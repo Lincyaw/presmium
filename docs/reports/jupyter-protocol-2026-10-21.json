@@ -1,0 +1,211 @@
+{
+  "sourceCommitAtReport": "01b7cee42d9821ac0e9eb6433a409c5f46d4a326",
+  "nodeVersion": "v22.23.2",
+  "scope": "Temporary local Jupyter Server, actual Presmium adapter and CLI, Chromium through the dev proxy; no Docker or mocks.",
+  "outcome": "Functional checks passed; browser unload leaves one empty execution directory after 20 seconds.",
+  "threadBudget": {
+    "native": 1,
+    "uv": 2,
+    "numerical": 1
+  },
+  "firstFunctionalRun": {
+    "measuredAt": "2026-10-21T10:35:06.399Z",
+    "complete": false,
+    "checks": {
+      "protocol": {
+        "ok": true,
+        "checks": [
+          "probe",
+          "fingerprint",
+          "session-state",
+          "session-isolation",
+          "working-directory-and-files",
+          "args-and-stdin",
+          "rich-output",
+          "timeout-and-recovery",
+          "kernel-cleanup",
+          "terminal-io",
+          "terminal-cleanup"
+        ],
+        "timingsMs": {
+          "probe": 106.2,
+          "fingerprint": 1721.7,
+          "session-state": 566,
+          "session-isolation": 583.9,
+          "working-directory-and-files": 16.8,
+          "args-and-stdin": 12.8,
+          "rich-output": 15,
+          "timeout-and-recovery": 1461.2,
+          "kernel-cleanup": 512.4,
+          "terminal-io": 731.2,
+          "terminal-cleanup": 257.9
+        },
+        "elapsedMs": 6885.8
+      },
+      "notebook": {
+        "valid": true,
+        "replayed": true,
+        "cachedRebuild": true,
+        "cells": 4,
+        "elapsedMs": 10734.255875
+      },
+      "browser": {
+        "proxyExecution": true,
+        "sessionReuse": true,
+        "terminalEcho": true,
+        "terminalClosedOnLeave": true,
+        "operatorTokenNotInBrowser": true,
+        "pageErrors": [],
+        "firstLiveExecutionMs": 13001.370833
+      }
+    },
+    "cleanup": {
+      "kernels": 0,
+      "terminals": 0,
+      "runDirectories": 1,
+      "serverStopped": true
+    },
+    "errors": [
+      "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n1 !== 0\n\n    at file:///private/tmp/presmium-jupyter-check-20261021/run.mjs:233:10\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)"
+    ],
+    "serverReadyMs": 2671.977083,
+    "versions": {
+      "python": "3.12.14",
+      "jupyter-server": "2.21.1",
+      "ipykernel": "7.4.0",
+      "nbformat": "5.11.1",
+      "nbclient": "0.11.0"
+    }
+  },
+  "browserCleanupRecheck": {
+    "measuredAt": "2026-10-21T10:39:29.070Z",
+    "complete": false,
+    "checks": {
+      "protocol": {
+        "ok": true,
+        "checks": [
+          "probe",
+          "fingerprint",
+          "session-state",
+          "session-isolation",
+          "working-directory-and-files",
+          "args-and-stdin",
+          "rich-output",
+          "timeout-and-recovery",
+          "kernel-cleanup",
+          "terminal-io",
+          "terminal-cleanup"
+        ],
+        "timingsMs": {
+          "probe": 106.2,
+          "fingerprint": 1721.7,
+          "session-state": 566,
+          "session-isolation": 583.9,
+          "working-directory-and-files": 16.8,
+          "args-and-stdin": 12.8,
+          "rich-output": 15,
+          "timeout-and-recovery": 1461.2,
+          "kernel-cleanup": 512.4,
+          "terminal-io": 731.2,
+          "terminal-cleanup": 257.9
+        },
+        "elapsedMs": 6885.8
+      },
+      "notebook": {
+        "valid": true,
+        "replayed": true,
+        "cachedRebuild": true,
+        "cells": 4,
+        "elapsedMs": 10734.255875
+      },
+      "browser": {
+        "proxyExecution": true,
+        "sessionReuse": true,
+        "terminalEcho": true,
+        "terminalClosedOnLeave": true,
+        "operatorTokenNotInBrowser": true,
+        "pageErrors": [],
+        "firstLiveExecutionMs": 6707.490541000003
+      }
+    },
+    "cleanup": {
+      "kernels": 0,
+      "terminals": 0,
+      "runDirectories": 1,
+      "serverStopped": true
+    },
+    "errors": [
+      "Error: Condition did not become true within the check budget\n    at eventually (file:///private/tmp/presmium-jupyter-check-20261021/run.mjs:48:9)\n    at async file:///private/tmp/presmium-jupyter-check-20261021/run.mjs:241:3"
+    ],
+    "reusedChecksFrom": "2026-10-21T10:35:06.399Z",
+    "serverReadyMs": 1836.334958,
+    "versions": {
+      "python": "3.12.14",
+      "jupyter-server": "2.21.1",
+      "ipykernel": "7.4.0",
+      "nbformat": "5.11.1",
+      "nbclient": "0.11.0"
+    }
+  },
+  "notTested": [
+    "Docker image and compose overlays",
+    "JupyterHub",
+    "GPU kernels",
+    "Slides UI",
+    "Production static auth:prompt deployment"
+  ],
+  "repairVerification": {
+    "date": "2026-10-21",
+    "source": "Uncommitted working tree based on sourceCommitAtReport",
+    "outcome": "Established proxy kernels, terminals and nested run directories cleaned after navigation and actual page close",
+    "baseline": {
+      "kernels": 0,
+      "terminals": 0,
+      "directoriesAfter20s": 1
+    },
+    "browserRegression": {
+      "file": "e2e/exec-remote-cleanup.spec.ts",
+      "passed": 3,
+      "elapsedSeconds": 14.4,
+      "lifecycleCount": 2,
+      "checks": [
+        "transient cleanup",
+        "navigation cleanup",
+        "page close cleanup",
+        "nested directory removal",
+        "terminal cleanup",
+        "operator token absent from browser requests",
+        "cleanup input scope",
+        "successful execution preserved when cleanup fails"
+      ]
+    },
+    "credentials": {
+      "file": "packages/addon-exec-jupyter/test/credentials.test.ts",
+      "passed": 2,
+      "elapsedSeconds": 1.68
+    },
+    "lightweightChecks": [
+      "check-layering.mjs",
+      "check-skills.mjs",
+      "git diff --check"
+    ],
+    "limits": {
+      "nativeThreads": 1,
+      "uvThreads": 2,
+      "serverCleanupTimeoutMs": 15000,
+      "maxCleanupsInFlight": 32
+    },
+    "notRun": [
+      "full test suites",
+      "Docker regression",
+      "cold start performance remeasurement"
+    ],
+    "knownLimitations": [
+      "static direct auth has no Node cleanup service",
+      "page unload before kernel creation returns its id",
+      "hidden files not exposed by Contents API may prevent directory removal; cleanup failure is warned without losing execution result"
+    ],
+    "temporaryServicesStopped": true,
+    "temporaryEnvironmentRemoved": true
+  }
+}

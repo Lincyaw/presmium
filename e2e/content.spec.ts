@@ -76,6 +76,64 @@ test('media directives give video, audio and an animated image from the build, w
   expect(await still.getAttribute('src')).not.toMatch(/\.gif$/)
 })
 
+test('leaving a media slide pauses video and audio, and returning keeps playback under the speaker\'s control', async ({ page }) => {
+  await page.bringToFront()
+  const video = (await open(page, 'content-media')).locator('figure.pm-media video')
+  await expect.poll(() => media(video)).toBeCloseTo(3, 0)
+  const original = (await video.elementHandle())!
+  const audio = (await page.locator('.slidev-layout.pm-content-media audio').elementHandle())!
+  await original.evaluate((element: HTMLVideoElement) => element.play())
+  await audio.evaluate((element: HTMLAudioElement) => {
+    element.muted = true
+    element.loop = true
+    return element.play()
+  })
+  await expect.poll(() => original.evaluate((element: HTMLVideoElement) => element.currentTime)).toBeGreaterThan(0)
+  await page.keyboard.press('ArrowDown')
+  await expect(page.locator('.slidev-layout.pm-content-element')).toBeVisible()
+  const paused = () => Promise.all([original, audio].map(element => element.evaluate((media: HTMLMediaElement) => media.paused)))
+  await expect.poll(paused, { timeout: 3000 }).toEqual([true, true])
+  await original.evaluate((element: HTMLVideoElement) => element.play().catch(() => {}))
+  await expect.poll(paused, { timeout: 3000 }).toEqual([true, true])
+  await page.keyboard.press('ArrowUp')
+  await expect(page.locator('.slidev-layout.pm-content-media')).toBeVisible()
+  await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true)
+  await video.evaluate((element: HTMLVideoElement) => element.play())
+  await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(false)
+
+  const autoplay = (await open(page, 'content-autoplay')).locator('video')
+  await expect.poll(() => autoplay.evaluate((element: HTMLVideoElement) => element.paused)).toBe(false)
+  const automatic = (await autoplay.elementHandle())!
+  await page.keyboard.press('ArrowUp')
+  await expect(page.locator('.slidev-layout.pm-content-captions')).toBeVisible()
+  await expect.poll(() => automatic.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true)
+  await page.keyboard.press('ArrowDown')
+  await expect(page.locator('.slidev-layout.pm-content-autoplay')).toBeVisible()
+  await expect.poll(() => autoplay.evaluate((element: HTMLVideoElement) => element.paused)).toBe(false)
+
+  for (const form of ['web', 'slides']) {
+    if (form === 'web') await page.goto(`${content().web}/cards.html?view=present&section=content-media-range`)
+    else await open(page, 'content-media-range')
+    const scope = page.locator(form === 'web' ? '.pm-present' : '.slidev-layout.pm-content-media-range')
+    const ranged = scope.locator('video')
+    const held = (await ranged.elementHandle())!
+    await held.evaluate((element: HTMLVideoElement) => element.play())
+    await expect.poll(() => held.evaluate((element: HTMLVideoElement) => element.paused)).toBe(false)
+    await page.keyboard.press('ArrowRight')
+    if (form === 'web') {
+      await expect(scope).toHaveAttribute('data-step', '1')
+      await expect(scope.locator('.pm-step-range:has(video)')).toHaveAttribute('aria-hidden', 'true')
+      await expect(ranged).toBeHidden()
+    } else await expect(scope.locator('.pm-step-range')).toHaveClass(/slidev-vclick-hidden/)
+    await expect(ranged).toHaveCount(1)
+    await expect.poll(() => held.evaluate((element: HTMLVideoElement) => element.paused), { timeout: 3000 }).toBe(true)
+    await page.keyboard.press('ArrowLeft')
+    await expect.poll(() => ranged.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true)
+    await ranged.evaluate((element: HTMLVideoElement) => element.play())
+    await expect.poll(() => ranged.evaluate((element: HTMLVideoElement) => element.paused)).toBe(false)
+  }
+})
+
 test('an embedded web component keeps its own interactive state', async ({ page }) => {
   const slide = await open(page, 'content-element')
   const counters = slide.locator('presmium-demo-counter')
@@ -140,6 +198,11 @@ async function expectCaptionedVideo(page: Page, video: Locator) {
   const files = [await video.getAttribute('poster'), ...await tracks.evaluateAll(list => list.map(track => track.getAttribute('src')))]
   expect(files).toEqual([expect.stringMatching(/poster\.png$/), expect.stringMatching(/loop\.en\.vtt$/), expect.stringMatching(/loop\.zh\.vtt$/)])
   for (const file of files) expect((await page.request.get(new URL(file!, page.url()).href)).status()).toBe(200)
+  await tracks.evaluateAll(list => list.forEach((element: HTMLTrackElement) => element.track.mode = 'hidden'))
+  await expect.poll(() => tracks.evaluateAll(list => list.map((element: HTMLTrackElement) => [...element.track.cues ?? []].map(cue => (cue as VTTCue).text)))).toEqual([
+    ['One turn of the agent loop.'],
+    ['智能体环路的一轮。'],
+  ])
 }
 
 test('a video with a poster and captions in two languages has its poster and two tracks in both forms (P-42)', async ({ page }) => {

@@ -45,6 +45,7 @@ export function createJupyterExecutor(name: string, spec: EnvironmentSpec, ctx: 
       settings: () => 'connection' in resolved
         ? nodeSettings(resolved.connection)
         : Promise.reject(new Error(`environment "${name}": ${'unavailable' in resolved ? resolved.unavailable : resolved.mismatch}`)),
+      cleanupFailed: error => ctx.log.warn(`environment "${name}": Jupyter cleanup failed`, error),
       text: text(`environment "${name}": `, () => ('connection' in resolved ? resolved.connection.url : '')),
     })
   }

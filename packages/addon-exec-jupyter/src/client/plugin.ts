@@ -17,8 +17,8 @@ const plugin: PluginDefinition = {
     requires: [{ token: EXECUTOR, optional: true }],
     capabilities: ['exec', 'network'],
   },
-  setup(ctx) {
-    remote?.dispose()
+  async setup(ctx) {
+    await remote?.dispose()
     remote = createRemoteEnvironments(jupyterEnvironments(ctx.environments))
     ctx.provide(JUPYTER_ENVIRONMENTS, remote.service)
     const router = ctx.tryGet(EXECUTOR)
@@ -27,8 +27,9 @@ const plugin: PluginDefinition = {
   dispose() {
     unregister.forEach(off => off())
     unregister = []
-    remote?.dispose()
+    const cleanup = remote?.dispose()
     remote = undefined
+    return cleanup
   },
 }
 

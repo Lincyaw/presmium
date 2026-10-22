@@ -65,7 +65,7 @@ export function prebundled(): { name: string, config(config: { root?: string }):
       } catch {
         return undefined
       }
-      return { optimizeDeps: { include: [`${PACKAGE} > diff`] } }
+      return { optimizeDeps: { include: [`${PACKAGE} > diff`, `${PACKAGE} > sucrase`] } }
     },
   }
 }

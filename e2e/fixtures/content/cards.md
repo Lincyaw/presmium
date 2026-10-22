@@ -71,3 +71,42 @@ slides: { class: pm-content-captions, routeAlias: content-captions }
 :captions-default: en
 带封面与中英字幕的视频
 ```
+
+(content-autoplay)=
+## 自动播放的生命周期
+
+:::{hints}
+slides: { class: pm-content-autoplay, routeAlias: content-autoplay }
+:::
+
+```{video} @lincyaw/slidev-addon-content/media/clip.webm
+:autoplay:
+:controls:
+:loop:
+:width: 280
+只在当前幻灯片自动播放。
+```
+
+(content-media-range)=
+## 媒体的显示范围
+
+:::{hints}
+slides: { class: pm-content-media-range, routeAlias: content-media-range }
+:::
+
+::::{slide}
+:at: 0
+:until: 1
+
+```{video} @lincyaw/slidev-addon-content/media/clip.webm
+:controls:
+:muted:
+:loop:
+第 0 步可播放，第 1 步隐藏并停止。
+```
+::::
+
+:::{slide}
+:at: 1
+媒体已经隐藏。
+:::

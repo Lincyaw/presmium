@@ -16,7 +16,7 @@ function quietSockets(): void {
   }
 }
 
-export async function nodeSettings(connection: Connection): Promise<ServerConnection.ISettings> {
+export async function nodeSettings(connection: Connection, signal?: AbortSignal): Promise<ServerConnection.ISettings> {
   quietSockets()
   const { ServerConnection } = await services()
   const headers = connection.headers
@@ -34,7 +34,7 @@ export async function nodeSettings(connection: Connection): Promise<ServerConnec
     fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
       const request = new Request(input, init)
       for (const [name, value] of Object.entries(headers)) request.headers.set(name, value)
-      return fetch(request).catch((error: unknown) => {
+      return fetch(request, signal ? { signal: AbortSignal.any([request.signal, signal]) } : undefined).catch((error: unknown) => {
         const cause = (error as { cause?: { code?: unknown, message?: unknown } }).cause
         const detail = typeof cause?.code === 'string' ? cause.code : typeof cause?.message === 'string' ? cause.message : undefined
         throw detail && error instanceof Error ? new TypeError(`${error.message} (${detail})`) : error

@@ -19,6 +19,8 @@ export interface KernelsOptions {
   kernel: string
   languages?: string[]
   settings(): Promise<ServerConnection.ISettings>
+  shutdown?(kernel: string, directory: string, settings: ServerConnection.ISettings): Promise<void>
+  cleanupFailed?(error: unknown): void
   refused?(): void
   text: KernelsText
 }
@@ -37,7 +39,7 @@ export interface Kernels {
   endSession(session: string): Promise<void>
   describe(): Promise<KernelDescription>
   probe(): Promise<string | undefined>
-  dispose(): void
+  dispose(): Promise<void>
 }
 
 interface Handle {
@@ -76,6 +78,10 @@ function statusOf(error: unknown): number | undefined {
 export function createKernels(options: KernelsOptions): Kernels {
   const sessions = new Map<string, Session>()
   const live = new Set<Handle>()
+  const starting = new Set<Promise<Handle>>()
+  const shuttingDown = new Map<Handle, Promise<void>>()
+  let disposed = false
+  let disposing: Promise<void> | undefined
   let specs: Promise<{ language: string, names: string[] }> | undefined
 
   const fail = (reason: string, started = Date.now()) => failedRun(options.executorId, reason, Date.now() - started)
@@ -84,6 +90,11 @@ export function createKernels(options: KernelsOptions): Kernels {
     try {
       return await options.settings()
     } catch (error) {
+      const status = statusOf(error)
+      if (status === 401 || status === 403) {
+        options.refused?.()
+        return fail(options.text.refused)
+      }
       return fail(errorText(error))
     }
   }
@@ -110,34 +121,46 @@ export function createKernels(options: KernelsOptions): Kernels {
     }
   }
 
-  const start = async (settings: ServerConnection.ISettings): Promise<Handle> => {
-    const { Drive, KernelAPI, KernelConnection } = await services()
-    const dir = `${RUNS_DIR}/${randomId()}`
-    const drive = new Drive({ serverSettings: settings })
-    await drive.save(RUNS_DIR, { type: 'directory' })
-    await drive.save(dir, { type: 'directory' })
-    const model = await KernelAPI.startNew({ name: options.kernel, path: `${dir}/kernel` } as { name: string }, settings)
-    const connection = new KernelConnection({ model, serverSettings: settings, handleComms: false })
-    const handle = { id: model.id, dir, connection }
-    live.add(handle)
-    try {
-      await connected(connection)
-    } catch (error) {
-      void shutdown(handle)
-      throw error
-    }
-    return handle
+  const start = (settings: ServerConnection.ISettings): Promise<Handle> => {
+    if (disposed) return Promise.reject(new Error('the Jupyter environment has been disposed'))
+    const task = (async () => {
+      const { Drive, KernelAPI, KernelConnection } = await services()
+      const dir = `${RUNS_DIR}/${randomId()}`
+      const drive = new Drive({ serverSettings: settings })
+      let handle: Handle | undefined
+      await drive.save(RUNS_DIR, { type: 'directory' })
+      try {
+        await drive.save(dir, { type: 'directory' })
+        const model = await KernelAPI.startNew({ name: options.kernel, path: `${dir}/kernel` } as { name: string }, settings)
+        const connection = new KernelConnection({ model, serverSettings: settings, handleComms: false })
+        handle = { id: model.id, dir, connection }
+        live.add(handle)
+        if (disposed) throw new Error('the Jupyter environment has been disposed')
+        await connected(connection)
+        if (disposed) throw new Error('the Jupyter environment has been disposed')
+        return handle
+      } catch (error) {
+        await (handle ? shutdown(handle) : removeDirectory(settings, dir)).catch(() => {})
+        throw error
+      }
+    })()
+    starting.add(task)
+    void task.then(() => starting.delete(task), () => starting.delete(task))
+    return task
   }
 
-  const shutdown = async (handle: Handle) => {
-    live.delete(handle)
-    try {
-      await handle.connection.shutdown()
-    } catch {
-    }
-    const settings = handle.connection.serverSettings
+  const shutdown = (handle: Handle): Promise<void> => {
+    const known = shuttingDown.get(handle)
+    if (known) return known
+    // Invoke the handoff before yielding: pagehide cannot wait for later continuations.
+    const cleanup = (options.shutdown ?? shutdownKernel)(handle.id, handle.dir, handle.connection.serverSettings)
     handle.connection.dispose()
-    await removeDirectory(settings, handle.dir)
+    const task = cleanup.finally(() => {
+      live.delete(handle)
+      shuttingDown.delete(handle)
+    })
+    shuttingDown.set(handle, task)
+    return task
   }
 
   const write = async (handle: Handle, settings: ServerConnection.ISettings, files: Record<string, string>) => {
@@ -154,14 +177,18 @@ export function createKernels(options: KernelsOptions): Kernels {
   const runIn = async (kernel: () => Promise<Handle>, request: RunRequest, signal: AbortSignal | undefined, settings: ServerConnection.ISettings, started: number): Promise<RunResult> => {
     let handle: Handle
     try {
+      signal?.throwIfAborted()
       if (!options.languages) {
         const { language, names } = await kernelSpecs(settings)
         if (!names.includes(options.kernel)) return fail(options.text.noKernel(options.kernel, names), started)
         if (language && languageId(language) !== languageId(request.lang)) return fail(options.text.wrongLanguage(options.kernel, language, request.lang), started)
       }
+      signal?.throwIfAborted()
       handle = await kernel()
+      signal?.throwIfAborted()
       if (request.files && Object.keys(request.files).length) await write(handle, settings, request.files)
     } catch (error) {
+      if (signal?.aborted) return fail(errorText(signal.reason), started)
       return failure(error, started)
     }
     const timeoutMs = request.timeoutMs && request.timeoutMs > 0 ? request.timeoutMs : DEFAULT_TIMEOUT_MS
@@ -175,6 +202,7 @@ export function createKernels(options: KernelsOptions): Kernels {
       status = outcome.status
       timedOut = outcome.timedOut
     } catch (error) {
+      if (signal?.aborted) return fail(errorText(signal.reason), started)
       return failure(error, started)
     }
     const { stdout, stderr } = collector.text()
@@ -194,6 +222,7 @@ export function createKernels(options: KernelsOptions): Kernels {
 
   const execute = async (handle: Handle, code: string, stdin: string, collector: OutputCollector | undefined, timeoutMs: number, signal?: AbortSignal): Promise<{ status: string, timedOut: boolean }> => {
     const { KernelAPI } = await services()
+    signal?.throwIfAborted()
     const lines = stdin ? stdin.replace(/\n$/, '').split('\n') : []
     const future = handle.connection.requestExecute({ code, silent: !collector, store_history: false, allow_stdin: true, stop_on_error: true })
     future.onIOPub = (msg) => {
@@ -207,7 +236,7 @@ export function createKernels(options: KernelsOptions): Kernels {
     const interrupt = () => {
       if (stopping) return
       void KernelAPI.interruptKernel(handle.id, handle.connection.serverSettings).catch(() => {})
-      stopping = setTimeout(() => void shutdown(handle), INTERRUPT_GRACE_MS)
+      stopping = setTimeout(() => void shutdown(handle).catch(() => {}), INTERRUPT_GRACE_MS)
     }
     const timer = setTimeout(() => {
       timedOut = true
@@ -247,13 +276,18 @@ export function createKernels(options: KernelsOptions): Kernels {
     try {
       return await runIn(async () => (handle = await start(settings)), request, signal, settings, started)
     } finally {
-      if (handle) void shutdown(handle)
+      if (handle) await shutdown(handle).catch(error => {
+        if (options.cleanupFailed) options.cleanupFailed(error)
+        else console.warn('[presmium] Jupyter cleanup failed', error)
+      })
     }
   }
 
   return {
     supports: lang => !options.languages || options.languages.some(l => languageId(l) === languageId(lang)),
     run(request, signal) {
+      if (signal?.aborted) return Promise.resolve(fail(errorText(signal.reason)))
+      if (disposed) return Promise.resolve(fail('the Jupyter environment has been disposed'))
       if (!request.session) return transient(request, signal)
       let session = sessions.get(request.session)
       if (!session) {
@@ -310,10 +344,28 @@ export function createKernels(options: KernelsOptions): Kernels {
       }
     },
     dispose() {
-      for (const handle of [...live]) void shutdown(handle)
+      if (disposing) return disposing
+      disposed = true
+      // Start all known shutdowns synchronously, including keepalive handoffs.
+      const cleanup = [...live].map(handle => shutdown(handle))
+      const pending = [...starting]
       sessions.clear()
+      disposing = (async () => {
+        const results = await Promise.allSettled(cleanup)
+        await Promise.allSettled(pending)
+        const failed = results.find(result => result.status === 'rejected')
+        if (failed?.status === 'rejected') throw failed.reason
+      })()
+      return disposing
     },
   }
+}
+
+export async function shutdownKernel(kernel: string, directory: string, settings: ServerConnection.ISettings): Promise<void> {
+  const { ServerConnection } = await services()
+  const response = await ServerConnection.makeRequest(`${settings.baseUrl}api/kernels/${encodeURIComponent(kernel)}`, { method: 'DELETE', keepalive: true }, settings)
+  if (response.status !== 204 && response.status !== 404) throw await ServerConnection.ResponseError.create(response)
+  await removeDirectory(settings, directory)
 }
 
 async function removeDirectory(settings: ServerConnection.ISettings, path: string): Promise<void> {
@@ -327,7 +379,13 @@ async function removeDirectory(settings: ServerConnection.ISettings, path: strin
     }
     await drive.delete(dir)
   }
-  await remove(path).catch(() => {})
+  try {
+    await remove(path)
+  } catch (error) {
+    if (statusOf(error) !== 404) throw error
+  } finally {
+    drive.dispose()
+  }
 }
 
 function connected(connection: Kernel.IKernelConnection): Promise<void> {

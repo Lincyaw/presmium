@@ -88,15 +88,27 @@ test.describe('presmium dev, auth: proxy', () => {
     }
   })
 
-  test('{terminal} opens a shell of the environment, which leaving the page shuts down (F-68)', async ({ page }) => {
+  test('{terminal} opens a shell; leaving the page closes the shell, session kernel and execution directory (F-68)', async ({ page }) => {
     test.setTimeout(180_000)
     const terminals = async () => {
       const response = await fetch(`${jupyter!.url}api/terminals`, { headers: { Authorization: `token ${jupyter!.token}` } })
       return (await response.json() as { name: string }[]).map(terminal => terminal.name)
     }
     const before = await terminals()
+    const remoteResources = async () => {
+      const api = async (path: string) => {
+        const response = await fetch(`${jupyter!.url}api/${path}`, { headers: { Authorization: `token ${jupyter!.token}` } })
+        expect(response.ok).toBe(true)
+        return response.json()
+      }
+      const [kernels, runs] = await Promise.all([api('kernels'), api('contents/presmium-runs?content=1')]) as [unknown[], { content: unknown[] }]
+      return { kernels: kernels.length, directories: runs.content.length }
+    }
     const terminal = page.locator('.pm-terminal[data-env="lab"]')
     await openDevPage(page, dev.url, terminal.locator('.pm-terminal__open'))
+    await run(block(page, 'define'))
+    await expect(block(page, 'define').locator('.pm-output__stdout')).toHaveText('定义了 x\n')
+    await expect.poll(remoteResources).toEqual({ kernels: 1, directories: 1 })
     await terminal.locator('.pm-terminal__open').click()
     await expect(terminal).toHaveAttribute('data-state', 'open', KERNEL)
     await expect(terminal.locator('.xterm-rows')).toContainText('$', KERNEL)
@@ -109,6 +121,7 @@ test.describe('presmium dev, auth: proxy', () => {
     expect(opened).toHaveLength(1)
     await page.goto('about:blank')
     await expect.poll(terminals, { timeout: 20_000 }).not.toContain(opened[0])
+    await expect.poll(remoteResources, { timeout: 20_000 }).toEqual({ kernels: 0, directories: 0 })
   })
 })
 

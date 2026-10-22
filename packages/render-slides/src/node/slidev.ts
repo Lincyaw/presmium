@@ -201,7 +201,7 @@ function visual(block: IRBlock, gen: Generation, notes: IRBlock[], owned: boolea
   }
   const content = node.type === 'markdown' ? md(node.mdast, block, gen)
     : node.type === 'code' ? code(node, block, gen, owned)
-    : scoped(component(node, block, gen, notes), block.at)
+    : scoped(component(node, block, gen, notes), block.at, block.until)
   if (block.at === 0 && block.until === undefined) return wrap(content)
   const click = block.until === undefined ? `v-click="${block.at}"`
     : block.at === 0 ? `v-click.hide="${block.until}"`
@@ -280,8 +280,10 @@ function asset(url: string, block: IRBlock, gen: Generation, type: LinkedType | 
   return published
 }
 
-function scoped(content: string, at: number): string {
-  return at > 0 ? `<PmStepScope :at="${at}">\n\n${content}\n\n</PmStepScope>` : content
+function scoped(content: string, at: number, until?: number): string {
+  return at > 0 || until !== undefined
+    ? `<PmStepScope :at="${at}"${until === undefined ? '' : ` :until="${until}"`}>\n\n${content}\n\n</PmStepScope>`
+    : content
 }
 
 function link(className: string, href: string | undefined, text: string, attrs = ''): string {

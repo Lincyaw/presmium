@@ -92,7 +92,7 @@ export const BlockView = defineComponent({
   setup(props) {
     const viewer = inject(VIEWER, undefined)
     const el = shallowRef<HTMLElement>()
-    provideStepScope(() => props.block.at)
+    provideStepScope(() => props.block.at, () => props.block.until)
     const clicks = computed(() => (props.expanded ? FINAL_STEP : props.step))
     let stop: (() => void) | undefined
     onMounted(() => {

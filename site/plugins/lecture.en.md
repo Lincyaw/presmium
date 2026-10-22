@@ -115,6 +115,7 @@ const t = useMessages(MESSAGES)
 ## Rules
 
 - **The look is a pure function of the step**: the same step always looks the same, going back included. `useStepState({ from, to })` gives the state of a range of steps inside the block (`active`, `reached`, `done`), counted from the step at which the block appears; `useStepScope` registers the block's k-th step with the host.
+- **Follow the block's visible range**: `useStepState(useBlockStepRange())` includes the block's and its parents' `at` and `until` limits; `until` is the first hidden step. Use it to stop background resources such as media. `useStepState({ from, to })` continues to describe the component's own steps within its block.
 - **Reduced motion**: animations read `usePrefersReducedMotion()` and show the final state when it is on.
 - **Configuration and services**: `useSectionConfig(plugin id)` is the global configuration merged with the section's `{config}`; `useService(token)` gets a browser service; `useSharedState` keeps state in step across windows or devices, under a key that starts with the plugin id.
 - **Static export**: when exporting PDF and PNG, the host replaces a component that has a fallback with its fallback; read `useStaticRender()` to decide yourself.

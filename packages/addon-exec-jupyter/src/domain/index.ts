@@ -1,6 +1,7 @@
 export {
   authOf,
   baseUrl,
+  cleanupPath,
   DEFAULT_KERNEL,
   DEFAULT_TERMINAL_ROWS,
   DEFAULT_TIMEOUT_MS,

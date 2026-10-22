@@ -27,12 +27,13 @@ export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideE
   let ids = 0
   const traces = new Map<string, Promise<Trace>>()
   let cancel: (() => void) | undefined
+  let disposed = false
 
   const spawn = () => (worker ??= new Worker(new URL('./pyodide.worker.ts', import.meta.url), { type: 'module', name: 'presmium-pyodide' }))
 
   function send<T>(kind: WorkerRequest['kind'], request: RunRequest, signal?: AbortSignal): Promise<Outcome<T>> {
     const job = () => new Promise<Outcome<T>>((resolve) => {
-      if (signal?.aborted) return resolve({ ok: false, error: messages().cancelled, timedOut: false, durationMs: 0 })
+      if (disposed || signal?.aborted) return resolve({ ok: false, error: messages().cancelled, timedOut: false, durationMs: 0 })
       const target = spawn()
       const indexURL = new URL(options.indexURL, location.href).href
       const message: WorkerRequest = { id: ++ids, kind, request: plain(request), indexURL, maxEvents: options.maxTraceEvents }
@@ -95,6 +96,8 @@ export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideE
       if (worker) await send<null>('end', { lang: 'python', code: '', session })
     },
     dispose() {
+      if (disposed) return
+      disposed = true
       cancel?.()
       worker?.terminate()
       worker = undefined

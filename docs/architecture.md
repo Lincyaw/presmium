@@ -263,11 +263,13 @@ interface HostAdapter {
 
 两个宿主适配器在应用初始化时通过 `installHost(app, adapter)` 注入实现。组件不直接读 `useStep()`：`useStepState(range)` 用宿主的绝对步骤减去所在步骤作用域的 `at`（`useStepScope()`，渲染端按块的 `at` 用 `PmStepScope` 提供），得到块内第 k 个状态是否已到达。组件自己再减一次 `at` 会算错。
 
+`provideStepScope(at, until?)` 与 `PmStepScope` 的可选 `until` 使用 IR 的绝对步骤，范围为 `[at, until)`；嵌套范围取交集，不改变原有的块内偏移。`useBlockStepRange()` 返回相对于当前作用域的有效范围，保留响应式 getter；需要跟随整个块的显示范围停止后台资源时，用 `useStepState(useBlockStepRange())`，而不是只判断 `from: 0`。阅读形态展开内容的语义仍由组件按 `useViewRole()` 决定。
+
 `@lincyaw/host` 导出的组合式函数与组件：
 
 | 名称 | 作用 |
 |---|---|
-| `useStepState`、`useStepScope`、`PmStepScope` | 块内步骤的状态与步骤作用域（见上） |
+| `useStepState`、`useStepScope`、`useBlockStepRange`、`PmStepScope` | 块内步骤的状态、步骤作用域与包含父范围限制的有效显示范围（见上） |
 | `useCursor`、`useViewRole`、`usePresentationMode` | 当前位置、视图角色、形态 |
 | `useService`、`useStartReport` | 服务实现与内核启动报告，内核启动后才有值 |
 | `usePrefersReducedMotion` | 系统“减少动态效果”设置（5.5 节） |
@@ -278,7 +280,7 @@ interface HostAdapter {
 | `createSharedStates(deck)`、`joinWindows(name, receive, known)`、`deckChannel(name)` | 宿主适配实现 `useSharedState` 的构件，见下文“共享状态” |
 | `useLocale()`、`useMessages(catalog)` | 界面语言 `'zh-CN'` 或 `'en'`，与按语言选取的文本（5.7 节） |
 | `useStaticRender()` | 静态导出（PDF、PNG）时为 true：幻灯片形态取自 Slidev 的打印模式，网页形态恒为 false（5.8 节） |
-| `registerPresmiumPlugin`、`startPresmium`、`stopPresmium` | 注册浏览器端插件、启动与停止内核；两个宿主在页面卸载（`pagehide`）与热更新替换时调用 `stopPresmium`，各插件的 `dispose` 因此会执行，页面从往返缓存恢复时再启动内核。持有资源的插件在 `dispose` 中释放它们（例如执行插件结束 Pyodide 的 Worker），再次启动时不留下第二份 |
+| `registerPresmiumPlugin`、`startPresmium`、`stopPresmium` | 注册浏览器端插件、启动与停止内核；两个宿主在页面卸载（`pagehide`）与热更新替换时调用 `stopPresmium`，各插件的 `dispose` 因此会执行，页面从往返缓存恢复时再启动内核。持有资源的插件在 `dispose` 中释放它们；执行插件结束 Pyodide 与所有正在运行的 JavaScript/TypeScript Worker，取消其计时器和待返回结果，再次启动时不留下第二份。已释放的执行器拒绝新运行，Pyodide 队列中尚未开始的任务也以取消结束，不能重新创建 Worker；恢复时由插件创建新实例 |
 | `startHost({ mode, config, navigation, transports })` | 宿主适配启动内核的共同部分：提供 `presenterPanels`、`syncTransports`、`navigation`、`toolbar` 四个宿主服务，并接上 `pagehide` |
 | `useSessionSnapshot()`、`claimFirst(group)` | 会话快照（`session` 服务的订阅），与“同一组中第一个实例拥有”的判断，会话与课堂插件共用 |
 | `currentLocale()` | 组件之外的界面语言，按 `CATALOG[currentLocale()]` 取文本 |
@@ -608,10 +610,10 @@ export interface HostStart {
 
 - **包内结构**：除 `src/domain`、`src/node`、`src/client` 外另有 `src/jupyter/`：Node 与浏览器共用的 `@jupyterlab/services` 客户端（`kernels.ts` 的内核池与运行、`terminals.ts` 的终端），它不引用 Node 内置模块与 vue，两端各自给出连接的设置（`src/node/connection.ts`：`ws` 的 WebSocket 与带请求头的 `fetch`；`src/client/environments.ts`：浏览器的 `fetch` 与 `WebSocket`）。`@jupyterlab/services` 在第一次运行时才加载。
 - **凭据规则**（`src/domain/connection.ts` 的 `operatorConnection`）：`none` 连接文稿的 `url`，不带令牌；`env`、`proxy`、`prompt` 在服务端（构建、代理、`probe`）都用运营者的一对 `PRESMIUM_ENV_<名>_URL`、`_TOKEN`（构建时没有学习者，`prompt` 的录制同样用运营者的令牌）；名字转为大写，其他字符变为 `_`。没有地址时不连接（运行失败并说明），文稿的 `url` 与地址不同源时提供方的 `create` 抛错，编译器给出 `presmium.execute` 的错误诊断，代理同样不挂载。令牌以 `Authorization: token …` 请求头发送，Node 端的 WebSocket 同样带请求头，令牌不进地址。
-- **运行**：一个会话是一个内核（`endSession` 关闭它），没有会话的运行用一个之后关闭的内核；同一会话的运行按请求的顺序排队。启动内核的请求只有内核名与路径 `presmium-runs/<id>/kernel`（jupyter_server 以它的目录为内核的工作目录，`files` 经 Contents API 写进这个目录），不带任何环境变量。内核关闭之后，这个目录连同代码写下的文件经 Contents API 删除（先删其中的文件与子目录，因为服务器只在送进回收站或设置了 `always_delete_dir` 时删除非空目录；服务器不列出的隐藏文件留下）。`args` 先作为一段静默执行的赋值运行；`stdin` 按行回答 `input_request`；超时或中止时经 REST 中断内核，5 秒内没有停下的内核被关闭。环境指纹为 `jupyter image=<文稿的 image> kernelspec=<内核名>:sha256:<内核规格的哈希> kernel=<kernel_info 的实现与版本、语言与版本>`，启动一个内核读 `kernel_info` 得出，60 秒内复用。`languages` 省略时按内核规格的语言判断，不符的运行失败。
-- **开发服务器的预打包**：页面在第一次远端运行时才加载 `@jupyterlab/services`，`{terminal}` 加载 xterm；开发服务器到那时才发现的依赖会让 Vite 重新优化并重新加载页面，正在进行的运行因此丢失。插件的 Vite 插件（`src/node/vite.ts` 的 `prebundled`）在开发服务器启动时把它们放进 `optimizeDeps.include`（经本插件包，写成 `@lincyaw/slidev-addon-exec-jupyter > @jupyterlab/services`，从 Vite 的根目录找不到本插件包时不加）；执行插件同样预打包执行面板的 `diff`。
-- **浏览器**：客户端插件为每个 `kind: jupyter` 的环境登记执行器 `presmium.env.<名>`，并提供 `PmTerminal` 用的 `JUPYTER_ENVIRONMENTS`。`proxy` 经 `/__presmium/presmium.execJupyter/env/<名>/`：HTTP 带 `Presmium-Document`，WebSocket 不能带请求头，文档放在查询参数 `document` 中（由 `hello` 得知）。`prompt` 第一次运行时弹出对话框，令牌存在 `sessionStorage` 的 `presmium.execJupyter.token:<名>` 中，以 `?token=` 带在 WebSocket 地址中（只发往这个服务器），服务器拒绝（401、403）时忘掉它；`url` 中的 `{user}` 由 `<hub>/hub/api/user` 给出。HTML 与 SVG 输出在执行器中先经 DOMPurify 清洗。
-- **服务端**：服务端贡献的代理随编译器最近一次为该文稿创建的环境变化（`proxies`、`routes` 是读取时计算的属性），只为 `auth: proxy` 的环境挂载，角色为 `reader`；代理设置目标的 `Host` 与 `Origin`（以服务端为 Jupyter 的客户端；Jupyter 校验 WebSocket 的来源），不能挂载时同一路径回答 502 与原因。
+- **运行**：一个会话是一个内核（`endSession` 关闭它），没有会话的运行用一个之后关闭的内核；同一会话的运行按请求的顺序排队。启动内核的请求只有内核名与路径 `presmium-runs/<id>/kernel`（jupyter_server 以它的目录为内核的工作目录，`files` 经 Contents API 写进这个目录），不带任何环境变量。内核关闭之后，这个目录连同代码写下的文件经 Contents API 删除（先删其中的文件与子目录，因为服务器只在送进回收站或设置了 `always_delete_dir` 时删除非空目录；服务器不列出的隐藏文件留下）。临时执行与普通插件销毁等待清理完成，启动失败时也回收已创建的目录；同一个内核的并发清理复用进行中的任务。临时执行的清理失败记录告警，保留代码原来的运行结果。提交前、排队等待或内核启动期间已取消的请求在发送代码前检查取消信号，不继续执行。`args` 先作为一段静默执行的赋值运行；`stdin` 按行回答 `input_request`；超时或中止时经 REST 中断内核，5 秒内没有停下的内核被关闭。环境指纹为 `jupyter image=<文稿的 image> kernelspec=<内核名>:sha256:<内核规格的哈希> kernel=<kernel_info 的实现与版本、语言与版本>`，启动一个内核读 `kernel_info` 得出，60 秒内复用。`languages` 省略时按内核规格的语言判断，不符的运行失败。
+- **开发服务器的预打包**：页面在第一次远端运行时才加载 `@jupyterlab/services`，`{terminal}` 加载 xterm；开发服务器到那时才发现的依赖会让 Vite 重新优化并重新加载页面，正在进行的运行因此丢失。插件的 Vite 插件（`src/node/vite.ts` 的 `prebundled`）在开发服务器启动时把它们放进 `optimizeDeps.include`（经本插件包，写成 `@lincyaw/slidev-addon-exec-jupyter > @jupyterlab/services`，从 Vite 的根目录找不到本插件包时不加）；执行插件同样预打包执行面板的 `diff` 和脚本 Worker 首次使用的 `sucrase`，避免第一次运行丢失结果。
+- **浏览器**：客户端插件为每个 `kind: jupyter` 的环境登记执行器 `presmium.env.<名>`，并提供 `PmTerminal` 用的 `JUPYTER_ENVIRONMENTS`。`proxy` 经 `/__presmium/presmium.execJupyter/env/<名>/`：HTTP 带 `Presmium-Document`，WebSocket 不能带请求头，文档放在查询参数 `document` 中（由 `hello` 得知）。`prompt` 第一次运行时弹出对话框，令牌存在 `sessionStorage` 的 `presmium.execJupyter.token:<名>` 中，以 `?token=` 带在 WebSocket 地址中（只发往这个服务器），服务器拒绝（401、403）、JupyterHub 用户发现失败或 HTTP 请求因网络/跨域问题无法完成时忘掉它，使下一次运行可以重新输入；`url` 中的 `{user}` 由 `<hub>/hub/api/user` 给出。HTML 与 SVG 输出在执行器中先经 DOMPurify 清洗。终端缓存连接前的窗口尺寸，在 WebSocket 连通后应用；通过客户端公开的 `disposed` 信号得知 shell 结束，停止管理器轮询并允许重新打开。主动关闭不再触发旧连接的结束回调，避免覆盖新终端状态。
+- **服务端**：服务端贡献的代理随编译器最近一次为该文稿创建的环境变化（`proxies`、`routes` 是读取时计算的属性），只为 `auth: proxy` 的环境挂载，角色为 `reader`；代理设置目标的 `Host` 与 `Origin`（以服务端为 Jupyter 的客户端；Jupyter 校验 WebSocket 的来源），不能挂载时同一路径回答 502 与原因。代理环境另有 `POST /__presmium/presmium.execJupyter/cleanup/<环境名>`：浏览器在自己的 `pagehide` 监听中同步发出带文稿头的 `keepalive` 请求，Node 关闭已取得 ID 的内核并递归删除目录，不随页面取消。请求体上限 1024 字节，只接受内核 ID 与单层 `presmium-runs/<id>` 目录；连接与凭据仍从运营者配置解析，不接受请求提供的 URL 或令牌。进行中的清理去重，最多 32 项，每项使用服务端独立的 15 秒总超时，服务关闭时等待它们。此路由沿用代理的 reader 权限，不提供比现有完整 Jupyter 代理更细的资源所有权隔离。静态页直接连接的 `auth: prompt`、`none` 没有这项 Node 清理服务，卸载时直接关闭内核的请求使用 `keepalive`，后续目录删除仍取决于页面是否继续执行。创建内核的请求还未返回 ID 时就卸载页面，也不能保证交接；启动中的任务跟踪只保证页面仍存活时的普通销毁。
 - **站点的服务端渲染**：Rollup 会加载死分支中的动态导入，网页的服务端渲染因此也打包插件的浏览器模块；`@jupyterlab/services` 只在非浏览器环境 `require('ws')`（包的 `browser` 字段把它换成垫片），服务端渲染的打包没有这一字段，会连 `ws` 与 Node 内置模块一起打包而失败。插件经 `PresmiumNodePlugin.vitePlugins` 给出一个 Vite 插件（`src/node/vite.ts`），在每次打包中把这一处 `ws` 解析为该包自己的垫片。
 
 执行与发布的约定：
@@ -1395,6 +1397,8 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 在页面上绘制在其他内容之上、自身不占版面的组件（例如引导的光标），由指令把组件节点标为 `layer: 'overlay'`。渲染端不给它单独的位置：网页的文档视图按源码顺序渲染块，不给上屏内容添加板书外框；浮层本身不占版面，服务端渲染与首帧的版面也不跳动；幻灯片渲染端不给没有降级内容的浮层组件写空的 `PmStaticFallback`。
 
 组件拥有的代码：组件默认拥有其子块中的代码块（例如执行面板、分步执行、本地环境包着的代码）。两种形态都不给它们运行控件，也不显示它们的录制输出：网页由 IR 运行时实现，幻灯片渲染端把它们写成组件插槽中的普通代码块（照常做语言映射）。只组织子内容、不负责执行的容器在 `ComponentNode` 写 `ownsCode: false`，例如预测的揭示内容，子代码照常显示运行控件和录制输出。组件运行的代码由指令放在组件的属性中（如执行面板的 `code`），不从渲染后的 DOM 读回。
+
+媒体组件在幻灯片失活或组件卸载时暂停视频与音频，并阻止隐藏实例继续播放。内容包的 `setup/` 经 Slidev 的公开活动与渲染上下文接口提供私有探针，组件不依赖 Slidev；总览与下一页预览不能自动播放。返回活动页时，只有因切页暂停的自动播放媒体恢复，手动暂停或已播放完的媒体保持原状态。网页阅读时仍可手动控制屏幕外的音频；网页放映按宿主步骤状态暂停非当前章节。回归见 `e2e/content.spec.ts`。
 
 ### 5.10 设计系统
 

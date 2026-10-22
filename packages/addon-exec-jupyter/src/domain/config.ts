@@ -26,6 +26,10 @@ export function proxyPath(name: string): string {
   return `env/${envKey(name).toLowerCase()}`
 }
 
+export function cleanupPath(name: string): string {
+  return `cleanup/${envKey(name).toLowerCase()}`
+}
+
 export function authOf(spec: EnvironmentSpec): EnvironmentAuth {
   const auth = spec.auth
   return auth === 'none' || auth === 'proxy' || auth === 'prompt' || auth === 'hub' ? auth : 'env'

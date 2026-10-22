@@ -59,14 +59,24 @@ expect(JSON.stringify(notebook.cells)).toContain('预期的降级内容')
 
 需要 Docker、GPU、凭据时，缺少条件就明确跳过并说明原因。复用已有的启动辅助，避免在测试中建立第二套协议：
 
-- 远端内核：`packages/addon-exec-jupyter/test/helpers.ts`、`e2e/fixtures/exec-remote/jupyter.ts`。
+- 远端内核：`packages/addon-exec-jupyter/test/helpers.ts`、`e2e/fixtures/exec-remote/jupyter.ts`。没有 Docker 时，`e2e/exec-remote-cleanup.spec.ts` 可使用本地真实 Jupyter：把 `PRESMIUM_TEST_JUPYTER_PYTHON` 指向已安装 `jupyter_server` 与 `ipykernel` 的 Python，运行 `pnpm exec playwright test e2e/exec-remote-cleanup.spec.ts --project chromium --no-deps --workers=1`。用例创建隔离的服务配置、凭据及目录，验证临时执行、页面导航和关闭后的内核、嵌套目录与终端清理；代理服务在离页检查期间保持运行。缺少该变量时明确跳过，不把跳过计为通过。
 - 语音：`packages/addon-speech/test/helpers.ts` 的假引擎，经真实服务端口使用；固定输出用于验证缓存、转写与合成流程。
 - 课堂：`e2e/fixtures/plugins/decks.ts` 的课堂服务辅助，用独立浏览器身份验证主讲与学生。
 - dsh：`packages/dsh/test/harness.ts`，每个用例自己的目录与脚本化模型。
 
+Jupyter 的本地完整功能检查复用同一个隔离 Python，依次运行，保持单个 worker：
+
+- `packages/addon-exec-jupyter/test/local.test.ts` 用真实服务验证提供方协议、错误与取消、指令诊断、notebook 校验、重放与缓存；Python 另需 `nbformat`、`nbclient`。运行 `pnpm exec vitest run --project integration packages/addon-exec-jupyter/test/local.test.ts --maxWorkers=1 --no-file-parallelism`。
+- `e2e/exec-remote-local.spec.ts` 验证代理、静态网页与幻灯片、`prompt` 和 `none`、令牌重试与浏览器会话隔离；只构建其最小文稿。
+- `e2e/exec-remote-hub-local.spec.ts` 验证真实 JupyterHub 用户发现与 `/user/<名字>/` 路由。Python 另需 `jupyterhub`，`PRESMIUM_TEST_JUPYTER_PROXY` 指向 `configurable-http-proxy` 的 JavaScript 入口，不能指向包管理器生成的 shell 包装脚本。用例自行创建单用户 Hub、代理和用户服务。
+
+后两项用对应文件名运行定向 Playwright，带 `--project chromium --no-deps --workers=1`。服务端原生线程预算仍为 1、libuv 为 2；在本地进程验证通过不代表 Docker 镜像、GPU、gVisor 或 Kubernetes 部署已验证。
+
 ## 运行与判断
 
 默认只运行改动对应的文件，例如 `pnpm exec vitest run --project integration packages/cli/test/ir.test.ts --maxWorkers=1 --no-file-parallelism` 或 `pnpm exec playwright test e2e/guide.spec.ts --project chromium --no-deps --workers=1`。只构建这些用例需要的文稿与媒介，并按需运行相关轻量结构检查。定向验证通过后停止，不自动扩大范围。除非用户明确要求全量验证，不运行以下全量命令；收尾和合并前同样遵守此约定。
+
+执行器释放与恢复用 `e2e/exec-lifecycle.spec.ts`：通过真实 Worker 与宿主的 `pagehide`、`pageshow` 处理器检查取消、排队任务及重新运行。排队取消须等两个面板结束并检查未产生成功输出、没有额外 Worker，不能只观察瞬时的 Worker 数为零；合成生命周期事件不等于验证浏览器真正进入与恢复 BFCache。仅检查 WGSL 的计算与降级时用 `e2e/exec-webgpu-smoke.spec.ts`，不连带构建 Python/jax-js 桥接部分；SwiftShader 通过不代表物理 GPU 已验证。离线发布与高对比度可用仅含 core、publish 的 `e2e/publish-smoke.spec.ts`。其余组件按用例名筛选需要的行为，批次通过后不为汇总而重复已过用例；本次范围与限制见 `docs/reports/components-validation-2026-10-21.md`。
 
 `pnpm test` 包含结构检查与 Vitest，测试文件默认使用一个 worker；每个文件会启动真实构建、服务或浏览器，需要控制同时运行的进程数量。PDF 导出相关文件在 `export` 项目，排在其他集成测试之后；单独运行用 `pnpm exec vitest run --project export`，避免同时大量构建导致截图时机不稳定。
 

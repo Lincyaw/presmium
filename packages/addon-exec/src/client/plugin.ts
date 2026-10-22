@@ -8,9 +8,11 @@ import { environments } from './place.ts'
 import { createPyodideExecutor } from './pyodide.ts'
 import type { PyodideExecutor } from './pyodide.ts'
 import { createScriptExecutor } from './script.ts'
+import type { ScriptExecutor } from './script.ts'
 import { withRuntimeFeedback } from './feedback.ts'
 
 let pyodide: PyodideExecutor | undefined
+let script: ScriptExecutor | undefined
 let stopStatus: (() => void) | undefined
 
 export const execPlugin: PluginDefinition = {
@@ -19,19 +21,21 @@ export const execPlugin: PluginDefinition = {
     const config = execConfig(ctx.config)
     environments.value = ctx.environments ?? {}
     pyodide?.dispose()
+    script?.dispose()
     pyodide = createPyodideExecutor({
       indexURL: config.pyodideURL ?? `${import.meta.env.BASE_URL}pyodide/`,
       timeoutMs: config.timeoutMs,
       loadTimeoutMs: config.loadTimeoutMs,
       maxTraceEvents: config.maxTraceEvents,
     })
+    script = createScriptExecutor({ timeoutMs: config.timeoutMs })
     const router = createExecutorRouter({
       noExecutor: lang => messages().noExecutor(lang),
       executorUnavailable: (id, lang) => messages().executorUnavailable(id, lang),
       executorCrashed: (id, error) => messages().executorCrashed(id, error),
     })
     router.register(pyodide)
-    router.register(createScriptExecutor({ timeoutMs: config.timeoutMs }))
+    router.register(script)
     const feedback = withRuntimeFeedback(router)
     stopStatus?.()
     stopStatus = ctx.tryGet(STATUS)?.register({ id: EXEC_ID, read: feedback.read })
@@ -41,6 +45,8 @@ export const execPlugin: PluginDefinition = {
   dispose() {
     pyodide?.dispose()
     pyodide = undefined
+    script?.dispose()
+    script = undefined
     stopStatus?.()
     stopStatus = undefined
   },

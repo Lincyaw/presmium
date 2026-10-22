@@ -2,7 +2,7 @@ import { environmentExecutor, isRecord } from '@lincyaw/kernel'
 import type { EnvironmentSpec, Executor, RunResult } from '@lincyaw/kernel'
 import { currentLocale, useServer } from '@lincyaw/host'
 import type { ServerConnection } from '@jupyterlab/services'
-import { authOf, baseUrl, EXEC_JUPYTER_ID, kernelOf, languagesOf, originOf, proxyPath } from '../domain/index.ts'
+import { authOf, baseUrl, cleanupPath, EXEC_JUPYTER_ID, kernelOf, languagesOf, originOf, proxyPath } from '../domain/index.ts'
 import type { JupyterEnvironments } from '../domain/index.ts'
 import type { TerminalSession } from '../domain/service.ts'
 import { createKernels, services } from '../jupyter/kernels.ts'
@@ -14,7 +14,7 @@ import { forgetToken, tokenFor } from './token.ts'
 export interface RemoteEnvironments {
   service: JupyterEnvironments
   executors: Executor[]
-  dispose(): void
+  dispose(): Promise<void>
 }
 
 let documentName: Promise<string> | undefined
@@ -59,6 +59,8 @@ async function sanitized(result: RunResult): Promise<RunResult> {
 
 export function createRemoteEnvironments(environments: Record<string, EnvironmentSpec>): RemoteEnvironments {
   const settings = new Map<string, Promise<ServerConnection.ISettings>>()
+  const proxyDocuments = new Map<string, string>()
+  let disposing: Promise<void> | undefined
 
   const unavailable = (name: string): string | undefined => {
     const t = messages()
@@ -78,6 +80,7 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
     const { ServerConnection } = await services()
     if (authOf(spec) === 'proxy') {
       const document = await servedDocument()
+      proxyDocuments.set(name, document)
       const base = `${location.origin}/__presmium/${EXEC_JUPYTER_ID}/${proxyPath(name)}/`
       class DocumentSocket extends WebSocket {
         constructor(url: string | URL, protocols?: string | string[]) {
@@ -104,8 +107,22 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
     if (authOf(spec) === 'none') return ServerConnection.makeSettings({ baseUrl: baseUrl(url), token: '' })
     const token = await tokenFor(name, originOf(url.replace('{user}', 'x'))!)
     if (!token) throw new Error(messages().noToken(name))
-    const resolved = url.includes('{user}') ? url.replace('{user}', await hubUser(url, token)) : url
-    return ServerConnection.makeSettings({ baseUrl: baseUrl(resolved), token, appendToken: true })
+    let resolved: string
+    try {
+      resolved = url.includes('{user}') ? url.replace('{user}', await hubUser(url, token)) : url
+    } catch (error) {
+      forget(name)
+      throw error
+    }
+    return ServerConnection.makeSettings({
+      baseUrl: baseUrl(resolved), token, appendToken: true,
+      fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, init).catch((error: unknown) => {
+        // Jupyter may omit CORS headers on auth failures, hiding the HTTP status.
+        // Let the next attempt ask again instead of retaining an unusable token.
+        forget(name)
+        throw error
+      }),
+    })
   }
 
   const settingsFor = (name: string) => {
@@ -131,6 +148,19 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
       kernel: kernelOf(spec),
       languages: languagesOf(spec),
       settings: () => settingsFor(name),
+      ...(authOf(spec) === 'proxy' ? {
+        shutdown: (kernel: string, directory: string) => {
+          const request = fetch(`/__presmium/${EXEC_JUPYTER_ID}/${cleanupPath(name)}`, {
+            method: 'POST',
+            keepalive: true,
+            headers: { 'Content-Type': 'application/json', 'Presmium-Document': encodeURIComponent(proxyDocuments.get(name) ?? '') },
+            body: JSON.stringify({ kernel, directory }),
+          })
+          return request.then(async response => {
+            if (!response.ok) throw new Error(`Jupyter cleanup failed (${response.status}): ${await response.text()}`)
+          })
+        },
+      } : {}),
       refused: () => forget(name),
       text: {
         unreachable: error => messages().unreachable(name, error),
@@ -150,6 +180,20 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
       endSession: session => kernels.endSession(session),
     }
   })
+
+  const dispose = (): Promise<void> => {
+    if (disposing) return disposing
+    window.removeEventListener('pagehide', leave)
+    // These calls must run before the first await, independently of host disposal order.
+    const cleanup = pools.map(kernels => kernels.dispose())
+    terminals.forEach(session => session.abandon())
+    terminals.clear()
+    settings.clear()
+    disposing = Promise.all(cleanup).then(() => undefined)
+    return disposing
+  }
+  const leave = () => void dispose().catch(error => console.error('[presmium] Jupyter cleanup failed', error))
+  window.addEventListener('pagehide', leave)
 
   return {
     executors,
@@ -177,11 +221,6 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
         }
       },
     },
-    dispose() {
-      pools.forEach(kernels => kernels.dispose())
-      terminals.forEach(session => session.abandon())
-      terminals.clear()
-      settings.clear()
-    },
+    dispose,
   }
 }

@@ -114,6 +114,7 @@ const t = useMessages(MESSAGES)
 ## 规则
 
 - **视觉状态是步骤的纯函数**：同一步骤总是同一画面，往回翻页也一样。`useStepState({ from, to })` 给出块内一段步骤的状态（`active`、`reached`、`done`），步骤从块出现的那一步算起；`useStepScope` 向宿主登记块内的第 k 步。
+- **跟随块的显示范围**：`useStepState(useBlockStepRange())` 包含块与父块的 `at`、`until` 限制，`until` 为隐藏的第一步；需要停止媒体等后台资源时使用它。原有 `useStepState({ from, to })` 仍描述组件自己的块内步骤。
 - **减少动态效果**：动画读 `usePrefersReducedMotion()`，开启时直接显示终态。
 - **配置与服务**：`useSectionConfig(插件 ID)` 是全局配置合并本章节 `{config}` 的结果；`useService(令牌)` 取得浏览器端服务；`useSharedState` 在窗口或设备之间同步状态，键以插件 ID 开头。
 - **静态导出**：导出 PDF 与 PNG 时，带降级内容的组件由宿主换成降级内容；需要自己判断时读 `useStaticRender()`。

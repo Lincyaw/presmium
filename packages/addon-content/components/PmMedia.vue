@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useLocale } from '@lincyaw/host'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { useMediaActive } from '../src/client/media.ts'
 import { captionTracks, mediaElements } from '../src/domain/index.ts'
 import type { MediaKind } from '../src/domain/index.ts'
 
@@ -22,6 +23,32 @@ const props = defineProps<{
 }>()
 
 const locale = useLocale()
+const figure = ref<HTMLElement>()
+const active = useMediaActive()
+let resumeAutoplay = false
+function pause() {
+  const media = [...figure.value?.querySelectorAll<HTMLMediaElement>('video, audio') ?? []]
+  resumeAutoplay = props.autoplay === true && media.some(element => !element.paused && !element.ended)
+  media.forEach(element => {
+    element.pause()
+  })
+}
+function play(event: Event) {
+  if (!active.value && event.target instanceof HTMLMediaElement) {
+    resumeAutoplay = props.autoplay === true
+    event.target.pause()
+  }
+}
+watch(active, shown => {
+  if (!shown) pause()
+  else {
+    const resume = resumeAutoplay && props.autoplay
+    resumeAutoplay = false
+    if (resume) figure.value?.querySelectorAll<HTMLMediaElement>('video, audio').forEach(element => void element.play().catch(() => {}))
+  }
+}, { flush: 'sync' })
+watch(() => props.autoplay, enabled => { if (!enabled) resumeAutoplay = false }, { flush: 'sync' })
+onBeforeUnmount(pause)
 const elements = computed(() => mediaElements(props.kind, props, props.still !== undefined).map(({ tag, file, attrs }) => ({
   tag,
   attrs: { ...attrs, src: file === 'still' ? props.still : props.src, ...tag === 'video' && props.poster ? { poster: props.poster } : {} },
@@ -30,7 +57,7 @@ const tracks = computed(() => (props.kind === 'video' ? captionTracks(props.capt
 </script>
 
 <template>
-  <figure class="pm-media" :data-kind="kind">
+  <figure ref="figure" class="pm-media" :data-kind="kind" @play.capture="play">
     <component :is="element.tag" v-for="(element, i) in elements" :key="i" v-bind="element.attrs">
       <track v-for="track in element.tag === 'video' ? tracks : []" :key="track.srclang" kind="captions" :src="track.src" :srclang="track.srclang" :label="track.label" :default="track.default">
     </component>
