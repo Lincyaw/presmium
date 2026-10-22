@@ -1,7 +1,7 @@
 import { currentLocale } from '@lincyaw/host'
 import { failedRun } from '@lincyaw/kernel'
 import type { Executor, RunResult } from '@lincyaw/kernel'
-import { computeRequest, isWgsl, MESSAGES, paramsSummary, programError, runResult } from '../domain/index.ts'
+import { computeRequest, isWgsl, MESSAGES, paramsSummary, programError, runResultOf } from '../domain/index.ts'
 import type { WorkerReply, WorkerRequest } from './protocol.ts'
 
 const STOP_GRACE_MS = 200
@@ -55,7 +55,7 @@ export function createWebgpuExecutor(options: { id: string, timeoutMs: number })
         signal?.addEventListener('abort', onAbort)
         worker.onmessage = ({ data }: MessageEvent<WorkerReply>) => {
           end()
-          if (data.type === 'done') finish(runResult(id, data.outcome, elapsed(), text))
+          if (data.type === 'done') finish(runResultOf(id, data.outcome, elapsed(), text))
         }
         worker.onerror = (event) => {
           end()

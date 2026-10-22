@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { compute } from '../gpu.mjs'
+import { compute } from '../shared/gpu-compute.mjs'
 import type { WorkerReply, WorkerRequest } from './protocol.ts'
 
 declare const self: DedicatedWorkerGlobalScope

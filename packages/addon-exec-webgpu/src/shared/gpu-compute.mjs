@@ -1,7 +1,7 @@
 const ARRAYS = { f32: Float32Array, i32: Int32Array, u32: Uint32Array }
 const ENDS = 4
 
-export function describeAdapter(adapter) {
+function describeAdapter(adapter) {
   const info = adapter.info ?? {}
   const fallback = Boolean(info.isFallbackAdapter ?? adapter.isFallbackAdapter) || info.architecture === 'swiftshader'
   return { vendor: info.vendor ?? '', architecture: info.architecture ?? '', description: info.description ?? '', fallback }
@@ -12,7 +12,8 @@ export async function probeAdapter(gpu) {
   return adapter ? describeAdapter(adapter) : undefined
 }
 
-export function bufferBytes(buffer) {
+// The same sizes as the domain's params.ts: this file runs alone in the recording's page, so it imports nothing.
+function bufferBytes(buffer) {
   const bytes = Math.max(4, buffer.length * 4)
   return buffer.usage === 'uniform' ? Math.ceil(bytes / 16) * 16 : bytes
 }

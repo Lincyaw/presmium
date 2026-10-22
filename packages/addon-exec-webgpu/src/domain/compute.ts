@@ -52,6 +52,6 @@ export type ComputeOutcome =
   | { ok: true, buffers: BufferSummary[], timing: Timing, adapter: AdapterDescription }
   | { ok: false, reason: Unavailable | 'shader' | 'validation', detail: string, adapter?: AdapterDescription }
 
-export function unavailable(reason: string): reason is Unavailable {
+export function isUnavailable(reason: string): reason is Unavailable {
   return ['no-webgpu', 'no-adapter', 'feature', 'limit', 'device-lost'].includes(reason)
 }
