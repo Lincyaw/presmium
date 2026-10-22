@@ -35,7 +35,8 @@ export interface PreviewFrame {
   stop(): void
 }
 
-const FRAME_NAME = `${PREVIEW_NAME}:`
+// A function, not a constant: bundlers keep a module-level template over an imported binding, and static builds must hold no preview code.
+const framePrefix = () => `${PREVIEW_NAME}:`
 const PAUSED = ':paused'
 const STYLE_ID = 'presmium-preview-style'
 const HIGHLIGHT = 'data-preview-highlight'
@@ -56,8 +57,8 @@ function previewNonce(): string | undefined {
   if (typeof window === 'undefined') return undefined
   const given = new URL(window.location.href).searchParams.get(PREVIEW_PARAM)
   if (given) return given
-  if (!window.name.startsWith(FRAME_NAME)) return undefined
-  const own = window.name.slice(FRAME_NAME.length)
+  if (!window.name.startsWith(framePrefix())) return undefined
+  const own = window.name.slice(framePrefix().length)
   return (own.endsWith(PAUSED) ? own.slice(0, -PAUSED.length) : own) || undefined
 }
 
@@ -69,7 +70,7 @@ export function previewFrameAncestors(origins: readonly string[]): string {
 export function isPreviewActive(): boolean {
   if (typeof window === 'undefined' || window.parent === window) return true
   const nonce = previewNonce()
-  return !nonce || window.name !== `${FRAME_NAME}${nonce}${PAUSED}`
+  return !nonce || window.name !== `${framePrefix()}${nonce}${PAUSED}`
 }
 
 interface FrameState {
@@ -345,7 +346,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
   const state: FrameState = { active: isPreviewActive(), stopped: false }
   const capabilities: PreviewCommandType[] = [...COMMANDS, ...page.setActive ? ['activity' as const] : []]
   const nameWindow = (active: boolean) => {
-    window.name = `${FRAME_NAME}${nonce}${active ? '' : PAUSED}`
+    window.name = `${framePrefix()}${nonce}${active ? '' : PAUSED}`
   }
   nameWindow(state.active)
   const root = document.documentElement
