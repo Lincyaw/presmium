@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import type { ApprovalKind, ApprovalRequest, Approvals, Member, MemberRole } from '@lincyaw/kernel'
+import { hasRole, isPresentingRole, pushStream } from '@lincyaw/kernel'
+import type { ApprovalKind, ApprovalRequest, Approvals, Member, MemberRole, PushStream } from '@lincyaw/kernel'
 
 export type ApprovalPolicy = 'off' | 'ask' | 'allow'
 
@@ -20,6 +21,11 @@ export interface WindowReport {
   at: number
 }
 
+export interface WindowFilter {
+  member?: Member
+  document?: string
+}
+
 interface Window {
   id: string
   member: Member
@@ -36,13 +42,8 @@ interface Pending {
   settle(allow: boolean): void
 }
 
-function presents(window: { report?: WindowReport }): boolean {
-  return window.report?.role === 'presenter' || window.report?.role === 'audience'
-}
-
-export function hasRole(member: Member, role: MemberRole): boolean {
-  const rank: Record<MemberRole, number> = { reader: 0, editor: 1, owner: 2 }
-  return member.roles.some(own => rank[own] >= rank[role])
+function isPresenting(window: Window): boolean {
+  return isPresentingRole(window.report?.role)
 }
 
 export interface ControlOptions {
@@ -50,7 +51,7 @@ export interface ControlOptions {
   timeoutMs?: number
 }
 
-export class Control {
+export class ControlChannel {
   readonly #windows = new Map<string, Window>()
   readonly #pending = new Map<string, Pending>()
   readonly #watchers = new Set<() => void>()
@@ -64,45 +65,19 @@ export class Control {
     request: (request, signal) => this.#request(request, signal),
   }
 
-  open(id: string, member: Member, document: string): AsyncIterable<{ event: string, data: unknown }> & { close(): void } {
+  open(id: string, member: Member, document: string): PushStream<{ event: string, data: unknown }> {
     this.#windows.get(id)?.close()
-    const queue: { event: string, data: unknown }[] = []
-    let wake: (() => void) | undefined
-    let closed = false
-    const window: Window = {
-      id,
-      member,
-      document,
-      send(event, data) {
-        if (closed) return
-        queue.push({ event, data })
-        wake?.()
-      },
-      close: () => {
-        closed = true
+    let window!: Window
+    const stream = pushStream<{ event: string, data: unknown }>((push) => {
+      window = { id, member, document, send: (event, data) => push({ event, data }), close: () => stream.end() }
+      this.#windows.set(id, window)
+      return () => {
         if (this.#windows.get(id) === window) this.#windows.delete(id)
-        wake?.()
-      },
-    }
-    this.#windows.set(id, window)
+      }
+    })
     window.send('ready', { window: id })
     for (const pending of this.#pending.values()) {
       if (this.#eligible(member, pending.request)) window.send('approval', { id: pending.id, request: pending.request })
-    }
-    const stream = {
-      close: window.close,
-      async* [Symbol.asyncIterator]() {
-        try {
-          while (!closed) {
-            while (queue.length > 0) yield queue.shift()!
-            if (closed) break
-            await new Promise<void>(resolve => wake = resolve)
-            wake = undefined
-          }
-        } finally {
-          window.close()
-        }
-      },
     }
     return stream
   }
@@ -133,24 +108,24 @@ export class Control {
     return 200
   }
 
-  positions(member?: Member, document?: string, viewer?: Member): { window: string, member: string, roles: MemberRole[], document: string, report: WindowReport }[] {
-    const all = [...this.#windows.values()].filter(w => w.report?.position && (!member || w.member.id === member.id) && (document === undefined || w.document === document))
-    const trusted = (w: Window) => hasRole(w.member, 'editor') || w.member.id === viewer?.id
-    const rank = (w: Window) => (!trusted(w) ? 2 : presents(w) ? 0 : 1)
+  positions(filter: WindowFilter & { viewer?: Member } = {}): { window: string, member: string, roles: MemberRole[], document: string, report: WindowReport }[] {
+    const all = this.#windowsOf(filter).filter(w => w.report?.position)
+    const trusted = (w: Window) => hasRole(w.member, 'editor') || w.member.id === filter.viewer?.id
+    const rank = (w: Window) => (!trusted(w) ? 2 : isPresenting(w) ? 0 : 1)
     return all.sort((a, b) => rank(a) - rank(b) || b.report!.at - a.report!.at)
       .map(w => ({ window: w.id, member: w.member.id, roles: w.member.roles, document: w.document, report: w.report! }))
   }
 
-  go(position: WindowPosition, member?: Member, document?: string): number {
-    const windows = [...this.#windows.values()].filter(w => (!member || w.member.id === member.id) && (document === undefined || w.document === document))
-    const presenting = windows.filter(w => w.report?.role === 'presenter' || w.report?.role === 'audience')
+  go(position: WindowPosition, filter: WindowFilter = {}): number {
+    const windows = this.#windowsOf(filter)
+    const presenting = windows.filter(isPresenting)
     const targets = presenting.length > 0 ? presenting : windows
     for (const window of targets) window.send('go', position)
     return targets.length
   }
 
-  session(action: 'start' | 'end', name?: string, document?: string, member?: Member): number {
-    const windows = [...this.#windows.values()].filter(w => (!member || w.member.id === member.id) && (document === undefined || w.document === document) && (w.report?.role === 'presenter' || w.report?.role === 'audience'))
+  setClassroom(action: 'start' | 'end', name: string | undefined, filter: WindowFilter = {}): number {
+    const windows = this.#windowsOf(filter).filter(isPresenting)
     for (const window of windows) window.send('session', { action, name })
     return windows.length
   }
@@ -204,6 +179,10 @@ export class Control {
         if (this.#eligible(window.member, pending.request)) window.send('approval', { id, request: pending.request })
       }
     })
+  }
+
+  #windowsOf(filter: WindowFilter): Window[] {
+    return [...this.#windows.values()].filter(w => (!filter.member || w.member.id === filter.member.id) && (filter.document === undefined || w.document === filter.document))
   }
 
   #eligible(member: Member, request: ApprovalRequest): boolean {

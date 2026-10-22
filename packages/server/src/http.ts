@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto'
 import { createServer } from 'node:http'
 import type { IncomingHttpHeaders, IncomingMessage, Server, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
@@ -9,7 +10,7 @@ import { createProxyServer } from 'http-proxy-3'
 
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]'])
 
-export function hostname(host: string | null | undefined): string {
+export function normalizeHostName(host: string | null | undefined): string {
   if (!host) return ''
   const value = host.trim().toLowerCase()
   if (value.startsWith('[')) return value.slice(0, value.indexOf(']') + 1)
@@ -18,13 +19,13 @@ export function hostname(host: string | null | undefined): string {
 }
 
 export function isLoopback(host: string | null | undefined): boolean {
-  return LOOPBACK.has(hostname(host))
+  return LOOPBACK.has(normalizeHostName(host))
 }
 
 export function originHost(origin: string | null | undefined): string | undefined {
   if (origin === null || origin === undefined) return undefined
   try {
-    return hostname(new URL(origin).host)
+    return normalizeHostName(new URL(origin).host)
   } catch {
     return ''
   }
@@ -33,6 +34,12 @@ export function originHost(origin: string | null | undefined): string | undefine
 export function bearer(value: string | null | undefined): string | undefined {
   const match = /^Bearer\s+(\S+)$/i.exec(value?.trim() ?? '')
   return match?.[1]
+}
+
+export function hasBearerToken(request: Request, accessToken: string): boolean {
+  const given = Buffer.from(bearer(request.headers.get('authorization')) ?? '')
+  const own = Buffer.from(accessToken)
+  return given.length === own.length && timingSafeEqual(given, own)
 }
 
 export async function limitBody(request: Request, limit: number): Promise<Request | Response> {

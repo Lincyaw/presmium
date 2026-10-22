@@ -1,15 +1,15 @@
 import { dirname } from 'node:path'
-import { errorMessage } from '@lincyaw/kernel'
+import { errorMessage, isPresentingRole } from '@lincyaw/kernel'
 import type { AgentTool, Member, ServiceToken } from '@lincyaw/kernel'
 import type { McpHost, McpPluginTools, McpPosition } from '@lincyaw/mcp'
-import type { Control } from './control.ts'
+import type { ControlChannel } from './control.ts'
 import type { FocusStore } from './focus.ts'
 import type { DiagnosticStore } from './diagnostics.ts'
-import type { ServedDocument, ServerHost } from './host.ts'
+import type { ServedDocument, ServerHost } from './server-host.ts'
 
 export interface McpHostOptions {
   serverHost?: ServerHost
-  control: Control
+  control: ControlChannel
   command: 'dev' | 'serve'
   mount(document: string): Promise<ServedDocument | undefined>
   mounted(): Promise<ServedDocument[]>
@@ -33,7 +33,7 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
     if (!options.serverHost) throw new Error('this server has no host operations')
     return options.serverHost
   }
-  const position = (entry: ReturnType<Control['positions']>[number]): McpPosition => {
+  const position = (entry: ReturnType<ControlChannel['positions']>[number]): McpPosition => {
     const { report } = entry
     const { slide, step, view, section, trail } = report.position!
     return { document: entry.document, member: entry.member, slide, step, view, ...section === undefined ? {} : { section }, ...trail ? { trail } : {}, role: report.role, at: report.at }
@@ -44,11 +44,11 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
     compile: document => host().compile(document),
     async check(document) {
       const { doc } = await host().compile(document)
-      const revision = options.diagnostics.revision(document)
+      const irRevision = options.diagnostics.irRevision(document)
       const findings = await host().check(document)
-      if (revision === options.diagnostics.revision(document)) {
+      if (irRevision === options.diagnostics.irRevision(document)) {
         const compiled = new Set(doc.diagnostics.map(finding => JSON.stringify(finding)))
-        options.diagnostics.replace({ document, origin: 'check' }, findings.filter(finding => !compiled.has(JSON.stringify(finding))), { root: host().workspaceRoot ?? dirname(doc.meta.entry), revision })
+        options.diagnostics.replace({ document, origin: 'check' }, findings.filter(finding => !compiled.has(JSON.stringify(finding))), { root: host().workspaceRoot ?? dirname(doc.meta.entry), irRevision })
       }
       return findings
     },
@@ -63,28 +63,28 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
       return toolsOf(doc ? [doc] : [], options.service)
     },
     positions(document: string | undefined, member: Member) {
-      const all = control.positions(undefined, document, member)
-      const presenting = (w: typeof all[number]) => w.member === member.id && (w.report.role === 'presenter' || w.report.role === 'audience')
+      const all = control.positions({ document, viewer: member })
+      const presenting = (w: typeof all[number]) => w.member === member.id && isPresentingRole(w.report.role)
       return [...all.filter(presenting), ...all.filter(w => !presenting(w))].map(position)
     },
     watchPositions: listener => control.watch(listener),
-    focus: document => options.focus.get(document),
+    focus: document => options.focus.find(document),
     watchFocus: listener => options.focus.watch(listener),
     async diagnostics(document) {
-      if (!options.diagnostics.observed(document)) {
+      if (!options.diagnostics.isObserved(document)) {
         try {
           const { doc } = await host().compile(document)
-          if (!options.diagnostics.observed(document)) options.diagnostics.compiled(document, doc, host().workspaceRoot ?? dirname(doc.meta.entry))
+          if (!options.diagnostics.isObserved(document)) options.diagnostics.compiled(document, doc, host().workspaceRoot ?? dirname(doc.meta.entry))
         } catch (error) {
-          if (!options.diagnostics.observed(document)) options.diagnostics.failed(document, errorMessage(error))
+          if (!options.diagnostics.isObserved(document)) options.diagnostics.failed(document, errorMessage(error))
         }
       }
       return options.diagnostics.snapshot(document)
     },
     watchDiagnostics: listener => options.diagnostics.watch(listener),
-    classroom: document => control.status(document),
+    classroomStatus: document => control.status(document),
     runtime: document => control.runtime(document).map(({ window, report }) => ({ window, role: report.role, position: report.position, reported: new Date(report.at).toISOString(), status: report.status ?? {} })),
-    navigate: (document, to, member) => control.go(to, member, document),
-    session: (document, action, name, member) => control.session(action, name, document, member),
+    navigate: (document, to, member) => control.go(to, { member, document }),
+    setClassroom: (document, action, name, member) => control.setClassroom(action, name, { document, member }),
   }
 }

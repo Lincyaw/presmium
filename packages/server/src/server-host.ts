@@ -19,7 +19,8 @@ export interface ServedDocument {
   home?: boolean
 }
 
-export function serverConfiguration(compilation: Pick<Compilation, 'doc' | 'plugins'>): string {
+/** What the server contributions of a compilation depend on, as a key that changes when they must be made again. */
+export function serverConfigKey(compilation: Pick<Compilation, 'doc' | 'plugins'>): string {
   return JSON.stringify([
     compilation.doc.meta.lang,
     compilation.plugins.filter(loaded => loaded.plugin).map(loaded => [pluginId(loaded), loaded.dir, loaded.entry]),
