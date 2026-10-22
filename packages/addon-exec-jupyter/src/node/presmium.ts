@@ -2,10 +2,10 @@ import { createRequire } from 'node:module'
 import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 import { EXEC_JUPYTER_ID } from '../domain/index.ts'
 import { declaredEnvironmentsPass } from './declared.ts'
-import { terminalDirective, terminalPass } from './directive.ts'
-import { jupyterProvider } from './environments.ts'
-import { jupyterServer } from './server.ts'
-import { prebundled, servicesInBrowserBuilds } from './vite.ts'
+import { jupyterProvider } from './provider.ts'
+import { jupyterProxy } from './proxy.ts'
+import { terminalDirective, terminalPass } from './terminal.ts'
+import { jupyterPrebundle, jupyterWsShim } from './vite.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
@@ -16,8 +16,8 @@ const plugin: PresmiumNodePlugin = {
   directives: [terminalDirective],
   passes: [declaredEnvironmentsPass, terminalPass],
   environments: { jupyter: jupyterProvider },
-  server: jupyterServer,
-  vitePlugins: () => [servicesInBrowserBuilds(), prebundled()],
+  server: jupyterProxy,
+  vitePlugins: () => [jupyterWsShim(), jupyterPrebundle()],
   rendererExtensions: {
     notebook: { components: { PmTerminal: () => [] } },
   },

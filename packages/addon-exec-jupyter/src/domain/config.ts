@@ -5,7 +5,7 @@ export const EXEC_JUPYTER_ID = 'presmium.execJupyter'
 
 export const JUPYTER_KIND = 'jupyter'
 
-export const DEFAULT_KERNEL = 'python3'
+export const DEFAULT_JUPYTER_KERNEL = 'python3'
 
 export const DEFAULT_TIMEOUT_MS = 60_000
 
@@ -35,15 +35,17 @@ export function authOf(spec: EnvironmentSpec): EnvironmentAuth {
   return auth === 'none' || auth === 'proxy' || auth === 'prompt' || auth === 'hub' ? auth : 'env'
 }
 
-export function kernelOf(spec: EnvironmentSpec): string {
-  return typeof spec.kernel === 'string' && spec.kernel.trim() ? spec.kernel.trim() : DEFAULT_KERNEL
+/** The name of the Jupyter kernel the environment asks for (`kernel` of the headmatter). */
+export function jupyterKernelName(spec: EnvironmentSpec): string {
+  return typeof spec.kernel === 'string' && spec.kernel.trim() ? spec.kernel.trim() : DEFAULT_JUPYTER_KERNEL
 }
 
 export function languagesOf(spec: EnvironmentSpec): string[] | undefined {
   return Array.isArray(spec.languages) ? spec.languages.filter((l): l is string => typeof l === 'string') : undefined
 }
 
-export function jupyterEnvironments(environments: unknown): Record<string, EnvironmentSpec> {
+/** The `kind: jupyter` environments among those of the headmatter. */
+export function jupyterSpecs(environments: unknown): Record<string, EnvironmentSpec> {
   if (!isRecord(environments)) return {}
   return Object.fromEntries(Object.entries(environments).filter((entry): entry is [string, EnvironmentSpec] => isRecord(entry[1]) && entry[1].kind === JUPYTER_KIND))
 }

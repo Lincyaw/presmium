@@ -6,10 +6,10 @@ import { run } from '@lincyaw/cli/testing'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { localPython, startLocalJupyter } from './local-jupyter.ts'
 import type { LocalJupyter } from './local-jupyter.ts'
-import { jupyterProvider } from '../src/node/environments.ts'
+import { jupyterProvider } from '../src/node/provider.ts'
 import { nodeSettings } from '../src/node/connection.ts'
-import { createKernels } from '../src/jupyter/kernels.ts'
-import type { Kernels } from '../src/jupyter/kernels.ts'
+import { createJupyterKernels } from '../src/shared/kernels.ts'
+import type { JupyterKernels } from '../src/shared/kernels.ts'
 import { closedPort, PACKAGES, presmium, remove, testDeck } from './helpers.ts'
 
 if (!localPython) console.warn('[local.test] skipped: set PRESMIUM_TEST_JUPYTER_PYTHON to a Python with jupyter_server, ipykernel, nbformat and nbclient installed')
@@ -26,7 +26,7 @@ describe.skipIf(!localPython)('the actual Jupyter provider and notebook CLI, wit
   let closed: number
   let context: EnvironmentContext
   const managed: { executor: Executor, sessions: Set<string> }[] = []
-  const pools: Kernels[] = []
+  const pools: JupyterKernels[] = []
   const spec: EnvironmentSpec = { kind: 'jupyter', kernel: 'python3', image: 'local-protocol-smoke' }
 
   const env = () => ({
@@ -230,8 +230,8 @@ print(x + 1)
   }, 15_000)
 
   it('disposes a starting or active real kernel and removes directories after a failed kernel start', async () => {
-    const pool = createKernels({
-      executorId: 'presmium.env.disposal', kernel: 'python3', languages: ['python'],
+    const pool = createJupyterKernels({
+      executorId: 'presmium.env.disposal', kernelName: 'python3', languages: ['python'],
       settings: () => nodeSettings({ url: jupyter.url, headers: { Authorization: `token ${jupyter.token}` } }),
       text: {
         unreachable: error => `unreachable: ${error}`, refused: 'refused',

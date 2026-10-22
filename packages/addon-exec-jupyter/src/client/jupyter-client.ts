@@ -2,17 +2,19 @@ import { environmentExecutor, isRecord } from '@lincyaw/kernel'
 import type { EnvironmentSpec, Executor, RunResult } from '@lincyaw/kernel'
 import { currentLocale, useServer } from '@lincyaw/host'
 import type { ServerConnection } from '@jupyterlab/services'
-import { authOf, baseUrl, cleanupPath, EXEC_JUPYTER_ID, kernelOf, languagesOf, originOf, proxyPath } from '../domain/index.ts'
-import type { JupyterEnvironments } from '../domain/index.ts'
-import type { TerminalSession } from '../domain/service.ts'
-import { createKernels, services } from '../jupyter/kernels.ts'
-import type { Kernels } from '../jupyter/kernels.ts'
-import { openTerminal } from '../jupyter/terminals.ts'
+import { authOf, baseUrl, cleanupPath, EXEC_JUPYTER_ID, jupyterKernelName, languagesOf, originOf, proxyPath } from '../domain/index.ts'
+import type { JupyterTerminals, TerminalSession } from '../domain/index.ts'
+import { createJupyterKernels } from '../shared/kernels.ts'
+import type { JupyterKernels } from '../shared/kernels.ts'
+import { loadJupyterServices } from '../shared/load-services.ts'
+import { isRefused } from '../shared/refusal.ts'
+import { openTerminal } from '../shared/terminals.ts'
 import { messages } from './messages.ts'
 import { forgetToken, tokenFor } from './token.ts'
 
-export interface RemoteEnvironments {
-  service: JupyterEnvironments
+/** The browser's side of the deck's Jupyter environments: an executor for each, and their terminals. */
+export interface JupyterClient {
+  terminals: JupyterTerminals
   executors: Executor[]
   dispose(): Promise<void>
 }
@@ -57,7 +59,7 @@ async function sanitized(result: RunResult): Promise<RunResult> {
   }
 }
 
-export function createRemoteEnvironments(environments: Record<string, EnvironmentSpec>): RemoteEnvironments {
+export function createJupyterClient(environments: Record<string, EnvironmentSpec>): JupyterClient {
   const settings = new Map<string, Promise<ServerConnection.ISettings>>()
   const proxyDocuments = new Map<string, string>()
   let disposing: Promise<void> | undefined
@@ -77,7 +79,7 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
     const reason = unavailable(name)
     if (reason) throw new Error(reason)
     const spec = environments[name]!
-    const { ServerConnection } = await services()
+    const { ServerConnection } = await loadJupyterServices()
     if (authOf(spec) === 'proxy') {
       const document = await servedDocument()
       proxyDocuments.set(name, document)
@@ -141,11 +143,11 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
   }
 
   const terminals = new Set<TerminalSession>()
-  const pools: Kernels[] = []
+  const kernelPools: JupyterKernels[] = []
   const executors = Object.entries(environments).map(([name, spec]): Executor => {
-    const kernels = createKernels({
+    const kernels = createJupyterKernels({
       executorId: environmentExecutor(name),
-      kernel: kernelOf(spec),
+      kernelName: jupyterKernelName(spec),
       languages: languagesOf(spec),
       settings: () => settingsFor(name),
       ...(authOf(spec) === 'proxy' ? {
@@ -172,7 +174,7 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
         timedOut: seconds => messages().timedOut(seconds),
       },
     })
-    pools.push(kernels)
+    kernelPools.push(kernels)
     return {
       id: environmentExecutor(name),
       supports: lang => kernels.supports(lang),
@@ -185,7 +187,7 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
     if (disposing) return disposing
     window.removeEventListener('pagehide', leave)
     // These calls must run before the first await, independently of host disposal order.
-    const cleanup = pools.map(kernels => kernels.dispose())
+    const cleanup = kernelPools.map(kernels => kernels.dispose())
     terminals.forEach(session => session.abandon())
     terminals.clear()
     settings.clear()
@@ -197,7 +199,7 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
 
   return {
     executors,
-    service: {
+    terminals: {
       unavailable,
       async openTerminal(name, events) {
         const connection = await settingsFor(name)
@@ -212,8 +214,7 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
             },
           }
         } catch (error) {
-          const status = (error as { response?: { status?: number } }).response?.status
-          if (status === 401 || status === 403) {
+          if (isRefused(error)) {
             forget(name)
             throw new Error(messages().refused(name))
           }

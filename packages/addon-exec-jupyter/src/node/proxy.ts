@@ -2,11 +2,11 @@ import { isRecord, problemResponse } from '@lincyaw/kernel'
 import type { EnvironmentSpec, ProxySpec, Route, ServerContext, ServerContribution } from '@lincyaw/kernel'
 import { authOf, cleanupPath, operatorConnection, proxyPath } from '../domain/index.ts'
 import type { Connection } from '../domain/index.ts'
-import { shutdownKernel } from '../jupyter/kernels.ts'
+import { shutdownJupyterKernel } from '../shared/kernel-lifecycle.ts'
 import { nodeSettings } from './connection.ts'
 import { declaredEnvironments } from './declared.ts'
 
-export function proxyHeaders(connection: Connection): Record<string, string> {
+function proxyHeaders(connection: Connection): Record<string, string> {
   const target = new URL(connection.url)
   const headers: Record<string, string> = { host: target.host, origin: target.origin }
   for (const [name, value] of Object.entries(connection.headers)) headers[name.toLowerCase()] = value
@@ -19,7 +19,8 @@ interface Mount {
   reason?: string
 }
 
-export function jupyterServer(ctx: ServerContext): ServerContribution {
+/** The server's proxy to each `auth: proxy` environment, and the route through which a page hands over its kernels' cleanup. */
+export function jupyterProxy(ctx: ServerContext): ServerContribution {
   const reported = new Set<string>()
   const cleaning = new Map<string, Promise<void>>()
   const mounts = (): Map<string, Mount> => {
@@ -70,7 +71,7 @@ export function jupyterServer(ctx: ServerContext): ServerContribution {
                 const { kernel, directory } = body
                 // Do not bind to request.signal: the browser may already be gone.
                 const timeout = AbortSignal.timeout(15_000)
-                task = nodeSettings(connection, timeout).then(settings => shutdownKernel(kernel, directory, settings))
+                task = nodeSettings(connection, timeout).then(settings => shutdownJupyterKernel(kernel, directory, settings))
                   .finally(() => cleaning.delete(key))
                 cleaning.set(key, task)
               }

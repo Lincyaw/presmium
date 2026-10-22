@@ -1,5 +1,5 @@
 import type { EnvironmentSpec, IRPass } from '@lincyaw/kernel'
-import { jupyterEnvironments } from '../domain/index.ts'
+import { jupyterSpecs } from '../domain/index.ts'
 
 const declared = new Map<string, ReadonlyMap<string, EnvironmentSpec>>()
 
@@ -11,6 +11,6 @@ export function declaredEnvironments(deckDir: string): ReadonlyMap<string, Envir
 export const declaredEnvironmentsPass: IRPass = {
   name: 'presmium.execJupyter.environments',
   run(doc, ctx) {
-    declared.set(ctx.deckDir, new Map(Object.entries(jupyterEnvironments(doc.config.execute?.environments))))
+    declared.set(ctx.deckDir, new Map(Object.entries(jupyterSpecs(doc.config.execute?.environments))))
   },
 }

@@ -2,7 +2,7 @@ import type { ServerConnection } from '@jupyterlab/services'
 import WebSocket from 'ws'
 import type { ClientOptions } from 'ws'
 import type { Connection } from '../domain/connection.ts'
-import { services } from '../jupyter/kernels.ts'
+import { loadJupyterServices } from '../shared/load-services.ts'
 
 let quiet = false
 
@@ -16,9 +16,10 @@ function quietSockets(): void {
   }
 }
 
+/** Settings of a connection from Node: `ws` WebSockets and `fetch`, both with the connection's headers. */
 export async function nodeSettings(connection: Connection, signal?: AbortSignal): Promise<ServerConnection.ISettings> {
   quietSockets()
-  const { ServerConnection } = await services()
+  const { ServerConnection } = await loadJupyterServices()
   const headers = connection.headers
   class HeaderSocket extends WebSocket {
     constructor(url: string, protocols?: string | string[], options?: ClientOptions) {

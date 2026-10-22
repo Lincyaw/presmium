@@ -12,9 +12,10 @@ export interface TerminalEvents {
   closed(): void
 }
 
-export interface JupyterEnvironments {
+/** Terminals of the deck's Jupyter environments, for PmTerminal. */
+export interface JupyterTerminals {
   unavailable(name: string): string | undefined
   openTerminal(name: string, events: TerminalEvents): Promise<TerminalSession>
 }
 
-export const JUPYTER_ENVIRONMENTS = defineService<JupyterEnvironments>('presmium.execJupyter.environments')
+export const JUPYTER_TERMINALS = defineService<JupyterTerminals>('presmium.execJupyter.environments')

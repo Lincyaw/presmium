@@ -10,7 +10,7 @@ function storage(): Storage | undefined {
   }
 }
 
-export function storedToken(name: string): string | undefined {
+function storedToken(name: string): string | undefined {
   return storage()?.getItem(key(name)) ?? undefined
 }
 

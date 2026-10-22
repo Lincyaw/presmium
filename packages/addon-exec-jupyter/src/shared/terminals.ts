@@ -1,9 +1,9 @@
 import type { ServerConnection, Terminal } from '@jupyterlab/services'
-import type { TerminalEvents, TerminalSession } from '../domain/service.ts'
-import { services } from './kernels.ts'
+import type { TerminalEvents, TerminalSession } from '../domain/terminal-service.ts'
+import { loadJupyterServices } from './load-services.ts'
 
 export async function openTerminal(settings: ServerConnection.ISettings, events: TerminalEvents): Promise<TerminalSession> {
-  const { ServerConnection, TerminalManager } = await services()
+  const { ServerConnection, TerminalManager } = await loadJupyterServices()
   const url = `${settings.baseUrl}api/terminals`
   const client: Terminal.ITerminalAPIClient = {
     serverSettings: settings,

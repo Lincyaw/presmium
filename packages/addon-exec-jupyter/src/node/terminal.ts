@@ -1,6 +1,6 @@
 import { docBlocks } from '@lincyaw/kernel'
 import type { ComponentNode, DirectiveSpec, IRPass } from '@lincyaw/kernel'
-import { DEFAULT_TERMINAL_ROWS, EXEC_JUPYTER_ID, jupyterEnvironments, terminalFallback } from '../domain/index.ts'
+import { DEFAULT_TERMINAL_ROWS, EXEC_JUPYTER_ID, jupyterSpecs, terminalFallback } from '../domain/index.ts'
 
 export const terminalDirective: DirectiveSpec = {
   name: 'terminal',
@@ -26,7 +26,7 @@ export const terminalDirective: DirectiveSpec = {
 export const terminalPass: IRPass = {
   name: 'presmium.execJupyter.terminals',
   run(doc, ctx) {
-    const declared = jupyterEnvironments(doc.config.execute?.environments)
+    const declared = jupyterSpecs(doc.config.execute?.environments)
     for (const { block } of docBlocks(doc)) {
       const node = block.node
       if (node.type !== 'component' || node.plugin !== EXEC_JUPYTER_ID || node.name !== 'PmTerminal') continue
