@@ -3,13 +3,13 @@ import { useMessages } from '@lincyaw/host'
 import { ref, useId } from 'vue'
 import { ASSISTANT_MESSAGES } from '../domain/index.ts'
 import AskPanel from './AskPanel.vue'
-import { useNavigator } from './state.ts'
+import { useWebViewerAccess } from './state.ts'
 
 const t = useMessages(ASSISTANT_MESSAGES)
 const id = useId()
 const open = ref(false)
 const popover = ref<HTMLElement>()
-useNavigator()
+useWebViewerAccess()
 
 function toggled(event: Event): void {
   open.value = (event as ToggleEvent).newState === 'open'
