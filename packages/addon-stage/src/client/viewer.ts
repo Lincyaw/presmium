@@ -1,12 +1,8 @@
+import type { ViewerPluginContext } from '@lincyaw/viewer'
 import type { Component } from 'vue'
 import { defineComponent, h, shallowRef, watch } from 'vue'
 import { messages } from './locale.ts'
 import { useScreen } from './screen.ts'
-
-export interface StageViewerContext {
-  registerAction(action: { id: string, keys: readonly string[], run(viewer: unknown): boolean | void }): void
-  registerLayer(layer: { id: string, component: Component, views?: readonly string[], scope?: 'view' | 'viewport' }): void
-}
 
 function freeze(frame: HTMLElement): void {
   const present = frame.closest('.pm-present')
@@ -60,7 +56,7 @@ const BlackLayer: Component = defineComponent({
   },
 })
 
-export default function stageViewerPlugin({ registerAction, registerLayer }: StageViewerContext): void {
+export default function stageViewerPlugin({ registerAction, registerLayer }: ViewerPluginContext): void {
   registerAction({ id: 'presmium.stage.black', keys: ['b'], run: () => useScreen().toggle('black') })
   registerAction({ id: 'presmium.stage.freeze', keys: ['f'], run: () => useScreen().toggle('frozen') })
   registerLayer({ id: 'presmium.stage.screen', component: ScreenLayer, scope: 'view' })

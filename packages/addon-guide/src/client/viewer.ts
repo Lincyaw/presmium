@@ -1,10 +1,7 @@
 import { blockAt, OPERATIONS, presmiumService } from '@lincyaw/host'
+import type { ViewerPluginContext } from '@lincyaw/viewer'
 import type { OperationCues } from './operation-cues.ts'
 import { hintCues, spotlightCues } from './operation-cues.ts'
-
-export interface GuideViewerContext {
-  registerAction(action: { id: string, keys: readonly string[], run(viewer: unknown): boolean | void }): void
-}
 
 let pointer: { x: number, y: number } | undefined
 
@@ -17,7 +14,7 @@ function toggle(type: 'spot' | 'hint', cues: OperationCues): boolean {
   return true
 }
 
-export default function guideViewerPlugin({ registerAction }: GuideViewerContext): void {
+export default function guideViewerPlugin({ registerAction }: ViewerPluginContext): void {
   window.addEventListener('pointermove', (event) => {
     pointer = { x: event.clientX, y: event.clientY }
   }, { passive: true })

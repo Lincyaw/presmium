@@ -49,6 +49,7 @@
     "@lincyaw/cli": "workspace:*",
     "@lincyaw/host": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
+    "@lincyaw/viewer": "workspace:*",
     "@slidev/client": "53.0.0"
   }
 }
