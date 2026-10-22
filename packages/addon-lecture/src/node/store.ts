@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto'
 import { closeSync, constants, createReadStream, existsSync, fstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { open } from 'node:fs/promises'
-import { dirname, isAbsolute, join, relative, sep } from 'node:path'
+import { dirname, join, relative, sep } from 'node:path'
 import type { DocumentFiles } from '@lincyaw/kernel'
+import { isInside } from '@lincyaw/kernel/node'
 import { formatTrack, LECTURES_DIR, parseTrack, TRACK_ID } from '../domain/index.ts'
 import type { LectureTrack, MediaSegment } from '../domain/index.ts'
 
@@ -98,7 +99,7 @@ export function openInDeck(deckDir: string, file: string): number | undefined {
   let expected: string
   try {
     const rel = relative(deckDir, file)
-    if (!rel || rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel) || rel.split(sep).includes('.git')) return undefined
+    if (!rel || !isInside(file, deckDir) || rel.split(sep).includes('.git')) return undefined
     expected = join(realpathSync(deckDir), rel)
   } catch {
     return undefined

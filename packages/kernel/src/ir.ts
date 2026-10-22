@@ -234,7 +234,7 @@ export interface RenderContext {
   outDir: string
   workDir: string
   config: Record<string, unknown>
-  extensions: RendererExtension[]
+  extensions: BoundRendererExtension[]
   plugins: string[]
   pluginDirs: Record<string, string>
   lang?: string
@@ -284,7 +284,7 @@ export interface RenderDevServer {
 export interface Renderer {
   id: RendererId
   site?: boolean
-  support(node: IRNode, extensions: RendererExtension[]): Support
+  support(node: IRNode, extensions: BoundRendererExtension[]): Support
   prepare?(doc: IRDocument, ctx: RenderContext): Promise<void>
   build(doc: IRDocument, ctx: RenderContext): Promise<RenderOutput>
   dev?(doc: IRDocument, ctx: RenderContext): Promise<RenderDevServer>
@@ -321,7 +321,7 @@ export interface RendererContribution {
   components?: Record<string, ComponentRenderer>
 }
 
-export interface RendererExtension {
+export interface BoundRendererExtension {
   plugin: string
   components?: Record<string, (node: ComponentNode, block: IRBlock) => unknown>
 }

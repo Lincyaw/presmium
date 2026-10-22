@@ -11,9 +11,9 @@ import { includeDirectiveTransform } from 'myst-transforms'
 import { parse as parseYaml } from 'yaml'
 import { FragmentParser, shiftLines } from './fragments.ts'
 
-export const BODY = 'presmiumDirectiveBody'
+export const DIRECTIVE_BODY_NODE = 'presmiumDirectiveBody'
 
-export const ROLE = 'presmiumRoleOptions'
+export const ROLE_OPTIONS_NODE = 'presmiumRoleOptions'
 
 const MYST_EXTENSIONS = { directives: [cardDirective, ...gridDirectives, ...tabDirectives], roles: [buttonRole] }
 
@@ -40,14 +40,14 @@ export function fileOf(node: MdastNode, fallback: string): string {
   return origin.get(node) ?? fallback
 }
 
-export function lineOf(node: MdastNode): { line: number, endLine: number } | undefined {
+export function nodeLines(node: MdastNode): { line: number, endLine: number } | undefined {
   const position = node.position as { start?: { line: number }, end?: { line: number } } | undefined
   if (!position?.start) return undefined
   return { line: position.start.line, endLine: Math.max(position.start.line, position.end?.line ?? 0) }
 }
 
 export function sourceOf(node: MdastNode, entry: string): SourcePos {
-  const lines = lineOf(node)
+  const lines = nodeLines(node)
   return { file: fileOf(node, entry), line: lines?.line ?? 1, endLine: lines?.endLine }
 }
 
@@ -68,7 +68,7 @@ export class Parser {
       options: Object.fromEntries(Object.entries(options ?? {}).map(([key, type]) => [key, { type: OPTION_TYPES[type] ?? String }])),
       body: { type: String },
       run(data: { options?: Record<string, unknown> }) {
-        return [{ type: ROLE, options: data.options ?? {} }]
+        return [{ type: ROLE_OPTIONS_NODE, options: data.options ?? {} }]
       },
     }))]
     this.#specs = [...MYST_EXTENSIONS.directives, ...[...directives].map(([name, mystBody]) => ({
@@ -78,7 +78,7 @@ export class Parser {
       run(data: { node: MdastNode, body?: unknown }) {
         const body = data.node.children?.find(c => c.type === 'mystDirectiveBody')
         const children = mystBody && Array.isArray(data.body) ? data.body as MdastNode[] : []
-        return [{ type: BODY, line: body && lineOf(body)?.line, children }]
+        return [{ type: DIRECTIVE_BODY_NODE, line: body && nodeLines(body)?.line, children }]
       },
     }))]
   }
@@ -160,7 +160,7 @@ export class Parser {
   }
 
   async #include(node: MdastNode, file: string, stack: string[], out: Expansion): Promise<MdastNode[]> {
-    const source = { file, line: lineOf(node)?.line ?? 1 }
+    const source = { file, line: nodeLines(node)?.line ?? 1 }
     const fail = (message: string) => {
       out.findings.push({ checkId: 'presmium.parse', severity: 'error', message, source })
       return []
@@ -183,7 +183,7 @@ export class Parser {
   }
 
   async #literal(node: MdastNode, file: string, out: Expansion): Promise<MdastNode[]> {
-    const source = { file, line: lineOf(node)?.line ?? 1 }
+    const source = { file, line: nodeLines(node)?.line ?? 1 }
     const name = `{${String(node.name)}}`
     const fail = (message: string) => {
       out.findings.push({ checkId: 'presmium.parse', severity: 'error', message, source })
@@ -228,7 +228,7 @@ interface Expansion {
   findings: Finding[]
 }
 
-export function readFrontmatter(text: string): Record<string, unknown> {
+export function parseFrontmatter(text: string): Record<string, unknown> {
   const { yaml } = splitFrontmatter(withoutBom(text))
   try {
     const data: unknown = yaml === undefined ? {} : parseYaml(yaml)
@@ -263,28 +263,28 @@ const INLINE = new Set(['paragraph', 'heading', 'tableCell', 'caption', 'admonit
 
 function insertAt(nodes: MdastNode[], node: MdastNode, line: number): void {
   const holder = nodes.find((n) => {
-    const lines = lineOf(n)
+    const lines = nodeLines(n)
     return lines && lines.line < line && line <= lines.endLine && !INLINE.has(n.type) && n.children?.length
   })
   const inner = holder && contentOf(holder)
   if (inner) return insertAt(inner, node, line)
-  const after = nodes.findIndex(n => (lineOf(n)?.line ?? 0) > line)
+  const after = nodes.findIndex(n => (nodeLines(n)?.line ?? 0) > line)
   nodes.splice(after < 0 ? nodes.length : after, 0, node)
 }
 
 function contentOf(holder: MdastNode): MdastNode[] | undefined {
   const children = holder.children!
   if (holder.type !== 'mystDirective') return children
-  const body = children.find(c => c.type === BODY)
+  const body = children.find(c => c.type === DIRECTIVE_BODY_NODE)
   if (body) return body.children
   const [made] = children
-  return children.length === 1 && made && !lineOf(made) && made.children ? made.children : children
+  return children.length === 1 && made && !nodeLines(made) && made.children ? made.children : children
 }
 
 function contentLines(node: MdastNode): { line: number, endLine: number } | undefined {
   let found: { line: number, endLine: number } | undefined
   for (const child of node.children ?? []) {
-    const lines = lineOf(child) ?? contentLines(child)
+    const lines = nodeLines(child) ?? contentLines(child)
     if (lines) found = { line: Math.min(found?.line ?? lines.line, lines.line), endLine: Math.max(found?.endLine ?? 0, lines.endLine) }
   }
   return found

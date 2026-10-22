@@ -6,35 +6,40 @@ import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, isRecord } from '@lincyaw/kernel'
 import type { AnchorResolverRegistry, CodeNode, DirectiveOptionType, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceReader } from '@lincyaw/kernel'
 import { defaultOptions } from 'myst-parser'
-import { audienceDocument, audienceMarks, AudienceParser, audienceView, emptyReferences, liftScopes, markBlocks, scanOutputs, withheld } from './audience.ts'
-import type { Withheld } from './audience.ts'
+import { audienceDocument, audienceMarks, AudienceParser, emptyReferences, filterForAudience, liftScopes, markBlocks, scanOutputs, withheld } from './audience.ts'
+import type { AudienceMark, Withheld } from './audience.ts'
 import { BUILTIN_DIRECTIVES, sectionBlocks } from './blocks.ts'
-import type { PluginDirective, PluginRole } from './blocks.ts'
-import { Dependencies } from './dependencies.ts'
-import type { CommittedFiles, Revision } from './dependencies.ts'
-import { checkLanguages, checkRuns, checkSecrets, environmentExecutors, environmentProviders, readExecute } from './environments.ts'
+import type { BlockContext, PluginDirective, PluginRole } from './blocks.ts'
+import { runAllChecks } from './compilation-actions.ts'
+import { enqueueCompile } from './compile-queue.ts'
+import { checkLanguages, checkRuns, checkSecrets, environmentExecutors, environmentProviders, toExecuteConfig } from './environments.ts'
 import { executePass, FREEZE_DIR, FreezeCache, runEnvironment } from './execute.ts'
-import type { ExecutionOptions, RunStats } from './execute.ts'
+import type { RunEnvironmentOptions, RunStats } from './execute.ts'
 import { numberFootnotes } from './footnotes.ts'
 import { checkForbidden } from './forbid.ts'
-import { pluginChecks } from './host.ts'
+import { CompileInputs } from './inputs.ts'
+import type { CommittedFiles, GitRead } from './inputs.ts'
 import { checkLinks } from './links.ts'
+import { pluginLogger } from './logging.ts'
+import { NodeServices } from './node-services.ts'
+import { parseFrontmatter, sourceOf, withoutBom } from './parser.ts'
+import type { Parser } from './parser.ts'
+import { DECK_ENTRY } from './paths.ts'
 import { DECK_PLUGIN, directoryComponents, loadOperatorPlugins, loadPlugins, pluginId } from './plugins.ts'
 import type { LoadedPlugin, PluginProblem, PluginSources } from './plugins.ts'
 import { resolveReferences } from './references.ts'
+import { hasPluginSyntax, moveSection, SectionCache } from './section-cache.ts'
 import { splitSections } from './sections.ts'
-import { NodeServices, operatorDir, operatorPlugins, pluginLogger, workspaceSettings } from './settings.ts'
-import type { OperatorSettings } from './settings.ts'
-import { readFrontmatter, sourceOf, withoutBom } from './source.ts'
-import type { Parser } from './source.ts'
+import type { RawSection } from './sections.ts'
+import { frontmatterLine } from './source-lines.ts'
 import { scheduleSteps } from './steps.ts'
 import { applyTranslations, translationFields } from './translations.ts'
 import { validateIR } from './validate.ts'
-import { compileTask } from './scheduling.ts'
-import { hasPluginSyntax, moveSection, SectionCache } from './section-cache.ts'
 import { createSourceReader, findWorkspaceRoot } from './workspace.ts'
+import { operatorDir, operatorPlugins, workspaceSettings } from './workspace-settings.ts'
+import type { OperatorSettings } from './workspace-settings.ts'
 
-export const DECK_ENTRY = 'lecture.md'
+export { DECK_ENTRY }
 
 const BUILTIN_RENDERERS = ['web', 'slides', 'notebook']
 
@@ -48,7 +53,7 @@ export interface CompilerOptions {
   bundled?: string
   operatorDir?: string
   secret?: (name: string) => string | undefined
-  execution?: ExecutionOptions
+  execution?: RunEnvironmentOptions
   audience?: string
   headmatter?: Record<string, unknown>
   deckDir?: string
@@ -70,12 +75,15 @@ export interface DeclaredEnvironment {
 export interface Compilation {
   doc: IRDocument
   options: CompilerOptions
-  files: string[]
-  dependencies: { files: string[], revisions: Revision[] }
-  runs: RunStats
+  /** The MyST files of the document: the entry and the files it includes. */
+  sourceFiles: string[]
+  /** The other files the compilation read, and the files it read at a git ref. */
+  inputs: { files: string[], gitReads: GitRead[] }
+  runStats: RunStats
   deckDir: string
   entry: string
-  frontmatter: Record<string, unknown>
+  /** The entry's headmatter, merged with `CompilerOptions.headmatter`. */
+  headmatter: Record<string, unknown>
   workspaceRoot: string
   src: SourceReader
   resolvers: AnchorResolverRegistry
@@ -92,8 +100,9 @@ export interface Compilation {
   runContext: RunContext
   run(node: CodeNode, signal?: AbortSignal): Promise<RunResult>
   audience?: AudienceCompilation
-  forAudience(name: string): IRDocument
-  audienceOf(name: string): AudienceCompilation
+  /** The document for one audience, with the blocks that leak withheld content removed. */
+  audienceDocument(name: string): IRDocument
+  audienceCompilation(name: string): AudienceCompilation
   publishChecks(options?: { externalLinks?: boolean }): Promise<Finding[]>
   check(options?: { externalLinks?: boolean }): Promise<Finding[]>
 }
@@ -124,6 +133,46 @@ interface Plugins {
   problems: PluginProblem[]
 }
 
+type Report = (finding: Finding) => void
+
+type HeadmatterLine = (needle: string) => { file: string, line: number }
+
+/** What the plugins of one compilation contribute to it. */
+interface Contributions {
+  directives: Map<string, PluginDirective>
+  roles: Map<string, PluginRole>
+  resolvers: AnchorResolverRegistry
+  executors: Executor[]
+  components: Map<string, string>
+  environments: Map<string, EnvironmentProvider>
+  environmentContext: EnvironmentContext
+}
+
+/** The state of one compilation that its steps share. */
+interface CompileRun {
+  workspace: Workspace
+  headmatter: Record<string, unknown>
+  lang: string
+  plugins: LoadedPlugin[]
+  configOf(plugin: LoadedPlugin): Record<string, unknown>
+  service<T>(token: ServiceToken<T>): T | undefined
+  execute: ExecuteConfig
+  inputs: CompileInputs
+  findings: Finding[]
+  report: Report
+  at: HeadmatterLine
+  signal?: AbortSignal
+}
+
+interface PassResults {
+  lock: AnchorLock
+  runStats: RunStats
+  runContext: RunContext
+  cache: FreezeCache
+  filled: WeakSet<object>
+  invalid: Finding[]
+}
+
 export class Compiler {
   readonly entry: string
   readonly deckDir: string
@@ -142,13 +191,61 @@ export class Compiler {
   }
 
   compile(options: CompileOptions = {}): Promise<Compilation> {
-    return compileTask(() => this.#compile(options), this.options.priority === 'interactive')
+    return enqueueCompile(() => this.#compile(options), this.options.priority === 'interactive')
   }
 
   async #compile(options: CompileOptions): Promise<Compilation> {
+    const run = await this.#start(options)
+    const { headmatter, execute, findings, report } = run
+    const contributions = await this.#collectContributions(run)
+    const { sections, marks, sourceFiles } = await this.#compileSections(run, contributions)
+
+    const { title: _title, lang: _lang, plugins: _plugins, presmium, renderers, sectionDepth: _sectionDepth, execute: _execute, translations: _translations, translationOf: _translationOf, ...rest } = headmatter
+    const doc: IRDocument = {
+      ir: IR_VERSION,
+      meta: { ...rest, title: titleOf(headmatter, this.entry), lang: run.lang, entry: this.entry },
+      config: {
+        plugins: stringList(headmatter.plugins),
+        presmium: isRecord(presmium) ? presmium : {},
+        renderers: isRecord(renderers) ? recordOfRecords(renderers) : {},
+        ...Object.keys(execute).length > 0 ? { execute } : {},
+      },
+      sections,
+      diagnostics: [],
+    }
+    applyTranslations(doc, translationFields(headmatter), report)
+    let audience: AudienceCompilation | undefined
+    if (this.options.audience) {
+      const name = this.options.audience
+      const filtered = filterForAudience(doc, name, marks)
+      doc.sections = filtered.doc.sections
+      doc.meta.audience = name
+      audience = audienceCompilation(name, withheld(filtered.removed, doc))
+      const left = findings.filter(finding => !filtered.keeps(finding))
+      findings.splice(0, findings.length, ...findings.filter(filtered.keeps))
+      if (left.length > 0) {
+        const severity = left.some(f => f.severity === 'error') ? 'error' : left.some(f => f.severity === 'warning') ? 'warning' : 'info'
+        report({ checkId: 'presmium.audience', severity, message: `${left.length} finding${left.length === 1 ? ' is' : 's are'} in the content left out for ${name}, not shown here: presmium check without --audience shows ${left.length === 1 ? 'it' : 'them'}`, source: { file: this.entry, line: 1 } })
+      }
+    }
+    checkRuns(doc, execute, report)
+    const unsupported = checkLanguages(doc, execute, contributions.executors, report)
+
+    numberFootnotes(doc, sourceFiles)
+
+    const passes = await this.#runPasses(doc, run, contributions, unsupported)
+    findings.push(...passes.invalid)
+    options.signal?.throwIfAborted()
+    doc.diagnostics = sortFindings(findings)
+    if (options.pruneCache && !audience && !findings.some(f => f.severity === 'error')) passes.cache.prune()
+    return this.#assemble(doc, run, contributions, { sourceFiles, marks, audience, passes })
+  }
+
+  /** Reads the entry's headmatter, loads the plugins with their Node services and reads the execution settings. */
+  async #start(options: CompileOptions): Promise<CompileRun> {
     options.signal?.throwIfAborted()
     const workspace = this.#workspace ??= await this.#openWorkspace()
-    const { root: workspaceRoot, src, settings } = workspace
+    const { root: workspaceRoot, settings } = workspace
     const findings: Finding[] = []
     const report = (finding: Finding) => findings.push(finding)
     const read = await readFile(this.entry, 'utf8').catch(() => undefined)
@@ -156,18 +253,16 @@ export class Compiler {
     const text = withoutBom(read)
     if (workspace.problem) report({ checkId: 'presmium.workspace', severity: 'error', message: workspace.problem, source: { file: this.entry, line: 1 } })
     if (workspace.operatorProblem) report({ checkId: 'presmium.workspace', severity: 'error', message: workspace.operatorProblem, source: { file: this.entry, line: 1 } })
-    const headmatter = withHeadmatter(readFrontmatter(text), this.options.headmatter)
+    const headmatter = withHeadmatter(parseFrontmatter(text), this.options.headmatter)
     const lang = typeof headmatter.lang === 'string' && headmatter.lang.trim() ? headmatter.lang.trim() : DEFAULT_LANG
-    const dependencies = new Dependencies(workspaceRoot, this.#committed)
-    const watch = (...files: string[]) => dependencies.watch(...files)
+    const inputs = new CompileInputs(workspaceRoot, this.#committed)
     const presmium = isRecord(headmatter.presmium) ? headmatter.presmium : {}
     const configOf = (plugin: LoadedPlugin) => {
       const config = presmium[pluginId(plugin)]
       return isRecord(config) ? config : {}
     }
 
-    const names = stringList(headmatter.plugins)
-    const loaded = await this.#loadPlugins(names, workspace)
+    const loaded = await this.#loadPlugins(stringList(headmatter.plugins), workspace)
     const { plugins } = loaded
     const problems = [...loaded.problems]
     const services = new NodeServices(this.options.services)
@@ -180,14 +275,19 @@ export class Compiler {
       secret: this.options.secret ?? (name => process.env[name]),
       ...workspace.operatorDir ? { operatorDir: workspace.operatorDir } : {},
       log: pluginLogger(pluginId(plugin)),
-      service: token => services.get(token),
+      service: token => services.tryGet(token),
     }, problems)
-    const service = <T>(token: ServiceToken<T>) => services.get(token)
+    const service = <T>(token: ServiceToken<T>) => services.tryGet(token)
     const at = (name: string) => ({ file: this.entry, line: frontmatterLine(text, name) })
     for (const p of problems) report({ checkId: 'presmium.plugins', severity: p.severity, message: p.message, source: at(p.name) })
-    const execute = readExecute(headmatter.execute, report, at)
+    const execute = toExecuteConfig(headmatter.execute, report, at)
     checkSecrets(headmatter, report, at)
+    return { workspace, headmatter, lang, plugins, configOf, service, execute, inputs, findings, report, at, signal: options.signal }
+  }
 
+  /** Registers each plugin's directives, roles, anchor resolvers, executors, environment providers and components. */
+  async #collectContributions(run: CompileRun): Promise<Contributions> {
+    const { plugins, configOf, execute, report, at } = run
     const directives = new Map<string, PluginDirective>()
     const roles = new Map<string, PluginRole>()
     const resolvers = createAnchorResolverRegistry()
@@ -226,17 +326,22 @@ export class Compiler {
     }
     for (const name of await directoryComponents(this.deckDir)) components.set(name, DECK_PLUGIN)
     const secret = this.options.secret ?? (name => process.env[name])
-    const environmentContext: EnvironmentContext = { deckDir: this.deckDir, workspaceRoot, secret, log: pluginLogger('presmium.execute') }
-    const declared = environmentProviders(execute, providers, report, at)
-    executors.push(...await environmentExecutors(execute, declared, environmentContext, this.#environments, report, at))
+    const environmentContext: EnvironmentContext = { deckDir: this.deckDir, workspaceRoot: run.workspace.root, secret, log: pluginLogger('presmium.execute') }
+    const environments = environmentProviders(execute, providers, report, at)
+    executors.push(...await environmentExecutors(execute, environments, environmentContext, this.#environments, report, at))
+    return { directives, roles, resolvers, executors, components, environments, environmentContext }
+  }
 
+  /** Parses the source, splits it into sections and turns each into blocks and steps; unchanged sections come from the cache. */
+  async #compileSections(run: CompileRun, contributions: Contributions): Promise<{ sections: IRSection[], marks: AudienceMark[], sourceFiles: string[] }> {
+    const { headmatter, inputs, findings, report, signal } = run
+    const { directives, roles, components } = contributions
     const parser = this.#parserFor(directives, roles)
-    parser.signal = options.signal
+    parser.signal = signal
     const source = await parser.expand(this.entry)
     findings.push(...source.findings)
-    dependencies.watch(...source.missing)
-    const { title: _title, lang: _lang, plugins: _plugins, presmium: _presmium, renderers, sectionDepth: depth, execute: _execute, translations: _translations, translationOf: _translationOf, ...rest } = headmatter
-    const title = typeof headmatter.title === 'string' ? headmatter.title : basename(this.entry, extname(this.entry))
+    inputs.watch(...source.missing)
+    const depth = headmatter.sectionDepth
     const sectionDepth = Number.isInteger(depth) && (depth as number) >= 1 ? depth as number : 2
 
     const lifted = liftScopes(source.children, sectionDepth, (node, audience) => report({
@@ -247,52 +352,47 @@ export class Compiler {
       source: sourceOf(node, this.entry),
     }))
     const marks = audienceMarks(lifted, this.entry)
-    const raw = splitSections(lifted, { entry: this.entry, title, sectionDepth }, report)
-    const rendererIds = new Set([...BUILTIN_RENDERERS, ...isRecord(renderers) ? Object.keys(renderers) : []])
-    const ctx = { entry: this.entry, deckDir: this.deckDir, workspaceRoot, lang, renderers: rendererIds, parser, directives, roles, components, execute, report, watch }
+    const raw = splitSections(lifted, { entry: this.entry, title: titleOf(headmatter, this.entry), sectionDepth }, report)
+    const renderers = headmatter.renderers
+    const ctx: BlockContext = {
+      entry: this.entry,
+      deckDir: this.deckDir,
+      workspaceRoot: run.workspace.root,
+      lang: run.lang,
+      renderers: new Set([...BUILTIN_RENDERERS, ...isRecord(renderers) ? Object.keys(renderers) : []]),
+      parser,
+      directives,
+      roles,
+      components,
+      execute: run.execute,
+      report,
+      watch: (...files) => inputs.watch(...files),
+    }
     const prepared: IRSection[] = []
     const cacheable: boolean[] = []
     this.#sections.context(JSON.stringify({ headmatter, components: [...components], plugins: this.#plugins?.key }))
     let yielded = performance.now()
+    const yieldSometimes = async () => {
+      if (performance.now() - yielded < 8) return
+      await setImmediate()
+      yielded = performance.now()
+    }
     for (const [i, section] of raw.entries()) {
-      options.signal?.throwIfAborted()
+      signal?.throwIfAborted()
       const key = hasPluginSyntax(section.nodes, directives, roles) ? undefined : this.#sections.key(section)
       cacheable.push(key !== undefined)
       const known = key === undefined ? undefined : this.#sections.get(section.id, key, section.source)
       if (known) {
         prepared.push(known.section)
         findings.push(...known.findings)
-        if (performance.now() - yielded >= 8) {
-          await setImmediate()
-          yielded = performance.now()
-        }
+        await yieldSometimes()
         continue
       }
       const local: Finding[] = []
-      const sectionReport = (finding: Finding) => { report(finding); local.push(finding) }
-      const { blocks: drafts, hints, config, audience } = await sectionBlocks(section.nodes, { ...ctx, report: sectionReport })
-      const { blocks, steps } = scheduleSteps(drafts, sectionReport)
-      drafts.forEach((draft, j) => {
-        if (draft.audience) blocks[j]!.audience = draft.audience
-      })
-      const compiled: IRSection = {
-        id: section.id,
-        index: i + 1,
-        title: section.title,
-        depth: section.depth,
-        source: section.source,
-        steps,
-        hints,
-        ...Object.keys(config).length > 0 ? { config } : {},
-        blocks,
-        ...audience ? { audience } : {},
-      }
+      const compiled = await compileSection(section, i + 1, { ...ctx, report: (finding) => { report(finding); local.push(finding) } })
       prepared.push(compiled)
       if (key !== undefined) this.#sections.set(section.id, key, compiled, local)
-      if (performance.now() - yielded >= 8) {
-        await setImmediate()
-        yielded = performance.now()
-      }
+      await yieldSometimes()
     }
     this.#sections.prune(new Set(raw.map(section => section.id)))
     // Clone cached blueprints together. Fresh plugin nodes must retain identity:
@@ -305,39 +405,13 @@ export class Compiler {
     })
 
     markBlocks(sections, marks)
+    return { sections, marks, sourceFiles: source.files }
+  }
 
-    const doc: IRDocument = {
-      ir: IR_VERSION,
-      meta: { ...rest, title, lang, entry: this.entry },
-      config: {
-        plugins: names,
-        presmium,
-        renderers: isRecord(renderers) ? recordOfRecords(renderers) : {},
-        ...Object.keys(execute).length > 0 ? { execute } : {},
-      },
-      sections,
-      diagnostics: [],
-    }
-    applyTranslations(doc, translationFields(headmatter), report)
-    let audience: AudienceCompilation | undefined
-    if (this.options.audience) {
-      const name = this.options.audience
-      const view = audienceView(doc, name, marks)
-      doc.sections = view.doc.sections
-      doc.meta.audience = name
-      audience = audienceCompilation(name, withheld(view.removed, doc))
-      const left = findings.filter(finding => !view.keeps(finding))
-      findings.splice(0, findings.length, ...findings.filter(view.keeps))
-      if (left.length > 0) {
-        const severity = left.some(f => f.severity === 'error') ? 'error' : left.some(f => f.severity === 'warning') ? 'warning' : 'info'
-        report({ checkId: 'presmium.audience', severity, message: `${left.length} finding${left.length === 1 ? ' is' : 's are'} in the content left out for ${name}, not shown here: presmium check without --audience shows ${left.length === 1 ? 'it' : 'them'}`, source: { file: this.entry, line: 1 } })
-      }
-    }
-    checkRuns(doc, execute, report)
-    const unsupported = checkLanguages(doc, execute, executors, report)
-
-    numberFootnotes(doc, source.files)
-
+  /** Runs the plugins' passes, resolves references and runs the code at compile time, validating the IR in between. */
+  async #runPasses(doc: IRDocument, run: CompileRun, contributions: Contributions, unsupported: ReadonlySet<CodeNode>): Promise<PassResults> {
+    const { plugins, configOf, workspace, inputs, report, at, signal } = run
+    const { executors, resolvers } = contributions
     const lockFile = join(this.deckDir, ANCHOR_LOCK_PATH)
     let lock = AnchorLock.empty()
     try {
@@ -346,33 +420,33 @@ export class Compiler {
       report({ checkId: 'presmium.lock', severity: 'error', message: errorMessage(error), source: { file: lockFile, line: 1 } })
     }
     const cache = new FreezeCache(join(this.deckDir, FREEZE_DIR), relative(this.deckDir, this.entry))
-    const runContext = this.#runContext(workspaceRoot, settings, service, lang)
+    const runContext = this.#runContext(workspace.root, workspace.settings, run.service, run.lang)
     const passes = plugins.flatMap(loaded => (loaded.plugin?.passes ?? []).map(pass => ({ pass, loaded })))
       .sort((a, b) => (a.pass.order ?? 0) - (b.pass.order ?? 0))
     const runPass = async ({ pass, loaded }: { pass: IRPass, loaded: LoadedPlugin }) => {
-      options.signal?.throwIfAborted()
+      signal?.throwIfAborted()
       const config = configOf(loaded)
       const pctx: PassContext = {
         deckDir: this.deckDir,
-        workspaceRoot,
-        lang,
-        src: dependencies.reader(src),
-        resolvers: dependencies.resolvers(resolvers),
+        workspaceRoot: workspace.root,
+        lang: run.lang,
+        src: inputs.reader(workspace.src),
+        resolvers: inputs.resolvers(resolvers),
         lock: lock.toJSON(),
         executors,
         cache,
         config,
         configFor: section => ({ ...config, ...section.config?.[pluginId(loaded)] }),
         report: finding => report({ ...finding, source: finding.source ?? at(loaded.name) }),
-        watch,
-        service,
+        watch: (...files) => inputs.watch(...files),
+        service: run.service,
       }
       try {
         await pass.run(doc, pctx)
       } catch (error) {
         report({ checkId: 'presmium.plugins', severity: 'error', message: `pass ${pass.name} of plugin ${pluginId(loaded)} failed: ${errorMessage(error)}`, source: at(loaded.name) })
       }
-      options.signal?.throwIfAborted()
+      signal?.throwIfAborted()
     }
     const blame = (findings: Finding[], culprit: string): Finding[] => findings.map(finding => ({ ...finding, hint: culprit }))
     let invalid = blame(validateIR(doc, this.entry), 'the IR is invalid before the plugin passes: a directive wrote it')
@@ -385,53 +459,56 @@ export class Compiler {
       }
     }
 
-    let runs: RunStats = { executed: 0, cached: 0 }
+    let runStats: RunStats = { executed: 0, cached: 0 }
     let filled = new WeakSet<object>()
     if (invalid.length === 0) {
       filled = emptyReferences(doc)
       resolveReferences(doc, report)
-      runs = await executePass(doc, executors, cache, report, { ...this.options.execution, signal: options.signal, rerun: execute.rerun === 'environment', context: runContext, unsupported })
+      runStats = await executePass(doc, executors, cache, report, { ...this.options.execution, signal, rerun: run.execute.rerun === 'environment', context: runContext, unsupported })
       for (const step of passes.filter(({ pass }) => pass.after === 'execute')) await runPass(step)
       invalid = validateIR(doc, this.entry)
     }
-    findings.push(...invalid)
-    options.signal?.throwIfAborted()
-    doc.diagnostics = sortFindings(findings)
-    if (options.pruneCache && !audience && !findings.some(f => f.severity === 'error')) cache.prune()
-    const publish = { doc, entry: this.entry, deckDir: this.deckDir, workspaceRoot, renderers: publishedRenderers(doc, plugins) }
+    return { lock, runStats, runContext, cache, filled, invalid }
+  }
 
+  #assemble(doc: IRDocument, run: CompileRun, contributions: Contributions, results: { sourceFiles: string[], marks: AudienceMark[], audience?: AudienceCompilation, passes: PassResults }): Compilation {
+    const { workspace, headmatter, plugins, execute, inputs } = run
+    const { executors } = contributions
+    const { marks, audience, passes } = results
+    const { runContext } = passes
+    const publish = { doc, entry: this.entry, deckDir: this.deckDir, workspaceRoot: workspace.root, renderers: publishedRenderers(doc, plugins) }
     const compilation: Compilation = {
       doc,
       options: this.options,
-      files: source.files,
-      dependencies: { files: dependencies.files, revisions: dependencies.revisions },
-      runs,
+      sourceFiles: results.sourceFiles,
+      inputs: { files: inputs.files, gitReads: inputs.gitReads },
+      runStats: passes.runStats,
       deckDir: this.deckDir,
       entry: this.entry,
-      frontmatter: headmatter,
-      workspaceRoot,
-      src,
-      resolvers,
-      lock,
+      headmatter,
+      workspaceRoot: workspace.root,
+      src: workspace.src,
+      resolvers: contributions.resolvers,
+      lock: passes.lock,
       plugins,
-      components,
-      service,
-      settings,
+      components: contributions.components,
+      service: run.service,
+      settings: workspace.settings,
       operatorDir: workspace.operatorDir,
       pluginSources: workspace.sources,
       execute,
-      environments: [...declared].map(([name, provider]) => ({ name, spec: execute.environments![name]!, provider, context: environmentContext })),
+      environments: [...contributions.environments].map(([name, provider]) => ({ name, spec: execute.environments![name]!, provider, context: contributions.environmentContext })),
       executors,
       runContext,
       run: (node, signal) => this.#run(doc, node, executors, runContext, signal),
       ...audience ? { audience } : {},
-      forAudience: name => audienceDocument(doc, name, filled, marks),
-      audienceOf: (name) => {
-        const view = audienceView(doc, name, marks)
-        return audienceCompilation(name, withheld(view.removed, view.doc))
+      audienceDocument: name => audienceDocument(doc, name, passes.filled, marks),
+      audienceCompilation: (name) => {
+        const filtered = filterForAudience(doc, name, marks)
+        return audienceCompilation(name, withheld(filtered.removed, filtered.doc))
       },
       publishChecks: async (checks = {}) => [...await checkLinks(publish, checks), ...checkForbidden(publish, headmatter)],
-      check: checks => pluginChecks(compilation, checks),
+      check: checks => runAllChecks(compilation, checks),
     }
     return compilation
   }
@@ -465,10 +542,10 @@ export class Compiler {
       }
       nodes = [...before, node]
     }
-    const session = run.session ? `run:${randomUUID()}` : undefined
-    const requests = nodes.map(code => ({ ...request(code), ...session ? { session } : {} }))
+    const runSession = run.session ? `run:${randomUUID()}` : undefined
+    const requests = nodes.map(code => ({ ...request(code), ...runSession ? { session: runSession } : {} }))
     const results = await Promise.all(requests.map(r => executor.run(r, signal, context)))
-    if (session) await executor.endSession?.(session)
+    if (runSession) await executor.endSession?.(runSession)
     return results.at(-1)!
   }
 
@@ -506,6 +583,27 @@ export class Compiler {
   }
 }
 
+/** One section's blocks and steps, from its mdast. */
+async function compileSection(section: RawSection, index: number, ctx: BlockContext): Promise<IRSection> {
+  const { blocks: drafts, hints, config, audience } = await sectionBlocks(section.nodes, ctx)
+  const { blocks, steps } = scheduleSteps(drafts, ctx.report)
+  drafts.forEach((draft, j) => {
+    if (draft.audience) blocks[j]!.audience = draft.audience
+  })
+  return {
+    id: section.id,
+    index,
+    title: section.title,
+    depth: section.depth,
+    source: section.source,
+    steps,
+    hints,
+    ...Object.keys(config).length > 0 ? { config } : {},
+    blocks,
+    ...audience ? { audience } : {},
+  }
+}
+
 function addServices(services: NodeServices, loaded: LoadedPlugin, context: NodeServiceContext, problems: PluginProblem[]): void {
   const contribute = loaded.plugin?.services
   if (!contribute) return
@@ -534,11 +632,11 @@ export async function workspacePlugins(root: string, options: CompilerOptions = 
       lang: DEFAULT_LANG,
       secret: options.secret ?? (name => process.env[name]),
       ...operator ? { operatorDir: operator } : {},
-      service: token => services.get(token),
+      service: token => services.tryGet(token),
       log: pluginLogger(pluginId(loaded)),
     }, problems)
   }
-  return { plugins, problems, service: token => services.get(token) }
+  return { plugins, problems, service: token => services.tryGet(token) }
 }
 
 export function audienceCompilation(name: string, left: Withheld[]): AudienceCompilation {
@@ -552,11 +650,8 @@ function withHeadmatter(own: Record<string, unknown>, replaced?: Record<string, 
   return merged
 }
 
-export function frontmatterLine(text: string, needle: string): number {
-  const lines = withoutBom(text).split(/\r?\n/)
-  const end = lines.indexOf('---', 1)
-  const index = lines.slice(0, end < 0 ? undefined : end).findIndex(line => line.includes(needle))
-  return index < 0 ? 1 : index + 1
+function titleOf(headmatter: Record<string, unknown>, entry: string): string {
+  return typeof headmatter.title === 'string' ? headmatter.title : basename(entry, extname(entry))
 }
 
 export function sortFindings(findings: Finding[]): Finding[] {

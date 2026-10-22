@@ -1,11 +1,13 @@
 import { createHash } from 'node:crypto'
 import { readFileSync, realpathSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path'
+import { basename, dirname, relative, resolve, sep } from 'node:path'
 import { errorMessage, irBlocks, isRecord } from '@lincyaw/kernel'
 import type { Finding, IRDocument } from '@lincyaw/kernel'
+import { isInside } from '@lincyaw/kernel/node'
 import type { AudienceCompilation, Compilation, Compiler, CompilerOptions } from './compiler.ts'
-import { readFrontmatter } from './source.ts'
+import { parseFrontmatter } from './parser.ts'
+import { textLine } from './source-lines.ts'
 
 const CHECK_ID = 'presmium.translations'
 
@@ -60,16 +62,10 @@ export function originalDigest(doc: IRDocument): string {
 function translationFile(deckDir: string, entry: string): string | undefined {
   const file = resolve(deckDir, entry)
   try {
-    const rel = relative(realpathSync(deckDir), realpathSync(file))
-    return statSync(file).isFile() && !rel.startsWith(`..${sep}`) && rel !== '..' && !isAbsolute(rel) ? file : undefined
+    return statSync(file).isFile() && isInside(realpathSync(file), realpathSync(deckDir)) ? file : undefined
   } catch {
     return undefined
   }
-}
-
-function lineWith(text: string, needle: string): number {
-  const index = text.split(/\r?\n/).findIndex(line => line.includes(needle))
-  return index < 0 ? 1 : index + 1
 }
 
 function staleTranslations(doc: IRDocument, translations: Record<string, string>): Finding[] {
@@ -82,19 +78,19 @@ function staleTranslations(doc: IRDocument, translations: Record<string, string>
     const file = translationFile(deckDir, entry)
     const name = `translation "${lang}" (${entry})`
     if (!file) {
-      findings.push({ checkId: CHECK_ID, severity: 'warning', message: `${name} not found in the deck's directory`, source: { file: doc.meta.entry, line: lineWith(entryText, entry) } })
+      findings.push({ checkId: CHECK_ID, severity: 'warning', message: `${name} not found in the deck's directory`, source: { file: doc.meta.entry, line: textLine(entryText, entry) } })
       continue
     }
     const text = readFileSync(file, 'utf8')
     digest ??= originalDigest(doc)
-    const { translationOf } = translationFields(readFrontmatter(text))
+    const { translationOf } = translationFields(parseFrontmatter(text))
     const expected = relative(dirname(file), doc.meta.entry).split(sep).join('/')
     if (!translationOf) {
       findings.push({ checkId: CHECK_ID, severity: 'warning', message: `${name} records no digest of the original; once it matches the original, add translationOf: { entry: ${expected}, digest: ${digest} } to its headmatter`, source: { file, line: 1 } })
     } else if (resolve(dirname(file), translationOf.entry) !== doc.meta.entry) {
-      findings.push({ checkId: CHECK_ID, severity: 'warning', message: `${name} names ${translationOf.entry} as its original, not ${original}`, source: { file, line: lineWith(text, 'entry') } })
+      findings.push({ checkId: CHECK_ID, severity: 'warning', message: `${name} names ${translationOf.entry} as its original, not ${original}`, source: { file, line: textLine(text, 'entry') } })
     } else if (translationOf.digest !== digest) {
-      findings.push({ checkId: CHECK_ID, severity: 'warning', message: `${name} is out of date: the original changed since digest ${translationOf.digest.slice(0, 12)}…; check the translation against it, then set translationOf.digest to ${digest}`, source: { file, line: lineWith(text, translationOf.digest) } })
+      findings.push({ checkId: CHECK_ID, severity: 'warning', message: `${name} is out of date: the original changed since digest ${translationOf.digest.slice(0, 12)}…; check the translation against it, then set translationOf.digest to ${digest}`, source: { file, line: textLine(text, translationOf.digest) } })
     }
   }
   return findings
@@ -108,7 +104,7 @@ export interface CompiledTranslation {
 }
 
 export async function compileTranslations(compilation: Compilation, compilers = new Map<string, Compiler>()): Promise<{ translations: CompiledTranslation[], findings: Finding[] }> {
-  const { doc, deckDir, frontmatter } = compilation
+  const { doc, deckDir, headmatter: original } = compilation
   const translations: CompiledTranslation[] = []
   const findings: Finding[] = []
   const { Compiler } = await import('./compiler.ts')
@@ -118,9 +114,9 @@ export async function compileTranslations(compilation: Compilation, compilers = 
     const file = translationFile(deckDir, entry)
     if (!file) continue
     try {
-      const own = readFrontmatter(await readFile(file, 'utf8'))
+      const own = parseFrontmatter(await readFile(file, 'utf8'))
       const headmatter: Record<string, unknown> = { translations: undefined }
-      for (const key of ORIGINAL_KEYS) headmatter[key] = frontmatter[key]
+      for (const key of ORIGINAL_KEYS) headmatter[key] = original[key]
       if (!(typeof own.lang === 'string' && own.lang.trim())) headmatter.lang = lang
       if (own.title === undefined) headmatter.title = doc.meta.title
       const options: CompilerOptions = { ...base, headmatter, deckDir, ...audience ? { audience } : {} }
@@ -130,7 +126,7 @@ export async function compileTranslations(compilation: Compilation, compilers = 
       compilers.set(file, compiler)
       const translated = await compiler.compile()
       findings.push(...translated.doc.diagnostics)
-      translations.push({ lang, doc: translated.doc, files: [...new Set([...translated.files, ...translated.dependencies.files])], ...translated.audience ? { audience: translated.audience } : {} })
+      translations.push({ lang, doc: translated.doc, files: [...new Set([...translated.sourceFiles, ...translated.inputs.files])], ...translated.audience ? { audience: translated.audience } : {} })
     } catch (error) {
       findings.push({ checkId: CHECK_ID, severity: 'error', message: `translation "${lang}" (${entry}) could not be compiled: ${errorMessage(error)}`, source: { file, line: 1 } })
     }

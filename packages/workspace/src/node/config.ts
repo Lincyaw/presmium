@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { DECK_ENTRY, readFrontmatter, WORKSPACE_CONFIG } from '@lincyaw/compiler'
+import { DECK_ENTRY, parseFrontmatter, WORKSPACE_CONFIG } from '@lincyaw/compiler'
 import type { OperatorSettings } from '@lincyaw/compiler'
 import { errorMessage, isRecord } from '@lincyaw/kernel'
 import type { ApprovalKind } from '@lincyaw/kernel'
@@ -104,7 +104,7 @@ function documentOf(config: WorkspaceConfig, entry: string): FoundDocument {
   const dir = entry.split('/').slice(0, -1).join('/')
   let headmatter: Record<string, unknown> = {}
   try {
-    headmatter = readFrontmatter(readFileSync(join(config.root, entry), 'utf8'))
+    headmatter = parseFrontmatter(readFileSync(join(config.root, entry), 'utf8'))
   } catch {
   }
   const tags = strings(headmatter.tags)

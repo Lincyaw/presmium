@@ -1,14 +1,14 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { json, problem } from '@lincyaw/kernel'
+import { isInside } from '@lincyaw/kernel/node'
 import { consentPath, consentProblem, DEFAULT_CONSENT_DIR, safeName } from '../domain/index.ts'
 import { SpeechError } from './errors.ts'
 
 export function consentDir(operatorDir: string, settings: Record<string, unknown>): string {
   const configured = typeof settings.consentDir === 'string' && settings.consentDir.trim() ? settings.consentDir.trim() : DEFAULT_CONSENT_DIR
   const dir = resolve(operatorDir, configured)
-  const rel = relative(resolve(operatorDir), dir)
-  if (rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)) {
+  if (!isInside(dir, resolve(operatorDir))) {
     throw new SpeechError(500, `settings.presmium.speech.consentDir (${configured}) leads out of the operator directory`)
   }
   return dir

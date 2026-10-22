@@ -1,18 +1,14 @@
 import { execFile } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { dirname, join, relative, resolve, sep } from 'node:path'
 import { gitConfigArgs, gitEnvironment } from '@lincyaw/kernel'
 import type { ChangeReview, DocumentFileChange, DocumentFiles, ReviewChange, ReviewChangeKind, ReviewStep } from '@lincyaw/kernel'
+import { isInside } from '@lincyaw/kernel/node'
 import { guardGitDir } from './git-guard.ts'
 import type { GitGuard } from './git-guard.ts'
 import { holderRuns, readRecord, removeRecord, SELF, writeRecord } from './review-record.ts'
 import type { ReviewRecord, SessionRecord } from './review-record.ts'
-
-export function within(path: string, dir: string): boolean {
-  const rel = relative(resolve(dir), resolve(path))
-  return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))
-}
 
 export interface GitReview extends ChangeReview {
   readonly task: string
@@ -159,7 +155,7 @@ class Trees {
   }
 
   async restore(tree: string, paths: string[]): Promise<void> {
-    const ours = paths.map(this.toGit).filter(path => within(join(this.top, path), this.deck))
+    const ours = paths.map(this.toGit).filter(path => isInside(join(this.top, path), this.deck))
     if (ours.length === 0) return
     if (this.#files) return this.#write(tree, ours)
     const known = new Set((await this.#text(['ls-tree', '-r', '-z', '--name-only', tree, '--', ...ours])).split('\0').filter(Boolean))
@@ -176,7 +172,7 @@ class Trees {
     for (const path of ours.filter(path => !known.has(path))) {
       const file = join(this.top, path)
       rmSync(file, { force: true })
-      for (let dir = dirname(file); within(dir, this.deck) && dir !== this.deck; dir = dirname(dir)) {
+      for (let dir = dirname(file); isInside(dir, this.deck) && dir !== this.deck; dir = dirname(dir)) {
         try {
           if (readdirSync(dir).length > 0) break
           rmdirSync(dir)
@@ -229,7 +225,7 @@ export interface GitReviewOptions {
 const recovering = new Map<string, Promise<{ task: string, paths: string[] } | undefined>>()
 
 function guarding(gitDir: string, deck: string, root: string, onRestore: GitReviewOptions['onRestore'], guard?: GitGuard) {
-  const found = guard ?? (within(gitDir, deck) ? guardGitDir(gitDir) : undefined)
+  const found = guard ?? (isInside(gitDir, deck) ? guardGitDir(gitDir) : undefined)
   return {
     guard: found,
     restore() {

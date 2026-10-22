@@ -1,10 +1,11 @@
 import { lstat, readdir, readFile } from 'node:fs/promises'
 import { basename, extname, join, relative } from 'node:path'
-import { irBlocks, isRecord, nodeMdast } from '@lincyaw/kernel'
+import { irBlocks, isRecord, nodeMdast, propText } from '@lincyaw/kernel'
 import type { Finding, IRBlock, IRDocument, IRNode, IRSection, MdastNode, SourcePos } from '@lincyaw/kernel'
 import { resolveReferences } from './references.ts'
-import { Parser, sourceOf } from './source.ts'
-import type { ParsedFile } from './source.ts'
+import { Parser, sourceOf } from './parser.ts'
+import { compactSteps } from './steps.ts'
+import type { ParsedFile } from './parser.ts'
 
 export interface Removed {
   source: SourcePos
@@ -33,7 +34,7 @@ const BINARY = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.ico
 
 const HTML_ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: '\'', nbsp: ' ' }
 
-export function forAudience(audience: string[] | undefined, name: string): boolean {
+export function includesAudience(audience: string[] | undefined, name: string): boolean {
   return !audience || audience.includes(name)
 }
 
@@ -41,7 +42,8 @@ export function audienceList(text: string): string[] {
   return [...new Set(text.split(/[\s,]+/).filter(Boolean))]
 }
 
-export function within(outer: string[] | undefined, inner: string[]): string[] {
+/** The audiences of an inner marking inside an outer one: their intersection. */
+export function narrowAudience(outer: string[] | undefined, inner: string[]): string[] {
   return outer ? outer.filter(name => inner.includes(name)) : inner
 }
 
@@ -51,7 +53,7 @@ export function markOf(node: unknown): string[] | undefined {
 }
 
 export function markAudience(nodes: MdastNode[], audience: string[]): MdastNode[] {
-  return nodes.map(node => ({ ...node, data: { ...isRecord(node.data) ? node.data : {}, audience: within(markOf(node), audience) } }))
+  return nodes.map(node => ({ ...node, data: { ...isRecord(node.data) ? node.data : {}, audience: narrowAudience(markOf(node), audience) } }))
 }
 
 export class AudienceParser extends Parser {
@@ -124,14 +126,14 @@ function ownAudience(node: MdastNode): string[] | undefined {
 function wider(node: MdastNode, own: string[] | undefined, section: string[]): boolean {
   if (node.type === 'comment' || node.type === 'mystTarget' || (node.type === 'mystDirective' && SETTINGS.has(String(node.name)))) return false
   const marked = ownAudience(node)
-  const audience = marked ? within(own, marked) : own
+  const audience = marked ? narrowAudience(own, marked) : own
   return !audience || audience.some(name => !section.includes(name))
 }
 
 export function audienceMarks(nodes: MdastNode[], entry: string, outer?: string[], marks: AudienceMark[] = []): AudienceMark[] {
   for (const node of nodes) {
     const own = ownAudience(node)
-    const audience = own ? within(outer, own) : outer
+    const audience = own ? narrowAudience(outer, own) : outer
     if (own && node.position) marks.push({ source: sourceOf(node, entry), audience: audience! })
     if (node.children?.length) audienceMarks(node.children, entry, audience, marks)
   }
@@ -145,7 +147,7 @@ export function markBlocks(sections: IRSection[], marks: AudienceMark[]): void {
       const { file, line } = block.source
       const end = block.source.endLine ?? line
       for (const mark of marks) {
-        if (mark.source.file === file && mark.source.line <= line && end <= (mark.source.endLine ?? mark.source.line)) block.audience = within(block.audience, mark.audience)
+        if (mark.source.file === file && mark.source.line <= line && end <= (mark.source.endLine ?? mark.source.line)) block.audience = narrowAudience(block.audience, mark.audience)
       }
     }
   }
@@ -162,7 +164,7 @@ function lift(scope: MdastNode, audience: string[], depth: number, out: MdastNod
   for (const node of scope.children ?? []) {
     if (node.type === AUDIENCE_SCOPE && holdsSection(node, depth)) {
       open()
-      last = lift(node, within(audience, node.audience as string[]), depth, out, trailing)
+      last = lift(node, narrowAudience(audience, node.audience as string[]), depth, out, trailing)
     } else if (opens(node, depth)) {
       const label = !opened && before.at(-1)?.type === 'mystTarget' ? before.pop() : undefined
       open()
@@ -179,18 +181,19 @@ function lift(scope: MdastNode, audience: string[], depth: number, out: MdastNod
   return last
 }
 
-export function audienceView(doc: IRDocument, name: string, marks: AudienceMark[] = []): { doc: IRDocument, removed: Removed[], keeps: (finding: Finding) => boolean } {
+/** Removes the sections and blocks not for the audience; `keeps` tells whether a finding lies in what is left. */
+export function filterForAudience(doc: IRDocument, name: string, marks: AudienceMark[] = []): { doc: IRDocument, removed: Removed[], keeps: (finding: Finding) => boolean } {
   const removed: Removed[] = []
   const sections: IRSection[] = []
   const compacted = new Set<string>()
   for (const section of doc.sections) {
-    if (!forAudience(section.audience, name)) {
+    if (!includesAudience(section.audience, name)) {
       removed.push({ source: section.source, audience: section.audience!, title: section.title, blocks: section.blocks })
       continue
     }
     let dropped = false
     const keep = (blocks: IRBlock[]): IRBlock[] => blocks.flatMap((block) => {
-      if (!forAudience(block.audience, name)) {
+      if (!includesAudience(block.audience, name)) {
         dropped = true
         removed.push({ source: block.source, audience: block.audience!, blocks: [block] })
         return []
@@ -202,7 +205,7 @@ export function audienceView(doc: IRDocument, name: string, marks: AudienceMark[
     if (dropped) compacted.add(section.id)
     sections.push(dropped ? compactSteps({ ...section, blocks }) : same(blocks, section.blocks) ? section : { ...section, blocks })
   }
-  const marked = marks.filter(mark => !forAudience(mark.audience, name)).map(mark => mark.source)
+  const marked = marks.filter(mark => !includesAudience(mark.audience, name)).map(mark => mark.source)
   if (removed.length === 0 && marked.length === 0) return { doc, removed, keeps: () => true }
   const kept = new Set(sections.map(section => section.id))
   sections.forEach((section, i) => sections[i] = withViewKeys(section, kept, compacted.has(section.id)))
@@ -222,7 +225,7 @@ export function audienceView(doc: IRDocument, name: string, marks: AudienceMark[
 function leftOut(doc: IRDocument, name: string, removed: Removed[]): SourcePos[] {
   const spans: SourcePos[] = removed.filter(item => !item.nested && item.title === undefined).map(item => item.source)
   doc.sections.forEach((section, i) => {
-    if (forAudience(section.audience, name)) return
+    if (includesAudience(section.audience, name)) return
     const next = doc.sections.slice(i + 1).find(later => later.source.file === section.source.file)
     spans.push({ file: section.source.file, line: section.source.line, endLine: next ? next.source.line - 1 : Number.MAX_SAFE_INTEGER })
     for (const block of irBlocks(section.blocks)) if (block.source.file !== section.source.file) spans.push(block.source)
@@ -231,7 +234,7 @@ function leftOut(doc: IRDocument, name: string, removed: Removed[]): SourcePos[]
 }
 
 export function audienceDocument(doc: IRDocument, name: string, filled: WeakSet<object>, marks: AudienceMark[] = []): IRDocument {
-  const { doc: found, removed } = audienceView(doc, name, marks)
+  const { doc: found, removed } = filterForAudience(doc, name, marks)
   const view = { ...found, meta: { ...found.meta, audience: name } }
   if (removed.length === 0) return view
   const own = detached(view, filled)
@@ -252,7 +255,7 @@ export function emptyReferences(doc: IRDocument): WeakSet<object> {
 export function withheld(removed: Removed[], kept: IRDocument): Withheld[] {
   const shown = ownText(kept)
   return removed.map(({ source, audience, title, blocks }) => {
-    const texts = [...title ? [title] : [], ...blocks.flatMap(block => [...irBlocks([block])].flatMap(blockTexts))]
+    const texts = [...title ? [title] : [], ...blocks.flatMap(block => [...irBlocks([block])].flatMap(sentenceSources))]
     return { source, audience, sentences: [...new Set(texts.flatMap(sentences))].filter(sentence => !shown.includes(sentence)) }
   })
 }
@@ -263,7 +266,7 @@ export function unshown(left: Withheld[], docs: IRDocument[]): Withheld[] {
 }
 
 function ownText(doc: IRDocument): string {
-  return doc.sections.flatMap(section => [section.title, ...[...irBlocks(section.blocks)].flatMap(blockTexts)]).map(squash).join('\n')
+  return doc.sections.flatMap(section => [section.title, ...[...irBlocks(section.blocks)].flatMap(sentenceSources)]).map(squash).join('\n')
 }
 
 export async function scanOutputs(left: Withheld[], paths: string[], audience: string, base: string, quote = true): Promise<Finding[]> {
@@ -319,7 +322,7 @@ function prune<T>(value: T, name: string, left: MdastNode[]): T {
   if (Array.isArray(value)) {
     let changed = false
     const kept = value.flatMap((item: unknown) => {
-      if (!forAudience(markOf(item), name)) {
+      if (!includesAudience(markOf(item), name)) {
         left.push(item as MdastNode)
         changed = true
         return []
@@ -410,47 +413,21 @@ function withViewKeys(section: IRSection, sections: ReadonlySet<string>, compact
   return { ...section, hints: { ...section.hints, slides: own } }
 }
 
-function compactSteps(section: IRSection): IRSection {
-  const used = new Set([0])
-  for (const block of irBlocks(section.blocks)) {
-    if (block.role !== 'visual') continue
-    for (let step = block.at; step <= block.at + (block.span ?? 0); step++) used.add(step)
-    if (block.until !== undefined) used.add(block.until)
-  }
-  if (used.size > section.steps) return section
-  const steps: number[] = []
-  for (let step = 0, n = -1; step <= section.steps; step++) steps.push(used.has(step) ? ++n : n)
-  const map = (step: number) => steps[Math.min(step, section.steps)]!
-  const renumber = (blocks: IRBlock[]): IRBlock[] => blocks.map(block => ({
-    ...block,
-    at: map(block.at),
-    ...block.until === undefined ? {} : { until: map(block.until) },
-    ...block.node.type === 'component' && block.node.children ? { node: { ...block.node, children: renumber(block.node.children) } } : {},
-  }))
-  return { ...section, steps: map(section.steps), blocks: renumber(section.blocks) }
-}
-
-function blockTexts(block: IRBlock): string[] {
+/** The texts of a block that the leak scan splits into sentences: its own source, without recorded output. */
+function sentenceSources(block: IRBlock): string[] {
   const { node } = block
   switch (node.type) {
-    case 'markdown': return mdastTexts(node.mdast)
+    case 'markdown': return mdastSentenceSources(node.mdast)
     case 'code': return [node.title ?? '', node.value, ...(node.variants ?? []).map(variant => variant.value)]
-    case 'component': return [...propTexts(node.props), ...node.fallback ? mdastTexts(node.fallback) : []]
+    case 'component': return [...propText(node.props), ...node.fallback ? mdastSentenceSources(node.fallback) : []]
   }
 }
 
-function mdastTexts(node: MdastNode): string[] {
+function mdastSentenceSources(node: MdastNode): string[] {
   const own: string[] = []
   if (typeof node.value === 'string') own.push(node.type === 'html' ? node.value.replace(/<[^<>]*>/g, ' ') : node.value)
   for (const key of ['alt', 'title'] as const) if (typeof node[key] === 'string') own.push(node[key] as string)
-  return [...own, ...(node.children ?? []).flatMap(mdastTexts)]
-}
-
-function propTexts(value: unknown): string[] {
-  if (typeof value === 'string') return [value]
-  if (Array.isArray(value)) return value.flatMap(propTexts)
-  if (value && typeof value === 'object') return Object.values(value).flatMap(propTexts)
-  return []
+  return [...own, ...(node.children ?? []).flatMap(mdastSentenceSources)]
 }
 
 function sentences(text: string): string[] {

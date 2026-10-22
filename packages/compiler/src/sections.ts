@@ -1,5 +1,5 @@
 import type { Finding, MdastNode, SourcePos } from '@lincyaw/kernel'
-import { fileOf, lineOf, sourceOf } from './source.ts'
+import { fileOf, nodeLines, sourceOf } from './parser.ts'
 
 export interface RawSection {
   id: string
@@ -65,7 +65,7 @@ export function splitSections(nodes: MdastNode[], options: SplitOptions, report:
   }
   return drafts.map((draft): RawSection => {
     const { title, depth, source, nodes } = draft
-    const ends = nodes.filter(n => fileOf(n, options.entry) === source.file).map(n => lineOf(n)?.endLine ?? 0)
+    const ends = nodes.filter(n => fileOf(n, options.entry) === source.file).map(n => nodeLines(n)?.endLine ?? 0)
     const id = labelled.has(draft) ? draft.label! : unique(draft.label ?? slugify(title), used)
     return { id, title, depth, source: { ...source, endLine: Math.max(source.line, ...ends) }, nodes }
   })

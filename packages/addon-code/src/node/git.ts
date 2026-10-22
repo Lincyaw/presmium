@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
-import { isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { join, relative, resolve, sep } from 'node:path'
 import type { SourceReader } from '@lincyaw/kernel'
+import { isInside } from '@lincyaw/kernel/node'
 import { simpleGit } from 'simple-git'
 
 export interface Repository {
@@ -18,9 +19,10 @@ export interface Workspace {
   repository(file: string): Promise<Repository>
 }
 
-function inside(root: string, file: string): string | undefined {
-  const rel = relative(root, resolve(root, file))
-  if (rel === '' || rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)) return undefined
+function relativeInside(root: string, file: string): string | undefined {
+  const path = resolve(root, file)
+  const rel = relative(root, path)
+  if (rel === '' || !isInside(path, root)) return undefined
   return rel.split(sep).join('/')
 }
 
@@ -58,7 +60,7 @@ export function openWorkspace(root: string): Workspace {
     .then(out => out.split('\n').filter(Boolean).map(line => line.slice(line.indexOf(' ') + 1).replace(/\/+$/, '')), () => [])
     .then(paths => paths.map(path => openRepository(root, path)))
   const repository = async (file: string) => {
-    const rel = inside(root, file) ?? file
+    const rel = relativeInside(root, file) ?? file
     return (await submodules).find(sub => rel.startsWith(`${sub.prefix}/`)) ?? own
   }
   workspace = {
@@ -66,7 +68,7 @@ export function openWorkspace(root: string): Workspace {
     repository,
     src: {
       async read(file, ref) {
-        const rel = inside(root, file)
+        const rel = relativeInside(root, file)
         if (rel === undefined) return undefined
         if (ref === undefined) return readFile(join(root, rel), 'utf8').catch(() => undefined)
         return (await repository(rel)).show(rel, ref)

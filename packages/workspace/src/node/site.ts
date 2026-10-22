@@ -1,8 +1,9 @@
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
-import { compileTranslations, DECK_ENTRY, directoryAsset, fileHash, frontmatterLine, inside, lineOf, loadPlugins, nodeVitePlugins, portable, publishesDirectory, readFrontmatter, viewFor } from '@lincyaw/compiler'
+import { compileTranslations, DECK_ENTRY, directoryAsset, fileHash, frontmatterLine, lineContaining, loadPlugins, nodeVitePlugins, parseFrontmatter, portable, publishesDirectory, viewFor } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import type { Finding, IRDocument, RenderContext, Renderer, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
+import { isInside } from '@lincyaw/kernel/node'
 import type { WorkspaceDocument } from '../domain/api.ts'
 import type { WorkspaceConfig } from './config.ts'
 
@@ -77,7 +78,7 @@ export function siteContext(options: SiteContextOptions): RenderContext {
 }
 
 function deckOf(file: string, root: string): string | undefined {
-  for (let dir = dirname(file); inside(dir, root); dir = dirname(dir)) {
+  for (let dir = dirname(file); isInside(dir, root); dir = dirname(dir)) {
     if (existsSync(join(dir, DECK_ENTRY))) return dir
     if (dir === root) return undefined
   }
@@ -93,7 +94,7 @@ function publishedAsset(options: SiteContextOptions, source: SourcePos, url: str
     name = decodeURIComponent(path)
   } catch {
   }
-  const warn = (message: string) => report({ checkId: 'presmium.links', severity: 'warning', message, source: { file: source.file, line: lineOf(source, url) } })
+  const warn = (message: string) => report({ checkId: 'presmium.links', severity: 'warning', message, source: { file: source.file, line: lineContaining(source, url) } })
   const target = resolve(dirname(source.file), name)
   const stat = statSync(target, { throwIfNoEntry: false })
   if (!stat) {
@@ -102,14 +103,14 @@ function publishedAsset(options: SiteContextOptions, source: SourcePos, url: str
   }
   const root = realpathSync(options.root)
   const real = realpathSync(target)
-  if (!inside(real, root)) {
+  if (!isInside(real, root)) {
     if (stat.isFile()) warn(`${url} is not published: the file lies outside the workspace`)
     return undefined
   }
   if (stat.isFile()) return { file: target, name: `${fileHash(target).slice(0, 8)}-${basename(target)}` }
   const deck = deckOf(source.file, options.root)
   if (!deck || !publishesDirectory(target, deck)) return undefined
-  const lang = readFrontmatter(readFileSync(join(deck, DECK_ENTRY), 'utf8')).lang
+  const lang = parseFrontmatter(readFileSync(join(deck, DECK_ENTRY), 'utf8')).lang
   return directoryAsset(target, deck, join(options.workDir, 'files'), typeof lang === 'string' ? lang : undefined, message => warn(`${url} is not published: ${message}`))
 }
 

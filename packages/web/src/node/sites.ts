@@ -7,7 +7,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'nod
 import { fileURLToPath } from 'node:url'
 import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, isRecord, localRequestRefusal, nodeMdast } from '@lincyaw/kernel'
 import type { DocumentLink, Finding, IRDocument, MdastNode, RenderContext, RenderOutput, SiteDevServer, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
-import { FONT_LICENSE, fontLicense, optimizeDeps } from '@lincyaw/kernel/node'
+import { FONT_LICENSE, fontLicense, isInside, optimizeDeps } from '@lincyaw/kernel/node'
 import { createProxyServer } from 'http-proxy-3'
 import { pageLink, searchDocuments, sectionLinks, siteShell, SITE_LABELS, toPages, translationPages, urlPath } from '../domain/index.ts'
 import type { Neighbour, SearchDocument, WebPage } from '../domain/index.ts'
@@ -128,8 +128,9 @@ function documentLinkOf(ctx: RenderContext): (source: SourcePos, url: string) =>
     }
     const stat = statSync(target)
     const dir = stat.isFile() && basename(target) === DECK_ENTRY ? dirname(target) : stat.isDirectory() && existsSync(join(target, DECK_ENTRY)) ? target : undefined
-    const rel = dir === undefined ? undefined : relative(realpathSync(ctx.workspaceRoot), dir)
-    if (rel === undefined || rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)) return undefined
+    const root = realpathSync(ctx.workspaceRoot)
+    if (dir === undefined || !isInside(dir, root)) return undefined
+    const rel = relative(root, dir)
     const hash = url.indexOf('#')
     const fragment = hash < 0 ? '' : decoded(url.slice(hash + 1))
     return { dir: rel.split(sep).join('/'), ...fragment ? { fragment } : {} }

@@ -5,7 +5,7 @@ const PREFIX = environmentExecutor('')
 
 type At = (needle: string) => { file: string, line: number }
 
-export function readExecute(value: unknown, report: (finding: Finding) => void, at: At): ExecuteConfig {
+export function toExecuteConfig(value: unknown, report: (finding: Finding) => void, at: At): ExecuteConfig {
   if (value === undefined) return {}
   const fail = (message: string, needle = 'execute') => report({ checkId: 'presmium.execute', severity: 'error', message, source: at(needle) })
   if (!isRecord(value)) {

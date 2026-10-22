@@ -1,13 +1,16 @@
 import { execFile, spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path'
-import { htmlAttributes, irBlocks, isRecord } from '@lincyaw/kernel'
+import { ABSOLUTE_URL, htmlAttributes, irBlocks, isRecord } from '@lincyaw/kernel'
 import type { Finding, IRBlock, IRDocument, MdastNode, SourcePos } from '@lincyaw/kernel'
+import { isInside } from '@lincyaw/kernel/node'
+import { publishesDirectory, unpublishedDirectory } from './assets.ts'
 import { BUILTIN_DIRECTIVES } from './blocks.ts'
-import { inside, publishesDirectory, unpublishedDirectory } from './published.ts'
-import { viewFor } from './renderers.ts'
+import { parseFrontmatter, Parser } from './parser.ts'
 import { plainText, slugify, splitSections } from './sections.ts'
-import { Parser, readFrontmatter } from './source.ts'
+import { lineFinder } from './source-lines.ts'
+import type { LineFinder } from './source-lines.ts'
+import { viewFor } from './views.ts'
 
 export interface PublishInput {
   doc: IRDocument
@@ -17,7 +20,6 @@ export interface PublishInput {
   renderers: string[]
 }
 
-const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/)/i
 const EXTERNAL = /^https?:\/\//i
 const URL_ATTRIBUTES = new Set(['href', 'src', 'poster'])
 const ID_ATTRIBUTES = new Set(['id', 'name'])
@@ -84,13 +86,13 @@ function blockUrls(block: IRBlock): string[] {
 }
 
 async function linkProblem(url: string, source: SourcePos, input: PublishInput, anchors: Set<string>, documents: Map<string, Promise<Set<string>>>): Promise<string | undefined> {
-  if (REMOTE.test(url)) return undefined
+  if (ABSOLUTE_URL.test(url)) return undefined
   const hash = url.indexOf('#')
   const fragment = hash < 0 ? '' : decode(url.slice(hash + 1))
   const path = decode((hash < 0 ? url : url.slice(0, hash)).replace(/\?.*$/s, ''))
   if (!path) return fragment && !anchors.has(fragment) ? `#${fragment} is no section, block, label or heading of the deck` : undefined
   const file = path.startsWith('/') ? join(input.deckDir, 'public', path) : resolve(dirname(source.file), path)
-  if (!inside(file, input.workspaceRoot)) return `${path} lies outside the repository: it cannot be published`
+  if (!isInside(file, input.workspaceRoot)) return `${path} lies outside the repository: it cannot be published`
   if (!existsSync(file)) return `${path}: no such file`
   const hidden = publishesDirectory(file, input.deckDir) ? unpublishedDirectory(file, input.deckDir) : undefined
   if (hidden) return `${path}: ${hidden}`
@@ -133,7 +135,7 @@ async function sourceAnchors(entry: string): Promise<Set<string>> {
     const parser = new Parser(new Map([...BUILTIN_DIRECTIVES]))
     const { children } = await parser.expand(entry)
     const text = readFileSync(entry, 'utf8')
-    const headmatter = readFrontmatter(text)
+    const headmatter = parseFrontmatter(text)
     const depth = Number.isInteger(headmatter.sectionDepth) && (headmatter.sectionDepth as number) >= 1 ? headmatter.sectionDepth as number : 2
     const title = typeof headmatter.title === 'string' ? headmatter.title : basename(dirname(entry))
     for (const section of splitSections(children, { entry, title, sectionDepth: depth }, () => {})) anchors.add(section.id)
@@ -171,27 +173,6 @@ async function externalLinks(urls: Map<string, SourcePos>, entry: string, line: 
 
 function needles(url: string): string[] {
   return [...new Set([url, decode(url)])]
-}
-
-export type LineFinder = (source: SourcePos, needles: string[]) => number
-
-export function lineFinder(): LineFinder {
-  const files = new Map<string, string[]>()
-  return (source, needles) => {
-    let lines = files.get(source.file)
-    if (!lines) {
-      try {
-        lines = readFileSync(source.file, 'utf8').split(/\r?\n/)
-      } catch {
-        lines = []
-      }
-      files.set(source.file, lines)
-    }
-    for (let line = source.line; line <= Math.min(source.endLine ?? source.line, lines.length); line++) {
-      if (needles.some(needle => needle && lines[line - 1]!.includes(needle))) return line
-    }
-    return source.line
-  }
 }
 
 function decode(text: string): string {

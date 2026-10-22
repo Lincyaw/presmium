@@ -119,7 +119,7 @@ export class DocumentSession {
 
   #watch(compilation: Compilation, started: number): void {
     if (this.#closed) return
-    const files = new Set([...compilation.files, ...compilation.dependencies.files])
+    const files = new Set([...compilation.sourceFiles, ...compilation.inputs.files])
     const next = new Map<string, Set<string>>()
     for (const file of files) {
       let dir = dirname(file)

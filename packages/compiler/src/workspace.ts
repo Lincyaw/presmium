@@ -1,12 +1,13 @@
 import { execFile } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
-import { isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { join, relative, resolve, sep } from 'node:path'
 import { promisify } from 'node:util'
 import type { SourceReader } from '@lincyaw/kernel'
+import { isInside } from '@lincyaw/kernel/node'
 
 const run = promisify(execFile)
 
-export const COMMIT = /^(?:[\da-f]{40}|[\da-f]{64})$/i
+export const COMMIT_HASH = /^(?:[\da-f]{40}|[\da-f]{64})$/i
 
 export async function findWorkspaceRoot(dir: string): Promise<string> {
   return run('git', ['rev-parse', '--show-toplevel'], { cwd: dir })
@@ -16,8 +17,9 @@ export async function findWorkspaceRoot(dir: string): Promise<string> {
 export function createSourceReader(root: string): SourceReader {
   return {
     async read(file, ref) {
-      const rel = relative(root, resolve(root, file))
-      if (rel === '' || rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)) return undefined
+      const path = resolve(root, file)
+      const rel = relative(root, path)
+      if (rel === '' || !isInside(path, root)) return undefined
       if (ref === undefined) return readFile(join(root, rel), 'utf8').catch(() => undefined)
       if (ref.startsWith('-')) return undefined
       return run('git', ['show', `${ref}:${rel.split(sep).join('/')}`], { cwd: root, maxBuffer: 64 << 20 })

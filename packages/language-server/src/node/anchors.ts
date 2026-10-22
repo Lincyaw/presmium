@@ -1,8 +1,9 @@
 import { readdir } from 'node:fs/promises'
-import { isAbsolute, relative, resolve, sep } from 'node:path'
+import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { Compilation } from '@lincyaw/compiler'
 import { isRenderable } from '@lincyaw/kernel'
+import { isInside } from '@lincyaw/kernel/node'
 import type { AnchorString, CodeNode, Resolution, ResolvedLocation } from '@lincyaw/kernel'
 import { CompletionItemKind, MarkupKind } from 'vscode-languageserver/node'
 import type { CompletionItem, Hover, Location, Range } from 'vscode-languageserver/node'
@@ -87,8 +88,7 @@ export async function anchorCompletion(compilation: Compilation, prefix: string,
   if (hash < 0) {
     const dir = target.slice(0, target.lastIndexOf('/') + 1)
     const path = resolve(compilation.workspaceRoot, dir)
-    const inside = relative(compilation.workspaceRoot, path)
-    if (inside === '..' || inside.startsWith(`..${sep}`) || isAbsolute(inside)) return []
+    if (!isInside(path, compilation.workspaceRoot)) return []
     const entries = await readdir(path, { withFileTypes: true }).catch(() => [])
     return entries.filter(entry => !entry.name.startsWith('.') && entry.name !== 'node_modules').map((entry) => {
       const name = entry.isDirectory() ? `${entry.name}/` : `${entry.name}#`

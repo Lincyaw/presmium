@@ -20,9 +20,9 @@ import { mathmlTagNames } from 'mathml-tag-names'
 import { defaultOptions } from 'myst-parser'
 import { svgTagNames } from 'svg-tag-names'
 import { parse as parseYaml } from 'yaml'
-import { AUDIENCE_SCOPE, audienceList, markAudience, within } from './audience.ts'
-import { BODY, ROLE, sourceOf } from './source.ts'
-import type { Parser } from './source.ts'
+import { AUDIENCE_SCOPE, audienceList, markAudience, narrowAudience } from './audience.ts'
+import { DIRECTIVE_BODY_NODE, ROLE_OPTIONS_NODE, sourceOf } from './parser.ts'
+import type { Parser } from './parser.ts'
 
 export interface BlockDraft {
   at?: number
@@ -79,7 +79,7 @@ const BROWSER = 'browser'
 const COMPONENT_OPTIONS = [...COMMON_OPTIONS, 'span', 'plugin']
 const CODE_DIRECTIVES = new Set(['code', 'code-block', 'code-cell', 'sourcecode', 'literalinclude', 'include'])
 const NARRATION = new Set(['paragraph', 'list', 'blockquote', 'heading', 'definitionList', 'footnoteDefinition', 'thematicBreak'])
-const DROPPED = new Set(['comment', 'mystTarget', 'outputs', BODY])
+const DROPPED = new Set(['comment', 'mystTarget', 'outputs', DIRECTIVE_BODY_NODE])
 const HTML_ELEMENTS = new Set(htmlTagNames)
 const FOREIGN_ELEMENTS = { svg: new Set(svgTagNames.map(name => name.toLowerCase())), math: new Set(mathmlTagNames) }
 const TAG = /<(\/?)([A-Za-z][\w:.-]*)([^<>]*)(>?)/g
@@ -157,11 +157,11 @@ async function convert(nodes: MdastNode[], scope: Scope, ctx: BlockContext, out:
     if (node.type === AUDIENCE_SCOPE) {
       const audience = scopeAudience(node, source, ctx)
       if (node.section) {
-        out.audience = within(out.audience, audience)
+        out.audience = narrowAudience(out.audience, audience)
         continue
       }
       const start = out.blocks.length
-      await convert(node.children ?? [], { ...scope, audience: within(scope.audience, audience) }, ctx, out)
+      await convert(node.children ?? [], { ...scope, audience: narrowAudience(scope.audience, audience) }, ctx, out)
       const first = out.blocks[start]
       if (first) {
         first.label ??= label
@@ -306,7 +306,7 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
     return
   }
 
-  const children = (node.children ?? []).filter(c => c.type !== BODY)
+  const children = (node.children ?? []).filter(c => c.type !== DIRECTIVE_BODY_NODE)
   const code = CODE_DIRECTIVES.has(name) ? codeOf(children[0]) : undefined
   if (code) {
     push({ kind: 'code', label, reveal: reveal !== undefined, role: 'visual', span: 0, source, audience, node: codeNode(code, options, source, ctx) })
@@ -319,7 +319,7 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
 function audienceOption(value: unknown, outer: string[] | undefined, fail: (message: string) => void): string[] {
   const names = typeof value === 'string' ? audienceList(value) : []
   if (names.length === 0) fail(':audience: needs the audiences it is for, e.g. :audience: teacher')
-  return within(outer, names)
+  return narrowAudience(outer, names)
 }
 
 function scopeAudience(node: MdastNode, source: SourcePos, ctx: BlockContext): string[] {
@@ -476,7 +476,7 @@ function roleNode(node: MdastNode, ctx: BlockContext, file: string): MdastNode {
   const value = typeof node.value === 'string' ? node.value : ''
   const where = sourceOf(node, file)
   const report = (finding: Finding) => ctx.report({ ...finding, source: finding.source ?? { file: where.file, line: where.line } })
-  const raw = node.children?.find(child => child.type === ROLE)?.options
+  const raw = node.children?.find(child => child.type === ROLE_OPTIONS_NODE)?.options
   const options: Record<string, unknown> = {}
   for (const [key, given] of Object.entries(isRecord(raw) ? raw : {})) {
     const type = spec.options?.[key]
@@ -503,11 +503,11 @@ function roleNode(node: MdastNode, ctx: BlockContext, file: string): MdastNode {
 }
 
 function bodyNodes(node: MdastNode): MdastNode[] {
-  return node.children?.find(c => c.type === BODY)?.children ?? []
+  return node.children?.find(c => c.type === DIRECTIVE_BODY_NODE)?.children ?? []
 }
 
 function bodyNodeLine(node: MdastNode): number | undefined {
-  const line = node.children?.find(c => c.type === BODY)?.line
+  const line = node.children?.find(c => c.type === DIRECTIVE_BODY_NODE)?.line
   return typeof line === 'number' ? line : undefined
 }
 

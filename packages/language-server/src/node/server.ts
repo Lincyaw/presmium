@@ -37,7 +37,7 @@ export function startServer(): void {
 
   const publish = (deck: Deck) => {
     const byFile = toDiagnostics(deck.findings, deck.entry, fileLines)
-    const files = new Set([...deck.compilation?.files ?? [deck.entry], ...byFile.keys()])
+    const files = new Set([...deck.compilation?.sourceFiles ?? [deck.entry], ...byFile.keys()])
     const uris = new Set([...files].map(file => pathToFileURL(file).href))
     for (const file of files) void connection.sendDiagnostics({ uri: pathToFileURL(file).href, diagnostics: byFile.get(file) ?? [] })
     for (const uri of published.get(deck) ?? []) {

@@ -1,7 +1,7 @@
 import { irBlocks } from '@lincyaw/kernel'
 import type { Finding, IRSection, MdastNode, SourcePos } from '@lincyaw/kernel'
 import type { RawSection } from './sections.ts'
-import { fileOf } from './source.ts'
+import { fileOf } from './parser.ts'
 import { AUDIENCE_SCOPE } from './audience.ts'
 
 interface Entry { key: string, section: IRSection, findings: Finding[], bytes: number }

@@ -1,8 +1,8 @@
-import { irBlocks, isRecord, mdastText } from '@lincyaw/kernel'
+import { irBlocks, isRecord, mdastText, propText } from '@lincyaw/kernel'
 import type { Finding, IRBlock, MdastNode, SourcePos } from '@lincyaw/kernel'
-import { lineFinder } from './links.ts'
 import type { PublishInput } from './links.ts'
-import { viewFor } from './renderers.ts'
+import { lineFinder } from './source-lines.ts'
+import { viewFor } from './views.ts'
 
 export function checkForbidden(input: PublishInput, headmatter: Record<string, unknown>): Finding[] {
   const given = isRecord(headmatter.checks) ? headmatter.checks.forbid : undefined
@@ -27,7 +27,7 @@ export function checkForbidden(input: PublishInput, headmatter: Record<string, u
     const view = viewFor(input.doc, renderer)
     const texts = view.sections.flatMap(section => [
       { source: section.source, text: section.title },
-      ...[...irBlocks(section.blocks)].map(block => ({ source: block.source, text: blockText(block) })),
+      ...[...irBlocks(section.blocks)].map(block => ({ source: block.source, text: searchableText(block) })),
     ])
     for (const { source, text } of texts) {
       for (const { text: name, pattern } of patterns) {
@@ -52,7 +52,8 @@ export function checkForbidden(input: PublishInput, headmatter: Record<string, u
   return findings
 }
 
-function blockText(block: IRBlock): string {
+/** What checks.forbid searches in a block: its text with link targets, every code variant and the recorded output. */
+function searchableText(block: IRBlock): string {
   const { node } = block
   switch (node.type) {
     case 'markdown': return `${mdastText(node.mdast)}\n${targets(node.mdast).join('\n')}`
@@ -72,11 +73,4 @@ function outputText(run: NonNullable<Extract<IRBlock['node'], { type: 'code' }>[
     if (output.output_type === 'error') return [output.evalue, ...output.traceback]
     return Object.entries(output.data).flatMap(([type, value]) => (type.startsWith('text/') || type === 'application/json' ? propText(value) : []))
   })]
-}
-
-function propText(value: unknown): string[] {
-  if (typeof value === 'string') return [value]
-  if (Array.isArray(value)) return value.flatMap(propText)
-  if (value && typeof value === 'object') return Object.values(value).flatMap(propText)
-  return []
 }

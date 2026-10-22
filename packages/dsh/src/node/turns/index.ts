@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { isAbsolute, relative, sep } from 'node:path'
+import { isInside } from '@lincyaw/kernel/node'
 import type { DshAgent, DshContext, DshToolExecution } from '../dsh.ts'
 
 export const name = 'presmium-turns'
@@ -93,8 +93,7 @@ export function apply(ctx: DshContext): void {
   ctx.on('tools/execute', async (exec: DshToolExecution, next: () => Promise<unknown>) => {
     if (!WRITES.has(exec.name) || !exec.agent) return next()
     const { root } = await ctx.presmium.ready
-    const cwd = relative(root, ctx.presmium.directoryOf(exec.agent))
-    if (cwd === '..' || cwd.startsWith(`..${sep}`) || isAbsolute(cwd)) return next()
+    if (!isInside(ctx.presmium.directoryOf(exec.agent), root)) return next()
     const document = ctx.presmium.session(exec.agent)?.document.dir ?? ''
     const session = reviewerOf(exec.agent.session.id)
     const turns = turnsOf(session)

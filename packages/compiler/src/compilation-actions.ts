@@ -2,16 +2,16 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { CheckRegistry, errorMessage, irBlocks } from '@lincyaw/kernel'
 import type { CheckContext, Finding, RunResult } from '@lincyaw/kernel'
-import { frontmatterLine } from './compiler.ts'
+import { build } from './build.ts'
+import type { BuildReport } from './build.ts'
 import type { Compilation } from './compiler.ts'
-import { build } from './renderers.ts'
-import type { BuildReport } from './renderers.ts'
+import { frontmatterLine } from './source-lines.ts'
 
 export function checkContext(compilation: Compilation): CheckContext {
   return {
     deckDir: compilation.deckDir,
     workspaceRoot: compilation.workspaceRoot,
-    headmatter: compilation.frontmatter,
+    headmatter: compilation.headmatter,
     src: compilation.src,
     resolvers: compilation.resolvers,
     lock: compilation.lock.toJSON(),
@@ -20,7 +20,8 @@ export function checkContext(compilation: Compilation): CheckContext {
   }
 }
 
-export async function pluginChecks(compilation: Compilation, options: { externalLinks?: boolean } = {}): Promise<Finding[]> {
+/** The plugins' checks and the publication checks; a crashed check or a duplicate check ID becomes a finding. */
+export async function runAllChecks(compilation: Compilation, options: { externalLinks?: boolean } = {}): Promise<Finding[]> {
   const { entry } = compilation
   const text = await readFile(entry, 'utf8').catch(() => '')
   const at = (name: string) => ({ file: entry, line: frontmatterLine(text, name) })
@@ -51,6 +52,7 @@ export async function runBlock(compilation: Compilation, target: { section: stri
   return compilation.run(block.node, signal)
 }
 
-export function buildView(compilation: Compilation, options: { to?: string[], outDir?: string } = {}): Promise<BuildReport> {
-  return build(compilation, { outDir: options.outDir ?? join(compilation.deckDir, 'dist'), to: options.to })
+/** Builds the compiled document into the deck's `dist/`. */
+export function buildToDist(compilation: Compilation, options: { to?: string[] } = {}): Promise<BuildReport> {
+  return build(compilation, { outDir: join(compilation.deckDir, 'dist'), to: options.to })
 }

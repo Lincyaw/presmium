@@ -1,5 +1,6 @@
 import { homedir } from 'node:os'
-import { isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { join, resolve } from 'node:path'
+import { isInside } from '@lincyaw/kernel/node'
 import { describeOperation } from '@lincyaw/mcp/client'
 import type { DshContext, DshPreDecision, DshToolExecution } from './dsh.ts'
 import { PREFIX } from './tools.ts'
@@ -11,11 +12,6 @@ const FILE_TOOLS = new Set(['write', 'edit', 'str_replace_editor'])
 
 export function operatorRoot(env: NodeJS.ProcessEnv = process.env): string {
   return resolve(env.PRESMIUM_OPERATOR_DIR || join(env.XDG_STATE_HOME || join(homedir(), '.local', 'state'), 'presmium', 'operator'))
-}
-
-function inside(path: string, dir: string): boolean {
-  const rel = relative(dir, path)
-  return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))
 }
 
 function fileOf(exec: Readonly<DshToolExecution>): string | undefined {
@@ -41,8 +37,8 @@ export function apply(ctx: DshContext): void {
       return { kind: 'ask', reason: `presmium:${tool.kind} ${tool.name}`, displayReason: shown(`Presmium · ${title}`, lang) }
     }
     const file = FILE_TOOLS.has(exec.name) ? fileOf(exec) : undefined
-    if (file && inside(resolve(exec.agent ? ctx.presmium.directoryOf(exec.agent) : process.cwd(), file), operators)) return next()
-    if (session && file && !inside(resolve(ctx.presmium.directoryOf(exec.agent!), file), ctx.presmium.directoryOf(exec.agent!))) {
+    if (file && isInside(resolve(exec.agent ? ctx.presmium.directoryOf(exec.agent) : process.cwd(), file), operators)) return next()
+    if (session && file && !isInside(resolve(ctx.presmium.directoryOf(exec.agent!), file), ctx.presmium.directoryOf(exec.agent!))) {
       return { kind: 'ask', reason: `presmium:write ${file}`, displayReason: shown(`Presmium · ${file}`, session.document.lang) }
     }
     return next()
@@ -51,7 +47,7 @@ export function apply(ctx: DshContext): void {
   ctx.tools.guard((exec) => {
     const file = FILE_TOOLS.has(exec.name) ? fileOf(exec) : undefined
     const dir = exec.agent ? ctx.presmium.directoryOf(exec.agent) : process.cwd()
-    if (file && inside(resolve(dir, file), operators)) return `Presmium: the operator directory (${operators}) is not the agent's to write`
+    if (file && isInside(resolve(dir, file), operators)) return `Presmium: the operator directory (${operators}) is not the agent's to write`
     const command = exec.name === 'bash' ? (exec.arguments as { command?: unknown } | undefined)?.command : undefined
     if (typeof command === 'string' && command.includes(operators)) return `Presmium: the operator directory (${operators}) is not the agent's to touch`
     return undefined

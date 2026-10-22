@@ -41,7 +41,8 @@ export class FreezeCache implements RunCache {
     this.#write(key, { run })
   }
 
-  record(key: string, input: string, request: RunRequest, run: RecordedRun, environment: string, revision = ''): void {
+  /** Records a run under its cache key and drops the older recordings of the same input. */
+  recordRun(key: string, input: string, request: RunRequest, run: RecordedRun, environment: string, revision = ''): void {
     for (const [file, record] of this.#all()) {
       if (record.input !== input || file === `${key}.json`) continue
       rmSync(join(this.dir, file), { force: true })
@@ -50,11 +51,8 @@ export class FreezeCache implements RunCache {
     this.#write(key, { input, entry: this.entry, lang: request.lang, code: request.code, environment, ...revision ? { revision } : {}, run })
   }
 
-  find(input: string): RecordedRun | undefined {
-    return this.recording(input)?.run
-  }
-
-  recording(input: string): { run: RecordedRun, environment?: string, revision: string } | undefined {
+  /** The recording of the input, made in whichever environment, whatever its cache key. */
+  findByInput(input: string): { run: RecordedRun, environment?: string, revision: string } | undefined {
     for (const record of this.#all().values()) {
       if (record.input !== input) continue
       const run = this.#restore(record.run)
@@ -170,7 +168,7 @@ function blobRefs(run: RecordedRun, into: Set<string>): void {
   }
 }
 
-export interface ExecutionOptions {
+export interface RunEnvironmentOptions {
   env?: 'local' | 'serve'
 }
 
@@ -180,7 +178,7 @@ export interface RunStats {
   sandbox?: string
 }
 
-export interface ExecuteOptions extends ExecutionOptions {
+export interface ExecutePassOptions extends RunEnvironmentOptions {
   signal?: AbortSignal
   rerun?: boolean
   context: RunContext
@@ -238,7 +236,7 @@ interface Unit {
 
 type Report = (severity: Finding['severity'], message: string, block: IRBlock) => void
 
-export async function executePass(doc: IRDocument, executors: Executor[], cache: FreezeCache, report: (finding: Finding) => void, options: ExecuteOptions): Promise<RunStats> {
+export async function executePass(doc: IRDocument, executors: Executor[], cache: FreezeCache, report: (finding: Finding) => void, options: ExecutePassOptions): Promise<RunStats> {
   const stats: RunStats = { executed: 0, cached: 0, ...options.context.sandbox ? { sandbox: options.context.sandbox.kind } : {} }
   const say: Report = (severity, message, block) =>
     report({ checkId: 'presmium.execute', severity, message, source: { file: block.source.file, line: block.source.line } })
@@ -273,7 +271,7 @@ export async function executePass(doc: IRDocument, executors: Executor[], cache:
       stats.cached += unit.items.length
       continue
     }
-    const others = options.rerun ? [] : unit.items.map(item => cache.recording(item.input)).map(other => (other?.revision === unit.revision ? other : undefined))
+    const others = options.rerun ? [] : unit.items.map(item => cache.findByInput(item.input)).map(other => (other?.revision === unit.revision ? other : undefined))
     if (others.length > 0 && others.every(Boolean)) {
       unit.items.forEach((item, i) => {
         const other = others[i]!
@@ -359,12 +357,12 @@ function record(item: Item, result: RunResult, unit: Unit, cache: FreezeCache, s
   const recorded: RecordedRun = { ...result, cacheKey: item.key! }
   item.node.outputs = [recorded]
   stats.executed++
-  if (!result.timedOut) cache.record(item.key!, item.input, item.request, recorded, unit.environment, unit.revision)
+  if (!result.timedOut) cache.recordRun(item.key!, item.input, item.request, recorded, unit.environment, unit.revision)
   if (!result.ok) say('warning', `block ${item.block.id} exited with ${result.timedOut ? 'a timeout' : result.exitCode === null ? `no exit code: ${result.stderr.trim().split('\n')[0]}` : `code ${result.exitCode}`}`, item.block)
 }
 
 function fromRecording(item: Item, cache: FreezeCache, stats: RunStats, say: Report, executor: string | undefined, failure?: string, reported = false): void {
-  const recorded = cache.find(item.input)
+  const recorded = cache.findByInput(item.input)?.run
   const which = executor ?? item.request.lang
   if (recorded) {
     item.node.outputs = [recorded]

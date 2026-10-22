@@ -156,7 +156,7 @@
 |---|---|---|
 | 渲染端 | `Renderer` | 从 IR 生成一种媒介 |
 | 支持程度 | `Support` | `full`、`degraded`、`none` |
-| 渲染扩展 | `RendererExtension` | 插件为某个渲染端提供的组件转换 |
+| 渲染扩展 | `RendererContribution`（`PresmiumNodePlugin.rendererExtensions` 的值） | 插件为某个渲染端提供的组件转换；渲染端拿到的是绑定了渲染上下文的 `BoundRendererExtension` |
 | 渲染输出 | `RenderOutput` | 产物目录与未渲染的块；与编译诊断一起组成构建报告 |
 | 运行时视图 | `ViewDefinition` | IR 运行时中的一种呈现方式：文档、滚动叙事、放映，可由插件注册 |
 | 实时更新 | `LiveUpdate` | `presmium dev` 推送的变化章节、章节顺序与诊断 |
@@ -368,7 +368,7 @@
 | 发布检查 | 检查项 `presmium.links`、`presmium.directive`、`presmium.forbid` | 各媒介中无法解析的本地链接与 `#片段`、MyST 指令错误、文稿头部 `checks.forbid` 中正则的命中 |
 | 受众 | `IRBlock.audience`、`IRSection.audience` | 只给某些受众（如 `teacher`）的块与章节 |
 | 学生版 | `presmium build --audience student` | 只含不带受众或受众包含 `student` 的内容的构建 |
-| 完整编译的学生版 | `Compilation.forAudience('student')`、`build` 的 `audience` 选项 | 在完整编译的文稿上做与学生版同样的筛选，并按泄漏扫描的句子再去掉块；服务端与 MCP 不给出它（`presmium serve` 只供本机作者使用） |
+| 完整编译的学生版 | `Compilation.audienceDocument('student')`、`build` 的 `audience` 选项 | 在完整编译的文稿上做与学生版同样的筛选，并按泄漏扫描的句子再去掉块；服务端与 MCP 不给出它（`presmium serve` 只供本机作者使用） |
 | 泄漏检查 | 检查项 `presmium.audience` | 带 `--audience` 构建后扫描产物，发现被筛掉的内容的文字即报错 |
 
 不变量：

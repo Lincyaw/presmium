@@ -22,7 +22,7 @@ export async function buildWorkspace(root: string, options: { outDir?: string, b
     const compilation = await new Compiler(join(config.root, document.entry), { bundled: options.bundled, settings: config.settings }).compile({ pruneCache: true })
     const translated = await siteTranslations(compilation)
     findings.push(...compilation.doc.diagnostics, ...translated.findings)
-    documents.push({ dir: document.dir, title: document.title, runs: compilation.runs })
+    documents.push({ dir: document.dir, title: document.title, runs: compilation.runStats })
     site.documents.push(siteDocument(document, siteIR(compilation), translated.translations, compilation))
   }
   const outDir = join(resolve(options.outDir ?? join(config.root, 'dist')), 'web')

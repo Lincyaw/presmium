@@ -9,7 +9,7 @@ import type {
   Locale,
   MdastNode,
   RecordedRun,
-  RendererExtension,
+  BoundRendererExtension,
   RunOutput,
   SourcePos,
   Support,
@@ -85,7 +85,7 @@ function text(value: string): MdastNode {
   return { type: 'text', value }
 }
 
-export function support(node: IRNode, extensions: RendererExtension[]): Support {
+export function support(node: IRNode, extensions: BoundRendererExtension[]): Support {
   return node.type === 'component' && !extensions.some(e => (!node.plugin || e.plugin === node.plugin) && e.components?.[node.name]) ? 'degraded' : 'full'
 }
 

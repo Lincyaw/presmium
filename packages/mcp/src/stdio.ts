@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { errorMessage } from '@lincyaw/kernel'
 import type { ApprovalKind, Member } from '@lincyaw/kernel'
-import { buildView, Compiler, findPackageDir, resolveEntry, runBlock } from '@lincyaw/compiler'
+import { buildToDist, Compiler, findPackageDir, resolveEntry, runBlock } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import type { McpHost } from './host.ts'
 import { serveMcpStdio } from './mcp.ts'
@@ -36,7 +36,7 @@ export function compilerHost(entry: string, allow: readonly ApprovalKind[]): Mcp
     const next = queue.then(async () => {
       if (latest && await stamps(latest.files) === latest.stamp) return latest.compilation
       const compilation = await compiler.compile()
-      const files = [...compilation.files, ...compilation.dependencies.files]
+      const files = [...compilation.sourceFiles, ...compilation.inputs.files]
       latest = { compilation, files, stamp: await stamps(files) }
       return compilation
     })
@@ -62,7 +62,7 @@ export function compilerHost(entry: string, allow: readonly ApprovalKind[]): Mcp
       return [...compilation.doc.diagnostics, ...await compilation.check()]
     },
     async build(document, options) {
-      const report = await buildView(await only(document), { to: options.to })
+      const report = await buildToDist(await only(document), { to: options.to })
       return { outputs: report.outputs.map(({ renderer, outDir }) => ({ renderer, outDir })), findings: report.findings }
     },
     run: async (document, target, signal) => runBlock(await only(document), target, signal),

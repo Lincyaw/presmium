@@ -258,7 +258,7 @@ async function buildDeck(command: Command): Promise<number> {
   const compilation = await new Compiler(command.entry, { bundled, ...command.audience ? { audience: command.audience } : {} }).compile({ pruneCache: true })
   const outDir = resolve(command.out ?? join(compilation.deckDir, 'dist'))
   const report = await build(compilation, { outDir, to: command.to })
-  process.stdout.write(buildText(report, compilation.runs, compilation.audience?.name))
+  process.stdout.write(buildText(report, compilation.runStats, compilation.audience?.name))
   return exitCode(report.findings)
 }
 

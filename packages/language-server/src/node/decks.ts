@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
-import { Compiler, DECK_ENTRY, readFrontmatter } from '@lincyaw/compiler'
+import { Compiler, DECK_ENTRY, parseFrontmatter } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import { ANCHOR_LOCK_PATH, errorMessage } from '@lincyaw/kernel'
 import type { Finding } from '@lincyaw/kernel'
@@ -40,13 +40,13 @@ export class Deck {
   }
 
   owns(file: string): boolean {
-    return this.compilation ? this.compilation.files.includes(file) : file === this.entry
+    return this.compilation ? this.compilation.sourceFiles.includes(file) : file === this.entry
   }
 
   reads(file: string): boolean {
     const { compilation } = this
     if (!compilation) return file === this.entry
-    return compilation.files.includes(file) || compilation.dependencies.files.includes(file) || file === join(compilation.deckDir, ANCHOR_LOCK_PATH)
+    return compilation.sourceFiles.includes(file) || compilation.inputs.files.includes(file) || file === join(compilation.deckDir, ANCHOR_LOCK_PATH)
   }
 
   async #compileOnce(): Promise<void> {
@@ -63,7 +63,7 @@ export class Deck {
 
 function declaresPlugins(file: string): boolean {
   try {
-    return 'plugins' in readFrontmatter(readFileSync(file, 'utf8'))
+    return 'plugins' in parseFrontmatter(readFileSync(file, 'utf8'))
   } catch {
     return false
   }
@@ -104,7 +104,7 @@ export class Decks {
 
   async of(file: string): Promise<Deck | undefined> {
     const known = this.all()
-    const owner = known.find(deck => deck.compilation?.files.includes(file))
+    const owner = known.find(deck => deck.compilation?.sourceFiles.includes(file))
     if (owner) return owner
     for (const deck of known) {
       await deck.ready()
