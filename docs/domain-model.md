@@ -623,3 +623,35 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 - **隐私默认值每次启动重新声明**：不上传会话日志、插件清单与遥测，不读用户目录中的技能，第一次使用不在用户的文档目录中建目录。
 
 服务：工作区服务的路由、`MCP_ENDPOINT`（会话令牌）、`CHANGE_REVIEW`（由工作区服务登记）。事件：dsh 的 turn 与 `workspace/changes` 事件驱动审阅的检查点；预览协议的 `picked`、`selection`、`position` 与 `updated` 驱动焦点与预览。
+
+## 17. 代码中的用词
+
+代码中的名字按本节取：一个词只指一样东西，同一样东西只用一个词。下表是本仓库中容易混淆的词，“改用”一列是这个词以外的含义应写的名字。作者与部署看得见的名字（指令、角色、配置键、命令与参数、路由、协议字段、检查 ID、服务 ID 与持久化的字段）不跟着改，表中注明。
+
+| 词 | 只指 | 改用 |
+|---|---|---|
+| host | 宿主适配：`@lincyaw/host` 的 `HostAdapter` 与它的两个实现、`installHost`、`startHost`、`stopHost`；以及由宿主实现、供别的模块调用的接口（`ServerHost`、`McpHost`） | 挂载视图或浮层的组件写 outlet；启动并监管子进程的模块写 launcher；对一次编译的检查、运行与构建写 compilation action（编译器的 `compilation-actions.ts`）；HTTP 请求的 `Host` 头写 `hostName`；监听的地址写 `listenAddress`（命令行参数 `--host` 不变） |
+| kernel | `@lincyaw/kernel` 包、`Kernel` 类，以及插件契约的版本（`KERNEL_VERSION`、`PluginManifest.kernel`） | Jupyter 的内核写 `jupyterKernel`（头部的键 `EnvironmentSpec.kernel` 不变）；浏览器端插件的登记、启动与停止写 runtime（`@lincyaw/host` 的 `runtime.ts`） |
+| session | 不带限定时只指课堂会话（`SessionService`、`SESSION`、`SessionSnapshot`） | 执行会话写 runSession（IR 与执行请求的字段 `RunSpec.session`、`RunRequest.session` 是契约，不改）；工作区服务中一份文档的编译与开发服务器写 `CompileSession`；dsh 的会话写 agentSession；编译器 `dev()` 返回的一组开发服务器写 `DevServers`；浏览器的 `sessionStorage` 照旧 |
+| service | 内核的服务：由 `ServiceToken` 标识、经 `provide`、`get`、`tryGet` 取得的实现，浏览器端与 Node 端相同 | 进程或 HTTP 服务写 server（`presmium serve` 是 workspace server）；浏览器的 Service Worker 写全称 `serviceWorker`；懒加载的第三方模块写 `load<库名>`（如 `loadJupyterServices`） |
+| place | 文档中的位置：章节加块（`{ section, block }`，如 `RunRequest.place`、课堂的 `Place`） | 代码在哪里运行写 runsIn（`Executor.runsIn`）；界面中放东西的位置写 slot 或 placement（`ToolbarSlot`、`ToolbarPlacement`、`PopoverPlacement`）；源码中的位置写 source（`SourcePos`）；主讲的位置写 position |
+| runner | 执行器在子进程或 Worker 中启动的运行器脚本（`runner.py`、`runner.mjs`） | 执行代码的服务写 executor；怎样启动子进程的说明写 launch spec；每种语言的命令表写 commands；一次运行写 run；Slidev 的 code runner 沿用框架的名字，只出现在 `setup/code-runners.ts` |
+| follow | 课堂中学习者跟随主讲（`FollowMode`、主讲的位置、`followedPlace`） | 订阅一个流写 subscribe（`subscribeDevUpdates`）；把一处的变化记录或同步到另一处写 record 或 sync（运行时视图与 `OPERATIONS` 之间）；监视文件写 watch；预览随编辑器光标移动写 sync |
+| view | IR 运行时的视图（`ViewDefinition`：文档、滚动叙事、放映与演讲者；位置中的 `view` 字段）与视图的角色 `ViewRole`；一个渲染端看到的 IR（`viewFor(doc, renderer)`） | 按受众筛选的 IR 是受众版本（`audienceDocument`，筛选这一步是 `filterForAudience`）；预览的是哪种媒介写 renderer（`'web' \| 'slides'`）；源码与预览的分栏写 layout；界面组件以它显示的东西命名（`ReviewPanel`、`DocumentEditor`），不以 View 结尾 |
+| revision | 工作区的一次修改，即一个 git 提交（`Revision`、`REVISIONS`、`HistoryRevision`） | IR 的内容哈希写 irRevision（`irRevision()`；预览协议与诊断中的字段 `revision` 不改）；执行器影响输出的代码版本是 `Executor.revision`，只作执行器的字段；编译时按 git 引用读到的文件写 `GitRead` |
+| preview | 嵌在另一个界面（工作台、VS Code）中的产物页面，以及它们之间的预览协议（`PREVIEW_PROTOCOL`、`PreviewCommand`、`PreviewReport`；产物一侧是 `connectPreviewFrame`，返回 `PreviewFrame`） | `presmium dev` 的页面本身写 dev server；嵌入的 iframe 的状态写 `PreviewFrameStatus` |
+| theme | 框架的主题：VitePress 主题（网页渲染端的 `theme`）、Slidev 主题（`render-slides/theme`）、dsh 的界面主题 | 明暗写 appearance 或 dark（`useAppearance`、预览命令 `appearance`、`HostAdapter.useDarkMode`）；设计系统的取值写 design token |
+| cue | 讲解中在某一步触发的提示动作：`{cue}` 角色、讲授计划中的提示标记、引导插件的提示目标（`CueTarget`） | 页面上指出的一处写 target；讲授的指点写 point |
+| mark | 必须带限定：受众标记 `AudienceMark`、作者标记（页面上显示的 `{cue}` 与 `{say}` 位置，`AUTHOR_MARKS_CLASS`）、角色的文字记号 `roleMark`、讲授的操作 `mark`（标记章节）、分步执行的行标记 `StepMark` | 圈画写 ink；指点写 point；高亮写 highlight |
+| script | 讲授脚本：讲解本身或 `renderers.lecture.script` 给出的文件（合成讲授的 ID `script`） | 浏览器与 Node 中运行 JavaScript、TypeScript 的执行器写 `ScriptExecutor`，常量按运行之处区分（`BROWSER_SCRIPT_EXECUTOR_ID`、`NODE_SCRIPT_EXECUTOR_ID`）；`package.json` 的 scripts 与 HTML 的 `<script>` 照旧 |
+| token | 单写 token 指服务令牌（`ServiceToken`，参数名 `token`） | 访问凭据写 accessToken 或带上服务名（`mcpToken`；环境变量 `PRESMIUM_ENV_<名>_TOKEN` 不变）；设计系统的取值写 design token（`colorToken`）；搜索的分词是 `tokenize`，结果写 word |
+| workspace | 工作区：一个 git 仓库，根目录可有 `presmium.workspace.yaml`，包含多份文档（`Workspace`、`workspaceRoot`） | dsh 的工作区写 `dshWorkspace`；VS Code 的工作区写 `workspaceFolder`；Node 包管理器的工作区写 package workspace |
+
+动词与名字的约定：
+
+- **read 只表示 I/O**：读文件、请求、流（`SourceReader.read`、`Parser.read` 读文件并解析）。文本变成结构写 parse（`parseAnchor`、`parseFrontmatter`）；把 unknown 收窄成具体类型写 `to*` 或 `as*`（`toPreviewCommand`、`toExecuteConfig`），不合法时返回 undefined 或给出诊断。
+- **get 找不到时抛错**；找不到时返回 undefined 的写 `tryGet` 或 `find*`（`ServiceRegistry.get` 与 `tryGet`）。Context 上返回 undefined 的服务查找沿用契约中的 `service(token)`。
+- **执行动作的函数以动词开头**（`buildToDist`、`runAllChecks`、`linkBrowserDependencies`、`enqueueCompile`）；只计算、不改外部状态的函数可以用名词短语（`viewFor`、`stepTrail`）。函数有写文件、连网络、启动进程这类副作用时，名字要说出来。
+- **布尔值与返回布尔值的函数用 `is*`、`has*`、`can*`**（`isInside`、`includesAudience` 这类以动词说出判断的也可以）。
+- **工厂写 `create*`**，组合式函数写 `use*`，服务令牌是大写常量加 `defineService`。
+- **缩写**：公开契约中不用 `impl`、`pctx`、`rev`；`ctx` 只作参数名。
