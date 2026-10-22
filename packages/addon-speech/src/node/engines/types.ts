@@ -1,6 +1,6 @@
 import type { SpeechWord, Transcript, VoiceInfo } from '@lincyaw/kernel'
 
-export interface EngineSynthesis {
+export interface EngineSynthesisRequest {
   voice: string
   text: string
   lang: string
@@ -8,14 +8,14 @@ export interface EngineSynthesis {
   style?: string
 }
 
-export interface EngineAudio {
+export interface EngineSynthesisResult {
   audio: Uint8Array
   contentType?: string
   words?: SpeechWord[]
   duration?: number
 }
 
-export interface EngineInput {
+export interface EngineTranscriptionRequest {
   audio: Uint8Array
   mime: string
   lang?: string
@@ -25,8 +25,8 @@ export interface EngineInput {
 export interface EngineAdapter {
   voices(lang?: string, signal?: AbortSignal): Promise<VoiceInfo[]>
   cloned?(voice: string): boolean
-  synthesize(request: EngineSynthesis, signal?: AbortSignal): Promise<EngineAudio>
-  transcribe(input: EngineInput, signal?: AbortSignal): Promise<Transcript>
+  synthesize(request: EngineSynthesisRequest, signal?: AbortSignal): Promise<EngineSynthesisResult>
+  transcribe(input: EngineTranscriptionRequest, signal?: AbortSignal): Promise<Transcript>
 }
 
 export function speaks(voice: VoiceInfo, lang: string | undefined): boolean {

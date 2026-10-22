@@ -1,3 +1,4 @@
+import { speechEngineId } from '@lincyaw/kernel'
 import type { SpeechEngineInfo } from '@lincyaw/kernel'
 
 export const VOLCENGINE = 'volcengine'
@@ -27,12 +28,8 @@ const SUFFIXES = ['URL', 'PROVIDER', 'KEY', 'APPID', 'MODEL', 'TRANSCRIBE_MODEL'
 type Suffix = typeof SUFFIXES[number]
 const VARIABLE = new RegExp(`^PRESMIUM_SPEECH_([A-Z0-9_]+?)_(${SUFFIXES.join('|')})$`)
 
-export function engineId(name: string): string {
-  return name.trim().toLowerCase().replace(/[^a-z0-9]/g, '_')
-}
-
 export function engineVariable(id: string, suffix: Suffix): string {
-  return `PRESMIUM_SPEECH_${engineId(id).toUpperCase()}_${suffix}`
+  return `PRESMIUM_SPEECH_${speechEngineId(id).toUpperCase()}_${suffix}`
 }
 
 export function howToDefine(id: string): string {
@@ -43,12 +40,12 @@ export function engineIds(names: Iterable<string>): string[] {
   const ids = new Set<string>()
   for (const name of names) {
     const match = VARIABLE.exec(name)
-    if (match && match[2] !== 'MODEL' && match[2] !== 'TRANSCRIBE_MODEL') ids.add(engineId(match[1]!))
+    if (match && match[2] !== 'MODEL' && match[2] !== 'TRANSCRIBE_MODEL') ids.add(speechEngineId(match[1]!))
   }
   return [...ids].sort()
 }
 
-function loopback(url: string): boolean {
+function isLoopback(url: string): boolean {
   try {
     return ['localhost', '127.0.0.1', '[::1]'].includes(new URL(url).hostname)
   } catch {
@@ -95,13 +92,13 @@ export function operatorEngines(names: Iterable<string>, secret: (name: string) 
   return { engines, unavailable }
 }
 
-function chinese(lang: string | undefined): boolean {
+function isChinese(lang: string | undefined): boolean {
   return /^zh\b/i.test((lang ?? '').trim())
 }
 
 export function providerName(engine: EngineDefinition, lang?: string): string {
   if (engine.kind !== 'volcengine') return engine.provider
-  return chinese(lang ?? 'zh') ? '火山引擎' : 'Volcengine'
+  return isChinese(lang ?? 'zh') ? '火山引擎' : 'Volcengine'
 }
 
 export function engineInfo(engine: EngineDefinition, lang?: string): SpeechEngineInfo {
@@ -111,6 +108,6 @@ export function engineInfo(engine: EngineDefinition, lang?: string): SpeechEngin
     stt: true,
     tts: true,
     wordTimes: engine.kind !== 'openai',
-    local: engine.kind === 'fake' || (engine.kind === 'openai' && loopback(engine.url)),
+    local: engine.kind === 'fake' || (engine.kind === 'openai' && isLoopback(engine.url)),
   }
 }

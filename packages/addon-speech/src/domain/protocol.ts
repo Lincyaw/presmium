@@ -1,6 +1,5 @@
 import { isRecord } from '@lincyaw/kernel'
-import type { SpeechEngineInfo, SpeechWord, SynthesisRequest, Transcript, VoiceInfo } from '@lincyaw/kernel'
-import type { AigcLabel } from './aigc.ts'
+import type { AigcLabel, SpeechEngineInfo, SpeechWord, SynthesisRequest, Transcript, VoiceInfo } from '@lincyaw/kernel'
 import type { UnavailableEngine } from './engines.ts'
 
 export interface ListedEngine extends SpeechEngineInfo {
@@ -8,16 +7,16 @@ export interface ListedEngine extends SpeechEngineInfo {
   transcribeModel: string
 }
 
-export interface EngineListing {
+export interface EnginesResponseBody {
   engines: ListedEngine[]
   unavailable: UnavailableEngine[]
 }
 
-export interface VoiceListing {
+export interface VoicesResponseBody {
   voices: VoiceInfo[]
 }
 
-export interface SpeechBody {
+export interface SynthesisRequestBody {
   engine?: string
   voice: string
   input: string
@@ -27,7 +26,7 @@ export interface SpeechBody {
   lexicon?: Record<string, string>
 }
 
-export interface TimedSpeech {
+export interface SynthesisResponseBody {
   audio: string
   format: string
   mime: string
@@ -43,12 +42,12 @@ export interface TimedSpeech {
   AIGC: AigcLabel
 }
 
-export interface TranscriptionAnswer extends Transcript {
+export interface TranscriptionResponseBody extends Transcript {
   language: string
   words: SpeechWord[]
 }
 
-export function speechBody(request: SynthesisRequest): SpeechBody {
+export function synthesisRequestBody(request: SynthesisRequest): SynthesisRequestBody {
   return {
     ...request.engine ? { engine: request.engine } : {},
     voice: request.voice,
@@ -60,7 +59,7 @@ export function speechBody(request: SynthesisRequest): SpeechBody {
   }
 }
 
-export function synthesisRequestOf(body: unknown): SynthesisRequest | string {
+export function toSynthesisRequest(body: unknown): SynthesisRequest | string {
   if (!isRecord(body)) return 'a JSON object { voice, input, lang?, engine?, speed?, style?, lexicon? }'
   const text = typeof body.input === 'string' ? body.input : typeof body.text === 'string' ? body.text : undefined
   if (typeof body.voice !== 'string' || !body.voice) return 'voice is needed'
@@ -77,6 +76,6 @@ export function synthesisRequestOf(body: unknown): SynthesisRequest | string {
   }
 }
 
-export function transcriptOf(answer: TranscriptionAnswer): Transcript {
-  return { lang: answer.lang ?? answer.language, duration: answer.duration, text: answer.text, segments: answer.segments }
+export function transcriptOf(body: TranscriptionResponseBody): Transcript {
+  return { lang: body.lang ?? body.language, duration: body.duration, text: body.text, segments: body.segments }
 }

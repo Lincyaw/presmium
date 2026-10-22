@@ -6,7 +6,7 @@ import { operatorDir, workspaceSettings } from '@lincyaw/compiler'
 import { errorMessage } from '@lincyaw/kernel'
 import { SPEECH_ID } from '../domain/index.ts'
 import { writeConsent } from './consent.ts'
-import { startFakeEngine } from './fake.ts'
+import { startFakeEngine } from './fake-engine.ts'
 
 const USAGE = `Usage: presmium-speech <command> [options]
 

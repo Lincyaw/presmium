@@ -1,5 +1,4 @@
-import { isRecord } from '@lincyaw/kernel'
-import { engineId } from './engines.ts'
+import { isRecord, speechEngineId } from '@lincyaw/kernel'
 
 export interface ConsentRecord {
   speaker: string
@@ -22,5 +21,5 @@ export function consentProblem(value: unknown): string | undefined {
 }
 
 export function consentPath(engine: string, voice: string): string {
-  return `${engineId(engine)}/${voice}.json`
+  return `${speechEngineId(engine)}/${voice}.json`
 }

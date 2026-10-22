@@ -1,11 +1,13 @@
-import type { SynthesisRequest, TranscriptionRequest } from '@lincyaw/kernel'
+import { DOCUMENT_FILES } from '@lincyaw/kernel'
+import type { NodeServiceContext, SpeechWord, SynthesisRequest, TranscriptionRequest } from '@lincyaw/kernel'
 import type { DeckSpeechConfig } from '../domain/index.ts'
-import { applyLexicon } from '../domain/index.ts'
+import { applyLexicon, deckSpeechConfig } from '../domain/index.ts'
 import type { SpeechBackend, SynthesisResult } from './backend.ts'
-import { cacheKey } from './backend.ts'
-import type { SynthesisCache } from './cache.ts'
+import { cacheKey, SynthesisCache } from './cache.ts'
+import type { SpeechCore } from './core.ts'
+import { speechCore } from './core.ts'
 
-export class DeckSpeech implements SpeechBackend {
+export class CachedSpeech implements SpeechBackend {
   readonly #inner: SpeechBackend
   readonly #defaults: DeckSpeechConfig
   readonly cache: SynthesisCache
@@ -16,8 +18,8 @@ export class DeckSpeech implements SpeechBackend {
     this.#defaults = defaults
   }
 
-  listing(lang?: string) {
-    return this.#inner.listing(lang)
+  listEngines(lang?: string) {
+    return this.#inner.listEngines(lang)
   }
 
   async defaultEngine() {
@@ -28,7 +30,7 @@ export class DeckSpeech implements SpeechBackend {
     return this.#inner.voices(engine ?? this.#defaults.engine, lang, signal)
   }
 
-  async cached(request: SynthesisRequest, signal?: AbortSignal): Promise<{ result: SynthesisResult, file: string }> {
+  async synthesizeThroughCache(request: SynthesisRequest, signal?: AbortSignal): Promise<{ result: SynthesisResult, file: string }> {
     const engine = request.engine ?? await this.defaultEngine()
     if (!engine) return this.#write(await this.#inner.synthesize(request, signal), request)
     const key = cacheKey({ ...request, engine }, applyLexicon(request.text, request.lexicon))
@@ -60,7 +62,24 @@ export class DeckSpeech implements SpeechBackend {
   }
 
   async synthesize(request: SynthesisRequest, signal?: AbortSignal): Promise<SynthesisResult> {
-    return (await this.cached(request, signal)).result
+    return (await this.synthesizeThroughCache(request, signal)).result
+  }
+
+  async alignWords(key: string, options: { lang: string, transcribe?: boolean }, signal?: AbortSignal): Promise<SpeechWord[] | undefined> {
+    const kept = this.cache.readAlignment(key)
+    if (kept) return kept
+    if (options.transcribe === false) return undefined
+    const hit = await this.cache.find(key)
+    if (!hit) return undefined
+    try {
+      const transcript = await this.transcribe({ audio: new Blob([new Uint8Array(hit.audio)], { type: hit.record.mime }), lang: options.lang }, signal)
+      const words = transcript.segments.flatMap(segment => segment.words)
+      if (words.length === 0) return undefined
+      await this.cache.writeAlignment(key, words)
+      return words
+    } catch {
+      return undefined
+    }
   }
 
   consent(engine: string, voice: string, recorded: boolean, signal?: AbortSignal): Promise<void> {
@@ -70,4 +89,12 @@ export class DeckSpeech implements SpeechBackend {
   transcribe(request: TranscriptionRequest, signal?: AbortSignal) {
     return this.#inner.transcribe({ ...request, engine: request.engine ?? this.#defaults.transcribe ?? this.#defaults.engine }, signal)
   }
+}
+
+export type DeckSpeechContext = Pick<NodeServiceContext, 'deckDir' | 'workspaceRoot' | 'config' | 'settings' | 'operatorDir' | 'log' | 'secret' | 'service'>
+
+export function createDeckSpeech(ctx: DeckSpeechContext): { core: SpeechCore, speech: CachedSpeech } {
+  const core = speechCore({ names: () => Object.keys(process.env), secret: name => ctx.secret(name), settings: ctx.settings, operatorDir: ctx.operatorDir, log: ctx.log })
+  const cache = new SynthesisCache(ctx.deckDir, ctx.workspaceRoot, () => ctx.service?.(DOCUMENT_FILES))
+  return { core, speech: new CachedSpeech(core, cache, deckSpeechConfig(ctx.config).config) }
 }

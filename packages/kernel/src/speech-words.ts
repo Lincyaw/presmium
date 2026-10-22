@@ -3,6 +3,10 @@ import type { SpeechWord } from './contracts/speech.ts'
 const CJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u
 const LETTER = /[\p{L}\p{N}'’]/u
 
+export function isCjk(char: string): boolean {
+  return CJK.test(char)
+}
+
 /** Words of a text; start and end are offsets in the text, not times. */
 export interface TextWord { text: string, start: number, end: number }
 
@@ -11,7 +15,7 @@ export function splitWords(text: string): TextWord[] {
   let run: TextWord | undefined
   let at = 0
   for (const char of text) {
-    if (CJK.test(char)) {
+    if (isCjk(char)) {
       if (run) words.push(run)
       run = undefined
       words.push({ text: char, start: at, end: at + char.length })

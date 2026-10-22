@@ -11,7 +11,18 @@ export interface Synthesis {
   engine: string
   model: string
   voice: string
+  provider: string
   synthetic: true
+}
+
+export interface AigcLabel {
+  Label: '1'
+  ContentProducer: string
+  ProduceID: string
+  ReservedCode1: string
+  ContentPropagator: string
+  PropagateID: string
+  ReservedCode2: string
 }
 
 export interface TranscriptSegment { start: number, end: number, text: string, words: SpeechWord[] }
@@ -61,6 +72,8 @@ export interface SpeechService {
   voices(engine: string, lang?: string): Promise<VoiceInfo[]>
   synthesize(request: SynthesisRequest, signal?: AbortSignal): Promise<Synthesis>
   cached?(key: string, signal?: AbortSignal): Promise<Synthesis | undefined>
+  alignWords?(key: string, options: { lang: string, transcribe?: boolean }, signal?: AbortSignal): Promise<SpeechWord[] | undefined>
+  pruneLock?(keep: ReadonlySet<string>): Promise<number>
   transcribe(request: TranscriptionRequest, signal?: AbortSignal): Promise<Transcript>
 }
 

@@ -1,13 +1,25 @@
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import type { SpeechWord, VoiceInfo } from '@lincyaw/kernel'
-import { isRecord } from '@lincyaw/kernel'
+import { isCjk, isRecord, splitWords } from '@lincyaw/kernel'
 import { bracketIPv6 } from '@lincyaw/kernel/node'
-import { fakeWords, oneSegment } from '../domain/index.ts'
+import { oneSegment } from '../domain/index.ts'
 import { isWav, makeWav, wavChunks, wavDuration } from './audio/riff.ts'
 
 const RATE = 8000
 const CHUNK = 'pmfk'
+
+function fakeWords(text: string): { words: SpeechWord[], duration: number } {
+  const words: SpeechWord[] = []
+  let ms = 0
+  for (const { text: word } of splitWords(text)) {
+    const length = isCjk(word) ? 220 : 60 * [...word].length
+    if (words.length) ms += 80
+    words.push({ text: word, start: ms / 1000, end: (ms + length) / 1000 })
+    ms += length
+  }
+  return { words, duration: ms / 1000 }
+}
 
 export const FAKE_VOICES: VoiceInfo[] = [
   { id: 'alpha', label: '假音色甲 Alpha', lang: ['zh-CN', 'en-US'] },
