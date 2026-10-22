@@ -2,13 +2,13 @@ import { createServer } from 'node:net'
 import type { AddressInfo } from 'node:net'
 import { join, relative, sep } from 'node:path'
 import { dev, relativeIR } from '@lincyaw/compiler'
-import type { Compilation } from '@lincyaw/compiler'
-import { errorMessage, PREVIEW_REVISION } from '@lincyaw/kernel'
+import type { Compilation, DevServers } from '@lincyaw/compiler'
+import { errorMessage, PREVIEW_REVISION, pushStream } from '@lincyaw/kernel'
 import { irRevision } from '@lincyaw/kernel/node'
 import type { Finding, IrAnswer, IRDocument, IrEvent, Logger, PreviewAnswer, PreviewRenderer, ProxySpec } from '@lincyaw/kernel'
 import type { DiagnosticStore, ServerHost } from '@lincyaw/server'
-import { WORKSPACE_ID } from '../domain/api.ts'
-import type { DocumentSession } from './session.ts'
+import type { CompileSession } from './compile-session.ts'
+import { WORKSPACE_ID } from './routes.ts'
 
 export interface BuildAnswer {
   outputs: { renderer: string, outDir: string }[]
@@ -19,18 +19,17 @@ export interface CheckAnswer {
   findings: Finding[]
 }
 
-export interface WorkspaceService {
+/** What the workbench's routes ask of the workspace server: a document's IR and its changes, its previews, builds and checks. */
+export interface WorkbenchApi {
   ir(document: string): Promise<IrAnswer>
   events(document: string, signal: AbortSignal): AsyncIterable<{ event: string, data: IrEvent }>
-  preview(document: string, view?: PreviewRenderer): Promise<PreviewAnswer>
+  preview(document: string, renderer?: PreviewRenderer): Promise<PreviewAnswer>
   build(document: string, to?: string[]): Promise<BuildAnswer>
   check(document: string): Promise<CheckAnswer>
   proxies: ProxySpec[]
 }
 
-export { irRevision } from '@lincyaw/kernel/node'
-
-export function withRevision(doc: IRDocument, revision: string): IRDocument {
+function withIrRevision(doc: IRDocument, revision: string): IRDocument {
   return { ...doc, meta: { ...doc.meta, [PREVIEW_REVISION]: revision } }
 }
 
@@ -57,9 +56,9 @@ function slidesPath(dir: string): string {
   return `slides/${dir ? `${urlPath(dir)}/` : ''}`
 }
 
-export interface ServiceOptions {
+export interface WorkbenchBackendOptions {
   root: string
-  sessionOf(dir: string): DocumentSession
+  compileSessionOf(dir: string): CompileSession
   serverHost: ServerHost
   diagnostics?: DiagnosticStore
   url(): string
@@ -68,41 +67,43 @@ export interface ServiceOptions {
   log: Logger
 }
 
-export interface Service extends WorkspaceService {
+/** The workbench's API with what the workspace server tells it: each compilation, the documents removed, closing. */
+export interface WorkbenchBackend extends WorkbenchApi {
   compiled(dir: string, compilation: Compilation, changed: string[]): void
-  siteDoc(compilation: Compilation, doc: IRDocument): IRDocument
-  removed(dirs: string[]): Promise<void>
+  /** The document as the site shows it, stamped with its IR revision when pages embed previews. */
+  stampPreviewRevision(compilation: Compilation, doc: IRDocument): IRDocument
+  documentsRemoved(dirs: string[]): Promise<void>
   close(): Promise<void>
 }
 
-export function workspaceService(options: ServiceOptions): Service {
+export function createWorkbenchBackend(options: WorkbenchBackendOptions): WorkbenchBackend {
   const { root, log } = options
-  const revisions = new WeakMap<Compilation, string>()
-  const readable = new WeakMap<Compilation, IRDocument>()
-  const revisionOf = (compilation: Compilation) => {
-    let known = revisions.get(compilation)
-    if (!known) revisions.set(compilation, known = irRevision(compilation.doc))
+  const irRevisions = new WeakMap<Compilation, string>()
+  const relativeDocs = new WeakMap<Compilation, IRDocument>()
+  const irRevisionOf = (compilation: Compilation) => {
+    let known = irRevisions.get(compilation)
+    if (!known) irRevisions.set(compilation, known = irRevision(compilation.doc))
     return known
   }
   const listeners = new Map<string, Set<(event: IrEvent) => void>>()
-  const slides = new Map<string, Promise<{ update(compilation: Compilation): Promise<void>, close(): Promise<void> } | undefined>>()
+  const slidesPreviews = new Map<string, Promise<DevServers | undefined>>()
   const proxies: ProxySpec[] = []
   let closed = false
 
   const eventOf = (dir: string, compilation: Compilation, changed: string[]): IrEvent => {
     const count = (severity: Finding['severity']) => compilation.doc.diagnostics.filter(finding => finding.severity === severity).length
-    return { document: dir, revision: revisionOf(compilation), diagnostics: { errors: count('error'), warnings: count('warning') }, files: changed.map(file => workspacePath(root, file)) }
+    return { document: dir, revision: irRevisionOf(compilation), diagnostics: { errors: count('error'), warnings: count('warning') }, files: changed.map(file => workspacePath(root, file)) }
   }
-  const stamped = (compilation: Compilation): Compilation => (options.preview ? { ...compilation, doc: withRevision(compilation.doc, revisionOf(compilation)) } : compilation)
+  const stamped = (compilation: Compilation): Compilation => (options.preview ? { ...compilation, doc: withIrRevision(compilation.doc, irRevisionOf(compilation)) } : compilation)
 
-  const slidesOf = (dir: string) => {
-    let known = slides.get(dir)
+  const startSlidesPreview = (dir: string) => {
+    let known = slidesPreviews.get(dir)
     if (!known) {
       let startupRevision: string | undefined
       known = (async () => {
-        const session = options.sessionOf(dir)
+        const session = options.compileSessionOf(dir)
         const compilation = await session.ready()
-        startupRevision = revisionOf(compilation)
+        startupRevision = irRevisionOf(compilation)
         const configured = Object.keys(compilation.doc.config.renderers)
         if (configured.length > 0 && !configured.includes('slides')) return undefined
         const path = slidesPath(dir)
@@ -114,16 +115,16 @@ export function workspaceService(options: ServiceOptions): Service {
           base: `/__presmium/${WORKSPACE_ID}/${path}`,
           port: await freePort(),
           ...options.preview ? { preview: { origins: options.preview.origins } } : {},
-          onCompile(_compilation, findings) {
+          onCompile(compiled, findings) {
             startupErrors = findings.filter(f => f.checkId === 'presmium.render' && f.severity === 'error').map(f => f.message)
-            const stampedRevision = _compilation.doc.meta[PREVIEW_REVISION]
-            const revision = typeof stampedRevision === 'string' ? stampedRevision : revisionOf(_compilation)
-            if (options.diagnostics?.revision(dir) === revision) options.diagnostics.replace({ document: dir, origin: 'preview', renderer: 'slides' }, findings.filter(f => f.checkId === 'presmium.render'), { root, revision })
+            const stampedRevision = compiled.doc.meta[PREVIEW_REVISION]
+            const revision = typeof stampedRevision === 'string' ? stampedRevision : irRevisionOf(compiled)
+            if (options.diagnostics?.irRevision(dir) === revision) options.diagnostics.replace({ document: dir, origin: 'preview', renderer: 'slides' }, findings.filter(f => f.checkId === 'presmium.render'), { root, irRevision: revision })
             for (const finding of findings.filter(f => f.checkId === 'presmium.render')) log.warn(`the slides' preview of ${dir || '.'}: ${finding.message}`)
           },
         })
         const server = started.servers[0]
-        if (!server || closed || slides.get(dir) !== known) {
+        if (!server || closed || slidesPreviews.get(dir) !== known) {
           await started.close()
           if (!server && !closed) throw new Error(startupErrors.join('\n') || 'the slides renderer did not start a preview server')
           return undefined
@@ -133,21 +134,21 @@ export function workspaceService(options: ServiceOptions): Service {
         proxies.sort((a, b) => b.path.length - a.path.length)
         return started
       })()
-      known.then(started => {
-        if (!started && slides.get(dir) === known) slides.delete(dir)
+      known.then((started) => {
+        if (!started && slidesPreviews.get(dir) === known) slidesPreviews.delete(dir)
       }, (error: unknown) => {
         log.warn(`the slides' preview of ${dir || '.'} did not start: ${errorMessage(error)}`)
-        if (options.diagnostics && options.diagnostics.revision(dir) === startupRevision) options.diagnostics.replace({ document: dir, origin: 'preview', renderer: 'slides' }, [{ checkId: 'presmium.preview', severity: 'error', message: errorMessage(error) }], { revision: startupRevision })
-        if (slides.get(dir) === known) slides.delete(dir)
+        if (options.diagnostics && options.diagnostics.irRevision(dir) === startupRevision) options.diagnostics.replace({ document: dir, origin: 'preview', renderer: 'slides' }, [{ checkId: 'presmium.preview', severity: 'error', message: errorMessage(error) }], { irRevision: startupRevision })
+        if (slidesPreviews.get(dir) === known) slidesPreviews.delete(dir)
       })
-      slides.set(dir, known)
+      slidesPreviews.set(dir, known)
     }
     return known
   }
 
-  const stop = async (dir: string) => {
-    const known = slides.get(dir)
-    slides.delete(dir)
+  const stopSlidesPreview = async (dir: string) => {
+    const known = slidesPreviews.get(dir)
+    slidesPreviews.delete(dir)
     const path = slidesPath(dir).replace(/\/$/, '')
     const at = proxies.findIndex(proxy => proxy.path === path)
     if (at >= 0) proxies.splice(at, 1)
@@ -157,58 +158,35 @@ export function workspaceService(options: ServiceOptions): Service {
   return {
     proxies,
     async ir(document) {
-      const compilation = await options.sessionOf(document).ready()
-      let doc = readable.get(compilation)
-      if (!doc) readable.set(compilation, doc = relativeIR(compilation.doc, root, root))
-      return { document, revision: revisionOf(compilation), doc, diagnostics: doc.diagnostics }
+      const compilation = await options.compileSessionOf(document).ready()
+      let doc = relativeDocs.get(compilation)
+      if (!doc) relativeDocs.set(compilation, doc = relativeIR(compilation.doc, root, root))
+      return { document, revision: irRevisionOf(compilation), doc, diagnostics: doc.diagnostics }
     },
     events(document, signal) {
-      const waiting: IrEvent[] = []
-      let wake: (() => void) | undefined
-      const listener = (event: IrEvent) => {
-        waiting.push(event)
-        wake?.()
-      }
-      const own = listeners.get(document) ?? new Set()
-      listeners.set(document, own.add(listener))
-      const done = () => own.delete(listener)
-      signal.addEventListener('abort', () => {
-        done()
-        wake?.()
-      }, { once: true })
-      const session = options.sessionOf(document)
-      if (session.latest) waiting.push(eventOf(document, session.latest, []))
-      else void session.ready().catch(() => undefined)
-      return {
-        async* [Symbol.asyncIterator]() {
-          try {
-            while (!signal.aborted) {
-              const next = waiting.shift()
-              if (next) {
-                yield { event: 'revision', data: next }
-                continue
-              }
-              await new Promise<void>(resolve => wake = resolve)
-              wake = undefined
-            }
-          } finally {
-            done()
-          }
-        },
-      }
+      const session = options.compileSessionOf(document)
+      return pushStream((push) => {
+        const own = listeners.get(document) ?? new Set()
+        listeners.set(document, own)
+        const listener = (event: IrEvent) => push({ event: 'revision', data: event })
+        own.add(listener)
+        if (session.latest) listener(eventOf(document, session.latest, []))
+        else void session.ready().catch(() => undefined)
+        return () => own.delete(listener)
+      }, { signal })
     },
-    async preview(document, view) {
+    async preview(document, renderer) {
       const base = options.url()
       const web = `${base}/${document ? `${urlPath(document)}/` : ''}`
       const slideURL = `${base}/__presmium/${WORKSPACE_ID}/${slidesPath(document)}`
-      const compilation = await options.sessionOf(document).ready()
+      const compilation = await options.compileSessionOf(document).ready()
       const configured = Object.keys(compilation.doc.config.renderers)
       const available = configured.length === 0 || configured.includes('slides')
       if (!available) options.diagnostics?.clear(document, 'preview', 'slides')
-      if (view === 'web' || !available) {
+      if (renderer === 'web' || !available) {
         return { document, web, ...available ? { slides: slideURL } : {} }
       }
-      const own = await (view === 'slides' ? slidesOf(document) : slidesOf(document).catch(() => undefined))
+      const own = await (renderer === 'slides' ? startSlidesPreview(document) : startSlidesPreview(document).catch(() => undefined))
       return { document, web, ...own ? { slides: slideURL } : {} }
     },
     async build(document, to) {
@@ -223,24 +201,24 @@ export function workspaceService(options: ServiceOptions): Service {
       const configured = Object.keys(compilation.doc.config.renderers)
       if (configured.length > 0 && !configured.includes('slides')) {
         options.diagnostics?.clear(dir, 'preview', 'slides')
-        void stop(dir).catch((error: unknown) => log.warn(`the slides' preview of ${dir || '.'} did not stop: ${errorMessage(error)}`))
+        void stopSlidesPreview(dir).catch((error: unknown) => log.warn(`the slides' preview of ${dir || '.'} did not stop: ${errorMessage(error)}`))
         return
       }
-      const known = slides.get(dir)
+      const known = slidesPreviews.get(dir)
       if (known) void known.then(started => started?.update(stamped(compilation))).catch((error: unknown) => log.warn(`the slides' preview of ${dir || '.'} did not update: ${errorMessage(error)}`))
     },
-    siteDoc(compilation, doc) {
-      return options.preview ? withRevision(doc, revisionOf(compilation)) : doc
+    stampPreviewRevision(compilation, doc) {
+      return options.preview ? withIrRevision(doc, irRevisionOf(compilation)) : doc
     },
-    async removed(dirs) {
+    async documentsRemoved(dirs) {
       for (const dir of dirs) {
-        await stop(dir)
+        await stopSlidesPreview(dir)
         options.diagnostics?.forget(dir)
       }
     },
     async close() {
       closed = true
-      for (const dir of [...slides.keys()]) await stop(dir)
+      for (const dir of [...slidesPreviews.keys()]) await stopSlidesPreview(dir)
     },
   }
 }

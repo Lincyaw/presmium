@@ -1,6 +1,5 @@
 export { buildWorkspace } from './node/build.ts'
 export type { WorkspaceBuild } from './node/build.ts'
-export { isWorkspaceRoot, listDocuments, readWorkspace } from './node/config.ts'
-export type { FoundDocument, WorkspaceConfig } from './node/config.ts'
+export { isWorkspaceRoot } from './node/config.ts'
 export { serveWorkspace } from './node/serve.ts'
 export type { ServeOptions, WorkspaceServer } from './node/serve.ts'

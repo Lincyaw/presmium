@@ -1,26 +1,27 @@
 import { createHash } from 'node:crypto'
 import { lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
+import { WORKSPACE_CONFIG } from '@lincyaw/compiler'
 import type { ConflictAnswer, DocumentFileChange, FilesAnswer, Member, SourceAnswer, SourceFile } from '@lincyaw/kernel'
-import { WORKSPACE_FILE } from '../domain/api.ts'
-import { within } from '../domain/paths.ts'
+import { isWithin } from '../domain/paths.ts'
 import { listDocuments } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
-import { lockedError, RequestError } from './documents.ts'
-import { documentDirOf, FilesError, writeChanges } from './files.ts'
-import type { DocumentWriter } from './files.ts'
+import { RequestError } from './errors.ts'
+import { lockedError } from './locks.ts'
 import type { DocumentLocks } from './locks.ts'
+import { documentDirOf, FilesError, writeChanges } from './writer.ts'
+import type { DocumentWriter } from './writer.ts'
 
 export const MAX_SOURCE = 2 << 20
 const MAX_FILES = 2000
-const NOT_SOURCE = new Set(['node_modules', 'dist', '.git', '.presmium'])
+const HIDDEN_FROM_EDITOR = new Set(['node_modules', 'dist', '.git', '.presmium'])
 const BINARY = /\.(?:png|jpe?g|gif|webp|avif|ico|bmp|pdf|wasm|zip|gz|tgz|bz2|xz|7z|woff2?|ttf|otf|eot|mp3|mp4|m4a|wav|ogg|oga|webm|mov|avi|mkv|bin|so|dylib|dll|exe|pyc|xlsx?|docx?|pptx?|parquet|npy|npz|pkl|db|sqlite)$/i
 
 export function versionOf(bytes: Uint8Array | string): string {
   return createHash('sha256').update(bytes).digest('hex').slice(0, 20)
 }
 
-export interface SourceOptions {
+export interface SourceEditorOptions {
   config: WorkspaceConfig
   writer: DocumentWriter
   locks?: DocumentLocks
@@ -31,19 +32,20 @@ interface Scope {
   home: boolean
 }
 
-export class SourceFiles {
+/** The source files the browser's editor lists, opens, creates and saves, as far as the member and the page's document may. */
+export class SourceEditor {
   readonly #config: WorkspaceConfig
   readonly #writer: DocumentWriter
   readonly #locks?: DocumentLocks
 
-  constructor(options: SourceOptions) {
+  constructor(options: SourceEditorOptions) {
     this.#config = options.config
     this.#writer = options.writer
     this.#locks = options.locks
   }
 
   scope(document: string): Scope {
-    return { document, home: document === '' && !this.#config.single }
+    return { document, home: document === '' && !this.#config.singleDeck }
   }
 
   roots(scope: Scope): string[] {
@@ -51,8 +53,8 @@ export class SourceFiles {
     return ['']
   }
 
-  allows(scope: Scope, path: string, member: Member): boolean {
-    if (path === WORKSPACE_FILE) return (scope.home || (this.#config.single && scope.document === '')) && member.roles.includes('owner')
+  canEdit(scope: Scope, path: string, member: Member): boolean {
+    if (path === WORKSPACE_CONFIG) return (scope.home || (this.#config.singleDeck && scope.document === '')) && member.roles.includes('owner')
     if (scope.home && member.roles.includes('owner')) return true
     const dir = documentDirOf(this.#config, path)
     if (dir === undefined) return scope.home && member.roles.includes('owner')
@@ -70,13 +72,13 @@ export class SourceFiles {
         return
       }
       for (const name of names) {
-        if (NOT_SOURCE.has(name) || name.startsWith('.')) continue
+        if (HIDDEN_FROM_EDITOR.has(name) || name.startsWith('.')) continue
         const path = dir ? `${dir}/${name}` : name
         const found = lstatSync(join(this.#config.root, path), { throwIfNoEntry: false })
         if (!found || found.isSymbolicLink()) continue
         if (found.isDirectory() && (scope.home || documentDirOf(this.#config, `${path}/x`) === owner)) {
           walk(path, owner)
-        } else if (found.isFile() && this.allows(scope, path, member)) {
+        } else if (found.isFile() && this.canEdit(scope, path, member)) {
           if (files.length >= MAX_FILES) {
             truncated = true
             return
@@ -90,13 +92,17 @@ export class SourceFiles {
     return { document: scope.document, home: scope.home, ...documents ? { documents } : {}, files, ...truncated ? { truncated: true as const } : {} }
   }
 
-  #check(scope: Scope, path: string, member: Member): void {
-    if (typeof path !== 'string' || !path || path.startsWith('/') || path.includes('\\') || path.includes('\0') || path.split('/').some(part => part === '' || part === '.' || part === '..' || NOT_SOURCE.has(part))) throw new RequestError(400, `not a source path: ${JSON.stringify(path)}`)
-    if (!this.allows(scope, path, member)) throw new RequestError(403, `${path} is not a file this page edits`)
+  #documentHolding(path: string): string | undefined {
+    return listDocuments(this.#config).sort((a, b) => b.dir.length - a.dir.length).find(doc => isWithin(path, doc.dir))?.dir
   }
 
-  #bytes(scope: Scope, path: string, member: Member): Buffer {
-    this.#check(scope, path, member)
+  #assertEditable(scope: Scope, path: string, member: Member): void {
+    if (typeof path !== 'string' || !path || path.startsWith('/') || path.includes('\\') || path.includes('\0') || path.split('/').some(part => part === '' || part === '.' || part === '..' || HIDDEN_FROM_EDITOR.has(part))) throw new RequestError(400, `not a source path: ${JSON.stringify(path)}`)
+    if (!this.canEdit(scope, path, member)) throw new RequestError(403, `${path} is not a file this page edits`)
+  }
+
+  #readBytes(scope: Scope, path: string, member: Member): Buffer {
+    this.#assertEditable(scope, path, member)
     const file = join(this.#config.root, path)
     let real: string
     try {
@@ -111,7 +117,7 @@ export class SourceFiles {
   }
 
   read(scope: Scope, path: string, member: Member): SourceAnswer {
-    const bytes = this.#bytes(scope, path, member)
+    const bytes = this.#readBytes(scope, path, member)
     if (BINARY.test(path) || bytes.includes(0)) throw new RequestError(415, `${path} is not a text file`)
     let content: string
     try {
@@ -123,9 +129,9 @@ export class SourceFiles {
   }
 
   async create(scope: Scope, path: string, member: Member): Promise<SourceAnswer> {
-    this.#check(scope, path, member)
+    this.#assertEditable(scope, path, member)
     if (BINARY.test(path)) throw new RequestError(415, `${path} is not a text file`)
-    const document = listDocuments(this.#config).sort((a, b) => b.dir.length - a.dir.length).find(doc => within(path, doc.dir))?.dir
+    const document = this.#documentHolding(path)
     const scopeDir = document ?? ''
     const release = this.#locks ? this.#locks.claim(scopeDir, 'editor:create') : () => {}
     if (!release) throw lockedError(scopeDir, this.#locks!.holder(scopeDir)!)
@@ -142,13 +148,13 @@ export class SourceFiles {
   }
 
   async save(scope: Scope, path: string, content: string, base: string, member: Member): Promise<string> {
-    const document = listDocuments(this.#config).sort((a, b) => b.dir.length - a.dir.length).find(doc => within(path, doc.dir))?.dir
+    const document = this.#documentHolding(path)
     const outside = document === undefined
     const scopeDir = document ?? ''
     const release = this.#locks ? this.#locks.claim(scopeDir, 'editor:save') : () => {}
     if (!release) throw lockedError(scopeDir, this.#locks!.holder(scopeDir)!)
     try {
-      const bytes = this.#bytes(scope, path, member)
+      const bytes = this.#readBytes(scope, path, member)
       const now = versionOf(bytes)
       if (now !== base) {
         const conflict: Omit<ConflictAnswer, 'error'> = { conflict: { version: now, content: bytes.toString('utf8') } }
@@ -163,9 +169,5 @@ export class SourceFiles {
     } finally {
       release()
     }
-  }
-
-  inScope(scope: Scope, path: string): boolean {
-    return this.roots(scope).some(root => root === WORKSPACE_FILE ? path === root : within(path, root))
   }
 }

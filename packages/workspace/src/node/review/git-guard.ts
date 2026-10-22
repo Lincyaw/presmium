@@ -3,14 +3,14 @@ import { join, sep } from 'node:path'
 
 type Entry = { kind: 'file', data: Buffer, mode: number } | { kind: 'link', target: string } | { kind: 'dir' } | { kind: 'other' }
 
-export interface SavedGuard {
+export interface SavedGitDir {
   identity: string
   entries: [string, { kind: 'file', data: string, mode: number } | { kind: 'link', target: string } | { kind: 'dir' } | { kind: 'other' }][]
 }
 
 const UNGUARDED = new Set(['refs', 'logs', 'lfs'])
 
-function unguarded(parts: string[]): boolean {
+function isUnguarded(parts: string[]): boolean {
   const name = parts.at(-1)!
   if (name === 'index' || name.endsWith('.lock')) return true
   return parts.some((part, i) => UNGUARDED.has(part) || (part === 'objects' && i + 1 < parts.length && parts[i + 1] !== 'info'))
@@ -19,7 +19,7 @@ function unguarded(parts: string[]): boolean {
 function scan(gitDir: string): Map<string, Entry> {
   const entries = new Map<string, Entry>()
   const visit = (rel: string) => {
-    if (unguarded(rel.split(sep))) return
+    if (isUnguarded(rel.split(sep))) return
     const path = join(gitDir, rel)
     let stat
     try {
@@ -40,16 +40,17 @@ function scan(gitDir: string): Map<string, Entry> {
   return entries
 }
 
-function same(a: Entry, b: Entry): boolean {
+function isSameEntry(a: Entry, b: Entry): boolean {
   if (a.kind !== b.kind) return false
   if (a.kind === 'file' && b.kind === 'file') return a.mode === b.mode && a.data.equals(b.data)
   if (a.kind === 'link' && b.kind === 'link') return a.target === b.target
   return a.kind === 'dir'
 }
 
-export interface GitGuard {
+/** What a git directory held, to put it back as it was: `restore` returns the paths it changed. */
+export interface GitDirSnapshot {
   restore(): string[]
-  saved(): SavedGuard
+  saved(): SavedGitDir
 }
 
 function identityOf(gitDir: string): string {
@@ -57,7 +58,7 @@ function identityOf(gitDir: string): string {
   return `${stat.dev}:${stat.ino}`
 }
 
-export function guardGitDir(gitDir: string, saved?: SavedGuard): GitGuard {
+export function snapshotGitDir(gitDir: string, saved?: SavedGitDir): GitDirSnapshot {
   const identity = saved?.identity ?? identityOf(gitDir)
   const before: Map<string, Entry> = saved
     ? new Map(saved.entries.map(([rel, entry]) => [rel, entry.kind === 'file' ? { ...entry, data: Buffer.from(entry.data, 'base64') } : entry]))
@@ -75,7 +76,7 @@ export function guardGitDir(gitDir: string, saved?: SavedGuard): GitGuard {
       const changed = new Set<string>()
       for (const [rel, entry] of [...now].sort((a, b) => b[0].length - a[0].length)) {
         const was = before.get(rel)
-        if (was && same(was, entry)) continue
+        if (was && isSameEntry(was, entry)) continue
         rmSync(join(gitDir, rel), { recursive: true, force: true })
         changed.add(rel)
       }

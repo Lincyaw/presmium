@@ -5,7 +5,8 @@ import type { Compilation, Compiler } from '@lincyaw/compiler'
 import { errorMessage } from '@lincyaw/kernel'
 import type { Logger } from '@lincyaw/kernel'
 
-export class DocumentSession {
+/** One document of the workspace server: its compiler, the latest compilation, and recompiling when a file it read changes. */
+export class CompileSession {
   readonly dir: string
   readonly compiler: Compiler
   #latest?: Compilation

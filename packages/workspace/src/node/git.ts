@@ -26,15 +26,6 @@ export class Git {
     }
   }
 
-  static ignores(dir: string, path: string): boolean {
-    try {
-      execFileSync('git', [...gitConfigArgs(), 'check-ignore', '-q', '--', path], { cwd: dir, stdio: 'ignore', env: gitEnvironment(process.env) })
-      return true
-    } catch {
-      return false
-    }
-  }
-
   run(command: string[], env: Record<string, string> = {}): Promise<GitResult> {
     return new Promise((done) => {
       execFile('git', [...gitConfigArgs(), ...command], {
@@ -49,13 +40,15 @@ export class Git {
     })
   }
 
-  async raw(command: string[], env?: Record<string, string>): Promise<string> {
+  /** The command's output; throws when it fails. */
+  async output(command: string[], env?: Record<string, string>): Promise<string> {
     const result = await this.run(command, env)
     if (result.code !== 0) throw new Error(result.stderr.trim() || `git ${command[0]} exited with ${result.code}`)
     return result.stdout.toString('utf8')
   }
 
-  async attempt(command: string[], env?: Record<string, string>): Promise<{ ok: boolean, output: string }> {
+  /** Whether the command succeeded, with its output, or its error output when it failed. */
+  async tryOutput(command: string[], env?: Record<string, string>): Promise<{ ok: boolean, output: string }> {
     const result = await this.run(command, env)
     return { ok: result.code === 0, output: result.code === 0 ? result.stdout.toString('utf8') : `${result.stderr}${result.stdout.toString('utf8')}` }
   }

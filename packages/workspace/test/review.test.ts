@@ -113,7 +113,7 @@ describe('the review routes of presmium serve', () => {
     }
   }, 120_000)
 
-  it('stopped and started again: resumes a session\'s review with its checkpoints; rolls back the review the assistant left in its old record', async () => {
+  it('stopped and started again: resumes a session\'s review with its checkpoints; rolls back the review a task left in a record that still names its directory deck', async () => {
     await route('review/open', 'intro', { session: 'session-c', turn: 4 })
     writeFileSync(join(dir, 'intro/kept.md'), '重启前写的\n')
     await route('review/step', 'intro', { session: 'session-c', turn: 4, label: 'write kept.md', tool: 'write' })

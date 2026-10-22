@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, normalize, sep } from 'node:path'
 import { docBlocks, isRecord } from '@lincyaw/kernel'
 import type { Focus, FocusReport, IRDocument, SourceRange } from '@lincyaw/kernel'
-import { findBlock, findSection, place } from './deck.ts'
+import { findBlock, findSection, relativeToDeck } from './deck.ts'
 
-export const EXCERPT_LINES = 20
+const EXCERPT_LINES = 20
 const QUOTE_CHARS = 2000
 const WORKSPACE_EXCERPT_CHARS = 8000
 const FROM = new Set<Focus['from']>(['source', 'web', 'slides'])
@@ -12,7 +12,7 @@ const FROM = new Set<Focus['from']>(['source', 'web', 'slides'])
 const str = (value: unknown, max = 200) => (typeof value === 'string' && value !== '' && value.length <= max ? value : undefined)
 const line = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : undefined)
 
-export function focusReport(value: unknown): FocusReport | string {
+export function toFocusReport(value: unknown): FocusReport | string {
   if (!isRecord(value)) return 'a focus is an object'
   const id = str(value.id)
   const from = value.from as Focus['from']
@@ -33,7 +33,7 @@ export function focusReport(value: unknown): FocusReport | string {
   return report
 }
 
-export function excerptOf(text: string, start: number, end: number): string {
+function excerptOf(text: string, start: number, end: number): string {
   const lines = text.split(/\r?\n/).slice(start - 1, end)
   if (lines.length <= EXCERPT_LINES) return lines.join('\n')
   const half = EXCERPT_LINES / 2
@@ -43,26 +43,26 @@ export function excerptOf(text: string, start: number, end: number): string {
 function blockAt(doc: IRDocument, range: SourceRange): { section: string, block?: string } | undefined {
   let found: { section: string, block: string, span: number } | undefined
   for (const { section, block } of docBlocks(doc)) {
-    const at = place(doc, block.source)
+    const at = relativeToDeck(doc, block.source)
     const end = at.endLine ?? at.line
     if (at.file !== range.file || range.startLine < at.line || range.startLine > end) continue
     if (!found || end - at.line < found.span) found = { section: section.id, block: block.id, span: end - at.line }
   }
   if (found) return { section: found.section, block: found.block }
   const sections = doc.sections.filter((s) => {
-    const at = place(doc, s.source)
+    const at = relativeToDeck(doc, s.source)
     return at.file === range.file && at.line <= range.startLine
   })
   const section = sections.at(-1)
   return section && { section: section.id }
 }
 
-export function resolveFocus(doc: IRDocument | undefined, document: string, report: FocusReport, read: (file: string) => string = file => readFileSync(file, 'utf8'), readWorkspace?: (file: string) => string): Focus {
+export function resolveFocus(doc: IRDocument | undefined, document: string, report: FocusReport, read: (file: string) => string = file => readFileSync(file, 'utf8'), readWorkspaceFile?: (file: string) => string): Focus {
   if (report.scope === 'workspace') {
-    if (!readWorkspace || !report.source) throw new Error('this host does not read workspace source selections')
+    if (!readWorkspaceFile || !report.source) throw new Error('this host does not read workspace source selections')
     const range = report.source
     const source = { ...range, endLine: Math.max(range.startLine, range.endLine) }
-    const excerpt = excerptOf(readWorkspace(source.file), source.startLine, source.endLine)
+    const excerpt = excerptOf(readWorkspaceFile(source.file), source.startLine, source.endLine)
     return { id: report.id, from: report.from, document, scope: 'workspace', source, excerpt: excerpt.length > WORKSPACE_EXCERPT_CHARS ? `${excerpt.slice(0, WORKSPACE_EXCERPT_CHARS)}\n[… excerpt truncated …]` : excerpt, ...report.quote ? { quote: report.quote } : {} }
   }
   if (!doc) throw new Error('a document focus requires the compiled document')
@@ -73,7 +73,7 @@ export function resolveFocus(doc: IRDocument | undefined, document: string, repo
   if (report.block || (report.section && !report.source)) {
     const found = findSection(doc, report.section ?? [...docBlocks(doc)].find(b => b.block.id === report.block)?.section.id ?? '')
     section = found.id
-    const at = report.block ? place(doc, findBlock(found, report.block).source) : place(doc, found.source)
+    const at = report.block ? relativeToDeck(doc, findBlock(found, report.block).source) : relativeToDeck(doc, found.source)
     source = { file: at.file, startLine: at.line, endLine: at.endLine ?? at.line }
   } else {
     const range = report.source!

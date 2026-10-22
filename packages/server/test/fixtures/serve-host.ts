@@ -1,6 +1,6 @@
 // A `serve` mode host for the tests of the server (packages/server/test, e2e/server.spec.ts): it
 // starts the real server on a workspace whose documents it compiles with the real compiler, as the
-// workspace (WP-79) does, and reads them for MCP (the documents and their compiled IR; no checks,
+// workspace server does, and reads them for MCP (the documents and their compiled IR; no checks,
 // builds or runs). Configured by the environment: SERVE_WORKSPACE (the workspace root), SERVE_FORWARD
 // (where the site's paths go), SERVE_HOST and SERVE_PORT. It
 // prints `{"url": ...}` once it listens, or `{"error": ...}` and exits 1. A line `unmount <dir>` on its
@@ -40,7 +40,7 @@ const serverHost: ServerHost = {
 try {
   const server = await startServer({
     mode: 'serve',
-    host: process.env.SERVE_HOST ?? '127.0.0.1',
+    listenAddress: process.env.SERVE_HOST ?? '127.0.0.1',
     port: Number(process.env.SERVE_PORT ?? 0),
     forward: () => process.env.SERVE_FORWARD || undefined,
     approvalTimeoutMs: Number(process.env.SERVE_APPROVAL_TIMEOUT ?? 50_000),

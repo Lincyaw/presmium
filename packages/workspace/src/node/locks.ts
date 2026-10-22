@@ -1,5 +1,6 @@
-import type { DocumentLockService } from '@lincyaw/kernel'
-import { lockKind } from '../domain/api.ts'
+import type { DocumentLockService, LockedAnswer } from '@lincyaw/kernel'
+import { lockKind } from '../domain/locks.ts'
+import { RequestError } from './errors.ts'
 
 export class DocumentLocks implements DocumentLockService {
   readonly #held = new Map<string, string>()
@@ -38,4 +39,8 @@ export function lockedMessage(document: string, holder: string): string {
   const kind = lockKind(holder)
   const what = kind === 'agent' ? 'an agent\'s change task runs or waits for its review' : kind === 'revert' ? 'a change is being undone' : 'a document operation is under way'
   return `${document || 'the document'} cannot change now: ${what} (${holder}); try again once it is done`
+}
+
+export function lockedError(document: string, holder: string): RequestError {
+  return new RequestError(409, lockedMessage(document, holder), { locked: { document, holder } } satisfies Omit<LockedAnswer, 'error'>)
 }

@@ -3,26 +3,20 @@ import { join, sep } from 'node:path'
 import { createMcpHandler, fromJsonSchema, McpServer, ResourceTemplate, UriTemplate } from '@modelcontextprotocol/server'
 import type { AuthInfo, CallToolResult, JsonSchemaType, Variables } from '@modelcontextprotocol/server'
 import { serveStdio } from '@modelcontextprotocol/server/stdio'
-import { deckLocale, diagnosticOf, docBlocks, errorMessage, isRecord, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
-import type { AgentTool, ApprovalKind, ApprovalScope, CodeNode, DiagnosticSnapshot, DocumentSummary, Finding, IRDocument, Member, MemberRole } from '@lincyaw/kernel'
-import { codeRef, deckInfo, diagnosticsOf, findBlock, findSection, locate, outputsOf, place, runInfo, search, sectionDetail, sectionSummary, stepDetail } from './deck.ts'
+import { deckLocale, diagnosticOf, docBlocks, errorMessage, hasRole, isPresentingRole, isRecord, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
+import type { AgentTool, ApprovalKind, ApprovalScope, CodeNode, DiagnosticSnapshot, DocumentSummary, Finding, IRDocument } from '@lincyaw/kernel'
+import { codeRef, deckInfo, diagnosticsOf, findBlock, findSection, locate, outputsOf, relativeToDeck, runInfo, search, sectionDetail, sectionSummary, stepDetail } from './deck.ts'
 import type { McpCaller, McpHost, McpProcess } from './host.ts'
 import { MCP_MESSAGES } from './messages.ts'
 import type { McpMessages } from './messages.ts'
+import { TOOL_APPROVAL_META, TOOL_KIND_META } from './tool-meta.ts'
 
-export const MCP_VERSION: string = (createRequire(import.meta.url)('../package.json') as { version: string }).version
-export const POSITION_URI = 'presmium://position'
-export const FOCUS_URI = 'presmium://focus'
+const MCP_VERSION: string = (createRequire(import.meta.url)('../package.json') as { version: string }).version
+const POSITION_URI = 'presmium://position'
+const FOCUS_URI = 'presmium://focus'
 export const DIAGNOSTICS_URI = 'presmium://diagnostics'
 
 const compilationSnapshots = new WeakMap<McpHost, Map<string, { signature: string, snapshot: DiagnosticSnapshot }>>()
-
-export const READ_TOOLS = [
-  'list_documents', 'deck_info', 'list_sections', 'get_section', 'get_step', 'search',
-  'get_code_ref', 'get_outputs', 'get_diagnostics', 'locate_source', 'get_position', 'get_classroom', 'get_runtime', 'get_focus',
-] as const
-
-export const OPERATE_TOOLS = ['navigate', 'run_code', 'build', 'classroom_start', 'classroom_end'] as const
 
 type Args = Record<string, unknown>
 
@@ -45,25 +39,13 @@ interface ToolSpec {
   run(call: Call): Promise<unknown>
 }
 
-export interface McpToolInfo {
-  name: string
-  description: string
-  inputSchema: Record<string, unknown>
-  kind: 'read' | ApprovalKind
-}
-
-export const TOOL_KIND_META = 'presmium/kind'
-export const TOOL_APPROVAL_META = 'presmium/approval'
 
 const DOCUMENT = { document: { type: 'string', description: 'The document directory (list_documents); omit it when the host serves one document.' } }
 const SECTION = { section: { type: 'string', description: 'The section id (list_sections), or its 1-based number.' } }
 const STEP = { step: { type: 'integer', minimum: 0, description: 'The step, from 0 (the section\'s initial state).' } }
 const BLOCK = { block: { type: 'string', description: 'The block id (get_section).' } }
 
-const rank: Record<MemberRole, number> = { reader: 0, editor: 1, owner: 2 }
-const hasRole = (member: Member, role: MemberRole) => member.roles.some(own => rank[own] >= rank[role])
-
-function operates(caller: McpCaller): boolean {
+function canOperate(caller: McpCaller): boolean {
   return hasRole(caller.member, 'editor')
 }
 
@@ -81,7 +63,7 @@ async function diagnostics(call: Call): Promise<DiagnosticSnapshot> {
   const { doc, diagnostics } = await call.compiled()
   const current = diagnostics.map(finding => diagnosticOf(document, 'compile', {
     ...finding,
-    ...finding.source ? { source: { ...finding.source, file: join(document, place(doc, { ...finding.source, line: finding.source.line ?? 1 }).file).split(sep).join('/') } } : {},
+    ...finding.source ? { source: { ...finding.source, file: join(document, relativeToDeck(doc, { ...finding.source, line: finding.source.line ?? 1 }).file).split(sep).join('/') } } : {},
   }))
   const signature = JSON.stringify(current)
   let documents = compilationSnapshots.get(call.host)
@@ -223,7 +205,7 @@ const TOOLS: ToolSpec[] = [
     description: 'The classroom\'s summaries that the open pages report, by plugin (no learner identities).',
     properties: { ...DOCUMENT },
     kind: 'read',
-    run: async call => ({ classroom: call.host.classroom?.(await call.document()) ?? {} }),
+    run: async call => ({ classroom: call.host.classroomStatus?.(await call.document()) ?? {} }),
   },
   {
     name: 'get_runtime',
@@ -286,7 +268,7 @@ const TOOLS: ToolSpec[] = [
       const { doc } = await call.compiled()
       const report = await call.host.build(document, { to })
       return {
-        outputs: report.outputs.map(o => ({ renderer: o.renderer, outDir: place(doc, { file: o.outDir, line: 1 }).file })),
+        outputs: report.outputs.map(o => ({ renderer: o.renderer, outDir: relativeToDeck(doc, { file: o.outDir, line: 1 }).file })),
         diagnostics: diagnosticsOf(doc, report.findings),
       }
     },
@@ -309,11 +291,11 @@ const TOOLS: ToolSpec[] = [
 
 async function classroom(call: Call, action: 'start' | 'end') {
   const document = await call.document()
-  const presenting = call.host.positions?.(document, call.caller.member).filter(p => p.member === call.caller.member.id && (p.role === 'presenter' || p.role === 'audience')) ?? []
+  const presenting = call.host.positions?.(document, call.caller.member).filter(p => p.member === call.caller.member.id && isPresentingRole(p.role)) ?? []
   if (presenting.length === 0) throw new Error('none of your windows presents the deck: open its present or presenter view first')
   const name = str(call.args.name) ?? ''
   await call.approve('operate', m => (action === 'start' ? m.classroomStart(name) : m.classroomEnd))
-  return { classroom: action, windows: call.host.session!(document, action, name || undefined, call.caller.member) }
+  return { classroom: action, windows: call.host.setClassroom!(document, action, name || undefined, call.caller.member) }
 }
 
 function runPlan(doc: IRDocument, node: CodeNode): string {
@@ -335,24 +317,24 @@ function runPlan(doc: IRDocument, node: CodeNode): string {
   return nodes.map(one).join('\n\n')
 }
 
-function supported(host: McpHost, name: string): boolean {
+function hostSupports(host: McpHost, name: string): boolean {
   switch (name) {
     case 'get_position': return Boolean(host.positions)
-    case 'get_classroom': return Boolean(host.classroom)
+    case 'get_classroom': return Boolean(host.classroomStatus)
     case 'navigate': return Boolean(host.positions && host.navigate)
     case 'classroom_start':
-    case 'classroom_end': return Boolean(host.positions && host.session)
+    case 'classroom_end': return Boolean(host.positions && host.setClassroom)
     default: return true
   }
 }
 
-function json(data: unknown): string {
+function toText(data: unknown): string {
   return typeof data === 'string' ? data : JSON.stringify(data, null, 2)
 }
 
-async function answer(run: () => Promise<unknown>): Promise<CallToolResult> {
+async function toolResult(run: () => Promise<unknown>): Promise<CallToolResult> {
   try {
-    return { content: [{ type: 'text', text: json(await run()) }] }
+    return { content: [{ type: 'text', text: toText(await run()) }] }
   } catch (error) {
     return { isError: true, content: [{ type: 'text', text: errorMessage(error) }] }
   }
@@ -362,11 +344,9 @@ function schemaOf(properties: Record<string, unknown> = {}, required: string[] =
   return { type: 'object', properties, ...required.length ? { required } : {} }
 }
 
-export const TOOL_TABLE: readonly McpToolInfo[] = TOOLS.map(tool => ({ name: tool.name, description: tool.description, inputSchema: schemaOf(tool.properties, tool.required), kind: tool.kind }))
-
-function pluginInfo(tool: AgentTool): McpToolInfo {
+function pluginSchema(tool: AgentTool): Record<string, unknown> {
   const schema = isRecord(tool.input) ? tool.input : {}
-  return { name: tool.name, description: tool.description, inputSchema: { ...schema, type: 'object', properties: { ...DOCUMENT, ...isRecord(schema.properties) ? schema.properties : {} } }, kind: tool.kind }
+  return { ...schema, type: 'object', properties: { ...DOCUMENT, ...isRecord(schema.properties) ? schema.properties : {} } }
 }
 
 interface Offered {
@@ -378,8 +358,8 @@ interface Offered {
 async function offer(host: McpHost, caller: McpCaller): Promise<Offered> {
   const documents = await host.documents().catch(() => [])
   const only = caller.document ?? (documents.length === 1 ? documents[0]!.dir : undefined)
-  const offered = (kind: 'read' | ApprovalKind) => kind === 'read' || (operates(caller) && host.offers(kind))
-  const builtIn = TOOLS.filter(tool => offered(tool.kind) && supported(host, tool.name))
+  const offered = (kind: 'read' | ApprovalKind) => kind === 'read' || (canOperate(caller) && host.offers(kind))
+  const builtIn = TOOLS.filter(tool => offered(tool.kind) && hostSupports(host, tool.name))
   const plugins: AgentTool[] = []
   const names = new Set(TOOLS.map(tool => tool.name))
   for (const tool of (await host.tools?.(only).catch(() => undefined))?.tools ?? []) {
@@ -388,11 +368,6 @@ async function offer(host: McpHost, caller: McpCaller): Promise<Offered> {
     plugins.push(tool)
   }
   return { builtIn, plugins, documents }
-}
-
-export async function listTools(host: McpHost, caller: McpCaller, document = caller.document): Promise<McpToolInfo[]> {
-  const { builtIn, plugins } = await offer(host, document === undefined ? caller : { ...caller, document })
-  return [...builtIn.map(tool => TOOL_TABLE.find(info => info.name === tool.name)!), ...plugins.map(pluginInfo)]
 }
 
 function recompiles(process: McpProcess | undefined): string {
@@ -411,9 +386,9 @@ function instructions(host: McpHost, caller: McpCaller, tools: { name: string, k
   return [
     `Presmium: ${title ? `the lecture deck "${title}"` : 'lecture decks'} as tools.`,
     `Read tools: ${reads.join(', ')}.`,
-    `The same data is offered as resources: presmium://documents, presmium://deck, presmium://sections, presmium://sections/{section}, presmium://sections/{section}/steps/{step}, presmium://sections/{section}/outputs, presmium://diagnostics (the current diagnostic snapshot; reading it does not run checks), presmium://ir (the compiled deck)${pages ? ', presmium://position (subscribe to it to hear when the presentation moves)' : ''}, presmium://focus (what the author points at in the workbench; subscribe to it to hear of a new one)${host.classroom ? ', presmium://classroom' : ''}. With several documents, add ?document=<dir> to a deck's resource (presmium://sections?document=<dir>). Subscribe to presmium://diagnostics?document=<dir> to hear when that document's current problems change; get_diagnostics explicitly runs the full checks.`,
+    `The same data is offered as resources: presmium://documents, presmium://deck, presmium://sections, presmium://sections/{section}, presmium://sections/{section}/steps/{step}, presmium://sections/{section}/outputs, presmium://diagnostics (the current diagnostic snapshot; reading it does not run checks), presmium://ir (the compiled deck)${pages ? ', presmium://position (subscribe to it to hear when the presentation moves)' : ''}, presmium://focus (what the author points at in the workbench; subscribe to it to hear of a new one)${host.classroomStatus ? ', presmium://classroom' : ''}. With several documents, add ?document=<dir> to a deck's resource (presmium://sections?document=<dir>). Subscribe to presmium://diagnostics?document=<dir> to hear when that document's current problems change; get_diagnostics explicitly runs the full checks.`,
     'Sections are named by id (list_sections); steps count from 0. Source paths in diagnostic snapshots are relative to the workspace root; other document paths are relative to the deck directory.',
-    !operates(caller)
+    !canOperate(caller)
       ? 'This token reads only.'
       : operations.length === 0
         ? (pages ? 'No operation is offered here.' : 'No operation is offered: presmium-mcp offers the kinds of operation its --allow names.')
@@ -451,7 +426,7 @@ function argsOf(variables: Variables): Args {
   return args
 }
 
-export async function presmiumServer(host: McpHost, caller: McpCaller): Promise<McpServer> {
+async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpServer> {
   const { builtIn, plugins, documents } = await offer(host, caller)
   const meta = (kind: 'read' | ApprovalKind) => ({
     [TOOL_KIND_META]: kind,
@@ -497,19 +472,19 @@ export async function presmiumServer(host: McpHost, caller: McpCaller): Promise<
       inputSchema: fromJsonSchema<Args>(schemaOf(tool.properties, tool.required) as JsonSchemaType),
       annotations: { readOnlyHint: tool.kind === 'read' },
       _meta: meta(tool.kind),
-    }, (args, ctx) => answer(() => tool.run(call(args, ctx.mcpReq.signal))))
+    }, (args, ctx) => toolResult(() => tool.run(call(args, ctx.mcpReq.signal))))
   }
   for (const tool of plugins) {
     server.registerTool(tool.name, {
       description: tool.description,
-      inputSchema: fromJsonSchema<Args>(pluginInfo(tool).inputSchema as JsonSchemaType),
+      inputSchema: fromJsonSchema<Args>(pluginSchema(tool) as JsonSchemaType),
       annotations: { readOnlyHint: tool.kind === 'read' },
       _meta: meta(tool.kind),
-    }, (args, ctx) => answer(() => pluginTool(call(args, ctx.mcpReq.signal), tool)))
+    }, (args, ctx) => toolResult(() => pluginTool(call(args, ctx.mcpReq.signal), tool)))
   }
 
   type Read = (call: Call) => Promise<unknown>
-  const contents = (url: URL, data: unknown) => ({ contents: [{ uri: url.href, mimeType: 'application/json', text: json(data) }] })
+  const contents = (url: URL, data: unknown) => ({ contents: [{ uri: url.href, mimeType: 'application/json', text: toText(data) }] })
   const template = (name: string, uri: string, read: Read) => {
     server.registerResource(name, new ResourceTemplate(new DocumentTemplate(uri), { list: undefined }), RESOURCE, async (url, variables, ctx) => contents(url, await read(call(argsOf(variables), ctx.mcpReq.signal))))
   }
@@ -526,7 +501,7 @@ export async function presmiumServer(host: McpHost, caller: McpCaller): Promise<
   resource('ir', 'presmium://ir', async c => (await c.compiled()).doc)
   if (host.positions) resource('position', POSITION_URI, c => position(c), false)
   resource('focus', FOCUS_URI, async c => focus(c, c.caller.document), false)
-  if (host.classroom) resource('classroom', 'presmium://classroom', read('get_classroom'))
+  if (host.classroomStatus) resource('classroom', 'presmium://classroom', read('get_classroom'))
   const section = (name: string, uri: string, tool: string) => template(name, uri, read(tool))
   section('section', 'presmium://sections/{section}', 'get_section')
   section('step', 'presmium://sections/{section}/steps/{step}', 'get_step')
@@ -539,7 +514,7 @@ async function pluginTool(call: Call, tool: AgentTool): Promise<unknown> {
   const own = await call.host.tools!(document)
   const found = own.tools.find(t => t.name === tool.name)
   if (!found) throw new Error(`the document ${JSON.stringify(document)} has no tool ${tool.name}`)
-  if (found.kind !== 'read' && !(operates(call.caller) && call.host.offers(found.kind))) throw new Error(`${tool.name} is not offered to this token`)
+  if (found.kind !== 'read' && !(canOperate(call.caller) && call.host.offers(found.kind))) throw new Error(`${tool.name} is not offered to this token`)
   const { document: _document, ...input } = call.args
   if (found.kind !== 'read') await call.approve(found.kind, m => m.tool(found.name), { detail: JSON.stringify(input) })
   return found.run(input, { document, member: call.caller.member, service: own.service, signal: call.signal })
@@ -570,7 +545,7 @@ export function createPresmiumMcp(host: McpHost): PresmiumMcp {
   const handlerOf = (document: string | undefined) => {
     let handler = handlers.get(document)
     if (!handler) {
-      handler = createMcpHandler(({ authInfo }) => presmiumServer(host, callerOf(authInfo)))
+      handler = createMcpHandler(({ authInfo }) => createMcpServer(host, callerOf(authInfo)))
       handlers.set(document, handler)
     }
     return handler
@@ -611,5 +586,5 @@ function callerOf(authInfo: AuthInfo | undefined): McpCaller {
 }
 
 export function serveMcpStdio(host: McpHost, caller: McpCaller): { close(): Promise<void> } {
-  return serveStdio(() => presmiumServer(host, caller))
+  return serveStdio(() => createMcpServer(host, caller))
 }

@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'n
 import { join, resolve } from 'node:path'
 import { DECK_ENTRY, parseFrontmatter, WORKSPACE_CONFIG } from '@lincyaw/compiler'
 import type { OperatorSettings } from '@lincyaw/compiler'
-import { errorMessage, isRecord } from '@lincyaw/kernel'
+import { APPROVAL_KINDS, errorMessage, isRecord } from '@lincyaw/kernel'
 import type { ApprovalKind, DocumentSummary } from '@lincyaw/kernel'
 import type { ApprovalPolicy } from '@lincyaw/server'
 import { parse as parseYaml } from 'yaml'
@@ -12,14 +12,13 @@ export const DEFAULT_DOCUMENTS = [`*/${DECK_ENTRY}`]
 
 const SKIPPED = new Set(['node_modules', '.git', '.presmium', 'dist'])
 
-const KINDS: ApprovalKind[] = ['operate', 'spend', 'write', 'agent']
 const POLICIES = new Set<ApprovalPolicy>(['off', 'ask', 'allow'])
 
 export interface WorkspaceConfig {
   root: string
   title: string
   documents: string[]
-  single: boolean
+  singleDeck: boolean
   site: Record<string, unknown>
   approvals: Partial<Record<ApprovalKind, ApprovalPolicy>>
   templates?: string
@@ -30,7 +29,7 @@ function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string' && v.trim() !== '').map(v => v.trim()) : typeof value === 'string' && value.trim() ? [value.trim()] : []
 }
 
-export function readWorkspace(root: string): WorkspaceConfig {
+export function readWorkspaceConfig(root: string): WorkspaceConfig {
   const dir = realpathSync(resolve(root))
   const file = join(dir, WORKSPACE_CONFIG)
   let data: Record<string, unknown> = {}
@@ -43,16 +42,16 @@ export function readWorkspace(root: string): WorkspaceConfig {
     }
   }
   const declared = strings(data.documents)
-  const single = declared.length === 0 && existsSync(join(dir, DECK_ENTRY))
+  const singleDeck = declared.length === 0 && existsSync(join(dir, DECK_ENTRY))
   const approvals = isRecord(data.approvals) ? data.approvals : {}
   const settings = isRecord(data.settings) ? data.settings : {}
   return {
     root: dir,
     title: typeof data.title === 'string' && data.title.trim() ? data.title.trim() : dir.split('/').at(-1) ?? 'Presmium',
-    documents: single ? [DECK_ENTRY] : declared.length > 0 ? declared : DEFAULT_DOCUMENTS,
-    single,
+    documents: singleDeck ? [DECK_ENTRY] : declared.length > 0 ? declared : DEFAULT_DOCUMENTS,
+    singleDeck,
     site: isRecord(data.site) ? data.site : {},
-    approvals: Object.fromEntries(KINDS.flatMap(kind => (POLICIES.has(approvals[kind] as ApprovalPolicy) ? [[kind, approvals[kind] as ApprovalPolicy]] : []))),
+    approvals: Object.fromEntries(APPROVAL_KINDS.flatMap(kind => (POLICIES.has(approvals[kind] as ApprovalPolicy) ? [[kind, approvals[kind] as ApprovalPolicy]] : []))),
     ...typeof data.templates === 'string' && data.templates.trim() ? { templates: resolve(dir, data.templates.trim()) } : {},
     settings: Object.fromEntries(Object.entries(settings).map(([id, value]) => [id, isRecord(value) ? value : {}])),
   }
@@ -61,7 +60,7 @@ export function readWorkspace(root: string): WorkspaceConfig {
 export function isWorkspaceRoot(dir: string): boolean {
   if (!existsSync(join(dir, WORKSPACE_CONFIG))) return false
   try {
-    return !readWorkspace(dir).single
+    return !readWorkspaceConfig(dir).singleDeck
   } catch {
     return true
   }
@@ -120,6 +119,10 @@ export function listDocuments(config: WorkspaceConfig): FoundDocument[] {
   return entries(config).map(entry => documentOf(config, entry))
 }
 
-export function namedByPatterns(config: WorkspaceConfig, dir: string): boolean {
+export function documentSummaries(config: WorkspaceConfig): DocumentSummary[] {
+  return listDocuments(config).map(({ entry: _entry, ...document }) => document)
+}
+
+export function isDocumentDir(config: WorkspaceConfig, dir: string): boolean {
   return config.documents.some(pattern => matchesPattern(pattern, dir ? `${dir}/${DECK_ENTRY}` : DECK_ENTRY))
 }

@@ -5,16 +5,15 @@ import { dirname, join, relative, resolve, sep } from 'node:path'
 import { gitConfigArgs, gitEnvironment } from '@lincyaw/kernel'
 import type { ChangeReview, DocumentFileChange, DocumentFiles, ReviewChange, ReviewChangeKind, ReviewStep } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
-import { guardGitDir } from './git-guard.ts'
-import type { GitGuard } from './git-guard.ts'
-import { holderRuns, readRecord, removeRecord, SELF, writeRecord } from './review-record.ts'
-import type { ReviewRecord, SessionRecord } from './review-record.ts'
+import { snapshotGitDir } from './git-guard.ts'
+import type { SavedGitDir } from './git-guard.ts'
+import { isHolderAlive, readRecord, removeRecord, THIS_PROCESS, writeRecord } from './record.ts'
+import type { AgentSessionRecord, ReviewRecord } from './record.ts'
 
 export interface GitReview extends ChangeReview {
   readonly task: string
-  checkpoints(): readonly string[]
   restoreFiles(paths: string[]): Promise<void>
-  note(session: Omit<SessionRecord, 'checkpoints' | 'steps'>): void
+  noteSession(session: Omit<AgentSessionRecord, 'checkpoints' | 'steps'>): void
   suspend(): void
   prepareAccept(reject: string[]): Promise<string[]>
   finish(): void
@@ -28,7 +27,7 @@ const MAX_DIFFS = 200
 
 const DIFF = ['diff', '--no-renames', '--no-ext-diff', '--no-textconv', '--no-color']
 
-const opened = new Set<string>()
+const openScopes = new Set<string>()
 
 function git(cwd: string, args: string[], env: Record<string, string> = {}): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -44,7 +43,7 @@ function git(cwd: string, args: string[], env: Record<string, string> = {}): Pro
   })
 }
 
-const text = async (cwd: string, args: string[], env?: Record<string, string>) => (await git(cwd, args, env)).toString('utf8')
+const gitText = async (cwd: string, args: string[], env?: Record<string, string>) => (await git(cwd, args, env)).toString('utf8')
 
 export interface GitDirs {
   top: string
@@ -53,16 +52,17 @@ export interface GitDirs {
 }
 
 async function gitDirsOf(root: string): Promise<GitDirs> {
-  const [top = '', gitDir = '', commonDir = ''] = (await text(root, ['rev-parse', '--show-toplevel', '--absolute-git-dir', '--git-common-dir'])).split('\n')
+  const [top = '', gitDir = '', commonDir = ''] = (await gitText(root, ['rev-parse', '--show-toplevel', '--absolute-git-dir', '--git-common-dir'])).split('\n')
   return { top: realpathSync(top), gitDir: realpathSync(gitDir), commonDir: realpathSync(resolve(root, commonDir)) }
 }
 
-const READING = '^(core\\.(filemode|symlinks|ignorecase|precomposeunicode|autocrlf|eol|safecrlf|excludesfile)|extensions\\.objectformat)$'
+const COPIED_CONFIG_KEYS = '^(core\\.(filemode|symlinks|ignorecase|precomposeunicode|autocrlf|eol|safecrlf|excludesfile)|extensions\\.objectformat)$'
 
 const quoted = (value: string) => `"${value.replace(/[\\"]/g, c => `\\${c}`).replace(/\n/g, '\\n')}"`
 
-async function readingOf(dirs: GitDirs): Promise<{ config: string, exclude?: string }> {
-  const listed = await text(dirs.top, ['config', '-z', '--get-regexp', READING], { GIT_DIR: dirs.gitDir, GIT_COMMON_DIR: dirs.commonDir }).catch(() => '')
+/** The settings of the repository's git configuration that reading its files depends on, for a git directory of the review's own. */
+async function isolatedGitConfig(dirs: GitDirs): Promise<{ config: string, exclude?: string }> {
+  const listed = await gitText(dirs.top, ['config', '-z', '--get-regexp', COPIED_CONFIG_KEYS], { GIT_DIR: dirs.gitDir, GIT_COMMON_DIR: dirs.commonDir }).catch(() => '')
   const sections = new Map<string, string[]>()
   for (const entry of listed.split('\0').filter(Boolean)) {
     const at = entry.indexOf('\n')
@@ -81,26 +81,27 @@ async function readingOf(dirs: GitDirs): Promise<{ config: string, exclude?: str
   return { config: `${config}\n`, ...exclude ? { exclude } : {} }
 }
 
-class Trees {
+/** Trees of the reviewed directory written with an index and a git directory of the review's own. */
+class ReviewTrees {
   readonly #work = mkdtempSync(join(tmpdir(), 'presmium-review-'))
   #indexes = 0
   readonly #pathspec: string
   readonly #env: Record<string, string>
   readonly #files?: DocumentFiles
   readonly top: string
-  readonly deck: string
+  readonly scopeDir: string
   readonly root: string
 
-  constructor(dirs: GitDirs, deck: string, root: string, reading: { config: string, exclude?: string }, options: { files?: DocumentFiles } = {}) {
+  constructor(dirs: GitDirs, scopeDir: string, root: string, gitConfig: { config: string, exclude?: string }, options: { files?: DocumentFiles } = {}) {
     this.top = dirs.top
-    this.deck = deck
+    this.scopeDir = scopeDir
     this.root = root
-    this.#pathspec = relative(dirs.top, deck).split(sep).join('/') || '.'
+    this.#pathspec = relative(dirs.top, scopeDir).split(sep).join('/') || '.'
     const own = join(this.#work, 'git')
     for (const dir of ['refs', 'objects', 'info']) mkdirSync(join(own, dir), { recursive: true })
     writeFileSync(join(own, 'HEAD'), 'ref: refs/heads/review\n')
-    writeFileSync(join(own, 'config'), reading.config)
-    if (reading.exclude !== undefined) writeFileSync(join(own, 'info', 'exclude'), reading.exclude)
+    writeFileSync(join(own, 'config'), gitConfig.config)
+    if (gitConfig.exclude !== undefined) writeFileSync(join(own, 'info', 'exclude'), gitConfig.exclude)
     this.#env = { GIT_DIR: own, GIT_OBJECT_DIRECTORY: join(dirs.commonDir, 'objects'), GIT_WORK_TREE: dirs.top }
     this.#files = options.files
   }
@@ -155,7 +156,7 @@ class Trees {
   }
 
   async restore(tree: string, paths: string[]): Promise<void> {
-    const ours = paths.map(this.toGit).filter(path => isInside(join(this.top, path), this.deck))
+    const ours = paths.map(this.toGit).filter(path => isInside(join(this.top, path), this.scopeDir))
     if (ours.length === 0) return
     if (this.#files) return this.#write(tree, ours)
     const known = new Set((await this.#text(['ls-tree', '-r', '-z', '--name-only', tree, '--', ...ours])).split('\0').filter(Boolean))
@@ -172,7 +173,7 @@ class Trees {
     for (const path of ours.filter(path => !known.has(path))) {
       const file = join(this.top, path)
       rmSync(file, { force: true })
-      for (let dir = dirname(file); isInside(dir, this.deck) && dir !== this.deck; dir = dirname(dir)) {
+      for (let dir = dirname(file); isInside(dir, this.scopeDir) && dir !== this.scopeDir; dir = dirname(dir)) {
         try {
           if (readdirSync(dir).length > 0) break
           rmdirSync(dir)
@@ -215,7 +216,7 @@ class Trees {
 
 export interface GitReviewOptions {
   workspaceRoot: string
-  deckDir: string
+  scopeDir: string
   task: string
   onRestore?: (paths: string[]) => void
   warn?: (message: string) => void
@@ -224,88 +225,90 @@ export interface GitReviewOptions {
 
 const recovering = new Map<string, Promise<{ task: string, paths: string[] } | undefined>>()
 
-function guarding(gitDir: string, deck: string, root: string, onRestore: GitReviewOptions['onRestore'], guard?: GitGuard) {
-  const found = guard ?? (isInside(gitDir, deck) ? guardGitDir(gitDir) : undefined)
+/** Puts a git directory inside the reviewed directory back as it was, from a saved snapshot or one taken now. */
+function gitDirGuard(gitDir: string, scopeDir: string, root: string, onRestore: GitReviewOptions['onRestore'], saved?: SavedGitDir): { saved(): SavedGitDir | undefined, restore(): void } {
+  const snapshot = saved ? snapshotGitDir(gitDir, saved) : isInside(gitDir, scopeDir) ? snapshotGitDir(gitDir) : undefined
   return {
-    guard: found,
+    saved: () => snapshot?.saved(),
     restore() {
-      const paths = found?.restore() ?? []
+      const paths = snapshot?.restore() ?? []
       if (paths.length > 0) onRestore?.(paths.map(path => relative(root, join(gitDir, path)).split(sep).join('/')))
     },
   }
 }
 
 export function recoverGitReview(options: Omit<GitReviewOptions, 'task'>): Promise<{ task: string, paths: string[] } | undefined> {
-  const deck = realpathSync(options.deckDir)
-  let running = recovering.get(deck)
+  const scopeDir = realpathSync(options.scopeDir)
+  let running = recovering.get(scopeDir)
   if (!running) {
-    running = recover(deck, realpathSync(options.workspaceRoot), options).finally(() => recovering.delete(deck))
-    recovering.set(deck, running)
+    running = rollBackLeftReview(scopeDir, realpathSync(options.workspaceRoot), options).finally(() => recovering.delete(scopeDir))
+    recovering.set(scopeDir, running)
   }
   return running
 }
 
-async function recover(deck: string, root: string, options: Omit<GitReviewOptions, 'task'>): Promise<{ task: string, paths: string[] } | undefined> {
-  const { onRestore } = options
-  const record = readRecord(deck)
-  if (!record || record.session || opened.has(deck) || holderRuns(record)) return undefined
-  let trees: Trees | undefined
+async function rollBackLeftReview(scopeDir: string, root: string, options: Omit<GitReviewOptions, 'task'>): Promise<{ task: string, paths: string[] } | undefined> {
+  const record = readRecord(scopeDir)
+  if (!record || record.session || openScopes.has(scopeDir) || isHolderAlive(record)) return undefined
+  let trees: ReviewTrees | undefined
   try {
-    if (record.guard) guarding(record.dirs.gitDir, deck, root, onRestore, guardGitDir(record.dirs.gitDir, record.guard)).restore()
-    trees = new Trees(record.dirs, deck, root, await readingOf(record.dirs), options)
+    if (record.guard) gitDirGuard(record.dirs.gitDir, scopeDir, root, options.onRestore, record.guard).restore()
+    trees = new ReviewTrees(record.dirs, scopeDir, root, await isolatedGitConfig(record.dirs), options)
     const paths = (await trees.compare(record.snapshot, await trees.tree())).map(change => change.path)
     await trees.restore(record.snapshot, paths)
     return { task: record.task, paths }
   } finally {
-    removeRecord(deck)
+    removeRecord(scopeDir)
     trees?.dispose()
   }
 }
 
-export function leftSessionReview(deckDir: string): ReviewRecord | undefined {
-  const deck = realpathSync(deckDir)
-  const record = readRecord(deck)
-  return record?.session && !opened.has(deck) && !holderRuns(record) ? record : undefined
+/** The record of an agent session's review that a process which has ended left waiting for its author. */
+export function pendingAgentSessionReview(scopeDir: string): ReviewRecord | undefined {
+  const real = realpathSync(scopeDir)
+  const record = readRecord(real)
+  return record?.session && !openScopes.has(real) && !isHolderAlive(record) ? record : undefined
 }
 
-export async function openGitReview(options: GitReviewOptions & { session?: Omit<SessionRecord, 'checkpoints' | 'steps'> }): Promise<GitReview> {
-  const deck = realpathSync(options.deckDir)
+export async function openGitReview(options: GitReviewOptions & { session?: Omit<AgentSessionRecord, 'checkpoints' | 'steps'> }): Promise<GitReview> {
+  const scopeDir = realpathSync(options.scopeDir)
   const root = realpathSync(options.workspaceRoot)
-  if (opened.has(deck)) throw new Error(`a change of ${relative(root, deck) || '.'} is under way already`)
-  const left = readRecord(deck)
-  if (left && holderRuns(left)) throw new Error(`a change of ${relative(root, deck) || '.'} is under way in another process (${left.pid})`)
-  if (left?.session) throw new Error(`a review of ${relative(root, deck) || '.'} waits for its author (session ${left.session.session}): accept or reject it in the workbench first`)
+  if (openScopes.has(scopeDir)) throw new Error(`a change of ${relative(root, scopeDir) || '.'} is under way already`)
+  const left = readRecord(scopeDir)
+  if (left && isHolderAlive(left)) throw new Error(`a change of ${relative(root, scopeDir) || '.'} is under way in another process (${left.pid})`)
+  if (left?.session) throw new Error(`a review of ${relative(root, scopeDir) || '.'} waits for its author (session ${left.session.session}): accept or reject it in the workbench first`)
   if (left) await recoverGitReview(options)
   const dirs = await gitDirsOf(root)
-  const { guard, restore: guarded } = guarding(dirs.gitDir, deck, root, options.onRestore)
-  const trees = new Trees(dirs, deck, root, await readingOf(dirs), options)
+  const guard = gitDirGuard(dirs.gitDir, scopeDir, root, options.onRestore)
+  const trees = new ReviewTrees(dirs, scopeDir, root, await isolatedGitConfig(dirs), options)
 
-  opened.add(deck)
+  openScopes.add(scopeDir)
   let snapshot: string
   try {
     snapshot = await trees.tree()
   } catch (error) {
-    opened.delete(deck)
+    openScopes.delete(scopeDir)
     trees.dispose()
     throw error
   }
-  const record: ReviewRecord = { deck, dirs, snapshot, task: options.task, ...SELF, ...guard ? { guard: guard.saved() } : {}, ...options.session ? { session: { ...options.session, checkpoints: [], steps: [] } } : {} }
-  return reviewOf({ deck, trees, guarded, record, warn: options.warn })
+  const saved = guard.saved()
+  const record: ReviewRecord = { scopeDir, dirs, snapshot, task: options.task, ...THIS_PROCESS, ...saved ? { guard: saved } : {}, ...options.session ? { session: { ...options.session, checkpoints: [], steps: [] } } : {} }
+  return createGitReview({ scopeDir, trees, restoreGitDir: guard.restore, record, warn: options.warn })
 }
 
-export async function resumeGitReview(record: ReviewRecord, options: Omit<GitReviewOptions, 'task' | 'deckDir'>): Promise<GitReview> {
-  const deck = realpathSync(record.deck)
+export async function resumeGitReview(record: ReviewRecord, options: Omit<GitReviewOptions, 'task' | 'scopeDir'>): Promise<GitReview> {
+  const scopeDir = realpathSync(record.scopeDir)
   const root = realpathSync(options.workspaceRoot)
-  if (opened.has(deck) || holderRuns(record)) throw new Error(`a change of ${relative(root, deck) || '.'} is under way already`)
-  const { restore: guarded } = guarding(record.dirs.gitDir, deck, root, options.onRestore, record.guard ? guardGitDir(record.dirs.gitDir, record.guard) : undefined)
-  guarded()
-  const trees = new Trees(record.dirs, deck, root, await readingOf(record.dirs), options)
-  opened.add(deck)
-  return reviewOf({ deck, trees, guarded, record: { ...record, ...SELF }, warn: options.warn })
+  if (openScopes.has(scopeDir) || isHolderAlive(record)) throw new Error(`a change of ${relative(root, scopeDir) || '.'} is under way already`)
+  const { restore: restoreGitDir } = gitDirGuard(record.dirs.gitDir, scopeDir, root, options.onRestore, record.guard)
+  restoreGitDir()
+  const trees = new ReviewTrees(record.dirs, scopeDir, root, await isolatedGitConfig(record.dirs), options)
+  openScopes.add(scopeDir)
+  return createGitReview({ scopeDir, trees, restoreGitDir, record: { ...record, ...THIS_PROCESS }, warn: options.warn })
 }
 
-function reviewOf(open: { deck: string, trees: Trees, guarded: () => void, record: ReviewRecord, warn?: (message: string) => void }): GitReview {
-  const { deck, trees, guarded, record } = open
+function createGitReview(open: { scopeDir: string, trees: ReviewTrees, restoreGitDir: () => void, record: ReviewRecord, warn?: (message: string) => void }): GitReview {
+  const { scopeDir, trees, restoreGitDir, record } = open
   const { snapshot } = record
   const steps: ReviewStep[] = [...record.session?.steps ?? []]
   const checkpoints = [snapshot, ...record.session?.checkpoints ?? []]
@@ -325,8 +328,8 @@ function reviewOf(open: { deck: string, trees: Trees, guarded: () => void, recor
   const settle = () => {
     if (settled) return
     settled = true
-    opened.delete(deck)
-    if (!suspended) removeRecord(deck)
+    openScopes.delete(scopeDir)
+    if (!suspended) removeRecord(scopeDir)
     trees.dispose()
   }
   const live = () => {
@@ -334,7 +337,7 @@ function reviewOf(open: { deck: string, trees: Trees, guarded: () => void, recor
   }
   const prepareAccept = async (reject: string[]) => {
     live()
-    guarded()
+    restoreGitDir()
     const changes = await trees.compare(snapshot, await trees.tree())
     const rejected = new Set(reject.filter(path => changes.some(change => change.path === path)))
     await trees.restore(snapshot, [...rejected])
@@ -342,13 +345,12 @@ function reviewOf(open: { deck: string, trees: Trees, guarded: () => void, recor
   }
 
   return {
-    root: deck,
+    root: scopeDir,
     visibility: 'immediate',
     task: record.task,
-    checkpoints: () => checkpoints.slice(1),
     async step(label, tool) {
       live()
-      guarded()
+      restoreGitDir()
       const now = await trees.tree()
       if (steps.length >= MAX_STEPS) {
         checkpoints[checkpoints.length - 1] = now
@@ -366,14 +368,14 @@ function reviewOf(open: { deck: string, trees: Trees, guarded: () => void, recor
     steps: () => steps,
     async diff() {
       live()
-      guarded()
+      restoreGitDir()
       return trees.compare(snapshot, await trees.tree())
     },
     async restoreTo(stepId) {
       live()
       const at = steps.findIndex(step => step.id === stepId)
       if (at < 0) throw new Error(`no step ${stepId} in this review`)
-      guarded()
+      restoreGitDir()
       await trees.reset(checkpoints[at]!)
       steps.splice(at)
       checkpoints.splice(at + 1)
@@ -381,11 +383,11 @@ function reviewOf(open: { deck: string, trees: Trees, guarded: () => void, recor
     },
     async restoreFiles(paths) {
       live()
-      guarded()
+      restoreGitDir()
       const changed = new Set((await trees.compare(snapshot, await trees.tree())).map(change => change.path))
       await trees.restore(snapshot, paths.filter(path => changed.has(path)))
     },
-    note(session) {
+    noteSession(session) {
       if (!record.session) return
       record.session = { ...record.session, ...session }
       write()
@@ -399,14 +401,14 @@ function reviewOf(open: { deck: string, trees: Trees, guarded: () => void, recor
     },
     async rollback() {
       live()
-      guarded()
+      restoreGitDir()
       await trees.reset(snapshot)
       settle()
     },
     async close() {
       if (settled) return
       try {
-        guarded()
+        restoreGitDir()
         await trees.reset(snapshot)
       } finally {
         settle()

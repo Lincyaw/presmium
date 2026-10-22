@@ -217,8 +217,8 @@ it('presmium-mcp finds what presmium check finds, a plugin\'s finding on its lin
     expect(diagnostics.map(key).sort()).toEqual(findings.map(f => key({ check: f.checkId, severity: f.severity, message: f.message, file: f.source.file.slice(dir.length + 1), line: f.source.line })).sort())
     expect(diagnostics.map(f => f.check)).toContain('fixture.mcp.check')
 
-    const { compilerHost } = await import('../src/stdio.ts')
-    const host = compilerHost(join(dir, 'lecture.md'), [])
+    const { compilerMcpHost } = await import('../src/cli.ts')
+    const host = compilerMcpHost(join(dir, 'lecture.md'), [])
     const { doc } = await host.compile('')
     expect(doc.sections.map(s => s.id)).toContain('teacher')
     expect(JSON.stringify(doc)).toContain('TEACHERNOTE27')

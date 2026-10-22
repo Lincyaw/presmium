@@ -124,11 +124,15 @@ describe('presmium serve: the workspace service for a workbench', () => {
     expect(check.json<{ findings: { message: string }[] }>().findings).toContainEqual(expect.objectContaining({ message: expect.stringMatching(/unknown renderer id/) }))
   }, 600_000)
 
-  it('asks every route of the workspace for the service token', async () => {
+  it('asks every route of the workspace and the server\'s diagnostics for the service token, and refuses a token that differs only in a non-ASCII letter', async () => {
     for (const [path, init] of [['ir?document=talk', {}], ['documents', {}], ['files?document=talk', {}], ['source?document=talk', { method: 'POST', json: { path: 'talk/lecture.md', content: 'x', base: 'x' } }]] as const) {
       expect((await raw(`${url}/__presmium/presmium.workspace/${path}`, init)).status, path).toBe(401)
       expect((await raw(`${url}/__presmium/presmium.workspace/${path}`, { ...init, headers: { Authorization: 'Bearer another' } })).status, path).toBe(401)
     }
+    const lookalike = { Authorization: `Bearer ${TOKEN.slice(0, -1)}é` }
+    expect((await raw(`${url}/__presmium/presmium.workspace/documents`, { headers: lookalike })).status).toBe(401)
+    expect((await raw(`${url}/__presmium/presmium.server/diagnostics?document=talk`, { headers: lookalike })).status).toBe(401)
+    expect((await raw(`${url}/__presmium/presmium.server/diagnostics?document=talk`, { headers: ALL })).status).toBe(200)
     expect((await route('documents')).status).toBe(200)
     expect((await raw(`${url}/__presmium/presmium.server/hello`)).status).toBe(200)
   })

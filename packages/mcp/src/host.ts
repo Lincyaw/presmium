@@ -72,8 +72,8 @@ export interface McpHost {
   watchPositions?(listener: () => void): () => void
   focus?(document?: string): McpFocus | undefined
   watchFocus?(listener: () => void): () => void
-  classroom?(document: string): Record<string, unknown>
+  classroomStatus?(document: string): Record<string, unknown>
   runtime?(document: string): McpRuntimeWindow[]
   navigate?(document: string, position: { slide: number, step: number, view?: string, section?: string, trail?: string[] }, member: Member): number
-  session?(document: string, action: 'start' | 'end', name: string | undefined, member: Member): number
+  setClassroom?(document: string, action: 'start' | 'end', name: string | undefined, member: Member): number
 }

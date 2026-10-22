@@ -1,7 +1,8 @@
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
-import { deckLocale, errorMessage, isRecord } from '@lincyaw/kernel'
+import { APPROVAL_KINDS, deckLocale, errorMessage, isRecord } from '@lincyaw/kernel'
 import type { ApprovalKind } from '@lincyaw/kernel'
 import { MCP_MESSAGES } from './messages.ts'
+import { TOOL_APPROVAL_META, TOOL_KIND_META } from './tool-meta.ts'
 
 export interface ListedTool {
   name: string
@@ -24,7 +25,7 @@ export interface PresmiumMcpClient {
   close(): Promise<void>
 }
 
-const KINDS = new Set(['read', 'operate', 'spend', 'write', 'agent'])
+const KINDS = new Set<string>(['read', ...APPROVAL_KINDS])
 const CALL_TIMEOUT_MS = 10 * 60_000
 
 export async function connectPresmiumMcp(url: string, token: string, name = 'presmium-dsh'): Promise<PresmiumMcpClient> {
@@ -95,8 +96,8 @@ export async function connectPresmiumMcp(url: string, token: string, name = 'pre
         const page = await client.listTools(cursor ? { cursor } : undefined)
         for (const tool of page.tools) {
           const meta = isRecord(tool._meta) ? tool._meta : {}
-          const kind = typeof meta['presmium/kind'] === 'string' && KINDS.has(meta['presmium/kind']) ? meta['presmium/kind'] as ListedTool['kind'] : (tool.annotations?.readOnlyHint ? 'read' : 'operate')
-          const approval = meta['presmium/approval'] === 'allow' ? 'allow' : meta['presmium/approval'] === 'ask' ? 'ask' : undefined
+          const kind = typeof meta[TOOL_KIND_META] === 'string' && KINDS.has(meta[TOOL_KIND_META]) ? meta[TOOL_KIND_META] as ListedTool['kind'] : (tool.annotations?.readOnlyHint ? 'read' : 'operate')
+          const approval = meta[TOOL_APPROVAL_META] === 'allow' ? 'allow' : meta[TOOL_APPROVAL_META] === 'ask' ? 'ask' : undefined
           listed.push({ name: tool.name, description: tool.description ?? tool.name, inputSchema: tool.inputSchema as Record<string, unknown>, kind, ...approval ? { approval } : {} })
         }
         cursor = page.nextCursor

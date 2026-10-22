@@ -5,28 +5,28 @@ import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { createJiti } from 'jiti'
-import { errorMessage } from '@lincyaw/kernel'
+import { APPROVAL_KINDS, errorMessage } from '@lincyaw/kernel'
 import { bracketIPv6, irRevision, lanAddresses } from '@lincyaw/kernel/node'
 import type { ApprovalKind, Finding, Severity } from '@lincyaw/kernel'
 import { build, Compiler, dev, resolveEntry } from '@lincyaw/compiler'
 import type { BuildReport, Compilation, RunStats } from '@lincyaw/compiler'
-import { anyAddress, isLoopback, serverConfiguration, servedDocument, startServer } from '@lincyaw/server'
+import { isAnyAddress, isLoopback, serverConfigKey, servedDocument, startServer } from '@lincyaw/server'
 import type { ApprovalPolicy } from '@lincyaw/server'
 import { buildWorkspace, isWorkspaceRoot, serveWorkspace } from '@lincyaw/workspace'
 import type { WorkspaceBuild } from '@lincyaw/workspace'
 import { runCheck } from './check.ts'
 import type { CheckResult } from './check.ts'
-import { devHost } from './host.ts'
+import { devHost } from './dev-host.ts'
 
-export const BUNDLED = fileURLToPath(new URL('..', import.meta.url))
+const BUNDLED = fileURLToPath(new URL('..', import.meta.url))
+const PRESMIUM_BIN = fileURLToPath(new URL('../bin/presmium.mjs', import.meta.url))
 
 export interface MainOptions {
+  /** The package whose dependencies hold the renderers and plugins a document does not install itself. */
   bundled?: string
+  /** The presmium command that presmium studio starts. */
   bin?: string
 }
-
-let bundled = BUNDLED
-let presmiumBin = fileURLToPath(new URL('../bin/presmium.mjs', import.meta.url))
 
 const USAGE = `Usage: presmium <command> [deck] [options]
 
@@ -90,8 +90,6 @@ const OPTIONS = {
 
 type Name = keyof typeof OPTIONS
 
-const KINDS: readonly ApprovalKind[] = ['operate', 'spend', 'write', 'agent']
-
 interface Command {
   name: Name
   entry: string
@@ -107,15 +105,14 @@ interface Command {
   allow: ApprovalKind[]
   operatorDir?: string
   port?: number
-  host?: string
+  listenAddress?: string
   previewOrigins: string[]
 }
 
 export async function main(argv: string[], options: MainOptions = {}): Promise<number> {
-  bundled = options.bundled ?? BUNDLED
-  if (options.bin) presmiumBin = options.bin
-  if (argv[0] === 'new') return create(argv.slice(1))
-  if (argv[0] === 'studio') return studio(argv.slice(1))
+  const bundled = options.bundled ?? BUNDLED
+  if (argv[0] === 'new') return runNewCommand(argv.slice(1), bundled)
+  if (argv[0] === 'studio') return runStudioCommand(argv.slice(1), bundled, options.bin ?? PRESMIUM_BIN)
   let command: Command | 'help'
   try {
     command = parseCommand(argv)
@@ -129,11 +126,11 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
   }
   try {
     switch (command.name) {
-      case 'check': return await check(command)
-      case 'ir': return await ir(command)
-      case 'build': return await buildDeck(command)
-      case 'dev': return await devDeck(command)
-      case 'serve': return await serve(command)
+      case 'check': return await runCheckCommand(command, bundled)
+      case 'ir': return await runIrCommand(command, bundled)
+      case 'build': return await runBuildCommand(command, bundled)
+      case 'dev': return await runDevCommand(command, bundled)
+      case 'serve': return await runServeCommand(command, bundled)
     }
   } catch (error) {
     process.stderr.write(`presmium: ${errorMessage(error)}\n`)
@@ -182,8 +179,8 @@ function parseCommand(argv: string[]): Command | 'help' {
   const to = values.to?.split(',').map(id => id.trim()).filter(Boolean)
   if (to?.length === 0) throw new Error('--to needs at least one renderer id')
   const allow = values.allow?.split(',').map(kind => kind.trim()).filter(Boolean) ?? []
-  const unknown = allow.find(kind => !(KINDS as string[]).includes(kind))
-  if (unknown) throw new Error(`--allow takes ${KINDS.join(', ')}, not "${unknown}"`)
+  const unknown = allow.find(kind => !(APPROVAL_KINDS as readonly string[]).includes(kind))
+  if (unknown) throw new Error(`--allow takes ${APPROVAL_KINDS.join(', ')}, not "${unknown}"`)
   const previewOrigins = values['preview-origin'] ?? []
   const notOrigin = previewOrigins.find(origin => !isOrigin(origin))
   if (notOrigin !== undefined) throw new Error(`--preview-origin takes an origin such as http://127.0.0.1:4320, not "${notOrigin}"`)
@@ -198,11 +195,11 @@ function parseCommand(argv: string[]): Command | 'help' {
     env: values.env,
     ...audience ? { audience } : {},
     externalLinks: values['external-links'],
-    serverPort: port(values['server-port'], '--server-port'),
+    serverPort: parsePort(values['server-port'], '--server-port'),
     allow: allow as ApprovalKind[],
     operatorDir: values['operator-dir'],
-    port: port(values.port, '--port'),
-    host: values.host,
+    port: parsePort(values.port, '--port'),
+    listenAddress: values.host,
     previewOrigins,
   }
 }
@@ -216,14 +213,14 @@ function isOrigin(value: string): boolean {
   }
 }
 
-function port(value: string | undefined, option: string): number | undefined {
+function parsePort(value: string | undefined, option: string): number | undefined {
   if (value === undefined) return undefined
   const n = Number(value)
   if (!Number.isInteger(n) || n < 0 || n > 65535) throw new Error(`${option} takes a port number, not "${value}"`)
   return n
 }
 
-async function check(command: Command): Promise<number> {
+async function runCheckCommand(command: Command, bundled: string): Promise<number> {
   const result = await runCheck({
     deck: command.entry,
     updateLock: command.updateLock,
@@ -235,7 +232,7 @@ async function check(command: Command): Promise<number> {
   return exitCode(result.findings)
 }
 
-async function ir(command: Command): Promise<number> {
+async function runIrCommand(command: Command, bundled: string): Promise<number> {
   const { doc } = await new Compiler(command.entry, { bundled }).compile()
   const json = `${JSON.stringify(doc, null, 2)}\n`
   if (command.out) {
@@ -249,7 +246,7 @@ async function ir(command: Command): Promise<number> {
   return exitCode(doc.diagnostics)
 }
 
-async function buildDeck(command: Command): Promise<number> {
+async function runBuildCommand(command: Command, bundled: string): Promise<number> {
   if (command.workspace) {
     const report = await buildWorkspace(command.workspace, { outDir: command.out, bundled })
     process.stdout.write(workspaceText(report))
@@ -262,7 +259,7 @@ async function buildDeck(command: Command): Promise<number> {
   return exitCode(report.findings)
 }
 
-async function devDeck(command: Command): Promise<number> {
+async function runDevCommand(command: Command, bundled: string): Promise<number> {
   let latest: Compilation | undefined
   const deckDir = dirname(command.entry)
   const approvals: Partial<Record<ApprovalKind, ApprovalPolicy>> = Object.fromEntries(command.allow.map(kind => [kind, 'allow']))
@@ -279,18 +276,18 @@ async function devDeck(command: Command): Promise<number> {
   const outDir = resolve(command.out ?? join(compiler.deckDir, '.presmium', 'dev'))
   await mkdir(outDir, { recursive: true })
   await writeFile(join(outDir, '.gitignore'), '*\n')
-  let session
+  let devServers
   try {
-    session = await dev(compiler, {
+    devServers = await dev(compiler, {
       outDir,
       to: command.to,
       server: { url: server.url },
       onCompile(compilation, findings) {
-        const changed = latest && serverConfiguration(latest) !== serverConfiguration(compilation)
+        const changed = latest && serverConfigKey(latest) !== serverConfigKey(compilation)
         latest = compilation
         const revision = irRevision(compilation.doc)
         server.diagnostics.compiled('', compilation.doc, compilation.workspaceRoot, revision)
-        server.diagnostics.replace({ document: '', origin: 'preview' }, findings.filter(finding => finding.checkId === 'presmium.render'), { root: compilation.workspaceRoot, revision })
+        server.diagnostics.replace({ document: '', origin: 'preview' }, findings.filter(finding => finding.checkId === 'presmium.render'), { root: compilation.workspaceRoot, irRevision: revision })
         if (changed) void server.unmount('', { preserveFocus: true }).catch((error: unknown) => {
           process.stderr.write(`presmium: the previous server contributions did not close: ${errorMessage(error)}\n`)
         })
@@ -303,31 +300,31 @@ async function devDeck(command: Command): Promise<number> {
     await server.close()
     throw error
   }
-  for (const { renderer, url } of session.servers) process.stdout.write(`${renderer}  ${url}\n`)
+  for (const { renderer, url } of devServers.servers) process.stdout.write(`${renderer}  ${url}\n`)
   process.stdout.write(`server  ${server.url}\nmcp  ${server.url}/mcp (its token is in ${relative(process.cwd(), join(deckDir, '.presmium', 'server.json'))})\n`)
-  process.stdout.write(`watching; IR in ${relative(process.cwd(), session.ir)}\n`)
+  process.stdout.write(`watching; IR in ${relative(process.cwd(), devServers.ir)}\n`)
   await new Promise<void>((done) => {
     process.once('SIGINT', done)
     process.once('SIGTERM', done)
   })
-  await session.close()
+  await devServers.close()
   await server.close()
   return 0
 }
 
-async function serve(command: Command): Promise<number> {
+async function runServeCommand(command: Command, bundled: string): Promise<number> {
   const started = await serveWorkspace({
     dir: command.entry,
-    host: command.host,
+    listenAddress: command.listenAddress,
     port: command.port,
     ...command.operatorDir ? { operatorDir: resolve(command.operatorDir) } : {},
     bundled,
     check: compilation => compilation.check(),
     previewOrigins: command.previewOrigins,
   })
-  process.stdout.write(`serve  ${started.url}\n${networkLines(command.host, started.url)}workspace  ${started.root}\nmcp  ${started.mcp.url} (its token is in ${started.mcp.stateFile})\n`)
-  if (command.host && !isLoopback(command.host)) {
-    process.stderr.write(`presmium serve: listening on ${command.host}, on the local network, with no login: anyone who reaches port ${new URL(started.url).port} uses this workspace as you (edits, runs code, approves). Use it on a network you trust; without --host it listens on this machine only.\n`)
+  process.stdout.write(`serve  ${started.url}\n${networkLines(command.listenAddress, started.url)}workspace  ${started.root}\nmcp  ${started.mcp.url} (its token is in ${started.mcp.stateFile})\n`)
+  if (command.listenAddress && !isLoopback(command.listenAddress)) {
+    process.stderr.write(`presmium serve: listening on ${command.listenAddress}, on the local network, with no login: anyone who reaches port ${new URL(started.url).port} uses this workspace as you (edits, runs code, approves). Use it on a network you trust; without --host it listens on this machine only.\n`)
   }
   await new Promise<void>((done) => {
     process.once('SIGINT', done)
@@ -337,7 +334,7 @@ async function serve(command: Command): Promise<number> {
   return 0
 }
 
-function installed(name: string): string | undefined {
+function resolveInstalled(name: string, bundled: string): string | undefined {
   for (const from of [pathToFileURL(join(bundled, 'package.json')).href, import.meta.url, pathToFileURL(join(process.cwd(), 'package.json')).href]) {
     try {
       return createRequire(from).resolve(name)
@@ -347,8 +344,8 @@ function installed(name: string): string | undefined {
   return undefined
 }
 
-async function create(argv: string[]): Promise<number> {
-  const entry = installed('create-presmium')
+async function runNewCommand(argv: string[], bundled: string): Promise<number> {
+  const entry = resolveInstalled('create-presmium', bundled)
   if (!entry) {
     process.stderr.write('presmium new: create-presmium is not installed; it comes with the presmium package: pnpm add -g @lincyaw/presmium\n')
     return 2
@@ -357,8 +354,8 @@ async function create(argv: string[]): Promise<number> {
   return createMain(argv)
 }
 
-async function studio(argv: string[]): Promise<number> {
-  const entry = installed('@lincyaw/studio')
+async function runStudioCommand(argv: string[], bundled: string, presmiumBin: string): Promise<number> {
+  const entry = resolveInstalled('@lincyaw/studio', bundled)
   if (!entry) {
     process.stderr.write('presmium studio: the workbench is not installed here. It is the package @lincyaw/studio (experimental; with DeepSeek Harness, about 865 MB): pnpm add -g @lincyaw/studio, then run presmium-studio; or pnpm add -D @lincyaw/studio in this project.\n')
     return 2
@@ -367,10 +364,10 @@ async function studio(argv: string[]): Promise<number> {
   return studioMain(argv, { presmium: presmiumBin })
 }
 
-function networkLines(host: string | undefined, url: string): string {
-  if (!host || isLoopback(host)) return ''
+function networkLines(listenAddress: string | undefined, url: string): string {
+  if (!listenAddress || isLoopback(listenAddress)) return ''
   const { port } = new URL(url)
-  const addresses = anyAddress(host) ? lanAddresses() : [bracketIPv6(host)]
+  const addresses = isAnyAddress(listenAddress) ? lanAddresses() : [bracketIPv6(listenAddress)]
   return addresses.map(address => `network  http://${address}:${port}/\n`).join('')
 }
 

@@ -3,13 +3,13 @@ import { tmpdir } from 'node:os'
 import { join, relative, sep } from 'node:path'
 import type { DocumentFileChange, HistoryRevision, Member, RevertResult, Revision, RevisionService, UncommittedFile } from '@lincyaw/kernel'
 import { leavesRoot } from '../domain/paths.ts'
-import { commitMessage, memberAddress, originOf } from '../domain/revisions.ts'
-import type { CommitOrigin } from '../domain/revisions.ts'
+import { commitMessage, memberAddress, originOf } from '../domain/commit-message.ts'
+import type { CommitOrigin } from '../domain/commit-message.ts'
 import type { WorkspaceConfig } from './config.ts'
-import { makeDocumentDir, RequestError } from './documents.ts'
-import { documentDirOf, generatedPath, writeChanges } from './files.ts'
-import type { DocumentWriter } from './files.ts'
+import { RequestError } from './errors.ts'
 import type { Git } from './git.ts'
+import { documentDirOf, isGeneratedPath, makeDocumentDir, writeChanges } from './writer.ts'
+import type { DocumentWriter } from './writer.ts'
 
 const FIELD = '\x00'
 const RECORD = '\x1e'
@@ -34,7 +34,7 @@ function revertedOf(message: string): string | undefined {
   return originOf(message)?.revert ?? /This reverts commit ([0-9a-f]{7,64})/.exec(message)?.[1]
 }
 
-function redoes(entries: LogEntry[]): (entry: LogEntry) => boolean {
+function redoPredicate(entries: LogEntry[]): (entry: LogEntry) => boolean {
   const find = (id: string) => entries.find(entry => entry.id === id || (id.length >= 7 && entry.id.startsWith(id)))
   const known = new Map<string, boolean>()
   const redo = (entry: LogEntry): boolean => {
@@ -79,6 +79,16 @@ export interface RevisionFiles {
   writer: DocumentWriter
 }
 
+export interface LockedCommit {
+  paths: string[]
+  summary: string
+  body: string
+  origin: CommitOrigin
+  /** The commit this one undoes. */
+  revert?: string
+  trailers?: [string, string][]
+}
+
 export class Revisions implements RevisionService {
   readonly #git: Git
   readonly #files: RevisionFiles
@@ -90,22 +100,24 @@ export class Revisions implements RevisionService {
 
   commit(change: { files: string[], message: string, origin: CommitOrigin, trailers?: [string, string][] }): Promise<Revision | undefined> {
     const [summary = '', ...body] = change.message.trim().split('\n')
-    return this.#git.exclusive(() => this.commitNow(change.files, summary, body.join('\n'), change.origin, undefined, change.trailers))
+    return this.#git.exclusive(() => this.commitWhileLocked({ paths: change.files, summary, body: body.join('\n'), origin: change.origin, ...change.trailers ? { trailers: change.trailers } : {} }))
   }
 
-  async commitNow(paths: string[], summary: string, body: string, origin: CommitOrigin, revert?: string, more: [string, string][] = []): Promise<Revision | undefined> {
-    const unique = [...new Set(paths.map(path => path.replace(/^\.?\/+|\/+$/g, '')).filter(path => path && !leavesRoot(path)))]
+  /** Commits the paths; the caller holds the git lock (`Git.exclusive`). */
+  async commitWhileLocked(commit: LockedCommit): Promise<Revision | undefined> {
+    const { summary, body, origin } = commit
+    const unique = [...new Set(commit.paths.map(path => path.replace(/^\.?\/+|\/+$/g, '')).filter(path => path && !leavesRoot(path)))]
     if (unique.length === 0) return undefined
-    for (const path of unique) await this.#git.raw(['add', '-A', '--', path], { GIT_LITERAL_PATHSPECS: '1' })
-    const staged = (await this.#git.raw(['diff', '--cached', '--name-only', '--', ...unique], { GIT_LITERAL_PATHSPECS: '1' })).trim()
+    for (const path of unique) await this.#git.output(['add', '-A', '--', path], { GIT_LITERAL_PATHSPECS: '1' })
+    const staged = (await this.#git.output(['diff', '--cached', '--name-only', '--', ...unique], { GIT_LITERAL_PATHSPECS: '1' })).trim()
     if (!staged) return undefined
-    const message = withTrailers(commitMessage(summary, body, origin, revert), more)
-    await this.#git.raw([...await this.#identity(), 'commit', '-q', '--no-verify', '-m', message, ...this.#author(origin.member), '--', ...unique], { GIT_LITERAL_PATHSPECS: '1' })
+    const message = withTrailers(commitMessage(summary, body, origin, commit.revert), commit.trailers ?? [])
+    await this.#git.output([...await this.#identity(), 'commit', '-q', '--no-verify', '-m', message, ...this.#author(origin.member), '--', ...unique], { GIT_LITERAL_PATHSPECS: '1' })
     return this.#revision('HEAD')
   }
 
   async status(paths: string[] = ['']): Promise<{ branch?: string, uncommitted: number }> {
-    const branch = await this.#git.attempt(['symbolic-ref', '--quiet', '--short', 'HEAD'])
+    const branch = await this.#git.tryOutput(['symbolic-ref', '--quiet', '--short', 'HEAD'])
     return { ...branch.ok ? { branch: branch.output.trim() } : {}, uncommitted: (await this.#statusOf(paths)).length }
   }
 
@@ -113,7 +125,7 @@ export class Revisions implements RevisionService {
     const specs = paths.map(path => path || '.')
     const status = await this.#statusOf(paths)
     const counts = new Map<string, [number, number]>()
-    const numstat = await this.#git.attempt(['diff', '--numstat', '-z', '--no-renames', 'HEAD', '--', ...specs], { GIT_LITERAL_PATHSPECS: '1' })
+    const numstat = await this.#git.tryOutput(['diff', '--numstat', '-z', '--no-renames', 'HEAD', '--', ...specs], { GIT_LITERAL_PATHSPECS: '1' })
     if (numstat.ok) {
       for (const entry of numstat.output.split('\0').filter(Boolean)) {
         const [added = '-', removed = '-', path = ''] = entry.split('\t')
@@ -131,7 +143,7 @@ export class Revisions implements RevisionService {
     return this.#git.exclusive(async () => {
       const files: TreeFile[] = []
       for (const path of paths) {
-        const listed = await this.#git.attempt(['ls-tree', '-z', 'HEAD', '--', path], { GIT_LITERAL_PATHSPECS: '1' })
+        const listed = await this.#git.tryOutput(['ls-tree', '-z', 'HEAD', '--', path], { GIT_LITERAL_PATHSPECS: '1' })
         const [meta = '', named] = (listed.ok ? listed.output.split('\0')[0] ?? '' : '').split('\t')
         const [mode = '', , oid = ''] = meta.split(' ')
         files.push(named && mode ? { path, mode, oid } : { path, mode: '000000', oid: '' })
@@ -141,7 +153,7 @@ export class Revisions implements RevisionService {
   }
 
   async history(filter: { document?: string, task?: string, limit?: number } = {}): Promise<HistoryRevision[]> {
-    const log = await this.#git.attempt(['log', FORMAT, '--name-only', '--no-renames', ...filter.document ? ['--', filter.document] : []], { GIT_LITERAL_PATHSPECS: '1' })
+    const log = await this.#git.tryOutput(['log', FORMAT, '--name-only', '--no-renames', ...filter.document ? ['--', filter.document] : []], { GIT_LITERAL_PATHSPECS: '1' })
     if (!log.ok) return []
     const entries = parseLog(log.output)
     const revertedBy = new Map<string, string>()
@@ -149,9 +161,9 @@ export class Revisions implements RevisionService {
       const reverted = revertedOf(entry.message)
       if (reverted && !revertedBy.has(reverted)) revertedBy.set(reverted, entry.id)
     }
-    const redo = redoes(entries)
+    const isRedo = redoPredicate(entries)
     const revisions = entries.flatMap((entry) => {
-      const found = revision(entry, revertedBy.get(entry.id), redo(entry))
+      const found = revision(entry, revertedBy.get(entry.id), isRedo(entry))
       return found && (!filter.task || found.origin.task === filter.task) ? [found] : []
     })
     return filter.limit ? revisions.slice(0, filter.limit) : revisions
@@ -159,10 +171,10 @@ export class Revisions implements RevisionService {
 
   revert(id: string, member: Member): Promise<RevertResult> {
     return this.#git.exclusive(async () => {
-      const verified = await this.#git.attempt(['rev-parse', '--verify', '--quiet', `${id}^{commit}`])
+      const verified = await this.#git.tryOutput(['rev-parse', '--verify', '--quiet', `${id}^{commit}`])
       if (!verified.ok) throw new Error(`no commit ${id}`)
       const target = (await this.#log(verified.output.trim()))!
-      const parent = await this.#git.attempt(['rev-parse', '--verify', '--quiet', `${target.id}^1`])
+      const parent = await this.#git.tryOutput(['rev-parse', '--verify', '--quiet', `${target.id}^1`])
       if (!parent.ok) throw new Error(`commit ${target.id} has no parent to go back to`)
       const merged = await this.#git.run(['merge-tree', '--write-tree', '--no-messages', '--name-only', `--merge-base=${target.id}`, 'HEAD', parent.output.trim()])
       const lines = merged.stdout.toString('utf8').split('\n').map(line => line.trim()).filter(Boolean)
@@ -178,41 +190,41 @@ export class Revisions implements RevisionService {
       const subject = target.message.split('\n')[0] ?? target.id
       const undone = originOf(target.message)
       const origin: CommitOrigin = { kind: undone?.kind ?? 'editor', member, ...undone?.operation ? { operation: undone.operation } : {} }
-      const done = await this.commitNow(changes.map(change => change.path), `Revert "${subject}"`, `This reverts commit ${target.id}.`, origin, target.id)
+      const done = await this.commitWhileLocked({ paths: changes.map(change => change.path), summary: `Revert "${subject}"`, body: `This reverts commit ${target.id}.`, origin, revert: target.id })
       if (!done) throw new Error(`the revert of ${target.id} committed nothing`)
       return { ok: true, revision: done }
     })
   }
 
   async messageOf(id: string): Promise<string | undefined> {
-    const shown = await this.#git.attempt(['show', '-s', '--format=%B', `${id}^{commit}`])
+    const shown = await this.#git.tryOutput(['show', '-s', '--format=%B', `${id}^{commit}`])
     return shown.ok ? shown.output : undefined
   }
 
   async filesOf(id: string): Promise<string[]> {
-    const shown = await this.#git.attempt(['show', '--no-renames', '--name-only', '-z', '--format=', `${id}^{commit}`])
+    const shown = await this.#git.tryOutput(['show', '--no-renames', '--name-only', '-z', '--format=', `${id}^{commit}`])
     return shown.ok ? shown.output.split('\0').filter(Boolean).map(this.#fromTop) : []
   }
 
   async documentsOf(id: string): Promise<string[]> {
-    const verified = await this.#git.attempt(['rev-parse', '--verify', '--quiet', `${id}^{commit}`])
+    const verified = await this.#git.tryOutput(['rev-parse', '--verify', '--quiet', `${id}^{commit}`])
     if (!verified.ok) return []
-    const files = (await this.#git.raw(['show', '--no-renames', '--name-only', '-z', '--format=', verified.output.trim()])).split('\0').filter(Boolean).map(this.#fromTop)
+    const files = (await this.#git.output(['show', '--no-renames', '--name-only', '-z', '--format=', verified.output.trim()])).split('\0').filter(Boolean).map(this.#fromTop)
     return [...new Set(files.flatMap(file => documentDirOf(this.#files.config, file) ?? []))]
   }
 
   async #statusOf(paths: string[]): Promise<{ code: string, path: string }[]> {
-    const status = await this.#git.attempt(['status', '--porcelain=v1', '-z', '--no-renames', '--untracked-files=all', '--', ...paths.map(path => path || '.')], { GIT_LITERAL_PATHSPECS: '1' })
+    const status = await this.#git.tryOutput(['status', '--porcelain=v1', '-z', '--no-renames', '--untracked-files=all', '--', ...paths.map(path => path || '.')], { GIT_LITERAL_PATHSPECS: '1' })
     if (!status.ok) return []
     return status.output.split('\0').filter(Boolean)
       .map(entry => ({ code: entry.slice(0, 2), path: this.#fromTop(entry.slice(3)) }))
-      .filter(({ path }) => !generatedPath(path))
+      .filter(({ path }) => !isGeneratedPath(path))
   }
 
   #fromTop = (path: string): string => relative(this.#files.config.root, join(this.#git.top, path)).split(sep).join('/')
 
   async #changes(from: string, to: string): Promise<TreeFile[]> {
-    const fields = (await this.#git.raw(['diff-tree', '-r', '-z', '--no-renames', from, to])).split('\0').filter(Boolean)
+    const fields = (await this.#git.output(['diff-tree', '-r', '-z', '--no-renames', from, to])).split('\0').filter(Boolean)
     const out: TreeFile[] = []
     for (let i = 0; i + 1 < fields.length; i += 2) {
       const [, mode = '', , oid = ''] = fields[i]!.slice(1).split(' ')
@@ -227,10 +239,10 @@ export class Revisions implements RevisionService {
     const work = mkdtempSync(join(tmpdir(), 'presmium-revert-'))
     const env = { GIT_INDEX_FILE: join(work, 'index'), GIT_LITERAL_PATHSPECS: '1' }
     try {
-      await this.#git.raw(['read-tree', 'HEAD'], env)
+      await this.#git.output(['read-tree', 'HEAD'], env)
       const blocked = new Set<string>()
       for (const path of paths) {
-        const tracked = (await this.#git.attempt(['ls-files', '--', path], env)).output.trim() !== ''
+        const tracked = (await this.#git.tryOutput(['ls-files', '--', path], env)).output.trim() !== ''
         let present = true
         try {
           lstatSync(join(this.#files.config.root, path))
@@ -238,9 +250,9 @@ export class Revisions implements RevisionService {
           present = false
         }
         if (!tracked && !present) continue
-        if (!(await this.#git.attempt(['add', '-A', '--', path], env)).ok) blocked.add(path)
+        if (!(await this.#git.tryOutput(['add', '-A', '--', path], env)).ok) blocked.add(path)
       }
-      const differ = (await this.#git.raw(['diff-index', '--cached', '--name-only', '-z', 'HEAD', '--', ...paths], env)).split('\0').filter(Boolean).map(this.#fromTop)
+      const differ = (await this.#git.output(['diff-index', '--cached', '--name-only', '-z', 'HEAD', '--', ...paths], env)).split('\0').filter(Boolean).map(this.#fromTop)
       for (const path of differ) blocked.add(path)
       return [...blocked].sort()
     } finally {
@@ -283,7 +295,7 @@ export class Revisions implements RevisionService {
   }
 
   async #log(id: string): Promise<LogEntry | undefined> {
-    return parseLog(await this.#git.raw(['show', '--no-renames', '--name-only', FORMAT, id]))[0]
+    return parseLog(await this.#git.output(['show', '--no-renames', '--name-only', FORMAT, id]))[0]
   }
 
   async #revision(id: string): Promise<Revision | undefined> {
@@ -296,7 +308,7 @@ export class Revisions implements RevisionService {
   }
 
   async #identity(): Promise<string[]> {
-    const email = await this.#git.attempt(['config', 'user.email'])
+    const email = await this.#git.tryOutput(['config', 'user.email'])
     return email.ok && email.output.trim() ? [] : ['-c', 'user.name=Presmium', '-c', 'user.email=presmium@presmium.invalid']
   }
 }
