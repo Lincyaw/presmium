@@ -1,8 +1,10 @@
 import { spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
-import type { Messages, ProjectKind } from './messages.ts'
+import type { Messages } from './messages.ts'
 import { projectPath, templateDir, templateFiles } from './templates.ts'
+
+export type ProjectKind = 'lecture' | 'workspace' | 'plugin'
 
 export const KINDS: readonly ProjectKind[] = ['lecture', 'workspace', 'plugin']
 
@@ -36,17 +38,17 @@ export class CreateError extends Error {
   }
 }
 
-export function validName(name: string): boolean {
+export function isValidPackageName(name: string): boolean {
   return name.length <= 214 && PACKAGE_NAME.test(name)
 }
 
-export function nameOf(dir: string): string {
+export function packageNameFor(dir: string): string {
   const name = basename(dir).toLowerCase().replace(/[^a-z0-9._~-]+/g, '-').replace(/^[._~-]+/, '')
   return name || 'presmium-project'
 }
 
-export function pluginId(name: string): string {
-  return name.replace(/^@/, '').replace('/', '.')
+export function pluginIdFor(packageName: string): string {
+  return packageName.replace(/^@/, '').replace('/', '.')
 }
 
 export function assertEmpty(dir: string, t: Messages): void {
@@ -56,7 +58,7 @@ export function assertEmpty(dir: string, t: Messages): void {
 export function createProject(options: ProjectOptions): void {
   const { kind, dir, title, name, t } = options
   assertEmpty(dir, t)
-  if (!validName(name)) throw new CreateError(t.badName(name))
+  if (!isValidPackageName(name)) throw new CreateError(t.badName(name))
   mkdirSync(dir, { recursive: true })
   const document = (to: string, documentTitle: string) => {
     const quoted = JSON.stringify(documentTitle).slice(1, -1)
@@ -71,7 +73,7 @@ export function createProject(options: ProjectOptions): void {
     document(join(dir, FIRST_DOCUMENT), t.firstDocument)
     writePackage(dir, { name, private: true, type: 'module', scripts: { serve: 'presmium serve', check: `presmium check ${FIRST_DOCUMENT}`, build: 'presmium build' }, devDependencies: { '@lincyaw/presmium': `^${VERSION}` } })
   } else {
-    copyTemplate('plugin', dir, (path, text) => text.replaceAll('{{name}}', () => name).replaceAll('{{id}}', () => pluginId(name)).replaceAll('{{version}}', () => VERSION))
+    copyTemplate('plugin', dir, (path, text) => text.replaceAll('{{name}}', () => name).replaceAll('{{id}}', () => pluginIdFor(name)).replaceAll('{{version}}', () => VERSION))
   }
   if (kind !== 'plugin') {
     writeFileSync(join(dir, 'README.md'), t.readme(kind, title))

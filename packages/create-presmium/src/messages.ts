@@ -1,6 +1,6 @@
-export type Locale = 'zh-CN' | 'en'
+import type { ProjectKind } from './create.ts'
 
-export type ProjectKind = 'lecture' | 'workspace' | 'plugin'
+export type Locale = 'zh-CN' | 'en'
 
 export interface Messages {
   usage: string
