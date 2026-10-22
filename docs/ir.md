@@ -501,7 +501,7 @@ IR 是一个 JSON 文档。顶层结构：
 
 IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的高亮行、录制的输出），不记录任何媒介专属的语法。
 
-`code` 节点的 `variants`（多版本）中，每个版本带有自己的标签、代码、在文件中的行区间（`startLine`、`endLine`）与永久链接，渲染端显示某个版本时，来源栏的文件链接与行号就是这个版本的。网页与幻灯片的来源栏和录制输出的说明（超时、退出码、预录输出）出自同一组纯函数（`@lincyaw/viewer/domain` 的 `originParts`、`outputNotes`），文字相同。`component` 节点另有 `assets`（属性名到本地文件 URL，渲染端发布这些文件并改写属性，第 6 节）与 `layer`（`overlay`：组件画在页面之上，渲染端不给它单独的位置）。脚注的 `footnoteReference`、`footnoteDefinition` 带 `enumerator`，即显示的编号（4 节，步骤 1）。
+`code` 节点的 `variants`（多版本）中，每个版本带有自己的标签、代码、在文件中的行区间（`startLine`、`endLine`）与永久链接，渲染端显示某个版本时，来源栏的文件链接与行号就是这个版本的。网页与幻灯片的来源栏和录制输出的说明（超时、退出码、预录输出）出自同一组纯函数（`@lincyaw/viewer/domain` 的 `originBar`、`outputNotes`），文字相同。`component` 节点另有 `assets`（属性名到本地文件 URL，渲染端发布这些文件并改写属性，第 6 节）与 `layer`（`overlay`：组件画在页面之上，渲染端不给它单独的位置）。脚注的 `footnoteReference`、`footnoteDefinition` 带 `enumerator`，即显示的编号（4 节，步骤 1）。
 
 以下字段都是可选的（TypeScript 定义见 `architecture.md` 4.6 至 4.10 节）：
 
