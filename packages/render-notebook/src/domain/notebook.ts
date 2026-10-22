@@ -1,4 +1,4 @@
-import { errorMessage, isRecord, languageId, withProp } from '@lincyaw/kernel'
+import { errorMessage, hasRendererExtension, isRecord, languageId, withPublishedAssets } from '@lincyaw/kernel'
 import type {
   CodeNode,
   ComponentNode,
@@ -14,15 +14,18 @@ import type {
   SourcePos,
   Support,
 } from '@lincyaw/kernel'
-import { toMarkdown } from './markdown.ts'
+import { lowerToMarkdown } from './markdown.ts'
+import { NOTEBOOK_MESSAGES } from './messages.ts'
+import type { NotebookMessages } from './messages.ts'
 
-export interface KernelSpec {
+/** The Jupyter kernel a notebook names (nbformat's `kernelspec`). */
+export interface JupyterKernelSpec {
   name: string
   display_name: string
   language: string
 }
 
-export const DEFAULT_KERNEL: KernelSpec = { name: 'python3', display_name: 'Python 3', language: 'python' }
+export const DEFAULT_JUPYTER_KERNEL: JupyterKernelSpec = { name: 'python3', display_name: 'Python 3', language: 'python' }
 
 export type NotebookCellInput = string | {
   cell_type: 'markdown' | 'code' | 'raw'
@@ -48,12 +51,12 @@ export interface NotebookCell {
 export interface Notebook {
   nbformat: 4
   nbformat_minor: 5
-  metadata: { kernelspec: KernelSpec, language_info: { name: string }, title?: string }
+  metadata: { kernelspec: JupyterKernelSpec, language_info: { name: string }, title?: string }
   cells: NotebookCell[]
 }
 
 export interface NotebookOptions {
-  kernel: KernelSpec
+  jupyterKernel: JupyterKernelSpec
   locale: Locale
   webLink?: (section: IRSection) => string | undefined
   extensionFor: (node: ComponentNode) => ComponentRenderer | undefined
@@ -70,29 +73,19 @@ export interface NotebookResult {
 
 type ComponentRenderer = (node: ComponentNode, block: IRBlock) => unknown
 
-const MESSAGES = {
-  'zh-CN': {
-    web: '网页版',
-    note: (name: MdastNode, web: MdastNode): MdastNode[] => [text('交互组件 '), name, text(' 需要在'), web, text('中查看。')],
-  },
-  'en': {
-    web: 'the web version',
-    note: (name: MdastNode, web: MdastNode): MdastNode[] => [text('The interactive component '), name, text(' can only be used in '), web, text('.')],
-  },
-} satisfies Record<Locale, unknown>
-
 function text(value: string): MdastNode {
   return { type: 'text', value }
 }
 
-export function support(node: IRNode, extensions: BoundRendererExtension[]): Support {
-  return node.type === 'component' && !extensions.some(e => (!node.plugin || e.plugin === node.plugin) && e.components?.[node.name]) ? 'degraded' : 'full'
+/** How well a notebook shows a node: a component without a notebook extension is degraded. */
+export function notebookSupport(node: IRNode, extensions: BoundRendererExtension[]): Support {
+  return node.type === 'component' && !hasRendererExtension(node, extensions) ? 'degraded' : 'full'
 }
 
 export function renderNotebook(doc: IRDocument, options: NotebookOptions): NotebookResult {
-  const { kernel } = options
+  const { jupyterKernel } = options
   const out: NotebookResult = {
-    notebook: { nbformat: 4, nbformat_minor: 5, metadata: { kernelspec: kernel, language_info: { name: kernel.language } }, cells: [] },
+    notebook: { nbformat: 4, nbformat_minor: 5, metadata: { kernelspec: jupyterKernel, language_info: { name: jupyterKernel.language } }, cells: [] },
     skipped: [],
     problems: [],
     degraded: [],
@@ -123,7 +116,7 @@ function renderSection(section: IRSection, options: NotebookOptions, out: Notebo
   }
   const written = (mdast: MdastNode, block?: IRBlock): string => {
     const { media } = options
-    const { text, problems, degraded } = toMarkdown(mdast, media && block ? url => media(url, block.source) : undefined)
+    const { text, problems, degraded } = lowerToMarkdown(mdast, media && block ? url => media(url, block.source) : undefined)
     const where = { section: section.id, block: block?.id ?? 'title', source: block?.source ?? section.source }
     for (const problem of problems) out.problems.push({ message: `${where.section}#${where.block}: ${problem}`, source: where.source })
     if (degraded.length) out.degraded.push({ ...where, nodes: degraded })
@@ -141,7 +134,7 @@ function renderSection(section: IRSection, options: NotebookOptions, out: Notebo
     const shown = node.echo !== false
     const caption = codeCaption(node)
     if (caption && shown) markdown(caption, block)
-    if (languageId(node.lang) === languageId(options.kernel.language)) {
+    if (languageId(node.lang) === languageId(options.jupyterKernel.language)) {
       flush()
       const runs = node.outputs ?? []
       const count = runs.length ? ++executions.count : null
@@ -166,7 +159,7 @@ function renderSection(section: IRSection, options: NotebookOptions, out: Notebo
     const render = options.extensionFor(node)
     if (render) {
       try {
-        const cells = cellInputs(render(node, block))
+        const cells = toCellInputs(render(node, block))
         if (cells) {
           flush()
           for (const input of cells) {
@@ -190,7 +183,7 @@ function renderSection(section: IRSection, options: NotebookOptions, out: Notebo
     if (node.fallback) return markdown(node.fallback, block)
     const link = options.webLink?.(section)
     if (!link) out.unlinked++
-    markdown(webNote(node, MESSAGES[options.locale], link), block)
+    markdown(webNote(node, NOTEBOOK_MESSAGES[options.locale], link), block)
     const reason = render ? `the notebook extension of ${node.name} rendered nothing and it has no fallback` : `component ${node.name} has no notebook extension or fallback`
     out.skipped.push({ section: section.id, block: block.id, reason: `${reason}; a note points to the web version` })
     node.children?.forEach(renderBlock)
@@ -210,13 +203,11 @@ function renderSection(section: IRSection, options: NotebookOptions, out: Notebo
 
 function published(node: ComponentNode, block: IRBlock, options: NotebookOptions): ComponentNode {
   const { media } = options
-  if (!node.assets || !media) return node
-  let props = node.props
-  for (const [path, url] of Object.entries(node.assets)) props = withProp(props, path, media(url, block.source) ?? url)
-  return { ...node, props }
+  return media ? withPublishedAssets(node, url => media(url, block.source)) : node
 }
 
-function cellInputs(value: unknown): NotebookCellInput[] | undefined {
+/** The cells a notebook extension returned; throws when one is not a cell. */
+function toCellInputs(value: unknown): NotebookCellInput[] | undefined {
   if (value === undefined || value === null) return undefined
   const cells = Array.isArray(value) ? value : [value]
   for (const c of cells) {
@@ -240,7 +231,7 @@ function codeCaption(node: CodeNode): MdastNode | undefined {
   return children.length ? { type: 'paragraph', children } : undefined
 }
 
-function webNote(node: ComponentNode, t: (typeof MESSAGES)[Locale], url?: string): MdastNode {
+function webNote(node: ComponentNode, t: NotebookMessages, url?: string): MdastNode {
   const web = url ? { type: 'link', url, children: [text(t.web)] } : text(t.web)
   return { type: 'blockquote', children: [{ type: 'paragraph', children: t.note({ type: 'inlineCode', value: node.name }, web) }] }
 }

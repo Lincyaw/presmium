@@ -9,7 +9,8 @@ export interface MarkdownText {
   degraded: string[]
 }
 
-export function toMarkdown(mdast: MdastNode, urls?: LowerOptions['urls']): MarkdownText {
+/** A Markdown tree as Markdown a notebook shows: MyST lowered to what Jupyter renders, then written block by block. */
+export function lowerToMarkdown(mdast: MdastNode, urls?: LowerOptions['urls']): MarkdownText {
   const lowered = lowerMyst(mdast, { urls, htmlUrls: true })
   const problems: string[] = []
   const parts = (lowered.mdast.children ?? []).map((block) => {
