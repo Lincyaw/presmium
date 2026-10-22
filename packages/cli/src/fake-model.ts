@@ -78,24 +78,3 @@ export async function fakeModel(script: Step[]): Promise<FakeModel> {
     }),
   }
 }
-
-export async function recordingProxy(): Promise<{ url: string, attempts: string[], close(): Promise<void> }> {
-  const attempts: string[] = []
-  const server = createServer((req, res) => {
-    attempts.push(`${req.method} ${req.url}`)
-    res.writeHead(502).end()
-  })
-  server.on('connect', (req, socket) => {
-    attempts.push(`CONNECT ${req.url}`)
-    socket.end('HTTP/1.1 502 Bad Gateway\r\n\r\n')
-  })
-  const port = await new Promise<number>(done => server.listen(0, '127.0.0.1', () => done((server.address() as AddressInfo).port)))
-  return {
-    url: `http://127.0.0.1:${port}`,
-    attempts,
-    close: () => new Promise<void>((done) => {
-      server.close(() => done())
-      server.closeAllConnections()
-    }),
-  }
-}
