@@ -63,12 +63,12 @@ const rules = [
   { name: 'DeepSeek Harness only in dsh and studio', dirs: ['.'], forbid: (spec, _file, pkgDir) => DSH.test(spec) && !DSH_PACKAGES.includes(pkgName(pkgDir)) },
   { name: 'the workbench\'s panels know no host', pkgs: ['workbench'], dirs: ['.'], skip: ['test'], forbid: spec => vue(spec) || DSH.test(spec) || /^@lincyaw\/host(\/|$)/.test(spec) },
   { name: 'the design system only uses framework-free icons', pkgs: ['design'], dirs: ['.'], skip: ['test'], forbid: spec => !spec.startsWith('.') && spec !== 'lucide' },
-  { name: 'outputs do not use the workbench', pkgs: pkg => PRODUCTS(pkg) || pkg.startsWith('addon-'), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/workbench(\/|$)/.test(spec) },
+  { name: 'outputs do not use the workbench', pkgs: pkg => isProductPackage(pkg) || pkg.startsWith('addon-'), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/workbench(\/|$)/.test(spec) },
 ]
 
 const DSH = /^@deepseek-ai\//
 const DSH_PACKAGES = ['dsh', 'studio']
-const PRODUCTS = pkg => ['web', 'viewer', 'addon-core'].includes(pkg) || pkg.startsWith('render-')
+const isProductPackage = pkg => ['web', 'viewer', 'addon-core'].includes(pkg) || pkg.startsWith('render-')
 
 const SOURCE = /\.(ts|tsx|vue|mts|mjs|js|jsx|cjs)$/
 
