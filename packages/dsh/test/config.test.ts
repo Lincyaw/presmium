@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { cpSync, mkdtempSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { fakeModel } from '@lincyaw/cli/testing'
+import { fakeModel } from '../src/node/fake-model.ts'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { writeProfile } from '../src/node/launch.ts'
 import { DSH, PACKAGE, rowsOf, testHome } from './harness.ts'

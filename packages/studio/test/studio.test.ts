@@ -6,8 +6,9 @@ import { networkInterfaces, tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
-import { fakeModel, run } from '@lincyaw/cli/testing'
-import type { FakeModel } from '@lincyaw/cli/testing'
+import { run } from '@lincyaw/cli/testing'
+import { fakeModel } from '@lincyaw/dsh/testing'
+import type { FakeModel } from '@lincyaw/dsh/testing'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url))

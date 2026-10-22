@@ -650,7 +650,7 @@ dsh 的网页是单一所有者的应用，正好对应“每人一个容器”�
 
 ## 15. 测试策略
 
-- 只写集成测试（仓库的约定）：真实运行 CLI、构建产物、服务、浏览器与锁定版本的 dsh；模型用脚本化的 Messages 兼容假模型（`@lincyaw/cli/testing`，供各包与端到端用例共用），不 mock 宿主框架；每条验收标准一到两个用例。
+- 只写集成测试（仓库的约定）：真实运行 CLI、构建产物、服务、浏览器与锁定版本的 dsh；模型用脚本化的 Messages 兼容假模型（`@lincyaw/dsh/testing`，供各包与端到端用例共用），不 mock 宿主框架；每条验收标准一到两个用例。
 - 每个用例用自己的 `DSH_HOME` 与 `HOME`（临时目录），并断言没有写到测试目录之外（例如没有出现 `~/Documents`）。
 - 预览协议的用例（`e2e/preview-protocol.spec.ts`）用一个不依赖任何框架的测试宿主页面，测的是协议本身，而不是某个工作台的实现；`e2e/preview.spec.ts` 是预览同步的用例。
 - bundle 的用例在 `packages/dsh/test/`（行与补丁、工具一致、确认、上下文、隐私、turn 与审阅），审阅的服务一侧在 `packages/workspace/test/review.test.ts`，studio 在 `packages/studio/test/studio.test.ts`。

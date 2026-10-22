@@ -22,5 +22,3 @@ export function presmium(cwd: string, args: string[], env: Record<string, string
   return run(process.execPath, [PRESMIUM_BIN, ...args], { cwd, env: { ...inherited, ...env } })
 }
 
-export { fakeModel } from './fake-model.ts'
-export type { FakeModel, Received, Step } from './fake-model.ts'

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { fakeModel } from '@lincyaw/cli/testing'
+import { fakeModel } from '../src/node/fake-model.ts'
 import type { DiagnosticSnapshot } from '@lincyaw/kernel'
 import { expect, it } from 'vitest'
 import { testHome, turns } from './harness.ts'

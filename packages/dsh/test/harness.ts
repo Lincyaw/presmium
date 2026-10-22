@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PRESMIUM_BIN } from '@lincyaw/cli/testing'
-import type { FakeModel } from '@lincyaw/cli/testing'
+import type { FakeModel } from '../src/node/fake-model.ts'
 import { dshBin, launchEnv, launchPatches, writeProfile } from '../src/node/launch.ts'
 import type { Carrier } from '../src/node/launch.ts'
 

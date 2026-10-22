@@ -36,6 +36,7 @@
     "./routes": "./entries/routes.mjs",
     "./turns": "./entries/turns.mjs",
     "./launch": "./src/node/launch.ts",
+    "./testing": "./src/node/fake-model.ts",
     "./package.json": "./package.json"
   },
   "files": [

@@ -1,6 +1,6 @@
 import { join } from 'node:path'
-import { fakeModel } from '@lincyaw/cli/testing'
-import type { FakeModel } from '@lincyaw/cli/testing'
+import { fakeModel } from '../src/node/fake-model.ts'
+import type { FakeModel } from '../src/node/fake-model.ts'
 import { connectPresmiumMcp } from '@lincyaw/mcp/client'
 import type { PresmiumMcpClient } from '@lincyaw/mcp/client'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'

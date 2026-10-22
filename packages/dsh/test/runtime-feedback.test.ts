@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { fakeModel } from '@lincyaw/cli/testing'
+import { fakeModel } from '../src/node/fake-model.ts'
 import { connectPresmiumMcp } from '@lincyaw/mcp/client'
 import { expect, it } from 'vitest'
 import { testHome, turns } from './harness.ts'
