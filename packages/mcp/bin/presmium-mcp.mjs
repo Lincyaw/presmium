@@ -10,6 +10,6 @@ process.emitWarning = (warning, ...args) => {
 }
 
 const jiti = createJiti(import.meta.url)
-const { main } = await jiti.import('../src/stdio.ts')
+const { main } = await jiti.import('../src/cli.ts')
 const code = await main(process.argv.slice(2))
 if (code !== undefined) process.exitCode = code

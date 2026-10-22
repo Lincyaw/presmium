@@ -2,15 +2,13 @@ import { stat } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
-import { errorMessage } from '@lincyaw/kernel'
-import type { ApprovalKind, Member } from '@lincyaw/kernel'
+import { APPROVAL_KINDS, errorMessage, LOCAL_AUTHOR } from '@lincyaw/kernel'
+import type { ApprovalKind } from '@lincyaw/kernel'
 import { buildToDist, Compiler, findPackageDir, resolveEntry, runBlock } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import type { McpHost } from './host.ts'
 import { serveMcpStdio } from './mcp.ts'
 
-const AUTHOR: Member = { id: 'local', name: 'local author', roles: ['owner'] }
-const KINDS: readonly ApprovalKind[] = ['operate', 'spend', 'write', 'agent']
 const OWN_DIR = fileURLToPath(new URL('..', import.meta.url))
 const CLI_PACKAGE = '@lincyaw/cli'
 
@@ -27,7 +25,7 @@ async function stamps(files: string[]): Promise<string> {
   return times.join(',')
 }
 
-export function compilerHost(entry: string, allow: readonly ApprovalKind[]): McpHost {
+export function compilerMcpHost(entry: string, allow: readonly ApprovalKind[]): McpHost {
   const bundled = findPackageDir(CLI_PACKAGE, dirname(entry)) ?? findPackageDir(CLI_PACKAGE, OWN_DIR) ?? OWN_DIR
   const compiler = new Compiler(entry, { bundled })
   let latest: { compilation: Compilation, files: string[], stamp: string } | undefined
@@ -87,8 +85,8 @@ export async function main(argv: string[]): Promise<number | undefined> {
     if (positionals.length > 1) throw new Error(`unexpected argument "${positionals[1]}"`)
     deck = resolveEntry(positionals[0] ?? '.')
     allow = (values.allow?.split(',').map(kind => kind.trim()).filter(Boolean) ?? []) as ApprovalKind[]
-    const unknown = allow.find(kind => !KINDS.includes(kind))
-    if (unknown) throw new Error(`--allow takes ${KINDS.join(', ')}, not "${unknown}"`)
+    const unknown = allow.find(kind => !APPROVAL_KINDS.includes(kind))
+    if (unknown) throw new Error(`--allow takes ${APPROVAL_KINDS.join(', ')}, not "${unknown}"`)
     await stat(deck).catch(() => {
       throw new Error(`${deck} not found`)
     })
@@ -96,6 +94,6 @@ export async function main(argv: string[]): Promise<number | undefined> {
     process.stderr.write(`presmium-mcp: ${errorMessage(error)}\n\n${USAGE}\n`)
     return 2
   }
-  serveMcpStdio(compilerHost(deck, allow), { member: AUTHOR, mode: 'author' })
+  serveMcpStdio(compilerMcpHost(deck, allow), { member: LOCAL_AUTHOR, mode: 'author' })
   return undefined
 }

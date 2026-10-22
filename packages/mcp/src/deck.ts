@@ -3,13 +3,8 @@ import { blockState, blockText, blockVisible, chapters, irBlocks, narrationAt, t
 import type { CodeNode, Finding, IRBlock, IRDocument, IRSection, RecordedRun, RunOutput, RunResult, SourcePos } from '@lincyaw/kernel'
 import MiniSearch from 'minisearch'
 
-export interface Place {
-  file: string
-  line: number
-  endLine?: number
-}
-
-export function place(doc: IRDocument, pos: SourcePos): Place {
+/** The source position with its file relative to the deck directory. */
+export function relativeToDeck(doc: IRDocument, pos: SourcePos): SourcePos {
   return { file: relative(dirname(doc.meta.entry), pos.file) || pos.file, line: pos.line, ...pos.endLine ? { endLine: pos.endLine } : {} }
 }
 
@@ -32,7 +27,7 @@ export function sectionSummary(doc: IRDocument, section: IRSection) {
     title: section.title,
     depth: section.depth,
     steps: section.steps,
-    source: place(doc, section.source),
+    source: relativeToDeck(doc, section.source),
     ...section.audience ? { audience: section.audience } : {},
   }
 }
@@ -43,7 +38,7 @@ export function deckInfo(doc: IRDocument, document: string) {
     document,
     title: doc.meta.title,
     lang: doc.meta.lang,
-    entry: place(doc, { file: doc.meta.entry, line: 1 }).file,
+    entry: relativeToDeck(doc, { file: doc.meta.entry, line: 1 }).file,
     sections: doc.sections.length,
     steps: doc.sections.reduce((sum, s) => sum + s.steps + 1, 0),
     plugins: doc.config.plugins,
@@ -70,7 +65,7 @@ export function blockInfo(doc: IRDocument, block: IRBlock, step?: number) {
     ...block.span ? { span: block.span } : {},
     ...block.only ? { only: block.only } : {},
     ...block.audience ? { audience: block.audience } : {},
-    source: place(doc, block.source),
+    source: relativeToDeck(doc, block.source),
   }
   if (node.type !== 'code') return { ...base, text: blockText(block) }
   const variant = state !== undefined ? node.variants?.[state] : undefined
@@ -121,7 +116,7 @@ export function codeRef(doc: IRDocument, section: IRSection, id: string) {
     lang: node.lang,
     ...node.title ? { title: node.title } : {},
     code: node.value,
-    source: place(doc, block.source),
+    source: relativeToDeck(doc, block.source),
     origin: origin(node) ?? null,
     ...node.variants ? { variants: node.variants.map(v => ({ label: v.label, ...v.startLine ? { startLine: v.startLine, endLine: v.endLine } : {} })) } : {},
     ...node.highlight ? { highlight: node.highlight } : {},
@@ -164,7 +159,7 @@ export function diagnosticsOf(doc: IRDocument, findings: Finding[]) {
     severity: f.severity,
     check: f.checkId,
     message: f.message,
-    ...f.source ? place(doc, { file: f.source.file, line: f.source.line ?? 1 }) : {},
+    ...f.source ? relativeToDeck(doc, { file: f.source.file, line: f.source.line ?? 1 }) : {},
     ...f.hint ? { hint: f.hint } : {},
   }))
 }
@@ -173,18 +168,18 @@ export function locate(doc: IRDocument, target: { section?: string, step?: numbe
   if (target.anchor) {
     const found = doc.sections.flatMap(section => [...irBlocks(section.blocks)]
       .filter(b => b.node.type === 'code' && b.node.origin?.anchor === target.anchor)
-      .map(b => ({ section: section.id, block: b.id, source: place(doc, b.source), code: origin(b.node as CodeNode) })))
+      .map(b => ({ section: section.id, block: b.id, source: relativeToDeck(doc, b.source), code: origin(b.node as CodeNode) })))
     if (found.length === 0) throw new Error(`no code block references ${target.anchor}`)
     return { anchor: target.anchor, references: found }
   }
   if (!target.section) throw new Error('name a section, or an anchor')
   const section = findSection(doc, target.section)
-  if (target.block) return { section: section.id, block: target.block, source: place(doc, findBlock(section, target.block).source) }
+  if (target.block) return { section: section.id, block: target.block, source: relativeToDeck(doc, findBlock(section, target.block).source) }
   if (target.step !== undefined) {
     const blocks = section.blocks.filter(b => b.at === target.step)
-    return { section: section.id, step: target.step, blocks: blocks.map(b => ({ block: b.id, role: b.role, source: place(doc, b.source) })) }
+    return { section: section.id, step: target.step, blocks: blocks.map(b => ({ block: b.id, role: b.role, source: relativeToDeck(doc, b.source) })) }
   }
-  return { section: section.id, source: place(doc, section.source) }
+  return { section: section.id, source: relativeToDeck(doc, section.source) }
 }
 
 const indexes = new WeakMap<IRDocument, MiniSearch>()
