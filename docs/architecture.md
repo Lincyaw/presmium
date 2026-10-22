@@ -847,7 +847,20 @@ export interface Synthesis {
   engine: string
   model: string
   voice: string
+  /** 引擎的服务提供方（`SpeechEngineInfo.provider`），写进 AI 生成的标识 */
+  provider: string
   synthetic: true
+}
+
+/** AI 生成的标识（GB 45438 的元数据）：语音服务写进合成的音频，讲授的导出写进视频；内核的 `aigcLabel`、`aigcString` 生成它 */
+export interface AigcLabel {
+  Label: '1'
+  ContentProducer: string
+  ProduceID: string
+  ReservedCode1: string
+  ContentPropagator: string
+  PropagateID: string
+  ReservedCode2: string
 }
 
 export interface TranscriptSegment { start: number, end: number, text: string, words: SpeechWord[] }
@@ -921,6 +934,13 @@ export interface SpeechService {
    * 不请引擎合成：缓存没有这个键时为 undefined，音色不能用时拒绝。Node 端的服务有它（讲授的片段按键给出与发布）
    */
   cached?(key: string, signal?: AbortSignal): Promise<Synthesis | undefined>
+  /**
+   * 合成缓存中一个片段的逐字时间，给没有逐字时间的引擎合成的片段：先取缓存中片段旁边的 `<键>.align.json`，
+   * 没有时以文稿的转写引擎转写片段一遍并写进它（`transcribe: false` 时只取已有的）；得不到时为 undefined。Node 端的服务有它
+   */
+  alignWords?(key: string, options: { lang: string, transcribe?: boolean }, signal?: AbortSignal): Promise<SpeechWord[] | undefined>
+  /** `speech.lock.json` 只留下给出的键，返回去掉了几个；不删除缓存中的文件。Node 端的服务有它（讲授的构建在发布之后清理） */
+  pruneLock?(keep: ReadonlySet<string>): Promise<number>
   transcribe(request: TranscriptionRequest, signal?: AbortSignal): Promise<Transcript>
 }
 
@@ -1083,7 +1103,7 @@ export const DOCUMENT_FILES = defineService<DocumentFiles>('presmium.documentFil
 
 - 提交说明的格式：第一行是摘要；正文是改动的说明；尾注 `Presmium-Origin: agent|document|editor`，会话的修改另有 `Presmium-Session` 与 `Presmium-Turn`，以及 `Co-authored-by`（发起人）。作者字段取发起的成员（本机作者）。修改历史按尾注筛选，不依赖服务端的数据库。工作区的 git 命令都关闭钩子与 fsmonitor（`-c core.hooksPath=/dev/null -c core.fsmonitor=false`），提交与撤销不执行仓库中的任何脚本。
 - 语音的 `lang` 是 BCP 47 标签而不是界面语言 `Locale`：文稿可以是 Presmium 界面没有翻译的语言，语音引擎照样支持。
-- **读者问答**（`@lincyaw/slidev-addon-assistant`，插件 ID `presmium.assistant`）：提问在浏览器中完成，不经站点的服务端，静态站点也能用。插件在每个页面上提供浏览器服务 `ASK`（`src/client/ask.ts`）：读者在“提问”面板中填写自己的 OpenAI 兼容服务（地址、密钥、模型名），保存在本站点的 `localStorage`（键 `presmium.assistant.ask`；存储被禁用时只在这个页面中有效）；面板写明同一站点的脚本能读到密钥，填写之后在提问之前写明服务（地址的主机）与模型。提问以流式的 `POST <地址>/chat/completions` 直接发往这个服务，请求不带站点的 Cookie 与来源（`credentials: 'omit'`、`referrerPolicy: 'no-referrer'`）。上下文取自页面：网页形态是页面中文档的 IR（学生版站点的 IR 本来就没有教师内容），给出当前章节的讲解与块的文字、选中的文字，以及章节目录（ID 与标题）供回答引用；幻灯片形态给出当前一页的文字（Slidev 文档化的 `.slidev-page-<页>` 类），引用只到它所在的页。回答边生成边显示，引用 `[标签](presmium://sections/<章节>)` 是能点的链接。没有填写时面板说明提问怎样进行并请读者填写。
+- **读者问答**（`@lincyaw/slidev-addon-assistant`，插件 ID `presmium.assistant`）：提问在浏览器中完成，不经站点的服务端，静态站点也能用。插件在每个页面上提供浏览器服务 `ASK`（`src/client/chat-client.ts`）：读者在“提问”面板中填写自己的 OpenAI 兼容服务（地址、密钥、模型名），保存在本站点的 `localStorage`（键 `presmium.assistant.ask`；存储被禁用时只在这个页面中有效）；面板写明同一站点的脚本能读到密钥，填写之后在提问之前写明服务（地址的主机）与模型。提问以流式的 `POST <地址>/chat/completions` 直接发往这个服务，请求不带站点的 Cookie 与来源（`credentials: 'omit'`、`referrerPolicy: 'no-referrer'`）。上下文取自页面：网页形态是页面中文档的 IR（学生版站点的 IR 本来就没有教师内容），给出当前章节的讲解与块的文字、选中的文字，以及章节目录（ID 与标题）供回答引用；幻灯片形态给出当前一页的文字（Slidev 文档化的 `.slidev-page-<页>` 类），引用只到它所在的页。回答边生成边显示，引用 `[标签](presmium://sections/<章节>)` 是能点的链接。没有填写时面板说明提问怎样进行并请读者填写。
 - **课堂中的 AI 回答**（`addon-classroom/src/client/ai.ts`）：主讲的“互动”总览中每个提问有“AI 回答（<服务提供方>）”，经 `ASK` 问主讲自己在提问面板中填写的服务（没有填写时总览请主讲先填写）；回答是主讲窗口中的草稿，主讲点“发给课堂”后写成提问的 `reply`（`{ text,provider,at }`；引用改为其标签的纯文字），学习者在自己的提问下看到它。
 - **服务提供方的标明**：读者的提问面板写明 `ASK.provider()`（读者填写的地址的主机）与模型；转写与合成的入口写明引擎的 `SpeechEngineInfo.provider`；本机引擎（`local: true`）写明不外发。
 - **讲授插件的 agent 工具**：`lecture_preview`（`read`，可选参数 `section`）给出讲授计划：每节每步要说的文字（与读出的文字不同时另给出）、其中的提示标记（命令、它之前的几个字与操作的数据）、`pause`、音色、`gap` 与问题；`lecture_synthesize`（`spend`）以文稿的音色合成讲授（缓存缺的片段才发给引擎），返回时长、语音段与事件的数目；`track_transcribe`（`spend`，参数 `track`）转写一份录制的讲授并写回它的 `track.json`，返回服务提供方与语音段。工具经讲授插件自己的 Node 服务 `presmium.lecture.deck`（文稿目录）找到文稿，按最近一次编译的 IR 计划；两个 `spend` 工具先经 `APPROVALS` 确认（`packages/addon-lecture/src/node/tools.ts`）。转写回写另有两个 `read` 工具：`track_narration`（参数 `track`、可选 `section`）给出录制讲授的逐字稿按章节与步骤拼成的讲解草稿，绑定到字的操作在那个字之前写成 `{cue}`，并给出每一步讲解在源码中的位置；`track_translations`（参数 `track`、`lang`）给出每句的原文与译文要记下的摘要（`ir.md` 9.5 节）。它们不写文件：写入由 agent 在会话的审阅之中完成。
@@ -1142,7 +1162,7 @@ export const OPERATIONS = defineService<Operations>('presmium.operations')
 
 引导插件包含内核插件 `src/client/plugin.ts`（两种形态都登记 `spot`、`hint` 的重放）与视图插件 `src/client/viewer.ts`（放映视图与演讲者窗口中 `s`、`h` 给指针下的块加上或取消聚光、提示并报告）；这种聚光持续到位置离开它的章节或步骤（`span`），由 `NAVIGATION.position` 的同步观察者结束，所以现场、依次重放与跳转后的折叠一致。讲授插件 `@lincyaw/slidev-addon-lecture`：`src/domain/`（讲授轨的读写与每项一行的格式、`at` 的时刻、章节、漂移分级、块指纹与 IR 哈希、VTT、路径简化、重录一节的拼接）、`src/node/`（服务端路由、检查项 `presmium.lecture`、站点渲染端 `lecture`）、`src/client/`（内核插件登记 `point`、`ink` 的重放；视图 `lecture`；放映视图上的录制与播放两个图层；`SilentClock`、`MediaClock`；Mediabunny 只在 `src/client/media.ts` 中）。视图插件只以类型引用 `@lincyaw/viewer`，拿不到章节上下文（`SECTION_CONTEXT`），自己画不出按步骤显示的幻灯片，所以回放的“真实页面”是放映视图：`lecture` 视图切到放映视图并保留 URL 的 `track` 参数，播放器是放映视图上的图层，重放 `go` 时去掉 `view`。独立的讲授视图需要放映组件或章节上下文，当前视图插件接口未提供它们。`run` 的重放没有 `clear`（`packages/viewer/src/code.ts`），跳回运行之前的时刻时已显示的录制输出不消失。
 
-讲授插件的 `src/domain/` 包含讲解的读法（`narration.ts`：显示与说的两份文字、`{cue}` 的位置、命令与时长）、讲授计划（`plan.ts`：每节每步的段落、在 `pause` 处切开的语音段、提示标记的目标与操作数据，单独的脚本代替所在章节的讲解）、合成的时间线（`synthesis.ts`：`scriptTrack`）、逐字的处理（`words.ts`：分词、把说的文字的逐字时间换回显示的文字、改文字后的重新对齐、换音色后的字锚换算）与讲授轨的编辑（`editing.ts`：转写得到语音段并绑定事件、改一句、换音色重新合成）；`Utterance.clip` 与合成音色的 `provider`。`src/node/` 提供行内角色 `{cue}`、`{say}`（`roles.ts`）、读单独的脚本（`script.ts`）、讲授计划与最近一次编译的 IR（`plan.ts`：编译步骤 `presmium.lecture.keep` 在编译时执行之后记下每个文稿目录的 IR，服务端的路由与 agent 工具由此得到 IR，因为 `ServerContext` 与 `AgentToolContext` 没有编译结果）、经 `SPEECH` 的合成与转写（`speak.ts`、`lecture.ts`：合成缓存中的片段、没有逐字时间时的转写对齐 `<键>.align.json`、锁定文件的清理）、站点渲染端的 `script` 与 `clips/`、检查项的计划部分、编辑的路由、agent 工具（`tools.ts`）与 `presmium-lecture export`（`export.ts`、`cli.ts`）。`src/client/` 用 `MediaClock` 播放每个语音段的片段、播放器的 `advanceTo`（按时间应用事件，播放与导出共用）、导出模式（地址加 `&export`：没有控件，`window.presmiumLecture.advance(t)`）、编辑面板 `TrackEditor.vue` 与逐字稿中每句的修改。交互与构建的边界：转写与合成的确认是页面上写明服务提供方的确认框，不经 `APPROVALS`（编辑者点按钮就是确认；agent 的计费工具仍经 MCP 的确认）；`presmium serve` 在进程内编译文稿，所以 `script` 在那里同样按需合成（`ir.md` 6.3 节）；合成音色的讲授中改一句要先确认，确认框写明服务提供方；路由、agent 工具与检查都按讲授渲染端的视图（`viewFor(doc,'lecture')`，讲授插件已依赖编译器）计划，与构建一致；`presmium check` 只查找，不向语音引擎发请求；合成讲授的 `go` 由讲授视图的步号经它的 `stepMap` 换回 IR 的步号，所以只在网页形态不压缩步骤时（没有只在幻灯片或 notebook 中显示的上屏块）就是网页的步号；当前渲染上下文没有网页视图的步号映射。
+讲授插件的 `src/domain/` 包含讲解的读法（`narration.ts`：显示与说的两份文字、`{cue}` 的位置、命令与时长）、讲授计划（`plan.ts`：每节每步的段落、在 `pause` 处切开的语音段、提示标记的目标与操作数据，单独的脚本代替所在章节的讲解）、合成的时间线（`script-track.ts`：`scriptTrack`）、逐字的处理（`words.ts`：分词、把说的文字的逐字时间换回显示的文字、改文字后的重新对齐、换音色后的字锚换算）与讲授轨的编辑（`editing.ts`：转写得到语音段并绑定事件、改一句、换音色重新合成）；`Utterance.clip` 与合成音色的 `provider`。`src/node/` 提供行内角色 `{cue}`、`{say}`（`roles.ts`）、读单独的脚本（`script-file.ts`）、讲授计划（`plan.ts`）、最近一次编译的 IR（`latest-ir.ts`：编译步骤 `presmium.lecture.keep` 在编译时执行之后记下每个文稿目录的 IR，服务端的路由与 agent 工具由此得到 IR，因为 `ServerContext` 与 `AgentToolContext` 没有编译结果）、经 `SPEECH` 的合成与转写（`synthesize.ts`、`transcribe.ts`；引擎的选择在 `engines.ts`，按键取合成缓存中的片段在 `clips.ts`；没有逐字时间时的对齐与锁定文件的清理经 `SpeechService.alignWords`、`pruneLock` 由语音服务完成，讲授插件不读写合成缓存的文件）、站点渲染端的 `script` 与 `clips/`、检查项的计划部分、编辑的路由（`routes/`：讲授与片段 `tracks.ts`、编辑 `editing.ts`、录制 `recordings.ts`）、agent 工具（`tools.ts`）与 `presmium-lecture export`（`export.ts`、`cli.ts`）。`src/client/` 用 `MediaClock` 播放每个语音段的片段、播放器的 `advanceTo`（按时间应用事件，播放与导出共用）、导出模式（地址加 `&export`：没有控件，`window.presmiumLecture.advance(t)`）、编辑面板 `TrackEditor.vue` 与逐字稿中每句的修改（`TranscriptList.vue`）。交互与构建的边界：转写与合成的确认是页面上写明服务提供方的确认框，不经 `APPROVALS`（编辑者点按钮就是确认；agent 的计费工具仍经 MCP 的确认）；`presmium serve` 在进程内编译文稿，所以 `script` 在那里同样按需合成（`ir.md` 6.3 节）；合成音色的讲授中改一句要先确认，确认框写明服务提供方；路由、agent 工具与检查都按讲授渲染端的视图（`viewFor(doc,'lecture')`，讲授插件已依赖编译器）计划，与构建一致；`presmium check` 只查找，不向语音引擎发请求；合成讲授的 `go` 由讲授视图的步号经它的 `stepMap` 换回 IR 的步号，所以只在网页形态不压缩步骤时（没有只在幻灯片或 notebook 中显示的上屏块）就是网页的步号；当前渲染上下文没有网页视图的步号映射。
 
 转写回写的读法在讲授插件的 `src/domain/writeback.ts`：由事件写回提示标记（`cueFor`）、逐字稿拼成的讲解草稿（`narrationDraft`）、一步讲解在源码中的位置（`narrationPlace`，取自讲授计划，所以单独的讲授脚本中的段落同样找得到）、要翻译的语音段与摘要（`translationItems`）；agent 经 `track_narration`、`track_translations`（`src/node/tools.ts`）取得它们，写入在会话的审阅之中。
 

@@ -285,7 +285,7 @@
 | 聚光 | `PmSpotlight` | 遮罩加高亮区域 |
 | 交互提示 | `PmHint` | 指向可交互元素的提示动画 |
 
-不变量：提示状态只由当前步骤决定；系统开启“减少动态效果”时，动画退化为直接显示终态。引导插件把聚光与提示报告为操作 `spot`、`hint`，并登记它们的重放（4 节）。
+不变量：提示状态只由当前步骤决定；系统开启“减少动态效果”时，动画退化为直接显示终态。引导插件把聚光与提示报告为操作 `spot`、`hint`，并登记它们的重放（4 节）；讲解中的 `{cue}\`spot\``、`{cue}\`hint\``（15 节）在讲授中产生同样的操作，也由引导插件画出。
 
 ## 7A. 富内容
 
@@ -547,7 +547,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 | 引擎定义 | 环境变量 `PRESMIUM_SPEECH_<ID>_URL`、`PRESMIUM_SPEECH_<ID>_PROVIDER`、可选的 `PRESMIUM_SPEECH_<ID>_KEY` | 运营者在服务端给出的引擎：地址、服务提供方的名字与凭据，凭据只发往同一组中的地址（火山引擎的地址与名字固定在适配器中，只给凭据）；缺少地址或服务提供方时引擎不可用；文稿只用 ID 选择引擎 |
 | 同意记录 | `ConsentRecord`；`<consentDir>/<引擎>/<音色>.json` | 克隆音色的本人同意：说话人、范围、日期、同意声明录音的 sha256。放在运营者目录中的 `consentDir`（`settings.presmium.speech.consentDir`，默认 `consent`；运营者目录在工作区之外的用户状态目录中），只由所有者经服务端或运营者用 `presmium-speech consent` 登记，不随文稿提交 |
 | 语音协议 | `addon-speech` 的服务端贡献 `/__presmium/presmium.speech/v1/` | Presmium 与语音之间唯一的协议：OpenAI 音频接口的形态，加上返回逐词时间的 `/audio/speech/timestamps`；浏览器经它使用语音，只有服务端接触服务提供方；只给编辑者，请求体至多 32 MiB（转写的录音） |
-| 合成 | `Synthesis` | 音频、时长、逐字时间、缓存键与引擎信息；`synthetic: true` |
+| 合成 | `Synthesis` | 音频、时长、逐字时间、缓存键、引擎信息与服务提供方；`synthetic: true` |
 | 转写 | `Transcript` | 语言、时长、文字、带逐字时间的语音片段 |
 | 合成缓存 | `.presmium/speech/<键>.<扩展名>`、`<键>.json`，`.presmium/speech.lock.json` | 按规范化的（引擎、音色、语言、语速、风格、文字、应用读音词典之后要说的文字）的 sha256 缓存，随文稿提交；模型写在 `<键>.json` 中，不进入键（命中时不问引擎用的模型）；音频保留引擎返回的格式（通常是 Ogg/Opus，假引擎为 WAV） |
 
