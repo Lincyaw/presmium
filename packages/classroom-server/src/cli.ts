@@ -1,7 +1,7 @@
 import { parseArgs } from 'node:util'
 import { errorMessage } from '@lincyaw/kernel'
 import { lanAddresses } from '@lincyaw/kernel/node'
-import { startClassroomServer } from './index.ts'
+import { startClassroomServer } from './server.ts'
 
 const USAGE = `Usage: presmium-classroom-server [--port <n>] [--host <address>] [--deck <dir>]
 
