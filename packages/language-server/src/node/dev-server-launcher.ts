@@ -1,33 +1,16 @@
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { createInterface } from 'node:readline'
+import { findPackageBin } from '@lincyaw/kernel/node'
 
 const START_TIMEOUT = 120_000
 const PREVIEW_DIR = '.presmium/preview'
 
 const CLI = '@lincyaw/cli'
 
-function cliBin(from: string): string | undefined {
-  let dir: string
-  try {
-    dir = dirname(createRequire(from).resolve(CLI))
-  } catch {
-    return undefined
-  }
-  for (; dirname(dir) !== dir; dir = dirname(dir)) {
-    const file = join(dir, 'package.json')
-    if (!existsSync(file)) continue
-    const pkg = JSON.parse(readFileSync(file, 'utf8')) as { name?: string, bin?: Record<string, string> }
-    if (pkg.name === CLI && pkg.bin?.presmium) return join(dir, pkg.bin.presmium)
-  }
-  return undefined
-}
-
 function presmiumBin(deckDir: string): string {
-  const bin = cliBin(join(deckDir, 'package.json')) ?? cliBin(import.meta.url)
+  const bin = findPackageBin(CLI, 'presmium', join(deckDir, 'package.json')) ?? findPackageBin(CLI, 'presmium', import.meta.url)
   if (!bin) throw new Error(`${CLI} is not installed`)
   return bin
 }

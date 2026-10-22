@@ -1,4 +1,7 @@
+import { spawn } from 'node:child_process'
+import type { ChildProcess, SpawnOptions } from 'node:child_process'
 import { availableParallelism, constants, setPriority } from 'node:os'
+import { TYPESCRIPT_IMPORT } from './packages.ts'
 
 const THREAD_VARIABLES = ['GOMAXPROCS', 'RAYON_NUM_THREADS', 'OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS', 'BLIS_NUM_THREADS', 'VECLIB_MAXIMUM_THREADS', 'NUMEXPR_MAX_THREADS', 'NUMEXPR_NUM_THREADS', 'POLARS_MAX_THREADS']
 export const NODE_RESOURCE_ARGS: readonly string[] = ['--v8-pool-size=1']
@@ -23,4 +26,11 @@ export function resourceEnvironment(source: NodeJS.ProcessEnv = process.env): Re
 export function backgroundPriority(pid: number | undefined): void {
   if (pid === undefined) return
   try { setPriority(pid, constants.priority.PRIORITY_BELOW_NORMAL) } catch {}
+}
+
+/** Starts Node on `script` as a background child: one V8 worker, bounded thread pools, TypeScript imports and a lower priority. */
+export function spawnBackgroundNode(script: string, args: readonly string[], options: SpawnOptions = {}): ChildProcess {
+  const child = spawn(process.execPath, [...NODE_RESOURCE_ARGS, ...TYPESCRIPT_IMPORT, script, ...args], { env: resourceEnvironment(), ...options })
+  backgroundPriority(child.pid)
+  return child
 }

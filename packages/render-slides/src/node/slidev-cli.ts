@@ -1,16 +1,11 @@
-import { spawn } from 'node:child_process'
-import type { ChildProcess } from 'node:child_process'
-import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
 import { errorMessage, irBlocks, nodeMdast } from '@lincyaw/kernel'
 import type { IRDocument, MdastNode, RenderContext } from '@lincyaw/kernel'
-import { backgroundPriority, NODE_RESOURCE_ARGS, resourceEnvironment, TYPESCRIPT_IMPORT } from '@lincyaw/kernel/node'
-
-const require = createRequire(import.meta.url)
+import { findPackageBin, spawnBackgroundNode } from '@lincyaw/kernel/node'
 
 function slidevBin(): string {
-  const pkg = require.resolve('@slidev/cli/package.json')
-  return join(dirname(pkg), (require(pkg) as { bin: { slidev: string } }).bin.slidev)
+  const bin = findPackageBin('@slidev/cli', 'slidev', import.meta.url)
+  if (!bin) throw new Error('@slidev/cli is not installed')
+  return bin
 }
 
 export class SlidevError extends Error {
@@ -24,11 +19,10 @@ export class SlidevError extends Error {
 /** Runs a Slidev command in the project's directory; rejects with its output when it fails. */
 export function runSlidev(args: string[], cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [...NODE_RESOURCE_ARGS, ...TYPESCRIPT_IMPORT, slidevBin(), ...args], { cwd, stdio: ['ignore', 'pipe', 'pipe'], env: resourceEnvironment() })
-    backgroundPriority(child.pid)
+    const child = spawnBackgroundNode(slidevBin(), args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] })
     let output = ''
-    child.stdout.on('data', (chunk: Buffer) => output += chunk)
-    child.stderr.on('data', (chunk: Buffer) => output += chunk)
+    child.stdout!.on('data', (chunk: Buffer) => output += chunk)
+    child.stderr!.on('data', (chunk: Buffer) => output += chunk)
     child.on('error', reject)
     child.on('close', code => code === 0 ? resolve() : reject(new SlidevError(`slidev ${args[0]} exited with code ${code}`, output)))
   })
@@ -36,8 +30,7 @@ export function runSlidev(args: string[], cwd: string): Promise<void> {
 
 /** Starts Slidev's dev server for the project and resolves with its address once it prints it. */
 export function startSlidevDev(dir: string, args: string[]): Promise<{ url: string, close(): Promise<void> }> {
-  const child: ChildProcess = spawn(process.execPath, [...NODE_RESOURCE_ARGS, ...TYPESCRIPT_IMPORT, slidevBin(), 'slides.md', ...args], { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'], env: resourceEnvironment() })
-  backgroundPriority(child.pid)
+  const child = spawnBackgroundNode(slidevBin(), ['slides.md', ...args], { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] })
   const exited = new Promise<void>(resolve => child.once('exit', () => resolve()))
   const close = async () => {
     if (child.exitCode === null) child.kill('SIGTERM')
