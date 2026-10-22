@@ -15,7 +15,8 @@ export interface Preview {
 
 export const SECTION_REQUEST = 'presmium/section'
 
-export interface SectionAt {
+/** The section at a position in a source file, and its page in the web form. */
+export interface SectionLocation {
   entry: string
   id: string
   index: number

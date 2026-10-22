@@ -1,7 +1,7 @@
 import { irBlocks } from '@lincyaw/kernel'
 import type { IRBlock, IRDocument, IRSection } from '@lincyaw/kernel'
 
-export function sectionAt(doc: IRDocument, file: string, line: number): IRSection | undefined {
+export function findSectionAtLine(doc: IRDocument, file: string, line: number): IRSection | undefined {
   const headed = doc.sections.filter(s => s.source.file === file && s.source.line <= line).at(-1)
   if (headed) return headed
   let first: IRSection | undefined
@@ -16,7 +16,7 @@ export function sectionAt(doc: IRDocument, file: string, line: number): IRSectio
   return last?.section ?? first ?? (file === doc.meta.entry ? doc.sections[0] : undefined)
 }
 
-export function blockAt(doc: IRDocument, file: string, line: number): IRBlock | undefined {
+export function findBlockAtLine(doc: IRDocument, file: string, line: number): IRBlock | undefined {
   for (const section of doc.sections) {
     for (const block of irBlocks(section.blocks)) {
       if (block.source.file === file && block.source.line === line) return block

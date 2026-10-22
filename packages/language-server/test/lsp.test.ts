@@ -9,7 +9,7 @@ import { CompletionRequest, DefinitionRequest, HoverRequest } from 'vscode-langu
 import type { CompletionItem, CompletionList, Hover, Location, MarkupContent } from 'vscode-languageserver/node'
 import { afterAll, beforeAll, expect, it } from 'vitest'
 import { PREVIEW_REQUEST, SECTION_REQUEST } from '../src/domain/protocol.ts'
-import type { Preview, SectionAt } from '../src/domain/protocol.ts'
+import type { Preview, SectionLocation } from '../src/domain/protocol.ts'
 import { startServer } from './client.ts'
 import type { Client } from './client.ts'
 
@@ -187,7 +187,7 @@ it('completes region names in an anchor, directive names and options', async () 
 
 it('maps the cursor to its section and opens the presmium dev preview (P-81)', async () => {
   const position = { line: lineOf(DECK, '```{code-ref} region:src/bpe.py#gone'), character: 0 }
-  const section = await server.connection.sendRequest(SECTION_REQUEST, { textDocument: { uri }, position }) as SectionAt
+  const section = await server.connection.sendRequest(SECTION_REQUEST, { textDocument: { uri }, position }) as SectionLocation
   expect(section).toEqual({ entry: deck, id: 'lost', index: 2, title: 'Lost', link: '/#lost' })
 
   const preview = await server.connection.sendRequest(PREVIEW_REQUEST, { textDocument: { uri } }) as Preview

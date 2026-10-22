@@ -10,7 +10,7 @@ import { open } from 'yauzl'
 import { createMessageConnection, StreamMessageReader, StreamMessageWriter } from 'vscode-jsonrpc/node'
 import { expect, it } from 'vitest'
 import { PREVIEW_REQUEST, SECTION_REQUEST } from '@lincyaw/language-server/protocol'
-import type { Preview, SectionAt } from '@lincyaw/language-server/protocol'
+import type { Preview, SectionLocation } from '@lincyaw/language-server/protocol'
 
 const PKG = fileURLToPath(new URL('..', import.meta.url))
 const TSC = createRequire(import.meta.url).resolve('typescript/bin/tsc')
@@ -96,7 +96,7 @@ it('packages a VSIX whose language server renders a lecture outside the checkout
       }))
       await connection.sendNotification('textDocument/didOpen', { textDocument: { uri, languageId: 'markdown', version: 1, text } })
       expect(await diagnostics).toEqual([])
-      const section = await connection.sendRequest<SectionAt>(SECTION_REQUEST, { textDocument: { uri }, position: { line: 8, character: 0 } })
+      const section = await connection.sendRequest<SectionLocation>(SECTION_REQUEST, { textDocument: { uri }, position: { line: 8, character: 0 } })
       expect(section.id).toBe('one')
       const preview = await connection.sendRequest<Preview>(PREVIEW_REQUEST, { textDocument: { uri } }).catch(error => {
         throw new Error(`${error}\n${logs.join('\n')}`)

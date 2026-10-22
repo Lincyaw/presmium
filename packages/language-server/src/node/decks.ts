@@ -39,11 +39,11 @@ export class Deck {
     return this.#running ?? Promise.resolve()
   }
 
-  owns(file: string): boolean {
+  hasSourceFile(file: string): boolean {
     return this.compilation ? this.compilation.sourceFiles.includes(file) : file === this.entry
   }
 
-  reads(file: string): boolean {
+  dependsOn(file: string): boolean {
     const { compilation } = this
     if (!compilation) return file === this.entry
     return compilation.sourceFiles.includes(file) || compilation.inputs.files.includes(file) || file === join(compilation.deckDir, ANCHOR_LOCK_PATH)
@@ -102,19 +102,20 @@ export class Decks {
     return deck
   }
 
-  async of(file: string): Promise<Deck | undefined> {
+  /** The deck whose source the file is: an open one, or one opened at an entry above it. */
+  async findByFile(file: string): Promise<Deck | undefined> {
     const known = this.all()
     const owner = known.find(deck => deck.compilation?.sourceFiles.includes(file))
     if (owner) return owner
     for (const deck of known) {
       await deck.ready()
-      if (deck.owns(file)) return deck
+      if (deck.hasSourceFile(file)) return deck
     }
     for (const entry of candidateEntries(file)) {
       if (known.some(deck => deck.entry === entry)) continue
       const deck = this.open(entry)
       await deck.ready()
-      if (deck.owns(file)) return deck
+      if (deck.hasSourceFile(file)) return deck
     }
     return undefined
   }

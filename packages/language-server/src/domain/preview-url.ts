@@ -1,8 +1,8 @@
-import type { SectionAt } from './protocol.ts'
+import type { SectionLocation } from './protocol.ts'
 
 const page = (link: string) => link.split('#')[0]!
 
-export function previewUrl(base: string, section: SectionAt | null | undefined, shown?: SectionAt): string {
+export function previewUrl(base: string, section: SectionLocation | null | undefined, shown?: SectionLocation): string {
   const root = base.replace(/\/?$/, '/')
   if (!section) return root
   const id = encodeURIComponent(section.id)

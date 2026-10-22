@@ -19,7 +19,8 @@ function rangeOf(text: string, line: number, message: string): Range {
   return { start: { line, character: start }, end: { line, character: text.trimEnd().length } }
 }
 
-export function toDiagnostics(findings: Finding[], entry: string, lines: (file: string) => string[]): Map<string, Diagnostic[]> {
+/** The findings as LSP diagnostics, by file; a finding without a file is the entry's. */
+export function diagnosticsByFile(findings: Finding[], entry: string, lines: (file: string) => string[]): Map<string, Diagnostic[]> {
   const byFile = new Map<string, Diagnostic[]>()
   const texts = new Map<string, string[]>()
   for (const finding of findings) {

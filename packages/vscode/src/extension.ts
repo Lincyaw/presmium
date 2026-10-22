@@ -5,13 +5,13 @@ import { dirname, join } from 'node:path'
 import { errorMessage, escapeHtml } from '@lincyaw/kernel'
 import { previewUrl } from '@lincyaw/language-server/domain'
 import { PREVIEW_REQUEST, SECTION_REQUEST } from '@lincyaw/language-server/protocol'
-import type { Preview, SectionAt } from '@lincyaw/language-server/protocol'
+import type { Preview, SectionLocation } from '@lincyaw/language-server/protocol'
 import * as vscode from 'vscode'
 import { LanguageClient, TransportKind } from 'vscode-languageclient/node'
 
 const SERVER_PACKAGE = '@lincyaw/language-server'
 const SERVER_BIN = 'bin/presmium-language-server.mjs'
-const FOLLOW_DELAY = 150
+const SYNC_DELAY = 150
 
 let client: LanguageClient | undefined
 
@@ -50,9 +50,9 @@ export async function deactivate(): Promise<void> {
   await client?.stop()
 }
 
-function sectionAt(client: LanguageClient, editor: vscode.TextEditor): Promise<SectionAt | null> {
+function requestSectionAtCursor(client: LanguageClient, editor: vscode.TextEditor): Promise<SectionLocation | null> {
   const position = client.code2ProtocolConverter.asPosition(editor.selection.active)
-  return client.sendRequest<SectionAt | null>(SECTION_REQUEST, { textDocument: { uri: editor.document.uri.toString() }, position })
+  return client.sendRequest<SectionLocation | null>(SECTION_REQUEST, { textDocument: { uri: editor.document.uri.toString() }, position })
 }
 
 async function openPreview(client: LanguageClient): Promise<void> {
@@ -67,29 +67,29 @@ async function openPreview(client: LanguageClient): Promise<void> {
     return
   }
   const base = (await vscode.env.asExternalUri(vscode.Uri.parse(preview.url))).toString(true).replace(/\/?$/, '/')
-  let shown: SectionAt | undefined
-  const urlOf = (section: SectionAt | null | undefined): string => previewUrl(base, section, shown)
+  let shown: SectionLocation | undefined
+  const urlOf = (section: SectionLocation | null | undefined): string => previewUrl(base, section, shown)
 
-  const first = await sectionAt(client, editor)
+  const first = await requestSectionAtCursor(client, editor)
   const panel = vscode.window.createWebviewPanel('presmium.preview', `Preview ${vscode.workspace.asRelativePath(preview.entry)}`, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, { enableScripts: true, retainContextWhenHidden: true })
   panel.webview.html = previewHtml(urlOf(first), new URL(base).origin)
   shown = first ?? undefined
 
   let timer: NodeJS.Timeout | undefined
-  const follow = vscode.window.onDidChangeTextEditorSelection(({ textEditor }) => {
+  const syncPreviewToCursor = vscode.window.onDidChangeTextEditorSelection(({ textEditor }) => {
     if (textEditor.document.languageId !== 'markdown') return
     clearTimeout(timer)
     timer = setTimeout(async () => {
-      const section = await sectionAt(client, textEditor).catch(() => null)
+      const section = await requestSectionAtCursor(client, textEditor).catch(() => null)
       if (!section || section.entry !== preview.entry || section.id === shown?.id) return
       const url = urlOf(section)
       shown = section
       void panel.webview.postMessage({ type: 'presmium:show', url })
-    }, FOLLOW_DELAY)
+    }, SYNC_DELAY)
   })
   panel.onDidDispose(() => {
     clearTimeout(timer)
-    follow.dispose()
+    syncPreviewToCursor.dispose()
   })
 }
 

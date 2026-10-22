@@ -7,7 +7,7 @@ import { isInside } from '@lincyaw/kernel/node'
 import type { AnchorString, CodeNode, Resolution, ResolvedLocation } from '@lincyaw/kernel'
 import { CompletionItemKind, MarkupKind } from 'vscode-languageserver/node'
 import type { CompletionItem, Hover, Location, Range } from 'vscode-languageserver/node'
-import { blockAt, declarationNames, regionNames } from '../domain/index.ts'
+import { declarationNames, findBlockAtLine, regionNames } from '../domain/index.ts'
 import type { AnchorRef, LsMessages } from '../domain/index.ts'
 
 const MAX_NAMES = 200
@@ -46,7 +46,7 @@ function where(file: string, startLine: number, endLine: number): string {
 
 export async function anchorHover(compilation: Compilation, file: string, ref: AnchorRef, t: LsMessages): Promise<Hover> {
   const range: Range = { start: { line: ref.line, character: ref.start }, end: { line: ref.line, character: ref.end } }
-  const block = blockAt(compilation.doc, file, ref.line + 1)
+  const block = findBlockAtLine(compilation.doc, file, ref.line + 1)
   const node = block?.node.type === 'code' && block.node.origin?.anchor === ref.anchor ? block.node : undefined
   const parts = node?.origin && node.origin.startLine > 0 ? codeNodeHover(node, t) : await resolvedHover(compilation, ref, t)
   return { contents: { kind: MarkupKind.Markdown, value: parts.join('\n\n') }, range }

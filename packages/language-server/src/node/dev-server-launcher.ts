@@ -32,7 +32,7 @@ function presmiumBin(deckDir: string): string {
   return bin
 }
 
-function stop(child: ChildProcess, signal: NodeJS.Signals = 'SIGTERM'): void {
+function stopProcess(child: ChildProcess, signal: NodeJS.Signals = 'SIGTERM'): void {
   if (!child.pid || child.exitCode !== null || child.signalCode !== null) return
   if (process.platform === 'win32') {
     const task = spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' })
@@ -40,7 +40,8 @@ function stop(child: ChildProcess, signal: NodeJS.Signals = 'SIGTERM'): void {
   } else child.kill(signal)
 }
 
-export class Previews {
+/** Starts a `presmium dev` web server for each deck the editor previews, once, and stops them all on close. */
+export class DevServerLauncher {
   readonly #urls = new Map<string, Promise<string>>()
   readonly #children = new Set<ChildProcess>()
   readonly #log: (line: string) => void
@@ -49,7 +50,8 @@ export class Previews {
     this.#log = log
   }
 
-  open(entry: string): Promise<string> {
+  /** The address of the deck's dev server, started on first use. */
+  urlOf(entry: string): Promise<string> {
     const known = this.#urls.get(entry)
     if (known) return known
     const forget = () => {
@@ -71,7 +73,7 @@ export class Previews {
       const fail = (error: Error) => {
         clearTimeout(timer)
         reject(error)
-        if (!started) stop(child)
+        if (!started) stopProcess(child)
       }
       const timer = setTimeout(() => fail(new Error('presmium dev did not start the web server in time')), START_TIMEOUT)
       createInterface({ input: child.stderr! }).on('line', line => this.#log(line))
@@ -99,11 +101,11 @@ export class Previews {
   async close(): Promise<void> {
     const exits = [...this.#children].map(child => new Promise<void>((done) => {
       const timer = setTimeout(() => {
-        stop(child, 'SIGKILL')
+        stopProcess(child, 'SIGKILL')
         done()
       }, 5000).unref()
       child.once('exit', () => { clearTimeout(timer); done() })
-      stop(child)
+      stopProcess(child)
     }))
     this.#urls.clear()
     await Promise.all(exits)
