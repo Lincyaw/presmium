@@ -16,6 +16,8 @@ const FIXTURE = join(ROOT, 'e2e/fixtures/preview-protocol')
 const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
 const TOKEN = 'preview-protocol-token'
 const COMMANDS = ['go', 'highlight', 'pick', 'pins', 'marks', 'appearance']
+// The web form can also pause and resume its runtime; the slides cannot.
+const WEB_COMMANDS = [...COMMANDS, 'activity']
 
 test.describe.configure({ mode: 'serial', timeout: 420_000 })
 
@@ -168,7 +170,7 @@ async function select(page: Page, selector: string): Promise<void> {
 }
 
 test('the web form takes every command and reports its position, a pick, the selection, a new IR and a plugin that failed', async ({ page }) => {
-  await ready(page, 'web', { renderer: 'web', document: 'talk', revision: await revision(), capabilities: COMMANDS })
+  await ready(page, 'web', { renderer: 'web', document: 'talk', revision: await revision(), capabilities: WEB_COMMANDS })
   const frame = page.frameLocator('#preview')
   await message(page, 'position', { section: 'preview-protocol', step: 0, trail: [], view: 'document' })
 
