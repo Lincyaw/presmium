@@ -3,7 +3,7 @@ import { Compiler } from '@lincyaw/compiler'
 import type { RunStats } from '@lincyaw/compiler'
 import { errorMessage } from '@lincyaw/kernel'
 import type { Finding } from '@lincyaw/kernel'
-import { listDocuments, readWorkspace } from './config.ts'
+import { listDocuments, readWorkspaceConfig } from './config.ts'
 import { siteContext, siteDocument, siteIR, siteSpec, siteTranslations, webRenderer } from './site.ts'
 
 export interface WorkspaceBuild {
@@ -13,7 +13,7 @@ export interface WorkspaceBuild {
 }
 
 export async function buildWorkspace(root: string, options: { outDir?: string, bundled?: string } = {}): Promise<WorkspaceBuild> {
-  const config = readWorkspace(root)
+  const config = readWorkspaceConfig(root)
   const found = listDocuments(config)
   const findings: Finding[] = []
   const documents: WorkspaceBuild['documents'] = []

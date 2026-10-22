@@ -32,7 +32,7 @@ export function leavesRoot(path: string): boolean {
   return path === '..' || path.startsWith('../')
 }
 
-export function within(path: string, dir: string): boolean {
+export function isWithin(path: string, dir: string): boolean {
   return dir === '' || path === dir || path.startsWith(`${dir}/`)
 }
 
@@ -76,7 +76,7 @@ export function movedUrl(url: string, file: string, was: string, from: string, t
   const dirOf = (p: string) => p.split('/').slice(0, -1).join('/')
   const target = joinPath(dirOf(was), decoded)
   if (target === undefined) return undefined
-  const moved = within(target, from) ? `${to}${target.slice(from.length)}` : target
+  const moved = isWithin(target, from) ? `${to}${target.slice(from.length)}` : target
   let next = relativePath(dirOf(file), moved)
   if (decoded.endsWith('/') && !next.endsWith('/')) next += '/'
   if (decoded.startsWith('./') && !next.startsWith('.')) next = `./${next}`

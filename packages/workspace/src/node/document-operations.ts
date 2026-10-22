@@ -1,46 +1,29 @@
-import { existsSync, mkdirSync, readdirSync, renameSync, rmdirSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, renameSync, rmdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { DocumentOperation, DocumentSummary, LockedAnswer, Member, OperationAnswer, RevisionOperation } from '@lincyaw/kernel'
-import { invalidDocumentDir, within } from '../domain/paths.ts'
-import type { CommitOrigin } from '../domain/revisions.ts'
-import { listDocuments, namedByPatterns } from './config.ts'
+import type { DocumentOperation, Member, OperationAnswer, RevisionOperation } from '@lincyaw/kernel'
+import type { CommitOrigin } from '../domain/commit-message.ts'
+import { invalidDocumentDir, isWithin } from '../domain/paths.ts'
+import { isDocumentDir, listDocuments } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
-import { templatesDir } from './files.ts'
-import type { DocumentWriter } from './files.ts'
+import { RequestError } from './errors.ts'
 import type { Git } from './git.ts'
-import { lockedMessage } from './locks.ts'
+import { lockedError } from './locks.ts'
 import type { DocumentLocks } from './locks.ts'
 import type { Revisions } from './revisions.ts'
-
-export { BUILTIN_TEMPLATES } from './files.ts'
-export const DEFAULT_TEMPLATE = 'default'
-
-export class RequestError extends Error {
-  readonly status: number
-  readonly detail?: Record<string, unknown>
-  constructor(status: number, message: string, detail?: Record<string, unknown>) {
-    super(message)
-    this.status = status
-    this.detail = detail
-  }
-}
-
-export function lockedError(document: string, holder: string): RequestError {
-  return new RequestError(409, lockedMessage(document, holder), { locked: { document, holder } } satisfies Omit<LockedAnswer, 'error'>)
-}
-
-export function makeDocumentDir(root: string, dir: string): void {
-  const path = join(root, dir)
-  mkdirSync(dirname(path), { recursive: true })
-  mkdirSync(path)
-}
+import { DEFAULT_TEMPLATE, listTemplates } from './templates.ts'
+import { makeDocumentDir } from './writer.ts'
+import type { DocumentWriter } from './writer.ts'
 
 export interface DocumentsChange {
   removed: string[]
   added: string[]
 }
 
-export interface DocumentsOptions {
+export function documentsDiff(before: string[], after: string[]): DocumentsChange {
+  return { removed: before.filter(dir => !after.includes(dir)), added: after.filter(dir => !before.includes(dir)) }
+}
+
+export interface DocumentOperationsOptions {
   config: WorkspaceConfig
   git: Git
   revisions: Revisions
@@ -53,16 +36,17 @@ function touched(operation: DocumentOperation): string[] {
   return operation.op === 'create' || operation.op === 'delete' ? [operation.dir] : [operation.dir, operation.to]
 }
 
-export class Documents {
-  readonly config: WorkspaceConfig
+/** Creating, renaming, copying and deleting a document, each under the document locks and as one commit. */
+export class DocumentOperations {
+  readonly #config: WorkspaceConfig
   readonly #git: Git
   readonly #revisions: Revisions
   readonly #writer: DocumentWriter
   readonly #changed: (change: DocumentsChange) => void | Promise<void>
   readonly #locks?: DocumentLocks
 
-  constructor(options: DocumentsOptions) {
-    this.config = options.config
+  constructor(options: DocumentOperationsOptions) {
+    this.#config = options.config
     this.#git = options.git
     this.#revisions = options.revisions
     this.#writer = options.writer
@@ -70,32 +54,8 @@ export class Documents {
     this.#locks = options.locks
   }
 
-  get writer(): DocumentWriter {
-    return this.#writer
-  }
-
-  get locks(): DocumentLocks | undefined {
-    return this.#locks
-  }
-
-  list(): DocumentSummary[] {
-    return listDocuments(this.config).map(({ entry: _entry, ...document }) => document)
-  }
-
-  get templatesDir(): string {
-    return templatesDir(this.config)
-  }
-
-  templates(): string[] {
-    try {
-      return readdirSync(this.templatesDir).filter(name => statSync(join(this.templatesDir, name)).isDirectory()).sort()
-    } catch {
-      return []
-    }
-  }
-
   async apply(operation: DocumentOperation, member: Member): Promise<OperationAnswer> {
-    if (this.config.single) throw new RequestError(409, 'this workspace is a single deck: it has no document operations')
+    if (this.#config.singleDeck) throw new RequestError(409, 'this workspace is a single deck: it has no document operations')
     const claimed = this.#locks?.claimAll(touched(operation), `document:${operation.op}`)
     if (claimed && 'holder' in claimed) throw lockedError(claimed.document, claimed.holder)
     try {
@@ -110,7 +70,7 @@ export class Documents {
   }
 
   async #fill(dir: string, fill: () => Promise<void>): Promise<void> {
-    makeDocumentDir(this.config.root, dir)
+    makeDocumentDir(this.#config.root, dir)
     try {
       await fill()
     } catch (error) {
@@ -123,7 +83,7 @@ export class Documents {
     for (let attempt = 0; ; attempt++) {
       await this.#writer.empty(dir)
       try {
-        rmdirSync(join(this.config.root, dir))
+        rmdirSync(join(this.#config.root, dir))
         return
       } catch (error) {
         if (attempt > 0 || (error as NodeJS.ErrnoException).code !== 'ENOTEMPTY') throw new RequestError(409, `${dir} could not be removed: ${error instanceof Error ? error.message : String(error)}`)
@@ -132,8 +92,10 @@ export class Documents {
   }
 
   async #apply(operation: DocumentOperation, member: Member): Promise<OperationAnswer> {
+    const config = this.#config
     const origin = (done: RevisionOperation): CommitOrigin => ({ kind: 'document', member, operation: done })
-    const known = listDocuments(this.config).map(doc => doc.dir)
+    const commit = (paths: string[], summary: string, body: string, done: RevisionOperation) => this.#revisions.commitWhileLocked({ paths, summary, body, origin: origin(done) })
+    const known = listDocuments(config).map(doc => doc.dir)
     const existing = (dir: string) => {
       if (!known.includes(dir)) throw new RequestError(404, `no document ${JSON.stringify(dir)}`)
       return dir
@@ -141,42 +103,43 @@ export class Documents {
     const fresh = (dir: string) => {
       const invalid = invalidDocumentDir(dir)
       if (invalid) throw new RequestError(400, invalid)
-      if (!namedByPatterns(this.config, dir)) throw new RequestError(400, `"${dir}" is not where the workspace configuration's documents are (${this.config.documents.join(', ')})`)
-      const holder = known.find(doc => doc !== '' && (within(dir, doc) || within(doc, dir)))
+      if (!isDocumentDir(config, dir)) throw new RequestError(400, `"${dir}" is not where the workspace configuration's documents are (${config.documents.join(', ')})`)
+      const holder = known.find(doc => doc !== '' && (isWithin(dir, doc) || isWithin(doc, dir)))
       if (holder !== undefined) throw new RequestError(409, `${dir} would hold or be inside the document ${holder}`)
-      if (existsSync(join(this.config.root, dir))) throw new RequestError(409, `${dir} exists already`)
+      if (existsSync(join(config.root, dir))) throw new RequestError(409, `${dir} exists already`)
       return dir
     }
     switch (operation.op) {
       case 'create': {
         const dir = fresh(operation.dir)
-        const name = operation.template ?? (this.templates().includes(DEFAULT_TEMPLATE) ? DEFAULT_TEMPLATE : this.templates()[0])
-        if (!name || !this.templates().includes(name)) throw new RequestError(400, `no document template ${JSON.stringify(name ?? '')}`)
+        const templates = listTemplates(config)
+        const name = operation.template ?? (templates.includes(DEFAULT_TEMPLATE) ? DEFAULT_TEMPLATE : templates[0])
+        if (!name || !templates.includes(name)) throw new RequestError(400, `no document template ${JSON.stringify(name ?? '')}`)
         const title = operation.title?.trim() || dir.split('/').at(-1)!
         await this.#fill(dir, () => this.#writer.template(dir, name, title))
-        const revision = await this.#revisions.commitNow([dir], `Create document ${dir}`, `Title: ${title}\nTemplate: ${name}`, origin({ op: 'create', dir }))
+        const revision = await commit([dir], `Create document ${dir}`, `Title: ${title}\nTemplate: ${name}`, { op: 'create', dir })
         return { revision, dir }
       }
       case 'rename': {
         const from = existing(operation.dir)
         const to = fresh(operation.to)
-        mkdirSync(dirname(join(this.config.root, to)), { recursive: true })
-        renameSync(join(this.config.root, from), join(this.config.root, to))
-        const rewritten = (await this.#writer.relink(from, to)).filter(path => !within(path, to))
-        const revision = await this.#revisions.commitNow([from, to, ...rewritten], `Rename document ${from} to ${to}`, rewritten.length ? `Links rewritten in: ${rewritten.join(', ')}` : '', origin({ op: 'rename', dir: from, to }))
+        mkdirSync(dirname(join(config.root, to)), { recursive: true })
+        renameSync(join(config.root, from), join(config.root, to))
+        const rewritten = (await this.#writer.relink(from, to)).filter(path => !isWithin(path, to))
+        const revision = await commit([from, to, ...rewritten], `Rename document ${from} to ${to}`, rewritten.length ? `Links rewritten in: ${rewritten.join(', ')}` : '', { op: 'rename', dir: from, to })
         return { revision, dir: to }
       }
       case 'copy': {
         const from = existing(operation.dir)
         const to = fresh(operation.to)
         await this.#fill(to, () => this.#writer.copy(from, to))
-        const revision = await this.#revisions.commitNow([to], `Copy document ${from} to ${to}`, '', origin({ op: 'copy', dir: from, to }))
+        const revision = await commit([to], `Copy document ${from} to ${to}`, '', { op: 'copy', dir: from, to })
         return { revision, dir: to }
       }
       case 'delete': {
         const dir = existing(operation.dir)
         await this.#remove(dir)
-        const revision = await this.#revisions.commitNow([dir], `Delete document ${dir}`, '', origin({ op: 'delete', dir }))
+        const revision = await commit([dir], `Delete document ${dir}`, '', { op: 'delete', dir })
         return { revision }
       }
     }

@@ -3,10 +3,10 @@ import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { Member, ReviewStep } from '@lincyaw/kernel'
-import type { SavedGuard } from './git-guard.ts'
+import type { SavedGitDir } from './git-guard.ts'
 import type { GitDirs } from './git-review.ts'
 
-export interface SessionRecord {
+export interface AgentSessionRecord {
   session: string
   document: string
   member: Member
@@ -16,24 +16,26 @@ export interface SessionRecord {
   steps: ReviewStep[]
 }
 
+/** A review in progress, kept in the user's state directory so that another process can roll it back or resume it. */
 export interface ReviewRecord {
-  deck: string
+  /** The directory the review covers: a document's for a plugin's task, the workspace root for an agent session. */
+  scopeDir: string
   dirs: GitDirs
   snapshot: string
   task: string
   pid: number
   started?: string
-  guard?: SavedGuard
-  session?: SessionRecord
+  guard?: SavedGitDir
+  session?: AgentSessionRecord
 }
 
 export function recordsDir(env: NodeJS.ProcessEnv = process.env): string {
   return join(env.XDG_STATE_HOME || join(env.HOME || homedir(), '.local', 'state'), 'presmium', 'reviews')
 }
 
-const fileOf = (deck: string) => join(recordsDir(), `${createHash('sha256').update(deck).digest('hex').slice(0, 24)}.json`)
+const recordFile = (scopeDir: string) => join(recordsDir(), `${createHash('sha256').update(scopeDir).digest('hex').slice(0, 24)}.json`)
 
-export function startTime(pid: number): string | undefined {
+export function processStartTime(pid: number): string | undefined {
   try {
     const stat = readFileSync(`/proc/${pid}/stat`, 'utf8')
     return stat.slice(stat.lastIndexOf(')') + 2).split(' ')[19]
@@ -42,32 +44,34 @@ export function startTime(pid: number): string | undefined {
   }
 }
 
-export const SELF = { pid: process.pid, started: startTime(process.pid) }
+export const THIS_PROCESS = { pid: process.pid, started: processStartTime(process.pid) }
 
-export function holderRuns(record: ReviewRecord): boolean {
+export function isHolderAlive(record: ReviewRecord): boolean {
   try {
     process.kill(record.pid, 0)
   } catch (error) {
     return (error as NodeJS.ErrnoException).code === 'EPERM'
   }
-  return record.started === undefined || startTime(record.pid) === record.started
+  return record.started === undefined || processStartTime(record.pid) === record.started
 }
 
-export function readRecord(deck: string): ReviewRecord | undefined {
+/** Reads the record of a review of the directory; records of earlier versions name the directory `deck`. */
+export function readRecord(scopeDir: string): ReviewRecord | undefined {
   try {
-    return JSON.parse(readFileSync(fileOf(deck), 'utf8')) as ReviewRecord
+    const { deck, ...record } = JSON.parse(readFileSync(recordFile(scopeDir), 'utf8')) as Partial<ReviewRecord> & { deck?: string }
+    return { ...record, scopeDir: record.scopeDir ?? deck } as ReviewRecord
   } catch {
     return undefined
   }
 }
 
 export function writeRecord(record: ReviewRecord): void {
-  const file = fileOf(record.deck)
+  const file = recordFile(record.scopeDir)
   mkdirSync(recordsDir(), { recursive: true, mode: 0o700 })
   writeFileSync(`${file}.${process.pid}`, JSON.stringify(record), { mode: 0o600 })
   renameSync(`${file}.${process.pid}`, file)
 }
 
-export function removeRecord(deck: string): void {
-  rmSync(fileOf(deck), { force: true })
+export function removeRecord(scopeDir: string): void {
+  rmSync(recordFile(scopeDir), { force: true })
 }

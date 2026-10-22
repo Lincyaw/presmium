@@ -1,16 +1,14 @@
 import { randomBytes } from 'node:crypto'
-import { closeSync, constants, existsSync, fstatSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, renameSync, rmdirSync, rmSync, symlinkSync, writeFileSync, writeSync } from 'node:fs'
+import { closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, renameSync, rmdirSync, rmSync, symlinkSync, writeFileSync, writeSync } from 'node:fs'
 import type { Stats } from 'node:fs'
-import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
 import type { DocumentFileChange, DocumentFiles } from '@lincyaw/kernel'
-import { rewriteLinks, within } from '../domain/paths.ts'
-import { listDocuments, namedByPatterns } from './config.ts'
+import { isWithin, rewriteLinks } from '../domain/paths.ts'
+import { isDocumentDir, listDocuments } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
+import { findTemplate } from './templates.ts'
 
-export const BUILTIN_TEMPLATES = fileURLToPath(new URL('../../templates/document', import.meta.url))
-
-const NOT_SOURCE = new Set(['node_modules', 'dist', '.git'])
+const NOT_COPIED = new Set(['node_modules', 'dist', '.git'])
 
 export class FilesError extends Error {}
 
@@ -51,16 +49,21 @@ export function documentDirOf(config: WorkspaceConfig, path: string): string | u
   const parts = path.split('/')
   for (let i = parts.length - 1; i >= 0; i--) {
     const dir = parts.slice(0, i).join('/')
-    if (namedByPatterns(config, dir)) return dir
+    if (isDocumentDir(config, dir)) return dir
   }
   return undefined
 }
 
-function documentDir(config: WorkspaceConfig, dir: string): string {
+function assertDocumentDir(config: WorkspaceConfig, dir: string): void {
   if (dir !== '') partsOf(dir)
-  if (!namedByPatterns(config, dir)) throw new FilesError(`${dir || '.'} is not a document directory of this workspace`)
+  if (!isDocumentDir(config, dir)) throw new FilesError(`${dir || '.'} is not a document directory of this workspace`)
   if (!realDirectory(config.root, dir)) throw new FilesError(`the document directory ${dir || '.'} is not there`)
-  return dir
+}
+
+export function makeDocumentDir(root: string, dir: string): void {
+  const path = join(root, dir)
+  mkdirSync(dirname(path), { recursive: true })
+  mkdirSync(path)
 }
 
 function madeParent(root: string, base: string, parts: string[]): string {
@@ -153,18 +156,18 @@ export function writeChanges(config: WorkspaceConfig, changes: DocumentFileChang
     const parts = partsOf(change.path)
     const dir = documentDirOf(config, parts.join('/'))
     if (dir === undefined && !outside) throw new FilesError(`${change.path} is in no document directory`)
-    if (!outside && dir !== undefined) documentDir(config, dir)
+    if (!outside && dir !== undefined) assertDocumentDir(config, dir)
     return { change, base: outside ? '' : dir ?? '' }
   })
   for (const { change, base } of targets) if ('remove' in change) apply(config.root, base, change)
   for (const { change, base } of targets) if (!('remove' in change)) apply(config.root, base, change)
 }
 
-export function createFile(config: WorkspaceConfig, path: string, content: Uint8Array, outside = false): void {
+function createFile(config: WorkspaceConfig, path: string, content: Uint8Array, outside = false): void {
   const parts = partsOf(path)
   const dir = documentDirOf(config, path)
   if (dir === undefined && !outside) throw new FilesError(`${path} is in no document directory`)
-  if (!outside && dir !== undefined) documentDir(config, dir)
+  if (!outside && dir !== undefined) assertDocumentDir(config, dir)
   const base = outside ? '' : dir ?? ''
   let parent = join(config.root, base)
   for (const part of parts.slice(base ? base.split('/').length : 0, -1)) {
@@ -178,7 +181,7 @@ export function createFile(config: WorkspaceConfig, path: string, content: Uint8
 
 const DECK_CONTENT = new Set(['freeze', 'drawings', 'assets', 'speech', 'speech.lock.json', 'anchors.lock.json'])
 
-export function generatedPath(path: string): boolean {
+export function isGeneratedPath(path: string): boolean {
   const parts = path.split('/')
   const at = parts.indexOf('.presmium')
   return at >= 0 && !DECK_CONTENT.has(parts[at + 1] ?? '')
@@ -188,7 +191,7 @@ function sourceEntries(dir: string): { path: string, link?: string, executable?:
   const out: { path: string, link?: string, executable?: boolean }[] = []
   const walk = (current: string, rel: string) => {
     for (const name of readdirSync(current).sort()) {
-      if (NOT_SOURCE.has(name)) continue
+      if (NOT_COPIED.has(name)) continue
       if (rel === '.presmium' && !DECK_CONTENT.has(name)) continue
       const path = join(current, name)
       const entry = rel ? `${rel}/${name}` : name
@@ -203,19 +206,9 @@ function sourceEntries(dir: string): { path: string, link?: string, executable?:
   return out
 }
 
-export function templatesDir(config: WorkspaceConfig): string {
-  return config.templates ?? BUILTIN_TEMPLATES
-}
-
-export function templateOf(config: WorkspaceConfig, name: string): string | undefined {
-  if (!name || name.includes('/') || name.includes('\\') || name.startsWith('.')) return undefined
-  const dir = join(templatesDir(config), name)
-  return existsSync(dir) && stat(dir)?.isDirectory() ? dir : undefined
-}
-
-export function fromTemplate(config: WorkspaceConfig, dir: string, template: string, title: string): void {
-  documentDir(config, dir)
-  const source = templateOf(config, template)
+function writeTemplate(config: WorkspaceConfig, dir: string, template: string, title: string): void {
+  assertDocumentDir(config, dir)
+  const source = findTemplate(config, template)
   if (!source) throw new FilesError(`no document template ${JSON.stringify(template)}`)
   const quoted = JSON.stringify(title).slice(1, -1)
   writeChanges(config, sourceEntries(source).filter(entry => entry.link === undefined).map(({ path, executable }) => {
@@ -224,9 +217,9 @@ export function fromTemplate(config: WorkspaceConfig, dir: string, template: str
   }))
 }
 
-export function copyDocument(config: WorkspaceConfig, from: string, to: string): void {
-  documentDir(config, from)
-  documentDir(config, to)
+function copyDocument(config: WorkspaceConfig, from: string, to: string): void {
+  assertDocumentDir(config, from)
+  assertDocumentDir(config, to)
   writeChanges(config, sourceEntries(join(config.root, from)).map(({ path, link, executable }): DocumentFileChange => {
     if (link !== undefined) return { path: `${to}/${path}`, link }
     const content = readFileSync(join(config.root, from, path))
@@ -235,14 +228,14 @@ export function copyDocument(config: WorkspaceConfig, from: string, to: string):
   }))
 }
 
-export function relinkDocuments(config: WorkspaceConfig, from: string, to: string): string[] {
+function relinkDocuments(config: WorkspaceConfig, from: string, to: string): string[] {
   const changes: DocumentFileChange[] = []
   for (const doc of listDocuments(config)) {
     if (!realDirectory(config.root, doc.dir)) continue
     for (const entry of sourceEntries(join(config.root, doc.dir))) {
       if (entry.link !== undefined || !entry.path.endsWith('.md')) continue
       const path = doc.dir ? `${doc.dir}/${entry.path}` : entry.path
-      const was = within(path, to) ? `${from}${path.slice(to.length)}` : path
+      const was = isWithin(path, to) ? `${from}${path.slice(to.length)}` : path
       const text = readFileSync(join(config.root, path), 'utf8')
       const next = rewriteLinks(text, path, was, from, to)
       if (next !== text) changes.push({ path, content: Buffer.from(next) })
@@ -252,8 +245,8 @@ export function relinkDocuments(config: WorkspaceConfig, from: string, to: strin
   return changes.map(change => change.path)
 }
 
-export function emptyDocument(config: WorkspaceConfig, dir: string): void {
-  documentDir(config, dir)
+function emptyDocument(config: WorkspaceConfig, dir: string): void {
+  assertDocumentDir(config, dir)
   const path = join(config.root, dir)
   for (const name of readdirSync(path)) rmSync(join(path, name), { recursive: true, force: true })
 }
@@ -262,7 +255,7 @@ export function localWriter(config: WorkspaceConfig): DocumentWriter {
   return {
     create: async (path, content, outside) => createFile(config, path, content, outside),
     write: async changes => writeChanges(config, changes),
-    template: async (dir, template, title) => fromTemplate(config, dir, template, title),
+    template: async (dir, template, title) => writeTemplate(config, dir, template, title),
     copy: async (from, to) => copyDocument(config, from, to),
     relink: async (from, to) => relinkDocuments(config, from, to),
     empty: async dir => emptyDocument(config, dir),

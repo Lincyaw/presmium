@@ -24,7 +24,7 @@ site:
 
 ## The workbench (preview)
 
-`presmium serve` runs the workbench on your machine: the live site, editing the source in the browser, managing documents and the history of changes. Its browser side (`@lincyaw/workspace/client`, `@lincyaw/workspace/domain` and the routes behind it) is experimental and will be replaced by a new workbench; the command, the workspace configuration file and the Node services stay.
+`presmium serve` runs the workbench on your machine: the live site, editing the source in the browser, managing documents and the history of changes. The routes the workbench (`@lincyaw/workbench`) uses are experimental; the command, the workspace configuration file and the Node services stay.
 
 ## Documentation
 

@@ -34,7 +34,7 @@ export function siteDocument(document: DocumentSummary, doc?: IRDocument, transl
   return { dir: document.dir, title: document.title, ...document.lang ? { lang: document.lang } : {}, ...document.tags ? { tags: document.tags } : {}, ...doc ? { doc } : {}, ...translations?.length ? { translations } : {}, ...compilation ? { nodeVitePlugins: nodeVitePlugins(compilation) } : {} }
 }
 
-export function documentPlugins(site: SiteSpec, dir: string, compilation: Compilation): void {
+export function refreshDocumentVitePlugins(site: SiteSpec, dir: string, compilation: Compilation): void {
   const document = site.documents.find(document => document.dir === dir)
   if (document) document.nodeVitePlugins = nodeVitePlugins(compilation)
 }
@@ -112,7 +112,7 @@ function publishedAsset(options: SiteContextOptions, source: SourcePos, url: str
   return directoryAsset(target, deck, join(options.workDir, 'files'), typeof lang === 'string' ? lang : undefined, message => warn(`${url} is not published: ${message}`))
 }
 
-export function untranslated(compilation: Compilation, root: string): Finding[] {
+export function untranslatedFindings(compilation: Compilation, root: string): Finding[] {
   const { translations } = compilation.doc.config
   if (!translations) return []
   const text = readFileSync(compilation.entry, 'utf8')

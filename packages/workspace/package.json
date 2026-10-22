@@ -23,7 +23,6 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./domain": "./src/domain/index.ts",
     "./package.json": "./package.json"
   },
   "files": [
