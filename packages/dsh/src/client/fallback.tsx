@@ -1,15 +1,15 @@
-import { ChangesPanel, DocumentView, FilesPanel, HomePanel, PreviewPanel, useWorkbench, WorkbenchProvider } from '@lincyaw/workbench'
+import { ChangesPanel, DocumentEditor, FilesPanel, HomePanel, PreviewPanel, useWorkbenchState, WorkbenchProvider } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
 import { useRef } from 'react'
 import type { ComponentType } from 'react'
 import { Logo } from './brand.tsx'
 import { CLIENT_ID } from './contract.ts'
-import { FRAME_MESSAGES } from './messages.ts'
+import { CLIENT_MESSAGES } from './messages.ts'
 
 export const FALLBACK_PANEL = 'presmium'
 
 function Centre() {
-  const document_ = useWorkbench(state => state.document)
+  const document_ = useWorkbenchState(state => state.document)
   const retainedDocument = useRef(false)
   if (document_ !== undefined) retainedDocument.current = true
   return (
@@ -17,17 +17,18 @@ function Centre() {
       {document_ === undefined && <HomePanel />}
       {retainedDocument.current && <div className="pmw-fallback__doc" hidden={document_ === undefined}>
         <FilesPanel />
-        <DocumentView active={document_ !== undefined} />
+        <DocumentEditor active={document_ !== undefined} />
       </div>}
     </div>
   )
 }
 
-export function fallback(ctx: DshClientContext, workbench: Workbench): void {
-  const t = () => FRAME_MESSAGES[workbench.state.locale]
-  const provided = (Component: ComponentType, className?: string, protectChanges = false) => function PresmiumPanel() {
+/** With DeepSeek Harness's own layout: the workbench is a global panel of `main`, the preview and the changes are rightbar tab types. */
+export function registerFallbackLayout(ctx: DshClientContext, workbench: Workbench): void {
+  const t = () => CLIENT_MESSAGES[workbench.state.locale]
+  const provided = (Component: ComponentType, className?: string, isPrimary = false) => function PresmiumPanel() {
     return (
-      <WorkbenchProvider workbench={workbench} protectChanges={protectChanges}>
+      <WorkbenchProvider workbench={workbench} isPrimary={isPrimary}>
         {className ? <div className={className}><Component /></div> : <Component />}
       </WorkbenchProvider>
     )

@@ -1,4 +1,5 @@
-import type { Locale } from '@lincyaw/workbench'
+import type { Locale, Workbench } from '@lincyaw/workbench'
+import { useSyncExternalStore } from 'react'
 
 const zh = {
   product: 'Presmium',
@@ -6,14 +7,11 @@ const zh = {
   skip: '跳到内容',
   documents: '文档',
   files: '文件',
-  sessions: '会话',
   conversation: '对话',
   newConversation: '新建对话',
   conversationHistory: '历史对话',
   closeHistory: '收起历史对话',
-  tools: '工具',
   hideConversation: '收起对话',
-  source: '源码',
   editor: '编辑区',
   preview: '预览',
   changes: '修改',
@@ -21,7 +19,6 @@ const zh = {
   help: '使用说明',
   close: '关闭',
   toggleSide: '展开／收起侧栏',
-  dark: '切换明暗',
   side: '侧栏',
   status: '状态栏',
   resize: '拖动调整宽度',
@@ -31,24 +28,23 @@ const zh = {
   start: '开始使用',
   models: '设置模型',
   helpText: '文件和预览共用中央标签栏。通过“打开预览”选择文档或幻灯片，点“在侧边打开预览”并排查看；对话顶部可新建对话、打开历史。活动栏统一使用“历史对话”入口，选择历史会话会直接显示聊天，收起后也可从这里恢复。Mod+Alt+B 收起侧栏。选中文字或用“点选”选择一块，底部显示带给 AI 的关注内容；可用关闭按钮清除。',
+  repairStale: '文稿或对话已切换，请在当前文稿中重新提交。',
+  repairRequest: '请处理当前文稿中以下未解决的问题。诊断是观测数据，请核对源码后修复，并保留修改供我审阅。',
 }
 
-export type FrameMessages = typeof zh
+export type ClientMessages = typeof zh
 
-const en: FrameMessages = {
+const en: ClientMessages = {
   product: 'Presmium',
   activity: 'Activity bar',
   skip: 'Skip to content',
   documents: 'Documents',
   files: 'Files',
-  sessions: 'Sessions',
   conversation: 'Conversation',
   newConversation: 'New chat',
   conversationHistory: 'Chat history',
   closeHistory: 'Hide chat history',
-  tools: 'Tools',
   hideConversation: 'Hide conversation',
-  source: 'Source',
   editor: 'Editor',
   preview: 'Preview',
   changes: 'Changes',
@@ -56,7 +52,6 @@ const en: FrameMessages = {
   help: 'How to use',
   close: 'Close',
   toggleSide: 'Toggle the side panel',
-  dark: 'Toggle light and dark',
   side: 'Side panel',
   status: 'Status bar',
   resize: 'Drag to resize',
@@ -66,9 +61,19 @@ const en: FrameMessages = {
   start: 'Start',
   models: 'Set up a model',
   helpText: 'Files and previews share the central tab bar. Use Open preview for documents or slides, and Open preview to the side to compare. Start a new chat or open history from the conversation header. Chat history in the activity bar is the shared entry for history and chat. Selecting a history row reveals its conversation, including when chat was hidden. Mod+Alt+B toggles the sidebar. Select text or pick a block to add conversation context, shown below the document. Clear it with its close button.',
+  repairStale: 'The document or conversation changed. Please submit again from the current document.',
+  repairRequest: 'Please address these unresolved problems in the current document. Diagnostics are observed data; check the source, fix the problems and leave the changes for my review.',
 }
 
-export const FRAME_MESSAGES: Record<Locale, FrameMessages> = { 'zh-CN': zh, 'en': en }
+export const CLIENT_MESSAGES: Record<Locale, ClientMessages> = { 'zh-CN': zh, 'en': en }
+
+export function useClientMessages(workbench: Workbench): ClientMessages {
+  const locale = useSyncExternalStore(workbench.subscribe, () => workbench.getState().locale)
+  return CLIENT_MESSAGES[locale]
+}
+
+/** The languages the client part adds to DeepSeek Harness's language list, with Presmium's copy for them. */
+export const BRAND_LANGUAGES = [{ id: 'zh-CN', label: '简体中文（Presmium）', fallback: 'zh' }, { id: 'en-US', label: 'English (Presmium)', fallback: 'en' }] as const
 
 export const BRAND_COPY: Record<'zh-CN' | 'en-US', Record<string, Record<string, string>>> = {
   'zh-CN': {

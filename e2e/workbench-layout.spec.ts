@@ -108,7 +108,7 @@ test('narrow screens use the same resource tabs and keep drafts across chat and 
   await expect(page.locator('.pmw-preview')).toBeVisible()
   await page.getByRole('tab', { name: /lecture\.md/ }).click()
   await expect(editor(page)).toContainText('Narrow classroom draft')
-  await expect(page.locator('.pmw-frame')).toHaveAttribute('data-view', 'source')
+  await expect(page.locator('.pmw-frame')).toHaveAttribute('data-pane', 'source')
   // The single resource bar belongs to the stable main group, above both mounted contents.
   const visibleBar = await page.locator('.pmw-editor-group__bar:visible').boundingBox()
   expect(visibleBar!.width).toBeLessThanOrEqual(390)

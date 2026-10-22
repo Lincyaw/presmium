@@ -2,9 +2,6 @@ import { ICONS } from '@lincyaw/design'
 import type { IconName } from '@lincyaw/design'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import * as Popover from '@radix-ui/react-popover'
-import * as Tabs from '@radix-ui/react-tabs'
-import * as ToggleGroup from '@radix-ui/react-toggle-group'
 import { createElement, forwardRef } from 'react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
@@ -57,63 +54,8 @@ export function PmField({ label, inline, children }: { label: string, inline?: b
   )
 }
 
-export interface Choice<T extends string = string> {
-  value: T
-  label: string
-}
-
-export function PmSegmented<T extends string>({ value, options, label, onChange }: { value: T, options: Choice<T>[], label: string, onChange(value: T): void }) {
-  return (
-    <ToggleGroup.Root type="single" value={value} onValueChange={next => { if (next) onChange(next as T) }} className="pm-ui-segmented" aria-label={label}>
-      {options.map(option => <ToggleGroup.Item key={option.value} value={option.value} className="pm-ui-segmented__option">{option.label}</ToggleGroup.Item>)}
-    </ToggleGroup.Root>
-  )
-}
-
-export function PmTabs<T extends string>({ value, tabs, label, onChange, children }: { value: T, tabs: Choice<T>[], label: string, onChange(value: T): void, children?: ReactNode }) {
-  return (
-    <Tabs.Root value={value} onValueChange={next => onChange(next as T)} className="pm-ui-tabset">
-      <Tabs.List className="pm-ui-tabs" aria-label={label}>
-        {tabs.map(tab => <Tabs.Trigger key={tab.value} value={tab.value} className="pm-ui-tab">{tab.label}</Tabs.Trigger>)}
-      </Tabs.List>
-      {children && <Tabs.Content value={value} className="pm-ui-tabpanel">{children}</Tabs.Content>}
-    </Tabs.Root>
-  )
-}
-
 export type PopoverPlacement = 'below-end' | 'below-start' | 'above-end' | 'above-start'
 const placementOf = (placement: PopoverPlacement) => ({ side: placement.startsWith('above') ? 'top' as const : 'bottom' as const, align: placement.endsWith('start') ? 'start' as const : 'end' as const })
-
-export function PmPopover({ open, label, placement = 'below-end', name, trigger, onClose, children }: { open: boolean, label: string, placement?: PopoverPlacement, name?: string, trigger: ReactNode, onClose(): void, children?: ReactNode }) {
-  return (
-    <Popover.Root open={open} onOpenChange={next => { if (!next) onClose() }}>
-      <Popover.Anchor asChild><span className={cls('pm-ui-anchor', name)}>{trigger}</span></Popover.Anchor>
-      <Popover.Portal>
-        <Popover.Content className={cls('pm-ui-popover', 'pmw-overlay', name && `${name}__panel`)} aria-label={label} {...placementOf(placement)} sideOffset={6} collisionPadding={16}>
-          {children}
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
-  )
-}
-
-export function PmDrawer({ open, label, closeLabel, name, trigger, onClose, children }: { open: boolean, label: string, closeLabel: string, name?: string, trigger?: ReactNode, onClose(): void, children?: ReactNode }) {
-  return (
-    <Dialog.Root open={open} onOpenChange={next => { if (!next) onClose() }}>
-      {trigger}
-      <Dialog.Portal>
-        <Dialog.Overlay className="pmw-dialog-overlay" />
-        <Dialog.Content className={cls('pm-ui-drawer', name && `${name}__panel`)} aria-describedby={undefined}>
-          <div className="pm-ui-drawer__header">
-            <Dialog.Title className="pm-ui-drawer__title">{label}</Dialog.Title>
-            <Dialog.Close asChild><PmIconButton icon="close" label={closeLabel} small /></Dialog.Close>
-          </div>
-          <div className="pm-ui-drawer__body">{children}</div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-  )
-}
 
 export function PmDialog({ open, label, closeLabel, name, actions, onClose, onCloseAutoFocus, children }: { open: boolean, label: string, closeLabel: string, name?: string, actions?: ReactNode, onClose(): void, onCloseAutoFocus?(event: Event): void, children?: ReactNode }) {
   return (

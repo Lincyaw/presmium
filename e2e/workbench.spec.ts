@@ -7,7 +7,7 @@ import type { Page } from '@playwright/test'
 import { fakeModel } from '../packages/cli/src/testing.ts'
 import type { FakeModel } from '../packages/cli/src/testing.ts'
 import { BRAND_SLOTS, EXPERIMENTAL_GROUP, LAYOUT_MEMBERS, ONBOARDING, ROOT_CHILDREN, SHELL_MODULES, UI_LAYOUT } from '../packages/dsh/src/client/contract.ts'
-import { TOKENS } from '../packages/dsh/src/client/theme.ts'
+import { DSH_THEME_TOKENS } from '../packages/dsh/src/client/theme.ts'
 import { lowContrast } from './fixtures/contrast.ts'
 import { aliasTokens, clientOf, layoutMembersUsed, rendersSlot, rootChildren, shellModules } from './fixtures/workbench/audit.ts'
 import { FALLBACK_PATCH, startStudio } from './fixtures/workbench/studio.ts'
@@ -115,7 +115,7 @@ test.describe('the root layout', () => {
     const models = clientOf('@deepseek-ai/dsh-client-ui-settings-models')
     for (const step of ONBOARDING.steps) expect(models, step).toContain(`name: "${ONBOARDING.slot}",\n\t\t\t\tid: "${step}"`)
     const { defined, used } = aliasTokens()
-    const mapped = Object.keys(TOKENS).filter(name => name.startsWith('--dsw-alias-'))
+    const mapped = Object.keys(DSH_THEME_TOKENS).filter(name => name.startsWith('--dsw-alias-'))
     expect([...used].filter(name => defined.has(name) && !mapped.includes(name))).toEqual([])
     expect(mapped.filter(name => !defined.has(name))).toEqual([])
     expect(shellModules()).toEqual([...SHELL_MODULES].sort())
@@ -223,7 +223,7 @@ test.describe('the root layout', () => {
       if (!await conversation(page).isVisible()) await showConversation(page)
       await expect(conversation(page).getByRole('button', { name: '新建对话', exact: true })).toBeVisible()
       await expect(conversation(page).getByRole('button', { name: /^(Open right sidebar|打开右侧边栏)$/ })).toHaveCount(0)
-      await expect(conversation(page).locator('.pmw-frame__dock-bar')).toHaveCount(0)
+      await expect(conversation(page).locator('.pmw-frame__conversation-bar')).toHaveCount(0)
       await expect(conversation(page).locator('header').filter({ has: page.locator('.pmw-chat-actions') })).toHaveCount(1)
       await conversation(page).getByRole('button', { name: '历史对话', exact: true }).click()
       await expect(sidebar.getByRole('heading', { name: '历史对话' })).toBeVisible()
@@ -303,7 +303,7 @@ test.describe('the root layout', () => {
     })
     await expect(pushed).toBeVisible()
     await expect.poll(fits).toBe(true)
-    const handle = (await page.locator('.pmw-frame__handle[data-side="dock"]').boundingBox())!
+    const handle = (await page.locator('.pmw-frame__handle[data-side="conversation"]').boundingBox())!
     await page.mouse.move(handle.x + handle.width / 2, handle.y + 200)
     await page.mouse.down()
     await page.mouse.move(handle.x - 60, handle.y + 200, { steps: 8 })

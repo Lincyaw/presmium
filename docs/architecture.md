@@ -1406,7 +1406,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 产物的 Vue 通用交互同样由依赖实现：`@lincyaw/host` 的弹窗、抽屉、菜单、浮层、标签页和分段切换封装 Reka UI；查看器的内容标签页与放映焦点围栏也使用 Reka UI。文稿标签的 `sync` 联动、放映时背景页面的禁用与步骤导航由 Presmium 维护，播放面板与放映画面处在同一个焦点范围，各自保留独立的视觉层级。主题观察通过 VueUse 统一到宿主，图标由 Lucide 提供，`@lincyaw/design` 保留语义名称与框架无关的节点和 HTML 接口。读者问答的 SSE 事件边界由 eventsource-parser 解析，文稿上下文和回答内容仍由问答插件维护。
 
-工作台的通用交互由依赖实现：Radix Primitives 提供弹窗、菜单、浮层、标签页与分段切换，cmdk 提供命令搜索，React Arborist 提供文件树，react-resizable-panels 提供分栏与鼠标、键盘调整。`Pm*` 只封装样式与业务回调；源码编辑使用 CodeMirror 6，首次欢迎在 dsh 适配层直接复用 Harness 的 `Modal`。文档操作、源码版本冲突、编译、审阅与预览协议仍由 Presmium 维护。
+工作台的通用交互由依赖实现：Radix Primitives 提供弹窗、菜单与标签页，cmdk 提供命令搜索，React Arborist 提供文件树，react-resizable-panels 提供分栏与鼠标、键盘调整。`Pm*` 只封装样式与业务回调；源码编辑使用 CodeMirror 6，首次欢迎在 dsh 适配层直接复用 Harness 的 `Modal`。文档操作、源码版本冲突、编译、审阅与预览协议仍由 Presmium 维护。
 
 `@lincyaw/host` 提供设计令牌与通用组件；网页形态的外壳（工作区首页、阅读页）与插件都用它们，不各自定义颜色与控件。插件界面与幻灯片的默认主题见 5.12 节。
 
@@ -1428,7 +1428,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 **加载**：`@lincyaw/host` 的入口引入 `src/design/design.css`（它引入 `@lincyaw/design/design.css`：字体、令牌与组件的类），用到宿主的页面都有它们；宿主之外的页面可以单独引入 `@lincyaw/host/design.css` 或 `@lincyaw/design/design.css`。
 
-**通用组件**（`packages/host/src/design/components.ts`，样式在 `@lincyaw/design` 的 `components.css`，类名以 `pm-ui-` 开头；插件也可以直接用这些类；工作台的 React 版在 `@lincyaw/workbench`，同名同类）：
+**通用组件**（`packages/host/src/design/components.ts`，样式在 `@lincyaw/design` 的 `components.css`，类名以 `pm-ui-` 开头；插件也可以直接用这些类；工作台用到的几个有 React 版，在 `@lincyaw/workbench`，同名同类）：
 
 | 组件 | 用途 |
 |---|---|
@@ -1882,7 +1882,7 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 | `MCP_ENDPOINT.issue(member, mode, { confirmed, document })`（`McpIssueOptions`）：会话令牌（主机已确认、绑定一份文档）；服务端路由 `presmium.server/tokens` 与 `presmium.server/focus` | `packages/kernel/src/contracts/server.ts`（只增加）、`packages/server/src/server.ts`、`focus.ts` |
 | 工具表 `TOOL_TABLE` 与 `listTools(host, caller)`；列出的工具的 `_meta`（`presmium/kind`，主机已确认的调用者另有 `presmium/approval`）；客户端一侧 `@lincyaw/mcp/client`（`connectPresmiumMcp`、`describeOperation`）；焦点的换算 `resolveFocus`；资源 `presmium://focus` 与工具 `get_focus`；`McpHost.focus`、`watchFocus`、`approval`；`McpCaller.confirmed`、`document` | `@lincyaw/mcp` |
 | bundle `@lincyaw/dsh`：`dsh.bundle`（`cordis.patch.yml`）、`web.patch.yml`、`profile.patch.yml`；启动器用的 `@lincyaw/dsh/launch`（`writeProfile`、`launchPatches`、`launchEnv`、`dshBin`、`launchArgs`；在看门狗之下启动进程的 `launchNode` 与 `launchWorkspaceServer`，环境的 `isLauncherVariable`、`inheritedEnv`、`workspaceServerEnv`；就绪的一行 `WEB_READY`、`SERVE_READY`、`WORKSPACE_READY`） | `packages/dsh/` |
-| 设计系统 `@lincyaw/design`（令牌、类、字体、图标、`COLORS`）；工作台的面板与状态 `@lincyaw/workbench`（`Workbench`、`workspaceClient`、`connectPreview`、`PANELS`、React 版的 `Pm*`）；bundle 的客户端部分 `@lincyaw/dsh/client` 与 `presmium-workbench` 行（`/api/presmium/workbench`） | `packages/design/`、`packages/workbench/`、`packages/dsh/src/client/`、`packages/dsh/src/node/workbench.ts`、`packages/dsh/build/` |
+| 设计系统 `@lincyaw/design`（令牌、类、字体、图标、`COLORS`）；工作台的面板与状态 `@lincyaw/workbench`（`Workbench`、`workspaceClient`、`connectPreview`、各面板与文档编辑器 `DocumentEditor`、React 版的 `Pm*`）；bundle 的客户端部分 `@lincyaw/dsh/client` 与 `presmium-workbench` 行（`/api/presmium/workbench`） | `packages/design/`、`packages/workbench/`、`packages/dsh/src/client/`、`packages/dsh/src/node/workbench.ts`、`packages/dsh/build/` |
 | `presmium studio [目录] [--port] [--host]` | `@lincyaw/studio`；`@lincyaw/cli` 转交 |
 
 ### 13.3 预览协议

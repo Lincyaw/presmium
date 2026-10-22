@@ -3,19 +3,19 @@ import type { KeyboardEvent } from 'react'
 import { createEditor } from '../editor.ts'
 import type { Problem, SourceEditor } from '../editor.ts'
 import { PmButton, PmIconButton, PmNotice } from '../components.tsx'
-import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
-import type { OpenFile } from '../store.ts'
-import { EditorGroup } from './EditorGroup.tsx'
-import type { EditorGroupProps } from './EditorGroup.tsx'
+import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
+import { EditorGroup } from '../parts/EditorGroup.tsx'
+import type { EditorGroupProps } from '../parts/EditorGroup.tsx'
+import type { OpenFile } from '../workbench.ts'
 
 const nameOf = (path: string) => path.slice(path.lastIndexOf('/') + 1)
 
 export function SourcePanel(props: EditorGroupProps) {
   const t = useMessages()
-  const workbench = useWorkbenchStore()
-  const open = useWorkbench(state => state.open)
-  const active = useWorkbench(state => state.active)
-  const file = open.find(f => f.path === active)
+  const workbench = useWorkbench()
+  const openFiles = useWorkbenchState(state => state.openFiles)
+  const activeFile = useWorkbenchState(state => state.activeFile)
+  const file = openFiles.find(f => f.path === activeFile)
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.defaultPrevented || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 's') return
     event.preventDefault()
@@ -25,7 +25,7 @@ export function SourcePanel(props: EditorGroupProps) {
     <section className="pmw-source" aria-label={t.source} onKeyDown={onKeyDown}>
       <EditorGroup {...props} kind="source" actions={<SourceActions />}>
       {file?.notice && <FileNoticeBox file={file} />}
-      <EditorPane />
+      <SourceEditorPane />
       {!file && <p className="pmw-source__empty pmw-muted">{t.noFile}</p>}
       </EditorGroup>
     </section>
@@ -34,14 +34,14 @@ export function SourcePanel(props: EditorGroupProps) {
 
 export function SourceActions() {
   const t = useMessages()
-  const workbench = useWorkbenchStore()
-  const file = useWorkbench(state => state.open.find(file => file.path === state.active))
-  return file && <PmIconButton small icon="save" label={t.save} disabled={!file.dirty} onClick={() => void workbench.save(file.path)} />
+  const workbench = useWorkbench()
+  const file = useWorkbenchState(state => state.openFiles.find(file => file.path === state.activeFile))
+  return file && <PmIconButton small icon="save" label={t.save} disabled={!file.isDirty} onClick={() => void workbench.save(file.path)} />
 }
 
 function FileNoticeBox({ file }: { file: OpenFile }) {
   const t = useMessages()
-  const workbench = useWorkbenchStore()
+  const workbench = useWorkbench()
   const notice = file.notice!
   switch (notice.kind) {
     case 'changed':
@@ -60,23 +60,23 @@ function FileNoticeBox({ file }: { file: OpenFile }) {
   }
 }
 
-function EditorPane() {
+function SourceEditorPane() {
   const t = useMessages()
-  const workbench = useWorkbenchStore()
+  const workbench = useWorkbench()
   const parent = useRef<HTMLDivElement>(null)
   const editor = useRef<SourceEditor>(undefined)
-  const active = useWorkbench(state => state.active)
-  const reveal = useWorkbench(state => state.reveal)
-  const ir = useWorkbench(state => state.ir)
-  const opened = useWorkbench(state => state.open.length)
+  const activeFile = useWorkbenchState(state => state.activeFile)
+  const reveal = useWorkbenchState(state => state.reveal)
+  const ir = useWorkbenchState(state => state.ir)
+  const opened = useWorkbenchState(state => state.openFiles.length)
 
   useEffect(() => {
     const made = createEditor(parent.current!, {
       label: t.editor(''),
-      save: () => void workbench.save(),
-      changed: (path, text) => workbench.edited(path, text),
-      moved: line => workbench.moved(line),
-      selected: selection => workbench.selectSource(selection),
+      onSave: () => void workbench.save(),
+      onChange: (path, text) => workbench.recordEdit(path, text),
+      onCursorLine: line => workbench.syncCursorLine(line),
+      onSelect: selection => workbench.focusSourceSelection(selection),
     })
     editor.current = made
     const unbind = workbench.bindEditor({ text: path => made.text(path), replace: (path, text, fresh) => made.replace(path, text, fresh), focus: () => made.focus() })
@@ -90,26 +90,26 @@ function EditorPane() {
   useEffect(() => {
     const made = editor.current
     if (!made) return
-    for (const path of made.paths()) if (!workbench.state.open.some(file => file.path === path)) made.forget(path)
-    if (!active) return
-    made.show(active, workbench.textOf(active) ?? '')
-  }, [active, workbench, opened])
+    for (const path of made.paths()) if (!workbench.state.openFiles.some(file => file.path === path)) made.forget(path)
+    if (!activeFile) return
+    made.show(activeFile, workbench.textOf(activeFile) ?? '')
+  }, [activeFile, workbench, opened])
 
   useEffect(() => {
-    if (active) editor.current?.describe(t.editor(active), t.editorKeys)
-  }, [active, t])
+    if (activeFile) editor.current?.describe(t.editor(activeFile), t.editorKeys)
+  }, [activeFile, t])
 
   useEffect(() => {
-    if (reveal && reveal.path === active) editor.current?.reveal(reveal.line, reveal.endLine, reveal.mark)
-  }, [reveal, active])
+    if (reveal && reveal.path === activeFile) editor.current?.reveal(reveal.line, reveal.endLine, reveal.highlight)
+  }, [reveal, activeFile])
 
   useEffect(() => {
-    if (!active || !editor.current) return
-    const problems: Problem[] = (ir?.diagnostics ?? []).filter(finding => finding.source?.file === active && finding.source.line).map(finding => ({ line: finding.source!.line!, severity: finding.severity === 'error' ? 'error' : finding.severity === 'warning' ? 'warning' : 'info', message: finding.message }))
-    editor.current.problems(active, problems)
-  }, [ir, active])
+    if (!activeFile || !editor.current) return
+    const problems: Problem[] = (ir?.diagnostics ?? []).filter(finding => finding.source?.file === activeFile && finding.source.line).map(finding => ({ line: finding.source!.line!, severity: finding.severity === 'error' ? 'error' : finding.severity === 'warning' ? 'warning' : 'info', message: finding.message }))
+    editor.current.setProblems(activeFile, problems)
+  }, [ir, activeFile])
 
   return (
-    <div className="pmw-source__editor" ref={parent} hidden={!active} data-path={active} />
+    <div className="pmw-source__editor" ref={parent} hidden={!activeFile} data-path={activeFile} />
   )
 }

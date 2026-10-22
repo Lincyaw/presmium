@@ -1,8 +1,9 @@
 import { Command } from 'cmdk'
 import { useEffect, useRef, useState } from 'react'
-import type { DocumentOperation, DocumentSummary } from '../api.ts'
+import { errorMessage } from '@lincyaw/kernel'
+import type { DocumentOperation, DocumentSummary } from '@lincyaw/kernel'
 import { PmBadge, PmButton, PmCard, PmDialog, PmEmpty, PmField, PmIcon, PmMenu, PmNotice } from '../components.tsx'
-import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
+import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 
 type Editing =
   | { op: 'create' }
@@ -17,10 +18,10 @@ function freeDir(dir: string, taken: string[]): string {
 
 export function HomePanel() {
   const t = useMessages()
-  const workbench = useWorkbenchStore()
-  const answer = useWorkbench(state => state.documents)
-  const failure = useWorkbench(state => state.failure)
-  const noRoutes = useWorkbench(state => state.noRoutes)
+  const workbench = useWorkbench()
+  const answer = useWorkbenchState(state => state.documents)
+  const failure = useWorkbenchState(state => state.documentsFailure)
+  const bundleDisabled = useWorkbenchState(state => state.isBundleDisabled)
   const [editing, setEditing] = useState<Editing>()
   const [done, setDone] = useState<string>()
   const [error, setError] = useState<string>()
@@ -33,11 +34,11 @@ export function HomePanel() {
   const run = async (operation: DocumentOperation, said: (dir: string) => string) => {
     setError(undefined)
     try {
-      const result = await workbench.operate(operation)
+      const result = await workbench.operateDocument(operation)
       setDone(said(result.dir ?? operation.dir))
       setEditing(undefined)
     } catch (failed) {
-      setError(failed instanceof Error ? failed.message : String(failed))
+      setError(errorMessage(failed))
     }
   }
 
@@ -48,7 +49,7 @@ export function HomePanel() {
         <Search documents={documents} onCreate={() => setEditing({ op: 'create' })} />
         {operable && <PmButton variant="primary" icon="plus" onClick={() => setEditing({ op: 'create' })}>{t.newDocument}</PmButton>}
       </header>
-      {failure && <PmNotice tone="danger">{noRoutes ? t.noRoutes : failure}</PmNotice>}
+      {failure && <PmNotice tone="danger">{bundleDisabled ? t.bundleDisabled : failure}</PmNotice>}
       {done && <PmNotice tone="ok">{done}</PmNotice>}
       {answer && !answer.git && !answer.single && <PmNotice tone="warn">{t.notGit}</PmNotice>}
       <h2 className="pmw-home__heading">{t.documents}</h2>
@@ -154,7 +155,7 @@ function OperationDialog({ editing, templates, taken, error, onClose, onRun }: {
 
 function Search({ documents, onCreate }: { documents: DocumentSummary[], onCreate(): void }) {
   const t = useMessages()
-  const workbench = useWorkbenchStore()
+  const workbench = useWorkbench()
   const [query, setQuery] = useState('')
   const input = useRef<HTMLInputElement>(null)
   useEffect(() => {
@@ -194,11 +195,11 @@ function Search({ documents, onCreate }: { documents: DocumentSummary[], onCreat
 
 function McpCard() {
   const t = useMessages()
-  const workbench = useWorkbenchStore()
+  const workbench = useWorkbench()
   const [address, setAddress] = useState<string>()
   const [copied, setCopied] = useState(false)
   useEffect(() => {
-    workbench.client.workbench().then(answer => setAddress(answer.mcp), () => {})
+    workbench.client.readWorkbenchInfo().then(answer => setAddress(answer.mcp), () => {})
   }, [workbench])
   if (!address) return null
   return (
