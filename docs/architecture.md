@@ -1136,7 +1136,7 @@ export interface Operations {
 export const OPERATIONS = defineService<Operations>('presmium.operations')
 ```
 
-`createOperations()` 是两种宿主共用的实现（`startHost` 提供它与 `STATUS`）：`replay` 调用登记的重放后，`replaying` 保持为 true 到下一个任务，期间同步发生的报告被丢弃。IR 运行时的部分是 `@lincyaw/viewer` 的 `followOperations(viewer, operations)`：位置或视图变化时同步报告 `go`（数据 `{ section,step,view }`，章节是 ID），重放 `go` 时先切到它的视图（隐藏的演讲者视图除外）再到达位置；网页主题在每次内核启动后接上它。
+`OPERATIONS` 在两种宿主中是同一个实现（`@lincyaw/host` 的 `operations.ts`，由 `startHost` 与 `STATUS` 一起提供，不导出）：`replay` 调用登记的重放后，`replaying` 保持为 true 到下一个任务，期间同步发生的报告被丢弃。IR 运行时的部分是 `@lincyaw/viewer` 的 `followOperations(viewer, operations)`：位置或视图变化时同步报告 `go`（数据 `{ section,step,view }`，章节是 ID），重放 `go` 时先切到它的视图（隐藏的演讲者视图除外）再到达位置；网页主题在每次内核启动后接上它。
 
 报告的分工（插件之间不互相引用，词汇是内核的共享契约）：IR 运行时报告 `go`（章节、步骤、视图）；执行插件报告 `run`（块与结果的缓存键）；引导插件报告 `spot`、`hint`；讲授插件自己报告指针 `point`（`elementFromPoint` → 最近的 `[data-block]` → 块内相对坐标，约 20 Hz，简化后保存）与工具栏的激光笔、荧光笔 `ink`。回放某一时刻：`clear()`，再按时间依次 `replay(…, true)` 此前的事件，最后一个事件不快进。
 

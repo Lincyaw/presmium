@@ -1,16 +1,16 @@
 import { Kernel, PRESENTER_PANELS } from '@lincyaw/kernel'
 import type { EnvironmentSpec, Logger, PluginDefinition, PluginReport, PresentationMode, ServiceToken, StartReport } from '@lincyaw/kernel'
 import { shallowRef } from 'vue'
-import { componentErrors } from './error-boundary.ts'
 import { PmApprovals } from './approvals.ts'
+import { NAVIGATION, OPERATIONS, STATUS, SYNC_TRANSPORTS, TOOLBAR } from './contracts.ts'
+import type { Navigation, ServerClient, SyncTransports } from './contracts.ts'
+import { connectControl } from './control.ts'
+import { componentErrors } from './error-boundary.ts'
 import { currentLocale } from './locale.ts'
 import { HOST_MESSAGES } from './messages.ts'
-import { connectControl } from './control.ts'
 import { createOperations } from './operations.ts'
 import { createPresenterPanels, createStatusRegistry, createToolbar } from './registries.ts'
 import { provideServer } from './server.ts'
-import { NAVIGATION, OPERATIONS, STATUS, SYNC_TRANSPORTS, TOOLBAR } from './contracts.ts'
-import type { Navigation, ServerClient, SyncTransports } from './contracts.ts'
 
 const registered: PluginDefinition[] = []
 const running = shallowRef<Kernel>()
