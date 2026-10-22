@@ -79,7 +79,7 @@ onBeforeUnmount(close)
   <div class="pm-terminal" :data-env="env" :data-state="unavailable ? 'unavailable' : state">
     <div class="pm-terminal__bar">
       <span class="pm-terminal__title">{{ t.terminal(env) }}</span>
-      <button v-if="!unavailable && (state === 'idle' || state === 'closed' || state === 'failed')" type="button" class="pm-terminal__open pm-ui-button pm-ui-button--small" :disabled="!environments" @click="open">
+      <button v-if="!unavailable && (state === 'idle' || state === 'closed' || state === 'failed')" type="button" class="pm-terminal__open pm-ui-button pm-ui-button--small" :disabled="!terminals" @click="open">
         {{ state === 'idle' ? t.terminalOpen : t.terminalReconnect }}
       </button>
       <span v-if="state === 'connecting'" class="pm-terminal__status">{{ t.terminalConnecting }}</span>
