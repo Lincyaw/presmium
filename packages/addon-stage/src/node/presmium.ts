@@ -8,7 +8,7 @@ const plugin: PresmiumNodePlugin = {
   id: STAGE_ID,
   version,
   kernel: '^1.0.0',
-  passes: [{ name: 'footnotes', run: doc => placeFootnotes(doc) }],
+  passes: [{ name: 'presmium.stage.footnotes', run: doc => placeFootnotes(doc) }],
 }
 
 export default plugin

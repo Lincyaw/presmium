@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useNav } from '@slidev/client'
 import { shallowRef, watch } from 'vue'
-import { messages } from './src/client/messages.ts'
+import { messages } from './src/client/locale.ts'
 import { useScreen } from './src/client/screen.ts'
 
 const { isPresenter, isPrintMode } = useNav()

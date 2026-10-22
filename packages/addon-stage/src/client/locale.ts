@@ -1,7 +1,7 @@
 import { currentLocale } from '@lincyaw/host'
-import { STAGE_MESSAGES } from '../domain/index.ts'
+import { MESSAGES } from '../domain/index.ts'
 import type { StageMessages } from '../domain/index.ts'
 
 export function messages(): StageMessages {
-  return STAGE_MESSAGES[currentLocale()]
+  return MESSAGES[currentLocale()]
 }

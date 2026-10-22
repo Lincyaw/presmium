@@ -1,6 +1,6 @@
 import type { Component } from 'vue'
 import { defineComponent, h, shallowRef, watch } from 'vue'
-import { messages } from './messages.ts'
+import { messages } from './locale.ts'
 import { useScreen } from './screen.ts'
 
 export interface StageViewerContext {

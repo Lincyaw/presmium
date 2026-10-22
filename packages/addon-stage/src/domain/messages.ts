@@ -10,4 +10,4 @@ const en: StageMessages = {
   badge: { black: 'Audience view blacked out', frozen: 'Audience view frozen' },
 }
 
-export const STAGE_MESSAGES: Record<Locale, StageMessages> = { 'zh-CN': zh, 'en': en }
+export const MESSAGES: Record<Locale, StageMessages> = { 'zh-CN': zh, 'en': en }
