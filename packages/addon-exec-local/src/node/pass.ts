@@ -1,14 +1,25 @@
 import { relative, resolve, sep } from 'node:path'
 import { docBlocks } from '@lincyaw/kernel'
-import type { CodeNode, ComponentNode, IRBlock, IRPass } from '@lincyaw/kernel'
+import type { CodeNode, ComponentNode, Executor, IRBlock, IRPass } from '@lincyaw/kernel'
 import { EXEC_LOCAL_ID, execLocalConfig } from '../domain/index.ts'
 import type { ContainerExecutor } from './container.ts'
-import { findDefinition } from './container.ts'
+import { createContainerExecutor, findDefinition } from './container.ts'
 import { requestedWorkspaces } from './directive.ts'
 import { inLanguage } from './messages.ts'
 import { replicateArchive } from './replicate.ts'
 
-export function localEnvPass(container: ContainerExecutor): IRPass {
+const deckContainers = new Map<string, ContainerExecutor>()
+
+/** Each deck runs in its own workspace: the deck's container executor takes the place of the plugin's in the executors of this compile. */
+function bindDeckContainer(deckDir: string, executors: Executor[], pluginContainer: Executor): ContainerExecutor {
+  let container = deckContainers.get(deckDir)
+  if (!container) deckContainers.set(deckDir, container = createContainerExecutor(pluginContainer.id))
+  const at = executors.indexOf(pluginContainer)
+  if (at >= 0) executors[at] = container
+  return container
+}
+
+export function localEnvPass(pluginContainer: Executor): IRPass {
   return {
     name: 'presmium.execLocal.workspace',
     run(doc, ctx) {
@@ -18,7 +29,7 @@ export function localEnvPass(container: ContainerExecutor): IRPass {
       const workspace = config.workspace !== undefined
         ? resolve(ctx.deckDir, config.workspace)
         : envs.map(env => requestedWorkspaces.get(env.node)).find(dir => dir !== undefined) ?? ctx.workspaceRoot
-      container.bind(workspace, config)
+      bindDeckContainer(ctx.deckDir, ctx.executors, pluginContainer).bind(workspace, config)
       const shared = relative(ctx.deckDir, workspace).split(sep).join('/') || '.'
       doc.config.presmium = { ...doc.config.presmium, [EXEC_LOCAL_ID]: { ...ctx.config, workspace: shared } }
       const named = (dir: string) => relative(ctx.deckDir, dir).split(sep).join('/') || '.'
