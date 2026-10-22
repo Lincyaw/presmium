@@ -1,5 +1,6 @@
 import { irBlocks } from './blocks.ts'
 import type { IRBlock, IRDocument, IRSection, MdastNode } from './ir.ts'
+import { propText } from './props.ts'
 
 export interface Chapter {
   title: string
@@ -61,13 +62,6 @@ export function mdastText(node: MdastNode): string {
   if (typeof node.value === 'string' && !node.children) return node.value
   const text = (node.children ?? []).map(mdastText).join('')
   return BREAKS.has(node.type) ? `${text}\n` : text
-}
-
-function propText(value: unknown): string[] {
-  if (typeof value === 'string') return [value]
-  if (Array.isArray(value)) return value.flatMap(propText)
-  if (value && typeof value === 'object') return Object.values(value).flatMap(propText)
-  return []
 }
 
 export function blockText(block: IRBlock): string {

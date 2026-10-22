@@ -1,6 +1,6 @@
 import { componentErrors, createServerClient, createSharedStates, currentLocale, installHost, OPERATIONS, pluginsOf, PmIcon, PmPresenterPanels, PmToolbar, presmiumReport, presmiumService, provideServer, registerPresmiumPlugin, reportPluginFailure, setHostActive, startHost, stopPresmium } from '@lincyaw/host'
 import type { ServerClient, SyncTransports } from '@lincyaw/host'
-import { errorMessage, previewActive } from '@lincyaw/kernel'
+import { errorMessage, isPreviewActive } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import { createViewer, followOperations, getView, installViewer, installViewerPlugin, OverlayHost, PmComponentFallback, registerComponent, useViewer, withSlideGlobals } from '@lincyaw/viewer'
 import type { LiveUpdate, Position, Viewer } from '@lincyaw/viewer'
@@ -14,7 +14,7 @@ import { IR_ENDPOINT, offlineEnabled, requested, samePage, SERVICE_WORKER, secti
 import type { FormOptions } from '../domain/index.ts'
 import { createViewerHost, createViewerNavigation } from './host.ts'
 import { PAGES, PresmiumPage, ViewMenu } from './page.ts'
-import type { WebPreviewPage } from './preview.ts'
+import type { WebPreviewPage } from './preview-frame.ts'
 import './style.css'
 
 export interface ViewerModule {
@@ -135,7 +135,7 @@ function localizeHiddenLabels(): void {
 }
 
 const slidesBase = ref<string>()
-const active = ref(previewActive())
+const active = ref(isPreviewActive())
 const embeddedPreview = ref(false)
 let preview: ThemeInput['preview']
 let setActive: WebPreviewPage['setActive'] = async () => {}

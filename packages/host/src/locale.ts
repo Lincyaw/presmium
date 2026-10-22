@@ -1,4 +1,4 @@
-import { localeOf } from '@lincyaw/kernel/contracts'
+import { localeOf } from '@lincyaw/kernel'
 import type { Locale } from '@lincyaw/kernel/contracts'
 import type { ComputedRef } from 'vue'
 import { computed, getCurrentInstance, inject, shallowRef } from 'vue'

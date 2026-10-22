@@ -1,4 +1,4 @@
-export const GIT_SAFE_CONFIG: readonly string[] = ['core.hooksPath=/dev/null', 'core.fsmonitor=false', 'core.quotePath=false', 'commit.gpgSign=false', 'tag.gpgSign=false']
+const GIT_SAFE_CONFIG: readonly string[] = ['core.hooksPath=/dev/null', 'core.fsmonitor=false', 'core.quotePath=false', 'commit.gpgSign=false', 'tag.gpgSign=false']
 
 export function gitConfigArgs(): string[] {
   return GIT_SAFE_CONFIG.flatMap(entry => ['-c', entry])

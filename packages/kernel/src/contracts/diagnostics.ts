@@ -1,4 +1,4 @@
-import type { Finding } from '../contracts.ts'
+import type { Finding } from './checks.ts'
 
 export type DiagnosticOrigin = 'compile' | 'check' | 'preview' | 'runtime' | 'server'
 

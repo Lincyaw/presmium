@@ -1,4 +1,4 @@
-export function normalizeWhitespace(text: string): string {
+function normalizeWhitespace(text: string): string {
   const lines = text
     .replace(/\r\n?/g, '\n')
     .split('\n')

@@ -80,5 +80,5 @@ export type {
   ToolbarSlot,
   ViewRole,
 } from './types.ts'
-export { localeOf } from '@lincyaw/kernel/contracts'
+export { localeOf } from '@lincyaw/kernel'
 export type { Locale } from '@lincyaw/kernel/contracts'

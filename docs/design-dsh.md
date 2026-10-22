@@ -179,7 +179,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 部分 | 位置 |
 |---|---|
 | 消息类型与 `PREVIEW_PROTOCOL = 1` | `packages/kernel/src/contracts/preview.ts`；产物与工作台都只依赖这里 |
-| 网页的预览代理 | `packages/web/src/client/preview.ts`：用 IR 运行时的 viewer 跳转、取位置、找章节与块的元素，实现 `marks`（`packages/viewer/src/rich.ts` 的 `PmRoleMark` 看它） |
+| 网页的预览代理 | `packages/web/src/client/preview-frame.ts`：用 IR 运行时的 viewer 跳转、取位置、找章节与块的元素，实现 `marks`（`packages/viewer/src/rich.ts` 的 `PmRoleMark` 看它） |
 | 幻灯片的预览代理 | `slidev-addon-core` 的客户端，用宿主的 `NAVIGATION` 与 `blockElement` |
 | 工作台一侧 | `@lincyaw/workbench` 的预览面板 |
 | 静态构建 | 不带预览代理；用例扫描构建产物 |

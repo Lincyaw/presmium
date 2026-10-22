@@ -8,7 +8,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { stepKeys, stepTrail, trailStep } from '../packages/kernel/src/follow.ts'
+import { stepKeys, stepTrail, trailStep } from '../packages/kernel/src/step-keys.ts'
 import type { IRSection } from '../packages/kernel/src/ir.ts'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))

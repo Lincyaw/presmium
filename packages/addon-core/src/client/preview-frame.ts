@@ -1,7 +1,7 @@
 import { componentErrors, presmiumReport } from '@lincyaw/host'
 import type { NavigationPosition } from '@lincyaw/host'
-import { startPreviewAgent } from '@lincyaw/kernel'
-import type { PreviewAgent, PreviewAnchor } from '@lincyaw/kernel'
+import { connectPreviewFrame } from '@lincyaw/kernel'
+import type { PreviewFrame, PreviewAnchor } from '@lincyaw/kernel'
 import type { FollowAnchor } from '@lincyaw/viewer/domain'
 import { useDarkMode, useNav } from '@slidev/client'
 import { nextTick, watch } from 'vue'
@@ -19,7 +19,7 @@ function pageNumber(element: Element | null | undefined): number | undefined {
   return name ? Number(name.slice('slidev-page-'.length)) : undefined
 }
 
-export function startSlidesPreview(options: SlidesPreviewOptions): void {
+export function connectSlidesPreviewFrame(options: SlidesPreviewOptions): void {
   const sections = useSlideSections()
   const navigation = createSlidevNavigation(sections)
   const { isDark } = useDarkMode()
@@ -32,7 +32,7 @@ export function startSlidesPreview(options: SlidesPreviewOptions): void {
     if (no === undefined || !own.anchorOf(no, Number.MAX_SAFE_INTEGER).trail?.includes(block)) return 0
     for (let step = 0; ; step++) if (own.anchorOf(no, step).trail?.includes(block)) return step
   }
-  const agent: PreviewAgent | undefined = startPreviewAgent({
+  const frame: PreviewFrame | undefined = connectPreviewFrame({
     renderer: 'slides',
     document: options.document,
     origins: options.origins,
@@ -66,31 +66,31 @@ export function startSlidesPreview(options: SlidesPreviewOptions): void {
       return { step, trail: sections().anchorOf(no, step).trail ?? [] }
     },
   })
-  if (!agent) return
+  if (!frame) return
   const style = document.createElement('style')
   style.textContent = '.slidev-layout { user-select: text; }'
   document.head.append(style)
-  watch(() => navigation.position.value, () => agent.moved())
-  watch([currentSlideNo, clicks], () => void nextTick(agent.redraw))
-  watchProblems(agent)
+  watch(() => navigation.position.value, () => frame.moved())
+  watch([currentSlideNo, clicks], () => void nextTick(frame.redraw))
+  watchProblems(frame)
   const hot = import.meta.hot
   hot?.on('presmium:revision', (data: { revision?: string }) => {
     revision = typeof data?.revision === 'string' ? data.revision : undefined
     if (!told) {
       told = true
-      return agent.moved()
+      return frame.moved()
     }
-    requestAnimationFrame(() => requestAnimationFrame(() => agent.updated()))
+    requestAnimationFrame(() => requestAnimationFrame(() => frame.updated()))
   })
   hot?.send('presmium:preview', {})
   setTimeout(() => {
     if (told) return
     told = true
-    agent.moved()
+    frame.moved()
   }, 5000)
 }
 
-function watchProblems(agent: PreviewAgent): void {
+function watchProblems(frame: PreviewFrame): void {
   let told = new Map<string, { level: 'error' | 'warning', plugin: string, message: string }>()
   watch(() => [presmiumReport()?.plugins ?? [], componentErrors()] as const, ([plugins, errors]) => {
     const problems = [
@@ -98,8 +98,8 @@ function watchProblems(agent: PreviewAgent): void {
       ...errors.map(e => ({ level: 'error' as const, plugin: e.component, message: e.message })),
     ]
     const current = new Map(problems.map(problem => [JSON.stringify(problem), problem]))
-    for (const [key, problem] of told) if (!current.has(key)) agent.report({ ...problem, resolved: true })
-    for (const [key, problem] of current) if (!told.has(key)) agent.report(problem)
+    for (const [key, problem] of told) if (!current.has(key)) frame.report({ ...problem, resolved: true })
+    for (const [key, problem] of current) if (!told.has(key)) frame.report(problem)
     told = current
   }, { immediate: true })
 }

@@ -1,4 +1,4 @@
-import type { Logger, Unsubscribe } from '../contracts.ts'
+import type { Logger, Unsubscribe } from './plugin.ts'
 import { defineService } from './service.ts'
 
 export interface RunRequest {
@@ -101,10 +101,6 @@ export interface ExecuteConfig {
   env?: string
   environments?: Record<string, EnvironmentSpec>
   rerun?: 'environment'
-}
-
-export function environmentExecutor(name: string): string {
-  return `presmium.env.${name}`
 }
 
 export interface EnvironmentContext {

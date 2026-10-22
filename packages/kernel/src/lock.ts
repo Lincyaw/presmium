@@ -1,6 +1,6 @@
-import { isRenderable } from './contracts.ts'
+import { isRenderable } from './anchors.ts'
 import type { AnchorLockFile, RecordedAnchor, Resolution } from './contracts.ts'
-import { errorMessage } from './errors.ts'
+import { errorMessage, isRecord } from './errors.ts'
 
 export const ANCHOR_LOCK_PATH = '.presmium/anchors.lock.json'
 
@@ -67,19 +67,15 @@ export class AnchorLock {
 }
 
 function validate(data: unknown): AnchorLockFile {
-  if (!isObject(data) || data.version !== 1 || !isObject(data.anchors)) {
+  if (!isRecord(data) || data.version !== 1 || !isRecord(data.anchors)) {
     throw new Error('invalid anchor lock: expected { "version": 1, "anchors": { ... } }')
   }
   for (const [anchor, record] of Object.entries(data.anchors)) {
-    const valid = isObject(record)
+    const valid = isRecord(record)
       && typeof record.fingerprint === 'string' && record.fingerprint !== ''
       && typeof record.file === 'string'
       && Number.isInteger(record.startLine) && (record.startLine as number) >= 1
     if (!valid) throw new Error(`invalid anchor lock: bad record for "${anchor}"`)
   }
   return data as unknown as AnchorLockFile
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
 }

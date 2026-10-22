@@ -1,4 +1,4 @@
-import { isPreviewEnvelope, PREVIEW_PARAM, PREVIEW_PROTOCOL, previewEnvelope, readPreviewReport } from '@lincyaw/kernel'
+import { isPreviewEnvelope, PREVIEW_PARAM, PREVIEW_PROTOCOL, previewEnvelope, toPreviewReport } from '@lincyaw/kernel'
 import type { PreviewCommand, PreviewCommandType, PreviewReport } from '@lincyaw/kernel'
 
 export interface PreviewHandlers {
@@ -35,7 +35,7 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
       handlers.mismatch?.(event.data.version)
       return
     }
-    const report = readPreviewReport(event.data, own)
+    const report = toPreviewReport(event.data, own)
     if (!report) return
     if (report.type === 'ready') {
       ready = true

@@ -82,7 +82,7 @@ const devTheme = (args: string[]) => dev(['--to', 'web', ...args], 'web', async 
 it('runs presmium dev without the preview agent', async () => {
   const plain = await devTheme([])
   expect(plain.addons).toContain('addon-core')
-  expect(plain.index).not.toContain('client/preview.ts')
+  expect(plain.index).not.toContain('client/preview-frame.ts')
 
   const deck = join(dir, '.presmium/dev/slides')
   const page = await dev(['--to', 'slides'], 'slides', async (slides) => {

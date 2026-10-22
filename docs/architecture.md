@@ -331,7 +331,7 @@ interface HostAdapter {
 
 4.6 至 4.10 节是执行环境、智能体、工作区与讲授的契约，全部是兼容扩展：只增加可选字段、可选参数（`Executor.run` 的第三个参数 `ctx`）、新类型、新函数与新的服务令牌，`IR_VERSION` 仍为 1。它们写在 `contracts.ts`、`ir.ts` 与 `host/src/types.ts`（`HostStart`、`StartOptions` 在 `host/src/kernel.ts`，`KernelOptions` 在 `kernel/src/kernel.ts`），按语义化版本的承诺变化。业务契约按领域拆在 `packages/kernel/src/contracts/` 中：`service.ts`（`ServiceToken`、`defineService`，其他模块只从这里取运行时的值，没有循环引用）、`execution.ts`（执行、进程沙箱、具名环境与 `environmentExecutor`）、`server.ts`（成员、路由、两种 Node 端上下文、确认与 `eventStream`、MCP 访问）、`speech.ts`、`agent.ts`（智能体、修改审阅与修改历史）、`operations.ts`；`contracts.ts` 保留插件、锚点、检查与课堂的契约并统一再导出，入口 `@lincyaw/kernel/contracts` 不变（9.2 节）。内核另导出 `withProp(props, path, value)`（按 `.` 分隔的属性路径设置组件属性，渲染端改写 `ComponentNode.assets` 用）与 `roleMark(node)`（角色的标记 `〔名 value〕`），`lowerMyst` 增加选项 `roles: 'marks'`。
 
-`packages/kernel/src/contracts.ts`：
+`packages/kernel/src/contracts/execution.ts`：
 
 ```ts
 export interface RunRequest {
@@ -633,7 +633,7 @@ export interface HostStart {
 
 ### 4.7 服务端契约
 
-`packages/kernel/src/contracts.ts`：
+`packages/kernel/src/contracts/server.ts`：
 
 ```ts
 export type MemberRole = 'reader' | 'editor' | 'owner'
@@ -823,7 +823,7 @@ export interface HostStart {
 ### 4.8 语音、智能体与修改历史
 
 
-`packages/kernel/src/contracts.ts`：
+`packages/kernel/src/contracts/speech.ts`：
 
 ```ts
 // 语音---------------------------------------------------------
@@ -1090,7 +1090,7 @@ export const DOCUMENT_FILES = defineService<DocumentFiles>('presmium.documentFil
 
 ### 4.9 操作与讲授轨
 
-`packages/kernel/src/contracts.ts`：
+`packages/kernel/src/contracts/operations.ts`：
 
 ```ts
 /** 一次语义化的操作，以章节、块与锚点为坐标（词汇见 `ir.md` 9.2 节） */
@@ -1890,7 +1890,7 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 
 实现：
 
-- **契约与代理**：`packages/kernel/src/contracts/preview.ts` 有 `PREVIEW_PROTOCOL`、两个方向的消息类型（`PreviewCommand`、`PreviewReport`）、两边共用的读取函数 `readPreviewCommand`、`readPreviewReport`（核对信封、版本、nonce 与字段，不认识的一律丢弃；`selection` 的内容在字段 `selection` 中，没有选中时为 `null`，与 `highlight` 的 `target` 一样）、`previewFrameAncestors`，以及不依赖框架的产物一侧 `startPreviewAgent(page)`：按锚点框出（`[data-preview-highlight]`，不在页面中的先由形态带进来）、在块的元素之中画编号标记（`.pm-preview-pin`）、点选（捕获阶段的点击，控件与链接照常，鼠标下的块加虚线框）、文字选中（`selectionchange`）、作者用的标记（`<html>` 的类 `pm-author-marks`，`AUTHOR_MARKS_CLASS`）、位置（至多每 150 ms）、页面重新渲染后重画（`MutationObserver`），`ready` 之前的问题攒到 `ready` 之后再发。这些都只对页面看得见的块：宿主的规则（排版了、不在 `[inert]` 与 `.pm-hidden` 之下）加上形态自己的规则（`PreviewPage.seen`；幻灯片中是点击还没显示或已经隐藏的块，即 Slidev 文档写明的类 `.slidev-vclick-hidden`，以及逐项出现的列表在第一项的点击之前），看不见的块不框（先由形态带到它出现的那一步）、不画标记、点不中（点在它的位置上得到章节）。nonce 另记在 iframe 的 `window.name` 中，同一个框架中换了地址或刷新后代理照样启动。两种形态各自只给出位置、跳转、明暗、修订号与问题：网页 `packages/web/src/client/preview.ts`（IR 运行时的 `navigation`、VitePress 的明暗开关），只由预览开发服务器生成的主题导入（`ThemeInput.preview`）；幻灯片 `packages/addon-core/src/client/preview.ts`（幻灯片的 `navigation`、Slidev 的 `useDarkMode`；预览中幻灯片的文字可以选中），只由 render-slides 在预览时写进生成文稿的 `setup/root.ts`。静态构建与 `presmium dev` 的页面不加载这两个文件，内核中的代理在构建中被摇掉（`packages/cli/test/preview.test.ts` 扫描两种形态的构建产物）。插件启动失败与组件出错（宿主的启动报告与 `componentErrors`）各报告一次。
+- **契约与代理**：`packages/kernel/src/contracts/preview.ts` 有 `PREVIEW_PROTOCOL`、两个方向的消息类型（`PreviewCommand`、`PreviewReport`）、两边共用的收窄函数 `toPreviewCommand`、`toPreviewReport`（核对信封、版本、nonce 与字段，不认识的一律丢弃；`selection` 的内容在字段 `selection` 中，没有选中时为 `null`，与 `highlight` 的 `target` 一样）、`previewFrameAncestors`；不依赖框架的产物一侧在 `packages/kernel/src/preview-frame.ts`，`connectPreviewFrame(page)` 返回 `PreviewFrame`：按锚点框出（`[data-preview-highlight]`，不在页面中的先由形态带进来）、在块的元素之中画编号标记（`.pm-preview-pin`）、点选（捕获阶段的点击，控件与链接照常，鼠标下的块加虚线框）、文字选中（`selectionchange`）、作者用的标记（`<html>` 的类 `pm-author-marks`，`AUTHOR_MARKS_CLASS`）、位置（至多每 150 ms）、页面重新渲染后重画（`MutationObserver`），`ready` 之前的问题攒到 `ready` 之后再发。这些都只对页面看得见的块：宿主的规则（排版了、不在 `[inert]` 与 `.pm-hidden` 之下）加上形态自己的规则（`PreviewPage.seen`；幻灯片中是点击还没显示或已经隐藏的块，即 Slidev 文档写明的类 `.slidev-vclick-hidden`，以及逐项出现的列表在第一项的点击之前），看不见的块不框（先由形态带到它出现的那一步）、不画标记、点不中（点在它的位置上得到章节）。nonce 另记在 iframe 的 `window.name` 中，同一个框架中换了地址或刷新后代理照样启动。两种形态各自只给出位置、跳转、明暗、修订号与问题：网页 `packages/web/src/client/preview-frame.ts`（IR 运行时的 `navigation`、VitePress 的明暗开关），只由预览开发服务器生成的主题导入（`ThemeInput.preview`）；幻灯片 `packages/addon-core/src/client/preview-frame.ts`（幻灯片的 `navigation`、Slidev 的 `useDarkMode`；预览中幻灯片的文字可以选中），只由 render-slides 在预览时写进生成文稿的 `setup/root.ts`。静态构建与 `presmium dev` 的页面不加载这两个文件，内核中的代理在构建中被摇掉（`packages/cli/test/preview.test.ts` 扫描两种形态的构建产物）。插件启动失败与组件出错（宿主的启动报告与 `componentErrors`）各报告一次。
 - **修订号**：工作区服务以编译结果 IR 的哈希为修订号（`GET ir`），写进交给预览开发服务器的 IR 的 `meta`（键 `PREVIEW_REVISION`，即 `presmiumRevision`）；网页从 IR 运行时的文档读出，页面换上新的 IR 后发 `updated`；幻灯片由生成文稿的 Vite 插件读 `preview.json`，经 Vite 的 WebSocket 推送（`presmium:revision`，在幻灯片的热更新之后）。
 - **步号**：`position`、`picked` 的 `step` 是页面自己的步号，都带 `trail`（`picked` 是块出现的那一步的，`PreviewPage.stepOf`），工作台用内核的 `trailStep` 换算成完整文稿的步号，与控制通道的位置相同；`go` 带 `trail` 时按它定位（`followedPlace`），只带 `step` 时按页面的步号。只给网页的块在幻灯片中不占步骤，端到端用例的文稿就有这样一步。
 - **幻灯片的锚点**：每一页的标题与块包在章节的锚点 `<div class="pm-slide-section" data-section>` 中（`display: contents`，不改变版式；演讲者备注留在它之后，Slidev 只认页末的注释），每个顶层上屏块包在 `<div class="pm-block" data-block data-section data-step>` 中（点击的包装在它之内），静态构建中同样存在，所以宿主的 `blockElement`（`[data-section] .pm-block[data-block]`）在幻灯片中同样找得到块；生成文稿的样式（`render-slides/src/deck/style.css`）让主题“书卷”对段落与列表的规则对锚点中的同样有效，预览的幻灯片上没有子内容的角色是一个空的 `.pm-role-mark`，只在 `pm-author-marks` 时以 `::before` 显示标记（构建与 `presmium dev` 的幻灯片照旧只在演讲者备注中有标记）。网页的 `PmRoleMark` 同样看这个类。

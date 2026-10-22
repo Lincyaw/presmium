@@ -1,7 +1,7 @@
 import { componentErrors, presmiumReport } from '@lincyaw/host'
 import type { NavigationPosition } from '@lincyaw/host'
-import { irBlocks, PREVIEW_REVISION, startPreviewAgent, stepKeys, stepTrail } from '@lincyaw/kernel'
-import type { PreviewAgent } from '@lincyaw/kernel'
+import { irBlocks, PREVIEW_REVISION, connectPreviewFrame, stepKeys, stepTrail } from '@lincyaw/kernel'
+import type { PreviewFrame } from '@lincyaw/kernel'
 import type { FollowAnchor, Viewer } from '@lincyaw/viewer'
 import type { Ref } from 'vue'
 import { nextTick, watch } from 'vue'
@@ -18,7 +18,7 @@ export interface WebPreviewPage {
   setActive(active: boolean): Promise<void>
 }
 
-export function startWebPreview(page: WebPreviewPage, options: WebPreviewOptions): void {
+export function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions): void {
   const { viewer, dark } = page
   const navigation = createViewerNavigation(viewer)
   const revision = () => {
@@ -29,7 +29,7 @@ export function startWebPreview(page: WebPreviewPage, options: WebPreviewOptions
     const found = viewer.section(section)
     return found ? [...irBlocks(found.blocks)].find(b => b.id === block)?.at : undefined
   }
-  const agent: PreviewAgent | undefined = startPreviewAgent({
+  const frame: PreviewFrame | undefined = connectPreviewFrame({
     renderer: 'web',
     document: options.document,
     origins: options.origins,
@@ -50,13 +50,13 @@ export function startWebPreview(page: WebPreviewPage, options: WebPreviewOptions
       return step === undefined || !found ? undefined : { step, trail: stepTrail(stepKeys(found), step) }
     },
   })
-  if (!agent) return
-  watch(() => navigation.position.value, () => agent.moved())
-  watch(revision, () => void nextTick(() => requestAnimationFrame(() => agent.updated())))
-  watchProblems(agent)
+  if (!frame) return
+  watch(() => navigation.position.value, () => frame.moved())
+  watch(revision, () => void nextTick(() => requestAnimationFrame(() => frame.updated())))
+  watchProblems(frame)
 }
 
-function watchProblems(agent: PreviewAgent): void {
+function watchProblems(frame: PreviewFrame): void {
   let told = new Map<string, { level: 'error' | 'warning', plugin: string, message: string }>()
   watch(() => [presmiumReport()?.plugins ?? [], componentErrors()] as const, ([plugins, errors]) => {
     const problems = [
@@ -64,8 +64,8 @@ function watchProblems(agent: PreviewAgent): void {
       ...errors.map(e => ({ level: 'error' as const, plugin: e.component, message: e.message })),
     ]
     const current = new Map(problems.map(problem => [JSON.stringify(problem), problem]))
-    for (const [key, problem] of told) if (!current.has(key)) agent.report({ ...problem, resolved: true })
-    for (const [key, problem] of current) if (!told.has(key)) agent.report(problem)
+    for (const [key, problem] of told) if (!current.has(key)) frame.report({ ...problem, resolved: true })
+    for (const [key, problem] of current) if (!told.has(key)) frame.report(problem)
     told = current
   }, { immediate: true })
 }

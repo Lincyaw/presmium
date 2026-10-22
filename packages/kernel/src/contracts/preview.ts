@@ -1,4 +1,4 @@
-import { errorMessage } from '../errors.ts'
+import { isRecord } from '../errors.ts'
 
 export const PREVIEW_PROTOCOL = 1
 
@@ -62,19 +62,18 @@ export function previewEnvelope<M extends PreviewCommand | PreviewReport>(nonce:
   return { protocol: PREVIEW_NAME, version: PREVIEW_PROTOCOL, nonce, ...message }
 }
 
-const record = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const text = (value: unknown): value is string => typeof value === 'string'
 const optional = <T>(value: unknown, is: (v: unknown) => v is T) => value === undefined || is(value)
 const step = (value: unknown): value is number => Number.isInteger(value) && (value as number) >= 0
 const request = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0
 const strings = (value: unknown): value is string[] => Array.isArray(value) && value.length <= 10_000 && value.every(text)
-const anchor = (value: unknown): value is PreviewAnchor => record(value) && text(value.section) && optional(value.block, text)
+const anchor = (value: unknown): value is PreviewAnchor => isRecord(value) && text(value.section) && optional(value.block, text)
 
 export function isPreviewEnvelope(data: unknown, nonce: string): data is PreviewEnvelope<{ type: string }> {
-  return record(data) && data.protocol === PREVIEW_NAME && data.nonce === nonce && typeof data.version === 'number' && text(data.type)
+  return isRecord(data) && data.protocol === PREVIEW_NAME && data.nonce === nonce && typeof data.version === 'number' && text(data.type)
 }
 
-export function readPreviewCommand(data: unknown, nonce: string): PreviewCommand | undefined {
+export function toPreviewCommand(data: unknown, nonce: string): PreviewCommand | undefined {
   if (!isPreviewEnvelope(data, nonce) || data.version !== PREVIEW_PROTOCOL) return undefined
   const m = data as Record<string, unknown>
   switch (m.type) {
@@ -84,21 +83,21 @@ export function readPreviewCommand(data: unknown, nonce: string): PreviewCommand
     case 'marks': return typeof m.on === 'boolean' ? { type: m.type, on: m.on } : undefined
     case 'appearance': return typeof m.dark === 'boolean' ? { type: 'appearance', dark: m.dark } : undefined
     case 'activity': return typeof m.active === 'boolean' && request(m.request) ? { type: 'activity', active: m.active, request: m.request } : undefined
-    case 'pins': return Array.isArray(m.targets) && m.targets.length <= 1000 && m.targets.every(t => record(t) && text(t.id) && text(t.section) && text(t.block) && text(t.label))
+    case 'pins': return Array.isArray(m.targets) && m.targets.length <= 1000 && m.targets.every(t => isRecord(t) && text(t.id) && text(t.section) && text(t.block) && text(t.label))
       ? { type: 'pins', targets: (m.targets as PreviewPin[]).map(({ id, section, block, label }) => ({ id, section, block, label })) }
       : undefined
     default: return undefined
   }
 }
 
-export function readPreviewReport(data: unknown, nonce: string): PreviewReport | undefined {
+export function toPreviewReport(data: unknown, nonce: string): PreviewReport | undefined {
   if (!isPreviewEnvelope(data, nonce) || data.version !== PREVIEW_PROTOCOL) return undefined
   const m = data as Record<string, unknown>
   switch (m.type) {
     case 'ready': return (m.renderer === 'web' || m.renderer === 'slides') && text(m.document) && optional(m.revision, text) && strings(m.capabilities) ? { type: 'ready', renderer: m.renderer, document: m.document, ...m.revision ? { revision: m.revision as string } : {}, capabilities: m.capabilities as PreviewCommandType[] } : undefined
     case 'position': return text(m.section) && step(m.step) && strings(m.trail) && optional(m.view, text) ? { type: 'position', section: m.section, step: m.step, trail: m.trail, ...m.view ? { view: m.view as string } : {} } : undefined
     case 'picked': return text(m.section) && optional(m.block, text) && optional(m.step, step) && optional(m.trail, strings) ? { type: 'picked', section: m.section, ...m.block ? { block: m.block as string } : {}, ...m.step === undefined ? {} : { step: m.step as number }, ...m.trail ? { trail: m.trail as string[] } : {} } : undefined
-    case 'selection': return m.selection === null || (record(m.selection) && text(m.selection.text) && anchor(m.selection)) ? { type: 'selection', selection: m.selection as (PreviewAnchor & { text: string }) | null } : undefined
+    case 'selection': return m.selection === null || (isRecord(m.selection) && text(m.selection.text) && anchor(m.selection)) ? { type: 'selection', selection: m.selection as (PreviewAnchor & { text: string }) | null } : undefined
     case 'updated': return optional(m.revision, text) ? { type: 'updated', ...m.revision ? { revision: m.revision as string } : {} } : undefined
     case 'activity': return typeof m.active === 'boolean' && request(m.request) && optional(m.revision, text) && optional(m.error, text)
       ? { type: 'activity', active: m.active, request: m.request, ...m.revision === undefined ? {} : { revision: m.revision as string }, ...m.error === undefined ? {} : { error: m.error as string } }
@@ -106,379 +105,5 @@ export function readPreviewReport(data: unknown, nonce: string): PreviewReport |
     case 'report': return (m.level === 'error' || m.level === 'warning') && text(m.message) && optional(m.plugin, text) && (m.resolved === undefined || typeof m.resolved === 'boolean') ? { type: 'report', level: m.level, message: m.message, ...m.plugin ? { plugin: m.plugin as string } : {}, ...m.resolved === undefined ? {} : { resolved: m.resolved as boolean } } : undefined
     case 'shortcut': return m.command === 'open-files' || m.command === 'open-commands' ? { type: 'shortcut', command: m.command } : undefined
     default: return undefined
-  }
-}
-
-export interface PreviewPage {
-  renderer: 'web' | 'slides'
-  document: string
-  origins: readonly string[]
-  revision(): string | undefined
-  position(): PreviewPosition | undefined
-  go(command: Extract<PreviewCommand, { type: 'go' }>): void
-  reveal(target: PreviewAnchor): void
-  setDark(dark: boolean): void
-  setActive?(active: boolean): void | Promise<void>
-  sectionOf?(element: Element): string | undefined
-  sectionElement?(section: string): HTMLElement | undefined
-  seen?(element: Element): boolean
-  stepOf?(anchor: Required<PreviewAnchor>): { step: number, trail: string[] } | undefined
-}
-
-export interface PreviewAgent {
-  moved(): void
-  updated(): void
-  redraw(): void
-  report(problem: { level: 'error' | 'warning', plugin?: string, message: string, resolved?: boolean }): void
-  stop(): void
-}
-
-const FRAME_NAME = `${PREVIEW_NAME}:`
-const PAUSED = ':paused'
-const STYLE_ID = 'presmium-preview-style'
-const HIGHLIGHT = 'data-preview-highlight'
-const HOVER = 'data-preview-hover'
-const POSITIONED = 'data-preview-positioned'
-const PIN_CLASS = 'pm-preview-pin'
-const CONTROLS = 'a, button, input, select, textarea, label, summary, [contenteditable], [role="dialog"]'
-const COMMANDS: PreviewCommandType[] = ['go', 'highlight', 'pick', 'pins', 'marks', 'appearance']
-
-const STYLE = `
-[${HIGHLIGHT}] { outline: 2px solid var(--pm-color-accent, #1d6b7a) !important; outline-offset: 4px; border-radius: 2px; }
-[${HOVER}] { outline: 2px dashed var(--pm-color-accent, #1d6b7a) !important; outline-offset: 2px; cursor: crosshair; }
-[${POSITIONED}] { position: relative; }
-.${PIN_CLASS} { position: absolute; top: -10px; left: -10px; z-index: 50; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 10px; background: var(--pm-color-accent, #1d6b7a); color: #fff; font: 600 12px/20px system-ui, sans-serif; text-align: center; pointer-events: none; }
-`
-
-function previewNonce(): string | undefined {
-  if (typeof window === 'undefined') return undefined
-  const given = new URL(window.location.href).searchParams.get(PREVIEW_PARAM)
-  if (given) return given
-  if (!window.name.startsWith(FRAME_NAME)) return undefined
-  const own = window.name.slice(FRAME_NAME.length)
-  return (own.endsWith(PAUSED) ? own.slice(0, -PAUSED.length) : own) || undefined
-}
-
-export function previewActive(): boolean {
-  if (typeof window === 'undefined' || window.parent === window) return true
-  const nonce = previewNonce()
-  return !nonce || window.name !== `${FRAME_NAME}${nonce}${PAUSED}`
-}
-
-export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
-  if (typeof window === 'undefined' || window.parent === window || page.origins.length === 0) return undefined
-  const nonce = previewNonce()
-  if (!nonce) return undefined
-  let active = previewActive()
-  let stopped = false
-  let activity = Promise.resolve()
-  const capabilities: PreviewCommandType[] = [...COMMANDS, ...page.setActive ? ['activity' as const] : []]
-  window.name = `${FRAME_NAME}${nonce}${active ? '' : PAUSED}`
-  const root = document.documentElement
-  root.dataset.presmiumPreview = 'on'
-  if (!document.getElementById(STYLE_ID)) {
-    const style = document.createElement('style')
-    style.id = STYLE_ID
-    style.textContent = STYLE
-    document.head.append(style)
-  }
-
-  const post = (message: PreviewReport) => {
-    if (stopped || (!active && message.type !== 'ready' && message.type !== 'activity')) return
-    for (const origin of page.origins) window.parent.postMessage(previewEnvelope(nonce, message), origin)
-  }
-
-  const shortcut = (event: KeyboardEvent) => {
-    if (!active || stopped) return
-    if (event.defaultPrevented || event.isComposing || event.altKey || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'p') return
-    event.preventDefault()
-    post({ type: 'shortcut', command: event.shiftKey ? 'open-commands' : 'open-files' })
-  }
-  window.addEventListener('keydown', shortcut)
-
-  let highlight: PreviewAnchor | null = null
-  let pins: PreviewPin[] = []
-  let picking = false
-  let ready = false
-  const waiting: Extract<PreviewReport, { type: 'report' }>[] = []
-  let sent: string | undefined
-  let revision: string | undefined
-
-  const seen = (element: Element): boolean =>
-    !element.closest('[inert], .pm-hidden') && element.getClientRects().length > 0 && (page.seen?.(element) ?? true)
-  const seenBlock = (element: Element): HTMLElement | undefined => {
-    for (let block = element.closest<HTMLElement>('.pm-block[data-block]'); block; block = block.parentElement?.closest<HTMLElement>('.pm-block[data-block]') ?? null) {
-      if (seen(block)) return block
-    }
-    return undefined
-  }
-  const sectionOf = (element: Element): string | undefined =>
-    element.closest<HTMLElement>('[data-section]')?.dataset.section ?? page.sectionOf?.(element)
-  const blockElement = (section: string, block: string): HTMLElement | undefined => {
-    for (const element of document.querySelectorAll<HTMLElement>(`.pm-block[data-block="${CSS.escape(block)}"]`)) {
-      if (sectionOf(element) === section && seen(element)) return element
-    }
-    return undefined
-  }
-  const sectionElement = (section: string): HTMLElement | undefined => {
-    const own = page.sectionElement?.(section)
-    if (own) return own
-    const all = [...document.querySelectorAll<HTMLElement>(`[data-section="${CSS.escape(section)}"]`)]
-    return all.find(el => el.classList.contains('pm-section') && seen(el)) ?? all.find(seen)
-  }
-  const elementOf = (target: PreviewAnchor) => (target.block ? blockElement(target.section, target.block) : sectionElement(target.section))
-  const anchorOf = (element: Element): PreviewAnchor | undefined => {
-    const block = seenBlock(element)
-    const section = sectionOf(block ?? element)
-    if (!section) return undefined
-    return block ? { section, block: block.dataset.block! } : { section }
-  }
-
-  const drawHighlight = (scroll: boolean) => {
-    const element = highlight && elementOf(highlight)
-    for (const other of document.querySelectorAll(`[${HIGHLIGHT}]`)) if (other !== element) other.removeAttribute(HIGHLIGHT)
-    if (!element) return false
-    element.setAttribute(HIGHLIGHT, '')
-    if (scroll) {
-      const box = element.getBoundingClientRect()
-      if (box.bottom < 0 || box.top > window.innerHeight) element.scrollIntoView({ block: 'center' })
-    }
-    return true
-  }
-  const drawPins = () => {
-    const wanted = new Map<HTMLElement, PreviewPin[]>()
-    for (const pin of pins) {
-      const element = blockElement(pin.section, pin.block)
-      if (element) wanted.set(element, [...wanted.get(element) ?? [], pin])
-    }
-    for (const old of document.querySelectorAll<HTMLElement>(`.${PIN_CLASS}`)) {
-      const host = old.parentElement
-      if (!host || !wanted.get(host)?.some(pin => pin.id === old.dataset.pin && pin.label === old.textContent)) old.remove()
-    }
-    for (const host of document.querySelectorAll<HTMLElement>(`[${POSITIONED}]`)) {
-      if (!wanted.has(host)) host.removeAttribute(POSITIONED)
-    }
-    for (const [element, own] of wanted) {
-      if (getComputedStyle(element).position === 'static') element.setAttribute(POSITIONED, '')
-      own.forEach((pin, i) => {
-        if ([...element.children].some(child => child.classList.contains(PIN_CLASS) && (child as HTMLElement).dataset.pin === pin.id)) return
-        const mark = document.createElement('span')
-        mark.className = PIN_CLASS
-        mark.dataset.pin = pin.id
-        mark.textContent = pin.label
-        mark.setAttribute('aria-hidden', 'true')
-        if (i > 0) mark.style.left = `${-10 + 24 * i}px`
-        element.append(mark)
-      })
-    }
-  }
-  let frame = 0
-  const redraw = () => {
-    if (!active || stopped) return
-    cancelAnimationFrame(frame)
-    frame = requestAnimationFrame(() => {
-      frame = 0
-      if (!active || stopped) return
-      drawHighlight(false)
-      drawPins()
-    })
-  }
-  let highlighting: ReturnType<typeof setTimeout> | undefined
-  const showHighlight = (target: PreviewAnchor | null) => {
-    clearTimeout(highlighting)
-    highlight = target
-    if (!active || stopped) return
-    if (!target) return void drawHighlight(false)
-    if (drawHighlight(true)) return
-    page.reveal(target)
-    const until = Date.now() + 5000
-    const retry = () => {
-      highlighting = undefined
-      if (!active || stopped || highlight !== target || drawHighlight(true) || Date.now() > until) return
-      highlighting = setTimeout(retry, 100)
-    }
-    highlighting = setTimeout(retry, 50)
-  }
-
-  let hovered: Element | undefined
-  const hover = (event: MouseEvent) => {
-    if (!active || stopped) return
-    const target = event.target instanceof Element ? event.target : undefined
-    const block = target && !target.closest(CONTROLS) ? seenBlock(target) : undefined
-    if (block === hovered) return
-    hovered?.removeAttribute(HOVER)
-    hovered = block
-    hovered?.setAttribute(HOVER, '')
-  }
-  const click = (event: MouseEvent) => {
-    if (!active || stopped) return
-    const target = event.target instanceof Element ? event.target : undefined
-    if (!target || event.button !== 0 || target.closest(CONTROLS)) return
-    if (document.getSelection()?.isCollapsed === false) return
-    const anchor = anchorOf(target)
-    if (!anchor) return
-    event.preventDefault()
-    event.stopImmediatePropagation()
-    const at = anchor.block ? page.stepOf?.({ section: anchor.section, block: anchor.block }) : undefined
-    post({ type: 'picked', ...anchor, ...at ? { step: at.step, trail: at.trail } : {} })
-  }
-  const setPicking = (on: boolean) => {
-    if (on === picking) return
-    picking = on
-    if (on) {
-      document.addEventListener('mouseover', hover, true)
-      document.addEventListener('click', click, true)
-      return
-    }
-    document.removeEventListener('mouseover', hover, true)
-    document.removeEventListener('click', click, true)
-    hovered?.removeAttribute(HOVER)
-    hovered = undefined
-  }
-
-  let selected = false
-  let selecting: ReturnType<typeof setTimeout> | undefined
-  const selection = () => {
-    clearTimeout(selecting)
-    if (!active || stopped) return
-    selecting = setTimeout(() => {
-      if (!active || stopped) return
-      const range = document.getSelection()
-      const value = range && !range.isCollapsed ? range.toString().trim() : ''
-      const node = range?.rangeCount ? range.getRangeAt(0).commonAncestorContainer : undefined
-      const anchor = value && node ? anchorOf(node instanceof Element ? node : node.parentElement ?? document.body) : undefined
-      if (anchor) {
-        selected = true
-        post({ type: 'selection', selection: { ...anchor, text: value.slice(0, 4000) } })
-      } else if (selected) {
-        selected = false
-        post({ type: 'selection', selection: null })
-      }
-    }, 200)
-  }
-  document.addEventListener('selectionchange', selection)
-
-  const observer = new MutationObserver(() => {
-    if (highlight || pins.length > 0) redraw()
-  })
-  if (active) observer.observe(document.body, { childList: true, subtree: true })
-
-  const changeActivity = (command: Extract<PreviewCommand, { type: 'activity' }>) => {
-    if (!page.setActive) return
-    activity = activity.then(async () => {
-      if (stopped) return
-      active = false
-      window.name = `${FRAME_NAME}${nonce}${PAUSED}`
-      clearTimeout(timer)
-      timer = undefined
-      clearTimeout(selecting)
-      clearTimeout(highlighting)
-      cancelAnimationFrame(frame)
-      frame = 0
-      observer.disconnect()
-      hovered?.removeAttribute(HOVER)
-      hovered = undefined
-      try {
-        await page.setActive!(command.active)
-        if (stopped) return
-        active = command.active
-        window.name = `${FRAME_NAME}${nonce}${active ? '' : PAUSED}`
-        const current = page.revision()
-        post({ type: 'activity', active, request: command.request, ...current === undefined ? {} : { revision: current } })
-        if (active) {
-          observer.observe(document.body, { childList: true, subtree: true })
-          sent = undefined
-          last = 0
-          moved()
-          redraw()
-        }
-      } catch (error) {
-        active = false
-        window.name = `${FRAME_NAME}${nonce}${PAUSED}`
-        post({ type: 'activity', active: false, request: command.request, error: errorMessage(error) })
-      }
-    }).catch((error) => {
-      console.error(`[presmium] the preview activity could not be reported: ${errorMessage(error)}`)
-    })
-  }
-
-  const receive = (event: MessageEvent) => {
-    if (event.source !== window.parent || !page.origins.includes(event.origin)) return
-    const command = readPreviewCommand(event.data, nonce)
-    if (!command) return
-    try {
-      switch (command.type) {
-        case 'go': return page.go(command)
-        case 'highlight': return showHighlight(command.target)
-        case 'pick': return setPicking(command.on)
-        case 'pins':
-          pins = command.targets
-          return drawPins()
-        case 'marks': return void root.classList.toggle(AUTHOR_MARKS_CLASS, command.on)
-        case 'appearance': return page.setDark(command.dark)
-        case 'activity': return changeActivity(command)
-      }
-    } catch (error) {
-      console.error(`[presmium] the preview could not take ${command.type}: ${errorMessage(error)}`)
-    }
-  }
-  window.addEventListener('message', receive)
-
-  let timer: ReturnType<typeof setTimeout> | undefined
-  let last = 0
-  const sendPosition = () => {
-    timer = undefined
-    if (stopped) return
-    const position = page.position()
-    if (!position) return
-    if (!ready) {
-      ready = true
-      revision = page.revision()
-      post({ type: 'ready', renderer: page.renderer, document: page.document, ...revision ? { revision } : {}, capabilities })
-    }
-    if (!active) return
-    for (const problem of waiting.splice(0)) post(problem)
-    const key = JSON.stringify(position)
-    if (key === sent) return
-    sent = key
-    last = Date.now()
-    post({ type: 'position', ...position })
-  }
-  const moved = () => {
-    if (stopped || timer || (!active && ready)) return
-    timer = setTimeout(sendPosition, Math.max(0, 150 - (Date.now() - last)))
-  }
-  moved()
-
-  return {
-    moved,
-    updated() {
-      if (!active || stopped) return
-      const next = page.revision()
-      if (!ready || next === revision) return
-      revision = next
-      post({ type: 'updated', ...next ? { revision: next } : {} })
-      redraw()
-    },
-    redraw,
-    report(problem) {
-      if (stopped) return
-      const message = { type: 'report' as const, ...problem }
-      if (ready && active) post(message)
-      else waiting.push(message)
-    },
-    stop() {
-      stopped = true
-      window.removeEventListener('message', receive)
-      window.removeEventListener('keydown', shortcut)
-      document.removeEventListener('selectionchange', selection)
-      observer.disconnect()
-      setPicking(false)
-      clearTimeout(timer)
-      clearTimeout(selecting)
-      clearTimeout(highlighting)
-      cancelAnimationFrame(frame)
-      delete root.dataset.presmiumPreview
-    },
   }
 }

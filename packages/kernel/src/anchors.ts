@@ -1,4 +1,4 @@
-import type { AnchorResolver, AnchorResolverRegistry, Resolution } from './contracts.ts'
+import type { AnchorResolver, AnchorResolverRegistry, Resolution } from './contracts/anchors.ts'
 import { errorMessage } from './errors.ts'
 
 const SCHEME = /^[a-z][a-z0-9+.-]*$/i
@@ -51,4 +51,8 @@ export function createAnchorResolverRegistry(resolvers: AnchorResolver[] = []): 
   }
   for (const resolver of resolvers) registry.register(resolver)
   return registry
+}
+
+export function isRenderable(resolution: Resolution): boolean {
+  return resolution.status === 'exact' || resolution.status === 'moved'
 }

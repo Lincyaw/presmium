@@ -3,7 +3,7 @@ import validRange from 'semver/ranges/valid.js'
 import { KERNEL_VERSION } from './contracts.ts'
 import type { PluginManifest, ServiceToken } from './contracts.ts'
 
-export const HOST_OWNER = 'host'
+const HOST_OWNER = 'host'
 
 export interface StartPlan {
   order: string[]

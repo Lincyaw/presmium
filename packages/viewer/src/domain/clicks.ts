@@ -1,4 +1,4 @@
-import { stepStateAt } from '@lincyaw/kernel/contracts'
+import { stepStateAt } from '@lincyaw/kernel'
 
 export interface ClickSpec {
   kind: 'click' | 'after'

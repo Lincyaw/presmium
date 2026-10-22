@@ -1,4 +1,4 @@
-import type { RunResult } from './contracts.ts'
+import type { RunResult } from './contracts/execution.ts'
 
 const ALIASES: Record<string, string> = {
   py: 'python',
@@ -19,3 +19,7 @@ export function failedRun(executorId: string, stderr: string, durationMs = 0): R
 }
 
 export const CREDENTIAL_VARIABLE = /_(?:KEY|TOKEN|SECRET|PASSWORD|APPID)$/i
+
+export function environmentExecutor(name: string): string {
+  return `presmium.env.${name}`
+}

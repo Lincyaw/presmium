@@ -578,7 +578,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 | bundle | `@lincyaw/dsh` | dsh 的扩展包（不是 Presmium 自己的插件包）：宿主部分的行（工具、确认策略、上下文、技能、文档的工作区登记、turn 与审阅、路由）与客户端部分（根布局插件与面板） |
 | 根布局插件 | `@lincyaw/dsh` 的客户端部分 | 占据 dsh 客户端 `root` 槽位、决定整页布局的客户端插件，替换 dsh 自带的 `ui-layout` |
 | 预览协议 | `PREVIEW_PROTOCOL`（`packages/kernel/src/contracts/preview.ts`） | 工作台与嵌在它里面的产物页面之间的 `postMessage` 消息约定，只传章节、块与步骤的 ID |
-| 预览代理 | 网页与幻灯片的客户端中的一小段脚本 | 产物页面中实现预览协议的部分，只在工作区服务启动的开发服务器的页面中 |
+| 预览代理 | `connectPreviewFrame`（`packages/kernel/src/preview-frame.ts`），由网页与幻灯片的客户端调用 | 产物页面中实现预览协议的部分，只在工作区服务启动的开发服务器的页面中 |
 | 当前诊断 | `DiagnosticSnapshot` | 编译、检查、预览、运行时与服务的当前问题，由工作区服务合并，按文稿经 SSE 与 MCP 订阅；生命周期见 `design-dsh.md` 5.4 节 |
 | 焦点 | `Focus` | 用户指向的一处：源码中的一段，带上它在文稿中的位置（见下） |
 | 当前位置 | `AgentContext` 的文档、章节、步骤与视图 | 没有选中任何东西时的被动焦点，对话时自动带上 |

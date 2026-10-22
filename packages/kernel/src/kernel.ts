@@ -11,7 +11,7 @@ import type {
   ServiceToken,
   StartReport,
 } from './contracts.ts'
-import { errorMessage } from './errors.ts'
+import { errorMessage, isRecord } from './errors.ts'
 import { createEventBus } from './events.ts'
 import { prefixed } from './logging.ts'
 import { ServiceRegistry } from './services.ts'
@@ -148,8 +148,9 @@ export class Kernel {
     const assertDeclared = (token: ServiceToken<unknown>) => {
       if (!declared.has(token.id)) throw new Error(`${id} did not declare service ${token.id} in its manifest`)
     }
+    const config = this.#config[id]
     return {
-      config: pluginConfig(this.#config[id]),
+      config: isRecord(config) ? { ...config } : {},
       mode: this.mode,
       provide: (token, impl) => {
         if (!provides.some(t => t.id === token.id)) {
@@ -170,8 +171,4 @@ export class Kernel {
       ...this.#environments ? { environments: this.#environments } : {},
     }
   }
-}
-
-function pluginConfig(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value) ? { ...value } : {}
 }

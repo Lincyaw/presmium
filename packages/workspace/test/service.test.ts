@@ -86,7 +86,7 @@ describe('presmium serve: the workspace service for a workbench', () => {
     expect(addons.text).toContain('addon-core')
     expect(addons.text).not.toMatch(/addon-assistant|packages\/workspace\/src\/client/)
     const theme = await raw(`${url}/talk/.vitepress/theme/index.ts`)
-    expect(theme.text).toContain('web/src/client/preview.ts')
+    expect(theme.text).toContain('web/src/client/preview-frame.ts')
   }, 300_000)
 
   it('answers the IR with its revision, pushes the revision of a saved source, gives the previews\' addresses, builds outside the document and checks', async () => {

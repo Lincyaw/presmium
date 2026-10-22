@@ -1,4 +1,4 @@
-import { stepStateAt } from '@lincyaw/kernel/contracts'
+import { stepStateAt } from '@lincyaw/kernel'
 import type { PresentationMode, ServiceToken, StartReport, StepRange, StepState } from '@lincyaw/kernel/contracts'
 import type { App, ComputedRef, Ref } from 'vue'
 import { computed, getCurrentInstance, getCurrentScope, inject, onScopeDispose, readonly, ref } from 'vue'
