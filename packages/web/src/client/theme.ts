@@ -55,7 +55,7 @@ async function startKernel(loaders: ThemeInput['plugins'], doc: IRDocument, view
     console.error('[presmium] a plugin module failed to load', error)
     return {}
   })))
-  const plugins = modules.flatMap(module => pluginsOf(module, config))
+  const plugins = modules.flatMap(module => pluginsOf(module))
   const restartable = !failed && plugins.every(plugin => plugin.restartable === true)
   if (!enabled()) return { started: false, restartable }
   plugins.forEach(registerPresmiumPlugin)

@@ -1,31 +1,32 @@
 <script setup lang="ts">
+// A bar that fills with an animation, or shows full at once with reduced motion.
 import { usePrefersReducedMotion } from '@lincyaw/host'
 
 const reduced = usePrefersReducedMotion()
 </script>
 
 <template>
-  <div class="pm-demo-animated" :data-motion="reduced ? 'reduced' : 'full'">
-    <div class="pm-demo-animated__bar" :class="{ 'pm-demo-animated__bar--animate': !reduced }" />
+  <div class="demo-animated" :data-motion="reduced ? 'reduced' : 'full'">
+    <div class="demo-animated__bar" :class="{ 'demo-animated__bar--animate': !reduced }" />
   </div>
 </template>
 
 <style scoped>
-.pm-demo-animated {
+.demo-animated {
   height: 0.75rem;
   border-radius: var(--pm-radius-pill);
   background: var(--pm-color-sunk);
   overflow: hidden;
 }
-.pm-demo-animated__bar {
+.demo-animated__bar {
   height: 100%;
   background: var(--pm-color-accent);
   transform-origin: left;
 }
-.pm-demo-animated__bar--animate {
-  animation: pm-demo-fill 2.5s ease-out both;
+.demo-animated__bar--animate {
+  animation: demo-fill 2.5s ease-out both;
 }
-@keyframes pm-demo-fill {
+@keyframes demo-fill {
   from {
     transform: scaleX(0);
   }

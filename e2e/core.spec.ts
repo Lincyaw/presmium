@@ -127,11 +127,11 @@ test.describe('the fixture deck in the slides form', () => {
   test('jumping to step 3 renders the same DOM as stepping there from step 0', async ({ page }) => {
     const layout = page.locator('.slidev-layout.fx-steps').first()
     await open(page, slide('steps', '?clicks=3'))
-    await expect(layout.locator('.pm-demo-stepper')).toHaveAttribute('data-step', '3')
+    await expect(layout.locator('.demo-stepper')).toHaveAttribute('data-step', '3')
     const expected = await layout.innerHTML()
 
     await open(page, slide('steps'))
-    const stepper = layout.locator('.pm-demo-stepper')
+    const stepper = layout.locator('.demo-stepper')
     await expect(stepper).toHaveAttribute('data-step', '0')
     for (const step of ['1', '2', '3']) {
       await page.keyboard.press('ArrowRight')
@@ -143,7 +143,7 @@ test.describe('the fixture deck in the slides form', () => {
   test('a component counts its steps from its block: at its first internal step it looks the same wherever the block appears', async ({ page }) => {
     const stepper = async (url: string, layout: string) => {
       await open(page, url)
-      const stepper = page.locator(`.slidev-layout.${layout} .pm-demo-stepper`).first()
+      const stepper = page.locator(`.slidev-layout.${layout} .demo-stepper`).first()
       await expect(stepper).toHaveAttribute('data-step', '1')
       await expect(stepper.locator('li[data-status="active"]')).toHaveText('Parse')
       return (await stepper.innerHTML()).replace(/ data-slidev-clicks-(start|end)="\d+"/g, '')
@@ -153,7 +153,7 @@ test.describe('the fixture deck in the slides form', () => {
     expect(late).toBe(early)
 
     await page.keyboard.press('ArrowLeft')
-    await expect(page.locator('.slidev-layout.fx-late-steps .pm-demo-stepper').first()).toHaveAttribute('data-step', '0')
+    await expect(page.locator('.slidev-layout.fx-late-steps .demo-stepper').first()).toHaveAttribute('data-step', '0')
   })
 
   test('narration becomes the speaker notes, highlighted at the step it belongs to', async ({ page }) => {
@@ -179,20 +179,20 @@ test.describe('the fixture deck in the slides form', () => {
 
   test('a consumer plugin gets the provider service; a plugin missing a required service is disabled', async ({ page }) => {
     await open(page, slide('services'))
-    await expect(shown(page, 'services').locator('.pm-demo-greeting')).toHaveText('presmium.demo.consumer got a greeting from presmium.demo.provider')
+    await expect(shown(page, 'services').locator('.demo-greeting')).toHaveText('fixture.host.consumer got a greeting from fixture.host.provider')
 
     await open(page, presenter('services'))
     const report = (await openPanels(page)).locator('.pm-start-report')
-    await expect(report.locator('[data-plugin="presmium.demo.provider"]')).toHaveAttribute('data-status', 'started')
-    await expect(report.locator('[data-plugin="presmium.demo.consumer"]')).toHaveAttribute('data-status', 'started')
-    const orphan = report.locator('[data-plugin="presmium.demo.orphan"]')
+    await expect(report.locator('[data-plugin="fixture.host.provider"]')).toHaveAttribute('data-status', 'started')
+    await expect(report.locator('[data-plugin="fixture.host.consumer"]')).toHaveAttribute('data-status', 'started')
+    const orphan = report.locator('[data-plugin="fixture.host.orphan"]')
     await expect(orphan).toHaveAttribute('data-status', 'disabled')
-    await expect(orphan).toContainText('presmium.demo.missing')
+    await expect(orphan).toContainText('fixture.host.missing')
   })
 
   test('with reduced motion the animated component shows its final state at once', async ({ page }) => {
     const animations = (bar: Locator) => bar.evaluate(el => el.getAnimations().length)
-    const bar = shown(page, 'services').locator('.pm-demo-animated__bar')
+    const bar = shown(page, 'services').locator('.demo-animated__bar')
 
     await open(page, slide('services'))
     expect(await animations(bar)).toBe(1)

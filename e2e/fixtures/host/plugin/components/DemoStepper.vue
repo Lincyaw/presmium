@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// Steps through its labels: block step k of the component highlights label k (useStepScope, useStepState).
 import { useStepScope, useStepState } from '@lincyaw/host'
 import { computed } from 'vue'
 
@@ -17,7 +18,7 @@ function status(i: number): string {
 </script>
 
 <template>
-  <ol class="pm-demo-stepper" :data-step="reached">
+  <ol class="demo-stepper" :data-step="reached">
     <li v-for="(label, i) in steps" :key="label" v-click="scope.step(i + 1)" :data-status="status(i)">
       {{ label }}
     </li>
@@ -25,11 +26,11 @@ function status(i: number): string {
 </template>
 
 <style scoped>
-.pm-demo-stepper li[data-status='active'] {
+.demo-stepper li[data-status='active'] {
   font-weight: 700;
   color: var(--pm-color-accent);
 }
-.pm-demo-stepper li[data-status='done'] {
+.demo-stepper li[data-status='done'] {
   color: var(--pm-color-muted);
 }
 </style>

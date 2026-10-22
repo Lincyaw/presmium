@@ -25,7 +25,7 @@ export function createSlidevNavigation(sections = useSlideSections()): Navigatio
     go(position: NavigationPosition & FollowAnchor) {
       const own = sections()
       if (position.section === undefined || !own.named) return void go(position.slide, position.step)
-      const place = own.placeOf(position)
+      const place = own.slideAt(position)
       if (place) void go(place.no, place.step)
     },
   }

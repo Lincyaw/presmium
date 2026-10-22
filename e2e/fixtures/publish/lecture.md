@@ -12,9 +12,9 @@ plugins:
   - '@lincyaw/slidev-addon-publish'
   - '@lincyaw/slidev-addon-session'
   - '@lincyaw/slidev-addon-classroom'
-presmium:
-  presmium.core:
-    demo: true
+  - ./host/plugin
+  - ./host/services
+  - ./content/plugin
 renderers:
   web: {}
   slides:

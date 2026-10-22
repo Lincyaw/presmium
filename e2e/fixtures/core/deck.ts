@@ -8,5 +8,5 @@ export type { FixtureDeck }
 
 /** Builds and serves the fixture deck; `edit` may change the copy first. */
 export function fixtureDeck(edit?: (dir: string) => void): Promise<FixtureDeck> {
-  return buildFixture('core/deck', { link: { '@lincyaw/host': 'packages/host' }, bases: true, edit })
+  return buildFixture('core/deck', { with: ['host/plugin', 'host/services'], link: { '@lincyaw/host': 'packages/host' }, bases: true, edit })
 }

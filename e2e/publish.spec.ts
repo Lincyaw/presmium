@@ -5,7 +5,7 @@ import type { BrowserContext, Locator, Page } from '@playwright/test'
 import { useFixture } from './fixtures/deck.ts'
 
 test.describe.configure({ mode: 'default' })
-const deck = useFixture('publish', { with: ['host', 'stage', 'code', 'exec/panels', 'exec-local', 'guide', 'content', 'session', 'plugins/classroom.md'] })
+const deck = useFixture('publish', { with: ['host', 'stage', 'code', 'exec/panels', 'exec-local', 'guide', 'content', 'session', 'plugins/classroom.md'], link: { '@lincyaw/host': 'packages/host' } })
 const slides = (path: string | number) => `${deck().slides}/${path}`
 
 async function openPublish(page: Page): Promise<Locator> {

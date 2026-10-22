@@ -4,7 +4,7 @@ import { isRecord } from '@lincyaw/kernel'
 import { configs, useNav, useSlideContext } from '@slidev/client'
 import { computed } from 'vue'
 import { presmiumConfig } from '../domain/index.ts'
-import { sharedStates } from './shared.ts'
+import { sharedStates } from './shared-states.ts'
 
 function record(value: unknown): Record<string, unknown> {
   return isRecord(value) ? value : {}

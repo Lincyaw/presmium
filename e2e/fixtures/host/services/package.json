@@ -1,0 +1,15 @@
+{
+  "name": "presmium-fixture-host-services",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of the host fixtures: kernel plugins that provide, use and miss a service (DemoGreeting of ../plugin shows the service)",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "slidev": {}
+}

@@ -174,7 +174,7 @@ export function createSiteHomeTheme(input: SiteHomeInput): Theme {
         console.error('[presmium] a plugin module failed to load', error)
         return {}
       }))).then((modules) => {
-        modules.flatMap(module => pluginsOf(module, {})).forEach(registerPresmiumPlugin)
+        modules.flatMap(module => pluginsOf(module)).forEach(registerPresmiumPlugin)
         return startHost({ mode: 'document', config: {}, navigation, transports: shared.transports })
       })
     },

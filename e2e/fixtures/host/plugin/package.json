@@ -1,0 +1,16 @@
+{
+  "name": "presmium-fixture-host",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of the host fixtures: components that step, show a service, animate and fail",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "exports": {
+    "./presmium": "./presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "slidev": {}
+}

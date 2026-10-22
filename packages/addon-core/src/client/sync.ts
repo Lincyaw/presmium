@@ -1,18 +1,19 @@
 import type { SyncTransports } from '@lincyaw/host'
 import { addSyncMethod } from '@slidev/client'
-import { drawingsIn, drawingsOut, sharedOut, sharedReceiver, slideSections } from '../domain/index.ts'
+import { createSharedStateIn, drawingsIn, drawingsOut, sharedStateOut, slideSections } from '../domain/index.ts'
 import type { SlideSections } from '../domain/index.ts'
-import { sharedStates } from './shared.ts'
+import { sharedStates } from './shared-states.ts'
 
 type SlidevSync = Parameters<typeof addSyncMethod>[0]
 type State = Record<string, unknown>
 
-const NAVIGATION = ' - shared'
-const DRAWINGS = ' - drawings'
+// Slidev's sync channels: its shared state (page, clicks, cursor) and its drawings.
+const SHARED_STATE_CHANNEL = ' - shared'
+const DRAWINGS_CHANNEL = ' - drawings'
 
-function translation(channel: string, sections: () => SlideSections): { out(state: State): State, in(patch: State): State } {
-  if (channel.endsWith(NAVIGATION)) return { out: state => sharedOut(state, sections()), in: sharedReceiver(sections) }
-  if (channel.endsWith(DRAWINGS)) return { out: state => drawingsOut(state, sections()), in: patch => drawingsIn(patch, sections()) }
+function channelTranslation(channel: string, sections: () => SlideSections): { out(state: State): State, in(patch: State): State } {
+  if (channel.endsWith(SHARED_STATE_CHANNEL)) return { out: state => sharedStateOut(state, sections()), in: createSharedStateIn(sections) }
+  if (channel.endsWith(DRAWINGS_CHANNEL)) return { out: state => drawingsOut(state, sections()), in: patch => drawingsIn(patch, sections()) }
   return { out: state => state, in: patch => patch }
 }
 
@@ -25,7 +26,7 @@ export function createSyncTransports(sections?: () => SlideSections): SyncTransp
       const sync: SlidevSync = {
         init(channel, onUpdate, state, persist) {
           if (!attached) return undefined
-          const { out, in: received } = translation(channel, slides)
+          const { out, in: received } = channelTranslation(channel, slides)
           const receive = (patch: State) => {
             if (attached) onUpdate(received(patch) as Parameters<typeof onUpdate>[0])
           }

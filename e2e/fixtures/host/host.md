@@ -5,22 +5,22 @@
 slides: { class: pm-core }
 :::
 
-本章演示宿主适配：插件之间通过服务协作，组件的状态由步骤推导，动画尊重减少动态效果的设置，出错的组件只影响自身。三个演示插件由文稿 frontmatter 中的 `presmium.core.demo` 启用。
+本章演示宿主适配：插件之间通过服务协作，组件的状态由步骤推导，动画尊重减少动态效果的设置，出错的组件只影响自身。组件与三个演示插件来自本目录的测试插件 `plugin` 与 `services`。
 
 :::{slide}
 **服务依赖**：消费方插件拿到提供方的实现
 :::
 
-:::{component} PmDemoGreeting
+:::{component} DemoGreeting
 :::
 
-presmium.demo.provider 提供问候服务，presmium.demo.consumer 依赖它，presmium.demo.orphan 缺少必需服务而被禁用。启动报告显示在演讲者视图的 Presmium 面板中。
+fixture.host.provider 提供问候服务，fixture.host.consumer 依赖它，fixture.host.orphan 缺少必需服务而被禁用。启动报告显示在演讲者视图的 Presmium 面板中。
 
 :::{slide}
 **步骤驱动**：状态由步骤推导，跳转与逐步前进一致
 :::
 
-:::{component} PmDemoStepper
+:::{component} DemoStepper
 :span: 3
 steps: [解析文稿, 启动插件, 渲染页面]
 :::
@@ -37,20 +37,20 @@ steps: [解析文稿, 启动插件, 渲染页面]
 **动画**：减少动态效果时直接显示终态
 :::
 
-:::{component} PmDemoAnimated
+:::{component} DemoAnimated
 :::
 
 :::{slide}
 **错误边界**：出错的组件只影响自身
 :::
 
-:::{component} PmDemoBroken
+:::{component} DemoBroken
 :::
 
 故意抛错的组件显示错误占位，本页其他内容照常渲染，错误同时列在演讲者面板中。
 
 :::{only} web
-网页形态中才出现的补充说明：本章的演示插件由 `presmium.core.demo` 配置启用。
+网页形态中才出现的补充说明：本章的演示插件来自测试插件 `services`。
 :::
 
 (core-scope)=
@@ -72,7 +72,7 @@ slides: { class: pm-core-scope }
 **第二步**：步进组件随后出现，从这一步开始数它自己的步骤
 :::
 
-:::{component} PmDemoStepper
+:::{component} DemoStepper
 :span: 3
 steps: [解析文稿, 启动插件, 渲染页面]
 :::

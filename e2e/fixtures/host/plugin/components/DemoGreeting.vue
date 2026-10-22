@@ -1,7 +1,10 @@
 <script setup lang="ts">
+// Shows the greeting service of fixture.host.consumer (../services), or why there is none.
 import { useMessages, useService, useStartReport } from '@lincyaw/host'
+import type { ServiceToken } from '@lincyaw/kernel'
 import { computed } from 'vue'
-import { DEMO_GREETING } from '../src/client/demo.ts'
+
+const GREETING = Object.freeze({ id: 'fixture.host.greeting' }) as ServiceToken<string>
 
 const MESSAGES = {
   'zh-CN': { unavailable: '问候服务不可用', starting: '内核启动中……' },
@@ -9,13 +12,13 @@ const MESSAGES = {
 }
 
 const t = useMessages(MESSAGES)
-const greeting = useService(DEMO_GREETING)
+const greeting = useService(GREETING)
 const report = useStartReport()
 const text = computed(() => greeting.value ?? (report.value ? t.value.unavailable : t.value.starting))
 </script>
 
 <template>
-  <p class="pm-demo-greeting">
+  <p class="demo-greeting">
     {{ text }}
   </p>
 </template>

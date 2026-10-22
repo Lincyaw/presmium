@@ -495,7 +495,7 @@ test.describe('steps in the web form (e2e/fixtures/viewer/steps)', () => {
   let site: FixtureDeck
   test.beforeAll(async () => {
     test.setTimeout(300_000)
-    site = await buildFixture('viewer/steps', { to: 'web' })
+    site = await buildFixture('viewer/steps', { to: 'web', with: ['host/plugin'], link: { '@lincyaw/host': 'packages/host' } })
   })
   test.afterAll(() => site?.close())
 
@@ -504,7 +504,7 @@ test.describe('steps in the web form (e2e/fixtures/viewer/steps)', () => {
     const { steps } = site.doc.sections.find(s => s.id === 'walk')!
     const settledAt = async (step: number) => {
       await expect(present).toHaveAttribute('data-step', String(step))
-      await expect(present.locator('.pm-demo-stepper')).toBeAttached()
+      await expect(present.locator('.demo-stepper')).toBeAttached()
       if (step === steps) await expect(present.locator('.pm-code[data-lang="python"] .line span').first()).toBeVisible()
       let last = ''
       await expect.poll(async () => {

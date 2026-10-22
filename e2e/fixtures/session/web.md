@@ -47,7 +47,7 @@ web: { layout: scrolly }
 
 第三步，发布站点。搜索索引在构建时从 IR 文本生成，随网页一起发布。
 
-:::{component} PmDemoStepper
+:::{component} DemoStepper
 :span: 2
 steps: [离线缓存, 形态互跳]
 :::

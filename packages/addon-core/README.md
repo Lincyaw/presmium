@@ -22,7 +22,6 @@ It is a Presmium plugin and a Slidev addon: its components work on the web page 
 ## What it provides
 
 - The Slidev side of `@lincyaw/host` (steps, navigation, shared state, the toolbar), so plugin components render in the slides.
-- Demonstration components (`PmDemo*`).
 
 List it in every document that builds slides.
 

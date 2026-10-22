@@ -11,8 +11,3 @@ export function presmiumEnvironments(matter: unknown): Record<string, Environmen
   if (!isRecord(matter) || !isRecord(matter.presmiumEnvironments)) return undefined
   return Object.fromEntries(Object.entries(matter.presmiumEnvironments).filter(([, spec]) => isRecord(spec) && typeof spec.kind === 'string')) as Record<string, EnvironmentSpec>
 }
-
-export function wantsDemo(presmium: Record<string, unknown>): boolean {
-  const core = presmium[CORE_ID]
-  return isRecord(core) && core.demo === true
-}
