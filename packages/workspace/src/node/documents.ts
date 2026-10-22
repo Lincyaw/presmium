@@ -1,9 +1,8 @@
 import { existsSync, mkdirSync, readdirSync, renameSync, rmdirSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { Member } from '@lincyaw/kernel'
-import type { DocumentOperation, LockedAnswer, OperationAnswer, WorkspaceDocument } from '../domain/api.ts'
+import type { DocumentOperation, DocumentSummary, LockedAnswer, Member, OperationAnswer, RevisionOperation } from '@lincyaw/kernel'
 import { invalidDocumentDir, within } from '../domain/paths.ts'
-import type { CommitOrigin, RevisionOperation } from '../domain/revisions.ts'
+import type { CommitOrigin } from '../domain/revisions.ts'
 import { listDocuments, namedByPatterns } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
 import { templatesDir } from './files.ts'
@@ -79,7 +78,7 @@ export class Documents {
     return this.#locks
   }
 
-  list(): WorkspaceDocument[] {
+  list(): DocumentSummary[] {
     return listDocuments(this.config).map(({ entry: _entry, ...document }) => document)
   }
 

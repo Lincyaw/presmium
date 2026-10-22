@@ -4,9 +4,9 @@ import { createMcpHandler, fromJsonSchema, McpServer, ResourceTemplate, UriTempl
 import type { AuthInfo, CallToolResult, JsonSchemaType, Variables } from '@modelcontextprotocol/server'
 import { serveStdio } from '@modelcontextprotocol/server/stdio'
 import { deckLocale, diagnosticOf, docBlocks, errorMessage, isRecord, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
-import type { AgentTool, ApprovalKind, ApprovalScope, CodeNode, DiagnosticSnapshot, Finding, IRDocument, Member, MemberRole } from '@lincyaw/kernel'
+import type { AgentTool, ApprovalKind, ApprovalScope, CodeNode, DiagnosticSnapshot, DocumentSummary, Finding, IRDocument, Member, MemberRole } from '@lincyaw/kernel'
 import { codeRef, deckInfo, diagnosticsOf, findBlock, findSection, locate, outputsOf, place, runInfo, search, sectionDetail, sectionSummary, stepDetail } from './deck.ts'
-import type { McpCaller, McpDocument, McpHost, McpProcess } from './host.ts'
+import type { McpCaller, McpHost, McpProcess } from './host.ts'
 import { MCP_MESSAGES } from './messages.ts'
 import type { McpMessages } from './messages.ts'
 
@@ -372,7 +372,7 @@ function pluginInfo(tool: AgentTool): McpToolInfo {
 interface Offered {
   builtIn: ToolSpec[]
   plugins: AgentTool[]
-  documents: McpDocument[]
+  documents: DocumentSummary[]
 }
 
 async function offer(host: McpHost, caller: McpCaller): Promise<Offered> {

@@ -80,6 +80,6 @@ Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、
 
 - 工作台 `presmium studio` 的包：`@lincyaw/studio`、`@lincyaw/dsh`、`@lincyaw/workbench`（0.x）的全部导出与界面；
 - 工作区服务为工作台提供的路由（文档、文件、源码、修改、修改历史与审阅）；
-- 契约 `Focus`、`FocusReport`、`McpIssueOptions`，`@lincyaw/host` 的 `useToolbarPlacement`、`provideToolbarPlacement`。
+- 契约 `Focus`、`FocusReport`、`McpIssueOptions`，工作区服务的路由的数据类型（`@lincyaw/kernel` 中如 `DocumentsAnswer`、`IrAnswer`、`ReviewSnapshot`），`@lincyaw/host` 的 `useToolbarPlacement`、`provideToolbarPlacement`。
 
 命令 `presmium serve`、工作区配置文件与 Node 端的服务是公开接口；读者问答（`ASK` 与提问面板）是产物的一部分，也是公开接口。插件不要依赖实验性接口，依赖时在自己的对等依赖中写确切的版本。

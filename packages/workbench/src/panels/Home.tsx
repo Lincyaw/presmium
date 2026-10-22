@@ -1,12 +1,12 @@
 import { Command } from 'cmdk'
 import { useEffect, useRef, useState } from 'react'
-import type { DocumentOperation, WorkspaceDocument } from '../api.ts'
+import type { DocumentOperation, DocumentSummary } from '../api.ts'
 import { PmBadge, PmButton, PmCard, PmDialog, PmEmpty, PmField, PmIcon, PmMenu, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
 
 type Editing =
   | { op: 'create' }
-  | { op: 'rename' | 'copy' | 'delete', doc: WorkspaceDocument }
+  | { op: 'rename' | 'copy' | 'delete', doc: DocumentSummary }
 
 function freeDir(dir: string, taken: string[]): string {
   for (let n = 2; ; n++) {
@@ -152,7 +152,7 @@ function OperationDialog({ editing, templates, taken, error, onClose, onRun }: {
   )
 }
 
-function Search({ documents, onCreate }: { documents: WorkspaceDocument[], onCreate(): void }) {
+function Search({ documents, onCreate }: { documents: DocumentSummary[], onCreate(): void }) {
   const t = useMessages()
   const workbench = useWorkbenchStore()
   const [query, setQuery] = useState('')

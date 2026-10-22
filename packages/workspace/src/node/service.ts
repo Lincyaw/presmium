@@ -5,32 +5,10 @@ import { dev, relativeIR } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import { errorMessage, PREVIEW_REVISION } from '@lincyaw/kernel'
 import { irRevision } from '@lincyaw/kernel/node'
-import type { Finding, IRDocument, Logger, ProxySpec } from '@lincyaw/kernel'
+import type { Finding, IrAnswer, IRDocument, IrEvent, Logger, PreviewAnswer, PreviewRenderer, ProxySpec } from '@lincyaw/kernel'
 import type { DiagnosticStore, ServerHost } from '@lincyaw/server'
 import { WORKSPACE_ID } from '../domain/api.ts'
 import type { DocumentSession } from './session.ts'
-
-export interface IrAnswer {
-  document: string
-  revision: string
-  doc: IRDocument
-  diagnostics: Finding[]
-}
-
-export interface IrEvent {
-  document: string
-  revision: string
-  diagnostics: { errors: number, warnings: number }
-  files: string[]
-}
-
-export type PreviewView = 'web' | 'slides'
-
-export interface PreviewAnswer {
-  document: string
-  web: string
-  slides?: string
-}
 
 export interface BuildAnswer {
   outputs: { renderer: string, outDir: string }[]
@@ -44,7 +22,7 @@ export interface CheckAnswer {
 export interface WorkspaceService {
   ir(document: string): Promise<IrAnswer>
   events(document: string, signal: AbortSignal): AsyncIterable<{ event: string, data: IrEvent }>
-  preview(document: string, view?: PreviewView): Promise<PreviewAnswer>
+  preview(document: string, view?: PreviewRenderer): Promise<PreviewAnswer>
   build(document: string, to?: string[]): Promise<BuildAnswer>
   check(document: string): Promise<CheckAnswer>
   proxies: ProxySpec[]

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { errorMessage } from '@lincyaw/kernel'
-import type { ChangeReviewService, DocumentFiles, Logger, Member, Revision, ReviewChange, ReviewStep } from '@lincyaw/kernel'
+import type { ChangeReviewService, DocumentFiles, Logger, Member, ReviewEnd, ReviewSnapshot, ReviewUpdate } from '@lincyaw/kernel'
 import { trailers } from '../../domain/revisions.ts'
 import type { WorkspaceConfig } from '../config.ts'
 import { listDocuments } from '../config.ts'
@@ -17,34 +17,8 @@ import { readRecord } from './review-record.ts'
 export const SESSION_TRAILER = 'Presmium-Session'
 export const TURN_TRAILER = 'Presmium-Turn'
 
-export interface ReviewView {
-  id: string
-  document: string
-  engine: string
-  session: string
-  holder: string
-  turns: { from: number, to: number }
-  running: boolean
-  mode: 'required' | 'auto'
-  opened: string
-  steps: ReviewStep[]
-  changes: ReviewChange[]
-}
-
-export interface ReviewEnd {
-  outcome: 'accepted' | 'rejected' | 'rolled-back' | 'empty'
-  revision?: Revision
-  files: string[]
-}
-
-export interface ReviewFollowed {
-  document: string
-  review?: ReviewView
-  ended?: ReviewEnd
-}
-
 export type ReviewEvent =
-  | { type: 'review', document: string, session: string, review?: ReviewView, ended?: ReviewEnd }
+  | { type: 'review', document: string, session: string, review?: ReviewSnapshot, ended?: ReviewEnd }
   | { type: 'reverted', session: string, documents: string[], turns?: string, revision: string, subject: string, revertedBy: string, files: string[] }
 
 export interface ReviewsOptions {
@@ -94,7 +68,7 @@ export class Reviews {
   #open?: Open
   #queue: Promise<unknown> = Promise.resolve()
   readonly #workspaceFiles: DocumentFiles
-  readonly #followers = new Set<(event: ReviewFollowed) => void>()
+  readonly #followers = new Set<(event: ReviewUpdate) => void>()
   readonly #listeners = new Set<(event: ReviewEvent) => void>()
   #closed = false
 
@@ -168,12 +142,12 @@ export class Reviews {
     }
   }
 
-  async view(): Promise<ReviewView | undefined> {
+  async view(): Promise<ReviewSnapshot | undefined> {
     const open = this.#open
     return open && await this.#view(open)
   }
 
-  async #view(open: Open): Promise<ReviewView> {
+  async #view(open: Open): Promise<ReviewSnapshot> {
     return {
       id: open.review.task,
       document: open.document,
@@ -189,9 +163,9 @@ export class Reviews {
     }
   }
 
-  follow(document: string, signal: AbortSignal): AsyncIterable<{ event: string, data: ReviewFollowed }> {
+  follow(document: string, signal: AbortSignal): AsyncIterable<{ event: string, data: ReviewUpdate }> {
     return this.#stream(signal, (push) => {
-      const follow = (event: ReviewFollowed) => push({ ...event, document })
+      const follow = (event: ReviewUpdate) => push({ ...event, document })
       this.#followers.add(follow)
       void this.view().then(review => push({ document, ...review ? { review } : {} }), () => push({ document }))
       this.#rearm()
@@ -237,7 +211,7 @@ export class Reviews {
     }
   }
 
-  open(document: string, body: { session: string, turn?: number }, member: Member): Promise<ReviewView> {
+  open(document: string, body: { session: string, turn?: number }, member: Member): Promise<ReviewSnapshot> {
     return this.#serial(async () => {
       if (this.#closed) throw new RequestError(503, 'the workspace service is closing')
       let open = this.#open
@@ -272,7 +246,7 @@ export class Reviews {
     })
   }
 
-  step(document: string, body: { session: string, turn?: number, label?: string, tool?: string, end?: boolean }): Promise<ReviewView | undefined> {
+  step(document: string, body: { session: string, turn?: number, label?: string, tool?: string, end?: boolean }): Promise<ReviewSnapshot | undefined> {
     return this.#serial(async () => {
       const open = this.#mine(document, body.session)
       this.#turn(open, body.turn)
@@ -319,7 +293,7 @@ export class Reviews {
     return ended
   }
 
-  reject(document: string, body: { paths?: string[] }): Promise<ReviewFollowed> {
+  reject(document: string, body: { paths?: string[] }): Promise<ReviewUpdate> {
     return this.#serial(async () => {
       const open = this.#any(document)
       if (body.paths) {
@@ -334,7 +308,7 @@ export class Reviews {
     })
   }
 
-  restore(document: string, body: { step: string }): Promise<ReviewView> {
+  restore(document: string, body: { step: string }): Promise<ReviewSnapshot> {
     return this.#serial(async () => {
       const open = this.#any(document)
       try {
@@ -386,7 +360,7 @@ export class Reviews {
     open.review.note({ session: open.session, document: open.document, member: open.member, turns: open.turns, opened: open.opened })
   }
 
-  async #changed(open: Open): Promise<ReviewView> {
+  async #changed(open: Open): Promise<ReviewSnapshot> {
     const review = await this.#view(open)
     this.#follow({ document: open.document, review })
     this.#tell({ type: 'review', document: open.document, session: open.session, review })
@@ -401,7 +375,7 @@ export class Reviews {
     this.#tell({ type: 'review', document: open.document, session: open.session, ended })
   }
 
-  #follow(event: ReviewFollowed): void {
+  #follow(event: ReviewUpdate): void {
     for (const push of this.#followers) push(event)
   }
 

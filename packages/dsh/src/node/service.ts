@@ -7,7 +7,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { connectPresmiumMcp } from '@lincyaw/mcp/client'
 import { errorMessage, isRecord } from '@lincyaw/kernel'
-import type { DiagnosticSnapshot } from '@lincyaw/kernel'
+import type { DiagnosticSnapshot, DocumentSummary } from '@lincyaw/kernel'
 import { backgroundPriority, NODE_RESOURCE_ARGS, resourceEnvironment } from '@lincyaw/kernel/node'
 import type { ListedTool, PresmiumMcpClient } from '@lincyaw/mcp/client'
 import type { DshAgent, DshContext, DshLogger } from './dsh.ts'
@@ -26,15 +26,9 @@ export interface Endpoint {
   root: string
 }
 
-export interface WorkspaceDocument {
-  dir: string
-  title: string
-  lang?: string
-}
-
 export interface PresmiumSession {
   id: string
-  document: WorkspaceDocument
+  document: DocumentSummary
   dir: string
   client: PresmiumMcpClient
   tools: ListedTool[]
@@ -122,7 +116,7 @@ function real(path: string): string {
   }
 }
 
-export function documentAt(root: string, dir: string, documents: WorkspaceDocument[]): WorkspaceDocument | undefined {
+export function documentAt(root: string, dir: string, documents: DocumentSummary[]): DocumentSummary | undefined {
   const rel = relative(real(root), real(dir)).split(sep).join('/')
   if (rel.startsWith('..')) return undefined
   return documents.find(doc => doc.dir === rel)
@@ -142,7 +136,7 @@ export class PresmiumService {
   readonly #ctx: DshContext
   readonly #log: DshLogger
   #child: ChildProcess | undefined
-  #documents: { at: number, list: Promise<WorkspaceDocument[]> } | undefined
+  #documents: { at: number, list: Promise<DocumentSummary[]> } | undefined
   readonly #opening = new Map<string, Promise<PresmiumSession | undefined>>()
   readonly #open = new Map<string, PresmiumSession>()
   readonly #failures = new Map<string, string>()
@@ -216,9 +210,9 @@ export class PresmiumService {
     return JSON.parse(text) as T
   }
 
-  documents(): Promise<WorkspaceDocument[]> {
+  documents(): Promise<DocumentSummary[]> {
     if (!this.#documents || Date.now() - this.#documents.at > DOCUMENTS_MS) {
-      const list = this.#json<{ documents: WorkspaceDocument[] }>('/__presmium/presmium.workspace/documents').then(answer => answer.documents)
+      const list = this.#json<{ documents: DocumentSummary[] }>('/__presmium/presmium.workspace/documents').then(answer => answer.documents)
       this.#documents = { at: Date.now(), list }
       list.catch(() => this.#documents = undefined)
     }

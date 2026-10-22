@@ -2,7 +2,7 @@ import * as Tabs from '@radix-ui/react-tabs'
 import type { ReactNode } from 'react'
 import { PmIcon, PmIconButton, PmMenu } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
-import type { PreviewView } from '../store.ts'
+import type { PreviewRenderer } from '../store.ts'
 
 export interface EditorGroupProps {
   split?: boolean
@@ -21,8 +21,8 @@ export function EditorGroup({ kind, split = false, compact = false, header = tru
   const previews = useWorkbench(state => state.previewTabs)
   const home = useWorkbench(state => state.document === '' && state.documents?.single === false)
   const slides = useWorkbench(state => Boolean(state.ir?.doc.config.renderers.slides))
-  const previewName = (view: PreviewView) => t.previewTab(t.views[view])
-  const selectPreview = (view: PreviewView, beside = split) => {
+  const previewName = (view: PreviewRenderer) => t.previewTab(t.views[view])
+  const selectPreview = (view: PreviewRenderer, beside = split) => {
     workbench.openPreview(view, beside && !compact)
     onNavigate?.('preview')
   }
@@ -32,7 +32,7 @@ export function EditorGroup({ kind, split = false, compact = false, header = tru
       workbench.showFile(value.slice(5))
       if (compact) workbench.setLayout('source')
       onNavigate?.('source')
-    } else selectPreview(value.slice(8) as PreviewView)
+    } else selectPreview(value.slice(8) as PreviewRenderer)
   }}>
     <div className={`pmw-editor-group__bar${kind === 'preview' ? ' pmw-preview__bar' : ''}`} hidden={!header}>
       <Tabs.List className="pmw-editor-group__tabs" aria-label={t.editorTabs}>
@@ -59,7 +59,7 @@ export function EditorGroup({ kind, split = false, compact = false, header = tru
         {!home && <PmMenu icon="preview" label={t.openPreview} items={[
           { id: 'web', label: previewName('web'), icon: 'document' },
           { id: 'slides', label: previewName('slides'), icon: 'slides', disabled: !slides },
-        ]} onSelect={value => selectPreview(value as PreviewView)} />}
+        ]} onSelect={value => selectPreview(value as PreviewRenderer)} />}
         {!home && !compact && open.length > 0 && (split
           ? kind === 'preview' && <PmIconButton icon="merge-panels" label={t.mergeEditors} small onClick={() => workbench.setLayout('preview')} />
           : <PmIconButton icon="split" label={t.previewBeside} small onClick={() => selectPreview(view, true)} />)}

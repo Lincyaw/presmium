@@ -1,5 +1,5 @@
 import type { DiagnosticSnapshot, FocusReport, PreviewDiagnostics } from '@lincyaw/kernel'
-import type { DocumentOperation, DocumentsAnswer, ErrorAnswer, FilesAnswer, FocusAnswer, HistoryRevision, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, PreviewView, RevertAnswer, ReviewEnd, ReviewFollowed, ReviewView, SavedAnswer, SourceAnswer, UncommittedFile, WorkbenchAnswer } from './api.ts'
+import type { DocumentOperation, DocumentsAnswer, ErrorAnswer, FilesAnswer, FocusAnswer, HistoryRevision, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, PreviewRenderer, RevertResult, ReviewEnd, ReviewUpdate, ReviewSnapshot, SavedAnswer, SourceAnswer, UncommittedFile, WorkbenchAnswer } from './api.ts'
 
 export class ServiceError extends Error {
   readonly status: number
@@ -22,19 +22,19 @@ export interface WorkspaceClient {
   diagnostics(document: string): Promise<DiagnosticSnapshot>
   diagnosticEvents(document: string, snapshot: (event: DiagnosticSnapshot) => void, failed: () => void): () => void
   reportDiagnostics(report: PreviewDiagnostics): Promise<unknown>
-  preview(document: string, view?: PreviewView): Promise<PreviewAnswer>
+  preview(document: string, view?: PreviewRenderer): Promise<PreviewAnswer>
   workbench(): Promise<WorkbenchAnswer>
   focus(document: string, focus?: FocusReport[]): Promise<FocusAnswer>
   events(document: string, revision: (event: IrEvent) => void, failed?: () => void): () => void
-  review(document: string, followed: (event: ReviewFollowed) => void): () => void
+  review(document: string, followed: (event: ReviewUpdate) => void): () => void
   accept(document: string, body: { reject?: string[], message?: string }): Promise<{ ended: ReviewEnd }>
-  reject(document: string, paths?: string[]): Promise<ReviewFollowed>
-  restore(document: string, step: string): Promise<{ review: ReviewView }>
+  reject(document: string, paths?: string[]): Promise<ReviewUpdate>
+  restore(document: string, step: string): Promise<{ review: ReviewSnapshot }>
   changes(document: string): Promise<{ files: UncommittedFile[] }>
   commit(document: string, message: string, paths?: string[]): Promise<unknown>
   discard(document: string, paths?: string[]): Promise<unknown>
   revisions(document: string): Promise<{ revisions: HistoryRevision[] }>
-  revert(document: string, id: string): Promise<RevertAnswer>
+  revert(document: string, id: string): Promise<RevertResult>
 }
 
 export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {

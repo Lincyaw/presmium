@@ -1,4 +1,4 @@
-import type { Member, RevisionOrigin } from '@lincyaw/kernel/contracts'
+import type { Member, RevisionOperation, RevisionOrigin } from '@lincyaw/kernel/contracts'
 
 export const ORIGIN_TRAILER = 'Presmium-Origin'
 export const TASK_TRAILER = 'Presmium-Task'
@@ -6,12 +6,6 @@ export const REVERT_TRAILER = 'Presmium-Revert'
 const CO_AUTHOR = 'Co-authored-by'
 
 const ORIGINS = new Set<RevisionOrigin['kind']>(['agent', 'document', 'editor'])
-
-export type RevisionOperation =
-  | { op: 'create', dir: string }
-  | { op: 'delete', dir: string }
-  | { op: 'rename', dir: string, to: string }
-  | { op: 'copy', dir: string, to: string }
 
 export type CommitOrigin = RevisionOrigin & { operation?: RevisionOperation }
 

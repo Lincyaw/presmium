@@ -1,6 +1,6 @@
 import { stepKeys, trailStep } from '@lincyaw/kernel'
 import type { Diagnostic, DiagnosticSnapshot, Finding, FocusReport, PreviewAnchor, PreviewCommand, PreviewDiagnostics, PreviewReport, PreviewShortcut } from '@lincyaw/kernel'
-import type { DocumentOperation, DocumentsAnswer, FilesAnswer, HistoryRevision, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, PreviewView, ReviewFollowed, ReviewView, SourceAnswer, UncommittedFile } from './api.ts'
+import type { DocumentOperation, DocumentsAnswer, FilesAnswer, HistoryRevision, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, PreviewRenderer, ReviewUpdate, ReviewSnapshot, SourceAnswer, UncommittedFile } from './api.ts'
 import { mergeTexts } from './merge.ts'
 import type { MergeLabels } from './merge.ts'
 import { placeAt, placeOf } from './places.ts'
@@ -9,7 +9,7 @@ import type { WorkspaceClient } from './service.ts'
 
 export type Locale = 'zh-CN' | 'en'
 
-export type { PreviewView } from './api.ts'
+export type { PreviewRenderer } from './api.ts'
 export type DocumentLayout = 'preview' | 'split' | 'source'
 
 export type FileNotice =
@@ -54,8 +54,8 @@ export interface WorkbenchState {
   openFailure?: string
   line: number
   reveal?: Reveal
-  view: PreviewView
-  previewTabs: PreviewView[]
+  view: PreviewRenderer
+  previewTabs: PreviewRenderer[]
   previewReload: number
   preview?: PreviewAnswer
   previewFailure?: string
@@ -73,7 +73,7 @@ export interface WorkbenchState {
   leaving?: string[]
   leaveSaving: boolean
   leaveFailed: boolean
-  review?: ReviewView
+  review?: ReviewSnapshot
   changed?: UncommittedFile[]
   history?: HistoryRevision[]
   changesFailure?: string
@@ -337,7 +337,7 @@ export class Workbench {
     }
   }
 
-  #reviewed(dir: string, event: ReviewFollowed): void {
+  #reviewed(dir: string, event: ReviewUpdate): void {
     if (this.#state.document !== dir) return
     this.#set({ review: event.review })
     if (event.ended) {
@@ -609,7 +609,7 @@ export class Workbench {
     await this.openFile(finding.source.file, { line: finding.source.line ?? 1 })
   }
 
-  setView(view: PreviewView): void {
+  setView(view: PreviewRenderer): void {
     if (view === this.#state.view) return
     this.#set({ view, preview: undefined, previewFailure: undefined, shown: undefined })
     const document = this.#state.document
@@ -621,13 +621,13 @@ export class Workbench {
     this.#set({ layout })
   }
 
-  openPreview(view: PreviewView = this.#state.view, beside = false): void {
+  openPreview(view: PreviewRenderer = this.#state.view, beside = false): void {
     if (!this.#state.previewTabs.includes(view)) this.#set({ previewTabs: [...this.#state.previewTabs, view] })
     this.setView(view)
     this.setLayout(beside && this.#state.open.length ? 'split' : 'preview')
   }
 
-  closePreview(view: PreviewView): void {
+  closePreview(view: PreviewRenderer): void {
     const tabs = this.#state.previewTabs.filter(tab => tab !== view)
     this.#set({ previewTabs: tabs, ...!tabs.length ? { layout: 'source' as const } : {} })
     if (tabs.length && this.#state.view === view) this.setView(tabs[tabs.length - 1]!)
@@ -678,7 +678,7 @@ export class Workbench {
     return () => this.#previews.delete(sink)
   }
 
-  previewReport(document: string, view: PreviewView, report: PreviewReport): void {
+  previewReport(document: string, view: PreviewRenderer, report: PreviewReport): void {
     if (document !== this.#state.document || view !== this.#state.view) return
     switch (report.type) {
       case 'ready':

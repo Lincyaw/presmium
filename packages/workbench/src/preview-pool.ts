@@ -1,7 +1,7 @@
 import type { Finding, PreviewReport } from '@lincyaw/kernel'
 import { connectPreview } from './preview.ts'
 import type { PreviewConnection } from './preview.ts'
-import type { PreviewView, Workbench } from './store.ts'
+import type { PreviewRenderer, Workbench } from './store.ts'
 
 // Retain loaded modules, not running documents. Unsupported previews are removed.
 const LIMIT = 2
@@ -11,7 +11,7 @@ const READY_MS = 45_000
 
 export interface PreviewTarget {
   document: string
-  view: PreviewView
+  view: PreviewRenderer
   address?: string
   title: string
   reload: number

@@ -1,9 +1,8 @@
 import { timingSafeEqual } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { errorMessage, isRecord, jsonResponse, problemResponse, sseResponse } from '@lincyaw/kernel'
-import type { Member, PresmiumNodePlugin, RequestContext, Route, ServerContribution } from '@lincyaw/kernel'
+import type { ChangesAnswer, CommitAnswer, DocumentOperation, DocumentsAnswer, Member, PresmiumNodePlugin, RequestContext, RevertResult, RevisionsAnswer, Route, SavedAnswer, ServerContribution } from '@lincyaw/kernel'
 import { bearer } from '@lincyaw/server'
-import type { ChangesAnswer, CommitAnswer, DocumentOperation, DocumentsAnswer, RevertAnswer, RevisionsAnswer, SavedAnswer } from '../domain/api.ts'
 import { WORKSPACE_ID } from '../domain/api.ts'
 import { trailers } from '../domain/revisions.ts'
 import { lockedError, RequestError } from './documents.ts'
@@ -139,7 +138,7 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
             const undone = trailers(result.revision.message)['Presmium-Revert']?.[0] ?? body.id
             void options.reviews?.reverted(undone, result.revision.id).catch(() => undefined)
           }
-          return jsonResponse(result satisfies RevertAnswer, result.ok ? 200 : 409)
+          return jsonResponse(result satisfies RevertResult, result.ok ? 200 : 409)
         } finally {
           claimed?.release()
         }

@@ -3,9 +3,8 @@ import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import { compileTranslations, DECK_ENTRY, directoryAsset, fileHash, frontmatterLine, lineContaining, loadPlugins, nodeVitePlugins, parseFrontmatter, portable, publishesDirectory, viewFor } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import { NON_FILE_URL } from '@lincyaw/kernel'
-import type { Finding, IRDocument, RenderContext, Renderer, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
+import type { DocumentSummary, Finding, IRDocument, RenderContext, Renderer, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
-import type { WorkspaceDocument } from '../domain/api.ts'
 import type { WorkspaceConfig } from './config.ts'
 
 const WEB_PACKAGE = '@lincyaw/web'
@@ -31,7 +30,7 @@ export async function siteTranslations(compilation: Compilation): Promise<{ tran
   return { translations: translations.map(({ lang, doc }) => ({ lang, doc: siteIR(compilation, doc) })), findings }
 }
 
-export function siteDocument(document: WorkspaceDocument, doc?: IRDocument, translations?: SiteDocument['translations'], compilation?: Compilation): SiteDocument {
+export function siteDocument(document: DocumentSummary, doc?: IRDocument, translations?: SiteDocument['translations'], compilation?: Compilation): SiteDocument {
   return { dir: document.dir, title: document.title, ...document.lang ? { lang: document.lang } : {}, ...document.tags ? { tags: document.tags } : {}, ...doc ? { doc } : {}, ...translations?.length ? { translations } : {}, ...compilation ? { nodeVitePlugins: nodeVitePlugins(compilation) } : {} }
 }
 

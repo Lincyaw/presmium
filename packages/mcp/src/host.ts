@@ -4,6 +4,7 @@ import type {
   ApprovalKind,
   ApprovalRequest,
   DiagnosticSnapshot,
+  DocumentSummary,
   Finding,
   Focus,
   IRDocument,
@@ -23,13 +24,6 @@ export interface McpFocus {
   document: string
   focus: Focus[]
   at: number
-}
-
-export interface McpDocument {
-  dir: string
-  title: string
-  lang?: string
-  tags?: string[]
 }
 
 export interface McpPosition {
@@ -63,7 +57,7 @@ export interface McpRuntimeWindow {
 
 export interface McpHost {
   process?: McpProcess
-  documents(): Promise<McpDocument[]>
+  documents(): Promise<DocumentSummary[]>
   compile(document: string): Promise<{ doc: IRDocument, diagnostics: Finding[] }>
   diagnostics?(document: string): Promise<DiagnosticSnapshot>
   watchDiagnostics?(listener: (document: string) => void): () => void

@@ -1,6 +1,6 @@
 import type { Compilation } from '@lincyaw/compiler'
 import { pluginId } from '@lincyaw/compiler'
-import type { Finding, IRDocument, Member, PresmiumNodePlugin, RunResult, ServiceToken } from '@lincyaw/kernel'
+import type { DocumentSummary, Finding, IRDocument, Member, PresmiumNodePlugin, RunResult, ServiceToken } from '@lincyaw/kernel'
 
 export interface ServedPlugin {
   id: string
@@ -44,17 +44,10 @@ export function servedDocument(compilation: Compilation): ServedDocument {
   }
 }
 
-export interface HostDocument {
-  dir: string
-  title: string
-  lang?: string
-  tags?: string[]
-}
-
 export interface ServerHost {
   readSource?(path: string, member: Member): Promise<{ content: string }>
   workspaceRoot?: string
-  documents(): Promise<HostDocument[]>
+  documents(): Promise<DocumentSummary[]>
   compile(document: string): Promise<{ doc: IRDocument, diagnostics: Finding[] }>
   check(document: string): Promise<Finding[]>
   build(document: string, options?: { to?: string[] }): Promise<{ outputs: { renderer: string, outDir: string }[], findings: Finding[] }>

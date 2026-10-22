@@ -3,10 +3,9 @@ import { join, resolve } from 'node:path'
 import { DECK_ENTRY, parseFrontmatter, WORKSPACE_CONFIG } from '@lincyaw/compiler'
 import type { OperatorSettings } from '@lincyaw/compiler'
 import { errorMessage, isRecord } from '@lincyaw/kernel'
-import type { ApprovalKind } from '@lincyaw/kernel'
+import type { ApprovalKind, DocumentSummary } from '@lincyaw/kernel'
 import type { ApprovalPolicy } from '@lincyaw/server'
 import { parse as parseYaml } from 'yaml'
-import type { WorkspaceDocument } from '../domain/api.ts'
 import { matchesPattern, patternSegments } from '../domain/paths.ts'
 
 export const DEFAULT_DOCUMENTS = [`*/${DECK_ENTRY}`]
@@ -96,7 +95,7 @@ function entries(config: WorkspaceConfig): string[] {
   return found
 }
 
-export interface FoundDocument extends WorkspaceDocument {
+export interface FoundDocument extends DocumentSummary {
   entry: string
 }
 
