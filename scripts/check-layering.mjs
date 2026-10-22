@@ -31,6 +31,12 @@ const rules = [
       || (target(spec, file, pkgDir) !== undefined && outside(target(spec, file, pkgDir), join('src', 'domain'))),
   },
   {
+    name: 'shared code runs in Node and in the browser',
+    dirs: ['src/shared'],
+    forbid: (spec, file, pkgDir) => vue(spec) || /^(vitepress|@slidev\/|@lincyaw\/host|@lincyaw\/kernel\/node)(\/|$)/.test(spec) || nodeBuiltin(spec)
+      || (target(spec, file, pkgDir) !== undefined && outside(target(spec, file, pkgDir), join('src', 'shared')) && outside(target(spec, file, pkgDir), join('src', 'domain'))),
+  },
+  {
     name: 'kernel is framework-free',
     pkgs: ['kernel'],
     dirs: ['src'],

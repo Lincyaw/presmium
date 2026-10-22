@@ -1,4 +1,5 @@
 import type { ExecutorRouter, RunRequest, RunResult } from '@lincyaw/kernel'
+import { mimeText } from '../domain/index.ts'
 
 const LIMIT = 8
 const TEXT_LIMIT = 2000
@@ -27,7 +28,7 @@ function resultInfo(result: RunResult): Partial<Feedback> {
   const values = result.outputs?.flatMap(output => output.output_type === 'execute_result'
     ? [output.data['text/plain'] ?? output.data['text/markdown'] ?? output.data['application/json']]
     : []) ?? []
-  const value = values.map(value => Array.isArray(value) ? value.join('') : typeof value === 'string' ? value : value === undefined ? '' : JSON.stringify(value)).join('\n')
+  const value = values.map(value => mimeText(value)).join('\n')
   const displayTypes = [...new Set(result.outputs?.flatMap(output => output.output_type === 'execute_result' || output.output_type === 'display_data' ? Object.keys(output.data) : []) ?? [])]
   return {
     state: result.timedOut ? 'timed-out' : result.ok ? 'succeeded' : 'failed',

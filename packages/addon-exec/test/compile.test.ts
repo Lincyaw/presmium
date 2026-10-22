@@ -136,7 +136,7 @@ it('records the output at compile time; a run panel in the kernel\'s language be
   expect(code(cached.cells)).toEqual(code(first.cells))
 })
 
-it('compares the panels with the notebook kernel\'s language, which need not be Python (R-104)', async () => {
+it('compares the panels with the notebook kernel\'s language, which need not be Python', async () => {
   const dir = deck(DECK.replace('x * k', 'x * 2').replace(`    package: ${NOTEBOOK}`, `    package: ${NOTEBOOK}\n    kernel: javascript`))
   const { code: exit, output, cells } = await build(dir)
   expect(exit, output).toBe(0)
@@ -213,7 +213,7 @@ console.log('started')
 \`\`\`
 `
 
-it('stops compile-time runs at presmium.exec.timeoutMs of their section (R-26)', async () => {
+it('stops compile-time runs at presmium.exec.timeoutMs of their section', async () => {
   const { blocks } = await ir(deck(RUNS))
   const [panel, child, plain] = blocks('slow').map(block => block.node) as [ComponentNode, CodeNode, CodeNode]
   expect(panel.props.timeout).toBe(1000)
@@ -225,7 +225,7 @@ it('stops compile-time runs at presmium.exec.timeoutMs of their section (R-26)',
   expect(other.props.timeout).toBe(20000)
 })
 
-it('puts the parameters and the compile-time output in a run panel\'s fallback (R-106)', async () => {
+it('puts the parameters and the compile-time output in a run panel\'s fallback', async () => {
   const { blocks } = await ir(deck(RUNS))
   const [panel] = blocks('params').map(block => block.node) as [ComponentNode]
   expect(panel.fallback).toEqual({ type: 'root', children: [
@@ -234,7 +234,7 @@ it('puts the parameters and the compile-time output in a run panel\'s fallback (
   ] })
 })
 
-it('records what code writes to its streams, and fails a run whose promise rejects later (R-105)', async () => {
+it('records what code writes to its streams, and fails a run whose promise rejects later', async () => {
   const { blocks } = await ir(deck(RUNS))
   const [streams, rejected] = blocks('streams').map(block => block.node) as [CodeNode, CodeNode]
   expect(streams.outputs?.[0]).toMatchObject({ ok: true, exitCode: 0, stdout: 'raw {"a":1}\ndone\n', stderr: '' })
@@ -242,7 +242,7 @@ it('records what code writes to its streams, and fails a run whose promise rejec
   expect(rejected.outputs?.[0]?.stderr).toContain('Error: late')
 })
 
-it('builds the slides of a run panel in any language, without recorded output in the panel (R-29)', async () => {
+it('builds the slides of a run panel in any language, without recorded output in the panel', async () => {
   const dir = deck(`---
 plugins:
   - ${CORE}

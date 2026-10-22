@@ -1,11 +1,10 @@
 import { createRequire } from 'node:module'
-import { join, resolve } from 'node:path'
+import { prebundleDependencies } from '@lincyaw/kernel/node'
 
 const require = createRequire(import.meta.url)
 
-const PACKAGE = '@lincyaw/slidev-addon-exec-jupyter'
-
-export function servicesInBrowserBuilds(): { name: string, enforce: 'pre', resolveId(source: string, importer?: string): string | undefined } {
+/** `@jupyterlab/services` imports `ws`; in every bundle (the server-side rendering too) it gets the package's own shim. */
+export function jupyterWsShim(): { name: string, enforce: 'pre', resolveId(source: string, importer?: string): string | undefined } {
   const shim = require.resolve('@jupyterlab/services/lib/shim/ws.js')
   return {
     name: 'presmium:exec-jupyter-services',
@@ -16,18 +15,6 @@ export function servicesInBrowserBuilds(): { name: string, enforce: 'pre', resol
   }
 }
 
-const LAZY = ['@jupyterlab/services', '@xterm/xterm', '@xterm/addon-fit']
-
-export function prebundled(): { name: string, config(config: { root?: string }): { optimizeDeps: { include: string[] } } | undefined } {
-  return {
-    name: 'presmium:exec-jupyter-prebundle',
-    config(config) {
-      try {
-        createRequire(join(resolve(config.root ?? process.cwd()), 'package.json')).resolve(`${PACKAGE}/package.json`)
-      } catch {
-        return undefined
-      }
-      return { optimizeDeps: { include: LAZY.map(dependency => `${PACKAGE} > ${dependency}`) } }
-    },
-  }
+export function jupyterPrebundle(): ReturnType<typeof prebundleDependencies> {
+  return prebundleDependencies('presmium:exec-jupyter-prebundle', '@lincyaw/slidev-addon-exec-jupyter', ['@jupyterlab/services', '@xterm/xterm', '@xterm/addon-fit'])
 }

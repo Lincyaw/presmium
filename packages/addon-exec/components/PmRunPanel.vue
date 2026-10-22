@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { usePresentationMode, useSectionConfig, useService, useStartReport } from '@lincyaw/host'
+import { useMessages, usePresentationMode, useSectionConfig, useService, useStartReport } from '@lincyaw/host'
 import { EXECUTOR, isRecord } from '@lincyaw/kernel'
 import type { ParamsDisplay } from '@lincyaw/kernel'
 import { computed, onBeforeUnmount, reactive, ref, shallowRef } from 'vue'
-import { languageName, runPlace, seconds, useMessages, useSlideRoom } from '../src/client/index.ts'
+import { languageName, MESSAGES, runsInOf, seconds, useSlideSpaceBelow } from '../src/client/index.ts'
 import { appendRun, compareRuns, configuredTimeout, defaultPair, EXEC_ID, fallbackReason, stringArgs, withRecordedFallback } from '../src/domain/index.ts'
 import type { RunHistory, RunRecord } from '../src/domain/index.ts'
-import RunOutput from '../src/client/RunOutput.vue'
+import RunOutputs from '../src/client/RunOutputs.vue'
 
 const props = withDefaults(defineProps<{
   lang?: string
@@ -23,20 +23,20 @@ const props = withDefaults(defineProps<{
 const executor = useService(EXECUTOR)
 const report = useStartReport()
 const config = useSectionConfig(EXEC_ID)
-const t = useMessages()
+const t = useMessages(MESSAGES)
 const args = reactive(stringArgs(props.params))
 const fields = reactive(Object.fromEntries(Object.entries(props.params ?? {})
   .filter(([, value]) => isRecord(value))
   .map(([name, value]) => [name, stringArgs(value as Record<string, unknown>)])))
 const presenting = usePresentationMode() === 'slides'
 const root = shallowRef<HTMLElement>()
-const room = ref<{ panel: number, code: number }>()
-useSlideRoom(root, presenting, (panel) => {
+const space = ref<{ panel: number, code: number }>()
+useSlideSpaceBelow(root, presenting, (panel) => {
   const main = root.value?.querySelector<HTMLElement>('.pm-run-panel__main')
   const pre = main?.querySelector<HTMLElement>('.pm-run-panel__source pre')
   if (!main || !pre) return
   const code = panel - (main.offsetHeight - pre.offsetHeight)
-  if (room.value?.panel !== panel || room.value.code !== code) room.value = { panel, code }
+  if (space.value?.panel !== panel || space.value.code !== code) space.value = { panel, code }
 })
 const history = shallowRef<RunHistory>([])
 const running = ref(false)
@@ -51,12 +51,12 @@ const routed = computed(() => {
   return props.executor ? executors.find(e => e.id === props.executor) : executors.find(e => e.supports(props.lang))
 })
 const display = computed((): ParamsDisplay | undefined => routed.value?.params?.(props.lang))
-const where = computed(() => {
+const runsInText = computed(() => {
   const id = latest.value?.result.executorId ?? props.executor ?? routed.value?.id
-  const place = runPlace(id, id === routed.value?.id ? routed.value : executor.value?.list().find(e => e.id === id))
-  if (!place) return undefined
+  const runsIn = runsInOf(id, id === routed.value?.id ? routed.value : executor.value?.list().find(e => e.id === id))
+  if (!runsIn) return undefined
   const said = t.value.runsIn
-  return place.kind === 'browser' || place.kind === 'machine' ? said[place.kind] : said[place.kind](place.name)
+  return runsIn.kind === 'browser' || runsIn.kind === 'machine' ? said[runsIn.kind] : said[runsIn.kind](runsIn.name)
 })
 const label = (name: string) => display.value?.labels[name] ?? name
 const split = (name: string) => Boolean(display.value?.fields?.includes(name) && fields[name])
@@ -140,13 +140,13 @@ function fieldSize(value: string | undefined): number {
     ref="root"
     class="pm-run-panel"
     :class="{ 'pm-run-panel--present': presenting }"
-    :style="room && { '--pm-run-room': `${room.panel}px`, '--pm-run-code': `${room.code}px` }"
+    :style="space && { '--pm-run-panel-space': `${space.panel}px`, '--pm-run-code-space': `${space.code}px` }"
     :data-state="running ? 'running' : latest ? 'done' : 'idle'"
     :data-runs="history.length"
   >
     <div class="pm-run-panel__main">
       <form class="pm-run-panel__bar pm-run-panel__form" @submit.prevent="run">
-        <span class="pm-run-panel__where"><span class="pm-run-panel__lang">{{ languageName(lang) }}</span><template v-if="where"> · {{ where }}</template></span>
+        <span class="pm-run-panel__where"><span class="pm-run-panel__lang">{{ languageName(lang) }}</span><template v-if="runsInText"> · {{ runsInText }}</template></span>
         <span class="pm-run-panel__controls">
           <template v-for="(_, name) in args" :key="name">
             <template v-if="split(name)">
@@ -184,7 +184,7 @@ function fieldSize(value: string | undefined): number {
         <div v-if="reason" class="pm-run-panel__badge pm-ui-badge pm-ui-badge--warn">
           {{ t.recordedBadge(reason) }}
         </div>
-        <RunOutput :result="latest.result" :hide-error="Boolean(reason)" />
+        <RunOutputs :result="latest.result" :hide-error="Boolean(reason)" />
       </div>
       <ol v-if="history.length" class="pm-run-panel__history">
         <li v-for="record in history" :key="record.id" :data-run="record.id">
@@ -270,10 +270,10 @@ function fieldSize(value: string | undefined): number {
   align-items: start;
 }
 .pm-run-panel--present .pm-run-panel__source :deep(pre) {
-  max-height: max(var(--pm-run-code, 20em), 6em);
+  max-height: max(var(--pm-run-code-space, 20em), 6em);
 }
 .pm-run-panel--present .pm-run-panel__side {
-  max-height: var(--pm-run-room);
+  max-height: var(--pm-run-panel-space);
   overflow: auto;
 }
 .pm-run-panel--present .pm-run-panel__source :deep(:is(pre, code)) {

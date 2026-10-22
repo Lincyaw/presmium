@@ -1,4 +1,4 @@
-import { isRecord, languageId } from '@lincyaw/kernel'
+import { isRecord } from '@lincyaw/kernel'
 import type { RunOutput } from '@lincyaw/kernel'
 
 const ANSI = /\u001B\[[0-9;?]*[ -/]*[@-~]/g
@@ -86,24 +86,4 @@ function richOutput(type: 'display_data' | 'execute_result', content: Record<str
 function errorOutput(content: Record<string, unknown>): RunOutput {
   const traceback = Array.isArray(content.traceback) ? content.traceback.filter((line): line is string => typeof line === 'string') : []
   return { output_type: 'error', ename: String(content.ename ?? 'Error'), evalue: String(content.evalue ?? ''), traceback }
-}
-
-const PYTHON_ARG = `def _pm_arg(raw):
-    import ast, json
-    try:
-        return ast.literal_eval(raw)
-    except (ValueError, SyntaxError, TypeError, MemoryError, RecursionError):
-        pass
-    try:
-        return json.loads(raw)
-    except (ValueError, TypeError, RecursionError):
-        return raw`
-
-export function argumentsCode(args: Record<string, string> | undefined, lang = ''): string | undefined {
-  const python = languageId(lang) === 'python'
-  const lines = Object.entries(args ?? {})
-    .filter(([name]) => /^[A-Za-z_]\w*$/.test(name))
-    .map(([name, value]) => `${name} = ${python ? `_pm_arg(${JSON.stringify(String(value))})` : JSON.stringify(String(value))}`)
-  if (lines.length === 0) return undefined
-  return python ? [PYTHON_ARG, ...lines, 'del _pm_arg'].join('\n') : lines.join('\n')
 }

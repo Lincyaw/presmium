@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url'
 import { presmium } from '@lincyaw/cli/testing'
 import type { CodeNode, ComponentNode, IRDocument } from '@lincyaw/kernel'
 import { afterAll, expect, it } from 'vitest'
-import { findRuntime, plainEnv } from '../src/node/recorder.ts'
+import { minimalRunEnv } from '@lincyaw/kernel/node'
+import { findChromiumAdapter } from '../src/node/recorder.ts'
 
 const WEBGPU = fileURLToPath(new URL('..', import.meta.url))
 const EXEC = fileURLToPath(new URL('../../addon-exec', import.meta.url))
@@ -64,10 +65,10 @@ it('records the shader\'s output in Chromium on SwiftShader, in the deck\'s lang
   expect(records[0]!.environment).toMatch(/^chromium [\d.]+; google swiftshader \(fallback\)$/)
 }, 180_000)
 
-const gpu = await findRuntime('gpu', plainEnv()).then(runtime => (runtime.adapter.fallback ? undefined : runtime.adapter), () => undefined)
+const gpu = await findChromiumAdapter('gpu', minimalRunEnv()).then(found => (found.adapter.fallback ? undefined : found.adapter), () => undefined)
 if (!gpu) console.warn('[record.test] the GPU case is skipped: Chromium finds no GPU through Vulkan (--enable-features=Vulkan); run it on a machine with a GPU and its Vulkan driver')
 
-it.skipIf(!gpu)('records the shader on the GPU that Chromium finds through Vulkan, with a fingerprint that names its vendor (P-104)', async () => {
+it.skipIf(!gpu)('records the shader on the GPU that Chromium finds through Vulkan, with a fingerprint that names its vendor', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'presmium-webgpu-gpu-'))
   dirs.push(dir)
   writeFileSync(join(dir, 'lecture.md'), deck('gpu'))

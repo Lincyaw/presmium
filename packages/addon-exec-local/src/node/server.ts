@@ -3,7 +3,9 @@ import { APPROVALS, errorMessage, isRecord, jsonResponse, problemResponse } from
 import type { Route, RunRequest, ServerContext, ServerContribution } from '@lincyaw/kernel'
 import { EXEC_LOCAL_ID, execLocalConfig, failedContainerRun } from '../domain/index.ts'
 import type { LocalEnvStatus } from '../domain/index.ts'
-import { definitionRunners, dockerAvailable, findDefinition, readDevcontainer, runInContainer } from './container.ts'
+import { runInContainer } from './container.ts'
+import { definitionCommands, findDefinition, readDevcontainer } from './devcontainer.ts'
+import { dockerAvailable } from './docker.ts'
 import { inLanguage, text } from './messages.ts'
 import { PathError, replicateArchive, requirePath } from './replicate.ts'
 
@@ -62,7 +64,7 @@ async function status(workspace: string): Promise<LocalEnvStatus> {
     connected: true,
     docker,
     devcontainer: definition ? relative(workspace, definition).split(sep).join('/') : null,
-    languages: docker && definition ? Object.keys(definitionRunners(definition)) : [],
+    languages: docker && definition ? Object.keys(definitionCommands(definition)) : [],
   }
 }
 
@@ -93,7 +95,7 @@ export function localEnvRoutes(ctx: ServerContext): ServerContribution {
         if (!findDefinition(workspace)) return jsonResponse(failedContainerRun(text().noDefinition))
         const devcontainer = await readDevcontainer(workspace)
         if (!devcontainer) return jsonResponse(failedContainerRun(text().unreadableDefinition))
-        return jsonResponse(await runInContainer(workspace, devcontainer, run, { buildTimeoutMs }, request.signal))
+        return jsonResponse(await runInContainer({ workspace, devcontainer, request: run, build: { buildTimeoutMs }, signal: request.signal }))
       }),
       replicate: route(async (request) => {
         const fields = await body(request)

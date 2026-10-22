@@ -4,9 +4,9 @@ import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import type { Executor } from '@lincyaw/kernel'
 import { isPython } from '../domain/index.ts'
-import { childRuns } from './child.ts'
+import { createChildProcessRuns } from './child-process.ts'
 
-export const PYTHON_EXECUTOR_ID = 'presmium.python'
+const PYTHON_EXECUTOR_ID = 'presmium.python'
 
 const PYTHON = 'python3'
 const RUNNER = readFileSync(createRequire(import.meta.url).resolve('@lincyaw/kernel/runner.py'), 'utf8')
@@ -23,7 +23,7 @@ function python(): { version: string, prefixes: string[] } {
   return probe
 }
 
-const runs = childRuns({
+const runs = createChildProcessRuns({
   executorId: PYTHON_EXECUTOR_ID,
   argv: [PYTHON, '-c', `${RUNNER}\n_pm_main()\n`],
   read: () => python().prefixes,

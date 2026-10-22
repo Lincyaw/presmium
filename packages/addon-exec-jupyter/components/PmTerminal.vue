@@ -4,26 +4,26 @@ import { errorMessage } from '@lincyaw/kernel'
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import '@xterm/xterm/css/xterm.css'
 import { MESSAGES } from '../src/client/messages.ts'
-import { DEFAULT_TERMINAL_ROWS, JUPYTER_ENVIRONMENTS } from '../src/domain/index.ts'
-import type { TerminalSession } from '../src/domain/service.ts'
+import { DEFAULT_TERMINAL_ROWS, JUPYTER_TERMINALS } from '../src/domain/index.ts'
+import type { TerminalSession } from '../src/domain/index.ts'
 
 const props = withDefaults(defineProps<{
   env: string
   rows?: number
 }>(), { rows: DEFAULT_TERMINAL_ROWS })
 
-const environments = useService(JUPYTER_ENVIRONMENTS)
+const terminals = useService(JUPYTER_TERMINALS)
 const t = useMessages(MESSAGES)
 const screen = ref<HTMLElement>()
 const state = ref<'idle' | 'connecting' | 'open' | 'closed' | 'failed'>('idle')
 const failure = ref<string>()
-const unavailable = computed(() => environments.value?.unavailable(props.env))
+const unavailable = computed(() => terminals.value?.unavailable(props.env))
 
 let session: TerminalSession | undefined
 let dispose: (() => void) | undefined
 
 async function open() {
-  const service = environments.value
+  const service = terminals.value
   if (!service || !screen.value || state.value === 'connecting' || state.value === 'open') return
   close()
   state.value = 'connecting'
@@ -79,7 +79,7 @@ onBeforeUnmount(close)
   <div class="pm-terminal" :data-env="env" :data-state="unavailable ? 'unavailable' : state">
     <div class="pm-terminal__bar">
       <span class="pm-terminal__title">{{ t.terminal(env) }}</span>
-      <button v-if="!unavailable && (state === 'idle' || state === 'closed' || state === 'failed')" type="button" class="pm-terminal__open pm-ui-button pm-ui-button--small" :disabled="!environments" @click="open">
+      <button v-if="!unavailable && (state === 'idle' || state === 'closed' || state === 'failed')" type="button" class="pm-terminal__open pm-ui-button pm-ui-button--small" :disabled="!terminals" @click="open">
         {{ state === 'idle' ? t.terminalOpen : t.terminalReconnect }}
       </button>
       <span v-if="state === 'connecting'" class="pm-terminal__status">{{ t.terminalConnecting }}</span>

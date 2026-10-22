@@ -4,7 +4,7 @@ title: Local environment test deck
 plugins:
   - __ADDON_CORE__
   - __ADDON_EXEC_LOCAL__
-# The repository's devcontainer definition as a named environment (P-100).
+# The repository's devcontainer definition as a named environment.
 execute:
   environments:
     box: { kind: devcontainer }

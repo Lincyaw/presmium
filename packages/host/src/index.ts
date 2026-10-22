@@ -82,3 +82,5 @@ export type {
 export { localeOf } from '@lincyaw/kernel'
 export type { Locale } from '@lincyaw/kernel/contracts'
 export { codeLinesBox } from './code-lines-box.ts'
+export { createResidentWorker } from './resident-worker.ts'
+export type { ResidentWorker, ResidentWorkerFailure, ResidentWorkerOptions, ResidentWorkerOutcome } from './resident-worker.ts'

@@ -8,7 +8,7 @@ import { presmium, PRESMIUM_BIN } from '@lincyaw/cli/testing'
 import type { CodeNode, ComponentNode, IRBlock, IRDocument } from '@lincyaw/kernel'
 import { strFromU8, unzipSync } from 'fflate'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { imageName } from '../src/node/container.ts'
+import { imageName } from '../src/node/devcontainer.ts'
 
 const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
 const PACKAGES = fileURLToPath(new URL('../..', import.meta.url))
@@ -104,7 +104,7 @@ afterAll(async () => {
   rmSync(SCRATCH, { recursive: true, force: true })
 }, 60_000)
 
-describe('container executor (P-22)', () => {
+describe('container executor', () => {
   it.skipIf(!docker)('runs Python in the image of the devcontainer definition at compile time', () => {
     const recorded = blocks().map(block => block.node).find((node): node is CodeNode => node.type === 'code' && node.run?.executor === 'presmium.container')
     expect(recorded?.outputs?.[0]).toMatchObject({ ok: true, exitCode: 0, executorId: 'presmium.container', stdout: PYTHON_OUTPUT })
@@ -112,12 +112,12 @@ describe('container executor (P-22)', () => {
     expect(python3?.outputs?.[0]).toMatchObject({ ok: true, executorId: 'presmium.container', stdout: 'python3 42\n' })
   })
 
-  it.skipIf(!docker)('runs code that names a devcontainer environment with its executor, which passes the run\'s variables but not its credentials or the host\'s paths (P-100)', () => {
+  it.skipIf(!docker)('runs code that names a devcontainer environment with its executor, which passes the run\'s variables but not its credentials or the host\'s paths', () => {
     const boxed = blocks().map(block => block.node).find((node): node is CodeNode => node.type === 'code' && node.run?.executor === 'presmium.env.box')
     expect(boxed?.outputs?.[0]).toMatchObject({ ok: true, executorId: 'presmium.env.box', stdout: 'plain None True\n' })
   })
 
-  it.skipIf(!docker)('answers a run request as the other executors do: files beside the program, parameters as variables (R-24)', async () => {
+  it.skipIf(!docker)('answers a run request as the other executors do: files beside the program, parameters as variables', async () => {
     const check = (submission: string) => ({
       lang: 'python',
       code: 'scope = {}\nexec(open("submission.py").read(), scope)\nexec(open("checks.py").read(), scope)\nprint("passed")',
@@ -132,18 +132,18 @@ describe('container executor (P-22)', () => {
     expect(args).toMatchObject({ ok: true, stdout: '42 hi int\nfrom stdin\n', executorId: 'presmium.container' })
   }, 180_000)
 
-  it.skipIf(!docker)('is served by `presmium dev --to slides` (R-25)', async () => {
+  it.skipIf(!docker)('is served by `presmium dev --to slides`', async () => {
     expect(await (await fetch(`${slides}${ROUTES}/status`)).json()).toEqual({ connected: true, docker: true, devcontainer: '.devcontainer/devcontainer.json', languages: ['python'] })
     expect(await (await post(slides, 'run', { lang: 'python', code: PYTHON_INFO })).json()).toMatchObject({ ok: true, exitCode: 0, timedOut: false, stdout: PYTHON_OUTPUT })
   }, 180_000)
 
-  it.skipIf(!docker)('is served by `presmium dev --to web` (R-25)', async () => {
+  it.skipIf(!docker)('is served by `presmium dev --to web`', async () => {
     const web = await startDev('web')
     expect(await (await fetch(`${web}${ROUTES}/status`)).json()).toMatchObject({ connected: true, docker: true, devcontainer: '.devcontainer/devcontainer.json' })
     expect(await (await post(web, 'run', { lang: 'python', code: PYTHON_INFO })).json()).toMatchObject({ ok: true, stdout: PYTHON_OUTPUT })
   }, 300_000)
 
-  it.skipIf(!docker)('fails an image build that does not end in time, and builds again for the next run (R-101)', async () => {
+  it.skipIf(!docker)('fails an image build that does not end in time, and builds again for the next run', async () => {
     const dir = join(SCRATCH, 'slow')
     mkdirSync(join(dir, '.devcontainer'), { recursive: true })
     writeFileSync(join(dir, '.devcontainer/Dockerfile'), 'FROM python:3.12-slim\nRUN sleep 120\n')
@@ -158,7 +158,7 @@ describe('container executor (P-22)', () => {
   }, 120_000)
 })
 
-describe('workspace (K-13, R-100)', () => {
+describe('workspace', () => {
   it('is published relative to the deck, in the IR and in the slides bundle', () => {
     const written = readdirSync(join(REPO, 'dist'), { recursive: true, withFileTypes: true })
       .filter(entry => entry.isFile() && /\.(json|js)$/.test(entry.name))
@@ -186,7 +186,7 @@ describe('workspace (K-13, R-100)', () => {
   })
 })
 
-describe('the run directory (N-08)', () => {
+describe('the run directory', () => {
   it.skipIf(!docker)('lies in a private directory of the server\'s user while the code runs, and the request\'s files cannot take the place of the runner\'s input', async () => {
     const running = post(slides, 'run', { lang: 'python', code: 'import time\ntime.sleep(4)\nprint("slept")' })
     let modes: string[] = []
@@ -205,7 +205,7 @@ describe('the run directory (N-08)', () => {
   }, 180_000)
 })
 
-describe('write-back (K-09, D-2)', () => {
+describe('write-back', () => {
   it('is gone: no commit route, here or where the dev-server endpoints were; a request from another site is refused', async () => {
     for (const path of [`${ROUTES}/commit`, '/__presmium/exec-local/commit']) {
       const res = await fetch(`${slides}${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ file: 'src/greet.py', content: 'print(1)\n' }) })
@@ -216,7 +216,7 @@ describe('write-back (K-09, D-2)', () => {
   })
 })
 
-describe('dev server (N-07)', () => {
+describe('dev server', () => {
   it('answers in the language the page asks for', async () => {
     const ask = (language: string) => fetch(`${slides}${ROUTES}/replicate`, {
       method: 'POST',
@@ -228,7 +228,7 @@ describe('dev server (N-07)', () => {
   })
 })
 
-describe('environment replicate (P-26)', () => {
+describe('environment replicate', () => {
   it('exports the snippet and the devcontainer definition, archived at compile time and from the dev server', async () => {
     const env = blocks().map(block => block.node).find((node): node is ComponentNode => node.type === 'component' && node.name === 'PmLocalEnv')!
     expect(env.props).toMatchObject({ file: 'src/greet.py', devcontainer: '.devcontainer/devcontainer.json' })

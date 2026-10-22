@@ -192,7 +192,7 @@ rendererExtensions: {
 },
 ```
 
-扩展的第三个参数 `ctx` 是该渲染端的 `RenderContext`（`outDir`、`workDir`、`deckDir`、`config`、`lang` 等）。编译时写入产物的文本按 `deckLocale(ctx.lang)` 选择中文或英文。范例：`packages/addon-exec/src/node/extensions.ts`（代码单元格或 mdast 单元格）。
+扩展的第三个参数 `ctx` 是该渲染端的 `RenderContext`（`outDir`、`workDir`、`deckDir`、`config`、`lang` 等）。编译时写入产物的文本按 `deckLocale(ctx.lang)` 选择中文或英文。范例：`packages/addon-exec/src/node/notebook-cells.ts`（代码单元格或 mdast 单元格）。
 
 ## 8. 测试与文档
 

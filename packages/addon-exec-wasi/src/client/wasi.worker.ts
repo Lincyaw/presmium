@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { prepare, runWasi } from '../runner.mjs'
+import { prepare, runWasi } from '../shared/wasi-runner.mjs'
 import type { WorkerReply, WorkerRequest } from './protocol.ts'
 
 declare const self: DedicatedWorkerGlobalScope

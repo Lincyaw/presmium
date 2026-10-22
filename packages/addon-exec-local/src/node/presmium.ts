@@ -1,22 +1,18 @@
 import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
-import { environmentExecutor, isRecord, languageId } from '@lincyaw/kernel'
-import type { CodeNode, EnvironmentProvider, EnvironmentSpec, PresmiumNodePlugin } from '@lincyaw/kernel'
-import { EXEC_LOCAL_ID } from '../domain/index.ts'
-import { createContainerExecutor, dockerAvailable, findDefinition } from './container.ts'
-import { localEnvDirective } from './directive.ts'
-import { localEnvPass } from './pass.ts'
+import { componentCode, environmentExecutor, jupyterKernelLanguage, languageId } from '@lincyaw/kernel'
+import type { EnvironmentProvider, EnvironmentSpec, PresmiumNodePlugin } from '@lincyaw/kernel'
+import { DEVCONTAINER_KIND, EXEC_LOCAL_ID } from '../domain/index.ts'
+import { createContainerExecutor } from './container.ts'
+import { findDefinition } from './devcontainer.ts'
+import { dockerAvailable } from './docker.ts'
+import { localEnvDirective, localEnvPass } from './local-env.ts'
 import { localEnvRoutes } from './server.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
+/** The plugin's executor, which each compile replaces with its deck's own (`localEnvPass`). */
 const container = createContainerExecutor()
-
-function kernelLanguage(kernel: unknown): string {
-  if (typeof kernel === 'string' && kernel) return languageId(kernel.replace(/[-\d.]+$/, '') || kernel)
-  if (isRecord(kernel) && typeof kernel.language === 'string') return languageId(kernel.language)
-  return 'python'
-}
 
 const definitionDir = (spec: EnvironmentSpec, deckDir: string, workspaceRoot: string) => typeof spec.path === 'string' && spec.path ? resolve(deckDir, spec.path) : workspaceRoot
 
@@ -40,14 +36,14 @@ const plugin: PresmiumNodePlugin = {
   directives: [localEnvDirective],
   passes: [localEnvPass(container)],
   executors: [container],
-  environments: { devcontainer },
+  environments: { [DEVCONTAINER_KIND]: devcontainer },
   server: localEnvRoutes,
   rendererExtensions: {
     notebook: {
       components: {
         PmLocalEnv(node, _block, ctx) {
-          const code = node.children?.find(child => child.node.type === 'code')?.node as CodeNode | undefined
-          return code && languageId(code.lang) === kernelLanguage(ctx.config.kernel) ? { cell_type: 'code', source: code.value, outputs: [], execution_count: null } : undefined
+          const code = componentCode(node)
+          return code && languageId(code.lang) === jupyterKernelLanguage(ctx.config.kernel) ? { cell_type: 'code', source: code.value, outputs: [], execution_count: null } : undefined
         },
       },
     },

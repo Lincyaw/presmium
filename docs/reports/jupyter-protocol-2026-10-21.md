@@ -47,7 +47,7 @@ macOS；Node.js 22.23.2；临时 Python 3.12.14 虚拟环境；Jupyter Server 2.
 
 复查时保持 Presmium 代理和 Jupyter Server 运行，离开网页后持续检查 20 秒，仍有一个空执行目录。随后停止临时服务并删除测试环境。此次没有发现仍在运行的 kernel 或终端。
 
-相关代码在 `packages/addon-exec-jupyter/src/jupyter/kernels.ts`：
+相关代码在 `packages/addon-exec-jupyter/src/shared/kernel-lifecycle.ts` 与 `kernels.ts`：
 
 - `shutdown` 先关闭 kernel，再通过 Contents API 删除目录（约第 132 行）。
 - 临时执行的 `finally` 和 `dispose` 通过 `void shutdown(...)` 发起异步清理，没有等待完成（约第 249、312 行）。

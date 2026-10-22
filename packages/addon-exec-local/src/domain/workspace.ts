@@ -1,19 +1,21 @@
 import { isRecord, languageId } from '@lincyaw/kernel'
 
-export type Runners = Record<string, string[]>
+/** The command that runs code of each language in the container; the code follows as its last argument. */
+export type LanguageCommands = Record<string, string[]>
 
-export const DEFAULT_RUNNERS: Runners = { python: ['python3', '-c'] }
+export const DEFAULT_LANGUAGE_COMMANDS: LanguageCommands = { python: ['python3', '-c'] }
 
-export function runnersFrom(customizations: unknown): Runners {
+/** The commands of the devcontainer definition (`customizations.presmium.runners`) over the default ones. */
+export function languageCommandsFrom(customizations: unknown): LanguageCommands {
   const presmium = isRecord(customizations) ? customizations.presmium : undefined
   const custom = isRecord(presmium) && isRecord(presmium.runners) ? presmium.runners : {}
-  const runners: Runners = { ...DEFAULT_RUNNERS }
+  const commands: LanguageCommands = { ...DEFAULT_LANGUAGE_COMMANDS }
   for (const [lang, command] of Object.entries(custom)) {
     if (Array.isArray(command) && command.length > 0 && command.every(part => typeof part === 'string')) {
-      runners[languageId(lang)] = command
+      commands[languageId(lang)] = command
     }
   }
-  return runners
+  return commands
 }
 
 export function workspacePath(file: string): string {

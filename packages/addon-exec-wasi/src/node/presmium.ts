@@ -2,11 +2,11 @@ import { createRequire } from 'node:module'
 import { environmentExecutor } from '@lincyaw/kernel'
 import type { EnvironmentProvider, PresmiumNodePlugin } from '@lincyaw/kernel'
 import { EXEC_WASI_ID, execWasiConfig, WASI_EXECUTOR_ID, WASI_KIND } from '../domain/index.ts'
-import { wasiLanguage } from '../runner.mjs'
+import { wasiLanguage } from '../shared/wasi-runner.mjs'
 import { createWasiExecutor } from './executor.ts'
-import { runtimesPass } from './pass.ts'
 import { missingRuntime } from './runtime.ts'
-import { wasiRuntime } from './vite.ts'
+import { runtimesPass } from './runtimes.ts'
+import { wasiAssets } from './vite.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
@@ -30,7 +30,7 @@ const plugin: PresmiumNodePlugin = {
   executors: [createWasiExecutor(WASI_EXECUTOR_ID)],
   environments: { [WASI_KIND]: wasi },
   vitePlugins({ config }) {
-    return [wasiRuntime(execWasiConfig(config).runtimes)]
+    return [wasiAssets(execWasiConfig(config).runtimes)]
   },
 }
 

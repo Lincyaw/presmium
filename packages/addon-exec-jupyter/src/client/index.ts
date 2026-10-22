@@ -1,5 +1,5 @@
-export { createRemoteEnvironments } from './environments.ts'
-export type { RemoteEnvironments } from './environments.ts'
+export { createJupyterClient } from './jupyter-client.ts'
+export type { JupyterClient } from './jupyter-client.ts'
 export { messages, MESSAGES } from './messages.ts'
 export type { JupyterMessages } from './messages.ts'
-export { default as jupyterPlugin } from './plugin.ts'
+export { execJupyterPlugin } from './plugin.ts'

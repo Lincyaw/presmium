@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { PmIcon, useHost, usePresentationMode, useSectionConfig, useService, useStartReport, useViewRole } from '@lincyaw/host'
+import { PmIcon, useHost, useMessages, usePresentationMode, useSectionConfig, useService, useStartReport, useViewRole } from '@lincyaw/host'
 import type { StepState } from '@lincyaw/kernel'
 import type { Ref } from 'vue'
 import { computed, onBeforeUnmount, onMounted, provide, ref, shallowReactive, shallowRef, watch, watchEffect } from 'vue'
-import { markLine, STEP_MARKS, useMessages } from '../src/client/index.ts'
+import { markLine, MESSAGES, STEP_MARKS } from '../src/client/index.ts'
 import StepMark from '../src/client/StepMark.vue'
 import { configuredTimeout, EXEC_ID, frameAt, stringArgs, TRACER } from '../src/domain/index.ts'
 import type { Trace } from '../src/domain/index.ts'
@@ -19,7 +19,7 @@ const props = withDefaults(defineProps<{
 const tracer = useService(TRACER)
 const report = useStartReport()
 const config = useSectionConfig(EXEC_ID)
-const t = useMessages()
+const t = useMessages(MESSAGES)
 const root = ref<HTMLElement>()
 const source = ref<HTMLElement>()
 const mounted = ref(false)

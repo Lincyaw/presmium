@@ -4,31 +4,23 @@ import type { RunOutput, RunResult } from '@lincyaw/kernel'
 import { useNav } from '@slidev/client'
 import type { CodeRunner, CodeRunnerOutput } from '@slidev/types'
 import { defineCodeRunnersSetup } from '@slidev/types'
-import DOMPurify from 'dompurify'
 import { messages, whenService } from '../src/client/index.ts'
+import { displayItem } from '../src/client/outputs.ts'
 
 function lines(text: string, className?: string): CodeRunnerOutput[] {
   return text ? text.replace(/\n$/, '').split('\n').map(line => ({ text: line, class: className })) : []
 }
 
-const joined = (value: unknown) => (Array.isArray(value) ? value.join('') : typeof value === 'string' ? value : JSON.stringify(value, null, 2))
-
-const BASE64 = /^[A-Za-z0-9+/=]*$/
-
 function rich(output: RunOutput): CodeRunnerOutput[] {
-  if (output.output_type === 'stream') return lines(joined(output.text), output.name === 'stderr' ? 'pm-run-stderr' : undefined)
-  if (output.output_type === 'error') return [{ error: output.traceback.join('\n') || `${output.ename}: ${output.evalue}` }]
-  const { data } = output
-  const image = ['image/png', 'image/jpeg', 'image/gif'].find(type => data[type] !== undefined)
-  if (image) {
-    const base64 = joined(data[image]).replace(/\s/g, '')
-    if (!BASE64.test(base64)) return [{ text: messages().droppedImage, class: 'pm-run-dropped' }]
-    return [{ html: `<img class="pm-run-image" alt="" src="${escapeHtml(`data:${image};base64,${base64}`)}">` }]
+  const item = displayItem(output, { html: true })
+  switch (item.kind) {
+    case 'stream': return lines(item.text, item.name === 'stderr' ? 'pm-run-stderr' : undefined)
+    case 'error': return [{ error: item.text }]
+    case 'dropped-image': return [{ text: messages().droppedImage, class: 'pm-run-dropped' }]
+    case 'image': return [{ html: `<img class="pm-run-image" alt="" src="${escapeHtml(item.src)}">` }]
+    case 'html': return [{ html: item.html }]
+    case 'text': return item.text ? [{ html: `<pre class="pm-run-text">${escapeHtml(item.text)}</pre>` }] : []
   }
-  if (data['image/svg+xml'] !== undefined) return [{ html: `<img class="pm-run-image" alt="" src="${escapeHtml(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(joined(data['image/svg+xml']))}`)}">` }]
-  if (data['text/html'] !== undefined) return [{ html: DOMPurify.sanitize(joined(data['text/html'])) }]
-  const text = data['text/markdown'] ?? data['text/plain'] ?? data['application/json']
-  return text === undefined ? [] : [{ html: `<pre class="pm-run-text">${escapeHtml(joined(text))}</pre>` }]
 }
 
 function outputs(result: Pick<RunResult, 'ok' | 'stdout' | 'stderr' | 'outputs'>): CodeRunnerOutput[] {

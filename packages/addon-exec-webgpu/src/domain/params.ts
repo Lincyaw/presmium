@@ -18,7 +18,8 @@ interface Declaration {
   scalar?: string
 }
 
-export function declarations(code: string): Declaration[] {
+/** The buffers the shader declares (`var<storage>`, `var<uniform>`), with their group, binding, access and scalar type. */
+export function shaderBuffers(code: string): Declaration[] {
   const source = code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
   return [...source.matchAll(DECLARATION)].map(([, attributes, space, access, name, type]) => {
     const attribute = (key: string) => Number(new RegExp(`@\\s*${key}\\s*\\(\\s*(\\d+)\\s*\\)`).exec(attributes!)?.[1] ?? 0)
@@ -40,6 +41,7 @@ export function declarations(code: string): Declaration[] {
 const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
 const positive = (value: unknown, max = Infinity): value is number => Number.isInteger(value) && (value as number) >= 1 && (value as number) <= max
 
+// The shared gpu-compute.mjs computes the same sizes; it runs alone in the recording's page and cannot import this.
 function bytes(buffer: Pick<ComputeBuffer, 'length' | 'usage'>): number {
   const size = Math.max(4, buffer.length * 4)
   return buffer.usage === 'uniform' ? Math.ceil(size / 16) * 16 : size
@@ -113,7 +115,7 @@ export function computeRequest(code: string, args: Record<string, string> | unde
 
   const specs = params.buffers
   if (!isRecord(specs)) return { error: text.noBuffers }
-  const declared = declarations(code)
+  const declared = shaderBuffers(code)
   for (const name of Object.keys(specs)) {
     if (!declared.some(d => d.name === name)) return { error: text.noDeclaration(name) }
   }
