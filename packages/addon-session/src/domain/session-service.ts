@@ -1,12 +1,11 @@
 import type { ClassroomStore, SessionService, SessionSnapshot, Unsubscribe } from '@lincyaw/kernel'
 import type { SessionMessages } from './messages.ts'
-import type { FollowMode, Position } from './room.ts'
+import type { FollowMode } from './session-record.ts'
 
 export interface ClassroomSnapshot extends SessionSnapshot {
   server?: string
   connection: 'offline' | 'connecting' | 'connected'
   follow: FollowMode
-  presenterPosition?: Position
   joinUrl?: string
   invitation?: string
   rejoin?: string

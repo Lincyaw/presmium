@@ -1,9 +1,14 @@
 import type { Participant } from '@lincyaw/kernel'
 import type * as Y from 'yjs'
-import { changedEntries, cursorOf, ended, samePosition, started } from '../domain/index.ts'
+import { changedEntries, clonePosition, endRecord, samePosition, startRecord } from '../domain/index.ts'
 import type { Position, SessionRecord } from '../domain/index.ts'
 
 const SESSION = 'session'
+
+export function observe(map: Y.Map<unknown>, handler: (event: Y.YMapEvent<unknown>, transaction: Y.Transaction) => void): () => void {
+  map.observe(handler)
+  return () => map.unobserve(handler)
+}
 
 export function sessionMap(doc: Y.Doc): Y.Map<unknown> {
   return doc.getMap(SESSION)
@@ -19,17 +24,17 @@ function write(doc: Y.Doc, map: Y.Map<unknown>, entries: Iterable<[string, unkno
   })
 }
 
-export function startSession(doc: Y.Doc, presenter: Participant, now: number): void {
-  write(doc, sessionMap(doc), Object.entries(started(presenter, now)))
+export function writeSessionStart(doc: Y.Doc, presenter: Participant, now: number): void {
+  write(doc, sessionMap(doc), Object.entries(startRecord(presenter, now)))
 }
 
-export function endSession(doc: Y.Doc, now: number): void {
-  write(doc, sessionMap(doc), Object.entries(ended(now)))
+export function writeSessionEnd(doc: Y.Doc, now: number): void {
+  write(doc, sessionMap(doc), Object.entries(endRecord(now)))
 }
 
 export function publishCursor(doc: Y.Doc, position: Position): void {
   const session = sessionMap(doc)
-  const cursor = cursorOf(position)
+  const cursor = clonePosition(position)
   if (!samePosition(session.get('cursor') as Position | undefined, cursor)) session.set('cursor', cursor)
 }
 

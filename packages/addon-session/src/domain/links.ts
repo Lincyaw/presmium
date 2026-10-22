@@ -23,7 +23,7 @@ export function joinUrl(base: string, room: string): string {
   return url.href
 }
 
-export function loopbackLink(link: string): boolean {
+export function isLoopbackLink(link: string): boolean {
   try {
     return isLoopback(new URL(link).hostname)
   } catch {
@@ -31,7 +31,7 @@ export function loopbackLink(link: string): boolean {
   }
 }
 
-export function roomId(random: Uint8Array): string {
+export function readableString(random: Uint8Array): string {
   return [...random].map(byte => ALPHABET[byte % ALPHABET.length]).join('')
 }
 

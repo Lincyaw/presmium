@@ -26,11 +26,11 @@ export function sessionStatus(record: SessionRecord): Exclude<SessionStatus, 'id
   return record.status === 'ended' ? 'ended' : 'active'
 }
 
-export function started(presenter: Participant, now: number): SessionRecord {
+export function startRecord(presenter: Participant, now: number): SessionRecord {
   return { status: 'active', presenter: presenter.id, presenterName: presenter.name, startedAt: now }
 }
 
-export function ended(now: number): SessionRecord {
+export function endRecord(now: number): SessionRecord {
   return { status: 'ended', endedAt: now }
 }
 
@@ -39,7 +39,7 @@ export function samePosition(a: Position | undefined, b: Position | undefined): 
     && a?.trail?.join('\n') === b?.trail?.join('\n') && a?.back === b?.back
 }
 
-export function cursorOf(position: Position): Position {
+export function clonePosition(position: Position): Position {
   const { slide, step, view, section, trail, back } = position
   return { slide, step, ...view ? { view } : {}, ...section ? { section } : {}, ...trail ? { trail: [...trail] } : {}, ...back ? { back } : {} }
 }
@@ -49,12 +49,12 @@ export function followTarget(me: Participant | undefined, follow: FollowMode, re
   return record.cursor
 }
 
-export function plain<T>(value: T): T {
+export function jsonClone<T>(value: T): T {
   return value === undefined ? value : JSON.parse(JSON.stringify(value)) as T
 }
 
 export function changedEntries(current: (key: string) => unknown, next: Readonly<Record<string, unknown>>): [string, unknown][] {
-  return Object.entries(plain(next)).filter(([key, value]) => value !== undefined && JSON.stringify(current(key)) !== JSON.stringify(value))
+  return Object.entries(jsonClone(next)).filter(([key, value]) => value !== undefined && JSON.stringify(current(key)) !== JSON.stringify(value))
 }
 
 function isParticipant(value: unknown): value is Participant {

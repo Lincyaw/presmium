@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import { claimFirst, useMessages } from '@lincyaw/host'
+import { useMessages } from '@lincyaw/host'
 import { ref, useId } from 'vue'
 import { MESSAGES, shortStatus, statusText } from '../domain/index.ts'
-import SessionBadge from './SessionBadge.vue'
+import { useClassroomSession } from './composables.ts'
+import SessionOverlays from './SessionOverlays.vue'
 import SessionPanel from './SessionPanel.vue'
-import { useClassroom } from './use.ts'
 
-const { snapshot } = useClassroom()
+const { snapshot } = useClassroomSession()
 const t = useMessages(MESSAGES)
 const id = useId()
 const open = ref(false)
-const badge = claimFirst('presmium.session.badge')
 
-function toggled(event: Event): void {
+function trackOpen(event: Event): void {
   open.value = (event as ToggleEvent).newState === 'open'
 }
 </script>
@@ -30,7 +29,7 @@ function toggled(event: Event): void {
       <span class="pm-session-toolbar__dot pm-ui-dot" :data-connection="snapshot.server ? snapshot.connection : 'none'" aria-hidden="true" />
       {{ t.classroom }}<span class="pm-session-toolbar__state">{{ shortStatus(snapshot, t) }}</span>
     </button>
-    <div :id="id" popover class="pm-session-popover" role="dialog" :aria-label="t.classroom" @toggle="toggled">
+    <div :id="id" popover class="pm-session-popover" role="dialog" :aria-label="t.classroom" @toggle="trackOpen">
       <template v-if="open">
         <SessionPanel />
         <button type="button" class="pm-session-popover__close pm-ui-button pm-ui-button--small" :popovertarget="id" popovertargetaction="hide">
@@ -38,9 +37,7 @@ function toggled(event: Event): void {
         </button>
       </template>
     </div>
-    <Teleport v-if="badge.owns.value" to="body">
-      <SessionBadge class="pm-session-badge--page" />
-    </Teleport>
+    <SessionOverlays />
   </span>
 </template>
 

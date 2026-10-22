@@ -1,4 +1,4 @@
-export { createClassroom } from './classroom.ts'
-export type { Classroom, ClassroomOptions } from './classroom.ts'
+export { createClassroomConnection } from './classroom-connection.ts'
+export type { ClassroomConnection, ClassroomConnectionOptions } from './classroom-connection.ts'
+export { useClassroomSession } from './composables.ts'
 export { sessionPlugin } from './plugin.ts'
-export { useClassroom } from './use.ts'

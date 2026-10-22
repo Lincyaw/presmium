@@ -3,10 +3,11 @@ import { useMessages } from '@lincyaw/host'
 import { errorMessage } from '@lincyaw/kernel'
 import { renderSVG } from 'uqr'
 import { computed, ref } from 'vue'
-import { loopbackLink, MESSAGES, statusText } from '../domain/index.ts'
-import { releaseFocus, useClassroom } from './use.ts'
+import { isLoopbackLink, MESSAGES, statusText } from '../domain/index.ts'
+import { useClassroomSession } from './composables.ts'
+import { releaseFocus } from './focus.ts'
 
-const { session, snapshot } = useClassroom()
+const { session, snapshot } = useClassroomSession()
 const t = useMessages(MESSAGES)
 const name = ref('')
 const busy = ref(false)
@@ -41,7 +42,7 @@ function submit(): void {
       {{ statusText(snapshot, t) }}
     </p>
     <p v-if="!snapshot.server" class="pm-session__hint">
-      {{ t.hint[0] }}<code>presmium-classroom-server</code>{{ t.hint[1] }}<code>presmium.session.server</code>{{ t.hint[2] }}
+      {{ t.hint.beforeCommand }}<code>presmium-classroom-server</code>{{ t.hint.beforeKey }}<code>presmium.session.server</code>{{ t.hint.end }}
     </p>
     <template v-else-if="snapshot.status === 'idle'">
       <p v-if="snapshot.rejoin" class="pm-session__actions">
@@ -64,7 +65,7 @@ function submit(): void {
         <p class="pm-session__join">
           {{ t.joinLink }}<a class="pm-session__link pm-ui-link" :href="snapshot.joinUrl" target="_blank" rel="noopener">{{ snapshot.joinUrl }}</a>
         </p>
-        <p v-if="loopbackLink(snapshot.joinUrl)" class="pm-session__warning" role="note">
+        <p v-if="isLoopbackLink(snapshot.joinUrl)" class="pm-session__warning" role="note">
           {{ t.loopbackLink }}
         </p>
         <div class="pm-session__qr" role="img" :aria-label="t.qr" v-html="qr" />

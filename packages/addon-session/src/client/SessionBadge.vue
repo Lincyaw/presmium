@@ -2,9 +2,10 @@
 import { useMessages } from '@lincyaw/host'
 import { computed, ref } from 'vue'
 import { MESSAGES } from '../domain/index.ts'
-import { releaseFocus, useClassroom } from './use.ts'
+import { useClassroomSession } from './composables.ts'
+import { releaseFocus } from './focus.ts'
 
-const { session, snapshot } = useClassroom()
+const { session, snapshot } = useClassroomSession()
 const t = useMessages(MESSAGES)
 const name = ref('')
 const busy = ref(false)

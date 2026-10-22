@@ -29,7 +29,6 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "components",
     "global-top.vue",
     "setup",
     "src",

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { startClassroomServer } from '@lincyaw/classroom-server'
 import { presmium } from '@lincyaw/cli/testing'
 import { afterAll, expect, it } from 'vitest'
-import { createClassroom } from '../src/client/classroom.ts'
+import { createClassroomConnection } from '../src/client/classroom-connection.ts'
 
 const ADDON = fileURLToPath(new URL('..', import.meta.url))
 const dir = mkdtempSync(join(tmpdir(), 'presmium-session-'))
@@ -24,7 +24,7 @@ async function freePort(): Promise<number> {
 it('a join abandoned while the server was down leaves the classroom created after it alone (P-60)', async () => {
   const port = await freePort()
   const timeoutMs = 1500
-  const classroom = createClassroom({ server: `ws://127.0.0.1:${port}`, base: 'http://localhost/deck/', timeoutMs })
+  const classroom = createClassroomConnection({ server: `ws://127.0.0.1:${port}`, base: 'http://localhost/deck/', timeoutMs })
   const joining = classroom.session.join('oldroom', '小明')
   const server = await startClassroomServer({ port, host: '127.0.0.1', deck: dir })
   try {
