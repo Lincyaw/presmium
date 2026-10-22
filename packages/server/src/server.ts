@@ -2,7 +2,7 @@ import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
 import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage } from 'node:http'
 import { dirname } from 'node:path'
-import { APPROVALS, eventStream, isRecord, MAX_BODY, MCP_ENDPOINT, errorMessage, prefixed } from '@lincyaw/kernel'
+import { APPROVALS, errorMessage, isRecord, jsonResponse, MAX_BODY, MCP_ENDPOINT, prefixedLogger, problemResponse, sseResponse } from '@lincyaw/kernel'
 import type {
   ApprovalKind,
   Logger,
@@ -26,7 +26,7 @@ import type { ApprovalPolicy, WindowPosition } from './control.ts'
 import { focusBody, FocusStore } from './focus.ts'
 import { DiagnosticStore } from './diagnostics.ts'
 import type { ServedDocument, ServerHost } from './host.ts'
-import { bearer, closeServer, createProxy, header, isLoopback, json, limitBody, listen, nodeServer, problem, urlHost } from './http.ts'
+import { bearer, closeServer, createProxy, header, isLoopback, limitBody, listen, nodeServer, urlHost } from './http.ts'
 import type { Decision, ProxyTarget } from './http.ts'
 import { serverMcpHost } from './mcp.ts'
 
@@ -207,7 +207,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
             secret: name => env[name],
             ...operatorDir ? { operatorDir } : {},
             ...doc.home ? { home: true } : {},
-            log: prefixed(log, id),
+            log: prefixedLogger(log, id),
           }
           try {
             contributions.set(id, await plugin.server.call(plugin, ctx))
@@ -249,7 +249,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     return found
   }
 
-  const refuse = (refusal: Refusal): Decision => ({ kind: 'answer', response: problem(refusal.status, refusal.message) })
+  const refuse = (refusal: Refusal): Decision => ({ kind: 'answer', response: problemResponse(refusal.status, refusal.message) })
 
   const decide = async (req: IncomingMessage): Promise<Decision> => {
     const url = new URL(req.url ?? '/', 'http://presmium')
@@ -265,7 +265,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
       return proxy ?? { kind: 'fetch' }
     }
     const forward = options.mode === 'serve' ? options.forward?.() : undefined
-    if (!forward) return { kind: 'answer', response: problem(404, 'not found') }
+    if (!forward) return { kind: 'answer', response: problemResponse(404, 'not found') }
     const site = new URL(forward)
     const lan = !isLoopback(header(req.headers, 'host'))
     const headers = lan ? { host: site.host, ...header(req.headers, 'origin') ? { origin: site.origin } : {} } : undefined
@@ -293,7 +293,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   const serveMcp = async (request: Request): Promise<Response> => {
     const given = bearer(request.headers.get('authorization'))
     const access: McpCaller | undefined = given === undefined ? undefined : given === token ? { member: LOCAL_AUTHOR, mode: 'author' as const } : mcpTokens.get(given)
-    if (!access) return problem(401, 'MCP needs an Authorization: Bearer token')
+    if (!access) return problemResponse(401, 'MCP needs an Authorization: Bearer token')
     const limited = await limitBody(request, MAX_BODY)
     if (limited instanceof Response) return limited
     request = limited
@@ -310,49 +310,49 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     const url = new URL(request.url)
     const path = url.pathname
     const member = memberOf(req)
-    if ('status' in member) return problem(member.status, member.message)
+    if ('status' in member) return problemResponse(member.status, member.message)
     const document = documentOf(req.headers, url)
     if (isMcp(path)) return serveMcp(request)
     if (path.startsWith(`${SERVER_PATH}/`)) return await serverRoute(request, path.slice(SERVER_PATH.length + 1), member, document, req)
     const target = pluginPath(path)
-    if (!target) return problem(404, 'not found')
+    if (!target) return problemResponse(404, 'not found')
     return await pluginRoute(request, target, member, document)
   }
 
   const serverRoute = async (request: Request, route: string, member: Member, document: string, req: IncomingMessage): Promise<Response> => {
-    if (route === 'hello') return json({ member, document })
+    if (route === 'hello') return jsonResponse({ member, document })
     if (route === 'control') {
       if (request.method === 'GET') {
         const window = new URL(request.url).searchParams.get('window') || randomUUID()
         const stream = control.open(window, member, document)
         req.once('close', () => stream.close())
-        return eventStream(stream, request.signal)
+        return sseResponse(stream, request.signal)
       }
-      if (request.method !== 'POST') return problem(405, 'GET or POST')
+      if (request.method !== 'POST') return problemResponse(405, 'GET or POST')
       const limited = await limitBody(request, MAX_BODY)
       if (limited instanceof Response) return limited
       const body: unknown = await limited.json().catch(() => undefined)
-      if (!isRecord(body)) return problem(400, 'a JSON object')
+      if (!isRecord(body)) return problemResponse(400, 'a JSON object')
       if (body.type === 'answer' && typeof body.id === 'string') {
         const status = control.answer(body.id, body.allow === true, member)
-        return status === 200 ? json({ ok: true }) : problem(status, status === 404 ? 'no such approval' : 'this member may not answer this approval')
+        return status === 200 ? jsonResponse({ ok: true }) : problemResponse(status, status === 404 ? 'no such approval' : 'this member may not answer this approval')
       }
       if (body.type === 'report' && typeof body.window === 'string') {
         const position = windowPosition(body.position)
         const ok = control.report(body.window, member, { position, role: typeof body.role === 'string' ? body.role : undefined, status: isRecord(body.status) ? body.status : undefined })
-        return ok ? json({ ok: true }) : problem(404, 'unknown window')
+        return ok ? jsonResponse({ ok: true }) : problemResponse(404, 'unknown window')
       }
-      return problem(400, 'unknown message')
+      return problemResponse(400, 'unknown message')
     }
     if (route === 'tokens') return await tokensRoute(request)
     if (route === 'focus') return await focusRoute(request, member)
     if (route === 'diagnostics' || route === 'diagnostics/events') return await diagnosticsRoute(request, route === 'diagnostics/events', req)
-    return problem(404, 'not found')
+    return problemResponse(404, 'not found')
   }
 
   const tokensRoute = async (request: Request): Promise<Response> => {
-    if (!serviceToken) return problem(403, 'session tokens are issued only to the host that started this service (PRESMIUM_SERVICE_TOKEN)')
-    if (!fromHost(request)) return problem(401, 'session tokens need Authorization: Bearer <the service token>')
+    if (!serviceToken) return problemResponse(403, 'session tokens are issued only to the host that started this service (PRESMIUM_SERVICE_TOKEN)')
+    if (!fromHost(request)) return problemResponse(401, 'session tokens need Authorization: Bearer <the service token>')
     const limited = await limitBody(request, MAX_BODY)
     if (limited instanceof Response) return limited
     const body: unknown = await limited.json().catch(() => ({}))
@@ -363,35 +363,35 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
         sessions.get(id)!.revoke()
         sessions.delete(id)
       }
-      return json({ revoked: revoked.length })
+      return jsonResponse({ revoked: revoked.length })
     }
-    if (request.method !== 'POST') return problem(405, 'POST or DELETE')
-    if (!isRecord(body) || typeof body.document !== 'string' || session === undefined) return problem(400, '{ document, session }')
+    if (request.method !== 'POST') return problemResponse(405, 'POST or DELETE')
+    if (!isRecord(body) || typeof body.document !== 'string' || session === undefined) return problemResponse(400, '{ document, session }')
     const document = body.document
-    if (options.serverHost && !(await options.serverHost.documents()).some(doc => doc.dir === document)) return problem(404, `no document ${JSON.stringify(document)}`)
+    if (options.serverHost && !(await options.serverHost.documents()).some(doc => doc.dir === document)) return problemResponse(404, `no document ${JSON.stringify(document)}`)
     sessions.get(session)?.revoke()
     const grant = mcpEndpoint.issue(LOCAL_AUTHOR, 'author', { confirmed: true, document })
     sessions.set(session, grant)
-    return json({ url: grant.url, token: grant.token, document }, 201)
+    return jsonResponse({ url: grant.url, token: grant.token, document }, 201)
   }
 
   const focusRoute = async (request: Request, member: Member): Promise<Response> => {
     if (request.method === 'GET') {
       const params = new URL(request.url).searchParams
       const found = focus.get(params.has('document') ? params.get('document')! : undefined)
-      return json(found ? { document: found.document, focus: found.focus, reported: new Date(found.at).toISOString() } : { focus: null })
+      return jsonResponse(found ? { document: found.document, focus: found.focus, reported: new Date(found.at).toISOString() } : { focus: null })
     }
-    if (request.method !== 'POST') return problem(405, 'GET or POST')
-    if (serviceToken && !fromHost(request)) return problem(401, 'a focus report needs Authorization: Bearer <the service token>')
-    if (!options.serverHost) return problem(409, 'this server compiles no document')
+    if (request.method !== 'POST') return problemResponse(405, 'GET or POST')
+    if (serviceToken && !fromHost(request)) return problemResponse(401, 'a focus report needs Authorization: Bearer <the service token>')
+    if (!options.serverHost) return problemResponse(409, 'this server compiles no document')
     const limited = await limitBody(request, MAX_BODY)
     if (limited instanceof Response) return limited
     const body = focusBody(await limited.json().catch(() => undefined))
-    if (typeof body === 'string') return problem(400, body)
+    if (typeof body === 'string') return problemResponse(400, body)
     const workspaceFocus = body.focus.filter(report => report.scope === 'workspace')
-    if (workspaceFocus.length && !hasRole(member, 'owner')) return problem(403, 'workspace source selections need the owner role')
-    if (workspaceFocus.length && !options.serverHost.readSource) return problem(400, 'this host does not read workspace source selections')
-    if (!(await options.serverHost.documents()).some(doc => doc.dir === body.document)) return problem(404, `no document ${JSON.stringify(body.document)}`)
+    if (workspaceFocus.length && !hasRole(member, 'owner')) return problemResponse(403, 'workspace source selections need the owner role')
+    if (workspaceFocus.length && !options.serverHost.readSource) return problemResponse(400, 'this host does not read workspace source selections')
+    if (!(await options.serverHost.documents()).some(doc => doc.dir === body.document)) return problemResponse(404, `no document ${JSON.stringify(body.document)}`)
     try {
       const doc = body.focus.some(report => report.scope !== 'workspace') ? (await options.serverHost.compile(body.document)).doc : undefined
       const sources = new Map(await Promise.all(workspaceFocus.map(async report => {
@@ -399,44 +399,44 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
         return [path, (await options.serverHost!.readSource!(path, member)).content] as const
       })))
       const record = focus.report(body.document, doc, body.focus, path => sources.get(path)!)
-      return json({ document: record.document, focus: record.focus, reported: new Date(record.at).toISOString() })
+      return jsonResponse({ document: record.document, focus: record.focus, reported: new Date(record.at).toISOString() })
     } catch (error) {
-      return problem(400, errorMessage(error))
+      return problemResponse(400, errorMessage(error))
     }
   }
 
   const diagnosticsRoute = async (request: Request, stream: boolean, req: IncomingMessage): Promise<Response> => {
-    if (serviceToken && !fromHost(request)) return problem(401, 'diagnostics need Authorization: Bearer <the service token>')
-    if (!options.serverHost) return problem(409, 'this server compiles no document')
+    if (serviceToken && !fromHost(request)) return problemResponse(401, 'diagnostics need Authorization: Bearer <the service token>')
+    if (!options.serverHost) return problemResponse(409, 'this server compiles no document')
     const params = new URL(request.url).searchParams
     if (request.method === 'GET') {
       const document = params.has('document') ? params.get('document')! : undefined
       if (document !== undefined) {
-        if (!(await options.serverHost.documents()).some(doc => doc.dir === document)) return problem(404, `no document ${JSON.stringify(document)}`)
+        if (!(await options.serverHost.documents()).some(doc => doc.dir === document)) return problemResponse(404, `no document ${JSON.stringify(document)}`)
         await mcpHost.diagnostics!(document)
       }
-      if (!stream) return json(diagnostics.snapshot(document))
+      if (!stream) return jsonResponse(diagnostics.snapshot(document))
       const connection = new AbortController()
       req.once('close', () => connection.abort())
-      return eventStream(diagnostics.events(document, AbortSignal.any([connection.signal, request.signal])), request.signal)
+      return sseResponse(diagnostics.events(document, AbortSignal.any([connection.signal, request.signal])), request.signal)
     }
-    if (request.method !== 'POST' || stream) return problem(405, stream ? 'GET' : 'GET or POST')
+    if (request.method !== 'POST' || stream) return problemResponse(405, stream ? 'GET' : 'GET or POST')
     const limited = await limitBody(request, MAX_BODY)
     if (limited instanceof Response) return limited
     const body: unknown = await limited.json().catch(() => undefined)
     const report = previewDiagnostics(body)
-    if (typeof report === 'string') return problem(400, report)
-    if (!(await options.serverHost.documents()).some(doc => doc.dir === report.document)) return problem(404, `no document ${JSON.stringify(report.document)}`)
-    return json({ accepted: diagnostics.report(report) })
+    if (typeof report === 'string') return problemResponse(400, report)
+    if (!(await options.serverHost.documents()).some(doc => doc.dir === report.document)) return problemResponse(404, `no document ${JSON.stringify(report.document)}`)
+    return jsonResponse({ accepted: diagnostics.report(report) })
   }
 
   const pluginRoute = async (request: Request, target: { plugin: string, path: string }, member: Member, document: string): Promise<Response> => {
     const known = await mount(document)
-    if (!known) return problem(404, `no document ${JSON.stringify(document)}`)
+    if (!known) return problemResponse(404, `no document ${JSON.stringify(document)}`)
     const found = findRoute(known.contributions.get(target.plugin)?.routes, target.path)
-    if (!found) return problem(404, 'not found')
+    if (!found) return problemResponse(404, 'not found')
     const role = found.route.role ?? 'editor'
-    if (!hasRole(member, role)) return problem(403, `this route needs the role ${role}`)
+    if (!hasRole(member, role)) return problemResponse(403, `this route needs the role ${role}`)
     const limited = await limitBody(request, found.route.maxBody ?? MAX_BODY)
     if (limited instanceof Response) return limited
     try {
@@ -444,7 +444,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
       return response.headers.has('cache-control') ? response : withHeaders(response, { 'Cache-Control': 'no-store' })
     } catch (error) {
       log.error(`route ${target.plugin}/${target.path} failed: ${errorMessage(error)}`)
-      return problem(500, errorMessage(error))
+      return problemResponse(500, errorMessage(error))
     }
   }
 

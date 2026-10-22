@@ -1,4 +1,4 @@
-import { prefixed } from '@lincyaw/kernel'
+import { prefixedLogger } from '@lincyaw/kernel'
 import type { Logger } from '@lincyaw/kernel'
 
 const STDERR: Logger = {
@@ -12,5 +12,5 @@ const STDERR: Logger = {
 
 /** A plugin's logger in Node: everything on stderr, debug only with PRESMIUM_DEBUG, tagged with the plugin's ID. */
 export function pluginLogger(id: string): Logger {
-  return prefixed(STDERR, id)
+  return prefixedLogger(STDERR, id)
 }

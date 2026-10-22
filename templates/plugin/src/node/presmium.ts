@@ -8,7 +8,7 @@
  * at the document (GET reads, POST waves once more). A built site has no server.
  */
 import { createRequire } from 'node:module'
-import { deckLocale, json } from '@lincyaw/kernel'
+import { deckLocale, jsonResponse } from '@lincyaw/kernel'
 import type { DirectiveSpec, PresmiumNodePlugin } from '@lincyaw/kernel'
 import { COMPONENT, GREETING_MESSAGES, PLUGIN_ID } from '../domain/index.ts'
 import type { Waves } from '../domain/index.ts'
@@ -57,7 +57,7 @@ const plugin: PresmiumNodePlugin = {
           role: 'reader',
           handle(request) {
             if (request.method === 'POST') waves++
-            return json({ waves } satisfies Waves)
+            return jsonResponse({ waves } satisfies Waves)
           },
         },
       },

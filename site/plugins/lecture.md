@@ -207,7 +207,7 @@ Node 端入口的 `services(ctx)` 返回 `[令牌, 实现]` 的列表，编译�
 Node 端入口的 `server(ctx)` 返回路由与反向代理，挂在 `/__presmium/<插件 ID>/` 下，`presmium dev` 与 `presmium serve` 都有。路由用 Fetch API 的请求与回答：
 
 ```ts
-import { json } from '@lincyaw/kernel'
+import { jsonResponse } from '@lincyaw/kernel'
 
 const plugin: PresmiumNodePlugin = {
   id: 'presmium.poll',
@@ -218,14 +218,14 @@ const plugin: PresmiumNodePlugin = {
       // GET /__presmium/presmium.poll/votes
       votes: {
         role: 'reader',
-        handle: async () => json({ votes: [] }),
+        handle: async () => jsonResponse({ votes: [] }),
       },
     },
   }),
 }
 ```
 
-- `role` 默认 `editor`；请求体默认至多 1 MiB，更大的写 `maxBody`。回答用内核的 `json(data)` 与 `problem(status, message)`。
+- `role` 默认 `editor`；请求体默认至多 1 MiB，更大的写 `maxBody`。回答用内核的 `jsonResponse(data)` 与 `problemResponse(status, message)`。
 - 改变状态的操作先经 `APPROVALS` 请求确认；写文档目录经 `DOCUMENT_FILES` 服务，不直接写文件。
 - 浏览器端用 `useServer().fetch(插件 ID, 路径)` 调用。静态产物中 `useServer().available` 为 false，组件要降级。
 

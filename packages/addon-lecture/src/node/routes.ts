@@ -1,7 +1,7 @@
 import { closeSync, createReadStream, existsSync, fstatSync, statSync } from 'node:fs'
 import { extname } from 'node:path'
 import { Readable } from 'node:stream'
-import { DOCUMENT_FILES, errorMessage, isRecord, json, problem, SPEECH } from '@lincyaw/kernel'
+import { DOCUMENT_FILES, errorMessage, isRecord, jsonResponse, problemResponse, SPEECH } from '@lincyaw/kernel'
 import type { IRDocument, Route, ServerContext, ServerContribution, SpeechService } from '@lincyaw/kernel'
 import { CLIPS_DIR, editUtterance, fileStem, lectureVoice, lexiconOf, recordedTrack, resynthesizedTrack, SCRIPT_TRACK, spliceSection, trackDuration } from '../domain/index.ts'
 import type { LectureTrack, MediaSegment, Recording, TrackHead, Voice } from '../domain/index.ts'
@@ -44,7 +44,7 @@ function decoded(segments: string[]): string {
 
 function serveFile(deckDir: string, file: string | undefined, request: Request): Response {
   const fd = file === undefined ? undefined : openInDeck(deckDir, file)
-  if (fd === undefined) return problem(404, 'no such file')
+  if (fd === undefined) return problemResponse(404, 'no such file')
   const { size } = fstatSync(fd)
   const headers = { 'Content-Type': TYPES[extname(file!)] ?? 'application/octet-stream', 'Accept-Ranges': 'bytes', 'Cache-Control': 'no-store' }
   const body = (start: number, end: number) => Readable.toWeb(createReadStream('', { fd, start, end })) as ReadableStream<Uint8Array>
@@ -109,7 +109,7 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     const body: unknown = await request.json().catch(() => undefined)
     const recording = isRecord(body) ? readRecording(body.recording) : undefined
     const head = isRecord(body) ? readHead(body.head, id) : undefined
-    if (!recording || !head) return problem(400, 'expected { head, recording }')
+    if (!recording || !head) return problemResponse(400, 'expected { head, recording }')
     const media = { ...recording, audio: await hashed(deckDir, id, recording.audio), video: await hashed(deckDir, id, recording.video) }
     const section = isRecord(body) && typeof body.section === 'string' ? body.section : undefined
     const stored = readTrack(deckDir, id)
@@ -126,7 +126,7 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     }
     await writeTrack(files, deckDir, track)
     ctx.log.info(`lecture ${id}: ${track.events.length} events, ${(trackDuration(track) / 1000).toFixed(1)} s`)
-    return json({ id, track })
+    return jsonResponse({ id, track })
   }
 
   const recordings: Route = {
@@ -134,33 +134,33 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     async handle(request, { rest }) {
       const [id = '', action, ...path] = rest.split('/')
       const dir = trackDir(deckDir, id)
-      if (!dir) return problem(404, 'no such lecture')
+      if (!dir) return problemResponse(404, 'no such lecture')
       try {
         if (action === 'media' && request.method === 'POST') {
           const body: unknown = await request.json().catch(() => undefined)
           if (!isRecord(body) || (body.folder !== 'audio' && body.folder !== 'video') || typeof body.section !== 'string' || typeof body.ext !== 'string' || !/^(ogg|webm|mp4|m4a)$/.test(body.ext)) {
-            return problem(400, 'expected { folder, section, ext }')
+            return problemResponse(400, 'expected { folder, section, ext }')
           }
           const stem = typeof body.kind === 'string' ? `${fileStem(body.section)}.${fileStem(body.kind)}` : fileStem(body.section)
-          return json({ src: freeMediaPath(deckDir, id, body.folder, stem, body.ext) })
+          return jsonResponse({ src: freeMediaPath(deckDir, id, body.folder, stem, body.ext) })
         }
         if (action === 'files' && request.method === 'PUT') {
           const file = mediaFile(deckDir, id, decoded(path))
           const at = Number(new URL(request.url).searchParams.get('at') ?? '0')
-          if (!file || !Number.isSafeInteger(at) || at < 0) return problem(400, 'expected a media file of the lecture and ?at=<position>')
+          if (!file || !Number.isSafeInteger(at) || at < 0) return problemResponse(400, 'expected a media file of the lecture and ?at=<position>')
           const size = existsSync(file) ? statSync(file).size : 0
-          if (at > size) return problem(400, `?at=${at} is past the end of the file (${size} bytes)`)
+          if (at > size) return problemResponse(400, `?at=${at} is past the end of the file (${size} bytes)`)
           const bytes = new Uint8Array(await request.arrayBuffer())
-          if (bytes.byteLength > MAX_CHUNK || at + bytes.byteLength > MAX_FILE) return problem(413, 'chunk too large')
+          if (bytes.byteLength > MAX_CHUNK || at + bytes.byteLength > MAX_FILE) return problemResponse(413, 'chunk too large')
           await files.write(file, bytes, at)
-          return json({ written: bytes.byteLength })
+          return jsonResponse({ written: bytes.byteLength })
         }
         if (action === 'finish' && request.method === 'POST') return await finish(id, request)
       } catch (error) {
         ctx.log.error(`lecture ${id}: ${errorMessage(error)}`)
-        return problem(500, errorMessage(error))
+        return problemResponse(500, errorMessage(error))
       }
-      return problem(404, 'unknown recording action')
+      return problemResponse(404, 'unknown recording action')
     },
   }
 
@@ -200,12 +200,12 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
   }
   const clipRefusal = async (id: string, name: string): Promise<Response | undefined> => {
     const said = id === SCRIPT_TRACK && voiced() ? [...takes.values()].some(take => take.has(name)) : recorded(id)?.utterances.some(u => u.clip === name)
-    if (!said) return problem(404, `no clip ${name} in the lecture ${id}`)
+    if (!said) return problemResponse(404, `no clip ${name} in the lecture ${id}`)
     try {
-      return (await cachedClip(speech(), name)) ? undefined : problem(404, `the clip ${name} is not in the synthesis cache`)
+      return (await cachedClip(speech(), name)) ? undefined : problemResponse(404, `the clip ${name} is not in the synthesis cache`)
     } catch (error) {
-      if (error instanceof Refusal) return problem(error.status, error.message)
-      return problem(403, `the clip ${name} may not be given: ${errorMessage(error)}`)
+      if (error instanceof Refusal) return problemResponse(error.status, error.message)
+      return problemResponse(403, `the clip ${name} may not be given: ${errorMessage(error)}`)
     }
   }
   const voiced = () => {
@@ -230,7 +230,7 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
   }
   const save = async (track: LectureTrack, extra: Record<string, unknown> = {}) => {
     await writeTrack(files, deckDir, track)
-    return json({ ...extra, track })
+    return jsonResponse({ ...extra, track })
   }
   const resynthesize = async (track: LectureTrack, voice: { engine?: string, voice: string }, only?: string): Promise<LectureTrack> => {
     const clips = new Map<string, MadeClip>()
@@ -251,7 +251,7 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
           if (!(await transcriptionEngine(speech(), latestDoc(deckDir)))) throw new Refusal(503, 'no speech engine transcribes: the operator defines one (PRESMIUM_SPEECH_<ID>_URL and _PROVIDER)')
           const { track: transcribed, bound, provider } = await transcribeLecture(files, deckDir, track.id, speech(), latestDoc(deckDir), request.signal)
           ctx.log.info(`lecture ${id}: transcribed by ${provider}, ${transcribed.utterances.length} utterances, ${bound} events bound to words`)
-          return json({ provider, bound, track: transcribed })
+          return jsonResponse({ provider, bound, track: transcribed })
         }
         if (action === 'utterances' && request.method === 'PUT' && path.length === 1) {
           const body: unknown = await request.json().catch(() => undefined)
@@ -268,11 +268,11 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
           const engine = typeof body.engine === 'string' && body.engine ? body.engine : undefined
           return await save(await resynthesize(track, { ...engine ? { engine } : {}, voice: body.voice }))
         }
-        return problem(404, 'unknown editing action')
+        return problemResponse(404, 'unknown editing action')
       } catch (error) {
-        if (error instanceof Refusal) return problem(error.status, error.message)
+        if (error instanceof Refusal) return problemResponse(error.status, error.message)
         ctx.log.error(`lecture ${id}: ${errorMessage(error)}`)
-        return problem(502, errorMessage(error))
+        return problemResponse(502, errorMessage(error))
       }
     },
   }
@@ -293,7 +293,7 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
           const doc = latestDoc(deckDir)
           const voice = voiced()
           const synthetic = voice && doc ? [{ id: SCRIPT_TRACK, lang: doc.meta.lang ?? 'zh-CN', voice: { kind: 'synthetic', ...voice } }] : []
-          return json([...synthetic, ...trackIds(deckDir).filter(id => !(voice && id === SCRIPT_TRACK)).flatMap((id) => {
+          return jsonResponse([...synthetic, ...trackIds(deckDir).filter(id => !(voice && id === SCRIPT_TRACK)).flatMap((id) => {
             try {
               const track = recorded(id)
               return track ? [{ id, lang: track.lang, voice: track.voice, duration: trackDuration(track), utterances: track.utterances.length }] : []
@@ -309,11 +309,11 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
           const [id = '', ...path] = rest.split('/')
           try {
             if (path.length > 0) return await lectureFile(id, path, request)
-            if (id === SCRIPT_TRACK && voiced()) return json(await scriptTrack())
+            if (id === SCRIPT_TRACK && voiced()) return jsonResponse(await scriptTrack())
             const track = recorded(id)
-            return track ? json(served(track)) : problem(404, `no lecture ${id}`)
+            return track ? jsonResponse(served(track)) : problemResponse(404, `no lecture ${id}`)
           } catch (error) {
-            return problem(error instanceof Refusal ? error.status : 500, errorMessage(error))
+            return problemResponse(error instanceof Refusal ? error.status : 500, errorMessage(error))
           }
         },
       },
@@ -326,22 +326,22 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
             const [transcribe, synthesize] = await Promise.all([transcriptionEngine(service, doc), synthesisEngineOf(service, doc, engine)])
             const voices = synthesize ? await service.voices(synthesize.id, doc?.meta.lang).catch(() => []) : []
             const info = (e: typeof transcribe) => e && { engine: e.id, provider: e.provider, local: e.local }
-            return json({ transcribe: info(transcribe), synthesize: synthesize && { ...info(synthesize), voices } })
+            return jsonResponse({ transcribe: info(transcribe), synthesize: synthesize && { ...info(synthesize), voices } })
           } catch (error) {
-            return error instanceof Refusal ? problem(error.status, error.message) : problem(502, errorMessage(error))
+            return error instanceof Refusal ? problemResponse(error.status, error.message) : problemResponse(502, errorMessage(error))
           }
         },
       },
       'editing/*': editing,
       'recordings': {
         async handle(request) {
-          if (request.method !== 'POST') return problem(405, 'POST to start a recording')
+          if (request.method !== 'POST') return problemResponse(405, 'POST to start a recording')
           const body: unknown = await request.json().catch(() => ({}))
           const existing = isRecord(body) && typeof body.track === 'string' ? body.track : undefined
-          if (existing && !readTrack(deckDir, existing)) return problem(404, `no lecture ${existing}`)
+          if (existing && !readTrack(deckDir, existing)) return problemResponse(404, `no lecture ${existing}`)
           const id = existing ?? newTrackId(deckDir)
           await writeGitFiles(files, trackDir(deckDir, id)!, policy)
-          return json({ id })
+          return jsonResponse({ id })
         },
       },
       'recordings/*': recordings,

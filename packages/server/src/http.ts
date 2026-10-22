@@ -3,7 +3,7 @@ import type { IncomingHttpHeaders, IncomingMessage, Server, ServerResponse } fro
 import type { AddressInfo } from 'node:net'
 import type { Duplex } from 'node:stream'
 import { getRequestListener } from '@hono/node-server'
-import { json, problem } from '@lincyaw/kernel'
+import { jsonResponse } from '@lincyaw/kernel'
 import { createProxyServer } from 'http-proxy-3'
 
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]'])
@@ -34,10 +34,8 @@ export function bearer(value: string | null | undefined): string | undefined {
   return match?.[1]
 }
 
-export { json, problem }
-
 export async function limitBody(request: Request, limit: number): Promise<Request | Response> {
-  const tooLarge = () => json({ error: `the request body is larger than this route takes (${limit} bytes)` }, 413)
+  const tooLarge = () => jsonResponse({ error: `the request body is larger than this route takes (${limit} bytes)` }, 413)
   const declared = Number(request.headers.get('content-length') ?? Number.NaN)
   if (declared > limit) return tooLarge()
   if (!request.body) return request

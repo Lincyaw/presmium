@@ -325,7 +325,7 @@ interface HostAdapter {
 
 内核契约中的令牌（`executor`、`session`、`classroomStore`、`presenterPanels`、`speech`、`agent`、`ask`、`agentRuntime`、`revisions`、`documentFiles`、`documentLocks`、`approvals`、`mcpEndpoint`、`changeReview`、`processSandbox`）定义在 `packages/kernel/src/contracts.ts` 与它再导出的 `contracts/` 模块中；宿主层的令牌（`syncTransports`、`navigation`、`toolbar`、`operations`、`status`）定义在 `packages/host/src/contracts.ts`。服务替换时，提供方与使用方都不需要改动。Node 端的令牌（`speech` 的 Node 实现、`agentRuntime`、`revisions`、`documentFiles`、`documentLocks`、`approvals`、`mcpEndpoint`、`changeReview`、`processSandbox`）登记在编译器为每份文稿建立的 Node 端服务注册表中（`PresmiumNodePlugin.services`，服务端与工作区另行登记自己的实现），规则与浏览器端相同：一个令牌只有一个实现。
 
-`executor`、`session`、`classroomStore` 的接口（`RunRequest`、`SessionService`、`Role` 等）是业务契约。它们放在内核包中是有意的：提供方与使用方是不同的插件，插件之间不互相引用（第 3 节），契约只能放在双方都依赖的共享内核中。内核的运行时（服务注册、启动、锚点、检查）不使用这些概念。见第 9.2 节。
+`executor`、`session`、`classroomStore` 的接口（`RunRequest`、`SessionService`、`ParticipantRole` 等）是业务契约。它们放在内核包中是有意的：提供方与使用方是不同的插件，插件之间不互相引用（第 3 节），契约只能放在双方都依赖的共享内核中。内核的运行时（服务注册、启动、锚点、检查）不使用这些概念。见第 9.2 节。
 
 ### 4.6 执行环境、会话与富输出
 
@@ -671,8 +671,8 @@ export interface Route {
 /** 路由默认接受的请求体：1 MiB */
 export const MAX_BODY = 1 << 20
 
-/** JSON 回答，带 `Cache-Control: no-store`；`problem(status, message)` 是 `{ error: message }` 的错误回答 */
-export function json(data: unknown, status?: number, headers?: Record<string, string>): Response
+/** JSON 回答，带 `Cache-Control: no-store`；`problemResponse(status, message)` 是 `{ error: message }` 的错误回答（`packages/kernel/src/responses.ts`） */
+export function jsonResponse(data: unknown, status?: number, headers?: Record<string, string>): Response
 
 export interface ProxySpec {
   /** 挂在 `/__presmium/<插件 ID>/<path>/` 下；HTTP 与 WebSocket 都转发 */
@@ -746,7 +746,7 @@ export interface Approvals {
 export const APPROVALS = defineService<Approvals>('presmium.approvals')
 
 /** SSE 响应：每个事件写成 `event:` 与 `data:`（JSON）行；`signal` 中止或事件结束时关闭 */
-export function eventStream(events: AsyncIterable<{ event?: string, data: unknown }>, signal?: AbortSignal): Response
+export function sseResponse(events: AsyncIterable<{ event?: string, data: unknown }>, signal?: AbortSignal): Response
 
 /** MCP 令牌签发时的模式：`author`，可以写源码；每个令牌都读完整的文稿 */
 export type AgentMode = 'author'

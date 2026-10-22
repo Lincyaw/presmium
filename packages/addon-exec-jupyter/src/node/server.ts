@@ -1,4 +1,4 @@
-import { isRecord, problem } from '@lincyaw/kernel'
+import { isRecord, problemResponse } from '@lincyaw/kernel'
 import type { EnvironmentSpec, ProxySpec, Route, ServerContext, ServerContribution } from '@lincyaw/kernel'
 import { authOf, cleanupPath, operatorConnection, proxyPath } from '../domain/index.ts'
 import type { Connection } from '../domain/index.ts'
@@ -56,17 +56,17 @@ export function jupyterServer(ctx: ServerContext): ServerContribution {
             role: 'reader',
             maxBody: 1024,
             async handle(request) {
-              if (request.method !== 'POST') return problem(405, 'POST')
+              if (request.method !== 'POST') return problemResponse(405, 'POST')
               const body: unknown = await request.json().catch(() => undefined)
               if (!isRecord(body) || Object.keys(body).length !== 2
                 || typeof body.kernel !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(body.kernel)
                 || typeof body.directory !== 'string' || !/^presmium-runs\/[a-z0-9]+-[a-z0-9]+$/.test(body.directory)) {
-                return problem(400, 'expected a kernel id and its presmium-runs directory')
+                return problemResponse(400, 'expected a kernel id and its presmium-runs directory')
               }
               const key = JSON.stringify([connection.url, body.kernel, body.directory])
               let task = cleaning.get(key)
               if (!task) {
-                if (cleaning.size >= 32) return problem(429, 'too many Jupyter cleanups in progress')
+                if (cleaning.size >= 32) return problemResponse(429, 'too many Jupyter cleanups in progress')
                 const { kernel, directory } = body
                 // Do not bind to request.signal: the browser may already be gone.
                 const timeout = AbortSignal.timeout(15_000)
@@ -83,7 +83,7 @@ export function jupyterServer(ctx: ServerContext): ServerContribution {
         const reason = found.reason
         routes[`${proxyPath(name)}/*`] = {
           role: 'reader',
-          handle: () => problem(502, reason),
+          handle: () => problemResponse(502, reason),
         }
       }
       return routes

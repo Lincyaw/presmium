@@ -1,12 +1,12 @@
-export function json(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
+export function jsonResponse(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers } })
 }
 
-export function problem(status: number, message: string): Response {
-  return json({ error: message }, status)
+export function problemResponse(status: number, message: string): Response {
+  return jsonResponse({ error: message }, status)
 }
 
-export function eventStream(events: AsyncIterable<{ event?: string, data: unknown }>, signal?: AbortSignal): Response {
+export function sseResponse(events: AsyncIterable<{ event?: string, data: unknown }>, signal?: AbortSignal): Response {
   const encoder = new TextEncoder()
   const iterator = events[Symbol.asyncIterator]()
   let closed = false

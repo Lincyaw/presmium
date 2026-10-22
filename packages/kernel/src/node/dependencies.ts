@@ -20,11 +20,11 @@ const resolveBrowserImport = resolve.create.sync({
   extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json'],
 })
 
-export function preBundle(root: string, packages: Iterable<string>): string[] {
-  return optimizeDeps(root, packages).include
-}
-
-export function optimizeDeps(root: string, packages: Iterable<string>): { include: string[], exclude: string[] } {
+/**
+ * Links each installed Presmium package that imports browser dependencies into `<root>/node_modules`,
+ * so Vite resolves them from the generated project, and returns Vite's `optimizeDeps` for them.
+ */
+export function linkBrowserDependencies(root: string, packages: Iterable<string>): { include: string[], exclude: string[] } {
   const include = new Set<string>()
   const exclude = new Set<string>()
   const seen = new Set<string>()

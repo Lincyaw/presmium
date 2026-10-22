@@ -208,7 +208,7 @@ Executors in `executors` run code at compile time: they use only the environment
 `server(ctx)` of the Node entry returns routes and reverse proxies under `/__presmium/<plugin id>/`, in both `presmium dev` and `presmium serve`. Routes take and give Fetch API requests and responses:
 
 ```ts
-import { json } from '@lincyaw/kernel'
+import { jsonResponse } from '@lincyaw/kernel'
 
 const plugin: PresmiumNodePlugin = {
   id: 'presmium.poll',
@@ -219,14 +219,14 @@ const plugin: PresmiumNodePlugin = {
       // GET /__presmium/presmium.poll/votes
       votes: {
         role: 'reader',
-        handle: async () => json({ votes: [] }),
+        handle: async () => jsonResponse({ votes: [] }),
       },
     },
   }),
 }
 ```
 
-- `role` defaults to `editor`; request bodies are at most 1 MiB unless the route sets `maxBody`. Answer with the kernel's `json(data)` and `problem(status, message)`.
+- `role` defaults to `editor`; request bodies are at most 1 MiB unless the route sets `maxBody`. Answer with the kernel's `jsonResponse(data)` and `problemResponse(status, message)`.
 - Operations that change state ask for approval through `APPROVALS` first; writes to a document's directory go through the `DOCUMENT_FILES` service, not straight to files.
 - The browser calls a route with `useServer().fetch(plugin id, path)`. In static outputs `useServer().available` is false, and the component degrades.
 

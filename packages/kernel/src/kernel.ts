@@ -13,7 +13,7 @@ import type {
 } from './contracts.ts'
 import { errorMessage, isRecord } from './errors.ts'
 import { createEventBus } from './events.ts'
-import { prefixed } from './logging.ts'
+import { prefixedLogger } from './logging.ts'
 import { ServiceRegistry } from './services.ts'
 
 export interface KernelOptions {
@@ -167,7 +167,7 @@ export class Kernel {
         return this.services.tryGet(token)
       },
       events: this.events,
-      log: prefixed(this.#log, id),
+      log: prefixedLogger(this.#log, id),
       ...this.#environments ? { environments: this.#environments } : {},
     }
   }

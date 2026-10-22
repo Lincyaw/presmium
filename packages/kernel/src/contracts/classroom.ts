@@ -2,12 +2,12 @@ import type { Unsubscribe } from './plugin.ts'
 import { defineService } from './service.ts'
 import type { Cursor } from './steps.ts'
 
-export type Role = 'presenter' | 'learner'
+export type ParticipantRole = 'presenter' | 'learner'
 
 export interface Participant {
   id: string
   name: string
-  role: Role
+  role: ParticipantRole
 }
 
 export type SessionStatus = 'idle' | 'active' | 'ended'

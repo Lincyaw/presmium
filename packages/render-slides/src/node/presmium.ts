@@ -7,7 +7,7 @@ import { dirname, join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { errorMessage, irBlocks, nodeMdast, previewFrameAncestors, PREVIEW_REVISION } from '@lincyaw/kernel'
 import type { IRDocument, LocalAsset, MdastNode, NodeVitePlugin, PresmiumNodePlugin, RenderContext } from '@lincyaw/kernel'
-import { backgroundPriority, copyPublished, FONT_LICENSE, fontLicense, NODE_RESOURCE_ARGS, optimizeDeps, resourceEnvironment, TYPESCRIPT_IMPORT } from '@lincyaw/kernel/node'
+import { backgroundPriority, copyPublished, FONT_LICENSE, fontLicense, linkBrowserDependencies, NODE_RESOURCE_ARGS, resourceEnvironment, TYPESCRIPT_IMPORT } from '@lincyaw/kernel/node'
 import { addonDirs, hasExtension, previewDocument, slidevMarkdown } from './slidev.ts'
 import type { SlidevDeck } from './slidev.ts'
 
@@ -119,7 +119,7 @@ async function writeDeck(dir: string, ctx: RenderContext, deck: SlidevDeck, doc:
 async function writeViteConfig(dir: string, ctx: RenderContext, doc: IRDocument): Promise<void> {
   if (ctx.vitePlugins.length && ctx.nodeVitePlugins === undefined) throw new Error('the slides renderer needs nodeVitePlugins entries to load the context\'s Vite plugins')
   const packages = [PACKAGE_DIR, ...addonDirs(doc, ctx)]
-  const config = viteConfig(ctx, ctx.nodeVitePlugins ?? [], optimizeDeps(dir, packages), allowed(ctx, packages))
+  const config = viteConfig(ctx, ctx.nodeVitePlugins ?? [], linkBrowserDependencies(dir, packages), allowed(ctx, packages))
   const file = join(dir, 'vite.config.ts')
   if (await readFile(file, 'utf8').catch(() => '') !== config) await writeFile(file, config)
 }

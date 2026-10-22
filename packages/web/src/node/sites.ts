@@ -7,7 +7,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'nod
 import { fileURLToPath } from 'node:url'
 import { ABSOLUTE_URL, DEFAULT_LANG, deckLocale, docBlocks, errorMessage, isRecord, localRequestRefusal, nodeMdast, NON_FILE_URL } from '@lincyaw/kernel'
 import type { DocumentLink, Finding, IRDocument, MdastNode, RenderContext, RenderOutput, SiteDevServer, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
-import { FONT_LICENSE, fontLicense, isInside, optimizeDeps } from '@lincyaw/kernel/node'
+import { FONT_LICENSE, fontLicense, isInside, linkBrowserDependencies } from '@lincyaw/kernel/node'
 import { createProxyServer } from 'http-proxy-3'
 import { pageLink, searchDocuments, sectionLinks, siteShell, SITE_LABELS, toPages, translationPages, urlPath } from '../domain/index.ts'
 import type { Neighbour, SearchDocument, WebPage } from '../domain/index.ts'
@@ -298,7 +298,7 @@ function writeHome(workDir: string, site: SiteSpec, ctx: RenderContext, modules:
   write(dataFile, JSON.stringify({ title: site.title, label: languageLabel(lang), documents: homeDocuments(site, ctx.base), locales, sitemap: sitemapPages(site) }))
   write(join(workDir, '.gitignore'), '*\n')
   linkDependencies(root)
-  const optimize = optimizeDeps(root, browserPackages(modules))
+  const optimize = linkBrowserDependencies(root, browserPackages(modules))
   const publicDir = join(root, 'public')
   write(join(publicDir, FONT_LICENSE), fontLicense(import.meta.url))
   const image = shell.head?.image && (ABSOLUTE_URL.test(shell.head.image)

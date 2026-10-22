@@ -1,6 +1,6 @@
 import type { Logger } from './contracts.ts'
 
-export function prefixed(log: Logger, id: string): Logger {
+export function prefixedLogger(log: Logger, id: string): Logger {
   const tag = `[${id}]`
   return {
     debug: (...args) => log.debug(tag, ...args),

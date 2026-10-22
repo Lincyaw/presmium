@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
-import { json, problem } from '@lincyaw/kernel'
+import { jsonResponse, problemResponse } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
 import { consentPath, consentProblem, DEFAULT_CONSENT_DIR, safeName } from '../domain/index.ts'
 import { SpeechError } from './errors.ts'
@@ -56,19 +56,19 @@ export function writeConsent(operatorDir: string | undefined, settings: Record<s
 }
 
 export async function consentRoute(request: Request, rest: string, register: (engine: string, voice: string, record: unknown) => string): Promise<Response> {
-  if (request.method !== 'POST' && request.method !== 'PUT') return problem(405, 'POST the consent record (JSON) to consent/<engine>/<voice>')
+  if (request.method !== 'POST' && request.method !== 'PUT') return problemResponse(405, 'POST the consent record (JSON) to consent/<engine>/<voice>')
   const [engine, voice, ...more] = rest.split('/').filter(Boolean)
-  if (!engine || !voice || more.length) return problem(404, 'the route is consent/<engine>/<voice>')
+  if (!engine || !voice || more.length) return problemResponse(404, 'the route is consent/<engine>/<voice>')
   let record: unknown
   try {
     record = JSON.parse(await request.text())
   } catch {
-    return problem(400, 'the body is the consent record as JSON { speaker, scope, date, statementSha256 }')
+    return problemResponse(400, 'the body is the consent record as JSON { speaker, scope, date, statementSha256 }')
   }
   try {
     register(engine, voice, record)
-    return json({ engine, voice, registered: consentPath(engine, voice) })
+    return jsonResponse({ engine, voice, registered: consentPath(engine, voice) })
   } catch (error) {
-    return problem(error instanceof SpeechError ? error.status : 500, error instanceof Error ? error.message : String(error))
+    return problemResponse(error instanceof SpeechError ? error.status : 500, error instanceof Error ? error.message : String(error))
   }
 }

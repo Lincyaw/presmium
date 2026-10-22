@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
 import { startClassroomServer } from '@lincyaw/classroom-server'
-import { isRecord, json } from '@lincyaw/kernel'
+import { isRecord, jsonResponse } from '@lincyaw/kernel'
 import type { Check, PresmiumNodePlugin } from '@lincyaw/kernel'
 import { SESSION_ID, SYNC_PATH, sessionConfig } from '../domain/index.ts'
 
@@ -34,7 +34,7 @@ const plugin: PresmiumNodePlugin = {
     })
     return {
       routes: {
-        classroom: { role: 'reader', handle: (_request, { document }) => json({ path: `/__presmium/${SESSION_ID}/${SYNC_PATH}`, document }) },
+        classroom: { role: 'reader', handle: (_request, { document }) => jsonResponse({ path: `/__presmium/${SESSION_ID}/${SYNC_PATH}`, document }) },
       },
       proxies: [{ path: SYNC_PATH, target: `http://127.0.0.1:${classroom.port}`, role: 'reader' }],
       close: () => classroom.close(),

@@ -1,5 +1,5 @@
 import { relative, resolve, sep } from 'node:path'
-import { APPROVALS, errorMessage, isRecord, json, problem } from '@lincyaw/kernel'
+import { APPROVALS, errorMessage, isRecord, jsonResponse, problemResponse } from '@lincyaw/kernel'
 import type { Route, RunRequest, ServerContext, ServerContribution } from '@lincyaw/kernel'
 import { EXEC_LOCAL_ID, execLocalConfig, failedContainerRun } from '../domain/index.ts'
 import type { LocalEnvStatus } from '../domain/index.ts'
@@ -72,8 +72,8 @@ function route(handle: (request: Request, member: string) => Promise<Response>):
       try {
         return await handle(request, ctx.member.id)
       } catch (error) {
-        if (error instanceof Refused) return problem(error.status, error.message)
-        return problem(error instanceof PathError ? 400 : 500, errorMessage(error))
+        if (error instanceof Refused) return problemResponse(error.status, error.message)
+        return problemResponse(error instanceof PathError ? 400 : 500, errorMessage(error))
       }
     }),
   }
@@ -84,16 +84,16 @@ export function localEnvRoutes(ctx: ServerContext): ServerContribution {
   const workspace = configured === undefined ? ctx.workspaceRoot : resolve(ctx.deckDir, configured)
   return {
     routes: {
-      status: route(async () => json(await status(workspace))),
+      status: route(async () => jsonResponse(await status(workspace))),
       run: route(async (request, member) => {
         const run = runRequest(await body(request))
         const approvals = ctx.service(APPROVALS)
         const allowed = await approvals?.request({ kind: 'operate', scope: 'content', title: text().runTitle(run.lang), detail: run.code, from: EXEC_LOCAL_ID, member }, request.signal)
         if (!allowed) throw new Refused(403, text().notAllowed)
-        if (!findDefinition(workspace)) return json(failedContainerRun(text().noDefinition))
+        if (!findDefinition(workspace)) return jsonResponse(failedContainerRun(text().noDefinition))
         const devcontainer = await readDevcontainer(workspace)
-        if (!devcontainer) return json(failedContainerRun(text().unreadableDefinition))
-        return json(await runInContainer(workspace, devcontainer, run, { buildTimeoutMs }, request.signal))
+        if (!devcontainer) return jsonResponse(failedContainerRun(text().unreadableDefinition))
+        return jsonResponse(await runInContainer(workspace, devcontainer, run, { buildTimeoutMs }, request.signal))
       }),
       replicate: route(async (request) => {
         const fields = await body(request)

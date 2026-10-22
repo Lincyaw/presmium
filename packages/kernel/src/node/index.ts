@@ -1,5 +1,5 @@
 export { copyPublished } from './assets.ts'
-export { optimizeDeps, preBundle } from './dependencies.ts'
+export { linkBrowserDependencies } from './dependencies.ts'
 export { FONT_LICENSE, fontLicense } from './fonts.ts'
 export { packageOf, TYPESCRIPT_IMPORT } from './packages.ts'
 export { isInside } from './paths.ts'

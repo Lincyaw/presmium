@@ -1,4 +1,4 @@
-import { CHANGE_REVIEW, errorMessage, json } from '@lincyaw/kernel'
+import { CHANGE_REVIEW, errorMessage, jsonResponse } from '@lincyaw/kernel'
 import type { ChangeReview, PresmiumNodePlugin } from '@lincyaw/kernel'
 
 export default {
@@ -16,9 +16,9 @@ export default {
             try {
               if (op === 'open') review = await ctx.service(CHANGE_REVIEW)!.open({ document: scope.document, task: 'fixture-task', member: scope.member })
               else await review![op]()
-              return json({ root: review?.root })
+              return jsonResponse({ root: review?.root })
             } catch (error) {
-              return json({ error: errorMessage(error) }, 409)
+              return jsonResponse({ error: errorMessage(error) }, 409)
             }
           },
         },

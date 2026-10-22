@@ -4,7 +4,7 @@ import { dirname, join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { deckLocale, previewFrameAncestors } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
-import { FONT_LICENSE, fontLicense, optimizeDeps, packageOf } from '@lincyaw/kernel/node'
+import { FONT_LICENSE, fontLicense, linkBrowserDependencies, packageOf } from '@lincyaw/kernel/node'
 import { formOptions, neighbour, pageMarkdown, searchDocuments, SERVER_PROXY, sidebar, SITE_LABELS, toPages, translationPages } from '../domain/index.ts'
 import type { FormOptions, NavItem, Neighbour, SearchDocument, SiteShell, WebPage, WebRendererConfig } from '../domain/index.ts'
 import type { ClientModules } from './addons.ts'
@@ -334,7 +334,7 @@ export function writeSite(workDir: string, input: SiteInput): void {
   write(files.site, JSON.stringify(siteData(doc, options, translations, workspace)))
   write(join(workDir, '.gitignore'), '*\n')
   linkDependencies(files.root)
-  const optimize = optimizeDeps(files.root, browserPackages(modules))
+  const optimize = linkBrowserDependencies(files.root, browserPackages(modules))
   write(join(files.root, '.vitepress/config.mjs'), config(options, files, modules, input.deck, workspace, input.image, optimize, input.preview))
   write(join(files.root, '.vitepress/theme/index.ts'), theme(input.preview && { origins: input.preview.origins, document: workspace?.document ?? '' }))
   write(join(files.root, '.vitepress/theme/addons.ts'), addons(modules))

@@ -1,7 +1,7 @@
 import { currentLocale } from '@lincyaw/host'
 import type { Navigation, SyncTransport } from '@lincyaw/host'
 import { errorMessage } from '@lincyaw/kernel'
-import type { ClassroomStore, Participant, Role, Unsubscribe } from '@lincyaw/kernel'
+import type { ClassroomStore, Participant, ParticipantRole, Unsubscribe } from '@lincyaw/kernel'
 import { watch } from 'vue'
 import { WebsocketProvider } from 'y-websocket'
 import * as Y from 'yjs'
@@ -177,7 +177,7 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     listeners.forEach(listener => listener(next))
   }
 
-  const role = (): Role | undefined => membership?.me.role
+  const role = (): ParticipantRole | undefined => membership?.me.role
   const active = () => membership !== undefined && sessionStatus(readSession(doc)) === 'active'
   const following = () => role() === 'learner' && follow === 'follow' && active()
 

@@ -1,4 +1,4 @@
-import { problem } from '@lincyaw/kernel'
+import { problemResponse } from '@lincyaw/kernel'
 
 export class SpeechError extends Error {
   readonly status: number
@@ -11,9 +11,9 @@ export class SpeechError extends Error {
 }
 
 export function failure(error: unknown): Response {
-  if (error instanceof SpeechError) return problem(error.status, error.message)
-  if (error instanceof Error && error.name === 'AbortError') return problem(499, 'aborted')
-  return problem(502, error instanceof Error ? error.message : String(error))
+  if (error instanceof SpeechError) return problemResponse(error.status, error.message)
+  if (error instanceof Error && error.name === 'AbortError') return problemResponse(499, 'aborted')
+  return problemResponse(502, error instanceof Error ? error.message : String(error))
 }
 
 export async function answerError(response: Response, what: string): Promise<SpeechError> {
