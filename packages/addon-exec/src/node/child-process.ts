@@ -27,7 +27,7 @@ interface Pending {
   resolve(result: RunResult): void
 }
 
-interface Session {
+interface RunSession {
   history: RunRequest[]
   queue: Pending[]
   tail: Promise<void>
@@ -38,7 +38,7 @@ interface Session {
  * together go into one run, and a later one first runs the session's earlier requests again.
  */
 export function createChildProcessRuns(launch: ChildLaunchSpec) {
-  const sessions = new Map<string, Session>()
+  const runSessions = new Map<string, RunSession>()
 
   async function batch(requests: RunRequest[], skip: number, signal?: AbortSignal, ctx?: RunContext): Promise<RunResult[]> {
     const id = launch.executorId
@@ -80,7 +80,7 @@ export function createChildProcessRuns(launch: ChildLaunchSpec) {
     }).slice(skip)
   }
 
-  async function flush(state: Session): Promise<void> {
+  async function flush(state: RunSession): Promise<void> {
     const queue = state.queue
     state.queue = []
     const skip = state.history.length
@@ -94,16 +94,16 @@ export function createChildProcessRuns(launch: ChildLaunchSpec) {
     run(request: RunRequest, signal?: AbortSignal, ctx?: RunContext): Promise<RunResult> {
       const name = launch.sessions ? request.session : undefined
       if (!name) return batch([request], 0, signal, ctx).then(results => results[0]!)
-      let state = sessions.get(name)
-      if (!state) sessions.set(name, state = { history: [], queue: [], tail: Promise.resolve() })
-      const session = state
+      let state = runSessions.get(name)
+      if (!state) runSessions.set(name, state = { history: [], queue: [], tail: Promise.resolve() })
+      const runSession = state
       return new Promise((resolve) => {
-        session.queue.push({ request, signal, ctx, resolve })
-        if (session.queue.length === 1) session.tail = session.tail.then(() => new Promise(next => setImmediate(next))).then(() => flush(session))
+        runSession.queue.push({ request, signal, ctx, resolve })
+        if (runSession.queue.length === 1) runSession.tail = runSession.tail.then(() => new Promise(next => setImmediate(next))).then(() => flush(runSession))
       })
     },
     async endSession(session: string): Promise<void> {
-      sessions.delete(session)
+      runSessions.delete(session)
     },
   }
 }

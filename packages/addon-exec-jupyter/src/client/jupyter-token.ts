@@ -10,18 +10,19 @@ function storage(): Storage | undefined {
   }
 }
 
-function storedToken(name: string): string | undefined {
+function storedJupyterToken(name: string): string | undefined {
   return storage()?.getItem(key(name)) ?? undefined
 }
 
-export function forgetToken(name: string): void {
+export function forgetJupyterToken(name: string): void {
   storage()?.removeItem(key(name))
 }
 
 const asking = new Map<string, Promise<string | undefined>>()
 
-export function tokenFor(name: string, origin: string): Promise<string | undefined> {
-  const stored = storedToken(name)
+/** The Jupyter token of the environment: the one this tab stored, or else the one the person enters. */
+export function jupyterTokenFor(name: string, origin: string): Promise<string | undefined> {
+  const stored = storedJupyterToken(name)
   if (stored) return Promise.resolve(stored)
   let pending = asking.get(name)
   if (!pending) {

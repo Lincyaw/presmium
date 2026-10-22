@@ -46,14 +46,14 @@ export interface JupyterKernels {
   dispose(): Promise<void>
 }
 
-interface Session {
+interface RunSession {
   kernel?: Promise<JupyterKernelHandle>
   tail: Promise<unknown>
 }
 
 /** The kernels of a Jupyter environment: one per session, kept until the session ends, and one for each run outside a session. */
 export function createJupyterKernels(options: JupyterKernelsOptions): JupyterKernels {
-  const sessions = new Map<string, Session>()
+  const runSessions = new Map<string, RunSession>()
   const lifecycle = createJupyterKernelLifecycle({ kernelName: options.kernelName, shutdown: options.shutdown })
   let specs: Promise<{ language: string, names: string[] }> | undefined
 
@@ -140,14 +140,14 @@ export function createJupyterKernels(options: JupyterKernelsOptions): JupyterKer
     }
   }
 
-  const sessionKernel = (session: Session, settings: ServerConnection.ISettings) => async (): Promise<JupyterKernelHandle> => {
-    const known = session.kernel ? await session.kernel.catch(() => undefined) : undefined
+  const sessionKernel = (runSession: RunSession, settings: ServerConnection.ISettings) => async (): Promise<JupyterKernelHandle> => {
+    const known = runSession.kernel ? await runSession.kernel.catch(() => undefined) : undefined
     if (known && !known.connection.isDisposed && known.connection.status !== 'dead') return known
-    session.kernel = lifecycle.start(settings)
-    session.kernel.catch(() => {
-      session.kernel = undefined
+    runSession.kernel = lifecycle.start(settings)
+    runSession.kernel.catch(() => {
+      runSession.kernel = undefined
     })
-    return session.kernel
+    return runSession.kernel
   }
 
   const runOnce = async (request: RunRequest, signal?: AbortSignal): Promise<RunResult> => {
@@ -171,12 +171,12 @@ export function createJupyterKernels(options: JupyterKernelsOptions): JupyterKer
       if (signal?.aborted) return Promise.resolve(failedWith(errorMessage(signal.reason)))
       if (lifecycle.disposed) return Promise.resolve(failedWith('the Jupyter environment has been disposed'))
       if (!request.session) return runOnce(request, signal)
-      let session = sessions.get(request.session)
-      if (!session) {
-        session = { tail: Promise.resolve() }
-        sessions.set(request.session, session)
+      let runSession = runSessions.get(request.session)
+      if (!runSession) {
+        runSession = { tail: Promise.resolve() }
+        runSessions.set(request.session, runSession)
       }
-      const own = session
+      const own = runSession
       const result = own.tail.then(async () => {
         const started = Date.now()
         const settings = await settingsOrFailedRun()
@@ -187,9 +187,9 @@ export function createJupyterKernels(options: JupyterKernelsOptions): JupyterKer
       return result
     },
     async endSession(session) {
-      const known = sessions.get(session)
+      const known = runSessions.get(session)
       if (!known) return
-      sessions.delete(session)
+      runSessions.delete(session)
       await known.tail
       const handle = await known.kernel?.catch(() => undefined)
       if (handle) await lifecycle.shutdown(handle)
@@ -226,7 +226,7 @@ export function createJupyterKernels(options: JupyterKernelsOptions): JupyterKer
     },
     dispose() {
       const disposing = lifecycle.dispose()
-      sessions.clear()
+      runSessions.clear()
       return disposing
     },
   }

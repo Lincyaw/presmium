@@ -10,7 +10,7 @@ import { loadJupyterServices } from '../shared/load-services.ts'
 import { isRefused } from '../shared/refusal.ts'
 import { openTerminal } from '../shared/terminals.ts'
 import { messages } from './messages.ts'
-import { forgetToken, tokenFor } from './token.ts'
+import { forgetJupyterToken, jupyterTokenFor } from './jupyter-token.ts'
 
 /** The browser's side of the deck's Jupyter environments: an executor for each, and their terminals. */
 export interface JupyterClient {
@@ -28,9 +28,9 @@ function servedDocument(): Promise<string> {
   return documentName
 }
 
-async function hubUser(url: string, token: string): Promise<string> {
+async function hubUser(url: string, accessToken: string): Promise<string> {
   const origin = originOf(url.replace('{user}', 'x'))!
-  const response = await fetch(`${origin}/hub/api/user`, { headers: { Authorization: `token ${token}` } })
+  const response = await fetch(`${origin}/hub/api/user`, { headers: { Authorization: `token ${accessToken}` } })
   if (!response.ok) throw Object.assign(new Error(`${origin}/hub/api/user: ${response.status}`), { response })
   const user: unknown = await response.json()
   if (!isRecord(user) || typeof user.name !== 'string') throw new Error(`${origin}/hub/api/user: no name`)
@@ -107,17 +107,17 @@ export function createJupyterClient(environments: Record<string, EnvironmentSpec
     }
     const url = String(spec.url)
     if (authOf(spec) === 'none') return ServerConnection.makeSettings({ baseUrl: baseUrl(url), token: '' })
-    const token = await tokenFor(name, originOf(url.replace('{user}', 'x'))!)
-    if (!token) throw new Error(messages().noToken(name))
+    const accessToken = await jupyterTokenFor(name, originOf(url.replace('{user}', 'x'))!)
+    if (!accessToken) throw new Error(messages().noToken(name))
     let resolved: string
     try {
-      resolved = url.includes('{user}') ? url.replace('{user}', await hubUser(url, token)) : url
+      resolved = url.includes('{user}') ? url.replace('{user}', await hubUser(url, accessToken)) : url
     } catch (error) {
       forget(name)
       throw error
     }
     return ServerConnection.makeSettings({
-      baseUrl: baseUrl(resolved), token, appendToken: true,
+      baseUrl: baseUrl(resolved), token: accessToken, appendToken: true,
       fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, init).catch((error: unknown) => {
         // Jupyter may omit CORS headers on auth failures, hiding the HTTP status.
         // Let the next attempt ask again instead of retaining an unusable token.
@@ -139,7 +139,7 @@ export function createJupyterClient(environments: Record<string, EnvironmentSpec
 
   const forget = (name: string) => {
     settings.delete(name)
-    forgetToken(name)
+    forgetJupyterToken(name)
   }
 
   const terminals = new Set<TerminalSession>()
