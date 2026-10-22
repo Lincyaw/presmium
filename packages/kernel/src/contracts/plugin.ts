@@ -48,7 +48,7 @@ export interface EventBus {
 export interface PluginContext {
   config: Record<string, unknown>
   mode: PresentationMode
-  provide<T>(token: ServiceToken<T>, impl: T): void
+  provide<T>(token: ServiceToken<T>, implementation: T): void
   get<T>(token: ServiceToken<T>): T
   tryGet<T>(token: ServiceToken<T>): T | undefined
   events: EventBus

@@ -426,7 +426,7 @@ export class Compiler {
     const runPass = async ({ pass, loaded }: { pass: IRPass, loaded: LoadedPlugin }) => {
       signal?.throwIfAborted()
       const config = configOf(loaded)
-      const pctx: PassContext = {
+      const passContext: PassContext = {
         deckDir: this.deckDir,
         workspaceRoot: workspace.root,
         lang: run.lang,
@@ -442,7 +442,7 @@ export class Compiler {
         service: run.service,
       }
       try {
-        await pass.run(doc, pctx)
+        await pass.run(doc, passContext)
       } catch (error) {
         report({ checkId: 'presmium.plugins', severity: 'error', message: `pass ${pass.name} of plugin ${pluginId(loaded)} failed: ${errorMessage(error)}`, source: at(loaded.name) })
       }

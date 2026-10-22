@@ -186,134 +186,170 @@ async function convert(nodes: MdastNode[], scope: Scope, ctx: BlockContext, out:
   }
 }
 
+/** A directive of the source with its arguments read once, for the functions that turn each kind into blocks. */
+interface DirectiveCall {
+  node: MdastNode
+  name: string
+  options: Record<string, string | true>
+  arg: string
+  body: string
+  label?: string
+  reveal?: 'items' | 'next'
+  audience?: string[]
+  source: SourcePos
+  fail(message: string, severity?: Finding['severity']): void
+}
+
 async function directive(node: MdastNode, source: SourcePos, scope: Scope, target: string | undefined, ctx: BlockContext, push: Push, out: Output): Promise<void> {
   const name = String(node.name)
   const options = isRecord(node.options) ? node.options as Record<string, string | true> : {}
-  const arg = typeof node.args === 'string' ? node.args.trim() : ''
-  const body = typeof node.value === 'string' ? node.value : ''
-  const label = typeof options.label === 'string' ? options.label : undefined
-  const reveal = options.reveal === undefined ? undefined : options.reveal === 'items' ? 'items' : 'next'
   const fail = (message: string, severity: Finding['severity'] = 'error') =>
     ctx.report({ checkId: 'presmium.directive', severity, message: `{${name}}: ${message}`, source: { file: source.file, line: source.line } })
-  const audience = options.audience === undefined ? scope.audience : audienceOption(options.audience, scope.audience, fail)
-
-  if (name === 'audience') {
-    const names = audienceList(arg)
-    if (names.length === 0) fail('needs the audiences its section is for, e.g. {audience} teacher; until it names them, the section is left out of every version for an audience')
-    if (body.trim()) fail('takes no body: it marks its whole section; to mark part of a section, give a directive :audience:, e.g. an {only} around the paragraphs', 'warning')
-    out.audience = out.audience ? out.audience.filter(a => names.includes(a)) : names
-    return
+  const call: DirectiveCall = {
+    node,
+    name,
+    options,
+    arg: typeof node.args === 'string' ? node.args.trim() : '',
+    body: typeof node.value === 'string' ? node.value : '',
+    label: typeof options.label === 'string' ? options.label : undefined,
+    reveal: options.reveal === undefined ? undefined : options.reveal === 'items' ? 'items' : 'next',
+    audience: options.audience === undefined ? scope.audience : audienceOption(options.audience, scope.audience, fail),
+    source,
+    fail,
   }
-
-  if (name === 'slide' || name === 'only') {
-    let only = scope.only
-    if (name === 'only') {
-      const ids = arg.split(/[\s,]+/).filter(Boolean)
-      if (ids.length === 0) fail('needs the renderer ids it is limited to, e.g. {only} web, notebook')
-      for (const id of ids.filter(id => !ctx.renderers.has(id))) {
-        fail(`unknown renderer id "${id}": its content shows in no form; known ids are ${[...ctx.renderers].join(', ')}`, 'warning')
-      }
-      only = scope.only ? scope.only.filter(id => ids.includes(id)) : ids
-    }
-    const position = (key: 'at' | 'until') => {
-      if (options[key] === undefined) return scope[key]
-      const value = Number(options[key])
-      if (options[key] === true || options[key] === '' || !Number.isInteger(value) || value < 0) {
-        fail(`:${key}: must be a non-negative integer`)
-        return scope[key]
-      }
-      return value
-    }
-    const at = position('at')
-    const until = position('until')
-    if (at !== undefined && until !== undefined && until <= at) fail(':until: must be greater than :at:')
-    if (at !== undefined && reveal !== undefined) fail(':at: and :reveal: cannot be combined')
-    const inner: Scope = {
-      at, until,
-      visual: scope.visual || name === 'slide',
-      only,
-      items: reveal === undefined ? scope.items : reveal === 'items',
-      group: reveal === 'next' ? ++out.groups : scope.group,
-      audience,
-    }
-    const start = out.blocks.length
-    await convert(bodyNodes(node), inner, ctx, out)
-    const first = out.blocks[start]
-    if (first) first.label ??= label ?? target
-    return
+  switch (name) {
+    case 'audience': return sectionAudience(call, out)
+    case 'slide':
+    case 'only': return scopeDirective(call, scope, target, ctx, out)
+    case 'hints': return hintsDirective(call, out)
+    case 'config': return
+    case 'component': return componentDirective(call, ctx, push)
   }
-
-  if (name === 'hints') {
-    const data = yamlBody(body, fail)
-    for (const [renderer, value] of Object.entries(data ?? {})) {
-      if (isRecord(value)) out.hints[renderer] = { ...out.hints[renderer], ...value }
-      else fail(`hints for "${renderer}" must be a mapping`)
-    }
-    return
-  }
-
-  if (name === 'config') return
-
-  if (name === 'component') {
-    if (!arg) return fail('needs a component name, e.g. {component} PmQuiz')
-    const props: Record<string, unknown> = {}
-    for (const [key, value] of Object.entries(options)) {
-      if (!COMPONENT_OPTIONS.includes(key)) props[key] = value === true ? true : yamlValue(value)
-    }
-    Object.assign(props, yamlBody(body, fail))
-    const plugin = typeof options.plugin === 'string' ? options.plugin : ctx.components.get(arg)
-    if (plugin === undefined) fail(`no plugin in \`plugins\` registers the component ${arg}`, 'warning')
-    const span = options.span === undefined ? 0 : Number(options.span)
-    if (!Number.isInteger(span) || span < 0) return fail(`:span: must be a non-negative integer`)
-    push({ kind: kebab(arg), label, reveal: reveal !== undefined, role: 'visual', span, source, audience, node: { type: 'component', plugin: plugin ?? '', name: arg, props } })
-    return
-  }
-
   const registered = ctx.directives.get(name)
-  if (registered) {
-    const { spec, plugin, config } = registered
-    const typed: Record<string, unknown> = {}
-    const own = (key: string) => spec.options?.[key] !== undefined
-    for (const [key, value] of Object.entries(options)) {
-      if (COMMON_OPTIONS.includes(key) || (RUN_OPTIONS.includes(key) && !own(key))) continue
-      const type = spec.options?.[key]
-      if (spec.options && !type) fail(`unknown option :${key}:`, 'warning')
-      typed[key] = type ? optionValue(value, type) : value
-    }
-    const bodyLine = bodyNodeLine(node) ?? source.line + 1
-    const dctx: DirectiveContext = {
-      file: source.file,
-      deckDir: ctx.deckDir,
-      workspaceRoot: ctx.workspaceRoot,
-      lang: ctx.lang,
-      config: { ...config, ...out.config[plugin] },
-      source,
-      parse: markdown => ({ type: 'root', children: clean(ctx.parser.parse(markdown, bodyLine).children ?? [], ctx, source.file) }),
-      report: finding => ctx.report({ ...finding, source: finding.source ?? { file: source.file, line: source.line } }),
-      watch: ctx.watch,
-    }
-    try {
-      const result = await spec.toIR({ name, arg: arg || undefined, options: typed, body }, dctx)
-      const runs = runnableCode(result.node)
-      const given = Object.fromEntries(RUN_OPTIONS.filter(key => !own(key) && options[key] !== undefined).map(key => [key, options[key]!]))
-      for (const run of runs) runOptions(run, given, fail, ctx)
-      if (runs.length === 0 && Object.keys(given).length > 0) fail(`${Object.keys(given).map(key => `:${key}:`).join(' and ')} has no effect: the directive runs no code`, 'warning')
-      const kind = result.node.type === 'component' ? kebab(result.node.name) : result.node.type === 'code' ? 'code' : name
-      push({ kind, label, reveal: reveal !== undefined, role: result.role ?? 'visual', span: result.span ?? 0, source, audience, node: result.node })
-    } catch (error) {
-      fail(`plugin ${plugin} failed: ${errorMessage(error)}`)
-    }
-    return
-  }
+  if (registered) return pluginDirective(call, registered, ctx, push, out)
+  mystBuiltinDirective(call, ctx, push)
+}
 
+/** `{audience}`: the audiences the whole section is for. */
+function sectionAudience({ arg, body, fail }: DirectiveCall, out: Output): void {
+  const names = audienceList(arg)
+  if (names.length === 0) fail('needs the audiences its section is for, e.g. {audience} teacher; until it names them, the section is left out of every version for an audience')
+  if (body.trim()) fail('takes no body: it marks its whole section; to mark part of a section, give a directive :audience:, e.g. an {only} around the paragraphs', 'warning')
+  out.audience = out.audience ? out.audience.filter(a => names.includes(a)) : names
+}
+
+/** `{slide}` and `{only}`: their body's blocks, limited to some renderers or to the slides, with their own steps. */
+async function scopeDirective(call: DirectiveCall, scope: Scope, target: string | undefined, ctx: BlockContext, out: Output): Promise<void> {
+  const { name, options, arg, reveal, fail } = call
+  let only = scope.only
+  if (name === 'only') {
+    const ids = arg.split(/[\s,]+/).filter(Boolean)
+    if (ids.length === 0) fail('needs the renderer ids it is limited to, e.g. {only} web, notebook')
+    for (const id of ids.filter(id => !ctx.renderers.has(id))) {
+      fail(`unknown renderer id "${id}": its content shows in no form; known ids are ${[...ctx.renderers].join(', ')}`, 'warning')
+    }
+    only = scope.only ? scope.only.filter(id => ids.includes(id)) : ids
+  }
+  const position = (key: 'at' | 'until') => {
+    if (options[key] === undefined) return scope[key]
+    const value = Number(options[key])
+    if (options[key] === true || options[key] === '' || !Number.isInteger(value) || value < 0) {
+      fail(`:${key}: must be a non-negative integer`)
+      return scope[key]
+    }
+    return value
+  }
+  const at = position('at')
+  const until = position('until')
+  if (at !== undefined && until !== undefined && until <= at) fail(':until: must be greater than :at:')
+  if (at !== undefined && reveal !== undefined) fail(':at: and :reveal: cannot be combined')
+  const inner: Scope = {
+    at, until,
+    visual: scope.visual || name === 'slide',
+    only,
+    items: reveal === undefined ? scope.items : reveal === 'items',
+    group: reveal === 'next' ? ++out.groups : scope.group,
+    audience: call.audience,
+  }
+  const start = out.blocks.length
+  await convert(bodyNodes(call.node), inner, ctx, out)
+  const first = out.blocks[start]
+  if (first) first.label ??= call.label ?? target
+}
+
+/** `{hints}`: renderer hints for the section. */
+function hintsDirective({ body, fail }: DirectiveCall, out: Output): void {
+  const data = yamlBody(body, fail)
+  for (const [renderer, value] of Object.entries(data ?? {})) {
+    if (isRecord(value)) out.hints[renderer] = { ...out.hints[renderer], ...value }
+    else fail(`hints for "${renderer}" must be a mapping`)
+  }
+}
+
+/** `{component}`: a component block, its props from the options and the YAML body. */
+function componentDirective(call: DirectiveCall, ctx: BlockContext, push: Push): void {
+  const { options, arg, body, fail } = call
+  if (!arg) return fail('needs a component name, e.g. {component} PmQuiz')
+  const props: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(options)) {
+    if (!COMPONENT_OPTIONS.includes(key)) props[key] = value === true ? true : yamlValue(value)
+  }
+  Object.assign(props, yamlBody(body, fail))
+  const plugin = typeof options.plugin === 'string' ? options.plugin : ctx.components.get(arg)
+  if (plugin === undefined) fail(`no plugin in \`plugins\` registers the component ${arg}`, 'warning')
+  const span = options.span === undefined ? 0 : Number(options.span)
+  if (!Number.isInteger(span) || span < 0) return fail(`:span: must be a non-negative integer`)
+  push({ kind: kebab(arg), label: call.label, reveal: call.reveal !== undefined, role: 'visual', span, source: call.source, audience: call.audience, node: { type: 'component', plugin: plugin ?? '', name: arg, props } })
+}
+
+/** A directive a plugin registers: its options typed, its `toIR` called, `:env:` and `:session:` applied to the code it runs. */
+async function pluginDirective(call: DirectiveCall, registered: PluginDirective, ctx: BlockContext, push: Push, out: Output): Promise<void> {
+  const { node, name, options, arg, body, source, fail } = call
+  const { spec, plugin, config } = registered
+  const typed: Record<string, unknown> = {}
+  const own = (key: string) => spec.options?.[key] !== undefined
+  for (const [key, value] of Object.entries(options)) {
+    if (COMMON_OPTIONS.includes(key) || (RUN_OPTIONS.includes(key) && !own(key))) continue
+    const type = spec.options?.[key]
+    if (spec.options && !type) fail(`unknown option :${key}:`, 'warning')
+    typed[key] = type ? optionValue(value, type) : value
+  }
+  const bodyLine = bodyNodeLine(node) ?? source.line + 1
+  const directiveContext: DirectiveContext = {
+    file: source.file,
+    deckDir: ctx.deckDir,
+    workspaceRoot: ctx.workspaceRoot,
+    lang: ctx.lang,
+    config: { ...config, ...out.config[plugin] },
+    source,
+    parse: markdown => ({ type: 'root', children: clean(ctx.parser.parse(markdown, bodyLine).children ?? [], ctx, source.file) }),
+    report: finding => ctx.report({ ...finding, source: finding.source ?? { file: source.file, line: source.line } }),
+    watch: ctx.watch,
+  }
+  try {
+    const result = await spec.toIR({ name, arg: arg || undefined, options: typed, body }, directiveContext)
+    const runs = runnableCode(result.node)
+    const given = Object.fromEntries(RUN_OPTIONS.filter(key => !own(key) && options[key] !== undefined).map(key => [key, options[key]!]))
+    for (const run of runs) runOptions(run, given, fail, ctx)
+    if (runs.length === 0 && Object.keys(given).length > 0) fail(`${Object.keys(given).map(key => `:${key}:`).join(' and ')} has no effect: the directive runs no code`, 'warning')
+    const kind = result.node.type === 'component' ? kebab(result.node.name) : result.node.type === 'code' ? 'code' : name
+    push({ kind, label: call.label, reveal: call.reveal !== undefined, role: result.role ?? 'visual', span: result.span ?? 0, source, audience: call.audience, node: result.node })
+  } catch (error) {
+    fail(`plugin ${plugin} failed: ${errorMessage(error)}`)
+  }
+}
+
+/** Any other MyST directive: a code block, or its content as markdown; unknown when it has none. */
+function mystBuiltinDirective(call: DirectiveCall, ctx: BlockContext, push: Push): void {
+  const { node, name, options, source, fail } = call
   const children = (node.children ?? []).filter(c => c.type !== DIRECTIVE_BODY_NODE)
   const code = CODE_DIRECTIVES.has(name) ? codeOf(children[0]) : undefined
   if (code) {
-    push({ kind: 'code', label, reveal: reveal !== undefined, role: 'visual', span: 0, source, audience, node: codeNode(code, options, source, ctx) })
+    push({ kind: 'code', label: call.label, reveal: call.reveal !== undefined, role: 'visual', span: 0, source, audience: call.audience, node: codeNode(code, options, source, ctx) })
     return
   }
   if (children.length === 0) return fail('unknown directive; is the plugin that provides it listed in `plugins`?')
-  push({ kind: name, label, reveal: reveal !== undefined, role: 'visual', span: 0, source, audience, node: markdown(children, ctx) })
+  push({ kind: name, label: call.label, reveal: call.reveal !== undefined, role: 'visual', span: 0, source, audience: call.audience, node: markdown(children, ctx) })
 }
 
 function audienceOption(value: unknown, outer: string[] | undefined, fail: (message: string) => void): string[] {
@@ -482,7 +518,7 @@ function roleNode(node: MdastNode, ctx: BlockContext, file: string): MdastNode {
     const type = spec.options?.[key]
     options[key] = type === 'list' && typeof given === 'string' ? given.split(/[\s,]+/).filter(Boolean) : given
   }
-  const dctx: DirectiveContext = {
+  const directiveContext: DirectiveContext = {
     file: where.file,
     deckDir: ctx.deckDir,
     workspaceRoot: ctx.workspaceRoot,
@@ -495,7 +531,7 @@ function roleNode(node: MdastNode, ctx: BlockContext, file: string): MdastNode {
   }
   let children: MdastNode[] = [{ type: 'text', value }]
   try {
-    if (spec.children) children = spec.children({ name, value, options }, dctx)
+    if (spec.children) children = spec.children({ name, value, options }, directiveContext)
   } catch (error) {
     report({ checkId: 'presmium.plugins', severity: 'error', message: `role {${name}} of plugin ${plugin} failed: ${errorMessage(error)}` })
   }

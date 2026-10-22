@@ -54,8 +54,8 @@ export class Kernel {
     this.#plugins.push(plugin)
   }
 
-  provide<T>(token: ServiceToken<T>, impl: T): void {
-    this.services.provide(token, impl)
+  provide<T>(token: ServiceToken<T>, implementation: T): void {
+    this.services.provide(token, implementation)
   }
 
   getService<T>(token: ServiceToken<T>): T | undefined {
@@ -152,11 +152,11 @@ export class Kernel {
     return {
       config: isRecord(config) ? { ...config } : {},
       mode: this.mode,
-      provide: (token, impl) => {
+      provide: (token, implementation) => {
         if (!provides.some(t => t.id === token.id)) {
           throw new Error(`${id} provides ${token.id} without declaring it in manifest.provides`)
         }
-        this.services.provide(token, impl, id)
+        this.services.provide(token, implementation, id)
       },
       get: token => {
         assertDeclared(token)

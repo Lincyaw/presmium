@@ -12,17 +12,17 @@ export interface StartPlan {
 }
 
 interface Entry {
-  impl: unknown
+  implementation: unknown
   owner: string
 }
 
 export class ServiceRegistry {
   #entries = new Map<string, Entry>()
 
-  provide<T>(token: ServiceToken<T>, impl: T, owner: string = HOST_OWNER): void {
+  provide<T>(token: ServiceToken<T>, implementation: T, owner: string = HOST_OWNER): void {
     const existing = this.#entries.get(token.id)
     if (existing) throw new Error(`service ${token.id} is already provided by ${existing.owner}`)
-    this.#entries.set(token.id, { impl, owner })
+    this.#entries.set(token.id, { implementation, owner })
   }
 
   has(token: ServiceToken<unknown>): boolean {
@@ -32,11 +32,11 @@ export class ServiceRegistry {
   get<T>(token: ServiceToken<T>): T {
     const entry = this.#entries.get(token.id)
     if (!entry) throw new Error(`service ${token.id} is not available`)
-    return entry.impl as T
+    return entry.implementation as T
   }
 
   tryGet<T>(token: ServiceToken<T>): T | undefined {
-    return this.#entries.get(token.id)?.impl as T | undefined
+    return this.#entries.get(token.id)?.implementation as T | undefined
   }
 
   owner(token: ServiceToken<unknown>): string | undefined {

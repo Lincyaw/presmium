@@ -654,4 +654,4 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 - **执行动作的函数以动词开头**（`buildToDist`、`runAllChecks`、`linkBrowserDependencies`、`enqueueCompile`）；只计算、不改外部状态的函数可以用名词短语（`viewFor`、`stepTrail`）。函数有写文件、连网络、启动进程这类副作用时，名字要说出来。
 - **布尔值与返回布尔值的函数用 `is*`、`has*`、`can*`**（`isInside`、`includesAudience` 这类以动词说出判断的也可以）。
 - **工厂写 `create*`**，组合式函数写 `use*`，服务令牌是大写常量加 `defineService`。
-- **缩写**：公开契约中不用 `impl`、`pctx`、`rev`；`ctx` 只作参数名。
+- **缩写**：名字写全称（`implementation`、`passContext`、`ref`，不写 `impl`、`pctx`、`rev`）；`ctx` 只作参数名；已有契约的字段 `src`（`SourceReader`）保留。

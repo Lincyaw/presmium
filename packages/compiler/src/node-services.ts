@@ -7,12 +7,12 @@ export class NodeServices {
 
   constructor(host: [ServiceToken<unknown>, unknown][] = []) {
     const latest = new Map(host.map(entry => [entry[0].id, entry]))
-    for (const [token, impl] of latest.values()) this.#registry.provide(token, impl)
+    for (const [token, implementation] of latest.values()) this.#registry.provide(token, implementation)
   }
 
   add(owner: string, entries: [ServiceToken<unknown>, unknown][]): string[] {
     const problems: string[] = []
-    for (const [token, impl] of entries) {
+    for (const [token, implementation] of entries) {
       if (!token || typeof token.id !== 'string') {
         problems.push(`plugin ${owner}: services() gave an entry without a service token`)
         continue
@@ -22,7 +22,7 @@ export class NodeServices {
         problems.push(`plugin ${owner}: ${token.id} is already provided by ${known}; this implementation is ignored`)
         continue
       }
-      this.#registry.provide(token, impl, owner)
+      this.#registry.provide(token, implementation, owner)
     }
     return problems
   }
