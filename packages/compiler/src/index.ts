@@ -1,7 +1,7 @@
 export { directoryAsset, fileHash, publishesDirectory } from './assets.ts'
 export { build, prepare } from './build.ts'
 export type { BuildOptions, BuildReport } from './build.ts'
-export { buildToDist, checkContext, runBlock } from './compilation-actions.ts'
+export { buildSummary, buildToDist, checkContext, runBlock } from './compilation-actions.ts'
 export { Compiler, DECK_ENTRY, resolveEntry, sortFindings, workspacePlugins } from './compiler.ts'
 export type { Compilation, CompileOptions, CompilerOptions } from './compiler.ts'
 export { dev } from './dev.ts'

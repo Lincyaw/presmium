@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { APPROVAL_KINDS, errorMessage, LOCAL_AUTHOR } from '@lincyaw/kernel'
 import type { ApprovalKind } from '@lincyaw/kernel'
-import { buildToDist, Compiler, findPackageDir, resolveEntry, runBlock } from '@lincyaw/compiler'
+import { buildSummary, buildToDist, Compiler, findPackageDir, resolveEntry, runBlock } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import type { McpHost } from './host.ts'
 import { serveMcpStdio } from './mcp.ts'
@@ -60,8 +60,7 @@ export function compilerMcpHost(entry: string, allow: readonly ApprovalKind[]): 
       return [...compilation.doc.diagnostics, ...await compilation.check()]
     },
     async build(document, options) {
-      const report = await buildToDist(await only(document), { to: options.to })
-      return { outputs: report.outputs.map(({ renderer, outDir }) => ({ renderer, outDir })), findings: report.findings }
+      return buildSummary(await buildToDist(await only(document), { to: options.to }))
     },
     run: async (document, target, signal) => runBlock(await only(document), target, signal),
     approve: async request => allow.includes(request.kind),

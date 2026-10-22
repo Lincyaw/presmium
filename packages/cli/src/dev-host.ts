@@ -1,4 +1,4 @@
-import { buildToDist, runBlock } from '@lincyaw/compiler'
+import { buildSummary, buildToDist, runBlock } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import type { ServerHost } from '@lincyaw/server'
 
@@ -23,8 +23,7 @@ export function devHost(latest: () => Compilation | undefined): ServerHost {
       return [...compilation.doc.diagnostics, ...await compilation.check()]
     },
     async build(document, options = {}) {
-      const report = await buildToDist(current(document), options)
-      return { outputs: report.outputs.map(({ renderer, outDir }) => ({ renderer, outDir })), findings: report.findings }
+      return buildSummary(await buildToDist(current(document), options))
     },
     run: async (document, target, signal) => runBlock(current(document), target, signal),
   }

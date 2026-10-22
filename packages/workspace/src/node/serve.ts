@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
-import { build, Compiler, pluginLogger, runBlock, workspacePlugins } from '@lincyaw/compiler'
+import { build, buildSummary, Compiler, pluginLogger, runBlock, workspacePlugins } from '@lincyaw/compiler'
 import type { Compilation, CompilerOptions } from '@lincyaw/compiler'
 import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, REVISIONS } from '@lincyaw/kernel'
 import { irRevision } from '@lincyaw/kernel/node'
@@ -194,8 +194,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       await ready
       const compilation = await compileSessionOf(document).ready()
       const outDir = join(stateDir, 'builds', encodeURIComponent(document) || '_')
-      const report = await build(compilation, { outDir, to: buildOptions.to })
-      return { outputs: report.outputs.map(({ renderer, outDir: written }) => ({ renderer, outDir: written })), findings: report.findings }
+      return buildSummary(await build(compilation, { outDir, to: buildOptions.to }))
     },
     async run(document, target, signal) {
       await ready

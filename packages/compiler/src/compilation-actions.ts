@@ -56,3 +56,8 @@ export async function runBlock(compilation: Compilation, target: { section: stri
 export function buildToDist(compilation: Compilation, options: { to?: string[] } = {}): Promise<BuildReport> {
   return build(compilation, { outDir: join(compilation.deckDir, 'dist'), to: options.to })
 }
+
+/** What a host answers for a build: each renderer's output directory, and the findings. */
+export function buildSummary(report: BuildReport): { outputs: { renderer: string, outDir: string }[], findings: Finding[] } {
+  return { outputs: report.outputs.map(({ renderer, outDir }) => ({ renderer, outDir })), findings: report.findings }
+}
