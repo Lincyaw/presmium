@@ -2,7 +2,7 @@ import { isAbsolute, join } from 'node:path'
 import type { Finding, MdastNode, SourcePos } from '@lincyaw/kernel'
 import { fromMarkdown } from 'mdast-util-from-markdown'
 import { LECTURE_ID } from '../domain/index.ts'
-import type { ScriptSections } from '../domain/index.ts'
+import type { ScriptFileSections } from '../domain/index.ts'
 import { readInDeck } from './store.ts'
 
 const NARRATION = new Set(['paragraph', 'list', 'blockquote'])
@@ -45,10 +45,10 @@ function withoutFrontmatter(text: string): string {
   return match ? match[0].replace(/[^\n]/g, '') + text.slice(match[0].length) : text
 }
 
-export function readScript(deckDir: string, path: string): { sections: ScriptSections, file: string, findings: Finding[] } {
+export function readScriptFile(deckDir: string, path: string): { sections: ScriptFileSections, file: string, findings: Finding[] } {
   const file = isAbsolute(path) ? path : join(deckDir, path)
   const findings: Finding[] = []
-  const sections: ScriptSections = new Map()
+  const sections: ScriptFileSections = new Map()
   const bytes = readInDeck(deckDir, file)
   if (!bytes) {
     findings.push({ checkId: LECTURE_ID, severity: 'error', message: `renderers.lecture.script: ${path} is not a file of the deck` })

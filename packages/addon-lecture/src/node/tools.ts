@@ -1,13 +1,14 @@
 import { isAbsolute, relative, resolve } from 'node:path'
 import { defineService, DOCUMENT_FILES, SPEECH } from '@lincyaw/kernel'
 import type { AgentTool, AgentToolContext, IRDocument, SourceRange, SpeechService } from '@lincyaw/kernel'
-import { LECTURES_DIR, narrationDraft, narrationPlace, SCRIPT_TRACK, trackDuration, translationItems } from '../domain/index.ts'
+import { LECTURES_DIR, narrationDraft, narrationSource, SCRIPT_TRACK, trackDuration, translationItems } from '../domain/index.ts'
 import type { LecturePlan, LectureTrack } from '../domain/index.ts'
-import { synthesizedLecture, transcribeLecture, unsaidMessage } from './lecture.ts'
-import { deckPlan, latestView } from './plan.ts'
-import { digest } from './renderer.ts'
+import { latestView } from './latest-ir.ts'
+import { deckPlan } from './plan.ts'
 import { deckFiles, readTrack, TRACK_FILE, trackDir } from './store.ts'
 import type { DeckFiles } from './store.ts'
+import { synthesisFailureMessage, synthesizeLecture } from './synthesize.ts'
+import { transcribeLecture } from './transcribe.ts'
 
 export interface LectureDeck {
   deckDir: string
@@ -61,7 +62,7 @@ export const lecturePreview: AgentTool = {
       voice: deck.voice ?? null,
       gapMs: deck.gap,
       sections: planView(deck.plan, typeof input.section === 'string' ? input.section : undefined),
-      problems: [...deck.findings.map(f => f.message), ...deck.plan.problems.filter(p => p.compiled).map(p => p.message)],
+      problems: [...deck.findings.map(f => f.message), ...deck.plan.problems.filter(p => p.reportedAtCompile).map(p => p.message)],
       play: deck.voice ? `?view=lecture&track=${SCRIPT_TRACK}` : null,
     }
   },
@@ -73,17 +74,17 @@ export const lectureSynthesize: AgentTool = {
   input: { type: 'object', properties: {} },
   kind: 'spend',
   async run(_input, ctx) {
-    const { deckDir, doc, files } = deckOf(ctx)
-    const made = await synthesizedLecture(doc, deckDir, speechOf(ctx), ctx.signal, { files })
-    if (!made.deck.voice) throw new Error('renderers.lecture.voice names no voice: the deck has no synthesized lecture')
-    if (!made.track) throw new Error(made.unsaid.map(unsaidMessage).join('\n'))
+    const { deckDir, doc } = deckOf(ctx)
+    const { deck, track, failures } = await synthesizeLecture(doc, deckDir, speechOf(ctx), ctx.signal)
+    if (!deck.voice) throw new Error('renderers.lecture.voice names no voice: the deck has no synthesized lecture')
+    if (!track) throw new Error(failures.map(synthesisFailureMessage).join('\n'))
     return {
       track: SCRIPT_TRACK,
-      voice: made.track.voice,
-      durationMs: trackDuration(made.track),
-      utterances: made.track.utterances.length,
-      events: made.track.events.length,
-      problems: made.deck.findings.map(f => f.message),
+      voice: track.voice,
+      durationMs: trackDuration(track),
+      utterances: track.utterances.length,
+      events: track.events.length,
+      problems: deck.findings.map(f => f.message),
     }
   },
 }
@@ -128,8 +129,8 @@ export const trackNarration: AgentTool = {
         section: s.section,
         title: doc.sections.find(own => own.id === s.section)?.title ?? '(the deck has no such section now)',
         steps: s.steps.map((step) => {
-          const place = narrationPlace(doc, plan, s.section, step.step)
-          return { ...step, narration: place.narration.map(file), ...place.after ? { after: { ...file(place.after), block: place.after.block } } : {} }
+          const source = narrationSource(doc, plan, s.section, step.step)
+          return { ...step, narration: source.narration.map(file), ...source.after ? { after: { ...file(source.after), block: source.after.block } } : {} }
         }),
       })),
       ...draft.skipped ? { skipped: `${draft.skipped} actions bound to words have no {cue}` } : {},
@@ -146,7 +147,7 @@ export const trackTranslations: AgentTool = {
     const { deckDir } = deckOf(ctx)
     const track = storedTrack(deckDir, input)
     if (typeof input.lang !== 'string' || !input.lang) throw new Error('lang: the language to translate into is required')
-    return { track: track.id, file: `${LECTURES_DIR}/${track.id}/${TRACK_FILE}`, lang: track.lang, into: input.lang, utterances: translationItems(track, input.lang, digest) }
+    return { track: track.id, file: `${LECTURES_DIR}/${track.id}/${TRACK_FILE}`, lang: track.lang, into: input.lang, utterances: translationItems(track, input.lang) }
   },
 }
 

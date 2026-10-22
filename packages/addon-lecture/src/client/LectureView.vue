@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { useMessages, useServer } from '@lincyaw/host'
-import { isRecord } from '@lincyaw/kernel'
 import { onMounted, ref } from 'vue'
 import { clockText, LECTURE_ID, LECTURE_MESSAGES } from '../domain/index.ts'
 import type { LectureSummary } from './source.ts'
-import { serverSource, staticBase, staticSource } from './source.ts'
+import { lectureSource } from './source.ts'
 import { play, playing, useViewer } from './state.ts'
 
 const t = useMessages(LECTURE_MESSAGES)
@@ -23,10 +22,8 @@ onMounted(async () => {
     viewer.setView('present')
     return
   }
-  const config = viewer.doc.value.config.presmium[LECTURE_ID]
-  const source = server.available ? serverSource(server) : staticSource(staticBase(isRecord(config) ? config : undefined))
   try {
-    lectures.value = await source.list()
+    lectures.value = await lectureSource(server, viewer.doc.value.config.presmium[LECTURE_ID]).list()
   } catch {
     failed.value = true
   }

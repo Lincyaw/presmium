@@ -1,11 +1,9 @@
-import { splitWords } from '@lincyaw/kernel'
+import { isCjk, splitWords } from '@lincyaw/kernel'
 import type { SpeechWord } from '@lincyaw/kernel'
 import type { Utterance, Word } from './track.ts'
 
-const CJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u
-
-export function isCjk(char: string): boolean {
-  return CJK.test(char)
+export function isWide(char: string | undefined): boolean {
+  return Boolean(char && (isCjk(char) || /[　-〿＀-￯]/u.test(char)))
 }
 
 export function locate(words: readonly string[], text: string): ({ start: number, end: number } | undefined)[] {

@@ -13,14 +13,15 @@ Builds the deck's web form and lectures, plays the lecture in Chromium
 WebM video (VP9 or VP8, Opus). --track names the lecture (default: the
 synthesized one, else the only recorded one); --out the file (default
 <deckDir>/dist/<track>.webm); --size the window (default 1280x720); --fps the
-frames a second (default 10). MP4 is not written: see docs/design-v0.7.md 11.`
+frames a second (default 10). MP4 is not written: it would need the GPL FFmpeg
+of @mediabunny/server.`
 
 function shown(file: string): string {
   const rel = relative(process.cwd(), file)
   return rel.startsWith('..') || isAbsolute(rel) ? file : rel
 }
 
-export async function lectureMain(argv: string[]): Promise<number> {
+export async function main(argv: string[]): Promise<number> {
   let args
   try {
     args = parseArgs({

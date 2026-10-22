@@ -1,7 +1,7 @@
 import { useServer } from '@lincyaw/host'
 import type { Viewer, ViewerPluginContext } from '@lincyaw/viewer'
 import { computed, shallowRef, watch } from 'vue'
-import { LECTURE_ID } from '../domain/index.ts'
+import { serverSource } from './source.ts'
 
 let context: Pick<ViewerPluginContext, 'useViewer'> | undefined
 
@@ -17,21 +17,19 @@ export function useViewer(): Viewer {
 const compiled = shallowRef(false)
 const listed = shallowRef<boolean>()
 
-export const offered = computed(() => (useServer().available ? listed.value === true : compiled.value))
+export const lecturesAvailable = computed(() => (useServer().available ? listed.value === true : compiled.value))
 
-export function offerLectures(config: Record<string, unknown>): void {
+export function readLecturesFlag(config: Record<string, unknown>): void {
   compiled.value = config.lectures === true
 }
 
 export async function refreshLectures(): Promise<void> {
   const server = useServer()
   if (!server.available) return
-  const response = await server.fetch(LECTURE_ID, 'tracks').catch(() => undefined)
-  const list: unknown = response?.ok ? await response.json().catch(() => []) : []
-  listed.value = Array.isArray(list) && list.length > 0
+  listed.value = (await serverSource(server).list().catch(() => [])).length > 0
 }
 
-export function followLectures(): void {
+export function watchLectureList(): void {
   watch(() => useServer().available, (available) => {
     if (available) void refreshLectures()
   }, { immediate: true })

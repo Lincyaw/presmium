@@ -68,14 +68,14 @@ export function lastIndexAt(events: readonly { t: number }[], t: number): number
   return low - 1
 }
 
-export interface Chapter {
+export interface TrackChapter {
   t: number
   section?: string
   title: string
 }
 
-export function chapters(events: readonly TimedEvent[], titles: (section: string) => string | undefined = () => undefined): Chapter[] {
-  const list: Chapter[] = []
+export function trackChapters(events: readonly TimedEvent[], titles: (section: string) => string | undefined = () => undefined): TrackChapter[] {
+  const list: TrackChapter[] = []
   let section: string | undefined
   for (const event of events) {
     if (event.type === 'go' && typeof event.data.section === 'string' && event.data.section !== section) {

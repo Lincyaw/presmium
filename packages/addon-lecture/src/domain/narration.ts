@@ -1,7 +1,7 @@
 import { isRecord } from '@lincyaw/kernel'
 import type { MdastNode, WordSpan } from '@lincyaw/kernel'
 import { LECTURE_ID } from './track.ts'
-import { isCjk } from './words.ts'
+import { isWide } from './words.ts'
 
 export interface CueMark {
   offset: number
@@ -75,14 +75,10 @@ class Builder {
     const pending = this.pending
     this.pending = undefined
     if (!pending || !this.text) return
-    if (wide(this.text.at(-1)!) && (wide(next) || !next)) return
+    if (isWide(this.text.at(-1)) && (isWide(next) || !next)) return
     this.text += ' '
     this.spoken += ' '
   }
-}
-
-function wide(char: string): boolean {
-  return isCjk(char) || /[　-〿＀-￯]/u.test(char)
 }
 
 function collapse(value: string): string {
@@ -151,7 +147,7 @@ export const CUE_COMMANDS: readonly CueCommand[] = ['next', 'spot', 'hint', 'poi
 
 export const TARGETED: ReadonlySet<CueCommand> = new Set(['spot', 'hint', 'point', 'click', 'run', 'ink'])
 
-export function readCue(command: string): { name: CueCommand, arg: string } | { problem: string } {
+export function parseCue(command: string): { name: CueCommand, arg: string } | { problem: string } {
   const [name = '', ...rest] = command.trim().split(/\s+/)
   const arg = rest.join(' ')
   if (!(CUE_COMMANDS as readonly string[]).includes(name)) return { problem: `unknown cue command "${name}"; the commands are ${CUE_COMMANDS.join(', ')}` }

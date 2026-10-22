@@ -1,11 +1,9 @@
-import { irBlocks, isRecord } from '@lincyaw/kernel'
+import { irBlocks } from '@lincyaw/kernel'
 import type { CodeNode, IRBlock, IRDocument, IRSection, MdastNode, RecordedRun, SourcePos, WordSpan } from '@lincyaw/kernel'
-import { blockKey } from './drift.ts'
+import { blockKey, codeLineCount, lastNamedLine } from './drift.ts'
 import type { CueCommand, CueMark, SpokenText } from './narration.ts'
-import { duration, readCue, spokenText, TARGETED } from './narration.ts'
-
-const LECTURE = 'lecture'
-const PLAYER = 'web'
+import { duration, parseCue, spokenText, TARGETED } from './narration.ts'
+import { LECTURE_RENDERER, PLAYER_RENDERER } from './track.ts'
 
 export interface PlannedCue {
   name: CueCommand
@@ -32,7 +30,7 @@ export interface PlannedSection {
   id: string
   title: string
   steps: number
-  from: 'narration' | 'script'
+  from: 'narration' | 'scriptFile'
   paragraphs: PlannedParagraph[]
   webStep(step: number): number
 }
@@ -40,7 +38,7 @@ export interface PlannedSection {
 export interface PlanProblem {
   message: string
   source?: SourcePos
-  compiled?: boolean
+  reportedAtCompile?: boolean
 }
 
 export interface LecturePlan {
@@ -48,23 +46,14 @@ export interface LecturePlan {
   problems: PlanProblem[]
 }
 
-export type ScriptSections = Map<string, { paragraphs: MdastNode[], source?: SourcePos }[]>
+export type ScriptFileSections = Map<string, { paragraphs: MdastNode[], source?: SourcePos }[]>
 
-function said(block: IRBlock): boolean {
-  return !block.only || block.only.includes(LECTURE)
+function isSaid(block: IRBlock): boolean {
+  return !block.only || block.only.includes(LECTURE_RENDERER)
 }
 
-function shown(block: IRBlock): boolean {
-  return !block.only || block.only.includes(PLAYER)
-}
-
-function codeLines(block: IRBlock): number | undefined {
-  return block.node.type === 'code' ? block.node.value.replace(/\n$/, '').split('\n').length : undefined
-}
-
-function lastLine(lines: string): number | undefined {
-  const numbers = lines.match(/\d+/g)?.map(Number) ?? []
-  return numbers.length ? Math.max(...numbers) : undefined
+function isShown(block: IRBlock): boolean {
+  return !block.only || block.only.includes(PLAYER_RENDERER)
 }
 
 function named(doc: IRDocument, section: IRSection, to: string): { section: IRSection, block: IRBlock } | undefined {
@@ -120,20 +109,20 @@ interface Reader {
   section: IRSection
   target?: IRBlock
   source?: SourcePos
-  script?: boolean
+  scriptFile?: boolean
   problems: PlanProblem[]
 }
 
 function planCues(spoken: SpokenText, at: Reader): PlannedCue[] {
   const cues: PlannedCue[] = []
-  const problem = (message: string, compiled = false) => at.problems.push({ message: `section ${at.section.id}: ${message}`, source: at.source, ...compiled ? { compiled } : {} })
+  const problem = (message: string, reportedAtCompile = false) => at.problems.push({ message: `section ${at.section.id}: ${message}`, source: at.source, ...reportedAtCompile ? { reportedAtCompile } : {} })
   for (const mark of spoken.cues) {
-    const read = readCue(mark.command)
-    if ('problem' in read) {
-      problem(`{cue}\`${mark.command}\`: ${read.problem}`, !at.script)
+    const parsed = parseCue(mark.command)
+    if ('problem' in parsed) {
+      problem(`{cue}\`${mark.command}\`: ${parsed.problem}`, !at.scriptFile)
       continue
     }
-    const { name, arg } = read
+    const { name, arg } = parsed
     if (name === 'next') {
       cues.push({ name, offset: mark.offset, data: {} })
       continue
@@ -147,12 +136,12 @@ function planCues(spoken: SpokenText, at: Reader): PlannedCue[] {
       problem(mark.to ? `{cue to=${mark.to}}\`${mark.command}\`: the deck has no block ${mark.to}` : `{cue}\`${mark.command}\` has no block before it to act on; name one with to=<label>`)
       continue
     }
-    if (!shown(found.block)) {
+    if (!isShown(found.block)) {
       problem(`{cue}\`${mark.command}\`: block ${found.block.id} is not shown in the web form, where the lecture plays`)
       continue
     }
-    const lines = codeLines(found.block)
-    const last = mark.lines ? lastLine(mark.lines) : undefined
+    const lines = codeLineCount(found.block)
+    const last = mark.lines ? lastNamedLine(mark.lines) : undefined
     if (last !== undefined && lines !== undefined && last > lines) {
       problem(`{cue}\`${mark.command}\` names lines ${mark.lines} of ${found.block.id}, which has ${lines}`)
       continue
@@ -202,9 +191,9 @@ function narration(section: IRSection): { block: IRBlock, target?: IRBlock }[] {
   const walk = (blocks: IRBlock[], target: IRBlock | undefined) => {
     for (const block of blocks) {
       if (block.role === 'visual') {
-        if (shown(block)) target = block
+        if (isShown(block)) target = block
         if (block.node.type === 'component' && block.node.children) walk(block.node.children, target)
-      } else if (said(block)) {
+      } else if (isSaid(block)) {
         list.push({ block, target })
       }
     }
@@ -221,20 +210,20 @@ function linesOf(node: MdastNode, section: SourcePos | undefined): SourcePos | u
 }
 
 function stepTarget(section: IRSection, step: number): IRBlock | undefined {
-  return section.blocks.filter(b => b.role === 'visual' && shown(b) && b.at <= step).at(-1)
+  return section.blocks.filter(b => b.role === 'visual' && isShown(b) && b.at <= step).at(-1)
 }
 
-export function lecturePlan(doc: IRDocument, script?: ScriptSections): LecturePlan {
+export function lecturePlan(doc: IRDocument, scriptFile?: ScriptFileSections): LecturePlan {
   const problems: PlanProblem[] = []
   const sections: PlannedSection[] = doc.sections.map((section) => {
     const paragraphs: PlannedParagraph[] = []
-    const fromScript = script?.get(section.id)
-    if (fromScript) {
-      fromScript.forEach(({ paragraphs: nodes, source: heading }) => nodes.forEach((node, k) => {
+    const fromScriptFile = scriptFile?.get(section.id)
+    if (fromScriptFile) {
+      fromScriptFile.forEach(({ paragraphs: nodes, source: heading }) => nodes.forEach((node, k) => {
         const step = Math.min(k, section.steps)
         const spoken = spokenText(node)
         const source = linesOf(node, heading)
-        const cues = planCues(spoken, { doc, section, target: stepTarget(section, step), source, script: true, problems })
+        const cues = planCues(spoken, { doc, section, target: stepTarget(section, step), source, scriptFile: true, problems })
         paragraphs.push({ step, pieces: pieces(spoken, cues), ...source ? { source } : {} })
       }))
     } else {
@@ -246,7 +235,7 @@ export function lecturePlan(doc: IRDocument, script?: ScriptSections): LecturePl
       }
     }
     paragraphs.sort((a, b) => a.step - b.step)
-    return { id: section.id, title: section.title, steps: section.steps, from: fromScript ? 'script' : 'narration', paragraphs, webStep: webSteps(section) }
+    return { id: section.id, title: section.title, steps: section.steps, from: fromScriptFile ? 'scriptFile' : 'narration', paragraphs, webStep: webSteps(section) }
   })
   let n = 0
   for (const section of sections) {
@@ -259,35 +248,4 @@ export function plannedUtterances(plan: LecturePlan): (PlannedPiece & { id: stri
   return plan.sections.flatMap(section => section.paragraphs.flatMap(paragraph => paragraph.pieces
     .filter((piece): piece is PlannedPiece & { id: string } => Boolean(piece.id))
     .map(piece => ({ ...piece, section: section.id, step: paragraph.step, ...paragraph.source ? { source: paragraph.source } : {} }))))
-}
-
-export interface LectureVoice {
-  engine?: string
-  voice: string
-  rate?: number
-  style?: string
-}
-
-export function lectureVoice(config: Record<string, unknown> | undefined): LectureVoice | undefined {
-  const voice = isRecord(config?.voice) ? config.voice : undefined
-  if (typeof voice?.voice !== 'string' || !voice.voice) return undefined
-  return {
-    voice: voice.voice,
-    ...typeof voice.engine === 'string' && voice.engine ? { engine: voice.engine } : {},
-    ...typeof voice.rate === 'number' ? { rate: voice.rate } : {},
-    ...typeof voice.style === 'string' && voice.style ? { style: voice.style } : {},
-  }
-}
-
-export function lectureGap(config: Record<string, unknown> | undefined): number {
-  const gap = config?.gap
-  if (typeof gap === 'number' && gap >= 0) return gap
-  return (typeof gap === 'string' ? duration(gap) : undefined) ?? 500
-}
-
-export function lexiconOf(config: Record<string, unknown> | undefined): Record<string, string> | undefined {
-  const lexicon = isRecord(config?.lexicon) ? config.lexicon : undefined
-  if (!lexicon) return undefined
-  const entries = Object.entries(lexicon).filter((entry): entry is [string, string] => typeof entry[1] === 'string')
-  return entries.length ? Object.fromEntries(entries) : undefined
 }

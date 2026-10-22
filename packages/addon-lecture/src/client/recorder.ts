@@ -5,6 +5,7 @@ import { irHash, LECTURE_ID, referencedBlocks, sectionHashes } from '../domain/i
 import type { MediaSegment, Recording, VideoSegment } from '../domain/index.ts'
 import type { Capture, Chunk } from './media.ts'
 import { captureAudio, captureVideo } from './media.ts'
+import { readAnswer } from './source.ts'
 
 const UPLOAD_MS = 5000
 
@@ -34,19 +35,12 @@ interface Segment {
   stopped?: Promise<void>
 }
 
-async function answer<T>(response: Promise<Response>): Promise<T> {
-  const r = await response
-  const body = await r.json().catch(() => ({})) as T & { error?: string }
-  if (!r.ok) throw new Error(body.error ?? `HTTP ${r.status}`)
-  return body
-}
-
 export class LectureRecorder {
   readonly state = shallowRef<RecorderState>('starting')
   readonly error = shallowRef<string>()
   readonly elapsed = shallowRef(0)
   id?: string
-  readonly section?: string
+  readonly rerecordSection?: string
   private current?: string
 
   private readonly options: RecorderOptions
@@ -63,7 +57,7 @@ export class LectureRecorder {
 
   constructor(options: RecorderOptions) {
     this.options = options
-    if (options.track) this.section = options.position().section
+    if (options.track) this.rerecordSection = options.position().section
   }
 
   now(): number {
@@ -75,7 +69,7 @@ export class LectureRecorder {
       if (this.options.screen) this.streams.screen = await navigator.mediaDevices.getDisplayMedia({ video: true })
       this.streams.audio = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } })
       if (this.options.camera) this.streams.camera = await navigator.mediaDevices.getUserMedia({ video: true })
-      const { id } = await answer<{ id: string }>(this.post('recordings', { track: this.options.track }))
+      const { id } = await readAnswer<{ id: string }>(this.post('recordings', { track: this.options.track }))
       this.id = id
       this.t0 = performance.now()
       const position = this.options.position()
@@ -91,7 +85,7 @@ export class LectureRecorder {
     }
   }
 
-  pathStarted(data: Record<string, unknown>, at: number): void {
+  notePointerPathStart(data: Record<string, unknown>, at: number): void {
     this.paths.set(data, at)
   }
 
@@ -110,7 +104,7 @@ export class LectureRecorder {
     const path = type === 'point' && Array.isArray(data.path) ? data.path as [number, number, number][] : undefined
     const t = Math.max(0, Math.round(began !== undefined ? began - this.t0 : this.now() - (path?.at(-1)?.[0] ?? 0)))
     if (type === 'go' && typeof data.section === 'string' && data.section !== this.current) {
-      if (this.section) {
+      if (this.rerecordSection) {
         void this.stop()
         return
       }
@@ -138,7 +132,7 @@ export class LectureRecorder {
       }
       capture.failed.catch(error => this.fail(error))
       segment.capture = capture
-      segment.src = answer<{ src: string }>(this.post(`recordings/${this.id}/media`, {
+      segment.src = readAnswer<{ src: string }>(this.post(`recordings/${this.id}/media`, {
         folder: source === 'audio' ? 'audio' : 'video',
         section,
         ...source === 'audio' ? {} : { kind: source },
@@ -181,7 +175,7 @@ export class LectureRecorder {
           }
         }
         for (const run of runs) {
-          await answer(this.options.server.fetch(LECTURE_ID, `recordings/${this.id}/files/${src.split('/').map(encodeURIComponent).join('/')}?at=${run.position}`, {
+          await readAnswer(this.options.server.fetch(LECTURE_ID, `recordings/${this.id}/files/${src.split('/').map(encodeURIComponent).join('/')}?at=${run.position}`, {
             method: 'PUT',
             body: run.data,
           }))
@@ -221,7 +215,7 @@ export class LectureRecorder {
         voice: { kind: 'recorded', ...this.options.speaker ? { speaker: this.options.speaker } : {} },
         blocks: referencedBlocks(doc, this.events),
       }
-      await answer(this.post(`recordings/${this.id}/finish`, { head, recording, ...this.section ? { section: this.section } : {} }))
+      await readAnswer(this.post(`recordings/${this.id}/finish`, { head, recording, ...this.rerecordSection ? { section: this.rerecordSection } : {} }))
       this.state.value = 'saved'
     } catch (error) {
       this.fail(error)

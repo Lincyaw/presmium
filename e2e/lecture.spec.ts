@@ -328,6 +328,17 @@ test.describe('playback failures in a dev server', () => {
     }).toPass({ timeout: 120_000 })
     await expect(page.getByRole('region', { name: '讲授回放' })).toHaveCount(0)
   })
+
+  test('says a lecture the server does not have is not found, and closes it', async ({ page }) => {
+    const missing = page.getByRole('alert')
+    await expect(async () => {
+      await page.goto(`${dev.url}?view=present&track=gone`)
+      await expect(missing).toContainText('找不到讲授 gone')
+    }).toPass({ timeout: 120_000 })
+    await missing.getByRole('button', { name: '关闭讲授' }).click()
+    await expect(missing).toHaveCount(0)
+    expect(new URL(page.url()).searchParams.has('track')).toBe(false)
+  })
 })
 
 test.describe('playback of a lecture track', () => {

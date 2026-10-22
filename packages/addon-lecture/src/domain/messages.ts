@@ -30,6 +30,7 @@ export interface LectureMessages {
     captions: string
     transcript: string
     chapters: string
+    sideTabs: string
     language: string
     tryIt: string
     back: string
@@ -40,7 +41,6 @@ export interface LectureMessages {
     loading: string
     failed: (reason: string) => string
     missing: (id: string) => string
-    notYet: string
     dropped: (count: number) => string
     stale: string
     jump: (time: string) => string
@@ -106,6 +106,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       captions: '字幕',
       transcript: '逐字稿',
       chapters: '章节',
+      sideTabs: '逐字稿与章节',
       language: '字幕语言',
       tryIt: '我来试试',
       back: '回到讲授',
@@ -116,7 +117,6 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       loading: '正在加载讲授…',
       failed: reason => `讲授加载失败：${reason}`,
       missing: id => `找不到讲授 ${id}`,
-      notYet: '这段由讲解合成的讲授还没有生成：合成要计费，所以编辑者打开它时才合成，请稍后再来',
       dropped: count => `讲义改动后有 ${count} 个操作失效，回放时略过`,
       stale: '译文过期：原句在翻译之后改过',
       jump: time => `跳到 ${time}`,
@@ -180,6 +180,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       captions: 'Captions',
       transcript: 'Transcript',
       chapters: 'Chapters',
+      sideTabs: 'Transcript and chapters',
       language: 'Caption language',
       tryIt: 'Try it',
       back: 'Back to the lecture',
@@ -190,7 +191,6 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       loading: 'Loading the lecture…',
       failed: reason => `Lecture could not be loaded: ${reason}`,
       missing: id => `Lecture ${id} not found`,
-      notYet: 'This lecture synthesized from the narration has not been made yet: synthesis is paid, so it is made when an editor opens it. Come back later',
       dropped: count => `${count} actions no longer match the deck and are skipped`,
       stale: 'Outdated translation: the sentence changed after it was translated',
       jump: time => `Go to ${time}`,

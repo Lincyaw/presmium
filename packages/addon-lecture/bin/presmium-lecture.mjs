@@ -8,5 +8,5 @@ process.emitWarning = (warning, ...args) => {
 }
 
 const jiti = createJiti(import.meta.url)
-const { lectureMain } = await jiti.import('../src/node/cli.ts')
-process.exitCode = await lectureMain(process.argv.slice(2))
+const { main } = await jiti.import('../src/node/cli.ts')
+process.exitCode = await main(process.argv.slice(2))

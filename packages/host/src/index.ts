@@ -81,3 +81,4 @@ export type {
 } from './contracts.ts'
 export { localeOf } from '@lincyaw/kernel'
 export type { Locale } from '@lincyaw/kernel/contracts'
+export { codeLinesBox } from './code-lines-box.ts'

@@ -3,6 +3,10 @@ import type { TrackEvent } from '@lincyaw/kernel'
 
 export const LECTURE_ID = 'presmium.lecture'
 
+export const LECTURE_RENDERER = 'lecture'
+
+export const PLAYER_RENDERER = 'web'
+
 export const TRACK_VERSION = 1
 
 export const LECTURES_DIR = 'lectures'
@@ -197,6 +201,13 @@ export function eventLine(text: string, index: number): number | undefined {
   return start === -1 || start + 1 + index >= lines.length ? undefined : start + 2 + index
 }
 
+export function utteranceLine(text: string, id: string): number | undefined {
+  const lines = text.split('\n')
+  const from = lines.findIndex(line => line.trimStart().startsWith('"utterances"'))
+  const at = lines.findIndex((line, i) => i > from && line.includes(`"id":${JSON.stringify(id)}`))
+  return from === -1 || at === -1 ? undefined : at + 1
+}
+
 export function trackDuration(track: LectureTrack): number {
   return Math.max(
     0,
@@ -206,16 +217,15 @@ export function trackDuration(track: LectureTrack): number {
   )
 }
 
-export function clockText(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000))
-  const s = String(total % 60).padStart(2, '0')
-  const m = Math.floor(total / 60) % 60
-  const h = Math.floor(total / 3600)
-  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`
+export interface AudioSegment {
+  src: string
+  start: number
+  duration: number
 }
 
-export function fileStem(section: string): string {
-  // eslint-disable-next-line no-control-regex
-  const stem = section.replace(/[/\\?%*:|"<>#\u0000-\u001F\s]/g, '_').replace(/^\.+/, '_')
-  return stem.slice(0, 80) || 'section'
+export function audioSegments(track: LectureTrack): AudioSegment[] {
+  if (track.voice.kind === 'synthetic') {
+    return track.utterances.filter(u => u.clip).map(u => ({ src: `${CLIPS_DIR}/${u.clip}`, start: u.t, duration: u.d }))
+  }
+  return (track.audio ?? []).map(a => ({ src: a.src, start: a.start * 1000, duration: a.duration * 1000 }))
 }
