@@ -13,13 +13,13 @@ const IMAGE = 'quay.io/jupyter/base-notebook:2026-10-12@sha256:3fc2b8023bb7e3f11
 
 if (!dockerCompose) console.warn('[remote.test] skipped: needs Docker with docker compose (templates/env/compose); start the Docker daemon to run it')
 
-describe.skipIf(!dockerCompose)('remote environment (P-105)', () => {
+describe.skipIf(!dockerCompose)('remote environment', () => {
   let jupyter: Jupyter | undefined
   let dir: string
   let closed: number
 
   beforeAll(async () => {
-    jupyter = startJupyter('wp89e-remote-test', PORT)
+    jupyter = startJupyter('presmium-remote-test', PORT)
     closed = await closedPort()
     dir = testDeck('remote', `
 execute:
@@ -150,20 +150,20 @@ print("after", round(time.time() - started) < 30)
   }, 120_000)
 })
 
-describe.skipIf(!dockerCompose)('the template\'s overlays (P-106)', () => {
+describe.skipIf(!dockerCompose)('the template\'s overlays', () => {
   it('compose.gvisor.yaml names the gVisor runtime for the Jupyter Server', () => {
-    const config = compose('wp89e-gvisor-config', ['config'], { JUPYTER_TOKEN: 'config-only' }, ['compose.gvisor.yaml'])
+    const config = compose('presmium-gvisor-config', ['config'], { JUPYTER_TOKEN: 'config-only' }, ['compose.gvisor.yaml'])
     expect(config).toMatch(/^\s+runtime: runsc$/m)
   })
 })
 
 if (dockerCompose && !nvidiaGpu) console.warn('[remote.test] the GPU overlay is skipped: the host has no NVIDIA GPU registered with Docker (the NVIDIA Container Toolkit)')
 
-describe.skipIf(!nvidiaGpu)('compose.gpu.yaml (P-106, needs an NVIDIA GPU)', () => {
+describe.skipIf(!nvidiaGpu)('compose.gpu.yaml (needs an NVIDIA GPU)', () => {
   let jupyter: Jupyter | undefined
   let dir: string
   beforeAll(() => {
-    jupyter = startJupyter('wp89e-remote-gpu', GPU_PORT, ['compose.gpu.yaml'])
+    jupyter = startJupyter('presmium-remote-gpu', GPU_PORT, ['compose.gpu.yaml'])
     dir = testDeck('remote-gpu', `
 execute:
   environments:

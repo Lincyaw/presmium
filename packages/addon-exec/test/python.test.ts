@@ -67,7 +67,7 @@ ${FENCE}
   ])
 }, 180_000)
 
-it('runs again the recordings an older runner made, where python3 runs (D-8): the runner\'s digest is part of the key', async () => {
+it('runs again the recordings an older runner made, where python3 runs: the runner\'s digest is part of the key', async () => {
   const dir = deck(`
 ## 旧的录制
 

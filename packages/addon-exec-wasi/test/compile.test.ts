@@ -133,7 +133,7 @@ function peakMemory(pid: number): number | undefined {
   }
 }
 
-it('stops a program\'s memory at its limit, in a process of its own: the program fails, saying why, and the compiling process does not grow with it (N-08)', async () => {
+it('stops a program\'s memory at its limit, in a process of its own: the program fails, saying why, and the compiling process does not grow with it', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'presmium-wasi-memory-'))
   dirs.push(dir)
   writeFileSync(join(dir, 'lecture.md'), `---

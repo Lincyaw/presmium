@@ -68,7 +68,7 @@ it('records the shader\'s output in Chromium on SwiftShader, in the deck\'s lang
 const gpu = await findChromiumAdapter('gpu', minimalRunEnv()).then(found => (found.adapter.fallback ? undefined : found.adapter), () => undefined)
 if (!gpu) console.warn('[record.test] the GPU case is skipped: Chromium finds no GPU through Vulkan (--enable-features=Vulkan); run it on a machine with a GPU and its Vulkan driver')
 
-it.skipIf(!gpu)('records the shader on the GPU that Chromium finds through Vulkan, with a fingerprint that names its vendor (P-104)', async () => {
+it.skipIf(!gpu)('records the shader on the GPU that Chromium finds through Vulkan, with a fingerprint that names its vendor', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'presmium-webgpu-gpu-'))
   dirs.push(dir)
   writeFileSync(join(dir, 'lecture.md'), deck('gpu'))
