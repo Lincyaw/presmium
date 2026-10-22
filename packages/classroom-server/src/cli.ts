@@ -1,6 +1,6 @@
-import { networkInterfaces } from 'node:os'
 import { parseArgs } from 'node:util'
 import { errorMessage } from '@lincyaw/kernel'
+import { lanAddresses } from '@lincyaw/kernel/node'
 import { startClassroomServer } from './index.ts'
 
 const USAGE = `Usage: presmium-classroom-server [--port <n>] [--host <address>] [--deck <dir>]
@@ -49,8 +49,4 @@ export async function main(argv: string[]): Promise<number | undefined> {
   process.once('SIGINT', stop)
   process.once('SIGTERM', stop)
   return undefined
-}
-
-function lanAddresses(): string[] {
-  return Object.values(networkInterfaces()).flatMap(entries => entries ?? []).filter(entry => entry.family === 'IPv4' && !entry.internal).map(entry => entry.address)
 }

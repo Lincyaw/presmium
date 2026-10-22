@@ -8,7 +8,7 @@ import type { AddressInfo } from 'node:net'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { backgroundPriority, dshBin, launchArgs, launchEnv, NODE_RESOURCE_ARGS, resourceEnvironment, WATCHDOG, WEB_READY, writeProfile } from '@lincyaw/dsh/launch'
+import { backgroundPriority, bracketIPv6, dshBin, launchArgs, launchEnv, NODE_RESOURCE_ARGS, resourceEnvironment, WATCHDOG, WEB_READY, writeProfile } from '@lincyaw/dsh/launch'
 import { modelEnv } from './model.ts'
 
 export const PROFILE = 'presmium-studio'
@@ -44,8 +44,6 @@ export function studioHome(env: NodeJS.ProcessEnv = process.env): string {
 export function presmiumBin(): string {
   return join(dirname(createRequire(join(PACKAGE_DIR, 'package.json')).resolve('@lincyaw/presmium/package.json')), 'bin', 'presmium.mjs')
 }
-
-const urlHost = (host: string) => (host.includes(':') ? `[${host}]` : host)
 
 const WILDCARD = /^(?:0\.0\.0\.0|::|(?:0+:){7}0+|::ffff:0\.0\.0\.0)$/i
 
@@ -185,7 +183,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
     throw new Error(`--host takes one address of this machine, such as 192.168.0.21, not "${host}" (DeepSeek Harness listens on one concrete address, never on all of them)`)
   }
   const port = await choosePort(host ?? '127.0.0.1', options.port)
-  const origins = [`http://${urlHost(host ?? '127.0.0.1')}:${port}`, ...!host || host === '127.0.0.1' ? [`http://localhost:${port}`] : []]
+  const origins = [`http://${bracketIPv6(host ?? '127.0.0.1')}:${port}`, ...!host || host === '127.0.0.1' ? [`http://localhost:${port}`] : []]
 
   const home = studioHome(env)
   mkdirSync(home, { recursive: true, mode: 0o700 })
@@ -215,7 +213,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
 
     const dsh = supervise('dsh', [
       dshBin(PACKAGE_DIR), ...launchArgs(PROFILE, 'web'), '--port', String(port), '--no-open',
-      ...host ? ['--host', host, '--trusted-host', `${urlHost(host)}:${port}`] : [],
+      ...host ? ['--host', host, '--trusted-host', `${bracketIPv6(host)}:${port}`] : [],
     ], {
       cwd: root,
       env: {

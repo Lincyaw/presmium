@@ -3,7 +3,7 @@ import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resourceEnvironment } from '@lincyaw/kernel/node'
-export { backgroundPriority, NODE_RESOURCE_ARGS, resourceEnvironment } from '@lincyaw/kernel/node'
+export { backgroundPriority, bracketIPv6, NODE_RESOURCE_ARGS, resourceEnvironment } from '@lincyaw/kernel/node'
 
 export type Carrier = 'web' | 'headless' | 'acp'
 

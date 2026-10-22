@@ -6,11 +6,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { createJiti } from 'jiti'
 import { errorMessage } from '@lincyaw/kernel'
-import { irRevision } from '@lincyaw/kernel/node'
+import { bracketIPv6, irRevision, lanAddresses } from '@lincyaw/kernel/node'
 import type { ApprovalKind, Finding, Severity } from '@lincyaw/kernel'
 import { build, Compiler, dev, resolveEntry } from '@lincyaw/compiler'
 import type { BuildReport, Compilation, RunStats } from '@lincyaw/compiler'
-import { anyAddress, isLoopback, networkAddresses, serverConfiguration, servedDocument, startServer } from '@lincyaw/server'
+import { anyAddress, isLoopback, serverConfiguration, servedDocument, startServer } from '@lincyaw/server'
 import type { ApprovalPolicy } from '@lincyaw/server'
 import { buildWorkspace, isWorkspaceRoot, serveWorkspace } from '@lincyaw/workspace'
 import type { WorkspaceBuild } from '@lincyaw/workspace'
@@ -370,7 +370,7 @@ async function studio(argv: string[]): Promise<number> {
 function networkLines(host: string | undefined, url: string): string {
   if (!host || isLoopback(host)) return ''
   const { port } = new URL(url)
-  const addresses = anyAddress(host) ? networkAddresses() : [host.includes(':') && !host.startsWith('[') ? `[${host}]` : host]
+  const addresses = anyAddress(host) ? lanAddresses() : [bracketIPv6(host)]
   return addresses.map(address => `network  http://${address}:${port}/\n`).join('')
 }
 

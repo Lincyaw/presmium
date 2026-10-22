@@ -2,6 +2,7 @@ import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import type { SpeechWord, VoiceInfo } from '@lincyaw/kernel'
 import { isRecord } from '@lincyaw/kernel'
+import { bracketIPv6 } from '@lincyaw/kernel/node'
 import { fakeWords, oneSegment } from '../domain/index.ts'
 import { isWav, makeWav, wavChunks, wavDuration } from './audio/riff.ts'
 
@@ -111,7 +112,7 @@ export async function startFakeEngine(options: { port?: number, host?: string } 
   const { port } = server.address() as AddressInfo
   const host = options.host && options.host !== '0.0.0.0' ? options.host : '127.0.0.1'
   return {
-    url: `http://${host.includes(':') ? `[${host}]` : host}:${port}/v1`,
+    url: `http://${bracketIPv6(host)}:${port}/v1`,
     close: () => new Promise((resolve) => {
       server.close(() => resolve())
       server.closeAllConnections()

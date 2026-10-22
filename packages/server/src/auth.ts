@@ -16,10 +16,6 @@ export function anyAddress(host: string): boolean {
   return ['0.0.0.0', '[::]'].includes(hostname(host))
 }
 
-export function networkAddresses(): string[] {
-  return Object.values(networkInterfaces()).flatMap(entries => entries ?? []).filter(entry => entry.family === 'IPv4' && !entry.internal).map(entry => entry.address)
-}
-
 export function machineHosts(listen: string): MachineHosts {
   const own = hostname(listen)
   if (isLoopback(own)) return isLoopback

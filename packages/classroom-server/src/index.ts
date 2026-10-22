@@ -5,6 +5,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { join, resolve } from 'node:path'
 import { errorMessage } from '@lincyaw/kernel'
+import { bracketIPv6 } from '@lincyaw/kernel/node'
 import * as decoding from 'lib0/decoding'
 import * as encoding from 'lib0/encoding'
 import { WebSocket, WebSocketServer } from 'ws'
@@ -434,7 +435,7 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
   const shown = !options.host || options.host === '0.0.0.0' || options.host === '::' ? 'localhost' : options.host
   return {
     port,
-    url: `ws://${shown.includes(':') ? `[${shown}]` : shown}:${port}`,
+    url: `ws://${bracketIPv6(shown)}:${port}`,
     archiveDir,
     async close() {
       for (const client of wss.clients) client.terminate()

@@ -1,7 +1,7 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { request as httpRequest } from 'node:http'
 import { join } from 'node:path'
-import { networkAddresses } from '@lincyaw/server'
+import { lanAddresses } from '@lincyaw/kernel/node'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Child } from './serve-helpers.ts'
 import { cleanEnv, FIXTURES, presmiumProcess, raw, remove, ROOT, waitFor, workspace } from './serve-helpers.ts'
@@ -111,7 +111,7 @@ describe('presmium serve on this machine', () => {
     try {
       const port = (await waitFor(network, /^serve {2}http:\/\/127\.0\.0\.1:(\d+)$/m))[1]!
       await waitFor(network, /with no login: anyone who reaches port \d+ uses this workspace as you/)
-      if (networkAddresses().length > 0) expect(network.output()).toContain(`network  http://${networkAddresses()[0]}:${port}/`)
+      if (lanAddresses().length > 0) expect(network.output()).toContain(`network  http://${lanAddresses()[0]}:${port}/`)
     } finally {
       await network.stop()
     }

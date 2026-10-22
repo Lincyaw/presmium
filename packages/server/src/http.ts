@@ -4,6 +4,7 @@ import type { AddressInfo } from 'node:net'
 import type { Duplex } from 'node:stream'
 import { getRequestListener } from '@hono/node-server'
 import { jsonResponse } from '@lincyaw/kernel'
+import { bracketIPv6 } from '@lincyaw/kernel/node'
 import { createProxyServer } from 'http-proxy-3'
 
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]'])
@@ -163,5 +164,5 @@ export function closeServer(server: Server): Promise<void> {
 
 export function urlHost(host: string): string {
   if (host === '0.0.0.0' || host === '::') return '127.0.0.1'
-  return host.includes(':') && !host.startsWith('[') ? `[${host}]` : host
+  return bracketIPv6(host)
 }
