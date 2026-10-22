@@ -198,7 +198,8 @@ function cardsAs(options: LowerOptions): 'element' | 'headings' {
   return options.cards ?? (options.iframes === 'element' ? 'element' : 'headings')
 }
 
-function isButton(node: MdastNode): boolean {
+/** Whether a MyST node has the class `button`, which renders a link or span as a button. */
+export function isButton(node: MdastNode): boolean {
   return typeof node.class === 'string' && node.class.split(/\s+/).includes('button')
 }
 
