@@ -1,12 +1,45 @@
-import { relative, resolve, sep } from 'node:path'
-import { docBlocks } from '@lincyaw/kernel'
-import type { CodeNode, ComponentNode, Executor, IRBlock, IRPass } from '@lincyaw/kernel'
-import { EXEC_LOCAL_ID, execLocalConfig } from '../domain/index.ts'
+import { dirname, relative, resolve, sep } from 'node:path'
+import { componentCode, docBlocks } from '@lincyaw/kernel'
+import type { CodeNode, ComponentNode, DirectiveSpec, Executor, IRBlock, IRPass } from '@lincyaw/kernel'
+import { EXEC_LOCAL_ID, execLocalConfig, workspacePath } from '../domain/index.ts'
 import type { ContainerExecutor } from './container.ts'
-import { createContainerExecutor, findDefinition } from './container.ts'
-import { requestedWorkspaces } from './directive.ts'
+import { createContainerExecutor } from './container.ts'
+import { findDefinition } from './devcontainer.ts'
 import { inLanguage } from './messages.ts'
 import { replicateArchive } from './replicate.ts'
+
+/** The `:workspace:` each {local-env} names, resolved, for the workspace pass of the same compile. */
+const requestedWorkspaces = new WeakMap<ComponentNode, string>()
+
+export const localEnvDirective: DirectiveSpec = {
+  name: 'local-env',
+  arg: true,
+  body: true,
+  options: { file: 'string', workspace: 'string' },
+  toIR(input, ctx) {
+    const lang = input.arg?.trim() || 'python'
+    let file: string
+    try {
+      file = workspacePath(String(input.options.file ?? ''))
+    }
+    catch {
+      const message = '{local-env} needs :file:, the path of the snippet inside the workspace'
+      ctx.report({ checkId: 'presmium.execLocal.syntax', severity: 'error', message })
+      return { node: { type: 'markdown', mdast: ctx.parse(`> ${message}`) } }
+    }
+    const code: CodeNode = { type: 'code', lang, value: input.body.replace(/\n+$/, '') }
+    const node: ComponentNode = {
+      type: 'component',
+      plugin: EXEC_LOCAL_ID,
+      name: 'PmLocalEnv',
+      props: { file, lang, code: code.value },
+      children: [{ id: 'source', role: 'visual', at: 0, source: ctx.source, node: code }],
+      fallback: { type: 'root', children: [{ type: 'code', lang, value: code.value }] },
+    }
+    if (typeof input.options.workspace === 'string') requestedWorkspaces.set(node, resolve(dirname(ctx.file), input.options.workspace))
+    return { node }
+  },
+}
 
 const deckContainers = new Map<string, ContainerExecutor>()
 
@@ -56,7 +89,8 @@ export function localEnvPass(pluginContainer: Executor): IRPass {
           })
           continue
         }
-        const code = node.children?.find(child => child.node.type === 'code')?.node as CodeNode
+        const code = componentCode(node)
+        if (!code) continue
         const file = String(node.props.file)
         const request = { file, content: `${code.value}\n`, lang: String(node.props.lang) }
         const { zip } = inLanguage(ctx.lang, () => replicateArchive(dir, definition, request))

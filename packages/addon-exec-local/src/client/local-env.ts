@@ -5,7 +5,8 @@ import { CONTAINER_EXECUTOR_ID, disconnected, EXEC_LOCAL_ID, failedContainerRun 
 import type { LocalEnvService, LocalEnvStatus, ReplicateRequest } from '../domain/index.ts'
 import { messages } from './messages.ts'
 
-export interface LocalEnv extends LocalEnvService {
+/** The local environment through the server's routes, and the executor that runs code there. */
+export interface LocalEnvClient extends LocalEnvService {
   readonly executor: Executor
 }
 
@@ -35,7 +36,7 @@ async function probe(): Promise<LocalEnvStatus> {
   }
 }
 
-export function createLocalEnv(): LocalEnv {
+export function createLocalEnvClient(): LocalEnvClient {
   let status: Promise<LocalEnvStatus> | undefined
   let languages: string[] = []
   const service: LocalEnvService = {

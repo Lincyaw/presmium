@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { useService, useStartReport } from '@lincyaw/host'
+import { useMessages, useService, useStartReport } from '@lincyaw/host'
 import { errorMessage, languageId } from '@lincyaw/kernel'
 import type { RunResult } from '@lincyaw/kernel'
 import { computed, ref, shallowRef, watch } from 'vue'
-import { useMessages } from '../src/client/messages.ts'
+import { MESSAGES } from '../src/client/messages.ts'
 import { archiveName, disconnected, LOCAL_ENV } from '../src/domain/index.ts'
 import type { LocalEnvStatus } from '../src/domain/index.ts'
 
@@ -17,7 +17,7 @@ const props = withDefaults(defineProps<{
 
 const env = useService(LOCAL_ENV)
 const report = useStartReport()
-const t = useMessages()
+const t = useMessages(MESSAGES)
 const probed = shallowRef<LocalEnvStatus>()
 watch(env, async (service) => {
   if (service) probed.value = await service.status()

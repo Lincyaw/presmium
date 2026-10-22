@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PRESMIUM_BIN } from '@lincyaw/cli/testing'
 import { afterAll, beforeAll, expect, it } from 'vitest'
-import { imageName } from '../src/node/container.ts'
+import { imageName } from '../src/node/devcontainer.ts'
 
 const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
 const IMAGE = 'python:3.12-alpine'

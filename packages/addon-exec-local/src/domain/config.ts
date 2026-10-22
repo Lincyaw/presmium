@@ -2,6 +2,8 @@ import { isRecord } from '@lincyaw/kernel'
 
 export const EXEC_LOCAL_ID = 'presmium.execLocal'
 
+export const DEVCONTAINER_KIND = 'devcontainer'
+
 export interface ExecLocalConfig {
   workspace?: string
   priority: number

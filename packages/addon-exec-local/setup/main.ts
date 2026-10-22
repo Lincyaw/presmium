@@ -1,7 +1,7 @@
 import { registerPresmiumPlugin } from '@lincyaw/host'
 import { defineAppSetup } from '@slidev/types'
-import plugin from '../src/client/plugin.ts'
+import { execLocalPlugin } from '../src/client/index.ts'
 
 export default defineAppSetup(() => {
-  registerPresmiumPlugin(plugin)
+  registerPresmiumPlugin(execLocalPlugin)
 })

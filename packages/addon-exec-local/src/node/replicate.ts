@@ -4,7 +4,7 @@ import { languageId } from '@lincyaw/kernel'
 import { strToU8, zipSync } from 'fflate'
 import { archiveName, workspacePath } from '../domain/index.ts'
 import type { ReplicateRequest } from '../domain/index.ts'
-import { definitionRunners } from './container.ts'
+import { definitionCommands } from './devcontainer.ts'
 import { text } from './messages.ts'
 
 export class PathError extends Error {}
@@ -32,7 +32,7 @@ export function replicateArchive(workspace: string, configFile: string, request:
     entries[relative(workspace, path).split(sep).join('/')] = readFileSync(path)
   }
   entries[file] = strToU8(request.content)
-  const runner = request.lang ? definitionRunners(configFile)[languageId(request.lang)] : undefined
-  entries[file === 'README.md' ? 'PRESMIUM.md' : 'README.md'] = strToU8(text().readme(file, runner && `${runner[0]} ${file}`))
+  const command = request.lang ? definitionCommands(configFile)[languageId(request.lang)] : undefined
+  entries[file === 'README.md' ? 'PRESMIUM.md' : 'README.md'] = strToU8(text().readme(file, command && `${command[0]} ${file}`))
   return { name: archiveName(file), zip: zipSync(entries, { mtime: '2000-01-01T00:00:00Z' }) }
 }

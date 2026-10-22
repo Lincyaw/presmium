@@ -31,6 +31,6 @@ export function disconnected(reason: DisconnectedReason): LocalEnvStatus {
   return { connected: false, docker: false, devcontainer: null, languages: [], reason }
 }
 
-export function failedContainerRun(message: string, durationMs = 0): RunResult {
-  return failedRun(CONTAINER_EXECUTOR_ID, message, durationMs)
+export function failedContainerRun(message: string, executorId = CONTAINER_EXECUTOR_ID): RunResult {
+  return failedRun(executorId, message)
 }

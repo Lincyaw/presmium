@@ -8,7 +8,7 @@ import { presmium, PRESMIUM_BIN } from '@lincyaw/cli/testing'
 import type { CodeNode, ComponentNode, IRBlock, IRDocument } from '@lincyaw/kernel'
 import { strFromU8, unzipSync } from 'fflate'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { imageName } from '../src/node/container.ts'
+import { imageName } from '../src/node/devcontainer.ts'
 
 const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
 const PACKAGES = fileURLToPath(new URL('../..', import.meta.url))

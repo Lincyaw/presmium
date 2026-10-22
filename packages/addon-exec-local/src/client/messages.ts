@@ -1,6 +1,5 @@
-import { currentLocale, useMessages as useCatalog } from '@lincyaw/host'
+import { currentLocale } from '@lincyaw/host'
 import type { Catalog } from '@lincyaw/host'
-import type { ComputedRef } from 'vue'
 
 const zhCN = {
   container: (definition: string) => `容器：${definition}`,
@@ -48,8 +47,4 @@ export const MESSAGES: Catalog<LocalEnvMessages> = { 'zh-CN': zhCN, en }
 
 export function messages(): LocalEnvMessages {
   return MESSAGES[currentLocale()]
-}
-
-export function useMessages(): ComputedRef<LocalEnvMessages> {
-  return useCatalog(MESSAGES)
 }
