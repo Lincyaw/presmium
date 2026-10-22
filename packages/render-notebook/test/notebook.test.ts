@@ -123,7 +123,7 @@ it('renders components through the plugin extension or the fallback, and reports
   expect(build.stdout).toContain(`${section}#fixture-canvas-1: component FixtureCanvas has no notebook extension or fallback`)
 })
 
-it('links the notes of components to their page of the web form built with them when no webUrl is set (R-48)', async () => {
+it('links the notes of components to their page of the web form built with them when no webUrl is set', async () => {
   const work = fileURLToPath(new URL('../../../e2e/fixtures/regression/.presmium', import.meta.url))
   mkdirSync(work, { recursive: true })
   const deck = mkdtempSync(join(work, 'notebook-linked-'))

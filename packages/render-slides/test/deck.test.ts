@@ -23,7 +23,7 @@ it('writes mcp: false in the headmatter, and the marks of roles without children
   expect(body).not.toContain('〔probe')
 }, 300_000)
 
-it('leaves a plugin the compiler refuses out of the slides\' addons, and builds them (P-143)', async () => {
+it('leaves a plugin the compiler refuses out of the slides\' addons, and builds them', async () => {
   const { code, stdout, stderr } = await presmium(REFUSED, ['build', '--to', 'slides', '--out', 'dist'])
   expect(code).toBe(1)
   expect(stdout + stderr).toContain('plugin "./future" (fixture.slides-future 2.0.0) is not loaded: kernel 1.0.0 does not satisfy "^9.0.0"')

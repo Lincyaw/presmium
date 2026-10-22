@@ -1,5 +1,5 @@
 // Test-only web renderer: a site (`Renderer.site`) whose page names the public base it is given,
-// so a build of it with the slides is a build of two sites, which deploys as one (C-13).
+// so a build of it with the slides is a build of two sites, which deploys as one.
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { PresmiumNodePlugin } from '@lincyaw/kernel'

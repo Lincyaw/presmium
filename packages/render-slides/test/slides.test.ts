@@ -198,7 +198,7 @@ it('shows tags that name no HTML element as text, and reports a slide that does 
   expect(broken.output).not.toContain('__slidev_')
 }, 180_000)
 
-it('gives code that runs live one output area, its runner\'s, which shows the recording until the code runs and on every printed page; shows an HTML table whole, sanitized, in the slide and its export (F-18, F-65)', async () => {
+it('gives code that runs live one output area, its runner\'s, which shows the recording until the code runs and on every printed page; shows an HTML table whole, sanitized, in the slide and its export', async () => {
   const target = join(out, 'live')
   const built = await build(['build', '--to', 'slides', '--out', target], LIVE_DECK)
   expect(built.code, built.output).toBe(0)

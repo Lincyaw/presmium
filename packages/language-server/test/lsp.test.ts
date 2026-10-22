@@ -185,7 +185,7 @@ it('completes region names in an anchor, directive names and options', async () 
   expect(await complete(':')).toEqual(expect.arrayContaining(['steps', 'pin', 'run', 'reveal']))
 })
 
-it('maps the cursor to its section and opens the presmium dev preview (P-81)', async () => {
+it('maps the cursor to its section and opens the presmium dev preview', async () => {
   const position = { line: lineOf(DECK, '```{code-ref} region:src/bpe.py#gone'), character: 0 }
   const section = await server.connection.sendRequest(SECTION_REQUEST, { textDocument: { uri }, position }) as SectionLocation
   expect(section).toEqual({ entry: deck, id: 'lost', index: 2, title: 'Lost', link: '/#lost' })
@@ -198,7 +198,7 @@ it('maps the cursor to its section and opens the presmium dev preview (P-81)', a
   expect(await page.text()).toContain('<div id="app">')
 }, 120_000)
 
-it('answers at once about a file of a deck that is compiling again after a save (R-46)', async () => {
+it('answers at once about a file of a deck that is compiling again after a save', async () => {
   const entry = join(dir, 'slow/lecture.md')
   const text = `---\ntitle: Slow\nplugins:\n  - ${fileURLToPath(new URL('./fixtures/slow', import.meta.url))}\n---\n\n## Slow\n\nA pass of a second.\n`
   mkdirSync(join(dir, 'slow'))
@@ -213,7 +213,7 @@ it('answers at once about a file of a deck that is compiling again after a save 
   expect(Date.now() - started).toBeLessThan(200)
 }, 30_000)
 
-it('starts one presmium dev for a deck again after a start that failed, however often the preview is asked for (F-43)', async () => {
+it('starts one presmium dev for a deck again after a start that failed, however often the preview is asked for', async () => {
   const entry = join(dir, 'again/lecture.md')
   mkdirSync(join(dir, 'again'))
   const text = (web: string) => `---\ntitle: Again\nrenderers:\n  web:\n    package: ${web}\n---\n\n## One\n\nText.\n`

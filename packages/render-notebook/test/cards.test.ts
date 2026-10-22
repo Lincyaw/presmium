@@ -61,7 +61,7 @@ afterAll(() => rmSync(dir, { recursive: true, force: true }))
 
 const markdown = (section: string) => cells.filter(c => c.metadata.presmium.section === section).map(c => c.source.join('')).join('\n\n')
 
-it('writes cards and tabs as small headings over their paragraphs, a button as a link (P-46)', () => {
+it('writes cards and tabs as small headings over their paragraphs, a button as a link', () => {
   expect(markdown('weeks')).toBe([
     '## 课程',
     '#### [第 1 周：智能体环路](https://example.com/week-01/)',
@@ -73,7 +73,7 @@ it('writes cards and tabs as small headings over their paragraphs, a button as a
   expect(markdown('install')).toBe(['## 安装', '#### Python', '用 pip 安装。', '#### JavaScript', '用 npm 安装。'].join('\n\n'))
 })
 
-it('lists the cards, the grid and the tab set as degraded in the build report (P-46)', () => {
+it('lists the cards, the grid and the tab set as degraded in the build report', () => {
   expect(output).toMatch(/lecture\.md:\d+ +warning +weeks#grid-1: degraded in the notebook, which has no Jupyter form for grid, card/)
   expect(output).toMatch(/lecture\.md:\d+ +warning +install#tab-set-1: degraded in the notebook, which has no Jupyter form for tabSet/)
 })
