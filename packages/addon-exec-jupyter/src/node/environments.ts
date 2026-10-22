@@ -6,12 +6,6 @@ import { createKernels } from '../jupyter/kernels.ts'
 import type { Kernels, KernelsText } from '../jupyter/kernels.ts'
 import { nodeSettings } from './connection.ts'
 
-const declared = new Map<string, Map<string, EnvironmentSpec>>()
-
-export function declaredEnvironments(deckDir: string): Map<string, EnvironmentSpec> {
-  return declared.get(deckDir) ?? new Map()
-}
-
 const FINGERPRINT_TTL_MS = 60_000
 
 function text(prefix: string, url: () => string): KernelsText {
@@ -77,9 +71,6 @@ export function createJupyterExecutor(name: string, spec: EnvironmentSpec, ctx: 
 
 export const jupyterProvider: EnvironmentProvider = {
   create(name, spec, ctx) {
-    let known = declared.get(ctx.deckDir)
-    if (!known) declared.set(ctx.deckDir, known = new Map())
-    known.set(name, spec)
     const resolved = operatorConnection(name, spec, { secret: ctx.secret })
     if ('mismatch' in resolved) throw new Error(resolved.mismatch)
     return createJupyterExecutor(name, spec, ctx)

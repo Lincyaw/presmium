@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module'
 import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 import { EXEC_JUPYTER_ID } from '../domain/index.ts'
+import { declaredEnvironmentsPass } from './declared.ts'
 import { terminalDirective, terminalPass } from './directive.ts'
 import { jupyterProvider } from './environments.ts'
 import { jupyterServer } from './server.ts'
@@ -13,7 +14,7 @@ const plugin: PresmiumNodePlugin = {
   version,
   kernel: '^1.0.0',
   directives: [terminalDirective],
-  passes: [terminalPass],
+  passes: [declaredEnvironmentsPass, terminalPass],
   environments: { jupyter: jupyterProvider },
   server: jupyterServer,
   vitePlugins: () => [servicesInBrowserBuilds(), prebundled()],

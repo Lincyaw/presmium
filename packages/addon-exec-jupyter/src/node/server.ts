@@ -4,7 +4,7 @@ import { authOf, cleanupPath, operatorConnection, proxyPath } from '../domain/in
 import type { Connection } from '../domain/index.ts'
 import { shutdownKernel } from '../jupyter/kernels.ts'
 import { nodeSettings } from './connection.ts'
-import { declaredEnvironments } from './environments.ts'
+import { declaredEnvironments } from './declared.ts'
 
 export function proxyHeaders(connection: Connection): Record<string, string> {
   const target = new URL(connection.url)
