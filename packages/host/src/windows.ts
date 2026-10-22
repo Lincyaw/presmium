@@ -5,7 +5,7 @@ export interface WindowChannel {
   close(): void
 }
 
-export function deckChannel(name: string): string {
+function deckChannel(name: string): string {
   return `${name} @ ${import.meta.env?.BASE_URL ?? '/'}`
 }
 

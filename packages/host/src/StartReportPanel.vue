@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { componentErrors } from './boundary.ts'
+import { componentErrors } from './error-boundary.ts'
 import { useStartReport } from './host.ts'
 import { useMessages } from './locale.ts'
 import { HOST_MESSAGES } from './messages.ts'

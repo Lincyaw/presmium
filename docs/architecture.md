@@ -180,7 +180,7 @@ VS Code 扩展的安装包包含语言服务、编译器与网页渲染运行时
 
 ## 4. 跨上下文契约
 
-契约的唯一来源是 `packages/kernel/src/contracts.ts`（内核）与 `packages/host/src/types.ts`（宿主）。以下为要点。
+契约的唯一来源是 `packages/kernel/src/contracts/`（内核，`contracts.ts` 汇总导出；目录中只有类型、服务令牌与协议的解析，辅助函数在 `src/` 根目录）与 `packages/host/src/contracts.ts`（宿主）。以下为要点。
 
 ### 4.1 插件与服务
 
@@ -234,7 +234,7 @@ VS Code 扩展的安装包包含语言服务、编译器与网页渲染运行时
 
 ### 4.4 宿主接口
 
-宿主契约的唯一来源是 `packages/host/src/types.ts`：
+宿主契约的唯一来源是 `packages/host/src/contracts.ts`：
 
 ```ts
 type PresentationMode = 'slides' | 'document'
@@ -277,10 +277,10 @@ interface HostAdapter {
 | `PmToolbar`、`PmPresenterPanels` | 宿主显示 `toolbar`、`presenterPanels` 服务内容的位置 |
 | `useSectionConfig(pluginId)` | 插件在当前章节的配置：全局配置合并章节的 `{config}`（5.2 节） |
 | `useSharedState(key, initial, { scope })` | 插件状态的共享范围：`view` 只在本视图，`local`（默认）在本机所有窗口，`remote` 经 `syncTransports` 跨设备。两种形态的实现相同：本机窗口之间用 BroadcastChannel（`joinWindows`），`remote` 另经同步传输端口 |
-| `createSharedStates(deck)`、`joinWindows(name, receive, known)`、`deckChannel(name)` | 宿主适配实现 `useSharedState` 的构件，见下文“共享状态” |
+| `createSharedStates(deck)`、`joinWindows(name, receive, known)` | 宿主适配实现 `useSharedState` 的构件，见下文“共享状态” |
 | `useLocale()`、`useMessages(catalog)` | 界面语言 `'zh-CN'` 或 `'en'`，与按语言选取的文本（5.7 节） |
 | `useStaticRender()` | 静态导出（PDF、PNG）时为 true：幻灯片形态取自 Slidev 的打印模式，网页形态恒为 false（5.8 节） |
-| `registerPresmiumPlugin`、`startPresmium`、`stopPresmium` | 注册浏览器端插件、启动与停止内核；两个宿主在页面卸载（`pagehide`）与热更新替换时调用 `stopPresmium`，各插件的 `dispose` 因此会执行，页面从往返缓存恢复时再启动内核。持有资源的插件在 `dispose` 中释放它们；执行插件结束 Pyodide 与所有正在运行的 JavaScript/TypeScript Worker，取消其计时器和待返回结果，再次启动时不留下第二份。已释放的执行器拒绝新运行，Pyodide 队列中尚未开始的任务也以取消结束，不能重新创建 Worker；恢复时由插件创建新实例 |
+| `registerPresmiumPlugin`、`stopHost`、`setHostActive(active)` | 注册浏览器端插件、停止与恢复内核（`packages/host/src/runtime.ts`）；页面卸载（`pagehide`）时 `startHost` 接上的处理与两个宿主的热更新替换调用 `stopHost`，各插件的 `dispose` 因此会执行，页面从往返缓存恢复时再启动内核。持有资源的插件在 `dispose` 中释放它们；执行插件结束 Pyodide 与所有正在运行的 JavaScript/TypeScript Worker，取消其计时器和待返回结果，再次启动时不留下第二份。已释放的执行器拒绝新运行，Pyodide 队列中尚未开始的任务也以取消结束，不能重新创建 Worker；恢复时由插件创建新实例 |
 | `startHost({ mode, config, navigation, transports })` | 宿主适配启动内核的共同部分：提供 `presenterPanels`、`syncTransports`、`navigation`、`toolbar` 四个宿主服务，并接上 `pagehide` |
 | `useSessionSnapshot()`、`claimFirst(group)` | 会话快照（`session` 服务的订阅），与“同一组中第一个实例拥有”的判断，会话与课堂插件共用 |
 | `currentLocale()` | 组件之外的界面语言，按 `CATALOG[currentLocale()]` 取文本 |
@@ -290,7 +290,7 @@ interface HostAdapter {
 **共享状态。** `createSharedStates(deck)` 返回适配器的 `useSharedState` 实现与同步传输的接入点（`transports.add`，`syncTransports` 服务把每个传输交给它），`deck` 是文稿标题。两种形态的宿主适配都用它，跨窗口、跨设备的状态只有这一套实现：
 
 - `local` 与 `remote` 状态经 `joinWindows` 在本机的窗口之间传递。BroadcastChannel 只送达加入之后的变化，所以新窗口加入时向其他窗口询问，状态改变过的窗口回答，中途打开的演讲者窗口因此从当前状态开始。
-- BroadcastChannel 对同源的全部页面可见。`joinWindows` 用 `deckChannel(name)` 给通道名加上文稿的基础路径（Vite 的 `import.meta.env.BASE_URL`，两种形态都由 Vite 构建），通道名形如 `presmium.shared:<文稿标题>:local:<key> @ /web/`，同一站点上同名的两份文稿因此不会串。同一文稿的网页与幻灯片基础路径不同，本机窗口之间的状态也不互通。IR 运行时的放映位置同样经 `deckChannel` 与 `joinWindows` 在窗口之间传递；视图插件的共享状态（例如舞台插件的黑屏）用 `useSharedState`，在两种形态中都是 `remote` 状态，课堂中会到达学员的设备。
+- BroadcastChannel 对同源的全部页面可见。`joinWindows` 给通道名加上文稿的基础路径（Vite 的 `import.meta.env.BASE_URL`，两种形态都由 Vite 构建），通道名形如 `presmium.shared:<文稿标题>:local:<key> @ /web/`，同一站点上同名的两份文稿因此不会串。同一文稿的网页与幻灯片基础路径不同，本机窗口之间的状态也不互通。IR 运行时的放映位置同样经 `joinWindows` 在窗口之间传递；视图插件的共享状态（例如舞台插件的黑屏）用 `useSharedState`，在两种形态中都是 `remote` 状态，课堂中会到达学员的设备。
 - `remote` 状态另是名为 `presmium.shared:<文稿标题>:remote:<key>` 的同步通道，由每个同步传输接入（例如课堂）。两种形态的通道名相同，课堂中幻灯片与网页的设备共享同一份状态。
 - 变化按到达的顺序生效并立即发布：来自其他窗口或设备的变化在本窗口生效，以 `fromRemote` 发布，传输不会再把它发出去；紧接着的本地变化照常作为本地变化发布。
 
@@ -323,13 +323,13 @@ interface HostAdapter {
 | `presmium.changeReview`（`CHANGE_REVIEW`，Node） | 工作区服务（git 仓库中的工作区） | 工作区服务的 `review` 路由，dsh bundle 的 `presmium-turns` 经它审阅会话的修改（10.7 节） |
 | `presmium.processSandbox`（`PROCESS_SANDBOX`，Node） | 运营者插件（没有内置的实现） | 编译器：放进 `RunContext.sandbox`，执行插件的子进程经它运行（4.6 节、10.6 节） |
 
-内核契约中的令牌（`executor`、`session`、`classroomStore`、`presenterPanels`、`speech`、`agent`、`ask`、`agentRuntime`、`revisions`、`documentFiles`、`documentLocks`、`approvals`、`mcpEndpoint`、`changeReview`、`processSandbox`）定义在 `packages/kernel/src/contracts.ts` 与它再导出的 `contracts/` 模块中；宿主层的令牌（`syncTransports`、`navigation`、`toolbar`、`operations`、`status`）定义在 `packages/host/src/types.ts`。服务替换时，提供方与使用方都不需要改动。Node 端的令牌（`speech` 的 Node 实现、`agentRuntime`、`revisions`、`documentFiles`、`documentLocks`、`approvals`、`mcpEndpoint`、`changeReview`、`processSandbox`）登记在编译器为每份文稿建立的 Node 端服务注册表中（`PresmiumNodePlugin.services`，服务端与工作区另行登记自己的实现），规则与浏览器端相同：一个令牌只有一个实现。
+内核契约中的令牌（`executor`、`session`、`classroomStore`、`presenterPanels`、`speech`、`agent`、`ask`、`agentRuntime`、`revisions`、`documentFiles`、`documentLocks`、`approvals`、`mcpEndpoint`、`changeReview`、`processSandbox`）定义在 `packages/kernel/src/contracts.ts` 与它再导出的 `contracts/` 模块中；宿主层的令牌（`syncTransports`、`navigation`、`toolbar`、`operations`、`status`）定义在 `packages/host/src/contracts.ts`。服务替换时，提供方与使用方都不需要改动。Node 端的令牌（`speech` 的 Node 实现、`agentRuntime`、`revisions`、`documentFiles`、`documentLocks`、`approvals`、`mcpEndpoint`、`changeReview`、`processSandbox`）登记在编译器为每份文稿建立的 Node 端服务注册表中（`PresmiumNodePlugin.services`，服务端与工作区另行登记自己的实现），规则与浏览器端相同：一个令牌只有一个实现。
 
 `executor`、`session`、`classroomStore` 的接口（`RunRequest`、`SessionService`、`Role` 等）是业务契约。它们放在内核包中是有意的：提供方与使用方是不同的插件，插件之间不互相引用（第 3 节），契约只能放在双方都依赖的共享内核中。内核的运行时（服务注册、启动、锚点、检查）不使用这些概念。见第 9.2 节。
 
 ### 4.6 执行环境、会话与富输出
 
-4.6 至 4.10 节是执行环境、智能体、工作区与讲授的契约，全部是兼容扩展：只增加可选字段、可选参数（`Executor.run` 的第三个参数 `ctx`）、新类型、新函数与新的服务令牌，`IR_VERSION` 仍为 1。它们写在 `contracts.ts`、`ir.ts` 与 `host/src/types.ts`（`HostStart`、`StartOptions` 在 `host/src/kernel.ts`，`KernelOptions` 在 `kernel/src/kernel.ts`），按语义化版本的承诺变化。业务契约按领域拆在 `packages/kernel/src/contracts/` 中：`service.ts`（`ServiceToken`、`defineService`，其他模块只从这里取运行时的值，没有循环引用）、`execution.ts`（执行、进程沙箱、具名环境与 `environmentExecutor`）、`server.ts`（成员、路由、两种 Node 端上下文、确认与 `eventStream`、MCP 访问）、`speech.ts`、`agent.ts`（智能体、修改审阅与修改历史）、`operations.ts`；`contracts.ts` 保留插件、锚点、检查与课堂的契约并统一再导出，入口 `@lincyaw/kernel/contracts` 不变（9.2 节）。内核另导出 `withProp(props, path, value)`（按 `.` 分隔的属性路径设置组件属性，渲染端改写 `ComponentNode.assets` 用）与 `roleMark(node)`（角色的标记 `〔名 value〕`），`lowerMyst` 增加选项 `roles: 'marks'`。
+4.6 至 4.10 节是执行环境、智能体、工作区与讲授的契约，全部是兼容扩展：只增加可选字段、可选参数（`Executor.run` 的第三个参数 `ctx`）、新类型、新函数与新的服务令牌，`IR_VERSION` 仍为 1。它们写在 `contracts/`、`ir.ts` 与 `host/src/contracts.ts`（`HostStart` 在 `host/src/runtime.ts`，`KernelOptions` 在 `kernel/src/kernel.ts`），按语义化版本的承诺变化。业务契约按领域拆在 `packages/kernel/src/contracts/` 中：`service.ts`（`ServiceToken`、`defineService`，其他模块只从这里取运行时的值，没有循环引用）、`execution.ts`（执行、进程沙箱、具名环境与 `environmentExecutor`）、`server.ts`（成员、路由、两种 Node 端上下文、确认与 `eventStream`、MCP 访问）、`speech.ts`、`agent.ts`（智能体、修改审阅与修改历史）、`operations.ts`；`contracts.ts` 保留插件、锚点、检查与课堂的契约并统一再导出，入口 `@lincyaw/kernel/contracts` 不变（9.2 节）。内核另导出 `withProp(props, path, value)`（按 `.` 分隔的属性路径设置组件属性，渲染端改写 `ComponentNode.assets` 用）与 `roleMark(node)`（角色的标记 `〔名 value〕`），`lowerMyst` 增加选项 `roles: 'marks'`。
 
 `packages/kernel/src/contracts/execution.ts`：
 
@@ -544,7 +544,7 @@ export interface PresmiumNodePlugin {
 
 Node 插件模块由加载器缓存；`services(ctx)` 在每次编译中按当前文稿头部的插件配置与 `lang` 创建。每份 `Compilation` 持有自己的服务快照，重新编译不改变旧编译结果的服务。服务端贡献单独按 10.2 节的生命周期挂载。
 
-`packages/kernel/src/kernel.ts` 与 `packages/host/src/kernel.ts`：宿主把 IR 的 `config.execute.environments` 一路交给每个插件的 `PluginContext.environments`（`HostStart` → `StartOptions` → `KernelOptions`）：
+`packages/kernel/src/kernel.ts` 与 `packages/host/src/runtime.ts`：宿主把 IR 的 `config.execute.environments` 一路交给每个插件的 `PluginContext.environments`（`HostStart` → `StartOptions` → `KernelOptions`）：
 
 ```ts
 // packages/kernel/src/kernel.ts
@@ -554,7 +554,7 @@ export interface KernelOptions {
   environments?: Record<string, EnvironmentSpec>
 }
 
-// packages/host/src/kernel.ts
+// packages/host/src/runtime.ts（StartOptions 只在本文件中）
 export interface StartOptions {
   // ……已有字段……
   /** 交给 `KernelOptions.environments` */
@@ -773,7 +773,7 @@ export interface McpEndpoint {
 export const MCP_ENDPOINT = defineService<McpEndpoint>('presmium.mcpEndpoint')
 ```
 
-`packages/host/src/types.ts`：
+`packages/host/src/contracts.ts`：
 
 ```ts
 export interface ServerClient {
@@ -807,7 +807,7 @@ export const STATUS = defineService<StatusRegistry>('presmium.status')
 
 ```
 
-`packages/host/src/kernel.ts`（`HostStart` 定义在这里，由 `index.ts` 再导出）：
+`packages/host/src/runtime.ts`（`HostStart` 定义在这里，由 `index.ts` 再导出）：
 
 ```ts
 export interface HostStart {
@@ -1107,7 +1107,7 @@ export type TrackEvent = [t: number, type: string, data: Record<string, unknown>
 export type UtteranceAnchor = [utterance: string, offset: number]
 ```
 
-`packages/host/src/types.ts`：
+`packages/host/src/contracts.ts`：
 
 ```ts
 export interface ReplayHandler {
@@ -1402,7 +1402,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 ### 5.10 设计系统
 
-> **工作台**：令牌、`pm-ui-*` 的类、字体与图标在 `@lincyaw/design`（`packages/design/src/`；`@lincyaw/host` 引用它，Vue 组件与 `useTheme` 留在 `host`），工作台的 React 面板（`@lincyaw/workbench` 的 `components.tsx`）用同一层，dsh 自己的面板经它的 `--dsw-*` 令牌映射（`design-dsh.md` 7.5 节，第 13 节）。
+> **工作台**：令牌、`pm-ui-*` 的类、字体与图标在 `@lincyaw/design`（`packages/design/src/`；`@lincyaw/host` 引用它，Vue 组件与 `useAppearance` 留在 `host`），工作台的 React 面板（`@lincyaw/workbench` 的 `components.tsx`）用同一层，dsh 自己的面板经它的 `--dsw-*` 令牌映射（`design-dsh.md` 7.5 节，第 13 节）。
 
 产物的 Vue 通用交互同样由依赖实现：`@lincyaw/host` 的弹窗、抽屉、菜单、浮层、标签页和分段切换封装 Reka UI；查看器的内容标签页与放映焦点围栏也使用 Reka UI。文稿标签的 `sync` 联动、放映时背景页面的禁用与步骤导航由 Presmium 维护，播放面板与放映画面处在同一个焦点范围，各自保留独立的视觉层级。主题观察通过 VueUse 统一到宿主，图标由 Lucide 提供，`@lincyaw/design` 保留语义名称与框架无关的节点和 HTML 接口。读者问答的 SSE 事件边界由 eventsource-parser 解析，文稿上下文和回答内容仍由问答插件维护。
 
@@ -1450,9 +1450,9 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 弹层、抽屉、对话框与菜单按 Escape 关闭，焦点回到触发器；弹层、抽屉与菜单在外部按下时关闭，对话框不关。文字对背景达到 WCAG AA（1.4.3）；标识控件与状态的图形达到 3:1（1.4.11）：输入框与搜索框由边框标识，分段控件的选中项由边框标识，都用 `line-strong`；按钮由文字标识，边框可以用 `line`；复选框由浏览器绘制，颜色取 `accent`。另有 `pm-ui-search`（搜索框）、`pm-ui-kbd`、`pm-ui-heading`（卡片与分区的小标题）、`pm-ui-list`、`pm-ui-dot`（状态点）、`pm-ui-code`、`pm-ui-link` 等类。
 
-`useTheme()` 给出当前是否为暗色与切换的方法。宿主适配可以提供 `HostAdapter.useDarkMode`（网页形态为 VitePress 的外观开关），这样切换被记住，与读者自己切换一样；没有时 `useTheme` 直接设 `<html>` 的 `dark` 类。
+`useAppearance()` 给出当前是否为暗色与切换的方法。宿主适配可以提供 `HostAdapter.useDarkMode`（网页形态为 VitePress 的外观开关），这样切换被记住，与读者自己切换一样；没有时 `useAppearance` 直接设 `<html>` 的 `dark` 类。
 
-**工具栏**：工具栏项（`ToolbarItem`）可以声明 `slot`（`tools`，默认；`settings`；`status`）与 `icon`。`PmToolbar` 按 `filter` 显示一处的项，并告诉它们所在的位置（`useToolbarPlace()`：`bar` 或 `status`）。页面的工具栏是网页的导航栏与幻灯片的导航控件。
+**工具栏**：工具栏项（`ToolbarItem`）可以声明 `slot`（`tools`，默认；`settings`；`status`）与 `icon`。`PmToolbar` 按 `filter` 显示一处的项，并告诉它们所在的位置（`useToolbarPlacement()`：`bar` 或 `status`；`PmToolbar` 的属性 `placement`）。页面的工具栏是网页的导航栏与幻灯片的导航控件。
 
 **网页形态的外壳**（`packages/web/src/client`）：
 

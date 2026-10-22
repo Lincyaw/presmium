@@ -3,7 +3,7 @@ import { defineComponent, h, ref, watch } from 'vue'
 import { PmButton, PmNotice, PmPopover } from './design/components.ts'
 import { useMessages } from './locale.ts'
 import { HOST_MESSAGES } from './messages.ts'
-import { approvals } from './server.ts'
+import { approvals } from './control.ts'
 
 export const PmApprovals = defineComponent({
   name: 'PmApprovals',

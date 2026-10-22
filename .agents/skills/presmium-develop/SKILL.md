@@ -30,7 +30,7 @@ description: "帮助开发者评估 Presmium 架构、定位故障、实现或�
 
 在 Presmium 仓库中先读根目录 `AGENTS.md`。按任务进入 `docs/domain-model.md`（职责与不变量）、`docs/architecture.md`（边界与取舍）、`docs/ir.md`（语法到 IR）；工作台再读 `docs/design-dsh.md`。公开接口与版本规则见 `site/reference/lecture.md`。
 
-契约以源码为准：`packages/kernel/src/contracts.ts` 是插件与服务，`packages/kernel/src/ir.ts` 是文稿与渲染，`packages/host/src/types.ts` 是浏览器宿主。读需要的类型与调用方，不把全仓包清单复制进回答。发现文档与实现不符时明确指出影响。
+契约以源码为准：`packages/kernel/src/contracts/`（`contracts.ts` 汇总导出）是插件与服务，`packages/kernel/src/ir.ts` 是文稿与渲染，`packages/host/src/contracts.ts` 是浏览器宿主。读需要的类型与调用方，不把全仓包清单复制进回答。发现文档与实现不符时明确指出影响。
 
 第三方插件项目先读它自己的 `AGENTS.md` 与现有源码；[插件开发流程](references/plugin.md) 提供独立示例，不要求项目里存在 Presmium 单仓的 `docs/` 或 `packages/`。
 

@@ -2,10 +2,10 @@ import { stepStateAt } from '@lincyaw/kernel'
 import type { PresentationMode, ServiceToken, StartReport, StepRange, StepState } from '@lincyaw/kernel/contracts'
 import type { App, ComputedRef, Ref } from 'vue'
 import { computed, getCurrentInstance, getCurrentScope, inject, onScopeDispose, readonly, ref } from 'vue'
-import { PmBoundary } from './boundary.ts'
-import { HOST, installed } from './key.ts'
-import { PmStepScope, useStepScope } from './scope.ts'
-import type { HostAdapter, SharedStateScope } from './types.ts'
+import { PmBoundary } from './error-boundary.ts'
+import { HOST, installed } from './host-key.ts'
+import { PmStepScope, useStepScope } from './step-scope.ts'
+import type { HostAdapter, SharedStateScope } from './contracts.ts'
 
 export function installHost(app: App, adapter: HostAdapter): void {
   installed.adapter = adapter

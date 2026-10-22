@@ -29,7 +29,7 @@ The interactive primitives wrap Reka UI; positioning, dismissal, keyboard naviga
 
 ## Experimental parts
 
-`useToolbarPlace` and `provideToolbarPlace` are experimental and outside the 1.x semver promise; their declarations carry the TSDoc tag `@experimental`, and the interface list names them.
+`useToolbarPlacement` and `provideToolbarPlacement` are experimental and outside the 1.x semver promise; their declarations carry the TSDoc tag `@experimental`, and the interface list names them.
 
 ## Documentation
 

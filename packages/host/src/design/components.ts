@@ -1,11 +1,11 @@
 import type { InjectionKey, PropType, VNode } from 'vue'
 import { defineComponent, cloneVNode, h, inject, provide, ref, useId } from 'vue'
 import { DialogClose, DialogContent, DialogPortal, DialogRoot, DialogTitle, DialogTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger, PopoverAnchor, PopoverContent, PopoverPortal, PopoverRoot, TabsContent, TabsList, TabsRoot, TabsTrigger, ToggleGroupItem, ToggleGroupRoot } from 'reka-ui'
-import type { ToolbarPlace } from '../types.ts'
+import type { ToolbarPlacement } from '../contracts.ts'
 import { ICONS } from '@lincyaw/design'
 import type { IconName } from '@lincyaw/design'
 
-const PLACE: InjectionKey<ToolbarPlace> = Symbol('presmium.toolbarPlace')
+const PLACEMENT: InjectionKey<ToolbarPlacement> = Symbol('presmium.toolbarPlacement')
 const OVERLAY_Z: InjectionKey<string> = Symbol('presmium.overlayZ')
 
 function overlayStyle(kind: 'popover' | 'dialog') {
@@ -17,13 +17,13 @@ function overlayStyle(kind: 'popover' | 'dialog') {
 
 
 /** @experimental */
-export function useToolbarPlace(): ToolbarPlace {
-  return inject(PLACE, 'bar')
+export function useToolbarPlacement(): ToolbarPlacement {
+  return inject(PLACEMENT, 'bar')
 }
 
 /** @experimental */
-export function provideToolbarPlace(place: ToolbarPlace): void {
-  provide(PLACE, place)
+export function provideToolbarPlacement(placement: ToolbarPlacement): void {
+  provide(PLACEMENT, placement)
 }
 
 export const PmIcon = defineComponent({
@@ -310,7 +310,7 @@ export const PmToolbarEntry = defineComponent({
   },
   emits: ['update:open'],
   setup(props, { emit, slots }) {
-    const place = useToolbarPlace()
+    const placement = useToolbarPlacement()
     const update = (open: boolean) => emit('update:open', open)
     const toggleAttrs = () => ({
       'class': `${props.name}__toggle`,
@@ -318,7 +318,7 @@ export const PmToolbarEntry = defineComponent({
       'onClick': () => update(!props.open),
     })
     return () => {
-      return h(PmPopover, { 'open': props.open, 'label': props.label, 'name': props.name, 'placement': place === 'status' ? 'above-start' : 'below-end', 'onUpdate:open': update }, {
+      return h(PmPopover, { 'open': props.open, 'label': props.label, 'name': props.name, 'placement': placement === 'status' ? 'above-start' : 'below-end', 'onUpdate:open': update }, {
         trigger: () => h(PmButton, { variant: 'ghost', small: true, icon: props.icon, ...toggleAttrs() }, () => props.label),
         default: () => slots.default?.(),
       })

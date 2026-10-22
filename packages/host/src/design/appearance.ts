@@ -1,9 +1,9 @@
 import type { Ref } from 'vue'
 import { getCurrentInstance, inject, readonly, shallowRef } from 'vue'
 import { createGlobalState, useMutationObserver } from '@vueuse/core'
-import { HOST, installed } from '../key.ts'
+import { HOST, installed } from '../host-key.ts'
 
-export interface Theme {
+export interface Appearance {
   readonly dark: Readonly<Ref<boolean>>
   setDark(dark: boolean): void
   toggle(): void
@@ -16,7 +16,7 @@ const observeDarkClass = createGlobalState(() => {
   return dark
 })
 
-export function useTheme(): Theme {
+export function useAppearance(): Appearance {
   const host = getCurrentInstance() ? inject(HOST, undefined) : installed.adapter
   const own = getCurrentInstance() ? host?.useDarkMode?.() : undefined
   const dark = own ?? observeDarkClass()

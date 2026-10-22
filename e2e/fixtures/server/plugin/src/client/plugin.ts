@@ -2,7 +2,7 @@
 // (`window.fixtureReplay`), as a lecture recorder and player would (e2e/server.spec.ts). It imports
 // nothing at run time: service tokens are matched by id.
 import type { Operation, PluginDefinition, ServiceToken } from '../../../../../../packages/kernel/src/contracts.ts'
-import type { Operations } from '../../../../../../packages/host/src/types.ts'
+import type { Operations } from '../../../../../../packages/host/src/contracts.ts'
 
 declare global {
   interface Window {

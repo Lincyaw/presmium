@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import { effectScope, ref, toRaw, watch } from 'vue'
-import type { SharedStateScope, SyncPublish, SyncTransport, SyncTransports } from './types.ts'
+import type { SharedStateScope, SyncPublish, SyncTransport, SyncTransports } from './contracts.ts'
 import { joinWindows } from './windows.ts'
 
 interface Channel {

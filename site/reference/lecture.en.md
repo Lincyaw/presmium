@@ -81,6 +81,6 @@ These interfaces are experimental: outside the 1.x promise, they may change in a
 
 - the packages of the workbench, `presmium studio`: every export and interface of `@lincyaw/studio`, `@lincyaw/dsh` and `@lincyaw/workbench` (0.x);
 - the routes the workspace service provides for the workbench (documents, files, source, changes, revisions and review);
-- the contracts `Focus`, `FocusReport` and `McpIssueOptions`, and `useToolbarPlace` and `provideToolbarPlace` of `@lincyaw/host`.
+- the contracts `Focus`, `FocusReport` and `McpIssueOptions`, and `useToolbarPlacement` and `provideToolbarPlacement` of `@lincyaw/host`.
 
 The `presmium serve` command, the workspace configuration file and the Node services are public interfaces; reader questions (`ASK` and the Ask panel) are part of the outputs and public too. Plugins should not depend on experimental interfaces; one that does names exact versions in its peer dependencies.

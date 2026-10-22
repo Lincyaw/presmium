@@ -1,5 +1,3 @@
-import type { NavigationPosition } from './types.ts'
-
 const UNSEEN = '[inert], .pm-hidden'
 
 export function blockKey(section: string, block: string): string {
@@ -74,9 +72,4 @@ export function linesText(numbers: number[]): string {
     i = j + 1
   }
   return runs.join(',')
-}
-
-export function positionSlide(position: NavigationPosition, sections: readonly { id: string, index: number }[]): number {
-  const named = position.section === undefined ? undefined : sections.find(s => s.id === position.section)
-  return named?.index ?? position.slide
 }

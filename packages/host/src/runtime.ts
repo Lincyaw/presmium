@@ -1,15 +1,16 @@
 import { Kernel, PRESENTER_PANELS } from '@lincyaw/kernel'
 import type { EnvironmentSpec, Logger, PluginDefinition, PluginReport, PresentationMode, ServiceToken, StartReport } from '@lincyaw/kernel'
 import { shallowRef } from 'vue'
-import { componentErrors } from './boundary.ts'
+import { componentErrors } from './error-boundary.ts'
 import { PmApprovals } from './approvals.ts'
 import { currentLocale } from './locale.ts'
 import { HOST_MESSAGES } from './messages.ts'
-import { createOperations, createStatusRegistry } from './operations.ts'
-import { createPresenterPanels, createToolbar } from './panels.ts'
-import { connectControl, provideServer } from './server.ts'
-import { NAVIGATION, OPERATIONS, STATUS, SYNC_TRANSPORTS, TOOLBAR } from './types.ts'
-import type { Navigation, ServerClient, SyncTransports } from './types.ts'
+import { connectControl } from './control.ts'
+import { createOperations } from './operations.ts'
+import { createPresenterPanels, createStatusRegistry, createToolbar } from './registries.ts'
+import { provideServer } from './server.ts'
+import { NAVIGATION, OPERATIONS, STATUS, SYNC_TRANSPORTS, TOOLBAR } from './contracts.ts'
+import type { Navigation, ServerClient, SyncTransports } from './contracts.ts'
 
 const registered: PluginDefinition[] = []
 const running = shallowRef<Kernel>()
@@ -40,7 +41,7 @@ export function pluginsOf(module: unknown, config: Record<string, unknown> = {})
   return [...new Set(values.filter(isPluginDefinition))]
 }
 
-export interface StartOptions {
+interface StartOptions {
   mode: PresentationMode
   config?: Record<string, unknown>
   beforeStart?(kernel: Kernel): void
@@ -48,7 +49,7 @@ export interface StartOptions {
   environments?: Record<string, EnvironmentSpec>
 }
 
-export function startPresmium(options: StartOptions): Promise<StartReport> {
+function startKernel(options: StartOptions): Promise<StartReport> {
   starting ??= (async () => {
     const kernel = new Kernel({ mode: options.mode, config: options.config, log: options.log, environments: options.environments })
     options.beforeStart?.(kernel)
@@ -60,7 +61,8 @@ export function startPresmium(options: StartOptions): Promise<StartReport> {
   return starting
 }
 
-export async function stopPresmium(): Promise<void> {
+/** Stops the kernel and disposes the plugins; `startHost` or `setHostActive(true)` starts it again. */
+export async function stopHost(): Promise<void> {
   const current = starting
   if (!current) return
   starting = undefined
@@ -72,11 +74,11 @@ export async function stopPresmium(): Promise<void> {
   await kernel?.dispose()
 }
 
-export function stopPresmiumOnPageHide(start: () => void): void {
+function stopOnPageHide(start: () => void): void {
   resumePage = start
   if (watchingPage) return
   watchingPage = true
-  window.addEventListener('pagehide', () => void stopPresmium())
+  window.addEventListener('pagehide', () => void stopHost())
   window.addEventListener('pageshow', (event) => {
     if (event.persisted && hostActive) resumePage?.()
   })
@@ -85,7 +87,7 @@ export function stopPresmiumOnPageHide(start: () => void): void {
 export async function setHostActive(active: boolean): Promise<void> {
   hostActive = active
   if (active) await resumeHost?.()
-  else await stopPresmium()
+  else await stopHost()
 }
 
 export function presmiumService<T>(token: ServiceToken<T>): T | undefined {
@@ -112,7 +114,7 @@ export interface HostStart {
 
 export function startHost(options: HostStart): Promise<StartReport> {
   if (options.server) provideServer(options.server)
-  const start = () => startPresmium({
+  const start = () => startKernel({
     mode: options.mode,
     config: options.config,
     environments: options.environments,
@@ -149,6 +151,6 @@ export function startHost(options: HostStart): Promise<StartReport> {
   })
   resumeHost = start
   hostActive = true
-  stopPresmiumOnPageHide(() => void setHostActive(true))
+  stopOnPageHide(() => void setHostActive(true))
   return start()
 }

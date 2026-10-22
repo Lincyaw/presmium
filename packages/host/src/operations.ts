@@ -1,6 +1,6 @@
 import type { Operation, Unsubscribe } from '@lincyaw/kernel/contracts'
 import { ref } from 'vue'
-import type { Operations, ReplayHandler, StatusProvider, StatusRegistry } from './types.ts'
+import type { Operations, ReplayHandler } from './contracts.ts'
 
 export function createOperations(): Operations {
   const listeners = new Set<(operation: Operation) => void>()
@@ -56,21 +56,5 @@ export function createOperations(): Operations {
       }
     },
     replaying,
-  }
-}
-
-export function createStatusRegistry(onChange?: () => void): StatusRegistry {
-  const providers = new Map<string, StatusProvider>()
-  return {
-    register(provider) {
-      providers.set(provider.id, provider)
-      onChange?.()
-      return () => {
-        if (providers.get(provider.id) !== provider) return
-        providers.delete(provider.id)
-        onChange?.()
-      }
-    },
-    list: () => [...providers.values()],
   }
 }

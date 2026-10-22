@@ -1,4 +1,4 @@
-import { createServerClient, pluginsOf, registerPresmiumPlugin, startHost, stopPresmium } from '@lincyaw/host'
+import { createServerClient, pluginsOf, registerPresmiumPlugin, startHost, stopHost } from '@lincyaw/host'
 import { configs } from '@slidev/client'
 import { presmiumConfig, presmiumEnvironments } from '../domain/index.ts'
 import { createSlidevNavigation, useSlideSections } from './navigation.ts'
@@ -15,4 +15,4 @@ export function startSlidevPresmium(): void {
   void startHost({ mode: 'slides', config, navigation: createSlidevNavigation(sections), transports: createSyncTransports(sections), server, environments })
 }
 
-import.meta.hot?.dispose(() => stopPresmium())
+import.meta.hot?.dispose(() => stopHost())

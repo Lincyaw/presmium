@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import type { PropType } from 'vue'
 import { onMounted, ref, shallowRef, watchEffect } from 'vue'
-import { provideToolbarPlace } from './design/components.ts'
+import { provideToolbarPlacement } from './design/components.ts'
 import { useService } from './host.ts'
-import { TOOLBAR } from './types.ts'
-import type { ToolbarItem, ToolbarPlace } from './types.ts'
+import { TOOLBAR } from './contracts.ts'
+import type { ToolbarItem, ToolbarPlacement } from './contracts.ts'
 
 const props = defineProps({
   filter: { type: Function as PropType<(item: ToolbarItem) => boolean>, default: (item: ToolbarItem) => !item.slot || item.slot === 'tools' || item.slot === 'settings' },
-  place: { type: String as PropType<ToolbarPlace>, default: 'bar' },
+  placement: { type: String as PropType<ToolbarPlacement>, default: 'bar' },
 })
 
-provideToolbarPlace(props.place)
+provideToolbarPlacement(props.placement)
 const service = useService(TOOLBAR)
 const items = shallowRef<ToolbarItem[]>([])
 const mounted = ref(false)
@@ -31,7 +31,7 @@ watchEffect((onCleanup) => {
 </script>
 
 <template>
-  <span v-if="mounted && items.length" class="pm-toolbar" :data-place="place">
+  <span v-if="mounted && items.length" class="pm-toolbar" :data-placement="placement">
     <component :is="item.component" v-for="item in items" :key="item.id" :data-toolbar-item="item.id" />
   </span>
 </template>
@@ -43,7 +43,7 @@ watchEffect((onCleanup) => {
   gap: 0.5rem;
 }
 
-.pm-toolbar[data-place='status'] {
+.pm-toolbar[data-placement='status'] {
   gap: 1.125rem;
 }
 </style>

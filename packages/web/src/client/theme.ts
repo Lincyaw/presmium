@@ -1,4 +1,4 @@
-import { componentErrors, createServerClient, createSharedStates, currentLocale, installHost, OPERATIONS, pluginsOf, PmIcon, PmPresenterPanels, PmToolbar, presmiumReport, presmiumService, provideServer, registerPresmiumPlugin, reportPluginFailure, setHostActive, startHost, stopPresmium } from '@lincyaw/host'
+import { componentErrors, createServerClient, createSharedStates, currentLocale, installHost, OPERATIONS, pluginsOf, PmIcon, PmPresenterPanels, PmToolbar, presmiumReport, presmiumService, provideServer, registerPresmiumPlugin, reportPluginFailure, setHostActive, startHost, stopHost } from '@lincyaw/host'
 import type { ServerClient, SyncTransports } from '@lincyaw/host'
 import { errorMessage, isPreviewActive } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
@@ -399,4 +399,4 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
   }
 }
 
-import.meta.hot?.dispose(() => stopPresmium())
+import.meta.hot?.dispose(() => stopHost())

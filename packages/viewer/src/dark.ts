@@ -1,5 +1,5 @@
-import { useTheme } from '@lincyaw/host'
+import { useAppearance } from '@lincyaw/host'
 
 export function useDark() {
-  return useTheme().dark
+  return useAppearance().dark
 }

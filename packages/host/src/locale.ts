@@ -2,7 +2,7 @@ import { localeOf } from '@lincyaw/kernel'
 import type { Locale } from '@lincyaw/kernel/contracts'
 import type { ComputedRef } from 'vue'
 import { computed, getCurrentInstance, inject, shallowRef } from 'vue'
-import { HOST, installed } from './key.ts'
+import { HOST, installed } from './host-key.ts'
 
 export type Catalog<T> = Record<Locale, T>
 

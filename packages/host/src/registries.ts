@@ -2,7 +2,7 @@ import type { PresenterPanel, PresenterPanels, Unsubscribe } from '@lincyaw/kern
 import { currentLocale } from './locale.ts'
 import { HOST_MESSAGES } from './messages.ts'
 import StartReportPanel from './StartReportPanel.vue'
-import type { Toolbar, ToolbarItem } from './types.ts'
+import type { StatusProvider, StatusRegistry, Toolbar, ToolbarItem } from './contracts.ts'
 
 interface Item {
   id: string
@@ -57,4 +57,20 @@ export function createPresenterPanels(): PresenterPanels {
 
 export function createToolbar(): Toolbar {
   return createRegistry<ToolbarItem>('toolbar item')
+}
+
+export function createStatusRegistry(onChange?: () => void): StatusRegistry {
+  const providers = new Map<string, StatusProvider>()
+  return {
+    register(provider) {
+      providers.set(provider.id, provider)
+      onChange?.()
+      return () => {
+        if (providers.get(provider.id) !== provider) return
+        providers.delete(provider.id)
+        onChange?.()
+      }
+    },
+    list: () => [...providers.values()],
+  }
 }

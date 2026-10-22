@@ -169,7 +169,7 @@ export default plugin
     })
     ```
 
-- 工具栏项：`ctx.tryGet(TOOLBAR)?.register({ id, title, component, order?, slot?, icon? })`，在 `dispose` 中取消。`slot`：`tools`（默认，页面的工具栏）、`settings`、`status`（状态栏）。组件用 `useToolbarPlace()` 得知自己画在哪里（`bar` 或 `status`）；打开面板的项用 `PmToolbarEntry`（`name`、`label`、`closeLabel`、`icon`、`v-model:open`），它是带文字的按钮与弹层（弹层留在窗口内）。
+- 工具栏项：`ctx.tryGet(TOOLBAR)?.register({ id, title, component, order?, slot?, icon? })`，在 `dispose` 中取消。`slot`：`tools`（默认，页面的工具栏）、`settings`、`status`（状态栏）。组件用 `useToolbarPlacement()` 得知自己画在哪里（`bar` 或 `status`）；打开面板的项用 `PmToolbarEntry`（`name`、`label`、`closeLabel`、`icon`、`v-model:open`），它是带文字的按钮与弹层（弹层留在窗口内）。
 - `components/*.vue`：幻灯片形态由 Slidev 自动注册；网页形态由 `@lincyaw/web` 按文件名注册（文稿自己的 `components/` 覆盖同名组件；文稿自己的组件以插件 ID `deck` 登记）。
 - 讲授能录下、回放的操作（`docs/ir.md` 9.2 节）：用户做了一件值得重放的事时 `presmiumService(OPERATIONS)?.report({ type, data })`（数据以章节、块 `<章节>/<块>` 与相对坐标为坐标，不用像素）；在内核插件的 `setup` 中 `ctx.tryGet(OPERATIONS)?.onReplay(type, { apply(data, seeking), clear() })` 登记重放，`dispose` 中取消。视觉状态要是“此前的操作”的函数：依次重放与跳转后的一次折叠（`clear()` 后以 `seeking` 为 true 重放）必须得到同一画面。范例：`packages/addon-guide/src/client/adhoc.ts`（`spot`、`hint`）、`packages/addon-lecture/src/client/marks.ts`（`point`、`ink`）。
 - `src/client/viewer.ts`（只用于网页形态）默认导出视图插件 `(ctx) => void`；`ctx` 有 `registerView`、`registerNodeRenderer`、`registerComponent`、`registerAction`、`registerLayer`、`useViewer`、`SectionView`、`BlockView`。`registerLayer` 的 `scope` 默认 `'viewport'`，用于播放器、课堂状态与黑屏；需要以视图为基准定位的冻结画面、徽标与录制面板用 `'view'`。两者都在模态焦点范围内，完整契约见 `docs/architecture.md` 5.1 节。只以类型方式引用 `@lincyaw/viewer`（`import type { ViewerPlugin } from '@lincyaw/viewer'`）。范例：`packages/addon-stage/src/client/viewer.ts`（动作与图层）、`packages/viewer/test/fixtures/plugin-deck/plugin/src/client/viewer.ts`（视图）。

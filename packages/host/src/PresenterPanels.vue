@@ -2,7 +2,7 @@
 import { PRESENTER_PANELS } from '@lincyaw/kernel'
 import type { PresenterPanel } from '@lincyaw/kernel'
 import { computed, shallowRef, watchEffect } from 'vue'
-import { componentErrors } from './boundary.ts'
+import { componentErrors } from './error-boundary.ts'
 import { useService, useStartReport } from './host.ts'
 import { useMessages } from './locale.ts'
 import { HOST_MESSAGES } from './messages.ts'

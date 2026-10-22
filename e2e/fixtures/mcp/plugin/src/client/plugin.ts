@@ -2,7 +2,7 @@
 // the page reports it over the control channel and MCP's get_classroom returns it. It imports nothing
 // at run time: service tokens are matched by id.
 import type { PluginDefinition, ServiceToken } from '../../../../../../packages/kernel/src/contracts.ts'
-import type { StatusRegistry } from '../../../../../../packages/host/src/types.ts'
+import type { StatusRegistry } from '../../../../../../packages/host/src/contracts.ts'
 
 const STATUS = { id: 'presmium.status' } as ServiceToken<StatusRegistry>
 

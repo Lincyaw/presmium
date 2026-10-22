@@ -52,7 +52,7 @@ export const NAVIGATION = defineService<Navigation>('presmium.navigation')
 
 export type ToolbarSlot = 'tools' | 'settings' | 'status'
 
-export type ToolbarPlace = 'bar' | 'status'
+export type ToolbarPlacement = 'bar' | 'status'
 
 export interface ToolbarItem {
   id: string

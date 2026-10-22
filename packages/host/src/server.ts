@@ -1,9 +1,7 @@
-import { SESSION } from '@lincyaw/kernel/contracts'
-import type { ApprovalRequest, Member, ServiceToken, Unsubscribe } from '@lincyaw/kernel/contracts'
-import type { Ref } from 'vue'
-import { computed, shallowRef, watch } from 'vue'
+import type { Member } from '@lincyaw/kernel/contracts'
+import { computed, shallowRef } from 'vue'
 import { currentLocale } from './locale.ts'
-import type { Navigation, NavigationPosition, ServerClient, StatusRegistry, ViewRole } from './types.ts'
+import type { ServerClient } from './contracts.ts'
 
 export const SERVER_PATH = '/__presmium/presmium.server'
 
@@ -18,6 +16,11 @@ const UNAVAILABLE: ServerClient = {
 
 const current = shallowRef<ServerClient>(UNAVAILABLE)
 const documents = new WeakMap<ServerClient, string>()
+
+/** The document a client from `createServerClient` was created for. */
+export function clientDocument(client: ServerClient): string {
+  return documents.get(client) ?? ''
+}
 
 const facade: ServerClient = {
   get available() {
@@ -38,7 +41,7 @@ export function provideServer(client: ServerClient | undefined): void {
   current.value = client ?? UNAVAILABLE
 }
 
-function documentHeader(document: string): string {
+export function documentHeader(document: string): string {
   return encodeURIComponent(document)
 }
 
@@ -68,106 +71,4 @@ export function createServerClient(options: { document?: string } = {}): ServerC
     .catch(() => undefined)
   documents.set(client, document)
   return client
-}
-
-export interface PendingApproval {
-  id: string
-  request: ApprovalRequest
-}
-
-export interface ApprovalState {
-  pending: Ref<PendingApproval[]>
-  answer(id: string, allow: boolean): Promise<void>
-}
-
-const pending = shallowRef<PendingApproval[]>([])
-let answering: (id: string, allow: boolean) => Promise<void> = async () => {}
-
-export const approvals: ApprovalState = {
-  pending,
-  answer: (id, allow) => answering(id, allow),
-}
-
-function roleOf(position: NavigationPosition): ViewRole {
-  if (position.view === 'presenter') return 'presenter'
-  if (position.view === 'present') return 'audience'
-  if (position.view !== undefined) return 'reader'
-  return typeof location !== 'undefined' && /\/presenter(?:\/|$)/.test(location.pathname) ? 'presenter' : 'audience'
-}
-
-export function connectControl(client: ServerClient, host: {
-  navigation: Navigation
-  status: StatusRegistry
-  service<T>(token: ServiceToken<T>): T | undefined
-}): Unsubscribe {
-  const { navigation, status } = host
-  const document = documents.get(client) ?? ''
-  const id = Math.random().toString(36).slice(2, 12)
-  const post = (body: Record<string, unknown>) => fetch(`${SERVER_PATH}/control`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Presmium-Document': documentHeader(document) },
-    body: JSON.stringify({ window: id, ...body }),
-  }).then(async response => ({ ok: response.ok, status: response.status, text: await response.text() }))
-  answering = async (approval, allow) => {
-    const response = await post({ type: 'answer', id: approval, allow })
-    if (!response.ok) throw new Error(`the server did not take the answer (${response.status})`)
-    pending.value = pending.value.filter(p => p.id !== approval)
-  }
-  const source = new EventSource(`${SERVER_PATH}/control?window=${id}&document=${documentHeader(document)}`)
-  const on = <T>(event: string, handle: (data: T) => void) => source.addEventListener(event, (message) => {
-    try {
-      handle(JSON.parse((message as MessageEvent<string>).data) as T)
-    } catch (error) {
-      console.error(`[presmium] control channel: bad ${event} message`, error)
-    }
-  })
-  on<PendingApproval>('approval', (approval) => {
-    if (!pending.value.some(p => p.id === approval.id)) pending.value = [...pending.value, approval]
-  })
-  on<{ id: string }>('settled', (settled) => {
-    pending.value = pending.value.filter(p => p.id !== settled.id)
-  })
-  on<NavigationPosition>('go', position => navigation.go(position))
-  on<{ action: 'start' | 'end', name?: string }>('session', ({ action, name }) => {
-    const session = host.service(SESSION)
-    if (!session) return
-    void (action === 'start' ? session.create(name ?? '') : session.end()).catch((error: unknown) => {
-      console.error('[presmium] the classroom command failed', error)
-    })
-  })
-
-  let reported = ''
-  const report = () => {
-    const position = navigation.position.value
-    const summaries = Object.fromEntries(status.list().map((provider) => {
-      try {
-        return [provider.id, provider.read()]
-      } catch {
-        return [provider.id, null]
-      }
-    }))
-    const body = JSON.stringify({ position, role: roleOf(position), status: summaries })
-    if (body === reported) return
-    reported = body
-    void post({ type: 'report', ...JSON.parse(body) as Record<string, unknown> }).catch(() => undefined)
-  }
-  source.addEventListener('open', () => {
-    reported = ''
-    report()
-  })
-  let soon: ReturnType<typeof setTimeout> | undefined
-  const stopWatch = watch(() => navigation.position.value, () => {
-    soon ??= setTimeout(() => {
-      soon = undefined
-      report()
-    }, 200)
-  }, { deep: true })
-  const timer = setInterval(report, 1000)
-  return () => {
-    stopWatch()
-    clearTimeout(soon)
-    clearInterval(timer)
-    source.close()
-    pending.value = []
-  }
 }

@@ -1,5 +1,5 @@
 import type { InjectionKey } from 'vue'
-import type { HostAdapter } from './types.ts'
+import type { HostAdapter } from './contracts.ts'
 
 export const HOST: InjectionKey<HostAdapter> = Symbol('presmium.host')
 
