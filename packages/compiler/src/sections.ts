@@ -66,7 +66,7 @@ export function splitSections(nodes: MdastNode[], options: SplitOptions, report:
   return drafts.map((draft): RawSection => {
     const { title, depth, source, nodes } = draft
     const ends = nodes.filter(n => fileOf(n, options.entry) === source.file).map(n => nodeLines(n)?.endLine ?? 0)
-    const id = labelled.has(draft) ? draft.label! : unique(draft.label ?? slugify(title), used)
+    const id = labelled.has(draft) ? draft.label! : unique(draft.label ?? sectionSlug(title), used)
     return { id, title, depth, source: { ...source, endLine: Math.max(source.line, ...ends) }, nodes }
   })
 }
@@ -83,7 +83,11 @@ export function plainText(node: MdastNode): string {
   return (node.children ?? []).map(plainText).join('')
 }
 
-export function slugify(text: string): string {
+/**
+ * The section ID a heading's text gives. Unlike the kernel's urlSlug, other characters are dropped rather than
+ * replaced, and only spaces, `_` and `-` become `-`; the IDs of existing documents depend on this rule.
+ */
+export function sectionSlug(text: string): string {
   return text.normalize('NFKC').toLowerCase()
     .replace(/[^\p{L}\p{N}\s_-]/gu, '')
     .trim()

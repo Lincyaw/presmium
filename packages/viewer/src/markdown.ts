@@ -1,5 +1,5 @@
 import { currentLocale } from '@lincyaw/host'
-import { roleMark } from '@lincyaw/kernel'
+import { roleMark, urlSlug } from '@lincyaw/kernel'
 import type { IRBlock, IRDocument, MarkdownNode, MdastNode } from '@lincyaw/kernel'
 import type { Element, ElementContent, Nodes, Properties, Root, RootContent } from 'hast'
 import { raw } from 'hast-util-raw'
@@ -166,10 +166,6 @@ function handlers(links: MarkdownLinks): Handlers {
   return custom as Handlers
 }
 
-function slug(text: string): string {
-  return text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '')
-}
-
 function textOf(node: ElementContent | Root): string {
   if (node.type === 'text') return node.value
   return 'children' in node ? node.children.map(c => textOf(c as ElementContent)).join('') : ''
@@ -181,7 +177,7 @@ export function markdownToHast(mdast: MdastNode, prefix: string, links: Markdown
   let item = 0
   for (const child of tree.children) {
     if (child.type !== 'element') continue
-    if (/^h[1-6]$/.test(child.tagName) && child.properties.id === undefined) child.properties.id = `${prefix}-${slug(textOf(child))}`
+    if (/^h[1-6]$/.test(child.tagName) && child.properties.id === undefined) child.properties.id = `${prefix}-${urlSlug(textOf(child))}`
     if (child.tagName !== 'ul' && child.tagName !== 'ol') continue
     for (const li of child.children) {
       if (li.type === 'element' && li.tagName === 'li') li.properties.dataPmItem = item++

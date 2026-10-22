@@ -7,7 +7,7 @@ import { isInside } from '@lincyaw/kernel/node'
 import { publishesDirectory, unpublishedDirectory } from './assets.ts'
 import { BUILTIN_DIRECTIVES } from './blocks.ts'
 import { parseFrontmatter, Parser } from './parser.ts'
-import { plainText, slugify, splitSections } from './sections.ts'
+import { plainText, sectionSlug, splitSections } from './sections.ts'
 import { lineFinder } from './source-lines.ts'
 import type { LineFinder } from './source-lines.ts'
 import { viewFor } from './views.ts'
@@ -121,7 +121,7 @@ function documentAnchors(doc: IRDocument): Set<string> {
 function mdastAnchors(node: MdastNode, anchors: Set<string>): void {
   for (const key of ['identifier', 'label', 'html_id'] as const) if (typeof node[key] === 'string' && node[key]) anchors.add(node[key] as string)
   if (node.type === 'footnoteDefinition' && typeof node.identifier === 'string') anchors.add(`fn-${node.identifier}`)
-  if (node.type === 'heading') anchors.add(slugify(plainText(node)))
+  if (node.type === 'heading') anchors.add(sectionSlug(plainText(node)))
   if (node.type === 'mystDirective' && isRecord(node.options) && typeof node.options.label === 'string') anchors.add(node.options.label)
   if (node.type === 'html' && typeof node.value === 'string') {
     for (const { value } of htmlAttributes(node.value, ID_ATTRIBUTES)) if (value) anchors.add(value)

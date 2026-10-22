@@ -1,14 +1,10 @@
-import { blockText, chapters } from '@lincyaw/kernel'
+import { blockText, chapters, urlSlug } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 
 export interface WebPage {
   path: string
   title: string
   sections: string[]
-}
-
-function slug(text: string): string {
-  return text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '') || 'page'
 }
 
 function baseName(file: string): string {
@@ -20,7 +16,7 @@ export function toPages(doc: IRDocument): WebPage[] {
   let file: string | undefined
   return chapters(doc).map((chapter, i) => {
     const first = chapter.sections[0]!
-    const name = i === 0 ? 'index' : slug(first.source.file === file ? first.id : baseName(first.source.file))
+    const name = i === 0 ? 'index' : urlSlug(first.source.file === file ? first.id : baseName(first.source.file)) || 'page'
     let path = name
     for (let n = 2; paths.has(path); n++) path = `${name}-${n}`
     paths.add(path)
