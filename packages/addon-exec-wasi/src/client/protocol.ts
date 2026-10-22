@@ -1,4 +1,4 @@
-import type { WasiOutput, WasiRequest } from '../runner.mjs'
+import type { WasiOutput, WasiRequest } from '../shared/wasi-runner.mjs'
 
 export interface WorkerRequest {
   id: number

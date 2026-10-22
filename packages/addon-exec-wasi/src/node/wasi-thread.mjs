@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { parentPort, workerData } from 'node:worker_threads'
-import { prepare, runWasi } from '../runner.mjs'
+import { prepare, runWasi } from '../shared/wasi-runner.mjs'
 
 const { request, dir } = workerData
 const load = name => readFile(join(dir, name))

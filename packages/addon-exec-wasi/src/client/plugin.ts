@@ -2,12 +2,12 @@ import { environmentExecutor, EXECUTOR } from '@lincyaw/kernel'
 import type { PluginDefinition } from '@lincyaw/kernel'
 import { version } from '../../package.json'
 import { EXEC_WASI_ID, execWasiConfig, RUNTIME_DIR, WASI_EXECUTOR_ID, WASI_KIND } from '../domain/index.ts'
-import { createWasiRunner } from './executor.ts'
-import type { WasiRunner } from './executor.ts'
+import { createWasiExecutors } from './executors.ts'
+import type { WasiExecutors } from './executors.ts'
 
-let runner: WasiRunner | undefined
+let executors: WasiExecutors | undefined
 
-const plugin: PluginDefinition = {
+export const execWasiPlugin: PluginDefinition = {
   manifest: {
     id: EXEC_WASI_ID,
     version,
@@ -18,16 +18,16 @@ const plugin: PluginDefinition = {
   setup(ctx) {
     const router = ctx.tryGet(EXECUTOR)
     if (!router) return
-    runner?.dispose()
-    runner = createWasiRunner({ runtimeURL: `${import.meta.env.BASE_URL}${RUNTIME_DIR}`, loadTimeoutMs: execWasiConfig(ctx.config).loadTimeoutMs })
-    router.register(runner.executor(WASI_EXECUTOR_ID))
+    executors?.dispose()
+    executors = createWasiExecutors({ runtimeURL: `${import.meta.env.BASE_URL}${RUNTIME_DIR}`, loadTimeoutMs: execWasiConfig(ctx.config).loadTimeoutMs })
+    router.register(executors.executor(WASI_EXECUTOR_ID))
     for (const [name, spec] of Object.entries(ctx.environments ?? {})) {
-      if (spec.kind === WASI_KIND) router.register(runner.executor(environmentExecutor(name), spec.languages))
+      if (spec.kind === WASI_KIND) router.register(executors.executor(environmentExecutor(name), spec.languages))
     }
   },
   dispose() {
-    runner?.dispose()
+    executors?.dispose()
   },
 }
 
-export default plugin
+export default execWasiPlugin

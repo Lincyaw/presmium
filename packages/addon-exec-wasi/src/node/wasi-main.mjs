@@ -1,14 +1,16 @@
 import { readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { Worker } from 'node:worker_threads'
 
-const { request, dir, timeoutMs, loadTimeoutMs } = JSON.parse(readFileSync('.presmium/request.json', 'utf8'))
-const worker = new Worker(new URL('./worker.mjs', import.meta.url), { workerData: { request, dir }, env: {} })
+const [requestFile, resultFile] = process.argv.slice(2)
+const { request, dir, timeoutMs, loadTimeoutMs } = JSON.parse(readFileSync(requestFile, 'utf8'))
+const worker = new Worker(new URL('./wasi-thread.mjs', import.meta.url), { workerData: { request, dir }, env: {} })
 let started = 0
 const elapsed = () => (started ? Math.round(performance.now() - started) : 0)
 
 function finish(result) {
-  writeFileSync('.presmium/result-0.part', JSON.stringify({ durationMs: elapsed(), ...result }))
-  renameSync('.presmium/result-0.part', '.presmium/result-0.json')
+  const part = resultFile.replace(/\.json$/, '.part')
+  writeFileSync(part, JSON.stringify({ durationMs: elapsed(), ...result }))
+  renameSync(part, resultFile)
   process.exit(0)
 }
 

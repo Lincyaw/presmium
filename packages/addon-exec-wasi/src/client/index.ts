@@ -1,5 +1,5 @@
-export { createWasiRunner } from './executor.ts'
-export type { WasiRunner, WasiRunnerOptions } from './executor.ts'
+export { createWasiExecutors } from './executors.ts'
+export type { WasiExecutors, WasiExecutorsOptions } from './executors.ts'
 export { MESSAGES, messages } from './messages.ts'
 export type { WasiMessages } from './messages.ts'
-export { default as wasiPlugin } from './plugin.ts'
+export { execWasiPlugin } from './plugin.ts'

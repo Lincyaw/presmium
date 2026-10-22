@@ -1,8 +1,9 @@
 import { docBlocks, environmentExecutor, isRecord } from '@lincyaw/kernel'
 import type { IRPass } from '@lincyaw/kernel'
 import { EXEC_WASI_ID, WASI_EXECUTOR_ID, WASI_KIND } from '../domain/index.ts'
-import { runtimeOf } from '../runner.mjs'
+import { runtimeOf } from '../shared/wasi-runner.mjs'
 
+/** Lists in the plugin's configuration the WASI runtimes that the page's live code needs, which the build then copies. */
 export const runtimesPass: IRPass = {
   name: 'presmium.execWasi.runtimes',
   run(doc) {
