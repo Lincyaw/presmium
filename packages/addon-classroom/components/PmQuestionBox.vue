@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useMessages } from '@lincyaw/host'
 import { computed, ref } from 'vue'
-import { newId, useClassroomStore, useCollection, useSession, useWrite } from '../src/client/use.ts'
-import { COLLECTIONS, isQuestion, MESSAGES, placeText } from '../src/domain/index.ts'
+import { useClassroomStore, useCollection, useGuardedWrite, useParticipation } from '../src/client/composables.ts'
+import { newId } from '../src/client/ids.ts'
+import { COLLECTIONS, MESSAGES, placeText, toQuestion } from '../src/domain/index.ts'
 import type { Place, Question } from '../src/domain/index.ts'
 import '../src/client/style.css'
 
@@ -11,10 +12,10 @@ const props = defineProps<{
   place?: Place
 }>()
 
-const { me, status, joined, presenter } = useSession()
+const { me, status, joined, presenter } = useParticipation()
 const store = useClassroomStore()
-const questions = useCollection(() => store.value, COLLECTIONS.questions, isQuestion)
-const { failure, write } = useWrite()
+const questions = useCollection(() => store.value, COLLECTIONS.questions, toQuestion)
+const { failure, write } = useGuardedWrite()
 const text = ref('')
 const t = useMessages(MESSAGES)
 
@@ -22,7 +23,7 @@ const where = computed(() => (props.place ? placeText({ ...props.place, block: p
 const here = computed(() => questions.value
   .filter(({ value }) => value.section === props.place?.section && value.block === props.target)
   .sort((a, b) => a.value.at - b.value.at))
-const shown = computed(() => (presenter.value ? here.value : here.value.filter(({ value }) => value.author === me.value?.id)))
+const shown = computed(() => (presenter.value ? here.value : here.value.filter(({ value }) => value.participant === me.value?.id)))
 const canAsk = computed(() => joined.value && !presenter.value && status.value === 'active')
 
 function ask(): void {
@@ -36,7 +37,7 @@ function ask(): void {
     title,
     index,
     text: question,
-    author: participant.id,
+    participant: participant.id,
     name: participant.name,
     at: Date.now(),
   }))

@@ -3,7 +3,7 @@ import type { MdastNode } from '@lincyaw/kernel'
 export interface QuizSource {
   prompt: MdastNode[]
   options: string[]
-  answer: number[]
+  correct: number[]
 }
 
 function plainText(node: MdastNode): string {
@@ -13,7 +13,7 @@ function plainText(node: MdastNode): string {
 export function quizSource(body: MdastNode): QuizSource {
   const prompt: MdastNode[] = []
   const options: string[] = []
-  const answer: number[] = []
+  const correct: number[] = []
   for (const node of body.children ?? []) {
     const items = node.type === 'list' ? (node.children ?? []).filter(item => typeof item.checked === 'boolean') : []
     if (items.length === 0) {
@@ -21,11 +21,11 @@ export function quizSource(body: MdastNode): QuizSource {
       continue
     }
     for (const item of items) {
-      if (item.checked) answer.push(options.length)
+      if (item.checked) correct.push(options.length)
       options.push(plainText(item).trim())
     }
   }
-  return { prompt, options, answer }
+  return { prompt, options, correct }
 }
 
 export interface CodeSource {

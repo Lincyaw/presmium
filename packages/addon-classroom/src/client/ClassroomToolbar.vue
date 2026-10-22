@@ -1,22 +1,21 @@
 <script setup lang="ts">
-import { claimFirst, useMessages } from '@lincyaw/host'
+import { useMessages } from '@lincyaw/host'
 import { computed, ref, useId } from 'vue'
-import { COLLECTIONS, isQuestion, MESSAGES } from '../domain/index.ts'
+import { COLLECTIONS, MESSAGES, toQuestion, unansweredCount } from '../domain/index.ts'
+import ClassroomOverlays from './ClassroomOverlays.vue'
 import ClassroomPanel from './ClassroomPanel.vue'
-import NotesLayer from './NotesLayer.vue'
-import { useClassroomStore, useCollection, useSession } from './use.ts'
+import { useClassroomStore, useCollection, useParticipation } from './composables.ts'
 import './style.css'
 
-const { presenter } = useSession()
+const { presenter } = useParticipation()
 const t = useMessages(MESSAGES)
 const store = useClassroomStore()
-const questions = useCollection(() => store.value, COLLECTIONS.questions, isQuestion)
-const unanswered = computed(() => questions.value.filter(({ value }) => !value.answered).length)
+const questions = useCollection(() => store.value, COLLECTIONS.questions, toQuestion)
+const unanswered = computed(() => unansweredCount(questions.value.map(item => item.value)))
 const id = useId()
 const open = ref(false)
-const layer = claimFirst('presmium.classroom.notes')
 
-function toggled(event: Event): void {
+function trackOpen(event: Event): void {
   open.value = (event as ToggleEvent).newState === 'open'
 }
 </script>
@@ -27,7 +26,7 @@ function toggled(event: Event): void {
       <button type="button" class="pm-ui-button pm-ui-button--ghost pm-ui-button--small" :popovertarget="id" :aria-expanded="open" :title="t.toolbar.title">
         {{ t.toolbar.button }}<span v-if="unanswered" class="pm-classroom-toolbar__badge pm-ui-badge pm-ui-badge--danger pm-ui-badge--pill" :aria-label="t.toolbar.unanswered(unanswered)">{{ unanswered }}</span>
       </button>
-      <div :id="id" popover class="pm-classroom-popover" role="dialog" :aria-label="t.interaction" @toggle="toggled">
+      <div :id="id" popover class="pm-classroom-popover" role="dialog" :aria-label="t.interaction" @toggle="trackOpen">
         <template v-if="open">
           <ClassroomPanel />
           <button type="button" class="pm-classroom-popover__close pm-ui-button pm-ui-button--small" :popovertarget="id" popovertargetaction="hide">
@@ -36,7 +35,7 @@ function toggled(event: Event): void {
         </template>
       </div>
     </template>
-    <NotesLayer v-if="layer.owns.value" />
+    <ClassroomOverlays />
   </span>
 </template>
 

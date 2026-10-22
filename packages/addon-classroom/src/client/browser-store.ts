@@ -53,7 +53,8 @@ export function createBrowserStore(key: string, storage = localStorageOrNone()):
   }
 }
 
-export function bothStores(first: ClassroomStore, second: ClassroomStore): ClassroomStore {
+/** Writes to both stores; reads the first, then the second. */
+export function layeredStore(first: ClassroomStore, second: ClassroomStore): ClassroomStore {
   return {
     list<T>(name: string) {
       const items = new Map(second.list<T>(name).map(item => [item.id, item]))

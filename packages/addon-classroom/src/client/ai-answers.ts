@@ -11,7 +11,7 @@ export interface Draft {
   stop: AbortController
 }
 
-const plain = (text: string) => text.replace(/\[([^\]\n]+)\]\(presmium:\/\/[^)\s]+\)/g, '$1').trim()
+const plainReply = (text: string) => text.replace(/\[([^\]\n]+)\]\(presmium:\/\/[^)\s]+\)/g, '$1').trim()
 
 export function useAiAnswers() {
   const ask = useService(ASK)
@@ -19,7 +19,7 @@ export function useAiAnswers() {
   const provider = computed(() => ask.value?.provider())
   const drafts = reactive(new Map<string, Draft>())
 
-  function answer(id: string, question: Question): void {
+  function draftReply(id: string, question: Question): void {
     const client = ask.value
     if (!client || drafts.has(id)) return
     const stop = new AbortController()
@@ -29,7 +29,7 @@ export function useAiAnswers() {
       let text = ''
       try {
         for await (const piece of client.ask(question.text, { document: '', section: question.section, ...question.block ? { block: question.block } : {} }, stop.signal)) text += piece
-        draft.text = plain(text)
+        draft.text = plainReply(text)
         draft.state = draft.text ? 'ready' : 'failed'
       } catch (error) {
         if (stop.signal.aborted) return
@@ -44,5 +44,7 @@ export function useAiAnswers() {
     drafts.delete(id)
   }
 
-  return { offered, provider, drafts, answer, discard }
+  return { offered, provider, drafts, draftReply, discard }
 }
+
+export type AiAnswers = ReturnType<typeof useAiAnswers>

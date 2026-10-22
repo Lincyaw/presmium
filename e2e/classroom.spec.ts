@@ -375,7 +375,7 @@ test.describe('a classroom', () => {
     await close()
   })
 
-  test('entries another client writes without their shape leave the presenter\'s overview and the tally intact (P-64, P-67)', async ({ browser }) => {
+  test('entries another client writes without their shape leave the presenter\'s overview and the tally intact, and those of an earlier version count (P-64, P-67)', async ({ browser }) => {
     const { presenter, a, room, close } = await classroom(browser, `${web.url}/classroom.html`, 'web')
     await browseAlone(a)
     await quiz(presenter).getByRole('button', { name: '开放作答' }).click()
@@ -387,6 +387,9 @@ test.describe('a classroom', () => {
     other.write('answers', `${quizId}:other`, { quiz: quizId, participant: 'other', name: '旧版本', at: Date.now() })
     other.write('pulse', `${pulse}:other`, { ...place, pulse, participant: 'other', level: 0, at: Date.now() })
     other.write('questions', 'other:q', { section, title: place.title, index: place.index, text: '还有别的问题吗？', author: 'other', name: '旧版本', at: Date.now() })
+    const earlier = await rawLearner(server.url, room, 'earlier')
+    earlier.write('answers', `${quizId}:earlier`, { quiz: quizId, participant: 'earlier', name: '旧版本', choice: [1], at: Date.now() })
+    earlier.write('pulse', `${pulse}:earlier`, { ...place, pulse, participant: 'earlier', level: 1, levels: ['懂了', '有点模糊', '没懂'], at: Date.now() })
     await presenter.getByRole('button', { name: /^互动/ }).click()
     const overview = presenter.getByRole('dialog', { name: '课堂互动' })
     await expect(overview.getByRole('region', { name: '提问' })).toContainText('旧版本：还有别的问题吗？')
@@ -394,10 +397,11 @@ test.describe('a classroom', () => {
     await quiz(a).getByRole('radio', { name: /次数最多/ }).check()
     await quiz(a).getByRole('button', { name: '提交' }).click()
     await a.locator('.pm-pulse').getByRole('button', { name: '懂了' }).click()
-    await expect(overview.getByRole('region', { name: '理解度' })).toContainText('懂了 1 人 · 有点模糊 0 人 · 没懂 0 人')
-    await expect(overview.getByRole('region', { name: '测验' })).toContainText('已作答 1 人，答对 1 人')
-    await expect(quiz(presenter).locator('.pm-quiz__tally')).toHaveText('已作答 1 人，答对 1 人')
+    await expect(overview.getByRole('region', { name: '理解度' })).toContainText('懂了 1 人 · 有点模糊 1 人 · 没懂 0 人')
+    await expect(overview.getByRole('region', { name: '测验' })).toContainText('已作答 2 人，答对 2 人')
+    await expect(quiz(presenter).locator('.pm-quiz__tally')).toHaveText('已作答 2 人，答对 2 人')
     other.close()
+    earlier.close()
     await close()
   })
 

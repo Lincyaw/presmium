@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import { useMessages } from '@lincyaw/host'
 import { computed, ref, useId, watch } from 'vue'
-import { useClassroomStore, useCollection, useSession, useWrite } from '../src/client/use.ts'
-import { acceptsAnswers, answerId, COLLECTIONS, countedAnswers, isAnswer, isCorrect, isQuizState, lateAnswers, MESSAGES, optionLetter, placeKey, quizSwitched, tally } from '../src/domain/index.ts'
+import { useClassroomStore, useCollection, useGuardedWrite, useParticipation } from '../src/client/composables.ts'
+import { acceptsAnswers, answerId, COLLECTIONS, countedAnswers, isCorrect, lateAnswers, MESSAGES, optionLetter, placeKey, quizSwitched, quizTally, toAnswer, toQuizState } from '../src/domain/index.ts'
 import type { Answer, Place, QuizState } from '../src/domain/index.ts'
 import '../src/client/style.css'
 
 const props = defineProps<{
   options: string[]
-  answer: number[]
+  correct: number[]
   place?: Place
 }>()
 
-const { me, status, joined, presenter } = useSession()
+const { me, status, joined, presenter } = useParticipation()
 const store = useClassroomStore()
-const quizzes = useCollection(() => store.value, COLLECTIONS.quizzes, isQuizState)
-const answers = useCollection(() => store.value, COLLECTIONS.answers, isAnswer)
-const { failure, write } = useWrite()
+const quizzes = useCollection(() => store.value, COLLECTIONS.quizzes, toQuizState)
+const answers = useCollection(() => store.value, COLLECTIONS.answers, toAnswer)
+const { failure, write } = useGuardedWrite()
 const t = useMessages(MESSAGES)
 const name = useId()
 
@@ -24,8 +24,8 @@ const id = computed(() => (props.place ? placeKey(props.place) : ''))
 const state = computed(() => quizzes.value.find(item => item.id === id.value)?.value)
 const counted = computed(() => countedAnswers(id.value, state.value, answers.value.map(item => item.value)))
 const late = computed(() => lateAnswers(id.value, state.value, answers.value.map(item => item.value)))
-const result = computed(() => tally(props.options.length, props.answer, counted.value))
-const multiple = computed(() => props.answer.length > 1)
+const result = computed(() => quizTally(props.options.length, props.correct, counted.value))
+const multiple = computed(() => props.correct.length > 1)
 const open = computed(() => acceptsAnswers(status.value, state.value))
 const closed = computed(() => state.value?.open === false)
 const submitted = computed(() => (me.value ? answers.value.find(item => item.id === answerId(id.value, me.value!.id))?.value : undefined))
@@ -33,8 +33,8 @@ const mine = computed(() => (closed.value ? counted.value.find(a => a.participan
 
 const choice = ref<number[]>([])
 const tried = ref<number[]>()
-watch([mine, closed], ([answer]) => {
-  if (answer && (closed.value || choice.value.length === 0)) choice.value = [...answer.choice]
+watch([mine, closed], ([own]) => {
+  if (own && (closed.value || choice.value.length === 0)) choice.value = [...own.choice]
 }, { immediate: true })
 
 const canAnswer = computed(() => (joined.value ? !presenter.value && open.value : true))
@@ -46,11 +46,11 @@ const statusText = computed(() => {
   const { quiz } = t.value
   if (!joined.value) {
     if (!tried.value) return quiz.selfTest
-    return isCorrect(tried.value, props.answer) ? quiz.right : quiz.wrong(letters(props.answer))
+    return isCorrect(tried.value, props.correct) ? quiz.right : quiz.wrong(letters(props.correct))
   }
   if (presenter.value) return open.value ? quiz.answering : closed.value ? quiz.closed : status.value === 'active' ? quiz.notOpen : quiz.ended
   if (closed.value) {
-    const verdict = mine.value ? quiz.yours(isCorrect(mine.value.choice, props.answer)) : ''
+    const verdict = mine.value ? quiz.yours(isCorrect(mine.value.choice, props.correct)) : ''
     return `${quiz.closed}${verdict}${late.value.some(a => a.participant === me.value?.id) ? quiz.lateMine : ''}`
   }
   if (status.value !== 'active') return quiz.ended
@@ -71,7 +71,7 @@ function submit(): void {
   const participant = me.value
   if (!store.value || !participant || !canAnswer.value) return
   write(() => store.value!.put<Answer>(COLLECTIONS.answers, answerId(id.value, participant.id), {
-    quiz: id.value,
+    quizId: id.value,
     participant: participant.id,
     name: participant.name,
     choice: choice.value,
@@ -81,7 +81,7 @@ function submit(): void {
 
 function setOpen(next: boolean): void {
   if (!store.value || !props.place) return
-  const quiz = { ...props.place, options: props.options, answer: props.answer, openedAt: state.value?.openedAt }
+  const quiz = { ...props.place, options: props.options, correct: props.correct, openedAt: state.value?.openedAt }
   write(() => store.value!.put<QuizState>(COLLECTIONS.quizzes, id.value, quizSwitched(quiz, next, counted.value, Date.now())))
 }
 </script>
@@ -98,7 +98,7 @@ function setOpen(next: boolean): void {
           :key="i"
           class="pm-quiz__option"
           :data-option="optionLetter(i)"
-          :data-correct="revealed && answer.includes(i) ? '' : undefined"
+          :data-correct="revealed && correct.includes(i) ? '' : undefined"
         >
           <label>
             <input class="pm-ui-checkbox" :type="multiple ? 'checkbox' : 'radio'" :name="name" :checked="choice.includes(i)" :disabled="!canAnswer" @change="toggle(i)">

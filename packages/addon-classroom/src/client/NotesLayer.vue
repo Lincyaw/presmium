@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useMessages } from '@lincyaw/host'
 import { computed, onBeforeUnmount, onMounted, shallowRef } from 'vue'
-import { COLLECTIONS, isLabel, isNote, MESSAGES, notesAt } from '../domain/index.ts'
+import { COLLECTIONS, isAuthorLabel, MESSAGES, notesAt, toNote } from '../domain/index.ts'
+import { useCollection, useNoteStore } from './composables.ts'
 import NoteSpot from './NoteSpot.vue'
-import { useCollection, useNotes } from './use.ts'
 
 interface Spot {
   key: string
@@ -16,9 +16,9 @@ interface Spot {
 const LABEL_LENGTH = 20
 
 const t = useMessages(MESSAGES)
-const { store, inClassroom } = useNotes()
-const notes = useCollection(() => store.value, COLLECTIONS.notes, isNote)
-const byPlace = computed(() => {
+const { store, inClassroom } = useNoteStore()
+const notes = useCollection(() => store.value, COLLECTIONS.notes, toNote)
+const notesBySpot = computed(() => {
   const places = new Map<string, typeof notes.value>()
   for (const note of notes.value) {
     const key = note.value.block ? `${note.value.section}/${note.value.block}` : note.value.section
@@ -64,7 +64,7 @@ function scan(): void {
     found.push({ key: id, slot: slotIn(section, 'section', title), section: id, label })
     for (const block of section.querySelectorAll<HTMLElement>('.pm-block[data-block]')) {
       const blockId = block.dataset.block!
-      if (!isLabel(blockId) || block.parentElement?.closest('.pm-block')) continue
+      if (!isAuthorLabel(blockId) || block.parentElement?.closest('.pm-block')) continue
       found.push({ key: `${id}/${blockId}`, slot: slotIn(block, 'block'), section: id, block: blockId, label: blockLabel(block, label) })
     }
   }
@@ -92,7 +92,7 @@ onBeforeUnmount(() => {
       :section="spot.section"
       :block="spot.block"
       :label="spot.label"
-      :notes="notesAt(byPlace.get(spot.key) ?? [], spot.section, spot.block)"
+      :notes="notesAt(notesBySpot.get(spot.key) ?? [], spot.section, spot.block)"
       :store="store"
       :in-classroom="inClassroom"
     />

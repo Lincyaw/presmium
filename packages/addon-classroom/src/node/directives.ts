@@ -12,10 +12,10 @@ export const quizDirective: DirectiveSpec = {
   name: 'quiz',
   body: true,
   toIR(input, ctx) {
-    const { prompt, options, answer } = quizSource(body(input.body, ctx))
-    if (options.length < 2) ctx.report({ checkId: 'presmium.classroom', severity: 'error', message: '{quiz} needs at least two options, written as a task list: `- [ ] wrong`, `- [x] right`' })
-    else if (answer.length === 0) ctx.report({ checkId: 'presmium.classroom', severity: 'error', message: '{quiz}: mark the right options with `[x]`' })
-    return { node: component('PmQuiz', { options, answer }, prompt, ctx) }
+    const { prompt, options, correct } = quizSource(body(input.body, ctx))
+    if (options.length < 2) ctx.report({ checkId: CLASSROOM_ID, severity: 'error', message: '{quiz} needs at least two options, written as a task list: `- [ ] wrong`, `- [x] right`' })
+    else if (correct.length === 0) ctx.report({ checkId: CLASSROOM_ID, severity: 'error', message: '{quiz}: mark the right options with `[x]`' })
+    return { node: component('PmQuiz', { options, correct }, prompt, ctx) }
   },
 }
 
@@ -28,9 +28,9 @@ export const exerciseDirective: DirectiveSpec = {
     const lang = input.arg?.trim() || 'python'
     const { prompt, code } = exerciseSource(body(input.body, ctx))
     const [starter, checks] = code
-    if (!checks) ctx.report({ checkId: 'presmium.classroom', severity: 'error', message: '{exercise} needs two code blocks: the starter code, then the checks' })
-    if (code.length > 2) ctx.report({ checkId: 'presmium.classroom', severity: 'warning', message: '{exercise}: code blocks after the second (the checks) are ignored' })
-    if (lang !== 'python') ctx.report({ checkId: 'presmium.classroom', severity: 'warning', message: `{exercise}: checks run Python; ${lang} exercises cannot be checked` })
+    if (!checks) ctx.report({ checkId: CLASSROOM_ID, severity: 'error', message: '{exercise} needs two code blocks: the starter code, then the checks' })
+    if (code.length > 2) ctx.report({ checkId: CLASSROOM_ID, severity: 'warning', message: '{exercise}: code blocks after the second (the checks) are ignored' })
+    if (lang !== 'python') ctx.report({ checkId: CLASSROOM_ID, severity: 'warning', message: `{exercise}: checks run Python; ${lang} exercises cannot be checked` })
     const props: Record<string, unknown> = { lang, starter: starter?.value ?? '', checks: checks?.value ?? '' }
     const timeout = Number(input.options.timeout)
     if (Number.isFinite(timeout) && timeout > 0) props.timeout = timeout
@@ -68,8 +68,8 @@ export const predictDirective: DirectiveSpec = {
   toIR(input, ctx) {
     const question = input.arg?.trim() ?? ''
     const choices = optionList(input.options.choices)
-    if (!question) ctx.report({ checkId: 'presmium.classroom', severity: 'error', message: '{predict} needs the question as its argument: ```{predict} How many …?' })
-    if (input.options.choices !== undefined && !choices) ctx.report({ checkId: 'presmium.classroom', severity: 'warning', message: '{predict}: :choices: needs at least two, separated by commas; readers write their prediction instead' })
+    if (!question) ctx.report({ checkId: CLASSROOM_ID, severity: 'error', message: '{predict} needs the question as its argument: ```{predict} How many …?' })
+    if (input.options.choices !== undefined && !choices) ctx.report({ checkId: CLASSROOM_ID, severity: 'warning', message: '{predict}: :choices: needs at least two, separated by commas; readers write their prediction instead' })
     const node = component('PmPredict', { question, ...choices ? { choices } : {} }, body(input.body, ctx).children ?? [], ctx)
     node.ownsCode = false
     return { node }

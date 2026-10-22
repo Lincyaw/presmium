@@ -1,5 +1,5 @@
-import { latestPerParticipant } from './place.ts'
 import type { Place } from './place.ts'
+import { latestPerParticipant } from './tally.ts'
 
 export interface SavedPrediction {
   choice?: number
@@ -8,14 +8,14 @@ export interface SavedPrediction {
 }
 
 export interface Prediction extends Place, SavedPrediction {
-  predict: string
+  predictId: string
   participant: string
   question: string
   choices?: string[]
 }
 
-export function predictionId(predict: string, participant: string): string {
-  return `${predict}:${participant}`
+export function predictionId(predictId: string, participant: string): string {
+  return `${predictId}:${participant}`
 }
 
 export interface PredictionTally {
@@ -24,8 +24,8 @@ export interface PredictionTally {
   texts: string[]
 }
 
-export function predictionTally(predict: string, choices: number, predictions: Iterable<Prediction>): PredictionTally {
-  const last = latestPerParticipant([...predictions].filter(p => p.predict === predict)).sort((a, b) => a.at - b.at)
+export function predictionTally(predictId: string, choices: number, predictions: Iterable<Prediction>): PredictionTally {
+  const last = latestPerParticipant([...predictions].filter(p => p.predictId === predictId)).sort((a, b) => a.at - b.at)
   return {
     counts: Array.from({ length: choices }, (_, i) => last.filter(p => p.choice === i).length),
     respondents: last.length,

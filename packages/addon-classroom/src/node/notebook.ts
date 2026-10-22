@@ -22,13 +22,11 @@ function predictCells(node: ComponentNode): unknown[] {
   return node.fallback ? [{ cell_type: 'markdown', mdast: node.fallback }] : []
 }
 
-export const rendererExtensions: Record<string, RendererContribution> = {
-  notebook: {
-    components: {
-      PmExercise: exerciseCells,
-      PmPredict: predictCells,
-      PmQuestionBox: () => [],
-      PmPulse: () => [],
-    },
+export const notebookContribution: RendererContribution = {
+  components: {
+    PmExercise: exerciseCells,
+    PmPredict: predictCells,
+    PmQuestionBox: () => [],
+    PmPulse: () => [],
   },
 }

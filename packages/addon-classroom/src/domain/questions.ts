@@ -1,6 +1,6 @@
+import type { SectionNumbers } from './config.ts'
 import type { ClassroomMessages } from './messages.ts'
 import { placeIndex, placeText } from './place.ts'
-import type { SectionNumbers } from './place.ts'
 
 export interface Question {
   section: string
@@ -8,7 +8,7 @@ export interface Question {
   title: string
   index: number
   text: string
-  author: string
+  participant: string
   name: string
   at: number
   answered?: boolean
@@ -22,7 +22,7 @@ export interface QuestionReply {
 }
 
 export interface QuestionGroup<T extends Question> {
-  place: string
+  label: string
   section: string
   block?: string
   questions: T[]
@@ -33,7 +33,7 @@ export function questionsByPlace<T extends Question>(questions: Iterable<T>, t: 
   for (const q of [...questions].sort((a, b) => a.at - b.at)) {
     const key = `${q.section}\n${q.block ?? ''}`
     let group = groups.get(key)
-    if (!group) groups.set(key, group = { place: placeText(q, t, numbers), section: q.section, block: q.block, index: placeIndex(q, numbers), questions: [] })
+    if (!group) groups.set(key, group = { label: placeText(q, t, numbers), section: q.section, block: q.block, index: placeIndex(q, numbers), questions: [] })
     group.questions.push(q)
   }
   return [...groups.values()]

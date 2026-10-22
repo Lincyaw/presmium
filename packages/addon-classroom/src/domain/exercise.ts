@@ -6,7 +6,7 @@ const MARKER = '@@presmium-check@@'
 const SUBMISSION = 'submission.py'
 const CHECKS = 'checks.py'
 
-export const CHECK_PROGRAM = `import ast as _pm_ast, json as _pm_json
+const CHECK_PROGRAM = `import ast as _pm_ast, json as _pm_json
 
 def _pm_describe(error):
     line = error.lineno if isinstance(error, SyntaxError) and error.filename == ${JSON.stringify(SUBMISSION)} else None
@@ -69,8 +69,8 @@ export interface CheckReport {
   output: string
 }
 
-export function typicalError(type: string, message: string, t: ClassroomMessages, line?: number): CheckError {
-  const [kind, hint] = t.exercise.typical[type] ?? [type, t.exercise.unknown]
+function typicalError(type: string, message: string, t: ClassroomMessages, line?: number): CheckError {
+  const { kind, hint } = t.exercise.typical[type] ?? { kind: type, hint: t.exercise.unknown }
   return { type, message, ...line ? { line } : {}, kind, hint }
 }
 
@@ -91,7 +91,7 @@ export function checkReport(result: RunResult, t: ClassroomMessages): CheckRepor
     if (at >= 0) raw = JSON.parse(result.stdout.slice(at + MARKER.length + 1)) as RawReport
   } catch {}
   if (!raw || !Array.isArray(raw.cases)) {
-    const [kind, hint] = t.exercise.unchecked
+    const { kind, hint } = t.exercise.unchecked
     return failed({ type: 'Error', message: result.stderr.trim() || t.exercise.noResult, kind, hint })
   }
   if (raw.error) return failed(checkError(raw.error))
@@ -101,7 +101,7 @@ export function checkReport(result: RunResult, t: ClassroomMessages): CheckRepor
 }
 
 export interface Submission extends Place {
-  exercise: string
+  exerciseId: string
   participant: string
   name: string
   status: CheckReport['status']
@@ -111,8 +111,8 @@ export interface Submission extends Place {
   at: number
 }
 
-export function submissionId(exercise: string, participant: string): string {
-  return `${exercise}:${participant}`
+export function submissionId(exerciseId: string, participant: string): string {
+  return `${exerciseId}:${participant}`
 }
 
 export function reportKinds(report: CheckReport): string[] {
@@ -120,13 +120,13 @@ export function reportKinds(report: CheckReport): string[] {
   return [...new Set(errors.map(e => e.kind))]
 }
 
-export interface ExerciseSummary {
+export interface ExerciseTally {
   submitted: number
   passed: number
   kinds: [kind: string, count: number][]
 }
 
-export function summarize(submissions: Submission[]): ExerciseSummary {
+export function exerciseTally(submissions: Submission[]): ExerciseTally {
   const counts = new Map<string, number>()
   for (const kind of submissions.flatMap(s => s.kinds)) counts.set(kind, (counts.get(kind) ?? 0) + 1)
   return {
@@ -136,8 +136,8 @@ export function summarize(submissions: Submission[]): ExerciseSummary {
   }
 }
 
-export function summaryText(summary: ExerciseSummary, t: ClassroomMessages): string {
+export function exerciseTallyText(tally: ExerciseTally, t: ClassroomMessages): string {
   const { exercise, list, people } = t
-  const common = summary.kinds.map(([kind, n]) => `${kind} ${people(n)}`).join(list)
-  return exercise.summary(summary.submitted, summary.passed) + (common ? exercise.common(common) : '')
+  const common = tally.kinds.map(([kind, n]) => `${kind} ${people(n)}`).join(list)
+  return exercise.tally(tally.submitted, tally.passed) + (common ? exercise.common(common) : '')
 }
