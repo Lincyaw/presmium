@@ -1,13 +1,15 @@
 import { randomUUID } from 'node:crypto'
+import { errorMessage } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
-import type { DshAgent, DshContext, DshToolExecution } from '../dsh.ts'
+import type { DshAgent, DshContext, DshToolExecution } from './dsh-types.ts'
+import { WORKSPACE_ROUTES } from './server-routes.ts'
 
 export const name = 'presmium-turns'
 export const inject = ['presmium', 'tools']
 
-export const WRITES = new Set(['write', 'edit', 'str_replace_editor', 'bash', 'pwsh', 'terminal_send'])
+export const WRITING_TOOLS = new Set(['write', 'edit', 'str_replace_editor', 'bash', 'pwsh', 'terminal_send'])
 
-const REVIEW = '/__presmium/presmium.workspace/review'
+const REVIEW = `${WORKSPACE_ROUTES}review`
 const RETRY_MS = 2000
 
 interface LiveAgent extends DshAgent {
@@ -29,7 +31,8 @@ interface Reverted {
   files: string[]
 }
 
-interface Turns {
+/** The turn an agent session is in, and whether a tool wrote in it (to which document's review). */
+interface TurnState {
   turn?: number
   document?: string
   wrote: boolean
@@ -52,23 +55,24 @@ export function revertNotice(event: Reverted): unknown {
 
 export function apply(ctx: DshContext): void {
   const log = ctx.logger?.('presmium') ?? console
-  const sessions = new Map<string, Turns>()
+  const turnStates = new Map<string, TurnState>()
   const agents = new Map<string, LiveAgent>()
   const pending = new Map<string, unknown[]>()
-  const turnsOf = (id: string) => {
-    let known = sessions.get(id)
-    if (!known) sessions.set(id, known = { wrote: false })
+  const turnStateOf = (id: string) => {
+    let known = turnStates.get(id)
+    if (!known) turnStates.set(id, known = { wrote: false })
     return known
   }
   const parents = new Map<string, string>()
-  const reviewerOf = (id: string) => {
+  /** A subagent's writes go to the review of the session that started it. */
+  const rootAgentSessionOf = (id: string) => {
     let at = id
     for (let depth = 0; depth < 32 && parents.has(at); depth++) at = parents.get(at)!
     return at
   }
 
-  const post = async (document: string, session: string, path: string, body: Record<string, unknown>): Promise<void> => {
-    const response = await ctx.presmium.request(`${REVIEW}/${path}`, { body: { session, ...body }, headers: { 'presmium-document': encodeURIComponent(document) } })
+  const postReview = async (document: string, agentSessionId: string, path: string, body: Record<string, unknown>): Promise<void> => {
+    const response = await ctx.presmium.server.request(`${REVIEW}/${path}`, { body: { session: agentSessionId, ...body }, headers: { 'presmium-document': encodeURIComponent(document) } })
     const text = await response.text()
     if (response.ok) return
     if (path === 'open' && response.status === 404) throw new Error('the workspace is not a git repository, so the author cannot review a change: run git init in it')
@@ -81,34 +85,34 @@ export function apply(ctx: DshContext): void {
   }
 
   ctx.on('session/event', (session: { id: string }, event: SessionEvent) => {
-    if (event.type === 'turn/start' && typeof event.data?.turn === 'number') turnsOf(session.id).turn = event.data.turn
+    if (event.type === 'turn/start' && typeof event.data?.turn === 'number') turnStateOf(session.id).turn = event.data.turn
     if (event.type !== 'turn/end') return
-    const turns = sessions.get(session.id)
-    if (!turns?.wrote || turns.document === undefined) return
-    turns.wrote = false
-    void post(turns.document, session.id, 'step', { ...turns.turn !== undefined ? { turn: turns.turn } : {}, end: true })
-      .catch((error: unknown) => log.warn(`presmium-turns: the end of turn ${turns.turn} of ${session.id} was not told to the review: ${error instanceof Error ? error.message : String(error)}`))
+    const state = turnStates.get(session.id)
+    if (!state?.wrote || state.document === undefined) return
+    state.wrote = false
+    void postReview(state.document, session.id, 'step', { ...state.turn !== undefined ? { turn: state.turn } : {}, end: true })
+      .catch((error: unknown) => log.warn(`presmium-turns: the end of turn ${state.turn} of ${session.id} was not told to the review: ${errorMessage(error)}`))
   })
 
   ctx.on('tools/execute', async (exec: DshToolExecution, next: () => Promise<unknown>) => {
-    if (!WRITES.has(exec.name) || !exec.agent) return next()
-    const { root } = await ctx.presmium.ready
-    if (!isInside(ctx.presmium.directoryOf(exec.agent), root)) return next()
-    const document = ctx.presmium.session(exec.agent)?.document.dir ?? ''
-    const session = reviewerOf(exec.agent.session.id)
-    const turns = turnsOf(session)
+    if (!WRITING_TOOLS.has(exec.name) || !exec.agent) return next()
+    const { root } = await ctx.presmium.server.ready
+    if (!isInside(ctx.presmium.bindings.workingDirectoryOf(exec.agent), root)) return next()
+    const document = ctx.presmium.bindings.bindingOf(exec.agent)?.document.dir ?? ''
+    const agentSessionId = rootAgentSessionOf(exec.agent.session.id)
+    const state = turnStateOf(agentSessionId)
     try {
-      await post(document, session, 'open', turns.turn !== undefined ? { turn: turns.turn } : {})
+      await postReview(document, agentSessionId, 'open', state.turn !== undefined ? { turn: state.turn } : {})
     } catch (error) {
-      throw new Error(`Presmium: ${error instanceof Error ? error.message : String(error)}. Nothing was changed.`)
+      throw new Error(`Presmium: ${errorMessage(error)}. Nothing was changed.`)
     }
-    turns.document = document
-    turns.wrote = true
+    state.document = document
+    state.wrote = true
     try {
       return await next()
     } finally {
-      await post(document, session, 'step', { ...turns.turn !== undefined ? { turn: turns.turn } : {}, label: labelOf(exec), tool: exec.name })
-        .catch((error: unknown) => log.warn(`presmium-turns: no checkpoint after ${exec.name} in ${session}: ${error instanceof Error ? error.message : String(error)}`))
+      await postReview(document, agentSessionId, 'step', { ...state.turn !== undefined ? { turn: state.turn } : {}, label: labelOf(exec), tool: exec.name })
+        .catch((error: unknown) => log.warn(`presmium-turns: no checkpoint after ${exec.name} in ${agentSessionId}: ${errorMessage(error)}`))
     }
   })
 
@@ -123,11 +127,11 @@ export function apply(ctx: DshContext): void {
     if (agents.get(agent.session.id) === agent) agents.delete(agent.session.id)
   })
   ctx.on('session/disposed', (session: { id: string }) => {
-    sessions.delete(session.id)
+    turnStates.delete(session.id)
     parents.delete(session.id)
   })
 
-  const tell = (event: Reverted) => {
+  const injectRevertNotice = (event: Reverted) => {
     const notice = revertNotice(event)
     const agent = agents.get(event.session)
     if (agent) agent.inject(notice)
@@ -136,10 +140,10 @@ export function apply(ctx: DshContext): void {
   }
 
   const stop = new AbortController()
-  const follow = async () => {
+  const subscribeReviewEvents = async () => {
     while (!stop.signal.aborted) {
       try {
-        const response = await ctx.presmium.request(`${REVIEW}/events`, { headers: { accept: 'text/event-stream' }, signal: stop.signal })
+        const response = await ctx.presmium.server.request(`${REVIEW}/events`, { headers: { accept: 'text/event-stream' }, signal: stop.signal })
         if (!response.ok || !response.body) throw new Error(`review/events answered ${response.status}`)
         const decoder = new TextDecoder()
         let buffer = ''
@@ -152,16 +156,16 @@ export function apply(ctx: DshContext): void {
             const data = block.split('\n').filter(line => line.startsWith('data: ')).map(line => line.slice(6)).join('\n')
             if (!data) continue
             const event = JSON.parse(data) as { type?: string }
-            if (event.type === 'reverted') tell(event as Reverted)
+            if (event.type === 'reverted') injectRevertNotice(event as Reverted)
           }
         }
       } catch (error) {
         if (stop.signal.aborted) return
-        log.debug(`presmium-turns: the review events: ${error instanceof Error ? error.message : String(error)}`)
+        log.debug(`presmium-turns: the review events: ${errorMessage(error)}`)
       }
       await new Promise(done => setTimeout(done, RETRY_MS).unref())
     }
   }
-  void follow()
+  void subscribeReviewEvents()
   ctx.effect(() => () => stop.abort())
 }

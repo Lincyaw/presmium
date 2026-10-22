@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { DshContext } from './dsh.ts'
+import type { DshContext } from './dsh-types.ts'
 
 export const name = 'presmium-skills'
 export const inject = ['skills']

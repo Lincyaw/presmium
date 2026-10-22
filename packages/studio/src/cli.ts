@@ -1,7 +1,7 @@
 import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import { modelEnv } from './model.ts'
+import { modelEnv } from './model-env.ts'
 import { startStudio } from './studio.ts'
 
 const USAGE = `Usage: presmium studio [dir] [options]
@@ -55,14 +55,14 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
 
   let studio
   try {
-    studio = await startStudio({ dir, port: portOf(values.port), ...values.host ? { host: values.host } : {}, ...options.presmium ? { presmium: options.presmium } : {} })
+    studio = await startStudio({ dir, port: portOf(values.port), ...values.host ? { listenAddress: values.host } : {}, ...options.presmium ? { presmium: options.presmium } : {} })
   } catch (error) {
     process.stderr.write(`presmium studio: ${error instanceof Error ? error.message : String(error)}\n`)
     return 2
   }
   process.stdout.write(`studio  ${studio.url}\n`)
   if (values.host && values.host !== '127.0.0.1' && values.host !== '::1') {
-    process.stderr.write(`presmium studio: listening on ${values.host}, on the local network, with no login: anyone who reaches port ${new URL(studio.url).port} (and the previews' port ${new URL(studio.service).port}) with the address above works in this workspace as you (edits, runs code, uses your model). Use it on a network you trust; without --host it listens on this machine only.\n`)
+    process.stderr.write(`presmium studio: listening on ${values.host}, on the local network, with no login: anyone who reaches port ${new URL(studio.url).port} (and the previews' port ${new URL(studio.workspaceServerUrl).port}) with the address above works in this workspace as you (edits, runs code, uses your model). Use it on a network you trust; without --host it listens on this machine only.\n`)
   }
 
   const signals = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const

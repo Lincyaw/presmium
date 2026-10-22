@@ -48,7 +48,7 @@ export async function startStudio(options: { port: number, model?: FakeModel, pa
       // A concurrent client build must not make Harness hot-reload this test's bundle.
       const bundle = join(home.dir, 'bundle')
       mkdirSync(bundle, { recursive: true })
-      for (const name of ['package.json', 'src', 'rows', 'build', 'skills', 'cordis.patch.yml', 'web.patch.yml', 'profile.patch.yml']) {
+      for (const name of ['package.json', 'src', 'entries', 'build', 'skills', 'cordis.patch.yml', 'web.patch.yml', 'profile.patch.yml']) {
         // Packaged bundles include generated skills; source checkouts may not.
         if (name === 'skills' && !existsSync(join(PACKAGE, name))) continue
         cpSync(join(PACKAGE, name), join(bundle, name), { recursive: true })

@@ -245,7 +245,7 @@ dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达�
   - `dsh.client`：`platform: 'web'`，导出预编译的客户端部分；
   - 出口：`.` 是 `presmium-workbench` 行的宿主部分，`./client` 是预编译的客户端包，其余各行各有一个出口，`./launch` 供启动器传入补丁；
   - `engines.dsh` 与对 `@deepseek-ai/dsh-*` 的精确对等依赖。dsh 在安装与启动时都检查它们，不满足时拒绝。
-- 宿主部分：每行一个普通 ESM 的入口文件，入口用 jiti 加载 `src/node/` 的 `.ts` 源码。
+- 宿主部分：每行一个普通 ESM 的入口文件（`entries/`），入口用 jiti 加载 `src/node/` 中同名的 `.ts` 源码。
 - 补丁：dsh 的一个包只有一个 bundle 层，只在某个载体中出现的行因此放在另外的补丁中，由启动器以 `--patch` 传入（`@lincyaw/dsh/launch`）：`profile.patch.yml`（全部载体：隐私、技能、第一次使用、沙箱、persona，6.6 节）与 `web.patch.yml`（web 载体：`presmium-workspaces`、`presmium-routes`、`presmium-workbench` 三行与它们的设置、内置的 `preset-authoring` 预设，以及界面上关掉的行）。headless 与 acp 载体不带 `web.patch.yml`，启动时不警告有行没有激活。
 - 技能：源只有 `.agents/skills` 一份，打包时复制进包内（副本不入库）；`scripts/check-skills.mjs` 核对 bundle 登记的技能都在源中。
 

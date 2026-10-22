@@ -56,9 +56,9 @@ describe('the workspace service DeepSeek Harness starts itself', () => {
     await home?.close()
   })
 
-  it.skipIf(process.platform === 'win32')('runs in its own process group without the model\'s credentials, and leaves no process after kill -9 of the host', async () => {
+  it.skipIf(process.platform === 'win32')('runs in its own process group without the model\'s credentials or the launcher\'s variables, and leaves no process after kill -9 of the host', async () => {
     model.hold()
-    const run = home.headless(ws.dir, '列出章节。', { model, env: {} })
+    const run = home.headless(ws.dir, '列出章节。', { model, env: { PRESMIUM_MODEL_URL: model.url, PRESMIUM_MODEL_KEY: 'model-key-5d1', PRESMIUM_MODEL_PROVIDER: 'Fake', PORT: '5999' } })
     await expect.poll(() => turns(model).length, { timeout: 180_000 }).toBeGreaterThan(0)
     const watchdog = descendants(run.child.pid!).find(proc => proc.cmdline.includes('watchdog.mjs'))!
     const serve = descendants(watchdog.pid).find(proc => / serve /.test(proc.cmdline))!
@@ -66,7 +66,7 @@ describe('the workspace service DeepSeek Harness starts itself', () => {
     if (process.platform === 'linux') {
       const seen = environ(serve.pid)
       expect(seen.PRESMIUM_SERVICE_TOKEN).toMatch(/^\S{20,}$/)
-      expect(Object.keys(seen).filter(name => /^(DEEPSEEK_|DSH_)/.test(name))).toEqual([])
+      expect(Object.keys(seen).filter(name => /^(DEEPSEEK_|DSH_|PRESMIUM_MODEL_)/.test(name) || name === 'PORT')).toEqual([])
     } else {
       console.info('Skipping child-environment inspection: Linux /proc/<pid>/environ is required; service startup and process cleanup are still checked.')
     }
