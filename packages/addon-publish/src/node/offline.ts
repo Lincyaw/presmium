@@ -2,27 +2,27 @@ import { errorMessage } from '@lincyaw/kernel'
 import { VitePWA } from 'vite-plugin-pwa'
 import RemoteAssets from 'vite-plugin-remote-assets'
 import webfontDownload from 'vite-plugin-webfont-dl'
-import { OFFLINE_MANIFEST, onInBuild, publishOptions } from '../domain/index.ts'
+import { OFFLINE_CACHE_RULES, publishOptions, slidevEnablesInBuild } from '../domain/index.ts'
 
 export function offlinePlugins(config: { pwa?: unknown, remoteAssets?: unknown }, mode: string) {
   if (mode !== 'build' || !publishOptions(config).offline) return []
   return [
-    ...(onInBuild(config.remoteAssets) ? [] : [remoteAssets()]),
+    ...(slidevEnablesInBuild(config.remoteAssets) ? [] : [remoteAssets()]),
     webfontDownload([], { throwError: false }),
-    ...(onInBuild(config.pwa)
+    ...(slidevEnablesInBuild(config.pwa)
       ? []
       : VitePWA({
           registerType: 'autoUpdate',
           injectRegister: 'script',
           manifest: false,
           workbox: {
-            globPatterns: OFFLINE_MANIFEST.precache,
-            maximumFileSizeToCacheInBytes: OFFLINE_MANIFEST.maxFileBytes,
+            globPatterns: OFFLINE_CACHE_RULES.precache,
+            maximumFileSizeToCacheInBytes: OFFLINE_CACHE_RULES.maxFileBytes,
             navigateFallback: 'index.html',
             navigateFallbackDenylist: [/\/[^/?]+\.[^/]+$/],
             cleanupOutdatedCaches: true,
             clientsClaim: true,
-            runtimeCaching: OFFLINE_MANIFEST.runtime.map(({ cacheName, urlPattern }) => ({
+            runtimeCaching: OFFLINE_CACHE_RULES.runtime.map(({ cacheName, urlPattern }) => ({
               urlPattern,
               handler: 'CacheFirst' as const,
               options: { cacheName, cacheableResponse: { statuses: [0, 200] } },
@@ -35,7 +35,7 @@ export function offlinePlugins(config: { pwa?: unknown, remoteAssets?: unknown }
 type Hook = ((this: unknown, ...args: any[]) => unknown) | { handler: (this: unknown, ...args: any[]) => unknown }
 
 function remoteAssets() {
-  const plugin = RemoteAssets({ rules: [{ match: OFFLINE_MANIFEST.remoteAssets }] })
+  const plugin = RemoteAssets({ rules: [{ match: OFFLINE_CACHE_RULES.remoteAssets }] })
   const tolerant = (hook: Hook): Hook => {
     const handler = typeof hook === 'function' ? hook : hook.handler
     async function guarded(this: unknown, ...args: unknown[]) {

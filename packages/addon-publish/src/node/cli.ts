@@ -3,9 +3,10 @@ import { parseArgs } from 'node:util'
 import type { ParseArgsConfig } from 'node:util'
 import { DECK_ENTRY } from '@lincyaw/compiler'
 import { errorMessage } from '@lincyaw/kernel'
-import { visualDiff } from './diff.ts'
+import { isDeck } from './deck.ts'
 import { exportDeck } from './export.ts'
-import { EXPORT_TIMEOUT, EXPORT_WAIT, isDeck } from './slides.ts'
+import { EXPORT_TIMEOUT, EXPORT_WAIT } from './slidev-export.ts'
+import { visualDiff } from './visual-diff.ts'
 
 const EXPORT_USAGE = `Usage: presmium-export [deckDir] [--format pdf|png] [--output <file.pdf | dir>] [--with-clicks] [--range <1,3-5>] [--dark] [--wait <ms>] [--timeout <ms>] [--json]
 

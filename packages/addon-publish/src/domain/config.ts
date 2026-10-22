@@ -12,6 +12,7 @@ export function publishOptions(headmatter: unknown): PublishOptions {
   return { offline: !(isRecord(own) && own.offline === false) }
 }
 
-export function onInBuild(flag: unknown): boolean {
+/** Whether Slidev turns this on in a build by itself: the deck's `pwa` or `remoteAssets` is `true` or `'build'`. */
+export function slidevEnablesInBuild(flag: unknown): boolean {
   return flag === true || flag === 'build'
 }

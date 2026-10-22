@@ -6,9 +6,10 @@ import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
 import { diffReport, pageStatus, pairPages, parsePageFile, parseWebFile, reportMarkdown } from '../domain/index.ts'
 import type { DiffSide, PageRef, VisualDiff, VisualDiffReport } from '../domain/index.ts'
+import { hasForm } from './deck.ts'
 import { git, run } from './process.ts'
-import { hasForm, slidevDeck, slidevExport } from './slides.ts'
-import { captureWeb } from './web.ts'
+import { prepareSlidevProject, runSlidevExport } from './slidev-export.ts'
+import { captureWeb } from './web-capture.ts'
 
 export interface DiffJob {
   refA: string
@@ -28,7 +29,7 @@ export async function visualDiff(job: DiffJob): Promise<{ report: VisualDiffRepo
     if (!commit) throw new Error(`unknown revision "${ref}"`)
     return { ref, commit }
   }))
-  const warnings = job.install ? [] : await unrendered(root, deckDir, sides[0]!.commit, sides[1]!.commit)
+  const warnings = job.install ? [] : await outsideDeckWarnings(root, deckDir, sides[0]!.commit, sides[1]!.commit)
 
   const work = join(deckDir, '.presmium', 'diff')
   const out = resolve(job.out ?? work)
@@ -51,9 +52,9 @@ export async function visualDiff(job: DiffJob): Promise<{ report: VisualDiffRepo
       const compilation = await new Compiler(deck).compile()
       const wait = job.wait ?? 500
       if (hasForm(compilation, 'slides')) {
-        const slides = await slidevDeck(compilation)
-        warnings.push(...slides.warnings.map(w => `${side.ref}: ${w}`))
-        await slidevExport(slides, { format: 'png', withClicks: true, wait, output: join(out, label), env: { VITE_PRESMIUM_VISUAL_DIFF: '1' } })
+        const project = await prepareSlidevProject(compilation)
+        warnings.push(...project.warnings.map(w => `${side.ref}: ${w}`))
+        await runSlidevExport(project, { format: 'png', withClicks: true, wait, output: join(out, label), env: { VITE_PRESMIUM_VISUAL_DIFF: '1' } })
       }
       if (hasForm(compilation, 'web')) {
         for (const section of viewFor(compilation.doc, 'web').sections) sections.set(section.id, section.index)
@@ -72,7 +73,8 @@ export async function visualDiff(job: DiffJob): Promise<{ report: VisualDiffRepo
   return { report, out, warnings }
 }
 
-async function unrendered(root: string, deckDir: string, a: string, b: string): Promise<string[]> {
+/** Warns of the changes between the commits outside the deck, which render from the installed packages. */
+async function outsideDeckWarnings(root: string, deckDir: string, a: string, b: string): Promise<string[]> {
   const deck = relative(root, deckDir)
   if (!deck) return []
   const files = (await git(root, 'diff', '--name-only', a, b, '--', '.', `:(exclude)${deck}`)).split('\n').filter(Boolean)

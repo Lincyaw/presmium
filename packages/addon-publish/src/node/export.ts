@@ -1,11 +1,11 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { viewFor } from '@lincyaw/compiler'
+import { Compiler, viewFor } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import { exportedSlides, linkLine, normalizeUrl, parseRange, slideLinks } from '../domain/index.ts'
 import type { DeclaredLink } from '../domain/index.ts'
 import { keepPages, pdfLinks } from './pdf.ts'
-import { EXPORT_WAIT, incompleteExport, shownSlides, slidesDeck, slidevExport } from './slides.ts'
+import { EXPORT_WAIT, incompleteExport, prepareSlidevProject, runSlidevExport, shownSlideCount } from './slidev-export.ts'
 
 export interface ExportJob {
   deckDir: string
@@ -35,17 +35,17 @@ export interface ExportResult {
 
 export async function exportDeck(job: ExportJob): Promise<ExportResult> {
   const format = job.format ?? 'pdf'
-  const deck = await slidesDeck(job.deckDir)
-  const { compilation, warnings } = deck
+  const project = await prepareSlidevProject(await new Compiler(job.deckDir).compile())
+  const { compilation, warnings } = project
   const filename = compilation.doc.config.renderers.slides?.exportFilename
   const name = job.output ? resolve(job.output) : resolve(compilation.deckDir, String(filename ?? 'slides-export'))
   const output = format === 'png' || name.endsWith('.pdf') ? name : `${name}.pdf`
-  const images = await slidevExport(deck, { ...job, format, output })
+  const images = await runSlidevExport(project, { ...job, format, output })
 
   if (format === 'png') return { format, output, pages: images.length, links: [], warnings }
   const range = parseRange(job.range)
-  warnings.push(...await checkPages(output, compilation, range, Boolean(job.withClicks), job.wait ?? EXPORT_WAIT))
-  const links = await located(slideLinks(viewFor(compilation.doc, 'slides'), range))
+  warnings.push(...await checkAndTrimPages(output, compilation, range, Boolean(job.withClicks), job.wait ?? EXPORT_WAIT))
+  const links = await locateLinks(slideLinks(viewFor(compilation.doc, 'slides'), range))
   const pages = (await pdfLinks(output)).map(uris => new Set(uris.map(normalizeUrl)))
   return {
     format,
@@ -56,9 +56,10 @@ export async function exportDeck(job: ExportJob): Promise<ExportResult> {
   }
 }
 
-async function checkPages(file: string, compilation: Compilation, range: Set<number> | undefined, withClicks: boolean, wait: number): Promise<string[]> {
+/** Checks that the PDF has a page for every slide exported and, for a range, removes the pages outside it. */
+async function checkAndTrimPages(file: string, compilation: Compilation, range: Set<number> | undefined, withClicks: boolean, wait: number): Promise<string[]> {
   const pages = (await pdfLinks(file)).length
-  const slides = exportedSlides(shownSlides(compilation), range).length
+  const slides = exportedSlides(shownSlideCount(compilation), range).length
   if (pages < slides) throw incompleteExport(`printed ${pages} pages for the ${slides} slides exported`, wait)
   if (!range) return []
   const steps = viewFor(compilation.doc, 'slides').sections
@@ -70,7 +71,7 @@ async function checkPages(file: string, compilation: Compilation, range: Set<num
   return []
 }
 
-async function located(links: DeclaredLink[]): Promise<Omit<ExportedLink, 'pages'>[]> {
+async function locateLinks(links: DeclaredLink[]): Promise<Omit<ExportedLink, 'pages'>[]> {
   const sources = new Map<string, Promise<string[]>>()
   const linesOf = (file: string) => {
     if (!sources.has(file)) sources.set(file, readFile(file, 'utf8').then(text => text.split(/\r?\n/), () => []))

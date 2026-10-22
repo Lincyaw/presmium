@@ -40,7 +40,7 @@ async function localCopy(url: string, dir: string, existing: readonly string[]):
 }
 
 export const remoteAssetsPass: IRPass = {
-  name: 'remote-assets',
+  name: 'presmium.publish.remote-assets',
   order: 100,
   async run(doc, ctx) {
     if (!publishOptions({ presmium: doc.config.presmium }).offline) return
