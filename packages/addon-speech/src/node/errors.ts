@@ -10,13 +10,13 @@ export class SpeechError extends Error {
   }
 }
 
-export function failure(error: unknown): Response {
+export function errorResponse(error: unknown): Response {
   if (error instanceof SpeechError) return problemResponse(error.status, error.message)
   if (error instanceof Error && error.name === 'AbortError') return problemResponse(499, 'aborted')
   return problemResponse(502, error instanceof Error ? error.message : String(error))
 }
 
-export async function answerError(response: Response, what: string): Promise<SpeechError> {
+export async function upstreamError(response: Response, what: string): Promise<SpeechError> {
   const text = await response.text().catch(() => '')
   let message = text.slice(0, 500)
   try {

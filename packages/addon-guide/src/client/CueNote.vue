@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useMessages } from '@lincyaw/host'
-import { CUE_MESSAGES } from '../domain/index.ts'
+import { GUIDE_MESSAGES } from '../domain/index.ts'
 
 defineProps<{ title?: string, text?: string, state?: 'shown' | 'hidden' }>()
 
-const t = useMessages(CUE_MESSAGES)
+const t = useMessages(GUIDE_MESSAGES)
 </script>
 
 <template>

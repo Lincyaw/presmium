@@ -3,7 +3,7 @@ import { openaiEngine } from './openai.ts'
 import type { EngineAdapter } from './types.ts'
 import { volcengineEngine } from './volcengine.ts'
 
-export type { EngineAdapter, EngineAudio, EngineInput, EngineSynthesis } from './types.ts'
+export type { EngineAdapter, EngineSynthesisRequest, EngineSynthesisResult, EngineTranscriptionRequest } from './types.ts'
 export { blobOf } from './openai.ts'
 
 export function engineAdapter(engine: EngineDefinition): EngineAdapter {

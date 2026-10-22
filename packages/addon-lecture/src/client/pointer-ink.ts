@@ -1,5 +1,5 @@
+import { blockElement, codeLinesBox } from '@lincyaw/host'
 import type { PathPoint } from '../domain/index.ts'
-import { blockElement, codeLines, lineNumbers } from '@lincyaw/host'
 
 const LASER_MS = 1500
 
@@ -45,7 +45,7 @@ function along(points: PathPoint[], elapsed: number): PathPoint {
 function ensureLayer(): HTMLElement {
   if (layer?.isConnected) return layer
   layer = document.createElement('div')
-  layer.className = 'pm-lecture-marks'
+  layer.className = 'pm-lecture-pointer-ink'
   layer.setAttribute('aria-hidden', 'true')
   Object.assign(layer.style, { position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: 'calc(var(--pm-cue-z, 1) + 2)' })
   document.body.append(layer)
@@ -53,15 +53,7 @@ function ensureLayer(): HTMLElement {
 }
 
 function inkBox(ink: Ink, block: HTMLElement): DOMRect | undefined {
-  if (ink.lines) {
-    const rows = codeLines(block)
-    const named = lineNumbers(ink.lines).map(n => rows[n - 1]).filter((row): row is HTMLElement => Boolean(row))
-    if (named.length === 0) return undefined
-    const code = block.querySelector('.pm-code')?.getBoundingClientRect() ?? block.getBoundingClientRect()
-    const top = Math.min(...named.map(row => row.getBoundingClientRect().top))
-    const bottom = Math.max(...named.map(row => row.getBoundingClientRect().bottom))
-    return new DOMRect(code.left, top, code.width, bottom - top)
-  }
+  if (ink.lines) return codeLinesBox(block, ink.lines)
   if (!ink.range) return undefined
   const box = block.getBoundingClientRect()
   const [x0, y0, x1, y1] = ink.range

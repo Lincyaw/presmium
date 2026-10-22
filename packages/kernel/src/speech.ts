@@ -1,11 +1,7 @@
-export interface AigcLabel {
-  Label: '1'
-  ContentProducer: string
-  ProduceID: string
-  ReservedCode1: string
-  ContentPropagator: string
-  PropagateID: string
-  ReservedCode2: string
+import type { AigcLabel } from './contracts/speech.ts'
+
+export function speechEngineId(name: string): string {
+  return name.trim().toLowerCase().replace(/[^a-z0-9]/g, '_')
 }
 
 export function aigcLabel(producer: string, produceId: string): AigcLabel {

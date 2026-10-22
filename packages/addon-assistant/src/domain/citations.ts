@@ -25,7 +25,3 @@ export function answerParts(text: string): AnswerPart[] {
   if (at < text.length) parts.push({ text: text.slice(at) })
   return parts
 }
-
-export function citationsOf(text: string): Citation[] {
-  return answerParts(text).flatMap(part => (part.citation ? [part.citation] : []))
-}

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { closeSync, constants, createReadStream, existsSync, fstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { open } from 'node:fs/promises'
 import { dirname, join, relative, sep } from 'node:path'
+import { ABSOLUTE_URL } from '@lincyaw/kernel'
 import type { DocumentFiles } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
 import { formatTrack, LECTURES_DIR, parseTrack, TRACK_ID } from '../domain/index.ts'
@@ -64,22 +65,6 @@ export interface StoredTrack {
 }
 
 const OPEN_FLAGS = constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0)
-
-export function readRegular(file: string): Buffer | undefined {
-  let fd: number
-  try {
-    fd = openSync(file, OPEN_FLAGS)
-  } catch {
-    return undefined
-  }
-  try {
-    return fstatSync(fd).isFile() ? readFileSync(fd) : undefined
-  } catch {
-    return undefined
-  } finally {
-    closeSync(fd)
-  }
-}
 
 function openedPath(fd: number, expected: string): string | undefined {
   try {
@@ -193,7 +178,7 @@ export function mediaPolicy(settings: Record<string, unknown>): MediaPolicy {
 
 export function publishedMedia<T extends MediaSegment>(segments: T[] | undefined, id: string, policy: MediaPolicy, local: (segment: T) => boolean = () => false): T[] | undefined {
   if (!segments || policy.kind !== 'url') return segments
-  return segments.map(segment => (/^[a-z][a-z\d+.-]*:/i.test(segment.src) || local(segment) ? segment : { ...segment, src: `${policy.prefix}${id}/${segment.src}` }))
+  return segments.map(segment => (ABSOLUTE_URL.test(segment.src) || local(segment) ? segment : { ...segment, src: `${policy.prefix}${id}/${segment.src}` }))
 }
 
 export async function writeGitFiles(files: DeckFiles, dir: string, policy: MediaPolicy): Promise<void> {

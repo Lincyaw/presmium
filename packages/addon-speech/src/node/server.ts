@@ -1,18 +1,16 @@
-import { DOCUMENT_FILES } from '@lincyaw/kernel'
 import type { ServerContext, ServerContribution } from '@lincyaw/kernel'
-import { CONSENT_PATH, deckSpeechConfig, PROTOCOL_PATH } from '../domain/index.ts'
-import { SynthesisCache } from './cache.ts'
+import { CONSENT_PATH, PROTOCOL_PATH } from '../domain/index.ts'
+import { createDeckSpeech } from './cached-speech.ts'
 import { consentRoute } from './consent.ts'
-import { reportEngines, speechCore } from './core.ts'
-import { DeckSpeech } from './deck.ts'
-import { protocolHandler } from './routes.ts'
+import { reportEngines } from './core.ts'
+import { protocolHandler } from './protocol-routes.ts'
 
 const MAX_AUDIO = 32 * 1024 * 1024
 
 export function speechServer(ctx: ServerContext): ServerContribution {
-  const core = speechCore({ names: () => Object.keys(process.env), secret: name => ctx.secret(name), settings: ctx.settings, operatorDir: ctx.operatorDir, log: ctx.log })
+  const { core, speech } = createDeckSpeech(ctx)
   void reportEngines(core, ctx.log)
-  const handle = protocolHandler(new DeckSpeech(core, new SynthesisCache(ctx.deckDir, ctx.workspaceRoot, () => ctx.service(DOCUMENT_FILES)), deckSpeechConfig(ctx.config).config))
+  const handle = protocolHandler(speech)
   return {
     routes: {
       [`${PROTOCOL_PATH}/*`]: { role: 'editor', maxBody: MAX_AUDIO, handle: (request, route) => handle(request, route.rest) },

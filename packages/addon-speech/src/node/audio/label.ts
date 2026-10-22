@@ -1,5 +1,5 @@
-import type { AigcLabel } from '../../domain/index.ts'
-import { aigcString } from '../../domain/index.ts'
+import { aigcString } from '@lincyaw/kernel'
+import type { AigcLabel } from '@lincyaw/kernel'
 import { SpeechError } from '../errors.ts'
 import { isOgg, oggOpusDuration, withOpusComment } from './ogg.ts'
 import { isWav, wavDuration, withInfo } from './riff.ts'

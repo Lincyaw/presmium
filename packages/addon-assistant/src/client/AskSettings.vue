@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { PmButton, PmField, PmNotice, useMessages } from '@lincyaw/host'
 import { ref } from 'vue'
-import { ASSISTANT_MESSAGES, askUrlValid } from '../domain/index.ts'
-import { askSettings, saveAskSettings } from './ask.ts'
+import { ASSISTANT_MESSAGES, isAskUrlValid } from '../domain/index.ts'
+import { askSettings, saveAskSettings } from './settings.ts'
 
 const emit = defineEmits<{ done: [] }>()
 
@@ -13,7 +13,7 @@ const model = ref(askSettings.value?.model ?? '')
 const problem = ref('')
 
 function save(): void {
-  if (!askUrlValid(url.value.trim())) {
+  if (!isAskUrlValid(url.value.trim())) {
     problem.value = t.value.ask.invalidUrl
     return
   }

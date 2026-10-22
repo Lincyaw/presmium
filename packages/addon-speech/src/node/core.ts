@@ -1,18 +1,17 @@
-import { remapWords } from '@lincyaw/kernel'
+import { aigcLabel, remapWords, speechEngineId } from '@lincyaw/kernel'
 import type { Logger, SpeechWord, SynthesisRequest, TranscriptionRequest, VoiceInfo } from '@lincyaw/kernel'
-import type { EngineDefinition } from '../domain/index.ts'
-import type { SpokenText } from '../domain/index.ts'
-import { aigcLabel, engineId, engineInfo, howToDefine, operatorEngines, providerName, speak } from '../domain/index.ts'
+import type { EngineDefinition, LexiconText } from '../domain/index.ts'
+import { applyLexiconWithSpans, engineInfo, howToDefine, operatorEngines, providerName } from '../domain/index.ts'
 import { audioMime, labelAudio } from './audio/label.ts'
 import type { SpeechBackend, SynthesisResult } from './backend.ts'
-import { cacheKey } from './backend.ts'
+import { cacheKey } from './cache.ts'
 import { checkConsent, writeConsent } from './consent.ts'
 import { engineAdapter } from './engines/index.ts'
 import type { EngineAdapter } from './engines/index.ts'
 import { speaks } from './engines/types.ts'
 import { SpeechError } from './errors.ts'
 
-function writtenWords(words: SpeechWord[], written: string, spoken: SpokenText): SpeechWord[] {
+function writtenWords(words: SpeechWord[], written: string, spoken: LexiconText): SpeechWord[] {
   if (spoken.spans.length === 0) return words
   return remapWords(words, written, spoken.text, spoken.spans).map(({ text, start, end }) => ({ text: text.trim(), start, end }))
 }
@@ -62,14 +61,14 @@ export function speechCore(options: CoreOptions): SpeechCore {
       if (list[0]) return list[0]
       throw new SpeechError(400, 'no speech engine is defined, so none was asked: the operator defines one in the environment (PRESMIUM_SPEECH_<ID>_URL and PRESMIUM_SPEECH_<ID>_PROVIDER, or PRESMIUM_SPEECH_VOLCENGINE_KEY)')
     }
-    const found = list.find(engine => engine.id === engineId(id))
+    const found = list.find(engine => engine.id === speechEngineId(id))
     if (found) return found
-    const reason = unavailable.find(engine => engine.id === engineId(id))?.reason
+    const reason = unavailable.find(engine => engine.id === speechEngineId(id))?.reason
     throw new SpeechError(400, reason ? `speech engine "${id}" is unavailable: ${reason}` : `speech engine "${id}" is not defined; ${howToDefine(id)}`)
   }
 
   return {
-    async listing(lang) {
+    async listEngines(lang) {
       const { engines: list, unavailable } = engines()
       return { engines: list.map(engine => ({ ...engineInfo(engine, lang), model: engine.model, transcribeModel: engine.transcribeModel })), unavailable }
     },
@@ -87,7 +86,7 @@ export function speechCore(options: CoreOptions): SpeechCore {
       const listed = (await allVoices(engine)).find(voice => voice.id === request.voice)
       const cloned = listed?.cloned === true || adapter(engine).cloned?.(request.voice) === true
       if (cloned) checkConsent(options.operatorDir, options.settings, engine.id, request.voice)
-      const spoken = speak(request.text, request.lexicon)
+      const spoken = applyLexiconWithSpans(request.text, request.lexicon)
       const key = cacheKey({ ...request, engine: engine.id }, spoken.text)
       const produced = await adapter(engine).synthesize({ voice: request.voice, text: spoken.text, lang: request.lang, rate: request.rate, style: request.style }, signal)
       const provider = providerName(engine, request.lang)
@@ -118,7 +117,7 @@ export function speechCore(options: CoreOptions): SpeechCore {
 
     async consent(engine, voice, recorded) {
       if (!recorded) {
-        const defined = engines().engines.find(own => own.id === engineId(engine))
+        const defined = engines().engines.find(own => own.id === speechEngineId(engine))
         if (!defined) return
         if (adapter(defined).cloned?.(voice) !== true) {
           const voices = known.get(defined.id) ?? (unlisted.has(defined.id)
@@ -130,7 +129,7 @@ export function speechCore(options: CoreOptions): SpeechCore {
           if (!voices.some(own => own.id === voice && own.cloned === true)) return
         }
       }
-      checkConsent(options.operatorDir, options.settings, engineId(engine), voice)
+      checkConsent(options.operatorDir, options.settings, speechEngineId(engine), voice)
     },
 
     registerConsent(engine, voice, record) {
@@ -142,7 +141,7 @@ export function speechCore(options: CoreOptions): SpeechCore {
 }
 
 export async function reportEngines(core: SpeechBackend, log: Logger): Promise<void> {
-  const { engines, unavailable } = await core.listing('en')
+  const { engines, unavailable } = await core.listEngines('en')
   if (engines.length) log.info(`speech engines: ${engines.map(engine => `${engine.id} (${engine.provider})`).join(', ')}`)
   for (const { id, reason } of unavailable) log.warn(`speech engine ${id} is unavailable: ${reason}`)
 }

@@ -4,11 +4,11 @@ import { LECTURE_MESSAGES } from '../domain/index.ts'
 import LectureView from './LectureView.vue'
 import PlayerPanel from './PlayerPanel.vue'
 import RecorderPanel from './RecorderPanel.vue'
-import { exporting, followLectures, offered, setViewerContext } from './state.ts'
+import { exporting, lecturesAvailable, setViewerContext, watchLectureList } from './state.ts'
 
 const plugin: ViewerPlugin = (ctx) => {
   setViewerContext(ctx)
-  followLectures()
+  watchLectureList()
   if (exporting) document.documentElement.classList.add('pm-lecture-exporting')
   ctx.registerView({
     id: 'lecture',
@@ -18,7 +18,7 @@ const plugin: ViewerPlugin = (ctx) => {
     kind: 'overlay',
     component: LectureView,
     get hidden() {
-      return !offered.value
+      return !lecturesAvailable.value
     },
   })
   ctx.registerLayer({ id: 'presmium.lecture.player', component: PlayerPanel, views: ['present'], scope: 'viewport' })

@@ -6,7 +6,7 @@ import { operatorDir, workspaceSettings } from '@lincyaw/compiler'
 import { errorMessage } from '@lincyaw/kernel'
 import { SPEECH_ID } from '../domain/index.ts'
 import { writeConsent } from './consent.ts'
-import { startFakeEngine } from './fake.ts'
+import { startFakeEngine } from './fake-engine.ts'
 
 const USAGE = `Usage: presmium-speech <command> [options]
 
@@ -37,7 +37,7 @@ async function fake(args: string[]): Promise<number> {
   const { values } = parseArgs({ args, options: { port: { type: 'string' }, host: { type: 'string' } } })
   const port = values.port === undefined ? 0 : Number(values.port)
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error(`--port takes a port number, not "${values.port}"`)
-  const engine = await startFakeEngine({ port, host: values.host })
+  const engine = await startFakeEngine({ port, listenAddress: values.host })
   process.stdout.write(`fake  ${engine.url}\n`)
   await new Promise<void>((done) => {
     process.once('SIGINT', done)

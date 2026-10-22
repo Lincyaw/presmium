@@ -2,8 +2,8 @@ import type { SpeechWord, Transcript, VoiceInfo } from '@lincyaw/kernel'
 import { isRecord } from '@lincyaw/kernel'
 import type { EngineDefinition } from '../../domain/index.ts'
 import { oneSegment, wordsIntoSegments } from '../../domain/index.ts'
-import { answerError, SpeechError } from '../errors.ts'
-import type { EngineAdapter, EngineAudio, EngineInput, EngineSynthesis } from './types.ts'
+import { SpeechError, upstreamError } from '../errors.ts'
+import type { EngineAdapter, EngineSynthesisRequest, EngineSynthesisResult, EngineTranscriptionRequest } from './types.ts'
 import { speaks } from './types.ts'
 
 export function blobOf(bytes: Uint8Array, type: string): Blob {
@@ -42,14 +42,14 @@ export function openaiEngine(engine: EngineDefinition): EngineAdapter {
     async voices(lang, signal) {
       const response = await call('audio/voices', { method: 'GET' }, signal)
       if (response.status === 404 || response.status === 405) return []
-      if (!response.ok) throw await answerError(response, what)
+      if (!response.ok) throw await upstreamError(response, what)
       const body: unknown = await response.json().catch(() => undefined)
       const list = isRecord(body) ? body.voices ?? body.data : body
       if (!Array.isArray(list)) throw new SpeechError(502, `${what} answered audio/voices without a list of voices`)
       return list.flatMap(item => voiceOf(item) ?? []).filter(voice => speaks(voice, lang))
     },
 
-    async synthesize(request: EngineSynthesis, signal): Promise<EngineAudio> {
+    async synthesize(request: EngineSynthesisRequest, signal): Promise<EngineSynthesisResult> {
       const body = JSON.stringify({
         model: engine.model,
         voice: request.voice,
@@ -67,15 +67,15 @@ export function openaiEngine(engine: EngineDefinition): EngineAdapter {
           if (typeof answer.audio !== 'string') throw new SpeechError(502, `${what} gave no audio`)
           return { audio: new Uint8Array(Buffer.from(answer.audio, 'base64')), words: timedWords(answer.words), ...typeof answer.duration === 'number' ? { duration: answer.duration } : {} }
         }
-        if (response.status !== 404 && response.status !== 405) throw await answerError(response, what)
+        if (response.status !== 404 && response.status !== 405) throw await upstreamError(response, what)
         timestamps = false
       }
       const response = await call('audio/speech', { method: 'POST', headers, body }, signal)
-      if (!response.ok) throw await answerError(response, what)
+      if (!response.ok) throw await upstreamError(response, what)
       return { audio: new Uint8Array(await response.arrayBuffer()), contentType: response.headers.get('content-type') ?? undefined }
     },
 
-    async transcribe(input: EngineInput, signal): Promise<Transcript> {
+    async transcribe(input: EngineTranscriptionRequest, signal): Promise<Transcript> {
       const form = new FormData()
       form.set('file', blobOf(input.audio, input.mime), `audio.${input.mime.includes('ogg') ? 'ogg' : input.mime.includes('wav') ? 'wav' : 'bin'}`)
       form.set('model', engine.transcribeModel)
@@ -85,7 +85,7 @@ export function openaiEngine(engine: EngineDefinition): EngineAdapter {
       if (input.lang) form.set('language', input.lang.split('-')[0]!.toLowerCase())
       if (input.hints?.length) form.set('prompt', input.hints.join(', '))
       const response = await call('audio/transcriptions', { method: 'POST', body: form }, signal)
-      if (!response.ok) throw await answerError(response, what)
+      if (!response.ok) throw await upstreamError(response, what)
       const answer = await response.json() as Record<string, unknown>
       const text = typeof answer.text === 'string' ? answer.text.trim() : ''
       const words = timedWords(answer.words)

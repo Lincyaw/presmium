@@ -1,5 +1,5 @@
 import type { TrackEvent, TranscriptSegment } from '@lincyaw/kernel'
-import type { Clip } from './synthesis.ts'
+import type { Clip } from './script-track.ts'
 import { anchorOf } from './timing.ts'
 import type { LectureTrack, MediaSegment, Utterance, Voice } from './track.ts'
 import { charOffset, locate, realign, reanchor, trackWords } from './words.ts'

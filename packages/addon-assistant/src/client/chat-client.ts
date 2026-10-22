@@ -1,33 +1,14 @@
 import { EventSourceParserStream } from 'eventsource-parser/stream'
 import type { Navigation } from '@lincyaw/host'
 import type { AgentContext, AskClient } from '@lincyaw/kernel'
-import { shallowRef } from 'vue'
-import { ASK_STORAGE_KEY, askMessages, askProvider, askSettingsOf, chunkText, completionText, completionsUrl, sectionText, serviceError } from '../domain/index.ts'
-import type { AskPlace, AskSettings } from '../domain/index.ts'
-import { currentNavigator } from './state.ts'
+import { askMessages, askProvider, completionsUrl, completionText, sectionText, serviceError, streamDelta } from '../domain/index.ts'
+import type { AskPlace } from '../domain/index.ts'
+import { askSettings } from './settings.ts'
+import type { WebViewerAccess } from './state.ts'
 
-function stored(): AskSettings | undefined {
-  try {
-    return askSettingsOf(JSON.parse(localStorage.getItem(ASK_STORAGE_KEY) ?? 'null'))
-  } catch {
-    return undefined
-  }
-}
-
-export const askSettings = shallowRef<AskSettings | undefined>(typeof window === 'undefined' ? undefined : stored())
-
-export function saveAskSettings(settings: AskSettings | undefined): void {
-  askSettings.value = settings
-  try {
-    if (settings) localStorage.setItem(ASK_STORAGE_KEY, JSON.stringify(settings))
-    else localStorage.removeItem(ASK_STORAGE_KEY)
-  } catch {
-  }
-}
-
-function placeOf(context: AgentContext, navigation: Navigation | undefined): AskPlace {
+function placeOf(context: AgentContext, webViewer: WebViewerAccess | undefined, slideNavigation: Navigation | undefined): AskPlace {
   const selection = context.selection ? { selection: context.selection } : {}
-  const doc = currentNavigator()?.doc()
+  const doc = webViewer?.doc()
   if (doc) {
     const section = context.section === undefined ? undefined : doc.sections.find(s => s.id === context.section)
     return {
@@ -38,7 +19,7 @@ function placeOf(context: AgentContext, navigation: Navigation | undefined): Ask
       ...selection,
     }
   }
-  const position = navigation?.position.value
+  const position = slideNavigation?.position.value
   const page = position && typeof document !== 'undefined' ? document.querySelector<HTMLElement>(`.slidev-page-${position.slide}`) : undefined
   const text = page?.innerText.trim() ?? ''
   const id = position?.section ?? context.section
@@ -57,9 +38,9 @@ async function* streamed(body: ReadableStream<Uint8Array<ArrayBuffer>>): AsyncIt
     for (;;) {
       const { value, done } = await reader.read()
       if (done) break
-      const piece = chunkText(`data: ${value.data}`)
-      if (piece === null) return
-      if (piece) yield piece
+      const delta = streamDelta(value.data)
+      if (delta.done) return
+      if (delta.text) yield delta.text
     }
   } finally {
     await reader.cancel().catch(() => {})
@@ -67,16 +48,22 @@ async function* streamed(body: ReadableStream<Uint8Array<ArrayBuffer>>): AsyncIt
   }
 }
 
-export function createAskClient(navigation: () => Navigation | undefined, missing: () => string): AskClient {
+export interface ChatClientOptions {
+  webViewer(): WebViewerAccess | undefined
+  slideNavigation(): Navigation | undefined
+  missing(): string
+}
+
+export function createAskClient(options: ChatClientOptions): AskClient {
   return {
     provider: () => (askSettings.value ? askProvider(askSettings.value.url) : undefined),
     async* ask(question, context, signal) {
       const settings = askSettings.value
-      if (!settings) throw new Error(missing())
+      if (!settings) throw new Error(options.missing())
       const response = await fetch(completionsUrl(settings.url), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream', 'Authorization': `Bearer ${settings.key}` },
-        body: JSON.stringify({ model: settings.model, stream: true, messages: askMessages(question, placeOf(context, navigation())) }),
+        body: JSON.stringify({ model: settings.model, stream: true, messages: askMessages(question, placeOf(context, options.webViewer(), options.slideNavigation())) }),
         credentials: 'omit',
         referrerPolicy: 'no-referrer',
         ...signal ? { signal } : {},

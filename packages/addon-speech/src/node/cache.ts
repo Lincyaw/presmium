@@ -1,10 +1,16 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { closeSync, constants, fstatSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
-import type { DocumentFiles, SpeechWord } from '@lincyaw/kernel'
-import { isRecord } from '@lincyaw/kernel'
-import type { AigcLabel } from '../domain/index.ts'
+import type { AigcLabel, DocumentFiles, SpeechWord, SynthesisRequest } from '@lincyaw/kernel'
+import { isRecord, speechEngineId } from '@lincyaw/kernel'
 import type { SynthesisResult } from './backend.ts'
+
+export function cacheKey(request: SynthesisRequest & { engine: string }, spoken: string): string {
+  const parts = ['presmium.speech/1', speechEngineId(request.engine), request.voice, request.lang, request.rate ?? 1, request.style ?? '', request.text, spoken]
+  return createHash('sha256').update(JSON.stringify(parts)).digest('hex').slice(0, 32)
+}
+
+const KEY = /^[0-9a-f]{32}$/
 
 export interface CacheRecord {
   key: string
@@ -82,7 +88,7 @@ export class SynthesisCache {
   }
 
   async find(key: string): Promise<{ record: CacheRecord, file: string, audio: Buffer } | undefined> {
-    if (!/^[0-9a-f]{32}$/.test(key)) return undefined
+    if (!KEY.test(key)) return undefined
     let found: { record: CacheRecord, file: string, audio: Buffer }
     try {
       if (!this.#contained()) return undefined
@@ -131,17 +137,49 @@ export class SynthesisCache {
     return { record, file }
   }
 
-  async #lock(key: string, record: CacheRecord): Promise<void> {
-    let lock: LockFile = { version: 1, synthesis: {} }
+  readAlignment(key: string): SpeechWord[] | undefined {
+    if (!KEY.test(key)) return undefined
     try {
-      const read: unknown = JSON.parse(readRegular(this.lockFile)?.toString('utf8') ?? '')
-      if (isRecord(read) && isRecord(read.synthesis)) lock = read as unknown as LockFile
+      if (!this.#contained()) return undefined
+      const value: unknown = JSON.parse(readRegular(join(this.dir, `${key}.align.json`))?.toString('utf8') ?? '')
+      return isRecord(value) && Array.isArray(value.words) ? value.words as SpeechWord[] : undefined
     } catch {
+      return undefined
     }
+  }
+
+  async writeAlignment(key: string, words: SpeechWord[]): Promise<void> {
+    await this.#put(join(this.dir, `${key}.align.json`), `${JSON.stringify({ key, words }, null, 2)}\n`)
+  }
+
+  async pruneLock(keep: ReadonlySet<string>): Promise<number> {
+    const lock = this.#readLock()
+    if (!lock) return 0
+    const kept = Object.keys(lock.synthesis).filter(key => keep.has(key))
+    const dropped = Object.keys(lock.synthesis).length - kept.length
+    if (dropped > 0) await this.#writeLock(Object.fromEntries(kept.map(key => [key, lock.synthesis[key]!])))
+    return dropped
+  }
+
+  async #lock(key: string, record: CacheRecord): Promise<void> {
+    const lock = this.#readLock() ?? { version: 1, synthesis: {} }
     const known = lock.synthesis[key]
     if (known?.audio === record.audio && known.sha256 === record.sha256) return
     lock.synthesis[key] = { audio: record.audio, sha256: record.sha256 }
-    const entries = Object.keys(lock.synthesis).sort().map(k => `    ${JSON.stringify(k)}: ${JSON.stringify(lock.synthesis[k])}`)
+    await this.#writeLock(lock.synthesis)
+  }
+
+  #readLock(): LockFile | undefined {
+    try {
+      const read: unknown = JSON.parse(readRegular(this.lockFile)?.toString('utf8') ?? '')
+      return isRecord(read) && isRecord(read.synthesis) ? read as unknown as LockFile : undefined
+    } catch {
+      return undefined
+    }
+  }
+
+  async #writeLock(synthesis: LockFile['synthesis']): Promise<void> {
+    const entries = Object.keys(synthesis).sort().map(k => `    ${JSON.stringify(k)}: ${JSON.stringify(synthesis[k])}`)
     await this.#put(this.lockFile, `{\n  "version": 1,\n  "synthesis": {${entries.length ? `\n${entries.join(',\n')}\n  ` : ''}}\n}\n`)
   }
 }

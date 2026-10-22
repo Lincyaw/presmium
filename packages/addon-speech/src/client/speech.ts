@@ -1,7 +1,7 @@
 import { useServer } from '@lincyaw/host'
 import type { SpeechService, Synthesis } from '@lincyaw/kernel'
-import type { EngineListing, TimedSpeech, TranscriptionAnswer, VoiceListing } from '../domain/index.ts'
-import { deckSpeechConfig, PROTOCOL_PATH, SPEECH_ID, speechBody, transcriptOf } from '../domain/index.ts'
+import type { EnginesResponseBody, SynthesisResponseBody, TranscriptionResponseBody, VoicesResponseBody } from '../domain/index.ts'
+import { deckSpeechConfig, PROTOCOL_PATH, SPEECH_ID, synthesisRequestBody, transcriptOf } from '../domain/index.ts'
 
 function bytesOf(base64: string): Uint8Array<ArrayBuffer> {
   const binary = atob(base64)
@@ -23,24 +23,25 @@ export function browserSpeech(config: Record<string, unknown>): SpeechService {
 
   return {
     async engines() {
-      return (await call<EngineListing>('engines')).engines.map(({ model: _model, transcribeModel: _transcribe, ...info }) => info)
+      return (await call<EnginesResponseBody>('engines')).engines.map(({ model: _model, transcribeModel: _transcribe, ...info }) => info)
     },
     async voices(engine, lang) {
       const query = new URLSearchParams({ engine, ...lang ? { lang } : {} })
-      return (await call<VoiceListing>(`audio/voices?${query}`)).voices
+      return (await call<VoicesResponseBody>(`audio/voices?${query}`)).voices
     },
     async synthesize(request, signal): Promise<Synthesis> {
-      const body = speechBody({ ...request, ...request.engine || defaults.engine ? { engine: request.engine ?? defaults.engine } : {} })
-      const timed = await call<TimedSpeech>('audio/speech/timestamps', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal })
+      const body = synthesisRequestBody({ ...request, ...request.engine || defaults.engine ? { engine: request.engine ?? defaults.engine } : {} })
+      const synthesized = await call<SynthesisResponseBody>('audio/speech/timestamps', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal })
       return {
-        audio: new Blob([bytesOf(timed.audio)], { type: timed.mime }),
-        mime: timed.mime,
-        duration: timed.duration,
-        ...timed.words ? { words: timed.words } : {},
-        key: timed.key,
-        engine: timed.engine,
-        model: timed.model,
-        voice: timed.voice,
+        audio: new Blob([bytesOf(synthesized.audio)], { type: synthesized.mime }),
+        mime: synthesized.mime,
+        duration: synthesized.duration,
+        ...synthesized.words ? { words: synthesized.words } : {},
+        key: synthesized.key,
+        engine: synthesized.engine,
+        model: synthesized.model,
+        voice: synthesized.voice,
+        provider: synthesized.provider,
         synthetic: true,
       }
     },
@@ -51,7 +52,7 @@ export function browserSpeech(config: Record<string, unknown>): SpeechService {
       if (engine) form.set('engine', engine)
       if (request.lang) form.set('language', request.lang)
       for (const hint of request.hints ?? []) form.append('hints[]', hint)
-      return transcriptOf(await call<TranscriptionAnswer>('audio/transcriptions', { method: 'POST', body: form, signal }))
+      return transcriptOf(await call<TranscriptionResponseBody>('audio/transcriptions', { method: 'POST', body: form, signal }))
     },
   }
 }

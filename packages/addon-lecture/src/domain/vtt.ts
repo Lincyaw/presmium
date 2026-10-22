@@ -1,6 +1,7 @@
-import { chapters, timedEvents } from './timing.ts'
-import type { LectureTrack, Utterance } from './track.ts'
+import { timedEvents, trackChapters } from './timing.ts'
+import type { LectureTrack } from './track.ts'
 import { trackDuration } from './track.ts'
+import { isStale } from './translation.ts'
 
 export function vttTime(ms: number): string {
   const total = Math.max(0, Math.round(ms))
@@ -10,13 +11,6 @@ export function vttTime(ms: number): string {
 
 function cueText(text: string): string {
   return text.replace(/\r?\n\s*\n/g, '\n').replace(/-->/g, '->').trim()
-}
-
-export type Digest = (text: string) => string
-
-export function isStale(utterance: Utterance, lang: string, digest: Digest): boolean {
-  const translation = utterance.translations?.[lang]
-  return Boolean(translation && translation.source !== digest(utterance.text))
 }
 
 export function captionLanguages(track: LectureTrack): string[] {
@@ -30,7 +24,7 @@ export interface Captions {
   stale: string[]
 }
 
-export function captionsVtt(track: LectureTrack, lang: string, digest: Digest): Captions {
+export function captionsVtt(track: LectureTrack, lang: string): Captions {
   const cues: string[] = []
   const missing: string[] = []
   const stale: string[] = []
@@ -41,7 +35,7 @@ export function captionsVtt(track: LectureTrack, lang: string, digest: Digest): 
       missing.push(u.id)
       continue
     }
-    if (!original && isStale(u, lang, digest)) {
+    if (!original && isStale(u, lang)) {
       stale.push(u.id)
       cues.push(`NOTE stale: the original of ${u.id} changed after it was translated`)
     }
@@ -51,7 +45,7 @@ export function captionsVtt(track: LectureTrack, lang: string, digest: Digest): 
 }
 
 export function chaptersVtt(track: LectureTrack, titles: (section: string) => string | undefined = () => undefined): string {
-  const list = chapters(timedEvents(track), titles)
+  const list = trackChapters(timedEvents(track), titles)
   const end = trackDuration(track)
   const cues = list.map((chapter, i) => {
     const until = Math.max(list[i + 1]?.t ?? end, chapter.t + 1)

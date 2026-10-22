@@ -1,11 +1,11 @@
 import { jsonResponse, problemResponse } from '@lincyaw/kernel'
-import type { TimedSpeech, TranscriptionAnswer } from '../domain/index.ts'
-import { synthesisRequestOf } from '../domain/index.ts'
+import type { SynthesisResponseBody, TranscriptionResponseBody } from '../domain/index.ts'
+import { toSynthesisRequest } from '../domain/index.ts'
 import type { SpeechBackend, SynthesisResult } from './backend.ts'
 import { blobOf } from './engines/index.ts'
-import { failure } from './errors.ts'
+import { errorResponse } from './errors.ts'
 
-function timedSpeech(result: SynthesisResult): TimedSpeech {
+function synthesisResponseBody(result: SynthesisResult): SynthesisResponseBody {
   return {
     audio: Buffer.from(result.audio).toString('base64'),
     format: result.ext,
@@ -29,7 +29,7 @@ export function protocolHandler(backend: SpeechBackend): (request: Request, path
   return async (request, path) => {
     const method = request.method.toUpperCase()
     try {
-      if (path === 'engines' && method === 'GET') return jsonResponse(await backend.listing(request.headers.get('accept-language') ?? undefined))
+      if (path === 'engines' && method === 'GET') return jsonResponse(await backend.listEngines(request.headers.get('accept-language') ?? undefined))
       if (path === 'audio/consent' && method === 'GET') {
         const query = new URL(request.url).searchParams
         await backend.consent(query.get('engine') ?? '', query.get('voice') ?? '', query.get('recorded') !== '0', request.signal)
@@ -40,10 +40,10 @@ export function protocolHandler(backend: SpeechBackend): (request: Request, path
         return jsonResponse({ voices: await backend.voices(query.get('engine') || undefined, query.get('lang') || undefined) })
       }
       if ((path === 'audio/speech' || path === 'audio/speech/timestamps') && method === 'POST') {
-        const parsed = synthesisRequestOf(await request.json().catch(() => undefined))
+        const parsed = toSynthesisRequest(await request.json().catch(() => undefined))
         if (typeof parsed === 'string') return problemResponse(400, parsed)
         const result = await backend.synthesize(parsed, request.signal)
-        if (path === 'audio/speech/timestamps') return jsonResponse(timedSpeech(result))
+        if (path === 'audio/speech/timestamps') return jsonResponse(synthesisResponseBody(result))
         return new Response(blobOf(result.audio, result.mime), { headers: { 'Content-Type': result.mime, 'Cache-Control': 'no-store', 'X-Presmium-Key': result.key } })
       }
       if (path === 'audio/transcriptions' && method === 'POST') {
@@ -52,12 +52,12 @@ export function protocolHandler(backend: SpeechBackend): (request: Request, path
         if (!form || !(file instanceof Blob)) return problemResponse(400, 'multipart form data with the audio as `file`')
         const hints = form.getAll('hints[]').flatMap(hint => text(hint) ?? [])
         const transcript = await backend.transcribe({ audio: file, engine: text(form.get('engine')), lang: text(form.get('language')), ...hints.length ? { hints } : {} }, request.signal)
-        const answer: TranscriptionAnswer = { ...transcript, language: transcript.lang, words: transcript.segments.flatMap(segment => segment.words) }
-        return jsonResponse(answer)
+        const body: TranscriptionResponseBody = { ...transcript, language: transcript.lang, words: transcript.segments.flatMap(segment => segment.words) }
+        return jsonResponse(body)
       }
       return problemResponse(404, `no speech route ${method} v1/${path}`)
     } catch (error) {
-      return failure(error)
+      return errorResponse(error)
     }
   }
 }

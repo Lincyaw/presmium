@@ -157,6 +157,25 @@ describe('presmium build --to lecture (P-134)', () => {
   }, 240_000)
 })
 
+describe('presmium check with a deck that names its engine in another spelling', () => {
+  let dir: string
+  beforeAll(() => {
+    dir = deck(tmpdir(), '  lecture:\n    voice: { engine: My.Fake, voice: alpha }', NARRATION)
+  })
+  afterAll(() => {
+    if (dir) rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('finds the engine the speech plugin finds under that name, and asks it for nothing', async () => {
+    const asked = await syntheses()
+    const checked = await presmium(dir, ['check', '--json'], { PRESMIUM_SPEECH_MY_FAKE_URL: fake.url, PRESMIUM_SPEECH_MY_FAKE_PROVIDER: 'Presmium fake' })
+    const findings = (JSON.parse(checked.stdout) as { findings: { checkId: string, severity: string, message: string }[] }).findings
+    expect(findings.filter(f => f.checkId === 'presmium.lecture' && f.severity === 'error')).toEqual([])
+    expect(await syntheses() - asked).toBe(0)
+    expect(existsSync(join(dir, '.presmium/speech'))).toBe(false)
+  }, 120_000)
+})
+
 describe('a separate lecture script (P-134)', () => {
   let dir: string
   beforeAll(() => {

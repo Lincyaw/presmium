@@ -1,13 +1,25 @@
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import type { SpeechWord, VoiceInfo } from '@lincyaw/kernel'
-import { isRecord } from '@lincyaw/kernel'
+import { isCjk, isRecord, splitWords } from '@lincyaw/kernel'
 import { bracketIPv6 } from '@lincyaw/kernel/node'
-import { fakeWords, oneSegment } from '../domain/index.ts'
+import { oneSegment } from '../domain/index.ts'
 import { isWav, makeWav, wavChunks, wavDuration } from './audio/riff.ts'
 
 const RATE = 8000
 const CHUNK = 'pmfk'
+
+function fakeWords(text: string): { words: SpeechWord[], duration: number } {
+  const words: SpeechWord[] = []
+  let ms = 0
+  for (const { text: word } of splitWords(text)) {
+    const length = isCjk(word) ? 220 : 60 * [...word].length
+    if (words.length) ms += 80
+    words.push({ text: word, start: ms / 1000, end: (ms + length) / 1000 })
+    ms += length
+  }
+  return { words, duration: ms / 1000 }
+}
 
 export const FAKE_VOICES: VoiceInfo[] = [
   { id: 'alpha', label: '假音色甲 Alpha', lang: ['zh-CN', 'en-US'] },
@@ -55,7 +67,7 @@ interface Logged {
   authorization: string | null
 }
 
-export async function startFakeEngine(options: { port?: number, host?: string } = {}): Promise<FakeEngine> {
+export async function startFakeEngine(options: { port?: number, listenAddress?: string } = {}): Promise<FakeEngine> {
   const requests: Logged[] = []
   const answer = (status: number, body: unknown, type = 'application/json; charset=utf-8') => new Response(body instanceof Uint8Array ? new Blob([new Uint8Array(body)]) : JSON.stringify(body), { status, headers: { 'Content-Type': type } })
 
@@ -107,10 +119,10 @@ export async function startFakeEngine(options: { port?: number, host?: string } 
   })
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject)
-    server.listen(options.port ?? 0, options.host ?? '127.0.0.1', () => resolve())
+    server.listen(options.port ?? 0, options.listenAddress ?? '127.0.0.1', () => resolve())
   })
   const { port } = server.address() as AddressInfo
-  const host = options.host && options.host !== '0.0.0.0' ? options.host : '127.0.0.1'
+  const host = options.listenAddress && options.listenAddress !== '0.0.0.0' ? options.listenAddress : '127.0.0.1'
   return {
     url: `http://${bracketIPv6(host)}:${port}/v1`,
     close: () => new Promise((resolve) => {

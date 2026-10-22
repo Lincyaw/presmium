@@ -2,10 +2,9 @@ import { fingerprint, fnv1a64, irBlocks } from '@lincyaw/kernel'
 import type { IRBlock, IRDocument, MdastNode, TrackEvent } from '@lincyaw/kernel'
 import { anchorOf } from './timing.ts'
 import type { LectureTrack, TrackBlock } from './track.ts'
+import { PLAYER_RENDERER } from './track.ts'
 
 export type Grade = 'exact' | 'moved' | 'fuzzy' | 'lost'
-
-const PLAYER_RENDERER = 'web'
 
 export function blockKey(section: string, block: string): string {
   return `${section}/${block}`
@@ -32,9 +31,20 @@ function content(block: IRBlock): string {
   return [node.name, JSON.stringify(props), ...(node.children ?? []).map(content)].join('\n')
 }
 
+export function codeLineCount(block: IRBlock): number | undefined {
+  return block.node.type === 'code' ? block.node.value.replace(/\n$/, '').split('\n').length : undefined
+}
+
+export function lastNamedLine(lines: unknown): number | undefined {
+  if (typeof lines !== 'string' && typeof lines !== 'number') return undefined
+  const numbers = String(lines).match(/\d+/g)?.map(Number) ?? []
+  return numbers.length ? Math.max(...numbers) : undefined
+}
+
 export function trackBlock(block: IRBlock): TrackBlock {
-  const value = content(block)
-  return block.node.type === 'code' ? { fp: fingerprint(value), lines: value.replace(/\n$/, '').split('\n').length } : { fp: fingerprint(value) }
+  const fp = fingerprint(content(block))
+  const lines = codeLineCount(block)
+  return lines === undefined ? { fp } : { fp, lines }
 }
 
 export function playedBlocks(doc: IRDocument): Map<string, TrackBlock> {
@@ -111,12 +121,6 @@ export interface EventDrift {
   data: Record<string, unknown>
 }
 
-function lastLine(lines: unknown): number | undefined {
-  if (typeof lines !== 'string' && typeof lines !== 'number') return undefined
-  const numbers = String(lines).match(/\d+/g)?.map(Number) ?? []
-  return numbers.length ? Math.max(...numbers) : undefined
-}
-
 export function eventDrift(track: LectureTrack, doc: IRDocument): EventDrift[] {
   const blocks = blockDrift(track, doc)
   const current = playedBlocks(doc)
@@ -137,7 +141,7 @@ export function eventDrift(track: LectureTrack, doc: IRDocument): EventDrift[] {
     if (drift.grade === 'lost') return { index, grade: 'lost', reason: 'block', block: key, data }
     const now = drift.to ?? key
     const moved = drift.to ? moveTo(data, drift.to) : data
-    const last = lastLine(data.lines ?? data.line)
+    const last = lastNamedLine(data.lines ?? data.line)
     const lines = current.get(now)?.lines
     if (last !== undefined && lines !== undefined && last > lines) return { index, grade: 'lost', reason: 'lines', block: key, data: moved }
     if (drift.grade !== 'exact') return { index, grade: drift.grade, reason: 'block', block: key, data: moved }

@@ -2,10 +2,11 @@ import { errorMessage, SPEECH } from '@lincyaw/kernel'
 import type { Check, CheckContext, Finding, IRDocument, Severity } from '@lincyaw/kernel'
 import { blockOf, clockText, eventDrift, eventLine, LECTURE_ID, plannedUtterances, unchanged } from '../domain/index.ts'
 import type { EventDrift } from '../domain/index.ts'
-import { synthesisEngineOf } from './lecture.ts'
-import { deckPlan, lectureView } from './plan.ts'
-import { synthesizeClip } from './speak.ts'
+import { synthesisEngine } from './engines.ts'
+import { lectureView } from './latest-ir.ts'
+import { deckPlan } from './plan.ts'
 import { readTrack, trackIds } from './store.ts'
+import { synthesizeClip } from './synthesize.ts'
 
 const SEVERITY: Record<EventDrift['grade'], Severity> = { exact: 'info', moved: 'info', fuzzy: 'warning', lost: 'warning' }
 
@@ -64,10 +65,10 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
     findings.push({ checkId: LECTURE_ID, severity: 'error', message: 'renderers.lecture.voice: the lecture is said through the speech service, which no plugin provides; add @lincyaw/slidev-addon-speech to plugins', source })
     return findings
   }
-  if (await synthesisEngineOf(speech, view, deck.voice.engine).catch(() => undefined)) return findings
+  if (await synthesisEngine(speech, view, deck.voice.engine).catch(() => undefined)) return findings
   for (const u of plannedUtterances(deck.plan)) {
     try {
-      await synthesizeClip(speech, u, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, lookup: true })
+      await synthesizeClip(speech, u, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, alignByTranscription: false })
     } catch (error) {
       const text = u.text.length > 40 ? `${u.text.slice(0, 40)}…` : u.text
       findings.push({

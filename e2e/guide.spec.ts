@@ -9,8 +9,8 @@ const STEPS = [
   { cursor: '0:move', mark: '', spotlight: '', hint: '', overlay: '', beacons: 0 },
   { cursor: '1:hover', mark: 'guide-run=hover', spotlight: '', hint: '', overlay: '', beacons: 0 },
   { cursor: '2:click', mark: 'guide-run=click', spotlight: '', hint: '', overlay: '', beacons: 0 },
-  { cursor: '2:click', mark: 'guide-run=click', spotlight: 'guide-output=live', hint: '', overlay: 'guide-output', beacons: 0 },
-  { cursor: '2:click', mark: 'guide-run=click', spotlight: '', hint: 'guide-help=live', overlay: '', beacons: 1 },
+  { cursor: '2:click', mark: 'guide-run=click', spotlight: 'guide-output=stage', hint: '', overlay: 'guide-output', beacons: 0 },
+  { cursor: '2:click', mark: 'guide-run=click', spotlight: '', hint: 'guide-help=stage', overlay: '', beacons: 1 },
 ]
 const CURSOR_AT = ['#guide-query', '#guide-query', '#guide-run', '#guide-run', '#guide-run', '#guide-run']
 
@@ -219,8 +219,8 @@ test('in the web form the cues follow the steps of the present view, which draws
     { cursor: '', spotlight: '', hint: '' },
     { cursor: 'guide-run=hover', spotlight: '', hint: '' },
     { cursor: 'guide-run=click', spotlight: '', hint: '' },
-    { cursor: 'guide-run=click', spotlight: 'guide-output=live', hint: '' },
-    { cursor: 'guide-run=click', spotlight: '', hint: 'guide-help=live' },
+    { cursor: 'guide-run=click', spotlight: 'guide-output=stage', hint: '' },
+    { cursor: 'guide-run=click', spotlight: '', hint: 'guide-help=stage' },
   ]
   for (const [step, marked] of expected.entries()) {
     if (step > 0) await page.keyboard.press('ArrowRight')

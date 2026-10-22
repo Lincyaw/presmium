@@ -2,7 +2,7 @@ import { NAVIGATION, OPERATIONS } from '@lincyaw/host'
 import type { PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
 import { version } from '../../package.json'
 import { GUIDE_ID } from '../domain/index.ts'
-import { hints, spots } from './adhoc.ts'
+import { hintCues, spotlightCues } from './operation-cues.ts'
 
 let unregister: Unsubscribe[] = []
 
@@ -16,11 +16,11 @@ const plugin: PluginDefinition = {
   setup(ctx) {
     const operations = ctx.tryGet(OPERATIONS)
     const navigation = ctx.tryGet(NAVIGATION)
-    unregister = [spots, hints].map((cues, i) => {
+    unregister = [spotlightCues, hintCues].map((cues, i) => {
       cues.bind(navigation)
       const off = operations?.onReplay(i === 0 ? 'spot' : 'hint', {
         apply: (data, seeking) => cues.apply(data, !seeking),
-        clear: () => cues.off(),
+        clear: () => cues.hide(),
       })
       return () => {
         off?.()

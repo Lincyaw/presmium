@@ -3,7 +3,8 @@ import { open } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { build, Compiler, playwrightChromium, serveDirectory } from '@lincyaw/compiler'
-import { CLIPS_DIR, parseTrack, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
+import { ABSOLUTE_URL, aigcLabel, aigcString } from '@lincyaw/kernel'
+import { audioSegments, parseTrack, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 
 export interface ExportOptions {
@@ -120,11 +121,8 @@ interface Chromium {
   }>
 }
 
-function audioOf(track: LectureTrack, base: string): { url: string, start: number, duration: number }[] {
-  if (track.voice.kind === 'synthetic') {
-    return track.utterances.filter(u => u.clip).map(u => ({ url: `${base}${CLIPS_DIR}/${u.clip}`, start: u.t, duration: u.d }))
-  }
-  return (track.audio ?? []).filter(a => !/^[a-z][a-z\d+.-]*:/i.test(a.src)).map(a => ({ url: `${base}${a.src}`, start: a.start * 1000, duration: a.duration * 1000 }))
+function localAudio(track: LectureTrack, base: string): { url: string, start: number, duration: number }[] {
+  return audioSegments(track).filter(segment => !ABSOLUTE_URL.test(segment.src)).map(({ src, start, duration }) => ({ url: `${base}${src}`, start, duration }))
 }
 
 export async function exportVideo(options: ExportOptions): Promise<ExportResult> {
@@ -176,16 +174,14 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
       await encoder.goto(`${server.url}/__export/encoder.html`)
       await encoder.waitForFunction('window.presmiumEncoderReady === true', undefined, { timeout: 60_000 })
       const voice = track.voice
-      const label = voice.kind === 'synthetic'
-        ? `AIGC=${JSON.stringify({ Label: '1', ContentProducer: voice.provider ?? voice.engine, ProduceID: id, ReservedCode1: '', ContentPropagator: '', PropagateID: '', ReservedCode2: '' })}`
-        : undefined
+      const label = voice.kind === 'synthetic' ? aigcLabel(voice.provider ?? voice.engine, id) : undefined
       await encoder.evaluate(options => (window as unknown as Hooks).presmiumEncoder.start(options), {
         width,
         height,
         fps,
         duration: frames * 1000 / fps,
-        audio: audioOf(track, `${server.url}${lectures.base}${encodeURIComponent(id)}/`),
-        metadata: { title: compilation.doc.meta.title, ...label ? { comment: label, raw: { AIGC: label.slice('AIGC='.length) } } : {} },
+        audio: localAudio(track, `${server.url}${lectures.base}${encodeURIComponent(id)}/`),
+        metadata: { title: compilation.doc.meta.title, ...label ? { comment: aigcString(label), raw: { AIGC: JSON.stringify(label) } } : {} },
       })
       log(`playing lecture ${id}: ${frames} frames at ${fps} fps, ${width}x${height}`)
       for (let i = 0; i < frames; i++) {

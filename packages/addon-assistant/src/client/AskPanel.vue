@@ -3,24 +3,24 @@ import { PmButton, useMessages } from '@lincyaw/host'
 import type { AgentContext, Citation } from '@lincyaw/kernel'
 import { computed, ref } from 'vue'
 import { answerParts, askProvider, ASSISTANT_MESSAGES } from '../domain/index.ts'
-import { askSettings } from './ask.ts'
 import AskSettings from './AskSettings.vue'
-import { ask, asker, exchanges, navigation, selected, showCitation, useNavigator } from './state.ts'
+import { askSettings } from './settings.ts'
+import { askClient, exchanges, selected, showCitation, slideNavigation, startExchange, useWebViewerAccess } from './state.ts'
 
 const emit = defineEmits<{ cited: [] }>()
 
 const t = useMessages(ASSISTANT_MESSAGES)
-const navigator = useNavigator()
+const webViewer = useWebViewerAccess()
 const text = ref('')
 const changing = ref(false)
 const running = computed(() => exchanges.value.some(e => e.state === 'running'))
 const service = computed(() => askSettings.value && { provider: askProvider(askSettings.value.url), model: askSettings.value.model })
-const follows = computed(() => Boolean(navigator ?? navigation.value))
+const canShowCitations = computed(() => Boolean(webViewer ?? slideNavigation.value))
 
 const place = computed(() => {
-  const position = navigator?.position() ?? navigation.value?.position.value
+  const position = webViewer?.position() ?? slideNavigation.value?.position.value
   const section = selected.value?.section ?? position?.section
-  return section ? { section, step: position?.section === section ? position.step : undefined, title: navigator?.title(section) ?? section } : undefined
+  return section ? { section, step: position?.section === section ? position.step : undefined, title: webViewer?.title(section) ?? section } : undefined
 })
 const excerpt = computed(() => {
   const value = selected.value?.text ?? ''
@@ -29,7 +29,7 @@ const excerpt = computed(() => {
 
 function submit(): void {
   const question = text.value.trim()
-  const client = asker.value
+  const client = askClient.value
   if (!question || !client) return
   const context: AgentContext = {
     document: '',
@@ -38,7 +38,7 @@ function submit(): void {
     ...selected.value?.block ? { block: selected.value.block } : {},
     ...selected.value ? { selection: selected.value.text } : {},
   }
-  ask(client, question, context)
+  startExchange(client, question, context)
   text.value = ''
   selected.value = undefined
 }
@@ -89,7 +89,7 @@ function go(citation: Citation): void {
         </p>
         <p v-if="exchange.answer" class="pm-assistant__answer">
           <template v-for="(part, j) in answerParts(exchange.answer)" :key="j">
-            <button v-if="part.citation && follows" type="button" class="pm-assistant__cite" :data-section="part.citation.section" :title="t.panel.cite(part.text)" @click="go(part.citation)">
+            <button v-if="part.citation && canShowCitations" type="button" class="pm-assistant__cite" :data-section="part.citation.section" :title="t.panel.cite(part.text)" @click="go(part.citation)">
               {{ part.text }}
             </button>
             <span v-else>{{ part.text }}</span>

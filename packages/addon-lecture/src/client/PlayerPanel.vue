@@ -1,19 +1,13 @@
 <script setup lang="ts">
-import { sha256 } from '@noble/hashes/sha2.js'
-import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js'
-import type { Operations } from '@lincyaw/host'
-import { OPERATIONS, PmIcon, PmTabs, useMessages, useServer, useService } from '@lincyaw/host'
-import { errorMessage, isRecord } from '@lincyaw/kernel'
-import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
-import { captionLanguages, chapters, CLIPS_DIR, clockText, isStale, LECTURE_ID, LECTURE_MESSAGES, SCRIPT_TRACK, stepStops, textPieces, trackDuration, utteranceAt } from '../domain/index.ts'
-import type { LectureTrack, Utterance } from '../domain/index.ts'
-import type { ClockMedia, TrackClock } from './clock.ts'
-import { MediaClock, SilentClock } from './clock.ts'
-import { LecturePlayer } from './player.ts'
-import type { LectureSource } from './source.ts'
-import { NotYetSynthesized, serverEditing, serverSource, staticBase, staticSource } from './source.ts'
+import { PmIcon, PmTabs, useMessages, useServer } from '@lincyaw/host'
+import { computed, ref } from 'vue'
+import { captionLanguages, clockText, isStale, LECTURE_MESSAGES, SCRIPT_TRACK, trackChapters, utteranceAt } from '../domain/index.ts'
+import type { Utterance } from '../domain/index.ts'
+import ChapterList from './ChapterList.vue'
+import { useLecturePlayback } from './playback.ts'
+import { serverEditing } from './source.ts'
 import { exporting, play, playing, useViewer } from './state.ts'
-import TrackEditor from './TrackEditor.vue'
+import TranscriptList from './TranscriptList.vue'
 
 defineProps<{ view: string }>()
 
@@ -22,177 +16,19 @@ const RATES = [0.5, 0.75, 1, 1.25, 1.5, 2]
 const t = useMessages(LECTURE_MESSAGES)
 const viewer = useViewer()
 const server = useServer()
-const operations = useService(OPERATIONS)
-const player = shallowRef<LecturePlayer>()
-const status = ref<'loading' | 'missing' | 'not-yet' | 'ready' | 'failed'>()
-const loadFailure = ref<string>()
-const failure = computed(() => loadFailure.value ?? player.value?.clock.error.value?.message)
+const { player, status, failure, language, reloadTrack } = useLecturePlayback()
 const captions = ref(false)
-const language = ref<string>()
 const panel = ref<'transcript' | 'chapters'>()
-const SIDE = { 'zh-CN': { tabs: '逐字稿与章节' }, 'en': { tabs: 'Transcript and chapters' } }
-const side = useMessages(SIDE)
 const sideTabs = computed(() => [{ value: 'transcript', label: t.value.player.transcript }, { value: 'chapters', label: t.value.player.chapters }])
 
-function lectureSource(): LectureSource {
-  const config = viewer.doc.value.config.presmium[LECTURE_ID]
-  return server.available ? serverSource(server) : staticSource(staticBase(isRecord(config) ? config : undefined))
-}
-
-async function clockOf(track: LectureTrack, source: LectureSource): Promise<TrackClock> {
-  const length = trackDuration(track)
-  const segments = track.voice.kind === 'synthetic'
-    ? track.utterances.filter(u => u.clip).map(u => ({ src: `${CLIPS_DIR}/${u.clip}`, start: u.t, duration: u.d }))
-    : (track.audio ?? []).map(a => ({ src: a.src, start: a.start * 1000, duration: a.duration * 1000 }))
-  if (!segments.length) return new SilentClock(length)
-  const loaded = await Promise.allSettled(segments.map(async (segment): Promise<ClockMedia> => ({
-    url: await source.media(track.id, segment.src), start: segment.start, duration: segment.duration,
-  })))
-  const media = loaded.flatMap(result => result.status === 'fulfilled' ? [result.value] : [])
-  const failed = loaded.find(result => result.status === 'rejected')
-  if (failed) {
-    for (const { url } of media) if (url.startsWith('blob:')) URL.revokeObjectURL(url)
-    throw failed.reason
-  }
-  return new MediaClock(length, media)
-}
-
-let loading = 0
-async function start(track: LectureTrack, source: LectureSource, ops: Operations, load: number, at = 0) {
-  player.value?.pause()
-  loadFailure.value = undefined
-  if (!player.value) status.value = 'loading'
-  try {
-    const clock = await clockOf(track, source)
-    if (load !== loading) return clock.dispose()
-    player.value?.dispose()
-    player.value = new LecturePlayer(track, viewer.doc.value, ops, clock)
-    language.value ??= track.lang
-    status.value = 'ready'
-    player.value.seek(at)
-    if (exporting) exportHook(player.value)
-  } catch (error) {
-    if (load !== loading) return
-    player.value?.dispose()
-    player.value = undefined
-    loadFailure.value = errorMessage(error)
-    status.value = 'failed'
-  }
-}
-
-watch([playing, operations], async ([id, ops]) => {
-  const load = ++loading
-  player.value?.dispose()
-  player.value = undefined
-  status.value = undefined
-  loadFailure.value = undefined
-  language.value = undefined
-  if (!id || !ops) return
-  status.value = 'loading'
-  const source = lectureSource()
-  try {
-    const track = await source.track(id)
-    if (load !== loading) return
-    if (!track) {
-      status.value = 'missing'
-      return
-    }
-    await start(track, source, ops, load)
-  } catch (error) {
-    if (load !== loading) return
-    status.value = error instanceof NotYetSynthesized ? 'not-yet' : 'failed'
-    if (status.value === 'failed') loadFailure.value = errorMessage(error)
-  }
-}, { immediate: true })
-onBeforeUnmount(() => {
-  loading++
-  player.value?.dispose()
-})
-
-function exportHook(p: LecturePlayer) {
-  const frame = () => new Promise<void>(done => requestAnimationFrame(() => done()))
-  Object.assign(window, {
-    presmiumLecture: {
-      duration: p.duration,
-      async advance(at: number) {
-        p.advanceTo(at)
-        await nextTick()
-        await frame()
-        await frame()
-      },
-    },
-  })
-}
-
 const editing = computed(() => (server.available && server.member.value?.roles.some(role => role === 'editor' || role === 'owner') ? serverEditing(server) : undefined))
-const editable = computed(() => Boolean(editing.value && player.value && playing.value !== SCRIPT_TRACK))
-const editingUtterance = ref<string>()
-const draft = ref('')
-const saving = ref(false)
-const editFailure = ref<string>()
-const engine = computed(() => {
-  const v = player.value?.track.voice
-  return editable.value && v?.kind === 'synthetic' ? v.engine : undefined
-})
-const engineProvider = ref<string>()
-watch(engine, async (id) => {
-  engineProvider.value = undefined
-  const choice = id && editing.value ? await editing.value.speech(id).catch(() => undefined) : undefined
-  if (id === engine.value) engineProvider.value = choice?.synthesize?.provider
-}, { immediate: true })
-const sayer = computed(() => {
-  const v = player.value?.track.voice
-  return v?.kind === 'synthetic' ? engineProvider.value || v.provider || v.engine : undefined
-})
-const confirmingEdit = ref(false)
-
-function changed(track: LectureTrack) {
-  const ops = operations.value
-  if (!ops || track.id !== playing.value) return
-  void start(track, lectureSource(), ops, ++loading, player.value?.time.value ?? 0)
-}
-
-function edit(u: Utterance) {
-  editingUtterance.value = u.id
-  draft.value = u.text
-  editFailure.value = undefined
-  confirmingEdit.value = false
-}
-
-function submitUtterance() {
-  if (sayer.value) confirmingEdit.value = true
-  else void saveUtterance()
-}
-
-async function saveUtterance() {
-  const id = editingUtterance.value
-  const track = player.value?.track
-  const load = loading
-  confirmingEdit.value = false
-  if (!id || !track || !editing.value || saving.value) return
-  saving.value = true
-  try {
-    const changedTrack = await editing.value.editUtterance(track.id, id, draft.value)
-    if (load !== loading) return
-    changed(changedTrack)
-    editingUtterance.value = undefined
-  } catch (error) {
-    editFailure.value = t.value.editor.failed(error instanceof Error ? error.message : String(error))
-  } finally {
-    saving.value = false
-  }
-}
+const trackEditing = computed(() => (player.value && playing.value !== SCRIPT_TRACK ? editing.value : undefined))
 
 const time = computed(() => player.value?.time.value ?? 0)
 const state = computed(() => (!player.value ? undefined : player.value.trying.value ? 'trying' : player.value.clock.playing.value ? 'playing' : 'paused'))
 const titles = computed(() => new Map(viewer.doc.value.sections.map(s => [s.id, s.title])))
-const chapterList = computed(() => (player.value ? chapters(player.value.events, id => titles.value.get(id)) : []))
+const chapterList = computed(() => (player.value ? trackChapters(player.value.events, id => titles.value.get(id)) : []))
 const chapter = computed(() => chapterList.value.filter(c => c.t <= time.value).at(-1))
-const entries = computed(() => [
-  ...chapterList.value.map(c => ({ ...c, step: undefined })),
-  ...(player.value ? stepStops(player.value.events) : []).filter(s => s.step > 0).map(s => ({ ...s, title: t.value.player.step(s.step) })),
-].sort((a, b) => a.t - b.t))
-const entry = computed(() => entries.value.filter(e => e.t <= time.value).at(-1))
 const languages = computed(() => (player.value ? captionLanguages(player.value.track) : []))
 const current = computed(() => (player.value ? utteranceAt(player.value.track, time.value) : undefined))
 const voice = computed(() => player.value?.track.voice)
@@ -203,13 +39,11 @@ function text(u: Utterance): string {
   return lang && lang !== player.value?.track.lang ? u.translations?.[lang]?.text ?? u.text : u.text
 }
 
-const digest = (text: string) => `sha256:${bytesToHex(sha256(utf8ToBytes(text)))}`
-
 const stale = computed(() => {
   const p = player.value
   const lang = language.value
   if (!p || !lang || lang === p.track.lang) return new Set<string>()
-  return new Set(p.track.utterances.filter(u => isStale(u, lang, digest)).map(u => u.id))
+  return new Set(p.track.utterances.filter(u => isStale(u, lang)).map(u => u.id))
 })
 
 function toggle() {
@@ -244,8 +78,8 @@ function close() {
         {{ t.player.failed(failure) }}
         <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" @click="close">{{ t.player.close }}</button>
       </p>
-      <p v-else-if="status === 'missing' || status === 'not-yet'" class="pm-lecture-player__status" role="alert">
-        {{ status === 'not-yet' ? t.player.notYet : t.player.missing(playing) }}
+      <p v-else-if="status === 'missing'" class="pm-lecture-player__status" role="alert">
+        {{ t.player.missing(playing) }}
         <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" @click="close">{{ t.player.close }}</button>
       </p>
       <div
@@ -259,54 +93,18 @@ function close() {
       <template v-else-if="player">
         <p v-if="captions && current" class="pm-lecture-caption" :lang="language" aria-live="polite" :data-stale="stale.has(current.id) ? 'true' : undefined">{{ text(current) }}<span v-if="stale.has(current.id)" class="pm-lecture-stale" role="img" :title="t.player.stale" :aria-label="t.player.stale"><PmIcon name="warning" size="1em" :stroke-width="2" /></span></p>
         <aside v-if="panel" class="pm-lecture-side" :aria-label="panel === 'transcript' ? t.player.transcript : t.player.chapters">
-          <PmTabs :model-value="panel" :tabs="sideTabs" :label="side.tabs" @update:model-value="panel = $event as 'transcript' | 'chapters'">
-            <TrackEditor v-if="panel === 'transcript' && editable && editing" :key="player.track.id" :track="player.track" :editing="editing" @changed="changed" />
-            <ol v-if="panel === 'transcript'" class="pm-lecture-transcript" :lang="language">
-              <li
-                v-for="u in player.track.utterances"
-                :key="u.id"
-                class="pm-lecture-transcript__item"
-                :data-utterance="u.id"
-                :data-stale="stale.has(u.id) ? 'true' : undefined"
-                :aria-current="current?.id === u.id ? 'true' : undefined"
-              >
-                <button type="button" class="pm-lecture-transcript__time" :aria-label="t.player.jump(clockText(u.t))" @click="seekTo(u.t)">{{ clockText(u.t) }}</button>
-                <form v-if="editingUtterance === u.id" class="pm-lecture-transcript__edit" @submit.prevent="submitUtterance">
-                  <input v-model="draft" class="pm-ui-input" type="text" :aria-label="t.editor.edit(u.id)" :disabled="saving">
-                  <button type="submit" class="pm-lecture-button pm-ui-button pm-ui-button--small" :disabled="saving || confirmingEdit">{{ saving ? t.editor.saving : sayer ? t.editor.saveSay(sayer) : t.editor.save }}</button>
-                  <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :disabled="saving" @click="editingUtterance = undefined">{{ t.editor.cancel }}</button>
-                  <div v-if="confirmingEdit && sayer" class="pm-lecture-editor__confirm" role="alertdialog" :aria-label="t.editor.saveSayConfirm(sayer)">
-                    <p>{{ t.editor.saveSayConfirm(sayer) }}</p>
-                    <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" @click="saveUtterance">{{ t.editor.confirm }}</button>
-                    <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" @click="confirmingEdit = false">{{ t.editor.cancel }}</button>
-                  </div>
-                  <span v-if="editFailure" role="alert">{{ editFailure }}</span>
-                </form>
-                <template v-else>
-                  <span v-if="language === player.track.lang && textPieces(u)" class="pm-lecture-transcript__text"><template v-for="(piece, i) in textPieces(u)" :key="i"><span v-if="piece.t !== undefined" class="pm-lecture-word" @click="seekTo(piece.t)">{{ piece.text }}</span><template v-else>{{ piece.text }}</template></template></span>
-                  <span v-else class="pm-lecture-transcript__text" @click="seekTo(u.t)">{{ text(u) }}</span>
-                  <span v-if="stale.has(u.id)" class="pm-lecture-stale" role="img" :title="t.player.stale" :aria-label="t.player.stale"><PmIcon name="warning" size="1em" :stroke-width="2" /></span>
-                  <button v-if="editable && language === player.track.lang" type="button" class="pm-lecture-transcript__edit-button" :aria-label="t.editor.edit(u.id)" @click="edit(u)"><PmIcon name="edit" size="1em" /></button>
-                </template>
-              </li>
-            </ol>
-            <ol v-else class="pm-lecture-chapters">
-              <li v-for="c in entries" :key="`${c.t}:${c.title}`" :aria-current="entry === c ? 'true' : undefined">
-                <button
-                  v-if="c.step !== undefined"
-                  type="button"
-                  class="pm-lecture-chapters__step"
-                  :data-section="c.section"
-                  :data-step="c.step"
-                  @click="seekTo(c.t)"
-                >
-                  <span class="pm-lecture-chapters__time">{{ clockText(c.t) }}</span> {{ c.title }}
-                </button>
-                <button v-else type="button" class="pm-lecture-chapters__item" :data-section="c.section" @click="seekTo(c.t)">
-                  <span class="pm-lecture-chapters__time">{{ clockText(c.t) }}</span> {{ c.title }}
-                </button>
-              </li>
-            </ol>
+          <PmTabs :model-value="panel" :tabs="sideTabs" :label="t.player.sideTabs" @update:model-value="panel = $event as 'transcript' | 'chapters'">
+            <TranscriptList
+              v-if="panel === 'transcript'"
+              :track="player.track"
+              :editing="trackEditing"
+              :language="language"
+              :current="current?.id"
+              :stale="stale"
+              @seek="seekTo"
+              @changed="reloadTrack"
+            />
+            <ChapterList v-else :chapters="chapterList" :events="player.events" :time="time" @seek="seekTo" />
           </PmTabs>
         </aside>
         <div class="pm-lecture-player" role="region" :aria-label="t.player.region" :data-state="state" :data-time="Math.round(time)" :data-clip="current?.clip">

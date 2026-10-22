@@ -2,10 +2,11 @@
 import { blockAt, linesText, OPERATIONS, PmIcon, useMessages, useServer, useService } from '@lincyaw/host'
 import type { BlockPoint } from '@lincyaw/host'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-import { clockText, LECTURE_ID, LECTURE_MESSAGES, simplifyPath } from '../domain/index.ts'
+import { clockText, LECTURE_MESSAGES, simplifyPath } from '../domain/index.ts'
 import type { PathPoint } from '../domain/index.ts'
-import { applyInk } from './marks.ts'
+import { applyInk } from './pointer-ink.ts'
 import { LectureRecorder } from './recorder.ts'
+import { serverSource } from './source.ts'
 import { playing, refreshLectures, useViewer } from './state.ts'
 
 defineProps<{ view: string }>()
@@ -20,8 +21,8 @@ const viewer = useViewer()
 const server = useServer()
 const operations = useService(OPERATIONS)
 const recorder = shallowRef<LectureRecorder>()
-const tracks = ref<string[]>([])
-const track = ref('')
+const trackIds = ref<string[]>([])
+const trackId = ref('')
 const camera = ref(false)
 const screen = ref(false)
 const tool = ref<'laser' | 'marker'>()
@@ -29,15 +30,13 @@ const shown = computed(() => server.available && !playing.value)
 const recording = computed(() => recorder.value?.state.value === 'recording')
 const busy = computed(() => ['starting', 'recording', 'saving'].includes(recorder.value?.state.value ?? ''))
 
-async function loadTracks() {
-  const response = await server.fetch(LECTURE_ID, 'tracks').catch(() => undefined)
-  const list = response?.ok ? await response.json() as { id: string }[] : []
-  tracks.value = list.map(item => item.id)
+async function loadTrackIds() {
+  trackIds.value = (await serverSource(server).list().catch(() => [])).map(item => item.id)
 }
 
 onMounted(() => {
   window.addEventListener('pointermove', onPointer, { passive: true })
-  if (shown.value) void loadTracks()
+  if (shown.value) void loadTrackIds()
 })
 
 async function start() {
@@ -50,7 +49,7 @@ async function start() {
     speaker: server.member.value?.name,
     camera: camera.value,
     screen: screen.value,
-    track: track.value || undefined,
+    track: trackId.value || undefined,
   })
   recorder.value = next
   await next.start()
@@ -58,7 +57,7 @@ async function start() {
 
 async function stop() {
   await recorder.value?.stop()
-  await Promise.all([loadTracks(), refreshLectures()])
+  await Promise.all([loadTrackIds(), refreshLectures()])
 }
 
 const status = computed(() => {
@@ -83,7 +82,7 @@ function flush() {
   path = undefined
   if (!done || !operations.value) return
   const data = { block: done.block, path: simplifyPath(done.points), ...done.line ? { line: done.line } : {} }
-  recorder.value?.pathStarted(data, done.from)
+  recorder.value?.notePointerPathStart(data, done.from)
   operations.value.report({ type: 'point', data })
 }
 
@@ -124,7 +123,7 @@ function onUp(event: PointerEvent) {
   operations.value?.report({ type: 'ink', data })
 }
 
-function clearMarks() {
+function clearInk() {
   const data = { clear: true }
   applyInk(data, false)
   operations.value?.report({ type: 'ink', data })
@@ -152,21 +151,21 @@ onBeforeUnmount(() => {
     />
     <div class="pm-lecture-recorder__row">
       <template v-if="!busy">
-        <label v-if="tracks.length" class="pm-lecture-recorder__field">
+        <label v-if="trackIds.length" class="pm-lecture-recorder__field">
           {{ t.recorder.track }}
-          <select v-model="track" class="pm-ui-select">
+          <select v-model="trackId" class="pm-ui-select">
             <option value="">{{ t.recorder.newTrack }}</option>
-            <option v-for="id in tracks" :key="id" :value="id">{{ id }}</option>
+            <option v-for="id in trackIds" :key="id" :value="id">{{ id }}</option>
           </select>
         </label>
         <label class="pm-lecture-recorder__field"><input v-model="camera" class="pm-ui-checkbox" type="checkbox"> {{ t.recorder.camera }}</label>
         <label class="pm-lecture-recorder__field"><input v-model="screen" class="pm-ui-checkbox" type="checkbox"> {{ t.recorder.screen }}</label>
-        <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small pm-ui-button--primary pm-lecture-recorder__record" @click="start">{{ track ? t.recorder.rerecord : t.recorder.record }}</button>
+        <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small pm-ui-button--primary pm-lecture-recorder__record" @click="start">{{ trackId ? t.recorder.rerecord : t.recorder.record }}</button>
       </template>
       <button v-else-if="recording" type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small pm-ui-button--danger pm-lecture-recorder__stop" @click="stop">{{ t.recorder.stop }}</button>
       <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :aria-pressed="tool === 'laser'" @click="tool = tool === 'laser' ? undefined : 'laser'">{{ t.recorder.laser }}</button>
       <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :aria-pressed="tool === 'marker'" @click="tool = tool === 'marker' ? undefined : 'marker'">{{ t.recorder.marker }}</button>
-      <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" @click="clearMarks">{{ t.recorder.clear }}</button>
+      <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" @click="clearInk">{{ t.recorder.clear }}</button>
     </div>
     <p v-if="status" class="pm-lecture-recorder__status" role="status"><PmIcon v-if="recording" class="pm-lecture-recorder__dot" name="record" size="1.1em" :stroke-width="2" />{{ status }}</p>
   </div>

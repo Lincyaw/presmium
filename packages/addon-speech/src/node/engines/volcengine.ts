@@ -3,7 +3,7 @@ import type { SpeechWord, Transcript, TranscriptSegment, VoiceInfo } from '@linc
 import { isRecord } from '@lincyaw/kernel'
 import type { EngineDefinition } from '../../domain/index.ts'
 import { SpeechError } from '../errors.ts'
-import type { EngineAdapter, EngineAudio, EngineInput, EngineSynthesis } from './types.ts'
+import type { EngineAdapter, EngineSynthesisRequest, EngineSynthesisResult, EngineTranscriptionRequest } from './types.ts'
 import { speaks } from './types.ts'
 
 const TTS = '/api/v3/tts/unidirectional'
@@ -50,7 +50,7 @@ export function volcengineEngine(engine: EngineDefinition): EngineAdapter {
 
     cloned: volcengineCloned,
 
-    async synthesize(request: EngineSynthesis, signal): Promise<EngineAudio> {
+    async synthesize(request: EngineSynthesisRequest, signal): Promise<EngineSynthesisResult> {
       const additions: Record<string, unknown> = {}
       if (request.lang.toLowerCase().startsWith('en')) additions.explicit_language = 'en'
       if (request.style) additions.context_texts = [request.style]
@@ -95,7 +95,7 @@ export function volcengineEngine(engine: EngineDefinition): EngineAdapter {
       return { audio: new Uint8Array(Buffer.concat(chunks)), contentType: 'audio/ogg', words, ...words.length ? { duration: words.at(-1)!.end } : {} }
     },
 
-    async transcribe(input: EngineInput, signal): Promise<Transcript> {
+    async transcribe(input: EngineTranscriptionRequest, signal): Promise<Transcript> {
       const format = input.mime.includes('wav') ? { format: 'wav' } : input.mime.includes('ogg') ? { format: 'ogg', codec: 'opus' } : input.mime.includes('mpeg') || input.mime.includes('mp3') ? { format: 'mp3' } : undefined
       if (!format) throw new SpeechError(400, `Volcengine's recognition takes WAV, MP3 or Ogg/Opus, not ${input.mime}`)
       const language = input.lang && !input.lang.toLowerCase().startsWith('zh') ? { language: input.lang } : {}

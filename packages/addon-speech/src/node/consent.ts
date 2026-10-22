@@ -14,7 +14,7 @@ export function consentDir(operatorDir: string, settings: Record<string, unknown
   return dir
 }
 
-function names(engine: string, voice: string): void {
+function assertSafeNames(engine: string, voice: string): void {
   if (!safeName(engine) || !safeName(voice)) throw new SpeechError(400, `"${engine}/${voice}" is not an engine id and a voice id (letters, digits, ".", "_", "-")`)
 }
 
@@ -24,7 +24,7 @@ export function checkConsent(operatorDir: string | undefined, settings: Record<s
     throw new SpeechError(403, `${what}, which the operator has not allowed: cloned voices need settings.presmium.speech.cloned: true in presmium.workspace.yaml and a consent record`)
   }
   if (!operatorDir) throw new SpeechError(403, `${what}, and this process has no operator directory to hold its consent record`)
-  names(engine, voice)
+  assertSafeNames(engine, voice)
   const file = join(consentDir(operatorDir, settings), consentPath(engine, voice))
   let text: string
   try {
@@ -44,7 +44,7 @@ export function checkConsent(operatorDir: string | undefined, settings: Record<s
 
 export function writeConsent(operatorDir: string | undefined, settings: Record<string, unknown>, engine: string, voice: string, record: unknown): string {
   if (!operatorDir) throw new SpeechError(409, 'this process has no operator directory to hold consent records')
-  names(engine, voice)
+  assertSafeNames(engine, voice)
   const problem = consentProblem(record)
   if (problem) throw new SpeechError(400, problem)
   const file = join(consentDir(operatorDir, settings), consentPath(engine, voice))
