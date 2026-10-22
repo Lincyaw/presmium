@@ -1,6 +1,6 @@
 import { rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { irBlocks } from '@lincyaw/kernel'
+import { ABSOLUTE_URL, irBlocks } from '@lincyaw/kernel'
 import type { IRDocument, RenderContext, Renderer } from '@lincyaw/kernel'
 import { diffDocuments } from '@lincyaw/viewer/domain'
 import launchEditor from 'launch-editor'
@@ -47,11 +47,9 @@ function merge(modules: ClientModules, extra?: ClientModules): ClientModules {
   }
 }
 
-const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/)/i
-
 function headImage(doc: IRDocument, ctx: RenderContext, options: WebRendererConfig, publicDir: string, document: DocumentSite): string | undefined {
   const image = options.shell.head?.image
-  if (!image || REMOTE.test(image)) return image
+  if (!image || ABSOLUTE_URL.test(image)) return image
   const published = publishedFile(ctx, publicDir, options.base, { file: document.config ?? resolve(ctx.deckDir, doc.meta.entry), line: 1 }, image)
   return published && options.shell.sitemap ? `${options.shell.sitemap.hostname}${published}` : published
 }

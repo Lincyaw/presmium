@@ -1,6 +1,6 @@
 import { statSync } from 'node:fs'
 import { join } from 'node:path'
-import { irBlocks, mapHtmlUrls, publishedUrl, withProp } from '@lincyaw/kernel'
+import { irBlocks, mapHtmlUrls, NON_FILE_URL, publishedUrl, withProp } from '@lincyaw/kernel'
 import type { DocumentLink, IRBlock, IRDocument, IRSection, LocalAsset, MdastNode, RenderContext, SourcePos } from '@lincyaw/kernel'
 import { copyPublished } from '@lincyaw/kernel/node'
 import katex from 'katex'
@@ -64,7 +64,7 @@ export class PublicationCache {
     this.#sections.delete(original.id)
     // Local files and raw HTML can change independently of the IR. Revisit them.
     const local = (node: MdastNode): boolean => node.type === 'html'
-      || (LINKED.has(node.type) && typeof node.url === 'string' && !/^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i.test(node.url))
+      || (LINKED.has(node.type) && typeof node.url === 'string' && !NON_FILE_URL.test(node.url))
       || Boolean(node.children?.some(local))
     for (const block of irBlocks(original.blocks)) {
       if (block.node.type === 'markdown' && local(block.node.mdast)) return

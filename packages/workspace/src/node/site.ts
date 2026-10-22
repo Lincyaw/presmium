@@ -2,6 +2,7 @@ import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import { compileTranslations, DECK_ENTRY, directoryAsset, fileHash, frontmatterLine, lineContaining, loadPlugins, nodeVitePlugins, parseFrontmatter, portable, publishesDirectory, viewFor } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
+import { NON_FILE_URL } from '@lincyaw/kernel'
 import type { Finding, IRDocument, RenderContext, Renderer, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
 import type { WorkspaceDocument } from '../domain/api.ts'
@@ -42,8 +43,6 @@ export function documentPlugins(site: SiteSpec, dir: string, compilation: Compil
 export function siteSpec(config: WorkspaceConfig, documents: SiteDocument[]): SiteSpec {
   return { title: config.title, documents, ...typeof config.site.home === 'string' ? { home: config.site.home } : {}, config: config.site }
 }
-
-const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i
 
 export interface SiteContextOptions {
   root: string
@@ -86,7 +85,7 @@ function deckOf(file: string, root: string): string | undefined {
 }
 
 function publishedAsset(options: SiteContextOptions, source: SourcePos, url: string, report: (finding: Finding) => void): { file: string, name: string } | undefined {
-  if (REMOTE.test(url)) return undefined
+  if (NON_FILE_URL.test(url)) return undefined
   const path = url.replace(/[?#].*$/s, '')
   if (!path || path.startsWith('/')) return undefined
   let name = path
