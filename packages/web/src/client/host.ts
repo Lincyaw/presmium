@@ -2,22 +2,24 @@ import { presmiumReport, presmiumService } from '@lincyaw/host'
 import type { HostAdapter, Navigation, NavigationPosition, SharedStates, ViewRole } from '@lincyaw/host'
 import { backSection, followedPlace, isRecord, stepKeys, stepTrail } from '@lincyaw/kernel'
 import type { FollowAnchor, IRSection, PresentationMode, StepKeys } from '@lincyaw/kernel'
-import { FINAL_STEP, getView, useSectionContext } from '@lincyaw/viewer'
+import { findView, useSectionContext } from '@lincyaw/viewer'
 import type { Viewer } from '@lincyaw/viewer'
+import { FINAL_STEP } from '@lincyaw/viewer/domain'
 import { useData } from 'vitepress'
 import { computed, readonly, ref } from 'vue'
 
-export interface ViewerHostOptions {
+export interface WebHostAdapterOptions {
   lang: string
   shared: SharedStates
 }
 
 function roleOf(view: string): ViewRole {
-  return view === 'presenter' ? 'presenter' : getView(view)?.kind === 'overlay' ? 'audience' : 'reader'
+  return view === 'presenter' ? 'presenter' : findView(view)?.kind === 'overlay' ? 'audience' : 'reader'
 }
 
-export function createViewerHost(viewer: Viewer, options: ViewerHostOptions): HostAdapter {
-  const overlay = () => getView(viewer.view.value)?.kind === 'overlay'
+/** The host adapter of the web form, on the IR runtime's viewer. */
+export function createWebHostAdapter(viewer: Viewer, options: WebHostAdapterOptions): HostAdapter {
+  const overlay = () => findView(viewer.view.value)?.kind === 'overlay'
   const role = computed(() => roleOf(viewer.view.value))
   const staticRender = readonly(ref(false))
   return {
@@ -80,15 +82,15 @@ export function createViewerNavigation(viewer: Viewer): Navigation {
     }),
     go(position: NavigationPosition & FollowAnchor) {
       const { slide, step, view, section: id } = position
-      const target = view === undefined ? undefined : getView(view)
+      const target = view === undefined ? undefined : findView(view)
       if (target && !target.hidden) viewer.setView(target.id)
-      const place = id === undefined
+      const destination = id === undefined
         ? { section: viewer.doc.value.sections.find(s => s.index === slide)?.id, step }
         : followedPlace(position, other => {
             const section = viewer.section(other)
             return section && keysOf(section)
           })
-      if (place?.section !== undefined) viewer.show({ section: place.section, step: place.step })
+      if (destination?.section !== undefined) viewer.show({ section: destination.section, step: destination.step })
     },
   }
 }

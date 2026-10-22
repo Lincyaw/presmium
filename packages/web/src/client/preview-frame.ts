@@ -1,6 +1,6 @@
 import { componentErrors, presmiumReport } from '@lincyaw/host'
 import type { NavigationPosition } from '@lincyaw/host'
-import { connectPreviewFrame, irBlocks, PREVIEW_REVISION, stepKeys, stepTrail } from '@lincyaw/kernel'
+import { connectPreviewFrame, irBlocks, isPreviewActive, PREVIEW_REVISION, stepKeys, stepTrail } from '@lincyaw/kernel'
 import type { FollowAnchor, PreviewFrame } from '@lincyaw/kernel'
 import type { Viewer } from '@lincyaw/viewer'
 import type { Ref } from 'vue'
@@ -18,7 +18,18 @@ export interface WebPreviewPage {
   setActive(active: boolean): Promise<void>
 }
 
-export function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions): void {
+/** What a preview dev server's theme gives the document theme (`ThemeInput.preview`). */
+export interface WebPreview {
+  /** False when the workbench paused the preview before the page loaded again. */
+  active: boolean
+  connect(page: WebPreviewPage): void
+}
+
+export function webPreview(options: WebPreviewOptions): WebPreview {
+  return { active: isPreviewActive(), connect: page => connectWebPreviewFrame(page, options) }
+}
+
+function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions): void {
   const { viewer, dark } = page
   const navigation = createViewerNavigation(viewer)
   const revision = () => {

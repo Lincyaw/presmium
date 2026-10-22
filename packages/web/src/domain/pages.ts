@@ -11,7 +11,7 @@ function baseName(file: string): string {
   return file.split(/[\\/]/).pop()!.replace(/\.[^.]+$/, '')
 }
 
-export function toPages(doc: IRDocument): WebPage[] {
+export function webPages(doc: IRDocument): WebPage[] {
   const paths = new Set<string>()
   let file: string | undefined
   return chapters(doc).map((chapter, i) => {
@@ -26,7 +26,7 @@ export function toPages(doc: IRDocument): WebPage[] {
 }
 
 export function translationPages(doc: IRDocument, original: readonly WebPage[]): WebPage[] {
-  const pages = toPages(doc)
+  const pages = webPages(doc)
   const matched = pages.map(page => original.find(o => o.sections[0] === page.sections[0])?.path)
   const paths = new Set(matched.filter(path => path !== undefined))
   return pages.map((page, i) => {
@@ -91,7 +91,7 @@ export interface SearchDocument {
   text: string
 }
 
-export function searchDocuments(doc: IRDocument, base: string, pages: readonly WebPage[] = toPages(doc), titles: string[] = []): SearchDocument[] {
+export function searchDocuments(doc: IRDocument, base: string, pages: readonly WebPage[] = webPages(doc), titles: string[] = []): SearchDocument[] {
   const byId = new Map(doc.sections.map(section => [section.id, section]))
   return pages.flatMap((page) => {
     const path = page.path === 'index' ? '' : `${page.path}.html`

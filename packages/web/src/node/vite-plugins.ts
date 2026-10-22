@@ -3,24 +3,21 @@ import { readFileSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
 import MiniSearch from 'minisearch'
 import { localRequestRefusal, tokenize } from '@lincyaw/kernel'
+import { UPDATE_EVENT } from '../domain/dev-updates.ts'
+import type { DevUpdateEvent } from '../domain/dev-updates.ts'
 import { IR_ENDPOINT, SOURCE_ENDPOINT } from '../domain/links.ts'
 
 export const IR_MODULE = 'virtual:presmium/ir'
-export const UPDATE_EVENT = 'presmium:update'
 const RESOLVED = `\0${IR_MODULE}`
 
-export function revisionOf(json: string): string {
+/** The IR revision of an IR written as JSON. */
+export function irRevisionOfJson(json: string): string {
   return createHash('sha256').update(json).digest('hex').slice(0, 16)
 }
 
-export interface UpdateEvent {
-  update: unknown
-  base: string
-  revision: string
-}
-
+/** The messages between the renderer and the VitePress process it started. */
 export type DevMessage =
-  | ({ type: 'presmium:update' } & UpdateEvent)
+  | ({ type: 'presmium:update' } & DevUpdateEvent)
   | { type: 'presmium:ready', port: number }
   | { type: 'presmium:source', file: string, line: number }
   | { type: 'presmium:translations' }
@@ -50,7 +47,8 @@ function searchIndex(documentsFile: string): string {
   return JSON.stringify(index)
 }
 
-function localeFile(file: string, lang: string): string {
+/** The file of a translation's IR or search documents, beside the original's. */
+export function localeFile(file: string, lang: string): string {
   return file.replace(/\.json$/, `.${lang}.json`)
 }
 
@@ -66,6 +64,7 @@ export function presmiumFrame(policy: string) {
   }
 }
 
+/** Tells the renderer that started VitePress the port the dev server listens on. */
 export function presmiumReady() {
   return {
     name: 'presmium:ready',
@@ -78,7 +77,11 @@ export function presmiumReady() {
   }
 }
 
-export function presmiumIR(irFile: string, searchDocuments: string, endpoints: { ir: string, source: string } = { ir: IR_ENDPOINT, source: SOURCE_ENDPOINT }, locales: string[] = []) {
+/**
+ * The IR as the virtual module `virtual:presmium/ir` (and one module for each translation) and the local search index
+ * built from it; in development, pushes the renderer's updates to the page and reloads the search index.
+ */
+export function presmiumIR(irFile: string, searchDocuments: string, locales: string[] = []) {
   let dev = false
   const names = ['root', ...locales]
   const documentsOf = (name: string) => (name === 'root' ? searchDocuments : localeFile(searchDocuments, name))
@@ -93,7 +96,7 @@ export function presmiumIR(irFile: string, searchDocuments: string, endpoints: {
       if (id === RESOLVED) {
         const json = readFileSync(irFile, 'utf8')
         const translations = locales.map(lang => `${JSON.stringify(lang)}: () => import(${JSON.stringify(`${IR_MODULE}/${lang}`)})`)
-        return `export default JSON.parse(${JSON.stringify(json)})\nexport const revision = ${JSON.stringify(revisionOf(json))}\nexport const translations = { ${translations.join(', ')} }`
+        return `export default JSON.parse(${JSON.stringify(json)})\nexport const irRevision = ${JSON.stringify(irRevisionOfJson(json))}\nexport const translations = { ${translations.join(', ')} }`
       }
       if (id.startsWith(`${RESOLVED}/`)) return `export default JSON.parse(${JSON.stringify(readFileSync(localeFile(irFile, id.slice(RESOLVED.length + 1)), 'utf8'))})`
       const module = id.split('?')[0]!
@@ -122,11 +125,20 @@ export function presmiumIR(irFile: string, searchDocuments: string, endpoints: {
           const module = server.moduleGraph.getModuleById(id)
           if (module) server.moduleGraph.invalidateModule(module)
         }
-        if (message.type === 'presmium:update') server.ws.send(UPDATE_EVENT, { update: message.update, base: message.base, revision: message.revision } satisfies UpdateEvent)
+        if (message.type === 'presmium:update') server.ws.send(UPDATE_EVENT, { update: message.update, base: message.base, revision: message.revision } satisfies DevUpdateEvent)
         refreshSearch()
       }
       process.on('message', receive)
       server.httpServer?.once('close', () => process.off('message', receive))
+    },
+  }
+}
+
+/** The dev server's endpoints: the current IR with its revision, and opening a source line in the editor (by the renderer). */
+export function presmiumEndpoints(irFile: string, endpoints: { ir: string, source: string } = { ir: IR_ENDPOINT, source: SOURCE_ENDPOINT }) {
+  return {
+    name: 'presmium:endpoints',
+    configureServer(server: DevServer) {
       const refused = (req: { headers: Record<string, string | string[] | undefined> }, res: { statusCode: number, end(body?: string): void }) => {
         const reason = localRequestRefusal(req.headers, server.config.server.allowedHosts)
         if (reason) {
@@ -138,7 +150,7 @@ export function presmiumIR(irFile: string, searchDocuments: string, endpoints: {
       server.middlewares.use(endpoints.ir, (req, res) => {
         if (refused(req, res)) return
         const json = readFileSync(irFile, 'utf8')
-        const revision = revisionOf(json)
+        const revision = irRevisionOfJson(json)
         const etag = `"${revision}"`
         res.setHeader('ETag', etag)
         res.setHeader('Cache-Control', 'no-store')
@@ -164,10 +176,6 @@ export function presmiumIR(irFile: string, searchDocuments: string, endpoints: {
         if (file) process.send?.({ type: 'presmium:source', file, line: Number.isInteger(line) && line > 0 ? line : 1 } satisfies DevMessage)
         res.statusCode = file ? 204 : 400
         res.end()
-      })
-      server.httpServer?.once('listening', () => {
-        const address = server.httpServer?.address()
-        if (address && typeof address === 'object') process.send?.({ type: 'presmium:ready', port: address.port } satisfies DevMessage)
       })
     },
   }

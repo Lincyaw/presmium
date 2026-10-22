@@ -1,6 +1,6 @@
 import { statSync } from 'node:fs'
 import { join } from 'node:path'
-import { irBlocks, mapHtmlUrls, NON_FILE_URL, publishedUrl, withProp } from '@lincyaw/kernel'
+import { irBlocks, mapHtmlUrls, NON_FILE_URL, publishedUrl, withPublishedAssets } from '@lincyaw/kernel'
 import type { DocumentLink, IRBlock, IRDocument, IRSection, LocalAsset, MdastNode, RenderContext, SourcePos } from '@lincyaw/kernel'
 import { copyPublished } from '@lincyaw/kernel/node'
 import katex from 'katex'
@@ -52,13 +52,13 @@ export class PublicationCache {
   readonly #sections = new Map<string, { key: string, section: IRSection, bytes: number }>()
   #bytes = 0
 
-  get(section: IRSection): { key: string, section?: IRSection } {
+  lookup(section: IRSection): { key: string, section?: IRSection } {
     const key = JSON.stringify(section)
     const known = this.#sections.get(section.id)
     return { key, ...known?.key === key ? { section: known.section } : {} }
   }
 
-  set(original: IRSection, key: string, section: IRSection): void {
+  store(original: IRSection, key: string, section: IRSection): void {
     const old = this.#sections.get(original.id)
     if (old) this.#bytes -= old.bytes
     this.#sections.delete(original.id)
@@ -116,16 +116,13 @@ export function publishedDocument(doc: IRDocument, ctx: RenderContext, publicDir
     if (node.type === 'markdown') mdast(node.mdast, source)
     if (node.type === 'component') {
       if (node.fallback) mdast(node.fallback, source)
-      for (const [path, url] of Object.entries(node.assets ?? {})) {
-        const published = publish(url, source)
-        if (published) node.props = withProp(node.props, path, published)
-      }
+      node.props = withPublishedAssets(node, url => publish(url, source)).props
     }
   }
   copy.meta.entry = ctx.portable(copy.meta.entry, deckDir) as string
   copy.config.presmium = ctx.portable(copy.config.presmium, deckDir) as IRDocument['config']['presmium']
   for (const original of cache ? doc.sections : copy.sections) {
-    const known = cache?.get(original)
+    const known = cache?.lookup(original)
     if (known?.section) {
       copy.sections.push(known.section)
       continue
@@ -137,7 +134,7 @@ export function publishedDocument(doc: IRDocument, ctx: RenderContext, publicDir
     for (const b of irBlocks(section.blocks)) relative(b.source)
     if (cache) {
       copy.sections.push(section)
-      cache.set(original, known!.key, section)
+      cache.store(original, known!.key, section)
     }
   }
   cache?.prune(new Set(doc.sections.map(section => section.id)))

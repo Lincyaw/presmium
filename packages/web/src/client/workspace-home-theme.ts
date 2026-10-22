@@ -1,26 +1,16 @@
 import { createSharedStates, currentLocale, installHost, PmEmpty, PmIcon, pluginsOf, PmToolbar, presmiumReport, presmiumService, registerPresmiumPlugin, startHost, useMessages } from '@lincyaw/host'
 import type { HostAdapter, Navigation } from '@lincyaw/host'
-import { FINAL_STEP } from '@lincyaw/viewer'
+import { FINAL_STEP } from '@lincyaw/viewer/domain'
 import type { Theme } from 'vitepress'
 import { inBrowser, useData } from 'vitepress'
 import DefaultTheme from 'vitepress/theme-without-fonts'
 import { computed, defineComponent, h, onBeforeUnmount, onMounted, readonly, ref } from 'vue'
 import { samePage, WEB_MESSAGES } from '../domain/index.ts'
+import type { HomeDocument } from '../domain/index.ts'
 import './style.css'
 
-export interface SiteHomeInput {
+export interface WorkspaceHomeInput {
   plugins: (() => Promise<unknown>)[]
-}
-
-interface HomeDocument {
-  dir: string
-  title: string
-  lang?: string
-  tags?: string[]
-  href: string
-  description?: string
-  pages?: number
-  problems?: { errors: number, warnings: number }
 }
 
 const query = ref('')
@@ -123,7 +113,7 @@ const SiteRedirect = defineComponent({
   },
 })
 
-function homeHost(lang: string, sharedState: HostAdapter['useSharedState']): HostAdapter {
+function createHomeHostAdapter(lang: string, sharedState: HostAdapter['useSharedState']): HostAdapter {
   const cursor = readonly(ref({ slide: 1, step: 0 }))
   return {
     mode: 'document',
@@ -150,7 +140,8 @@ const Layout = defineComponent({
   },
 })
 
-export function createSiteHomeTheme(input: SiteHomeInput): Theme {
+/** The VitePress theme of the workspace site's home page: the documents' cards. */
+export function createWorkspaceHomeTheme(input: WorkspaceHomeInput): Theme {
   return {
     extends: DefaultTheme,
     Layout,
@@ -167,7 +158,7 @@ export function createSiteHomeTheme(input: SiteHomeInput): Theme {
         return false
       }
       const shared = createSharedStates(`${siteData.value.title} (home)`)
-      installHost(app, homeHost(siteData.value.lang, shared.sharedState))
+      installHost(app, createHomeHostAdapter(siteData.value.lang, shared.sharedState))
       if (!inBrowser) return
       const navigation: Navigation = { position: computed(() => ({ slide: 1, step: 0 })), go: () => {} }
       void Promise.all(input.plugins.map(load => load().catch((error: unknown) => {

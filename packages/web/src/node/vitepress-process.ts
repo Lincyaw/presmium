@@ -6,24 +6,25 @@ import type { AddressInfo } from 'node:net'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { backgroundPriority, NODE_RESOURCE_ARGS, resourceEnvironment, TYPESCRIPT_IMPORT } from '@lincyaw/kernel/node'
-import type { DevMessage } from './vite.ts'
+import type { DevMessage } from './vite-plugins.ts'
 
-function bin(): string {
+function vitepressBin(): string {
   const require = createRequire(import.meta.url)
   const pkg = require.resolve('vitepress/package.json')
   return join(dirname(pkg), (require(pkg) as { bin: Record<string, string> }).bin.vitepress!)
 }
 
-export function vitepressBuild(root: string, outDir: string): Promise<number> {
+/** Runs `vitepress build`; resolves to its exit code. */
+export function runVitepressBuild(root: string, outDir: string): Promise<number> {
   return new Promise((done) => {
-    const child = spawn(process.execPath, [...NODE_RESOURCE_ARGS, ...TYPESCRIPT_IMPORT, bin(), 'build', realpathSync(root), '--outDir', outDir], { stdio: ['ignore', 2, 2], env: resourceEnvironment() })
+    const child = spawn(process.execPath, [...NODE_RESOURCE_ARGS, ...TYPESCRIPT_IMPORT, vitepressBin(), 'build', realpathSync(root), '--outDir', outDir], { stdio: ['ignore', 2, 2], env: resourceEnvironment() })
     backgroundPriority(child.pid)
     child.on('exit', code => done(code ?? 1))
     child.on('error', () => done(1))
   })
 }
 
-export function freePort(host: string): Promise<number> {
+function findFreePort(host: string): Promise<number> {
   return new Promise((resolve, reject) => {
     const probe = createServer()
     probe.once('error', reject)
@@ -34,15 +35,16 @@ export function freePort(host: string): Promise<number> {
   })
 }
 
-export interface DevProcess {
+export interface VitepressDevProcess {
   port: number
   send(message: DevMessage): void
   close(): Promise<void>
 }
 
-export async function vitepressDev(root: string, port: number | undefined, receive: (message: DevMessage) => void, options: { host?: string, signal?: AbortSignal } = {}): Promise<DevProcess> {
-  const listen = port === 0 ? await freePort(options.host ?? '127.0.0.1') : port
-  const args = [...NODE_RESOURCE_ARGS, ...TYPESCRIPT_IMPORT, bin(), 'dev', realpathSync(root), ...(listen ? ['--port', String(listen)] : []), ...(options.host ? ['--host', options.host] : [])]
+/** Starts `vitepress dev` and resolves when it listens; `receive` gets its messages, and the abort signal stops it. */
+export async function startVitepressDev(root: string, port: number | undefined, receive: (message: DevMessage) => void, options: { host?: string, signal?: AbortSignal } = {}): Promise<VitepressDevProcess> {
+  const listen = port === 0 ? await findFreePort(options.host ?? '127.0.0.1') : port
+  const args = [...NODE_RESOURCE_ARGS, ...TYPESCRIPT_IMPORT, vitepressBin(), 'dev', realpathSync(root), ...(listen ? ['--port', String(listen)] : []), ...(options.host ? ['--host', options.host] : [])]
   const child: ChildProcess = spawn(process.execPath, args, { stdio: ['ignore', 'inherit', 'inherit', 'ipc'], env: resourceEnvironment() })
   backgroundPriority(child.pid)
   const exited = new Promise<void>(resolve => child.once('exit', () => resolve()))

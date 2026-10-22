@@ -3,7 +3,8 @@ import { DEFAULT_LANG } from '@lincyaw/kernel/contracts'
 
 export const WEB_ID = 'presmium.web'
 
-export interface FormOptions {
+/** The settings that link the web form and the slides to each other. */
+export interface CrossFormLinks {
   slides?: boolean
   slidesUrl?: string
   webUrl?: string
@@ -66,7 +67,7 @@ function url(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim().replace(/\/+$/, '') : undefined
 }
 
-export function formOptions(presmium: unknown, renderers?: unknown): FormOptions {
+export function crossFormLinks(presmium: unknown, renderers?: unknown): CrossFormLinks {
   const all = isRecord(presmium) ? presmium : {}
   const config = { ...(isRecord(all.web) ? all.web : {}), ...(isRecord(all[WEB_ID]) ? all[WEB_ID] : {}) }
   const configured = isRecord(renderers) ? renderers : {}

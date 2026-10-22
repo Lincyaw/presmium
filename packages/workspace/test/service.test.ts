@@ -76,7 +76,7 @@ describe('presmium serve: the workspace service for a workbench', () => {
     expect(index.status).toBe(200)
     const homeTheme = await raw(`${url}/.vitepress/theme/index.ts`)
     expect(homeTheme.status).toBe(200)
-    expect(homeTheme.text).toContain('createSiteHomeTheme')
+    expect(homeTheme.text).toContain('createWorkspaceHomeTheme')
     expect(homeTheme.text).not.toMatch(/addon-assistant|packages\/workspace\/src\/client/)
     const homeConfig = readFileSync(join(home, 'cache/presmium/serve', serveState(), 'site/full/home/site/.vitepress/config.mjs'), 'utf8')
     expect(homeConfig).toMatch(/site\.themeConfig\.presmium = \{ home: true, documents: data\.documents \}/)
