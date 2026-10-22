@@ -68,7 +68,7 @@ test('the link points to the remote repository at the pinned commit and line ran
   await expect(ref.locator('.pm-code-origin__badge')).toHaveText('已锁定')
 })
 
-test('the multi-version code block switches versions with the steps, the file link with them (C-10)', async ({ page }) => {
+test('the multi-version code block switches versions with the steps, the file link with them', async ({ page }) => {
   const commits = option('variants').split(',').map(rev => git('rev-parse', `${rev.trim()}^{commit}`))
 
   const slide = await openSlide(page, 'code-variants', '多版本切换')
@@ -107,7 +107,7 @@ test('the web form links the code to the remote repository at the pinned commit'
   await expect(ref.locator('.pm-code-origin__badge')).toHaveText('已锁定')
 })
 
-test('the web form\'s present view highlights the units and switches the versions step by step (R-109)', async ({ page }) => {
+test('the web form\'s present view highlights the units and switches the versions step by step', async ({ page }) => {
   const present = page.getByRole('region', { name: '放映' })
   const highlighted = present.locator('.pm-code .line.highlighted')
   await page.goto(`${deck().web}/code.html?view=present&section=code-steps`)

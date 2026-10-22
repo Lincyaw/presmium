@@ -33,7 +33,7 @@ it('reports the links that the PDF lost, located in the deck source', async () =
   expect(stdout).toContain('1 of 3 links kept')
 }, 180_000)
 
-it('exports PNG images, one per click step, the slide of a component in its static form included (P-50)', async () => {
+it('exports PNG images, one per click step, the slide of a component in its static form included', async () => {
   const dir = copyFixture('export')
   const { code, stdout, stderr } = await bin('presmium-export', dir, '--format', 'png', '--with-clicks', '--output', 'pages', '--json')
   expect(code, stderr).toBe(0)
@@ -55,7 +55,7 @@ it('exports only the slides of a range', async () => {
   expect((await pdfLinks(join(dir, 'part.pdf'))).length).toBe(3)
 }, 180_000)
 
-it('fails, rather than pass for the slides, when slidev export captures the print page before it shows them; --wait lets the page settle (P-50)', async () => {
+it('fails, rather than pass for the slides, when slidev export captures the print page before it shows them; --wait lets the page settle', async () => {
   const dir = copyFixture('late')
   const early = await bin('presmium-export', dir, '--format', 'png', '--with-clicks', '--output', 'pages', '--json')
   expect(early.code, early.stderr).toBe(2)
@@ -69,7 +69,7 @@ it('fails, rather than pass for the slides, when slidev export captures the prin
   expect(readdirSync(join(dir, 'pages')).sort()).toEqual(['001-01.png', '002-01.png', '002-02.png'])
 }, 180_000)
 
-it('fails when the PDF does not have the pages of the range, rather than pass for them with other pages (F-18)', async () => {
+it('fails when the PDF does not have the pages of the range, rather than pass for them with other pages', async () => {
   const dir = copyFixture('late')
   const exportRange = () => bin('presmium-export', dir, '--with-clicks', '--range', '2', '--output', 'part.pdf', '--json')
   let result = await exportRange()
@@ -90,7 +90,7 @@ async function pdfText(file: string): Promise<string[]> {
   return pages
 }
 
-it('exports a page per slide: code that runs live is static code with its recorded output, once; a slide taller than its page is cut, not the others shrunk, and a run panel\'s keeps its output; a range exports its slides only (F-18, F-19)', async () => {
+it('exports a page per slide: code that runs live is static code with its recorded output, once; a slide taller than its page is cut, not the others shrunk, and a run panel\'s keeps its output; a range exports its slides only', async () => {
   const dir = copyFixture('tall')
   const whole = await exported(dir, '--output', 'tall.pdf', '--json')
   expect(whole.code, whole.stderr).toBe(0)

@@ -42,7 +42,7 @@ test('the lecture builds to the web, the slides and a notebook without warnings'
   }
 })
 
-test('the lecture\'s slides export to a PDF, a page a slide, its links kept (C-8)', DEMO_DECK, async ({ browserName }) => {
+test('the lecture\'s slides export to a PDF, a page a slide, its links kept', DEMO_DECK, async ({ browserName }) => {
   test.skip(browserName !== 'chromium', 'the export runs in Playwright\'s Chromium whatever the browser under test')
   test.setTimeout(900_000)
   const out = mkdtempSync(join(tmpdir(), 'presmium-demo-export-'))
@@ -63,7 +63,7 @@ test('the lecture\'s slides export to a PDF, a page a slide, its links kept (C-8
   }
 })
 
-test('the export waits for the print page to show every slide, and loads it again when a request of the page fails (C-8)', async ({ browserName }) => {
+test('the export waits for the print page to show every slide, and loads it again when a request of the page fails', async ({ browserName }) => {
   test.skip(browserName !== 'chromium', 'the export runs in Playwright\'s Chromium whatever the browser under test')
   test.setTimeout(300_000)
   const dir = deckDir('print')

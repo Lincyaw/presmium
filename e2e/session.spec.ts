@@ -196,7 +196,7 @@ test.describe('a classroom', () => {
     await close()
   })
 
-  test('the learner\'s badge leaves the present view\'s controls free, on a desktop and on a phone (P-62)', async ({ browser }) => {
+  test('the learner\'s badge leaves the present view\'s controls free, on a desktop and on a phone', async ({ browser }) => {
     const { presenter, learner, close } = await people(browser)
     const phone = await browser.newContext({ ...devices['iPhone 13'] })
     const mobile = await phone.newPage()
@@ -231,7 +231,7 @@ test.describe('a classroom', () => {
     await close()
   })
 
-  test('a presenter whose window was closed rejoins from another window of the browser, then ends and archives the classroom (P-60)', async ({ browser }) => {
+  test('a presenter whose window was closed rejoins from another window of the browser, then ends and archives the classroom', async ({ browser }) => {
     const context = await browser.newContext()
     const first = await context.newPage()
     await first.goto(`${deck.web}/session.html`)
@@ -252,7 +252,7 @@ test.describe('a classroom', () => {
     await context.close()
   })
 
-  test('a learner browsing alone still browses alone after a reload (P-62)', async ({ browser }) => {
+  test('a learner browsing alone still browses alone after a reload', async ({ browser }) => {
     const { presenter, learner, close } = await people(browser)
     await presenter.goto(`${deck.web}/session.html`)
     const { link } = await create(presenter)
@@ -276,7 +276,7 @@ test.describe('a classroom', () => {
     await context.close()
   })
 
-  test('shared state of scope remote reaches the learners and a late joiner through the classroom, and in the web form the black screen too (P-61)', async ({ browser }) => {
+  test('shared state of scope remote reaches the learners and a late joiner through the classroom, and in the web form the black screen too', async ({ browser }) => {
     const { presenter, learner, close } = await people(browser)
     await presenter.goto(`${deck.web}/remote.html`)
     const { panel, link } = await create(presenter)
@@ -301,7 +301,7 @@ test.describe('a classroom', () => {
   })
 })
 
-test.describe('a classroom across the full and the student build (D-4)', () => {
+test.describe('a classroom across the full and the student build', () => {
   test.describe.configure({ mode: 'serial', timeout: 90_000 })
   let classroom: Awaited<ReturnType<typeof startClassroomServer>>
   let archives: string
@@ -328,7 +328,7 @@ test.describe('a classroom across the full and the student build (D-4)', () => {
     if (archives) rmSync(archives, { recursive: true, force: true })
   })
 
-  test('a learner of the student build follows the presenter of the full build to the same section, and the overview numbers the learner\'s places as the presenter\'s build does (F-85)', async ({ browser }) => {
+  test('a learner of the student build follows the presenter of the full build to the same section, and the overview numbers the learner\'s places as the presenter\'s build does', async ({ browser }) => {
     expect([full.slide('follow-rules'), student.slide('follow-rules')]).toEqual([3, 2])
     const { presenter, learner, close } = await people(browser)
     await presenter.goto(`${full.web}/`)
@@ -388,7 +388,7 @@ test.describe('a classroom across the full and the student build (D-4)', () => {
     await close()
   })
 
-  test('in the slides form too, a learner of the student build follows the presenter of the full build to the same slide by its section, and sees the presenter\'s drawings there (F-85)', async ({ browser }) => {
+  test('in the slides form too, a learner of the student build follows the presenter of the full build to the same slide by its section, and sees the presenter\'s drawings there', async ({ browser }) => {
     const { presenter, learner, close } = await people(browser)
     const slide = (page: Page, heading: string) => page.locator('.slidev-page').getByRole('heading', { name: heading })
     await presenter.goto(`${full.slides}/presenter/1`)

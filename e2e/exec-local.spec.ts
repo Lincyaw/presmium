@@ -43,7 +43,7 @@ test('the web form exports the environment of the snippet', async ({ page }) => 
   await expectExport(page, env)
 })
 
-test('under presmium dev the snippet runs and exports, and nothing writes it back: no commit button, no commit route (D-2)', async ({ page }) => {
+test('under presmium dev the snippet runs and exports, and nothing writes it back: no commit button, no commit route', async ({ page }) => {
   test.setTimeout(300_000)
   const dev = await startDev(deck().dir, 'slides')
   try {

@@ -108,7 +108,7 @@ test.describe('a deck with a site shell, published files and a translation', () 
     expect(await download(page, await content.locator('video').getAttribute('poster'))).toEqual(readFileSync(join(site.dir, 'media/cover.png')))
   })
 
-  test('a linked Markdown template and the README of a linked directory are published as files, not built as pages (F-24)', async ({ page }) => {
+  test('a linked Markdown template and the README of a linked directory are published as files, not built as pages', async ({ page }) => {
     await page.goto(`${site.url}/web/start.html`)
     const section = page.locator('.pm-section[data-section="starter"]')
     expect(await download(page, await section.getByRole('link', { name: '报告模板', exact: true }).getAttribute('href'))).toEqual(readFileSync(join(site.dir, 'kit/report.md')))
@@ -166,7 +166,7 @@ test.describe('a workspace site', () => {
     await site?.close()
   })
 
-  test('a document\'s translation is published under its directory, and its language menu switches to it (WP-93c)', async ({ page }) => {
+  test('a document\'s translation is published under its directory, and its language menu switches to it', async ({ page }) => {
     expect(site.report).not.toContain('is not in the workspace site')
     await page.goto(`${site.url}/week2/`)
     const menu = page.locator('.VPNavBarTranslations')
@@ -199,7 +199,7 @@ test.describe('a workspace site', () => {
     await expect(page.locator('h2#w2-shells')).toBeInViewport()
   })
 
-  test('a link to another document\'s lecture.md opens that document\'s page at the section; no document\'s source is published (F-25)', async ({ page }) => {
+  test('a link to another document\'s lecture.md opens that document\'s page at the section; no document\'s source is published', async ({ page }) => {
     await page.goto(`${site.url}/week1/`)
     const link = page.locator('.pm-section[data-section="w1-basics"]').getByRole('link', { name: '第 2 周的螺线' })
     await expect(link).toHaveAttribute('href', '/week2/w2-more.html#w2-spiral')
@@ -209,7 +209,7 @@ test.describe('a workspace site', () => {
     expect(readdirSync(join(site.dir, 'dist'), { recursive: true, encoding: 'utf8' }).filter(file => file.endsWith('lecture.md'))).toEqual([])
   })
 
-  test('the linking document built for students holds none of the linked document\'s teacher sentences, nor its source; the build says the link stays as written (F-25)', async () => {
+  test('the linking document built for students holds none of the linked document\'s teacher sentences, nor its source; the build says the link stays as written', async () => {
     const out = join(site.dir, 'student')
     const report = await presmium(['build', 'week1', '--audience', 'student', '--to', 'web', '--out', out], site.dir)
     expect(report).toMatch(/^week1\/lecture\.md:12 {2}warning {2}\.\.\/week2\/lecture\.md#w2-spiral is not published: it is the source of the document .*week2, which a workspace site links as its page; this build keeps the link as written {2}\(presmium\.links\)$/m)

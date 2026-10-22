@@ -1,4 +1,4 @@
-# A workspace's .gitignore (F-51), at the workspace root beside presmium.workspace.yaml; a repository of
+# A workspace's .gitignore, at the workspace root beside presmium.workspace.yaml; a repository of
 # one document has it too (npm create presmium@latest writes it to both). What is generated or installed
 # stays out of the history and out of an agent's review; what belongs to a document stays in.
 node_modules

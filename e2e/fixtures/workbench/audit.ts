@@ -1,4 +1,4 @@
-// The start audit's half that reads the pinned DeepSeek Harness (docs/design-dsh.md section 12, group 3; WP-96d): what the
+// The start audit's half that reads the pinned DeepSeek Harness (docs/design-dsh.md section 12, group 3): what the
 // workbench's client part relies on (packages/dsh/src/client/contract.ts and theme.ts), checked against the client
 // bundles of the installed version, found through @lincyaw/dsh (its DeepSeek Harness, then the web bundle's
 // dependencies). Only the shipped bundles' text is read; nothing of DeepSeek Harness is imported.

@@ -140,7 +140,7 @@ test('the reader fills in his service and asks about selected code: the answer s
   expect(errors).toEqual([])
 })
 
-test('the static output has no console error, in the reading and the presenter view, and the assistant started (F-48)', async ({ page }) => {
+test('the static output has no console error, in the reading and the presenter view, and the assistant started', async ({ page }) => {
   const errors = errorsOf(page)
   await page.goto(`${site.url}/?view=presenter&section=merge`)
   await expect(page.locator('[data-section="merge"]').first()).toBeVisible()

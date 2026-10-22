@@ -106,7 +106,7 @@ describe('presmium serve on this machine', () => {
     }
   }, 180_000)
 
-  it('listens on the local network with --host, saying there is no login, and on a name of this machine (E-3, revised)', async () => {
+  it('listens on the local network with --host, saying there is no login, and on a name of this machine (revised)', async () => {
     const network = presmiumProcess(dir, ['serve', '--host', '0.0.0.0', '--port', '0'])
     try {
       const port = (await waitFor(network, /^serve {2}http:\/\/127\.0\.0\.1:(\d+)$/m))[1]!
@@ -131,7 +131,7 @@ async function siteIR(url: string, dir: string, headers: Record<string, string> 
   return { text: answer.text, doc: answer.json<{ doc: { diagnostics: { checkId: string, severity: string, message: string }[] } }>().doc }
 }
 
-describe('the plugins of presmium serve are those the deck lists, as in presmium dev (E-2)', () => {
+describe('the plugins of presmium serve are those the deck lists, as in presmium dev', () => {
   let dir: string
   let serve: Child
   afterAll(async () => {
@@ -173,7 +173,7 @@ function recordings(dir: string): { env: Record<string, string>, parent: number 
   })
 }
 
-describe('compile-time execution in presmium serve (N-08)', () => {
+describe('compile-time execution in presmium serve', () => {
   const cleanups: (() => Promise<void> | void)[] = []
   afterAll(async () => {
     for (const cleanup of cleanups.reverse()) await cleanup()

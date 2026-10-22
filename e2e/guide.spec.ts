@@ -182,7 +182,7 @@ test('the presenter view shows the cues in its slides instead of covering the pa
   await expect(page.locator('.driver-hint')).toHaveCount(0)
 })
 
-test('under the spotlight, Tab moves the focus to the spotlit element and the keys still page (N-06)', async ({ page }) => {
+test('under the spotlight, Tab moves the focus to the spotlit element and the keys still page', async ({ page }) => {
   await openGuide(page, 4)
   await expect.poll(() => cues(page)).toEqual(STEPS[4])
   const output = page.locator('.pm-guide #guide-output')

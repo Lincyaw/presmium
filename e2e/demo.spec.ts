@@ -45,7 +45,7 @@ test('the chapter opens in the slides, the C program with the output recorded at
   await expect(page.locator(`.slidev-page-${index} .slidev-runner-output`)).toContainText('次数最多的一对 (97, 97) 就是 a a')
 })
 
-test('on its slide the compute shader stays legible, its run panel on the slide and the code scrolling (C-8, R-27)', async ({ page }) => {
+test('on its slide the compute shader stays legible, its run panel on the slide and the code scrolling', async ({ page }) => {
   const doc = await irDocument(page)
   const { index } = doc.sections.find(s => s.id === 'extend-gpu')!
   await page.setViewportSize({ width: 1920, height: 1080 })
@@ -60,7 +60,7 @@ test('on its slide the compute shader stays legible, its run panel on the slide 
   expect(run.y + run.height).toBeLessThanOrEqual(bottom.y + bottom.height)
 })
 
-test('on their slides the C program and the training code keep a projection size with no zoom, their editor scrolling and the output on the slide (R-27)', async ({ page }) => {
+test('on their slides the C program and the training code keep a projection size with no zoom, their editor scrolling and the output on the slide', async ({ page }) => {
   const doc = await irDocument(page)
   await page.setViewportSize({ width: 1920, height: 1080 })
   for (const [id, last] of [['extend-c', 'return 0;'], ['extend-train', '个词元']] as const) {

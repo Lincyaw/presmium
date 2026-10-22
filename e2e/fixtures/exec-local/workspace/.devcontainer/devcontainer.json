@@ -1,5 +1,5 @@
 // Development container of the local environment fixture (e2e/fixtures/exec-local). Presmium's
-// local environment (P-22) runs presented code in the image built from this definition.
+// local environment runs presented code in the image built from this definition.
 {
   "name": "presmium-e2e-exec-local",
   "image": "python:3.12-slim",

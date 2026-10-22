@@ -1,4 +1,4 @@
-# Presmium's documentation site (P-144, P-145): a Presmium workspace, built with `presmium build` here
+# Presmium's documentation site: a Presmium workspace, built with `presmium build` here
 # (`pnpm --filter presmium-docs build`, see README.md). Each document is written in Chinese (lecture.md)
 # and translated into English (lecture.en.md): the site publishes the translation under /<document>/en/
 # and the home page in English under /en/.

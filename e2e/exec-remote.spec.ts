@@ -88,7 +88,7 @@ test.describe('presmium dev, auth: proxy', () => {
     }
   })
 
-  test('{terminal} opens a shell; leaving the page closes the shell, session kernel and execution directory (F-68)', async ({ page }) => {
+  test('{terminal} opens a shell; leaving the page closes the shell, session kernel and execution directory', async ({ page }) => {
     test.setTimeout(180_000)
     const terminals = async () => {
       const response = await fetch(`${jupyter!.url}api/terminals`, { headers: { Authorization: `token ${jupyter!.token}` } })
@@ -193,7 +193,7 @@ test.describe('static output, auth: prompt', () => {
   })
 })
 
-test.describe('JupyterHub, auth: prompt with {user} (P-105, F-71)', () => {
+test.describe('JupyterHub, auth: prompt with {user}', () => {
   let hub: Hub | undefined
   let deck: FixtureDeck
   test.beforeAll(async () => {

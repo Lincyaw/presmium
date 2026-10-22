@@ -280,7 +280,7 @@ describe('cloned voices', () => {
   }, 300_000)
 })
 
-describe('an engine that answers Ogg/Opus (N-08)', () => {
+describe('an engine that answers Ogg/Opus', () => {
   const tone = readFileSync(join(PACKAGE, 'test/fixtures/tone.ogg'))
   let engine: { url: string, close(): Promise<void> }
   let dir: string

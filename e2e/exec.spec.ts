@@ -84,7 +84,7 @@ test('opening the stepwise slide at a step shows the same as stepping there', as
   await expect(back.locator('.pm-step-run__output')).toHaveText('n=1 total=1\nn=2 total=3\nn=3 total=6\ndone\n')
 })
 
-test('a run panel\'s parameters keep their types: a YAML false is False, at compile time and in Pyodide (F-17)', async ({ page }) => {
+test('a run panel\'s parameters keep their types: a YAML false is False, at compile time and in Pyodide', async ({ page }) => {
   interface Block { node: { type: string, name?: string, children?: Block[], outputs?: { stdout: string }[] } }
   const blocks = (list: Block[]): Block[] => list.flatMap(block => [block, ...blocks(block.node.children ?? [])])
   const ir = JSON.parse(readFileSync(join(panels().dir, 'dist/ir.json'), 'utf8')) as { sections: { id: string, blocks: Block[] }[] }
@@ -98,7 +98,7 @@ test('a run panel\'s parameters keep their types: a YAML false is False, at comp
   await expect(panel.locator('.pm-run-panel__stdout')).toHaveText('off 42\n')
 })
 
-test('a stepwise run whose :steps: is not the lines its code executes says so in the presenter view, not to the audience (F-67)', async ({ page }) => {
+test('a stepwise run whose :steps: is not the lines its code executes says so in the presenter view, not to the audience', async ({ page }) => {
   const run = (await openSlide(page, 'exec-steps-declared', '声明的步数')).locator('.pm-step-run')
   await expect(run).toHaveAttribute('data-state', 'ready', RUNTIME)
   await expect(run.locator('.pm-step-run__status')).toContainText('第 0 / 3 步')
@@ -121,7 +121,7 @@ test('a run that times out shows the recorded output, marked as recorded', async
 
 const COMPILED = '平方： [1, 4, 9, 16, 25]\n合计： 55'
 
-test('in the slides, code that also runs live has one output area, its runner\'s: the recording until it runs, marked as recorded (F-18)', async ({ page }) => {
+test('in the slides, code that also runs live has one output area, its runner\'s: the recording until it runs, marked as recorded', async ({ page }) => {
   const slide = await openSlide(page, 'exec-compile', '编译时执行')
   const output = slide.locator('.slidev-runner-output')
   const lines = output.locator('.output-line')
@@ -158,7 +158,7 @@ async function webSection(page: Page, id: string) {
   return section
 }
 
-test('in the document view, a stepwise run has a stepper of its own that goes back and forth (R-28)', async ({ page }) => {
+test('in the document view, a stepwise run has a stepper of its own that goes back and forth', async ({ page }) => {
   const run = (await webSection(page, 'exec-steps')).locator('.pm-step-run')
   await expect(run).toHaveAttribute('data-state', 'ready', RUNTIME)
   await expect(run).toHaveAttribute('data-step', '12')
@@ -174,7 +174,7 @@ test('in the document view, a stepwise run has a stepper of its own that goes ba
   await expect(run).toHaveAttribute('data-line', '1')
 })
 
-test('in the document view, a stepwise run loads the Python runtime only once it nears the screen (R-103)', async ({ page }) => {
+test('in the document view, a stepwise run loads the Python runtime only once it nears the screen', async ({ page }) => {
   const runtime: string[] = []
   page.on('request', (request) => {
     if (request.url().endsWith('/pyodide.asm.wasm')) runtime.push(request.url())
@@ -190,7 +190,7 @@ test('in the document view, a stepwise run loads the Python runtime only once it
   expect(runtime).toHaveLength(1)
 })
 
-test('a run in the browser cannot change what the next one finds: it gives what compile time recorded (R-99)', async ({ page }) => {
+test('a run in the browser cannot change what the next one finds: it gives what compile time recorded', async ({ page }) => {
   const blocks = (await webSection(page, 'exec-isolation')).locator('.pm-code-block[data-run="both"]')
   const [writer, reader] = [blocks.nth(0), blocks.nth(1)]
   await expect(reader.locator('.pm-output__stdout')).toHaveText('False 100\n')
@@ -202,7 +202,7 @@ test('a run in the browser cannot change what the next one finds: it gives what 
   await expect(reader.locator('.pm-output__stdout')).toHaveText('False 100\n')
 })
 
-test('a page restored from the back-forward cache keeps one Python runtime (R-102)', async ({ page }) => {
+test('a page restored from the back-forward cache keeps one Python runtime', async ({ page }) => {
   const panel = (await webSection(page, 'exec-panel')).locator('.pm-run-panel')
   const button = panel.locator('.pm-run-panel__run')
   const runtimes = () => page.workers().filter(worker => worker.url().includes('pyodide.worker')).length
@@ -235,7 +235,7 @@ test.describe('in the present view at 1920x1080', () => {
 
   const textSize = (element: Locator) => element.evaluate((el: HTMLElement) => Number.parseFloat(getComputedStyle(el).fontSize) * el.getBoundingClientRect().width / el.offsetWidth)
 
-  test('the code of a run panel and of a stepwise run follows the size of the slide and is not cut, across or down (R-27, F-19)', async ({ page }) => {
+  test('the code of a run panel and of a stepwise run follows the size of the slide and is not cut, across or down', async ({ page }) => {
     for (const [id, selector] of [['exec-panel', '.pm-run-panel'], ['exec-steps', '.pm-step-run']] as const) {
       await page.goto(`${panels().web}/exec.html?view=present&section=${id}`)
       const present = page.getByRole('region', { name: '放映' })
@@ -261,7 +261,7 @@ test.describe('in the present view at 1920x1080', () => {
     return Boolean(a && b && a.y >= b.y - 1 && a.y + a.height <= b.y + b.height + 1)
   }
 
-  test('a run panel longer than the slide keeps its controls and output on the slide; its code keeps the size and scrolls (N-05, F-19)', async ({ page }) => {
+  test('a run panel longer than the slide keeps its controls and output on the slide; its code keeps the size and scrolls', async ({ page }) => {
     await page.goto(`${panels().web}/exec.html?view=present&section=exec-long`)
     const present = page.getByRole('region', { name: '放映' })
     await expect(present).toHaveAttribute('data-section', 'exec-long')
@@ -287,7 +287,7 @@ test.describe('in the present view at 1920x1080', () => {
     expect(shown.cut).toBeLessThanOrEqual(0)
   })
 
-  test('a stepwise run steps forward and back with the present view (R-109)', async ({ page }) => {
+  test('a stepwise run steps forward and back with the present view', async ({ page }) => {
     await page.goto(`${panels().web}/exec.html?view=present&section=exec-steps`)
     const present = page.getByRole('region', { name: '放映' })
     const run = present.locator('.pm-step-run')
@@ -309,7 +309,7 @@ test.describe('in the present view at 1920x1080', () => {
 test.describe('on a phone', () => {
   test.use({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true })
 
-  test('a stepwise run puts its output below the code, which keeps its width (R-27)', async ({ page }) => {
+  test('a stepwise run puts its output below the code, which keeps its width', async ({ page }) => {
     const run = (await webSection(page, 'exec-steps')).locator('.pm-step-run')
     const pre = run.locator('.pm-step-run__source pre')
     await expect(pre).toBeVisible()
@@ -344,7 +344,7 @@ test.describe('a French deck with JavaScript and TypeScript', () => {
     return page.locator(`.slidev-page-${no} .pm-run-panel`)
   }
 
-  test('in the slides form, the run panels run JavaScript and TypeScript and speak English (R-01)', async ({ page }) => {
+  test('in the slides form, the run panels run JavaScript and TypeScript and speak English', async ({ page }) => {
     const js = await slidePanel(page, 'js-panel')
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr')
     await js.getByRole('button', { name: 'Run', exact: true }).click()
@@ -379,7 +379,7 @@ test.describe('a French deck with JavaScript and TypeScript', () => {
     await expect(panel.locator('.pm-run-panel__stdout')).toHaveText('now\nlater\n')
   })
 
-  test('a promise that rejects after the code ran fails the run, in the browser as at compile time (R-105)', async ({ page }) => {
+  test('a promise that rejects after the code ran fails the run, in the browser as at compile time', async ({ page }) => {
     interface Block { node: { type: string, children?: Block[], outputs?: { exitCode: number | null, stderr: string }[] } }
     const ir = JSON.parse(readFileSync(join(deck.dir, 'dist/ir.json'), 'utf8')) as { sections: { id: string, blocks: Block[] }[] }
     const blocks = (list: Block[]): Block[] => list.flatMap(block => [block, ...blocks(block.node.children ?? [])])
@@ -408,7 +408,7 @@ test.describe('a French deck with JavaScript and TypeScript', () => {
   })
 })
 
-test.describe('untrusted output in the slides\' runner (F-20)', () => {
+test.describe('untrusted output in the slides\' runner', () => {
   const xss = useFixture('exec/xss', { to: 'slides', link: { '@lincyaw/host': 'packages/host' } })
 
   test('an image output whose data is not base64 runs nothing and is dropped, saying why', async ({ page }) => {

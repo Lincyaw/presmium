@@ -239,7 +239,7 @@ test.describe('the reading fixture deck', () => {
     await expect.poll(() => long.evaluate(el => Math.round(el.scrollLeft + el.clientWidth) >= el.scrollWidth - 1)).toBe(true)
   })
 
-  test('WGSL shaders and Ruby are highlighted as the slides highlight them (F-80)', async ({ page }) => {
+  test('WGSL shaders and Ruby are highlighted as the slides highlight them', async ({ page }) => {
     await page.goto(deck.web('wide-content.html'))
     for (const lang of ['wgsl', 'ruby']) {
       const tokens = page.locator(`.pm-section[data-section="highlight"] .pm-code[data-lang="${lang}"] .line span`)
@@ -248,7 +248,7 @@ test.describe('the reading fixture deck', () => {
     }
   })
 
-  test('on a phone a table keeps each piece of inline code on one line and scrolls in its own block, not the page (F-81)', async ({ browser }) => {
+  test('on a phone a table keeps each piece of inline code on one line and scrolls in its own block, not the page', async ({ browser }) => {
     const context = await phone(browser)
     const page = await context.newPage()
     await page.goto(deck.web('wide-content.html'))

@@ -101,7 +101,7 @@ function fakeWords(text: string, t: number): Word[] {
   return [...text].filter(c => /\p{Script=Han}/u.test(c)).map((c, i): Word => [t + i * 300, 220, c])
 }
 
-describe('presmium build --to lecture (P-134)', () => {
+describe('presmium build --to lecture', () => {
   let dir: string
   beforeAll(() => {
     dir = deck(tmpdir(), VOICE, NARRATION)
@@ -176,7 +176,7 @@ describe('presmium check with a deck that names its engine in another spelling',
   }, 120_000)
 })
 
-describe('a separate lecture script (P-134)', () => {
+describe('a separate lecture script', () => {
   let dir: string
   beforeAll(() => {
     dir = deck(WORK, `  web: {}\n${VOICE}\n    script: lecture.script.md`, NARRATION)
@@ -247,7 +247,7 @@ async function wordless(state: { transcribe: boolean }): Promise<{ url: string, 
   }
 }
 
-describe('{only} lecture, and an engine without word times (P-134)', () => {
+describe('{only} lecture, and an engine without word times', () => {
   let dir: string
   let front: Awaited<ReturnType<typeof wordless>>
   const state = { transcribe: true }
@@ -431,7 +431,7 @@ describe('presmium dev', () => {
   }, 240_000)
 })
 
-describe('presmium dev with a cloned voice (D-7, F-57)', () => {
+describe('presmium dev with a cloned voice', () => {
   let dir: string
   let operator: string
   let consent: string
@@ -521,7 +521,7 @@ describe('presmium dev with a cloned voice (D-7, F-57)', () => {
     expect(await syntheses()).toBe(asked)
   }, 300_000)
 
-  it('gives the clips of a lecture a page loaded after the deck compiled again and other windows took the new lecture many times; a clip the cache lost is 404, not synthesized again (WP-92c, WP-92d)', async () => {
+  it('gives the clips of a lecture a page loaded after the deck compiled again and other windows took the new lecture many times; a clip the cache lost is 404, not synthesized again', async () => {
     giveConsent()
     const loaded = await (await route('tracks/script')).json() as Track
     const compiled = output.match(/^compiled /gm)!.length

@@ -67,7 +67,7 @@ function targets(value: unknown): string[] {
   return value && typeof value === 'object' ? Object.values(value).flatMap(targets) : []
 }
 
-it('packs every public package with its license and the files its exports and commands name (P-140, P-141)', () => {
+it('packs every public package with its license and the files its exports and commands name', () => {
   expect(tarballs.length).toBeGreaterThan(25)
   for (const { name, dir, files } of tarballs) {
     const pkg = JSON.parse(readFileSync(join(ROOT, dir, 'package.json'), 'utf8')) as { exports?: unknown, bin?: unknown }
@@ -83,7 +83,7 @@ it('packs every public package with its license and the files its exports and co
   expect(Object.keys(plugin.dependencies ?? {}).filter(name => name.startsWith('@lincyaw/'))).toEqual([])
 })
 
-it('checks the document with no problems and builds its web form, slides and notebook with the third-party plugin (P-141)', async () => {
+it('checks the document with no problems and builds its web form, slides and notebook with the third-party plugin', async () => {
   const check = await presmium(['check'])
   expect(check.code, check.stdout + check.stderr).toBe(0)
   expect(check.stdout).toContain('no problems')
@@ -101,7 +101,7 @@ it('checks the document with no problems and builds its web form, slides and not
   }
 }, 600_000)
 
-it('serves the web form and the slides with presmium dev (P-141)', async () => {
+it('serves the web form and the slides with presmium dev', async () => {
   const lecture = join(project, 'lecture.md')
   writeFileSync(lecture, readFileSync(lecture, 'utf8').replace('  web: {}', '  web: { port: 5406 }').replace('  slides: {}', '  slides: { port: 5407 }'))
   const dev = await start(['dev', '--to', 'web,slides'], /^watching/m)
@@ -119,7 +119,7 @@ it('serves the web form and the slides with presmium dev (P-141)', async () => {
   }
 }, 300_000)
 
-it('serves a workspace with presmium serve, its sites outside the project, the browser dependencies pre-bundled (P-141, P-120)', async () => {
+it('serves a workspace with presmium serve, its sites outside the project, the browser dependencies pre-bundled', async () => {
   const ws = join(project, 'ws')
   mkdirSync(join(ws, 'intro'), { recursive: true })
   cpSync(join(FIXTURES, 'deck/lecture.md'), join(ws, 'intro/lecture.md'))
@@ -155,7 +155,7 @@ it('serves a workspace with presmium serve, its sites outside the project, the b
   }
 }, 300_000)
 
-it('reports a plugin whose peer dependencies exclude the installed Presmium and builds the document without it (P-143)', async () => {
+it('reports a plugin whose peer dependencies exclude the installed Presmium and builds the document without it', async () => {
   cpSync(join(FIXTURES, 'incompatible'), join(project, 'incompatible'), { recursive: true })
   const { version } = JSON.parse(readFileSync(join(ROOT, 'packages/kernel/package.json'), 'utf8')) as { version: string }
   const message = `plugin "./plugin" (presmium-plugin-future 2.0.0) is not loaded: it needs @lincyaw/kernel ^9.0.0 (peerDependencies), and ${version} is installed`

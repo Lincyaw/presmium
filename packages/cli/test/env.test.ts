@@ -45,7 +45,7 @@ it('check fails on code that names an undeclared environment, on its line; it wa
 
 const EXEC_WASI = fileURLToPath(new URL('../../addon-exec-wasi', import.meta.url))
 
-it('check says on a block\'s line that its environment does not run its language, the default environment too (F-45)', async () => {
+it('check says on a block\'s line that its environment does not run its language, the default environment too', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'presmium-env-'))
   dirs.push(dir)
   writeFileSync(join(dir, 'lecture.md'), `---\ntitle: 环境的语言\nplugins:\n  - ${EXEC_WASI}\nexecute:\n  env: wasm\n  environments:\n    wasm: { kind: wasi, languages: [c] }\n---\n\n## 代码\n\n\`\`\`{code} ruby\n:run:\nputs 1\n\`\`\`\n\n\`\`\`{code} python\n:run:\n:env: wasm\nprint(1)\n\`\`\`\n`)

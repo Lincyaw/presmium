@@ -21,7 +21,7 @@ async function freePort(): Promise<number> {
   return port
 }
 
-it('a join abandoned while the server was down leaves the classroom created after it alone (P-60)', async () => {
+it('a join abandoned while the server was down leaves the classroom created after it alone', async () => {
   const port = await freePort()
   const timeoutMs = 1500
   const classroom = createClassroomConnection({ server: `ws://127.0.0.1:${port}`, base: 'http://localhost/deck/', timeoutMs })

@@ -78,7 +78,7 @@ function awarenessMessage(states: [client: number, clock: number, state: unknown
 
 const answer = (q: string, p: string, choice: number) => [`${q}:${p}`, { quizId: q, participant: p, choice: [choice] }] as const
 
-it('starts from the command, which prints its address and, on every interface, its addresses on the network (P-60)', async () => {
+it('starts from the command, which prints its address and, on every interface, its addresses on the network', async () => {
   const child = spawn(process.execPath, [BIN, '--port', '0', '--deck', deck], { stdio: ['ignore', 'pipe', 'inherit'] })
   try {
     const output = await new Promise<string>((resolve, reject) => {
@@ -150,7 +150,7 @@ it('takes no more writes once the classroom has ended', async () => {
   expect(Object.keys(answers(late.doc).toJSON())).toEqual(['q:p1'])
 })
 
-it('takes the presenter\'s writes only from the presenter, and a learner\'s entries only under their own id and of bounded size (P-60)', async () => {
+it('takes the presenter\'s writes only from the presenter, and a learner\'s entries only under their own id and of bounded size', async () => {
   const presenter = await join('room-f', { claim: 'presenter-key', participant: 'teacher', key: 'teacher-key' })
   const learner = await join('room-f', { participant: 'p1', key: 'p1-key' })
   const impostor = await join('room-f', { participant: 'p1', key: 'guessed' })
@@ -186,7 +186,7 @@ it('takes the presenter\'s writes only from the presenter, and a learner\'s entr
   expect(late.doc.getMap('store:quizzes').toJSON()).toEqual({ 's/quiz': { open: true } })
 })
 
-it('finds the participant where its collection puts it in the key: a learner whose id is a part of a section id cannot overwrite nor delete another learner\'s answer, and is told so (F-27)', async () => {
+it('finds the participant where its collection puts it in the key: a learner whose id is a part of a section id cannot overwrite nor delete another learner\'s answer, and is told so', async () => {
   const presenter = await join('room-sec', { claim: 'presenter-key', participant: 'teacher', key: 'teacher-key' })
   const alice = await join('room-sec', { participant: 'alice', key: 'alice-key' })
   presenter.doc.getMap('session').set('status', 'active')
@@ -252,7 +252,7 @@ function structAfter(client: number, clock: number, value: unknown): Uint8Array 
   return encoding.toUint8Array(encoder)
 }
 
-it('refuses a learner\'s update that would wait in the room, such as one deleting what the presenter writes next or placing a value after it (P-60, P-61)', async () => {
+it('refuses a learner\'s update that would wait in the room, such as one deleting what the presenter writes next or placing a value after it', async () => {
   const presenter = await join('room-g', { claim: 'presenter-key' })
   presenter.doc.getMap('session').set('status', 'active')
   const next = Y.getState(presenter.doc.store, presenter.doc.clientID)
@@ -280,7 +280,7 @@ it('refuses a learner\'s update that would wait in the room, such as one deletin
   expect(presenter.doc.getMap('session').get('cursor')).toEqual({ slide: 3, step: 0 })
 })
 
-it('refuses a learner\'s structs in the name of the presenter\'s client, which would make the presenter\'s own write of that clock a duplicate that every document ignores (P-60, P-61)', async () => {
+it('refuses a learner\'s structs in the name of the presenter\'s client, which would make the presenter\'s own write of that clock a duplicate that every document ignores', async () => {
   const presenter = await join('room-j', { claim: 'presenter-key' })
   presenter.provider.awareness.setLocalStateField('participant', { id: 'teacher', name: '王老师', role: 'presenter' })
   const learner = await join('room-j', { participant: 'p1', key: 'p1-key' })
@@ -314,7 +314,7 @@ it('refuses a learner\'s structs in the name of the presenter\'s client, which w
   expect(late.doc.getMap('store:answers').toJSON()).toEqual({})
 })
 
-it('keeps the presenter\'s client, known from awareness only, as the presenter\'s while its connection is down: a learner can neither show it nor write as it (P-60, R-20)', async () => {
+it('keeps the presenter\'s client, known from awareness only, as the presenter\'s while its connection is down: a learner can neither show it nor write as it', async () => {
   const presenter = await join('room-k', { claim: 'presenter-key' })
   presenter.provider.awareness.setLocalStateField('participant', { id: 'teacher', name: '王老师', role: 'presenter' })
   const learner = await join('room-k', { participant: 'p1', key: 'p1-key' })
@@ -344,7 +344,7 @@ it('keeps the presenter\'s client, known from awareness only, as the presenter\'
   expect(drops('room-k')).toHaveLength(2)
 })
 
-it('closes the connection of a refused update, leaves nothing of it in the room, and takes the learner\'s writes again once the client starts over (F-27)', async () => {
+it('closes the connection of a refused update, leaves nothing of it in the room, and takes the learner\'s writes again once the client starts over', async () => {
   const presenter = await join('room-h', { claim: 'presenter-key' })
   const learner = await join('room-h', { participant: 'p1', key: 'p1-key' })
   const code = providerClosed(learner.provider)
@@ -363,7 +363,7 @@ it('closes the connection of a refused update, leaves nothing of it in the room,
   expect(Object.keys(JSON.parse(readFileSync(joinPath(deck, file), 'utf8')).document).sort()).toEqual(['session', 'store:answers'])
 })
 
-it('takes awareness states only for a connection\'s own clients, naming the participant it proved (P-60)', async () => {
+it('takes awareness states only for a connection\'s own clients, naming the participant it proved', async () => {
   const presenter = await join('room-i', { claim: 'presenter-key', participant: 'teacher', key: 'teacher-key' })
   presenter.provider.awareness.setLocalStateField('participant', { id: 'teacher', name: '王老师', role: 'presenter' })
   const learner = await join('room-i', { participant: 'p1', key: 'p1-key' })

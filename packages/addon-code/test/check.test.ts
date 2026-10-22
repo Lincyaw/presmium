@@ -245,7 +245,7 @@ async function codeNodes(dir: string, deck = 'deck'): Promise<CodeNode[]> {
   return doc.sections.flatMap(s => s.blocks.map(b => b.node)).filter(node => node.type === 'code') as unknown as CodeNode[]
 }
 
-it('finds a fragment by its syntax with an ast-grep pattern, and reports it lost once nothing matches (P-11)', async () => {
+it('finds a fragment by its syntax with an ast-grep pattern, and reports it lost once nothing matches', async () => {
   const repo = createRepo()
   const guard = (await codeNodes(repo.dir)).find(node => node.origin.anchor === GUARD)
   expect(guard?.value).toBe('if (prices.length === 0)\n  throw new Error(\'empty\')')
@@ -260,7 +260,7 @@ it('finds a fragment by its syntax with an ast-grep pattern, and reports it lost
   }])
 })
 
-it('reads pinned code from a git submodule and links it to the submodule\'s repository (P-12)', async () => {
+it('reads pinned code from a git submodule and links it to the submodule\'s repository', async () => {
   const repo = createRepo()
   const lib = mkdtempSync(join(tmpdir(), 'presmium-lib-'))
   repos.push(lib)
@@ -297,7 +297,7 @@ presmium:
   expect(part?.origin).toMatchObject({ file: 'vendor/lib/src/x.ts', pin: pinned, permalink: `https://github.com/acme/lib/blob/${pinned}/src/x.ts#L3-L5` })
 })
 
-it('reads anchor paths from the repository root and says so when a path is written from the deck (R-107)', async () => {
+it('reads anchor paths from the repository root and says so when a path is written from the deck', async () => {
   const repo = createRepo()
   mkdirSync(join(repo.dir, 'deck/lib'))
   writeFileSync(join(repo.dir, 'deck/lib/util.ts'), '// #region one\nexport const one = 1\n// #endregion one\n')
@@ -316,7 +316,7 @@ it('reads anchor paths from the repository root and says so when a path is writt
   })])
 })
 
-it('links a section\'s code to the repository its {config} names (R-26)', async () => {
+it('links a section\'s code to the repository its {config} names', async () => {
   const repo = createRepo()
   writeFileSync(repo.deck, `${readFileSync(repo.deck, 'utf8')}
 ## Elsewhere
@@ -337,7 +337,7 @@ presmium.code: { repo: https://github.com/acme/elsewhere }
   ])
 })
 
-it('refuses an anchor that names a file in .git, putting nothing of it in the IR, and reads the working tree\'s own files (F-26)', async () => {
+it('refuses an anchor that names a file in .git, putting nothing of it in the IR, and reads the working tree\'s own files', async () => {
   const repo = createRepo()
   sh(repo.dir, 'git', ['remote', 'add', 'origin', 'https://probe-user:ghp_PROBESECRET0123456789@github.com/acme/shop.git'])
   writeFileSync(repo.deck, `---\nplugins:\n  - ${ADDON}\n---\n\n## Named\n\n\`\`\`{code-ref} region:.git/config#core\n\`\`\`\n`)

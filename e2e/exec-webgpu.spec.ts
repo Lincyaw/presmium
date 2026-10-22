@@ -20,7 +20,7 @@ async function runCode(code: Locator): Promise<Locator> {
   return code.locator('.pm-output')
 }
 
-test('the panel names the shader\'s parameters for learners: a field per buffer, and its history sums the arguments up (D-10)', async ({ page }) => {
+test('the panel names the shader\'s parameters for learners: a field per buffer, and its history sums the arguments up', async ({ page }) => {
   const panel = (await webBlock(page, 'shader', 'add')).locator('.pm-run-panel')
   await expect(panel.locator('.pm-run-panel__run')).toBeEnabled()
   const labels = panel.locator('.pm-run-panel__param > span')
@@ -93,7 +93,7 @@ test('without a GPU adapter, the shader shows its recorded output and why', asyn
 
 const VULKAN = ['--enable-unsafe-webgpu', '--enable-features=Vulkan', '--use-angle=vulkan']
 
-test('on the GPU that Chromium finds through Vulkan, the shader and jax-js run on it (P-104; skipped without one)', async ({ playwright }) => {
+test('on the GPU that Chromium finds through Vulkan, the shader and jax-js run on it (skipped without one)', async ({ playwright }) => {
   test.setTimeout(180_000)
   const browser = await playwright.chromium.launch({ args: VULKAN })
   try {

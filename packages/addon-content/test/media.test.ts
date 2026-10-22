@@ -47,7 +47,7 @@ function deck(text: string): string {
   return dir
 }
 
-it('writes a video with its poster and two caption tracks into the notebook, the files copied to media/ (P-42)', async () => {
+it('writes a video with its poster and two caption tracks into the notebook, the files copied to media/', async () => {
   const dir = deck(DECK)
   const { code, stdout, stderr } = await presmium(dir, ['build', '--to', 'notebook', '--out', 'out'])
   expect(code, stdout + stderr).toBe(0)
@@ -64,7 +64,7 @@ it('writes a video with its poster and two caption tracks into the notebook, the
   expect(video).toContain('<figcaption>智能体环路的一轮</figcaption>')
 })
 
-it('fails the build when a caption file does not exist, on the line of the {video} (P-42)', async () => {
+it('fails the build when a caption file does not exist, on the line of the {video}', async () => {
   const dir = deck(DECK.replace('films/loop.zh.vtt', 'films/missing.zh.vtt'))
   const line = DECK.split('\n').findIndex(text => text.startsWith('```{video}')) + 1
   const { code, stdout, stderr } = await presmium(dir, ['build', '--to', 'notebook', '--out', 'out'])

@@ -51,7 +51,7 @@ it('with --install renders each commit with the dependencies of its own lockfile
   expect(shared.stderr).toContain('warning: changes outside the deck are not rendered from their commit: addon/style.css; --install renders each commit with its own dependencies')
 }, 360_000)
 
-it('renders the web form of both commits, and lists the web page whose {only} web content changed (P-53)', async () => {
+it('renders the web form of both commits, and lists the web page whose {only} web content changed', async () => {
   const dir = repository('web')
   const lecture = join(dir, 'lecture.md')
   writeFileSync(lecture, readFileSync(lecture, 'utf8').replace('the first version', 'the second version, with more words'))

@@ -1,4 +1,4 @@
-// A plugin written outside Presmium, installed from its tarball (P-141): `{hello} <name>` becomes its
+// A plugin written outside Presmium, installed from its tarball: `{hello} <name>` becomes its
 // component, which both forms show; the notebook shows the fallback. Its Vite plugin has both forms'
 // frameworks import this file, TypeScript under node_modules.
 import type { DirectiveSpec, PresmiumNodePlugin } from '@lincyaw/kernel'

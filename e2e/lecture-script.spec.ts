@@ -70,7 +70,7 @@ function stop(child: ChildProcess | undefined): Promise<void> {
   return exited
 }
 
-test.describe('a lecture synthesized from the narration (P-134)', () => {
+test.describe('a lecture synthesized from the narration', () => {
   test.describe.configure({ mode: 'serial' })
   let fake: Awaited<ReturnType<typeof startFake>> | undefined
   let dir: string
@@ -92,7 +92,7 @@ test.describe('a lecture synthesized from the narration (P-134)', () => {
     if (dir) rmSync(dir, { recursive: true, force: true })
   })
 
-  test('spotlights lines 2 and 3 of code-1 when the word after the cue is said, labels the AI voice, says {say} as its alias (N-08)', async ({ page }) => {
+  test('spotlights lines 2 and 3 of code-1 when the word after the cue is said, labels the AI voice, says {say} as its alias', async ({ page }) => {
     const spot = track.events.find(([, type]) => type === 'spot')!
     expect(spot[2]).toMatchObject({ block: 'merge/code-1', lines: '2-3' })
     const [id, index] = spot[2].at as [string, number]
@@ -169,7 +169,7 @@ async function transcribingFront(fake: string, transcripts: ReturnType<typeof se
   return state
 }
 
-test.describe('a recorded lecture transcribed, corrected and said again (P-132, P-133)', () => {
+test.describe('a recorded lecture transcribed, corrected and said again', () => {
   test.describe.configure({ mode: 'serial', timeout: 240_000 })
   let fake: Awaited<ReturnType<typeof startFake>> | undefined
   let front: Awaited<ReturnType<typeof transcribingFront>> | undefined

@@ -149,7 +149,7 @@ it('shows a quiz as a question list and an exercise as code cells; live-only com
   expect(of('live')).toEqual([{ type: 'markdown', source: '## 课堂' }])
 })
 
-it('writes an exercise\'s prompt as the deck\'s Markdown, its local image copied, in the deck\'s language; a fenced task list is no option (N-07, P-75)', async () => {
+it('writes an exercise\'s prompt as the deck\'s Markdown, its local image copied, in the deck\'s language; a fenced task list is no option', async () => {
   const { dir, of } = await notebook(FRENCH, { 'img/dot.svg': '<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"/>' })
   const [prompt, starter, checks] = of('exercise').slice(1)
   expect(prompt?.source).toContain('**Exercise**')

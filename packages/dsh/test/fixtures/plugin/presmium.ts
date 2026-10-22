@@ -1,5 +1,5 @@
 // The test plugin of packages/dsh/test: an agent tool (`AgentTool`) of the documents that list it, which MCP
-// lists and the bundle registers as `presmium__fixture_note` (G-3). Plain objects: the fixture needs no package.
+// lists and the bundle registers as `presmium__fixture_note`. Plain objects: the fixture needs no package.
 export default {
   id: 'fixture.dsh',
   version: '0.1.0',

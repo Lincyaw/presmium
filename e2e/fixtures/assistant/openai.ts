@@ -1,5 +1,5 @@
 // An OpenAI-compatible Chat Completions service on this machine for the end-to-end tests of readers' questions
-// (P-112): what a reader fills in as his own model service. It answers `POST <base>/chat/completions` with the
+//: what a reader fills in as his own model service. It answers `POST <base>/chat/completions` with the
 // pieces `answer` gives for the request, streamed as server-sent events (`data: {choices:[{delta}]}`, then
 // `[DONE]`), allows a page of any origin to call it (CORS, its preflight too), records what it received, and
 // can hold the rest of an answer after its first piece until the test lets it go. Not a model: the browser

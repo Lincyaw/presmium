@@ -109,7 +109,7 @@ async function lowContrastTexts(slide: Locator): Promise<string[]> {
   return texts.filter(t => contrast(t.fg, t.bg) < 4.5).map(t => `${t.text} (${contrast(t.fg, t.bg).toFixed(2)})`)
 }
 
-test('offline, the slides still run Python: the service worker keeps the Pyodide runtime (P-23, P-51)', async ({ page, context }) => {
+test('offline, the slides still run Python: the service worker keeps the Pyodide runtime', async ({ page, context }) => {
   await page.goto(slides(deck().slide('classroom-exercise')))
   await goOffline(page, context)
   await page.reload()
@@ -186,7 +186,7 @@ test.describe('web form', () => {
     await expect(page.locator('.pm-section[data-section="publish"]')).toContainText('def add(a, b):')
   })
 
-  test('offline, a web page still runs Python once it has run it: the service worker keeps the Pyodide runtime (P-23, P-51, D-6)', async ({ page, context }) => {
+  test('offline, a web page still runs Python once it has run it: the service worker keeps the Pyodide runtime', async ({ page, context }) => {
     await page.goto(`${deck().web}/classroom.html`)
     const exercise = page.locator('.pm-section[data-section="classroom-exercise"] .pm-exercise')
     await controlled(page)
@@ -210,7 +210,7 @@ test.describe('web form', () => {
     test.use({ serviceWorkers: 'block' })
 
     for (const colorScheme of ['light', 'dark'] as const) {
-      test(`in high contrast, every page of the web form reaches WCAG AA, the dimmed narration of a scrolling section included (${colorScheme}, F-72)`, async ({ page }) => {
+      test(`in high contrast, every page of the web form reaches WCAG AA, the dimmed narration of a scrolling section included (${colorScheme})`, async ({ page }) => {
         test.setTimeout(240_000)
         await page.emulateMedia({ colorScheme })
         await page.addInitScript(() => localStorage.setItem('presmium.publish.contrast', 'high'))
@@ -241,7 +241,7 @@ test.describe('web form', () => {
   })
 })
 
-test.describe('web form, offline runtimes (D-6)', () => {
+test.describe('web form, offline runtimes', () => {
   const wasi = useFixture('exec-wasi', {
     to: 'web',
     link: { '@lincyaw/slidev-addon-exec-wasi': 'packages/addon-exec-wasi' },
@@ -249,7 +249,7 @@ test.describe('web form, offline runtimes (D-6)', () => {
       .replace("  - '@lincyaw/slidev-addon-exec-wasi'\n", "  - '@lincyaw/slidev-addon-exec-wasi'\n  - '@lincyaw/slidev-addon-publish'\n")),
   })
 
-  test('a first visit caches no C compiler; once saved for offline use, C runs offline (F-73)', async ({ page, context }) => {
+  test('a first visit caches no C compiler; once saved for offline use, C runs offline', async ({ page, context }) => {
     test.setTimeout(300_000)
     await page.goto(`${wasi().web}/?section=c-program`)
     await controlled(page)

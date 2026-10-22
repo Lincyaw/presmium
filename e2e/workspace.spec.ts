@@ -141,7 +141,7 @@ plugins:
 第二节的内容。
 `
 
-test.describe('presmium serve on the local network (E-3, revised), with the classroom sync on its own port', () => {
+test.describe('presmium serve on the local network (revised), with the classroom sync on its own port', () => {
   test.describe.configure({ mode: 'serial', timeout: 180_000 })
   test.skip(!NETWORK, 'this machine has no network address besides the loopback')
   const dirs: string[] = []

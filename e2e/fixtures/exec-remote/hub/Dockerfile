@@ -1,4 +1,4 @@
-# A JupyterHub for e2e/exec-remote.spec.ts (P-105, `auth: prompt` with `{user}`): the image of
+# A JupyterHub for e2e/exec-remote.spec.ts (`auth: prompt` with `{user}`): the image of
 # templates/env/compose (it has JupyterHub and its single-user server) with the proxy JupyterHub needs,
 # DummyAuthenticator, and single-user servers as local processes. Set up as the Zero to JupyterHub
 # values of templates/env/kubernetes/README.md: the hub's API and the user servers answer the pages of

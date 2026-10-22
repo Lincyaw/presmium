@@ -190,7 +190,7 @@ test.describe('the reading fixture deck', () => {
     await expect(menu(page)).toHaveValue('document')
   })
 
-  test('a reload keeps the present view and the presenter window at their section and step (P-77)', async ({ page }) => {
+  test('a reload keeps the present view and the presenter window at their section and step', async ({ page }) => {
     await page.goto(deck.web('basics.html?view=present'))
     const present = page.getByRole('region', { name: '放映' })
     await expect(present).toHaveAttribute('data-section', 'reading')
@@ -499,7 +499,7 @@ test.describe('steps in the web form (e2e/fixtures/viewer/steps)', () => {
   })
   test.afterAll(() => site?.close())
 
-  test('the present view shows a step the same, whether it opens at the step or steps there from step 0 (K-04, F-77)', async ({ page }) => {
+  test('the present view shows a step the same, whether it opens at the step or steps there from step 0', async ({ page }) => {
     const present = page.getByRole('region', { name: '放映' })
     const { steps } = site.doc.sections.find(s => s.id === 'walk')!
     const settledAt = async (step: number) => {
@@ -700,7 +700,7 @@ test.describe('presmium dev', () => {
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(before)
   })
 
-  test('a page whose request for the current document is answered before two edits, and arrives after them, shows the second edit (F-84)', async ({ page }) => {
+  test('a page whose request for the current document is answered before two edits, and arrives after them, shows the second edit', async ({ page }) => {
     await openDev(page, `${dev.url}web.html`, '.pm-section[data-section="scrolly"]')
     const scrolly = page.locator('.pm-section[data-section="scrolly"]')
     let release!: () => void

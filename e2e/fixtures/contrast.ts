@@ -1,4 +1,4 @@
-// WCAG AA in the page (N-10): the one check of the specs of the shell (e2e/design.spec.ts), the plugins' UIs and the
+// WCAG AA in the page: the one check of the specs of the shell (e2e/design.spec.ts), the plugins' UIs and the
 // slides theme (e2e/plugin-ui.spec.ts) and the remote environment's token dialog (e2e/exec-remote.spec.ts).
 import type { Page } from '@playwright/test'
 

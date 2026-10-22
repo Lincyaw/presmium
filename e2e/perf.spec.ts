@@ -105,7 +105,7 @@ async function keyToFrame(page: Page, key: string, shown: string): Promise<numbe
   return page.evaluate(() => (window as { pmFrame?: Promise<number> }).pmFrame!)
 }
 
-test(`the first screen of each form shows within 2 s on a deck of ${SECTIONS} sections (N-01)`, async ({ browser }) => {
+test(`the first screen of each form shows within 2 s on a deck of ${SECTIONS} sections`, async ({ browser }) => {
   expect(Object.keys(deck.slides)).toHaveLength(SECTIONS)
   const screens = {
     'first slide': await firstRender(browser, `${slides}/1`, '.slidev-page-1 .slidev-layout h1'),
@@ -116,7 +116,7 @@ test(`the first screen of each form shows within 2 s on a deck of ${SECTIONS} se
   for (const [screen, ms] of Object.entries(screens)) expect(ms, screen).toBeLessThan(2000)
 })
 
-test('a slides click, a slides page turn and a step of the web present view render within 100 ms (N-02)', async ({ page }) => {
+test('a slides click, a slides page turn and a step of the web present view render within 100 ms', async ({ page }) => {
   await page.goto(`${slides}/50`)
   await expect(page.locator('.slidev-page-50 .slidev-layout h1')).toBeVisible()
   const hidden = '.slidev-page-50 .slidev-vclick-hidden'
@@ -132,7 +132,7 @@ test('a slides click, a slides page turn and a step of the web present view rend
   for (const [action, ms] of Object.entries({ click, turn, step })) expect(ms, action).toBeLessThan(100)
 })
 
-test('on slides with a Monaco runner, a flowchart and a mind map, a key press is painted within 100 ms, as the browser times it (N-02, F-83)', async ({ page }) => {
+test('on slides with a Monaco runner, a flowchart and a mind map, a key press is painted within 100 ms, as the browser times it', async ({ page }) => {
   await page.addInitScript(() => {
     const keys: { duration: number, slide: string }[] = []
     Object.assign(window, { pmKeys: keys })
@@ -185,7 +185,7 @@ function p95(values: number[]): number {
   return sorted[Math.floor(0.95 * (sorted.length - 1))]!
 }
 
-test('the guidance cursor of the present view and the slides\' page turns keep 60 frames a second (N-02)', async ({ page }) => {
+test('the guidance cursor of the present view and the slides\' page turns keep 60 frames a second', async ({ page }) => {
   await page.goto(`${guide.web}/guide.html?view=present&section=guide&step=0`)
   const present = page.locator('.pm-present')
   await expect(present.locator('.pm-cursor')).toBeAttached()

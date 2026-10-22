@@ -1,4 +1,4 @@
-# A remote environment for Presmium (P-105, P-106): one Jupyter Server from a docker-stacks image
+# A remote environment for Presmium: one Jupyter Server from a docker-stacks image
 # pinned by digest. Code blocks with `:env: <name>` run in its kernels, at build time and in the
 # browser; `{terminal} <name>` opens its terminals. See README.md.
 #

@@ -200,7 +200,7 @@ afterAll(() => {
   for (const path of [dir, operator]) if (path) rmSync(path, { recursive: true, force: true })
 })
 
-it('publishes each recorded lecture without the teachers\' sections, nor what was said and shown in a section that lost something for the teachers since its recording, in a build for students (P-55, F-13)', async () => {
+it('publishes each recorded lecture without the teachers\' sections, nor what was said and shown in a section that lost something for the teachers since its recording, in a build for students', async () => {
   const out = join(dir, 'student')
   const built = await run(process.execPath, [PRESMIUM_BIN, 'build', '--audience', 'student', '--to', 'lecture', '--out', out], {
     cwd: dir,

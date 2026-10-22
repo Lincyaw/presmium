@@ -185,7 +185,7 @@ describe('presmium studio installed from the packed packages', () => {
     home?.close()
   }, 120_000)
 
-  it('prints one address, which opens the workbench (P-125, P-141)', async () => {
+  it('prints one address, which opens the workbench', async () => {
     const ws = join(project, 'ws')
     mkdirSync(join(ws, 'intro'), { recursive: true })
     cpSync(join(CONSUMER, 'deck/lecture.md'), join(ws, 'intro/lecture.md'))

@@ -3,5 +3,5 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Test plugin: in-memory session and classroomStore services in place of @lincyaw/slidev-addon-session (K-08)"
+  "description": "Test plugin: in-memory session and classroomStore services in place of @lincyaw/slidev-addon-session"
 }

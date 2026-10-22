@@ -354,7 +354,7 @@ test.describe('a classroom', () => {
     await close()
   })
 
-  test('a learner who closes the tab and joins again is the same participant: the quiz counts them once (P-60, P-64)', async ({ browser }) => {
+  test('a learner who closes the tab and joins again is the same participant: the quiz counts them once', async ({ browser }) => {
     const { presenter, a, link, close } = await classroom(browser, `${web.url}/classroom.html`, 'web')
     await browseAlone(a)
     await quiz(presenter).getByRole('button', { name: '开放作答' }).click()
@@ -375,7 +375,7 @@ test.describe('a classroom', () => {
     await close()
   })
 
-  test('entries another client writes without their shape leave the presenter\'s overview and the tally intact, and those of an earlier version count (P-64, P-67)', async ({ browser }) => {
+  test('entries another client writes without their shape leave the presenter\'s overview and the tally intact, and those of an earlier version count', async ({ browser }) => {
     const { presenter, a, room, close } = await classroom(browser, `${web.url}/classroom.html`, 'web')
     await browseAlone(a)
     await quiz(presenter).getByRole('button', { name: '开放作答' }).click()
@@ -405,7 +405,7 @@ test.describe('a classroom', () => {
     await close()
   })
 
-  test('after a write the classroom server refuses, the learner\'s window starts again from the classroom, says so, and the next answer counts (P-60)', async ({ browser }) => {
+  test('after a write the classroom server refuses, the learner\'s window starts again from the classroom, says so, and the next answer counts', async ({ browser }) => {
     const { presenter, a, close } = await classroom(browser, `${web.url}/classroom.html`, 'web')
     await browseAlone(a)
     await quiz(presenter).getByRole('button', { name: '开放作答' }).click()
@@ -501,7 +501,7 @@ renderers:
     if (deck) rmSync(deck, { recursive: true, force: true })
   })
 
-  test('the session panel, the join form and the quiz speak the deck\'s language, not the browser\'s (N-07)', async ({ browser }) => {
+  test('the session panel, the join form and the quiz speak the deck\'s language, not the browser\'s', async ({ browser }) => {
     const contexts = await Promise.all([browser.newContext({ locale: 'zh-CN' }), browser.newContext({ locale: 'zh-CN' })])
     const [presenter, learner] = await Promise.all(contexts.map(context => context.newPage())) as [Page, Page]
     await presenter.goto(`${web.url}/quiz.html`)
@@ -576,7 +576,7 @@ renderers:
     if (deck) rmSync(deck, { recursive: true, force: true })
   })
 
-  test('a French deck in a French browser speaks English, at compile time and in the page (N-07)', async ({ browser }) => {
+  test('a French deck in a French browser speaks English, at compile time and in the page', async ({ browser }) => {
     const context = await browser.newContext({ locale: 'fr-FR' })
     const page = await context.newPage()
     await page.goto(`${web.url}/quiz.html`)
@@ -616,7 +616,7 @@ renderers:
     if (deck) rmSync(deck, { recursive: true, force: true })
   })
 
-  test('runs a quiz round with the quiz unchanged, and the start report shows the provider that replaced addon-session (K-08)', async ({ browser }) => {
+  test('runs a quiz round with the quiz unchanged, and the start report shows the provider that replaced addon-session', async ({ browser }) => {
     const context = await browser.newContext()
     const presenter = await context.newPage()
     await presenter.goto(`${web.url}/quiz.html?as=presenter`)
@@ -648,7 +648,7 @@ export function total(prices: number[]): number {
 // #endregion total
 `
 
-test('notes stay attached to their section and to a labelled code block when the deck and the code change (P-63)', async ({ page }) => {
+test('notes stay attached to their section and to a labelled code block when the deck and the code change', async ({ page }) => {
   test.setTimeout(480_000)
   const deck = writeDeck('notes', `
 title: Notes

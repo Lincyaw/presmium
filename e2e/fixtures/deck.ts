@@ -149,7 +149,7 @@ export interface FixtureOptions {
   edit?: (dir: string) => void
   /** Renderers to build, as `--to` takes them. */
   to?: string
-  /** Builds the view of this audience (`presmium build --audience`, P-55), e.g. the student build. */
+  /** Builds the view of this audience (`presmium build --audience`), e.g. the student build. */
   audience?: string
   /** Packages linked into the deck's node_modules (see `deckDir`). */
   link?: Record<string, string>

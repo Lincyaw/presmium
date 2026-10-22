@@ -2,7 +2,7 @@
   "name": "presmium-plugin-hello",
   "version": "1.0.0",
   "private": true,
-  "description": "A third-party Presmium plugin for the consumer install (P-141): a directive and a component of both forms",
+  "description": "A third-party Presmium plugin for the consumer install: a directive and a component of both forms",
   "license": "Apache-2.0",
   "type": "module",
   "keywords": [

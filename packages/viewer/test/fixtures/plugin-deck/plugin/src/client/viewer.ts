@@ -1,5 +1,5 @@
 /**
- * Example viewer plugin (K-20, docs/ir.md section 8.2): a view that shows the
+ * Example viewer plugin (docs/ir.md section 8.2): a view that shows the
  * sections of a page as cards, a renderer for `csv` code blocks and one for
  * the component PmSwap.
  */

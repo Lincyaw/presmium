@@ -1,6 +1,6 @@
 # 远端环境：Kubernetes（参考配置）
 
-这里只给文档与清单片段（P-106），不维护 Helm chart，也不经测试：集群、GPU Operator、gVisor 或 Kata 的安装、入口与证书、身份提供方由你负责。单机与小班用 `../compose/`。
+这里只给文档与清单片段，不维护 Helm chart，也不经测试：集群、GPU Operator、gVisor 或 Kata 的安装、入口与证书、身份提供方由你负责。单机与小班用 `../compose/`。
 
 两种做法，文稿的写法相同（`kind: jupyter`，`docs/ir.md` 2.7 节）：
 

@@ -72,7 +72,7 @@ afterAll(() => {
   if (dir) rmSync(dir, { recursive: true, force: true })
 })
 
-describe('presmium-lecture export (P-135)', () => {
+describe('presmium-lecture export', () => {
   it('writes the lecture as a video with its audio, as long as the track', async () => {
     const built = await run(process.execPath, [PRESMIUM_BIN, 'build', '--to', 'lecture'], { cwd: dir, env: env(engine) })
     expect(built.code, built.stdout + built.stderr).toBe(0)

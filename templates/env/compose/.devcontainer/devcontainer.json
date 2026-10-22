@@ -1,5 +1,5 @@
 // The remote environment as a dev container: the same compose definition (../compose.yaml), to work
-// in it locally (VS Code, the Dev Containers CLI) or to replicate it (P-26). Its variables come from
+// in it locally (VS Code, the Dev Containers CLI) or to replicate it. Its variables come from
 // the shell, as for docker compose: JUPYTER_TOKEN is required.
 {
   "name": "Presmium remote environment",

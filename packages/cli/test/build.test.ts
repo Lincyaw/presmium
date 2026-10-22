@@ -65,7 +65,7 @@ it('dev recompiles when a source file is saved and pushes the IR to the renderer
   expect(json(server).at(-1)).toBe('closed')
 })
 
-it('dev recompiles when code that a pass read changes, when a commit moves the revision it read, and when a declared file changes (K-09)', async () => {
+it('dev recompiles when code that a pass read changes, when a commit moves the revision it read, and when a declared file changes', async () => {
   const deck = join(fixtures(), 'watch')
   const git = async (...args: string[]) => {
     const result = await run('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgsign=false', ...args], { cwd: deck })
@@ -100,7 +100,7 @@ it('dev recompiles when code that a pass read changes, when a commit moves the r
   expect(await exited).toBe(0)
 })
 
-it('dev compiles at most once more after the compilation under way, however often the source is saved meanwhile (R-05)', async () => {
+it('dev compiles at most once more after the compilation under way, however often the source is saved meanwhile', async () => {
   const deck = join(fixtures(), 'slow')
   mkdirSync(deck)
   const text = (n: number) => `---\ntitle: Slow\nplugins:\n  - ../addons/slow\n---\n\n## Saved\n\nsave ${n}\n`
@@ -123,7 +123,7 @@ it('dev compiles at most once more after the compilation under way, however ofte
   }
 }, 60_000)
 
-it('dev compiles an included file once it is created in a directory that did not exist, and says when the plugins change (R-34, R-35)', async () => {
+it('dev compiles an included file once it is created in a directory that did not exist, and says when the plugins change', async () => {
   const deck = join(fixtures(), 'grow')
   mkdirSync(deck)
   const entry = join(deck, 'lecture.md')

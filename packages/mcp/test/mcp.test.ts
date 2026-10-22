@@ -181,7 +181,7 @@ describe('presmium dev', () => {
     await subscription.close()
   })
 
-  it('gives the position of the presenting window by its section, the step in the whole deck\'s numbering by the keys a window of another numbering reports; navigate sends those keys (F-41, F-85)', async () => {
+  it('gives the position of the presenting window by its section, the step in the whole deck\'s numbering by the keys a window of another numbering reports; navigate sends those keys', async () => {
     const page = await window('teaching')
     const client = await connect()
     const where = async () => resultOf(await client.callTool({ name: 'get_position', arguments: {} })).position as Record<string, unknown>
@@ -202,7 +202,7 @@ describe('presmium dev', () => {
   })
 })
 
-it('presmium-mcp finds what presmium check finds, a plugin\'s finding on its line; its host compiles the whole deck (F-03)', async () => {
+it('presmium-mcp finds what presmium check finds, a plugin\'s finding on its line; its host compiles the whole deck', async () => {
   const dir = deck()
   const client = new Client({ name: 'presmium-test', version: '0.1.0' })
   try {

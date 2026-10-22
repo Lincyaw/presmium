@@ -129,7 +129,7 @@ test.describe('recording in the present view', () => {
     expect(readFileSync(join(dir, 'lectures', id, '.gitignore'), 'utf8')).toMatch(/^audio\/$/m)
   })
 
-  test('records strokes of the laser and the marker as ink and a hint as hint, uploading the audio every 5 s while it records (P-90)', async ({ page }) => {
+  test('records strokes of the laser and the marker as ink and a hint as hint, uploading the audio every 5 s while it records', async ({ page }) => {
     await openDevPage(page, `${dev.url}?view=present&section=merge`, page.getByRole('region', { name: '讲授录制' }))
     const recorder = page.getByRole('region', { name: '讲授录制' })
     const code = page.locator('.pm-present .pm-block[data-block="merge-code"]')
@@ -159,7 +159,7 @@ test.describe('recording in the present view', () => {
     expect(track.audio?.[0]?.duration).toBeGreaterThan(5)
   })
 
-  test('records one section again: the lecture keeps the other sections, and the check still reports what changed in them since (P-90, P-130)', async ({ page }) => {
+  test('records one section again: the lecture keeps the other sections, and the check still reports what changed in them since', async ({ page }) => {
     await openDevPage(page, `${dev.url}?view=present`, page.getByRole('region', { name: '讲授录制' }))
     const present = page.locator('.pm-present')
     const code = present.locator('.pm-block[data-block="merge-code"]')
@@ -211,7 +211,7 @@ test.describe('recording in the present view', () => {
     }
   })
 
-  test('records the camera when it is on, and the track refers to the video (P-90)', async ({ page }) => {
+  test('records the camera when it is on, and the track refers to the video', async ({ page }) => {
     await openDevPage(page, `${dev.url}?view=present`, page.getByRole('region', { name: '讲授录制' }))
     const recorder = page.getByRole('region', { name: '讲授录制' })
     await recorder.getByLabel('摄像头').check()
@@ -229,7 +229,7 @@ test.describe('recording in the present view', () => {
     expect(track.audio).toHaveLength(1)
   })
 
-  test('records the screen too, asking for it before the microphone and the camera (P-90)', async ({ page }) => {
+  test('records the screen too, asking for it before the microphone and the camera', async ({ page }) => {
     await page.addInitScript(() => {
       const media = navigator.mediaDevices
       const asked: string[] = (window as unknown as { asked: string[] }).asked = []
@@ -372,7 +372,7 @@ test.describe('playback of a lecture track', () => {
 
   const time = async (page: Page) => Number(await page.getByRole('region', { name: '讲授回放' }).getAttribute('data-time'))
 
-  test('seeks to a go and to a sentence, and restores the lecture after the viewer tried it (P-131)', async ({ page }) => {
+  test('seeks to a go and to a sentence, and restores the lecture after the viewer tried it', async ({ page }) => {
     const player = await open(page)
     const present = page.locator('.pm-present')
     await expect(present).toHaveAttribute('data-section', 'intro')
@@ -403,7 +403,7 @@ test.describe('playback of a lecture track', () => {
     expect(await time(page)).toBe(6100)
   })
 
-  test('jumps to a step of a section (P-131)', async ({ page }) => {
+  test('jumps to a step of a section', async ({ page }) => {
     const player = await open(page)
     const present = page.locator('.pm-present')
     await player.getByRole('button', { name: '章节' }).click()
@@ -444,7 +444,7 @@ test.describe('playback of a lecture track', () => {
     }
   })
 
-  test('plays at twice the speed, with captions of the current utterance (P-131)', async ({ page }) => {
+  test('plays at twice the speed, with captions of the current utterance', async ({ page }) => {
     const player = await open(page)
     await player.getByLabel('倍速').selectOption('2')
     await player.getByRole('button', { name: '播放' }).click()
@@ -459,7 +459,7 @@ test.describe('playback of a lecture track', () => {
     await expect(page.locator('.pm-lecture-caption')).toHaveText('接着看合并函数')
   })
 
-  test('shows each sentence of the transcript as written, its words in it; a word seeks to its time (P-131)', async ({ page }) => {
+  test('shows each sentence of the transcript as written, its words in it; a word seeks to its time', async ({ page }) => {
     const player = await open(page, 'words')
     await player.getByRole('button', { name: '逐字稿' }).click()
     for (const u of TRACKS[0]!.utterances as { id: string, text: string }[]) {
@@ -471,7 +471,7 @@ test.describe('playback of a lecture track', () => {
     expect(await time(page)).toBe(4350)
   })
 
-  test('marks a translation made from an earlier text of its sentence as stale, in the transcript and the captions (P-137)', async ({ page }) => {
+  test('marks a translation made from an earlier text of its sentence as stale, in the transcript and the captions', async ({ page }) => {
     const player = await open(page, 'translated')
     await player.getByLabel('字幕语言').selectOption('en')
     await player.getByRole('button', { name: '字幕' }).click()
@@ -487,7 +487,7 @@ test.describe('playback of a lecture track', () => {
     await expect(page.locator('.pm-lecture-caption')).toContainText('Then the merge function')
   })
 
-  test('keeps the AI label over a spotlight, which finds its block in a section whose id holds . and : (N-08, P-131)', async ({ page }) => {
+  test('keeps the AI label over a spotlight, which finds its block in a section whose id holds . and :', async ({ page }) => {
     const player = await open(page, 'said')
     const present = page.locator('.pm-present')
     await expect(present).toHaveAttribute('data-section', 'part.two:x')
@@ -513,7 +513,7 @@ test.describe('playback of a lecture track', () => {
     await expect.poll(() => page.evaluate(() => document.fullscreenElement)).toBe(null)
   })
 
-  test('follows a block relabeled since the recording, and skips the actions on one deleted, saying so (P-130)', async ({ page }) => {
+  test('follows a block relabeled since the recording, and skips the actions on one deleted, saying so', async ({ page }) => {
     const player = await open(page, 'drift')
     await expect(player.locator('.pm-lecture-player__notice')).toHaveText('讲义改动后有 1 个操作失效，回放时略过')
     await player.getByRole('button', { name: '逐字稿' }).click()
@@ -522,7 +522,7 @@ test.describe('playback of a lecture track', () => {
     await expect(page.locator('.pm-present .pm-block[data-block="merge-code"]')).toHaveClass(/driver-active-element/)
   })
 
-  test('reaches the player with Tab, a lecture chosen from the list (N-06, P-131)', async ({ page }) => {
+  test('reaches the player with Tab, a lecture chosen from the list', async ({ page }) => {
     await page.goto(`${deck().web}/?view=lecture`)
     await page.getByRole('button', { name: '播放讲授 demo' }).click()
     const player = page.getByRole('region', { name: '讲授回放' })
@@ -535,13 +535,13 @@ test.describe('playback of a lecture track', () => {
     expect(reached).toBe(true)
   })
 
-  test('offers the lecture view in the view menu (P-131)', async ({ page }) => {
+  test('offers the lecture view in the view menu', async ({ page }) => {
     await page.goto(`${deck().web}/`)
     await expect(page.locator('select.pm-view-menu').first().locator('option[value="lecture"]')).toHaveText('讲授')
   })
 })
 
-test.describe('a web build of a deck whose renderers are the web form\'s alone (P-131)', () => {
+test.describe('a web build of a deck whose renderers are the web form\'s alone', () => {
   test.describe.configure({ mode: 'default' })
   const deck = useFixture('lecture', { to: 'web', link: LINK })
 

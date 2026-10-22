@@ -168,7 +168,7 @@ it('{config} overrides a plugin\'s global options in its section, for its direct
   expect(future.stderr).toContain('plugin "../addons/future" (fixture.future 2.0.0) is not loaded: kernel 1.0.0 does not satisfy "^9.0.0"')
 })
 
-it('compiles a {code-cell} as a code block, keeps labels as ids, keeps the footnotes of each included file its own and reports a misspelled {only} (R-02, R-04, R-37, R-38)', async () => {
+it('compiles a {code-cell} as a code block, keeps labels as ids, keeps the footnotes of each included file its own and reports a misspelled {only}', async () => {
   const dir = fixtures()
   const first = await presmium(dir, ['ir', 'syntax'])
   expect(first.code).toBe(0)
@@ -193,7 +193,7 @@ it('compiles a {code-cell} as a code block, keeps labels as ids, keeps the footn
   expect(footnotes('chapter-b')).toEqual([['footnoteReference', '1-2', '1', '1'], ['footnoteDefinition', '1-2', '1', '1']])
 })
 
-it('gives each renderer the steps of what it shows: steps that only blocks of other renderers took are left out (R-03)', async () => {
+it('gives each renderer the steps of what it shows: steps that only blocks of other renderers took are left out', async () => {
   const dir = fixtures()
   const out = join(dir, 'out')
   expect((await presmium(dir, ['build', 'syntax', '--out', out])).code).toBe(0)
@@ -202,7 +202,7 @@ it('gives each renderer the steps of what it shows: steps that only blocks of ot
   expect(JSON.parse(readFileSync(join(out, 'fixture/outline.json'), 'utf8')).steps.only).toEqual({ steps: 1, at: { 'code-1': 1 } })
 })
 
-it('names the pass that leaves a malformed IR in a located presmium.ir error, instead of crashing (R-32)', async () => {
+it('names the pass that leaves a malformed IR in a located presmium.ir error, instead of crashing', async () => {
   const dir = fixtures()
   mkdirSync(join(dir, 'breaking'))
   writeFileSync(join(dir, 'breaking/lecture.md'), '---\ntitle: Breaking\nplugins:\n  - ../addons/breaker\n---\n\n## First\n\nSee {ref}`first`.\n')
@@ -212,7 +212,7 @@ it('names the pass that leaves a malformed IR in a located presmium.ir error, in
   expect(stderr).toContain('hint: the IR is invalid after pass fixture.breaker.typeless of plugin fixture.breaker')
 })
 
-it('names the directive, not the first pass, when a directive writes a malformed IR (R-32)', async () => {
+it('names the directive, not the first pass, when a directive writes a malformed IR', async () => {
   const dir = fixtures()
   mkdirSync(join(dir, 'directive'))
   writeFileSync(join(dir, 'directive/lecture.md'), '---\ntitle: Breaking\nplugins:\n  - ../addons/breaker\n---\n\n## First\n\nText.\n\n:::{typeless}\n:::\n')
@@ -223,7 +223,7 @@ it('names the directive, not the first pass, when a directive writes a malformed
   expect(stderr).not.toContain('after pass')
 })
 
-it('reads the headmatter of an entry that starts with a byte order mark (R-36)', async () => {
+it('reads the headmatter of an entry that starts with a byte order mark', async () => {
   const dir = fixtures()
   mkdirSync(join(dir, 'bom'))
   writeFileSync(join(dir, 'bom/lecture.md'), '﻿---\ntitle: BOM deck\nlang: en-US\nplugins:\n  - ../addons/echo\n---\n\n## First\n\nText.\n')

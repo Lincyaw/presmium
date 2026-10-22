@@ -2,7 +2,7 @@
   "name": "presmium-plugin-future",
   "version": "2.0.0",
   "private": true,
-  "description": "A plugin for a Presmium that does not exist yet (P-143): its peer dependency excludes the installed one",
+  "description": "A plugin for a Presmium that does not exist yet: its peer dependency excludes the installed one",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {

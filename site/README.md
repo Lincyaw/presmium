@@ -1,6 +1,6 @@
 # Presmium 的文档站
 
-文档站（P-144、P-145）是一个 Presmium 工作区，用 Presmium 自己构建：
+文档站是一个 Presmium 工作区，用 Presmium 自己构建：
 
 | 文档 | 中文（原文） | 英文（译本） |
 |---|---|---|

@@ -1,4 +1,4 @@
-// The provider of `kind: fixture-lab` environments (P-100): at compile time its executor records a
+// The provider of `kind: fixture-lab` environments: at compile time its executor records a
 // fixed output for Python; in the browser no plugin registers the environment's executor, so a live
 // run of code that names it fails and the recorded output stands in (docs/review-round2.md, decision 5).
 const RECORDED = '实验环境中录制的输出\n'

@@ -171,7 +171,7 @@ test('the web form renders the same content: math, diagrams, mindmap, media and 
   await expect.poll(() => loaded(image)).toBe(96)
 })
 
-test('the mindmap folds and unfolds a node from the keyboard (N-06)', async ({ page }) => {
+test('the mindmap folds and unfolds a node from the keyboard', async ({ page }) => {
   await page.goto(`${content().web}/content.html`)
   const map = page.locator('.pm-section[data-section="content-mindmap"] svg.pm-markmap')
   await expect(map.locator('.markmap-node')).toHaveCount(13)
@@ -205,7 +205,7 @@ async function expectCaptionedVideo(page: Page, video: Locator) {
   ])
 }
 
-test('a video with a poster and captions in two languages has its poster and two tracks in both forms (P-42)', async ({ page }) => {
+test('a video with a poster and captions in two languages has its poster and two tracks in both forms', async ({ page }) => {
   await page.goto(`${content().web}/cards.html`)
   const video = page.locator('.pm-section[data-section="content-captions"] figure.pm-media video')
   await expect(video).toHaveAttribute('poster', /^\/web\/media\/[0-9a-f]{8}-poster\.png$/)
@@ -215,7 +215,7 @@ test('a video with a poster and captions in two languages has its poster and two
   await expectCaptionedVideo(page, slide.locator('figure.pm-media video'))
 })
 
-test('a grid of three cards has three columns on a desktop and one on a phone; a card\'s button is a link (P-46)', async ({ page }) => {
+test('a grid of three cards has three columns on a desktop and one on a phone; a card\'s button is a link', async ({ page }) => {
   const cards = page.locator('.pm-section[data-section="content-cards"] .pm-grid > .pm-card')
   const columns = async () => new Set(await cards.evaluateAll(list => list.map(card => Math.round(card.getBoundingClientRect().left)))).size
   await page.setViewportSize({ width: 1280, height: 800 })
@@ -232,7 +232,7 @@ test('a grid of three cards has three columns on a desktop and one on a phone; a
   await expect(cards.nth(2).locator('.pm-card__header')).toHaveText('页眉')
 })
 
-test('choosing a tab chooses the tab with the same :sync: key in the other tab set (P-46)', async ({ page }) => {
+test('choosing a tab chooses the tab with the same :sync: key in the other tab set', async ({ page }) => {
   await page.goto(`${content().web}/cards.html`)
   const sets = page.locator('.pm-section[data-section="content-tabs"] .pm-tabs')
   await expect(sets).toHaveCount(2)
@@ -245,7 +245,7 @@ test('choosing a tab chooses the tab with the same :sync: key in the other tab s
   await expect(second.getByRole('tabpanel')).toHaveText('安装：npm install presmium')
 })
 
-test('the slides show the cards in their grid, and a tab set as its tabs one after another (P-46)', async ({ page }) => {
+test('the slides show the cards in their grid, and a tab set as its tabs one after another', async ({ page }) => {
   const slide = await open(page, 'content-cards')
   const cards = slide.locator('.pm-grid > .pm-card')
   await expect(cards).toHaveCount(3)
@@ -286,7 +286,7 @@ renderers:
     if (deck) rmSync(deck, { recursive: true, force: true })
   })
 
-  test('a YouTube video and online video and audio show from their URLs in both forms, and the notebook links to them (P-42)', async ({ page }) => {
+  test('a YouTube video and online video and audio show from their URLs in both forms, and the notebook links to them', async ({ page }) => {
     await page.route(/youtube|example\.com/, route => route.abort())
     const PLAYER = 'https://www.youtube-nocookie.com/embed/luoMHjh-XcQ?start=30'
 

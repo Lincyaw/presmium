@@ -9,7 +9,7 @@ import { copyFixture, removeCopies } from './helpers.ts'
 
 afterAll(removeCopies)
 
-it('downloads the remote images of a deck at once, and tries a failed one once per process (N-03)', async () => {
+it('downloads the remote images of a deck at once, and tries a failed one once per process', async () => {
   const image = PNG.sync.write(new PNG({ width: 2, height: 2 }))
   const requests: string[] = []
   const server = createServer((request, response) => {

@@ -14,7 +14,7 @@ renderers:
 # 浏览器 GPU 测试文稿
 
 :::{slide}
-e2e/exec-webgpu.spec.ts 的测试文稿：WGSL 计算着色器、Python 中的 `presmium_gpu` 与 jax-js（P-104）。
+e2e/exec-webgpu.spec.ts 的测试文稿：WGSL 计算着色器、Python 中的 `presmium_gpu` 与 jax-js。
 :::
 
 (shader)=

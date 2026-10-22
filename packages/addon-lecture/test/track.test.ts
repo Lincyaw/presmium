@@ -91,7 +91,7 @@ async function lectureFindings(): Promise<Finding[]> {
   return (JSON.parse(stdout) as { findings: Finding[] }).findings.filter(f => f.checkId === 'presmium.lecture')
 }
 
-describe('presmium check (P-130)', () => {
+describe('presmium check', () => {
   it('reports the events whose block is gone, with their time', async () => {
     expect(await lectureFindings()).toEqual([])
 
@@ -106,7 +106,7 @@ describe('presmium check (P-130)', () => {
   }, 120_000)
 })
 
-describe('presmium build --to lecture (P-137)', () => {
+describe('presmium build --to lecture', () => {
   it('exports captions in both languages, and marks a translation whose original changed as stale', async () => {
     const built = await presmium(dir, ['build', '--to', 'lecture'])
     expect(built.code, built.stdout + built.stderr).toBe(0)
@@ -159,7 +159,7 @@ async function stop(child: ChildProcess | undefined): Promise<void> {
   await exited
 }
 
-describe('the operator\'s media policies (settings.presmium.lecture.audio, P-130)', () => {
+describe('the operator\'s media policies (settings.presmium.lecture.audio)', () => {
   const PREFIX = 'https://media.example.test/lectures/'
   const SAID = '开场的录音讲解。'
   let fake: { child: ChildProcess, url: string } | undefined

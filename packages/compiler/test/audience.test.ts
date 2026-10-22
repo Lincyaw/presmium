@@ -70,7 +70,7 @@ renderers:
 type Slides = { presmiumId?: string, presmiumSteps?: string[][], presmiumBack?: string }
 const slidesOf = (doc: IRDocument, id: string) => doc.sections.find(section => section.id === id)?.hints.slides as Slides | undefined
 
-it('writes the keys of following of the student build as it has its steps, naming none of the teachers\' blocks; a teachers\' section goes back to the learners\' own (F-85)', async () => {
+it('writes the keys of following of the student build as it has its steps, naming none of the teachers\' blocks; a teachers\' section goes back to the learners\' own', async () => {
   mkdirSync(WORK, { recursive: true })
   const dir = mkdtempSync(join(WORK, 'compiler-audience-'))
   dirs.push(dir)

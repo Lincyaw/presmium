@@ -12,7 +12,7 @@ const MCP_ENDPOINT = { id: 'presmium.mcpEndpoint' }
 
 const json = (data: unknown) => new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } })
 
-/** How many contributions of this process were closed (a document taken down, F-40): each document loads its copy of this module. */
+/** How many contributions of this process were closed (a document taken down): each document loads its copy of this module. */
 const counted = globalThis as { fixtureClosed?: number }
 
 export default {

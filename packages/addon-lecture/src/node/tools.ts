@@ -113,7 +113,7 @@ const TRACK_INPUT = { track: { type: 'string', description: 'The lecture id (a d
 
 export const trackNarration: AgentTool = {
   name: 'track_narration',
-  description: 'A recorded lecture\'s transcript as narration, to write it back into the deck (P-136): per section and step, the sentences said there joined (draft), with a {cue …}`…` role before the word each action of the lecture (spotlight, pointer, next step, run …) was bound to; and where that step\'s narration is in the source (narration: file and lines of its paragraphs; for a step without narration, the on-screen block it follows: after). Reads only.',
+  description: 'A recorded lecture\'s transcript as narration, to write it back into the deck: per section and step, the sentences said there joined (draft), with a {cue …}`…` role before the word each action of the lecture (spotlight, pointer, next step, run …) was bound to; and where that step\'s narration is in the source (narration: file and lines of its paragraphs; for a step without narration, the on-screen block it follows: after). Reads only.',
   input: { type: 'object', properties: { ...TRACK_INPUT, section: { type: 'string', description: 'Only this section id' } }, required: ['track'] },
   kind: 'read',
   async run(input, ctx) {
@@ -140,7 +140,7 @@ export const trackNarration: AgentTool = {
 
 export const trackTranslations: AgentTool = {
   name: 'track_translations',
-  description: 'The sentences (utterances) of a recorded lecture to translate (P-137): each with its id, text and source, the digest of the text that its translation records; with the translation into lang it has, if any, and whether that is stale. Write a translation into the utterance\'s line of lectures/<track>/track.json as "translations": { "<lang>": { "text": "…", "source": "<source>" } }. Reads only.',
+  description: 'The sentences (utterances) of a recorded lecture to translate: each with its id, text and source, the digest of the text that its translation records; with the translation into lang it has, if any, and whether that is stale. Write a translation into the utterance\'s line of lectures/<track>/track.json as "translations": { "<lang>": { "text": "…", "source": "<source>" } }. Reads only.',
   input: { type: 'object', properties: { ...TRACK_INPUT, lang: { type: 'string', description: 'The language to translate into (BCP 47), e.g. en' } }, required: ['track', 'lang'] },
   kind: 'read',
   async run(input, ctx) {
