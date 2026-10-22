@@ -20,8 +20,6 @@ export const OFFLINE_MANIFEST: OfflineManifest = {
   remoteAssets: /\b(https?:\/\/[\w#&?./:%=+~-]*?\.(?:png|jpe?g|gif|svg|ico|webp|avif|mp4|webm|ogg|mp3|wav|woff2?|ttf|otf))(?=[`'")\]])/gi,
 }
 
-export const OFFLINE_MESSAGES = { runtimes: 'presmium:offline-runtimes', save: 'presmium:save-offline' } as const
-
 export const ASSETS_DIR = '.presmium/assets'
 
 const TYPES: Record<string, string> = {

@@ -1,4 +1,4 @@
-import { OFFLINE_MESSAGES } from '../domain/index.ts'
+import { OFFLINE_REQUESTS } from '@lincyaw/kernel'
 
 export interface OfflineRuntimes {
   bytes: number
@@ -21,9 +21,9 @@ async function ask<T>(type: string, timeoutMs: number): Promise<T | undefined> {
 }
 
 export function offlineRuntimes(): Promise<OfflineRuntimes | undefined> {
-  return ask<OfflineRuntimes>(OFFLINE_MESSAGES.runtimes, 3000)
+  return ask<OfflineRuntimes>(OFFLINE_REQUESTS.runtimes, 3000)
 }
 
 export async function saveOffline(): Promise<boolean> {
-  return Boolean((await ask<{ ok: boolean }>(OFFLINE_MESSAGES.save, 600_000))?.ok)
+  return Boolean((await ask<{ ok: boolean }>(OFFLINE_REQUESTS.save, 600_000))?.ok)
 }
