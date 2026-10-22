@@ -67,7 +67,7 @@ interface Logged {
   authorization: string | null
 }
 
-export async function startFakeEngine(options: { port?: number, host?: string } = {}): Promise<FakeEngine> {
+export async function startFakeEngine(options: { port?: number, listenAddress?: string } = {}): Promise<FakeEngine> {
   const requests: Logged[] = []
   const answer = (status: number, body: unknown, type = 'application/json; charset=utf-8') => new Response(body instanceof Uint8Array ? new Blob([new Uint8Array(body)]) : JSON.stringify(body), { status, headers: { 'Content-Type': type } })
 
@@ -119,10 +119,10 @@ export async function startFakeEngine(options: { port?: number, host?: string } 
   })
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject)
-    server.listen(options.port ?? 0, options.host ?? '127.0.0.1', () => resolve())
+    server.listen(options.port ?? 0, options.listenAddress ?? '127.0.0.1', () => resolve())
   })
   const { port } = server.address() as AddressInfo
-  const host = options.host && options.host !== '0.0.0.0' ? options.host : '127.0.0.1'
+  const host = options.listenAddress && options.listenAddress !== '0.0.0.0' ? options.listenAddress : '127.0.0.1'
   return {
     url: `http://${bracketIPv6(host)}:${port}/v1`,
     close: () => new Promise((resolve) => {
