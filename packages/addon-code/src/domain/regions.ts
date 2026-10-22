@@ -25,7 +25,7 @@ function marker(line: string): Marker | undefined {
   return undefined
 }
 
-export function isRegionMarker(line: string): boolean {
+function isRegionMarker(line: string): boolean {
   return marker(line) !== undefined
 }
 
@@ -50,7 +50,7 @@ export function findRegions(lines: string[]): Region[] {
   return regions.sort((a, b) => a.open - b.open)
 }
 
-export function dedent(lines: string[]): string[] {
+function dedent(lines: string[]): string[] {
   const indents = lines.filter(l => l.trim() !== '').map(l => /^[ \t]*/.exec(l)![0].length)
   const common = indents.length > 0 ? Math.min(...indents) : 0
   return lines.map(l => l.slice(Math.min(common, /^[ \t]*/.exec(l)![0].length)))
@@ -58,7 +58,7 @@ export function dedent(lines: string[]): string[] {
 
 export interface Snippet {
   code: string
-  units: Map<string, { from: number, to: number }>
+  regions: Map<string, { from: number, to: number }>
 }
 
 export function toSnippet(text: string): Snippet {
@@ -69,11 +69,11 @@ export function toSnippet(text: string): Snippet {
     before.push(kept.length)
     if (!isRegionMarker(line)) kept.push(line)
   }
-  const units = new Map<string, { from: number, to: number }>()
+  const regions = new Map<string, { from: number, to: number }>()
   for (const region of findRegions(lines)) {
     const from = before[region.open]! + 1
     const to = before[region.close]!
-    if (to >= from && !units.has(region.name)) units.set(region.name, { from, to })
+    if (to >= from && !regions.has(region.name)) regions.set(region.name, { from, to })
   }
-  return { code: dedent(kept).join('\n'), units }
+  return { code: dedent(kept).join('\n'), regions }
 }

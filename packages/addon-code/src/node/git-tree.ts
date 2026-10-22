@@ -13,7 +13,8 @@ export interface Repository {
   refFiles(rev: string): Promise<string[]>
 }
 
-export interface Workspace {
+/** A git repository and its submodules: the repository that holds a file, and the files at a commit. */
+export interface GitTree {
   root: string
   src: SourceReader
   repository(file: string): Promise<Repository>
@@ -26,8 +27,8 @@ function relativeInside(root: string, file: string): string | undefined {
   return rel.split(sep).join('/')
 }
 
-function openRepository(workspaceRoot: string, prefix: string): Repository {
-  const root = join(workspaceRoot, prefix)
+function openRepository(treeRoot: string, prefix: string): Repository {
+  const root = join(treeRoot, prefix)
   const git = simpleGit(root)
   const commit = (rev: string) => rev.startsWith('-')
     ? Promise.resolve(undefined)
@@ -49,11 +50,11 @@ function openRepository(workspaceRoot: string, prefix: string): Repository {
   }
 }
 
-const workspaces = new Map<string, Workspace>()
+const trees = new Map<string, GitTree>()
 
-export function openWorkspace(root: string): Workspace {
-  let workspace = workspaces.get(root)
-  if (workspace) return workspace
+export function openGitTree(root: string): GitTree {
+  let tree = trees.get(root)
+  if (tree) return tree
   const own = openRepository(root, '')
   const submodules = simpleGit(root)
     .raw(['config', '--file', '.gitmodules', '--get-regexp', String.raw`^submodule\..*\.path$`])
@@ -63,7 +64,7 @@ export function openWorkspace(root: string): Workspace {
     const rel = relativeInside(root, file) ?? file
     return (await submodules).find(sub => rel.startsWith(`${sub.prefix}/`)) ?? own
   }
-  workspace = {
+  tree = {
     root,
     repository,
     src: {
@@ -75,6 +76,6 @@ export function openWorkspace(root: string): Workspace {
       },
     },
   }
-  workspaces.set(root, workspace)
-  return workspace
+  trees.set(root, tree)
+  return tree
 }

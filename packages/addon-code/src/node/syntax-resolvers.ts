@@ -3,7 +3,7 @@ import type { AnchorResolver, AnchorString, SourceReader } from '@lincyaw/kernel
 import python from '@ast-grep/lang-python'
 import { Lang, parse, registerDynamicLanguage } from '@ast-grep/napi'
 import type { SgNode } from '@ast-grep/napi'
-import { codeFingerprint, found, locate, notFound, splitTarget } from '../domain/index.ts'
+import { codeFingerprint, lineRange, resolvedAt, splitTarget, unresolved } from '../domain/index.ts'
 import type { Candidate } from '../domain/index.ts'
 
 registerDynamicLanguage({ python })
@@ -80,12 +80,12 @@ function statement(node: SgNode): SgNode {
 function describe(file: string, lines: string[], node: SgNode): Candidate {
   const name = nameOf(node)!
   const { start, end } = statement(node).range()
-  const location = locate(file, lines, start.line + 1, end.line + 1)
+  const location = lineRange(file, lines, start.line + 1, end.line + 1)
   const text = location.text.split('\n')
   const at = name.range().start
   const line = at.line - start.line
   text[line] = `${text[line]!.slice(0, at.column)}_${text[line]!.slice(at.column + name.text().length)}`
-  return { location, print: codeFingerprint(text.join('\n')) }
+  return { location, fingerprint: codeFingerprint(text.join('\n')) }
 }
 
 type Tree = { failure: string } | { target: NonNullable<ReturnType<typeof splitTarget>>, at: string, lines: string[], root: SgNode }
@@ -113,18 +113,18 @@ export const symbolResolver: AnchorResolver = {
       if (!node) break
     }
     if (node) {
-      const { location, print } = describe(target.file, lines, node)
-      return found(location, recorded, print)
+      const { location, fingerprint } = describe(target.file, lines, node)
+      return resolvedAt(location, recorded, fingerprint)
     }
     const candidates = declarations(root).map(d => describe(target.file, lines, d))
-    return notFound(`symbol "${target.name}" not found in ${target.file}${at}`, candidates, recorded)
+    return unresolved(`symbol "${target.name}" not found in ${target.file}${at}`, candidates, recorded)
   },
 }
 
 function span(file: string, lines: string[], node: SgNode): Candidate {
   const { start, end } = node.range()
-  const location = locate(file, lines, start.line + 1, end.line + 1)
-  return { location, print: codeFingerprint(location.text) }
+  const location = lineRange(file, lines, start.line + 1, end.line + 1)
+  return { location, fingerprint: codeFingerprint(location.text) }
 }
 
 function spans(file: string, lines: string[], root: SgNode): Candidate[] {
@@ -151,7 +151,7 @@ export const patternResolver: AnchorResolver = {
     } catch (error) {
       return { status: 'lost', message: `invalid pattern "${target.name}": ${errorMessage(error)}` }
     }
-    if (match) return found(span(target.file, lines, match).location, recorded)
-    return notFound(`pattern "${target.name}" matches nothing in ${target.file}${at}`, recorded ? spans(target.file, lines, root) : [], recorded)
+    if (match) return resolvedAt(span(target.file, lines, match).location, recorded)
+    return unresolved(`pattern "${target.name}" matches nothing in ${target.file}${at}`, recorded ? spans(target.file, lines, root) : [], recorded)
   },
 }

@@ -3,7 +3,7 @@ import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 import { CODE_ID, regionResolver } from '../domain/index.ts'
 import { codeRefDirective } from './directive.ts'
 import { codeRefAnchors, codeRefPass } from './resolve.ts'
-import { patternResolver, symbolResolver } from './symbol.ts'
+import { patternResolver, symbolResolver } from './syntax-resolvers.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
