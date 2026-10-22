@@ -1,10 +1,10 @@
 import type { Locale } from '@lincyaw/kernel/contracts'
 
-export interface CueMessages {
+export interface GuideMessages {
   separator: string
 }
 
-export const CUE_MESSAGES: Record<Locale, CueMessages> = {
+export const GUIDE_MESSAGES: Record<Locale, GuideMessages> = {
   'zh-CN': { separator: '：' },
   'en': { separator: ': ' },
 }

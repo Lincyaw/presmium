@@ -1,11 +1,11 @@
-import { blockElement, codeLines, lineNumbers } from '@lincyaw/host'
+import { blockElement, codeLinesBox } from '@lincyaw/host'
 import type { Navigation } from '@lincyaw/host'
 import { watch } from 'vue'
 import type { CueRequest, ShowCue } from './cue.ts'
 import { requestHint } from './hints.ts'
 import { requestSpotlight } from './spotlight.ts'
 
-export interface AdhocCue {
+export interface OperationCue {
   block?: string
   selector?: string
   lines?: string
@@ -16,30 +16,20 @@ export interface AdhocCue {
 
 const REFRESH_MS = 250
 
-function visible(elements: Iterable<HTMLElement>): HTMLElement | undefined {
+function firstVisible(elements: Iterable<HTMLElement>): HTMLElement | undefined {
   for (const el of elements) {
     if (!el.closest('[inert], .pm-hidden') && el.getClientRects().length > 0) return el
   }
   return undefined
 }
 
-function linesBox(block: HTMLElement, lines: string): DOMRect | undefined {
-  const rows = codeLines(block)
-  const named = lineNumbers(lines).map(n => rows[n - 1]).filter((row): row is HTMLElement => Boolean(row))
-  if (named.length === 0) return undefined
-  const code = block.querySelector('.pm-code')!.getBoundingClientRect()
-  const top = Math.min(...named.map(row => row.getBoundingClientRect().top))
-  const bottom = Math.max(...named.map(row => row.getBoundingClientRect().bottom))
-  return new DOMRect(code.left, top, code.width, bottom - top)
-}
-
-function sameCue(a: AdhocCue, b: AdhocCue): boolean {
+function sameTarget(a: OperationCue, b: OperationCue): boolean {
   return a.block === b.block && a.selector === b.selector && a.lines === b.lines
 }
 
-export function cueOf(data: Record<string, unknown>): AdhocCue | undefined {
+export function toOperationCue(data: Record<string, unknown>): OperationCue | undefined {
   const text = (value: unknown) => (typeof value === 'string' && value ? value : undefined)
-  const cue: AdhocCue = {
+  const cue: OperationCue = {
     block: text(data.block),
     selector: text(data.selector),
     lines: typeof data.lines === 'number' ? String(data.lines) : text(data.lines),
@@ -50,8 +40,8 @@ export function cueOf(data: Record<string, unknown>): AdhocCue | undefined {
   return cue.block || cue.selector ? cue : undefined
 }
 
-export class AdhocCues {
-  private current?: { cue: AdhocCue, slide: number, step: number }
+export class OperationCues {
+  private current?: { cue: OperationCue, slide: number, step: number }
   private readonly owner = {}
   private box?: HTMLElement
   private timer?: ReturnType<typeof setInterval>
@@ -68,24 +58,24 @@ export class AdhocCues {
     this.navigation = navigation
     this.unwatch = navigation && watch(navigation.position, ({ slide, step }) => {
       const now = this.current
-      if (now && (slide !== now.slide || step < now.step || step > now.step + (now.cue.span ?? 0))) this.off()
+      if (now && (slide !== now.slide || step < now.step || step > now.step + (now.cue.span ?? 0))) this.hide()
     }, { flush: 'sync' })
   }
 
   unbind(): void {
-    this.off()
+    this.hide()
     this.unwatch?.()
     this.unwatch = undefined
     this.navigation = undefined
   }
 
-  get shown(): AdhocCue | undefined {
+  get shown(): OperationCue | undefined {
     return this.current?.cue
   }
 
   apply(data: Record<string, unknown>, animate = true): void {
-    const cue = cueOf(data)
-    if (!cue) return this.off()
+    const cue = toOperationCue(data)
+    if (!cue) return this.hide()
     const position = this.navigation?.position.value ?? { slide: 0, step: 0 }
     this.current = { cue, slide: position.slide, step: position.step }
     this.draw(animate)
@@ -93,12 +83,12 @@ export class AdhocCues {
     this.timer = setInterval(() => this.draw(animate), REFRESH_MS)
   }
 
-  showing(data: Record<string, unknown>): boolean {
-    const cue = cueOf(data)
-    return Boolean(cue && this.current && sameCue(cue, this.current.cue))
+  isShowing(data: Record<string, unknown>): boolean {
+    const cue = toOperationCue(data)
+    return Boolean(cue && this.current && sameTarget(cue, this.current.cue))
   }
 
-  off(): void {
+  hide(): void {
     clearInterval(this.timer)
     this.timer = undefined
     this.current = undefined
@@ -112,13 +102,13 @@ export class AdhocCues {
     if (!cue) return
     let element: HTMLElement | undefined
     try {
-      element = cue.block ? blockElement(cue.block) : visible(document.querySelectorAll<HTMLElement>(cue.selector!))
+      element = cue.block ? blockElement(cue.block) : firstVisible(document.querySelectorAll<HTMLElement>(cue.selector!))
     } catch {
       element = undefined
     }
-    const lines = element && cue.lines ? linesBox(element, cue.lines) : undefined
+    const lines = element && cue.lines ? codeLinesBox(element, cue.lines) : undefined
     if (lines) {
-      this.box ??= Object.assign(document.createElement('div'), { className: 'pm-adhoc-lines' })
+      this.box ??= Object.assign(document.createElement('div'), { className: 'pm-cue-lines' })
       Object.assign(this.box.style, { position: 'fixed', pointerEvents: 'none', left: `${lines.left}px`, top: `${lines.top}px`, width: `${lines.width}px`, height: `${lines.height}px` })
       if (!this.box.isConnected) document.body.append(this.box)
       element = this.box
@@ -128,5 +118,5 @@ export class AdhocCues {
   }
 }
 
-export const spots = new AdhocCues(requestSpotlight)
-export const hints = new AdhocCues(requestHint)
+export const spotlightCues = new OperationCues(requestSpotlight)
+export const hintCues = new OperationCues(requestHint)

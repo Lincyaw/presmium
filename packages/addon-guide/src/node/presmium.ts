@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module'
 import { deckLocale } from '@lincyaw/kernel'
 import type { ComponentNode, DirectiveSpec, MdastNode, PresmiumNodePlugin } from '@lincyaw/kernel'
-import { CUE_MESSAGES, GUIDE_ID, parseCursorPath, planCursorPath } from '../domain/index.ts'
+import { GUIDE_ID, GUIDE_MESSAGES, parseCursorPath, planCursorPath } from '../domain/index.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
@@ -13,7 +13,7 @@ function component(name: string, props: Record<string, unknown>, fallback: Mdast
 function popover(lang: string | undefined, title?: string, text?: string): MdastNode {
   const children: MdastNode[] = []
   if (title) children.push({ type: 'strong', children: [{ type: 'text', value: title }] })
-  if (text) children.push({ type: 'text', value: title ? `${CUE_MESSAGES[deckLocale(lang)].separator}${text}` : text })
+  if (text) children.push({ type: 'text', value: title ? `${GUIDE_MESSAGES[deckLocale(lang)].separator}${text}` : text })
   return { type: 'root', children: children.length > 0 ? [{ type: 'paragraph', children }] : [] }
 }
 
