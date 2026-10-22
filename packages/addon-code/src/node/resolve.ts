@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { docBlocks, errorMessage, isRenderable } from '@lincyaw/kernel'
 import type { AnchorString, CodeNode, CodeVariant, IRDocument, IRPass, PassContext, Resolution, ResolutionStatus, ResolvedLocation, Severity } from '@lincyaw/kernel'
-import { codeConfig, driftDiff, highlightSteps, originUnits, permalink, repoWebUrl, splitTarget, toSnippet } from '../domain/index.ts'
+import { driftDiff, highlightSteps, originUnits, permalink, repoWebUrl, splitTarget, toCodeConfig, toSnippet } from '../domain/index.ts'
 import type { CodeRefSpec } from '../domain/index.ts'
 import { codeRefs } from './directive.ts'
 import { openGitTree } from './git-tree.ts'
@@ -30,7 +30,7 @@ export const codeRefPass: IRPass = {
       if (!spec) continue
       const report: Report = (checkId, severity, message, hint) =>
         ctx.report({ checkId, severity, message, source: { file: block.source.file, line: block.source.line }, ...hint ? { hint } : {} })
-      await resolveCodeRef(block.node as CodeNode, spec, codeConfig(ctx.configFor(section)).repo, tree, ctx, report)
+      await resolveCodeRef(block.node as CodeNode, spec, toCodeConfig(ctx.configFor(section)).repo, tree, ctx, report)
     }
   },
 }

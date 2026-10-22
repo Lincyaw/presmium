@@ -2,7 +2,7 @@ export { codeFingerprint, lineRange, resolvedAt, splitTarget, unresolved } from 
 export type { Candidate } from './anchors.ts'
 export { parseCodeRef } from './code-ref.ts'
 export type { CodeRefSpec } from './code-ref.ts'
-export { CODE_ID, codeConfig } from './config.ts'
+export { CODE_ID, toCodeConfig } from './config.ts'
 export type { CodeConfig } from './config.ts'
 export { driftDiff } from './drift.ts'
 export { permalink, repoWebUrl } from './permalink.ts'

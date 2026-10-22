@@ -9,12 +9,12 @@ import {
   MESSAGES,
   placeText,
   questionsByPlace,
-  sectionNumbers,
   toAnswer,
   toPrediction,
   toPulseVote,
   toQuestion,
   toQuizState,
+  toSectionNumbers,
   toSubmission,
   unansweredCount,
 } from '../domain/index.ts'
@@ -38,7 +38,7 @@ const t = useMessages(MESSAGES)
 const ai = useAiAnswers()
 
 const config = useSectionConfig(CLASSROOM_ID)
-const numbers = computed(() => sectionNumbers(config.value))
+const numbers = computed(() => toSectionNumbers(config.value))
 
 const questionGroups = computed(() => questionsByPlace(questions.value.map(({ id, value }) => ({ ...value, id })), t.value, numbers.value))
 const unanswered = computed(() => unansweredCount(questions.value.map(item => item.value)))

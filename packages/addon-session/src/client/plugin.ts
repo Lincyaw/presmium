@@ -3,7 +3,7 @@ import { CLASSROOM_STORE, isRecord, PRESENTER_PANELS, SESSION } from '@lincyaw/k
 import type { PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
 import { watch } from 'vue'
 import { version } from '../../package.json'
-import { localServer, MESSAGES, reachableServer, SESSION_ID, sessionConfig } from '../domain/index.ts'
+import { localServer, MESSAGES, reachableServer, SESSION_ID, toSessionConfig } from '../domain/index.ts'
 import type { LocalClassroom } from '../domain/index.ts'
 import { createClassroomConnection } from './classroom-connection.ts'
 import { tryStorage } from './membership-storage.ts'
@@ -42,7 +42,7 @@ export const sessionPlugin: PluginDefinition = {
     capabilities: ['network'],
   },
   setup(ctx) {
-    const { server } = sessionConfig(ctx.config)
+    const { server } = toSessionConfig(ctx.config)
     const connection = createClassroomConnection({
       server: server && reachableServer(server, location.hostname),
       navigation: ctx.tryGet(NAVIGATION),

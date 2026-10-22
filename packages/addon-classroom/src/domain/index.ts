@@ -1,4 +1,4 @@
-export { CLASSROOM_ID, COLLECTIONS, isForStudents, sectionNumbers } from './config.ts'
+export { CLASSROOM_ID, COLLECTIONS, isForStudents, toSectionNumbers } from './config.ts'
 export type { SectionNumbers } from './config.ts'
 export {
   acceptsAnswers,

@@ -14,7 +14,7 @@ export function sessionMap(doc: Y.Doc): Y.Map<unknown> {
   return doc.getMap(SESSION)
 }
 
-export function readSession(doc: Y.Doc): SessionRecord {
+export function sessionRecordOf(doc: Y.Doc): SessionRecord {
   return sessionMap(doc).toJSON() as SessionRecord
 }
 

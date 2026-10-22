@@ -23,7 +23,7 @@ export function connectSlidesPreviewFrame(options: SlidesPreviewOptions): void {
   const navigation = createSlidevNavigation(sections)
   const { isDark } = useDarkMode()
   const { currentSlideNo, clicks } = useNav()
-  let revision: string | undefined
+  let irRevision: string | undefined
   let told = false
   const blockStep = (section: string, block: string) => {
     const own = sections()
@@ -35,7 +35,7 @@ export function connectSlidesPreviewFrame(options: SlidesPreviewOptions): void {
     renderer: 'slides',
     document: options.document,
     origins: options.origins,
-    revision: () => revision,
+    revision: () => irRevision,
     position() {
       const { section, step, trail } = navigation.position.value as NavigationPosition & FollowAnchor
       return section === undefined || !told ? undefined : { section, step, trail: trail ?? [] }
@@ -74,7 +74,7 @@ export function connectSlidesPreviewFrame(options: SlidesPreviewOptions): void {
   watchProblems(frame)
   const hot = import.meta.hot
   hot?.on('presmium:revision', (data: { revision?: string }) => {
-    revision = typeof data?.revision === 'string' ? data.revision : undefined
+    irRevision = typeof data?.revision === 'string' ? data.revision : undefined
     if (!told) {
       told = true
       return frame.moved()

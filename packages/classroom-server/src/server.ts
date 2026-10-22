@@ -90,7 +90,7 @@ function reply(response: ServerResponse, status: number, body: Record<string, un
 
 export interface ClassroomServerOptions {
   port?: number
-  host?: string
+  listenAddress?: string
   deck?: string
   onDropped?(room: string, writer: ClassroomWriter, reason: string): void
 }
@@ -246,10 +246,11 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
   })
   await new Promise<void>((resolve, reject) => {
     http.once('error', reject)
-    http.listen(options.port ?? 1234, options.host ?? '0.0.0.0', () => resolve())
+    http.listen(options.port ?? 1234, options.listenAddress ?? '0.0.0.0', () => resolve())
   })
   const { port } = http.address() as AddressInfo
-  const shown = !options.host || options.host === '0.0.0.0' || options.host === '::' ? 'localhost' : options.host
+  const { listenAddress } = options
+  const shown = !listenAddress || listenAddress === '0.0.0.0' || listenAddress === '::' ? 'localhost' : listenAddress
   return {
     port,
     url: `ws://${bracketIPv6(shown)}:${port}`,

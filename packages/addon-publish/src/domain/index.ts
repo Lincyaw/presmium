@@ -1,5 +1,5 @@
 export { ASSETS_DIR, assetExtension, MEDIA_EXTENSIONS } from './assets.ts'
-export { PUBLISH_ID, publishOptions, slidevEnablesInBuild } from './config.ts'
+export { PUBLISH_ID, slidevEnablesInBuild, toPublishOptions } from './config.ts'
 export type { PublishOptions } from './config.ts'
 export { exportedSlides, missingSlides, parseRange } from './export.ts'
 export { linkLine, normalizeUrl, slideLinks } from './links.ts'

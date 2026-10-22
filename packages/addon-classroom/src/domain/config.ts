@@ -18,7 +18,7 @@ export function isForStudents(section: { audience?: readonly string[] }): boolea
 
 export type SectionNumbers = Readonly<Record<string, number>>
 
-export function sectionNumbers(config: Record<string, unknown> | undefined): SectionNumbers {
+export function toSectionNumbers(config: Record<string, unknown> | undefined): SectionNumbers {
   const sections = config?.sections
   if (typeof sections !== 'object' || sections === null || Array.isArray(sections)) return {}
   return Object.fromEntries(Object.entries(sections).filter((entry): entry is [string, number] => Number.isInteger(entry[1])))

@@ -11,7 +11,7 @@ import { createMembershipStorage } from './membership-storage.ts'
 import type { Membership } from './membership-storage.ts'
 import { createSyncChannels } from './sync-channels.ts'
 import { connectTabs } from './tab-mirror.ts'
-import { observe, publishCursor, readSession, sessionMap, writeSessionEnd, writeSessionStart } from './ydoc.ts'
+import { observe, publishCursor, sessionMap, sessionRecordOf, writeSessionEnd, writeSessionStart } from './ydoc.ts'
 import { createYjsStore } from './yjs-store.ts'
 
 export interface ClassroomConnectionOptions {
@@ -73,13 +73,13 @@ export function createClassroomConnection(options: ClassroomConnectionOptions): 
   }
 
   function snapshot(): ClassroomSnapshot {
-    const record = readSession(doc)
+    const record = sessionRecordOf(doc)
     return {
       server,
       connection,
       follow,
       invitation,
-      rejoin: membership || invitation ? undefined : memberships.lastPresenterMembership(preferred)?.room,
+      rejoin: membership || invitation ? undefined : memberships.findLastPresenterMembership(preferred)?.room,
       error,
       refused,
       sessionId: membership?.room,
@@ -98,7 +98,7 @@ export function createClassroomConnection(options: ClassroomConnectionOptions): 
   }
 
   const role = (): ParticipantRole | undefined => membership?.me.role
-  const active = () => membership !== undefined && sessionStatus(readSession(doc)) === 'active'
+  const active = () => membership !== undefined && sessionStatus(sessionRecordOf(doc)) === 'active'
   const presenting = () => role() === 'presenter' && !isMirrorTab
   const following = () => role() === 'learner' && follow === 'follow' && active()
 
@@ -116,7 +116,7 @@ export function createClassroomConnection(options: ClassroomConnectionOptions): 
   const channels = createSyncChannels(() => doc, { following, publishing: () => presenting() && active() })
 
   function followPresenter(force = false): void {
-    const target = followTarget(membership?.me, follow, readSession(doc))
+    const target = followTarget(membership?.me, follow, sessionRecordOf(doc))
     if (!target || !navigation || (!force && samePosition(target, followed))) return
     followed = target
     navigation.go(target)
@@ -280,10 +280,10 @@ export function createClassroomConnection(options: ClassroomConnectionOptions): 
       await enter({ server: server ?? '', room, me: { id: randomString(16), name: nickname, role: 'learner' }, key: randomString(24) })
     },
     async rejoin() {
-      const before = memberships.lastPresenterMembership(preferred)
+      const before = memberships.findLastPresenterMembership(preferred)
       if (!before) throw new Error(messages().errors.noRoom)
       await enter(before)
-      if (membership?.room === before.room && readSession(doc).status === undefined) {
+      if (membership?.room === before.room && sessionRecordOf(doc).status === undefined) {
         memberships.forget(before.room)
         disconnect()
         error = messages().errors.noRoom

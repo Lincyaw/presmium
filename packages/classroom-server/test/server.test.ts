@@ -22,7 +22,7 @@ const providers: WebsocketProvider[] = []
 const sockets: WebSocket[] = []
 
 beforeAll(async () => {
-  server = await startClassroomServer({ port: 0, host: '127.0.0.1', deck, onDropped: (room, writer, reason) => void dropped.push({ room, writer, reason }) })
+  server = await startClassroomServer({ port: 0, listenAddress: '127.0.0.1', deck, onDropped: (room, writer, reason) => void dropped.push({ room, writer, reason }) })
   url = server.url
 })
 

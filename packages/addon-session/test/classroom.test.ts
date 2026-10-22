@@ -26,7 +26,7 @@ it('a join abandoned while the server was down leaves the classroom created afte
   const timeoutMs = 1500
   const classroom = createClassroomConnection({ server: `ws://127.0.0.1:${port}`, base: 'http://localhost/deck/', timeoutMs })
   const joining = classroom.session.join('oldroom', '小明')
-  const server = await startClassroomServer({ port, host: '127.0.0.1', deck: dir })
+  const server = await startClassroomServer({ port, listenAddress: '127.0.0.1', deck: dir })
   try {
     classroom.session.leave()
     const room = await classroom.session.create('王老师')

@@ -36,7 +36,7 @@ export interface MembershipStorage {
   /** The room this tab was last in. */
   findInTab(): Membership | undefined
   /** The presenter's membership this browser joined last, of `room` when given. */
-  lastPresenterMembership(room?: string): Membership | undefined
+  findLastPresenterMembership(room?: string): Membership | undefined
   remember(membership: Membership): void
   forget(room: string): void
 }
@@ -56,7 +56,7 @@ export function createMembershipStorage(options: MembershipStorageOptions): Memb
       const room = tryStorage(() => tabStorage?.getItem(prefix))
       return room ? find(room) : undefined
     },
-    lastPresenterMembership(room) {
+    findLastPresenterMembership(room) {
       const keys = tryStorage(() => Array.from({ length: storage?.length ?? 0 }, (_, i) => storage!.key(i) ?? '')) ?? []
       const rooms = room ? [room] : keys.filter(key => key.startsWith(`${prefix}:`)).map(key => key.slice(prefix.length + 1))
       return rooms.map(find)

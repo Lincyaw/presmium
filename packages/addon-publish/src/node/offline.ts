@@ -2,10 +2,10 @@ import { errorMessage } from '@lincyaw/kernel'
 import { VitePWA } from 'vite-plugin-pwa'
 import RemoteAssets from 'vite-plugin-remote-assets'
 import webfontDownload from 'vite-plugin-webfont-dl'
-import { OFFLINE_CACHE_RULES, publishOptions, slidevEnablesInBuild } from '../domain/index.ts'
+import { OFFLINE_CACHE_RULES, slidevEnablesInBuild, toPublishOptions } from '../domain/index.ts'
 
 export function offlinePlugins(config: { pwa?: unknown, remoteAssets?: unknown }, mode: string) {
-  if (mode !== 'build' || !publishOptions(config).offline) return []
+  if (mode !== 'build' || !toPublishOptions(config).offline) return []
   return [
     ...(slidevEnablesInBuild(config.remoteAssets) ? [] : [remoteAssets()]),
     webfontDownload([], { throwError: false }),

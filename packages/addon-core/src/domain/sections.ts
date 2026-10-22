@@ -16,7 +16,7 @@ const isTrail = (value: unknown): value is string[] => Array.isArray(value) && v
 const isKeys = (value: unknown): value is StepKeys => Array.isArray(value) && value.every(isTrail)
 const text = (value: unknown) => (typeof value === 'string' && value ? value : undefined)
 
-export function slideSectionOf(frontmatter: Record<string, unknown> | undefined): SlideSection {
+export function toSlideSection(frontmatter: Record<string, unknown> | undefined): SlideSection {
   const id = text(frontmatter?.[SECTION_KEY])
   const back = text(frontmatter?.[BACK_KEY])
   const steps = frontmatter?.[STEPS_KEY]

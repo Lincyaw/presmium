@@ -2,7 +2,7 @@ import { currentLocale, STATUS, TOOLBAR } from '@lincyaw/host'
 import { CLASSROOM_STORE, EXECUTOR, PRESENTER_PANELS, SESSION } from '@lincyaw/kernel'
 import type { ClassroomStore, PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
 import { version } from '../../package.json'
-import { CLASSROOM_ID, classroomSummary, COLLECTIONS, MESSAGES, sectionNumbers, toAnswer, toPrediction, toPulseVote, toQuestion, toQuizState, toSubmission } from '../domain/index.ts'
+import { CLASSROOM_ID, classroomSummary, COLLECTIONS, MESSAGES, toAnswer, toPrediction, toPulseVote, toQuestion, toQuizState, toSectionNumbers, toSubmission } from '../domain/index.ts'
 import type { ClassroomSummary } from '../domain/index.ts'
 import ClassroomPanel from './ClassroomPanel.vue'
 import ClassroomToolbar from './ClassroomToolbar.vue'
@@ -37,7 +37,7 @@ export const classroomPlugin: PluginDefinition = {
         predictions: records(store, COLLECTIONS.predictions, toPrediction),
         votes: records(store, COLLECTIONS.pulse, toPulseVote),
         submissions: records(store, COLLECTIONS.submissions, toSubmission),
-        numbers: sectionNumbers(ctx.config),
+        numbers: toSectionNumbers(ctx.config),
       })
     }
     cleanup = [
