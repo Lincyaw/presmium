@@ -1,5 +1,5 @@
 import type { Navigation, NavigationPosition } from '@lincyaw/host'
-import type { FollowAnchor } from '@lincyaw/viewer/domain'
+import type { FollowAnchor } from '@lincyaw/kernel'
 import { useNav } from '@slidev/client'
 import { computed } from 'vue'
 import { slideSectionOf, slideSections } from '../domain/index.ts'

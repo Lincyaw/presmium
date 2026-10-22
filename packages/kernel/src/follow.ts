@@ -1,9 +1,8 @@
-import { stepTrail, trailStep } from '@lincyaw/kernel'
-import type { IRSection, StepKeys } from '@lincyaw/kernel'
+import type { IRSection } from './ir.ts'
+import { stepTrail, trailStep } from './step-keys.ts'
+import type { StepKeys } from './step-keys.ts'
 
-export { stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
-export type { StepKeys } from '@lincyaw/kernel'
-
+/** The presenter's position by ID, so learners with another version of the document reach the same place. */
 export interface FollowAnchor {
   section?: string
   trail?: string[]
@@ -12,6 +11,7 @@ export interface FollowAnchor {
 
 const LEARNERS = 'student'
 
+/** For a section only some audiences have: the nearest earlier section that the other versions have too. */
 export function backSection(sections: readonly Pick<IRSection, 'id' | 'audience'>[], id: string): string | undefined {
   const at = sections.findIndex(section => section.id === id)
   const audience = sections[at]?.audience
@@ -20,6 +20,7 @@ export function backSection(sections: readonly Pick<IRSection, 'id' | 'audience'
   return sections.slice(0, at).findLast(section => !section.audience?.length || (learners && section.audience.includes(LEARNERS)))?.id
 }
 
+/** Where a learner goes in their own version of the document when following the presenter's position. */
 export function followedPlace(position: FollowAnchor & { step: number }, keysOf: (id: string) => StepKeys | undefined): { section: string, step: number } | undefined {
   const { section, trail, back, step } = position
   const keys = section === undefined ? undefined : keysOf(section)

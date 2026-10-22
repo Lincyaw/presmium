@@ -1,9 +1,9 @@
 import { presmiumReport, presmiumService } from '@lincyaw/host'
 import type { HostAdapter, Navigation, NavigationPosition, SharedStates, ViewRole } from '@lincyaw/host'
-import { isRecord } from '@lincyaw/kernel'
-import type { IRSection, PresentationMode } from '@lincyaw/kernel'
-import { backSection, FINAL_STEP, followedPlace, getView, stepKeys, stepTrail, useSectionContext } from '@lincyaw/viewer'
-import type { FollowAnchor, StepKeys, Viewer } from '@lincyaw/viewer'
+import { backSection, followedPlace, isRecord, stepKeys, stepTrail } from '@lincyaw/kernel'
+import type { FollowAnchor, IRSection, PresentationMode, StepKeys } from '@lincyaw/kernel'
+import { FINAL_STEP, getView, useSectionContext } from '@lincyaw/viewer'
+import type { Viewer } from '@lincyaw/viewer'
 import { useData } from 'vitepress'
 import { computed, readonly, ref } from 'vue'
 

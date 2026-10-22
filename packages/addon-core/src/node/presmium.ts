@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
 import type { IRPass, PresmiumNodePlugin } from '@lincyaw/kernel'
-import { backSection, stepKeys } from '@lincyaw/viewer/domain'
+import { backSection, stepKeys } from '@lincyaw/kernel'
 import { BACK_KEY, SECTION_KEY, STEPS_KEY } from '../domain/index.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }

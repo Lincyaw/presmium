@@ -1,5 +1,5 @@
-import { followedPlace, stepTrail } from '@lincyaw/viewer/domain'
-import type { FollowAnchor, StepKeys } from '@lincyaw/viewer/domain'
+import { followedPlace, stepTrail } from '@lincyaw/kernel'
+import type { FollowAnchor, StepKeys } from '@lincyaw/kernel'
 
 export const SECTION_KEY = 'presmiumId'
 export const STEPS_KEY = 'presmiumSteps'
