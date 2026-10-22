@@ -9,22 +9,22 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 `presmium studio` shows these panels in DeepSeek Harness's web client: `@lincyaw/dsh` bundles them into its client part and places them. They know nothing of the host they are drawn in; a layout gives them one `Workbench` and places them:
 
 ```tsx
-import { HomePanel, DocumentView, Workbench, WorkbenchProvider, workspaceClient } from '@lincyaw/workbench'
+import { DocumentEditor, HomePanel, Workbench, WorkbenchProvider, workspaceClient } from '@lincyaw/workbench'
 import '@lincyaw/design/design.css'
 import '@lincyaw/workbench/styles.css'
 
 const workbench = new Workbench({ client: workspaceClient('api/presmium/'), locale: 'zh-CN' })
 
 export function Centre({ open }: { open: boolean }) {
-  return <WorkbenchProvider workbench={workbench}>{open ? <DocumentView /> : <HomePanel />}</WorkbenchProvider>
+  return <WorkbenchProvider workbench={workbench}>{open ? <DocumentEditor /> : <HomePanel />}</WorkbenchProvider>
 }
 ```
 
 The workspace service's routes are reached under the page's `api/presmium/` (the host passes them on to the service); React 18 is a peer dependency. Interactive controls wrap Radix Primitives; cmdk owns command search, React Arborist owns the file tree, and react-resizable-panels owns pane resizing. Presmium maintains the visual tokens and the document, save, review and preview behavior, rather than duplicating these libraries' focus, keyboard, positioning and drag logic. The file tree follows VS Code's Explorer: folders start closed, keep their open state per workspace or document, sort before files, and open a file's folders and scroll to it when a source is opened elsewhere.
 
-Documents open a Document preview tab. Source files, Document preview and Slides preview share a resource tab strip. Opening a file activates its editor; Open preview chooses a rendered resource, and Open preview to the side explicitly creates a second group. Merge editor groups returns the preview to the main group. Closing a preview keeps the selected lecture and source drafts. Text selections and picked preview blocks become conversation context. `WorkbenchProvider` protects unsaved changes when closing files, leaving a document or unloading the page. Set `protectChanges={false}` on auxiliary providers when several panels share one workbench, keeping the protection mounted once in its primary provider.
+Documents open a Document preview tab. Source files, Document preview and Slides preview share a resource tab strip. Opening a file activates its editor; Open preview chooses a rendered resource, and Open preview to the side explicitly creates a second group. Merge editor groups returns the preview to the main group. Closing a preview keeps the selected lecture and source drafts. Text selections and picked preview blocks become conversation context. `WorkbenchProvider` protects unsaved changes when closing files, leaving a document or unloading the page, and re-reads the open files from disk when the window regains focus. Set `isPrimary={false}` on auxiliary providers when several panels share one workbench, keeping both mounted once in its primary provider.
 
-Hosts route text file references through `workbench.openSource(document, path, { line })`. The file tree and source reads and saves use the opened workspace's scope (`''`), including code outside the current lecture directory. Opening shared code or root notes keeps the selected lecture preview and existing drafts; switching lectures still protects unsaved changes. Without a selected lecture, root files open in source mode. Keep `DocumentView` mounted when hiding it so editor drafts and undo history survive navigation.
+Hosts route text file references through `workbench.openWorkspaceFile(path, { document, line })`; without `document` the selected lecture stays. The file tree and source reads and saves use the opened workspace's scope (`WORKSPACE_SCOPE`, `''`), including code outside the current lecture directory. Opening shared code or root notes keeps the selected lecture preview and existing drafts; switching lectures still protects unsaved changes. Without a selected lecture, root files open in source mode. Keep `DocumentEditor` mounted when hiding it so editor drafts and undo history survive navigation.
 
 The editor highlights Python files and Python code fences in Markdown. Python files indent by four spaces after a block header. Tab indents and Shift+Tab unindents; press Escape followed by Tab to move keyboard focus out of the editor. Ctrl+M (Shift+Alt+M on macOS) toggles Tab focus mode. Ctrl+S (Command+S on macOS) saves the active file, and each file tab keeps its own draft and undo history.
 

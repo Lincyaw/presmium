@@ -1425,7 +1425,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 产物的 Vue 通用交互同样由依赖实现：`@lincyaw/host` 的弹窗、抽屉、菜单、浮层、标签页和分段切换封装 Reka UI；查看器的内容标签页与放映焦点围栏也使用 Reka UI。文稿标签的 `sync` 联动、放映时背景页面的禁用与步骤导航由 Presmium 维护，播放面板与放映画面处在同一个焦点范围，各自保留独立的视觉层级。主题观察通过 VueUse 统一到宿主，图标由 Lucide 提供，`@lincyaw/design` 保留语义名称与框架无关的节点和 HTML 接口。读者问答的 SSE 事件边界由 eventsource-parser 解析，文稿上下文和回答内容仍由问答插件维护。
 
-工作台的通用交互由依赖实现：Radix Primitives 提供弹窗、菜单、浮层、标签页与分段切换，cmdk 提供命令搜索，React Arborist 提供文件树，react-resizable-panels 提供分栏与鼠标、键盘调整。`Pm*` 只封装样式与业务回调；源码编辑使用 CodeMirror 6，首次欢迎在 dsh 适配层直接复用 Harness 的 `Modal`。文档操作、源码版本冲突、编译、审阅与预览协议仍由 Presmium 维护。
+工作台的通用交互由依赖实现：Radix Primitives 提供弹窗、菜单与标签页，cmdk 提供命令搜索，React Arborist 提供文件树，react-resizable-panels 提供分栏与鼠标、键盘调整。`Pm*` 只封装样式与业务回调；源码编辑使用 CodeMirror 6，首次欢迎在 dsh 适配层直接复用 Harness 的 `Modal`。文档操作、源码版本冲突、编译、审阅与预览协议仍由 Presmium 维护。
 
 `@lincyaw/host` 提供设计令牌与通用组件；网页形态的外壳（工作区首页、阅读页）与插件都用它们，不各自定义颜色与控件。插件界面与幻灯片的默认主题见 5.12 节。
 
@@ -1447,7 +1447,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 **加载**：`@lincyaw/host` 的入口引入 `src/design/design.css`（它引入 `@lincyaw/design/design.css`：字体、令牌与组件的类），用到宿主的页面都有它们；宿主之外的页面可以单独引入 `@lincyaw/host/design.css` 或 `@lincyaw/design/design.css`。
 
-**通用组件**（`packages/host/src/design/components.ts`，样式在 `@lincyaw/design` 的 `components.css`，类名以 `pm-ui-` 开头；插件也可以直接用这些类；工作台的 React 版在 `@lincyaw/workbench`，同名同类）：
+**通用组件**（`packages/host/src/design/components.ts`，样式在 `@lincyaw/design` 的 `components.css`，类名以 `pm-ui-` 开头；插件也可以直接用这些类；工作台用到的几个有 React 版，在 `@lincyaw/workbench`，同名同类）：
 
 | 组件 | 用途 |
 |---|---|
@@ -1878,11 +1878,11 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 
 实现：
 
-- **包与命令**：`@lincyaw/studio`（0.1.0；依赖精确版本的 `@deepseek-ai/dsh` 0.2.1-alpha.4、`@lincyaw/dsh` 与 `presmium`）：`src/cli.ts` 的 `main`（`presmium studio [目录] [--port <端口>] [--host <地址>]`；命令 `presmium-studio` 相同）、`src/studio.ts` 的 `startStudio`（启动器）、`src/model.ts`（模型的环境变量）。`@lincyaw/cli` 不依赖它：`presmium studio` 从回退的包目录（`presmium`）、CLI 的包目录或当前项目解析 `@lincyaw/studio`，用 jiti 加载并转交，带上运行它的 `presmium` 命令作为工作区服务的命令；pnpm 的全局安装每个包各在自己的目录中，所以全局装的工作台的命令是 `presmium-studio`，它依赖 `presmium`，用 `presmium` 的 `bin/presmium.mjs` 启动工作区服务。没装时说明怎样安装（`pnpm add -g @lincyaw/studio` 后运行 `presmium-studio`，或在项目中 `pnpm add -D @lincyaw/studio`），以 2 退出。目录的规则同 `presmium serve`。
+- **包与命令**：`@lincyaw/studio`（0.1.0；依赖精确版本的 `@deepseek-ai/dsh` 0.2.1-alpha.4、`@lincyaw/dsh` 与 `presmium`）：`src/cli.ts` 的 `main`（`presmium studio [目录] [--port <端口>] [--host <地址>]`；命令 `presmium-studio` 相同）、`src/studio.ts` 的 `startStudio`（启动器）、`src/model-env.ts`（模型的环境变量）。`@lincyaw/cli` 不依赖它：`presmium studio` 从回退的包目录（`presmium`）、CLI 的包目录或当前项目解析 `@lincyaw/studio`，用 jiti 加载并转交，带上运行它的 `presmium` 命令作为工作区服务的命令；pnpm 的全局安装每个包各在自己的目录中，所以全局装的工作台的命令是 `presmium-studio`，它依赖 `presmium`，用 `presmium` 的 `bin/presmium.mjs` 启动工作区服务。没装时说明怎样安装（`pnpm add -g @lincyaw/studio` 后运行 `presmium-studio`，或在项目中 `pnpm add -D @lincyaw/studio`），以 2 退出。目录的规则同 `presmium serve`。
 - **目录与 profile**：`DSH_HOME` 是 `$XDG_STATE_HOME/presmium/studio`（没有这个变量时是 `~/.local/state/presmium/studio`），从不用环境中的 `DSH_HOME` 或用户自己的 `~/.dsh`。每次启动用 `@lincyaw/dsh/launch` 的 `writeProfile` 写 profile `presmium-studio`（web 载体；保留 profile 自己的 `cordis.patch.yml`，即用户在界面中的改动），以 `launchArgs` 传入 `web.patch.yml` 与 `profile.patch.yml`，环境中加 `launchEnv`。两个进程的输出写进其中的 `presmium-studio.log`（0600，每行带进程名；过 16 MB 时另起，旧的留作 `.1`）：启动器的标准输出只有一行 `studio  <网址>`。
 - **端口与源**：工作台的端口默认 4320，每次相同，浏览器的 cookie 因此在重启之后仍有效（dsh 的签名密钥在 `DSH_HOME` 中）；4320 被占用时另取一个空闲端口，`--port 0` 取空闲端口，`--port` 给出的端口被占用时报错。端口在启动任何进程之前由启动器选定，因为工作区服务以工作台的源启动：`--preview-origin` 是 `http://127.0.0.1:<端口>` 与 `http://localhost:<端口>`（`--host` 时是 `http://<地址>:<端口>`）。
-- **启动顺序**（`design-dsh.md` 11.2 节）：服务令牌（24 字节的随机值）；`node <WATCHDOG> node <presmium> serve <目录> --port 0 [--host <地址>] --preview-origin …`，环境中没有 `DSH_*`、`DEEPSEEK_*`、`PRESMIUM_MODEL_*`、`NODE_ENV`、`PORT`，有 `PRESMIUM_SERVICE_TOKEN`，等它打印 `serve  <网址>` 与 `workspace  <根目录>`；`node <WATCHDOG> node <dsh> --profile presmium-studio --patch … --port <端口> --no-open [--host <地址> --trusted-host <地址>:<端口>]`，工作目录是工作区根，环境中有 `PRESMIUM_SERVICE_URL`、`PRESMIUM_SERVICE_TOKEN`、`PRESMIUM_WORKSPACE`、`launchEnv` 与模型的变量，等它打印 `dsh web: <网址>`（`WEB_READY`）；打印这个网址。dsh 在加载树安定、启动审计通过之后才打印这一行（`dsh-web-app` 的 README），`presmium-workspaces` 在激活时登记文档的工作区，所以这一行也说明登记好了，启动器不另外查询。任何一步失败（3 分钟没有就绪也算）都停下已启动的进程，在标准错误报告并给出日志的位置，以 2 退出。
-- **监管**（11.2、14 节）：两个进程各在 `@lincyaw/dsh` 的看门狗（`WATCHDOG`，`presmium-service` 行用的同一个）之下，以 `detached` 自成进程组，看门狗的标准输入是来自启动器的管道：启动器退出（`kill -9` 也是）时看门狗结束整个组，组中的开发服务器一并结束。SIGINT、SIGTERM、SIGHUP 时启动器先停 dsh（bundle 在服务处作废会话令牌）再停服务，各等 15 秒，之后向组发 SIGKILL，以 0 退出；一个进程自己结束时启动器停下另一个，报告是哪一个与日志的位置，以 1 退出。
+- **启动顺序**（`design-dsh.md` 11.2 节）：服务令牌（24 字节的随机值）；`node <看门狗> node <presmium> serve <目录> --port 0 [--host <地址>] --preview-origin …`（`@lincyaw/dsh/launch` 的 `launchWorkspaceServer`，`presmium-service` 行自己启动服务时用的同一个），环境中没有 `DSH_*`、`DEEPSEEK_*`、`PRESMIUM_MODEL_*`、`PRESMIUM_SERVICE_*`、`PRESMIUM_WORKSPACE`、`NODE_ENV`、`PORT`（`workspaceServerEnv`），有 `PRESMIUM_SERVICE_TOKEN`，等它打印 `serve  <网址>` 与 `workspace  <根目录>`；`node <看门狗> node <dsh> --profile presmium-studio --patch … --port <端口> --no-open [--host <地址> --trusted-host <地址>:<端口>]`，工作目录是工作区根，环境中有 `PRESMIUM_SERVICE_URL`、`PRESMIUM_SERVICE_TOKEN`、`PRESMIUM_WORKSPACE`、`launchEnv` 与模型的变量，等它打印 `dsh web: <网址>`（`WEB_READY`）；打印这个网址。dsh 在加载树安定、启动审计通过之后才打印这一行（`dsh-web-app` 的 README），`presmium-workspaces` 在激活时登记文档的工作区，所以这一行也说明登记好了，启动器不另外查询。任何一步失败（3 分钟没有就绪也算）都停下已启动的进程，在标准错误报告并给出日志的位置，以 2 退出。
+- **监管**（11.2、14 节）：两个进程各在 `@lincyaw/dsh` 的看门狗之下（`launchNode`，`presmium-service` 行用的同一个），以 `detached` 自成进程组，看门狗的标准输入是来自启动器的管道：启动器退出（`kill -9` 也是）时看门狗结束整个组，组中的开发服务器一并结束。SIGINT、SIGTERM、SIGHUP 时启动器先停 dsh（bundle 在服务处作废会话令牌）再停服务，各等 15 秒，之后向组发 SIGKILL，以 0 退出；一个进程自己结束时启动器停下另一个，报告是哪一个与日志的位置，以 1 退出。
 - **模型**（11.3 节）：`PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` 三个都有时成为 `DEEPSEEK_BASE_URL`、`DEEPSEEK_API_KEY` 与 `DEEPSEEK_SEARCH_BASE_URL`（网页搜索用同一个密钥，地址也是这个服务）；只有一部分时在标准错误警告缺少哪个；否则 `DEEPSEEK_API_KEY` 原样传给 dsh，作者环境中的 `DEEPSEEK_BASE_URL`、`DEEPSEEK_SEARCH_BASE_URL` 不传（密钥只去 DeepSeek 的官方地址）。dsh 自己不接受 `.env` 文件中的这类地址变量（工作区根的 `.env` 写了它时 dsh 拒绝启动），所以工作区的 `.env` 改不了密钥的去向。
 - **局域网**（11.4 节）：`--host` 只接受本机的一个具体 IP 地址（拒绝 `0.0.0.0`、`::` 等通配地址与主机名），dsh 与工作区服务都只监听这个地址（服务端的 `Host`、`Origin` 规则按 10.1 节接受它），`--preview-origin` 是它的源；启动时在标准错误警告没有登录，同一网络中到得了这两个端口的人都以作者的身份工作。
 - **用例**：`packages/studio/test/studio.test.ts`（消费者安装与一个网址、在 Chromium 中打开后是工作台；全新的 home 中第一个会话在工作区根目录、没有 `~/Documents`；环境中的模型；外来 `Origin` 的 403；局域网；服务的环境中没有模型的密钥与 `kill -9`），工作区在 `e2e/fixtures/regression/.presmium` 中，端口 5663 至 5666。消费者安装由 `scripts/consumer.ts` 的 `STUDIO` 完成（单独运行：`node scripts/consumer.ts [<目录>] --studio`）；打包在全仓的一个锁（`node_modules/.presmium-pack.lock`）之下进行，因为 `@lincyaw/dsh` 的 `prepack` 与 `postpack` 改写它自己的目录，CLI 与 studio 的消费者安装用例同时打包时会互相删去对方要打进去的文件。
@@ -1895,13 +1895,13 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 | 当前诊断：`Diagnostic`、`DiagnosticSnapshot`、`PreviewDiagnostics`；SSE 与 MCP 资源订阅；工作台与 agent 读取同一快照 | `packages/kernel/src/contracts/diagnostics.ts`、`packages/server/src/diagnostics.ts`（`design-dsh.md` 5.4 节） |
 | `RenderContext.preview?: { origins: string[] }`：开发服务器的页面带预览代理与允许的父页面来源 | `packages/kernel/src/ir.ts`（只增加可选字段） |
 | 工作区服务的新路由：`ir`、`ir/events`、`preview`、`build`、`check`；`presmium serve --preview-origin <源>`；服务令牌 `PRESMIUM_SERVICE_TOKEN` | `packages/workspace/src/node/`、`packages/cli/src/cli.ts`（`design-dsh.md` 第 5 节） |
-| 审阅的路由：`review`（SSE 时为页面跟随）、`review/open`、`review/step`、`review/accept`、`review/reject`、`review/restore`、`review/events`（bundle 的 SSE）；`CHANGE_REVIEW` 的 git 实现由工作区服务提供；会话的提交另带尾注 `Presmium-Session`、`Presmium-Turn` | `packages/workspace/src/node/review/`、`packages/dsh/src/node/turns/` |
+| 审阅的路由：`review`（SSE 时为页面跟随）、`review/open`、`review/step`、`review/accept`、`review/reject`、`review/restore`、`review/events`（bundle 的 SSE）；`CHANGE_REVIEW` 的 git 实现由工作区服务提供；会话的提交另带尾注 `Presmium-Session`、`Presmium-Turn` | `packages/workspace/src/node/review/`、`packages/dsh/src/node/turns.ts` |
 | `Focus`、`FocusReport`（工作台报告的、尚未换算的焦点）；`Annotation.focus`、`AgentContext.focus` | `packages/kernel/src/contracts/agent.ts`（只增加） |
 | 工作区服务的路由的数据：`DocumentsAnswer`、`FilesAnswer`、`SourceAnswer`、`IrAnswer`、`IrEvent`、`PreviewAnswer`、`ReviewSnapshot`、`ReviewUpdate`、`HistoryRevision` 等；文档列表的 `DocumentSummary`（`ServerHost`、`McpHost` 与工作区服务共用） | `packages/kernel/src/contracts/workspace.ts`，工作区服务与工作台都引用它 |
 | `MCP_ENDPOINT.issue(member, mode, { confirmed, document })`（`McpIssueOptions`）：会话令牌（主机已确认、绑定一份文档）；服务端路由 `presmium.server/tokens` 与 `presmium.server/focus` | `packages/kernel/src/contracts/server.ts`（只增加）、`packages/server/src/server.ts`、`focus.ts` |
 | 列出的工具的 `_meta`（`presmium/kind`，主机已确认的调用者另有 `presmium/approval`）；客户端一侧 `@lincyaw/mcp/client`（`connectPresmiumMcp`、`describeOperation`）；焦点的换算 `resolveFocus`；资源 `presmium://focus` 与工具 `get_focus`；`McpHost.focus`、`watchFocus`、`approval`；`McpCaller.confirmed`、`document` | `@lincyaw/mcp` |
-| bundle `@lincyaw/dsh`：`dsh.bundle`（`cordis.patch.yml`）、`web.patch.yml`、`profile.patch.yml`；启动器用的 `@lincyaw/dsh/launch`（`writeProfile`、`launchPatches`、`launchEnv`、`dshBin`、`launchArgs`、看门狗 `WATCHDOG` 与就绪的一行 `WEB_READY`） | `packages/dsh/` |
-| 设计系统 `@lincyaw/design`（令牌、类、字体、图标、`COLORS`）；工作台的面板与状态 `@lincyaw/workbench`（`Workbench`、`workspaceClient`、`connectPreview`、`PANELS`、React 版的 `Pm*`）；bundle 的客户端部分 `@lincyaw/dsh/client` 与 `presmium-workbench` 行（`/api/presmium/workbench`） | `packages/design/`、`packages/workbench/`、`packages/dsh/src/client/`、`packages/dsh/src/node/workbench.ts`、`packages/dsh/build/` |
+| bundle `@lincyaw/dsh`：`dsh.bundle`（`cordis.patch.yml`）、`web.patch.yml`、`profile.patch.yml`；启动器用的 `@lincyaw/dsh/launch`（`writeProfile`、`launchPatches`、`launchEnv`、`dshBin`、`launchArgs`；在看门狗之下启动进程的 `launchNode` 与 `launchWorkspaceServer`，环境的 `isLauncherVariable`、`inheritedEnv`、`workspaceServerEnv`；就绪的一行 `WEB_READY`、`SERVE_READY`、`WORKSPACE_READY`） | `packages/dsh/` |
+| 设计系统 `@lincyaw/design`（令牌、类、字体、图标、`COLORS`）；工作台的面板与状态 `@lincyaw/workbench`（`Workbench`、`workspaceClient`、`connectPreview`、各面板与文档编辑器 `DocumentEditor`、React 版的 `Pm*`）；bundle 的客户端部分 `@lincyaw/dsh/client` 与 `presmium-workbench` 行（`/api/presmium/workbench`） | `packages/design/`、`packages/workbench/`、`packages/dsh/src/client/`、`packages/dsh/src/node/workbench.ts`、`packages/dsh/build/` |
 | `presmium studio [目录] [--port] [--host]` | `@lincyaw/studio`；`@lincyaw/cli` 转交 |
 
 ### 13.3 预览协议
@@ -1923,10 +1923,10 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 
 | 边界 | 实现 | 责任 |
 |---|---|---|
-| 工作区与当前文稿 | `packages/dsh/src/node/workspaces.ts`、`service.ts` | 登记启动时的工作区根目录；按选中的文稿绑定 MCP 工具、快照与焦点，不改变网页会话的 cwd |
+| 工作区与当前文稿 | `packages/dsh/src/node/workspaces.ts`、`service.ts`、`bindings.ts` | 登记启动时的工作区根目录；`service.ts` 的 `WorkspaceServerClient` 连接或启动工作区服务，`bindings.ts` 的 `DocumentBindings` 按选中的文稿把每个 dsh 会话绑定到 MCP 工具、快照与焦点，不改变网页会话的 cwd |
 | 工具与确认 | `packages/dsh/src/node/tools.ts`、`policy.ts` | 将同一张 MCP 工具表登记到 agent 作用域，按工具元数据映射确认策略；运营者目录由 guard 拒绝 |
 | 文稿上下文与技能 | `packages/dsh/src/node/context.ts`、`skills.ts` | 每一步前读取当前文稿的快照；登记 bundle 提供的技能 |
-| 会话审阅 | `packages/dsh/src/node/turns/index.ts` | 写入前打开工作区审阅，工具完成后记检查点，撤销后把通知注入会话 |
+| 会话审阅 | `packages/dsh/src/node/turns.ts` | 写入前打开工作区审阅，工具完成后记检查点，撤销后把通知注入会话 |
 | 工作区事务 | `packages/workspace/src/node/review/` | 快照、检查点、锁、接受、拒绝与崩溃恢复；恢复与提交边界见 10.7 节 |
 | HTTP 适配 | `packages/dsh/src/node/routes.ts`、`workbench.ts` | 认证后把工作台请求转给工作区服务，保留流式回答；向页面提供工作区与 MCP 连接信息 |
 | 工作台面板 | `packages/workbench/` | 编辑、保存冲突、诊断、预览协议、焦点与审阅的界面和状态，不引用 dsh |

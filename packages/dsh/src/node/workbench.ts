@@ -1,4 +1,4 @@
-import type { DshContext } from './dsh.ts'
+import type { DshContext } from './dsh-types.ts'
 
 export const name = 'presmium-workbench'
 export const inject = ['presmium', 'connection', 'webServer']
@@ -24,7 +24,7 @@ export function apply(ctx: DshContext & { webServer: WebServer }): void {
       const body = await request.json().catch(() => null) as { session?: unknown, document?: unknown } | null
       if (!body || typeof body.session !== 'string' || !body.session || (body.document !== null && typeof body.document !== 'string')) return new Response('Invalid context', { status: 400 })
       try {
-        await ctx.presmium.selectDocument(body.session, body.document)
+        await ctx.presmium.bindings.selectDocument(body.session, body.document)
         return Response.json({ session: body.session, document: body.document })
       } catch {
         return new Response('Unknown document', { status: 400 })
@@ -36,7 +36,7 @@ export function apply(ctx: DshContext & { webServer: WebServer }): void {
     methods: ['GET'],
     requestBody: 'buffered',
     async fetch() {
-      const { url, root } = await ctx.presmium.ready
+      const { url, root } = await ctx.presmium.server.ready
       return new Response(JSON.stringify({ mcp: `${url}/mcp`, root }), { headers: { 'Content-Type': 'application/json' } })
     },
   })

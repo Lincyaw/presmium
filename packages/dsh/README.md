@@ -6,7 +6,7 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 
 ## Usage
 
-`presmium studio` installs and starts it; you do not add it yourself. A launcher of its own writes a profile with `@lincyaw/dsh/launch` (`writeProfile`), passes the patches `launchPatches(carrier)` returns with `--patch`, and sets `launchEnv(dshHome)`; with `PRESMIUM_SERVICE_URL` and `PRESMIUM_SERVICE_TOKEN` it uses that workspace service, otherwise it starts `presmium serve` itself.
+`presmium studio` installs and starts it; you do not add it yourself. A launcher of its own writes a profile with `@lincyaw/dsh/launch` (`writeProfile`), passes the patches `launchPatches(carrier)` returns with `--patch`, and sets `launchEnv(dshHome)`; it can start the workspace service as studio does with `launchWorkspaceServer`. With `PRESMIUM_SERVICE_URL` and `PRESMIUM_SERVICE_TOKEN` the bundle uses that workspace service, otherwise it starts `presmium serve` itself in the same way.
 
 In a checkout of the repository the client bundle is built when DeepSeek Harness starts and its sources are newer (`build/ensure.mjs`); `node build/client.mjs` builds it by hand, and packing the package (`prepack`) builds it for publishing.
 

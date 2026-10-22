@@ -1,9 +1,7 @@
 import { ArrowLeft, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleHelp, CircleX, Columns2, Contrast, Copy, ExternalLink, FileDiff, FileText, Folder, GitBranch, GitFork, Info, Moon, MoreHorizontal, PanelLeftClose, Pencil, Play, Plug, Plus, Presentation, Redo2, Save, Search, SlidersHorizontal, Sparkles, Sun, Trash2, TriangleAlert, Undo2, Users, X } from 'lucide'
 import type { IconNode } from 'lucide'
 
-export type Shape = IconNode[number]
-
-// Presmium's semantic names stay stable across the Vue, React and generated HTML views.
+// Presmium's semantic names stay stable across the Vue and React components and the generated HTML.
 export const ICONS = {
   document: FileText, diff: FileDiff, search: Search, history: GitFork, people: Users, help: CircleHelp,
   sliders: SlidersHorizontal, plus: Plus, sparkle: Sparkles, edit: Pencil, close: X,

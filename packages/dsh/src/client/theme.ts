@@ -6,7 +6,8 @@ const same = (value: string): Pair => ({ light: value, dark: value })
 const pm = (name: ColorName): Pair => same(color(name))
 const mix = (name: ColorName, percent: number, other = 'transparent'): Pair => same(`color-mix(in srgb, ${color(name)} ${percent}%, ${other})`)
 
-export const TOKENS: Record<string, Pair> = {
+/** DeepSeek Harness's theme tokens (`--dsw-*`) mapped onto Presmium's design tokens. */
+export const DSH_THEME_TOKENS: Record<string, Pair> = {
   '--dsw-alias-bg-base': pm('bg'),
   '--dsw-alias-bg-document-preview': pm('surface'),
   '--dsw-alias-bg-layer-1': pm('surface'),
@@ -142,7 +143,8 @@ export class ThemePresenter {
   }
 }
 
-export function followScheme(snapshot: DshThemeSnapshot): boolean {
+/** Sets the `dark` class of the page to DeepSeek Harness's colour scheme; returns whether it is dark. */
+export function syncDarkClass(snapshot: DshThemeSnapshot): boolean {
   const dark = snapshot.active.colorScheme === 'dark'
   document.documentElement.classList.toggle('dark', dark)
   return dark

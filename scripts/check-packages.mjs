@@ -6,7 +6,7 @@ const root = new URL('..', import.meta.url).pathname
 const REPOSITORY = 'git+https://github.com/Lincyaw/presmium.git'
 const SHARED = new Set(['@lincyaw/kernel', '@lincyaw/host', '@lincyaw/viewer', '@lincyaw/compiler'])
 const UNSCOPED = new Set(['create-presmium'])
-const ZERO = new Set(['@lincyaw/workbench', '@lincyaw/dsh', '@lincyaw/studio'])
+const ZERO_X_PACKAGES = new Set(['@lincyaw/workbench', '@lincyaw/dsh', '@lincyaw/studio'])
 
 const read = file => JSON.parse(readFileSync(join(root, file), 'utf8'))
 const rootPackage = read('package.json')
@@ -41,8 +41,8 @@ for (const dir of workspaces) {
   }
   if (row && row !== 'npm') problems.push(`${at}: published, but the table says "${row}"`)
   if (!pkg.name.startsWith('@lincyaw/') && !UNSCOPED.has(pkg.name)) problems.push(`${at}: a public package is named @lincyaw/*`)
-  if (ZERO.has(pkg.name)) {
-    if (!/^0\./.test(pkg.version)) problems.push(`${at}: a package of the workbench is 0.x (docs/design-dsh.md 12), not ${pkg.version}`)
+  if (ZERO_X_PACKAGES.has(pkg.name)) {
+    if (!/^0\./.test(pkg.version)) problems.push(`${at}: a package of the workbench is 0.x (docs/design-dsh.md 3.3), not ${pkg.version}`)
   } else {
     versions.add(pkg.version)
   }

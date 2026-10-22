@@ -62,7 +62,7 @@ test('Quick Open locates workspace code while a lecture is open and keeps the un
   await search.press('Enter')
   await unsaved.getByRole('button', { name: '不保存', exact: true }).click()
   await expect(page.locator('.pmw-preview__frame')).toHaveAttribute('title', 'Second lecture 的预览')
-  await expect(page.locator('.pmw-frame')).toHaveAttribute('data-view', 'preview')
+  await expect(page.locator('.pmw-frame')).toHaveAttribute('data-pane', 'preview')
 })
 
 test('commands change the lecture layout and Quick Open also works from the launcher', async ({ page }) => {

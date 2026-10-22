@@ -34,5 +34,3 @@ export function colorToken(name: ColorName): `--pm-color-${ColorName}` {
 export function color(name: ColorName): string {
   return `var(${colorToken(name)})`
 }
-
-export const FONTS = ['sans', 'serif', 'mono'] as const

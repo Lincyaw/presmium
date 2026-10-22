@@ -1,10 +1,9 @@
 import { PmButton, WorkbenchProvider } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
-import { useEffect, useSyncExternalStore } from 'react'
+import { useEffect } from 'react'
 import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import { BRAND_LANGUAGES, BRAND_SLOTS, ONBOARDING } from './contract.ts'
-import { BRAND_COPY, FRAME_MESSAGES } from './messages.ts'
-import type { FrameMessages } from './messages.ts'
+import { BRAND_SLOTS, ONBOARDING } from './contract.ts'
+import { BRAND_COPY, BRAND_LANGUAGES, useClientMessages } from './messages.ts'
 
 export function Logo({ size = 24, className }: { size?: number, className?: string }) {
   return (
@@ -13,11 +12,6 @@ export function Logo({ size = 24, className }: { size?: number, className?: stri
       <path d="M11 8h7.5a6.5 6.5 0 0 1 0 13H15v4h-4zM15 12v5h3.5a2.5 2.5 0 0 0 0-5z" fill="#F7F5F0" fillRule="evenodd" />
     </svg>
   )
-}
-
-export function useFrameMessages(workbench: Workbench): FrameMessages {
-  const locale = useSyncExternalStore(workbench.subscribe, () => workbench.getState().locale)
-  return FRAME_MESSAGES[locale]
 }
 
 const WELCOMED = 'presmium.workbench.welcomed'
@@ -31,7 +25,7 @@ function welcomed(): boolean {
 }
 
 function Welcome({ workbench, complete, openSection }: { workbench: Workbench, complete?: () => void, openSection?: (id: string) => void }) {
-  const t = useFrameMessages(workbench)
+  const t = useClientMessages(workbench)
   const read = welcomed()
   useEffect(() => {
     if (read) complete?.()
@@ -45,7 +39,7 @@ function Welcome({ workbench, complete, openSection }: { workbench: Workbench, c
     complete?.()
   }
   return (
-    <WorkbenchProvider workbench={workbench} protectChanges={false}>
+    <WorkbenchProvider workbench={workbench} isPrimary={false}>
       <Modal open title={t.welcomeTitle} onClose={done} headless>
         <div className="pmw-welcome__card pm-ui" data-pmw-welcome="">
           <Logo size={40} />
@@ -75,7 +69,8 @@ function PassOver({ complete }: { complete?: () => void }) {
   return null
 }
 
-export function brand(ctx: DshClientContext, workbench: Workbench): void {
+/** Puts Presmium's mark, name, first-use notice and languages in DeepSeek Harness's slots, in every layout. */
+export function registerBrand(ctx: DshClientContext, workbench: Workbench): void {
   const [mark, name, hero] = BRAND_SLOTS
   ctx.effect(() => ctx.slots.inject(mark, () => ctx.slots.register({ name: mark }, ({ size }: { size?: number }) => <Logo size={size ?? 24} />)), 'presmium: sidebar brand mark')
   ctx.effect(() => ctx.slots.inject(name, () => ctx.slots.register({ name }, () => <span className="pmw-brand-name">Presmium</span>)), 'presmium: sidebar brand name')

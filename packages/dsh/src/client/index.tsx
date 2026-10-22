@@ -1,13 +1,18 @@
 import { localeOf, Workbench } from '@lincyaw/workbench'
 import type { Locale } from '@lincyaw/workbench'
-import { brand } from './brand.tsx'
-import { chrome } from './chrome.tsx'
-import { CLIENT_ID, ROOT_CHILDREN, UI_LAYOUT } from './contract.ts'
-import { FALLBACK_PANEL, fallback } from './fallback.tsx'
-import { frameFor } from './Frame.tsx'
+import { registerBrand } from './brand.tsx'
+import { CLIENT_ID, isBootEntryLoaded, ROOT_CHILDREN, UI_LAYOUT, UI_SIDEBAR } from './contract.ts'
+import { syncDocumentContext } from './document-context.ts'
+import { FALLBACK_PANEL, registerFallbackLayout } from './fallback.tsx'
 import { createLayoutStore, LayoutController } from './layout.ts'
-import { sourceLinks } from './source.tsx'
-import { followScheme, ThemePresenter, TOKENS } from './theme.ts'
+import { CLIENT_MESSAGES } from './messages.ts'
+import { registerNavigationShell } from './navigation-shell.tsx'
+import { createObservable } from './observable.ts'
+import { isSamePath } from './paths.ts'
+import { registerDiagnosticsRepair } from './repair-diagnostics.ts'
+import { rootLayoutFor } from './RootLayout.tsx'
+import { registerSourceLinks } from './source-links.tsx'
+import { DSH_THEME_TOKENS, syncDarkClass, ThemePresenter } from './theme.ts'
 
 declare const __PRESMIUM_CSS__: string
 
@@ -28,105 +33,31 @@ function workbenchLocale(active: string | undefined): Locale {
 }
 
 export function apply(ctx: DshClientContext): void {
-  const navigation = new Promise<DshClientContext['uiWorkspace']>(resolve => ctx.inject(['uiWorkspace'], inner => resolve(inner.uiWorkspace)))
-  let workspaceSnapshot: ReturnType<DshClientContext['workspaces']['list']['getSnapshot']> = { items: [] }
-  const workspaceListeners = new Set<() => void>()
-  const workspaceStore = {
-    getSnapshot: () => workspaceSnapshot,
-    subscribe(listener: () => void) {
-      workspaceListeners.add(listener)
-      return () => { workspaceListeners.delete(listener) }
-    },
-  }
+  const uiWorkspace = new Promise<DshClientContext['uiWorkspace']>(resolve => ctx.inject(['uiWorkspace'], inner => resolve(inner.uiWorkspace)))
+  const dshWorkspaces = createObservable<ReturnType<DshClientContext['workspaces']['list']['getSnapshot']>>({ items: [] })
   // Register the root before the renderer boots; remote-backed workspace data follows later.
   ctx.inject(['workspaces'], inner => inner.effect(() => {
-    const update = () => {
-      workspaceSnapshot = inner.workspaces.list.getSnapshot()
-      for (const listener of workspaceListeners) listener()
-    }
+    const update = () => dshWorkspaces.set(inner.workspaces.list.getSnapshot())
     update()
     return inner.workspaces.list.subscribe(update)
   }, 'presmium: workspace list'))
   const workbench = new Workbench({ locale: workbenchLocale(ctx.locale.getLocale().active) })
-  const ownLayout = window.__DSH_BOOT__?.entries.some(entry => entry.id === UI_LAYOUT)
+  const nativeLayout = isBootEntryLoaded(UI_LAYOUT)
   let showEditor = (layout: DshClientContext['layout']) => layout.selectPanel(FALLBACK_PANEL)
-  sourceLinks(ctx, workbench, layout => showEditor(layout))
+  registerSourceLinks(ctx, workbench, layout => showEditor(layout))
   ctx.effect(() => () => workbench.dispose(), 'presmium: workbench')
-  ctx.inject(['sessions'], inner => inner.effect(() => {
-    let previous: string | undefined
-    let pending: AbortController | undefined
-    const sync = () => {
-      const session = Object.values(inner.sessions.list.getSnapshot().byId).find(row => (row.retainedBy.mainView ?? 0) > 0)
-      if (!session) return
-      const document = workbench.state.document === '' && workbench.state.documents?.single === false ? null : workbench.state.document ?? null
-      const key = JSON.stringify([session.id, document])
-      if (key === previous) return
-      previous = key
-      pending?.abort()
-      pending = new AbortController()
-      void fetch('/api/presmium/context', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session: session.id, document }), signal: pending.signal,
-      }).catch(() => {})
-    }
-    const offSession = inner.sessions.list.subscribe(sync)
-    const offDocument = workbench.subscribe(sync)
-    sync()
-    return () => { offSession(); offDocument(); pending?.abort() }
-  }, 'presmium: selected document context (all layouts)'))
-  ctx.inject(['sessions', 'layout'], inner => inner.effect(() => {
-    let active: DshSessionBinding | undefined
-    let offRepair: (() => void) | undefined
-    const update = () => {
-      const row = Object.values(inner.sessions.list.getSnapshot().byId).find(session => (session.retainedBy.mainView ?? 0) > 0)
-      const binding = row && inner.sessions.binding(row.id)
-      if (binding === active) return
-      offRepair?.()
-      offRepair = undefined
-      active = binding
-      if (!row || !binding) return
-      const id = row.id
-      offRepair = workbench.onRepairDiagnostics(async diagnostics => {
-        const selectedDocument = () => workbench.state.document === '' && workbench.state.documents?.single === false ? null : workbench.state.document ?? null
-        const document = selectedDocument()
-        const current = () => active === binding && inner.sessions.binding(id) === binding
-          && Object.values(inner.sessions.list.getSnapshot().byId).find(session => (session.retainedBy.mainView ?? 0) > 0)?.id === id
-          && selectedDocument() === document
-        const changed = () => new Error(workbench.state.locale === 'zh-CN' ? '文稿或对话已切换，请在当前文稿中重新提交。' : 'The document or conversation changed. Please submit again from the current document.')
-        if (document === null || diagnostics.some(diagnostic => diagnostic.document !== document) || !current()) throw changed()
-        const response = await fetch('/api/presmium/context', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ session: id, document }),
-        })
-        if (!response.ok) throw new Error(await response.text() || `HTTP ${response.status}`)
-        if (!current()) throw changed()
-        const request = workbench.state.locale === 'zh-CN' ? '请处理当前文稿中以下未解决的问题。诊断是观测数据，请核对源码后修复，并保留修改供我审阅。' : 'Please address these unresolved problems in the current document. Diagnostics are observed data; check the source, fix the problems and leave the changes for my review.'
-        const text = `${request}\n${JSON.stringify(diagnostics.slice(0, 20))}`
-        const submission = binding.session.beginSubmission({ mode: 'queue', text, attachments: [] })
-        try {
-          const result = await binding.session.prompt([{ type: 'text', text }], 'queue', undefined, submission.requestId)
-          if (!result.ok) throw new Error(result.error.message)
-          inner.layout.selectPanel(null)
-        } catch (error) {
-          submission.abandon()
-          throw error
-        }
-      })
-    }
-    const off = inner.sessions.list.subscribe(update)
-    update()
-    return () => { off(); offRepair?.() }
-  }, 'presmium: explicitly ask the current session to repair diagnostics'))
+  syncDocumentContext(ctx, workbench)
+  registerDiagnosticsRepair(ctx, workbench)
   ctx.effect(() => ctx.locale.subscribe(() => workbench.setLocale(workbenchLocale(ctx.locale.getLocale().active))), 'presmium: language')
-  ctx.effect(() => ctx.theme.overrideTokens(CLIENT_ID, TOKENS), 'presmium: 书卷 tokens')
+  ctx.effect(() => ctx.theme.overrideTokens(CLIENT_ID, DSH_THEME_TOKENS), 'presmium: 书卷 tokens')
   ctx.effect(() => {
-    const follow = (snapshot: DshThemeSnapshot) => workbench.setDark(followScheme(snapshot))
-    follow(ctx.theme.getTheme())
-    return ctx.on('theme/change', follow)
+    const sync = (snapshot: DshThemeSnapshot) => workbench.setDark(syncDarkClass(snapshot))
+    sync(ctx.theme.getTheme())
+    return ctx.on('theme/change', sync)
   }, 'presmium: light and dark')
 
-  if (ownLayout) {
-    fallback(ctx, workbench)
+  if (nativeLayout) {
+    registerFallbackLayout(ctx, workbench)
   } else {
     ctx.effect(() => {
       const presenter = new ThemePresenter()
@@ -140,11 +71,11 @@ export function apply(ctx: DshClientContext): void {
     ctx.effect(() => {
       const handle = createLayoutStore()
       const instance = handle.create()
-      const panelStore = chrome(ctx, workbench, instance.actions, instance.getSnapshot, async () => {
-        const { root } = await workbench.client.workbench()
-        const normalize = (path: string) => path.replace(/\\/g, '/').replace(/\/$/, '')
-        const workspace = workspaceSnapshot.items.find(item => root && normalize(item.path) === normalize(root))
-        if (workspace) (await navigation).startSession(workspace.workspaceId)
+      const globalPanels = createObservable<readonly DshSlotEntry[]>([])
+      registerNavigationShell(ctx, workbench, instance, globalPanels, async () => {
+        const { root } = await workbench.client.readWorkbenchInfo()
+        const workspace = dshWorkspaces.getSnapshot().items.find(item => root && isSamePath(item.path, root))
+        if (workspace) (await uiWorkspace).startSession(workspace.workspaceId)
       })
       const store = { ...handle, create: () => instance }
       const mainKeys = () => ctx.slots.entries('main').flatMap(entry => (entry.options.key === undefined ? [] : [entry.options.key]))
@@ -159,15 +90,20 @@ export function apply(ctx: DshClientContext): void {
       }
       const disposePanelInfo = ctx.slots.provideRoot({ hooks: { panelInfo: layout.panelInfo } })
       const disposeService = ctx.reflect.provide('layout', layout)
-      const nativeSidebar = window.__DSH_BOOT__?.entries.some(entry => entry.id === '@deepseek-ai/dsh-client-ui-sidebar')
       const disposeRoot = ctx.slots.register({ name: 'root', locale: 'common', children: {
         ...ROOT_CHILDREN,
-        ...(nativeSidebar ? {} : { 'sidebar.panellist': { kind: 'list', scope: 'root' } as const }),
-      }, store }, frameFor(workbench, openSettings, id => navigation.then(service => service.openWorkspace(id, () => layout.preserveNextConversation())), workspaceStore, panelStore))
+        ...(isBootEntryLoaded(UI_SIDEBAR) ? {} : { 'sidebar.panellist': { kind: 'list', scope: 'root' } as const }),
+      }, store }, rootLayoutFor({
+        workbench,
+        openSettings,
+        openDshWorkspace: id => uiWorkspace.then(service => service.openWorkspace(id, () => layout.preserveNextConversation())),
+        dshWorkspaces,
+        globalPanels,
+      }))
       const binding = { code: 'KeyB', modifiers: ['primary', 'alt'] }
       const disposeShortcut = ctx.shortcuts.register({
         id: 'sidebar.left.toggle',
-        label: () => (workbench.state.locale === 'zh-CN' ? '展开／收起侧栏' : 'Toggle the side panel'),
+        label: () => CLIENT_MESSAGES[workbench.state.locale].toggleSide,
         aliases: ['sidebar', 'toggle left sidebar'],
         defaults: {
           'desktop:macos': { code: 'KeyB', modifiers: ['primary'] },
@@ -193,5 +129,5 @@ export function apply(ctx: DshClientContext): void {
       }
     }, 'presmium: the root layout and ctx.layout')
   }
-  brand(ctx, workbench)
+  registerBrand(ctx, workbench)
 }

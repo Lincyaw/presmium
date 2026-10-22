@@ -1,4 +1,4 @@
-import type { PresmiumService } from './service.ts'
+import type { Presmium } from './service.ts'
 
 export interface DshLogger {
   info(format: string, ...args: unknown[]): void
@@ -89,5 +89,5 @@ export interface DshContext {
   skills: { register(skill: DshSkill): () => void }
   connection: { fetch: { register(route: DshFetchRoute): () => Promise<void> } }
   workspaceRegistry: DshWorkspaces
-  presmium: PresmiumService
+  presmium: Presmium
 }

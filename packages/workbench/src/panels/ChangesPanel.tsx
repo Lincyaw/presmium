@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { PmBadge, PmButton, PmDialog, PmIconButton, PmNotice } from '../components.tsx'
-import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
+import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 
 function Counts({ added, removed }: { added?: number, removed?: number }) {
   return (
@@ -14,19 +14,19 @@ function Counts({ added, removed }: { added?: number, removed?: number }) {
 
 export function ChangesPanel() {
   const t = useMessages()
-  const workbench = useWorkbenchStore()
-  const locale = useWorkbench(state => state.locale)
-  const review = useWorkbench(state => state.review)
-  const changed = useWorkbench(state => state.changed)
-  const history = useWorkbench(state => state.history)
-  const failure = useWorkbench(state => state.changesFailure)
-  const dir = useWorkbench(state => state.document)
+  const workbench = useWorkbench()
+  const locale = useWorkbenchState(state => state.locale)
+  const review = useWorkbenchState(state => state.review)
+  const uncommitted = useWorkbenchState(state => state.uncommitted)
+  const revisions = useWorkbenchState(state => state.revisions)
+  const failure = useWorkbenchState(state => state.changesFailure)
+  const dir = useWorkbenchState(state => state.document)
   const short = (path: string) => (dir && path.startsWith(`${dir}/`) ? path.slice(dir.length + 1) : path)
   const [reviewMessage, setReviewMessage] = useState('')
   const [commitMessage, setCommitMessage] = useState('')
   const [discarding, setDiscarding] = useState(false)
   const pending = new Set(review?.changes.map(change => change.path))
-  const own = changed?.filter(file => !pending.has(file.path))
+  const own = uncommitted?.filter(file => !pending.has(file.path))
   const submit = (work: () => Promise<boolean>, done: () => void) => async (event: FormEvent) => {
     event.preventDefault()
     if (await work()) done()
@@ -92,9 +92,9 @@ export function ChangesPanel() {
       </section>
       <section className="pmw-changes__group" aria-label={t.history} data-group="history">
         <h2 className="pmw-changes__head">{t.history}</h2>
-        {history?.length === 0 && <p className="pmw-muted">{t.noHistory}</p>}
+        {revisions?.length === 0 && <p className="pmw-muted">{t.noHistory}</p>}
         <ol className="pmw-changes__list">
-          {history?.map(revision => (
+          {revisions?.map(revision => (
             <li key={revision.id} className="pmw-changes__revision" data-revision={revision.id}>
               <span className="pmw-changes__subject">{revision.message.split('\n')[0]}</span>
               <span className="pmw-muted pmw-changes__meta">
@@ -103,7 +103,7 @@ export function ChangesPanel() {
               </span>
               {revision.revertedBy
                 ? <span className="pmw-muted">{t.reverted}</span>
-                : <PmButton small icon="undo" onClick={() => void workbench.revert(revision.id)}>{t.revert}</PmButton>}
+                : <PmButton small icon="undo" onClick={() => void workbench.revertRevision(revision.id)}>{t.revert}</PmButton>}
             </li>
           ))}
         </ol>

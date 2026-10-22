@@ -1,7 +1,7 @@
-import type { Finding, PreviewReport } from '@lincyaw/kernel'
+import type { Finding, PreviewRenderer, PreviewReport } from '@lincyaw/kernel'
 import { connectPreview } from './preview.ts'
 import type { PreviewConnection } from './preview.ts'
-import type { PreviewRenderer, Workbench } from './store.ts'
+import type { Workbench } from './workbench.ts'
 
 // Retain loaded modules, not running documents. Unsupported previews are removed.
 const LIMIT = 2
@@ -11,13 +11,14 @@ const READY_MS = 45_000
 
 export interface PreviewTarget {
   document: string
-  view: PreviewRenderer
+  renderer: PreviewRenderer
   address?: string
   title: string
   reload: number
 }
 
-export interface PreviewState {
+/** The state of the selected preview's iframe. */
+export interface PreviewFrameStatus {
   ready: boolean
   mismatch?: boolean
   identityFailure?: boolean
@@ -31,7 +32,7 @@ interface Entry {
   ready: boolean
   active: boolean
   used: number
-  revision?: string
+  irRevision?: string
   problems: Map<string, Finding>
   detach?: () => void
   loading?: ReturnType<typeof setInterval>
@@ -39,7 +40,11 @@ interface Entry {
   pending?: { request: number, active: boolean, timer: ReturnType<typeof setTimeout>, resolve(): void, reject(error: Error): void }
 }
 
-export function createPreviewPool(container: HTMLElement, workbench: Workbench, changed: (state: PreviewState) => void, navigate: (document: string) => void) {
+/**
+ * Keeps the iframes of the last previews (at most two) in `container`, shows the selected one and pauses the others
+ * (or removes those that cannot pause). `switchDocument` opens another document when a preview navigates to it.
+ */
+export function createPreviewPool(container: HTMLElement, workbench: Workbench, onStatus: (status: PreviewFrameStatus) => void, switchDocument: (document: string) => void) {
   const entries = new Map<string, Entry>()
   let desired: PreviewTarget | undefined
   let signature = ''
@@ -48,14 +53,14 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
   let requests = 0
   let uses = 0
   let disposed = false
-  const keyOf = (target: PreviewTarget) => JSON.stringify([target.document, target.view])
+  const keyOf = (target: PreviewTarget) => JSON.stringify([target.document, target.renderer])
   const selected = (entry: Entry) => !disposed && desired !== undefined && keyOf(desired) === entry.key
-    && workbench.state.document === entry.target.document && workbench.state.view === entry.target.view
+    && workbench.state.document === entry.target.document && workbench.state.previewRenderer === entry.target.renderer
 
-  const publish = (entry: Entry, clear = false) => {
-    if (!entry.revision) return
-    void workbench.reportPreviewDiagnostics({ document: entry.target.document, renderer: entry.target.view, instance: entry.connection.nonce,
-      revision: entry.revision, findings: clear ? [] : [...entry.problems.values()] })
+  const publishRuntimeFindings = (entry: Entry, clear = false) => {
+    if (!entry.irRevision) return
+    void workbench.reportPreviewDiagnostics({ document: entry.target.document, renderer: entry.target.renderer, instance: entry.connection.nonce,
+      revision: entry.irRevision, findings: clear ? [] : [...entry.problems.values()] })
   }
 
   const hide = (entry: Entry) => {
@@ -81,11 +86,11 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     entry.connection.dispose()
     entry.frame.remove()
     entry.problems.clear()
-    publish(entry)
+    publishRuntimeFindings(entry)
   }
-  const show = (entry: Entry, revision?: string) => {
+  const show = (entry: Entry, irRevision?: string) => {
     if (!selected(entry)) return
-    if (!entry.frame.hidden && entry.frame.dataset.active === 'true' && (revision === undefined || revision === entry.revision)) return
+    if (!entry.frame.hidden && entry.frame.dataset.active === 'true' && (irRevision === undefined || irRevision === entry.irRevision)) return
     clearTimeout(entry.expiry)
     entry.used = ++uses
     entry.frame.hidden = false
@@ -94,12 +99,13 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     entry.frame.dataset.active = 'true'
     entry.frame.tabIndex = 0
     entry.detach ??= workbench.attachPreview(entry.connection)
-    if (revision !== undefined) entry.revision = revision
-    changed({ ready: true })
-    workbench.previewReport(entry.target.document, entry.target.view, { type: 'updated', revision: entry.revision })
-    publish(entry)
+    if (irRevision !== undefined) entry.irRevision = irRevision
+    onStatus({ ready: true })
+    workbench.handlePreviewReport(entry.target.document, entry.target.renderer, { type: 'updated', revision: entry.irRevision })
+    publishRuntimeFindings(entry)
   }
-  const activity = (entry: Entry, active: boolean): Promise<void> => new Promise((resolve, reject) => {
+  /** Asks the page to run (`active`) or to pause its runtime; settles with its `activity` report. */
+  const requestActivity = (entry: Entry, active: boolean): Promise<void> => new Promise((resolve, reject) => {
     const request = ++requests
     const timer = setTimeout(() => {
       entry.pending = undefined
@@ -112,9 +118,9 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     hide(entry)
     if (!entry.ready || !entry.connection.capabilities.includes('activity')) return destroy(entry)
     if (entry.active) {
-      publish(entry, true)
+      publishRuntimeFindings(entry, true)
       try {
-        await activity(entry, false)
+        await requestActivity(entry, false)
       } catch {
         return destroy(entry)
       }
@@ -128,69 +134,73 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     serial = serial.then(work).catch(() => {})
   }
 
+  const handleActivity = (entry: Entry, report: Extract<PreviewReport, { type: 'activity' }>) => {
+    const pending = entry.pending
+    if (!pending || pending.request !== report.request) return
+    clearTimeout(pending.timer)
+    entry.pending = undefined
+    entry.active = report.active
+    if (report.error || report.active !== pending.active) pending.reject(new Error(report.error ?? 'Preview activity failed'))
+    else {
+      if (report.active && selected(entry)) show(entry, report.revision)
+      pending.resolve()
+    }
+  }
+
+  const handleReady = (entry: Entry, report: Extract<PreviewReport, { type: 'ready' }>) => {
+    const { target } = entry
+    if (report.document !== target.document || report.renderer !== target.renderer) {
+      const current = selected(entry)
+      const navigated = current && report.renderer === target.renderer && workbench.state.documents?.documents.some(doc => doc.dir === report.document)
+      destroy(entry)
+      if (navigated) switchDocument(report.document)
+      else if (current) onStatus({ ready: false, identityFailure: true })
+      return
+    }
+    const reloaded = entry.ready
+    entry.ready = true
+    if (!reloaded) entry.active = true
+    entry.irRevision = report.revision
+    entry.problems.clear()
+    publishRuntimeFindings(entry, true)
+    clearInterval(entry.loading)
+    if (!selected(entry)) enqueue(() => pause(entry))
+    else if (!entry.pending && entry.active) {
+      show(entry, report.revision)
+      workbench.handlePreviewReport(target.document, target.renderer, report)
+    } else if (!entry.pending) {
+      enqueue(async () => {
+        if (!selected(entry)) return
+        try { await requestActivity(entry, true) } catch { destroy(entry) }
+      })
+    }
+  }
+
+  const handleReport = (entry: Entry, report: PreviewReport) => {
+    if (entries.get(entry.key) !== entry) return
+    if (report.type === 'activity') return handleActivity(entry, report)
+    if (report.type === 'ready') return handleReady(entry, report)
+    if (report.type === 'updated') entry.irRevision = report.revision
+    if (report.type === 'report') {
+      const key = JSON.stringify([report.level, report.plugin, report.message])
+      if (report.resolved) entry.problems.delete(key)
+      else entry.problems.set(key, { checkId: report.plugin ?? 'presmium.runtime', severity: report.level, message: report.message })
+    }
+    if (entry.active && (report.type === 'updated' || report.type === 'report')) publishRuntimeFindings(entry)
+    if (entry.active && selected(entry)) workbench.handlePreviewReport(entry.target.document, entry.target.renderer, report)
+  }
+
   const create = (target: PreviewTarget & { address: string }): Entry => {
     const frame = document.createElement('iframe')
     frame.title = target.title
     frame.dataset.document = target.document
-    frame.dataset.view = target.view
+    frame.dataset.renderer = target.renderer
     frame.dataset.previewCache = ''
     const key = keyOf(target)
     const connection = connectPreview(() => frame, target.address, {
-      report(report: PreviewReport) {
-        if (entries.get(key) !== entry) return
-        if (report.type === 'activity') {
-          const pending = entry.pending
-          if (!pending || pending.request !== report.request) return
-          clearTimeout(pending.timer)
-          entry.pending = undefined
-          entry.active = report.active
-          if (report.error || report.active !== pending.active) pending.reject(new Error(report.error ?? 'Preview activity failed'))
-          else {
-            if (report.active && selected(entry)) show(entry, report.revision)
-            pending.resolve()
-          }
-          return
-        }
-        if (report.type === 'ready') {
-          if (report.document !== target.document || report.renderer !== target.view) {
-            const current = selected(entry)
-            const follow = current && report.renderer === target.view && workbench.state.documents?.documents.some(doc => doc.dir === report.document)
-            destroy(entry)
-            if (follow) navigate(report.document)
-            else if (current) changed({ ready: false, identityFailure: true })
-            return
-          }
-          const reloaded = entry.ready
-          entry.ready = true
-          if (!reloaded) entry.active = true
-          entry.revision = report.revision
-          entry.problems.clear()
-          publish(entry, true)
-          clearInterval(entry.loading)
-          if (selected(entry)) {
-            if (!entry.pending && entry.active) {
-              show(entry, report.revision)
-              workbench.previewReport(target.document, target.view, report)
-            } else if (!entry.pending) enqueue(async () => {
-              if (!selected(entry)) return
-              try { await activity(entry, true) } catch { destroy(entry) }
-            })
-          } else enqueue(() => pause(entry))
-          return
-        }
-        if (report.type === 'updated') entry.revision = report.revision
-        if (report.type === 'report') {
-          const key = JSON.stringify([report.level, report.plugin, report.message])
-          if (report.resolved) entry.problems.delete(key)
-          else entry.problems.set(key, { checkId: report.plugin ?? 'presmium.runtime', severity: report.level, message: report.message })
-        }
-        if (entry.active && (report.type === 'updated' || report.type === 'report')) publish(entry)
-        if (entry.active && selected(entry)) {
-          workbench.previewReport(target.document, target.view, report)
-        }
-      },
+      report: report => handleReport(entry, report),
       mismatch() {
-        if (selected(entry)) changed({ ready: false, mismatch: true })
+        if (selected(entry)) onStatus({ ready: false, mismatch: true })
         destroy(entry)
       },
     })
@@ -221,7 +231,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
       if (signature === next) return
       signature = next
       const own = ++generation
-      changed({ ready: false })
+      onStatus({ ready: false })
       for (const entry of entries.values()) hide(entry)
       enqueue(async () => {
         if (own !== generation || disposed) return
@@ -240,7 +250,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
           wanted.frame.title = target.title
           clearTimeout(wanted.expiry)
           try {
-            if (!wanted.active) await activity(wanted, true)
+            if (!wanted.active) await requestActivity(wanted, true)
             if (own === generation) show(wanted)
             return
           } catch {

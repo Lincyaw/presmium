@@ -1,21 +1,21 @@
 import { useState } from 'react'
 import { PmButton, PmIcon, PmNotice } from '../components.tsx'
-import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
+import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 
 export function ProblemsPanel({ compact = false }: { compact?: boolean }) {
   const t = useMessages()
-  const workbench = useWorkbenchStore()
-  const snapshot = useWorkbench(state => state.diagnostics)
-  const unavailable = useWorkbench(state => state.diagnosticsUnavailable)
-  const canRepair = useWorkbench(state => state.canRepairDiagnostics)
-  const repairing = useWorkbench(state => state.diagnosticsRepairing)
-  const repairFailure = useWorkbench(state => state.diagnosticsRepairFailure)
-  const findings = snapshot?.diagnostics ?? []
-  const count = findings.length
+  const workbench = useWorkbench()
+  const snapshot = useWorkbenchState(state => state.diagnostics)
+  const unavailable = useWorkbenchState(state => state.isDiagnosticsUnavailable)
+  const canRepair = useWorkbenchState(state => state.canRepairDiagnostics)
+  const repairing = useWorkbenchState(state => state.isRepairingDiagnostics)
+  const repairFailure = useWorkbenchState(state => state.diagnosticsRepairFailure)
+  const diagnostics = snapshot?.diagnostics ?? []
+  const count = diagnostics.length
   const [expanded, setExpanded] = useState(false)
   const collapsed = compact && !expanded
-  const error = findings.find(finding => finding.severity === 'error')
-  const summary = error?.message ?? findings[0]?.message
+  const error = diagnostics.find(diagnostic => diagnostic.severity === 'error')
+  const summary = error?.message ?? diagnostics[0]?.message
   if (compact && snapshot && count === 0 && !unavailable && !repairFailure) return null
   return (
     <section className="pmw-problems" aria-label={t.problems}>
@@ -32,13 +32,13 @@ export function ProblemsPanel({ compact = false }: { compact?: boolean }) {
       {snapshot && count === 0 && !unavailable && <p className="pmw-muted pmw-problems__none">{t.noProblems}</p>}
       {collapsed ? summary && <p className="pmw-problems__summary" role={error ? 'alert' : 'status'} data-severity={error ? 'error' : 'warning'}>{summary}</p> : (
       <ul className="pmw-problems__list">
-        {findings.map(finding => (
-          <li key={finding.id}>
-            <button type="button" className="pmw-problem" data-severity={finding.severity} disabled={!finding.source?.file} onClick={() => void workbench.revealProblem(finding)}>
-              <PmIcon name={finding.severity === 'error' ? 'error' : finding.severity === 'warning' ? 'warning' : 'info'} size={15} />
-              <span className="pmw-problem__severity">{t.severity[finding.severity] ?? finding.severity}</span>
-              <span className="pmw-problem__where">{finding.source ? `${finding.source.file}${finding.source.line ? `:${finding.source.line}` : ''}` : finding.renderer ? t.views[finding.renderer] : ''}</span>
-              <span className="pmw-problem__message">{finding.message}{finding.hint ? ` ${finding.hint}` : ''}</span>
+        {diagnostics.map(diagnostic => (
+          <li key={diagnostic.id}>
+            <button type="button" className="pmw-problem" data-severity={diagnostic.severity} disabled={!diagnostic.source?.file} onClick={() => void workbench.revealProblem(diagnostic)}>
+              <PmIcon name={diagnostic.severity === 'error' ? 'error' : diagnostic.severity === 'warning' ? 'warning' : 'info'} size={15} />
+              <span className="pmw-problem__severity">{t.severity[diagnostic.severity] ?? diagnostic.severity}</span>
+              <span className="pmw-problem__where">{diagnostic.source ? `${diagnostic.source.file}${diagnostic.source.line ? `:${diagnostic.source.line}` : ''}` : diagnostic.renderer ? t.renderers[diagnostic.renderer] : ''}</span>
+              <span className="pmw-problem__message">{diagnostic.message}{diagnostic.hint ? ` ${diagnostic.hint}` : ''}</span>
             </button>
           </li>
         ))}

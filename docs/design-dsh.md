@@ -126,7 +126,7 @@
 
 ### 4.1 作用与边界
 
-工作台经预览协议驱动嵌在它里面的产物页面，产物页面经它报告位置与点选。协议只传章节、块与步骤的 ID 和少量状态，不传源码位置，也不传 DOM。源码位置由工作台从 IR 的 `SourcePos` 得出（`placeAt`、`placeOf`，在 `@lincyaw/workbench` 中）。
+工作台经预览协议驱动嵌在它里面的产物页面，产物页面经它报告位置与点选。协议只传章节、块与步骤的 ID 和少量状态，不传源码位置，也不传 DOM。源码位置由工作台从 IR 的 `SourcePos` 得出（`findPlaceAtLine`、`findPlaceSource`，在 `@lincyaw/workbench` 中）。
 
 v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实时页面；讲授播放器不在 v1 中。
 
@@ -245,7 +245,7 @@ dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达�
   - `dsh.client`：`platform: 'web'`，导出预编译的客户端部分；
   - 出口：`.` 是 `presmium-workbench` 行的宿主部分，`./client` 是预编译的客户端包，其余各行各有一个出口，`./launch` 供启动器传入补丁；
   - `engines.dsh` 与对 `@deepseek-ai/dsh-*` 的精确对等依赖。dsh 在安装与启动时都检查它们，不满足时拒绝。
-- 宿主部分：每行一个普通 ESM 的入口文件，入口用 jiti 加载 `src/node/` 的 `.ts` 源码。
+- 宿主部分：每行一个普通 ESM 的入口文件（`entries/`），入口用 jiti 加载 `src/node/` 中同名的 `.ts` 源码。
 - 补丁：dsh 的一个包只有一个 bundle 层，只在某个载体中出现的行因此放在另外的补丁中，由启动器以 `--patch` 传入（`@lincyaw/dsh/launch`）：`profile.patch.yml`（全部载体：隐私、技能、第一次使用、沙箱、persona，6.6 节）与 `web.patch.yml`（web 载体：`presmium-workspaces`、`presmium-routes`、`presmium-workbench` 三行与它们的设置、内置的 `preset-authoring` 预设，以及界面上关掉的行）。headless 与 acp 载体不带 `web.patch.yml`，启动时不警告有行没有激活。
 - 技能：源只有 `.agents/skills` 一份，打包时复制进包内（副本不入库）；`scripts/check-skills.mjs` 核对 bundle 登记的技能都在源中。
 
@@ -335,13 +335,13 @@ dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达�
 | `@lincyaw/dsh` 的 `src/client` | 根布局插件，把面板登记进槽位，主题、品牌、语言包 | `@lincyaw/workbench`、dsh 外壳的模块表 | vue |
 | `@lincyaw/dsh` 的 `src/node` | 第 6 节的各行 | `@lincyaw/mcp`、Node 库 | vue、`@lincyaw/host` |
 
-面板以“面板描述”导出：标题、图标、组件、需要的服务。只有 `@lincyaw/dsh` 登记它们，所以同一批面板既能挂在根布局中，也能挂在 dsh 自带布局中。
+面板是 `@lincyaw/workbench` 导出的 React 组件，只有 `@lincyaw/dsh` 把它们放进槽位，所以同一批面板既能挂在根布局中，也能挂在 dsh 自带布局中。
 
 ### 7.2 根布局与退路
 
 根布局插件声明 `root`，子槽位与 ui-layout 相同：`sidebar`、键控的 `main`（保留键 `conversation`）、`rightbar`、`shell.bottom`、`shell.overlay`、`shell.leading`。dsh 自己的插件因此不改就能挂上。只能整个替换 ui-layout：外壳只渲染 `root` 一个槽位，子槽位只能声明一次，`renderSlot` 只渲染调用者自己声明的子槽位。
 
-导航外壳也只保留一套。`chrome.tsx` 占据 `sidebar` 并声明会话浏览器、设置等公开子槽位，直接渲染 Harness 的 `sidebar.workspaces`；设置的原生控制器保持挂载，由活动栏的唯一设置按钮打开。根布局另声明 `sidebar.panellist`，将插件、自动化任务等全局入口放在活动栏底部，与设置同列，点击后在中央打开对应全局面板；再次点击返回文稿，保留编辑草稿。历史侧栏只显示工作区和会话，不再重复品牌、新建按钮、全局工具和设置入口。原生 `ui-sidebar` 因此关闭，避免同一子槽位被两个所有者声明。
+导航外壳也只保留一套。`navigation-shell.tsx` 占据 `sidebar` 并声明会话浏览器、设置等公开子槽位，直接渲染 Harness 的 `sidebar.workspaces`；设置的原生控制器保持挂载，由活动栏的唯一设置按钮打开。根布局另声明 `sidebar.panellist`，将插件、自动化任务等全局入口放在活动栏底部，与设置同列，点击后在中央打开对应全局面板；再次点击返回文稿，保留编辑草稿。历史侧栏只显示工作区和会话，不再重复品牌、新建按钮、全局工具和设置入口。原生 `ui-sidebar` 因此关闭，避免同一子槽位被两个所有者声明。
 
 根布局插件还要重新提供：
 
@@ -364,7 +364,7 @@ dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达�
 | 状态栏 | Presmium 的状态项（git、语言、编码、光标所在行、模型）与 `shell.bottom` |
 | 浮层（`shell.overlay`） | 对话框与设置 |
 
-打开讲义默认激活文档预览标签，文件与预览的打开和分组操作见本节开头的资源标签约定。面板通过 `react-resizable-panels` 的公开接口调整与收放，切换视图保留编辑器和预览实例；收起对话保留未发送的草稿。关闭文件、返回文档列表或切换文档时，若有未保存的修改，先选择保存、放弃或取消；保存失败时保留当前文档。刷新与关闭页面使用浏览器的未保存提示。`WorkbenchProvider` 默认提供这层保护；同一工作台的辅助面板使用 `protectChanges={false}`，避免重复对话框。
+打开讲义默认激活文档预览标签，文件与预览的打开和分组操作见本节开头的资源标签约定。面板通过 `react-resizable-panels` 的公开接口调整与收放，切换视图保留编辑器和预览实例；收起对话保留未发送的草稿。关闭文件、返回文档列表或切换文档时，若有未保存的修改，先选择保存、放弃或取消；保存失败时保留当前文档。刷新与关闭页面使用浏览器的未保存提示。`WorkbenchProvider` 默认提供这层保护；同一工作台的辅助面板使用 `isPrimary={false}`，避免重复对话框。
 
 新建、历史与收起对话放在 Harness 常驻头部的 `conversation.header.leading` 槽位，桌面与窄屏一致；不在对话外面再加一层标题栏。通过 `ctx.uiWorkspace.startSession(workspaceId)` 在启动的工作区中新建，复用 Harness 的会话与草稿管理；不操作隐藏的侧栏按钮。当前文稿、编辑草稿与选中内容保持，新会话仍取得当前文稿上下文。
 
@@ -384,7 +384,7 @@ dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达�
 
 文件栏的“新建文件”只需填写工作区相对路径，自动建立缺失目录，在中央编辑器打开并保留当前讲义与草稿。`POST source/create {path}` 独立于带版本的保存接口：只创建空文本文件，拒绝已有路径、符号链接父目录、范围之外的路径和锁冲突。编辑器提供 Python 语法、四空格块缩进、Tab/Shift+Tab，Escape 后 Tab 可以离开编辑区。
 
-源码只在中央编辑器中打开。dsh 对话中的文件名与代码行引用、工作区文件列表，经过公开的 `sidebarRightTabs` 资源解析接口转到同一个编辑器；`source.tsx` 复用 `@deepseek-ai/dsh-util-workspace-path` 解码文件地址，并保留行号、未保存修改与已有标签。恢复的旧 `text` 标签通过 `sidebar.right.tab.document.actions` 同样转到编辑器。图片、PDF、Office、表格与 HTML 继续使用 dsh 的专用预览，修改审阅仍在审阅面板中。
+源码只在中央编辑器中打开。dsh 对话中的文件名与代码行引用、工作区文件列表，经过公开的 `sidebarRightTabs` 资源解析接口转到同一个编辑器；`source-links.tsx` 复用 `@deepseek-ai/dsh-util-workspace-path` 解码文件地址，并保留行号、未保存修改与已有标签。恢复的旧 `text` 标签通过 `sidebar.right.tab.document.actions` 同样转到编辑器。图片、PDF、Office、表格与 HTML 继续使用 dsh 的专用预览，修改审阅仍在审阅面板中。
 
 转到中央编辑器时，在布局效果中移除临时文件标签并明确收起原生查看栏，再选择中央面板；只关闭标签不足以收起已有其他标签的查看栏。原生文件树、终端等标签保留，用户显式打开辅助栏时仍可继续使用。
 
@@ -422,7 +422,7 @@ Presmium 自己占用的槽位：品牌槽位 `sidebar.brand.mark`、`sidebar.br
 ### 7.5 设计系统、主题与品牌
 
 - **共用的一层**：`@lincyaw/design`，产物中的 Vue 组件与工作台中的 React 组件用同一层令牌与 `pm-ui-*` 的类。
-- **React 版的通用组件**在 `@lincyaw/workbench`：`PmButton`、`PmIconButton`、`PmIcon`、`PmField`、`PmBadge`、`PmCard`、`PmSegmented`、`PmTabs`、`PmPopover`、`PmDrawer`、`PmDialog`、`PmMenu`、`PmEmpty`、`PmNotice`。有交互的组件封装 Radix Primitives，焦点、键盘导航、浮层定位与模态遮罩由依赖提供；Presmium 只维护样式与业务回调。工作台搜索用 cmdk，文件树用 React Arborist（只读目录操作，打开与选择文件），分栏用 react-resizable-panels。源码编辑继续使用 CodeMirror 6，文本合并继续使用 node-diff3。首次使用的提示直接使用 Harness 的 `Modal`。对比度与键盘行为由浏览器用例检查。
+- **React 版的通用组件**在 `@lincyaw/workbench`，只有工作台用到的几个：`PmButton`、`PmIconButton`、`PmIcon`、`PmField`、`PmBadge`、`PmCard`、`PmDialog`、`PmMenu`、`PmEmpty`、`PmNotice`。工作台自己的类以 `pmw-` 开头，只供工作台的样式与用例使用，作者与插件用 `pm-ui-*`。有交互的组件封装 Radix Primitives，焦点、键盘导航、浮层定位与模态遮罩由依赖提供；Presmium 只维护样式与业务回调。工作台搜索用 cmdk，文件树用 React Arborist（只读目录操作，打开与选择文件），分栏用 react-resizable-panels。源码编辑继续使用 CodeMirror 6，文本合并继续使用 node-diff3。首次使用的提示直接使用 Harness 的 `Modal`。对比度与键盘行为由浏览器用例检查。
 - **dsh 的令牌**：`ctx.theme.overrideTokens` 把 dsh 用到的 76 个 `--dsw-*` 别名令牌（dsh 共用到 125 个变量）映射到书卷的取值，明暗两套。字体经 `--dsh-font-family-*` 设为 IBM Plex Sans 与 IBM Plex Mono，用户自己选的字体优先。dsh 写死的颜色、圆角、字号与 CSS module 的类不去覆盖：检查以 WCAG AA 与截图为准，不要求和书卷一致。
 - **暗色**：工作台在 `<html>` 上设 `dark` 类，`--pm-*` 与 `--dsw-*` 一起切换，再经预览协议的 `appearance` 让产物跟随。
 - **品牌**：品牌槽位、标题与图标（`tapIndex`）、首次使用提示换成 Presmium 的。对话首页的标语用公开的语言包接口替换（`ctx.locale.addLanguage` 加 `register`）：`zh-CN`、`en-US` 两个语言包出现在 dsh 设置的语言列表中，标为“简体中文（Presmium）”“English (Presmium)”，只换 `conversation` 的 `hero.headline` 与 `hero.preview`，其余回退到 dsh 的中文与英文。换不干净的：其他语言标签（如 zh-TW）仍显示 dsh 的文案；插件管理器的备用源默认是 npmmirror；用户能在插件管理中关掉 `@lincyaw/dsh`（7.2 节）。默认的模型路由是 DeepSeek 的官方服务，它是正当的服务提供方，不算品牌问题。

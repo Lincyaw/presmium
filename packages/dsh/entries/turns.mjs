@@ -1,6 +1,6 @@
 import { load } from './load.mjs'
 
-const row = await load('turns/index.ts')
+const row = await load('turns.ts')
 
 export const name = row.name
 export const inject = row.inject

@@ -1,21 +1,24 @@
 import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
 import { useLayoutEffect } from 'react'
 import { PmButton, PmIconButton, PmNotice } from '../components.tsx'
-import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
-import { ProblemsPanel } from './Problems.tsx'
-import { PreviewActions, PreviewPanel } from './Preview.tsx'
-import { SourceActions, SourcePanel } from './Source.tsx'
-import { EditorGroup } from './EditorGroup.tsx'
+import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
+import { EditorGroup } from '../parts/EditorGroup.tsx'
+import type { DocumentPane } from '../parts/EditorGroup.tsx'
+import { isWorkspaceRootOpen } from '../workbench.ts'
+import { ProblemsPanel } from './ProblemsPanel.tsx'
+import { PreviewActions, PreviewPanel } from './PreviewPanel.tsx'
+import { SourceActions, SourcePanel } from './SourcePanel.tsx'
 
-export function DocumentView({ only, active = true, onNavigate }: { only?: 'source' | 'preview', active?: boolean, onNavigate?(view: 'source' | 'preview'): void }) {
+/** The editor of the open document: its source and its preview (side by side or one of them), the focus tray and the problems. */
+export function DocumentEditor({ only, active = true, onNavigate }: { only?: DocumentPane, active?: boolean, onNavigate?(pane: DocumentPane): void }) {
   const t = useMessages()
-  const workbench = useWorkbenchStore()
-  const layout = useWorkbench(state => state.layout)
-  const focus = useWorkbench(state => state.focus)
-  const pending = useWorkbench(state => state.focusPending)
-  const failure = useWorkbench(state => state.focusFailure)
-  const home = useWorkbench(state => state.document === '' && state.documents?.single === false)
-  const mode = home ? 'source' : only && layout === 'split' ? only : layout
+  const workbench = useWorkbench()
+  const layout = useWorkbenchState(state => state.layout)
+  const focus = useWorkbenchState(state => state.focus)
+  const pending = useWorkbenchState(state => state.isFocusPending)
+  const failure = useWorkbenchState(state => state.focusFailure)
+  const noLecture = useWorkbenchState(isWorkspaceRootOpen)
+  const mode = noLecture ? 'source' : only && layout === 'split' ? only : layout
   const single = mode === 'split' ? undefined : mode
   const selected = focus[0]
   const label = selected?.quote ?? selected?.section ?? selected?.source?.file

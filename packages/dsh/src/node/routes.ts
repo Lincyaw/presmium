@@ -1,18 +1,16 @@
-import type { DshContext } from './dsh.ts'
+import type { DshContext } from './dsh-types.ts'
+import { SERVER_ROUTES, WORKSPACE_ROUTES } from './server-routes.ts'
 
 export const name = 'presmium-routes'
 export const inject = ['presmium', 'connection']
 
-const WORKSPACE = '/__presmium/presmium.workspace/'
-const SERVER = '/__presmium/presmium.server/'
-
 export const ROUTES: Record<string, string> = Object.fromEntries([
   ...['documents', 'files', 'source', 'source/create', 'changes', 'changes/commit', 'changes/discard', 'revisions', 'revisions/revert',
     'ir', 'ir/events', 'preview', 'build', 'check',
-    'review', 'review/open', 'review/step', 'review/accept', 'review/reject', 'review/restore'].map(path => [path, `${WORKSPACE}${path}`]),
-  ['focus', `${SERVER}focus`],
-  ['diagnostics', `${SERVER}diagnostics`],
-  ['diagnostics/events', `${SERVER}diagnostics/events`],
+    'review', 'review/open', 'review/step', 'review/accept', 'review/reject', 'review/restore'].map(path => [path, `${WORKSPACE_ROUTES}${path}`]),
+  ['focus', `${SERVER_ROUTES}focus`],
+  ['diagnostics', `${SERVER_ROUTES}diagnostics`],
+  ['diagnostics/events', `${SERVER_ROUTES}diagnostics/events`],
 ])
 
 const PASSED = ['accept', 'content-type', 'presmium-document', 'last-event-id', 'if-none-match']
@@ -30,7 +28,7 @@ export function apply(ctx: DshContext): void {
           const value = request.headers.get(name)
           if (value !== null) headers[name] = value
         }
-        const upstream = await ctx.presmium.request(`${target}${new URL(request.url).search}`, {
+        const upstream = await ctx.presmium.server.request(`${target}${new URL(request.url).search}`, {
           method: request.method,
           headers,
           ...request.method === 'POST' ? { raw: await request.arrayBuffer() } : {},

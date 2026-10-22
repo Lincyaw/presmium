@@ -1,10 +1,11 @@
 import { Tree } from 'react-arborist'
 import type { NodeRendererProps, TreeApi } from 'react-arborist'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { SourceFile } from '../api.ts'
+import { errorMessage } from '@lincyaw/kernel'
+import type { SourceFile } from '@lincyaw/kernel'
 import { PmButton, PmDialog, PmField, PmIcon, PmIconButton, PmNotice } from '../components.tsx'
-import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
-import { ServiceError } from '../service.ts'
+import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
+import { WorkspaceServerError } from '../workspace-client.ts'
 
 interface FileNode {
   id: string
@@ -95,12 +96,12 @@ function FileRow({ node, style }: NodeRendererProps<FileNode>) {
 
 export function FilesPanel({ onOpen }: { onOpen?(path: string): void }) {
   const t = useMessages()
-  const workbench = useWorkbenchStore()
-  const document = useWorkbench(state => state.document)
-  const files = useWorkbench(state => state.files)
-  const active = useWorkbench(state => state.active)
-  const documents = useWorkbench(state => state.documents)
-  const failure = useWorkbench(state => state.openFailure)
+  const workbench = useWorkbench()
+  const document = useWorkbenchState(state => state.document)
+  const files = useWorkbenchState(state => state.files)
+  const activeFile = useWorkbenchState(state => state.activeFile)
+  const documents = useWorkbenchState(state => state.documents)
+  const failure = useWorkbenchState(state => state.openFailure)
   const [creating, setCreating] = useState(false)
   const data = useMemo(() => fileTree(files?.files ?? [], files?.home ? '' : document ?? ''), [files, document])
   const scope = files?.home ? 'workspace' : `document:${document ?? ''}`
@@ -110,16 +111,16 @@ export function FilesPanel({ onOpen }: { onOpen?(path: string): void }) {
   useEffect(() => {
     const current = tree.current
     if (!current) return
-    if (!active) {
+    if (!activeFile) {
       revealed.current = undefined
       return
     }
-    if (revealed.current?.tree === current && revealed.current.path === active) return
-    revealed.current = { tree: current, path: active }
-    void current.scrollTo(active)?.then(() => {
-      if (tree.current === current) current.select(active, { focus: false })
+    if (revealed.current?.tree === current && revealed.current.path === activeFile) return
+    revealed.current = { tree: current, path: activeFile }
+    void current.scrollTo(activeFile)?.then(() => {
+      if (tree.current === current) current.select(activeFile, { focus: false })
     })
-  }, [active, data])
+  }, [activeFile, data])
   if (document === undefined) return null
   const title = files?.home ? documents?.title ?? t.workspace : documents?.documents.find(doc => doc.dir === document)?.title ?? (document || documents?.title || t.workspace)
   return (
@@ -147,7 +148,7 @@ export function FilesPanel({ onOpen }: { onOpen?(path: string): void }) {
             ref={tree}
             className="pmw-tree"
             data={data}
-            selection={active}
+            selection={activeFile}
             width="100%"
             height={Math.min(480, Math.max(96, (files.files.length + data.length) * 32))}
             rowHeight={32}
@@ -180,7 +181,7 @@ export function FilesPanel({ onOpen }: { onOpen?(path: string): void }) {
       )}
       {files?.truncated && <p className="pmw-muted">{t.truncated}</p>}
       {creating && <NewFileDialog
-        initialPath={active?.slice(0, active.lastIndexOf('/') + 1) ?? (document ? `${document}/` : '')}
+        initialPath={activeFile?.slice(0, activeFile.lastIndexOf('/') + 1) ?? (document ? `${document}/` : '')}
         onClose={() => setCreating(false)}
         onCreated={path => { setCreating(false); onOpen?.(path) }}
       />}
@@ -190,7 +191,7 @@ export function FilesPanel({ onOpen }: { onOpen?(path: string): void }) {
 
 function NewFileDialog({ initialPath, onClose, onCreated }: { initialPath: string, onClose(): void, onCreated(path: string): void }) {
   const t = useMessages()
-  const workbench = useWorkbenchStore()
+  const workbench = useWorkbench()
   const [path, setPath] = useState(initialPath)
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<string>()
@@ -205,7 +206,7 @@ function NewFileDialog({ initialPath, onClose, onCreated }: { initialPath: strin
       created.current = next
       onCreated(next)
     } catch (error) {
-      setFailure(error instanceof ServiceError && error.answer.exists ? t.fileExists(next) : t.createFileFailed(error instanceof Error ? error.message : String(error)))
+      setFailure(error instanceof WorkspaceServerError && error.answer.exists ? t.fileExists(next) : t.createFileFailed(errorMessage(error)))
     } finally {
       setBusy(false)
     }
@@ -218,7 +219,7 @@ function NewFileDialog({ initialPath, onClose, onCreated }: { initialPath: strin
     onCloseAutoFocus={event => {
       if (!created.current) return
       event.preventDefault()
-      void workbench.openSource('', created.current)
+      void workbench.openWorkspaceFile(created.current)
     }}
   >
     <form className="pmw-operation" onSubmit={event => { event.preventDefault(); void create() }}>

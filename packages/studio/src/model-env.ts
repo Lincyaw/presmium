@@ -8,11 +8,11 @@ export interface ModelEnv {
 
 const searchUrl = (url: string) => `${url.replace(/\/+$/, '').replace(/\/v1$/, '')}/v1`
 
-const service = (url: string) => ({ DEEPSEEK_BASE_URL: url, DEEPSEEK_SEARCH_BASE_URL: searchUrl(url) })
+const deepseekEndpoints = (url: string) => ({ DEEPSEEK_BASE_URL: url, DEEPSEEK_SEARCH_BASE_URL: searchUrl(url) })
 
 export function modelEnv(env: NodeJS.ProcessEnv): ModelEnv {
   const [url, key, provider] = MODEL_VARIABLES.map(name => env[name]?.trim() || undefined)
-  if (url && key && provider) return { env: { ...service(url), DEEPSEEK_API_KEY: key }, from: [...MODEL_VARIABLES] }
+  if (url && key && provider) return { env: { ...deepseekEndpoints(url), DEEPSEEK_API_KEY: key }, from: [...MODEL_VARIABLES] }
   const unset = MODEL_VARIABLES.filter((_, i) => ![url, key, provider][i])
   const warning = unset.length < MODEL_VARIABLES.length ? { warning: `${MODEL_VARIABLES.join(', ')} go together; ${unset.join(' and ')} ${unset.length > 1 ? 'are' : 'is'} not set` } : {}
   const deepseek = env.DEEPSEEK_API_KEY?.trim()

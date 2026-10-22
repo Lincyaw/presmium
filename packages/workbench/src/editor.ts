@@ -14,10 +14,10 @@ import { tags } from '@lezer/highlight'
 
 export interface EditorOptions {
   label: string
-  save(): void
-  changed(path: string, text: string): void
-  moved(line: number): void
-  selected?(selection: { startLine: number, endLine: number, text: string }): void
+  onSave(): void
+  onChange(path: string, text: string): void
+  onCursorLine(line: number): void
+  onSelect?(selection: { startLine: number, endLine: number, text: string }): void
 }
 
 export interface Problem {
@@ -31,8 +31,8 @@ export interface SourceEditor {
   describe(label: string, description: string): void
   text(path: string): string | undefined
   replace(path: string, text: string, fresh: boolean): void
-  reveal(line: number, endLine?: number, mark?: boolean): void
-  problems(path: string, problems: Problem[]): void
+  reveal(line: number, endLine?: number, highlight?: boolean): void
+  setProblems(path: string, problems: Problem[]): void
   paths(): string[]
   forget(path: string): void
   focus(): void
@@ -43,7 +43,7 @@ const MYST = new MatchDecorator({
   regexp: /^(?:`{3,}|:{3,})\{[\w.:-]+\}.*$|^:[\w-]+:(?=\s|$)|^\([^)\s]+\)=\s*$|\{[\w.:-]+\}`[^`]*`/g,
   decoration: match => Decoration.mark({ class: match[0].startsWith('(') ? 'pm-cm-myst-label' : 'pm-cm-myst' }),
 })
-const mystMarks = ViewPlugin.fromClass(class {
+const mystHighlighting = ViewPlugin.fromClass(class {
   decorations: DecorationSet
   constructor(view: EditorView) {
     this.decorations = MYST.createDeco(view)
@@ -91,26 +91,26 @@ const THEME = EditorView.theme({
   '.cm-matchingBracket, &.cm-focused .cm-matchingBracket': { backgroundColor: 'var(--pm-color-accent-soft)' },
 })
 
-const pick = StateEffect.define<{ from: number, to: number } | null>()
-const picked = StateField.define<DecorationSet>({
+const highlightLines = StateEffect.define<{ from: number, to: number } | null>()
+const highlightedLines = StateField.define<DecorationSet>({
   create: () => Decoration.none,
-  update(marks, transaction) {
-    marks = marks.map(transaction.changes)
+  update(highlighted, transaction) {
+    highlighted = highlighted.map(transaction.changes)
     for (const effect of transaction.effects) {
-      if (!effect.is(pick)) continue
+      if (!effect.is(highlightLines)) continue
       if (!effect.value) return Decoration.none
       const { doc } = transaction.state
       const lines = []
       for (let n = effect.value.from; n <= effect.value.to && n <= doc.lines; n++) lines.push(Decoration.line({ class: 'pm-cm-picked' }).range(doc.line(n).from))
       return Decoration.set(lines)
     }
-    return marks
+    return highlighted
   },
   provide: field => EditorView.decorations.from(field),
 })
 
 function language(path: string): Extension {
-  if (/\.(?:md|markdown)$/i.test(path)) return [yamlFrontmatter({ content: markdown({ codeLanguages: info => /^(?:python|py)\b/i.test(info) ? pythonLanguage : null }) }), mystMarks]
+  if (/\.(?:md|markdown)$/i.test(path)) return [yamlFrontmatter({ content: markdown({ codeLanguages: info => /^(?:python|py)\b/i.test(info) ? pythonLanguage : null }) }), mystHighlighting]
   if (/\.(?:py|pyw|pyi)$/i.test(path)) return [python(), indentUnit.of('    ')]
   if (/\.ya?ml$/i.test(path)) return yaml()
   return []
@@ -124,11 +124,11 @@ export function createEditor(parent: HTMLElement, options: EditorOptions): Sourc
   let current: string | undefined
   const listener = EditorView.updateListener.of((update) => {
     if (!current) return
-    if (update.docChanged) options.changed(current, update.state.doc.toString())
-    if (update.docChanged || update.selectionSet) options.moved(update.state.doc.lineAt(update.state.selection.main.head).number)
+    if (update.docChanged) options.onChange(current, update.state.doc.toString())
+    if (update.docChanged || update.selectionSet) options.onCursorLine(update.state.doc.lineAt(update.state.selection.main.head).number)
     const selection = update.state.selection.main
     if (update.view.hasFocus && update.selectionSet && !selection.empty) {
-      options.selected?.({
+      options.onSelect?.({
         startLine: update.state.doc.lineAt(selection.from).number,
         endLine: update.state.doc.lineAt(Math.max(selection.from, selection.to - 1)).number,
         text: update.state.sliceDoc(selection.from, selection.to),
@@ -145,14 +145,14 @@ export function createEditor(parent: HTMLElement, options: EditorOptions): Sourc
     bracketMatching(),
     highlightSelectionMatches(),
     lintGutter(),
-    picked,
+    highlightedLines,
     EditorView.lineWrapping,
     syntaxHighlighting(HIGHLIGHT),
     THEME,
     language(path),
     keymap.of([
       { key: 'Mod-s', preventDefault: true, run: () => {
-        options.save()
+        options.onSave()
         return true
       } },
       ...defaultKeymap,
@@ -165,7 +165,7 @@ export function createEditor(parent: HTMLElement, options: EditorOptions): Sourc
   ]
   const view = new EditorView({ parent, state: EditorState.create({ doc: '', extensions: [THEME, EditorState.readOnly.of(true)] }) })
 
-  const diagnose = () => {
+  const showProblems = () => {
     if (!current) return
     const { doc } = view.state
     const diagnostics: Diagnostic[] = (problems.get(current) ?? []).filter(problem => problem.line >= 1 && problem.line <= doc.lines).map((problem) => {
@@ -185,8 +185,8 @@ export function createEditor(parent: HTMLElement, options: EditorOptions): Sourc
       if (current) states.set(current, view.state)
       current = path
       view.setState(states.get(path) ?? EditorState.create({ doc: text, extensions: extensions(path) }))
-      diagnose()
-      options.moved(view.state.doc.lineAt(view.state.selection.main.head).number)
+      showProblems()
+      options.onCursorLine(view.state.doc.lineAt(view.state.selection.main.head).number)
     },
     text(path) {
       return (path === current ? view.state : states.get(path))?.doc.toString()
@@ -199,24 +199,24 @@ export function createEditor(parent: HTMLElement, options: EditorOptions): Sourc
       if (fresh) {
         const head = Math.min(view.state.selection.main.head, text.length)
         view.setState(EditorState.create({ doc: text, selection: EditorSelection.cursor(head), extensions: extensions(path) }))
-        diagnose()
+        showProblems()
         return
       }
       view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } })
     },
-    reveal(line, endLine, mark) {
+    reveal(line, endLine, highlight) {
       const { doc } = view.state
       const first = Math.min(Math.max(line, 1), doc.lines)
       const last = Math.min(Math.max(endLine ?? first, first), doc.lines)
       const position = doc.line(first).from
       view.dispatch({
         selection: { anchor: position },
-        effects: [EditorView.scrollIntoView(position, { y: 'center' }), pick.of(mark ? { from: first, to: last } : null)],
+        effects: [EditorView.scrollIntoView(position, { y: 'center' }), highlightLines.of(highlight ? { from: first, to: last } : null)],
       })
     },
-    problems(path, list) {
+    setProblems(path, list) {
       problems.set(path, list)
-      if (path === current) diagnose()
+      if (path === current) showProblems()
     },
     paths: () => [...new Set([...states.keys(), ...current ? [current] : []])],
     forget(path) {

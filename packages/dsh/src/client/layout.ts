@@ -1,6 +1,6 @@
 import { defineStore } from '@deepseek-ai/dsh-client-store'
 
-export const CENTER_MIN = 400
+export const CENTRE_MIN = 400
 export const RIGHTBAR_MIN = 300
 export const RIGHTBAR_MAX_RATIO = 0.7
 export const RIGHTBAR_DEFAULT_RATIO = 0.45
@@ -10,49 +10,60 @@ export const ACTIVITY = 48
 export const SIDE_DEFAULT = 264
 export const SIDE_MIN = 200
 export const SIDE_MAX = 420
-export const DOCK_DEFAULT = 400
-export const DOCK_MIN = 320
-export const DOCK_MAX = 640
+export const CONVERSATION_DEFAULT = 400
+export const CONVERSATION_MIN = 320
+export const CONVERSATION_MAX = 640
+/** The width of one resize handle between two columns. */
+export const HANDLE = 8
 
 export const clamp = (px: number, min: number, max: number) => Math.min(max, Math.max(min, Math.round(px)))
 
+/** The width left for the rightbar column: the viewport less the activity bar, the side panel, the conversation, the centre's minimum and `handles` resize handles. */
+export function rightbarRoom(viewport: number, side: number, conversation: number, handles: number): number {
+  return viewport - ACTIVITY - side - conversation - CENTRE_MIN - handles * HANDLE
+}
+
 export type Activity = 'documents' | 'files' | 'changes' | 'sessions'
-export type NarrowView = 'documents' | 'files' | 'source' | 'preview' | 'changes' | 'sessions' | 'conversation'
+/** What a narrow screen shows, one at a time. */
+export type NarrowPane = 'documents' | 'files' | 'source' | 'preview' | 'changes' | 'sessions' | 'conversation'
 
 export interface LayoutState {
   panelInfo: { activePanelId: string | null }
   layoutInfo: {
     viewportWidth: number
-    sideOpen: boolean
-    sideExpanded: boolean
-    side: number
-    dock: number
-    dockOpen: boolean
-    rightbar: number | null
-    rightbarShown: boolean
-    rightbarTrack: boolean
-    rightbarFullscreen: boolean
+    isSideOpen: boolean
+    /** On a screen narrower than SIDE_COLLAPSE the side panel opens over the centre. */
+    isSideExpanded: boolean
+    sideWidth: number
+    conversationWidth: number
+    isConversationOpen: boolean
+    rightbarWidth: number | null
+    isRightbarOpen: boolean
+    hasRightbarTrack: boolean
+    isRightbarFullscreen: boolean
     activity: Activity
-    view: NarrowView
+    narrowPane: NarrowPane
   }
 }
 
+const openConversationWidth = (info: LayoutState['layoutInfo']) => (info.isConversationOpen ? info.conversationWidth : 0)
+
 function revealConversation(d: LayoutState): void {
   d.panelInfo.activePanelId = null
-  d.layoutInfo.dockOpen = true
-  d.layoutInfo.view = 'conversation'
-  if (d.layoutInfo.viewportWidth < SIDE_COLLAPSE) d.layoutInfo.sideExpanded = false
+  d.layoutInfo.isConversationOpen = true
+  d.layoutInfo.narrowPane = 'conversation'
+  if (d.layoutInfo.viewportWidth < SIDE_COLLAPSE) d.layoutInfo.isSideExpanded = false
 }
 
 function showHistory(d: LayoutState): void {
   d.panelInfo.activePanelId = null
   d.layoutInfo.activity = 'sessions'
-  d.layoutInfo.sideOpen = true
-  d.layoutInfo.view = 'sessions'
+  d.layoutInfo.isSideOpen = true
+  d.layoutInfo.narrowPane = 'sessions'
   if (d.layoutInfo.viewportWidth < SIDE_COLLAPSE) {
-    d.layoutInfo.sideExpanded = d.layoutInfo.viewportWidth >= NARROW
-    d.layoutInfo.dockOpen = false
-  } else d.layoutInfo.dockOpen = true
+    d.layoutInfo.isSideExpanded = d.layoutInfo.viewportWidth >= NARROW
+    d.layoutInfo.isConversationOpen = false
+  } else d.layoutInfo.isConversationOpen = true
 }
 
 export function createLayoutStore() {
@@ -61,17 +72,17 @@ export function createLayoutStore() {
       panelInfo: { activePanelId: null },
       layoutInfo: {
         viewportWidth: window.innerWidth,
-        sideOpen: false,
-        sideExpanded: false,
-        side: SIDE_DEFAULT,
-        dock: DOCK_DEFAULT,
-        dockOpen: true,
-        rightbar: null,
-        rightbarShown: false,
-        rightbarTrack: false,
-        rightbarFullscreen: false,
+        isSideOpen: false,
+        isSideExpanded: false,
+        sideWidth: SIDE_DEFAULT,
+        conversationWidth: CONVERSATION_DEFAULT,
+        isConversationOpen: true,
+        rightbarWidth: null,
+        isRightbarOpen: false,
+        hasRightbarTrack: false,
+        isRightbarFullscreen: false,
         activity: 'files',
-        view: 'documents',
+        narrowPane: 'documents',
       },
     }),
     actions: {
@@ -82,76 +93,78 @@ export function createLayoutStore() {
         if (d.panelInfo.activePanelId !== null && !ids.includes(d.panelInfo.activePanelId)) d.panelInfo.activePanelId = null
       },
       setViewportWidth: (d: LayoutState, width: number) => {
-        if ((d.layoutInfo.viewportWidth < SIDE_COLLAPSE) !== (width < SIDE_COLLAPSE)) d.layoutInfo.sideExpanded = false
+        if ((d.layoutInfo.viewportWidth < SIDE_COLLAPSE) !== (width < SIDE_COLLAPSE)) d.layoutInfo.isSideExpanded = false
         d.layoutInfo.viewportWidth = width
-        if (d.layoutInfo.rightbarTrack && width - ACTIVITY - d.layoutInfo.side - (d.layoutInfo.dockOpen ? d.layoutInfo.dock : 0) - CENTER_MIN - 24 < RIGHTBAR_MIN) {
-          d.layoutInfo.sideOpen = false
-          d.layoutInfo.sideExpanded = false
+        if (d.layoutInfo.hasRightbarTrack && rightbarRoom(width, d.layoutInfo.sideWidth, openConversationWidth(d.layoutInfo), 3) < RIGHTBAR_MIN) {
+          d.layoutInfo.isSideOpen = false
+          d.layoutInfo.isSideExpanded = false
         }
       },
       toggleSidebar: (d: LayoutState) => {
         if (d.layoutInfo.viewportWidth < SIDE_COLLAPSE) {
-          d.layoutInfo.sideExpanded = !d.layoutInfo.sideExpanded
-          if (d.layoutInfo.sideExpanded) d.layoutInfo.dockOpen = false
+          d.layoutInfo.isSideExpanded = !d.layoutInfo.isSideExpanded
+          if (d.layoutInfo.isSideExpanded) d.layoutInfo.isConversationOpen = false
         }
-        else d.layoutInfo.sideOpen = !d.layoutInfo.sideOpen
+        else d.layoutInfo.isSideOpen = !d.layoutInfo.isSideOpen
       },
-      setSide: (d: LayoutState, px: number) => {
-        d.layoutInfo.side = clamp(px, SIDE_MIN, SIDE_MAX)
+      setSideWidth: (d: LayoutState, px: number) => {
+        d.layoutInfo.sideWidth = clamp(px, SIDE_MIN, SIDE_MAX)
       },
-      setDock: (d: LayoutState, px: number) => {
-        d.layoutInfo.dock = clamp(px, DOCK_MIN, Math.min(DOCK_MAX, d.layoutInfo.viewportWidth * 0.5))
+      setConversationWidth: (d: LayoutState, px: number) => {
+        d.layoutInfo.conversationWidth = clamp(px, CONVERSATION_MIN, Math.min(CONVERSATION_MAX, d.layoutInfo.viewportWidth * 0.5))
       },
-      setDockOpen: (d: LayoutState, open: boolean) => {
-        d.layoutInfo.dockOpen = open
-        if (open && d.layoutInfo.viewportWidth < SIDE_COLLAPSE) d.layoutInfo.sideExpanded = false
+      setConversationOpen: (d: LayoutState, open: boolean) => {
+        d.layoutInfo.isConversationOpen = open
+        if (open && d.layoutInfo.viewportWidth < SIDE_COLLAPSE) d.layoutInfo.isSideExpanded = false
       },
       revealConversation,
       showHistory,
       toggleConversations: (d: LayoutState) => {
         const info = d.layoutInfo
         if (info.viewportWidth < NARROW) {
-          if (info.view === 'conversation') showHistory(d)
+          if (info.narrowPane === 'conversation') showHistory(d)
           else revealConversation(d)
         } else {
-          const historyShown = info.activity === 'sessions' && (info.viewportWidth < SIDE_COLLAPSE ? info.sideExpanded : info.sideOpen)
+          const historyShown = info.activity === 'sessions' && (info.viewportWidth < SIDE_COLLAPSE ? info.isSideExpanded : info.isSideOpen)
           if (historyShown && info.viewportWidth < SIDE_COLLAPSE) revealConversation(d)
-          else if (historyShown && info.dockOpen) info.sideOpen = false
+          else if (historyShown && info.isConversationOpen) info.isSideOpen = false
           else showHistory(d)
         }
       },
-      setRightbar: (d: LayoutState, px: number) => {
-        d.layoutInfo.rightbar = clamp(px, RIGHTBAR_MIN, Math.max(RIGHTBAR_MIN, d.layoutInfo.viewportWidth * RIGHTBAR_MAX_RATIO))
+      setRightbarWidth: (d: LayoutState, px: number) => {
+        d.layoutInfo.rightbarWidth = clamp(px, RIGHTBAR_MIN, Math.max(RIGHTBAR_MIN, d.layoutInfo.viewportWidth * RIGHTBAR_MAX_RATIO))
       },
       openRightbar: (d: LayoutState, track: boolean, fullscreen: boolean) => {
-        if (track && d.layoutInfo.viewportWidth - ACTIVITY - d.layoutInfo.side - (d.layoutInfo.dockOpen ? d.layoutInfo.dock : 0) - CENTER_MIN - 24 < RIGHTBAR_MIN) {
-          d.layoutInfo.sideOpen = false
-          d.layoutInfo.sideExpanded = false
+        const info = d.layoutInfo
+        if (track && rightbarRoom(info.viewportWidth, info.sideWidth, openConversationWidth(info), 3) < RIGHTBAR_MIN) {
+          info.isSideOpen = false
+          info.isSideExpanded = false
         }
-        if (track && d.layoutInfo.viewportWidth - ACTIVITY - (d.layoutInfo.dockOpen ? d.layoutInfo.dock : 0) - CENTER_MIN - 16 < RIGHTBAR_MIN) d.layoutInfo.dockOpen = false
-        d.layoutInfo.rightbar ??= Math.max(RIGHTBAR_MIN, Math.round(d.layoutInfo.viewportWidth * RIGHTBAR_DEFAULT_RATIO * 0.6))
-        d.layoutInfo.rightbarShown = true
-        d.layoutInfo.rightbarTrack = track
-        d.layoutInfo.rightbarFullscreen = fullscreen
+        if (track && rightbarRoom(info.viewportWidth, 0, openConversationWidth(info), 2) < RIGHTBAR_MIN) info.isConversationOpen = false
+        info.rightbarWidth ??= Math.max(RIGHTBAR_MIN, Math.round(info.viewportWidth * RIGHTBAR_DEFAULT_RATIO * 0.6))
+        info.isRightbarOpen = true
+        info.hasRightbarTrack = track
+        info.isRightbarFullscreen = fullscreen
       },
       closeRightbar: (d: LayoutState) => {
-        d.layoutInfo.rightbarShown = false
-        d.layoutInfo.rightbarTrack = false
-        d.layoutInfo.rightbarFullscreen = false
+        d.layoutInfo.isRightbarOpen = false
+        d.layoutInfo.hasRightbarTrack = false
+        d.layoutInfo.isRightbarFullscreen = false
       },
-      choose: (d: LayoutState, activity: Activity) => {
-        if (d.layoutInfo.activity === activity && d.layoutInfo.viewportWidth >= SIDE_COLLAPSE) d.layoutInfo.sideOpen = !d.layoutInfo.sideOpen
-        else d.layoutInfo.sideOpen = true
+      /** An activity of the activity bar: opens the side panel on it, or toggles it on a wide screen. */
+      selectActivity: (d: LayoutState, activity: Activity) => {
+        if (d.layoutInfo.activity === activity && d.layoutInfo.viewportWidth >= SIDE_COLLAPSE) d.layoutInfo.isSideOpen = !d.layoutInfo.isSideOpen
+        else d.layoutInfo.isSideOpen = true
         d.layoutInfo.activity = activity
         if (d.layoutInfo.viewportWidth < SIDE_COLLAPSE) {
-          d.layoutInfo.sideExpanded = d.layoutInfo.viewportWidth >= NARROW
-          if (d.layoutInfo.sideExpanded) d.layoutInfo.dockOpen = false
+          d.layoutInfo.isSideExpanded = d.layoutInfo.viewportWidth >= NARROW
+          if (d.layoutInfo.isSideExpanded) d.layoutInfo.isConversationOpen = false
         }
-        d.layoutInfo.view = activity
+        d.layoutInfo.narrowPane = activity
       },
-      show: (d: LayoutState, view: NarrowView) => {
-        d.layoutInfo.view = view
-        d.layoutInfo.sideExpanded = false
+      showNarrowPane: (d: LayoutState, pane: NarrowPane) => {
+        d.layoutInfo.narrowPane = pane
+        d.layoutInfo.isSideExpanded = false
       },
     },
   })
@@ -190,7 +203,7 @@ export class LayoutController {
   showDocument(): void {
     this.#navigation.abort()
     this.#actions.selectPanel(null)
-    this.#actions.show('source')
+    this.#actions.showNarrowPane('source')
   }
 
   beginNavigation(): AbortSignal {

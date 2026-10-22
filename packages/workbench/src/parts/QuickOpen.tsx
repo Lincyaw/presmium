@@ -1,17 +1,20 @@
 import { Command, defaultFilter } from 'cmdk'
 import { useEffect, useRef, useState } from 'react'
-import type { FilesAnswer } from '../api.ts'
+import { errorMessage } from '@lincyaw/kernel'
+import type { FilesAnswer } from '@lincyaw/kernel'
 import { PmDialog, PmIcon, PmIconButton, PmNotice } from '../components.tsx'
-import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
+import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
+import { WORKSPACE_SCOPE } from '../workbench.ts'
+import type { DocumentPane } from './EditorGroup.tsx'
 
-/** Workspace navigation stays available while a lecture, editor or conversation is open. */
-export function WorkbenchCommands({ onNavigate }: { onNavigate?(view: 'source' | 'preview'): void }) {
+/** The activity bar's search: Quick Open of the workspace's files and documents, and the command palette. It stays available while a lecture, editor or conversation is open. */
+export function QuickOpen({ onNavigate }: { onNavigate?(pane: DocumentPane): void }) {
   const t = useMessages()
-  const workbench = useWorkbenchStore()
-  const documents = useWorkbench(state => state.documents)
-  const document = useWorkbench(state => state.document)
-  const active = useWorkbench(state => state.active)
-  const leaving = useWorkbench(state => state.leaving)
+  const workbench = useWorkbench()
+  const documents = useWorkbenchState(state => state.documents)
+  const document = useWorkbenchState(state => state.document)
+  const activeFile = useWorkbenchState(state => state.activeFile)
+  const leaving = useWorkbenchState(state => state.unsavedOnLeave)
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [files, setFiles] = useState<FilesAnswer>()
@@ -44,7 +47,7 @@ export function WorkbenchCommands({ onNavigate }: { onNavigate?(view: 'source' |
     return () => window.removeEventListener('keydown', onKey, true)
   }, [])
 
-  useEffect(() => workbench.subscribeCommands(command => show(command === 'open-commands')), [workbench])
+  useEffect(() => workbench.subscribePreviewShortcuts(command => show(command === 'open-commands')), [workbench])
 
   useEffect(() => {
     if (destination === undefined) return
@@ -58,10 +61,10 @@ export function WorkbenchCommands({ onNavigate }: { onNavigate?(view: 'source' |
     if (!open) return
     const version = ++request.current
     setFiles(undefined)
-    void workbench.client.files('').then(answer => {
+    void workbench.client.readFiles(WORKSPACE_SCOPE).then(answer => {
       if (version === request.current) setFiles(answer)
     }, error => {
-      if (version === request.current) setFailure(error instanceof Error ? error.message : String(error))
+      if (version === request.current) setFailure(errorMessage(error))
     })
     return () => { request.current++ }
   }, [open, workbench])
@@ -72,8 +75,8 @@ export function WorkbenchCommands({ onNavigate }: { onNavigate?(view: 'source' |
     void action()
   }
   const source = (path: string) => run(async () => {
-    await workbench.openSource('', path, location ? { line: Number(location[1]) } : undefined)
-    if (workbench.state.active === path) onNavigate?.('source')
+    await workbench.openWorkspaceFile(path, location ? { line: Number(location[1]) } : {})
+    if (workbench.state.activeFile === path) onNavigate?.('source')
     else if (workbench.state.openFailure) {
       setFailure(workbench.state.openFailure)
       setOpen(true)
@@ -108,7 +111,7 @@ export function WorkbenchCommands({ onNavigate }: { onNavigate?(view: 'source' |
             {document !== undefined && layouts.map(layout => <Command.Item key={layout.value} value={`>${t.showLayout(layout.label)}`} className="pmw-search__item" onSelect={() => run(() => { workbench.setLayout(layout.value); onNavigate?.(layout.value === 'preview' ? 'preview' : 'source') })}>
               {t.showLayout(layout.label)}
             </Command.Item>)}
-            {active && <Command.Item value={`>${t.save}`} className="pmw-search__item" onSelect={() => run(() => workbench.save())}>{t.save}</Command.Item>}
+            {activeFile && <Command.Item value={`>${t.save}`} className="pmw-search__item" onSelect={() => run(() => workbench.save())}>{t.save}</Command.Item>}
             <Command.Item value={`>${t.backToDocuments}`} className="pmw-search__item" onSelect={() => run(() => workbench.closeDocument())}>{t.backToDocuments}</Command.Item>
           </Command.Group>}
         </Command.List>
