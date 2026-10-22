@@ -3,15 +3,15 @@ import { blockVisible, fnv1a64 } from '@lincyaw/kernel'
 import type { ComponentNode, IRBlock, IRSection } from '@lincyaw/kernel'
 import type { InjectionKey, PropType, VNode } from 'vue'
 import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, provide, shallowRef } from 'vue'
-import { BLOCK_CLASS, trackClicks } from './clicks.ts'
-import { CodeBlockView } from './code.ts'
-import { CODE_OWNED } from './context.ts'
-import { FINAL_STEP } from './domain/index.ts'
-import { messages } from './i18n.ts'
-import { hastToVNodes, markdownToHast, MarkdownView } from './markdown.ts'
-import { getComponent, getNodeRenderer } from './registry.ts'
-import { PmMermaid } from './rich.ts'
-import { VIEWER } from './viewer.ts'
+import { FINAL_STEP } from '../domain/index.ts'
+import { CODE_OWNED, CodeBlockView } from './code/code-block.ts'
+import { markdownToHast } from './markdown/handlers.ts'
+import { PmMermaid } from './markdown/mermaid.ts'
+import { hastToVNodes, MarkdownView } from './markdown/render.ts'
+import { findComponent, findNodeRenderer } from './registry.ts'
+import { BLOCK_CLASS, trackClicks } from './slidev-compat/click-directives.ts'
+import { viewerMessages } from './viewer-messages.ts'
+import { VIEWER } from './viewer-state.ts'
 
 const blockProps = {
   block: { type: Object as PropType<IRBlock>, required: true },
@@ -53,10 +53,10 @@ const ComponentView = defineComponent({
     })
     return () => {
       const node = props.block.node as ComponentNode
-      const component = getComponent(node.name)
+      const component = findComponent(node.name)
       if (!component) {
         const fallback = fallbackOf(node, props.section.id)
-        return h('div', { 'class': 'pm-component-missing', 'data-component': node.name }, fallback.length ? fallback : messages().missingComponent(node.name))
+        return h('div', { 'class': 'pm-component-missing', 'data-component': node.name }, fallback.length ? fallback : viewerMessages().missingComponent(node.name))
       }
       const children = node.children?.length
         ? { default: () => node.children!.map(child => h(BlockView, { key: child.id, block: child, section: props.section, step: props.step, expanded: props.expanded })) }
@@ -69,9 +69,9 @@ const ComponentView = defineComponent({
 
 function content(props: { block: IRBlock, section: IRSection, step: number, expanded: boolean }): VNode {
   const { node } = props.block
-  const custom = (node.type === 'component' && getNodeRenderer(node.name))
-    || (node.type === 'code' && getNodeRenderer(`code:${node.lang}`))
-    || getNodeRenderer(node.type)
+  const custom = (node.type === 'component' && findNodeRenderer(node.name))
+    || (node.type === 'code' && findNodeRenderer(`code:${node.lang}`))
+    || findNodeRenderer(node.type)
   if (custom) return h(custom, props)
   switch (node.type) {
     case 'markdown': return h(MarkdownView, { block: props.block, step: props.step, expanded: props.expanded, prefix: props.section.id })
@@ -82,7 +82,7 @@ function content(props: { block: IRBlock, section: IRSection, step: number, expa
   }
 }
 
-export function isOverlay(block: IRBlock): boolean {
+function isOverlay(block: IRBlock): boolean {
   return block.node.type === 'component' && block.node.layer === 'overlay'
 }
 

@@ -1,81 +1,11 @@
 import { FocusScope } from 'reka-ui'
 import { PmApprovals } from '@lincyaw/host'
-import { blockText, sectionNarration } from '@lincyaw/kernel'
-import type { IRSection } from '@lincyaw/kernel'
 import type { Ref } from 'vue'
-import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef, watch } from 'vue'
-import { BlockView } from './block.ts'
-import { SECTION_CONTEXT } from './context.ts'
-import { nextPosition } from './domain/index.ts'
-import { messages } from './i18n.ts'
-import { listActions, listLayers } from './registry.ts'
-import type { ViewerAction } from './registry.ts'
-import { useViewer } from './viewer.ts'
-import type { Viewer } from './viewer.ts'
-
-const overview = ref(false)
-
-export const BUILTIN_ACTIONS: readonly ViewerAction[] = [
-  { id: 'next', keys: ['ArrowRight', 'ArrowDown', 'PageDown', ' '], run: (viewer) => { viewer.next() } },
-  { id: 'prev', keys: ['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'], run: (viewer) => { viewer.prev() } },
-  { id: 'first', keys: ['Home'], run: viewer => viewer.go({ section: viewer.doc.value.sections[0]?.id ?? '', step: 0 }) },
-  { id: 'last', keys: ['End'], run: viewer => viewer.go({ section: viewer.doc.value.sections.at(-1)?.id ?? '', step: Number.POSITIVE_INFINITY }) },
-  { id: 'exit', keys: ['Escape'], views: ['present'], run: viewer => viewer.setView(viewer.pageView.value) },
-  {
-    id: 'presenter',
-    keys: ['p'],
-    views: ['present'],
-    run: viewer => viewer.options.openPresenter ? viewer.options.openPresenter(viewer.position.value) : false,
-  },
-  { id: 'overview', keys: ['o'], views: ['present'], run: () => { overview.value = !overview.value } },
-]
-
-function typing(target: EventTarget | null): boolean {
-  return Boolean((target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable], [role="dialog"], [role="menu"], [role="tablist"], [role="slider"]'))
-}
-
-function useActions(viewer: Viewer, view: string): void {
-  const onKey = (event: KeyboardEvent) => {
-    if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || typing(event.target)) return
-    for (const action of listActions(view)) {
-      if (!action.keys.includes(event.key) || action.run(viewer) === false) continue
-      event.preventDefault()
-      return
-    }
-  }
-  onMounted(() => {
-    window.addEventListener('keydown', onKey)
-    document.documentElement.classList.add('pm-presenting')
-  })
-  onBeforeUnmount(() => {
-    window.removeEventListener('keydown', onKey)
-    document.documentElement.classList.remove('pm-presenting')
-  })
-}
-
-// The page stays mounted to preserve its scroll position; only the overlay is interactive.
-function useModal(root: Readonly<Ref<HTMLElement | undefined>>): void {
-  const inert: Element[] = []
-  onMounted(() => {
-    const el = root.value?.closest('[data-pm-overlay-scope]')
-    if (!el) return
-    for (let node: Element = el; node.parentElement && node !== document.body; node = node.parentElement) {
-      for (const sibling of node.parentElement.children) {
-        if (sibling === node || sibling.hasAttribute('inert') || ['SCRIPT', 'STYLE', 'LINK'].includes(sibling.tagName)) continue
-        sibling.setAttribute('inert', '')
-        inert.push(sibling)
-      }
-    }
-  })
-  onBeforeUnmount(() => inert.splice(0).forEach(el => el.removeAttribute('inert')))
-}
-
-function focusScope(root: Readonly<Ref<HTMLElement | undefined>>) {
-  return { 'data-pm-overlay-scope': '', style: { display: 'contents' }, loop: true, trapped: true, onMountAutoFocus: (event: Event) => {
-    event.preventDefault()
-    root.value?.focus({ preventScroll: true })
-  } }
-}
+import { defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { viewerMessages } from '../viewer-messages.ts'
+import { useViewer } from '../viewer-state.ts'
+import { overviewOpen, useActions } from './actions.ts'
+import { button, focusScope, layers, useCurrentSection, useModal, useOverlayBar, visuals } from './overlay.ts'
 
 interface Fitted {
   width?: number
@@ -118,42 +48,6 @@ function useFit(frame: Readonly<Ref<HTMLElement | undefined>>, content: Readonly
   return fitted
 }
 
-function useOverlayBar(bar: Readonly<Ref<HTMLElement | undefined>>): void {
-  const root = () => document.documentElement.style
-  let observer: ResizeObserver | undefined
-  onMounted(() => {
-    const el = bar.value
-    if (!el) return
-    const update = () => root().setProperty('--pm-overlay-bar', `${el.offsetHeight}px`)
-    update()
-    observer = new ResizeObserver(update)
-    observer.observe(el)
-  })
-  onBeforeUnmount(() => {
-    observer?.disconnect()
-    root().removeProperty('--pm-overlay-bar')
-  })
-}
-
-function useCurrent(viewer: Viewer, view: string) {
-  const section = computed(() => viewer.section(viewer.position.value.section))
-  const step = computed(() => viewer.position.value.step)
-  provide(SECTION_CONTEXT, { section: section as Readonly<Ref<IRSection>>, step, view: computed(() => view) })
-  return { section, step }
-}
-
-function visuals(section: IRSection, step: number) {
-  return section.blocks.filter(b => b.role === 'visual').map(block => h(BlockView, { key: `${section.id}/${block.id}`, block, section, step }))
-}
-
-function button(label: string, onClick: () => void) {
-  return h('button', { type: 'button', class: 'pm-present__button', onClick }, label)
-}
-
-function layers(view: string, scope: 'view' | 'viewport') {
-  return listLayers(view).filter(layer => (layer.scope ?? 'viewport') === scope).map(layer => h(layer.component, { key: layer.id, view }))
-}
-
 function moveInOverview(root: HTMLElement | undefined, key: string): boolean {
   const items = [...root?.querySelectorAll<HTMLElement>('.pm-overview__item') ?? []]
   if (!items.length) return false
@@ -169,7 +63,7 @@ export const PresentView = defineComponent({
   name: 'PmPresentView',
   setup() {
     const viewer = useViewer()
-    const { section, step } = useCurrent(viewer, 'present')
+    const { section, step } = useCurrentSection(viewer, 'present')
     const root = shallowRef<HTMLElement>()
     const frame = shallowRef<HTMLElement>()
     const content = shallowRef<HTMLElement>()
@@ -184,14 +78,14 @@ export const PresentView = defineComponent({
         ownsFullscreen = true
       }).catch(() => {})
     }
-    overview.value = false
+    overviewOpen.value = false
     const closeOverview = () => {
-      overview.value = false
+      overviewOpen.value = false
       root.value?.focus()
     }
     useActions(viewer, 'present')
     const onOverviewKey = (event: KeyboardEvent) => {
-      if (!overview.value || event.key === 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return
+      if (!overviewOpen.value || event.key === 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return
       event.stopImmediatePropagation()
       if (event.key === 'Escape' || event.key === 'o') closeOverview()
       else if (!moveInOverview(root.value, event.key)) return
@@ -203,10 +97,10 @@ export const PresentView = defineComponent({
     })
     onBeforeUnmount(() => {
       window.removeEventListener('keydown', onOverviewKey, { capture: true })
-      overview.value = false
+      overviewOpen.value = false
       if (ownsFullscreen && document.fullscreenElement === document.documentElement) void document.exitFullscreen().catch(() => {})
     })
-    watch(overview, async (open) => {
+    watch(overviewOpen, async (open) => {
       if (!open) return
       await nextTick()
       root.value?.querySelector<HTMLElement>('.pm-overview__item[aria-current="true"]')?.focus()
@@ -219,7 +113,7 @@ export const PresentView = defineComponent({
     return () => {
       const current = section.value
       if (!current) return null
-      const t = messages()
+      const t = viewerMessages()
       const { sections } = viewer.doc.value
       return h(FocusScope, focusScope(root), () => [h('div', {
         'ref': root,
@@ -242,7 +136,7 @@ export const PresentView = defineComponent({
             h('h1', { class: 'pm-present__title' }, current.title),
             ...visuals(current, step.value),
           ])),
-          overview.value
+          overviewOpen.value
             ? h('div', { 'class': 'pm-overview', 'role': 'dialog', 'aria-label': t.present.overview }, h('ol', { class: 'pm-overview__grid' }, sections.map(s => h('li', { key: s.id }, h('button', {
                 'type': 'button',
                 'class': 'pm-overview__item',
@@ -256,7 +150,7 @@ export const PresentView = defineComponent({
           h('span', { class: 'pm-present__counter' }, t.present.counter(current.index, sections.length, step.value, current.steps)),
           button(t.present.prev, () => viewer.prev()),
           button(t.present.next, () => viewer.next()),
-          button(t.present.overview, () => overview.value = !overview.value),
+          button(t.present.overview, () => overviewOpen.value = !overviewOpen.value),
           viewer.options.openPresenter ? button(t.present.presenter, () => viewer.options.openPresenter!(viewer.position.value)) : null,
           button(t.present.fullscreen, enterFullscreen),
           button(t.present.exit, () => viewer.setView(viewer.pageView.value)),
@@ -264,75 +158,6 @@ export const PresentView = defineComponent({
         ]),
         ...layers('present', 'view'),
       ]), ...layers('present', 'viewport')])
-    }
-  },
-})
-
-function clock(ms: number): string {
-  const s = Math.floor(ms / 1000)
-  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
-}
-
-export const PresenterView = defineComponent({
-  name: 'PmPresenterView',
-  setup() {
-    const viewer = useViewer()
-    const { section, step } = useCurrent(viewer, 'presenter')
-    const root = shallowRef<HTMLElement>()
-    const bar = shallowRef<HTMLElement>()
-    useActions(viewer, 'presenter')
-    useOverlayBar(bar)
-    useModal(root)
-    const started = ref(Date.now())
-    const now = ref(Date.now())
-    let timer: ReturnType<typeof setInterval> | undefined
-    onMounted(() => {
-      timer = setInterval(() => now.value = Date.now(), 1000)
-    })
-    onBeforeUnmount(() => clearInterval(timer))
-
-    const upcoming = computed(() => {
-      const t = messages()
-      const next = nextPosition(viewer.doc.value, viewer.position.value)
-      if (!next) return t.presenter.end
-      const target = viewer.section(next.section)!
-      if (next.section !== section.value?.id) return t.presenter.nextSection(target.title)
-      return sectionNarration(target).filter(block => block.at === next.step).map(blockText).join('\n') || t.presenter.nextStep(next.step)
-    })
-
-    return () => {
-      const current = section.value
-      if (!current) return null
-      const t = messages()
-      const notes = sectionNarration(current)
-      return h(FocusScope, focusScope(root), () => [h('div', { 'ref': root, 'tabindex': -1, 'class': 'pm-presenter', 'data-section': current.id, 'data-step': step.value }, [
-        h('div', { ref: bar, class: 'pm-presenter__bar' }, [
-          h('strong', { class: 'pm-presenter__title' }, `${current.index}. ${current.title}`),
-          current.steps > 0 ? h('span', { class: 'pm-presenter__counter' }, t.presenter.step(step.value, current.steps)) : null,
-          h('span', { 'class': 'pm-presenter__timer', 'aria-label': t.presenter.timer }, clock(now.value - started.value)),
-          button(t.presenter.restart, () => started.value = now.value = Date.now()),
-          button(t.present.prev, () => viewer.prev()),
-          button(t.present.next, () => viewer.next()),
-          h(PmApprovals),
-        ]),
-        h('div', { class: 'pm-presenter__main' }, [
-          h('div', { key: current.id, class: 'pm-presenter__slide' }, [h('h1', { class: 'pm-present__title' }, current.title), ...visuals(current, step.value)]),
-          h('div', { class: 'pm-presenter__side' }, [
-            h('p', { class: 'pm-presenter__label' }, t.presenter.notes),
-            h('div', { class: 'pm-presenter__notes' }, notes.length
-              ? notes.map(block => h('div', {
-                  'key': block.id,
-                  'class': ['pm-presenter__note', { 'pm-current': block.at === step.value }],
-                  'data-step': block.at,
-                  'aria-current': block.at === step.value ? 'step' : undefined,
-                }, [h(BlockView, { block, section: current, step: step.value, expanded: true })]))
-              : [h('p', { class: 'pm-presenter__empty' }, t.presenter.noNotes)]),
-            h('p', { class: 'pm-presenter__label' }, t.presenter.upcoming),
-            h('p', { class: 'pm-presenter__next' }, upcoming.value),
-          ]),
-        ]),
-        ...layers('presenter', 'view'),
-      ]), ...layers('presenter', 'viewport')])
     }
   },
 })

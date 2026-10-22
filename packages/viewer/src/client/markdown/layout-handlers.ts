@@ -1,23 +1,9 @@
-import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import type { MdastNode } from '@lincyaw/kernel'
-import type { Element, ElementContent, Properties } from 'hast'
+import type { ElementContent } from 'hast'
 import type { Handler, State } from 'mdast-util-to-hast'
-import type { PropType, VNodeChild } from 'vue'
-import { defineComponent, h, reactive, ref, watch } from 'vue'
+import { classes, element } from './hast.ts'
 
 const WIDTHS = ['xs', 'sm', 'md', 'lg'] as const
-
-function element(tagName: string, properties: Properties, children: ElementContent[] = []): Element {
-  return { type: 'element', tagName, properties, children }
-}
-
-function classes(node: MdastNode): string[] {
-  return typeof node.class === 'string' ? node.class.split(/\s+/).filter(Boolean) : []
-}
-
-export function isButton(node: MdastNode): boolean {
-  return classes(node).includes('button')
-}
 
 function gridColumns(node: MdastNode): number[] {
   const given = Array.isArray(node.columns) ? node.columns.map(Number).filter(n => Number.isInteger(n) && n >= 1) : []
@@ -61,70 +47,11 @@ const card: Handler = (state: State, node: MdastNode) => {
   return element('div', { className: ['pm-card', ...url ? ['pm-card--link'] : [], ...classes(node)] }, content)
 }
 
-const tabSet: Handler = (state, node: MdastNode) => {
-  const panels = (node.children ?? []).filter(child => child.type === 'tabItem').map(item => element('div', {
-    className: ['pm-tabs__panel'],
-    dataTitle: typeof item.title === 'string' ? item.title : '',
-    dataSync: typeof item.sync === 'string' && item.sync ? item.sync : undefined,
-    dataSelected: item.selected === true ? 'true' : undefined,
-  }, state.all(item as never)))
-  return element('div', { className: ['pm-tabs', ...classes(node)], dataPmTabs: '' }, panels)
-}
-
-export function cardHandlers(): Record<string, Handler> {
+/** The handlers of MyST's grids and cards. */
+export function layoutHandlers(): Record<string, Handler> {
   return {
     'grid': grid,
     'grid-item': gridItem,
     'card': card,
-    'tabSet': tabSet,
-    'tabItem': (state, node) => element('div', {}, state.all(node)),
   }
 }
-
-export interface TabEntry {
-  title: string
-  sync?: string
-  selected: boolean
-  content: () => VNodeChild[]
-}
-
-export function tabEntries(set: Element, render: (nodes: ElementContent[]) => VNodeChild[]): TabEntry[] {
-  return set.children.flatMap((panel): TabEntry[] => panel.type !== 'element' ? [] : [{
-    title: String(panel.properties.dataTitle ?? ''),
-    sync: typeof panel.properties.dataSync === 'string' ? panel.properties.dataSync : undefined,
-    selected: panel.properties.dataSelected === 'true',
-    content: () => render(panel.children),
-  }])
-}
-
-const synced = reactive({ key: undefined as string | undefined, choices: 0 })
-
-export const TabSetView = defineComponent({
-  name: 'PmTabSet',
-  props: {
-    tabs: { type: Array as PropType<TabEntry[]>, required: true },
-  },
-  setup(props) {
-    const withKey = (key?: string) => (key ? props.tabs.findIndex(tab => tab.sync === key) : -1)
-    const active = ref([withKey(synced.key), props.tabs.findIndex(tab => tab.selected), 0].find(k => k >= 0)!)
-    watch(() => synced.choices, () => {
-      const k = withKey(synced.key)
-      if (k >= 0) active.value = k
-    })
-    const choose = (k: number) => {
-      active.value = k
-      const key = props.tabs[k]?.sync
-      if (key) {
-        synced.key = key
-        synced.choices++
-      }
-    }
-    return () => h(TabsRoot, { modelValue: String(active.value), 'onUpdate:modelValue': value => choose(Number(value)) }, () => [
-      h(TabsList, { class: 'pm-tabs__list' }, () => props.tabs.map((tab, k) =>
-        h(TabsTrigger, { key: k, value: String(k), class: 'pm-tabs__tab' }, () => tab.title))),
-      ...props.tabs.map((tab, k) => h(TabsContent, {
-        key: k, value: String(k), class: 'pm-tabs__panel', forceMount: true, hidden: k !== active.value, tabindex: 0,
-      }, tab.content)),
-    ])
-  },
-})

@@ -1,7 +1,7 @@
 import type { App, Directive, DirectiveBinding, Ref } from 'vue'
 import { defineComponent, h, onBeforeUnmount, onMounted, shallowRef, watchEffect, withDirectives } from 'vue'
-import { clickVisible, resolveClicks } from './domain/index.ts'
-import type { ClickRange, ClickSpec } from './domain/index.ts'
+import { clickVisible, resolveClicks } from '../../domain/index.ts'
+import type { ClickRange, ClickSpec } from '../../domain/index.ts'
 
 interface Controller {
   add(el: HTMLElement, spec: ClickSpec): void
@@ -114,7 +114,7 @@ const VClicks = defineComponent({
   },
 })
 
-export function installClicks(app: App): void {
+export function installClickDirectives(app: App): void {
   app.directive('click', vClick)
   app.directive('after', vAfter)
   app.directive('click-hide', clickDirective('click', true))

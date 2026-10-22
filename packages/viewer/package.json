@@ -23,7 +23,7 @@
     "access": "public"
   },
   "exports": {
-    ".": "./src/index.ts",
+    ".": "./src/client/index.ts",
     "./domain": "./src/domain/index.ts",
     "./package.json": "./package.json"
   },

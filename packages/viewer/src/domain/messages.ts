@@ -36,7 +36,7 @@ const zh = {
     rerun: '重跑',
     running: '运行中…',
     unavailable: '执行服务不可用',
-    resetSession: '重置会话',
+    resetRunSession: '重置会话',
   },
   markdown: {
     admonitions: {
@@ -92,7 +92,7 @@ const en: Messages = {
     rerun: 'Run again',
     running: 'Running…',
     unavailable: 'Execution service unavailable',
-    resetSession: 'Reset session',
+    resetRunSession: 'Reset session',
   },
   markdown: {
     admonitions: {

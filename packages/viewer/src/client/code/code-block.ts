@@ -1,95 +1,15 @@
-import { currentLocale, OPERATIONS, usePrefersReducedMotion, useService, useStartReport } from '@lincyaw/host'
+import { currentLocale, OPERATIONS, useService, useStartReport } from '@lincyaw/host'
 import type { Operations } from '@lincyaw/host'
 import { blockState, EXECUTOR, errorMessage, failedRun } from '@lincyaw/kernel'
 import type { CodeNode, IRBlock, RecordedRun, RunRequest, RunResult } from '@lincyaw/kernel'
-import { ShikiMagicMove } from '@shikijs/magic-move/vue'
-import '@shikijs/magic-move/style.css'
-import type { Element, ElementContent, Root } from 'hast'
-import { toHtml } from 'hast-util-to-html'
-import type { PropType, VNode, VNodeChild } from 'vue'
-import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-import { CODE_OWNED, useSectionContext } from './context.ts'
-import { useDark } from './dark.ts'
-import { codeColumns, originParts } from './domain/index.ts'
-import type { OriginPart } from './domain/index.ts'
-import { highlighterFor, THEMES } from './highlight.ts'
-import { messages } from './i18n.ts'
-import { proseOnly, runOutput } from './outputs.ts'
-
-type Loaded = Awaited<ReturnType<typeof highlighterFor>>
-
-function useHighlighter(lang: () => string) {
-  const shiki = shallowRef<Loaded>()
-  const load = async () => {
-    const wanted = lang()
-    const loaded = await highlighterFor(wanted).catch(() => undefined)
-    if (wanted === lang()) shiki.value = loaded
-  }
-  onMounted(load)
-  watch(lang, load)
-  return shiki
-}
-
-function lineElements(tree: Root): Element[] {
-  const pre = tree.children.find((node): node is Element => node.type === 'element')
-  const code = pre?.children.find((node): node is Element => node.type === 'element' && node.tagName === 'code')
-  return (code?.children ?? []).filter((node: ElementContent): node is Element => node.type === 'element')
-}
-
-export const CodeView = defineComponent({
-  name: 'PmCodeView',
-  props: {
-    lang: { type: String, default: '' },
-    value: { type: String, required: true },
-    highlight: { type: Array as PropType<number[]>, default: undefined },
-  },
-  setup(props) {
-    const shiki = useHighlighter(() => props.lang)
-    const code = computed(() => props.value.replace(/\n$/, ''))
-    const lines = computed(() => new Set(props.highlight ?? []))
-    const tree = computed(() => shiki.value && shiki.value.highlighter.codeToHast(code.value, { lang: shiki.value.lang, themes: THEMES, defaultColor: false }))
-    const html = computed(() => {
-      if (!tree.value) return undefined
-      const marked = lines.value
-      lineElements(tree.value).forEach((line, i) => {
-        line.properties.class = marked.has(i + 1) ? 'line highlighted' : 'line'
-      })
-      return toHtml(tree.value)
-    })
-    const columns = computed(() => codeColumns(code.value))
-    return () => {
-      const attrs = {
-        'class': ['pm-code', { 'pm-code--highlight': lines.value.size > 0 }],
-        'style': { '--pm-code-columns': columns.value },
-        'data-lang': props.lang || undefined,
-      }
-      if (html.value) return h('div', { ...attrs, key: 'shiki', innerHTML: html.value })
-      const rows = code.value.split('\n').flatMap((text, i) => [h('span', { class: ['line', { highlighted: lines.value.has(i + 1) }] }, text), '\n'])
-      return h('div', { ...attrs, key: 'plain' }, [h('pre', { class: 'shiki' }, [h('code', rows.slice(0, -1))])])
-    }
-  },
-})
-
-const VariantView = defineComponent({
-  name: 'PmCodeVariant',
-  props: {
-    lang: { type: String, default: '' },
-    value: { type: String, required: true },
-  },
-  setup(props) {
-    const shiki = useHighlighter(() => props.lang)
-    const reduced = usePrefersReducedMotion()
-    const dark = useDark()
-    const code = computed(() => props.value.replace(/\n$/, ''))
-    return () => {
-      const loaded = shiki.value
-      if (!loaded || reduced.value) return h(CodeView, { lang: props.lang, value: props.value })
-      return h('div', { 'class': 'pm-code pm-code--magic-move', 'style': { '--pm-code-columns': codeColumns(code.value) }, 'data-lang': props.lang || undefined }, [
-        h(ShikiMagicMove, { highlighter: loaded.highlighter, lang: loaded.lang, theme: dark.value ? THEMES.dark : THEMES.light, code: code.value, options: { duration: 500 } }),
-      ])
-    }
-  },
-})
+import type { InjectionKey, PropType, Ref, VNode, VNodeChild } from 'vue'
+import { defineComponent, h, inject, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { originBar } from '../../domain/index.ts'
+import type { OriginPart } from '../../domain/index.ts'
+import { useSectionContext } from '../section-context.ts'
+import { viewerMessages } from '../viewer-messages.ts'
+import { CodeView, VariantView } from './code-view.ts'
+import { isProseOutput, runOutput } from './outputs.ts'
 
 function link(className: string, href: string | undefined, text: string, attrs: Record<string, unknown> = {}): VNode {
   return href
@@ -107,17 +27,21 @@ function originPart(part: OriginPart, k: number): VNode {
   })
 }
 
-function originBar(node: CodeNode, shown: number | undefined): VNodeChild {
-  const bar = originParts(node, shown, currentLocale())
+function renderOriginBar(node: CodeNode, shown: number | undefined): VNodeChild {
+  const bar = originBar(node, shown, currentLocale())
   return bar ? h('div', { 'class': 'pm-code-origin', 'data-anchor': bar.anchor }, bar.parts.map(originPart)) : null
 }
 
-const replays = new Set<(data: Record<string, unknown>) => void>()
-const followed = new WeakSet<Operations>()
+/** Whether the component around a code block owns it: the block then shows no run button and no outputs. */
+export const CODE_OWNED: InjectionKey<Readonly<Ref<boolean>>> = Symbol('presmium.viewer.codeOwned')
 
-function followRuns(operations: Operations): void {
-  if (followed.has(operations)) return
-  followed.add(operations)
+const replays = new Set<(data: Record<string, unknown>) => void>()
+const listening = new WeakSet<Operations>()
+
+/** Handles the replay of `run` operations, once for each operations service, by passing them to the mounted code blocks. */
+function listenRunReplays(operations: Operations): void {
+  if (listening.has(operations)) return
+  listening.add(operations)
   operations.onReplay('run', { apply: data => replays.forEach(replay => replay(data)) })
 }
 
@@ -151,7 +75,7 @@ export const CodeBlockView = defineComponent({
     const show = (result: RunResult | undefined) => {
       const node = props.block.node as CodeNode
       const recorded = result && !result.ok && result.exitCode === null && node.outputs?.length
-      fallback.value = recorded ? result.stderr.trim() || messages().code.unavailable : undefined
+      fallback.value = recorded ? result.stderr.trim() || viewerMessages().code.unavailable : undefined
       live.value = recorded ? undefined : result
     }
     const run = async () => {
@@ -169,7 +93,7 @@ export const CodeBlockView = defineComponent({
       try {
         result = await router.run(request, controller.signal)
       } catch (error) {
-        result = failedRun(router.id, messages().code.executorFailed(router.id, errorMessage(error)), Date.now() - started)
+        result = failedRun(router.id, viewerMessages().code.executorFailed(router.id, errorMessage(error)), Date.now() - started)
       }
       if (controller.signal.aborted) return
       show(result)
@@ -178,7 +102,7 @@ export const CodeBlockView = defineComponent({
       const recording = node.outputs?.[0] as RecordedRun | undefined
       operations.value?.report({ type: 'run', data: { section: section?.section.value.id, block: props.block.id, result: fallback.value && recording ? `freeze:${recording.cacheKey}` : 'live' } })
     }
-    const reset = async () => {
+    const resetRunSession = async () => {
       const node = props.block.node as CodeNode
       if (!node.run?.session) return
       stop()
@@ -191,7 +115,7 @@ export const CodeBlockView = defineComponent({
       show(undefined)
     }
     watch(operations, (ops) => {
-      if (ops) followRuns(ops)
+      if (ops) listenRunReplays(ops)
     }, { immediate: true })
     onMounted(() => replays.add(replay))
     onBeforeUnmount(() => replays.delete(replay))
@@ -212,23 +136,23 @@ export const CodeBlockView = defineComponent({
           : [h(VariantView, { key: 'variant', lang: node.lang, value: variants[shown]!.value })]
       const echo = node.echo !== false
       const runnable = !owned?.value && echo && node.run && node.run.when !== 'compile'
-      const t = messages().code
+      const t = viewerMessages().code
       const available = mounted.value && executor.value
       const controls = runnable
         ? h('div', { class: 'pm-code-block__run' }, [
             h('button', { type: 'button', disabled: running.value || !available, onClick: run }, running.value ? t.running : live.value ? t.rerun : t.run),
-            node.run!.session ? h('button', { 'type': 'button', 'class': 'pm-code-block__reset', 'disabled': !available, 'data-session': node.run!.session, 'onClick': reset }, t.resetSession) : null,
+            node.run!.session ? h('button', { 'type': 'button', 'class': 'pm-code-block__reset', 'disabled': !available, 'data-session': node.run!.session, 'onClick': resetRunSession }, t.resetRunSession) : null,
             mounted.value && !executor.value && report.value ? h('span', { class: 'pm-code-block__hint' }, t.unavailable) : null,
           ])
         : null
       const runs = owned?.value ? [] : live.value ? [live.value] : node.outputs ?? []
-      const prose = !echo && !live.value && runs.length > 0 && runs.every(proseOnly)
+      const prose = !echo && !live.value && runs.length > 0 && runs.every(isProseOutput)
       const prefix = section?.section.value.id ?? props.block.id
       const outputs = runs.length
         ? h('div', { 'class': ['pm-outputs', { 'pm-outputs--prose': prose }], 'data-source': live.value ? 'live' : 'recorded' }, runs.map((r, i) => runOutput(r, (r as RecordedRun).cacheKey || i, prefix, { prose, note: fallback.value })))
         : null
       return h('div', { 'class': ['pm-code-block', { 'pm-code-block--output-only': !echo }], 'data-state': props.expanded ? undefined : state, 'data-run': runnable ? node.run!.when : undefined, 'data-session': node.run?.session }, echo
-        ? [originBar(node, shown), ...listings, controls, outputs]
+        ? [renderOriginBar(node, shown), ...listings, controls, outputs]
         : [outputs])
     }
   },

@@ -1,6 +1,6 @@
 import type { Component } from 'vue'
 import { markRaw, shallowReactive } from 'vue'
-import type { Viewer } from './viewer.ts'
+import type { Viewer } from './viewer-state.ts'
 
 export interface ViewDefinition {
   id: string
@@ -26,7 +26,7 @@ export interface ViewerLayer {
   scope?: 'view' | 'viewport'
 }
 
-export const OVERLAY_VIEWS: readonly string[] = ['present', 'presenter']
+const OVERLAY_VIEWS: readonly string[] = ['present', 'presenter']
 
 const views = shallowReactive(new Map<string, ViewDefinition>())
 const nodeRenderers = shallowReactive(new Map<string, NodeRenderer>())
@@ -57,7 +57,7 @@ export function registerLayer(layer: ViewerLayer): void {
   layers.set(layer.id, { ...layer, component: markRaw(layer.component) })
 }
 
-export function getView(id: string): ViewDefinition | undefined {
+export function findView(id: string): ViewDefinition | undefined {
   return views.get(id)
 }
 
@@ -65,11 +65,11 @@ export function listViews(): ViewDefinition[] {
   return [...views.values()]
 }
 
-export function getNodeRenderer(key: string): NodeRenderer | undefined {
+export function findNodeRenderer(key: string): NodeRenderer | undefined {
   return nodeRenderers.get(key)
 }
 
-export function getComponent(name: string): Component | undefined {
+export function findComponent(name: string): Component | undefined {
   return components.get(name)
 }
 

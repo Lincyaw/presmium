@@ -1,4 +1,4 @@
-import type { CodeNode, ResolutionStatus, RunResult } from '@lincyaw/kernel'
+import type { CodeNode, ResolutionStatus } from '@lincyaw/kernel'
 import type { Locale } from '@lincyaw/kernel/contracts'
 
 const zh = {
@@ -14,9 +14,6 @@ const zh = {
   synced: '已锁定',
   syncedTitle: '锁定的代码与工作区一致',
   openFile: (file: string) => `在仓库中打开 ${file}`,
-  timedOut: '超时',
-  exitCode: (code: number) => `退出码 ${code}`,
-  recorded: '预录输出',
 }
 
 export type OriginMessages = typeof zh
@@ -34,9 +31,6 @@ const en: OriginMessages = {
   synced: 'Pinned',
   syncedTitle: 'The pinned code matches the working tree',
   openFile: file => `Open ${file} in the repository`,
-  timedOut: 'Timed out',
-  exitCode: code => `Exit code ${code}`,
-  recorded: 'Recorded output',
 }
 
 export const ORIGIN_MESSAGES: Record<Locale, OriginMessages> = { 'zh-CN': zh, 'en': en }
@@ -60,7 +54,7 @@ function lines(start: number, end = start): string {
   return end > start ? `${start}-${end}` : `${start}`
 }
 
-export function originParts(node: CodeNode, shown: number | undefined, locale: Locale): OriginBar | undefined {
+export function originBar(node: CodeNode, shown: number | undefined, locale: Locale): OriginBar | undefined {
   const t = ORIGIN_MESSAGES[locale]
   const { origin } = node
   if (!origin) return node.title ? { parts: [{ kind: 'file', text: node.title }] } : undefined
@@ -81,13 +75,4 @@ export function originParts(node: CodeNode, shown: number | undefined, locale: L
     parts.push({ kind: 'badge', text: drifted ? t.drifted : t.synced, title: drifted ? t.driftedTitle : t.syncedTitle, drift: origin.drift })
   }
   return { anchor: origin.anchor, parts }
-}
-
-export function outputNotes(run: RunResult, locale: Locale): string[] {
-  const t = ORIGIN_MESSAGES[locale]
-  return [
-    run.timedOut ? t.timedOut : '',
-    run.exitCode !== null && run.exitCode !== 0 ? t.exitCode(run.exitCode) : '',
-    run.source === 'recorded' ? t.recorded : '',
-  ].filter(Boolean)
 }

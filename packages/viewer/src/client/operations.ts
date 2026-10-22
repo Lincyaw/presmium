@@ -1,9 +1,10 @@
 import type { Operations } from '@lincyaw/host'
 import { watch } from 'vue'
-import { getView } from './registry.ts'
-import type { Viewer } from './viewer.ts'
+import { findView } from './registry.ts'
+import type { Viewer } from './viewer-state.ts'
 
-export function followOperations(viewer: Viewer, operations: Operations): () => void {
+/** Reports the viewer's position and view as `go` operations and replays `go` in it; returns the function that stops both. */
+export function syncViewerWithOperations(viewer: Viewer, operations: Operations): () => void {
   const stop = watch(
     () => ({ section: viewer.position.value.section, step: viewer.position.value.step, view: viewer.view.value }),
     (now, before) => {
@@ -14,7 +15,7 @@ export function followOperations(viewer: Viewer, operations: Operations): () => 
   )
   const off = operations.onReplay('go', {
     apply(data) {
-      const view = typeof data.view === 'string' ? getView(data.view) : undefined
+      const view = typeof data.view === 'string' ? findView(data.view) : undefined
       if (view && !view.hidden) viewer.setView(view.id)
       if (typeof data.section !== 'string') return
       const step = Number(data.step)

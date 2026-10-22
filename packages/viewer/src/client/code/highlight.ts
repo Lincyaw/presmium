@@ -41,7 +41,7 @@ const ALIASES: Record<string, string> = {
   rb: 'ruby',
 }
 
-export const THEMES = { light: 'github-light', dark: 'github-dark' } as const
+export const SHIKI_THEMES = { light: 'github-light', dark: 'github-dark' } as const
 
 let highlighter: Promise<HighlighterCore> | undefined
 const loading = new Map<string, Promise<void>>()
@@ -57,7 +57,7 @@ function load(): Promise<HighlighterCore> {
   return highlighter
 }
 
-export function grammarOf(lang: string): string | undefined {
+function grammarOf(lang: string): string | undefined {
   const id = languageId(lang)
   const name = ALIASES[id] ?? id
   return name in GRAMMARS ? name : undefined

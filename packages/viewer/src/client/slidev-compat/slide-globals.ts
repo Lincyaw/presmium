@@ -1,15 +1,16 @@
 import type { IRSection } from '@lincyaw/kernel'
 import type { App, Component, ComponentOptions } from 'vue'
 import { computed, getCurrentInstance, inject, reactive } from 'vue'
-import { SECTION_CONTEXT } from './context.ts'
-import type { SectionContext } from './context.ts'
-import { VIEWER } from './viewer.ts'
-import type { Viewer } from './viewer.ts'
+import { SECTION_CONTEXT } from '../section-context.ts'
+import type { SectionContext } from '../section-context.ts'
+import { VIEWER } from '../viewer-state.ts'
+import type { Viewer } from '../viewer-state.ts'
 
 function section() {
   return getCurrentInstance() ? inject(SECTION_CONTEXT, undefined) : undefined
 }
 
+/** Defines Slidev's globals `$page`, `$clicks`, `$nav` and `$slidev` on the app from the viewer, for components written for Slidev. */
 export function installSlideGlobals(app: App, viewer: Viewer): void {
   const props = app.config.globalProperties as Record<string, unknown>
   const index = computed(() => viewer.section(viewer.position.value.section)?.index ?? 1)
@@ -40,10 +41,11 @@ export function installSlideGlobals(app: App, viewer: Viewer): void {
   define('$slidev', () => ({ configs: configs.value, themeConfigs: {}, nav }))
 }
 
-export function sectionFrontmatter(section: IRSection, renderer: string): Record<string, unknown> {
+function sectionFrontmatter(section: IRSection, renderer: string): Record<string, unknown> {
   return { title: section.title, ...section.hints[renderer] }
 }
 
+/** The component with Slidev's `$frontmatter`: the section's title and its hints for the renderer. */
 export function withSlideGlobals(component: Component): Component {
   if (typeof component === 'function') return component
   const options = component as ComponentOptions

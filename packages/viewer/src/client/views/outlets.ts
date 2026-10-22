@@ -1,43 +1,22 @@
-import type { IRSection } from '@lincyaw/kernel'
+import { safeDecodeURIComponent } from '@lincyaw/kernel'
 import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, provide, watch } from 'vue'
-import { decoded } from './markdown.ts'
-import { getView } from './registry.ts'
-import { createPageTracker, PAGE_TRACKER, SectionView } from './section.ts'
-import type { SectionLayout } from './section.ts'
-import { useViewer } from './viewer.ts'
-
-const sectionsProp = { sections: { type: Array as PropType<IRSection[]>, required: true } } as const
-
-export const DocumentView = defineComponent({
-  name: 'PmDocumentView',
-  props: sectionsProp,
-  setup(props) {
-    const viewer = useViewer()
-    const layout = (section: IRSection): SectionLayout => (section.hints[viewer.options.renderer]?.layout === 'scrolly' ? 'scrolly' : 'document')
-    return () => h('div', { class: 'pm-view pm-view--document' }, props.sections.map(section => h(SectionView, { key: section.id, section, layout: layout(section) })))
-  },
-})
-
-export const ScrollyView = defineComponent({
-  name: 'PmScrollyView',
-  props: sectionsProp,
-  setup(props) {
-    return () => h('div', { class: 'pm-view pm-view--scrolly' }, props.sections.map(section => h(SectionView, { key: section.id, section, layout: 'scrolly' })))
-  },
-})
+import { findView } from '../registry.ts'
+import { useViewer } from '../viewer-state.ts'
+import { createPageTracker, PAGE_TRACKER } from './page-tracker.ts'
 
 const frame = () => new Promise(resolve => requestAnimationFrame(resolve))
 
-export const ViewHost = defineComponent({
-  name: 'PmViewHost',
+/** Mounts the current page view with the page's sections, follows the page's scrolling and restores the position. */
+export const PageViewOutlet = defineComponent({
+  name: 'PmPageViewOutlet',
   props: {
     sections: { type: Array as PropType<string[]>, required: true },
   },
   setup(props) {
     const viewer = useViewer()
-    const pageView = computed(() => getView(viewer.pageView.value) ?? getView('document'))
-    const isPage = () => getView(viewer.view.value)?.kind === 'page'
+    const pageView = computed(() => findView(viewer.pageView.value) ?? findView('document'))
+    const isPage = () => findView(viewer.view.value)?.kind === 'page'
     const tracker = createPageTracker((section, step) => {
       const { position } = viewer
       viewer.go({ section, step: step ?? (section === position.value.section ? position.value.step : 0) })
@@ -46,7 +25,7 @@ export const ViewHost = defineComponent({
     onBeforeUnmount(() => tracker.dispose())
 
     const linked = () => {
-      const hash = decoded(location.hash.slice(1))
+      const hash = safeDecodeURIComponent(location.hash.slice(1))
       return props.sections.includes(hash) ? hash : undefined
     }
     const onHash = () => {
@@ -89,12 +68,13 @@ export const ViewHost = defineComponent({
   },
 })
 
-export const OverlayHost = defineComponent({
-  name: 'PmOverlayHost',
+/** Mounts the current view when it is an overlay view. */
+export const OverlayViewOutlet = defineComponent({
+  name: 'PmOverlayViewOutlet',
   setup() {
     const viewer = useViewer()
     return () => {
-      const view = getView(viewer.view.value)
+      const view = findView(viewer.view.value)
       return view?.kind === 'overlay' ? h(view.component, { key: view.id }) : null
     }
   },

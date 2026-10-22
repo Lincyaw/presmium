@@ -2,9 +2,9 @@ import { joinWindows } from '@lincyaw/host'
 import type { IRDocument, IRSection, SourcePos } from '@lincyaw/kernel'
 import type { App, InjectionKey, Ref, ShallowRef, VNodeChild } from 'vue'
 import { computed, inject, ref, shallowRef } from 'vue'
-import { applyUpdate, clampPosition, footnoteSections, keepPosition, nextPosition, prevPosition } from './domain/index.ts'
-import type { LiveUpdate, Position } from './domain/index.ts'
-import { getView } from './registry.ts'
+import { applyUpdate, clampPosition, footnoteSections, keepPosition, nextPosition, prevPosition } from '../domain/index.ts'
+import type { LiveUpdate, Position } from '../domain/index.ts'
+import { findView } from './registry.ts'
 
 export interface ViewerOptions {
   renderer?: string
@@ -48,7 +48,7 @@ export function createViewer(initial: IRDocument, options: ViewerOptions = {}): 
   const pageView = ref('document')
   const position = shallowRef<Position>(clampPosition(initial, { section: initial.sections[0]?.id ?? '', step: 0 }))
   const restoring = ref(false)
-  const presenting = () => getView(view.value)?.kind === 'overlay'
+  const presenting = () => findView(view.value)?.kind === 'overlay'
   const footnotes = computed(() => footnoteSections(doc.value))
   const windows = joinWindows(`${CHANNEL}:${initial.meta.title}`, (value) => {
     if (presenting()) viewer.go(value as Position, true)
@@ -93,7 +93,7 @@ export function createViewer(initial: IRDocument, options: ViewerOptions = {}): 
       return Boolean(prev)
     },
     setView(id) {
-      const target = getView(id)
+      const target = findView(id)
       if (!target || id === view.value) return
       view.value = id
       if (target.kind === 'page') pageView.value = id

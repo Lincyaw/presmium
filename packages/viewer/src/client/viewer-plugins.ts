@@ -2,7 +2,7 @@ import { errorMessage } from '@lincyaw/kernel'
 import { BlockView } from './block.ts'
 import { registerAction, registerComponent, registerLayer, registerNodeRenderer, registerView } from './registry.ts'
 import { SectionView } from './section.ts'
-import { useViewer } from './viewer.ts'
+import { useViewer } from './viewer-state.ts'
 
 export interface ViewerPluginContext {
   registerView: typeof registerView
@@ -19,7 +19,8 @@ export type ViewerPlugin = (context: ViewerPluginContext) => void
 
 const context: ViewerPluginContext = { registerView, registerNodeRenderer, registerComponent, registerAction, registerLayer, useViewer, SectionView, BlockView }
 
-export function installViewerPlugin(plugin: unknown, name = 'viewer plugin'): string | undefined {
+/** Installs a viewer plugin; returns why it could not be installed, or undefined when it was. */
+export function tryInstallViewerPlugin(plugin: unknown, name = 'viewer plugin'): string | undefined {
   if (typeof plugin !== 'function') {
     console.error(`[presmium] ${name}: the default export is not a function`)
     return 'the default export is not a function'
