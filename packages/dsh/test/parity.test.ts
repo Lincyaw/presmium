@@ -101,7 +101,7 @@ describe('[gate] one tool table for MCP and DeepSeek Harness', () => {
     const scripted = await model([{ text: '好。' }])
     const run = home.headless(ws.dir, '看看我指的地方。', { model: scripted, env: service.env })
     expect(await run.exited, run.output()).toBe(0)
-    const context = JSON.parse(`"${/<presmium-document>[\s\S]*?Focus, as presmium__get_focus answers: (.*?)\\n<\/presmium-document>/.exec(JSON.stringify(turns(scripted)[0]!.messages))![1]}"`) as string
+    const context = JSON.parse(`"${/<presmium-document>[\s\S]*?Focus, as presmium__get_focus answers: (.*?)\\n(?:Browser feedback|<\/presmium-document>)/.exec(JSON.stringify(turns(scripted)[0]!.messages))![1]}"`) as string
     expect(JSON.parse(context)).toEqual(tool)
   }, 180_000)
 

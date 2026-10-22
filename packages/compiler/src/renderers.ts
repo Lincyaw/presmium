@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { errorMessage, isRecord } from '@lincyaw/kernel'
+import { errorMessage, findComponentRenderer, isRecord } from '@lincyaw/kernel'
 import type { BoundRendererExtension, ComponentNode, ComponentRenderer, Finding, IRBlock, IRDocument, NodeVitePlugin, RenderContext, RenderOutput, Renderer } from '@lincyaw/kernel'
 import { documentLink, publishedAsset } from './assets.ts'
 import type { Compilation, Compiler } from './compiler.ts'
@@ -99,12 +99,6 @@ export async function writeIR(doc: IRDocument, outDir: string): Promise<string> 
   return file
 }
 
-function extensionOf(node: ComponentNode, extensions: BoundRendererExtension[]) {
-  const owner = extensions.find(e => e.plugin === node.plugin && e.components?.[node.name])
-    ?? (node.plugin ? undefined : extensions.find(e => e.components?.[node.name]))
-  return owner?.components?.[node.name]
-}
-
 export function renderContext(compilation: Compilation, id: string, outDir: string, workDir: string, run: RenderRun, findings: Finding[], server?: { url: string }): RenderContext {
   const { deckDir, workspaceRoot, doc } = compilation
   const config = doc.config.renderers[id]
@@ -126,7 +120,7 @@ export function renderContext(compilation: Compilation, id: string, outDir: stri
     base: run.bases.get(id) ?? '/',
     vitePlugins: vitePluginsFor(compilation, report),
     nodeVitePlugins: nodeVitePlugins(compilation),
-    extensionFor: node => extensionOf(node, ctx.extensions),
+    extensionFor: node => findComponentRenderer(node, ctx.extensions),
     portable: (value, from) => portable(value, from, workspaceRoot),
     localAsset: (source, url) => publishedAsset(compilation, source, url, report),
     documentLink: (source, url) => documentLink(compilation, source, url),

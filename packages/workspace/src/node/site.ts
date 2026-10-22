@@ -2,17 +2,15 @@ import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import { compileTranslations, DECK_ENTRY, directoryAsset, fileHash, frontmatterLine, lineContaining, loadPlugins, nodeVitePlugins, parseFrontmatter, portable, publishesDirectory, viewFor } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
-import { NON_FILE_URL } from '@lincyaw/kernel'
+import { NON_FILE_URL, WEB_RENDERER_PACKAGE } from '@lincyaw/kernel'
 import type { DocumentSummary, Finding, IRDocument, RenderContext, Renderer, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
 import type { WorkspaceConfig } from './config.ts'
 
-const WEB_PACKAGE = '@lincyaw/web'
-
 export async function webRenderer(root: string, bundled?: string): Promise<Renderer> {
-  const { plugins, problems } = await loadPlugins(root, [WEB_PACKAGE], { workspaceRoot: root, listed: [], bundled })
+  const { plugins, problems } = await loadPlugins(root, [WEB_RENDERER_PACKAGE], { workspaceRoot: root, listed: [], bundled })
   const renderer = plugins[0]?.plugin?.renderer
-  if (!renderer?.buildSite || !renderer.devSite) throw new Error(`the web renderer (${WEB_PACKAGE}) is not installed: ${problems.map(p => p.message).join('; ') || 'it has no workspace site'}`)
+  if (!renderer?.buildSite || !renderer.devSite) throw new Error(`the web renderer (${WEB_RENDERER_PACKAGE}) is not installed: ${problems.map(p => p.message).join('; ') || 'it has no workspace site'}`)
   return renderer
 }
 

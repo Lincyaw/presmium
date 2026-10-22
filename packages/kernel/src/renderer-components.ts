@@ -1,12 +1,19 @@
-import type { BoundRendererExtension, ComponentNode } from './ir.ts'
+import type { BoundRendererExtension, ComponentNode, IRBlock } from './ir.ts'
 import { withProp } from './props.ts'
 
 /** The package of the web renderer when a document names none. */
 export const WEB_RENDERER_PACKAGE = '@lincyaw/web'
 
-/** Whether a renderer extension renders the component: one of its plugin, or of any plugin for a document's own component. */
+/** The renderer extension's renderer of the component: its own plugin's first, or any plugin's for a document's own component. */
+export function findComponentRenderer(node: ComponentNode, extensions: readonly BoundRendererExtension[]): ((node: ComponentNode, block: IRBlock) => unknown) | undefined {
+  const owner = extensions.find(e => e.plugin === node.plugin && e.components?.[node.name])
+    ?? (node.plugin ? undefined : extensions.find(e => e.components?.[node.name]))
+  return owner?.components?.[node.name]
+}
+
+/** Whether a renderer extension renders the component (`findComponentRenderer` finds one). */
 export function hasRendererExtension(node: ComponentNode, extensions: readonly BoundRendererExtension[]): boolean {
-  return extensions.some(e => (!node.plugin || e.plugin === node.plugin) && Boolean(e.components?.[node.name]))
+  return findComponentRenderer(node, extensions) !== undefined
 }
 
 /** The component with each prop that `assets` names set to the file's published URL; a file not published keeps its URL. */
