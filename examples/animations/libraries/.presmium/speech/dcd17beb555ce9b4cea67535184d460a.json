@@ -1,0 +1,96 @@
+{
+  "key": "dcd17beb555ce9b4cea67535184d460a",
+  "audio": "dcd17beb555ce9b4cea67535184d460a.ogg",
+  "mime": "audio/ogg",
+  "duration": 4.3,
+  "words": [
+    {
+      "text": "把",
+      "start": 0.05,
+      "end": 0.1875
+    },
+    {
+      "text": "它们",
+      "start": 0.2,
+      "end": 0.425
+    },
+    {
+      "text": "合并",
+      "start": 0.45,
+      "end": 0.925
+    },
+    {
+      "text": "成",
+      "start": 0.925,
+      "end": 1.1125
+    },
+    {
+      "text": "一个",
+      "start": 1.1125,
+      "end": 1.3
+    },
+    {
+      "text": "新",
+      "start": 1.325,
+      "end": 1.5625
+    },
+    {
+      "text": "符号",
+      "start": 1.5625,
+      "end": 1.925
+    },
+    {
+      "text": "lo",
+      "start": 1.925,
+      "end": 2.175
+    },
+    {
+      "text": "词表",
+      "start": 2.4125,
+      "end": 2.8125
+    },
+    {
+      "text": "里",
+      "start": 2.8125,
+      "end": 3.0125
+    },
+    {
+      "text": "多",
+      "start": 3.0375,
+      "end": 3.25
+    },
+    {
+      "text": "了",
+      "start": 3.25,
+      "end": 3.325
+    },
+    {
+      "text": "一",
+      "start": 3.3375,
+      "end": 3.4625
+    },
+    {
+      "text": "项",
+      "start": 3.4625,
+      "end": 3.7625
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "把它们合并成一个新符号 lo，词表里多了一项。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "dcd17beb555ce9b4cea67535184d460a",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "e66a036e67a369e12544a8684ee11c0ce590755366d6b9c8652e543e266161f6"
+}

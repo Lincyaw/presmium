@@ -1,0 +1,71 @@
+{
+  "key": "d0c6691fa99a37e5ca6181f7decee0ec",
+  "audio": "d0c6691fa99a37e5ca6181f7decee0ec.ogg",
+  "mime": "audio/ogg",
+  "duration": 3.4,
+  "words": [
+    {
+      "text": "第一次",
+      "start": 0.05,
+      "end": 0.5125
+    },
+    {
+      "text": "比较",
+      "start": 0.525,
+      "end": 0.85
+    },
+    {
+      "text": "5",
+      "start": 0.875,
+      "end": 1.0125
+    },
+    {
+      "text": "和",
+      "start": 1.025,
+      "end": 1.2
+    },
+    {
+      "text": "2",
+      "start": 1.2,
+      "end": 1.425
+    },
+    {
+      "text": "比较",
+      "start": 1.7,
+      "end": 2
+    },
+    {
+      "text": "次数",
+      "start": 2.0125,
+      "end": 2.3625
+    },
+    {
+      "text": "加",
+      "start": 2.375,
+      "end": 2.6
+    },
+    {
+      "text": "一",
+      "start": 2.6,
+      "end": 2.875
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "第一次比较 5 和 2，比较次数加一。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "d0c6691fa99a37e5ca6181f7decee0ec",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "9a4674a343294383ccd1932a74fd847e262caa036e142144b24634bcddb64c26"
+}

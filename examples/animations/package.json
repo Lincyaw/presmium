@@ -1,0 +1,30 @@
+{
+  "name": "presmium-animations",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "presmium serve .",
+    "build": "node tools/course.mjs build",
+    "check": "node tools/course.mjs check",
+    "ir": "node tools/course.mjs ir"
+  },
+  "dependencies": {
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/compiler": "workspace:*",
+    "@lincyaw/host": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
+    "@lincyaw/render-notebook": "workspace:*",
+    "@lincyaw/render-slides": "workspace:*",
+    "@lincyaw/slidev-addon-core": "workspace:*",
+    "@lincyaw/slidev-addon-guide": "workspace:*",
+    "@lincyaw/slidev-addon-lecture": "workspace:*",
+    "@lincyaw/slidev-addon-motion": "workspace:*",
+    "@lincyaw/slidev-addon-speech": "workspace:*",
+    "@lincyaw/viewer": "workspace:*",
+    "@lincyaw/web": "workspace:*",
+    "@slidev/cli": "53.0.0",
+    "@slidev/theme-default": "^0.25.0",
+    "vue": "^3.5.42",
+    "yaml": "2.9.0"
+  }
+}

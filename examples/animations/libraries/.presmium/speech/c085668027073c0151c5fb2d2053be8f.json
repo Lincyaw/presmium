@@ -1,0 +1,106 @@
+{
+  "key": "c085668027073c0151c5fb2d2053be8f",
+  "audio": "c085668027073c0151c5fb2d2053be8f.ogg",
+  "mime": "audio/ogg",
+  "duration": 6.92,
+  "words": [
+    {
+      "text": "字节",
+      "start": 0.05,
+      "end": 0.4125
+    },
+    {
+      "text": "对",
+      "start": 0.4375,
+      "end": 0.575
+    },
+    {
+      "text": "编码",
+      "start": 0.575,
+      "end": 1.0625
+    },
+    {
+      "text": "从",
+      "start": 1.1625,
+      "end": 1.375
+    },
+    {
+      "text": "单个",
+      "start": 1.3875,
+      "end": 1.6375
+    },
+    {
+      "text": "字符",
+      "start": 1.65,
+      "end": 1.975
+    },
+    {
+      "text": "开始",
+      "start": 1.9875,
+      "end": 2.5375
+    },
+    {
+      "text": "low",
+      "start": 2.8375,
+      "end": 3.1
+    },
+    {
+      "text": "lower",
+      "start": 3.3375,
+      "end": 3.8
+    },
+    {
+      "text": "lowest",
+      "start": 4.075,
+      "end": 4.4875
+    },
+    {
+      "text": "三个",
+      "start": 4.5,
+      "end": 4.825
+    },
+    {
+      "text": "词",
+      "start": 4.825,
+      "end": 5.175
+    },
+    {
+      "text": "先",
+      "start": 5.2625,
+      "end": 5.5125
+    },
+    {
+      "text": "拆",
+      "start": 5.525,
+      "end": 5.7125
+    },
+    {
+      "text": "成",
+      "start": 5.7125,
+      "end": 5.9
+    },
+    {
+      "text": "字母",
+      "start": 5.9125,
+      "end": 6.375
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "字节对编码从单个字符开始：low、lower、lowest 三个词先拆成字母。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "c085668027073c0151c5fb2d2053be8f",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "3f4961b2aa83adfbe671179308b685668e41b8f4a77e81b4392ae82615a7a312"
+}

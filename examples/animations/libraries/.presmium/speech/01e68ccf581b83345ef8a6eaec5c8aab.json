@@ -1,0 +1,51 @@
+{
+  "key": "01e68ccf581b83345ef8a6eaec5c8aab",
+  "audio": "01e68ccf581b83345ef8a6eaec5c8aab.ogg",
+  "mime": "audio/ogg",
+  "duration": 2.36,
+  "words": [
+    {
+      "text": "它们",
+      "start": 0.05,
+      "end": 0.3125
+    },
+    {
+      "text": "指向",
+      "start": 0.325,
+      "end": 0.6875
+    },
+    {
+      "text": "差不多",
+      "start": 0.7125,
+      "end": 1.2
+    },
+    {
+      "text": "的",
+      "start": 1.2,
+      "end": 1.3
+    },
+    {
+      "text": "方向",
+      "start": 1.3125,
+      "end": 1.825
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "它们指向差不多的方向。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "01e68ccf581b83345ef8a6eaec5c8aab",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "9d6c628166c7af1beba08acdd8126346de22bdf5b08ce383224b12e129a61374"
+}

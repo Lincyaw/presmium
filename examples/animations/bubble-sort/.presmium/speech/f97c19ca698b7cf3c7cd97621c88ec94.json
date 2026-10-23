@@ -1,0 +1,76 @@
+{
+  "key": "f97c19ca698b7cf3c7cd97621c88ec94",
+  "audio": "f97c19ca698b7cf3c7cd97621c88ec94.ogg",
+  "mime": "audio/ogg",
+  "duration": 3.5,
+  "words": [
+    {
+      "text": "用",
+      "start": 0.05,
+      "end": 0.2375
+    },
+    {
+      "text": "一个",
+      "start": 0.25,
+      "end": 0.4375
+    },
+    {
+      "text": "动画",
+      "start": 0.45,
+      "end": 0.975
+    },
+    {
+      "text": "讲",
+      "start": 1.075,
+      "end": 1.3125
+    },
+    {
+      "text": "清楚",
+      "start": 1.3125,
+      "end": 1.65
+    },
+    {
+      "text": "冒泡",
+      "start": 1.675,
+      "end": 2
+    },
+    {
+      "text": "排序",
+      "start": 2.0125,
+      "end": 2.45
+    },
+    {
+      "text": "的",
+      "start": 2.45,
+      "end": 2.525
+    },
+    {
+      "text": "一",
+      "start": 2.5375,
+      "end": 2.675
+    },
+    {
+      "text": "趟",
+      "start": 2.675,
+      "end": 2.9625
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "用一个动画讲清楚冒泡排序的一趟。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "f97c19ca698b7cf3c7cd97621c88ec94",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "ca7ea12266a01e0c2e31cec18e76df327fe517b29e0c4ca00421dda4302ce120"
+}

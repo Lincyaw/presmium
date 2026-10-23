@@ -1,0 +1,17 @@
+title: 'Presmium 示例：用代码讲课'
+documents:
+  - '*/lecture.md'
+site:
+  footer:
+    message: 'Presmium 示例'
+  nav:
+    - text: '幻灯片'
+      items:
+        - text: '冒泡排序'
+          link: '/bubble-sort/slides/'
+        - text: '代码写成的动画'
+          link: '/libraries/slides/'
+    - text: 'Notebook'
+      items:
+        - text: '冒泡排序'
+          link: '/bubble-sort/notebook/lecture.ipynb'

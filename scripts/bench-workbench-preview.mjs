@@ -1,7 +1,8 @@
 // Run from any directory:
 // node scripts/bench-workbench-preview.mjs [output.json] [--rounds 3]
 // Two first opens, followed by `rounds` alternating returns in one isolated Studio.
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { createServer } from 'node:net'
 import { availableParallelism, arch, loadavg, platform, tmpdir, totalmem } from 'node:os'
@@ -15,13 +16,13 @@ const { values, positionals } = parseArgs({
   options: {
     rounds: { type: 'string', default: '3' },
     output: { type: 'string' },
-    cs336: { type: 'boolean', default: false },
+    example: { type: 'boolean', default: false },
     help: { type: 'boolean', short: 'h' },
   },
 })
 
 if (values.help) {
-  console.log('Usage: node scripts/bench-workbench-preview.mjs [output.json] [--rounds 3] [--cs336]\n\nOpens two fixture lectures for the first time, then alternates between them for\nthree warm returns by default. --cs336 uses only CS336 lectures 01 and 02 with\ntheir images. --output is an alternative to the positional path.\nUses one isolated Studio and Chromium; does not build the full demo or run tests.\nJSON goes to stdout when no output path is supplied. Progress goes to stderr.')
+  console.log('Usage: node scripts/bench-workbench-preview.mjs [output.json] [--rounds 3] [--example]\n\nOpens two fixture lectures for the first time, then alternates between them for\nthree warm returns by default. --example uses the two lectures of the example\n(examples/animations), with their animations. --output is an alternative to the positional path.\nUses one isolated Studio and Chromium; does not build the full demo or run tests.\nJSON goes to stdout when no output path is supplied. Progress goes to stderr.')
   process.exit(0)
 }
 
@@ -52,7 +53,7 @@ const result = {
   measuredAt: new Date().toISOString(),
   runtime: { node: process.version, platform: platform(), arch: arch(), logicalCpus: availableParallelism(), memoryBytes: totalmem() },
   rounds,
-  fixture: values.cs336 ? 'cs336-01-02' : 'workbench',
+  fixture: values.example ? 'example' : 'workbench',
   // Each run has a fresh service state directory and a fresh browser context.
   // Later first opens still share the existing process and dependency caches.
   loadAtStart: loadavg(),
@@ -96,16 +97,11 @@ process.once('SIGTERM', stop)
 
 try {
   const bootStarted = performance.now()
-  if (values.cs336) {
-    fixture = mkdtempSync(join(tmpdir(), 'presmium-bench-cs336-'))
-    for (const name of ['lecture_01', 'lecture_02']) {
-      mkdirSync(join(fixture, name))
-      writeFileSync(join(fixture, name, 'lecture.md'), readFileSync(join(root, 'examples/cs336', name, 'lecture.md')))
-    }
-    writeFileSync(join(fixture, 'presmium.workspace.yaml'), "title: CS336 preview benchmark\ndocuments: ['lecture_*/lecture.md']\n")
+  if (values.example) {
+    fixture = mkdtempSync(join(tmpdir(), 'presmium-bench-example-'))
+    execFileSync(process.execPath, [join(root, 'examples/animations/try.mjs'), fixture], { stdio: 'ignore' })
   }
   studio = await startStudio({ port: await freePort(), prefix: 'bench-preview', isolateClient: true, ...fixture ? { fixture } : {} })
-  if (fixture) cpSync(join(root, 'examples/cs336/source/images'), join(studio.workspace.dir, 'source/images'), { recursive: true })
   result.boot.studioReadyMs = performance.now() - bootStarted
   if (interrupted) throw new Error('Benchmark interrupted')
   const browserStarted = performance.now()
@@ -153,9 +149,7 @@ try {
   console.error(`Studio and workbench ready: ${Math.round(result.boot.totalMs)} ms`)
   save()
 
-  const titles = values.cs336
-    ? ['CS336 Lecture 01: Introduction and tokenization', 'CS336 Lecture 02: Resource accounting']
-    : ['分词入门', 'Second lecture']
+  const titles = values.example ? ['冒泡排序', '代码写成的动画'] : ['分词入门', 'Second lecture']
   for (let index = 0; index < 2 + rounds; index++) {
     if (interrupted) throw new Error('Benchmark interrupted')
     if (await page.locator('.pmw-home__card:visible').count() === 0) await page.locator('[data-activity="documents"]').click()

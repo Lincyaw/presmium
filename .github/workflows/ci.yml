@@ -49,7 +49,6 @@ jobs:
         run: pnpm exec playwright test --project chromium
         env:
           PRESMIUM_E2E_BROWSERS: ''
-          PRESMIUM_CS336_REUSE_BUILD: '1'
       - name: Release dry run (pnpm -r publish --dry-run)
         run: pnpm release:check
       - if: failure()

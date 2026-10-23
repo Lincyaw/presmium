@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build CS336
+    name: Build the example
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -29,13 +29,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - id: pages
         uses: actions/configure-pages@v5
-      - name: Set the course site's base
+      - name: Set the example site's base
         env:
           BASE: ${{ steps.pages.outputs.base_path }}/
         run: |
           node --input-type=module -e "
             import { readFileSync, writeFileSync } from 'node:fs'
-            const path = 'examples/cs336/presmium.workspace.yaml'
+            const path = 'examples/animations/presmium.workspace.yaml'
             const text = readFileSync(path, 'utf8')
             if (!/^site:$/m.test(text)) throw new Error('missing site configuration')
             writeFileSync(path, text.replace(/^site:$/m, 'site:\n  base: ' + JSON.stringify(process.env.BASE)))
@@ -44,7 +44,7 @@ jobs:
       - run: pnpm demo:build
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: examples/cs336/dist/web
+          path: examples/animations/dist/web
 
   deploy:
     name: Deploy

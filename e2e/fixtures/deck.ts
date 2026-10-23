@@ -1,7 +1,7 @@
 // Fixture decks of the feature specs: e2e/fixtures/<name> holds a deck (lecture.md and the files it
 // includes). It is copied into e2e/fixtures/regression/.presmium, where its plugins, Slidev and VitePress
 // resolve from the regression fixture's node_modules, built with the real `presmium build`, and its web form and
-// slides are served on free ports. The specs depend on their fixture decks, independent of the public CS336 course.
+// slides are served on free ports. The specs depend on their fixture decks, independent of the public example.
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, createReadStream, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'

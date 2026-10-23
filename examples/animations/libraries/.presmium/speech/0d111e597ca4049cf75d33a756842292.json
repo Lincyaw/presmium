@@ -1,0 +1,51 @@
+{
+  "key": "0d111e597ca4049cf75d33a756842292",
+  "audio": "0d111e597ca4049cf75d33a756842292.ogg",
+  "mime": "audio/ogg",
+  "duration": 2.22,
+  "words": [
+    {
+      "text": "统计",
+      "start": 0.05,
+      "end": 0.4875
+    },
+    {
+      "text": "相邻",
+      "start": 0.5125,
+      "end": 0.8875
+    },
+    {
+      "text": "的",
+      "start": 0.8875,
+      "end": 0.9875
+    },
+    {
+      "text": "字节",
+      "start": 1,
+      "end": 1.375
+    },
+    {
+      "text": "对",
+      "start": 1.375,
+      "end": 1.6875
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "统计相邻的字节对，",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "0d111e597ca4049cf75d33a756842292",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "d4944b92ee26ea7abe54126e9da791478ecacad7b827c78588d88da76e4b6ca7"
+}

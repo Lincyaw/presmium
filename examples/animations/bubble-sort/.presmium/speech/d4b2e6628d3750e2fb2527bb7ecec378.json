@@ -1,0 +1,61 @@
+{
+  "key": "d4b2e6628d3750e2fb2527bb7ecec378",
+  "audio": "d4b2e6628d3750e2fb2527bb7ecec378.ogg",
+  "mime": "audio/ogg",
+  "duration": 2.62,
+  "words": [
+    {
+      "text": "停",
+      "start": 0.05,
+      "end": 0.25
+    },
+    {
+      "text": "在",
+      "start": 0.25,
+      "end": 0.375
+    },
+    {
+      "text": "最后",
+      "start": 0.3875,
+      "end": 0.9
+    },
+    {
+      "text": "这",
+      "start": 1.1125,
+      "end": 1.275
+    },
+    {
+      "text": "一",
+      "start": 1.275,
+      "end": 1.375
+    },
+    {
+      "text": "趟",
+      "start": 1.375,
+      "end": 1.575
+    },
+    {
+      "text": "结束",
+      "start": 1.5875,
+      "end": 2.1
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "停在最后，这一趟结束。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "d4b2e6628d3750e2fb2527bb7ecec378",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "a6f66a22aa001814023bf24f19d4fc869450f87909b59f013f3060ed6d0d8b1f"
+}

@@ -59,7 +59,7 @@ MyST 源码 + 真实代码文件
 
 同一文稿正在进行的 IR 请求合并，保存事件若在读取期间到达且修订仍不一致，再验证一次。网页 Markdown 的纯 HAST 按 viewer、文稿对象、Markdown 节点对象、章节前缀和语言缓存，每份文稿最多 256 项、序列化 HAST 的 UTF-16 大小合计 4 MiB；旧文稿通过弱引用回收。这是数据缓存，不保留 VNode、组件、DOM 或订阅。引用标题、脚注等内容因文稿对象变化而重新转换。
 
-性能评估分别记录冷启动、同进程首次编译、单行修改编译、保存到 IR 事件、保存到浏览器可见更新。记录 CPU 时间和实际等待时间，在相同负载下交替比较修改前后版本；首轮初始化、外部代码执行和网络请求不混入普通编辑的延迟。测试中的时间预算与本机实测值分开报告。工作台首开与切回讲义用 `node scripts/bench-workbench-preview.mjs /private/tmp/preview.json --rounds 3` 单独测量：一套隔离工作台与 Chromium，点击后等预览协议 ready 且首章节可见，不构建完整示例；加 `--cs336` 只测真实课程前两讲与图片。首次测量见 [工作台加载记录](benchmarks/workbench-preview-2026-10-21.md)，后续缓存与剩余瓶颈见 [预览缓存记录](benchmarks/preview-cache-2026-10-21.md)。
+性能评估分别记录冷启动、同进程首次编译、单行修改编译、保存到 IR 事件、保存到浏览器可见更新。记录 CPU 时间和实际等待时间，在相同负载下交替比较修改前后版本；首轮初始化、外部代码执行和网络请求不混入普通编辑的延迟。测试中的时间预算与本机实测值分开报告。工作台首开与切回讲义用 `node scripts/bench-workbench-preview.mjs /private/tmp/preview.json --rounds 3` 单独测量：一套隔离工作台与 Chromium，点击后等预览协议 ready 且首章节可见，不构建完整示例；加 `--example` 测示例的两讲（带动画）。首次测量见 [工作台加载记录](benchmarks/workbench-preview-2026-10-21.md)，后续缓存与剩余瓶颈见 [预览缓存记录](benchmarks/preview-cache-2026-10-21.md)。
 
 ## 2. 仓库结构
 
@@ -108,7 +108,7 @@ presmium/
 │   ├── workspace/           工作区：presmium.workspace.yaml 与 .gitignore 的模板
 │   └── plugin/              插件项目的模板（create-presmium 用）
 ├── examples/
-│   └── cs336/               Stanford CS336 完整课程：唯一的公开示例，端到端测试的对象
+│   └── animations/          用代码讲课：两讲中文讲义（冒泡排序、代码写成的动画），唯一的公开示例，端到端测试的对象
 ├── site/                    文档站：一个 Presmium 工作区，用 Presmium 自己构建（中英双语，接口参考由 TypeDoc 生成）
 ├── e2e/                     Playwright 测试，每个上下文一个 spec；测试文稿在 e2e/fixtures/<组>/
 ├── scripts/                 结构检查：check-layering.mjs、check-skills.mjs、check-plugins.mjs、check-packages.mjs（发布的包）、check-types.mjs（类型）；consumer.ts（消费者安装）
@@ -1567,11 +1567,11 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 ## 6. 示例文稿约定
 
-唯一公开示例位于 `examples/cs336/`：Stanford CS336 2026 春季课程的全部 17 讲，固定上游提交并保留原始材料。每讲的 `lecture.md` 按主题编排连续阅读的文档与 notebook；`slides.md` 独立编排 PPT，两个入口都使用标准 MyST 编译为 IR。9 份 Python 讲义直接转换执行记录中的文字、图像、引用和实际变量值：文档保留语句的最终结果，合并列表和引用；PPT 用 `{slide}` 的 `at`、`until` 保留全部出现与替换步骤，支持前进与回退。没有可见变化的 Python 调用不占演示步骤，不使用课程专用插件或录制播放器。8 份 PDF 的全部 496 页保留在 PPT，阅读文档提取正文与独立图表，并合并连续页面的同名主题。提取器误识别的装饰线表格重新提取为正文，profiler 等预格式输出使用文本代码块。源码和转换元信息只存放在维护文件中。`coverage.json` 和审计脚本核对两个入口的哈希、原始步骤映射、展示事件、页面和资源。
+唯一公开示例位于 `examples/animations/`：两讲为 Presmium 写的中文讲义。`bubble-sort/`（冒泡排序）从代码讲到一趟冒泡的 GSAP 动画，讲解点击文稿自己的计数组件、光标指向按钮，再合成为带字幕的讲授；`libraries/`（代码写成的动画）用 GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节场景（4.4 节的步骤时间），最后是讲到哪里点哪里与讲授视频。每讲的 `scenes/` 是场景源码，`components/` 是讲义的组件，`.presmium/speech/` 与 `speech.lock.json` 是讲解的合成缓存（音色 `edge`），随讲义提交：没有语音引擎的环境（CI、新的检出）照样能检查、构建与播放讲授，改过的句子才需要引擎。
 
-`pnpm studio` 首次复制课程到独立的 `.presmium/cs336-workspace`，之后复用用户可编辑的副本。`pnpm demo:check` 检查全部文稿；`pnpm demo:build` 构建全部幻灯片、notebook 和课程站点，站点在 `examples/cs336/dist/web/`。上游录制值不在构建时重新运行，构建不要求 CUDA 或外部模型服务。
+`pnpm studio` 首次用示例的 `try.mjs` 复制到独立的 `.presmium/example-workspace`（自己的 git 仓库，带合成缓存与给 AI 的 `AGENTS.md`），之后复用用户可编辑的副本。`pnpm demo:check` 检查两讲；`pnpm demo:build` 构建工作区站点，并把每讲的幻灯片、notebook 与讲授放进 `<讲义>/slides/`、`<讲义>/notebook/`、`<讲义>/lecture/`，站点在 `examples/animations/dist/web/`。讲授视图先找页面下的 `lecture/`，再找网页形态旁边的 `../lecture/`（单讲构建的位置），所以同一站点中几讲的讲授互不冲突。
 
-功能回归使用 `e2e/fixtures/<组>/` 的私有文稿。`e2e/fixtures/regression/` 中的 BPE 文稿仅用于私有回归，代码引用的历史版本行为由专用代码用例验证。冒烟和功能测试从该目录解析依赖；课程用例检查 17 讲导航、原始步骤前进回退和页面资源。`lang` 决定两种形态的界面语言（5.7 节）。
+功能回归使用 `e2e/fixtures/<组>/` 的私有文稿。`e2e/fixtures/regression/` 中的 BPE 文稿仅用于私有回归，代码引用的历史版本行为由专用代码用例验证。冒烟和功能测试从该目录解析依赖；示例的用例检查站点中的两讲、各自的幻灯片与讲授，以及 `pnpm studio` 的副本。`lang` 决定两种形态的界面语言（5.7 节）。
 
 ## 7. 测试策略
 
@@ -1582,7 +1582,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 | 结构检查 | `scripts/check-layering.mjs`、`scripts/check-skills.mjs`、`scripts/check-plugins.mjs`、`scripts/check-packages.mjs`、`scripts/check-types.mjs` | 第 3 节的分层规则；技能与代码一致（指令、命令及其选项）；每个 Node 插件声明 `version` 与当前内核满足的 `kernel` 范围（4.2 节）；每个包按 `.changeset/README.md` 的表公开或私有，公开的包有许可证、同一版本、`engines`、元数据与只含发布所需的 `files`，插件以对等依赖使用共用的包；源码、测试与 spec 没有类型错误（`tsconfig.json` 只含 `.ts`，工作台的 React 面板由 `packages/workbench/tsconfig.json` 检查）。`@slidev/client` 发布的是 `.ts` 源码，只在 Slidev 自己的仓库中能通过类型检查（它的构建期全局量与设置），`skipLibCheck` 只跳过 `.d.ts`；检查按这些源码的类型检查仓库的代码，不报它们内部的错误 | `pnpm test` |
 | 消费者安装 | Vitest、Playwright | `scripts/consumer.ts` 用 pnpm 打包全部公开的包，在单仓之外的临时目录中用 pnpm 从压缩包安装 `presmium`（另加一个从自己的压缩包安装的第三方插件）；`packages/cli/test/consumer.test.ts` 在其中运行 `check`、三种形态的 `build`、`dev`、`serve`（站点在项目之外，从随包的模板新建文档）、不兼容插件的诊断，在空目录中 `presmium new` 之后检查与构建，以及转交给项目里的 `presmium`，`e2e/consumer.spec.ts` 在浏览器中看插件的组件 | `pnpm test`、`pnpm e2e` |
 | 集成 | Vitest | 真实运行 CLI、构建产物检查、服务端（`packages/<pkg>/test/`）；运行 `slidev export` 的用例是单独的项目 `export`，在其他用例之后运行 | `pnpm test` |
-| 构建 | `presmium build` | 示例文稿编译并生成全部媒介（网页、幻灯片、notebook） | `pnpm demo:build` |
+| 构建 | `presmium build` | 示例文稿编译并生成全部媒介（网页、幻灯片、notebook、讲授） | `pnpm demo:build` |
 | 检查 | `presmium check` | 示例文稿全部检查项通过 | `pnpm demo:check` |
 | 端到端 | Playwright | 构建产物上的行为（`e2e/`）：全部用例在 Chromium 中运行，冒烟用例另在 Firefox 与 WebKit 中运行 | `pnpm e2e` |
 | 升级闸门 | Vitest、Playwright | 五组与 dsh 相关的用例：行 ID、经 bundle 的假模型用例、客户端的启动审计、Host API 的 schema、工作台的端到端用例（`design-dsh.md` 第 12 节）；用例名带 `[gate]` 或标签 `@gate` | 随 `pnpm test` 与 `pnpm e2e` 运行，升级 dsh 时单独运行 |

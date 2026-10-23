@@ -1,0 +1,66 @@
+{
+  "key": "f30aa9e3bd4fd80bafa302e1e615ba50",
+  "audio": "f30aa9e3bd4fd80bafa302e1e615ba50.ogg",
+  "mime": "audio/ogg",
+  "duration": 5.72,
+  "words": [
+    {
+      "text": "渲染",
+      "start": 0.05,
+      "end": 0.475
+    },
+    {
+      "text": "端",
+      "start": 0.475,
+      "end": 0.6875
+    },
+    {
+      "text": "各取所需",
+      "start": 0.7125,
+      "end": 1.5625
+    },
+    {
+      "text": "网页",
+      "start": 1.8,
+      "end": 2.3
+    },
+    {
+      "text": "幻灯片",
+      "start": 2.5125,
+      "end": 3.2125
+    },
+    {
+      "text": "notebook",
+      "start": 3.4375,
+      "end": 4.0625
+    },
+    {
+      "text": "还有",
+      "start": 4.325,
+      "end": 4.6
+    },
+    {
+      "text": "视频",
+      "start": 4.6,
+      "end": 5.2
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "渲染端各取所需：网页、幻灯片、notebook，还有视频。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "f30aa9e3bd4fd80bafa302e1e615ba50",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "70109d4dadabfb1023b0808cf77ef74b59413e91a9bd23f05311af8baee461ae"
+}

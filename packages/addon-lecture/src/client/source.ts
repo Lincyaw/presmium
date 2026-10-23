@@ -84,25 +84,40 @@ export function serverEditing(server: ServerClient): LectureEditing {
   }
 }
 
-export function staticSource(base: string): LectureSource {
+/** The lectures published at the first of `bases` that has an index (the last when none answers). */
+export function staticSource(bases: readonly string[]): LectureSource {
+  let located: Promise<string> | undefined
+  const base = () => located ??= (async () => {
+    for (const candidate of bases.slice(0, -1)) {
+      const response = await fetch(new URL('index.json', candidate), { method: 'HEAD' }).catch(() => undefined)
+      if (response?.ok) return candidate
+    }
+    return bases.at(-1)!
+  })()
   return {
     list: async () => {
-      const response = await fetch(new URL('index.json', base))
+      const response = await fetch(new URL('index.json', await base()))
       return response.ok ? summaries(await response.json()) : []
     },
-    track: async id => readTrackAnswer(await fetch(new URL(`${encodeURIComponent(id)}/track.json`, base), { cache: 'no-cache' })),
-    media: async (id, src) => (ABSOLUTE_URL.test(src) ? src : new URL(`${encodeURIComponent(id)}/${src.split('/').map(encodeURIComponent).join('/')}`, base).href),
+    track: async id => readTrackAnswer(await fetch(new URL(`${encodeURIComponent(id)}/track.json`, await base()), { cache: 'no-cache' })),
+    media: async (id, src) => (ABSOLUTE_URL.test(src) ? src : new URL(`${encodeURIComponent(id)}/${src.split('/').map(encodeURIComponent).join('/')}`, await base()).href),
   }
 }
 
-export function staticBase(config: Record<string, unknown> | undefined): string {
-  const configured = typeof config?.url === 'string' && config.url ? config.url : undefined
+/**
+ * Where a static page looks for its lectures: `presmium.lecture.url` when the document names it; otherwise `lecture/` under
+ * the page, where a site of several documents puts each one's lectures in its own directory, then `../lecture/` beside
+ * the web form, where a document's own build puts them.
+ */
+export function staticBases(config: Record<string, unknown> | undefined): string[] {
   const site = new URL(import.meta.env.BASE_URL ?? '/', location.href)
-  const base = configured ?? '../lecture/'
-  const url = new URL(base, site)
-  return url.href.endsWith('/') ? url.href : `${url.href}/`
+  const configured = typeof config?.url === 'string' && config.url ? config.url : undefined
+  return (configured ? [configured] : ['lecture/', '../lecture/']).map((base) => {
+    const url = new URL(base, site).href
+    return url.endsWith('/') ? url : `${url}/`
+  })
 }
 
 export function lectureSource(server: ServerClient, config: unknown): LectureSource {
-  return server.available ? serverSource(server) : staticSource(staticBase(isRecord(config) ? config : undefined))
+  return server.available ? serverSource(server) : staticSource(staticBases(isRecord(config) ? config : undefined))
 }

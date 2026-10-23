@@ -1,0 +1,201 @@
+{
+  "key": "061ff7867ce54e573e54dd9c2b5e476f",
+  "audio": "061ff7867ce54e573e54dd9c2b5e476f.ogg",
+  "mime": "audio/ogg",
+  "duration": 13.84,
+  "words": [
+    {
+      "text": "讲解",
+      "start": 0.05,
+      "end": 0.55
+    },
+    {
+      "text": "经",
+      "start": 0.575,
+      "end": 0.75
+    },
+    {
+      "text": "语音",
+      "start": 0.7625,
+      "end": 1.075
+    },
+    {
+      "text": "合成",
+      "start": 1.0875,
+      "end": 1.625
+    },
+    {
+      "text": "成为",
+      "start": 1.6375,
+      "end": 1.9375
+    },
+    {
+      "text": "讲授",
+      "start": 1.9625,
+      "end": 2.375
+    },
+    {
+      "text": "轨",
+      "start": 2.375,
+      "end": 2.6375
+    },
+    {
+      "text": "字幕",
+      "start": 2.95,
+      "end": 3.425
+    },
+    {
+      "text": "章节",
+      "start": 3.625,
+      "end": 4.1875
+    },
+    {
+      "text": "和",
+      "start": 4.2875,
+      "end": 4.4375
+    },
+    {
+      "text": "每个",
+      "start": 4.45,
+      "end": 4.75
+    },
+    {
+      "text": "提示",
+      "start": 4.7625,
+      "end": 5.2875
+    },
+    {
+      "text": "都",
+      "start": 5.3875,
+      "end": 5.55
+    },
+    {
+      "text": "在",
+      "start": 5.55,
+      "end": 5.7
+    },
+    {
+      "text": "时间线",
+      "start": 5.725,
+      "end": 6.3125
+    },
+    {
+      "text": "上",
+      "start": 6.3125,
+      "end": 6.6125
+    },
+    {
+      "text": "导出",
+      "start": 7.175,
+      "end": 7.5625
+    },
+    {
+      "text": "时",
+      "start": 7.5625,
+      "end": 7.8875
+    },
+    {
+      "text": "一",
+      "start": 7.9125,
+      "end": 8.0625
+    },
+    {
+      "text": "帧",
+      "start": 8.0625,
+      "end": 8.2375
+    },
+    {
+      "text": "一",
+      "start": 8.25,
+      "end": 8.375
+    },
+    {
+      "text": "帧",
+      "start": 8.375,
+      "end": 8.55
+    },
+    {
+      "text": "推进",
+      "start": 8.575,
+      "end": 8.875
+    },
+    {
+      "text": "时间",
+      "start": 8.8875,
+      "end": 9.3625
+    },
+    {
+      "text": "动画",
+      "start": 9.675,
+      "end": 10.175
+    },
+    {
+      "text": "光标",
+      "start": 10.375,
+      "end": 10.75
+    },
+    {
+      "text": "与",
+      "start": 10.775,
+      "end": 10.8875
+    },
+    {
+      "text": "点击",
+      "start": 10.9,
+      "end": 11.4375
+    },
+    {
+      "text": "都",
+      "start": 11.5375,
+      "end": 11.6875
+    },
+    {
+      "text": "按",
+      "start": 11.6875,
+      "end": 11.8625
+    },
+    {
+      "text": "讲授",
+      "start": 11.8875,
+      "end": 12.25
+    },
+    {
+      "text": "的",
+      "start": 12.25,
+      "end": 12.325
+    },
+    {
+      "text": "时刻",
+      "start": 12.3375,
+      "end": 12.7
+    },
+    {
+      "text": "画",
+      "start": 12.725,
+      "end": 12.9375
+    },
+    {
+      "text": "出来",
+      "start": 12.9375,
+      "end": 13.3125
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "讲解经语音合成成为讲授轨，字幕、章节和每个提示都在时间线上。导出时一帧一帧推进时间，动画、光标与点击都按讲授的时刻画出来。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "061ff7867ce54e573e54dd9c2b5e476f",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "126c934e82920c9584fa8a082a94d6db7d18ffbd6842828888f2edfbd12b5232"
+}

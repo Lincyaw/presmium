@@ -1,0 +1,96 @@
+{
+  "key": "4357d8c7d0df9477350b40d5c9eae79f",
+  "audio": "4357d8c7d0df9477350b40d5c9eae79f.ogg",
+  "mime": "audio/ogg",
+  "duration": 4.82,
+  "words": [
+    {
+      "text": "画面",
+      "start": 0.05,
+      "end": 0.4125
+    },
+    {
+      "text": "由",
+      "start": 0.4375,
+      "end": 0.5625
+    },
+    {
+      "text": "帧",
+      "start": 0.5625,
+      "end": 0.75
+    },
+    {
+      "text": "号",
+      "start": 0.75,
+      "end": 0.95
+    },
+    {
+      "text": "决定",
+      "start": 0.9625,
+      "end": 1.3875
+    },
+    {
+      "text": "所以",
+      "start": 1.7125,
+      "end": 1.95
+    },
+    {
+      "text": "导出",
+      "start": 1.975,
+      "end": 2.2625
+    },
+    {
+      "text": "视频",
+      "start": 2.275,
+      "end": 2.6875
+    },
+    {
+      "text": "时",
+      "start": 2.6875,
+      "end": 3.0625
+    },
+    {
+      "text": "每",
+      "start": 3.1625,
+      "end": 3.3625
+    },
+    {
+      "text": "一",
+      "start": 3.3625,
+      "end": 3.5
+    },
+    {
+      "text": "帧",
+      "start": 3.5,
+      "end": 3.6875
+    },
+    {
+      "text": "都",
+      "start": 3.7,
+      "end": 3.825
+    },
+    {
+      "text": "确定",
+      "start": 3.8375,
+      "end": 4.275
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "画面由帧号决定，所以导出视频时每一帧都确定。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "4357d8c7d0df9477350b40d5c9eae79f",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "94a4f84ea5551effb46767fd9cfa9e1317d3e9c56fa0c402cfec8d3ea05a0392"
+}

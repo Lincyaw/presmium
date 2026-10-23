@@ -1,0 +1,86 @@
+{
+  "key": "a7c23e557b0ab84ae11ef5fbc9befad7",
+  "audio": "a7c23e557b0ab84ae11ef5fbc9befad7.ogg",
+  "mime": "audio/ogg",
+  "duration": 4.3,
+  "words": [
+    {
+      "text": "这",
+      "start": 0.05,
+      "end": 0.25
+    },
+    {
+      "text": "一",
+      "start": 0.25,
+      "end": 0.4
+    },
+    {
+      "text": "页",
+      "start": 0.4,
+      "end": 0.675
+    },
+    {
+      "text": "是",
+      "start": 0.7625,
+      "end": 1.075
+    },
+    {
+      "text": "Remotion",
+      "start": 1.1625,
+      "end": 1.675
+    },
+    {
+      "text": "写",
+      "start": 1.6875,
+      "end": 1.85
+    },
+    {
+      "text": "的",
+      "start": 1.85,
+      "end": 1.925
+    },
+    {
+      "text": "片头",
+      "start": 1.9375,
+      "end": 2.5125
+    },
+    {
+      "text": "标题",
+      "start": 2.7125,
+      "end": 3.075
+    },
+    {
+      "text": "弹",
+      "start": 3.075,
+      "end": 3.25
+    },
+    {
+      "text": "了",
+      "start": 3.25,
+      "end": 3.3375
+    },
+    {
+      "text": "进来",
+      "start": 3.35,
+      "end": 3.7625
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "这一页是 Remotion 写的片头，标题弹了进来。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "a7c23e557b0ab84ae11ef5fbc9befad7",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "9a758a46afc486c41769b9bd388576c8af04267c3f0f2647bff0d6bf979feec7"
+}

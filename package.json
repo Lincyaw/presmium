@@ -14,9 +14,9 @@
   "scripts": {
     "studio": "node scripts/studio.mjs",
     "test": "node scripts/check-layering.mjs && node scripts/check-skills.mjs && node scripts/check-plugins.mjs && node scripts/check-packages.mjs && node scripts/check-types.mjs && vitest run --passWithNoTests",
-    "demo:build": "pnpm --filter presmium-cs336 build",
-    "demo:check": "pnpm --filter presmium-cs336 check",
-    "demo:ir": "pnpm --filter presmium-cs336 ir",
+    "demo:build": "pnpm --filter presmium-animations build",
+    "demo:check": "pnpm --filter presmium-animations check",
+    "demo:ir": "pnpm --filter presmium-animations ir",
     "e2e": "pnpm --filter presmium-regression-fixture build && playwright test",
     "verify": "pnpm test && pnpm demo:check && pnpm demo:build && pnpm e2e",
     "docs:fetch": "./scripts/fetch-docs.sh",

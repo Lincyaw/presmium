@@ -1,0 +1,96 @@
+{
+  "key": "1510189a6b875fac8a0c27e2b921572d",
+  "audio": "1510189a6b875fac8a0c27e2b921572d.ogg",
+  "mime": "audio/ogg",
+  "duration": 4.3,
+  "words": [
+    {
+      "text": "视频",
+      "start": 0.05,
+      "end": 0.5625
+    },
+    {
+      "text": "也",
+      "start": 0.575,
+      "end": 0.725
+    },
+    {
+      "text": "从",
+      "start": 0.725,
+      "end": 0.9
+    },
+    {
+      "text": "同",
+      "start": 0.925,
+      "end": 1.125
+    },
+    {
+      "text": "一",
+      "start": 1.125,
+      "end": 1.2375
+    },
+    {
+      "text": "份",
+      "start": 1.2375,
+      "end": 1.4
+    },
+    {
+      "text": "讲义",
+      "start": 1.4125,
+      "end": 1.7875
+    },
+    {
+      "text": "来",
+      "start": 1.7875,
+      "end": 2.0375
+    },
+    {
+      "text": "讲解",
+      "start": 2.275,
+      "end": 2.7625
+    },
+    {
+      "text": "就",
+      "start": 2.775,
+      "end": 2.925
+    },
+    {
+      "text": "是",
+      "start": 2.925,
+      "end": 3.025
+    },
+    {
+      "text": "它",
+      "start": 3.0375,
+      "end": 3.1625
+    },
+    {
+      "text": "的",
+      "start": 3.1625,
+      "end": 3.25
+    },
+    {
+      "text": "脚本",
+      "start": 3.2625,
+      "end": 3.75
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "视频也从同一份讲义来，讲解就是它的脚本。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "1510189a6b875fac8a0c27e2b921572d",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "2d2de02225b02c6d4f8d04da74a978cd65360033ffca71563ab5dee62ef71eed"
+}

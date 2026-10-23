@@ -7,7 +7,7 @@ description: "帮助用户把内容写成可阅读、可演示的 Presmium 讲�
 
 从用户要讲清楚的内容出发，交付能阅读、能按预期演示的讲义。先弄清读者会看到什么、讲者需要怎样推进，再选择语法与插件。
 
-本仓库唯一公开示例是 `examples/cs336/` 的 17 讲完整课程。`pnpm demo:check` 检查全部内容和来源清单，`pnpm demo:build` 构建整个课程。Python 讲义将原 web server 的执行结果直接转换为 MyST Markdown，PPT 用内置步骤控制出现与替换，阅读文档按主题连续编排，不使用 trace plugin、专用播放器或源执行计数器。不能把 `text(...)`、`print(...)` 等源码调用当成结果；修改时验证变量、展示内容的前进与回退。没有可见变化的调用不生成空演示步骤。源码、转换说明、Original content 等元信息不进入讲义展示，来源与校验仅在维护文件中保存。PDF 的 PPT 保留全部 496 页，阅读文档使用提取文字与独立图表。`pnpm studio` 默认准备并复用独立副本 `.presmium/cs336-workspace`。
+本仓库唯一公开示例是 `examples/animations/` 的两讲：冒泡排序（代码、GSAP 动画、讲解点击的计数组件、光标提示与讲授）和代码写成的动画（GSAP、Anime.js、Motion、Three.js、Remotion 各一节）。要写动画、分步讲解或讲授时先看它们的 `lecture.md` 与 `scenes/`。`pnpm demo:check` 检查两讲，`pnpm demo:build` 构建网页、幻灯片、notebook 与讲授。`pnpm studio` 默认准备并复用独立副本 `.presmium/example-workspace`。
 
 ## 找到这次任务的入口
 
@@ -65,7 +65,7 @@ presmium dev --to web
 
 需要分步揭示时，按讲者的推进顺序安排上屏内容与后续讲解。给会被链接、课堂笔记或讲授回放引用的章节与块写显式标签；自动生成的块 ID 会随插入内容变化。
 
-文档按主题连续阅读，不把每次输出或投影片分页变成重复标题。CS336 示例的 `lecture.md` 是文档与 notebook 的入口，`slides.md` 单独编排 PPT，保留全部原生演示步骤；课程构建命令会分别处理两个入口。PDF 文档使用文字与独立图表，完整原页用于 PPT。
+文档按主题连续阅读，不把每次输出或投影片分页变成重复标题。同一份内容另需一套独立编排的 PPT 时，可以在讲义目录中另写一个入口（如 `slides.md`），用 `presmium build slides.md --to slides` 构建；两个入口的同一段话要一起改。
 
 在文稿目录运行 `presmium check`，修复与本次内容有关的诊断。用 `presmium dev --to web` 看阅读效果；需要幻灯片时也预览幻灯片，检查文字是否上屏、字号与溢出、前进和后退时的步骤。步数或备注归属不明确时才用 `presmium ir` 核对块的 `at`、`span` 与章节的 `steps`。
 

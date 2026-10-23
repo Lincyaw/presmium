@@ -1,0 +1,86 @@
+{
+  "key": "c18101bf4890fdbfa87916a4c437373a",
+  "audio": "c18101bf4890fdbfa87916a4c437373a.ogg",
+  "mime": "audio/ogg",
+  "duration": 3.92,
+  "words": [
+    {
+      "text": "出现",
+      "start": 0.05,
+      "end": 0.4875
+    },
+    {
+      "text": "最多",
+      "start": 0.4875,
+      "end": 0.8375
+    },
+    {
+      "text": "的",
+      "start": 0.8375,
+      "end": 0.95
+    },
+    {
+      "text": "是",
+      "start": 0.95,
+      "end": 1.2125
+    },
+    {
+      "text": "l",
+      "start": 1.2125,
+      "end": 1.5125
+    },
+    {
+      "text": "和",
+      "start": 1.525,
+      "end": 1.7375
+    },
+    {
+      "text": "o",
+      "start": 1.7375,
+      "end": 1.9875
+    },
+    {
+      "text": "三个",
+      "start": 2.2375,
+      "end": 2.55
+    },
+    {
+      "text": "词",
+      "start": 2.55,
+      "end": 2.75
+    },
+    {
+      "text": "里",
+      "start": 2.75,
+      "end": 2.9
+    },
+    {
+      "text": "都",
+      "start": 2.9125,
+      "end": 3.1
+    },
+    {
+      "text": "有",
+      "start": 3.1,
+      "end": 3.3875
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "出现最多的是 l 和 o，三个词里都有。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "c18101bf4890fdbfa87916a4c437373a",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "0654544c318d9c73b647363d04ad9b549617377aa3ac17ef87dd0a3ea3469c1a"
+}

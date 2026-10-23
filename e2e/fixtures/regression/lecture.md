@@ -22,7 +22,7 @@ renderers:
   web: {}
   slides: {}
   notebook: {}
-  # 讲授：把讲解合成为语音讲授。默认不构建（`pnpm demo:build` 只构建上面三种）；配置火山引擎后
+  # 讲授：把讲解合成为语音讲授。没有写音色时不合成；配置火山引擎后
   # 写上音色，例如 { voice: { engine: volcengine, voice: zh_female_xiaohe_uranus_bigtts } }，
   # 见 e2e/fixtures/regression/README.md。
   lecture: {}

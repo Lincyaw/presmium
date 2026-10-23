@@ -1,0 +1,91 @@
+{
+  "key": "c16a17f2af5245c856ad42554f0e4894",
+  "audio": "c16a17f2af5245c856ad42554f0e4894.ogg",
+  "mime": "audio/ogg",
+  "duration": 4.36,
+  "words": [
+    {
+      "text": "查询",
+      "start": 0.05,
+      "end": 0.4625
+    },
+    {
+      "text": "换",
+      "start": 0.475,
+      "end": 0.6875
+    },
+    {
+      "text": "成",
+      "start": 0.6875,
+      "end": 0.8875
+    },
+    {
+      "text": "mat",
+      "start": 0.8875,
+      "end": 1.3
+    },
+    {
+      "text": "同",
+      "start": 1.5625,
+      "end": 1.7875
+    },
+    {
+      "text": "一",
+      "start": 1.7875,
+      "end": 1.9125
+    },
+    {
+      "text": "组",
+      "start": 1.9125,
+      "end": 2.05
+    },
+    {
+      "text": "柱子",
+      "start": 2.0625,
+      "end": 2.55
+    },
+    {
+      "text": "换",
+      "start": 2.6375,
+      "end": 2.85
+    },
+    {
+      "text": "上",
+      "start": 2.85,
+      "end": 3.0125
+    },
+    {
+      "text": "新",
+      "start": 3.0375,
+      "end": 3.2125
+    },
+    {
+      "text": "的",
+      "start": 3.2125,
+      "end": 3.3
+    },
+    {
+      "text": "权重",
+      "start": 3.3125,
+      "end": 3.8125
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "查询换成 mat，同一组柱子换上新的权重。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "c16a17f2af5245c856ad42554f0e4894",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "09b294238f99cd39c95227d3863c863645da87b88986ac437e76a35258234871"
+}

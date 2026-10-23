@@ -1,0 +1,126 @@
+{
+  "key": "695e37bbe1159d910ac99e08a8c01543",
+  "audio": "695e37bbe1159d910ac99e08a8c01543.ogg",
+  "mime": "audio/ogg",
+  "duration": 6.56,
+  "words": [
+    {
+      "text": "冒泡",
+      "start": 0.05,
+      "end": 0.4125
+    },
+    {
+      "text": "排序",
+      "start": 0.425,
+      "end": 0.825
+    },
+    {
+      "text": "每",
+      "start": 0.85,
+      "end": 1.025
+    },
+    {
+      "text": "一",
+      "start": 1.025,
+      "end": 1.15
+    },
+    {
+      "text": "趟",
+      "start": 1.15,
+      "end": 1.4625
+    },
+    {
+      "text": "比较",
+      "start": 1.4875,
+      "end": 1.775
+    },
+    {
+      "text": "相邻",
+      "start": 1.7875,
+      "end": 2.15
+    },
+    {
+      "text": "的",
+      "start": 2.15,
+      "end": 2.225
+    },
+    {
+      "text": "两个",
+      "start": 2.2375,
+      "end": 2.5375
+    },
+    {
+      "text": "数",
+      "start": 2.5375,
+      "end": 2.8375
+    },
+    {
+      "text": "把",
+      "start": 3.075,
+      "end": 3.2375
+    },
+    {
+      "text": "大",
+      "start": 3.2375,
+      "end": 3.425
+    },
+    {
+      "text": "的",
+      "start": 3.425,
+      "end": 3.5125
+    },
+    {
+      "text": "往后",
+      "start": 3.5375,
+      "end": 3.9
+    },
+    {
+      "text": "换",
+      "start": 3.9,
+      "end": 4.2
+    },
+    {
+      "text": "先",
+      "start": 4.7625,
+      "end": 5.05
+    },
+    {
+      "text": "看",
+      "start": 5.05,
+      "end": 5.2625
+    },
+    {
+      "text": "这",
+      "start": 5.2875,
+      "end": 5.4125
+    },
+    {
+      "text": "五个",
+      "start": 5.4125,
+      "end": 5.675
+    },
+    {
+      "text": "数",
+      "start": 5.675,
+      "end": 6.025
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "冒泡排序每一趟比较相邻的两个数，把大的往后换。先看这五个数。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "695e37bbe1159d910ac99e08a8c01543",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "ff936849f57083a4a8321efdd8bc4d0a91726b140bbd8e2dcf368c27dcb15b7f"
+}

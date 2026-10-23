@@ -18,11 +18,11 @@ try {
   // Let the workbench CLI report invalid arguments using its normal usage message.
 }
 
-if (parsed?.values.help) console.log('pnpm studio [dir]: repository shortcut (default: .presmium/cs336-workspace)\n')
+if (parsed?.values.help) console.log('pnpm studio [dir]: repository shortcut (default: .presmium/example-workspace, a copy of examples/animations)\n')
 if (parsed?.positionals.length === 0 && !parsed.values.help) {
-  const dir = '.presmium/cs336-workspace'
+  const dir = '.presmium/example-workspace'
   if (!existsSync(dir)) {
-    execFileSync(process.execPath, ['examples/cs336/try.mjs', dir], { stdio: ['ignore', 'ignore', 'inherit'] })
+    execFileSync(process.execPath, ['examples/animations/try.mjs', dir], { stdio: ['ignore', 'ignore', 'inherit'] })
   }
   process.argv.splice(2, 0, dir)
 }

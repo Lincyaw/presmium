@@ -1,0 +1,66 @@
+{
+  "key": "de526b0a94f2b47b2ee0a5e9eb02ab4d",
+  "audio": "de526b0a94f2b47b2ee0a5e9eb02ab4d.ogg",
+  "mime": "audio/ogg",
+  "duration": 3.16,
+  "words": [
+    {
+      "text": "讲义",
+      "start": 0.05,
+      "end": 0.4375
+    },
+    {
+      "text": "的",
+      "start": 0.4375,
+      "end": 0.525
+    },
+    {
+      "text": "源码",
+      "start": 0.5375,
+      "end": 0.9375
+    },
+    {
+      "text": "是",
+      "start": 0.95,
+      "end": 1.125
+    },
+    {
+      "text": "MyST",
+      "start": 1.125,
+      "end": 1.6
+    },
+    {
+      "text": "一",
+      "start": 1.8375,
+      "end": 1.975
+    },
+    {
+      "text": "份",
+      "start": 1.975,
+      "end": 2.1375
+    },
+    {
+      "text": "文件",
+      "start": 2.1375,
+      "end": 2.6375
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "讲义的源码是 MyST，一份文件。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "de526b0a94f2b47b2ee0a5e9eb02ab4d",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "1515400509fb4aba4bee6c960f43ee5b28b2a46625c041d21ea8ac556c919df9"
+}

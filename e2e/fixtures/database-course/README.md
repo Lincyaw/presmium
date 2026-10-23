@@ -1,6 +1,6 @@
 # 从文件到 LSM：磁盘数据库实现课
 
-八个单元，从磁盘 JSON 快照到带 WAL、排序 SSTable、稀疏索引、Bloom 和原子 manifest 的单写者 LSM。所有引擎与 benchmark 仅依赖 Python 3.9+ 标准库。此目录是用户课程的私有验证文稿；仓库的公开示例仍是 CS336。
+八个单元，从磁盘 JSON 快照到带 WAL、排序 SSTable、稀疏索引、Bloom 和原子 manifest 的单写者 LSM。所有引擎与 benchmark 仅依赖 Python 3.9+ 标准库。此目录是用户课程的私有验证文稿；仓库的公开示例是 `examples/animations`。
 
 ## 开始上课
 

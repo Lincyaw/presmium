@@ -1,0 +1,76 @@
+{
+  "key": "9e0ba19f2fc4540754fa315a59669bb1",
+  "audio": "9e0ba19f2fc4540754fa315a59669bb1.ogg",
+  "mime": "audio/ogg",
+  "duration": 3.84,
+  "words": [
+    {
+      "text": "再",
+      "start": 0.05,
+      "end": 0.25
+    },
+    {
+      "text": "比较",
+      "start": 0.25,
+      "end": 0.575
+    },
+    {
+      "text": "5",
+      "start": 0.6,
+      "end": 0.7375
+    },
+    {
+      "text": "和",
+      "start": 0.75,
+      "end": 0.925
+    },
+    {
+      "text": "4",
+      "start": 0.925,
+      "end": 1.25
+    },
+    {
+      "text": "又是",
+      "start": 1.5125,
+      "end": 1.7875
+    },
+    {
+      "text": "前面",
+      "start": 1.8,
+      "end": 2.1625
+    },
+    {
+      "text": "大",
+      "start": 2.1625,
+      "end": 2.3875
+    },
+    {
+      "text": "再",
+      "start": 2.6375,
+      "end": 2.8125
+    },
+    {
+      "text": "交换",
+      "start": 2.8125,
+      "end": 3.3125
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "再比较 5 和 4，又是前面大，再交换。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "9e0ba19f2fc4540754fa315a59669bb1",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "05fae09f39a20734584bb69596530e950dc66f197c583fd8f9b33f12ed61dee4"
+}

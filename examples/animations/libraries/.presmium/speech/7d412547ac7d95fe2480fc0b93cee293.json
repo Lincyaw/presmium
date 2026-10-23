@@ -1,0 +1,71 @@
+{
+  "key": "7d412547ac7d95fe2480fc0b93cee293",
+  "audio": "7d412547ac7d95fe2480fc0b93cee293.ogg",
+  "mime": "audio/ogg",
+  "duration": 3.1,
+  "words": [
+    {
+      "text": "讲",
+      "start": 0.05,
+      "end": 0.2625
+    },
+    {
+      "text": "到",
+      "start": 0.2625,
+      "end": 0.3875
+    },
+    {
+      "text": "这里",
+      "start": 0.4,
+      "end": 0.675
+    },
+    {
+      "text": "点",
+      "start": 0.675,
+      "end": 0.8625
+    },
+    {
+      "text": "一次",
+      "start": 0.875,
+      "end": 1.35
+    },
+    {
+      "text": "词表",
+      "start": 1.575,
+      "end": 1.9625
+    },
+    {
+      "text": "多",
+      "start": 1.975,
+      "end": 2.175
+    },
+    {
+      "text": "了",
+      "start": 2.175,
+      "end": 2.2875
+    },
+    {
+      "text": "lo",
+      "start": 2.2875,
+      "end": 2.5625
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "讲到这里点一次，词表多了 lo；",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "7d412547ac7d95fe2480fc0b93cee293",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "9bb647e103180cd6bbc5b7579bbfff959906c989bc647e2ef58cc52b8ea32462"
+}

@@ -1,0 +1,66 @@
+{
+  "key": "d0f3d25b8af5ca9fa18e8e38c92ad354",
+  "audio": "d0f3d25b8af5ca9fa18e8e38c92ad354.ogg",
+  "mime": "audio/ogg",
+  "duration": 2.92,
+  "words": [
+    {
+      "text": "词",
+      "start": 0.05,
+      "end": 0.225
+    },
+    {
+      "text": "向量",
+      "start": 0.225,
+      "end": 0.75
+    },
+    {
+      "text": "一",
+      "start": 0.85,
+      "end": 0.9875
+    },
+    {
+      "text": "开始",
+      "start": 0.9875,
+      "end": 1.35
+    },
+    {
+      "text": "散",
+      "start": 1.375,
+      "end": 1.575
+    },
+    {
+      "text": "在",
+      "start": 1.575,
+      "end": 1.6875
+    },
+    {
+      "text": "空间",
+      "start": 1.7,
+      "end": 2.175
+    },
+    {
+      "text": "里",
+      "start": 2.175,
+      "end": 2.3875
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "词向量一开始散在空间里。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "d0f3d25b8af5ca9fa18e8e38c92ad354",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "57cffd803ea7f7ca31b542b09c579cb7540e0bf91ecc3614427ae9dec9edb27b"
+}

@@ -1,0 +1,101 @@
+{
+  "key": "ca7f5997bfe825ec00f92c51ceeeeea6",
+  "audio": "ca7f5997bfe825ec00f92c51ceeeeea6.ogg",
+  "mime": "audio/ogg",
+  "duration": 5.14,
+  "words": [
+    {
+      "text": "查询",
+      "start": 0.05,
+      "end": 0.5
+    },
+    {
+      "text": "词",
+      "start": 0.5125,
+      "end": 0.7375
+    },
+    {
+      "text": "cat",
+      "start": 0.7375,
+      "end": 1.2125
+    },
+    {
+      "text": "看",
+      "start": 1.3125,
+      "end": 1.5375
+    },
+    {
+      "text": "向",
+      "start": 1.5375,
+      "end": 1.7375
+    },
+    {
+      "text": "句子",
+      "start": 1.7625,
+      "end": 2.0625
+    },
+    {
+      "text": "里",
+      "start": 2.0625,
+      "end": 2.175
+    },
+    {
+      "text": "的",
+      "start": 2.175,
+      "end": 2.2625
+    },
+    {
+      "text": "每个",
+      "start": 2.2875,
+      "end": 2.5625
+    },
+    {
+      "text": "词",
+      "start": 2.5625,
+      "end": 2.9375
+    },
+    {
+      "text": "它",
+      "start": 3.175,
+      "end": 3.325
+    },
+    {
+      "text": "自己",
+      "start": 3.3375,
+      "end": 3.6
+    },
+    {
+      "text": "的",
+      "start": 3.6,
+      "end": 3.6875
+    },
+    {
+      "text": "权重",
+      "start": 3.7,
+      "end": 4.15
+    },
+    {
+      "text": "最大",
+      "start": 4.1625,
+      "end": 4.6
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "查询词 cat 看向句子里的每个词，它自己的权重最大。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "ca7f5997bfe825ec00f92c51ceeeeea6",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "7318d2fd659e754bec86b96152f9ed1c68268f52879f98be8789c4b1ffb4eb46"
+}

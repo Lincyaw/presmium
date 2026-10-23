@@ -106,7 +106,7 @@ importers:
         specifier: 1.64.1
         version: 1.64.1
 
-  examples/cs336:
+  examples/animations:
     dependencies:
       '@lincyaw/cli':
         specifier: workspace:*
@@ -126,12 +126,21 @@ importers:
       '@lincyaw/render-slides':
         specifier: workspace:*
         version: link:../../packages/render-slides
-      '@lincyaw/slidev-addon-content':
-        specifier: workspace:*
-        version: link:../../packages/addon-content
       '@lincyaw/slidev-addon-core':
         specifier: workspace:*
         version: link:../../packages/addon-core
+      '@lincyaw/slidev-addon-guide':
+        specifier: workspace:*
+        version: link:../../packages/addon-guide
+      '@lincyaw/slidev-addon-lecture':
+        specifier: workspace:*
+        version: link:../../packages/addon-lecture
+      '@lincyaw/slidev-addon-motion':
+        specifier: workspace:*
+        version: link:../../packages/addon-motion
+      '@lincyaw/slidev-addon-speech':
+        specifier: workspace:*
+        version: link:../../packages/addon-speech
       '@lincyaw/viewer':
         specifier: workspace:*
         version: link:../../packages/viewer

@@ -1,0 +1,106 @@
+{
+  "key": "dc37e345510b0732a667b2af12195920",
+  "audio": "dc37e345510b0732a667b2af12195920.ogg",
+  "mime": "audio/ogg",
+  "duration": 5.6,
+  "words": [
+    {
+      "text": "编译",
+      "start": 0.05,
+      "end": 0.4
+    },
+    {
+      "text": "器",
+      "start": 0.4,
+      "end": 0.725
+    },
+    {
+      "text": "把",
+      "start": 0.75,
+      "end": 0.8875
+    },
+    {
+      "text": "它",
+      "start": 0.8875,
+      "end": 1.0125
+    },
+    {
+      "text": "变成",
+      "start": 1.0125,
+      "end": 1.35
+    },
+    {
+      "text": "中间",
+      "start": 1.375,
+      "end": 1.725
+    },
+    {
+      "text": "表示",
+      "start": 1.7375,
+      "end": 2.2375
+    },
+    {
+      "text": "IR",
+      "start": 2.3375,
+      "end": 2.8125
+    },
+    {
+      "text": "只",
+      "start": 3.1,
+      "end": 3.3
+    },
+    {
+      "text": "记",
+      "start": 3.3,
+      "end": 3.4875
+    },
+    {
+      "text": "语义",
+      "start": 3.5,
+      "end": 3.8625
+    },
+    {
+      "text": "和",
+      "start": 3.8875,
+      "end": 4.0125
+    },
+    {
+      "text": "算",
+      "start": 4.025,
+      "end": 4.2375
+    },
+    {
+      "text": "好",
+      "start": 4.2375,
+      "end": 4.4375
+    },
+    {
+      "text": "的",
+      "start": 4.4375,
+      "end": 4.525
+    },
+    {
+      "text": "结果",
+      "start": 4.5375,
+      "end": 5.05
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "编译器把它变成中间表示 IR，只记语义和算好的结果。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "dc37e345510b0732a667b2af12195920",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "30896849787d6d44274d3957b56dfc7682e067535f1948c046d93aea45c4ab31"
+}

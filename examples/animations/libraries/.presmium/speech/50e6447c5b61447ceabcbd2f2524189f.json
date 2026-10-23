@@ -1,0 +1,81 @@
+{
+  "key": "50e6447c5b61447ceabcbd2f2524189f",
+  "audio": "50e6447c5b61447ceabcbd2f2524189f.ogg",
+  "mime": "audio/ogg",
+  "duration": 3.52,
+  "words": [
+    {
+      "text": "权",
+      "start": 0.05,
+      "end": 0.325
+    },
+    {
+      "text": "重",
+      "start": 0.325,
+      "end": 0.4875
+    },
+    {
+      "text": "最大",
+      "start": 0.5,
+      "end": 0.8875
+    },
+    {
+      "text": "的",
+      "start": 0.8875,
+      "end": 0.9875
+    },
+    {
+      "text": "是",
+      "start": 0.9875,
+      "end": 1.1375
+    },
+    {
+      "text": "mat",
+      "start": 1.1375,
+      "end": 1.45
+    },
+    {
+      "text": "自己",
+      "start": 1.4625,
+      "end": 1.9125
+    },
+    {
+      "text": "它",
+      "start": 2.15,
+      "end": 2.3
+    },
+    {
+      "text": "亮",
+      "start": 2.3,
+      "end": 2.5
+    },
+    {
+      "text": "了",
+      "start": 2.5,
+      "end": 2.5875
+    },
+    {
+      "text": "起来",
+      "start": 2.5875,
+      "end": 2.9875
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "权重最大的是 mat 自己，它亮了起来。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "50e6447c5b61447ceabcbd2f2524189f",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "20e256c1322af395a879df3b93f6696b8b7fa32918c16894f0475d240702c6c4"
+}

@@ -1,0 +1,76 @@
+{
+  "key": "4638049a271043f12ca5396226bb82da",
+  "audio": "4638049a271043f12ca5396226bb82da.ogg",
+  "mime": "audio/ogg",
+  "duration": 4.1,
+  "words": [
+    {
+      "text": "训练",
+      "start": 0.05,
+      "end": 0.4625
+    },
+    {
+      "text": "之后",
+      "start": 0.475,
+      "end": 0.95
+    },
+    {
+      "text": "意思",
+      "start": 1.2375,
+      "end": 1.5125
+    },
+    {
+      "text": "相近",
+      "start": 1.525,
+      "end": 1.9
+    },
+    {
+      "text": "的",
+      "start": 1.9,
+      "end": 2.0125
+    },
+    {
+      "text": "词",
+      "start": 2.0125,
+      "end": 2.4125
+    },
+    {
+      "text": "聚",
+      "start": 2.5125,
+      "end": 2.7125
+    },
+    {
+      "text": "成",
+      "start": 2.7125,
+      "end": 2.8875
+    },
+    {
+      "text": "了",
+      "start": 2.8875,
+      "end": 2.9625
+    },
+    {
+      "text": "三团",
+      "start": 2.975,
+      "end": 3.5625
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "训练之后，意思相近的词聚成了三团。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "4638049a271043f12ca5396226bb82da",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "7e46abae13c1ddcfbef70e1d5dd26ce68517b16f6eadd5f47de9aa5fb13e37f9"
+}

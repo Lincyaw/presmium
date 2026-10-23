@@ -1,0 +1,46 @@
+{
+  "key": "dace196394952a84740710d32558e8d8",
+  "audio": "dace196394952a84740710d32558e8d8.ogg",
+  "mime": "audio/ogg",
+  "duration": 2.42,
+  "words": [
+    {
+      "text": "5 比 2",
+      "start": 0.05,
+      "end": 0.5875
+    },
+    {
+      "text": "大",
+      "start": 0.5875,
+      "end": 0.8625
+    },
+    {
+      "text": "交换",
+      "start": 1.1125,
+      "end": 1.5125
+    },
+    {
+      "text": "它们",
+      "start": 1.525,
+      "end": 1.8875
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "5 比 2 大，交换它们。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "dace196394952a84740710d32558e8d8",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "4868975e46452c95f4ccfd98439290e5acac8067845c6872bac4a2353ff6e1e4"
+}

@@ -36,7 +36,7 @@ description: "帮助开发者评估 Presmium 架构、定位故障、实现或�
 
 在仓库中体验或调试工作台，用 `pnpm studio [目录]`，打开终端打印的完整网址。不传目录时首次准备独立示例工作区，之后复用；编辑预览不需要模型，`Ctrl+C` 停止。
 
-默认副本在 `.presmium/cs336-workspace`，来自唯一公开示例 `examples/cs336/`。课程转换必须保留 Python 录制的全部步骤与 PDF 的全部页面，运行课程审计和构建验证。功能验证使用 `e2e/fixtures/<组>/`，旧 BPE 讲义只留在 `e2e/fixtures/regression/` 做回归。
+默认副本在 `.presmium/example-workspace`，由唯一公开示例 `examples/animations/` 的 `try.mjs` 复制而来：两讲用代码写动画的中文讲义，讲解的语音在随讲义提交的合成缓存中。改示例的讲解后用配置好的语音引擎重新构建讲授，提交更新的 `.presmium/speech/` 与 `speech.lock.json`，再在没有引擎的环境中运行 `pnpm demo:check` 确认缓存齐全。功能验证使用 `e2e/fixtures/<组>/`，旧 BPE 讲义只留在 `e2e/fixtures/regression/` 做回归。
 
 工作区、会话与当前文稿的映射以 `docs/design-dsh.md` 6.2 节为准。修改 agent 写入时，验证工作区中的代码与其他文稿都进入同一次审阅，未选择文稿也一样；提交失败后仍能重试或拒绝。
 

@@ -1,0 +1,66 @@
+{
+  "key": "bd4b7f51f411e44b3a79f14e00668cb4",
+  "audio": "bd4b7f51f411e44b3a79f14e00668cb4.ogg",
+  "mime": "audio/ogg",
+  "duration": 2.96,
+  "words": [
+    {
+      "text": "副标题",
+      "start": 0.05,
+      "end": 0.825
+    },
+    {
+      "text": "一个",
+      "start": 0.85,
+      "end": 1.1
+    },
+    {
+      "text": "字",
+      "start": 1.1,
+      "end": 1.2625
+    },
+    {
+      "text": "一个",
+      "start": 1.2875,
+      "end": 1.5375
+    },
+    {
+      "text": "字",
+      "start": 1.5375,
+      "end": 1.7
+    },
+    {
+      "text": "地",
+      "start": 1.7,
+      "end": 1.7875
+    },
+    {
+      "text": "打",
+      "start": 1.8,
+      "end": 2
+    },
+    {
+      "text": "出来",
+      "start": 2,
+      "end": 2.425
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "副标题一个字一个字地打出来。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "bd4b7f51f411e44b3a79f14e00668cb4",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "1e9d300abcee010293a308e2b867c7517b9e738c3e2cc4221ba9227b1ca55c67"
+}

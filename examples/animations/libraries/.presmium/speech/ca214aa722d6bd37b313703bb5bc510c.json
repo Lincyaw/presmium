@@ -1,0 +1,91 @@
+{
+  "key": "ca214aa722d6bd37b313703bb5bc510c",
+  "audio": "ca214aa722d6bd37b313703bb5bc510c.ogg",
+  "mime": "audio/ogg",
+  "duration": 4.92,
+  "words": [
+    {
+      "text": "这是",
+      "start": 0.05,
+      "end": 0.3625
+    },
+    {
+      "text": "文稿",
+      "start": 0.375,
+      "end": 0.775
+    },
+    {
+      "text": "自己",
+      "start": 0.8,
+      "end": 1.1
+    },
+    {
+      "text": "写",
+      "start": 1.1125,
+      "end": 1.275
+    },
+    {
+      "text": "的",
+      "start": 1.275,
+      "end": 1.3625
+    },
+    {
+      "text": "组件",
+      "start": 1.375,
+      "end": 1.875
+    },
+    {
+      "text": "合并",
+      "start": 2.175,
+      "end": 2.55
+    },
+    {
+      "text": "一次",
+      "start": 2.5625,
+      "end": 3.075
+    },
+    {
+      "text": "是",
+      "start": 3.1,
+      "end": 3.2625
+    },
+    {
+      "text": "它",
+      "start": 3.2625,
+      "end": 3.4125
+    },
+    {
+      "text": "的",
+      "start": 3.4125,
+      "end": 3.5125
+    },
+    {
+      "text": "具名",
+      "start": 3.5375,
+      "end": 3.8875
+    },
+    {
+      "text": "动作",
+      "start": 3.9,
+      "end": 4.375
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "这是文稿自己写的组件，“合并一次”是它的具名动作。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "ca214aa722d6bd37b313703bb5bc510c",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "1599d45c142e2694ccdbb5563ab87e8c8ee9d941e422d854e36f44728d39cdb4"
+}

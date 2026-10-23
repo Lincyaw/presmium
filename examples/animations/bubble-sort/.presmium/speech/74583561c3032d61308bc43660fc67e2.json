@@ -1,0 +1,71 @@
+{
+  "key": "74583561c3032d61308bc43660fc67e2",
+  "audio": "74583561c3032d61308bc43660fc67e2.ogg",
+  "mime": "audio/ogg",
+  "duration": 3.16,
+  "words": [
+    {
+      "text": "一",
+      "start": 0.05,
+      "end": 0.2125
+    },
+    {
+      "text": "趟",
+      "start": 0.2125,
+      "end": 0.425
+    },
+    {
+      "text": "下来",
+      "start": 0.4375,
+      "end": 0.9
+    },
+    {
+      "text": "最大",
+      "start": 1.1625,
+      "end": 1.575
+    },
+    {
+      "text": "的",
+      "start": 1.575,
+      "end": 1.675
+    },
+    {
+      "text": "数",
+      "start": 1.675,
+      "end": 1.8625
+    },
+    {
+      "text": "到",
+      "start": 1.8625,
+      "end": 2.025
+    },
+    {
+      "text": "了",
+      "start": 2.025,
+      "end": 2.1
+    },
+    {
+      "text": "末尾",
+      "start": 2.1125,
+      "end": 2.6125
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "一趟下来，最大的数到了末尾。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "74583561c3032d61308bc43660fc67e2",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "8e4d2c126d23a9cfebf34062fe8d2c2a833253476453efcaaefa20da55d70d80"
+}

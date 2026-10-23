@@ -1,0 +1,61 @@
+{
+  "key": "4b4b7aa0ef818c50b35ce00aa85ed33a",
+  "audio": "4b4b7aa0ef818c50b35ce00aa85ed33a.ogg",
+  "mime": "audio/ogg",
+  "duration": 2.7,
+  "words": [
+    {
+      "text": "5",
+      "start": 0.05,
+      "end": 0.225
+    },
+    {
+      "text": "继续",
+      "start": 0.225,
+      "end": 0.5375
+    },
+    {
+      "text": "往后",
+      "start": 0.55,
+      "end": 1.05
+    },
+    {
+      "text": "越过",
+      "start": 1.275,
+      "end": 1.55
+    },
+    {
+      "text": "1",
+      "start": 1.575,
+      "end": 1.6875
+    },
+    {
+      "text": "和",
+      "start": 1.7,
+      "end": 1.85
+    },
+    {
+      "text": "3",
+      "start": 1.85,
+      "end": 2.175
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "5 继续往后，越过 1 和 3，",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "4b4b7aa0ef818c50b35ce00aa85ed33a",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "f168234d93a9071d57b8b9f98ad1c1e6092061259140078e69c356c9ccb98028"
+}
