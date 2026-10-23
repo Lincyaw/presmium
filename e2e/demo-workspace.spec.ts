@@ -87,6 +87,7 @@ test('CS336 is the sole example, with all 17 lectures and every PDF page; the ed
   try {
     execFileSync(process.execPath, [join(WORKSPACE, 'try.mjs'), dir], { stdio: 'pipe' })
     expect(execFileSync('git', ['rev-list', '--count', 'HEAD'], { cwd: dir, encoding: 'utf8' }).trim()).toBe('1')
+    expect(execFileSync('git', ['show', 'HEAD:AGENTS.md'], { cwd: dir, encoding: 'utf8' })).toContain('make the same change where the passage appears in `slides.md`')
     server = await serve(dir)
     await page.goto(server.url)
     await expect(page.locator('.pm-site-home__document')).toHaveCount(17)

@@ -16,7 +16,7 @@
 
 | 命令 | 结果 |
 |---|---|
-| `pnpm studio` | 首次复制完整课程到 `.presmium/cs336-workspace`，启动可编辑工作台；之后复用该副本 |
+| `pnpm studio` | 首次复制完整课程到 `.presmium/cs336-workspace`，启动可编辑工作台；之后复用该副本。副本的 `AGENTS.md` 告诉 AI 该改哪些文件（`lecture.md` 与对应的 `slides.md`，不改 `source/` 与来源清单） |
 | `pnpm demo:check` | 检查全部 17 讲及内容清单 |
 | `pnpm demo:build` | 构建 17 讲的幻灯片、notebook，以及整个课程网页站点 |
 | `pnpm demo:ir` | 输出全部 17 讲的 IR |

@@ -1,5 +1,7 @@
 import { irBlocks } from '@lincyaw/kernel'
-import type { IRDocument, SourcePos } from '@lincyaw/kernel'
+import type { IRDocument, PreviewAnchor, ReviewChange, SourcePos } from '@lincyaw/kernel'
+
+const CHANGED_PLACES = 100
 
 /** A place in the document (a section, or a block of it) and its source. */
 export interface PlaceWithSource {
@@ -34,4 +36,32 @@ export function findPlaceSource(doc: IRDocument, section: string, block?: string
   if (!block) return { section, source: found.source }
   const inner = [...irBlocks(found.blocks)].find(b => b.id === block)
   return inner ? { section, block, source: inner.source } : { section, source: found.source }
+}
+
+/** The lines of the new file a unified diff added or changed; a removal marks the line now in its place. */
+function changedLines(diff: string): Set<number> {
+  const lines = new Set<number>()
+  let line = 0
+  for (const text of diff.split('\n')) {
+    const hunk = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/.exec(text)
+    if (hunk) line = Number(hunk[1])
+    else if (line === 0) continue
+    else if (text.startsWith('+')) lines.add(line++)
+    else if (text.startsWith('-')) lines.add(line)
+    else if (text.startsWith(' ')) line++
+  }
+  return lines
+}
+
+/** The blocks (or sections) of the document whose source the changes touched, in the order of the changes. */
+export function changedPlaces(doc: IRDocument, changes: readonly ReviewChange[]): PreviewAnchor[] {
+  const places = new Map<string, PreviewAnchor>()
+  for (const change of changes) {
+    if (!change.diff || change.kind === 'deleted') continue
+    for (const line of changedLines(change.diff)) {
+      const place = findPlaceAtLine(doc, change.path, line)
+      if (place) places.set(`${place.section}\0${place.block ?? ''}`, { section: place.section, ...place.block ? { block: place.block } : {} })
+    }
+  }
+  return [...places.values()].slice(0, CHANGED_PLACES)
 }

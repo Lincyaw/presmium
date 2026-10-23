@@ -88,7 +88,7 @@ describe('[gate] privacy and persona of Presmium\'s DeepSeek Harness', () => {
       await expect.poll(() => turns(page).length, { timeout: 60_000 }).toBeGreaterThan(0)
       const asked = JSON.stringify(turns(page)[0])
       expect(asked).toContain('You are Presmium\'s assistant for the authors of lectures')
-      expect(asked).toContain('发布会原则')
+      expect(asked).toContain('Do not tell them how things are done inside Presmium')
       expect(asked).not.toContain('You are a coding agent')
       expect(asked).toContain(GUIDE)
       expect(asked).not.toContain('DeepSeek Harness implementation checkout')

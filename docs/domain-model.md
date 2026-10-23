@@ -590,12 +590,12 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 
 ## 16. 工作台与 dsh
 
-工作台是 DeepSeek Harness（下称 dsh）的一个定制发行版（设计见 `design-dsh.md`）。它不是新的业务领域：文稿、修改、审阅与修改历史仍归工作区与智能体（第 13、14 节）；工作台把它们呈现给作者，并经防腐层（bundle `@lincyaw/dsh`）把 dsh 的会话、确认与修改卡片接到 Presmium 的概念上。
+工作台是 DeepSeek Harness（下称 dsh）的一个定制发行版（设计见 `design-dsh.md`）。它不是新的业务领域：文稿、修改、审阅与修改历史仍归工作区与智能体（第 13、14 节）；工作台把它们呈现给作者，并经防腐层（bundle `@lincyaw/dsh`）把 dsh 的会话与确认接到 Presmium 的概念上。
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
 | 产物 | 网页、幻灯片、notebook、讲授 | 渲染端从 IR 生成、能单独部署的东西；静态构建的结果与开发服务器实时提供的页面都算。产物不认识工作台，只暴露锚点 |
-| 工作台 | `presmium studio` 的页面；`@lincyaw/workbench`、`@lincyaw/dsh` | 作者编写文稿的界面：Presmium 的根布局插件与 React 面板，加上 dsh 的对话、确认卡片、修改卡片、会话与模型设置 |
+| 工作台 | `presmium studio` 的页面；`@lincyaw/workbench`、`@lincyaw/dsh` | 作者编写文稿的界面：Presmium 的根布局插件与 React 面板，加上 dsh 的对话、确认卡片、会话与模型设置；AI 改了哪里在文稿上闪烁标出 |
 | 工作区服务 | `presmium serve` | `presmium serve` 中不含界面的部分：编译会话、产物的开发服务器、文档与源码的路由、审阅、修改历史、焦点、MCP |
 | bundle | `@lincyaw/dsh` | dsh 的扩展包（不是 Presmium 自己的插件包）：宿主部分的行（工具、确认策略、上下文、技能、文档的工作区登记、turn 与审阅、路由）与客户端部分（根布局插件与面板） |
 | 根布局插件 | `@lincyaw/dsh` 的客户端部分 | 占据 dsh 客户端 `root` 槽位、决定整页布局的客户端插件，替换 dsh 自带的 `ui-layout` |
@@ -614,9 +614,9 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 | 工作区（`presmium.workspace.yaml`，多份文档） | 工作区（Workspace） | 登记启动时的工作区根目录；文档树由 Presmium 维护。会话、沙箱与审阅的范围见 `design-dsh.md` 6.2、6.5 节 |
 | 当前文档（文档目录） | 会话中的 Presmium 上下文 | 选择文稿更新工具、快照与焦点；文稿不是单独的 dsh 工作区 |
 | 修改任务、对话线程 | 会话（Session）与其中的 turn | 一个线程一个会话；面板发起的任务（由 AI 起草、讲授回写）在工作区中创建会话并选择目标文稿 |
-| 批注 | 没有 | 焦点加一句要求；一批批注以带来源标记的消息进入会话 |
+| 批注 | 没有 | 焦点加作者的一句话（问题或修改要求）；一批批注以一条消息进入会话，逐条引用批注与位置 |
 | 文档的锁 `DOCUMENT_LOCKS` | 没有 | 会话审阅持有工作区锁；插件的文档审阅持有文档锁。锁拦住冲突的保存与文档操作 |
-| 修改审阅 `CHANGE_REVIEW` | workspace-changes：每个 turn 两个 git 树快照，只在宿主内存中；修改卡片与 Review 标签页是它的视图 | 审阅由工作区服务负责，覆盖审阅期间的全部 turn，记录由服务保存（宿主重启后 dsh 的摘要不在了） |
+| 修改审阅 `CHANGE_REVIEW` | workspace-changes：每个 turn 两个 git 树快照，只在宿主内存中；工作台不显示它的修改卡片 | 审阅由工作区服务负责，覆盖审阅期间的全部 turn，记录由服务保存（宿主重启后 dsh 的摘要不在了） |
 | 修改（`REVISIONS` 的提交） | 没有：dsh 不提交，也不回滚 | 一次接受形成一个提交，尾注另带 `Presmium-Session` 与 `Presmium-Turn` |
 | 撤销 | 没有 | `git revert`，尾注 `Presmium-Revert`；之后给会话发一条标明来源的消息 |
 | 确认 `APPROVALS`（策略 `off`、`ask`、`allow`；范围 `content`、`workspace`） | `tools/pre-execute` 的 allow、ask 与 deny；`approval/request` 的回答者；`ctx.tools.guard` | `off` 不登记工具；`allow` 在 pre-execute 中放行；`ask` 交给 dsh 的确认卡片；运营者目录用 guard 拒绝 |
@@ -641,7 +641,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 - **dsh 只经一个包**：只有 `@lincyaw/dsh` 引用 dsh 的接口，`@lincyaw/studio` 只启动它；核心与产物不知道 dsh 存在。
 - **会话与当前文稿分开**：网页会话属于工作区，选择文稿不改变会话、cwd 或沙箱；没有选中文稿也可以修改工作区，修改仍须进入审阅。完整映射见 `design-dsh.md` 6.2 节。
 - **文稿的代码不进 dsh 宿主**：编译、编译时执行与构建在工作区服务的进程中。
-- **修改落在源码上并成为提交**：dsh 的修改卡片只是视图，审阅、提交与撤销由 Presmium 负责。
+- **修改落在源码上并成为提交**：审阅、提交与撤销由 Presmium 负责；作者在文稿上看到 AI 改了哪里。
 - **隐私默认值每次启动重新声明**：不上传会话日志、插件清单与遥测，不读用户目录中的技能，第一次使用不在用户的文档目录中建目录。
 
 服务：工作区服务的路由、`MCP_ENDPOINT`（会话令牌）、`CHANGE_REVIEW`（由工作区服务登记）。事件：dsh 的 turn 与 `workspace/changes` 事件驱动审阅的检查点；预览协议的 `picked`、`selection`、`position` 与 `updated` 驱动焦点与预览。

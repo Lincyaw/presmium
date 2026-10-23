@@ -44,13 +44,16 @@ const HOVER = 'data-preview-hover'
 const EDITING = 'data-preview-editing'
 const POSITIONED = 'data-preview-positioned'
 const PINNED = 'data-preview-pinned'
+const FLASH = 'data-preview-flash'
+// Three blinks of 0.8 s, the length of the animation below.
+const FLASH_MS = 2400
 const PIN_CLASS = 'pm-preview-pin'
 const CONTROLS = 'a, button, input, select, textarea, label, summary, [contenteditable], [role="dialog"]'
 const HEADINGS = 'h1, h2, h3, h4, h5, h6'
 // Inside an edited element: the frame's pins and a heading's anchor link, which the caret does not enter. A function for
 // the same reason as `framePrefix`: a module-level template keeps this module in static builds.
 const notText = () => `.${PIN_CLASS}, .header-anchor`
-const COMMANDS: PreviewCommandType[] = ['go', 'highlight', 'pick', 'pins', 'marks', 'appearance', 'edit']
+const COMMANDS: PreviewCommandType[] = ['go', 'highlight', 'pick', 'pins', 'marks', 'appearance', 'edit', 'flash']
 
 const STYLE = `
 [${HIGHLIGHT}] { outline: 2px solid var(--pm-color-accent, #1d6b7a) !important; outline-offset: 4px; border-radius: 2px; }
@@ -58,6 +61,9 @@ const STYLE = `
 [${EDITING}] { outline: 2px solid var(--pm-color-accent, #1d6b7a) !important; outline-offset: 3px; border-radius: 4px; cursor: text; }
 [${POSITIONED}] { position: relative; }
 [${PINNED}] { background: color-mix(in srgb, var(--pm-color-accent, #1d6b7a) 7%, transparent); box-shadow: inset 3px 0 0 var(--pm-color-accent, #1d6b7a); border-radius: 2px; }
+@keyframes pm-preview-flash { 0%, 100% { box-shadow: none; } 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--pm-color-accent, #1d6b7a) 35%, transparent), inset 0 0 0 100vmax color-mix(in srgb, var(--pm-color-accent, #1d6b7a) 16%, transparent); } }
+[${FLASH}] { animation: pm-preview-flash 0.8s ease-in-out 3; border-radius: 2px; }
+@media (prefers-reduced-motion: reduce) { [${FLASH}] { animation: none; box-shadow: inset 0 0 0 100vmax color-mix(in srgb, var(--pm-color-accent, #1d6b7a) 12%, transparent); } }
 .${PIN_CLASS} { position: absolute; top: 4px; right: 4px; z-index: 50; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 10px; background: var(--pm-color-accent, #1d6b7a); color: #fff; font: 600 12px/20px system-ui, sans-serif; text-align: center; pointer-events: none; }
 `
 
@@ -244,6 +250,53 @@ function createHighlight(page: PreviewPage, state: FrameState, locate: Locator) 
     show,
     isSet: () => target !== null,
     cancel: () => clearTimeout(retrying),
+  }
+}
+
+/**
+ * Makes the blocks the workbench names blink (a steady tint when the reader asks for less motion), after bringing the first
+ * into view; retries while the page brings it there, as the highlight does.
+ */
+function createFlash(page: PreviewPage, state: FrameState, locate: Locator) {
+  let ending: ReturnType<typeof setTimeout> | undefined
+  let retrying: ReturnType<typeof setTimeout> | undefined
+  let frame = 0
+  const clear = () => {
+    clearTimeout(ending)
+    cancelAnimationFrame(frame)
+    for (const element of document.querySelectorAll(`[${FLASH}]`)) element.removeAttribute(FLASH)
+  }
+  const play = (targets: PreviewAnchor[]): boolean => {
+    const first = locate.elementOf(targets[0]!)
+    if (!first) return false
+    clear()
+    const box = first.getBoundingClientRect()
+    if (box.bottom < 0 || box.top > window.innerHeight) first.scrollIntoView({ block: 'center' })
+    const elements = targets.map(target => locate.elementOf(target)).filter((element): element is HTMLElement => Boolean(element))
+    // A frame after the old attributes went, so that a block still blinking starts again.
+    frame = requestAnimationFrame(() => {
+      for (const element of elements) element.setAttribute(FLASH, '')
+      ending = setTimeout(clear, FLASH_MS)
+    })
+    return true
+  }
+  return {
+    flash(targets: PreviewAnchor[]) {
+      clearTimeout(retrying)
+      if (!isLive(state) || targets.length === 0 || play(targets)) return
+      page.reveal(targets[0]!)
+      const until = Date.now() + 5000
+      const retry = () => {
+        retrying = undefined
+        if (!isLive(state) || play(targets) || Date.now() > until) return
+        retrying = setTimeout(retry, 100)
+      }
+      retrying = setTimeout(retry, 50)
+    },
+    cancel() {
+      clearTimeout(retrying)
+      clear()
+    },
   }
 }
 
@@ -683,6 +736,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
   const locate = createLocator(page)
   const highlight = createHighlight(page, state, locate)
   const pins = createPins(locate)
+  const flash = createFlash(page, state, locate)
   const rects = createRectReport(state, locate, post)
   const picking = createPicking(page, state, locate, rects, post)
   const editing = createEditing(state, locate, picking, post)
@@ -717,6 +771,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
     position.cancel()
     selection.cancel()
     highlight.cancel()
+    flash.cancel()
     cancelAnimationFrame(frame)
     frame = 0
     observer.disconnect()
@@ -765,6 +820,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
         case 'appearance': return page.setDark(command.dark)
         case 'activity': return changeActivity(command)
         case 'edit': return editing.edit(command)
+        case 'flash': return flash.flash(command.targets)
       }
     } catch (error) {
       console.error(`[presmium] the preview could not take ${command.type}: ${errorMessage(error)}`)
@@ -796,6 +852,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
       picking.set(false)
       position.cancel()
       highlight.cancel()
+      flash.cancel()
       cancelAnimationFrame(frame)
       delete root.dataset.presmiumPreview
     },

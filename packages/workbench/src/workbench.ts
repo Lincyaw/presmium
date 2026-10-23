@@ -1,12 +1,12 @@
 import { errorMessage, irBlocks, stepKeys, trailStep } from '@lincyaw/kernel'
-import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPin, PreviewPoint, PreviewRect, PreviewRenderer, PreviewReport, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
+import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPin, PreviewPoint, PreviewRect, PreviewRenderer, PreviewReport, ReviewChange, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
 import { CommentStore, newComment } from './comments.ts'
 import type { DocumentComment } from './comments.ts'
 import { DocumentDiagnostics } from './diagnostics.ts'
 import { DocumentHistory } from './history.ts'
 import { localeOf, MESSAGES } from './messages.ts'
-import type { Locale } from './messages.ts'
-import { findPlaceAtLine, findPlaceSource } from './places.ts'
+import type { AgentPlace, Locale } from './messages.ts'
+import { changedPlaces, findPlaceAtLine, findPlaceSource } from './places.ts'
 import { applyRenderedEdit } from './text-edit.ts'
 import { workspaceClient, WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
@@ -182,6 +182,8 @@ export class Workbench {
   #edits: Promise<void> = Promise.resolve()
   /** A place to show that no preview could take yet (none was attached, e.g. the chat covered the document). */
   #pendingReveal?: PreviewAnchor
+  /** The AI's changes to show on the document once the preview has them. */
+  #pendingFlash?: ReviewChange[]
 
   constructor(options: { client?: WorkspaceClient, locale?: Locale, isDark?: boolean } = {}) {
     this.client = options.client ?? workspaceClient()
@@ -209,7 +211,10 @@ export class Workbench {
       set: patch => workbench.#set(patch),
     }
     this.#diagnostics = new DocumentDiagnostics(this.client, store)
-    this.#history = new DocumentHistory(this.client, store)
+    this.#history = new DocumentHistory(this.client, store, (changes) => {
+      this.#pendingFlash = changes
+      this.#flashChanges()
+    })
   }
 
   get state(): WorkbenchState {
@@ -331,9 +336,25 @@ export class Workbench {
     const read = ++this.#irReads
     try {
       const ir = await this.client.readIr(dir)
-      if (this.#state.document === dir && read === this.#irReads) this.#set({ ir })
+      if (this.#state.document === dir && read === this.#irReads) {
+        this.#set({ ir })
+        this.#flashChanges()
+      }
     } catch {
     }
+  }
+
+  /**
+   * Makes the blocks the AI changed blink on the document, once the preview shows the revision the workbench has: the
+   * author sees what changed where they read it, not as files.
+   */
+  #flashChanges(): void {
+    const changes = this.#pendingFlash
+    const ir = this.#state.ir
+    if (!changes || !ir || this.#state.previewIrRevision !== ir.revision || this.#previewSinks.size === 0) return
+    this.#pendingFlash = undefined
+    const targets = changedPlaces(ir.doc, changes)
+    if (targets.length > 0) this.#broadcast({ type: 'flash', targets })
   }
 
   retryDiagnostics(): void {
@@ -502,7 +523,15 @@ export class Workbench {
   }
 
   /** Hands `instruction` about what the author points at (or `focus`) to the conversation's agent. */
-  async askAgent(instruction: string, focus: FocusReport[] = this.#state.pointer ? [this.#focusReportOf(this.#state.pointer)] : []): Promise<boolean> {
+  askAgent(instruction: string, focus: FocusReport[] = this.#state.pointer ? [this.#focusReportOf(this.#state.pointer)] : []): Promise<boolean> {
+    return this.#ask(focus, places => this.#messages.agentRequest(instruction, [...places.values()]))
+  }
+
+  /**
+   * Sets `focus` as the document's focus, then sends the agent the message `compose` writes from the places, by focus id.
+   * The message names places as the author sees them; the agent's document context has their source ranges.
+   */
+  async #ask(focus: FocusReport[], compose: (places: Map<string, AgentPlace>) => string): Promise<boolean> {
     const document = this.#state.document
     const asker = [...this.#askers][0]
     const t = this.#messages
@@ -518,8 +547,8 @@ export class Workbench {
         await this.#focusWriting
       }
       const located = this.#state.focus as (FocusReport & Partial<Focus>)[]
-      const places = located.map(item => this.#describe(item))
-      await asker({ text: t.agentRequest(instruction, places), focus })
+      const places = new Map(located.map(item => [item.id, this.#describe(item)]))
+      await asker({ text: compose(places), focus })
       if (this.#state.document === document) this.#set({ isAsking: false, pointer: undefined })
       this.#broadcast({ type: 'highlight', target: null })
       return true
@@ -529,13 +558,12 @@ export class Workbench {
     }
   }
 
-  /** A place as the agent reads it: the section, the source lines and the passage. */
-  #describe(item: FocusReport & Partial<Focus>): { section?: string, source?: string, quote?: string } {
+  /** A place as the author sees it: the section's title and the passage. */
+  #describe(item: FocusReport & Partial<Focus>): AgentPlace {
     const doc = this.#state.ir?.doc
     const section = item.section ? doc?.sections.find(s => s.id === item.section)?.title ?? item.section : undefined
-    const range = item.source && `${item.source.file}:${item.source.startLine}-${item.source.endLine}`
     const quote = item.quote ?? item.excerpt
-    return { ...section ? { section } : {}, ...range ? { source: range } : {}, ...quote ? { quote: quote.slice(0, 1500) } : {} }
+    return { ...section ? { section } : {}, ...quote ? { quote: quote.slice(0, 1500) } : {} }
   }
 
   #setComments(comments: DocumentComment[]): void {
@@ -572,7 +600,7 @@ export class Workbench {
     const chosen = this.#state.comments.filter(comment => ids.includes(comment.id))
     if (chosen.length === 0) return false
     const focus = chosen.map((comment, i): FocusReport => ({ id: `comment-${i + 1}`, from: this.#state.previewRenderer, section: comment.section, ...comment.block ? { block: comment.block } : {}, ...comment.quote ? { quote: comment.quote } : {} }))
-    const asked = await this.askAgent(this.#messages.commentsRequest(chosen.map(comment => comment.text)), focus)
+    const asked = await this.#ask(focus, places => this.#messages.commentsRequest(chosen.map((comment, i) => ({ ...places.get(focus[i]!.id) ?? this.#describe(focus[i]!), text: comment.text }))))
     if (asked) this.#writeComments(this.#state.comments.map(comment => (ids.includes(comment.id) ? { ...comment, status: 'sent' as const } : comment)))
     return asked
   }
@@ -643,6 +671,7 @@ export class Workbench {
       case 'ready':
       case 'updated':
         this.#set({ previewIrRevision: report.revision })
+        this.#flashChanges()
         break
       case 'picked': {
         if (this.#state.editing || this.#state.mode !== 'editing') break
@@ -693,6 +722,7 @@ export class Workbench {
   #stopSubscriptions(): void {
     this.#focusVersion++
     this.#pendingReveal = undefined
+    this.#pendingFlash = undefined
     this.#unsubscribeIr?.()
     this.#unsubscribeIr = undefined
     this.#history.stop()

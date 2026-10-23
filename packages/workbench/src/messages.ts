@@ -4,6 +4,12 @@ export function localeOf(tag: string | undefined): Locale {
   return tag?.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en'
 }
 
+/** A place of the document as the author's message to the AI names it: the section's title and the passage, as readers see them. */
+export interface AgentPlace {
+  section?: string
+  quote?: string
+}
+
 // Names of commands follow Microsoft Word's (撤消/Undo, 新建批注/New Comment, 版本历史/Version History…).
 const zh = {
   documents: '文稿',
@@ -115,16 +121,22 @@ const zh = {
   justNow: '刚刚',
   editedSection: (title: string) => (title ? `编辑“${title}”` : '编辑文字'),
   retitled: (title: string) => `重命名为“${title}”`,
-  agentRequest: (instruction: string, places: { section?: string, source?: string, quote?: string }[]) => [
+  agentRequest: (instruction: string, places: AgentPlace[]) => [
     instruction.trim(),
     ...places.map((place, i) => [
       places.length > 1 ? `${i + 1}.` : '',
       place.section ? `位置：“${place.section}”` : '',
-      place.source ? `（源码 ${place.source}）` : '',
       place.quote ? `\n原文：「${place.quote}」` : '',
     ].join('')).filter(Boolean),
   ].join('\n\n'),
-  commentsRequest: (texts: string[]) => (texts.length === 1 ? `请按这条批注修改文稿：${texts[0]}` : `请按下面的批注逐条修改文稿：\n${texts.map((text, i) => `${i + 1}. ${text}`).join('\n')}`),
+  commentsRequest: (comments: (AgentPlace & { text: string })[]) => [
+    comments.length === 1 ? '我在文稿上写了一条批注：' : `我在文稿上写了 ${comments.length} 条批注：`,
+    ...comments.map((comment, i) => [
+      `${comments.length > 1 ? `${i + 1}. ` : ''}「${comment.text}」`,
+      comment.section ? `\n位置：“${comment.section}”` : '',
+      comment.quote ? `\n原文：「${comment.quote}」` : '',
+    ].join('')),
+  ].join('\n\n'),
   rewriteEditRequest: (before: string, after: string) => `把这段文字改成：「${after}」，保留原有的格式与结构。原来是：「${before}」`,
 }
 
@@ -240,16 +252,22 @@ const en: WorkbenchMessages = {
   justNow: 'just now',
   editedSection: (title: string) => (title ? `Edit "${title}"` : 'Edit text'),
   retitled: (title: string) => `Rename to "${title}"`,
-  agentRequest: (instruction: string, places: { section?: string, source?: string, quote?: string }[]) => [
+  agentRequest: (instruction: string, places: AgentPlace[]) => [
     instruction.trim(),
     ...places.map((place, i) => [
       places.length > 1 ? `${i + 1}. ` : '',
       place.section ? `Where: "${place.section}"` : '',
-      place.source ? ` (source ${place.source})` : '',
       place.quote ? `\nText: "${place.quote}"` : '',
     ].join('')).filter(Boolean),
   ].join('\n\n'),
-  commentsRequest: (texts: string[]) => (texts.length === 1 ? `Please revise the document as this comment asks: ${texts[0]}` : `Please revise the document as these comments ask, one by one:\n${texts.map((text, i) => `${i + 1}. ${text}`).join('\n')}`),
+  commentsRequest: (comments: (AgentPlace & { text: string })[]) => [
+    comments.length === 1 ? 'I left a comment on the document:' : `I left ${comments.length} comments on the document:`,
+    ...comments.map((comment, i) => [
+      `${comments.length > 1 ? `${i + 1}. ` : ''}"${comment.text}"`,
+      comment.section ? `\nWhere: "${comment.section}"` : '',
+      comment.quote ? `\nText: "${comment.quote}"` : '',
+    ].join('')),
+  ].join('\n\n'),
   rewriteEditRequest: (before: string, after: string) => `Change this text to: "${after}", keeping its formatting and structure. It was: "${before}"`,
 }
 

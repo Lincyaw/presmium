@@ -15,7 +15,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const FIXTURE = join(ROOT, 'e2e/fixtures/preview-protocol')
 const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
 const TOKEN = 'preview-protocol-token'
-const COMMANDS = ['go', 'highlight', 'pick', 'pins', 'marks', 'appearance', 'edit']
+const COMMANDS = ['go', 'highlight', 'pick', 'pins', 'marks', 'appearance', 'edit', 'flash']
 // The web form can also pause and resume its runtime; the slides cannot.
 const WEB_COMMANDS = [...COMMANDS, 'activity']
 

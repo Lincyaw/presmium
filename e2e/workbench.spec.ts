@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { FrameLocator, Page } from '@playwright/test'
@@ -76,7 +76,8 @@ test.describe('the root layout', () => {
     test.setTimeout(400_000)
     model = await fakeModel([
       { text: '收到批注。' },
-      { tool: 'write', input: { file_path: 'lectures/intro/summary.md', content: '# 小结\n' } },
+      { tool: 'read', input: { file_path: 'lectures/intro/lecture.md' } },
+      { tool: 'edit', input: { file_path: 'lectures/intro/lecture.md', old_string: '最常相邻的一对合并成一个新词元。', new_string: '最常相邻的一对合并成一个新词元，例如 a 与 b 合成 ab。' } },
       { text: '改好了。' },
       { text: '已修复。' },
     ])
@@ -287,6 +288,13 @@ test.describe('the root layout', () => {
     const before = model.received.length
     await send.click()
     await expect.poll(() => asked(model, before), { timeout: 60_000 }).toContain('这里加一个例子')
+    // The author's own words with the place as readers see it; the source range is in the context's focus, not the message.
+    const message = asked(model, before)
+    expect(message).toContain('合并')
+    expect(message).not.toMatch(/lecture\.md|:\d+-\d+/)
+    const focus = model.received.slice(before).flatMap(request => texts(request.body.messages)).findLast(text => text.includes('<presmium-document>')) ?? ''
+    expect(focus).toContain('"id":"comment-1"')
+    expect(focus).toContain('"file":"lectures/intro/lecture.md"')
     await expect(conversation(page)).toContainText('收到批注。', { timeout: 60_000 })
     // Sent, the comments wait no more: no button, no number on the page.
     await expect(send).toBeHidden()
@@ -301,7 +309,7 @@ test.describe('the root layout', () => {
     await expect(comments.locator('.pmw-comment')).toContainText('已解决')
   })
 
-  test('Rewrite with AI hands the selected passage and the request to the AI; its change is one version, undone from the history', async ({ page }) => {
+  test('Rewrite with AI hands the selected passage and the request to the AI; the changed block blinks on the document; the change is one version, undone from the history', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await studio.open(page)
     await openDocument(page, '分词入门')
@@ -309,14 +317,20 @@ test.describe('the root layout', () => {
     await select(page, '最常相邻的一对合并成一个新词元。')
     await tools(page).getByRole('button', { name: 'AI 改写' }).click()
     await expect(page.locator('.pmw-pointer__quote')).toContainText('最常相邻的一对')
-    await page.getByRole('textbox', { name: 'AI 改写' }).fill('写一份小结')
+    await page.getByRole('textbox', { name: 'AI 改写' }).fill('举个例子')
     const before = model.received.length
     await page.getByRole('button', { name: '发送', exact: true }).click()
-    await expect.poll(() => asked(model, before), { timeout: 60_000 }).toContain('写一份小结')
+    await expect.poll(() => asked(model, before), { timeout: 60_000 }).toContain('举个例子')
     expect(asked(model, before)).toContain('最常相邻的一对')
-    expect(asked(model, before)).toContain('lecture.md')
-    const summary = join(studio.workspace.dir, 'lectures/intro/summary.md')
-    await expect.poll(() => existsSync(summary), { timeout: 60_000 }).toBe(true)
+    // The source range is the context's focus; the author's message names no file.
+    expect(asked(model, before)).not.toContain('lecture.md')
+    expect(model.received.slice(before).flatMap(request => texts(request.body.messages)).findLast(text => text.includes('<presmium-document>'))).toContain('"file":"lectures/intro/lecture.md"')
+    const lecture = join(studio.workspace.dir, 'lectures/intro/lecture.md')
+    await expect.poll(() => readFileSync(lecture, 'utf8'), { timeout: 60_000 }).toContain('例如 a 与 b 合成 ab。')
+    // When the turn's change stands, the block it changed blinks where the author reads; the others do not.
+    const flashing = preview(page).locator('[data-preview-flash]')
+    await expect(flashing).toContainText('例如 a 与 b 合成 ab。', { timeout: 60_000 })
+    expect(await flashing.count()).toBe(1)
     await expect(conversation(page)).toContainText('改好了。', { timeout: 60_000 })
     // With nobody asked to review, the turn's change is committed when it ends.
     await expect.poll(() => git(studio.workspace.dir, ['log', '-1', '--format=%(trailers:key=Presmium-Origin,valueonly)']).trim(), { timeout: 60_000 }).toBe('agent')
@@ -325,7 +339,7 @@ test.describe('the root layout', () => {
     await expect(latest).toContainText('AI')
     await latest.getByRole('button', { name: '撤消此更改' }).click()
     await expect(latest).toContainText('已撤消')
-    expect(existsSync(summary)).toBe(false)
+    expect(readFileSync(lecture, 'utf8')).not.toContain('例如 a 与 b')
   })
 
   test('content that does not display is said plainly; the details tell what; the AI is asked to fix it', async ({ page }) => {
@@ -459,7 +473,7 @@ test.describe('the conversation', () => {
     await send(page, '解释我选中的内容')
     await expect.poll(() => context(before), { timeout: 60_000 }).toContain(quote)
     expect(context(before)).toContain('"from":"web"')
-    expect(context(before)).toContain('"file":"lecture.md"')
+    expect(context(before)).toContain('"file":"lectures/intro/lecture.md"')
     await expect(conversation(page)).toContainText('已看到选中的内容。')
     await select(page, quote)
     await tools(page).getByRole('button', { name: '关闭', exact: true }).click()

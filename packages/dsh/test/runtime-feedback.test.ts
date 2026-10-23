@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { join } from 'node:path'
 import { fakeModel } from '../src/node/fake-model.ts'
 import { connectPresmiumMcp } from '@lincyaw/mcp/client'
 import { expect, it } from 'vitest'
@@ -53,6 +54,55 @@ it('gives the agent observed browser failures before it edits and commits its co
     try {
       await expect.poll(async () => JSON.parse((await client.call('get_runtime', {})).text).windows).toEqual([])
     } finally { await client.close() }
+  } finally {
+    browser.abort()
+    await model.close()
+    await home.close()
+  }
+}, 180_000)
+
+it('names the document\'s entry and files, and keeps the author\'s position of the turn while they scroll, without sending the context again', async () => {
+  const home = testHome('turn-position')
+  const workspace = home.workspace('turn-position', {
+    'presmium.workspace.yaml': 'title: 两讲\ndocuments: [lectures/*/lecture.md]\n',
+    'lectures/one/lecture.md': '---\ntitle: 第一讲\n---\n\n(first)=\n## 第一节\n\n正文。\n\n(second)=\n## 第二节\n\n正文。\n',
+    'lectures/one/slides.md': '---\ntitle: 第一讲的幻灯片\n---\n\n## 第一节\n',
+    'lectures/two/lecture.md': '---\ntitle: 第二讲\n---\n\n## 一节\n\n正文。\n',
+  })
+  const model = await fakeModel([{ tool: 'presmium__list_sections', input: {} }, { text: '有两节。' }, { text: '在第二节。' }])
+  const browser = new AbortController()
+  try {
+    const service = await home.serve(workspace.dir)
+    const control = `${service.url}/__presmium/presmium.server/control`
+    const stream = await fetch(`${control}?window=author&document=lectures%2Fone`, { signal: browser.signal })
+    expect(new TextDecoder().decode((await stream.body!.getReader().read()).value)).toContain('event: ready')
+    const scroll = async (slide: number, section: string) => expect((await fetch(control, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      type: 'report', window: 'author', role: 'reader', position: { slide, section, step: 0, view: 'document' }, status: { 'presmium.runtime': { plugins: [], errors: [] } },
+    }) })).status).toBe(200)
+    await scroll(1, 'first')
+    const web = await home.web(workspace.dir, 7104, { model, env: service.env })
+    const api = await web.api()
+    const { sessionId } = await api.call<{ sessionId: string }>('session/create', { request: { cwd: join(workspace.dir, 'lectures', 'one') } })
+    const prompt = (text: string) => api.call('session/prompt', { request: { requestId: randomUUID(), sessionId, mode: 'queue', content: [{ type: 'text', text }] } })
+    const contexts = (body: Record<string, any>) => [...JSON.stringify(body.messages).matchAll(/<presmium-document>([\s\S]*?)<\/presmium-document>/g)].map(match => match[1]!)
+    model.hold()
+    await prompt('这一讲有哪些节？')
+    await expect.poll(() => turns(model).length, { timeout: 60_000 }).toBe(1)
+    await scroll(2, 'second')
+    model.release()
+    await expect.poll(() => turns(model).length, { timeout: 60_000 }).toBe(2)
+    const [first, second] = turns(model)
+    const context = contexts(first!).at(-1)!
+    expect(context).toContain('Document \\"lectures/one\\"')
+    expect(context).toContain('entry lectures/one/lecture.md')
+    expect(context).toContain('Files in lectures/one/: lecture.md, slides.md.')
+    expect(context).toContain('- lectures/two: 第二讲')
+    expect(context).toContain('Position when this turn began: section first')
+    expect(context).toContain('reports no failure and no live code run')
+    expect(contexts(second!)).toEqual(contexts(first!))
+    await prompt('我现在在哪一节？')
+    await expect.poll(() => turns(model).length, { timeout: 60_000 }).toBe(3)
+    expect(contexts(turns(model)[2]!).at(-1)).toContain('Position when this turn began: section second')
   } finally {
     browser.abort()
     await model.close()

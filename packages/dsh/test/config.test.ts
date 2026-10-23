@@ -33,8 +33,10 @@ describe('[gate] the pinned DeepSeek Harness with Presmium\'s bundle', () => {
     const preset = web.get('preset-authoring')
     expect(preset?.disabled, 'web: preset-authoring').toBe(false)
     expect(preset!.text).toContain('id: authoring')
-    expect(preset!.text).toContain('发布会原则')
+    expect(preset!.text).toContain('The author is a teacher who may know no code')
+    for (const tool of ['dsh-tool-schedule', 'dsh-tool-goal', 'dsh-tool-subagent', 'dsh-tool-workflow']) expect(preset!.text, `web: ${tool}`).not.toContain(tool)
     expect(web.get('agent-preset-registry')!.text).toContain('default: authoring')
+    expect(web.get('ui-deliverables')?.disabled, 'web: the file cards').toBe(true)
     for (const carrier of ['headless', 'acp'] as const) {
       const rows = home.dump(carrier)
       for (const id of HOST_ROWS) expect(rows.get(id)?.disabled, `${carrier}: ${id}`).toBe(false)

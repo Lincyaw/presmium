@@ -53,6 +53,8 @@ export type PreviewCommand =
   | { type: 'activity', active: boolean, request: number }
   /** Edits the text of a block (a section's heading when there is no block) in place, the caret at `at`; null ends editing and puts the text back. */
   | { type: 'edit', target: PreviewAnchor | null, at?: PreviewPoint }
+  /** Makes the blocks (or sections) blink a few times, the first brought into view: what the AI just changed. */
+  | { type: 'flash', targets: PreviewAnchor[] }
 
 export type PreviewCommandType = PreviewCommand['type']
 
@@ -113,6 +115,7 @@ export function toPreviewCommand(data: unknown, nonce: string): PreviewCommand |
     case 'pins': return Array.isArray(m.targets) && m.targets.length <= 1000 && m.targets.every(t => isRecord(t) && text(t.id) && text(t.section) && text(t.block) && text(t.label))
       ? { type: 'pins', targets: (m.targets as PreviewPin[]).map(({ id, section, block, label }) => ({ id, section, block, label })) }
       : undefined
+    case 'flash': return Array.isArray(m.targets) && m.targets.length <= 1000 && m.targets.every(anchor) ? { type: 'flash', targets: (m.targets as PreviewAnchor[]).map(toAnchor) } : undefined
     default: return undefined
   }
 }

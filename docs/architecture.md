@@ -1905,7 +1905,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 浏览器标签页
 ┌ 工作台：dsh 的客户端运行时 ─────────────────────────────────────────────────────────┐
 │ Presmium 的根布局插件（替换 dsh 的 ui-layout）与面板（@lincyaw/workbench，React）      │
-│ dsh 的插件：对话、确认卡片、修改卡片与 Review、会话、模型设置、终端、jobs                 │
+│ dsh 的插件：对话、确认卡片、会话、模型设置、终端、jobs                                    │
 │ 预览 iframe ══ 预览协议（postMessage）══ 产物页面（Vue：VitePress 网页、Slidev 幻灯片）   │
 └──────┬────────────────────────────────────────────────────────┬────────────────────────┘
        │ /api/presmium/*（dsh 的 cookie 与 Host、Origin 栅栏）        │ 另一个源，直接访问
