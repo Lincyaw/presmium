@@ -4,11 +4,11 @@ import { useLayoutEffect, useRef, useSyncExternalStore } from 'react'
 import { normalizePath } from './paths.ts'
 
 const ID = '@lincyaw/dsh/source'
-// These formats keep Harness's rich previews. Text files share the workbench editor.
-const PREVIEW = /\.(?:png|jpe?g|gif|webp|avif|ico|bmp|svg|pdf|html?|csv|tsv|wasm|zip|gz|tgz|bz2|xz|7z|woff2?|ttf|otf|eot|mp3|mp4|m4a|wav|ogg|oga|webm|mov|avi|mkv|bin|so|dylib|dll|exe|pyc|xlsx?|docx?|pptx?|parquet|npy|npz|pkl|db|sqlite)$/i
+// A document's Markdown is shown as the document; other files keep Harness's own previews.
+const DOCUMENT_SOURCE = /\.(?:md|markdown)$/i
 const RESERVED = new Set(['node_modules', 'dist', '.git', '.presmium'])
 
-/** Routes Harness's file links and line references through its resolver to the workbench's editor. */
+/** Routes Harness's links to a document's Markdown (with a line) to that place in the open document. */
 export function registerSourceLinks(ctx: DshClientContext, workbench: Workbench, showEditor: (layout: DshClientContext['layout']) => void): void {
   ctx.inject(['sidebarRightTabs', 'sidebarRight', 'sessions', 'layout'], inner => inner.effect(() => {
     let root: string | undefined
@@ -19,7 +19,7 @@ export function registerSourceLinks(ctx: DshClientContext, workbench: Workbench,
       const file = parseFileAddress(address)
       if (!root || file?.scope !== 'session') return
       const session = inner.sessions.list.getSnapshot().byId[file.sessionId]
-      if (!session?.cwd || normalizePath(session.cwd) !== root || PREVIEW.test(file.path)) return
+      if (!session?.cwd || normalizePath(session.cwd) !== root || !DOCUMENT_SOURCE.test(file.path)) return
       const absolute = normalizePath(resolveWorkspacePath(session.cwd, file.path))
       if (!absolute || !isAbsoluteWorkspacePath(absolute) || !absolute.startsWith(`${root}/`)) return
       const path = absolute.slice(root.length + 1)
@@ -27,7 +27,7 @@ export function registerSourceLinks(ctx: DshClientContext, workbench: Workbench,
       const documents = workbench.state.documents
       if (!documents) return
       const document = [...documents.documents].sort((a, b) => b.dir.length - a.dir.length).find(doc => !doc.dir || path.startsWith(`${doc.dir}/`))?.dir
-      if (document === undefined && documents.single) return
+      if (document === undefined) return
       return { path, document }
     }
     function SourceLink({ useTabInfo }: DshSourceTabProps) {
@@ -42,7 +42,7 @@ export function registerSourceLinks(ctx: DshClientContext, workbench: Workbench,
         tab.actions.close()
         if (inner.sidebarRight.isExpanded()) inner.sidebarRight.toggleExpanded()
         showEditor(inner.layout)
-        void workbench.openWorkspaceFile(target.path, { document: target.document, ...typeof line === 'number' && Number.isInteger(line) && line > 0 ? { line, highlight: true } : {} })
+        void workbench.revealSource(target.path, typeof line === 'number' && Number.isInteger(line) && line > 0 ? line : 1)
       }, [tab.visible, tab.contentId, tab.navigation.revision])
       return <span data-pmw-source-route="" hidden />
     }
@@ -57,7 +57,7 @@ export function registerSourceLinks(ctx: DshClientContext, workbench: Workbench,
         inner.sidebarRight.close(tab.id)
         if (inner.sidebarRight.isExpanded()) inner.sidebarRight.toggleExpanded()
         showEditor(inner.layout)
-        void workbench.openWorkspaceFile(target.path, { document: target.document })
+        void workbench.revealSource(target.path)
       }, [absolutePath, documents])
       return null
     }
@@ -67,5 +67,5 @@ export function registerSourceLinks(ctx: DshClientContext, workbench: Workbench,
     let offRestored: (() => void) | undefined
     inner.slots.inject('sidebar.right.tab.document.actions', () => { offRestored = inner.slots.register({ name: 'sidebar.right.tab.document.actions', id: ID }, RestoredSource) })
     return () => { active = false; offRestored?.(); offBody?.(); offType() }
-  }, 'presmium: shared source editor'))
+  }, 'presmium: links to a document\'s source show the document'))
 }

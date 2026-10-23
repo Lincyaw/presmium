@@ -39,7 +39,7 @@ function Welcome({ workbench, complete, openSection }: { workbench: Workbench, c
     complete?.()
   }
   return (
-    <WorkbenchProvider workbench={workbench} isPrimary={false}>
+    <WorkbenchProvider workbench={workbench}>
       <Modal open title={t.welcomeTitle} onClose={done} headless>
         <div className="pmw-welcome__card pm-ui" data-pmw-welcome="">
           <Logo size={40} />

@@ -1,4 +1,4 @@
-import { ChangesPanel, DocumentEditor, FilesPanel, HomePanel, PreviewPanel, useWorkbenchState, WorkbenchProvider } from '@lincyaw/workbench'
+import { DocumentView, HistoryPanel, HomePanel, PreviewPanel, useWorkbenchState, WorkbenchProvider } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
 import { useRef } from 'react'
 import type { ComponentType } from 'react'
@@ -16,29 +16,29 @@ function Centre() {
     <div className="pmw-fallback pm-ui" data-pmw-fallback="">
       {document_ === undefined && <HomePanel />}
       {retainedDocument.current && <div className="pmw-fallback__doc" hidden={document_ === undefined}>
-        <FilesPanel />
-        <DocumentEditor active={document_ !== undefined} />
+        <DocumentView active={document_ !== undefined} />
       </div>}
     </div>
   )
 }
 
-/** With DeepSeek Harness's own layout: the workbench is a global panel of `main`, the preview and the changes are rightbar tab types. */
+/** With DeepSeek Harness's own layout: the workbench is a global panel of `main`, the document and its history are rightbar tab types. */
 export function registerFallbackLayout(ctx: DshClientContext, workbench: Workbench): void {
   const t = () => CLIENT_MESSAGES[workbench.state.locale]
-  const provided = (Component: ComponentType, className?: string, isPrimary = false) => function PresmiumPanel() {
+  const provided = (Component: ComponentType, className?: string) => function PresmiumPanel() {
     return (
-      <WorkbenchProvider workbench={workbench} isPrimary={isPrimary}>
+      <WorkbenchProvider workbench={workbench}>
         {className ? <div className={className}><Component /></div> : <Component />}
       </WorkbenchProvider>
     )
   }
   ctx.effect(() => ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: FALLBACK_PANEL, order: -10, label: () => t().product }, () => <Logo size={20} />)), 'presmium: the panel list entry')
-  ctx.effect(() => ctx.slots.register({ name: 'main', key: FALLBACK_PANEL }, provided(Centre, undefined, true)), 'presmium: the workbench as a global panel')
+  ctx.effect(() => ctx.slots.register({ name: 'main', key: FALLBACK_PANEL }, provided(Centre)), 'presmium: the workbench as a global panel')
   ctx.inject(['sidebarRightTabs'], (inner) => {
+    const History = () => <HistoryPanel onClose={() => {}} />
     const tabs = [
-      { kind: 'presmium-preview', Panel: PreviewPanel, title: () => `Presmium · ${t().preview}` },
-      { kind: 'presmium-changes', Panel: ChangesPanel, title: () => `Presmium · ${t().changes}` },
+      { kind: 'presmium-preview', Panel: PreviewPanel as ComponentType, title: () => `Presmium · ${t().preview}` },
+      { kind: 'presmium-history', Panel: History, title: () => `Presmium · ${t().history}` },
     ]
     for (const { kind, Panel, title } of tabs) {
       const id = `${CLIENT_ID}/${kind}`

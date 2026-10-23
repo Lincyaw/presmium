@@ -1,13 +1,13 @@
 import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
-import { ChangesPanel, DocumentEditor, FilesPanel, HomePanel, PmDialog, PmIcon, QuickOpen, StatusItems, useWorkbenchState, WorkbenchProvider } from '@lincyaw/workbench'
-import type { DocumentPane, Workbench } from '@lincyaw/workbench'
+import { DocumentView, HomePanel, PmDialog, PmIcon, PmMenu, useWorkbenchState, WorkbenchProvider } from '@lincyaw/workbench'
+import type { Workbench } from '@lincyaw/workbench'
 import type { IconName } from '@lincyaw/design'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import { Logo } from './brand.tsx'
 import { mainViewAgentSession } from './document-context.ts'
 import { ACTIVITY, clamp, CONVERSATION_MAX, CONVERSATION_MIN, NARROW, RIGHTBAR_MAX_RATIO, RIGHTBAR_MIN, rightbarRoom, SIDE_COLLAPSE, SIDE_MAX, SIDE_MIN } from './layout.ts'
-import type { Activity, LayoutActions, LayoutState, NarrowPane } from './layout.ts'
+import type { LayoutActions, LayoutState, NarrowPane } from './layout.ts'
 import { useClientMessages } from './messages.ts'
 import { isSamePath } from './paths.ts'
 
@@ -140,22 +140,12 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
   const retainedDocument = useRef(false)
   if (document_ !== undefined) retainedDocument.current = true
   const documentTitle = useWorkbenchState(state => state.documents?.documents.find(doc => doc.dir === state.document)?.title)
-  const activeFile = useWorkbenchState(state => state.activeFile)
-  const sourceNavigation = useWorkbenchState(state => state.reveal?.sequence)
   const session = useSessions(state => mainViewAgentSession(state.byId))
   const frame = useRef<HTMLDivElement>(null)
   const rightbarTrack = useRef<HTMLDivElement>(null)
   const [helpOpen, setHelpOpen] = useState(false)
   const geometry = solveGeometry(info)
   const { narrow, collapsed } = geometry
-  const lastEditorPane = useRef<DocumentPane>('preview')
-  if (narrow && (info.narrowPane === 'source' || info.narrowPane === 'preview')) lastEditorPane.current = info.narrowPane
-  const lastSource = useRef({ file: activeFile, navigation: sourceNavigation })
-  useEffect(() => {
-    const changed = lastSource.current.file !== activeFile || lastSource.current.navigation !== sourceNavigation
-    lastSource.current = { file: activeFile, navigation: sourceNavigation }
-    if (narrow && activeFile && (changed || (info.narrowPane !== 'conversation' && info.narrowPane !== 'sessions'))) actions.showNarrowPane('source')
-  }, [narrow, activeFile, sourceNavigation, actions])
   const conversationPanel = usePanelRef()
   const sidePanelRef = usePanelRef()
   useEffect(() => {
@@ -173,13 +163,10 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
 
   const opened = useRef(document_)
   useEffect(() => {
-    if (document_ !== undefined && document_ !== opened.current) {
-      if (narrow) actions.showNarrowPane('preview')
-      else if (info.activity !== 'files') actions.selectActivity('files')
-    }
-    if (document_ === undefined && narrow && (info.narrowPane === 'files' || info.narrowPane === 'source' || info.narrowPane === 'preview' || info.narrowPane === 'changes')) actions.showNarrowPane('documents')
+    if (document_ !== undefined && document_ !== opened.current && narrow) actions.showNarrowPane('preview')
+    if (document_ === undefined && narrow && info.narrowPane === 'preview') actions.showNarrowPane('documents')
     opened.current = document_
-  }, [document_, narrow, actions, info.activity, info.narrowPane])
+  }, [document_, narrow, actions, info.narrowPane])
 
   useOpenStartupWorkspace(workbench, dshWorkspaces, openDshWorkspace, session)
   useDocumentTitle(session?.title, documentTitle)
@@ -191,28 +178,15 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
   const panel = activePanel !== null ? renderSlot('main', {}, { entryKey: activePanel }) : null
   const rightbar = renderSlot('rightbar', { width: rightbarBox?.width ?? geometry.rightbar, viewportWidth: geometry.viewport, canShow: geometry.rightbar > 0 })
 
-  const sideContent = info.activity === 'sessions' ? 'sessions' : info.activity === 'changes' && document_ !== undefined ? 'changes' : 'files'
   const pane: NarrowPane = narrow ? info.narrowPane : 'documents'
-
-  const documentShown = panel === null && (!narrow || pane === 'source' || pane === 'preview')
+  const documentShown = panel === null && document_ !== undefined && (!narrow || pane === 'preview')
   const centre = <>
     {panel !== null && <div className="pmw-frame__panel" data-pmw-slot={`main:${activePanel}`}>{panel}</div>}
-    {retainedDocument.current && <div className="pmw-frame__document" hidden={document_ === undefined || !documentShown}>
-      <DocumentEditor active={document_ !== undefined && documentShown} only={narrow ? pane === 'preview' ? 'preview' : 'source' : undefined} onNavigate={narrow ? pane => actions.showNarrowPane(pane) : undefined} />
+    {retainedDocument.current && <div className="pmw-frame__document" hidden={!documentShown}>
+      <DocumentView active={documentShown} />
     </div>}
-    {panel === null && (narrow
-      ? pane === 'changes' && document_ !== undefined ? <ChangesPanel /> : pane === 'files' ? <FilesOrDocuments workbench={workbench} onOpen={() => actions.showNarrowPane('source')} />
-        : pane === 'documents' || (document_ === undefined && (pane === 'source' || pane === 'preview')) ? <HomePanel /> : null
-      : document_ === undefined ? <HomePanel /> : null)}
+    {panel === null && (document_ === undefined || (narrow && pane === 'documents')) && <HomePanel />}
   </>
-
-  const sidePanel = (<>
-          <aside className="pmw-frame__side" aria-label={t.side} data-shown={sideShown || undefined} data-content={sideContent}>
-            <div className="pmw-frame__side-files" hidden={sideContent !== 'files'}>{!narrow && <FilesOrDocuments workbench={workbench} />}</div>
-            {sideContent === 'changes' && <ChangesPanel />}
-          </aside>
-          <div className="pmw-frame__sidebar" data-pmw-slot="sidebar" data-shown={(narrow ? pane === 'sessions' : sideShown && sideContent === 'sessions') || undefined}>{sidebar}</div>
-        </>)
 
   return (
     <div
@@ -224,20 +198,22 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
       data-rightbar-fullscreen={info.isRightbarFullscreen || undefined}
     >
       <a className="pmw-frame__skip" href="#pmw-centre">{t.skip}</a>
-      <ActivityBar workbench={workbench} info={info} actions={actions} renderSlot={renderSlot} activePanel={activePanel} globalPanels={globalPanels} pane={pane} sideShown={sideShown} sideContent={sideContent} narrow={narrow} lastEditorPane={lastEditorPane} openSettings={openSettings} openHelp={() => setHelpOpen(true)} />
+      <ActivityBar workbench={workbench} info={info} actions={actions} activePanel={activePanel} globalPanels={globalPanels} pane={pane} narrow={narrow} openSettings={openSettings} openHelp={() => setHelpOpen(true)} />
 
       <Group className="pmw-frame__panels" disabled={narrow} onLayoutChanged={(layout, meta) => {
         if (!meta.isUserInteraction) return
         const width = info.viewportWidth - ACTIVITY
-        if (layout.files !== undefined) actions.setSideWidth(layout.files * width / 100)
-        if (layout.files === 0 && sideShown) actions.toggleSidebar()
+        if (layout.sessions !== undefined) actions.setSideWidth(layout.sessions * width / 100)
+        if (layout.sessions === 0 && sideShown) actions.toggleSidebar()
         if (layout.conversation !== undefined) {
           actions.setConversationOpen(layout.conversation > 0)
           if (layout.conversation > 0) actions.setConversationWidth(layout.conversation * width / 100)
         }
         if (layout.rightbar !== undefined) actions.setRightbarWidth(layout.rightbar * width / 100)
       }}>
-        <Panel id="files" panelRef={sidePanelRef} groupResizeBehavior="preserve-pixel-size" collapsible collapsedSize={0} defaultSize={info.sideWidth} minSize={narrow ? 0 : SIDE_MIN} maxSize={SIDE_MAX} className="pmw-frame__side-panel" hidden={narrow ? pane !== 'sessions' : !sideShown}>{sidePanel}</Panel>
+        <Panel id="sessions" panelRef={sidePanelRef} groupResizeBehavior="preserve-pixel-size" collapsible collapsedSize={0} defaultSize={info.sideWidth} minSize={narrow ? 0 : SIDE_MIN} maxSize={SIDE_MAX} className="pmw-frame__side-panel" hidden={narrow ? pane !== 'sessions' : !sideShown}>
+          <div className="pmw-frame__sidebar" data-pmw-slot="sidebar" data-shown={(narrow ? pane === 'sessions' : sideShown) || undefined}>{sidebar}</div>
+        </Panel>
         {sideShown && <Separator className="pmw-frame__handle" data-side="side" aria-label={t.resize} />}
         <Panel id="centre" minSize={narrow ? 0 : 200} className="pmw-frame__centre-panel" hidden={narrow && (pane === 'sessions' || pane === 'conversation') && panel === null}>
           <main id="pmw-centre" className="pmw-frame__centre" aria-label={documentTitle ?? t.centre}>{centre}</main>
@@ -257,15 +233,11 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
       </Group>
       <div className="pmw-frame__rightbar pmw-frame__rightbar-overlay" data-pmw-slot="rightbar" style={info.isRightbarFullscreen ? { right: 0, width: geometry.viewport } : rightbarBox ?? { right: geometry.conversation, width: geometry.track }}>{rightbar}</div>
 
-      <footer className="pmw-frame__status" aria-label={t.status}>
-        <StatusItems />
-      </footer>
       <div className="pmw-frame__bottom" data-pmw-slot="shell.bottom">{bottom}</div>
       <div className="pmw-frame__overlay" data-pmw-slot="shell.overlay">{overlays}</div>
 
-
       <PmDialog open={helpOpen} label={t.help} closeLabel={t.close} onClose={() => setHelpOpen(false)}>
-        <p>{t.helpText}</p>
+        <ul className="pmw-help">{t.helpItems.map(item => <li key={item}>{item}</li>)}</ul>
       </PmDialog>
     </div>
   )
@@ -275,99 +247,68 @@ interface ActivityBarProps {
   workbench: Workbench
   info: LayoutState['layoutInfo']
   actions: LayoutActions
-  renderSlot: RootSlotProps['renderSlot']
   activePanel: string | null
   globalPanels: RootLayoutOptions['globalPanels']
   pane: NarrowPane
-  sideShown: boolean
-  sideContent: 'sessions' | 'changes' | 'files'
   narrow: boolean
-  lastEditorPane: RefObject<DocumentPane>
   openSettings(): void
   openHelp(): void
 }
 
-/** The activity bar: the logo, Quick Open, the activities, the global panels, the settings and the help. */
-function ActivityBar({ workbench, info, actions, renderSlot, activePanel, globalPanels, pane, sideShown, sideContent, narrow, lastEditorPane, openSettings, openHelp }: ActivityBarProps) {
+/** The activity bar: the documents, the open document (on a narrow screen), the AI assistant; more, settings and help. */
+function ActivityBar({ workbench, info, actions, activePanel, globalPanels, pane, narrow, openSettings, openHelp }: ActivityBarProps) {
   const t = useClientMessages(workbench)
   const document_ = useWorkbenchState(state => state.document)
-  const pendingReviewCount = useWorkbenchState(state => state.review?.changes.length ?? 0)
+  const documentTitle = useWorkbenchState(state => state.documents?.documents.find(doc => doc.dir === state.document)?.title)
+  const working = useWorkbenchState(state => Boolean(state.review?.running))
   const panels = useSyncExternalStore(globalPanels.subscribe, globalPanels.getSnapshot)
+  const chatShown = narrow ? pane === 'conversation' || pane === 'sessions' : info.isConversationOpen
 
-  const activate = (target: Activity | NarrowPane) => {
-    if (target === 'sessions') { actions.toggleConversations(); return }
-    if (narrow || target !== 'conversation') actions.selectPanel(null)
-    if (target === 'documents') {
-      workbench.closeDocument()
-      if (narrow && workbench.state.document === undefined) actions.showNarrowPane('documents')
+  const items: { id: 'documents' | 'document' | 'assistant', icon: IconName, label: string, title?: string, pressed: boolean, busy?: boolean }[] = [
+    { id: 'documents', icon: 'folder', label: t.documents, pressed: activePanel === null && (narrow ? pane === 'documents' : document_ === undefined) },
+    ...narrow && document_ !== undefined ? [{ id: 'document' as const, icon: 'document' as const, label: t.document, title: documentTitle, pressed: activePanel === null && pane === 'preview' }] : [],
+    { id: 'assistant', icon: 'sparkle', label: t.assistant, pressed: chatShown, busy: working },
+  ]
+  const activate = (id: typeof items[number]['id']) => {
+    if (id === 'assistant') {
+      if (narrow) actions.showNarrowPane(chatShown ? (document_ === undefined ? 'documents' : 'preview') : 'conversation')
+      else actions.setConversationOpen(!info.isConversationOpen)
       return
     }
-    if (narrow) actions.showNarrowPane(target === 'preview' ? workbench.state.layout === 'split' ? lastEditorPane.current! : workbench.state.layout : target as NarrowPane)
-    else if (target === 'files' || target === 'changes') actions.selectActivity(target)
+    // From a global panel, the first click gives back what was under it.
+    const fromPanel = activePanel !== null
+    actions.selectPanel(null)
+    if (id === 'documents') {
+      if (fromPanel && !narrow) return
+      workbench.closeDocument()
+      if (narrow) actions.showNarrowPane('documents')
+    } else actions.showNarrowPane('preview')
   }
-
-  const changes = document_ === undefined ? [] : [{ id: 'changes' as const, icon: 'diff' as const, label: t.changes, pressed: narrow ? pane === 'changes' : sideShown && sideContent === 'changes', count: pendingReviewCount }]
-  const activities: { id: Activity | NarrowPane, icon: IconName, label: string, pressed: boolean, count?: number }[] = narrow
-    ? [
-        { id: 'documents', icon: 'document', label: t.documents, pressed: activePanel === null && pane === 'documents' },
-        { id: 'files', icon: 'folder', label: t.files, pressed: pane === 'files' },
-        { id: 'preview', icon: 'document', label: t.editor, pressed: pane === 'source' || pane === 'preview' },
-        ...changes,
-        { id: 'sessions', icon: 'history', label: t.conversationHistory, pressed: pane === 'sessions' || pane === 'conversation' },
-      ]
-    : [
-        { id: 'documents', icon: 'document', label: t.documents, pressed: document_ === undefined && activePanel === null && !sideShown },
-        { id: 'files', icon: 'folder', label: t.files, pressed: sideShown && sideContent === 'files' },
-        ...changes,
-        { id: 'sessions', icon: 'history', label: t.conversationHistory, pressed: info.isConversationOpen || (sideShown && sideContent === 'sessions') },
-      ]
+  const more = panels.map(({ options }) => ({ id: options.id!, label: typeof options.label === 'function' ? options.label() : options.label ?? options.id! }))
 
   return (
     <nav className="pmw-activity" aria-label={t.activity}>
       <span className="pmw-activity__logo"><Logo size={28} /></span>
-      <QuickOpen onNavigate={pane => { actions.selectPanel(null); actions.showNarrowPane(pane) }} />
-      {activities.map(item => (
-        <button key={item.id} type="button" className="pmw-activity__button" data-activity={item.id} aria-label={item.label} title={item.label} aria-pressed={item.pressed && (!narrow || activePanel === null)} onClick={() => activate(item.id)}>
+      {items.map(item => (
+        <button key={item.id} type="button" className="pmw-activity__button" data-activity={item.id} title={item.title ?? item.label} aria-pressed={item.pressed} onClick={() => activate(item.id)}>
           <PmIcon name={item.icon} />
-          {item.count ? <span className="pmw-activity__count">{item.count}</span> : null}
+          <span className="pmw-activity__label">{item.label}</span>
+          {item.busy && <span className="pmw-activity__busy" aria-hidden="true" />}
         </button>
       ))}
       <span className="pmw-activity__end">
-        {panels.map(({ options }) => {
-          const id = options.id!
-          const label = typeof options.label === 'function' ? options.label() : options.label ?? id
-          return <button key={id} type="button" className="pmw-activity__button" data-activity={id} aria-label={label} title={label} aria-pressed={activePanel === id} onClick={() => {
-            actions.selectPanel(activePanel === id ? null : id)
-            if (narrow) actions.showNarrowPane(activePanel === id && document_ !== undefined ? 'preview' : 'documents')
-          }}>
-            {renderSlot('sidebar.panellist', { size: 20, active: activePanel === id }, { only: id })}
-          </button>
-        })}
-        <button type="button" className="pmw-activity__button" data-activity="settings" aria-label={t.settings} title={t.settings} onClick={openSettings}><PmIcon name="sliders" /></button>
-        <button type="button" className="pmw-activity__button" data-activity="help" aria-label={t.help} title={t.help} onClick={openHelp}><PmIcon name="help" /></button>
+        {more.length > 0 && (
+          <span className="pmw-activity__more" data-activity="more">
+            <PmMenu label={t.more} placement="above-start" items={more} onSelect={(id) => {
+              actions.selectPanel(activePanel === id ? null : id)
+              if (narrow) actions.showNarrowPane('documents')
+            }} />
+            <span className="pmw-activity__label" aria-hidden="true">{t.more}</span>
+          </span>
+        )}
+        <button type="button" className="pmw-activity__button" data-activity="settings" title={t.settings} onClick={openSettings}><PmIcon name="sliders" /><span className="pmw-activity__label">{t.settings}</span></button>
+        <button type="button" className="pmw-activity__button" data-activity="help" title={t.help} onClick={openHelp}><PmIcon name="help" /><span className="pmw-activity__label">{t.help}</span></button>
       </span>
-    </nav>
-  )
-}
-
-function FilesOrDocuments({ workbench, onOpen }: { workbench: Workbench, onOpen?: () => void }) {
-  const document_ = useWorkbenchState(state => state.document)
-  const documents = useWorkbenchState(state => state.documents)
-  const t = useClientMessages(workbench)
-  if (document_ !== undefined) return <FilesPanel onOpen={onOpen} />
-  return (
-    <nav className="pmw-files" aria-label={t.documents}>
-      <h2 className="pmw-files__title">{documents?.title ?? t.documents}</h2>
-      <ul className="pmw-tree">
-        {(documents?.documents ?? []).map(doc => (
-          <li key={doc.dir}>
-            <button type="button" className="pmw-tree__file" onClick={() => void workbench.openDocument(doc.dir)}>
-              <PmIcon name="document" size={15} />
-              {doc.title}
-            </button>
-          </li>
-        ))}
-      </ul>
     </nav>
   )
 }

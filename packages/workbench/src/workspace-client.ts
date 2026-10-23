@@ -1,4 +1,4 @@
-import type { DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FilesAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
+import type { DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
 
 /** A route of the workspace server answered with an error. */
 export class WorkspaceServerError extends Error {
@@ -15,9 +15,7 @@ export class WorkspaceServerError extends Error {
 export interface WorkspaceClient {
   readDocuments(document?: string): Promise<DocumentsAnswer>
   operateDocument(operation: DocumentOperation): Promise<OperationAnswer>
-  readFiles(document: string): Promise<FilesAnswer>
   readSource(document: string, path: string): Promise<SourceAnswer>
-  createSource(document: string, path: string): Promise<SourceAnswer>
   /** Saves the file; in a git workspace the save is committed at once, `message` its summary. */
   saveSource(document: string, path: string, content: string, base: string, message?: string): Promise<SavedAnswer>
   readIr(document: string): Promise<IrAnswer>
@@ -128,9 +126,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
   return {
     readDocuments: document => call(url('documents', document)),
     operateDocument: operation => post(url('documents'), operation),
-    readFiles: document => call(url('files', document)),
     readSource: (document, path) => call(url('source', document, { path })),
-    createSource: (document, path) => post(url('source/create', document), { path }),
     saveSource: (document, path, content, base, message) => post(url('source', document), { path, content, base, ...message ? { message } : {} }),
     readIr,
     subscribeIr: (document, revision, failed) => subscribe(url('ir/events', document), 'revision', revision, failed),

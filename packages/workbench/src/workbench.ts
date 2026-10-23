@@ -1,40 +1,51 @@
-import { errorMessage, stepKeys, trailStep } from '@lincyaw/kernel'
-import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, FilesAnswer, Finding, FocusReport, HistoryRevision, IrAnswer, IrEvent, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewRenderer, PreviewReport, PreviewShortcut, ReviewSnapshot, SourceAnswer, UncommittedFile } from '@lincyaw/kernel'
-import { DocumentChanges } from './changes.ts'
+import { errorMessage, irBlocks, stepKeys, trailStep } from '@lincyaw/kernel'
+import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPoint, PreviewRect, PreviewRenderer, PreviewReport, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
+import { CommentStore, newComment } from './comments.ts'
+import type { DocumentComment } from './comments.ts'
 import { DocumentDiagnostics } from './diagnostics.ts'
-import { mergeTexts } from './merge.ts'
-import type { MergeLabels } from './merge.ts'
-import { localeOf } from './messages.ts'
+import { DocumentHistory } from './history.ts'
+import { localeOf, MESSAGES } from './messages.ts'
 import type { Locale } from './messages.ts'
 import { findPlaceAtLine, findPlaceSource } from './places.ts'
+import { applyRenderedEdit } from './text-edit.ts'
 import { workspaceClient, WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 
-export type DocumentLayout = 'preview' | 'split' | 'source'
+/** `editing`: blocks are picked, commented on and edited in place; `viewing`: the document reads as its readers see it. */
+export type WorkbenchMode = 'editing' | 'viewing'
 
-export type FileNotice =
-  | { kind: 'changed', version: string, content: string }
-  | { kind: 'merged', conflicts: number }
-  | { kind: 'locked', holder: string }
+/** What the author points at in the document: a block (or a section), or a passage selected in it. */
+export interface Pointer {
+  target: PreviewAnchor
+  step?: number
+  /** The selected passage. */
+  quote?: string
+  /** Its box in the preview's viewport; none while it is out of sight. */
+  rect?: PreviewRect
+  point?: PreviewPoint
+  /** Its text can be edited in place. */
+  isEditable: boolean
+}
+
+export type SaveState =
+  | { kind: 'idle' }
+  | { kind: 'saving' }
+  | { kind: 'saved', at: string }
+  | { kind: 'locked' }
   | { kind: 'failed', message: string }
 
-export interface OpenFile {
-  path: string
-  base: string
-  version: string
-  isDirty: boolean
-  notice?: FileNotice
+/** An edit in place that could not be written back as plain text, offered to the AI. */
+export interface EditFallback {
+  target: PreviewAnchor
+  before: string
+  after: string
 }
 
-export interface Reveal {
-  path: string
-  line: number
-  endLine?: number
-  highlight?: boolean
-  sequence: number
+/** A request for the agent of the conversation: its text and what it is about. */
+export interface AgentRequest {
+  text: string
+  focus: FocusReport[]
 }
-
-type RevealAt = Omit<Reveal, 'path' | 'sequence'>
 
 export interface WorkbenchState {
   locale: Locale
@@ -44,15 +55,9 @@ export interface WorkbenchState {
   /** The workspace's routes answer 404: `@lincyaw/dsh` is turned off on the plugins page. */
   isBundleDisabled?: boolean
   document?: string
-  files?: FilesAnswer
   ir?: IrAnswer
-  openFiles: OpenFile[]
-  activeFile?: string
-  openFailure?: string
-  cursorLine: number
-  reveal?: Reveal
+  mode: WorkbenchMode
   previewRenderer: PreviewRenderer
-  previewTabs: PreviewRenderer[]
   previewReload: number
   preview?: PreviewAnswer
   previewFailure?: string
@@ -63,25 +68,24 @@ export interface WorkbenchState {
   canRepairDiagnostics: boolean
   isRepairingDiagnostics: boolean
   diagnosticsRepairFailure?: string
-  isPicking: boolean
-  layout: DocumentLayout
+  pointer?: Pointer
+  /** The block whose text is being edited in place. */
+  editing?: PreviewAnchor
+  save: SaveState
+  editFallback?: EditFallback
+  /** What the conversation's agent is told the author points at. */
   focus: FocusReport[]
   isFocusPending: boolean
   focusFailure?: string
-  /** The unsaved files that leaving the document or a file would drop: the author saves, discards or stays. */
-  unsavedOnLeave?: string[]
-  isSavingOnLeave: boolean
-  hasSaveOnLeaveFailed: boolean
+  comments: DocumentComment[]
   review?: ReviewSnapshot
-  uncommitted?: UncommittedFile[]
-  revisions?: HistoryRevision[]
-  changesFailure?: string
-}
-
-export interface EditorBridge {
-  text(path: string): string | undefined
-  replace(path: string, text: string, fresh: boolean): void
-  focus?(): void
+  history?: RevisionsAnswer
+  /** Files changed elsewhere and not yet in the history. */
+  outside?: UncommittedFile[]
+  historyFailure?: string
+  isHistoryBusy: boolean
+  isAsking: boolean
+  askFailure?: string
 }
 
 export interface PreviewSink {
@@ -96,73 +100,99 @@ export interface WorkbenchStore {
   set(patch: Partial<WorkbenchState>): void
 }
 
-/**
- * The document of the workspace's own routes: their paths are relative to the workspace root. The file tree and the
- * editor always use it; opened as a document in a workspace of several documents, it is the workspace root with no
- * lecture selected.
- */
-export const WORKSPACE_SCOPE = ''
+/** The workspace's own routes: source paths are relative to the workspace root. */
+const WORKSPACE_SCOPE = ''
 
-export function isWorkspaceRootOpen(state: WorkbenchState): boolean {
-  return state.document === WORKSPACE_SCOPE && state.documents?.single === false
+// Blocks of these Markdown kinds are edited in place; others (code, components, math) through the AI.
+const EDITABLE = new Set(['paragraph', 'heading', 'list', 'blockquote', 'table'])
+
+/** The document the conversation works on: none when no document is open. */
+export function selectedDocument(state: WorkbenchState): string | null {
+  return state.document ?? null
 }
 
-/** The lecture the conversation works on: none when no document or the workspace root is open. */
-export function selectedDocument(state: WorkbenchState): string | null {
-  return isWorkspaceRootOpen(state) ? null : state.document ?? null
+/** Whether the AI is changing the workspace now, or its change waits for the author. */
+export function isAgentChanging(state: WorkbenchState): boolean {
+  return Boolean(state.review && (state.review.running || state.review.changes.length > 0))
+}
+
+/** Whether the document has a slides form (no renderers listed: every form). */
+export function hasSlides(ir: IrAnswer | undefined): boolean {
+  const renderers = ir?.doc.config.renderers
+  return !renderers || Object.keys(renderers).length === 0 || 'slides' in renderers
 }
 
 /** What opening or closing a document clears. */
 const DOCUMENT_RESET = {
-  files: undefined, ir: undefined, openFiles: [], activeFile: undefined, reveal: undefined, preview: undefined, previewIrRevision: undefined,
+  ir: undefined, preview: undefined, previewFailure: undefined, previewIrRevision: undefined,
   diagnostics: undefined, isDiagnosticsUnavailable: false, isRepairingDiagnostics: false, diagnosticsRepairFailure: undefined,
-  focus: [], isFocusPending: false, focusFailure: undefined,
-  review: undefined, uncommitted: undefined, revisions: undefined, changesFailure: undefined,
+  pointer: undefined, editing: undefined, save: { kind: 'idle' }, editFallback: undefined,
+  focus: [], isFocusPending: false, focusFailure: undefined, comments: [],
+  review: undefined, history: undefined, outside: undefined, historyFailure: undefined, askFailure: undefined,
 } satisfies Partial<WorkbenchState>
 
+/** A free directory for a new document called `title`, beside most of the existing ones. */
+export function documentDirFor(title: string, taken: readonly string[]): string {
+  const parents = new Map<string, number>()
+  for (const dir of taken) {
+    const parent = dir.includes('/') ? dir.slice(0, dir.lastIndexOf('/')) : ''
+    parents.set(parent, (parents.get(parent) ?? 0) + 1)
+  }
+  const parent = [...parents].sort((a, b) => b[1] - a[1])[0]?.[0] ?? ''
+  const slug = title.normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'document'
+  const base = parent ? `${parent}/${slug}` : slug
+  let dir = base
+  for (let n = 2; taken.includes(dir); n++) dir = `${base}-${n}`
+  return dir
+}
+
+/** The front matter of `source` with its `title` set to `title`. */
+export function withTitle(source: string, title: string): string {
+  const line = `title: ${JSON.stringify(title)}`
+  const head = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(source)
+  if (!head) return `---\n${line}\n---\n\n${source}`
+  const body = /^title:.*$/m.test(head[1]!) ? head[1]!.replace(/^title:.*$/m, line) : `${line}\n${head[1]}`
+  return `---\n${body}\n---\n${source.slice(head[0].length)}`
+}
+
 /**
- * The state of the workbench and its actions: the documents, the open document's files and editor, its preview and
- * focus; its diagnostics and its changes are parts of their own (`diagnostics.ts`, `changes.ts`).
+ * The state of the workbench and its actions: the documents, the open document's preview, what the author points at
+ * in it, its edits in place and its comments; its diagnostics and its history are parts of their own
+ * (`diagnostics.ts`, `history.ts`).
  */
 export class Workbench {
   readonly client: WorkspaceClient
   #state: WorkbenchState
   readonly #listeners = new Set<Listener>()
-  readonly #shortcutListeners = new Set<(command: PreviewShortcut) => void>()
   readonly #diagnostics: DocumentDiagnostics
-  readonly #changes: DocumentChanges
-  #editor?: EditorBridge
+  readonly #history: DocumentHistory
+  readonly #comments = new CommentStore()
+  readonly #askers = new Set<(request: AgentRequest) => Promise<void>>()
   readonly #previewSinks = new Set<PreviewSink>()
-  readonly #savingPaths = new Set<string>()
   #unsubscribeIr?: () => void
   #previewReads = 0
   #irReads = 0
-  #revealSequence = 0
-  #highlightTimer?: ReturnType<typeof setTimeout>
-  #highlight: PreviewAnchor | null = null
   #focusVersion = 0
   #focusWriting: Promise<void> = Promise.resolve()
-  #pendingLeave?: () => void | Promise<void>
+  #edits: Promise<void> = Promise.resolve()
 
   constructor(options: { client?: WorkspaceClient, locale?: Locale, isDark?: boolean } = {}) {
     this.client = options.client ?? workspaceClient()
     this.#state = {
       locale: options.locale ?? localeOf(globalThis.navigator?.language),
       isDark: options.isDark ?? false,
-      openFiles: [],
-      cursorLine: 1,
+      mode: 'editing',
       previewRenderer: 'web',
-      previewTabs: ['web'],
       previewReload: 0,
       isDiagnosticsUnavailable: false,
       canRepairDiagnostics: false,
       isRepairingDiagnostics: false,
-      isPicking: false,
-      layout: 'preview',
+      save: { kind: 'idle' },
       focus: [],
       isFocusPending: false,
-      isSavingOnLeave: false,
-      hasSaveOnLeaveFailed: false,
+      comments: [],
+      isHistoryBusy: false,
+      isAsking: false,
     }
     const workbench = this
     const store: WorkbenchStore = {
@@ -172,21 +202,18 @@ export class Workbench {
       set: patch => workbench.#set(patch),
     }
     this.#diagnostics = new DocumentDiagnostics(this.client, store)
-    this.#changes = new DocumentChanges(this.client, store, dir => this.#readStatus(dir))
+    this.#history = new DocumentHistory(this.client, store)
   }
 
   get state(): WorkbenchState {
     return this.#state
   }
 
+  getState = (): WorkbenchState => this.#state
+
   subscribe = (listener: Listener): (() => void) => {
     this.#listeners.add(listener)
     return () => this.#listeners.delete(listener)
-  }
-
-  subscribePreviewShortcuts = (listener: (command: PreviewShortcut) => void): (() => void) => {
-    this.#shortcutListeners.add(listener)
-    return () => this.#shortcutListeners.delete(listener)
   }
 
   onRepairDiagnostics = (repairer: (diagnostics: readonly Diagnostic[]) => void | Promise<void>): (() => void) => this.#diagnostics.onRepair(repairer)
@@ -195,19 +222,19 @@ export class Workbench {
     return this.#diagnostics.requestRepair()
   }
 
-  getState = (): WorkbenchState => this.#state
+  /** The host's way to hand a request to the conversation's agent. */
+  onAgentRequest = (asker: (request: AgentRequest) => Promise<void>): (() => void) => {
+    this.#askers.add(asker)
+    return () => this.#askers.delete(asker)
+  }
 
   #set(patch: Partial<WorkbenchState>): void {
     this.#state = { ...this.#state, ...patch }
     for (const listener of this.#listeners) listener()
   }
 
-  #findOpenFile(path: string | undefined): OpenFile | undefined {
-    return this.#state.openFiles.find(file => file.path === path)
-  }
-
-  #updateOpenFile(path: string, patch: Partial<OpenFile>): void {
-    this.#set({ openFiles: this.#state.openFiles.map(file => (file.path === path ? { ...file, ...patch } : file)) })
+  get #messages() {
+    return MESSAGES[this.#state.locale]
   }
 
   setLocale(locale: Locale): void {
@@ -235,44 +262,53 @@ export class Workbench {
     return answer
   }
 
-  async openDocument(dir: string): Promise<void> {
-    if (this.#state.document === dir) return
-    if (this.#deferLeave(this.#state.openFiles, () => this.#openDocument(dir))) return
-    await this.#openDocument(dir)
+  /** Makes a document called `title` from the template, in a directory of its own; answers the directory. */
+  async createDocument(title: string, template?: string): Promise<string> {
+    const taken = this.#state.documents?.documents.map(doc => doc.dir) ?? []
+    const answer = await this.operateDocument({ op: 'create', dir: documentDirFor(title, taken), title, ...template ? { template } : {} })
+    return answer.dir!
   }
 
-  async #openDocument(dir: string): Promise<void> {
+  /** Copies a document; the copy is called `title`. */
+  async copyDocument(dir: string, title: string): Promise<string> {
+    const taken = this.#state.documents?.documents.map(doc => doc.dir) ?? []
+    let to = `${dir}-copy`
+    for (let n = 2; taken.includes(to); n++) to = `${dir}-copy-${n}`
+    const answer = await this.operateDocument({ op: 'copy', dir, to })
+    await this.retitleDocument(answer.dir ?? to, title)
+    return answer.dir ?? to
+  }
+
+  /** Changes the title in a document's front matter; the change is a revision of its own. */
+  async retitleDocument(dir: string, title: string): Promise<void> {
+    const { doc } = await this.client.readIr(dir)
+    const entry = doc.meta.entry
+    const source = await this.client.readSource(WORKSPACE_SCOPE, entry)
+    await this.client.saveSource(WORKSPACE_SCOPE, entry, withTitle(source.content, title), source.version, this.#messages.retitled(title))
+    await this.loadDocuments()
+    if (this.#state.document === dir) void this.#history.read(dir)
+  }
+
+  async openDocument(dir: string): Promise<void> {
+    if (this.#state.document === dir) return
     this.#stopSubscriptions()
-    this.#changes.subscribeReview(dir)
-    this.#set({ ...DOCUMENT_RESET, document: dir, previewRenderer: 'web', previewTabs: ['web'], layout: 'preview', cursorLine: 1, previewFailure: undefined })
+    this.#history.subscribeReview(dir)
+    this.#set({ ...DOCUMENT_RESET, document: dir, previewRenderer: 'web' })
     this.#diagnostics.subscribe(dir)
-    if (isWorkspaceRootOpen(this.#state)) {
-      this.#unsubscribeIr = undefined
-      this.#set({ layout: 'source' })
-      await Promise.all([this.#readFiles(dir), this.#readStatus(dir), this.#changes.read(dir)])
-      return
-    }
     this.#unsubscribeIr = this.client.subscribeIr(dir, event => void this.#handleIrEvent(dir, event), () => void this.#readIr(dir))
-    await Promise.all([this.#readFiles(dir), this.#readIr(dir), this.#readPreview(dir), this.#readStatus(dir), this.#readFocus(dir), this.#changes.read(dir)])
+    void this.client.readWorkbenchInfo().then(({ root }) => {
+      this.#comments.setRoot(root)
+      if (this.#state.document === dir) this.#setComments(this.#comments.read(dir))
+    }, () => {
+      if (this.#state.document === dir) this.#setComments(this.#comments.read(dir))
+    })
+    await Promise.all([this.#readIr(dir), this.#readPreview(dir), this.#readFocus(dir), this.#history.read(dir)])
   }
 
   closeDocument(): void {
-    if (this.#deferLeave(this.#state.openFiles, () => this.#closeDocument())) return
-    this.#closeDocument()
-  }
-
-  #closeDocument(): void {
     this.#stopSubscriptions()
     this.#set({ ...DOCUMENT_RESET, document: undefined })
     void this.loadDocuments()
-  }
-
-  async #readFiles(dir: string): Promise<void> {
-    try {
-      const files = await this.client.readFiles(WORKSPACE_SCOPE)
-      if (this.#state.document === dir) this.#set({ files })
-    } catch {
-    }
   }
 
   async #readFocus(dir: string): Promise<void> {
@@ -301,38 +337,6 @@ export class Workbench {
     return this.#diagnostics.reportPreview(report)
   }
 
-  async #readStatus(dir: string): Promise<void> {
-    try {
-      const documents = await this.client.readDocuments(dir)
-      if (this.#state.document === dir) this.#set({ documents: { ...documents, documents: this.#state.documents?.documents ?? documents.documents } })
-    } catch {
-    }
-  }
-
-  acceptReview(message?: string): Promise<boolean> {
-    return this.#changes.acceptReview(message)
-  }
-
-  rejectReview(paths?: string[]): Promise<boolean> {
-    return this.#changes.rejectReview(paths)
-  }
-
-  restoreReview(step: string): Promise<boolean> {
-    return this.#changes.restoreReview(step)
-  }
-
-  commitChanges(message: string): Promise<boolean> {
-    return this.#changes.commit(message)
-  }
-
-  discardChanges(): Promise<boolean> {
-    return this.#changes.discard()
-  }
-
-  revertRevision(id: string): Promise<boolean> {
-    return this.#changes.revertRevision(id)
-  }
-
   async #readPreview(dir: string): Promise<void> {
     const read = ++this.#previewReads
     const renderer = this.#state.previewRenderer
@@ -355,235 +359,25 @@ export class Workbench {
       if (this.#state.document === dir && event.revision !== this.#state.ir?.revision) await this.#readIr(dir)
     }
     if (this.#state.document !== dir) return
-    if (renderers && JSON.stringify(renderers) !== JSON.stringify(this.#state.ir?.doc.config.renderers)) void this.#readPreview(dir)
-    const changed = this.#state.openFiles.filter(file => event.files.includes(file.path)).map(file => file.path)
-    if (changed.length > 0) await this.checkDisk(changed)
-    if (event.files.length > 0) {
-      void this.#readStatus(dir)
-      void this.#changes.read(dir)
-    }
-    if (event.files.some(file => !this.#state.files?.files.some(listed => listed.path === file))) void this.#readFiles(dir)
+    // The view switch goes with the slides: a document that lost them shows its web form.
+    if (this.#state.previewRenderer === 'slides' && !hasSlides(this.#state.ir)) this.setPreviewRenderer('web')
+    else if (renderers && JSON.stringify(renderers) !== JSON.stringify(this.#state.ir?.doc.config.renderers)) void this.#readPreview(dir)
+    if (event.files.length > 0) void this.#history.read(dir)
   }
 
-  bindEditor(editor: EditorBridge): () => void {
-    this.#editor = editor
-    return () => {
-      if (this.#editor === editor) this.#editor = undefined
-    }
-  }
-
-  textOf(path: string): string | undefined {
-    const file = this.#findOpenFile(path)
-    return file && (this.#editor?.text(path) ?? file.base)
-  }
-
-  /** Opens a file of the workspace in the open document's editor. */
-  async openFile(path: string, at?: RevealAt): Promise<boolean> {
-    const document = this.#state.document
-    if (document === undefined) return false
-    if (!this.#findOpenFile(path)) {
-      let answer: SourceAnswer
-      try {
-        // Files belong to the opened workspace; the selected document owns only its preview and context.
-        answer = await this.client.readSource(WORKSPACE_SCOPE, path)
-      } catch (error) {
-        this.#set({ openFailure: errorMessage(error) })
-        return false
-      }
-      if (document !== this.#state.document) return false
-      if (!this.#findOpenFile(path)) this.#set({ openFiles: [...this.#state.openFiles, { path, base: answer.content, version: answer.version, isDirty: false }] })
-    }
-    this.#set({ activeFile: path, openFailure: undefined, ...this.#state.layout !== 'split' ? { layout: 'source' as const } : {}, ...at ? { reveal: { path, ...at, sequence: ++this.#revealSequence } } : {} })
-    return true
-  }
-
-  async createFile(path: string): Promise<void> {
-    const document = this.#state.document
-    if (document === undefined) return
-    await this.client.createSource(WORKSPACE_SCOPE, path)
-    if (this.#state.document !== document) return
-    await this.#readFiles(document)
-    await this.openFile(path)
-    void this.#readStatus(document)
-    void this.#changes.read(document)
-  }
-
-  /**
-   * Opens a file of the workspace from elsewhere (a link, Quick Open) and focuses the editor: in `document` when it is
-   * given (leaving the open one, which guards unsaved files first), else in the open document or the workspace root.
-   * A file already open is checked against the disk first; without a line it keeps its cursor.
-   */
-  async openWorkspaceFile(path: string, options: { document?: string } & Partial<RevealAt> = {}): Promise<void> {
-    const { document, ...at } = options
-    const destination = document ?? this.#state.document ?? WORKSPACE_SCOPE
-    const open = async () => {
-      if (destination !== this.#state.document) await this.#openDocument(destination)
-      if (destination !== this.#state.document) return
-      if (this.#findOpenFile(path)) await this.checkDisk([path])
-      await this.openFile(path, at.line === undefined ? { line: this.#state.activeFile === path ? this.#state.cursorLine : 1 } : { ...at, line: at.line })
-      this.#editor?.focus?.()
-    }
-    if (destination !== this.#state.document && this.#deferLeave(this.#state.openFiles, open)) return
-    await open()
-  }
-
-  closeFile(path: string): void {
-    if (this.#deferLeave(this.#state.openFiles.filter(file => file.path === path), () => this.#closeFile(path))) return
-    this.#closeFile(path)
-  }
-
-  #closeFile(path: string): void {
-    const index = this.#state.openFiles.findIndex(file => file.path === path)
-    if (index < 0) return
-    const openFiles = this.#state.openFiles.filter(file => file.path !== path)
-    this.#set({ openFiles, ...this.#state.activeFile === path ? { activeFile: openFiles[Math.min(index, openFiles.length - 1)]?.path } : {}, ...!openFiles.length && this.#state.previewTabs.length ? { layout: 'preview' as const } : {} })
-  }
-
-  #deferLeave(files: OpenFile[], leave: () => void | Promise<void>): boolean {
-    const dirty = files.filter(file => file.isDirty).map(file => file.path)
-    if (!dirty.length) return false
-    this.#pendingLeave = leave
-    this.#set({ unsavedOnLeave: dirty, isSavingOnLeave: false, hasSaveOnLeaveFailed: false })
-    return true
-  }
-
-  async resolveLeave(choice: 'save' | 'discard' | 'cancel'): Promise<void> {
-    if (this.#state.isSavingOnLeave) return
-    const leave = this.#pendingLeave
-    if (choice === 'save') {
-      this.#set({ isSavingOnLeave: true, hasSaveOnLeaveFailed: false })
-      for (const path of this.#state.unsavedOnLeave ?? []) await this.save(path)
-      if (this.#state.unsavedOnLeave?.some(path => this.#findOpenFile(path)?.isDirty)) {
-        this.#set({ isSavingOnLeave: false, hasSaveOnLeaveFailed: true })
-        return
-      }
-    }
-    this.#pendingLeave = undefined
-    this.#set({ unsavedOnLeave: undefined, isSavingOnLeave: false, hasSaveOnLeaveFailed: false })
-    if (choice !== 'cancel') await leave?.()
-  }
-
-  showFile(path: string): void {
-    if (this.#findOpenFile(path)) this.#set({ activeFile: path, ...this.#state.layout !== 'split' ? { layout: 'source' as const } : {} })
-  }
-
-  /** The editor's text of an open file changed: it is dirty while it differs from the file's text on disk. */
-  recordEdit(path: string, text: string): void {
-    const file = this.#findOpenFile(path)
-    if (file && file.isDirty !== (text !== file.base)) this.#updateOpenFile(path, { isDirty: text !== file.base })
-  }
-
-  async save(path = this.#state.activeFile): Promise<void> {
-    const file = this.#findOpenFile(path)
-    const document = this.#state.document
-    if (!file || document === undefined || this.#savingPaths.has(file.path)) return
-    const text = this.textOf(file.path) ?? file.base
-    this.#savingPaths.add(file.path)
-    try {
-      const { version } = await this.client.saveSource(WORKSPACE_SCOPE, file.path, text, file.version)
-      this.#updateOpenFile(file.path, { base: text, version, isDirty: this.textOf(file.path) !== text, notice: undefined })
-      void this.#readStatus(document)
-    } catch (error) {
-      const answer = error instanceof WorkspaceServerError ? error.answer : undefined
-      if (answer?.locked) this.#updateOpenFile(file.path, { notice: { kind: 'locked', holder: answer.locked.holder } })
-      else if (answer?.conflict) this.#updateOpenFile(file.path, { notice: { kind: 'changed', ...answer.conflict } })
-      else this.#updateOpenFile(file.path, { notice: { kind: 'failed', message: errorMessage(error) } })
-    } finally {
-      this.#savingPaths.delete(file.path)
-    }
-  }
-
-  reload(path: string): void {
-    const file = this.#findOpenFile(path)
-    if (file?.notice?.kind !== 'changed') return
-    const { content, version } = file.notice
-    this.#updateOpenFile(path, { base: content, version, isDirty: false, notice: undefined })
-    this.#editor?.replace(path, content, true)
-    this.#editor?.focus?.()
-  }
-
-  merge(path: string, labels: MergeLabels): void {
-    const file = this.#findOpenFile(path)
-    if (file?.notice?.kind !== 'changed') return
-    const { content, version } = file.notice
-    const merged = mergeTexts(this.textOf(path) ?? file.base, file.base, content, labels)
-    this.#updateOpenFile(path, { base: content, version, notice: { kind: 'merged', conflicts: merged.conflicts }, isDirty: merged.text !== content })
-    this.#editor?.replace(path, merged.text, false)
-    this.#editor?.focus?.()
-  }
-
-  async checkDisk(paths = this.#state.openFiles.map(file => file.path)): Promise<void> {
-    const document = this.#state.document
-    if (document === undefined) return
-    for (const path of paths) {
-      const file = this.#findOpenFile(path)
-      if (!file || this.#savingPaths.has(path)) continue
-      const known = file.version
-      let answer: SourceAnswer
-      try {
-        answer = await this.client.readSource(WORKSPACE_SCOPE, path)
-      } catch {
-        continue
-      }
-      const now = this.#findOpenFile(path)
-      if (!now || answer.version === now.version || now.version !== known || this.#savingPaths.has(path)) continue
-      if (!now.isDirty) {
-        this.#updateOpenFile(path, { base: answer.content, version: answer.version, notice: undefined })
-        this.#editor?.replace(path, answer.content, true)
-      } else if (now.notice?.kind !== 'locked' && (now.notice?.kind !== 'changed' || now.notice.version !== answer.version)) {
-        this.#updateOpenFile(path, { notice: { kind: 'changed', version: answer.version, content: answer.content } })
-      }
-    }
-  }
-
-  /** The editor's cursor moved to `line`: the preview highlights the section or block there, 150 ms later. */
-  syncCursorLine(line: number): void {
-    if (line !== this.#state.cursorLine) this.#set({ cursorLine: line })
-    clearTimeout(this.#highlightTimer)
-    this.#highlightTimer = setTimeout(() => {
-      const doc = this.#state.ir?.doc
-      const path = this.#state.activeFile
-      if (!doc || !path) return
-      const place = findPlaceAtLine(doc, path, line)
-      this.#highlight = place ? { section: place.section, ...place.block ? { block: place.block } : {} } : null
-      this.#broadcast({ type: 'highlight', target: this.#highlight })
-    }, 150)
-  }
-
-  async revealPlace(section: string, block?: string): Promise<void> {
-    const doc = this.#state.ir?.doc
-    const place = doc && findPlaceSource(doc, section, block)
-    if (!place) return
-    await this.openFile(place.source.file, { line: place.source.line, ...place.source.endLine ? { endLine: place.source.endLine } : {}, highlight: true })
-  }
-
-  async revealProblem(finding: Finding): Promise<void> {
-    if (!finding.source?.file) return
-    await this.openFile(finding.source.file, { line: finding.source.line ?? 1 })
+  setMode(mode: WorkbenchMode): void {
+    if (mode === this.#state.mode) return
+    if (this.#state.editing) this.#broadcast({ type: 'edit', target: null })
+    this.#set({ mode })
+    this.point(undefined)
+    this.#broadcast({ type: 'pick', on: mode === 'editing' })
   }
 
   setPreviewRenderer(renderer: PreviewRenderer): void {
     if (renderer === this.#state.previewRenderer) return
-    this.#set({ previewRenderer: renderer, preview: undefined, previewFailure: undefined, previewIrRevision: undefined })
+    this.#set({ previewRenderer: renderer, preview: undefined, previewFailure: undefined, previewIrRevision: undefined, pointer: undefined })
     const document = this.#state.document
-    if (document !== undefined && !isWorkspaceRootOpen(this.#state)) void this.#readPreview(document)
-  }
-
-  setLayout(layout: DocumentLayout): void {
-    if (layout !== 'source' && !this.#state.previewTabs.length) this.#set({ previewTabs: [this.#state.previewRenderer] })
-    this.#set({ layout })
-  }
-
-  openPreview(renderer: PreviewRenderer = this.#state.previewRenderer, beside = false): void {
-    if (!this.#state.previewTabs.includes(renderer)) this.#set({ previewTabs: [...this.#state.previewTabs, renderer] })
-    this.setPreviewRenderer(renderer)
-    this.setLayout(beside && this.#state.openFiles.length ? 'split' : 'preview')
-  }
-
-  closePreview(renderer: PreviewRenderer): void {
-    const tabs = this.#state.previewTabs.filter(tab => tab !== renderer)
-    this.#set({ previewTabs: tabs, ...!tabs.length ? { layout: 'source' as const } : {} })
-    if (tabs.length && this.#state.previewRenderer === renderer) this.setPreviewRenderer(tabs[tabs.length - 1]!)
+    if (document !== undefined) void this.#readPreview(document)
   }
 
   reloadPreview(): void {
@@ -592,13 +386,90 @@ export class Workbench {
     if (!address) this.retryPreview()
   }
 
-  /** Makes the editor's selection the conversation's focus. */
-  focusSourceSelection(selection: { startLine: number, endLine: number, text: string }): void {
-    const { activeFile, document } = this.#state
-    if (!activeFile || document === undefined || isWorkspaceRootOpen(this.#state)) return
-    const prefix = document ? `${document}/` : ''
-    const outside = Boolean(prefix && !activeFile.startsWith(prefix))
-    this.setFocus([{ id: 'selection', from: 'source', ...outside ? { scope: 'workspace' as const } : {}, source: { file: outside ? activeFile : activeFile.slice(prefix.length), startLine: selection.startLine, endLine: selection.endLine }, quote: selection.text.slice(0, 2000) }])
+  retryPreview(): void {
+    if (this.#state.document !== undefined) void this.#readPreview(this.#state.document)
+  }
+
+  /** Whether the target's text is plain enough to edit in place. */
+  isEditable(target: PreviewAnchor): boolean {
+    const doc = this.#state.ir?.doc
+    const section = doc?.sections.find(s => s.id === target.section)
+    if (!section) return false
+    if (!target.block) return true
+    const block = [...irBlocks(section.blocks)].find(b => b.id === target.block)
+    return block?.node.type === 'markdown' && EDITABLE.has(String(block.node.mdast.type))
+  }
+
+  /** Points at a block or a passage (none: stops pointing): the preview outlines it and the conversation is told. */
+  point(pointer: Pointer | undefined): void {
+    const pointed = this.#state.pointer !== undefined || this.#state.focus.length > 0
+    this.#set({ pointer, askFailure: undefined })
+    this.#broadcast({ type: 'highlight', target: pointer?.target ?? null })
+    if (pointer) this.setFocus([this.#focusReportOf(pointer)])
+    else if (pointed) this.setFocus([])
+  }
+
+  #focusReportOf(pointer: Pointer): FocusReport {
+    const { target, step, quote } = pointer
+    return { id: 'selection', from: this.#state.previewRenderer, section: target.section, ...target.block ? { block: target.block } : {}, ...step === undefined ? {} : { step }, ...quote ? { quote: quote.slice(0, 2000) } : {} }
+  }
+
+  /** Edits the target's text in place in the preview; none ends editing without saving. */
+  editText(target: PreviewAnchor | null, at?: PreviewPoint): void {
+    if (target && (isAgentChanging(this.#state) || !this.isEditable(target))) return
+    if (target) this.#set({ pointer: undefined, editFallback: undefined })
+    this.#broadcast({ type: 'edit', target, ...at ? { at } : {} })
+  }
+
+  #sourceOf(target: PreviewAnchor, doc: IRDocument): { file: string, line: number, endLine?: number } | undefined {
+    if (!target.block) {
+      const section = doc.sections.find(s => s.id === target.section)
+      return section && { file: section.source.file, line: section.source.line }
+    }
+    return findPlaceSource(doc, target.section, target.block)?.source
+  }
+
+  #saveEdit(target: PreviewAnchor, before: string, after: string): void {
+    const document = this.#state.document
+    const doc = this.#state.ir?.doc
+    if (document === undefined || !doc) return
+    const source = this.#sourceOf(target, doc)
+    const title = doc.sections.find(s => s.id === target.section)?.title ?? ''
+    this.#set({ save: { kind: 'saving' }, editFallback: undefined })
+    this.#edits = this.#edits.then(async () => {
+      const fallBack = () => {
+        this.#set({ save: { kind: 'idle' }, editFallback: { target, before, after } })
+        this.reloadPreview()
+      }
+      if (!source) return fallBack()
+      try {
+        for (let attempt = 0; ; attempt++) {
+          const current = await this.client.readSource(WORKSPACE_SCOPE, source.file)
+          const edited = applyRenderedEdit(current.content, source, before, after)
+          if (!edited.ok) return fallBack()
+          try {
+            await this.client.saveSource(WORKSPACE_SCOPE, source.file, edited.content, current.version, this.#messages.editedSection(title))
+            break
+          } catch (error) {
+            // Changed on disk between the read and the save: read it again once.
+            if (attempt > 0 || !(error instanceof WorkspaceServerError && error.answer.conflict)) throw error
+          }
+        }
+        if (this.#state.document === document) {
+          this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
+          void this.#history.read(document)
+        }
+      } catch (error) {
+        if (this.#state.document !== document) return
+        const locked = error instanceof WorkspaceServerError && error.answer.locked
+        this.#set({ save: locked ? { kind: 'locked' } : { kind: 'failed', message: errorMessage(error) } })
+        this.reloadPreview()
+      }
+    })
+  }
+
+  dismissEditFallback(): void {
+    this.#set({ editFallback: undefined })
   }
 
   setFocus(focus: FocusReport[]): void {
@@ -606,7 +477,6 @@ export class Workbench {
     if (document === undefined) return
     const version = ++this.#focusVersion
     this.#set({ focus, isFocusPending: true, focusFailure: undefined })
-    this.#broadcast({ type: 'pins', targets: focus.flatMap(item => item.section && item.block ? [{ id: item.id, section: item.section, block: item.block, label: '1' }] : []) })
     this.#focusWriting = this.#focusWriting.then(async () => {
       if (version !== this.#focusVersion) return
       try {
@@ -618,16 +488,133 @@ export class Workbench {
     })
   }
 
-  setPicking(isPicking: boolean): void {
-    this.#set({ isPicking })
-    this.#broadcast({ type: 'pick', on: isPicking })
+  /** Hands `instruction` about what the author points at (or `focus`) to the conversation's agent. */
+  async askAgent(instruction: string, focus: FocusReport[] = this.#state.pointer ? [this.#focusReportOf(this.#state.pointer)] : []): Promise<boolean> {
+    const document = this.#state.document
+    const asker = [...this.#askers][0]
+    const t = this.#messages
+    if (document === undefined) return false
+    if (!asker) {
+      this.#set({ askFailure: t.noConversation })
+      return false
+    }
+    this.#set({ isAsking: true, askFailure: undefined })
+    try {
+      if (focus.length > 0) {
+        this.setFocus(focus)
+        await this.#focusWriting
+      }
+      const located = this.#state.focus as (FocusReport & Partial<Focus>)[]
+      const places = located.map(item => this.#describe(item))
+      await asker({ text: t.agentRequest(instruction, places), focus })
+      if (this.#state.document === document) this.#set({ isAsking: false, pointer: undefined })
+      this.#broadcast({ type: 'highlight', target: null })
+      return true
+    } catch (error) {
+      if (this.#state.document === document) this.#set({ isAsking: false, askFailure: errorMessage(error) })
+      return false
+    }
+  }
+
+  /** A place as the agent reads it: the section, the source lines and the passage. */
+  #describe(item: FocusReport & Partial<Focus>): { section?: string, source?: string, quote?: string } {
+    const doc = this.#state.ir?.doc
+    const section = item.section ? doc?.sections.find(s => s.id === item.section)?.title ?? item.section : undefined
+    const range = item.source && `${item.source.file}:${item.source.startLine}-${item.source.endLine}`
+    const quote = item.quote ?? item.excerpt
+    return { ...section ? { section } : {}, ...range ? { source: range } : {}, ...quote ? { quote: quote.slice(0, 1500) } : {} }
+  }
+
+  #setComments(comments: DocumentComment[]): void {
+    this.#set({ comments })
+    const counted = comments.filter(comment => comment.status !== 'resolved' && comment.block)
+    this.#broadcast({ type: 'pins', targets: counted.map((comment, i) => ({ id: comment.id, section: comment.section, block: comment.block!, label: String(i + 1) })) })
+  }
+
+  #writeComments(comments: DocumentComment[]): void {
+    const document = this.#state.document
+    if (document === undefined) return
+    this.#comments.write(document, comments)
+    this.#setComments(comments)
+  }
+
+  /** Leaves a comment on what the author points at. */
+  addComment(text: string, pointer = this.#state.pointer): DocumentComment | undefined {
+    if (!pointer || !text.trim()) return undefined
+    const comment = newComment(pointer.target, text.trim(), pointer.quote)
+    this.#writeComments([...this.#state.comments, comment])
+    this.point(undefined)
+    return comment
+  }
+
+  setCommentStatus(id: string, status: DocumentComment['status']): void {
+    this.#writeComments(this.#state.comments.map(comment => (comment.id === id ? { ...comment, status } : comment)))
+  }
+
+  removeComment(id: string): void {
+    this.#writeComments(this.#state.comments.filter(comment => comment.id !== id))
+  }
+
+  /** Hands the comments (all open ones by default) to the AI to act on. */
+  async askAgentAboutComments(ids = this.#state.comments.filter(comment => comment.status === 'open').map(comment => comment.id)): Promise<boolean> {
+    const chosen = this.#state.comments.filter(comment => ids.includes(comment.id))
+    if (chosen.length === 0) return false
+    const focus = chosen.map((comment, i): FocusReport => ({ id: `comment-${i + 1}`, from: this.#state.previewRenderer, section: comment.section, ...comment.block ? { block: comment.block } : {}, ...comment.quote ? { quote: comment.quote } : {} }))
+    const asked = await this.askAgent(this.#messages.commentsRequest(chosen.map(comment => comment.text)), focus)
+    if (asked) this.#writeComments(this.#state.comments.map(comment => (ids.includes(comment.id) ? { ...comment, status: 'sent' as const } : comment)))
+    return asked
+  }
+
+  /** Shows a section, or a block of it, in the preview. */
+  revealPlace(section: string, block?: string): void {
+    this.#broadcast({ type: 'go', section })
+    this.#broadcast({ type: 'highlight', target: { section, ...block ? { block } : {} } })
+  }
+
+  /** Shows the place of a line of a source file: in the document holding the file, opened when it is another. */
+  async revealSource(path: string, line = 1): Promise<boolean> {
+    const documents = this.#state.documents?.documents ?? []
+    const holder = [...documents].sort((a, b) => b.dir.length - a.dir.length).find(doc => !doc.dir || path.startsWith(`${doc.dir}/`))
+    if (!holder) return false
+    if (holder.dir !== this.#state.document) await this.openDocument(holder.dir)
+    const doc = this.#state.ir?.doc
+    const place = doc && findPlaceAtLine(doc, path, line)
+    if (!place) return false
+    this.revealPlace(place.section, place.block)
+    return true
+  }
+
+  undo(): Promise<boolean> {
+    return this.#history.undo()
+  }
+
+  redo(): Promise<boolean> {
+    return this.#history.redo()
+  }
+
+  revertRevision(id: string): Promise<boolean> {
+    return this.#history.revert(id)
+  }
+
+  acceptReview(): Promise<boolean> {
+    return this.#history.acceptReview()
+  }
+
+  rejectReview(): Promise<boolean> {
+    return this.#history.rejectReview()
+  }
+
+  recordOutsideChanges(): Promise<boolean> {
+    return this.#history.recordOutside(this.#messages.outsideChange)
   }
 
   attachPreview(sink: PreviewSink): () => void {
     this.#previewSinks.add(sink)
     sink.send({ type: 'appearance', dark: this.#state.isDark })
-    sink.send({ type: 'pick', on: this.#state.isPicking })
-    sink.send({ type: 'highlight', target: this.#highlight })
+    sink.send({ type: 'pick', on: this.#state.mode === 'editing' })
+    sink.send({ type: 'highlight', target: this.#state.pointer?.target ?? null })
+    const counted = this.#state.comments.filter(comment => comment.status !== 'resolved' && comment.block)
+    sink.send({ type: 'pins', targets: counted.map((comment, i) => ({ id: comment.id, section: comment.section, block: comment.block!, label: String(i + 1) })) })
     return () => this.#previewSinks.delete(sink)
   }
 
@@ -635,32 +622,43 @@ export class Workbench {
     if (document !== this.#state.document || renderer !== this.#state.previewRenderer) return
     switch (report.type) {
       case 'ready':
-        this.#set({ previewIrRevision: report.revision })
-        break
       case 'updated':
         this.#set({ previewIrRevision: report.revision })
         break
-      case 'picked':
-        {
-          const section = this.#state.ir?.doc.sections.find(section => section.id === report.section)
-          const step = section && report.trail ? trailStep(stepKeys(section), report.trail) : report.step
-          this.setFocus([{ id: 'selection', from: renderer, section: report.section, ...report.block ? { block: report.block } : {}, ...step === undefined ? {} : { step } }])
-          if (this.#state.layout !== 'preview') void this.revealPlace(report.section, report.block)
+      case 'picked': {
+        if (this.#state.editing || this.#state.mode !== 'editing') break
+        const target: PreviewAnchor = { section: report.section, ...report.block ? { block: report.block } : {} }
+        const isEditable = this.isEditable(target)
+        if ((report.clicks ?? 1) >= 2 && isEditable) {
+          this.editText(target, report.point)
+          break
         }
+        const section = this.#state.ir?.doc.sections.find(s => s.id === report.section)
+        const step = section && report.trail ? trailStep(stepKeys(section), report.trail) : report.step
+        this.point({ target, ...step === undefined ? {} : { step }, ...report.rect ? { rect: report.rect } : {}, ...report.point ? { point: report.point } : {}, isEditable })
         break
-      case 'selection':
-        if (report.selection?.text.trim()) this.setFocus([{ id: 'selection', from: renderer, section: report.selection.section, ...report.selection.block ? { block: report.selection.block } : {}, quote: report.selection.text.slice(0, 2000) }])
+      }
+      case 'selection': {
+        if (this.#state.editing || this.#state.mode !== 'editing') break
+        const selected = report.selection
+        if (selected?.text.trim()) {
+          const target: PreviewAnchor = { section: selected.section, ...selected.block ? { block: selected.block } : {} }
+          this.point({ target, quote: selected.text.trim(), ...selected.rect ? { rect: selected.rect } : {}, isEditable: this.isEditable(target) })
+        } else if (this.#state.pointer?.quote) this.point(undefined)
         break
-      case 'shortcut':
-        for (const listener of this.#shortcutListeners) listener(report.command)
+      }
+      case 'rect':
+        if (this.#state.pointer) this.#set({ pointer: { ...this.#state.pointer, rect: report.rect ?? undefined } })
+        break
+      case 'editing':
+        this.#set({ editing: report.active ? report.target : undefined })
+        break
+      case 'edited':
+        this.#saveEdit(report.target, report.before, report.after)
         break
       default:
         break
     }
-  }
-
-  retryPreview(): void {
-    if (this.#state.document !== undefined) void this.#readPreview(this.#state.document)
   }
 
   #broadcast(command: PreviewCommand): void {
@@ -671,14 +669,12 @@ export class Workbench {
     this.#focusVersion++
     this.#unsubscribeIr?.()
     this.#unsubscribeIr = undefined
-    this.#changes.stop()
+    this.#history.stop()
     this.#diagnostics.stop()
   }
 
   dispose(): void {
     this.#stopSubscriptions()
-    this.#shortcutListeners.clear()
     this.#diagnostics.dispose()
-    clearTimeout(this.#highlightTimer)
   }
 }
