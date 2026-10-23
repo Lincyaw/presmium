@@ -890,7 +890,7 @@ settings:                            # 插件的运营者设置，键为插件 I
     plugins:                         # 运营者插件：安装在工作区根目录的包，每份文档都加载它们
       - '@lincyaw/slidev-addon-speech'
   presmium.assistant:
-    review: required                 # agent 的修改先审阅后提交（默认）；auto：每个 turn 结束时提交
+    review: required                 # agent 的修改先审阅后提交；默认 auto：每个 turn 结束时提交
     reviewTimeoutMs: 1800000         # 等待审阅而没有页面跟随的审阅在这之后回滚（默认 30 分钟）
   presmium.exec:                     # 编译时执行（architecture.md 10.6 节）
     passEnv: [HF_HOME]               # 另外传给被执行代码的环境变量

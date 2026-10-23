@@ -49,7 +49,7 @@ describe('the review routes of presmium serve', () => {
 
   beforeAll(async () => {
     const source = mkdtempSync(join(tmpdir(), 'presmium-review-source-'))
-    writeFileSync(join(source, 'presmium.workspace.yaml'), 'title: 审阅\ndocuments: [intro/lecture.md, old/lecture.md]\n')
+    writeFileSync(join(source, 'presmium.workspace.yaml'), 'title: 审阅\ndocuments: [intro/lecture.md, old/lecture.md]\nsettings:\n  presmium.assistant:\n    review: required\n')
     for (const doc of ['intro', 'old']) {
       mkdirSync(join(source, doc))
       writeFileSync(join(source, doc, 'lecture.md'), LECTURE)

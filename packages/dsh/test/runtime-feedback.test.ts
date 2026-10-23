@@ -2,9 +2,9 @@ import { randomUUID } from 'node:crypto'
 import { fakeModel } from '../src/node/fake-model.ts'
 import { connectPresmiumMcp } from '@lincyaw/mcp/client'
 import { expect, it } from 'vitest'
-import { testHome, turns } from './harness.ts'
+import { git, testHome, turns } from './harness.ts'
 
-it('gives the agent observed browser failures before it edits and leaves its correction for review', async () => {
+it('gives the agent observed browser failures before it edits and commits its correction when the turn ends', async () => {
   const home = testHome('runtime-feedback')
   const workspace = home.workspace('runtime-feedback', {
     'lecture.md': '---\ntitle: Python database\n---\n\n(database)=\n## Database lookup\n\nExplain the latest value.\n',
@@ -14,7 +14,7 @@ it('gives the agent observed browser failures before it edits and leaves its cor
     { tool: 'presmium__get_runtime', input: {} },
     { tool: 'read', input: { file_path: 'database.py' } },
     { tool: 'write', input: { file_path: 'database.py', content: 'def get(rows, key):\n    return rows.get(key)\n' } },
-    { text: '已根据浏览器的 NameError 修复查询，等待审阅。' },
+    { text: '已根据浏览器的 NameError 修复查询。' },
   ])
   const browser = new AbortController()
   try {
@@ -45,8 +45,9 @@ it('gives the agent observed browser failures before it edits and leaves its cor
     expect(context).toContain('NameError')
     expect(context).toContain('reported')
     expect(JSON.stringify(requests[1]!.body.messages)).toContain('teacher-runtime')
-    const review = await api.fetch('/api/presmium/review?document=')
-    expect(await review.json()).toMatchObject({ review: { session: sessionId, changes: [{ path: 'database.py' }] } })
+    await expect.poll(() => git(workspace.dir, ['log', '-1', '--format=%B']), { timeout: 30_000 }).toContain(`Presmium-Session: ${sessionId}`)
+    expect(git(workspace.dir, ['show', '--name-only', '--format=', 'HEAD']).trim()).toBe('database.py')
+    expect(await (await api.fetch('/api/presmium/review?document=')).json()).toEqual({})
     browser.abort()
     const client = await connectPresmiumMcp(`${service.url}/mcp`, service.mcpToken())
     try {

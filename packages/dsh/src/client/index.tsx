@@ -9,7 +9,7 @@ import { CLIENT_MESSAGES } from './messages.ts'
 import { registerNavigationShell } from './navigation-shell.tsx'
 import { createObservable } from './observable.ts'
 import { isSamePath } from './paths.ts'
-import { registerDiagnosticsRepair } from './repair-diagnostics.ts'
+import { registerAgentRequests } from './agent-requests.ts'
 import { rootLayoutFor } from './RootLayout.tsx'
 import { registerSourceLinks } from './source-links.tsx'
 import { DSH_THEME_TOKENS, syncDarkClass, ThemePresenter } from './theme.ts'
@@ -47,7 +47,7 @@ export function apply(ctx: DshClientContext): void {
   registerSourceLinks(ctx, workbench, layout => showEditor(layout))
   ctx.effect(() => () => workbench.dispose(), 'presmium: workbench')
   syncDocumentContext(ctx, workbench)
-  registerDiagnosticsRepair(ctx, workbench)
+  registerAgentRequests(ctx, workbench)
   ctx.effect(() => ctx.locale.subscribe(() => workbench.setLocale(workbenchLocale(ctx.locale.getLocale().active))), 'presmium: language')
   ctx.effect(() => ctx.theme.overrideTokens(CLIENT_ID, DSH_THEME_TOKENS), 'presmium: 书卷 tokens')
   ctx.effect(() => {

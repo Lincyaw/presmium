@@ -1,12 +1,12 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { createPreviewPool } from '../preview-pool.ts'
 import type { PreviewFrameStatus } from '../preview-pool.ts'
-import { PmIconButton, PmNotice } from '../components.tsx'
+import { PmButton, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
-import { EditorGroup } from '../parts/EditorGroup.tsx'
-import type { EditorGroupProps } from '../parts/EditorGroup.tsx'
+import { PointerPopover } from '../parts/PointerPopover.tsx'
 
-export function PreviewPanel({ active = true, ...props }: EditorGroupProps & { active?: boolean }) {
+/** The open document as its readers see it (the web form or the slides), with the tools for what the author points at. */
+export function PreviewPanel({ active = true }: { active?: boolean }) {
   const t = useMessages()
   const workbench = useWorkbench()
   const document = useWorkbenchState(state => state.document)
@@ -39,24 +39,15 @@ export function PreviewPanel({ active = true, ...props }: EditorGroupProps & { a
 
   return (
     <section className="pmw-preview" aria-label={t.preview} data-ready={(active && document !== undefined && ready) || undefined}>
-      <EditorGroup {...props} kind="preview" actions={<PreviewActions />}>
       {mismatch && <PmNotice tone="warn">{t.versionMismatch}</PmNotice>}
-      {identityFailure && <PmNotice tone="danger">{t.previewIdentityMismatch}</PmNotice>}
-      {failure && <PmNotice tone="danger">{t.previewFailed(failure)}</PmNotice>}
-      {!ready && !preview && !failure && <p className="pmw-muted pmw-preview__loading">{t.previewLoading}</p>}
-      {renderer === 'slides' && preview && !preview.slides && <p className="pmw-muted">{t.noSlides}</p>}
-      <div ref={container} className="pmw-preview__frames" />
-      </EditorGroup>
+      {identityFailure && <PmNotice tone="danger"><span>{t.previewIdentityMismatch}</span><PmButton small onClick={() => workbench.reloadPreview()}>{t.reloadPreview}</PmButton></PmNotice>}
+      {failure && <PmNotice tone="danger"><span>{t.previewFailed(failure)}</span><PmButton small onClick={() => workbench.retryPreview()}>{t.retry}</PmButton></PmNotice>}
+      {!ready && !failure && !(renderer === 'slides' && preview && !preview.slides) && <p className="pmw-muted pmw-preview__loading">{t.previewLoading}</p>}
+      {renderer === 'slides' && preview && !preview.slides && <p className="pmw-muted pmw-preview__loading">{t.noSlides}</p>}
+      <div className="pmw-preview__stage">
+        <div ref={container} className="pmw-preview__frames" />
+        {ready && <PointerPopover />}
+      </div>
     </section>
   )
-}
-
-export function PreviewActions() {
-  const t = useMessages()
-  const workbench = useWorkbench()
-  const picking = useWorkbenchState(state => state.isPicking)
-  return <>
-    <PmIconButton small icon="edit" label={t.pick} aria-pressed={picking} title={t.pickHint} onClick={() => workbench.setPicking(!picking)} />
-    <PmIconButton icon="redo" label={t.reloadPreview} small onClick={() => workbench.reloadPreview()} />
-  </>
 }

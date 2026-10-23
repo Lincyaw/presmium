@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleHelp, CircleX, Columns2, Contrast, Copy, ExternalLink, FileDiff, FileText, Folder, GitBranch, GitFork, Info, Moon, MoreHorizontal, PanelLeftClose, Pause, Pencil, Play, Plug, Plus, Presentation, Redo2, Save, Search, SlidersHorizontal, Sparkles, Sun, Trash2, TriangleAlert, Undo2, Users, X } from 'lucide'
+import { ArrowLeft, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleCheck, CircleHelp, CircleX, Columns2, Contrast, Copy, ExternalLink, Eye, FileDiff, FileText, Folder, GitBranch, GitFork, History, Info, MessageSquare, MessageSquarePlus, MessagesSquare, Moon, MoreHorizontal, PanelLeftClose, Pause, Pencil, PenLine, Play, Plug, Plus, Presentation, Redo2, Save, Search, SlidersHorizontal, Sparkles, Sun, Trash2, TriangleAlert, Undo2, Users, X } from 'lucide'
 import type { IconNode } from 'lucide'
 
 // Presmium's semantic names stay stable across the Vue and React components and the generated HTML.
@@ -12,6 +12,8 @@ export const ICONS = {
   warning: TriangleAlert, error: CircleX, info: Info, contrast: Contrast,
   record: Circle, plug: Plug, 'arrow-left': ArrowLeft,
   split: Columns2, 'merge-panels': PanelLeftClose, save: Save, preview: Presentation,
+  comment: MessageSquare, 'comment-add': MessageSquarePlus, chat: MessagesSquare, versions: History,
+  eye: Eye, 'edit-text': PenLine, resolved: CircleCheck,
 } satisfies Record<string, IconNode>
 
 export type IconName = keyof typeof ICONS

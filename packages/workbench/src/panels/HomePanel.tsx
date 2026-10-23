@@ -1,21 +1,14 @@
-import { Command } from 'cmdk'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { errorMessage } from '@lincyaw/kernel'
-import type { DocumentOperation, DocumentSummary } from '@lincyaw/kernel'
-import { PmBadge, PmButton, PmCard, PmDialog, PmEmpty, PmField, PmIcon, PmMenu, PmNotice } from '../components.tsx'
+import type { DocumentSummary } from '@lincyaw/kernel'
+import { PmButton, PmCard, PmDialog, PmEmpty, PmField, PmIcon, PmMenu, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 
 type Editing =
   | { op: 'create' }
-  | { op: 'rename' | 'copy' | 'delete', doc: DocumentSummary }
+  | { op: 'rename' | 'delete', doc: DocumentSummary }
 
-function freeDir(dir: string, taken: string[]): string {
-  for (let n = 2; ; n++) {
-    const candidate = `${dir}-${n}`
-    if (!taken.includes(candidate)) return candidate
-  }
-}
-
+/** The documents of the workspace: open one, make a new one, rename, copy or delete one. */
 export function HomePanel() {
   const t = useMessages()
   const workbench = useWorkbench()
@@ -23,203 +16,158 @@ export function HomePanel() {
   const failure = useWorkbenchState(state => state.documentsFailure)
   const bundleDisabled = useWorkbenchState(state => state.isBundleDisabled)
   const [editing, setEditing] = useState<Editing>()
+  const [query, setQuery] = useState('')
   const [done, setDone] = useState<string>()
   const [error, setError] = useState<string>()
+  const [working, setWorking] = useState(false)
   useEffect(() => {
     void workbench.loadDocuments()
   }, [workbench])
   const documents = answer?.documents ?? []
   const operable = Boolean(answer?.git) && !answer?.single
+  const shown = documents.filter(doc => doc.title.toLowerCase().includes(query.trim().toLowerCase()))
 
-  const run = async (operation: DocumentOperation, said: (dir: string) => string) => {
+  const run = async (work: () => Promise<string>) => {
     setError(undefined)
+    setWorking(true)
     try {
-      const result = await workbench.operateDocument(operation)
-      setDone(said(result.dir ?? operation.dir))
+      setDone(await work())
       setEditing(undefined)
     } catch (failed) {
       setError(errorMessage(failed))
+    } finally {
+      setWorking(false)
     }
   }
 
   return (
     <section className="pmw-home" aria-labelledby="pmw-home-title">
       <header className="pmw-home__bar">
-        <h1 id="pmw-home-title" className="pmw-home__title">{answer?.title ?? t.workspace}</h1>
-        <Search documents={documents} onCreate={() => setEditing({ op: 'create' })} />
+        <h1 id="pmw-home-title" className="pmw-home__title">{answer?.title ?? t.documents}</h1>
         {operable && <PmButton variant="primary" icon="plus" onClick={() => setEditing({ op: 'create' })}>{t.newDocument}</PmButton>}
       </header>
       {failure && <PmNotice tone="danger">{bundleDisabled ? t.bundleDisabled : failure}</PmNotice>}
       {done && <PmNotice tone="ok">{done}</PmNotice>}
+      {error && !editing && <PmNotice tone="danger">{error}</PmNotice>}
       {answer && !answer.git && !answer.single && <PmNotice tone="warn">{t.notGit}</PmNotice>}
-      <h2 className="pmw-home__heading">{t.documents}</h2>
+      <div className="pmw-home__heading-row">
+        <h2 className="pmw-home__heading">{t.allDocuments}</h2>
+        {documents.length > 6 && (
+          <label className="pm-ui-search pmw-home__search">
+            <PmIcon name="search" size={16} />
+            <input type="search" value={query} placeholder={t.search} aria-label={t.search} onChange={event => setQuery(event.target.value)} />
+          </label>
+        )}
+      </div>
       {answer && documents.length === 0
         ? <PmEmpty icon="document" title={t.noDocuments} />
-        : (
-            <ul className="pmw-home__cards" aria-label={t.documents}>
-              {documents.map(doc => (
-                <li key={doc.dir} className="pmw-home__card" data-document={doc.dir}>
-                  <PmCard variant="interactive">
-                    <button type="button" className="pmw-home__open" onClick={() => void workbench.openDocument(doc.dir)}>
-                      <span className="pmw-home__doc-title">{doc.title}</span>
-                      <span className="pmw-home__doc-dir">{doc.dir || '.'}</span>
-                    </button>
-                    <div className="pmw-home__meta">
-                      {doc.lang && <PmBadge tone="outline">{doc.lang}</PmBadge>}
+        : shown.length === 0 && query
+          ? <p className="pmw-muted">{t.noMatch}</p>
+          : (
+              <ul className="pmw-home__cards" aria-label={t.allDocuments}>
+                {shown.map(doc => (
+                  <li key={doc.dir} className="pmw-home__card" data-document={doc.dir}>
+                    <PmCard variant="interactive">
+                      <button type="button" className="pmw-home__open" onClick={() => void workbench.openDocument(doc.dir)}>
+                        <span className="pmw-home__doc-icon" aria-hidden="true"><PmIcon name="document" size={22} /></span>
+                        <span className="pmw-home__doc-title">{doc.title}</span>
+                      </button>
                       {operable && (
                         <PmMenu
                           label={t.more(doc.title)}
-                          items={[{ id: 'rename', label: t.rename, icon: 'edit' }, { id: 'copy', label: t.copy, icon: 'copy' }, { id: 'delete', label: t.remove, icon: 'trash', danger: true }]}
-                          onSelect={id => setEditing({ op: id as 'rename' | 'copy' | 'delete', doc })}
+                          items={[{ id: 'rename', label: t.rename, icon: 'edit' }, { id: 'copy', label: t.makeCopy, icon: 'copy' }, { id: 'delete', label: t.remove, icon: 'trash', danger: true }]}
+                          onSelect={(id) => {
+                            if (id === 'copy') {
+                              const title = t.copyTitle(doc.title)
+                              void run(async () => {
+                                await workbench.copyDocument(doc.dir, title)
+                                return t.copied(title)
+                              })
+                            } else setEditing({ op: id as 'rename' | 'delete', doc })
+                          }}
                         />
                       )}
-                    </div>
-                  </PmCard>
-                </li>
-              ))}
-            </ul>
-          )}
-      <McpCard />
+                    </PmCard>
+                  </li>
+                ))}
+              </ul>
+            )}
       {editing && (
-        <OperationDialog
+        <DocumentDialog
           editing={editing}
           templates={answer?.templates ?? []}
-          taken={documents.map(doc => doc.dir)}
           error={error}
+          working={working}
           onClose={() => {
             setEditing(undefined)
             setError(undefined)
           }}
-          onRun={(operation) => {
-            const said = { create: t.created, rename: t.renamed, copy: t.copied, delete: t.removed }[operation.op]
-            void run(operation, said)
-          }}
+          onCreate={(title, template) => void run(async () => {
+            const dir = await workbench.createDocument(title, template)
+            void workbench.openDocument(dir)
+            return t.created(title)
+          })}
+          onRename={(doc, title) => void run(async () => {
+            await workbench.retitleDocument(doc.dir, title)
+            return t.renamed(title)
+          })}
+          onDelete={doc => void run(async () => {
+            await workbench.operateDocument({ op: 'delete', dir: doc.dir })
+            return t.removed(doc.title)
+          })}
         />
       )}
     </section>
   )
 }
 
-function OperationDialog({ editing, templates, taken, error, onClose, onRun }: { editing: Editing, templates: string[], taken: string[], error?: string, onClose(): void, onRun(operation: DocumentOperation): void }) {
+function DocumentDialog({ editing, templates, error, working, onClose, onCreate, onRename, onDelete }: {
+  editing: Editing
+  templates: string[]
+  error?: string
+  working: boolean
+  onClose(): void
+  onCreate(title: string, template?: string): void
+  onRename(doc: DocumentSummary, title: string): void
+  onDelete(doc: DocumentSummary): void
+}) {
   const t = useMessages()
-  const [dir, setDir] = useState(editing.op === 'create' ? '' : editing.op === 'copy' ? freeDir(editing.doc.dir, taken) : editing.op === 'rename' ? editing.doc.dir : '')
-  const [title, setTitle] = useState('')
+  const [title, setTitle] = useState(editing.op === 'rename' ? editing.doc.title : '')
   const [template, setTemplate] = useState(templates.includes('default') ? 'default' : templates[0] ?? '')
-  const label = editing.op === 'create' ? t.newDocument : `${{ rename: t.rename, copy: t.copy, delete: t.remove }[editing.op]} · ${editing.doc.title}`
-  const submit = () => {
-    if (editing.op === 'create') onRun({ op: 'create', dir: dir.trim(), ...title.trim() ? { title: title.trim() } : {}, ...template ? { template } : {} })
-    else if (editing.op === 'delete') onRun({ op: 'delete', dir: editing.doc.dir })
-    else onRun({ op: editing.op, dir: editing.doc.dir, to: dir.trim() })
-  }
+  const label = editing.op === 'create' ? t.newDocument : editing.op === 'rename' ? t.rename : t.remove
   return (
     <PmDialog open label={label} closeLabel={t.close} name="pmw-operation" onClose={onClose}>
       <form
         className="pmw-operation"
         onSubmit={(event) => {
           event.preventDefault()
-          submit()
+          if (editing.op === 'create') onCreate(title.trim(), template || undefined)
+          else if (editing.op === 'rename') onRename(editing.doc, title.trim())
+          else onDelete(editing.doc)
         }}
       >
         {editing.op === 'delete'
-          ? <p>{t.confirmRemove(editing.doc.title)}</p>
+          ? <><p>{t.confirmRemove(editing.doc.title)}</p><p className="pmw-muted">{t.removeHint}</p></>
           : (
-              <PmField label={editing.op === 'create' ? t.dir : editing.op === 'rename' ? t.renameTo : t.copyTo}>
-                <input className="pm-ui-input" name="dir" value={dir} required onChange={event => setDir(event.target.value)} />
+              <PmField label={t.title}>
+                <input className="pm-ui-input" value={title} required autoFocus placeholder={t.titlePlaceholder} onChange={event => setTitle(event.target.value)} />
               </PmField>
             )}
-        {editing.op === 'create' && (
-          <>
-            <PmField label={t.title}>
-              <input className="pm-ui-input" name="title" value={title} onChange={event => setTitle(event.target.value)} />
-            </PmField>
-            {templates.length > 1 && (
-              <PmField label={t.template}>
-                <select className="pm-ui-select" name="template" value={template} onChange={event => setTemplate(event.target.value)}>
-                  {templates.map(name => <option key={name} value={name}>{name}</option>)}
-                </select>
-              </PmField>
-            )}
-          </>
+        {editing.op === 'create' && templates.length > 1 && (
+          <PmField label={t.template}>
+            <select className="pm-ui-select" value={template} onChange={event => setTemplate(event.target.value)}>
+              {templates.map(name => <option key={name} value={name}>{name}</option>)}
+            </select>
+          </PmField>
         )}
         {error && <PmNotice tone="danger">{error}</PmNotice>}
         <div className="pmw-operation__actions">
           <PmButton onClick={onClose}>{t.cancel}</PmButton>
-          <PmButton type="submit" variant={editing.op === 'delete' ? 'danger' : 'primary'}>
-            {editing.op === 'create' ? t.create : { rename: t.rename, copy: t.copy, delete: t.remove }[editing.op]}
+          <PmButton type="submit" variant={editing.op === 'delete' ? 'danger' : 'primary'} disabled={working || (editing.op !== 'delete' && !title.trim())}>
+            {editing.op === 'create' ? t.create : editing.op === 'rename' ? t.save : t.remove}
           </PmButton>
         </div>
       </form>
     </PmDialog>
-  )
-}
-
-function Search({ documents, onCreate }: { documents: DocumentSummary[], onCreate(): void }) {
-  const t = useMessages()
-  const workbench = useWorkbench()
-  const [query, setQuery] = useState('')
-  const input = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault()
-        input.current?.focus()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
-  return (
-    <Command className="pmw-search" label={t.search}>
-      <label className="pm-ui-search">
-        <PmIcon name="search" size={15} strokeWidth={1.8} />
-        <Command.Input ref={input} value={query} aria-label={t.search} placeholder={`${t.search}（${t.searchHint}）`} onValueChange={setQuery} onKeyDown={event => { if (event.key === 'Escape') setQuery('') }} />
-      </label>
-      {query.trim() && (
-        <Command.List className="pmw-search__results" aria-label={t.search}>
-          <Command.Empty className="pmw-muted">{t.noMatch}</Command.Empty>
-          <Command.Group heading={t.documents}>
-            {documents.map(doc => (
-              <Command.Item key={doc.dir} value={`${doc.title} ${doc.dir}`} className="pmw-search__item" onSelect={() => { setQuery(''); void workbench.openDocument(doc.dir) }}>
-                <PmIcon name="document" size={15} />{doc.title}<span className="pmw-muted">{doc.dir}</span>
-              </Command.Item>
-            ))}
-          </Command.Group>
-          <Command.Group heading={t.commands}>
-            <Command.Item value={t.newDocument} className="pmw-search__item" onSelect={() => { setQuery(''); onCreate() }}><PmIcon name="plus" size={15} />{t.newDocument}</Command.Item>
-          </Command.Group>
-        </Command.List>
-      )}
-    </Command>
-  )
-}
-
-function McpCard() {
-  const t = useMessages()
-  const workbench = useWorkbench()
-  const [address, setAddress] = useState<string>()
-  const [copied, setCopied] = useState(false)
-  useEffect(() => {
-    workbench.client.readWorkbenchInfo().then(answer => setAddress(answer.mcp), () => {})
-  }, [workbench])
-  if (!address) return null
-  return (
-    <PmCard className="pmw-home__mcp">
-      <h2 className="pmw-home__heading">{t.mcp}</h2>
-      <div className="pmw-home__address">
-        <code>{address}</code>
-        <PmButton
-          small
-          icon={copied ? 'check' : 'copy'}
-          onClick={() => {
-            void navigator.clipboard?.writeText(address).catch(() => {})
-            setCopied(true)
-            setTimeout(() => setCopied(false), 2000)
-          }}
-        >
-          {copied ? t.copiedAddress : t.copyAddress}
-        </PmButton>
-      </div>
-      <p className="pmw-muted">{t.mcpHint}</p>
-    </PmCard>
   )
 }

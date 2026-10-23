@@ -1,7 +1,7 @@
 {
   "name": "@lincyaw/workbench",
   "version": "0.1.0",
-  "description": "Presmium's workbench panels in React (home, file tree, source editor, problems, preview, changes) with the workspace service's client and the preview protocol's workbench side; @lincyaw/dsh places them in presmium studio (experimental)",
+  "description": "Presmium's workbench panels in React (the documents, a document edited on its rendered page with comments and version history) with the workspace service's client and the preview protocol's workbench side; @lincyaw/dsh places them in presmium studio (experimental)",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -30,27 +30,10 @@
     "src"
   ],
   "dependencies": {
-    "@codemirror/commands": "6.11.1",
-    "@codemirror/lang-markdown": "6.5.2",
-    "@codemirror/lang-python": "6.2.1",
-    "@codemirror/lang-yaml": "6.1.3",
-    "@codemirror/language": "6.13.1",
-    "@codemirror/lint": "6.9.7",
-    "@codemirror/search": "6.7.2",
-    "@codemirror/state": "6.7.6",
-    "@codemirror/view": "6.43.14",
-    "@lezer/highlight": "1.2.5",
     "@lincyaw/design": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
     "@radix-ui/react-dialog": "^1.3.1",
-    "@radix-ui/react-dropdown-menu": "^2.2.1",
-    "@radix-ui/react-tabs": "^1.2.1",
-    "cmdk": "^1.1.1",
-    "node-diff3": "3.2.1",
-    "react-arborist": "^4.0.1",
-    "react-dnd": "^16.0.1",
-    "react-dnd-html5-backend": "^16.0.1",
-    "react-resizable-panels": "^4.14.5"
+    "@radix-ui/react-dropdown-menu": "^2.2.1"
   },
   "peerDependencies": {
     "react": "^18.3.1",

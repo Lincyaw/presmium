@@ -6,7 +6,7 @@ export const RIGHTBAR_MAX_RATIO = 0.7
 export const RIGHTBAR_DEFAULT_RATIO = 0.45
 export const SIDE_COLLAPSE = 1024
 export const NARROW = 768
-export const ACTIVITY = 48
+export const ACTIVITY = 72
 export const SIDE_DEFAULT = 264
 export const SIDE_MIN = 200
 export const SIDE_MAX = 420
@@ -23,9 +23,10 @@ export function rightbarRoom(viewport: number, side: number, conversation: numbe
   return viewport - ACTIVITY - side - conversation - CENTRE_MIN - handles * HANDLE
 }
 
-export type Activity = 'documents' | 'files' | 'changes' | 'sessions'
+/** What the side panel shows: the chat history (DeepSeek Harness's sessions). */
+export type Activity = 'sessions'
 /** What a narrow screen shows, one at a time. */
-export type NarrowPane = 'documents' | 'files' | 'source' | 'preview' | 'changes' | 'sessions' | 'conversation'
+export type NarrowPane = 'documents' | 'preview' | 'sessions' | 'conversation'
 
 export interface LayoutState {
   panelInfo: { activePanelId: string | null }
@@ -81,7 +82,7 @@ export function createLayoutStore() {
         isRightbarOpen: false,
         hasRightbarTrack: false,
         isRightbarFullscreen: false,
-        activity: 'files',
+        activity: 'sessions',
         narrowPane: 'documents',
       },
     }),
@@ -199,11 +200,11 @@ export class LayoutController {
     this.#preserveNextConversation = true
   }
 
-  /** Source navigation selects the document without revealing the conversation. */
+  /** A link to a place of the document shows the document without revealing the conversation. */
   showDocument(): void {
     this.#navigation.abort()
     this.#actions.selectPanel(null)
-    this.#actions.showNarrowPane('source')
+    this.#actions.showNarrowPane('preview')
   }
 
   beginNavigation(): AbortSignal {

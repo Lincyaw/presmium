@@ -30,10 +30,11 @@ test.afterEach(async ({}, info) => {
 })
 
 const preview = (page: Page) => page.frameLocator('.pmw-preview__frame')
-const problems = (page: Page) => page.getByRole('region', { name: '问题', exact: true })
+// What did not display, said plainly; the findings themselves are in its details.
+const problems = (page: Page) => page.locator('.pmw-problems')
 async function openDocument(page: Page, title: string): Promise<void> {
   await page.locator('.pmw-home__card').filter({ hasText: title }).locator('.pmw-home__open').click()
-  await expect(page.locator('.pmw-preview__frame')).toHaveAttribute('title', `${title} 的预览`)
+  await expect(page.locator('.pmw-preview__frame')).toHaveAttribute('title', title)
 }
 async function diagnostics(page: Page, document: string): Promise<DiagnosticSnapshot> {
   const response = await page.request.get(`${studio.web.url}/api/presmium/diagnostics?document=${document}`)
@@ -44,8 +45,8 @@ async function diagnostics(page: Page, document: string): Promise<DiagnosticSnap
 test('a compile error appears in the default preview and disappears after the source is repaired', async ({ page }) => {
   await studio.open(page)
   await openDocument(page, '诊断示例')
-  await expect(page.locator('.pmw-doc__source')).toBeHidden()
-  await expect(problems(page).getByRole('alert')).toContainText('diagnostics_unknown', { timeout: 120_000 })
+  await expect(problems(page)).toContainText('有 1 处内容没能正确显示。', { timeout: 120_000 })
+  await expect(problems(page)).toContainText('diagnostics_unknown')
   const before = await diagnostics(page, 'talk')
   expect(before.diagnostics.some(finding => finding.origin === 'compile' && finding.message.includes('diagnostics_unknown'))).toBe(true)
   expect(new Set(before.diagnostics.map(finding => finding.id)).size).toBe(before.diagnostics.length)
@@ -64,7 +65,7 @@ test('a compile error appears in the default preview and disappears after the so
     await route.fulfill({ response })
   }
   await page.route('**/api/presmium/context', delay)
-  await problems(page).getByRole('button', { name: '让 AI 处理', exact: true }).click()
+  await problems(page).getByRole('button', { name: '让 AI 修复', exact: true }).click()
   await captured
   await page.locator('[data-activity="documents"]').click()
   await openDocument(page, '隔离讲义')
@@ -75,8 +76,8 @@ test('a compile error appears in the default preview and disappears after the so
   expect(requests()).toHaveLength(0)
   await page.locator('[data-activity="documents"]').click()
   await openDocument(page, '诊断示例')
-  await expect(problems(page).getByRole('alert')).toContainText('diagnostics_unknown')
-  await problems(page).getByRole('button', { name: '让 AI 处理', exact: true }).click()
+  await expect(problems(page)).toContainText('diagnostics_unknown')
+  await problems(page).getByRole('button', { name: '让 AI 修复', exact: true }).click()
   await expect(page.locator('[data-pmw-slot="main:conversation"]')).toContainText('已看到待处理诊断。', { timeout: 60_000 })
   expect(JSON.stringify(requests().at(-1)?.body.messages)).toContain('diagnostics_unknown')
   const requested = requests().length
@@ -96,7 +97,7 @@ test('runtime diagnostics follow the preview instance, stay in their document, a
   const revision = async () => (await (await page.request.get(`${studio.web.url}/api/presmium/ir?document=talk`)).json()).revision as string
   const before = await revision()
   await preview(page).getByRole('button', { name: '触发运行错误', exact: true }).click()
-  await expect(problems(page).getByRole('alert')).toContainText('诊断运行错误', { timeout: 60_000 })
+  await expect(problems(page)).toContainText('诊断运行错误', { timeout: 60_000 })
   await expect.poll(async () => (await diagnostics(page, 'talk')).diagnostics).toContainEqual(expect.objectContaining({ document: 'talk', origin: 'runtime', renderer: 'web', message: '诊断运行错误' }))
 
   await page.locator('[data-activity="documents"]').click()
@@ -109,7 +110,7 @@ test('runtime diagnostics follow the preview instance, stay in their document, a
   await page.locator('[data-activity="documents"]').click()
   await openDocument(page, '诊断示例')
   await preview(page).getByRole('button', { name: '触发运行错误', exact: true }).click()
-  await expect(problems(page).getByRole('alert')).toContainText('诊断运行错误', { timeout: 120_000 })
+  await expect(problems(page)).toContainText('诊断运行错误', { timeout: 120_000 })
   await preview(page).locator('body').evaluate(() => (window as unknown as { diagnosticsKept: boolean }).diagnosticsKept = true)
   await preview(page).getByRole('button', { name: '恢复组件', exact: true }).click()
   await expect(preview(page).getByText('运行组件已恢复。', { exact: true })).toBeVisible({ timeout: 60_000 })

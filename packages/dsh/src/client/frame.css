@@ -7,12 +7,11 @@ body,
 .pmw-frame {
   position: relative;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   grid-template-areas:
     'activity panels'
-    'status status'
     'bottom bottom';
-  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-columns: 72px minmax(0, 1fr);
   height: 100%;
   overflow: hidden;
   background: var(--pm-color-bg);
@@ -58,13 +57,17 @@ body,
   margin-top: auto;
 }
 
-.pmw-activity__button {
+.pmw-activity__button,
+.pmw-activity__more {
   position: relative;
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 64px;
+  min-height: 48px;
+  padding: 4px 0;
   border: 0;
   border-radius: var(--pm-radius-control);
   background: none;
@@ -72,17 +75,38 @@ body,
   cursor: pointer;
 }
 
-.pmw-activity__count {
+.pmw-activity__more > .pm-ui-icon-button {
+  width: 100%;
+  height: auto;
+  color: inherit;
+}
+
+.pmw-activity__label {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pmw-activity__busy {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  min-width: 14px;
-  padding: 0 3px;
-  border-radius: var(--pm-radius-pill);
+  top: 6px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   background: var(--pm-color-accent);
-  color: var(--pm-color-on-accent);
-  font-size: 10px;
-  line-height: 14px;
+  animation: pmw-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pmw-pulse {
+  50% { opacity: 0.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pmw-activity__busy { animation: none; }
 }
 
 .pmw-activity__button:hover {
@@ -101,28 +125,16 @@ body,
   outline-offset: 1px;
 }
 
-.pmw-frame__side,
 .pmw-frame__sidebar {
   grid-area: side;
   min-width: 0;
   min-height: 0;
-  overflow: auto;
-  border-right: 1px solid var(--pm-color-line);
-  background: var(--pm-color-bg);
-}
-
-.pmw-frame__sidebar {
   overflow: hidden;
+  border-right: 1px solid var(--pm-color-line);
   background: var(--dsw-specific-sidebar-fill, var(--pm-color-sunk));
 }
 
-.pmw-frame__side:not([data-shown]),
-.pmw-frame__side[data-content='sessions'],
 .pmw-frame__sidebar:not([data-shown]) {
-  display: none;
-}
-
-.pmw-frame__side-files[hidden] {
   display: none;
 }
 
@@ -177,21 +189,6 @@ body,
 .pmw-history__header h2 { margin: 0; font-size: var(--pm-text-sm); font-weight: 600; }
 .pmw-history__browser { flex: 1; min-height: 0; overflow: hidden; }
 
-.pmw-frame__status {
-  grid-area: status;
-  display: flex;
-  align-items: center;
-  gap: var(--pm-space-4);
-  min-height: var(--pm-statusbar-height);
-  padding: 0 var(--pm-space-3);
-  overflow: hidden;
-  border-top: 1px solid var(--pm-color-line);
-  background: var(--pm-color-sunk);
-  color: var(--pm-color-muted);
-  font-family: var(--pm-font-mono);
-  font-size: var(--pm-text-xs);
-}
-
 .pmw-frame__bottom {
   grid-area: bottom;
   min-width: 0;
@@ -215,17 +212,16 @@ body,
 .pmw-frame__panels { grid-area: panels; min-width: 0; min-height: 0; }
 .pmw-frame__side-panel { display: grid; }
 .pmw-frame__side-panel > * { grid-area: 1 / 1; }
-.pmw-frame__side, .pmw-frame__sidebar, .pmw-frame__centre, .pmw-frame__conversation, .pmw-frame__rightbar { height: 100%; }
+.pmw-frame__sidebar, .pmw-frame__centre, .pmw-frame__conversation, .pmw-frame__rightbar { height: 100%; }
 .pmw-frame__handle { width: 8px; z-index: 11; background: var(--pm-color-line); }
 .pmw-frame__handle:hover, .pmw-frame__handle:focus-visible { background: var(--pm-color-accent); }
 
 .pmw-frame[data-narrow] {
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   grid-template-areas:
     'activity'
     'panels'
-    'status'
     'bottom';
 }
 
@@ -239,7 +235,7 @@ body,
 }
 
 .pmw-frame[data-narrow] .pmw-activity__logo {
-  margin: 0 var(--pm-space-1) 0 0;
+  display: none;
 }
 
 .pmw-frame[data-narrow] .pmw-activity__end {
@@ -249,6 +245,15 @@ body,
 
 .pmw-frame[data-narrow] .pmw-activity__button[aria-pressed='true'] {
   box-shadow: inset 0 -2px 0 var(--pm-color-accent);
+}
+
+.pmw-frame[data-narrow] .pmw-activity__button,
+.pmw-frame[data-narrow] .pmw-activity__more {
+  flex: none;
+  width: auto;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 2px var(--pm-space-1);
 }
 
 .pmw-frame[data-narrow] .pmw-frame__sidebar,
@@ -268,10 +273,6 @@ body,
 
 .pmw-frame[data-narrow] .pmw-frame__rightbar > * {
   pointer-events: auto;
-}
-
-.pmw-frame[data-narrow] .pmw-frame__status {
-  gap: var(--pm-space-2);
 }
 
 .pmw-logo {
@@ -322,8 +323,6 @@ body,
 }
 
 .pmw-fallback__doc {
-  display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
   height: 100%;
 }
 
@@ -335,13 +334,26 @@ body,
 }
 
 .pmw-frame[data-narrow] .pmw-frame__panels { display: block !important; }
-.pmw-frame[data-narrow] .pmw-frame__panels > [data-panel] { width: 100%; height: 100%; }
+/* react-resizable-panels writes `height: auto` on each panel; on a narrow screen each one fills the page. */
+.pmw-frame[data-narrow] .pmw-frame__panels > [data-panel] { width: 100%; height: 100% !important; }
 .pmw-frame__panels > [hidden] { display: none !important; }
 .pmw-frame[data-narrow] .pmw-frame__sidebar[data-shown] { height: 100%; }
 
-.pmw-frame__rightbar-overlay { position: absolute; top: 0; bottom: var(--pm-statusbar-height); height: auto; z-index: 13; pointer-events: none; }
+.pmw-frame__rightbar-overlay { position: absolute; top: 0; bottom: 0; height: auto; z-index: 13; pointer-events: none; }
 .pmw-frame__rightbar-track { height: 100%; width: 100%; }
 .pmw-frame__rightbar-overlay [data-sidebar-right-session]:has([data-pmw-source-route]) { opacity: 0; }
 .pmw-frame__rightbar-overlay [data-sidebar-right-session]:not([data-sidebar-right-open]) [data-dockkit-host='dock'] { transition: none; }
 .pmw-frame__document { height: 100%; min-width: 0; min-height: 0; }
 .pmw-frame__document[hidden] { display: none; }
+
+/*
+ * Presmium opens one workspace: the conversation does not offer to choose another or another agent preset, and the
+ * chat history lists the sessions without the workspace row above them. Matched by slot names and row keys, not by
+ * Harness's generated class names.
+ */
+[data-slot='conversation.hero.agentPreset'],
+:has(> [data-slot='conversation.hero.agentPreset']) > button,
+[data-slot='sidebar.workspaces'] [data-row-key^='workspace:'],
+[data-slot='sidebar.workspaces'] :has(> [data-slot^='sidebar.workspaces.directory']) {
+  display: none !important;
+}

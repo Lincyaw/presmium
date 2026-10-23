@@ -2,10 +2,10 @@ import { createHash } from 'node:crypto'
 import { lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
 import { WORKSPACE_CONFIG } from '@lincyaw/compiler'
-import type { ConflictAnswer, DocumentFileChange, FilesAnswer, Member, SourceAnswer, SourceFile } from '@lincyaw/kernel'
+import type { ConflictAnswer, DocumentFileChange, FilesAnswer, Member, Revision, SavedAnswer, SourceAnswer, SourceFile } from '@lincyaw/kernel'
 import { isWithin } from '../domain/paths.ts'
 import { listDocuments } from './config.ts'
-import type { WorkspaceConfig } from './config.ts'
+import type { FoundDocument, WorkspaceConfig } from './config.ts'
 import { RequestError } from './errors.ts'
 import { lockedError } from './locks.ts'
 import type { DocumentLocks } from './locks.ts'
@@ -92,8 +92,8 @@ export class SourceEditor {
     return { document: scope.document, home: scope.home, ...documents ? { documents } : {}, files, ...truncated ? { truncated: true as const } : {} }
   }
 
-  #documentHolding(path: string): string | undefined {
-    return listDocuments(this.#config).sort((a, b) => b.dir.length - a.dir.length).find(doc => isWithin(path, doc.dir))?.dir
+  #documentHolding(path: string): FoundDocument | undefined {
+    return listDocuments(this.#config).sort((a, b) => b.dir.length - a.dir.length).find(doc => isWithin(path, doc.dir))
   }
 
   #assertEditable(scope: Scope, path: string, member: Member): void {
@@ -131,7 +131,7 @@ export class SourceEditor {
   async create(scope: Scope, path: string, member: Member): Promise<SourceAnswer> {
     this.#assertEditable(scope, path, member)
     if (BINARY.test(path)) throw new RequestError(415, `${path} is not a text file`)
-    const document = this.#documentHolding(path)
+    const document = this.#documentHolding(path)?.dir
     const scopeDir = document ?? ''
     const release = this.#locks ? this.#locks.claim(scopeDir, 'editor:create') : () => {}
     if (!release) throw lockedError(scopeDir, this.#locks!.holder(scopeDir)!)
@@ -147,10 +147,14 @@ export class SourceEditor {
     }
   }
 
-  async save(scope: Scope, path: string, content: string, base: string, member: Member): Promise<string> {
+  /**
+   * Writes the text over the version the editor opened. `commit` makes a change a revision while the document's lock
+   * is still held; when it fails, the file is put back as it was and the save fails.
+   */
+  async save(scope: Scope, path: string, content: string, base: string, member: Member, commit?: (path: string, lang: string | undefined) => Promise<Revision | undefined>): Promise<SavedAnswer> {
     const document = this.#documentHolding(path)
     const outside = document === undefined
-    const scopeDir = document ?? ''
+    const scopeDir = document?.dir ?? ''
     const release = this.#locks ? this.#locks.claim(scopeDir, 'editor:save') : () => {}
     if (!release) throw lockedError(scopeDir, this.#locks!.holder(scopeDir)!)
     try {
@@ -163,9 +167,18 @@ export class SourceEditor {
       const written = Buffer.from(content, 'utf8')
       if (written.byteLength > MAX_SOURCE) throw new RequestError(413, `the text is larger than the editor saves (${MAX_SOURCE} bytes)`)
       const change: DocumentFileChange = { path, content: written, ...(lstatSync(join(this.#config.root, path)).mode & 0o111) !== 0 ? { executable: true } : {} }
-      if (outside) writeChanges(this.#config, [change], true)
-      else await this.#writer.write([change])
-      return versionOf(written)
+      const write = async (next: DocumentFileChange) => (outside ? writeChanges(this.#config, [next], true) : await this.#writer.write([next]))
+      await write(change)
+      let revision: Revision | undefined
+      if (commit && !written.equals(bytes)) {
+        try {
+          revision = await commit(path, document?.lang)
+        } catch (error) {
+          await write({ ...change, content: bytes })
+          throw error
+        }
+      }
+      return { version: versionOf(written), ...revision ? { revision } : {} }
     } finally {
       release()
     }

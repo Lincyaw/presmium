@@ -1462,7 +1462,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 产物的 Vue 通用交互同样由依赖实现：`@lincyaw/host` 的弹窗、抽屉、菜单、浮层、标签页和分段切换封装 Reka UI；查看器的内容标签页与放映焦点围栏也使用 Reka UI。文稿标签的 `sync` 联动、放映时背景页面的禁用与步骤导航由 Presmium 维护，播放面板与放映画面处在同一个焦点范围，各自保留独立的视觉层级。主题观察通过 VueUse 统一到宿主，图标由 Lucide 提供，`@lincyaw/design` 保留语义名称与框架无关的节点和 HTML 接口。读者问答的 SSE 事件边界由 eventsource-parser 解析，文稿上下文和回答内容仍由问答插件维护。
 
-工作台的通用交互由依赖实现：Radix Primitives 提供弹窗、菜单与标签页，cmdk 提供命令搜索，React Arborist 提供文件树，react-resizable-panels 提供分栏与鼠标、键盘调整。`Pm*` 只封装样式与业务回调；源码编辑使用 CodeMirror 6，首次欢迎在 dsh 适配层直接复用 Harness 的 `Modal`。文档操作、源码版本冲突、编译、审阅与预览协议仍由 Presmium 维护。
+工作台的通用交互由依赖实现：Radix Primitives 提供弹窗与菜单，react-resizable-panels 提供分栏与鼠标、键盘调整。`Pm*` 只封装样式与业务回调；首次欢迎在 dsh 适配层直接复用 Harness 的 `Modal`。文档操作、就地编辑落回源码、版本历史、编译、审阅与预览协议由 Presmium 维护。
 
 `@lincyaw/host` 提供设计令牌与通用组件；网页形态的外壳（工作区首页、阅读页）与插件都用它们，不各自定义颜色与控件。插件界面与幻灯片的默认主题见 5.12 节。
 
@@ -1518,7 +1518,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 ### 5.11 浏览器中的源码编辑
 
-浏览器中的源码编辑在工作台（`presmium studio`）中：文件树、源码编辑器、问题与预览面板（第 13 节，`design-dsh.md` 第 7 节），保存经工作区服务的 `source` 路由（加锁，冲突时三方合并）。产物的页面不编辑源码。
+浏览器中的编辑在工作台（`presmium studio`）中：作者在文稿页面上就地改文字，工作台按块的源码行把改动落回源码（第 13 节，`design-dsh.md` 7.3 节），保存经工作区服务的 `source` 路由（加锁，按版本，每次保存一个提交）。产物的页面自己不编辑源码。
 
 ### 5.12 插件界面与幻灯片的默认主题
 
@@ -1683,7 +1683,7 @@ dsh 的客户端接口中没有文档的部分（客户端包的工厂格式 `__
 | 代码 | 拿得到什么 | 已有的纵深防御 |
 |---|---|---|
 | 编译时执行的代码（没有进程沙箱时） | `presmium` 进程与 agent 进程的 `/proc/<pid>/environ`：`DEEPSEEK_API_KEY` 或 `PRESMIUM_MODEL_KEY`、`PRESMIUM_SPEECH_<ID>_KEY`、`PRESMIUM_ENV_<名>_TOKEN`；`~/.ssh`、`~/.config` 等用户文件；Docker 的套接字（用户在 `docker` 组中时等于 root）与 D-Bus 会话总线；任意网络；运营者目录（可以伪造同意记录）；任何文档目录 | `RunContext.env` 只有清理过的变量；运营者插件登记了进程沙箱时经它运行（10.6 节） |
-| agent（DeepSeek Harness）与它的 shell 命令 | 同上：DeepSeek Harness 的沙箱只管文件的写入（`workspace-write`），不隐藏进程与网络，`workspace-write` 另允许写它的临时区域（Linux 上 `/tmp` 之下的路径，不询问）；agent 自己的环境中有模型的密钥 | 写到工作目录之外、shell 与网络的权限请求经所有者（本机用户）确认；修改经审阅后才提交，可以全部或逐个文件拒绝 |
+| agent（DeepSeek Harness）与它的 shell 命令 | 同上：DeepSeek Harness 的沙箱只管文件的写入（`workspace-write`），不隐藏进程与网络，`workspace-write` 另允许写它的临时区域（Linux 上 `/tmp` 之下的路径，不询问）；agent 自己的环境中有模型的密钥 | 写到工作目录之外、shell 与网络的权限请求经所有者（本机用户）确认；每个 turn 的修改在结束时提交，可以撤销（`review: required` 时经审阅后才提交，可以全部或逐个文件拒绝） |
 | agent 写进被 `.gitignore` 忽略的路径 | git 实现的审阅不含被忽略的文件：agent 写进文稿目录的 `node_modules/` 或 `.presmium/` 中工作目录的文件不出现在差异中，拒绝时也不恢复；`presmium dev` 加载文稿目录 `node_modules` 中的插件，这样写入的包在下一次启动时在 `presmium` 进程中运行 | 无（agent 本来就有 shell，能直接做同样的事） |
 | 文稿声明的本地容器（`kind: devcontainer`） | 容器定义来自文稿，可以挂载主机的任意路径或以特权运行，等于用户的 Docker 权限 | 命令行只得到 `RunContext.env` 与 Docker 客户端的变量；不经进程沙箱（要用 Docker 的套接字） |
 | 文稿目录中的 Node 插件与渲染端包（`presmium dev`、`serve`、`build`、`check` 都接受相对路径与文稿目录的 `node_modules`） | 在 `presmium` 进程中运行，拿得到进程的全部环境 | 无 |
@@ -1708,7 +1708,7 @@ DeepSeek Harness 的限制与 Presmium 的绕开办法见 `design-dsh.md` 第 16
 
 > **工作台**：`presmium studio` 另有启动器与 dsh 宿主两个进程，工作区服务以 `presmium serve` 运行在回环上（第 13 节）。
 
-服务端只供运行它的那个用户使用：`presmium dev`、`build`、`check` 与 `presmium serve` 中，唯一的用户就是运营者，被执行的代码与 agent 以这个用户的身份受信任，没有登录。隔离只做纵深防御：子进程的环境清理（`RunContext.env`）；编译时的代码可以经运营者插件的进程沙箱运行（10.6 节）；agent 的写入先审阅再提交。同一 uid 的代码能读这个用户能读的一切（9.4 节）。多人使用时每人一个工作区（hub 托管模板）。
+服务端只供运行它的那个用户使用：`presmium dev`、`build`、`check` 与 `presmium serve` 中，唯一的用户就是运营者，被执行的代码与 agent 以这个用户的身份受信任，没有登录。隔离只做纵深防御：子进程的环境清理（`RunContext.env`）；编译时的代码可以经运营者插件的进程沙箱运行（10.6 节）；agent 的写入成为可撤销的提交（或按设置先审阅再提交）。同一 uid 的代码能读这个用户能读的一切（9.4 节）。多人使用时每人一个工作区（hub 托管模板）。
 
 没有多人共用一个服务端的部署：没有登录与成员、信任模式、持有第三方凭据的另一个进程与容器编排的工作区模板。
 
@@ -1825,7 +1825,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 | 本机端点被其他网站或进程调用 | 默认只监听本机；校验 `Host` 与 `Origin`（`presmium serve --host` 时另接受监听的地址与本机的名字，其他名字与其他站点的页面照旧被拒绝，10.3 节）；MCP 要求令牌；插件代理的路径不能越出目标（`.`、`..` 与编码的分隔符得到 400） |
 | 局域网中的其他设备 | `presmium serve` 没有登录，只供运行它的那个用户使用：`--host` 时到得了这个端口的设备都以本机作者的身份使用工作区，启动时在标准错误上写明（9.4 节）；默认只监听本机；多人使用时每人一个工作区（hub 托管模板） |
 | agent 误改或越权 | dsh 的文件权限与确认映射见 `design-dsh.md` 6.2、6.3 节；会话修改由工作区审阅覆盖（10.7 节），接受后提交并可撤销。MCP 的操作类与计费类工具由服务端确认，确认按范围分发（10.4 节） |
-| 文稿关闭安全设置 | 工作区的插件列表、确认策略、agent 的替换命令与模型的服务提供方、修改的审阅、编译时执行传入的环境变量（`settings.presmium.exec.passEnv`）、录音的去处、是否允许克隆音色与同意记录的目录都不从文稿读取，只来自命令行、环境变量与工作区配置（插件经 `settings` 得到，4.7 节）；工作区配置只在进程启动时读取，改动要等运营者重启才生效。agent 对工作区配置的改动包含在工作区审阅中，作者可以逐文件拒绝；写入权限由 dsh 的权限模式决定（`design-dsh.md` 6.3 节） |
+| 文稿关闭安全设置 | 工作区的插件列表、确认策略、agent 的替换命令与模型的服务提供方、修改的审阅、编译时执行传入的环境变量（`settings.presmium.exec.passEnv`）、录音的去处、是否允许克隆音色与同意记录的目录都不从文稿读取，只来自命令行、环境变量与工作区配置（插件经 `settings` 得到，4.7 节）；工作区配置只在进程启动时读取，改动要等运营者重启才生效。agent 对工作区配置的改动包含在工作区审阅中，提交后作者可以撤销（`review: required` 时可以在接受前逐文件拒绝）；写入权限由 dsh 的权限模式决定（`design-dsh.md` 6.3 节） |
 | 文稿中的 Node 插件在服务端运行 | 文稿列出的插件与文稿目录中的包在 `presmium` 进程中运行，等于运行文稿的代码：`presmium serve` 与 `presmium dev` 相同；只打开信任的文稿与工作区（9.4 节） |
 | 编辑者或 agent 写的代码在服务端运行 | 代码只得到清理过的环境变量（`RunContext.env`，4.6 节），`presmium serve` 中只有允许列表；全部执行，运营者插件登记了进程沙箱时经它运行（10.6 节）；agent 的 shell 按 dsh 的权限模式 |
 | 同一 uid 的代码读其他进程的环境与内存 | 不声称挡住（9.4 节），只有进程沙箱在可用时隐藏其他进程 |
@@ -1952,7 +1952,7 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 
 实现：
 
-- **契约与代理**：`packages/kernel/src/contracts/preview.ts` 有 `PREVIEW_PROTOCOL`、两个方向的消息类型（`PreviewCommand`、`PreviewReport`）、两边共用的收窄函数 `toPreviewCommand`、`toPreviewReport`（核对信封、版本、nonce 与字段，不认识的一律丢弃；`selection` 的内容在字段 `selection` 中，没有选中时为 `null`，与 `highlight` 的 `target` 一样）；不依赖框架的产物一侧在 `packages/kernel/src/preview-frame.ts`（另有开发服务器的 `Content-Security-Policy` 用的 `previewFrameAncestors`），`connectPreviewFrame(page)` 返回 `PreviewFrame`：按锚点框出（`[data-preview-highlight]`，不在页面中的先由形态带进来）、在块的元素之中画编号标记（`.pm-preview-pin`）、点选（捕获阶段的点击，控件与链接照常，鼠标下的块加虚线框）、文字选中（`selectionchange`）、作者用的标记（`<html>` 的类 `pm-author-marks`，`AUTHOR_MARKS_CLASS`）、位置（至多每 150 ms）、页面重新渲染后重画（`MutationObserver`），`ready` 之前的问题攒到 `ready` 之后再发。这些都只对页面看得见的块：宿主的规则（排版了、不在 `[inert]` 与 `.pm-hidden` 之下）加上形态自己的规则（`PreviewPage.seen`；幻灯片中是点击还没显示或已经隐藏的块，即 Slidev 文档写明的类 `.slidev-vclick-hidden`，以及逐项出现的列表在第一项的点击之前），看不见的块不框（先由形态带到它出现的那一步）、不画标记、点不中（点在它的位置上得到章节）。nonce 另记在 iframe 的 `window.name` 中，同一个框架中换了地址或刷新后代理照样启动。两种形态各自只给出位置、跳转、明暗、修订号与问题：网页 `packages/web/src/client/preview-frame.ts`（IR 运行时的 `navigation`、VitePress 的明暗开关），只由预览开发服务器生成的主题导入（`ThemeInput.preview`）；幻灯片 `packages/addon-core/src/client/preview-frame.ts`（幻灯片的 `navigation`、Slidev 的 `useDarkMode`；预览中幻灯片的文字可以选中），只由 render-slides 在预览时写进生成文稿的 `setup/root.ts`。静态构建与 `presmium dev` 的页面不加载这两个文件，内核中的代理在构建中被摇掉（`packages/cli/test/preview.test.ts` 扫描两种形态的构建产物）。插件启动失败与组件出错（宿主的启动报告与 `componentErrors`）各报告一次。
+- **契约与代理**：`packages/kernel/src/contracts/preview.ts` 有 `PREVIEW_PROTOCOL`、两个方向的消息类型（`PreviewCommand`、`PreviewReport`）、两边共用的收窄函数 `toPreviewCommand`、`toPreviewReport`（核对信封、版本、nonce 与字段，不认识的一律丢弃；`selection` 的内容在字段 `selection` 中，没有选中时为 `null`，与 `highlight` 的 `target` 一样）；不依赖框架的产物一侧在 `packages/kernel/src/preview-frame.ts`（另有开发服务器的 `Content-Security-Policy` 用的 `previewFrameAncestors`），`connectPreviewFrame(page)` 返回 `PreviewFrame`：按锚点框出（`[data-preview-highlight]`，不在页面中的先由形态带进来）、在块的元素之中画编号标记（`.pm-preview-pin`）、点选（捕获阶段的点击，控件与链接照常，鼠标下的块加浅色细框，报告块的框、鼠标位置与连击次数）、文字选中（`selectionchange`，带选区的框）、点选或选区的框随滚动与尺寸变化重报（`rect`，每帧再看一次，直到连续两帧不变）、就地编辑（`edit`：元素加 `contenteditable` 与 `[data-preview-editing]`，按键在窗口的捕获阶段截下；取消或没有改动时按 `MutationObserver` 的记录倒着撤销浏览器的改动，页面框架持有的节点因此不变）、作者用的标记（`<html>` 的类 `pm-author-marks`，`AUTHOR_MARKS_CLASS`）、位置（至多每 150 ms）、页面重新渲染后重画（`MutationObserver`），`ready` 之前的问题攒到 `ready` 之后再发。这些都只对页面看得见的块：宿主的规则（排版了、不在 `[inert]` 与 `.pm-hidden` 之下）加上形态自己的规则（`PreviewPage.seen`；幻灯片中是点击还没显示或已经隐藏的块，即 Slidev 文档写明的类 `.slidev-vclick-hidden`，以及逐项出现的列表在第一项的点击之前），看不见的块不框（先由形态带到它出现的那一步）、不画标记、点不中（点在它的位置上得到章节）。nonce 另记在 iframe 的 `window.name` 中，同一个框架中换了地址或刷新后代理照样启动。两种形态各自只给出位置、跳转、明暗、修订号与问题：网页 `packages/web/src/client/preview-frame.ts`（IR 运行时的 `navigation`、VitePress 的明暗开关），只由预览开发服务器生成的主题导入（`ThemeInput.preview`）；幻灯片 `packages/addon-core/src/client/preview-frame.ts`（幻灯片的 `navigation`、Slidev 的 `useDarkMode`；预览中幻灯片的文字可以选中），只由 render-slides 在预览时写进生成文稿的 `setup/root.ts`。静态构建与 `presmium dev` 的页面不加载这两个文件，内核中的代理在构建中被摇掉（`packages/cli/test/preview.test.ts` 扫描两种形态的构建产物）。插件启动失败与组件出错（宿主的启动报告与 `componentErrors`）各报告一次。
 - **修订号**：工作区服务以编译结果 IR 的哈希为修订号（`GET ir`），写进交给预览开发服务器的 IR 的 `meta`（键 `PREVIEW_REVISION`，即 `presmiumRevision`）；网页从 IR 运行时的文档读出，页面换上新的 IR 后发 `updated`；幻灯片由生成文稿的 Vite 插件读 `preview.json`，经 Vite 的 WebSocket 推送（`presmium:revision`，在幻灯片的热更新之后）。
 - **步号**：`position`、`picked` 的 `step` 是页面自己的步号，都带 `trail`（`picked` 是块出现的那一步的，`PreviewPage.stepOf`），工作台用内核的 `trailStep` 换算成完整文稿的步号，与控制通道的位置相同；`go` 带 `trail` 时按它定位（`followedPlace`），只带 `step` 时按页面的步号。只给网页的块在幻灯片中不占步骤，端到端用例的文稿就有这样一步。
 - **幻灯片的锚点**：每一页的标题与块包在章节的锚点 `<div class="pm-slide-section" data-section>` 中（`display: contents`，不改变版式；演讲者备注留在它之后，Slidev 只认页末的注释），每个顶层上屏块包在 `<div class="pm-block" data-block data-section data-step>` 中（点击的包装在它之内），静态构建中同样存在，所以宿主的 `blockElement`（`[data-section] .pm-block[data-block]`）在幻灯片中同样找得到块；生成文稿的样式（`render-slides/src/node/deck-base.css`）让主题“书卷”对段落与列表的规则对锚点中的同样有效，预览的幻灯片上没有子内容的角色是一个空的 `.pm-role-mark`，只在 `pm-author-marks` 时以 `::before` 显示标记（构建与 `presmium dev` 的幻灯片照旧只在演讲者备注中有标记）。网页的 `PmRoleMark` 同样看这个类。

@@ -56,7 +56,8 @@ export type PreviewCommand =
 
 export type PreviewCommandType = PreviewCommand['type']
 
-export type PreviewShortcut = 'open-files' | 'open-commands'
+/** A workbench command the page's keyboard asks for while it has the focus. */
+export type PreviewShortcut = 'undo' | 'redo' | 'dismiss'
 
 export type PreviewReport =
   | { type: 'ready', renderer: 'web' | 'slides', document: string, revision?: string, capabilities: PreviewCommandType[] }
@@ -140,7 +141,7 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
       ? { type: 'activity', active: m.active, request: m.request, ...m.revision === undefined ? {} : { revision: m.revision as string }, ...m.error === undefined ? {} : { error: m.error as string } }
       : undefined
     case 'report': return (m.level === 'error' || m.level === 'warning') && text(m.message) && optional(m.plugin, text) && (m.resolved === undefined || typeof m.resolved === 'boolean') ? { type: 'report', level: m.level, message: m.message, ...m.plugin ? { plugin: m.plugin as string } : {}, ...m.resolved === undefined ? {} : { resolved: m.resolved as boolean } } : undefined
-    case 'shortcut': return m.command === 'open-files' || m.command === 'open-commands' ? { type: 'shortcut', command: m.command } : undefined
+    case 'shortcut': return m.command === 'undo' || m.command === 'redo' || m.command === 'dismiss' ? { type: 'shortcut', command: m.command } : undefined
     default: return undefined
   }
 }

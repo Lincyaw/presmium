@@ -1,0 +1,113 @@
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import type { FormEvent, KeyboardEvent } from 'react'
+import { PmButton, PmIconButton, PmNotice } from '../components.tsx'
+import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
+import { isAgentChanging } from '../workbench.ts'
+import type { Pointer } from '../workbench.ts'
+
+type Step = 'tools' | 'comment' | 'rewrite'
+
+const GAP = 10
+const MARGIN = 8
+
+/** Where the popover goes in the stage: below the pointer (above it when there is no room), inside the stage. */
+function placement(pointer: Pointer, size: { width: number, height: number }, stage: { width: number, height: number }) {
+  const rect = pointer.rect!
+  const x = pointer.quote ? rect.x : pointer.point?.x ?? rect.x
+  const below = pointer.quote ? rect.y + rect.height : pointer.point?.y ?? rect.y + rect.height
+  const above = pointer.quote ? rect.y : pointer.point?.y ?? rect.y
+  let top = below + GAP
+  if (top + size.height > stage.height - MARGIN && above - GAP - size.height >= MARGIN) top = above - GAP - size.height
+  const left = Math.max(MARGIN, Math.min(x - 16, stage.width - size.width - MARGIN))
+  return { left, top: Math.max(MARGIN, Math.min(top, stage.height - size.height - MARGIN)) }
+}
+
+/** The small toolbar beside the mouse for what the author points at: edit its text, comment on it, or have the AI rewrite it. */
+export function PointerPopover() {
+  const t = useMessages()
+  const workbench = useWorkbench()
+  const pointer = useWorkbenchState(state => state.pointer)
+  const asking = useWorkbenchState(state => state.isAsking)
+  const failure = useWorkbenchState(state => state.askFailure)
+  const busy = useWorkbenchState(isAgentChanging)
+  const [step, setStep] = useState<Step>('tools')
+  const [text, setText] = useState('')
+  const box = useRef<HTMLDivElement>(null)
+  const [position, setPosition] = useState<{ left: number, top: number }>()
+  const key = pointer && JSON.stringify([pointer.target, pointer.quote ?? ''])
+
+  useEffect(() => {
+    setStep('tools')
+    setText('')
+  }, [key])
+  useLayoutEffect(() => {
+    const element = box.current
+    const stage = element?.parentElement
+    if (!pointer?.rect || !element || !stage) return setPosition(undefined)
+    setPosition(placement(pointer, { width: element.offsetWidth, height: element.offsetHeight }, { width: stage.clientWidth, height: stage.clientHeight }))
+  }, [pointer, step, failure])
+  useEffect(() => {
+    if (!pointer) return
+    const close = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape' && !event.defaultPrevented) workbench.point(undefined)
+    }
+    window.addEventListener('keydown', close)
+    return () => window.removeEventListener('keydown', close)
+  }, [pointer, workbench])
+
+  if (!pointer?.rect) return null
+  const send = async (instruction: string) => {
+    if (instruction.trim() && await workbench.askAgent(instruction)) setText('')
+  }
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    if (step === 'comment') workbench.addComment(text)
+    else void send(text)
+  }
+  const keys = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) submit(event)
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      setStep('tools')
+    }
+  }
+  return (
+    <div ref={box} className="pmw-pointer pm-ui" role="dialog" aria-label={t.pointerTools} data-step={step} style={position ?? { visibility: 'hidden' }}>
+      {step === 'tools'
+        ? (
+            <div className="pmw-pointer__tools" role="toolbar" aria-label={t.pointerTools}>
+              {pointer.isEditable && <PmButton small icon="edit-text" disabled={busy} onClick={() => workbench.editText(pointer.target, pointer.point)}>{t.editText}</PmButton>}
+              <PmButton small icon="comment-add" onClick={() => setStep('comment')}>{t.newComment}</PmButton>
+              <PmButton small icon="sparkle" variant="accent" onClick={() => setStep('rewrite')}>{t.rewrite}</PmButton>
+              <PmIconButton small icon="close" label={t.close} onClick={() => workbench.point(undefined)} />
+            </div>
+          )
+        : (
+            <form className="pmw-pointer__form" onSubmit={submit}>
+              {pointer.quote && <blockquote className="pmw-pointer__quote">{pointer.quote}</blockquote>}
+              {step === 'rewrite' && (
+                <div className="pmw-pointer__suggestions">
+                  {t.suggestions.map(suggestion => <PmButton key={suggestion} small disabled={asking} onClick={() => void send(suggestion)}>{suggestion}</PmButton>)}
+                </div>
+              )}
+              <textarea
+                className="pm-ui-textarea pmw-pointer__text"
+                autoFocus
+                rows={3}
+                value={text}
+                aria-label={step === 'comment' ? t.newComment : t.rewrite}
+                placeholder={step === 'comment' ? t.commentPlaceholder : t.rewritePlaceholder}
+                onChange={event => setText(event.target.value)}
+                onKeyDown={keys}
+              />
+              {failure && <PmNotice tone="danger">{t.askFailed(failure)}</PmNotice>}
+              <div className="pmw-pointer__actions">
+                {asking && <span className="pmw-muted">{t.sending}</span>}
+                <PmButton small onClick={() => setStep('tools')}>{t.cancel}</PmButton>
+                <PmButton small type="submit" variant="primary" disabled={!text.trim() || asking}>{step === 'comment' ? t.postComment : t.send}</PmButton>
+              </div>
+            </form>
+          )}
+    </div>
+  )
+}

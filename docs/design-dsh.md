@@ -10,7 +10,7 @@
 |---|---|
 | dsh | DeepSeek Harness（MIT）：agent 循环、工具、沙箱、确认、会话、模型适配，以及一个用 React 写的网页客户端运行时。Presmium 只经它的插件、配置补丁与客户端插件机制使用它 |
 | 产物 | 渲染端从 IR 生成、能单独部署的东西：网页、幻灯片、notebook、讲授。静态构建的结果与开发服务器实时提供的页面都算。产物用 Vue（VitePress、Slidev） |
-| 工作台 | 作者编写文稿用的界面：外壳、首页、文件树、源码编辑器、问题、预览、对话与批注、审阅与修改历史、讲授的面板。它是 `presmium studio` 的页面 |
+| 工作台 | 作者编写文稿用的界面：外壳、文稿列表、文稿视图（在文稿上就地编辑、批注、AI 改写）、版本历史、对话、讲授的面板。它是 `presmium studio` 的页面 |
 | 工作区服务 | `presmium serve` 中不含界面的部分：编译会话、产物的开发服务器、文档与源码的路由、修改历史与审阅、MCP |
 | bundle | dsh 的扩展包，由 dsh 的插件与配置补丁组成。Presmium 的 bundle 是 `@lincyaw/dsh`。它不是 Presmium 自己的插件包（`@lincyaw/slidev-addon-*`） |
 | 行 | dsh 配置树中的一项：一个插件、它的配置与是否启用，以 ID 标识（如 `ui-layout`） |
@@ -29,7 +29,7 @@
 
 ### 1.1 目标
 
-工作台面向不熟悉开发工具的教师：描述教学要求、查看预览、选择有问题的内容，再审阅 agent 的修改。布局沿用 VS Code 的活动栏、文件与预览习惯，操作保持简单；专业代码编写使用 VS Code 扩展。工作台的优先级是让 dsh 得到足够的文稿、选区、诊断和实际运行反馈，完成编辑与检查。
+工作台面向不懂技术的教师：在排好版的文稿上直接修改、写批注、请 AI 改写，每次修改自动成为可以撤消的版本，使用体验接近 Word；界面中不出现源码、文件与 git。专业的源码编写使用 VS Code 扩展与命令行。工作台的优先级是让 dsh 得到足够的文稿、选区、诊断和实际运行反馈，完成编辑与检查。
 
 1. 不配模型、也不装 dsh 时，核心照常可用：编译、IR、渲染端、CLI、静态产物，以及 `presmium dev` 的实时预览。
 2. 产物可以单独部署与使用，不带工作台的代码。工作台换框架或换实现时，产物不改。
@@ -44,11 +44,11 @@
 4. **dsh 只经一个包接触。** 只有 `@lincyaw/dsh` 引用 dsh 的宿主接口与客户端接口；`@lincyaw/studio` 只负责安装与启动 dsh；分层检查保证这一点（3.2 节）。工作台的面板不引用 dsh，核心与产物不知道 dsh 存在。dsh 的接口变了，只改这一个包。dsh 精确锁定一个版本，升级先过升级闸门（第 12 节）。
 5. **不改 dsh。** 不 fork，不打补丁，只用它的插件、配置补丁与客户端插件机制（仓库的“依赖优先”）；它的限制在 Presmium 一侧绕开（第 16 节）。
 6. **工作台中的 agent 只用 dsh，外部 agent 经 MCP 接入。** 模型在 dsh 的模型设置中选。外部 agent（Claude Code、Codex 等）是一等入口。一张工具表，两个适配器（MCP 与 dsh 工具）：工具只在工作区服务中执行，新工具两边都有，两边的清单由一致性用例保证相同（第 9 节）。
-7. **浏览器中的源码编辑只在工作台中。** `presmium studio` 可以不配模型；`presmium dev` 是实时预览加“在编辑器中打开”，`presmium serve` 只有文档列表与产物（第 13 节）。没有不依赖 dsh 的浏览器编辑页。
+7. **浏览器中的编辑只在工作台中，而且不经源码。** 工作台在文稿页面上就地改文字，再落回源码；`presmium studio` 可以不配模型；`presmium dev` 是实时预览加“在编辑器中打开”，`presmium serve` 只有文档列表与产物（第 13 节）。没有不依赖 dsh 的浏览器编辑页。
 8. **文稿的代码不进 dsh 宿主。** 编译、编译时执行与构建都在工作区服务的进程中；持有模型凭据与确认通道的 dsh 宿主不运行文稿的代码。
 9. **修改落在源码上，并成为提交。** dsh 的修改卡片只是视图；审阅、提交与撤销由 Presmium 负责（6.5 节）。
 10. **隐私默认关闭，每次启动重新声明。** 不上传会话日志、插件清单与遥测，不读用户目录中的技能，第一次使用时不在用户的文档目录中建目录（6.6 节）。
-11. **焦点只有一种。** 源码编辑器中的选中、网页预览与幻灯片预览中的点选统一为一种 `Focus`、一种交互、一种发送方式；MCP 另有 `presmium://focus` 与 `get_focus`（第 8 节）。
+11. **焦点只有一种。** 网页与幻灯片中的点选与选中文字统一为一种 `Focus`、一种交互、一种发送方式；MCP 另有 `presmium://focus` 与 `get_focus`（第 8 节）。
 12. **有退路。** 根布局插件失效时，同一批面板挂在 dsh 自带布局中仍可用（7.2 节）。
 
 ## 2. 三层与进程
@@ -150,16 +150,20 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 产物 → 工作台 | `activity` | `active`、`request`、`revision?`、`error?` | 完成上述切换后的确认，回传请求编号；失败时工作台销毁预览，沿用重新加载路径 |
 | 工作台 → 产物 | `go` | `section`、`step?`、`trail?`、`view?` | 跳到某节的某一步。`view` 是网页形态的运行时视图（`document`、`present` 等，与控制通道的位置相同）；幻灯片形态没有 |
 | 工作台 → 产物 | `highlight` | `target`：`{ section, block? }` 或 `null` | 框出一块或一节；不在视野中时滚动过去；`null` 清除 |
-| 工作台 → 产物 | `pick` | `on` | 点选模式。打开时点在块上报告 `picked`，不触发块自己的操作；链接、按钮与输入框照常工作（规则同 `placeOfClick`）。鼠标下的块加虚线框 |
-| 工作台 → 产物 | `pins` | `targets`：`[{ id, section, block, label }]` | 在这些块旁画编号标记（`label`）；标记在页面之中，滚动、缩放与切换步骤时自然跟着块走；块不在当前页面中时不画。空数组清除 |
+| 工作台 → 产物 | `pick` | `on` | 点选模式。打开时点在块上报告 `picked`，不触发块自己的操作；链接、按钮与输入框照常工作（规则同 `placeOfClick`）。鼠标下的块加一道浅色细框，指针为手形；双击块不选中词 |
+| 工作台 → 产物 | `pins` | `targets`：`[{ id, section, block, label }]` | 在这些块的右上角画编号标记（`label`），并把块淡淡标出，像 Word 标出有批注的文字；标记在页面之中，滚动、缩放与切换步骤时自然跟着块走；块不在当前页面中时不画。空数组清除 |
 | 工作台 → 产物 | `marks` | `on` | 显示作者用的标记（如 `{cue}`），`PmRoleMark` 看它 |
 | 工作台 → 产物 | `appearance` | `dark` | 明暗跟随工作台 |
+| 工作台 → 产物 | `edit` | `target`：`{ section, block? }` 或 `null`、`at?`：`{ x, y }` | 就地编辑一块的文字；只有 `section` 时编辑该节的标题。光标放在 `at`（iframe 视口中的点，通常取 `picked` 的 `point`）下的文字处，不在元素的文字上时放在末尾。只能输入纯文本：格式命令、换行与拖放被拦下，粘贴只取纯文本。编辑中的按键不交给页面（幻灯片的翻页、站内搜索与 `shortcut` 都不响应），输入法组字时的按键不算。`Enter` 结束并保留，焦点离开该元素时同样；`Esc` 或 `target: null` 取消，页面恢复原来的节点。正在编辑另一处时先结束并保留那一处。每条带 `target` 的 `edit` 都有 `editing` 回答 |
 | 产物 → 工作台 | `position` | `section`、`step`、`trail`、`view?` | 位置变化时发出，至多每 150 ms 一次 |
-| 产物 → 工作台 | `picked` | `section`、`block?`、`step?`、`trail?` | 点选的结果；点在块上时带块出现的步骤（页面自己的步号）与那一步的 `trail`，同 `position` |
-| 产物 → 工作台 | `selection` | `{ section, block?, text }` 或 `null` | 页面中的文字选中，供焦点带上（8.2 节的 `quote`） |
+| 产物 → 工作台 | `picked` | `section`、`block?`、`step?`、`trail?`、`rect?`、`point`、`clicks` | 点选的结果；点在块上时带块出现的步骤（页面自己的步号）与那一步的 `trail`，同 `position`。`rect` 是所点的块（没有块时是节）的框，`point` 是鼠标的位置，都在 iframe 的视口中，单位为 CSS 像素；`clicks` 是连击的次数（1 到 3），双击依次报告 1 与 2 |
+| 产物 → 工作台 | `selection` | `{ section, block?, text, rect? }` 或 `null` | 页面中的文字选中，供焦点带上（8.2 节的 `quote`）。`rect` 是选区的框（选区没有框时取它最后一行的框）。编辑中的选区不报告 |
+| 产物 → 工作台 | `rect` | `rect`：框或 `null` | 跟随的对象在页面滚动（任何滚动区域）或尺寸变化后的框，供工作台把工具条留在它旁边；完全移出视野或已不在页面中时为 `null`。跟随的对象是最近一次点选的块，直到再次点选或有了非空的选区；有选区时是选区，选区清空后不再跟随。没有跟随的对象时不发，框不变时也不发 |
+| 产物 → 工作台 | `editing` | `target`、`active` | 就地编辑开始（`true`）或结束（`false`）；找不到要编辑的元素时立即回答 `false` |
+| 产物 → 工作台 | `edited` | `target`、`before`、`after` | 编辑结束并保留、文字有变化时发出一次，先于 `editing` 的 `false`。`before`、`after` 是元素的文字（`textContent`，不含代理画的编号标记，不间断空格按普通空格）。页面保留编辑后的样子，新的 IR 到来时重新渲染；工作台据此改写源码。没有变化时页面恢复原来的节点，不发 |
 | 产物 → 工作台 | `updated` | `revision` | 页面换上了新的 IR。工作台据此重新加上高亮与焦点的标记，并判断预览是否已反映刚保存的源码 |
 | 产物 → 工作台 | `report` | `level`（`error` 或 `warning`）、`plugin?`、`message`、`resolved?` | 页面中的运行时问题；`resolved: true` 清除同一问题。工作台按预览实例报告到诊断接口 |
-| 产物 → 工作台 | `shortcut` | `command`（`open-files` 或 `open-commands`） | 预览获得键盘焦点后，Ctrl/Cmd+P 与 Ctrl/Cmd+Shift+P 仍打开工作台的快速打开与命令面板。只传这两种意图，经原有来源、nonce 与文稿握手校验；不传任意按键 |
+| 产物 → 工作台 | `shortcut` | `command`（`undo`、`redo` 或 `dismiss`） | 预览获得键盘焦点后，Ctrl/Cmd+Z 仍撤消、Ctrl/Cmd+Y 与 Ctrl/Cmd+Shift+Z 仍恢复工作台中的版本，Esc 关掉工作台的工具条；页面自己的输入框与就地编辑中的按键不转发。只传这三种意图，经原有来源、nonce 与文稿身份检查 |
 
 ### 4.4 坐标与步骤
 
@@ -197,9 +201,10 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 路由 | 作用 |
 |---|---|
 | `GET documents`、`POST documents` | 文档列表、编译状态与章节；新建、重命名、复制、删除 |
-| `GET files`、`GET source`、`POST source` | 列出文件；带版本的读写，冲突时 409，加锁（`architecture.md` 5.11 节） |
-| `GET changes`、`POST changes/commit`、`POST changes/discard` | 未提交的修改 |
-| `GET revisions`、`POST revisions/revert` | 修改历史与撤销 |
+| `GET files`、`GET source`、`POST source` | 列出文件；带版本的读写，冲突时 409，加锁（`architecture.md` 5.11 节）。git 仓库中的保存在持有文档锁时随即提交这一个文件（来源 `editor`），回答带这个 `revision`：说明是请求的 `message`（去掉首尾空白后的第一行，至多 200 个字符），没有时按文件所在文稿的 `lang` 写成 `编辑 <文件名>`（`lang` 缺省或以 `zh` 开头）或 `Edit <文件名>`。内容不变、文件被 git 忽略时不提交；提交失败时文件恢复原样，保存失败 |
+| `GET changes`、`POST changes/commit`、`POST changes/discard` | 未提交的修改（工作台之外的写入） |
+| `GET revisions`、`POST revisions/revert` | 修改历史（新的在前）与撤销其中任一个修改；`revisions` 另给出下一次撤销与重做收回的修改 `undo`、`redo`，按文档的整个历史计算，不受 `limit` 截断 |
+| `POST history/undo`、`POST history/redo` | 按修改撤销与重做，请求体 `{ expect? }`。从旧到新看文档历史中的 Presmium 修改：普通修改压入撤销栈并清空重做栈；撤销一个修改把它移出撤销栈，这次撤销压入重做栈；重做（撤销一次撤销）把那次撤销移出重做栈，原来的修改放回撤销栈；文档操作清空两个栈，撤销按钮不收回它与它之前的修改。`undo` 是撤销栈顶的修改，`redo` 是重做栈顶的撤销。服务在 git 锁中取目标：没有可撤销或重做的、`expect`（读到的 `undo` 或 `redo`，可以是前缀）不是当前目标时 409；之后与 `revisions/revert` 相同，回答 `RevertResult`，冲突时 409 |
 | `GET ir?document=` | 文档的 IR、修订号与诊断 |
 | `GET ir/events?document=` | SSE，由服务直接流出、不缓冲：连接后先发当前的修订号，之后是新的修订号、诊断数与改过的文件（相对于工作区根目录）。编辑器据此与磁盘比较 |
 | `GET preview?document=&view=web\|slides` | 各形态开发服务器的地址；按选择的形态启动，页面带预览代理。网页请求不启动幻灯片；显式请求幻灯片时，启动失败返回错误而不是冒充未配置。文稿的渲染端配置变化后刷新可选形态，缺失或启动失败时仍可切回网页，修复后可重新载入 |
@@ -298,14 +303,14 @@ dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达�
 
 ### 6.5 turn、审阅与提交
 
-整个工作区对应 dsh 的工作区，对话对应 dsh 的会话；一次接受的审阅是一个提交，撤销用 `git revert`。
+整个工作区对应 dsh 的工作区，对话对应 dsh 的会话；一次接受的审阅是一个提交（默认每个 turn 结束时自动接受），撤销用 `git revert`。
 
 1. **开始**：会话第一次调用会写文件的工具（文件工具与 shell）时，bundle 在 `tools/execute` 中为整个工作区打开审阅（`POST review/open`，持有者 `agent:<会话>`），未选择文稿时同样。它在确认之后、工具执行之前运行，被拒绝或被策略否决的调用不打开审阅，也不持有锁。审阅持有工作区锁，与其他会话、文档审阅、保存及文档操作互斥；取锁失败时工具不执行。打开是幂等的（同一会话得到同一个审阅），所以每次写入之前都问一次服务，宿主不必记住审阅是否还开着。快照包含工作区中当时还没提交的修改；从文稿目录启动的 headless 与 acp 会话也使用工作区范围。
-2. **进行中**：工作区内的编辑器保存得到 409，并提示 AI 的修改在等待审阅；所有文稿的审阅面板显示同一份会话审阅。后面的 turn 继续累加进同一次审阅；每个工具调用完成时记一个检查点，标签是工具与文件或命令。服务给出 turn 的范围（`turns { from, to }`）与是否有 turn 在运行。一个 turn 结束时审阅没有改动（例如 shell 只运行了 `ls`）就结束，释放锁。
+2. **进行中**：审阅开着时（turn 运行中；`required` 时直到作者接受或拒绝），工作区内的编辑器保存得到 409，并提示 AI 正在修改或修改在等待审阅；所有文稿的审阅面板显示同一份会话审阅。后面的 turn 继续累加进同一次审阅；每个工具调用完成时记一个检查点，标签是工具与文件或命令。服务给出 turn 的范围（`turns { from, to }`）与是否有 turn 在运行。一个 turn 结束时审阅没有改动（例如 shell 只运行了 `ls`）就结束，释放锁。
 3. **审阅与修改卡片**：一次审阅覆盖会话在它期间的全部 turn；dsh 的修改卡片（`workspace/changes`）是每个 turn 的视图。同一个 turn 中卡片列出的文件与审阅的改动相同（构建的产物两边都没有），多个 turn 时每张卡片是审阅的一部分。审阅是修改的唯一来源，卡片只作 turn 内的提示。
-4. **审阅**：`settings.presmium.assistant.review` 为 `required`（默认）时，工作台的审阅面板列出自快照以来的全部文件，作者可以全部接受、拒绝某些文件，或回到某个检查点；为 `auto` 时每个 turn 结束就提交。`review` 与 `reviewTimeoutMs` 由工作区服务按 `settings.presmium.assistant` 执行，bundle 不读它们；超时只在没有 turn 运行、也没有页面跟随（`GET review` 的 SSE）时计时。作者在 turn 之间接受之后，下一次写入开一个新的审阅。
+4. **审阅**：`settings.presmium.assistant.review` 为 `auto`（默认）时，改了文件的 turn 结束就接受并提交，不等作者，作者用撤销收回（5.1 节的 `history/undo`）；为 `required` 时，作者在工作台的审阅面板中接受：面板列出自快照以来的全部文件，作者可以全部接受、拒绝某些文件，或回到某个检查点。`review` 与 `reviewTimeoutMs` 由工作区服务按 `settings.presmium.assistant` 执行，bundle 不读它们；超时只在没有 turn 运行、也没有页面跟随（`GET review` 的 SSE）时计时。作者在 turn 之间接受之后，下一次写入开一个新的审阅。
 5. **提交**：一次接受形成一个提交，成功后才结束审阅、删除记录并释放锁。提交失败时返回错误并保留审阅，作者可以重试或拒绝。尾注是 `Presmium-Origin: agent`、`Presmium-Task`、`Presmium-Session: <会话>`、`Presmium-Turn: <起>-<止>` 与 `Co-authored-by`。
-6. **撤销**：`git revert`，尾注 `Presmium-Revert`。撤销会话的提交之后，bundle 经 `Agent.inject`（`dsh-agent` 的公开接口）给会话注入一条 user 角色的通知，来源是 `{ kind: 'presmium', form: 'notice' }`，正文以 `[Presmium]` 开头。它不唤醒 agent，在会话的下一步进入模型请求，并作为 `session/projections` 的 `inbox` 中的待处理消息可见；agent 不在时等它被创建或恢复再注入。dsh 文件工具的“先读后改”规则会拦住基于旧内容的编辑。
+6. **撤销**：`git revert`，尾注 `Presmium-Revert`；会话的提交与编辑器的保存在同一个撤销栈中（5.1 节）。撤销会话的提交之后，bundle 经 `Agent.inject`（`dsh-agent` 的公开接口）给会话注入一条 user 角色的通知，来源是 `{ kind: 'presmium', form: 'notice' }`，正文以 `[Presmium]` 开头。它不唤醒 agent，在会话的下一步进入模型请求，并作为 `session/projections` 的 `inbox` 中的待处理消息可见；agent 不在时等它被创建或恢复再注入。dsh 文件工具的“先读后改”规则会拦住基于旧内容的编辑。
 7. **记录**：审阅记录由工作区服务保存，另记会话、turn 的范围、检查点与各步。服务关闭或崩溃时会话的审阅不回滚，下一个服务进程启动时恢复它并重新持有锁。记录的范围不是当前工作区时，启动拒绝并保留记录与快照；先用能识别该记录的版本接受或拒绝，再启动服务。dsh 宿主重启后修改卡片没有了，审阅仍在，可以经新宿主接受。Presmium 不依赖 dsh 只在内存中的修改摘要，它在宿主重启后返回 404。
 8. **构建**：agent 经工具发起的构建由工作区服务写到工作区之外的服务状态目录，不进入审阅与修改卡片。
 
@@ -324,14 +329,14 @@ dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达�
 
 ## 7. 工作台
 
-日常阅读默认打开“文档预览”标签。中央编辑组的同一标签栏显示实际文件名与已打开的“文档预览”“幻灯片预览”；文件树与快速打开激活文件标签。“打开预览”菜单选择媒介，“在侧边打开预览”明确创建右侧预览组，右组的“合并编辑组”将预览收回主组。没有全局源码/并排/预览模式选择器。切换标签保留编辑器草稿、撤销与预览实例；关闭预览只关闭视图，保留当前讲义与源码。右侧对话可以从活动栏或对话栏的关闭按钮收起，再从活动栏恢复，收起保留对话草稿。
+工作台给不懂技术的教师用：打开一份文稿，看到的就是读者看到的网页或幻灯片，直接在上面改文字、写批注、请 AI 改写。每次修改自动成为一个版本，可以撤消、恢复，也可以在版本历史中单独撤消某一次修改。工作台中不出现源码、文件、git 与开发工具的用语；要直接改源码的人用 VS Code 扩展与命令行（第 13 节）。命令的名称参照 Microsoft Word：撤消、恢复、新建批注、版本历史、接受与拒绝、编辑与查看。
 
 ### 7.1 包与依赖
 
 | 部分 | 内容 | 可以依赖 | 不得依赖 |
 |---|---|---|---|
 | `@lincyaw/design` | 令牌、`pm-ui-*` 的类、字体、图标、令牌名 | 无 | 任何框架 |
-| `@lincyaw/workbench` | React 面板与框架无关的逻辑 | `@lincyaw/design`、`@lincyaw/kernel`（类型与纯函数）、CodeMirror 6、`node-diff3`、react 18（对等依赖） | vue、`@lincyaw/host`、`@deepseek-ai/*` |
+| `@lincyaw/workbench` | React 面板与框架无关的逻辑 | `@lincyaw/design`、`@lincyaw/kernel`（类型与纯函数）、Radix Primitives、react 18（对等依赖） | vue、`@lincyaw/host`、`@deepseek-ai/*` |
 | `@lincyaw/dsh` 的 `src/client` | 根布局插件，把面板登记进槽位，主题、品牌、语言包 | `@lincyaw/workbench`、dsh 外壳的模块表 | vue |
 | `@lincyaw/dsh` 的 `src/node` | 第 6 节的各行 | `@lincyaw/mcp`、Node 库 | vue、`@lincyaw/host` |
 
@@ -341,14 +346,16 @@ dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达�
 
 根布局插件声明 `root`，子槽位与 ui-layout 相同：`sidebar`、键控的 `main`（保留键 `conversation`）、`rightbar`、`shell.bottom`、`shell.overlay`、`shell.leading`。dsh 自己的插件因此不改就能挂上。只能整个替换 ui-layout：外壳只渲染 `root` 一个槽位，子槽位只能声明一次，`renderSlot` 只渲染调用者自己声明的子槽位。
 
-导航外壳也只保留一套。`navigation-shell.tsx` 占据 `sidebar` 并声明会话浏览器、设置等公开子槽位，直接渲染 Harness 的 `sidebar.workspaces`；设置的原生控制器保持挂载，由活动栏的唯一设置按钮打开。根布局另声明 `sidebar.panellist`，将插件、自动化任务等全局入口放在活动栏底部，与设置同列，点击后在中央打开对应全局面板；再次点击返回文稿，保留编辑草稿。历史侧栏只显示工作区和会话，不再重复品牌、新建按钮、全局工具和设置入口。原生 `ui-sidebar` 因此关闭，避免同一子槽位被两个所有者声明。
+导航外壳也只保留一套。`navigation-shell.tsx` 占据 `sidebar` 并声明会话浏览器、设置等公开子槽位，直接渲染 Harness 的 `sidebar.workspaces`，作为“对话记录”；设置的原生控制器保持挂载，由活动栏的唯一设置按钮打开。根布局另声明 `sidebar.panellist`，插件、自动化任务等全局入口收在活动栏底部的“更多”菜单中，选中后在中央打开对应的全局面板；再点“文稿”回到之前的文稿。原生 `ui-sidebar` 因此关闭，避免同一子槽位被两个所有者声明。
+
+工作区只有一个：对话不提供选择别的工作区与别的 agent 预设，对话记录只列会话，不列它们上面的工作区一行。这些按槽位名与行键（`conversation.hero.agentPreset`、`sidebar.workspaces.directory…`、`data-row-key="workspace:…"`）隐藏，不按 Harness 生成的类名。
 
 根布局插件还要重新提供：
 
 - `ctx.layout`：`panelInfo`、`selectPanel`、`beginNavigation`、`toggleSidebar`、`openRightbar`、`closeRightbar`（ui-layout 的 README 写明了它们的行为）；
 - 标准钩子 `usePanelInfo`；
 - 主题呈现：调色板、字号、字体列表与令牌变量；
-- 展开或收起侧栏的快捷键 `Mod+Alt+B`（与 ui-layout 相同；dsh 只许网页在 macOS 与 Windows 上用 Mod+Alt 组合，Linux 的网页上没有默认的按键，侧栏用活动栏与 dsh 侧栏自己的按钮收起）、跟随会话的文档标题、拖动柄、右侧列在宽度不够时的关闭协议（`canShow`）。
+- 展开或收起对话记录的快捷键 `Mod+Alt+B`（与 ui-layout 相同；dsh 只许网页在 macOS 与 Windows 上用 Mod+Alt 组合，Linux 的网页上没有默认的按键）、跟随会话的文档标题、拖动柄、右侧列在宽度不够时的关闭协议（`canShow`）。
 
 桌面的窗口装饰（`shell.leading`、`--dsh-frame-*`）留到做桌面时（11.6 节）。
 
@@ -356,58 +363,53 @@ dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达�
 
 | 区域 | 内容 |
 |---|---|
-| 活动栏（最左） | 标志、文档、文件、修改与统一的“历史对话”入口；底部是插件、自动化任务、设置（dsh 的设置与模型设置）与使用说明 |
-| 侧栏 | 活动栏所选的内容：文件树、修改，或 dsh 的会话与工作区 |
-| 中央 | 首页时是启动台；打开文件时左边是文件标签与源码编辑器、下方是问题面板，右边是预览，也可以只看其中一个。dsh 的全局面板（插件、自动任务）也显示在这里 |
-| 右侧坞（`rightbar`） | dsh 的文件、终端、Review、浏览器等标签页 |
-| 对话（`main` 的 `conversation` 键） | 停靠在最右 |
-| 状态栏 | Presmium 的状态项（git、语言、编码、光标所在行、模型）与 `shell.bottom` |
+| 活动栏（最左，图标带文字） | 标志、文稿、AI 助手；底部是更多（插件、自动化任务）、设置（dsh 的设置与模型设置）与帮助 |
+| 侧栏 | 对话记录（dsh 的会话） |
+| 中央 | 没有打开文稿时是文稿列表；打开时是文稿视图（7.3 节）。dsh 的全局面板（插件、自动化任务）也显示在这里 |
+| 右侧坞（`rightbar`） | dsh 的文件、终端、Review、浏览器等标签页，只在 dsh 自己打开它们时出现 |
+| 对话（`main` 的 `conversation` 键） | “AI 助手”，停靠在最右 |
 | 浮层（`shell.overlay`） | 对话框与设置 |
 
-打开讲义默认激活文档预览标签，文件与预览的打开和分组操作见本节开头的资源标签约定。面板通过 `react-resizable-panels` 的公开接口调整与收放，切换视图保留编辑器和预览实例；收起对话保留未发送的草稿。关闭文件、返回文档列表或切换文档时，若有未保存的修改，先选择保存、放弃或取消；保存失败时保留当前文档。刷新与关闭页面使用浏览器的未保存提示。`WorkbenchProvider` 默认提供这层保护；同一工作台的辅助面板使用 `isPrimary={false}`，避免重复对话框。
+面板通过 `react-resizable-panels` 的公开接口调整与收放，切换视图保留文稿视图与预览实例；收起对话保留未发送的草稿。新建、对话记录与收起对话放在 Harness 常驻头部的 `conversation.header.leading` 槽位，桌面与窄屏一致。通过 `ctx.uiWorkspace.startSession(workspaceId)` 在启动的工作区中新建，复用 Harness 的会话与草稿管理；当前文稿保持，新会话仍取得当前文稿上下文。点击任何对话记录都会直接显示对话。
 
-新建、历史与收起对话放在 Harness 常驻头部的 `conversation.header.leading` 槽位，桌面与窄屏一致；不在对话外面再加一层标题栏。通过 `ctx.uiWorkspace.startSession(workspaceId)` 在启动的工作区中新建，复用 Harness 的会话与草稿管理；不操作隐藏的侧栏按钮。当前文稿、编辑草稿与选中内容保持，新会话仍取得当前文稿上下文。
+`ctx.layout.selectPanel(null)` 遵循 Harness 的语义：显示会话。指向文稿某处的链接另经 `LayoutController.showDocument()` 显示文稿，不顺带展开对话。启动时绑定工作区通过 `uiWorkspace.openWorkspace` 的 `beforeOpen` 保持本次布局，避免后台初始化改变作者当前视图。
 
-活动栏合并会话与聊天，只保留“历史对话”入口。宽屏打开历史时也恢复聊天栏；中等宽度在历史与聊天之间让出空间；窄屏从文稿一键恢复聊天，聊天中点击该入口进入历史。点击任何历史会话都会直接显示聊天，包括重新选中当前会话。聊天仍由头部的关闭按钮收起，未发送的草稿保留。
+对话头部的 `conversation.session.header.corner` 用空组件替换，去掉原生右侧栏的展开按钮。
 
-`ctx.layout.selectPanel(null)` 遵循 Harness 的语义：显示会话。源码跳转另经 `LayoutController.showDocument()` 选择中央编辑器，不顺带展开聊天。启动时绑定工作区通过 `uiWorkspace.openWorkspace` 的 `beforeOpen` 保持本次布局，避免后台初始化改变作者当前视图。
+**退路**：根布局与退路是同一个客户端部分。重新打开 `ui-layout` 与 `ui-sidebar` 后，它不占据 `root` 或 `sidebar`，得到 dsh 自带布局：对话居中，Presmium 的文稿与版本历史作为右侧坞的标签页类型登记（`ctx.sidebarRightTabs`），文稿列表与文稿视图作为 `main` 的全局面板。根布局插件出错时整个应用不挂载（ui-renderer 的 README），所以启动审计有用例。
 
-对话头部的 `conversation.session.header.corner` 用空组件替换，去掉原生右侧栏的展开按钮。文件引用统一进入中央编辑器；修改审阅、媒体等专用预览仍可按内容打开辅助栏。退路模式保留原生布局与入口。
+**在插件管理中关掉 `@lincyaw/dsh` 时**，`ui-layout` 不回来。插件管理的开关只改 profile 的 bundle 列表：bundle 层（`cordis.patch.yml` 的 `presmium-service` 等行）不再加载，但启动器传入的 `web.patch.yml` 仍在，它关掉 `ui-layout`，插入 `presmium-workspaces`、`presmium-routes` 与 `presmium-workbench`。这三行等不到 `presmium` 服务而停在 pending（dsh 启动时警告“3 entries did not activate”），客户端部分照常载入并占据 `root`（模块系统按 Loader 的行，不看行是否已激活），`/api/presmium/*` 不在。页面因此是工作台，但读不到文稿：文稿列表在 `documents` 得到 404 时说明“`@lincyaw/dsh` 在‘插件’页中被关掉了，从‘更多’打开‘插件’把它重新打开，然后重新载入页面”。切换是热加载的，不用重启；重新打开就恢复，用户的数据都在。
 
-**退路**：根布局与退路是同一个客户端部分。重新打开 `ui-layout` 与 `ui-sidebar` 后，它不占据 `root` 或 `sidebar`，得到 dsh 自带布局：对话居中，Presmium 的预览与审阅作为右侧坞的标签页类型登记（`ctx.sidebarRightTabs`），首页与文档编辑器作为 `main` 的全局面板。文件引用仍回到同一个文档编辑器，不再另设源码坞标签。根布局插件出错时整个应用不挂载（ui-renderer 的 README），所以退路与启动审计都有用例。
+### 7.3 文稿
 
-**在插件管理中关掉 `@lincyaw/dsh` 时**，`ui-layout` 不回来。插件管理的开关只改 profile 的 bundle 列表：bundle 层（`cordis.patch.yml` 的 `presmium-service` 等行）不再加载，但启动器传入的 `web.patch.yml` 仍在，它关掉 `ui-layout`，插入 `presmium-workspaces`、`presmium-routes` 与 `presmium-workbench`。这三行等不到 `presmium` 服务而停在 pending（dsh 启动时警告“3 entries did not activate”），客户端部分照常载入并占据 `root`（模块系统按 Loader 的行，不看行是否已激活），`/api/presmium/*` 不在。页面因此是工作台，但读不到工作区：首页在 `documents` 得到 404 时说明“`@lincyaw/dsh` 在‘插件’页中被关掉了，从活动栏打开‘插件’把它重新打开，然后重新载入页面”。切换是热加载的，不用重启；重新打开就恢复，用户的数据都在。
+**文稿列表**：卡片只有标题。“新建文稿”只问标题（工作区有多个模板时另选模板），目录由标题生成，放在多数文稿所在的目录下；更多菜单中有重命名（改文稿头部的 `title`）、创建副本（标题加“（副本）”）与删除。每个操作都是一个版本。工作区不是 git 仓库时说明这几项与撤消需要版本记录。
 
-### 7.3 面板
+**文稿视图**：顶栏依次是返回、标题、撤消与恢复、保存状态；右边是视图（文档、幻灯片，文稿有幻灯片时才有）、模式（编辑、查看）、有未发送的批注时的“发送 N 条批注给 AI”、批注与版本历史。顶栏下是需要作者注意的事：AI 正在修改、AI 的修改等作者接受或拒绝（审阅为 `required` 时）、带格式的文字交给 AI、保存失败、内容没能正确显示。其下是文稿本身（预览协议嵌入的产物页面），批注或版本历史在它右边，窄屏时盖在它上面。
 
-活动栏的搜索入口、Ctrl/Cmd+P 随时快速打开工作区文件或文稿；文件名后加 `:行号` 定位。Ctrl/Cmd+Shift+P 搜索保存与显示方式等现有命令。预览 iframe 仅通过经过来源、nonce 和文稿身份检查的 `shortcut` 报告转发这两个意图；不转发任意键值。取消搜索回到原输入位置；切文稿仍先处理未保存修改。该入口不要求教师先回首页。
-
-文件栏的“新建文件”只需填写工作区相对路径，自动建立缺失目录，在中央编辑器打开并保留当前讲义与草稿。`POST source/create {path}` 独立于带版本的保存接口：只创建空文本文件，拒绝已有路径、符号链接父目录、范围之外的路径和锁冲突。编辑器提供 Python 语法、四空格块缩进、Tab/Shift+Tab，Escape 后 Tab 可以离开编辑区。
-
-源码只在中央编辑器中打开。dsh 对话中的文件名与代码行引用、工作区文件列表，经过公开的 `sidebarRightTabs` 资源解析接口转到同一个编辑器；`source-links.tsx` 复用 `@deepseek-ai/dsh-util-workspace-path` 解码文件地址，并保留行号、未保存修改与已有标签。恢复的旧 `text` 标签通过 `sidebar.right.tab.document.actions` 同样转到编辑器。图片、PDF、Office、表格与 HTML 继续使用 dsh 的专用预览，修改审阅仍在审阅面板中。
-
-转到中央编辑器时，在布局效果中移除临时文件标签并明确收起原生查看栏，再选择中央面板；只关闭标签不足以收起已有其他标签的查看栏。原生文件树、终端等标签保留，用户显式打开辅助栏时仍可继续使用。
-
-文件树与源码读写以启动时的工作区根目录为范围，使用文档 `''` 的 `files`、`source` 路由；当前讲义只决定预览、IR 与会话上下文。讲义目录外的 Python、TypeScript 等代码和根目录笔记也在同一编辑器中打开，保留当前讲义预览、已有标签与草稿。文件仍经过版本、大小、符号链接与路径检查；服务端的文档范围路由仍只编辑其自己的文件。未选择讲义时，根目录文件以纯源码视图打开。窄屏切换聊天与源码只隐藏文档面板，保留编辑器实例与草稿。
-
-文件树按 VS Code 的资源管理器工作：目录默认折叠，目录在文件之前按名称排列；点目录行或它前面的折角展开、收起，展开状态按工作区（单文档模式按文稿）记在浏览器的 `localStorage` 中。从问题或对话中的文件引用打开文件时，文件树展开它的各级目录并滚到它；方向键在可见行中移动，左键收起当前目录或回到上一层，右键展开当前目录或进入第一个子项。缩进线标出层级，活动文件仍有选中底色。这些键盘行为来自 React Arborist，工作台只维护默认状态、记忆与定位。
-
-| 面板 | 数据来源 |
+| 部分 | 数据来源 |
 |---|---|
-| 首页：文档卡片、新建与管理、启动台搜索、MCP 卡片 | `documents`；MCP 卡片的地址来自 `/api/presmium/workbench`（6.2 节） |
-| 由 AI 起草 | 先按模板新建文档（`POST documents`，一个提交），再在根目录的同一 dsh 会话中起草新文档 |
-| 文件树 | `files` |
-| 源码编辑器与文件标签 | `source`（版本、409、锁）；IR 的诊断；`ir/events` 中改过的文件 |
-| 问题 | IR 的诊断 |
-| 预览 | `preview` 与预览协议 |
-| 对话与批注 | dsh 的对话，加上 Presmium 的焦点托盘（第 8 节） |
-| 修改：AI 的修改（审阅）、未提交的修改、修改历史 | `review`（文档打开时一直跟随，所以页面开着时审阅不因超时回滚）与它的操作；`changes`、`changes/commit`、`changes/discard`；`revisions`、`revisions/revert` |
-| 讲授回写 | 讲授插件的路由；回写时新建 dsh 会话 |
-| 状态项 | git 状态、光标；模型来自 dsh 的设置 |
+| 文稿列表 | `documents`、`documents` 的操作、`source`（重命名改头部的标题） |
+| 文稿 | `preview` 与预览协议（第 4 节） |
+| 就地编辑 | 预览协议的 `edit`、`edited`；IR 中块的源码行；`source` 的读写，每次保存一个版本（5.1 节） |
+| 撤消、恢复与版本历史 | `revisions`（含 `undo`、`redo`）、`history/undo`、`history/redo`、`revisions/revert`；别处所做、还没有记入的修改来自 `changes`，“记为一个版本”用 `changes/commit` |
+| AI 的修改 | `review`（文稿打开时一直跟随）；`review/accept`、`review/reject` |
+| 批注 | 浏览器的 `localStorage`，按工作区根目录与文稿；块上的编号由预览协议的 `pins` 画出 |
+| 内容没能正确显示 | 当前诊断（5.4 节）中的错误；“让 AI 修复”把它们交给对话 |
+| 对话 | dsh 的对话，加上焦点（第 8 节） |
 
-起草新文档时，会话仍在工作区根目录中，使用相对根目录的文稿路径。文稿级审阅只收集对应文稿的变化，Harness 的文件工具与变更记录仍覆盖整个工作区。
+`ir/events` 在页面中以 `EventSource` 读 `/api/presmium/ir/events?document=`（同源，带 dsh 的 cookie）。保存、撤消或文件在磁盘上被改之后，事件随即到达，工作台读新的 IR 与版本历史；文稿页面自己经开发服务器更新。连接断开时 `EventSource` 自己重连，期间读一次 IR；不按秒轮询。
 
-`ir/events` 在页面中以 `EventSource` 读 `/api/presmium/ir/events?document=`（同源，带 dsh 的 cookie）。保存或文件在磁盘上被改之后，事件随即到达，工作台读新的 IR（诊断），并把事件列出的、打开着的文件与磁盘比较。连接断开时 `EventSource` 自己重连，期间读一次 IR；不按秒轮询。
+**编辑与查看**：编辑模式中预览协议的 `pick` 打开：鼠标下的块有淡淡的轮廓（像开发者工具的点选）。单击一个块，或在文稿中选中一段文字，鼠标旁出现工具条：编辑文字（文字块才有）、新建批注、AI 改写。新建批注与 AI 改写在同一个浮窗中写，浮窗显示选中的文字；AI 改写另有几条常用要求，一点就发。查看模式中 `pick` 关闭，文稿与读者看到的一样，链接与互动内容都能用。浮窗在工作台中，不在产物页面中（8.3 节）。
+
+**就地编辑**：双击文字块，或在工具条中点“编辑文字”，工作台发 `edit`，预览代理让这一块可以输入；Enter 或离开这一块保存，Esc 取消。预览代理报告编辑前后的文字（`edited`），工作台按 IR 中这一块的源码行，把两段文字的差异落回源码：两段文字去掉相同的开头与结尾，剩下的那一段若在源码中是连续的纯文字，就只替换这一段，新文字中的 Markdown 字符加上转义；跨过强调、链接地址、角色等标记时不写回（写回会丢掉或弄坏格式），而是说明这里带有格式，请 AI 改写。保存时先读文件的版本，冲突时重读一次。AI 修改期间不能就地编辑。能就地编辑的块是 Markdown 的段落、标题、列表、引用与表格，以及节的标题；代码、组件与公式经 AI 修改。
+
+**撤消与恢复**：顶栏的撤消与恢复（Ctrl+Z 与 Ctrl+Y 或 Ctrl+Shift+Z，焦点不在输入框时）调用 `history/undo` 与 `history/redo`，带上读到的 `undo`、`redo` 作为 `expect`；提示文字说出要撤消或恢复的是哪一次修改。版本历史列出普通修改与文稿操作（撤消与恢复本身不单列，而是标在它们作用的那一次修改上），每条写明是你、AI 还是文稿操作、多久之前；可以单独撤消某一次修改，已撤消的可以恢复。
+
+**批注**：批注是写给 AI 的修改意见。作者在块或选中的文字上一条条写下，先攒着，写完后选择发送：有未发送的批注时，顶栏出现“发送 N 条批注给 AI”，把它们放进一条消息逐条列出（每条带位置、源码行与原文）发给 AI；批注栏也可以“全部发送给 AI”或单条发送。未发送的批注所在的块淡淡标出，右上角有编号；发送后标为“已发送给 AI”，不再编号，AI 的修改成为一个版本。批注栏列出全部批注：位置（所在的节）、选中的文字、内容、时间与状态，可以解决、重新打开或删除。
+
+**交给 AI**：AI 改写、批注与“让 AI 修复”都经 `agent-requests.ts` 交给主视图的会话：先设好文稿上下文与焦点，再发一条写明要求、位置（节、源码行）与原文的消息，并显示对话。没有会话或会话已切换时说明原因，不丢掉作者写的内容。
+
+**对话中的链接**：dsh 对话中指向文稿 Markdown 的文件名与行号，经公开的 `sidebarRightTabs` 资源解析接口转到工作台：打开那一份文稿，按 IR 找到这一行所在的块，在文稿中滚到它并标出；`source-links.tsx` 复用 `@deepseek-ai/dsh-util-workspace-path` 解码文件地址。其他文件（代码、图片、PDF 等）仍用 dsh 自己的预览。
 
 ### 7.4 复用的 dsh 插件与关掉的行
 
@@ -415,37 +417,36 @@ dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达�
 
 Presmium 自己占用的槽位：品牌槽位 `sidebar.brand.mark`、`sidebar.brand.name`、`conversation.hero.brand.mark`；`settings.onboarding` 中的 `welcome-notice`（优先级 -1，替换首次使用的提示）。
 
-首次使用的提示：dsh 把 `settings.onboarding` 的步骤画在侧栏底部的设置区里，根布局显示文件树时侧栏收起，所以 Presmium 的提示画在页面之上（portal）。dsh 自己的 `welcome-notice` 在宿主上记“已读”，替换它的步骤只能调用 `complete()`（只在页面的内存中），所以“已读”记在浏览器的 `localStorage`。同一个槽位中 DeepSeek 的登录步骤（`deepseek-official`）以同样的方式换成立即完成的步骤。
+首次使用的提示：dsh 把 `settings.onboarding` 的步骤画在侧栏底部的设置区里，根布局中侧栏平时收起，所以 Presmium 的提示画在页面之上（portal）。dsh 自己的 `welcome-notice` 在宿主上记“已读”，替换它的步骤只能调用 `complete()`（只在页面的内存中），所以“已读”记在浏览器的 `localStorage`。同一个槽位中 DeepSeek 的登录步骤（`deepseek-official`）以同样的方式换成立即完成的步骤。
 
 关掉的行见 6.6 节。
 
 ### 7.5 设计系统、主题与品牌
 
 - **共用的一层**：`@lincyaw/design`，产物中的 Vue 组件与工作台中的 React 组件用同一层令牌与 `pm-ui-*` 的类。
-- **React 版的通用组件**在 `@lincyaw/workbench`，只有工作台用到的几个：`PmButton`、`PmIconButton`、`PmIcon`、`PmField`、`PmBadge`、`PmCard`、`PmDialog`、`PmMenu`、`PmEmpty`、`PmNotice`。工作台自己的类以 `pmw-` 开头，只供工作台的样式与用例使用，作者与插件用 `pm-ui-*`。有交互的组件封装 Radix Primitives，焦点、键盘导航、浮层定位与模态遮罩由依赖提供；Presmium 只维护样式与业务回调。工作台搜索用 cmdk，文件树用 React Arborist（只读目录操作，打开与选择文件），分栏用 react-resizable-panels。源码编辑继续使用 CodeMirror 6，文本合并继续使用 node-diff3。首次使用的提示直接使用 Harness 的 `Modal`。对比度与键盘行为由浏览器用例检查。
+- **React 版的通用组件**在 `@lincyaw/workbench`，只有工作台用到的几个：`PmButton`、`PmIconButton`、`PmIcon`、`PmField`、`PmBadge`、`PmCard`、`PmDialog`、`PmMenu`、`PmEmpty`、`PmNotice`。工作台自己的类以 `pmw-` 开头，只供工作台的样式与用例使用，作者与插件用 `pm-ui-*`。有交互的组件封装 Radix Primitives，焦点、键盘导航、浮层定位与模态遮罩由依赖提供；Presmium 只维护样式与业务回调。分栏用 react-resizable-panels。首次使用的提示直接使用 Harness 的 `Modal`。对比度与键盘行为由浏览器用例检查。
 - **dsh 的令牌**：`ctx.theme.overrideTokens` 把 dsh 用到的 76 个 `--dsw-*` 别名令牌（dsh 共用到 125 个变量）映射到书卷的取值，明暗两套。字体经 `--dsh-font-family-*` 设为 IBM Plex Sans 与 IBM Plex Mono，用户自己选的字体优先。dsh 写死的颜色、圆角、字号与 CSS module 的类不去覆盖：检查以 WCAG AA 与截图为准，不要求和书卷一致。
 - **暗色**：工作台在 `<html>` 上设 `dark` 类，`--pm-*` 与 `--dsw-*` 一起切换，再经预览协议的 `appearance` 让产物跟随。
-- **品牌**：品牌槽位、标题与图标（`tapIndex`）、首次使用提示换成 Presmium 的。对话首页的标语用公开的语言包接口替换（`ctx.locale.addLanguage` 加 `register`）：`zh-CN`、`en-US` 两个语言包出现在 dsh 设置的语言列表中，标为“简体中文（Presmium）”“English (Presmium)”，只换 `conversation` 的 `hero.headline` 与 `hero.preview`，其余回退到 dsh 的中文与英文。换不干净的：其他语言标签（如 zh-TW）仍显示 dsh 的文案；插件管理器的备用源默认是 npmmirror；用户能在插件管理中关掉 `@lincyaw/dsh`（7.2 节）。默认的模型路由是 DeepSeek 的官方服务，它是正当的服务提供方，不算品牌问题。
+- **品牌**：品牌槽位、标题与图标（`tapIndex`）、首次使用提示换成 Presmium 的。对话首页的标语用公开的语言包接口替换（`ctx.locale.addLanguage` 加 `register`）：`zh-CN`、`en-US` 两个语言包出现在 dsh 设置的语言列表中，标为“简体中文（Presmium）”“English (Presmium)”，只换 `conversation` 的 `hero.headline`、`hero.preview` 与输入框的提示（`placeholder.hero`、`placeholder.default`、`placeholder.workspace`，改成对教师说的话），其余回退到 dsh 的中文与英文。换不干净的：其他语言标签（如 zh-TW）仍显示 dsh 的文案；插件管理器的备用源默认是 npmmirror；用户能在插件管理中关掉 `@lincyaw/dsh`（7.2 节）。默认的模型路由是 DeepSeek 的官方服务，它是正当的服务提供方，不算品牌问题。
 
 ### 7.6 界面语言
 
-- 工作台的文字按包维护中文与英文两套（仓库的约定）。界面语言跟随 dsh 当前的语言（`ctx.locale`），映射为 zh-CN 或 en；没有对应时看 `navigator.language`。
+- 工作台的文字按包维护中文与英文两套（仓库的约定），英文界面中全是英文。界面语言跟随 dsh 当前的语言（`ctx.locale`），映射为 zh-CN 或 en；没有对应时看 `navigator.language`。
 - dsh 自己的文案只在涉及品牌的地方替换（7.5 节）。
 - 写进产物的文字按文稿的 `lang`，不受工作台的语言影响。
 
 ### 7.7 窄屏与可访问性
 
-- 左侧文件栏默认收起，通过活动栏的文件入口展开。宽度小于 1024 px 时手动打开侧栏会占用分栏空间，并收起对话，保留草稿。辅助栏空间不足时先收起左侧导航，再按需要收起对话。小于 768 px 时活动栏横排在顶部，侧栏、右侧坞与对话使用占满宽度的视图。
+- 对话记录默认收起，从对话头部打开。宽度小于 1024 px 时打开对话记录会占用分栏空间，并收起对话，保留草稿。辅助栏空间不足时先收起对话记录，再按需要收起对话。小于 900 px 时顶栏只留图标（按钮仍有名称），批注与版本历史盖在文稿上。小于 768 px 时活动栏横排在顶部，多出“当前文稿”一项；文稿列表、文稿、对话记录与对话各占满宽度。
 - 辅助栏跟随 `react-resizable-panels` 分配的实际轨道边界，不按偏好宽度估算坐标；全屏时锚定整个工作台。程序控制的折叠不回写成用户拖动，避免面板反复展开；空的辅助栏容器不截获点击。
-- 390 px 时 dsh 的每个面板都能从活动栏到达，包括会话、设置、Review 与文件。
+- 390 px 时每个面板都能从活动栏到达，包括对话、对话记录、设置与“更多”中的全局面板。
 - 文字对比度达到 WCAG AA，控件边框达到 3:1。
 
 ### 7.8 客户端包的构建与加载
 
 - 用 esbuild 构建。外部依赖是 dsh 外壳模块表中的键：`react`、`react/jsx-runtime`、`react-dom`、`react-dom/client`、`@deepseek-ai/cordis`、`zod`、`@tanstack/react-virtual`、`dsh-client-store`、`dsh-client-ui-slots`、`dsh-client-ui-primitives`、`dsh-client-ui-dockkit`。React 的版本因此由 dsh 决定，现在是 18.3.1；Presmium 不自带 React，也不用 React 19 的特性。
 - 输出是工厂格式 `__ModuleLoader__.load({ id, factory })`。这个格式没有文档，由 Presmium 自己的 esbuild 插件生成；它的变化由升级闸门的启动审计发现。ui-slots、client-store、ui-primitives 没有可安装的包与类型，只为用到的部分声明最小的类型。
-- CodeMirror 打进包内；几个客户端插件要共用它时，用 `dsh.client.external` 声明共享（有文档）。
-- 客户端包不能带静态文件：dsh 的模块系统只提供启动图中的合并脚本（`plugins/??…&rev=`）与按修订号请求的 `client.<名>.js` 分块，同一包中的其他文件（字体、JSON，连不带修订号的 `client.js`）都是 404。字体因此以 data URL 内联在样式中：Fontsource 的样式写 WOFF2 与 WOFF 两种，构建只内联 WOFF2（浏览器都取第一种），8 个字面约 212 KB，整个客户端包约 930 KB（gzip 约 400 KB）。
+- 客户端包不能带静态文件：dsh 的模块系统只提供启动图中的合并脚本（`plugins/??…&rev=`）与按修订号请求的 `client.<名>.js` 分块，同一包中的其他文件（字体、JSON，连不带修订号的 `client.js`）都是 404。字体因此以 data URL 内联在样式中：Fontsource 的样式写 WOFF2 与 WOFF 两种，构建只内联 WOFF2（浏览器都取第一种），8 个字面约 212 KB，整个客户端包约 560 KB。
 - dsh 要求客户端包在启动前已构建。发布的包由 `prepack` 构建，安装后不再构建；在仓库的检出中，`presmium-workbench` 行的入口在 dsh 读取客户端包之前检查源码是否比包新，是则用 esbuild 重新构建（原子写入，并行启动的 dsh 互不干扰）。
 - 宿主换版本后，页面要重新载入才会加载新版本的模块（`dsh-client-modules` 的 README）；studio 升级后工作台提示用户重新载入。
 
@@ -453,11 +454,11 @@ Presmium 自己占用的槽位：品牌槽位 `sidebar.brand.mark`、`sidebar.br
 
 ### 8.1 原则
 
-agent 读的、改的都是源码。所以用户指向的任何东西，无论在源码编辑器、网页预览还是幻灯片预览中，最后都落到同一个东西上：源码中的一段，加上它在文稿中的位置。三个入口共用一种数据、一种交互、一种发送方式；MCP 另有 `presmium://focus` 与 `get_focus`（8.6 节）。交互参考 dsh 的社区插件 dsh-annotate（https://github.com/alaliqing/dsh-annotate，MIT；只作参考，不是依赖），实现用 Presmium 自己的 IR 锚点。
+agent 读的、改的都是源码。所以用户指向的任何东西，无论在网页还是幻灯片中，最后都落到同一个东西上：源码中的一段，加上它在文稿中的位置。各个入口共用一种数据、一种交互、一种发送方式；MCP 另有 `presmium://focus` 与 `get_focus`（8.6 节）。交互参考 dsh 的社区插件 dsh-annotate（https://github.com/alaliqing/dsh-annotate，MIT；只作参考，不是依赖），实现用 Presmium 自己的 IR 锚点。
 
 ### 8.2 数据：`Focus`
 
-`FocusReport.scope` 默认 `document`，`source.file` 相对讲义目录。教师选中讲义目录之外的 Python 等源码时使用 `scope: 'workspace'`，文件路径相对工作区根目录；只允许 `from: 'source'` 和源码行范围，不带讲义章节或块。服务要求 owner，通过工作区已有的文本源码读取校验获取磁盘摘录；`quote` 保留用户尚未保存的选区文字，两者分别给出。焦点仍绑定当前讲义与原 MCP 令牌范围，清除、切讲后不沿用旧选区。工作区源码选区与清除不依赖讲义成功编译，讲义报错时仍能把相关代码交给 agent。
+`FocusReport.scope` 默认 `document`，`source.file` 相对讲义目录。从源码报告的选区（`from: 'source'`，工作台本身不再报告）落在讲义目录之外的 Python 等文件时使用 `scope: 'workspace'`，文件路径相对工作区根目录；只允许 `from: 'source'` 和源码行范围，不带讲义章节或块。服务要求 owner，通过工作区已有的文本源码读取校验获取磁盘摘录；`quote` 保留用户尚未保存的选区文字，两者分别给出。焦点仍绑定当前讲义与原 MCP 令牌范围，清除、切讲后不沿用旧选区。工作区源码选区与清除不依赖讲义成功编译，讲义报错时仍能把相关代码交给 agent。
 
 
 在内核的 agent 契约（`packages/kernel/src/contracts/agent.ts`）中扩展 `AgentContext` 与 `Annotation`，只增加，不改已有字段：
@@ -487,21 +488,18 @@ export interface Focus {
 - `AgentContext` 增加 `focus?: Focus[]`。
 - 没有选中任何东西时，**当前位置**（文档、节、步骤、形态）是一种被动的焦点，对话时自动带上，不需要用户操作。
 
-### 8.3 三个入口与一种交互
+### 8.3 入口与交互
 
-当前实现自动把源码中的非空选区、预览中的文字选区与点选块报告到服务端的焦点接口。编辑区底部仅在有选区时显示当前关注内容及同步状态；焦点在转到聊天输入框时保留，作者可以明确清除。预览模式中点选块不打开源码；并排或源码模式中同时定位源码。下列批注托盘、快捷键、多条批注与发送方式是进一步的交互设计，不能据此宣称当前版本已经提供。
+编辑模式中，单击一个块或选中一段文字，就是指向它（7.3 节）：块被标出，鼠标旁出现工具条，焦点同时报告到服务端的焦点接口，之后在对话中说的话都带着它。关掉工具条（或选区消失）就不再指向，焦点清空；切换文稿时也清空。
 
 | 入口 | 怎么指 | 得到 |
 |---|---|---|
-| 源码编辑器 | 选中几行，按 `⌘/Ctrl L` 或点“加入对话” | 文件与行范围；服务端补上所在的节与块 |
-| 网页预览 | 按 `⌘/Ctrl ⇧ E` 进入点选（预览协议的 `pick`），点一个块，写一句要求 | 节、块、源码范围；可以带上选中的文字 |
-| 幻灯片预览 | 同上 | 节、块、步骤、源码范围 |
+| 网页 | 单击块，或选中文字（预览协议的 `picked`、`selection`，带位置与大小） | 节、块、源码范围；选中时带上文字 |
+| 幻灯片 | 同上 | 节、块、步骤、源码范围 |
 
-- 点选模式：鼠标下的块加虚线框；点击后块旁出现编号标记（预览代理按 `pins` 画出），工作台的焦点托盘中出现同一编号的输入框并获得焦点；`Enter` 保存并继续点下一个，`Shift Enter` 换行，`Esc` 退出，`⌘/Ctrl` 点击保存并发送这一批。
-- 输入框在工作台中，不在产物页面中，产物页面只画标记：产物页面与工作台不同源，页面中运行着第三方插件的脚本（4.5 节），作者写在页面中的要求它们读得到；输入框还要带上工作台的文字、键盘处理与界面语言，这违背“产物只暴露锚点”。标记留在页面中，滚动、缩放与切换步骤时才能跟着块走。
-- 标记跟着块走：收到 `updated` 后工作台按 8.7 节重新定位并重发 `pins`；块被删掉时，托盘中的那一条显示为“已失效”。
-- 两种发送：**加到草稿**（焦点作为对话输入框上方的卡片，可以再写话）或**直接发送**。发送失败不丢焦点。
-- 每条批注有状态；完成后关联到那次审阅接受形成的提交，可以一键撤销。
+- 工具条与写批注、写要求的浮窗在工作台中，不在产物页面中，产物页面只画轮廓与编号：产物页面与工作台不同源，页面中运行着第三方插件的脚本（4.5 节），作者写在页面中的话它们读得到；浮窗还要带上工作台的文字、键盘处理与界面语言，这违背“产物只暴露锚点”。浮窗按页面报告的位置放在鼠标旁，页面滚动时跟着 `rect` 移动，看不见时隐藏。
+- 编号跟着块走：编号由预览代理按 `pins` 画在块上，页面重新渲染后重画。
+- 发送：AI 改写与“交给 AI”直接发出一条消息（7.3 节）；在对话输入框中说的话带着当前的焦点。发送失败不丢作者写的内容。
 
 ### 8.4 发给 agent 的文字
 
@@ -522,7 +520,7 @@ export interface Focus {
 ### 8.5 产物只暴露锚点，工作台组装焦点
 
 - **产物**：只在 DOM 上写锚点（4.4 节），这是产物唯一要做的事。
-- **预览代理**：回答点选、选中的文字与位置，按工作台的要求高亮、画编号标记与跳转（第 4 节）。
+- **预览代理**：回答点选、选中的文字与位置，按工作台的要求高亮、画编号标记、跳转与就地编辑（第 4 节）。
 - **工作台**：收到锚点后经服务把块换成源码范围与摘录，组装成 `Focus`，放进对话。
 
 ### 8.6 MCP 与 dsh
@@ -534,11 +532,11 @@ export interface Focus {
 
 ### 8.7 源码改动之后
 
-块的 ID 在源码改动后可能移动。每个焦点同时记源码范围与摘录：重新编译后先按块 ID 找；找不到时按摘录在源码中重新定位（与 `{code-ref}` 的漂移检测同一思路）；再找不到就把这个焦点标为“已失效”（焦点托盘中显示，页面中不再画它的标记），不悄悄指到别处。
+块的 ID 在源码改动后可能移动。每个焦点同时记源码范围与摘录：重新编译后先按块 ID 找；找不到时按摘录在源码中重新定位（与 `{code-ref}` 的漂移检测同一思路）；再找不到就把这个焦点标为“已失效”（页面中不再画它的标记），不悄悄指到别处。
 
 ### 8.8 保存
 
-批注按文档与对话保存（工作台存在浏览器中，服务端只存最近一次的焦点），刷新页面不丢；不同对话互不共享。
+批注按工作区与文稿保存在浏览器中，刷新页面不丢，不随对话切换；服务端只存最近一次的焦点。
 
 ## 9. MCP 与 dsh 的工具一致
 

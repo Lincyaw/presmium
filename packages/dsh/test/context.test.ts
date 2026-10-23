@@ -19,7 +19,7 @@ describe('[gate] each session\'s own document on the web carrier', () => {
   beforeAll(async () => {
     home = testHome('context')
     ws = home.workspace('context', {
-      'presmium.workspace.yaml': 'title: 两份文稿\ndocuments: [lectures/*/lecture.md]\n',
+      'presmium.workspace.yaml': 'title: 两份文稿\ndocuments: [lectures/*/lecture.md]\nsettings:\n  presmium.assistant:\n    review: required\n',
       'lectures/alpha/lecture.md': '---\ntitle: 文稿甲\nplugins:\n  - presmium-fixture-dsh\n---\n\n# 文稿甲\n\n(alpha-one)=\n## 甲的一节\n\n甲的正文。\n',
       'lectures/beta/lecture.md': '---\ntitle: 文稿乙\nlang: en\n---\n\n# 文稿乙\n\n(beta-one)=\n## 乙的一节\n\n乙的正文。\n',
     }, { 'presmium-fixture-dsh': join(FIXTURES, 'plugin') })
