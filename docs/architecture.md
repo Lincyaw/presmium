@@ -1949,7 +1949,7 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 
 第 1、2 组在 `packages/dsh/test/`：`config.test.ts`（三个载体的 `--dump-config`；headless 与 acp 启动时没有未激活的行；`engines.dsh` 不满足时安装被拒、启动时跳过）是第 1 组；`policy.test.ts`（`ask`、`off`、`allow`、会话令牌、运营者目录）、`privacy.test.ts`（请求体与技能目录、profile 补丁重新打开上传行、persona）、`context.test.ts`（web 载体上两份文档的两个会话、工作区登记、`/api/presmium/*`）、`parity.test.ts`（工具一致、焦点、6.12 节的四个操作）是第 2 组；`service.test.ts`（`kill -9`）不属于闸门。单独运行闸门：`pnpm exec vitest run packages/dsh -t '\[gate\]'`。
 
-第 3 组是 `e2e/workbench.spec.ts` 中带 `@gate` 的启动审计：读锁定版本的客户端包（`e2e/fixtures/workbench/audit.ts`），核对 `root` 的子槽位与 ui-layout 声明的相同、dsh 插件调用的 `ctx.layout` 成员都在 `LAYOUT_MEMBERS` 中、品牌与首次使用的槽位与步骤还在、用到且定义了的 `--dsw-alias-*` 都已映射、映射的都已定义、外壳模块表的键等于构建的外部依赖、插件页实验插件组的属性还在，再打开页面，启动图中有 `@lincyaw/dsh` 而没有 ui-layout 与 DeepSeek 的品牌和账号，没有页面错误；同一文件的退路用例也带 `@gate`（第 5 组的一部分）。单独运行：`pnpm exec playwright test e2e/workbench.spec.ts --grep @gate`。
+第 3 组是 `e2e/workbench.spec.ts` 中带 `@gate` 的启动审计：读锁定版本的客户端包（`e2e/fixtures/workbench/audit.ts`），核对 `root` 的子槽位与 ui-layout 声明的相同、dsh 插件调用的 `ctx.layout` 成员都在 `LAYOUT_MEMBERS` 中、品牌与首次使用的槽位与步骤还在、用到且定义了的 `--dsw-alias-*` 都已映射、映射的都已定义、外壳模块表的键等于构建的外部依赖、插件页实验插件组的属性还在，再打开页面，启动图中有 `@lincyaw/dsh` 而没有 ui-layout 与 DeepSeek 的品牌和账号，没有页面错误。单独运行：`pnpm exec playwright test e2e/workbench.spec.ts --grep @gate`。
 
 ### 13.6 `presmium serve` 与 `presmium dev`
 

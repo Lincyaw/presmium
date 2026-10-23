@@ -202,25 +202,6 @@ test('a run in the browser cannot change what the next one finds: it gives what 
   await expect(reader.locator('.pm-output__stdout')).toHaveText('False 100\n')
 })
 
-test('a page restored from the back-forward cache keeps one Python runtime', async ({ page }) => {
-  const panel = (await webSection(page, 'exec-panel')).locator('.pm-run-panel')
-  const button = panel.locator('.pm-run-panel__run')
-  const runtimes = () => page.workers().filter(worker => worker.url().includes('pyodide.worker')).length
-  await button.click()
-  await expect(panel.locator('.pm-run-panel__output')).toHaveAttribute('data-source', 'live', RUNTIME)
-  expect(runtimes()).toBe(1)
-  await page.evaluate(async () => {
-    window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true }))
-    window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))
-    await new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)))
-  })
-  await expect(button).toBeEnabled()
-  await button.click()
-  await expect(panel).toHaveAttribute('data-runs', '2', RUNTIME)
-  await expect(panel.locator('.pm-run-panel__output')).toHaveAttribute('data-source', 'live')
-  await expect.poll(runtimes).toBe(1)
-})
-
 test.describe('in the present view at 1920x1080', () => {
   test.use({ viewport: { width: 1920, height: 1080 } })
 

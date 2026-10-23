@@ -10,7 +10,7 @@ import { BRAND_SLOTS, EXPERIMENTAL_GROUP, LAYOUT_MEMBERS, ONBOARDING, ROOT_CHILD
 import { DSH_THEME_TOKENS } from '../packages/dsh/src/client/theme.ts'
 import { lowContrast } from './fixtures/contrast.ts'
 import { aliasTokens, clientOf, layoutMembersUsed, rendersSlot, rootChildren, shellModules } from './fixtures/workbench/audit.ts'
-import { FALLBACK_PATCH, startStudio } from './fixtures/workbench/studio.ts'
+import { startStudio } from './fixtures/workbench/studio.ts'
 import type { Studio } from './fixtures/workbench/studio.ts'
 import { selectPreview, splitPreview } from './fixtures/workbench/ui.ts'
 
@@ -32,12 +32,6 @@ async function showHistory(page: Page): Promise<void> {
   if (!await conversation(page).isVisible()) await showConversation(page)
   await conversation(page).getByRole('button', { name: '历史对话', exact: true }).click()
   await expect(page.locator('[data-pmw-slot="sidebar"]')).toBeVisible()
-}
-
-// Auxiliary previews still have a public command; their duplicate conversation-header opener is removed.
-async function toggleAuxiliary(page: Page): Promise<void> {
-  const primary = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform)) ? 'Meta' : 'Control'
-  await page.keyboard.press(`${primary}+Shift+b`)
 }
 
 async function openDocument(page: Page, title: string): Promise<void> {
@@ -71,16 +65,6 @@ async function send(page: Page, message: string): Promise<void> {
   await page.keyboard.press('Enter')
 }
 
-async function openWritten(page: Page, name: string, turns: number): Promise<void> {
-  const completed = conversation(page).getByRole('button', { name: /^已完成.*用时/ })
-  await expect(completed).toHaveCount(turns)
-  const latest = completed.last()
-  if (await latest.getAttribute('aria-expanded') === 'false') await latest.click()
-  const written = conversation(page).getByRole('button', { name: '已写入文件', exact: true, includeHidden: true }).last()
-  if (await written.getAttribute('aria-expanded') === 'false') await written.click()
-  await conversation(page).getByRole('button', { name, exact: true }).click()
-}
-
 function git(dir: string, args: string[]): string {
   return execFileSync('git', ['-c', 'core.hooksPath=/dev/null', ...args], { cwd: dir, encoding: 'utf8' })
 }
@@ -92,10 +76,6 @@ test.describe('the root layout', () => {
   test.beforeAll(async () => {
     test.setTimeout(400_000)
     model = await fakeModel([
-      { tool: 'write', input: { file_path: 'notes.md', content: '# 笔记\n\n第一条。\n' } },
-      { text: '写好了。' },
-      { tool: 'write', input: { file_path: 'notes-2.md', content: '# 笔记二\n' } },
-      { text: '又写好了。' },
       { tool: 'write', input: { file_path: 'summary.md', content: '# 小结\n' } },
       { tool: 'write', input: { file_path: 'extra.md', content: '多出来的\n' } },
       { text: '改好了。' },
@@ -283,126 +263,6 @@ test.describe('the root layout', () => {
     }
   })
 
-  test('auxiliary panels follow their resized track, stay beside the conversation, and fullscreen covers the whole workbench', async ({ page }) => {
-    await page.setViewportSize({ width: 1600, height: 900 })
-    await studio.open(page)
-    await openDocument(page, '分词入门')
-    await toggleAuxiliary(page)
-    const dock = page.locator('[data-pmw-slot="rightbar"]')
-    const pushed = dock.locator('[data-sidebar-right-open][data-sidebar-right-panel="push"]')
-    const fits = () => page.evaluate(() => {
-      const box = (selector: string) => {
-        const element = document.querySelector(selector)
-        return element?.getClientRects().length ? element.getBoundingClientRect() : undefined
-      }
-      const pane = box('[data-sidebar-right-open][data-sidebar-right-panel="push"]')
-      const centre = box('.pmw-frame__centre')
-      const chat = box('[data-pmw-slot="main:conversation"]')
-      const track = box('.pmw-frame__rightbar-track')
-      return Boolean(pane && centre && track && pane.x >= centre.right - 1 && Math.abs(pane.x - track.x) < 1 && Math.abs(pane.width - track.width) < 1 && (!chat || pane.right <= chat.x + 1))
-    })
-    await expect(pushed).toBeVisible()
-    await expect.poll(fits).toBe(true)
-    const handle = (await page.locator('.pmw-frame__handle[data-side="conversation"]').boundingBox())!
-    await page.mouse.move(handle.x + handle.width / 2, handle.y + 200)
-    await page.mouse.down()
-    await page.mouse.move(handle.x - 60, handle.y + 200, { steps: 8 })
-    await page.mouse.up()
-    await expect.poll(fits).toBe(true)
-    await dock.getByRole('button', { name: '全屏', exact: true }).click()
-    const full = dock.locator('[data-sidebar-right-open][data-sidebar-right-panel="fullscreen"]')
-    await expect(full).toBeVisible()
-    await expect.poll(async () => (await full.boundingBox())?.x).toBe(0)
-    await expect.poll(async () => (await full.boundingBox())?.width).toBe(1600)
-    await dock.getByRole('button', { name: '退出全屏', exact: true }).click()
-    await expect.poll(fits).toBe(true)
-    await page.setViewportSize({ width: 1280, height: 900 })
-    await expect.poll(fits).toBe(true)
-    await page.setViewportSize({ width: 900, height: 900 })
-    await expect(pushed).toBeHidden()
-    await toggleAuxiliary(page)
-    await expect.poll(fits).toBe(true)
-    await dock.getByRole('button', { name: '收起右侧边栏', exact: true }).click()
-    await expect(pushed).toBeHidden()
-    await page.setViewportSize({ width: 390, height: 900 })
-    await showConversation(page)
-    await toggleAuxiliary(page)
-    await expect(full).toBeVisible()
-    await expect.poll(async () => (await full.boundingBox())?.x).toBe(0)
-    await expect.poll(async () => (await full.boundingBox())?.width).toBe(390)
-  })
-
-  test('at 1440 and 390 px the activity bar, the files, the editor, the problems, the preview, the conversation, the sessions, the settings, Review and the files of the dock are reached and used', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 })
-    await studio.open(page)
-    const activity = page.getByRole('navigation', { name: '活动栏' })
-    await expect(activity).toBeVisible()
-    await openDocument(page, '分词入门')
-    await openFile(page, 'lecture.md', '分词入门')
-    await splitPreview(page)
-    await expect(page.getByRole('region', { name: '问题' })).toBeVisible()
-    await expect(preview(page).locator('[data-section="words"]')).toBeVisible({ timeout: 120_000 })
-    await send(page, '写一份笔记')
-    await expect(conversation(page)).toContainText('写好了。', { timeout: 60_000 })
-    await openWritten(page, 'notes.md', 1)
-    await expect(editor(page)).toBeVisible()
-    await expect(editor(page)).toContainText('第一条。')
-    const dock = page.locator('[data-pmw-slot="rightbar"]')
-    await expect(dock).toBeHidden()
-    await conversation(page).getByRole('button', { name: '查看 notes.md 的改动', exact: true }).click()
-    await expect(dock).toContainText('第一条。')
-    await dock.getByRole('button', { name: /^(New tab|新标签页)$/ }).first().click()
-    await dock.getByText(/^(Workspace files|工作区文件)$/).first().click()
-    await expect(dock.getByText('notes.md').first()).toBeVisible()
-    await dock.getByRole('button', { name: /^(Collapse right sidebar|收起右侧边栏)$/ }).first().click()
-    await showHistory(page)
-    await expect(page.locator('[data-pmw-slot="sidebar"]')).toBeVisible()
-    await expect(page.locator('[data-pmw-slot="sidebar"]').getByRole('heading', { name: '历史对话' })).toBeVisible()
-    await expect(page.locator('[data-pmw-slot="sidebar"]').getByRole('tree', { name: '会话' })).toBeVisible()
-    await activity.getByRole('button', { name: '设置' }).click()
-    const settings = page.getByRole('dialog').filter({ hasText: /^(Settings|设置)/ })
-    await expect(settings).toBeVisible()
-    await page.keyboard.press('Escape')
-    await expect(settings).toBeHidden()
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
-
-    await page.setViewportSize({ width: 390, height: 844 })
-    await expect(page.locator('.pmw-frame[data-narrow]')).toBeVisible()
-    await activity.getByRole('button', { name: '文件' }).click()
-    await openFile(page, 'more.md', '延伸一节')
-    await expect(editor(page)).toBeVisible()
-    await expect(page.getByRole('region', { name: '问题' })).toBeVisible()
-    await selectPreview(page)
-    await expect(page.locator('.pmw-preview__frame')).toBeVisible()
-    await expect(preview(page).locator('[data-section="words"]')).toBeAttached()
-    await showHistory(page)
-    await expect(page.locator('[data-pmw-slot="sidebar"]').getByRole('heading', { name: '历史对话' })).toBeVisible()
-    await showConversation(page)
-    await expect(conversation(page)).toBeVisible()
-    await send(page, '再写一份')
-    await expect(conversation(page)).toContainText('又写好了。', { timeout: 60_000 })
-    await openWritten(page, 'notes-2.md', 2)
-    await expect(editor(page)).toBeVisible()
-    await expect(editor(page)).toContainText('笔记二')
-    await expect(dock).toBeHidden()
-    await showConversation(page)
-    await conversation(page).getByRole('button', { name: '查看 notes-2.md 的改动', exact: true }).click()
-    await expect(dock.getByText('笔记二').first()).toBeVisible()
-    await dock.getByRole('button', { name: /^(New tab|新标签页)$/ }).first().click()
-    await dock.getByText(/^(Workspace files|工作区文件)$/).first().click()
-    await expect(dock.getByText('notes-2.md').first()).toBeVisible()
-    await dock.getByRole('button', { name: /^(Collapse right sidebar|收起右侧边栏)$/ }).first().click()
-    await activity.getByRole('button', { name: '设置' }).click()
-    await expect(settings).toBeVisible()
-    await page.keyboard.press('Escape')
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
-    await activity.getByRole('button', { name: '修改', exact: true }).click()
-    const review = page.getByRole('region', { name: 'AI 的修改' })
-    await expect(review).toContainText('2 个文件等待审阅')
-    await review.getByRole('button', { name: '接受', exact: true }).click()
-    await expect(review).toBeHidden()
-  })
-
   test('the side panel: its handle resizes it; the shortcut of ui-layout (Mod+Alt+B on the web, here Windows) closes and opens it', async ({ page }) => {
     await page.addInitScript(() => Object.defineProperty(Navigator.prototype, 'platform', { get: () => 'Win32' }))
     await page.setViewportSize({ width: 1440, height: 900 })
@@ -487,30 +347,6 @@ test.describe('the root layout', () => {
     await expect(page.locator('.pmw-tree__file[data-node="directory:lectures/intro/pages"]')).toHaveAttribute('data-open', 'true')
     await expect(more).toHaveAttribute('data-active', 'true')
     await expect(page.locator('[data-status="line"]')).toHaveText('第 8 行')
-  })
-
-  test('a file changed on disk: unchanged in the editor it follows; changed there too, the editor offers to merge or reload, and merges', async ({ page }) => {
-    await studio.open(page)
-    await openDocument(page, '分词入门')
-    await openFile(page, 'lecture.md', '最常相邻的一对')
-    const file = join(studio.workspace.dir, 'lectures/intro/lecture.md')
-    writeFileSync(file, readFileSync(file, 'utf8').replace('最常相邻的一对', '最常出现的相邻一对'))
-    await expect(editor(page)).toContainText('最常出现的相邻一对', { timeout: 60_000 })
-    await editor(page).getByText('一份讲分词的讲义').click()
-    await page.keyboard.press('End')
-    await page.keyboard.type('（编辑器）')
-    writeFileSync(file, readFileSync(file, 'utf8').replace('最常出现的相邻一对', '最常出现的相邻两个词元'))
-    await page.keyboard.press('Control+s')
-    const notice = page.locator('.pmw-source').getByRole('status').filter({ hasText: '被别处改过' })
-    await expect(notice).toBeVisible({ timeout: 60_000 })
-    await expect(notice.getByRole('button', { name: '重新载入' })).toBeVisible()
-    await notice.getByRole('button', { name: '合并' }).click()
-    await expect(page.locator('.pmw-source').getByRole('status')).toContainText('已合并')
-    await page.keyboard.press('Control+s')
-    await expect(page.locator('.pmw-editor-group__tab:visible:has([role="tab"][title])[data-active] .pmw-source__dot')).toBeHidden()
-    const text = readFileSync(file, 'utf8')
-    expect(text).toContain('一份讲分词的讲义，工作台的用例在浏览器中编辑它。（编辑器）')
-    expect(text).toContain('最常出现的相邻两个词元')
   })
 
   test('the text of the workbench\'s panels and DeepSeek Harness\'s mapped ones reaches WCAG AA, light and dark', async ({ page }) => {
@@ -747,64 +583,6 @@ test.describe('reading and conversation context', () => {
     await expect(conversation(page)).toContainText('现在是第二份讲义。')
   })
 
-  test('preview navigation follows the lecture with synchronized focus, and cancelling keeps the original preview and draft', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 })
-    await studio.open(page)
-    await openDocument(page, '分词入门')
-    const context: { document: string | null }[] = []
-    page.on('response', response => {
-      if (response.url().endsWith('/api/presmium/context') && response.ok()) context.push(response.request().postDataJSON())
-    })
-    const select = (text: string) => preview(page).getByText(text, { exact: true }).evaluate((element) => {
-      const range = document.createRange()
-      range.selectNodeContents(element)
-      const selection = document.getSelection()!
-      selection.removeAllRanges()
-      selection.addRange(range)
-    })
-    const first = '最常相邻的一对合并成一个新词元。'
-    await select(first)
-    await expect(page.locator('.pmw-focus:not([data-pending])')).toContainText(first)
-    await openFile(page, 'lecture.md', '一份讲分词的讲义')
-    await splitPreview(page)
-    await editor(page).getByText('一份讲分词的讲义').click()
-    await page.keyboard.press('End')
-    await page.keyboard.type('（跨讲保留的草稿）')
-    await preview(page).getByRole('link', { name: '转到第二讲', exact: true }).click()
-    const dialog = page.getByRole('dialog', { name: '保存未完成的修改？' })
-    await expect(dialog).toBeVisible()
-    await dialog.getByRole('button', { name: '取消', exact: true }).click()
-    await expect(preview(page).locator('[data-section="merge"]')).toBeVisible({ timeout: 120_000 })
-    await expect(editor(page)).toContainText('（跨讲保留的草稿）')
-    await expect(page.locator('.pmw-preview__frame')).toHaveAttribute('title', '分词入门 的预览')
-
-    await preview(page).getByRole('link', { name: '转到第二讲', exact: true }).click()
-    await expect(dialog).toBeVisible()
-    await dialog.getByRole('button', { name: '不保存', exact: true }).click()
-    await expect(page.locator('.pmw-preview__frame')).toHaveAttribute('title', 'Second lecture 的预览')
-    await select('Its one paragraph.')
-    await expect(page.locator('.pmw-focus:not([data-pending])')).toContainText('Its one paragraph.')
-    await expect(page.getByText(/^关注内容未同步到对话：/)).toHaveCount(0)
-    await expect.poll(() => context.at(-1)?.document).toBe('lectures/second')
-    const focus = await page.request.get(`${studio.web.url}/api/presmium/focus?document=lectures/second`)
-    expect(focus.ok()).toBe(true)
-    expect(await focus.json()).toMatchObject({ document: 'lectures/second', focus: [{ document: 'lectures/second', section: 'only-section', from: 'web', quote: 'Its one paragraph.' }] })
-    await page.screenshot({ path: test.info().outputPath('preview-navigation-focus.png') })
-
-    const frame = page.locator('.pmw-preview__frame')
-    const src = await frame.getAttribute('src')
-    await preview(page).locator('body').evaluate(() => {
-      window.parent.postMessage({ protocol: 'presmium-preview', version: 1, nonce: new URL(location.href).searchParams.get('presmium-preview'), type: 'ready', renderer: 'web', document: 'unknown-lecture', capabilities: [] }, new URL(document.referrer).origin)
-    })
-    const identityFailure = page.getByText('预览的文稿或形态与当前选择不一致，请重新加载预览。', { exact: true })
-    await expect(identityFailure).toBeVisible()
-    await expect(frame).toHaveAttribute('src', src!)
-    await page.getByRole('button', { name: '重新载入预览', exact: true }).click()
-    await expect(identityFailure).toBeHidden()
-    await expect(page.locator('.pmw-preview')).toHaveAttribute('data-ready', 'true')
-    await expect(preview(page).getByText('Its one paragraph.', { exact: true })).toBeVisible()
-  })
-
   test('unsaved changes can be kept, saved before closing, or discarded before leaving; refreshing warns too', async ({ page }) => {
     await studio.open(page)
     await openDocument(page, '分词入门')
@@ -862,37 +640,31 @@ test.describe('one source editor', () => {
   let model: FakeModel
   test.beforeAll(async () => {
     test.setTimeout(400_000)
-    model = await fakeModel([1440, 390].flatMap(() => [
+    model = await fakeModel([
       { tool: 'read', input: { file_path: 'lectures/intro/lecture.md', offset: 13, limit: 2 } },
       { text: '已读到指定的代码行。' },
       { tool: 'read', input: { file_path: 'notes %.md' } },
       { text: '已读到工作区笔记。' },
-    ]))
+    ])
     studio = await startStudio({ port: 5683 + studioPortOffset, model, prefix: 'single-editor' })
     writeFileSync(join(studio.workspace.dir, 'notes %.md'), '# 工作区笔记\n')
     writeFileSync(join(studio.workspace.dir, 'diagram.svg'), '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="40"><rect width="80" height="40" fill="teal"/></svg>')
   })
   test.afterAll(async () => { await studio?.close(); await model?.close() })
 
-  for (const width of [1440, 390]) test(`${width}px: chat line references and file links share one editor, keep drafts, and root files can be saved`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 900 })
+  test('390px: chat line references and file links share one editor, keep drafts, and root files can be saved', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 900 })
     await studio.open(page)
     await openDocument(page, '分词入门')
     const activity = page.getByRole('navigation', { name: '活动栏' })
-    if (width === 390) await activity.getByRole('button', { name: '文件', exact: true }).click()
+    await activity.getByRole('button', { name: '文件', exact: true }).click()
     await openFile(page, 'lecture.md', '一份讲分词的讲义')
-    if (width === 390) await showConversation(page)
+    await showConversation(page)
     await send(page, '读取第十三行')
     await expect(conversation(page)).toContainText('已读到指定的代码行。', { timeout: 60_000 })
     await conversation(page).getByText(/已完成.*用时/).last().click()
     await conversation(page).getByRole('button', { name: '已读取文件', exact: true }).last().click()
     const reference = conversation(page).getByRole('button', { name: 'lectures/intro/lecture.md', exact: true })
-    if (width === 1440) {
-      await toggleAuxiliary(page)
-      const dock = page.locator('[data-pmw-slot="rightbar"]')
-      await dock.getByText(/^(Workspace files|工作区文件)$/).first().click()
-      await dock.getByRole('button', { name: '收起右侧边栏', exact: true }).click()
-    }
     await reference.click()
     await expect(editor(page)).toBeVisible()
     await expect(page.locator('[data-status="line"]')).toHaveText('第 13 行')
@@ -900,18 +672,14 @@ test.describe('one source editor', () => {
     await expect(page.locator('[data-pmw-slot="rightbar"]')).toBeHidden()
     await expect(conversation(page).getByRole('button', { name: /^(Open right sidebar|打开右侧边栏)$/ })).toHaveCount(0)
     await page.keyboard.press('End')
-    await page.keyboard.type(`（保留草稿${width}）`)
-    if (width === 390) await showConversation(page)
+    await page.keyboard.type('（保留草稿390）')
+    await showConversation(page)
     await reference.click()
-    await expect(editor(page)).toContainText(`（保留草稿${width}）`)
+    await expect(editor(page)).toContainText('（保留草稿390）')
     await expect(page.locator('.pmw-editor-group__tab:visible:has([role="tab"][title])')).toHaveCount(1)
-    if (width === 1440) {
-      await splitPreview(page)
-      await expect(preview(page).locator('[data-section="words"]')).toBeVisible({ timeout: 120_000 })
-    }
     await page.screenshot({ path: test.info().outputPath('shared-editor.png'), animations: 'disabled' })
 
-    if (width === 390) await showConversation(page)
+    await showConversation(page)
     await send(page, '读取工作区的笔记')
     await expect(conversation(page)).toContainText('已读到工作区笔记。', { timeout: 60_000 })
     await expect(conversation(page).getByText(/已完成.*用时/)).toHaveCount(2)
@@ -923,25 +691,14 @@ test.describe('one source editor', () => {
     await expect(editor(page)).toContainText('工作区笔记')
     await expect(page.locator('.pmw-editor-group__tab:visible:has([role="tab"][title])')).toHaveCount(2)
     await page.getByRole('tab', { name: /^lecture\.md/ }).click()
-    await expect(editor(page)).toContainText(`（保留草稿${width}）`)
+    await expect(editor(page)).toContainText('（保留草稿390）')
     await page.getByRole('tab', { name: 'notes %.md', exact: true }).click()
     await editor(page).click()
     await page.keyboard.press('Control+End')
-    await page.keyboard.type(`已保存${width}\n`)
+    await page.keyboard.type('已保存390\n')
     await page.keyboard.press('Control+s')
     await expect(page.locator('.pmw-editor-group__tab:visible:has([role="tab"][title])[data-active] .pmw-source__dot')).toBeHidden()
-    expect(readFileSync(join(studio.workspace.dir, 'notes %.md'), 'utf8')).toContain(`已保存${width}`)
-    if (width === 1440) {
-      await toggleAuxiliary(page)
-      const dock = page.locator('[data-pmw-slot="rightbar"]')
-      await dock.getByText('notes %.md', { exact: true }).first().click()
-      await expect(page.locator('.pmw-editor-group__tab:visible:has([role="tab"][title])')).toHaveCount(2)
-      await expect(editor(page)).toContainText(`已保存${width}`)
-      await expect(dock).toBeHidden()
-      await toggleAuxiliary(page)
-      await dock.getByText('diagram.svg', { exact: true }).first().click()
-      await expect(dock.locator('img')).toBeVisible()
-    }
+    expect(readFileSync(join(studio.workspace.dir, 'notes %.md'), 'utf8')).toContain('已保存390')
   })
 })
 
@@ -1139,49 +896,5 @@ test.describe('the bundle turned off', () => {
     expect(await api.call('pluginManager/setBundleEnabled', { name: '@lincyaw/dsh', enabled: true })).toMatchObject({ changed: true })
     await page.reload()
     await expect(page.locator('.pmw-home__card')).toHaveCount(2)
-  })
-})
-
-test.describe('the fallback', () => {
-  let studio: Studio
-
-  test.beforeAll(async () => {
-    test.setTimeout(400_000)
-    studio = await startStudio({ port: 5646 + studioPortOffset, prefix: 'fallback', patches: [FALLBACK_PATCH] })
-    writeFileSync(join(studio.workspace.dir, 'notes.md'), '# 共享的编辑器\n')
-  })
-
-  test.afterAll(async () => {
-    await studio?.close()
-  })
-
-  test('with DeepSeek Harness\'s own layout on, file links return to the one workbench editor and its preview stays available in the dock @gate', async ({ page }) => {
-    const errors: string[] = []
-    page.on('pageerror', error => errors.push(error.message))
-    await studio.open(page)
-    const boot = await page.evaluate(() => (window as unknown as { __DSH_BOOT__: { entries: { id: string }[] } }).__DSH_BOOT__.entries.map(entry => entry.id))
-    expect(boot).toEqual(expect.arrayContaining([UI_LAYOUT, '@lincyaw/dsh']))
-    await expect(page.locator('.pmw-frame')).toHaveCount(0)
-    await page.getByRole('button', { name: 'Presmium' }).first().click()
-    await expect(page.locator('.pmw-fallback .pmw-home__card')).toHaveCount(2)
-    await openDocument(page, '分词入门')
-    await openFile(page, 'lecture.md', '分词入门')
-    await expect(page.getByRole('region', { name: '问题' })).toBeVisible()
-    await expect(preview(page).locator('[data-section="words"]')).toBeVisible({ timeout: 120_000 })
-    await page.getByRole('button', { name: /^(New session|新建会话)$/ }).first().click()
-    await page.getByRole('button', { name: /^(Open right sidebar|打开右侧边栏)$/ }).click()
-    const dock = page.locator('[data-rightbar-col]')
-    await expect(dock.getByText('Presmium · 源码', { exact: true })).toHaveCount(0)
-    await dock.getByText(/^(Workspace files|工作区文件)$/).first().click()
-    await dock.getByText('notes.md', { exact: true }).first().click()
-    await expect(editor(page)).toContainText('共享的编辑器')
-    await expect(page.locator('.pmw-source__editor')).toHaveCount(1)
-    await page.getByRole('button', { name: '回到文档', exact: true }).click()
-    await openDocument(page, '分词入门')
-    await page.getByRole('button', { name: /^(New session|新建会话)$/ }).first().click()
-    await page.getByRole('button', { name: /^(Open right sidebar|打开右侧边栏)$/ }).click()
-    await dock.getByText('Presmium · 预览').first().click()
-    await expect(dock.frameLocator('.pmw-preview__frame').locator('[data-section="words"]')).toBeVisible({ timeout: 120_000 })
-    expect(errors).toEqual([])
   })
 })

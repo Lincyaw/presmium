@@ -18,7 +18,6 @@ import { PACKAGE, running, testHome } from '../../../packages/dsh/test/harness.t
 import type { Running, TestHome, Web, Workspace } from '../../../packages/dsh/test/harness.ts'
 
 const FIXTURE = fileURLToPath(new URL('./workspace', import.meta.url))
-export const FALLBACK_PATCH = fileURLToPath(new URL('./fallback.patch.yml', import.meta.url))
 
 /** The fixture workspace's files, by path. */
 function fixtureFiles(dir = FIXTURE): Record<string, string> {
