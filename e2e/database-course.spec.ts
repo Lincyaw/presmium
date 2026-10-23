@@ -162,10 +162,10 @@ test('students can inspect eight units, change actual file work, fix recovery, a
     ['sparse-implementation', '_find'],
     ['flush-implementation', 'flush'],
     ['lsm-compact-implementation', 'compact'],
-  ]) {
-    await openSection(id!)
+  ] as const) {
+    await openSection(id)
     await expect(section(id).locator('.pm-code-origin')).toContainText('code/')
-    await expect(section(id).locator('pre')).toContainText(snippet!)
+    await expect(section(id).locator('pre')).toContainText(snippet)
   }
   const metadata = JSON.parse(readFileSync(join(deck.dir, 'results/raw.json'), 'utf8')).metadata as {
     python: string, os: string, seed: number, cpu: string, keys: number, read_sizes: number[], repeats: number, source_sha256: Record<string, string>

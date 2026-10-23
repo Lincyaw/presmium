@@ -7,7 +7,7 @@ function lines(text: string): string[] {
 }
 
 function notebookOutputs(runs: RecordedRun[]): unknown[] {
-  return runs.flatMap(run => run.outputs ? run.outputs.map((output) => {
+  return runs.flatMap<unknown>(run => run.outputs ? run.outputs.map((output) => {
     if (output.output_type === 'stream') return { ...output, text: lines(output.text) }
     if (output.output_type === 'error') return output
     return { ...output, metadata: output.metadata ?? {}, ...output.output_type === 'execute_result' ? { execution_count: null } : {} }

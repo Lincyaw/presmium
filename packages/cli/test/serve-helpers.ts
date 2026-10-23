@@ -113,7 +113,7 @@ export interface RawResponse {
 export function raw(url: string, options: { method?: string, headers?: Record<string, string>, json?: unknown, timeoutMs?: number } = {}): Promise<RawResponse> {
   return new Promise((resolve, reject) => {
     const body = options.json === undefined ? undefined : JSON.stringify(options.json)
-    const headers = { ...options.headers, ...body === undefined ? {} : { 'Content-Type': 'application/json' } }
+    const headers: Record<string, string> = { ...options.headers, ...body === undefined ? {} : { 'Content-Type': 'application/json' } }
     const req = httpRequest(url, { method: options.method ?? (body === undefined ? 'GET' : 'POST'), headers, setHost: !headers.Host, timeout: options.timeoutMs ?? 300_000 }, (res) => {
       let text = ''
       res.setEncoding('utf8')

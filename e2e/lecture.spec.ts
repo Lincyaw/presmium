@@ -500,14 +500,14 @@ test.describe('playback of a lecture track', () => {
     let hitTest = await page.addStyleTag({ content: '.driver-overlay, .driver-overlay * { pointer-events: auto !important; }' })
     const box = (await label.boundingBox())!
     expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.classList.contains('pm-lecture-player__ai'), [box.x + box.width / 2, box.y + box.height / 2])).toBe(true)
-    await hitTest.evaluate(style => style.remove())
+    await hitTest.evaluate((style: HTMLStyleElement) => style.remove())
     await present.getByRole('button', { name: '全屏' }).click()
     await expect.poll(() => page.evaluate(() => document.fullscreenElement === document.documentElement)).toBe(true)
     await expect(label).toBeVisible()
     hitTest = await page.addStyleTag({ content: '.driver-overlay, .driver-overlay * { pointer-events: auto !important; }' })
     const full = (await label.boundingBox())!
     expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.classList.contains('pm-lecture-player__ai'), [full.x + full.width / 2, full.y + full.height / 2])).toBe(true)
-    await hitTest.evaluate(style => style.remove())
+    await hitTest.evaluate((style: HTMLStyleElement) => style.remove())
     await present.getByRole('button', { name: '退出放映' }).click()
     await expect(present).toHaveCount(0)
     await expect.poll(() => page.evaluate(() => document.fullscreenElement)).toBe(null)

@@ -26,7 +26,7 @@
 
 - `pnpm studio [目录]`：启动浏览器编辑工作台，首次自动在 `.presmium/cs336-workspace` 准备独立的示例工作区，后续复用；可指定讲义或工作区，支持 `--port`、`--host`、`--help`。打开终端打印的完整网址，`Ctrl+C` 停止；编辑和预览不需要模型。
 
-- `pnpm test`：分层检查 + 技能检查（`scripts/check-skills.mjs`，技能在 `.agents/skills`）+ 插件声明检查（`scripts/check-plugins.mjs`）+ 包的发布检查（`scripts/check-packages.mjs`，按 `.changeset/README.md` 的表）+ 集成测试（Vitest，`packages/<pkg>/test/`，含消费者安装测试 `packages/cli/test/consumer.test.ts`；运行 `slidev export` 的用例是 `export` 项目，在其他用例之后运行，单独运行用 `pnpm exec vitest run --project export`）
+- `pnpm test`：分层检查 + 技能检查（`scripts/check-skills.mjs`，技能在 `.agents/skills`）+ 插件声明检查（`scripts/check-plugins.mjs`）+ 包的发布检查（`scripts/check-packages.mjs`，按 `.changeset/README.md` 的表）+ 类型检查（`scripts/check-types.mjs`，`tsconfig.json` 与 `packages/workbench/tsconfig.json`，不报依赖包源码内部的错误）+ 集成测试（Vitest，`packages/<pkg>/test/`，含消费者安装测试 `packages/cli/test/consumer.test.ts`；运行 `slidev export` 的用例是 `export` 项目，在其他用例之后运行，单独运行用 `pnpm exec vitest run --project export`）
 - `pnpm demo:build`、`pnpm demo:check`、`pnpm demo:ir`：构建、检查和输出唯一公开示例 `examples/cs336` 的全部 17 讲；课程站点在 `examples/cs336/dist/web/`，单讲的幻灯片与 notebook 同时汇入课程站点的 `lecture_XX/slides/`、`lecture_XX/notebook/`。Python 讲义将执行结果直接转换为 Markdown 并使用内置步骤，不使用 trace 插件或播放器，PDF 全部 496 页逐页转换；完整性清单为 `coverage.json`。
 - `pnpm e2e`：构建私有回归文稿后运行 Playwright。功能专用文稿放在 `e2e/fixtures/<组>/`；旧 BPE 文稿只保留在 `e2e/fixtures/regression/` 用于回归验证。Chromium 运行全部用例，冒烟另在 `PRESMIUM_E2E_BROWSERS`（默认 `firefox,webkit`）中已安装且能启动的浏览器运行。并行测试用 `PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT` 指定端口。性能用例最后运行，单独运行时加 `--no-deps`。
 - `pnpm verify`：全部

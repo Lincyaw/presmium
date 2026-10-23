@@ -46,7 +46,7 @@ function endless(url: string, chunked: boolean): Promise<{ status: string, ms: n
       clearInterval(writing)
       clearTimeout(timer)
       socket.destroy()
-      resolve({ status: answer.split('\r\n')[0], ms })
+      resolve({ status: answer.split('\r\n')[0] ?? '', ms })
     }
     const timer = setTimeout(() => done(-1), 10_000)
     socket.once('close', () => done(Date.now() - started))

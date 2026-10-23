@@ -3,9 +3,11 @@
   "include": [
     "packages/*/src/**/*.ts",
     "packages/*/setup/**/*.ts",
+    "packages/*/test/**/*.ts",
     "e2e/**/*.ts",
     "*.config.ts"
   ],
-  // The consumer test's plugin is packed and installed outside the workspace, where its dependencies resolve.
-  "exclude": ["e2e/fixtures/consumer/**"]
+  // The consumer test's plugin is packed and installed outside the workspace, where its dependencies resolve;
+  // the packages' test fixtures are decks and their plugins, which the tests build as a user's project.
+  "exclude": ["e2e/fixtures/consumer/**", "packages/*/test/fixtures/**"]
 }

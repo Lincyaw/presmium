@@ -200,7 +200,7 @@ renderers:
 
 看。
 `)
-    const env = { ...process.env, PRESMIUM_SPEECH_FAKE_URL: fake.url, PRESMIUM_SPEECH_FAKE_PROVIDER: 'Presmium fake' }
+    const env: NodeJS.ProcessEnv = { ...process.env, PRESMIUM_SPEECH_FAKE_URL: fake.url, PRESMIUM_SPEECH_FAKE_PROVIDER: 'Presmium fake' }
     delete env.NODE_ENV
     const exported = await run(process.execPath, [join(LECTURE, 'bin/presmium-lecture.mjs'), 'export', '.', '--out', join(dir, 'out.webm'), '--fps', '4', '--size', '640x360'], { cwd: dir, env })
     expect(exported.code, exported.stdout + exported.stderr).toBe(2)

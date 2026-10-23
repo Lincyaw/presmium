@@ -198,8 +198,8 @@ async function expectCaptionedVideo(page: Page, video: Locator) {
   const files = [await video.getAttribute('poster'), ...await tracks.evaluateAll(list => list.map(track => track.getAttribute('src')))]
   expect(files).toEqual([expect.stringMatching(/poster\.png$/), expect.stringMatching(/loop\.en\.vtt$/), expect.stringMatching(/loop\.zh\.vtt$/)])
   for (const file of files) expect((await page.request.get(new URL(file!, page.url()).href)).status()).toBe(200)
-  await tracks.evaluateAll(list => list.forEach((element: HTMLTrackElement) => element.track.mode = 'hidden'))
-  await expect.poll(() => tracks.evaluateAll(list => list.map((element: HTMLTrackElement) => [...element.track.cues ?? []].map(cue => (cue as VTTCue).text)))).toEqual([
+  await tracks.evaluateAll((list: HTMLTrackElement[]) => list.forEach(element => element.track.mode = 'hidden'))
+  await expect.poll(() => tracks.evaluateAll((list: HTMLTrackElement[]) => list.map(element => [...element.track.cues ?? []].map(cue => (cue as VTTCue).text)))).toEqual([
     ['One turn of the agent loop.'],
     ['智能体环路的一轮。'],
   ])

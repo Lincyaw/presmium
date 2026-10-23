@@ -111,7 +111,7 @@ presmium/
 │   └── cs336/               Stanford CS336 完整课程：唯一的公开示例，端到端测试的对象
 ├── site/                    文档站：一个 Presmium 工作区，用 Presmium 自己构建（中英双语，接口参考由 TypeDoc 生成）
 ├── e2e/                     Playwright 测试，每个上下文一个 spec；测试文稿在 e2e/fixtures/<组>/
-├── scripts/                 结构检查：check-layering.mjs、check-skills.mjs、check-plugins.mjs、check-packages.mjs（发布的包）；consumer.ts（消费者安装）
+├── scripts/                 结构检查：check-layering.mjs、check-skills.mjs、check-plugins.mjs、check-packages.mjs（发布的包）、check-types.mjs（类型）；consumer.ts（消费者安装）
 ├── .changeset/              版本与发布（changesets，预发布模式 rc）；README.md 是哪些包公开发布的表
 ├── .github/workflows/       CI（ci.yml）
 ├── .agents/skills/          仓库技能：presmium-author、presmium-present、presmium-develop（.claude/skills 是指向它的软链接，AGENTS.md 是指向 CLAUDE.md 的软链接）
@@ -1579,7 +1579,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 | 层级 | 工具 | 范围 | 命令 |
 |---|---|---|---|
-| 结构检查 | `scripts/check-layering.mjs`、`scripts/check-skills.mjs`、`scripts/check-plugins.mjs`、`scripts/check-packages.mjs` | 第 3 节的分层规则；技能与代码一致（指令、命令及其选项）；每个 Node 插件声明 `version` 与当前内核满足的 `kernel` 范围（4.2 节）；每个包按 `.changeset/README.md` 的表公开或私有，公开的包有许可证、同一版本、`engines`、元数据与只含发布所需的 `files`，插件以对等依赖使用共用的包 | `pnpm test` |
+| 结构检查 | `scripts/check-layering.mjs`、`scripts/check-skills.mjs`、`scripts/check-plugins.mjs`、`scripts/check-packages.mjs`、`scripts/check-types.mjs` | 第 3 节的分层规则；技能与代码一致（指令、命令及其选项）；每个 Node 插件声明 `version` 与当前内核满足的 `kernel` 范围（4.2 节）；每个包按 `.changeset/README.md` 的表公开或私有，公开的包有许可证、同一版本、`engines`、元数据与只含发布所需的 `files`，插件以对等依赖使用共用的包；源码、测试与 spec 没有类型错误（`tsconfig.json` 只含 `.ts`，工作台的 React 面板由 `packages/workbench/tsconfig.json` 检查）。`@slidev/client` 发布的是 `.ts` 源码，只在 Slidev 自己的仓库中能通过类型检查（它的构建期全局量与设置），`skipLibCheck` 只跳过 `.d.ts`；检查按这些源码的类型检查仓库的代码，不报它们内部的错误 | `pnpm test` |
 | 消费者安装 | Vitest、Playwright | `scripts/consumer.ts` 用 pnpm 打包全部公开的包，在单仓之外的临时目录中用 pnpm 从压缩包安装 `presmium`（另加一个从自己的压缩包安装的第三方插件）；`packages/cli/test/consumer.test.ts` 在其中运行 `check`、三种形态的 `build`、`dev`、`serve`（站点在项目之外，从随包的模板新建文档）、不兼容插件的诊断，在空目录中 `presmium new` 之后检查与构建，以及转交给项目里的 `presmium`，`e2e/consumer.spec.ts` 在浏览器中看插件的组件 | `pnpm test`、`pnpm e2e` |
 | 集成 | Vitest | 真实运行 CLI、构建产物检查、服务端（`packages/<pkg>/test/`）；运行 `slidev export` 的用例是单独的项目 `export`，在其他用例之后运行 | `pnpm test` |
 | 构建 | `presmium build` | 示例文稿编译并生成全部媒介（网页、幻灯片、notebook） | `pnpm demo:build` |
