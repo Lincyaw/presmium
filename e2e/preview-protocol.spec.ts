@@ -7,7 +7,7 @@ import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { stepKeys, stepTrail, trailStep } from '../packages/kernel/src/step-keys.ts'
 import type { IRSection } from '../packages/kernel/src/ir.ts'
 
@@ -15,7 +15,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const FIXTURE = join(ROOT, 'e2e/fixtures/preview-protocol')
 const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
 const TOKEN = 'preview-protocol-token'
-const COMMANDS = ['go', 'highlight', 'pick', 'pins', 'marks', 'appearance']
+const COMMANDS = ['go', 'highlight', 'pick', 'pins', 'marks', 'appearance', 'edit']
 // The web form can also pause and resume its runtime; the slides cannot.
 const WEB_COMMANDS = [...COMMANDS, 'activity']
 
@@ -315,6 +315,183 @@ test('the slides take every command, report their position and picks with the tr
   await message(page, 'updated', { revision: await revision() })
 
   await message(page, 'report', { level: 'error', plugin: 'fixture.preview.throws' })
+})
+
+interface Point { x: number, y: number }
+interface Rect extends Point { width: number, height: number }
+
+const boxOf = (element: Locator) => element.evaluate((el): Rect => {
+  const box = el.getBoundingClientRect()
+  return { x: box.x, y: box.y, width: box.width, height: box.height }
+})
+const textBoxOf = (element: Locator) => element.evaluate((el): Rect => {
+  const range = document.createRange()
+  range.selectNodeContents(el)
+  const box = range.getBoundingClientRect()
+  return { x: box.x, y: box.y, width: box.width, height: box.height }
+})
+function near(rect: unknown, box: Rect, by = 1): void {
+  expect(rect).toEqual({ x: expect.any(Number), y: expect.any(Number), width: expect.any(Number), height: expect.any(Number) })
+  for (const key of ['x', 'y', 'width', 'height'] as const) expect(Math.abs((rect as Rect)[key] - box[key]), key).toBeLessThanOrEqual(by)
+}
+
+async function clicked(page: Page, clicks: number): Promise<Record<string, unknown>> {
+  await expect.poll(async () => (await received(page, 'picked')).some(m => m.clicks === clicks)).toBe(true)
+  return (await received(page, 'picked')).findLast(m => m.clicks === clicks)!
+}
+
+async function edits(page: Page, target: Record<string, string>): Promise<boolean[]> {
+  return (await received(page, 'editing')).filter(m => JSON.stringify(m.target) === JSON.stringify(target)).map(m => m.active as boolean)
+}
+
+test('the web form tells where a pick and a selection are and follows them as it scrolls; a block and a heading are edited in place', async ({ page }) => {
+  await ready(page, 'web', { renderer: 'web', capabilities: WEB_COMMANDS })
+  const frame = page.frameLocator('#preview')
+  const text = frame.locator('.pm-block[data-block="alpha-text"]')
+  const alpha = { section: 'alpha', block: 'alpha-text' }
+
+  await send(page, 'pick', { on: true })
+  await text.click()
+  const one = await clicked(page, 1)
+  expect(one).toMatchObject({ ...alpha, step: 0, point: { x: expect.any(Number), y: expect.any(Number) } })
+  near(one.rect, await boxOf(text))
+
+  const lastRect = async () => (await received(page, 'rect')).at(-1)?.rect
+  const preview = page.locator('#preview')
+  const bottom = (one.rect as Rect).y + (one.rect as Rect).height
+  // A frame just taller than the block, so that the page scrolls far enough to take the block out of sight.
+  await preview.evaluate((el: HTMLElement, height) => void (el.style.height = `${height}px`), Math.ceil(bottom + 80))
+  await frame.locator('html').evaluate(() => window.scrollBy(0, 40))
+  await expect(async () => near(await lastRect(), { ...one.rect as Rect, y: (one.rect as Rect).y - 40 })).toPass({ timeout: 10_000 })
+  await text.evaluate(el => window.scrollBy(0, el.getBoundingClientRect().bottom + 20))
+  await expect.poll(lastRect).toBeNull()
+  await frame.locator('html').evaluate(() => window.scrollTo(0, 0))
+  await preview.evaluate((el: HTMLElement) => void (el.style.height = ''))
+  await expect(async () => near(await lastRect(), one.rect as Rect)).toPass({ timeout: 10_000 })
+
+  const selections = (await received(page, 'selection')).length
+  await select(page, '.pm-block[data-block="alpha-text"] p')
+  const chosen = (await next(page, 'selection', selections)).selection as { rect: Rect }
+  near(chosen.rect, await textBoxOf(text.locator('p')))
+  await frame.locator('body').evaluate(() => document.getSelection()!.removeAllRanges())
+  await message(page, 'selection', { selection: null })
+  const quiet = (await received(page, 'rect')).length
+  await frame.locator('html').evaluate(() => window.scrollBy(0, 10))
+  await page.waitForTimeout(500)
+  expect(await received(page, 'rect')).toHaveLength(quiet)
+
+  const original = await text.textContent()
+  await send(page, 'edit', { target: alpha })
+  await expect.poll(() => edits(page, alpha)).toEqual([true])
+  await expect(text).toHaveAttribute('contenteditable', 'true')
+  await expect(text).toHaveAttribute('data-preview-editing', '')
+  await page.keyboard.type(' gone')
+  await expect(text).toContainText('the author. gone')
+  await page.keyboard.press('Escape')
+  await expect.poll(() => edits(page, alpha)).toEqual([true, false])
+  await expect(text).not.toHaveAttribute('contenteditable')
+  expect(await text.textContent()).toBe(original)
+  await send(page, 'marks', { on: true })
+  await expect(text.locator('.pm-role-mark')).toHaveText('〔mark here〕')
+  await send(page, 'marks', { on: false })
+  await expect(text.locator('.pm-role-mark')).toHaveCount(0)
+
+  await text.dblclick()
+  const two = await clicked(page, 2)
+  expect(two).toMatchObject(alpha)
+  expect(await frame.locator('body').evaluate(() => document.getSelection()!.toString())).toBe('')
+  await send(page, 'edit', { target: alpha, at: two.point as Point })
+  await expect.poll(() => edits(page, alpha)).toEqual([true, false, true])
+  await page.keyboard.type(' Edited')
+  await page.keyboard.press('Enter')
+  await expect.poll(() => edits(page, alpha)).toEqual([true, false, true, false])
+  const [edited, ...more] = await received(page, 'edited')
+  expect(more).toEqual([])
+  expect(edited).toMatchObject({ target: alpha, before: original })
+  expect(edited!.after).not.toBe(original)
+  expect((edited!.after as string).replace(' Edited', '')).toBe(original)
+  expect((edited!.after as string).indexOf(' Edited'), 'the caret goes where the block was double-clicked').toBeLessThan(original!.trimEnd().length)
+  await expect(text).toContainText('Edited')
+  await expect(text).not.toHaveAttribute('contenteditable')
+
+  const heading = { section: 'gamma' }
+  await send(page, 'edit', { target: heading })
+  await expect(frame.getByRole('heading', { name: 'Gamma' })).toHaveAttribute('contenteditable', 'true')
+  await page.keyboard.type(' again')
+  await page.keyboard.press('Enter')
+  await expect.poll(() => edits(page, heading)).toEqual([true, false])
+  const titled = (await received(page, 'edited')).at(-1)!
+  expect(titled).toMatchObject({ target: heading, before: expect.stringContaining('Gamma') })
+  expect(titled.after).toBe((titled.before as string).replace('Gamma', 'Gamma again'))
+
+  await send(page, 'edit', { target: { section: 'alpha', block: 'no-such-block' } })
+  await expect.poll(() => edits(page, { section: 'alpha', block: 'no-such-block' })).toEqual([false])
+})
+
+test('the slides tell where a pick and a selection are, follow them as the frame resizes, and edit a block and a heading in place', async ({ page }) => {
+  await ready(page, 'slides', { renderer: 'slides', capabilities: COMMANDS })
+  const frame = page.frameLocator('#preview')
+  const shown = frame.locator('.slidev-page').filter({ visible: true })
+  await send(page, 'go', { section: 'beta' })
+  await message(page, 'position', { section: 'beta', step: 0, trail: [] })
+  const intro = shown.locator('[data-section="beta"] .pm-block[data-block="beta-intro"]')
+  const target = { section: 'beta', block: 'beta-intro' }
+
+  await send(page, 'pick', { on: true })
+  await intro.dblclick()
+  const one = await clicked(page, 1)
+  const two = await clicked(page, 2)
+  expect(one).toMatchObject({ ...target, point: { x: expect.any(Number), y: expect.any(Number) } })
+  expect(two).toMatchObject(target)
+  near(two.rect, await boxOf(intro))
+  expect(await frame.locator('body').evaluate(() => document.getSelection()!.toString())).toBe('')
+
+  const lastRect = async () => (await received(page, 'rect')).at(-1)?.rect
+  const preview = page.locator('#preview')
+  await preview.evaluate((el: HTMLElement) => void (el.style.width = '60%'))
+  await expect(async () => near(await lastRect(), await boxOf(intro))).toPass({ timeout: 10_000 })
+  expect(((await lastRect()) as Rect).width).toBeLessThan((two.rect as Rect).width)
+  await preview.evaluate((el: HTMLElement) => void (el.style.width = ''))
+  await expect(async () => near(await lastRect(), two.rect as Rect)).toPass({ timeout: 10_000 })
+
+  const selections = (await received(page, 'selection')).length
+  await select(page, '.pm-block[data-block="beta-intro"] p')
+  const chosen = (await next(page, 'selection', selections)).selection as { rect: Rect }
+  expect(chosen).toMatchObject(target)
+  near(chosen.rect, await textBoxOf(intro.locator('p')))
+  await frame.locator('body').evaluate(() => document.getSelection()!.removeAllRanges())
+  await message(page, 'selection', { selection: null })
+
+  const original = await intro.textContent()
+  const positions = (await received(page, 'position')).length
+  await send(page, 'edit', { target, at: two.point as Point })
+  await expect.poll(() => edits(page, target)).toEqual([true])
+  await page.keyboard.type(' and more')
+  await page.keyboard.press('Space')
+  await page.keyboard.press('ArrowLeft')
+  await page.keyboard.press('ArrowRight')
+  await page.keyboard.press('Enter')
+  await expect.poll(() => edits(page, target)).toEqual([true, false])
+  const [edited] = await received(page, 'edited')
+  expect(edited).toMatchObject({ target, before: original })
+  expect((edited!.after as string).replace(' and more ', '')).toBe(original)
+  expect((await received(page, 'position')).length).toBe(positions)
+  await expect(shown.locator('[data-section="beta"]').getByRole('heading', { name: 'Beta' })).toBeVisible()
+
+  const heading = { section: 'beta' }
+  await send(page, 'edit', { target: heading })
+  await expect.poll(() => edits(page, heading)).toEqual([true])
+  await page.keyboard.type('!')
+  await page.keyboard.press('Escape')
+  await expect.poll(() => edits(page, heading)).toEqual([true, false])
+  await send(page, 'edit', { target: heading })
+  await page.keyboard.type('!')
+  await page.keyboard.press('Enter')
+  await expect.poll(() => edits(page, heading)).toEqual([true, false, true, false])
+  const titled = (await received(page, 'edited')).at(-1)!
+  expect(titled).toMatchObject({ target: heading })
+  expect(titled.after).toBe((titled.before as string).replace('Beta', 'Beta!'))
+  expect(await received(page, 'edited')).toHaveLength(2)
 })
 
 test('the agent answers no other origin, no other nonce, and does not start out of a frame', async ({ page }) => {

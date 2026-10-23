@@ -150,13 +150,17 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 产物 → 工作台 | `activity` | `active`、`request`、`revision?`、`error?` | 完成上述切换后的确认，回传请求编号；失败时工作台销毁预览，沿用重新加载路径 |
 | 工作台 → 产物 | `go` | `section`、`step?`、`trail?`、`view?` | 跳到某节的某一步。`view` 是网页形态的运行时视图（`document`、`present` 等，与控制通道的位置相同）；幻灯片形态没有 |
 | 工作台 → 产物 | `highlight` | `target`：`{ section, block? }` 或 `null` | 框出一块或一节；不在视野中时滚动过去；`null` 清除 |
-| 工作台 → 产物 | `pick` | `on` | 点选模式。打开时点在块上报告 `picked`，不触发块自己的操作；链接、按钮与输入框照常工作（规则同 `placeOfClick`）。鼠标下的块加虚线框 |
+| 工作台 → 产物 | `pick` | `on` | 点选模式。打开时点在块上报告 `picked`，不触发块自己的操作；链接、按钮与输入框照常工作（规则同 `placeOfClick`）。鼠标下的块加一道浅色细框，指针为手形；双击块不选中词 |
 | 工作台 → 产物 | `pins` | `targets`：`[{ id, section, block, label }]` | 在这些块旁画编号标记（`label`）；标记在页面之中，滚动、缩放与切换步骤时自然跟着块走；块不在当前页面中时不画。空数组清除 |
 | 工作台 → 产物 | `marks` | `on` | 显示作者用的标记（如 `{cue}`），`PmRoleMark` 看它 |
 | 工作台 → 产物 | `appearance` | `dark` | 明暗跟随工作台 |
+| 工作台 → 产物 | `edit` | `target`：`{ section, block? }` 或 `null`、`at?`：`{ x, y }` | 就地编辑一块的文字；只有 `section` 时编辑该节的标题。光标放在 `at`（iframe 视口中的点，通常取 `picked` 的 `point`）下的文字处，不在元素的文字上时放在末尾。只能输入纯文本：格式命令、换行与拖放被拦下，粘贴只取纯文本。编辑中的按键不交给页面（幻灯片的翻页、站内搜索与 `shortcut` 都不响应），输入法组字时的按键不算。`Enter` 结束并保留，焦点离开该元素时同样；`Esc` 或 `target: null` 取消，页面恢复原来的节点。正在编辑另一处时先结束并保留那一处。每条带 `target` 的 `edit` 都有 `editing` 回答 |
 | 产物 → 工作台 | `position` | `section`、`step`、`trail`、`view?` | 位置变化时发出，至多每 150 ms 一次 |
-| 产物 → 工作台 | `picked` | `section`、`block?`、`step?`、`trail?` | 点选的结果；点在块上时带块出现的步骤（页面自己的步号）与那一步的 `trail`，同 `position` |
-| 产物 → 工作台 | `selection` | `{ section, block?, text }` 或 `null` | 页面中的文字选中，供焦点带上（8.2 节的 `quote`） |
+| 产物 → 工作台 | `picked` | `section`、`block?`、`step?`、`trail?`、`rect?`、`point`、`clicks` | 点选的结果；点在块上时带块出现的步骤（页面自己的步号）与那一步的 `trail`，同 `position`。`rect` 是所点的块（没有块时是节）的框，`point` 是鼠标的位置，都在 iframe 的视口中，单位为 CSS 像素；`clicks` 是连击的次数（1 到 3），双击依次报告 1 与 2 |
+| 产物 → 工作台 | `selection` | `{ section, block?, text, rect? }` 或 `null` | 页面中的文字选中，供焦点带上（8.2 节的 `quote`）。`rect` 是选区的框（选区没有框时取它最后一行的框）。编辑中的选区不报告 |
+| 产物 → 工作台 | `rect` | `rect`：框或 `null` | 跟随的对象在页面滚动（任何滚动区域）或尺寸变化后的框，供工作台把工具条留在它旁边；完全移出视野或已不在页面中时为 `null`。跟随的对象是最近一次点选的块，直到再次点选或有了非空的选区；有选区时是选区，选区清空后不再跟随。没有跟随的对象时不发，框不变时也不发 |
+| 产物 → 工作台 | `editing` | `target`、`active` | 就地编辑开始（`true`）或结束（`false`）；找不到要编辑的元素时立即回答 `false` |
+| 产物 → 工作台 | `edited` | `target`、`before`、`after` | 编辑结束并保留、文字有变化时发出一次，先于 `editing` 的 `false`。`before`、`after` 是元素的文字（`textContent`，不含代理画的编号标记，不间断空格按普通空格）。页面保留编辑后的样子，新的 IR 到来时重新渲染；工作台据此改写源码。没有变化时页面恢复原来的节点，不发 |
 | 产物 → 工作台 | `updated` | `revision` | 页面换上了新的 IR。工作台据此重新加上高亮与焦点的标记，并判断预览是否已反映刚保存的源码 |
 | 产物 → 工作台 | `report` | `level`（`error` 或 `warning`）、`plugin?`、`message`、`resolved?` | 页面中的运行时问题；`resolved: true` 清除同一问题。工作台按预览实例报告到诊断接口 |
 | 产物 → 工作台 | `shortcut` | `command`（`open-files` 或 `open-commands`） | 预览获得键盘焦点后，Ctrl/Cmd+P 与 Ctrl/Cmd+Shift+P 仍打开工作台的快速打开与命令面板。只传这两种意图，经原有来源、nonce 与文稿握手校验；不传任意按键 |
