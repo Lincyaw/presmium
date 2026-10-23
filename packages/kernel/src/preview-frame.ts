@@ -43,6 +43,7 @@ const HIGHLIGHT = 'data-preview-highlight'
 const HOVER = 'data-preview-hover'
 const EDITING = 'data-preview-editing'
 const POSITIONED = 'data-preview-positioned'
+const PINNED = 'data-preview-pinned'
 const PIN_CLASS = 'pm-preview-pin'
 const CONTROLS = 'a, button, input, select, textarea, label, summary, [contenteditable], [role="dialog"]'
 const HEADINGS = 'h1, h2, h3, h4, h5, h6'
@@ -56,7 +57,8 @@ const STYLE = `
 [${HOVER}] { outline: 1px solid color-mix(in srgb, var(--pm-color-accent, #1d6b7a) 50%, transparent) !important; outline-offset: 3px; border-radius: 4px; cursor: pointer; }
 [${EDITING}] { outline: 2px solid var(--pm-color-accent, #1d6b7a) !important; outline-offset: 3px; border-radius: 4px; cursor: text; }
 [${POSITIONED}] { position: relative; }
-.${PIN_CLASS} { position: absolute; top: -10px; left: -10px; z-index: 50; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 10px; background: var(--pm-color-accent, #1d6b7a); color: #fff; font: 600 12px/20px system-ui, sans-serif; text-align: center; pointer-events: none; }
+[${PINNED}] { background: color-mix(in srgb, var(--pm-color-accent, #1d6b7a) 7%, transparent); box-shadow: inset 3px 0 0 var(--pm-color-accent, #1d6b7a); border-radius: 2px; }
+.${PIN_CLASS} { position: absolute; top: 4px; right: 4px; z-index: 50; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 10px; background: var(--pm-color-accent, #1d6b7a); color: #fff; font: 600 12px/20px system-ui, sans-serif; text-align: center; pointer-events: none; }
 `
 
 function previewNonce(): string | undefined {
@@ -258,10 +260,14 @@ function createPins(locate: Locator) {
       const host = old.parentElement
       if (!host || !wanted.get(host)?.some(pin => pin.id === old.dataset.pin && pin.label === old.textContent)) old.remove()
     }
-    for (const host of document.querySelectorAll<HTMLElement>(`[${POSITIONED}]`)) {
-      if (!wanted.has(host)) host.removeAttribute(POSITIONED)
+    for (const host of document.querySelectorAll<HTMLElement>(`[${POSITIONED}], [${PINNED}]`)) {
+      if (!wanted.has(host)) {
+        host.removeAttribute(POSITIONED)
+        host.removeAttribute(PINNED)
+      }
     }
     for (const [element, own] of wanted) {
+      element.setAttribute(PINNED, '')
       if (getComputedStyle(element).position === 'static') element.setAttribute(POSITIONED, '')
       own.forEach((pin, i) => {
         if ([...element.children].some(child => child.classList.contains(PIN_CLASS) && (child as HTMLElement).dataset.pin === pin.id)) return
@@ -270,7 +276,7 @@ function createPins(locate: Locator) {
         mark.dataset.pin = pin.id
         mark.textContent = pin.label
         mark.setAttribute('aria-hidden', 'true')
-        if (i > 0) mark.style.left = `${-10 + 24 * i}px`
+        if (i > 0) mark.style.right = `${4 + 24 * i}px`
         element.append(mark)
       })
     }
