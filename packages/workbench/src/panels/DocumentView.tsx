@@ -58,7 +58,8 @@ function DocumentToolbar({ aside, onAside }: { aside: DocumentAside | null, onAs
   const renderer = useWorkbenchState(state => state.previewRenderer)
   const hasSlides = useWorkbenchState(state => hasSlidesForm(state.ir))
   const mode = useWorkbenchState(state => state.mode)
-  const openComments = useWorkbenchState(state => state.comments.filter(comment => comment.status !== 'resolved').length)
+  const openComments = useWorkbenchState(state => state.comments.filter(comment => comment.status === 'open').length)
+  const asking = useWorkbenchState(state => state.isAsking)
   const summaryOf = (id: string | undefined) => {
     const revision = id ? history?.revisions.find(r => r.id.startsWith(id) || id.startsWith(r.id)) : undefined
     return revision?.message.split('\n')[0] ?? ''
@@ -89,6 +90,11 @@ function DocumentToolbar({ aside, onAside }: { aside: DocumentAside | null, onAs
       <span className="pm-ui-segmented" role="group" aria-label={t.modeLabel}>
         {modes.map(item => <button key={item.id} type="button" className="pm-ui-segmented__option" aria-label={item.label} aria-pressed={mode === item.id} title={item.hint} onClick={() => workbench.setMode(item.id)}><PmIcon name={item.icon} size={15} /><span className="pmw-toolbar__label">{item.label}</span></button>)}
       </span>
+      {openComments > 0 && (
+        <PmButton variant="accent" icon="sparkle" aria-label={t.sendComments(openComments)} title={t.sendComments(openComments)} disabled={asking} onClick={() => void workbench.askAgentAboutComments()}>
+          <span className="pmw-toolbar__label">{t.sendComments(openComments)}</span>
+        </PmButton>
+      )}
       <PmButton icon="comment" aria-label={openComments > 0 ? `${t.comments} (${openComments})` : t.comments} title={t.comments} aria-pressed={aside === 'comments'} onClick={() => onAside('comments')}>
         <span className="pmw-toolbar__label">{t.comments}</span>
         {openComments > 0 && <PmBadge tone="accent" pill>{openComments}</PmBadge>}

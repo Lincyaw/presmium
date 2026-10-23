@@ -252,7 +252,7 @@ test.describe('the root layout', () => {
     await expect(preview(page).getByText('转到第二讲')).toBeVisible({ timeout: 60_000 })
   })
 
-  test('a click or a selection opens the toolbar beside it; a comment is numbered on its block and listed; the comments go to the AI', async ({ page }) => {
+  test('a click or a selection opens the toolbar beside it; comments are numbered on their blocks, listed, and sent to the AI together', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await studio.open(page)
     await openDocument(page, '分词入门')
@@ -270,6 +270,8 @@ test.describe('the root layout', () => {
     await page.getByRole('button', { name: '发布', exact: true }).click()
     await expect(tools(page)).toBeHidden()
     await expect(preview(page).locator('.pm-preview-pin')).toHaveText('1')
+    const send = page.locator('.pmw-toolbar').getByRole('button', { name: '发送 1 条批注给 AI' })
+    await expect(send).toBeVisible()
 
     await select(page, '这一段要改的词是')
     await expect(tools(page)).toBeVisible()
@@ -281,14 +283,17 @@ test.describe('the root layout', () => {
     await expect(comments.locator('.pmw-comment')).toHaveCount(1)
     await expect(comments.locator('.pmw-comment')).toContainText('这里加一个例子')
     await expect(comments.locator('.pmw-comment')).toContainText('位于“合并”')
+    await expect(comments).toContainText('1 条批注等待发送')
     const before = model.received.length
-    await comments.getByRole('button', { name: '全部交给 AI' }).click()
+    await send.click()
     await expect.poll(() => asked(model, before), { timeout: 60_000 }).toContain('这里加一个例子')
     await expect(conversation(page)).toContainText('收到批注。', { timeout: 60_000 })
-    await expect(comments.locator('.pmw-comment')).toContainText('已交给 AI')
+    // Sent, the comments wait no more: no button, no number on the page.
+    await expect(send).toBeHidden()
+    await expect(preview(page).locator('.pm-preview-pin')).toHaveCount(0)
+    await expect(comments.locator('.pmw-comment')).toContainText('已发送给 AI')
     await comments.getByRole('button', { name: '解决' }).click()
     await expect(comments.locator('.pmw-comment')).toHaveCount(0)
-    await expect(preview(page).locator('.pm-preview-pin')).toHaveCount(0)
     await page.reload()
     await openDocument(page, '分词入门')
     await page.locator('.pmw-toolbar').getByRole('button', { name: /^批注/ }).click()

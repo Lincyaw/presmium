@@ -1,5 +1,5 @@
 import { errorMessage, irBlocks, stepKeys, trailStep } from '@lincyaw/kernel'
-import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPoint, PreviewRect, PreviewRenderer, PreviewReport, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
+import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPin, PreviewPoint, PreviewRect, PreviewRenderer, PreviewReport, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
 import { CommentStore, newComment } from './comments.ts'
 import type { DocumentComment } from './comments.ts'
 import { DocumentDiagnostics } from './diagnostics.ts'
@@ -120,6 +120,11 @@ export function isAgentChanging(state: WorkbenchState): boolean {
 export function hasSlides(ir: IrAnswer | undefined): boolean {
   const renderers = ir?.doc.config.renderers
   return !renderers || Object.keys(renderers).length === 0 || 'slides' in renderers
+}
+
+/** The numbers on the blocks of the comments not yet sent, in order. */
+function commentPins(comments: readonly DocumentComment[]): PreviewPin[] {
+  return comments.filter(comment => comment.status === 'open' && comment.block).map((comment, i) => ({ id: comment.id, section: comment.section, block: comment.block!, label: String(i + 1) }))
 }
 
 /** What opening or closing a document clears. */
@@ -535,8 +540,7 @@ export class Workbench {
 
   #setComments(comments: DocumentComment[]): void {
     this.#set({ comments })
-    const counted = comments.filter(comment => comment.status !== 'resolved' && comment.block)
-    this.#broadcast({ type: 'pins', targets: counted.map((comment, i) => ({ id: comment.id, section: comment.section, block: comment.block!, label: String(i + 1) })) })
+    this.#broadcast({ type: 'pins', targets: commentPins(comments) })
   }
 
   #writeComments(comments: DocumentComment[]): void {
@@ -563,7 +567,7 @@ export class Workbench {
     this.#writeComments(this.#state.comments.filter(comment => comment.id !== id))
   }
 
-  /** Hands the comments (all open ones by default) to the AI to act on. */
+  /** Sends the comments (all those not yet sent, by default) to the AI in one message; they are then sent, no longer pending. */
   async askAgentAboutComments(ids = this.#state.comments.filter(comment => comment.status === 'open').map(comment => comment.id)): Promise<boolean> {
     const chosen = this.#state.comments.filter(comment => ids.includes(comment.id))
     if (chosen.length === 0) return false
@@ -629,8 +633,7 @@ export class Workbench {
     this.#pendingReveal = undefined
     if (reveal) sink.send({ type: 'go', section: reveal.section })
     sink.send({ type: 'highlight', target: reveal ?? this.#state.pointer?.target ?? null })
-    const counted = this.#state.comments.filter(comment => comment.status !== 'resolved' && comment.block)
-    sink.send({ type: 'pins', targets: counted.map((comment, i) => ({ id: comment.id, section: comment.section, block: comment.block!, label: String(i + 1) })) })
+    sink.send({ type: 'pins', targets: commentPins(this.#state.comments) })
     return () => this.#previewSinks.delete(sink)
   }
 

@@ -48,7 +48,7 @@ Every save is a version. Undo and Redo (Ctrl+Z, Ctrl+Y or Ctrl+Shift+Z, also whi
 
 The AI's turns become versions too. When the workspace asks to review them (`review: required`), the author accepts or rejects them first.
 
-Comments are kept in the browser, by workspace and document. They are numbered on their blocks, and they go to the AI one by one or all at once.
+Comments are notes for the AI. The author writes them one by one, and they wait, numbered on their blocks, until the author sends them: Send N comments to AI in the toolbar puts them in one message. The AI's changes become a version. Comments are kept in the browser, by workspace and document.
 
 The workbench hands requests to the conversation through `workbench.onAgentRequest`; the host binds that to its agent session. These requests are Rewrite with AI, comments, and fixing content that does not display. Hosts route links to a document's Markdown through `workbench.revealSource(path, line)`, which opens that document and outlines the block at the line.
 

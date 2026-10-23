@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { PmBadge, PmButton, PmEmpty, PmIconButton } from '../components.tsx'
+import { PmBadge, PmButton, PmEmpty, PmIconButton, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
 
-/** The document's comments: where each is, what it says; each can go to the AI, be resolved or deleted. */
+/** The document's comments, notes of what should change: written one by one, sent to the AI together; then resolved or deleted. */
 export function CommentsPanel({ onClose }: { onClose(): void }) {
   const t = useMessages()
   const workbench = useWorkbench()
@@ -12,8 +12,8 @@ export function CommentsPanel({ onClose }: { onClose(): void }) {
   const locale = useWorkbenchState(state => state.locale)
   const asking = useWorkbenchState(state => state.isAsking)
   const [showResolved, setShowResolved] = useState(false)
-  // Numbered as the document's pins are: the unresolved comments on a block, in order.
-  const numbers = new Map(comments.filter(comment => comment.status !== 'resolved' && comment.block).map((comment, i) => [comment.id, i + 1]))
+  // Numbered as the document's pins are: the comments not yet sent on a block, in order.
+  const numbers = new Map(comments.filter(comment => comment.status === 'open' && comment.block).map((comment, i) => [comment.id, i + 1]))
   const shown = comments.filter(comment => showResolved || comment.status !== 'resolved')
   const open = comments.filter(comment => comment.status === 'open').length
   return (
@@ -23,6 +23,7 @@ export function CommentsPanel({ onClose }: { onClose(): void }) {
         {open > 0 && <PmButton small variant="accent" icon="sparkle" disabled={asking} onClick={() => void workbench.askAgentAboutComments()}>{t.askAboutAll}</PmButton>}
         <PmIconButton small icon="close" label={t.close} onClick={onClose} />
       </header>
+      {open > 0 && <PmNotice tone="accent">{t.pendingComments(open)}</PmNotice>}
       {shown.length === 0
         ? <PmEmpty icon="comment">{t.noComments}</PmEmpty>
         : (
