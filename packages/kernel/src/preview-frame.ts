@@ -660,11 +660,17 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
     for (const origin of page.origins) window.parent.postMessage(previewEnvelope(nonce, message), origin)
   }
 
+  // Undo, redo and Escape belong to the workbench, except where the page's own fields take typing.
   const shortcut = (event: KeyboardEvent) => {
     if (!isLive(state)) return
-    if (event.defaultPrevented || event.isComposing || event.altKey || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'p') return
+    if (event.defaultPrevented || event.isComposing || event.altKey) return
+    if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable]')) return
+    if (event.key === 'Escape' && !event.ctrlKey && !event.metaKey) return post({ type: 'shortcut', command: 'dismiss' })
+    if (!(event.ctrlKey || event.metaKey)) return
+    const key = event.key.toLowerCase()
+    if (key !== 'z' && key !== 'y') return
     event.preventDefault()
-    post({ type: 'shortcut', command: event.shiftKey ? 'open-commands' : 'open-files' })
+    post({ type: 'shortcut', command: key === 'y' || event.shiftKey ? 'redo' : 'undo' })
   }
   window.addEventListener('keydown', shortcut)
 

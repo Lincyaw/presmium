@@ -55,11 +55,13 @@ async function select(page: Page, text: string): Promise<void> {
 
 const texts = (value: unknown): string[] => typeof value === 'string' ? [value] : value && typeof value === 'object' ? Object.values(value).flatMap(texts) : []
 
-/** The author's latest message to the model in the turns since `after` (not the document context Presmium adds). */
+/** What the author's latest message to the model in the turns since `after` says: its first text, before the runtime context the host adds. */
 function asked(model: FakeModel, after: number): string {
   const turns = model.received.slice(after).filter(request => Array.isArray(request.body.tools))
   const messages = turns.at(-1)?.body.messages as { role: string, content: unknown }[] | undefined
-  return (messages ?? []).filter(message => message.role === 'user').map(message => texts(message.content).join('\n')).filter(text => !text.includes('<presmium-document>')).at(-1) ?? ''
+  // The author's messages begin with text; the agent's tool results come back as user messages too.
+  const content = messages?.filter(message => message.role === 'user' && (!Array.isArray(message.content) || (message.content[0] as { type?: string } | undefined)?.type === 'text')).at(-1)?.content
+  return Array.isArray(content) ? texts(content[0]).join('\n') : texts(content).join('\n')
 }
 
 function git(dir: string, args: string[]): string {
@@ -326,9 +328,9 @@ test.describe('the root layout', () => {
     await openDocument(page, '分词入门')
     const notices = page.locator('.pmw-notices')
     await expect(notices).toContainText('有 1 处内容没能正确显示。')
-    await expect(notices).not.toContainText('nosuch')
+    await expect(notices.getByText(/nosuch/)).toBeHidden()
     await notices.getByText('详细信息').click()
-    await expect(notices).toContainText('nosuch')
+    await expect(notices.getByText(/nosuch/)).toBeVisible()
     const before = model.received.length
     await notices.getByRole('button', { name: '让 AI 修复' }).click()
     await expect.poll(() => asked(model, before), { timeout: 60_000 }).toContain('nosuch')

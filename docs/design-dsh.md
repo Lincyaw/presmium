@@ -163,7 +163,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 产物 → 工作台 | `edited` | `target`、`before`、`after` | 编辑结束并保留、文字有变化时发出一次，先于 `editing` 的 `false`。`before`、`after` 是元素的文字（`textContent`，不含代理画的编号标记，不间断空格按普通空格）。页面保留编辑后的样子，新的 IR 到来时重新渲染；工作台据此改写源码。没有变化时页面恢复原来的节点，不发 |
 | 产物 → 工作台 | `updated` | `revision` | 页面换上了新的 IR。工作台据此重新加上高亮与焦点的标记，并判断预览是否已反映刚保存的源码 |
 | 产物 → 工作台 | `report` | `level`（`error` 或 `warning`）、`plugin?`、`message`、`resolved?` | 页面中的运行时问题；`resolved: true` 清除同一问题。工作台按预览实例报告到诊断接口 |
-| 产物 → 工作台 | `shortcut` | `command`（`open-files` 或 `open-commands`） | 预览获得键盘焦点后，Ctrl/Cmd+P 与 Ctrl/Cmd+Shift+P 仍打开工作台的快速打开与命令面板。只传这两种意图，经原有来源、nonce 与文稿握手校验；不传任意按键 |
+| 产物 → 工作台 | `shortcut` | `command`（`undo`、`redo` 或 `dismiss`） | 预览获得键盘焦点后，Ctrl/Cmd+Z 仍撤消、Ctrl/Cmd+Y 与 Ctrl/Cmd+Shift+Z 仍恢复工作台中的版本，Esc 关掉工作台的工具条；页面自己的输入框与就地编辑中的按键不转发。只传这三种意图，经原有来源、nonce 与文稿身份检查 |
 
 ### 4.4 坐标与步骤
 

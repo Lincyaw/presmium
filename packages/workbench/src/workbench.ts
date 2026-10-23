@@ -175,6 +175,8 @@ export class Workbench {
   #focusVersion = 0
   #focusWriting: Promise<void> = Promise.resolve()
   #edits: Promise<void> = Promise.resolve()
+  /** A place to show that no preview could take yet (none was attached, e.g. the chat covered the document). */
+  #pendingReveal?: PreviewAnchor
 
   constructor(options: { client?: WorkspaceClient, locale?: Locale, isDark?: boolean } = {}) {
     this.client = options.client ?? workspaceClient()
@@ -397,7 +399,10 @@ export class Workbench {
     if (!section) return false
     if (!target.block) return true
     const block = [...irBlocks(section.blocks)].find(b => b.id === target.block)
-    return block?.node.type === 'markdown' && EDITABLE.has(String(block.node.mdast.type))
+    if (block?.node.type !== 'markdown') return false
+    const { mdast } = block.node
+    const parts = mdast.type === 'root' ? mdast.children ?? [] : [mdast]
+    return parts.length > 0 && parts.every(part => EDITABLE.has(part.type))
   }
 
   /** Points at a block or a passage (none: stops pointing): the preview outlines it and the conversation is told. */
@@ -417,7 +422,10 @@ export class Workbench {
   /** Edits the target's text in place in the preview; none ends editing without saving. */
   editText(target: PreviewAnchor | null, at?: PreviewPoint): void {
     if (target && (isAgentChanging(this.#state) || !this.isEditable(target))) return
-    if (target) this.#set({ pointer: undefined, editFallback: undefined })
+    if (target) {
+      this.#set({ pointer: undefined, editFallback: undefined })
+      this.#broadcast({ type: 'highlight', target: null })
+    }
     this.#broadcast({ type: 'edit', target, ...at ? { at } : {} })
   }
 
@@ -565,10 +573,15 @@ export class Workbench {
     return asked
   }
 
-  /** Shows a section, or a block of it, in the preview. */
+  /** Shows a section, or a block of it, in the preview (the next one attached, when none is). */
   revealPlace(section: string, block?: string): void {
+    const target: PreviewAnchor = { section, ...block ? { block } : {} }
+    if (this.#previewSinks.size === 0) {
+      this.#pendingReveal = target
+      return
+    }
     this.#broadcast({ type: 'go', section })
-    this.#broadcast({ type: 'highlight', target: { section, ...block ? { block } : {} } })
+    this.#broadcast({ type: 'highlight', target })
   }
 
   /** Shows the place of a line of a source file: in the document holding the file, opened when it is another. */
@@ -612,7 +625,10 @@ export class Workbench {
     this.#previewSinks.add(sink)
     sink.send({ type: 'appearance', dark: this.#state.isDark })
     sink.send({ type: 'pick', on: this.#state.mode === 'editing' })
-    sink.send({ type: 'highlight', target: this.#state.pointer?.target ?? null })
+    const reveal = this.#pendingReveal
+    this.#pendingReveal = undefined
+    if (reveal) sink.send({ type: 'go', section: reveal.section })
+    sink.send({ type: 'highlight', target: reveal ?? this.#state.pointer?.target ?? null })
     const counted = this.#state.comments.filter(comment => comment.status !== 'resolved' && comment.block)
     sink.send({ type: 'pins', targets: counted.map((comment, i) => ({ id: comment.id, section: comment.section, block: comment.block!, label: String(i + 1) })) })
     return () => this.#previewSinks.delete(sink)
@@ -656,6 +672,12 @@ export class Workbench {
       case 'edited':
         this.#saveEdit(report.target, report.before, report.after)
         break
+      case 'shortcut':
+        if (report.command === 'dismiss') {
+          if (this.#state.pointer) this.point(undefined)
+        } else if (report.command === 'undo') void this.undo()
+        else void this.redo()
+        break
       default:
         break
     }
@@ -667,6 +689,7 @@ export class Workbench {
 
   #stopSubscriptions(): void {
     this.#focusVersion++
+    this.#pendingReveal = undefined
     this.#unsubscribeIr?.()
     this.#unsubscribeIr = undefined
     this.#history.stop()

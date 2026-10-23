@@ -211,7 +211,8 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
         }
         if (layout.rightbar !== undefined) actions.setRightbarWidth(layout.rightbar * width / 100)
       }}>
-        <Panel id="sessions" panelRef={sidePanelRef} groupResizeBehavior="preserve-pixel-size" collapsible collapsedSize={0} defaultSize={info.sideWidth} minSize={narrow ? 0 : SIDE_MIN} maxSize={SIDE_MAX} className="pmw-frame__side-panel" hidden={narrow ? pane !== 'sessions' : !sideShown}>
+        {/* Collapsed, not hidden, on a wide screen: a hidden panel's box sits at the page's corner, and react-resizable-panels takes the gap from it to the centre (the activity bar) for a handle. */}
+        <Panel id="sessions" panelRef={sidePanelRef} groupResizeBehavior="preserve-pixel-size" collapsible collapsedSize={0} defaultSize={info.sideWidth} minSize={narrow ? 0 : SIDE_MIN} maxSize={SIDE_MAX} className="pmw-frame__side-panel" hidden={narrow && pane !== 'sessions'}>
           <div className="pmw-frame__sidebar" data-pmw-slot="sidebar" data-shown={(narrow ? pane === 'sessions' : sideShown) || undefined}>{sidebar}</div>
         </Panel>
         {sideShown && <Separator className="pmw-frame__handle" data-side="side" aria-label={t.resize} />}

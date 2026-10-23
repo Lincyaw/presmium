@@ -177,7 +177,7 @@ test.describe('the bounded workbench preview pool', () => {
     await choose(page, SECOND)
     await ready(page, SECOND)
     await expect(page.locator('iframe[data-preview-cache][data-active="true"]')).toHaveCount(1)
-    await expect(frame(page, SECOND)).toHaveAttribute('title', 'Second lecture 的预览')
+    await expect(frame(page, SECOND)).toHaveAttribute('title', 'Second lecture')
     await expect(content(page, SECOND).locator('body')).toContainText('The second document of the workspace.')
     expect(await page.locator('iframe[data-preview-cache]').count()).toBeLessThanOrEqual(2)
     for (const cached of await page.locator('iframe[data-preview-cache][data-active="false"]').all()) {

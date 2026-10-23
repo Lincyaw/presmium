@@ -352,6 +352,10 @@
   padding: var(--pm-space-3);
 }
 
+.pmw-pointer[data-step='tools'] {
+  width: max-content;
+}
+
 .pmw-pointer__tools {
   display: flex;
   flex-wrap: wrap;
