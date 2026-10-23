@@ -1648,7 +1648,7 @@ dsh 的客户端接口中没有文档的部分（客户端包的工厂格式 `__
 | 代码 | 拿得到什么 | 已有的纵深防御 |
 |---|---|---|
 | 编译时执行的代码（没有进程沙箱时） | `presmium` 进程与 agent 进程的 `/proc/<pid>/environ`：`DEEPSEEK_API_KEY` 或 `PRESMIUM_MODEL_KEY`、`PRESMIUM_SPEECH_<ID>_KEY`、`PRESMIUM_ENV_<名>_TOKEN`；`~/.ssh`、`~/.config` 等用户文件；Docker 的套接字（用户在 `docker` 组中时等于 root）与 D-Bus 会话总线；任意网络；运营者目录（可以伪造同意记录）；任何文档目录 | `RunContext.env` 只有清理过的变量；运营者插件登记了进程沙箱时经它运行（10.6 节） |
-| agent（DeepSeek Harness）与它的 shell 命令 | 同上：DeepSeek Harness 的沙箱只管文件的写入（`workspace-write`），不隐藏进程与网络，`workspace-write` 另允许写它的临时区域（Linux 上 `/tmp` 之下的路径，不询问）；agent 自己的环境中有模型的密钥 | 写到工作目录之外、shell 与网络的权限请求经所有者（本机用户）确认；修改经审阅后才提交，可以全部或逐个文件拒绝 |
+| agent（DeepSeek Harness）与它的 shell 命令 | 同上：DeepSeek Harness 的沙箱只管文件的写入（`workspace-write`），不隐藏进程与网络，`workspace-write` 另允许写它的临时区域（Linux 上 `/tmp` 之下的路径，不询问）；agent 自己的环境中有模型的密钥 | 写到工作目录之外、shell 与网络的权限请求经所有者（本机用户）确认；每个 turn 的修改在结束时提交，可以撤销（`review: required` 时经审阅后才提交，可以全部或逐个文件拒绝） |
 | agent 写进被 `.gitignore` 忽略的路径 | git 实现的审阅不含被忽略的文件：agent 写进文稿目录的 `node_modules/` 或 `.presmium/` 中工作目录的文件不出现在差异中，拒绝时也不恢复；`presmium dev` 加载文稿目录 `node_modules` 中的插件，这样写入的包在下一次启动时在 `presmium` 进程中运行 | 无（agent 本来就有 shell，能直接做同样的事） |
 | 文稿声明的本地容器（`kind: devcontainer`） | 容器定义来自文稿，可以挂载主机的任意路径或以特权运行，等于用户的 Docker 权限 | 命令行只得到 `RunContext.env` 与 Docker 客户端的变量；不经进程沙箱（要用 Docker 的套接字） |
 | 文稿目录中的 Node 插件与渲染端包（`presmium dev`、`serve`、`build`、`check` 都接受相对路径与文稿目录的 `node_modules`） | 在 `presmium` 进程中运行，拿得到进程的全部环境 | 无 |
@@ -1673,7 +1673,7 @@ DeepSeek Harness 的限制与 Presmium 的绕开办法见 `design-dsh.md` 第 16
 
 > **工作台**：`presmium studio` 另有启动器与 dsh 宿主两个进程，工作区服务以 `presmium serve` 运行在回环上（第 13 节）。
 
-服务端只供运行它的那个用户使用：`presmium dev`、`build`、`check` 与 `presmium serve` 中，唯一的用户就是运营者，被执行的代码与 agent 以这个用户的身份受信任，没有登录。隔离只做纵深防御：子进程的环境清理（`RunContext.env`）；编译时的代码可以经运营者插件的进程沙箱运行（10.6 节）；agent 的写入先审阅再提交。同一 uid 的代码能读这个用户能读的一切（9.4 节）。多人使用时每人一个工作区（hub 托管模板）。
+服务端只供运行它的那个用户使用：`presmium dev`、`build`、`check` 与 `presmium serve` 中，唯一的用户就是运营者，被执行的代码与 agent 以这个用户的身份受信任，没有登录。隔离只做纵深防御：子进程的环境清理（`RunContext.env`）；编译时的代码可以经运营者插件的进程沙箱运行（10.6 节）；agent 的写入成为可撤销的提交（或按设置先审阅再提交）。同一 uid 的代码能读这个用户能读的一切（9.4 节）。多人使用时每人一个工作区（hub 托管模板）。
 
 没有多人共用一个服务端的部署：没有登录与成员、信任模式、持有第三方凭据的另一个进程与容器编排的工作区模板。
 
@@ -1790,7 +1790,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 | 本机端点被其他网站或进程调用 | 默认只监听本机；校验 `Host` 与 `Origin`（`presmium serve --host` 时另接受监听的地址与本机的名字，其他名字与其他站点的页面照旧被拒绝，10.3 节）；MCP 要求令牌；插件代理的路径不能越出目标（`.`、`..` 与编码的分隔符得到 400） |
 | 局域网中的其他设备 | `presmium serve` 没有登录，只供运行它的那个用户使用：`--host` 时到得了这个端口的设备都以本机作者的身份使用工作区，启动时在标准错误上写明（9.4 节）；默认只监听本机；多人使用时每人一个工作区（hub 托管模板） |
 | agent 误改或越权 | dsh 的文件权限与确认映射见 `design-dsh.md` 6.2、6.3 节；会话修改由工作区审阅覆盖（10.7 节），接受后提交并可撤销。MCP 的操作类与计费类工具由服务端确认，确认按范围分发（10.4 节） |
-| 文稿关闭安全设置 | 工作区的插件列表、确认策略、agent 的替换命令与模型的服务提供方、修改的审阅、编译时执行传入的环境变量（`settings.presmium.exec.passEnv`）、录音的去处、是否允许克隆音色与同意记录的目录都不从文稿读取，只来自命令行、环境变量与工作区配置（插件经 `settings` 得到，4.7 节）；工作区配置只在进程启动时读取，改动要等运营者重启才生效。agent 对工作区配置的改动包含在工作区审阅中，作者可以逐文件拒绝；写入权限由 dsh 的权限模式决定（`design-dsh.md` 6.3 节） |
+| 文稿关闭安全设置 | 工作区的插件列表、确认策略、agent 的替换命令与模型的服务提供方、修改的审阅、编译时执行传入的环境变量（`settings.presmium.exec.passEnv`）、录音的去处、是否允许克隆音色与同意记录的目录都不从文稿读取，只来自命令行、环境变量与工作区配置（插件经 `settings` 得到，4.7 节）；工作区配置只在进程启动时读取，改动要等运营者重启才生效。agent 对工作区配置的改动包含在工作区审阅中，提交后作者可以撤销（`review: required` 时可以在接受前逐文件拒绝）；写入权限由 dsh 的权限模式决定（`design-dsh.md` 6.3 节） |
 | 文稿中的 Node 插件在服务端运行 | 文稿列出的插件与文稿目录中的包在 `presmium` 进程中运行，等于运行文稿的代码：`presmium serve` 与 `presmium dev` 相同；只打开信任的文稿与工作区（9.4 节） |
 | 编辑者或 agent 写的代码在服务端运行 | 代码只得到清理过的环境变量（`RunContext.env`，4.6 节），`presmium serve` 中只有允许列表；全部执行，运营者插件登记了进程沙箱时经它运行（10.6 节）；agent 的 shell 按 dsh 的权限模式 |
 | 同一 uid 的代码读其他进程的环境与内存 | 不声称挡住（9.4 节），只有进程沙箱在可用时隐藏其他进程 |

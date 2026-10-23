@@ -197,9 +197,10 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 路由 | 作用 |
 |---|---|
 | `GET documents`、`POST documents` | 文档列表、编译状态与章节；新建、重命名、复制、删除 |
-| `GET files`、`GET source`、`POST source` | 列出文件；带版本的读写，冲突时 409，加锁（`architecture.md` 5.11 节） |
-| `GET changes`、`POST changes/commit`、`POST changes/discard` | 未提交的修改 |
-| `GET revisions`、`POST revisions/revert` | 修改历史与撤销 |
+| `GET files`、`GET source`、`POST source` | 列出文件；带版本的读写，冲突时 409，加锁（`architecture.md` 5.11 节）。git 仓库中的保存在持有文档锁时随即提交这一个文件（来源 `editor`），回答带这个 `revision`：说明是请求的 `message`（去掉首尾空白后的第一行，至多 200 个字符），没有时按文件所在文稿的 `lang` 写成 `编辑 <文件名>`（`lang` 缺省或以 `zh` 开头）或 `Edit <文件名>`。内容不变、文件被 git 忽略时不提交；提交失败时文件恢复原样，保存失败 |
+| `GET changes`、`POST changes/commit`、`POST changes/discard` | 未提交的修改（工作台之外的写入） |
+| `GET revisions`、`POST revisions/revert` | 修改历史（新的在前）与撤销其中任一个修改；`revisions` 另给出下一次撤销与重做收回的修改 `undo`、`redo`，按文档的整个历史计算，不受 `limit` 截断 |
+| `POST history/undo`、`POST history/redo` | 按修改撤销与重做，请求体 `{ expect? }`。从旧到新看文档历史中的 Presmium 修改：普通修改压入撤销栈并清空重做栈；撤销一个修改把它移出撤销栈，这次撤销压入重做栈；重做（撤销一次撤销）把那次撤销移出重做栈，原来的修改放回撤销栈；文档操作清空两个栈，撤销按钮不收回它与它之前的修改。`undo` 是撤销栈顶的修改，`redo` 是重做栈顶的撤销。服务在 git 锁中取目标：没有可撤销或重做的、`expect`（读到的 `undo` 或 `redo`，可以是前缀）不是当前目标时 409；之后与 `revisions/revert` 相同，回答 `RevertResult`，冲突时 409 |
 | `GET ir?document=` | 文档的 IR、修订号与诊断 |
 | `GET ir/events?document=` | SSE，由服务直接流出、不缓冲：连接后先发当前的修订号，之后是新的修订号、诊断数与改过的文件（相对于工作区根目录）。编辑器据此与磁盘比较 |
 | `GET preview?document=&view=web\|slides` | 各形态开发服务器的地址；按选择的形态启动，页面带预览代理。网页请求不启动幻灯片；显式请求幻灯片时，启动失败返回错误而不是冒充未配置。文稿的渲染端配置变化后刷新可选形态，缺失或启动失败时仍可切回网页，修复后可重新载入 |
@@ -298,14 +299,14 @@ dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达�
 
 ### 6.5 turn、审阅与提交
 
-整个工作区对应 dsh 的工作区，对话对应 dsh 的会话；一次接受的审阅是一个提交，撤销用 `git revert`。
+整个工作区对应 dsh 的工作区，对话对应 dsh 的会话；一次接受的审阅是一个提交（默认每个 turn 结束时自动接受），撤销用 `git revert`。
 
 1. **开始**：会话第一次调用会写文件的工具（文件工具与 shell）时，bundle 在 `tools/execute` 中为整个工作区打开审阅（`POST review/open`，持有者 `agent:<会话>`），未选择文稿时同样。它在确认之后、工具执行之前运行，被拒绝或被策略否决的调用不打开审阅，也不持有锁。审阅持有工作区锁，与其他会话、文档审阅、保存及文档操作互斥；取锁失败时工具不执行。打开是幂等的（同一会话得到同一个审阅），所以每次写入之前都问一次服务，宿主不必记住审阅是否还开着。快照包含工作区中当时还没提交的修改；从文稿目录启动的 headless 与 acp 会话也使用工作区范围。
-2. **进行中**：工作区内的编辑器保存得到 409，并提示 AI 的修改在等待审阅；所有文稿的审阅面板显示同一份会话审阅。后面的 turn 继续累加进同一次审阅；每个工具调用完成时记一个检查点，标签是工具与文件或命令。服务给出 turn 的范围（`turns { from, to }`）与是否有 turn 在运行。一个 turn 结束时审阅没有改动（例如 shell 只运行了 `ls`）就结束，释放锁。
+2. **进行中**：审阅开着时（turn 运行中；`required` 时直到作者接受或拒绝），工作区内的编辑器保存得到 409，并提示 AI 正在修改或修改在等待审阅；所有文稿的审阅面板显示同一份会话审阅。后面的 turn 继续累加进同一次审阅；每个工具调用完成时记一个检查点，标签是工具与文件或命令。服务给出 turn 的范围（`turns { from, to }`）与是否有 turn 在运行。一个 turn 结束时审阅没有改动（例如 shell 只运行了 `ls`）就结束，释放锁。
 3. **审阅与修改卡片**：一次审阅覆盖会话在它期间的全部 turn；dsh 的修改卡片（`workspace/changes`）是每个 turn 的视图。同一个 turn 中卡片列出的文件与审阅的改动相同（构建的产物两边都没有），多个 turn 时每张卡片是审阅的一部分。审阅是修改的唯一来源，卡片只作 turn 内的提示。
-4. **审阅**：`settings.presmium.assistant.review` 为 `required`（默认）时，工作台的审阅面板列出自快照以来的全部文件，作者可以全部接受、拒绝某些文件，或回到某个检查点；为 `auto` 时每个 turn 结束就提交。`review` 与 `reviewTimeoutMs` 由工作区服务按 `settings.presmium.assistant` 执行，bundle 不读它们；超时只在没有 turn 运行、也没有页面跟随（`GET review` 的 SSE）时计时。作者在 turn 之间接受之后，下一次写入开一个新的审阅。
+4. **审阅**：`settings.presmium.assistant.review` 为 `auto`（默认）时，改了文件的 turn 结束就接受并提交，不等作者，作者用撤销收回（5.1 节的 `history/undo`）；为 `required` 时，作者在工作台的审阅面板中接受：面板列出自快照以来的全部文件，作者可以全部接受、拒绝某些文件，或回到某个检查点。`review` 与 `reviewTimeoutMs` 由工作区服务按 `settings.presmium.assistant` 执行，bundle 不读它们；超时只在没有 turn 运行、也没有页面跟随（`GET review` 的 SSE）时计时。作者在 turn 之间接受之后，下一次写入开一个新的审阅。
 5. **提交**：一次接受形成一个提交，成功后才结束审阅、删除记录并释放锁。提交失败时返回错误并保留审阅，作者可以重试或拒绝。尾注是 `Presmium-Origin: agent`、`Presmium-Task`、`Presmium-Session: <会话>`、`Presmium-Turn: <起>-<止>` 与 `Co-authored-by`。
-6. **撤销**：`git revert`，尾注 `Presmium-Revert`。撤销会话的提交之后，bundle 经 `Agent.inject`（`dsh-agent` 的公开接口）给会话注入一条 user 角色的通知，来源是 `{ kind: 'presmium', form: 'notice' }`，正文以 `[Presmium]` 开头。它不唤醒 agent，在会话的下一步进入模型请求，并作为 `session/projections` 的 `inbox` 中的待处理消息可见；agent 不在时等它被创建或恢复再注入。dsh 文件工具的“先读后改”规则会拦住基于旧内容的编辑。
+6. **撤销**：`git revert`，尾注 `Presmium-Revert`；会话的提交与编辑器的保存在同一个撤销栈中（5.1 节）。撤销会话的提交之后，bundle 经 `Agent.inject`（`dsh-agent` 的公开接口）给会话注入一条 user 角色的通知，来源是 `{ kind: 'presmium', form: 'notice' }`，正文以 `[Presmium]` 开头。它不唤醒 agent，在会话的下一步进入模型请求，并作为 `session/projections` 的 `inbox` 中的待处理消息可见；agent 不在时等它被创建或恢复再注入。dsh 文件工具的“先读后改”规则会拦住基于旧内容的编辑。
 7. **记录**：审阅记录由工作区服务保存，另记会话、turn 的范围、检查点与各步。服务关闭或崩溃时会话的审阅不回滚，下一个服务进程启动时恢复它并重新持有锁。记录的范围不是当前工作区时，启动拒绝并保留记录与快照；先用能识别该记录的版本接受或拒绝，再启动服务。dsh 宿主重启后修改卡片没有了，审阅仍在，可以经新宿主接受。Presmium 不依赖 dsh 只在内存中的修改摘要，它在宿主重启后返回 404。
 8. **构建**：agent 经工具发起的构建由工作区服务写到工作区之外的服务状态目录，不进入审阅与修改卡片。
 

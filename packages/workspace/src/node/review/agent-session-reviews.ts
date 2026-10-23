@@ -49,7 +49,7 @@ function reviewSettings(config: WorkspaceConfig): { mode: 'required' | 'auto', t
   const settings = config.settings['presmium.assistant'] ?? {}
   const timeout = settings.reviewTimeoutMs
   return {
-    mode: settings.review === 'auto' ? 'auto' : 'required',
+    mode: settings.review === 'required' ? 'required' : 'auto',
     timeoutMs: typeof timeout === 'number' && Number.isFinite(timeout) && timeout > 0 ? timeout : 30 * 60_000,
   }
 }

@@ -1,7 +1,7 @@
 import { lstatSync, mkdtempSync, readdirSync, readFileSync, rmdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, relative, sep } from 'node:path'
-import type { DocumentFileChange, HistoryRevision, Member, RevertResult, Revision, RevisionService, UncommittedFile } from '@lincyaw/kernel'
+import type { DocumentFileChange, HistoryRevision, Member, RevertResult, Revision, RevisionsAnswer, RevisionService, UncommittedFile } from '@lincyaw/kernel'
 import { leavesRoot } from '../domain/paths.ts'
 import { commitMessage, memberAddress, originOf } from '../domain/commit-message.ts'
 import type { CommitOrigin } from '../domain/commit-message.ts'
@@ -34,8 +34,12 @@ function revertedOf(message: string): string | undefined {
   return originOf(message)?.revert ?? /This reverts commit ([0-9a-f]{7,64})/.exec(message)?.[1]
 }
 
+function finder(entries: LogEntry[]): (id: string) => LogEntry | undefined {
+  return id => entries.find(entry => entry.id === id || (id.length >= 7 && entry.id.startsWith(id)))
+}
+
 function redoPredicate(entries: LogEntry[]): (entry: LogEntry) => boolean {
-  const find = (id: string) => entries.find(entry => entry.id === id || (id.length >= 7 && entry.id.startsWith(id)))
+  const find = finder(entries)
   const known = new Map<string, boolean>()
   const redo = (entry: LogEntry): boolean => {
     let found = known.get(entry.id)
@@ -48,6 +52,70 @@ function redoPredicate(entries: LogEntry[]): (entry: LogEntry) => boolean {
     return found
   }
   return redo
+}
+
+export type UndoTargets = Pick<RevisionsAnswer, 'undo' | 'redo'>
+
+/**
+ * The change the next undo takes back and the undo the next redo takes back. Over the Presmium revisions, oldest
+ * first: a change goes on the done stack and empties the undone one; an undo takes its change off done and goes on
+ * undone; a redo takes its undo off undone and puts the change back on done. A document operation empties both.
+ */
+function undoTargets(entries: LogEntry[]): UndoTargets {
+  const find = finder(entries)
+  const isRedo = redoPredicate(entries)
+  const changeOf = (entry: LogEntry): string => {
+    let current = entry
+    for (let hops = 0; hops < entries.length; hops++) {
+      const reverted = revertedOf(current.message)
+      const next = reverted === undefined ? undefined : find(reverted)
+      if (!next) break
+      current = next
+    }
+    return current.id
+  }
+  const done: string[] = []
+  const undone: string[] = []
+  const drop = (stack: string[], id: string) => {
+    const at = stack.lastIndexOf(id)
+    if (at >= 0) stack.splice(at, 1)
+  }
+  for (const entry of [...entries].reverse()) {
+    const origin = originOf(entry.message)
+    if (!origin) continue
+    if (origin.operation) {
+      done.length = 0
+      undone.length = 0
+      continue
+    }
+    const reverted = revertedOf(entry.message)
+    const target = reverted === undefined ? undefined : find(reverted)
+    if (!target) {
+      done.push(entry.id)
+      undone.length = 0
+    } else if (isRedo(entry)) {
+      drop(undone, target.id)
+      done.push(changeOf(target))
+    } else {
+      drop(done, changeOf(target))
+      undone.push(entry.id)
+    }
+  }
+  return { ...done.length ? { undo: done.at(-1)! } : {}, ...undone.length ? { redo: undone.at(-1)! } : {} }
+}
+
+function listed(entries: LogEntry[], filter: { task?: string, limit?: number }): HistoryRevision[] {
+  const revertedBy = new Map<string, string>()
+  for (const entry of entries) {
+    const reverted = revertedOf(entry.message)
+    if (reverted && !revertedBy.has(reverted)) revertedBy.set(reverted, entry.id)
+  }
+  const isRedo = redoPredicate(entries)
+  const revisions = entries.flatMap((entry) => {
+    const found = revision(entry, revertedBy.get(entry.id), isRedo(entry))
+    return found && (!filter.task || found.origin.task === filter.task) ? [found] : []
+  })
+  return filter.limit ? revisions.slice(0, filter.limit) : revisions
 }
 
 function revision(entry: LogEntry, revertedBy?: string, redo = false): HistoryRevision | undefined {
@@ -153,24 +221,24 @@ export class Revisions implements RevisionService {
   }
 
   async history(filter: { document?: string, task?: string, limit?: number } = {}): Promise<HistoryRevision[]> {
-    const log = await this.#git.tryOutput(['log', FORMAT, '--name-only', '--no-renames', ...filter.document ? ['--', filter.document] : []], { GIT_LITERAL_PATHSPECS: '1' })
-    if (!log.ok) return []
-    const entries = parseLog(log.output)
-    const revertedBy = new Map<string, string>()
-    for (const entry of entries) {
-      const reverted = revertedOf(entry.message)
-      if (reverted && !revertedBy.has(reverted)) revertedBy.set(reverted, entry.id)
-    }
-    const isRedo = redoPredicate(entries)
-    const revisions = entries.flatMap((entry) => {
-      const found = revision(entry, revertedBy.get(entry.id), isRedo(entry))
-      return found && (!filter.task || found.origin.task === filter.task) ? [found] : []
-    })
-    return filter.limit ? revisions.slice(0, filter.limit) : revisions
+    return listed(await this.#entries(filter.document), filter)
   }
 
-  revert(id: string, member: Member): Promise<RevertResult> {
+  /** The history and the revisions its next undo and redo take back, which count the document's whole history whatever the limit. */
+  async historyWithUndo(filter: { document?: string, task?: string, limit?: number } = {}): Promise<RevisionsAnswer> {
+    const entries = await this.#entries(filter.document)
+    return { revisions: listed(entries, filter), ...undoTargets(entries) }
+  }
+
+  /** The revision the next undo or redo of the document's history takes back, read under the git lock. */
+  next(which: keyof UndoTargets, document?: string): Promise<string | undefined> {
+    return this.#git.exclusive(async () => undoTargets(await this.#entries(document))[which])
+  }
+
+  /** Reverts the commit; with `still`, only while it is the next undo or redo of that history (checked under the git lock). */
+  revert(id: string, member: Member, still?: { which: keyof UndoTargets, document?: string }): Promise<RevertResult> {
     return this.#git.exclusive(async () => {
+      if (still && undoTargets(await this.#entries(still.document))[still.which] !== id) throw new RequestError(409, `the history changed: ${id} is not the next ${still.which} any more; read it again`)
       const verified = await this.#git.tryOutput(['rev-parse', '--verify', '--quiet', `${id}^{commit}`])
       if (!verified.ok) throw new Error(`no commit ${id}`)
       const target = (await this.#log(verified.output.trim()))!
@@ -196,6 +264,11 @@ export class Revisions implements RevisionService {
     })
   }
 
+  /** Whether git ignores the path, which a commit then leaves out. */
+  async ignores(path: string): Promise<boolean> {
+    return (await this.#git.run(['check-ignore', '-q', '--', path])).code === 0
+  }
+
   async messageOf(id: string): Promise<string | undefined> {
     const shown = await this.#git.tryOutput(['show', '-s', '--format=%B', `${id}^{commit}`])
     return shown.ok ? shown.output : undefined
@@ -211,6 +284,11 @@ export class Revisions implements RevisionService {
     if (!verified.ok) return []
     const files = (await this.#git.output(['show', '--no-renames', '--name-only', '-z', '--format=', verified.output.trim()])).split('\0').filter(Boolean).map(this.#fromTop)
     return [...new Set(files.flatMap(file => documentDirOf(this.#files.config, file) ?? []))]
+  }
+
+  async #entries(document?: string): Promise<LogEntry[]> {
+    const log = await this.#git.tryOutput(['log', FORMAT, '--name-only', '--no-renames', ...document ? ['--', document] : []], { GIT_LITERAL_PATHSPECS: '1' })
+    return log.ok ? parseLog(log.output) : []
   }
 
   async #statusOf(paths: string[]): Promise<{ code: string, path: string }[]> {

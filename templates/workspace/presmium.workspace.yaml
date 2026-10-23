@@ -12,4 +12,4 @@ settings:                           # the plugins' operator settings, by plugin 
     # own model, in the browser).
     plugins: ['@lincyaw/slidev-addon-assistant']
   # presmium.assistant:
-  #   review: required                       # agent changes wait for the author's review (auto: committed at once)
+  #   review: required                       # agent changes wait for the author's review (default auto: committed when each turn ends)

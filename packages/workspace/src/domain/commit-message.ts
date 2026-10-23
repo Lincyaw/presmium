@@ -38,6 +38,12 @@ export function commitMessage(summary: string, body: string, origin: CommitOrigi
   return `${head}\n\n${body.trim() ? `${body.trim()}\n\n` : ''}${trailers.join('\n')}\n`
 }
 
+/** The summary of a save that came without the author's: the file's name, in the language of the document holding it. */
+export function saveSummary(path: string, lang: string | undefined): string {
+  const name = path.split('/').at(-1)!
+  return !lang || lang.startsWith('zh') ? `编辑 ${name}` : `Edit ${name}`
+}
+
 export function trailers(message: string): Record<string, string[]> {
   const paragraphs = message.trim().split(/\n\s*\n/)
   const last = paragraphs.at(-1) ?? ''

@@ -2,7 +2,7 @@ import { createRequire } from 'node:module'
 import { hasRole, isRecord, jsonResponse, problemResponse, sseResponse } from '@lincyaw/kernel'
 import type { ChangesAnswer, CommitAnswer, DocumentOperation, DocumentsAnswer, Member, PresmiumNodePlugin, RequestContext, RevertResult, RevisionsAnswer, Route, SavedAnswer, ServerContribution } from '@lincyaw/kernel'
 import { hasBearerToken } from '@lincyaw/server'
-import { REVERT_TRAILER, trailers } from '../domain/commit-message.ts'
+import { REVERT_TRAILER, saveSummary, trailers } from '../domain/commit-message.ts'
 import { documentSummaries, listDocuments } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
 import { documentsDiff } from './document-operations.ts'
@@ -10,7 +10,7 @@ import type { DocumentOperations, DocumentsChange } from './document-operations.
 import { catchRequestErrors } from './errors.ts'
 import { lockedError } from './locks.ts'
 import type { DocumentLocks } from './locks.ts'
-import type { Revisions } from './revisions.ts'
+import type { Revisions, UndoTargets } from './revisions.ts'
 import { reviewRoutes } from './review/routes.ts'
 import type { AgentSessionReviews } from './review/agent-session-reviews.ts'
 import { MAX_SOURCE } from './source-editor.ts'
@@ -62,6 +62,12 @@ function toChosenPaths(body: unknown, uncommitted: string[]): string[] {
   return asked ? uncommitted.filter(path => asked.includes(path)) : uncommitted
 }
 
+function toSaveMessage(value: unknown): string {
+  return typeof value === 'string' ? [...(value.trim().split(/\r?\n/)[0] ?? '').trim()].slice(0, 200).join('') : ''
+}
+
+const COMMIT = /^[0-9a-f]{4,64}$/i
+
 export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribution {
   const { config, editor, locks, revisions, operations, reviews, workbench } = options
   const listed = () => listDocuments(config).map(doc => doc.dir)
@@ -81,6 +87,38 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       claimed.release()
     }
   }
+  const historyOf = (request: Request, ctx: RequestContext) => new URL(request.url).searchParams.get('document') ?? (ctx.document || (config.singleDeck ? '.' : undefined))
+  const revert = async (history: Revisions, id: string, member: Member, still?: { which: keyof UndoTargets, document?: string }) => {
+    const claimed = locks.claimAll((await history.filesOf(id)).map(path => documentDirOf(config, path) ?? ''), 'revision:revert')
+    if ('holder' in claimed) throw lockedError(claimed.document, claimed.holder)
+    try {
+      const before = listed()
+      const result = await history.revert(id, member, still)
+      if (result.ok) {
+        await options.documentsChanged(documentsDiff(before, listed()))
+        const undone = trailers(result.revision.message)[REVERT_TRAILER]?.[0] ?? id
+        void reviews?.reverted(undone, result.revision.id).catch(() => undefined)
+      }
+      return jsonResponse(result satisfies RevertResult, result.ok ? 200 : 409)
+    } finally {
+      claimed.release()
+    }
+  }
+  const undoRoute = (which: keyof UndoTargets): Route => ({
+    role: 'editor',
+    handle: (request, ctx) => catchRequestErrors(async () => {
+      if (request.method !== 'POST') return problemResponse(405, 'POST')
+      if (!revisions) return problemResponse(409, NO_GIT)
+      const body: unknown = await request.json().catch(() => ({}))
+      const expected = isRecord(body) ? body.expect : undefined
+      if (expected !== undefined && (typeof expected !== 'string' || !COMMIT.test(expected))) return problemResponse(400, '{ expect?: <commit> }')
+      const document = historyOf(request, ctx)
+      const id = await revisions.next(which, document)
+      if (!id) return problemResponse(409, `nothing to ${which}`)
+      if (expected !== undefined && !id.startsWith(expected.toLowerCase())) return problemResponse(409, `the next ${which} is ${id}, not ${expected}: read the history again`)
+      return await revert(revisions, id, ctx.member, { which, ...document ? { document } : {} })
+    }),
+  })
   const routes: Record<string, Route> = {
     documents: {
       role: 'reader',
@@ -104,8 +142,8 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
         if (!revisions) return jsonResponse({ revisions: [] } satisfies RevisionsAnswer)
         const params = new URL(request.url).searchParams
         const limit = Number(params.get('limit'))
-        const document = params.get('document') ?? (ctx.document || (config.singleDeck ? '.' : undefined))
-        return jsonResponse({ revisions: await revisions.history({ ...document ? { document } : {}, ...params.get('task') ? { task: params.get('task')! } : {}, ...Number.isInteger(limit) && limit > 0 ? { limit } : {} }) } satisfies RevisionsAnswer)
+        const document = historyOf(request, ctx)
+        return jsonResponse(await revisions.historyWithUndo({ ...document ? { document } : {}, ...params.get('task') ? { task: params.get('task')! } : {}, ...Number.isInteger(limit) && limit > 0 ? { limit } : {} }) satisfies RevisionsAnswer)
       }),
     },
     'revisions/revert': {
@@ -114,23 +152,12 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
         if (request.method !== 'POST') return problemResponse(405, 'POST')
         if (!revisions) return problemResponse(409, NO_GIT)
         const body: unknown = await request.json().catch(() => undefined)
-        if (!isRecord(body) || typeof body.id !== 'string' || !/^[0-9a-f]{4,64}$/i.test(body.id)) return problemResponse(400, '{ id: <commit> }')
-        const claimed = locks.claimAll((await revisions.filesOf(body.id)).map(path => documentDirOf(config, path) ?? ''), 'revision:revert')
-        if ('holder' in claimed) throw lockedError(claimed.document, claimed.holder)
-        try {
-          const before = listed()
-          const result = await revisions.revert(body.id, ctx.member)
-          if (result.ok) {
-            await options.documentsChanged(documentsDiff(before, listed()))
-            const undone = trailers(result.revision.message)[REVERT_TRAILER]?.[0] ?? body.id
-            void reviews?.reverted(undone, result.revision.id).catch(() => undefined)
-          }
-          return jsonResponse(result satisfies RevertResult, result.ok ? 200 : 409)
-        } finally {
-          claimed.release()
-        }
+        if (!isRecord(body) || typeof body.id !== 'string' || !COMMIT.test(body.id)) return problemResponse(400, '{ id: <commit> }')
+        return await revert(revisions, body.id, ctx.member)
       }),
     },
+    'history/undo': undoRoute('undo'),
+    'history/redo': undoRoute('redo'),
     'files': {
       role: 'editor',
       handle: (request, ctx) => catchRequestErrors(async () => {
@@ -146,8 +173,10 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
         if (request.method === 'GET') return jsonResponse(editor.read(scope, new URL(request.url).searchParams.get('path') ?? '', ctx.member))
         if (request.method !== 'POST') return problemResponse(405, 'GET or POST')
         const body: unknown = await request.json().catch(() => undefined)
-        if (!isRecord(body) || typeof body.path !== 'string' || typeof body.content !== 'string' || typeof body.base !== 'string') return problemResponse(400, '{ path, content, base: <the version opened> }')
-        return jsonResponse({ version: await editor.save(scope, body.path, body.content, body.base, ctx.member) } satisfies SavedAnswer)
+        if (!isRecord(body) || typeof body.path !== 'string' || typeof body.content !== 'string' || typeof body.base !== 'string') return problemResponse(400, '{ path, content, base: <the version opened>, message? }')
+        const message = toSaveMessage(body.message)
+        const commit = revisions && (async (path: string, lang: string | undefined) => (await revisions.ignores(path) ? undefined : revisions.commit({ files: [path], message: message || saveSummary(path, lang), origin: { kind: 'editor', member: ctx.member } })))
+        return jsonResponse(await editor.save(scope, body.path, body.content, body.base, ctx.member, commit) satisfies SavedAnswer)
       }),
     },
     'source/create': {
