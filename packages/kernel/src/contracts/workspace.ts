@@ -132,9 +132,13 @@ export interface HistoryRevision extends Revision {
   redo?: true
 }
 
-/** @experimental */
+/** @experimental The history of a document, newest first, and the revisions the next undo and redo take back. */
 export interface RevisionsAnswer {
   revisions: HistoryRevision[]
+  /** The revision `history/undo` reverts. */
+  undo?: string
+  /** The revision `history/redo` reverts: the latest undo. */
+  redo?: string
 }
 
 /** @experimental */
@@ -165,9 +169,10 @@ export interface SourceAnswer {
   version: string
 }
 
-/** @experimental */
+/** @experimental A saved source file; in a git workspace the save is a revision of its own. */
 export interface SavedAnswer {
   version: string
+  revision?: Revision
 }
 
 /** @experimental */

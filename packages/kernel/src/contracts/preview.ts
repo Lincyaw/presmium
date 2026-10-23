@@ -15,6 +15,20 @@ export interface PreviewAnchor {
   block?: string
 }
 
+/** A box in the preview page's viewport, in CSS pixels. */
+export interface PreviewRect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/** A point in the preview page's viewport, in CSS pixels. */
+export interface PreviewPoint {
+  x: number
+  y: number
+}
+
 export interface PreviewPin {
   id: string
   section: string
@@ -37,6 +51,8 @@ export type PreviewCommand =
   | { type: 'marks', on: boolean }
   | { type: 'appearance', dark: boolean }
   | { type: 'activity', active: boolean, request: number }
+  /** Edits the text of a block (a section's heading when there is no block) in place, the caret at `at`; null ends editing and puts the text back. */
+  | { type: 'edit', target: PreviewAnchor | null, at?: PreviewPoint }
 
 export type PreviewCommandType = PreviewCommand['type']
 
@@ -45,8 +61,13 @@ export type PreviewShortcut = 'open-files' | 'open-commands'
 export type PreviewReport =
   | { type: 'ready', renderer: 'web' | 'slides', document: string, revision?: string, capabilities: PreviewCommandType[] }
   | ({ type: 'position' } & PreviewPosition)
-  | { type: 'picked', section: string, block?: string, step?: number, trail?: string[] }
-  | { type: 'selection', selection: (PreviewAnchor & { text: string }) | null }
+  | { type: 'picked', section: string, block?: string, step?: number, trail?: string[], rect?: PreviewRect, point?: PreviewPoint, clicks?: number }
+  | { type: 'selection', selection: (PreviewAnchor & { text: string, rect?: PreviewRect }) | null }
+  /** Where the picked block or the selection is after the page scrolled or resized; null when it is out of sight. */
+  | { type: 'rect', rect: PreviewRect | null }
+  | { type: 'editing', target: PreviewAnchor, active: boolean }
+  /** The text of a block edited in place, before and after (its `textContent`); sent only when it changed. */
+  | { type: 'edited', target: PreviewAnchor, before: string, after: string }
   | { type: 'updated', revision?: string }
   | { type: 'activity', active: boolean, request: number, revision?: string, error?: string }
   | { type: 'report', level: 'error' | 'warning', plugin?: string, message: string, resolved?: boolean }
@@ -64,6 +85,14 @@ const step = (value: unknown): value is number => Number.isInteger(value) && (va
 const request = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0
 const strings = (value: unknown): value is string[] => Array.isArray(value) && value.length <= 10_000 && value.every(text)
 const anchor = (value: unknown): value is PreviewAnchor => isRecord(value) && text(value.section) && optional(value.block, text)
+const length = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
+const rect = (value: unknown): value is PreviewRect => isRecord(value) && length(value.x) && length(value.y) && length(value.width) && length(value.height) && value.width >= 0 && value.height >= 0
+const point = (value: unknown): value is PreviewPoint => isRecord(value) && length(value.x) && length(value.y)
+const clicks = (value: unknown): value is number => Number.isInteger(value) && (value as number) >= 1 && (value as number) <= 3
+const toAnchor = (value: PreviewAnchor): PreviewAnchor => ({ section: value.section, ...value.block ? { block: value.block } : {} })
+const toRect = (value: PreviewRect): PreviewRect => ({ x: value.x, y: value.y, width: value.width, height: value.height })
+const toPoint = (value: PreviewPoint): PreviewPoint => ({ x: value.x, y: value.y })
+const MAX_EDITED = 200_000
 
 export function isPreviewEnvelope(data: unknown, nonce: string): data is PreviewEnvelope<{ type: string }> {
   return isRecord(data) && data.protocol === PREVIEW_NAME && data.nonce === nonce && typeof data.version === 'number' && text(data.type)
@@ -79,6 +108,7 @@ export function toPreviewCommand(data: unknown, nonce: string): PreviewCommand |
     case 'marks': return typeof m.on === 'boolean' ? { type: m.type, on: m.on } : undefined
     case 'appearance': return typeof m.dark === 'boolean' ? { type: 'appearance', dark: m.dark } : undefined
     case 'activity': return typeof m.active === 'boolean' && request(m.request) ? { type: 'activity', active: m.active, request: m.request } : undefined
+    case 'edit': return (m.target === null || anchor(m.target)) && optional(m.at, point) ? { type: 'edit', target: m.target === null ? null : toAnchor(m.target), ...m.at ? { at: toPoint(m.at as PreviewPoint) } : {} } : undefined
     case 'pins': return Array.isArray(m.targets) && m.targets.length <= 1000 && m.targets.every(t => isRecord(t) && text(t.id) && text(t.section) && text(t.block) && text(t.label))
       ? { type: 'pins', targets: (m.targets as PreviewPin[]).map(({ id, section, block, label }) => ({ id, section, block, label })) }
       : undefined
@@ -92,8 +122,19 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
   switch (m.type) {
     case 'ready': return (m.renderer === 'web' || m.renderer === 'slides') && text(m.document) && optional(m.revision, text) && strings(m.capabilities) ? { type: 'ready', renderer: m.renderer, document: m.document, ...m.revision ? { revision: m.revision as string } : {}, capabilities: m.capabilities as PreviewCommandType[] } : undefined
     case 'position': return text(m.section) && step(m.step) && strings(m.trail) && optional(m.view, text) ? { type: 'position', section: m.section, step: m.step, trail: m.trail, ...m.view ? { view: m.view as string } : {} } : undefined
-    case 'picked': return text(m.section) && optional(m.block, text) && optional(m.step, step) && optional(m.trail, strings) ? { type: 'picked', section: m.section, ...m.block ? { block: m.block as string } : {}, ...m.step === undefined ? {} : { step: m.step as number }, ...m.trail ? { trail: m.trail as string[] } : {} } : undefined
-    case 'selection': return m.selection === null || (isRecord(m.selection) && text(m.selection.text) && anchor(m.selection)) ? { type: 'selection', selection: m.selection as (PreviewAnchor & { text: string }) | null } : undefined
+    case 'picked': return text(m.section) && optional(m.block, text) && optional(m.step, step) && optional(m.trail, strings) && optional(m.rect, rect) && optional(m.point, point) && optional(m.clicks, clicks)
+      ? { type: 'picked', section: m.section, ...m.block ? { block: m.block as string } : {}, ...m.step === undefined ? {} : { step: m.step as number }, ...m.trail ? { trail: m.trail as string[] } : {}, ...m.rect ? { rect: toRect(m.rect as PreviewRect) } : {}, ...m.point ? { point: toPoint(m.point as PreviewPoint) } : {}, ...m.clicks === undefined ? {} : { clicks: m.clicks as number } }
+      : undefined
+    case 'selection': {
+      if (m.selection === null) return { type: 'selection', selection: null }
+      const selected = m.selection
+      return isRecord(selected) && text(selected.text) && anchor(selected) && optional(selected.rect, rect)
+        ? { type: 'selection', selection: { ...toAnchor(selected), text: selected.text, ...selected.rect ? { rect: toRect(selected.rect as PreviewRect) } : {} } }
+        : undefined
+    }
+    case 'rect': return m.rect === null || rect(m.rect) ? { type: 'rect', rect: m.rect === null ? null : toRect(m.rect) } : undefined
+    case 'editing': return anchor(m.target) && typeof m.active === 'boolean' ? { type: 'editing', target: toAnchor(m.target), active: m.active } : undefined
+    case 'edited': return anchor(m.target) && text(m.before) && text(m.after) && m.before.length <= MAX_EDITED && m.after.length <= MAX_EDITED ? { type: 'edited', target: toAnchor(m.target), before: m.before, after: m.after } : undefined
     case 'updated': return optional(m.revision, text) ? { type: 'updated', ...m.revision ? { revision: m.revision as string } : {} } : undefined
     case 'activity': return typeof m.active === 'boolean' && request(m.request) && optional(m.revision, text) && optional(m.error, text)
       ? { type: 'activity', active: m.active, request: m.request, ...m.revision === undefined ? {} : { revision: m.revision as string }, ...m.error === undefined ? {} : { error: m.error as string } }

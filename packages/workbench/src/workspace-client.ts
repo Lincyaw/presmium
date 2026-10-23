@@ -1,4 +1,4 @@
-import type { DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FilesAnswer, FocusAnswer, FocusReport, HistoryRevision, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, SavedAnswer, SourceAnswer, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
+import type { DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FilesAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
 
 /** A route of the workspace server answered with an error. */
 export class WorkspaceServerError extends Error {
@@ -18,7 +18,8 @@ export interface WorkspaceClient {
   readFiles(document: string): Promise<FilesAnswer>
   readSource(document: string, path: string): Promise<SourceAnswer>
   createSource(document: string, path: string): Promise<SourceAnswer>
-  saveSource(document: string, path: string, content: string, base: string): Promise<SavedAnswer>
+  /** Saves the file; in a git workspace the save is committed at once, `message` its summary. */
+  saveSource(document: string, path: string, content: string, base: string, message?: string): Promise<SavedAnswer>
   readIr(document: string): Promise<IrAnswer>
   subscribeIr(document: string, revision: (event: IrEvent) => void, failed?: () => void): () => void
   readDiagnostics(document: string): Promise<DiagnosticSnapshot>
@@ -36,8 +37,12 @@ export interface WorkspaceClient {
   readChanges(document: string): Promise<{ files: UncommittedFile[] }>
   commitChanges(document: string, message: string, paths?: string[]): Promise<unknown>
   discardChanges(document: string, paths?: string[]): Promise<unknown>
-  readRevisions(document: string): Promise<{ revisions: HistoryRevision[] }>
+  readRevisions(document: string): Promise<RevisionsAnswer>
   revertRevision(document: string, id: string): Promise<RevertResult>
+  /** Takes back the document's latest change; `expect` is the `undo` of the history read, refused when it is not the latest any more. */
+  undo(document: string, expect?: string): Promise<RevertResult>
+  /** Puts back the change the latest undo took back. */
+  redo(document: string, expect?: string): Promise<RevertResult>
 }
 
 export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
@@ -126,7 +131,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     readFiles: document => call(url('files', document)),
     readSource: (document, path) => call(url('source', document, { path })),
     createSource: (document, path) => post(url('source/create', document), { path }),
-    saveSource: (document, path, content, base) => post(url('source', document), { path, content, base }),
+    saveSource: (document, path, content, base, message) => post(url('source', document), { path, content, base, ...message ? { message } : {} }),
     readIr,
     subscribeIr: (document, revision, failed) => subscribe(url('ir/events', document), 'revision', revision, failed),
     readDiagnostics: document => call(url('diagnostics', document)),
@@ -151,5 +156,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     discardChanges: (document, paths) => post(url('changes/discard', document), paths ? { paths } : {}),
     readRevisions: document => call(url('revisions', document, { limit: '50' })),
     revertRevision: (document, id) => post(url('revisions/revert', document), { id }),
+    undo: (document, expect) => post(url('history/undo', document), expect ? { expect } : {}),
+    redo: (document, expect) => post(url('history/redo', document), expect ? { expect } : {}),
   }
 }
