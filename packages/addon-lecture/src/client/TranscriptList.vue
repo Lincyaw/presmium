@@ -3,7 +3,7 @@ import { PmIcon, useMessages } from '@lincyaw/host'
 import { computed, ref, watch } from 'vue'
 import { clockText, LECTURE_MESSAGES, textPieces } from '../domain/index.ts'
 import type { LectureTrack, Utterance } from '../domain/index.ts'
-import type { LectureEditing } from './source.ts'
+import type { EngineChoice, LectureEditing } from './source.ts'
 import TrackEditor from './TrackEditor.vue'
 
 const props = defineProps<{ track: LectureTrack, editing?: LectureEditing, language?: string, current?: string, stale: ReadonlySet<string> }>()
@@ -16,16 +16,17 @@ const saving = ref(false)
 const editFailure = ref<string>()
 const confirmingEdit = ref(false)
 const engine = computed(() => (props.editing && props.track.voice.kind === 'synthetic' ? props.track.voice.engine : undefined))
-const engineProvider = ref<string>()
+const engineChoice = ref<EngineChoice>()
 watch(engine, async (id) => {
-  engineProvider.value = undefined
+  engineChoice.value = undefined
   const choice = id && props.editing ? await props.editing.speech(id).catch(() => undefined) : undefined
-  if (id === engine.value) engineProvider.value = choice?.synthesize?.provider
+  if (id === engine.value) engineChoice.value = choice?.synthesize
 }, { immediate: true })
 const synthesisProvider = computed(() => {
   const v = props.track.voice
-  return v.kind === 'synthetic' ? engineProvider.value || v.provider || v.engine : undefined
+  return v.kind === 'synthetic' ? engineChoice.value?.provider || v.provider || v.engine : undefined
 })
+const synthesisIsLocal = computed(() => engineChoice.value?.local === true)
 
 function text(u: Utterance): string {
   const lang = props.language
@@ -79,8 +80,8 @@ async function saveUtterance() {
         <input v-model="draft" class="pm-ui-input" type="text" :aria-label="t.editor.edit(u.id)" :disabled="saving">
         <button type="submit" class="pm-lecture-button pm-ui-button pm-ui-button--small" :disabled="saving || confirmingEdit">{{ saving ? t.editor.saving : synthesisProvider ? t.editor.saveSay(synthesisProvider) : t.editor.save }}</button>
         <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :disabled="saving" @click="editingUtterance = undefined">{{ t.editor.cancel }}</button>
-        <div v-if="confirmingEdit && synthesisProvider" class="pm-lecture-editor__confirm" role="alertdialog" :aria-label="t.editor.saveSayConfirm(synthesisProvider)">
-          <p>{{ t.editor.saveSayConfirm(synthesisProvider) }}</p>
+        <div v-if="confirmingEdit && synthesisProvider" class="pm-lecture-editor__confirm" role="alertdialog" :aria-label="t.editor.saveSayConfirm(synthesisProvider, synthesisIsLocal)">
+          <p>{{ t.editor.saveSayConfirm(synthesisProvider, synthesisIsLocal) }}</p>
           <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" @click="saveUtterance">{{ t.editor.confirm }}</button>
           <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" @click="confirmingEdit = false">{{ t.editor.cancel }}</button>
         </div>

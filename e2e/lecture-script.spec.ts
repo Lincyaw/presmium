@@ -138,9 +138,9 @@ function segment(text: string, start: number, end: number) {
   return { start, end, text, words: chars.map((c, i) => ({ word: c, start: start + i * step, end: start + (i + 1) * step })) }
 }
 
-async function transcribingFront(fake: string, transcripts: ReturnType<typeof segment>[][]): Promise<{ url: string, asked: number, close(): Promise<void> }> {
+async function transcribingFront(fake: string, transcripts: ReturnType<typeof segment>[][]): Promise<{ url: string, asked: number, prompts: string[], close(): Promise<void> }> {
   const upstream = new URL(fake)
-  const state = { url: '', asked: 0, close: async () => {} }
+  const state = { url: '', asked: 0, prompts: [] as string[], close: async () => {} }
   const server = createServer((req, res) => {
     const chunks: Buffer[] = []
     req.on('data', (chunk: Buffer) => chunks.push(chunk))
@@ -148,6 +148,7 @@ async function transcribingFront(fake: string, transcripts: ReturnType<typeof se
       const body = Buffer.concat(chunks)
       if (req.method === 'POST' && req.url?.endsWith('/audio/transcriptions') && body.includes('OggS')) {
         const segments = transcripts[state.asked++] ?? []
+        state.prompts.push(/name="prompt"\r\n\r\n([^\r]*)/.exec(body.toString('utf8'))?.[1] ?? '')
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ text: segments.map(s => s.text).join(''), language: 'zh', duration: segments.at(-1)?.end ?? 0, segments, words: segments.flatMap(s => s.words) }))
         return
@@ -234,10 +235,14 @@ test.describe('a recorded lecture transcribed, corrected and said again', () => 
     const editor = page.getByRole('group', { name: '讲授的文字与语音' })
     await editor.getByRole('button', { name: `转写（${PROVIDER}）` }).click()
     const ask = editor.getByRole('alertdialog')
-    await expect(ask).toContainText(`把讲授 ${id} 的录音发给 ${PROVIDER}`)
+    // The fake engine answers on this machine: nothing is sent out and no service charges for it.
+    await expect(ask).toContainText(`用 ${PROVIDER}（本机，不外发） 转写讲授 ${id} 的录音？`)
+    await expect(ask).not.toContainText('计费')
     await ask.getByRole('button', { name: '确定' }).click()
     await expect(editor.getByRole('status')).toHaveText('已转写 3 句', { timeout: 30_000 })
     expect(front!.asked).toBe(2)
+    // Each section's recording goes with the words of its narration as hints: the title of section merge is 合并.
+    expect(front!.prompts[1]!.split(', ')).toEqual(expect.arrayContaining(['合并', '这', '两', '行']))
     const transcribed = read(id)
     expect(transcribed.utterances.map(u => [u.id, u.section, u.text])).toEqual([['u1', 'intro', '我们从开场讲起'], ['u2', 'merge', '现在看合并函数的代码'], ['u3', 'merge', '注意这几行']])
     expect(transcribed.events.find(([, type]) => type === 'spot')![2].at).toEqual(['u2', expect.any(Number)])
@@ -253,6 +258,7 @@ test.describe('a recorded lecture transcribed, corrected and said again', () => 
     await editor.getByRole('button', { name: `重新合成（${PROVIDER}）` }).click()
     await expect(ask).toContainText(`用 ${PROVIDER}`)
     await expect(ask).toContainText(`的音色“假音色乙 Beta”重新合成这段讲授的 3 句话`)
+    await expect(ask).not.toContainText('计费')
     await ask.getByRole('button', { name: '确定' }).click()
     await expect(editor.getByRole('status')).toHaveText('已重新合成', { timeout: 30_000 })
     await expect(player.locator('.pm-lecture-player__ai')).toHaveText(`AI 合成语音（${PROVIDER}）`)
@@ -262,7 +268,8 @@ test.describe('a recorded lecture transcribed, corrected and said again', () => 
     await first.getByRole('textbox', { name: '修改语音段 u1' }).fill('我们从开场白讲起')
     await first.getByRole('button', { name: `保存并重新合成（${PROVIDER}）` }).click()
     const sayAgain = first.getByRole('alertdialog')
-    await expect(sayAgain).toContainText(`把改过的这句话发给 ${PROVIDER} 重新合成`)
+    await expect(sayAgain).toContainText(`用 ${PROVIDER} 重新合成改过的这句话？结果由 AI 生成。`)
+    await expect(sayAgain).not.toContainText('计费')
     await sayAgain.getByRole('button', { name: '确定' }).click()
     await expect(first).toContainText('我们从开场白讲起', { timeout: 30_000 })
 

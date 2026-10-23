@@ -77,8 +77,9 @@ function nodeProblem({ node }: IRBlock): string | undefined {
     case 'component':
       if (typeof node.plugin !== 'string' || typeof node.name !== 'string' || node.name === '') return 'component node needs plugin and name'
       if (!isRecord(node.props)) return 'component props must be an object'
-      if (node.fallback !== undefined) return isRecord(node.fallback) ? mdastProblem(node.fallback, 'fallback') : 'component fallback must be mdast'
       if (node.assets !== undefined && !(isRecord(node.assets) && Object.values(node.assets).every(url => typeof url === 'string'))) return 'component assets must map props to URLs'
+      if (node.durations !== undefined && !(Array.isArray(node.durations) && node.durations.every(ms => typeof ms === 'number' && Number.isFinite(ms) && ms >= 0))) return 'component durations must list non-negative milliseconds'
+      if (node.fallback !== undefined) return isRecord(node.fallback) ? mdastProblem(node.fallback, 'fallback') : 'component fallback must be mdast'
       return undefined
     default:
       return `unknown node type ${String((node as { type?: unknown }).type)}`

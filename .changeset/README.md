@@ -32,6 +32,7 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `@lincyaw/slidev-addon-exec-jupyter` | npm | 插件：远端 Jupyter 环境与浏览器终端 |
 | `@lincyaw/slidev-addon-guide` | npm | 插件：引导 |
 | `@lincyaw/slidev-addon-content` | npm | 插件：富内容 |
+| `@lincyaw/slidev-addon-motion` | npm | 插件：动画场景（GSAP、Anime.js、Motion、Three.js、Remotion） |
 | `@lincyaw/slidev-addon-publish` | npm | 插件：离线、高对比度、导出与视觉差异 |
 | `@lincyaw/slidev-addon-session` | npm | 插件：课堂会话与同步 |
 | `@lincyaw/slidev-addon-classroom` | npm | 插件：课堂功能 |

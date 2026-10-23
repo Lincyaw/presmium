@@ -1,5 +1,5 @@
 import { timedEvents, trackChapters } from './timing.ts'
-import type { LectureTrack } from './track.ts'
+import type { LectureTrack, Utterance } from './track.ts'
 import { trackDuration } from './track.ts'
 import { isStale } from './translation.ts'
 
@@ -17,6 +17,11 @@ export function captionLanguages(track: LectureTrack): string[] {
   return [...new Set([track.lang, ...track.utterances.flatMap(u => Object.keys(u.translations ?? {}))])]
 }
 
+/** A sentence's caption in a language: its text, or its translation; undefined when it has none in that language. */
+export function captionText(track: LectureTrack, utterance: Utterance, lang: string): string | undefined {
+  return lang === track.lang ? utterance.text : utterance.translations?.[lang]?.text
+}
+
 export interface Captions {
   lang: string
   vtt: string
@@ -30,7 +35,7 @@ export function captionsVtt(track: LectureTrack, lang: string): Captions {
   const stale: string[] = []
   for (const u of track.utterances) {
     const original = lang === track.lang
-    const text = original ? u.text : u.translations?.[lang]?.text
+    const text = captionText(track, u, lang)
     if (text === undefined) {
       missing.push(u.id)
       continue

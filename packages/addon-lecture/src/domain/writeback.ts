@@ -45,7 +45,7 @@ export function cueFor(type: string, data: Record<string, unknown>, at: { sectio
     case 'mark':
       return text(data.label) ? formatCue(`mark ${text(data.label)}`) : undefined
     case 'pause':
-      return typeof data.ms === 'number' && data.ms > 0 ? formatCue(`pause ${Math.round(data.ms)}ms`) : undefined
+      return typeof data.ms === 'number' && data.ms > 0 && !data.hold ? formatCue(`pause ${Math.round(data.ms)}ms`) : undefined
     default:
       return undefined
   }

@@ -83,6 +83,7 @@ presmium/
 │   ├── addon-exec-local/    @lincyaw/slidev-addon-exec-local   容器执行、环境复刻
 │   ├── addon-guide/         @lincyaw/slidev-addon-guide
 │   ├── addon-content/       @lincyaw/slidev-addon-content
+│   ├── addon-motion/        @lincyaw/slidev-addon-motion       动画场景：GSAP、Anime.js、Motion、Three.js、Remotion，按步内时间画出
 │   ├── addon-publish/       @lincyaw/slidev-addon-publish
 │   ├── addon-session/       @lincyaw/slidev-addon-session      会话与网络同步
 │   ├── addon-classroom/     @lincyaw/slidev-addon-classroom
@@ -154,7 +155,7 @@ packages/addon-<ctx>/
 - `@lincyaw/server` 只由 `cli` 与 `workspace` 引用。插件经 `ServerContext`、`RequestContext`、`APPROVALS` 与 `MCP_ENDPOINT` 使用服务端，浏览器端经 `@lincyaw/host` 的 `useServer()`。
 - `@lincyaw/mcp` 只由 `server` 引用（挂载 `/mcp`）。MCP 服务需要的宿主能力由它自己声明为接口 `McpHost`（`@lincyaw/mcp` 的类型：文档列表、编译结果与诊断、检查、构建、运行代码块、放映位置与课堂状态、确认），服务端在 `ServerHost` 与控制通道之上实现它，`presmium-mcp` 直接在编译器上实现它；`mcp` 不引用 `server`，两者之间没有循环依赖（10.2 节）。
 - 插件包（`addon-*`）不引用 `@lincyaw/server`、`@lincyaw/mcp`、`@lincyaw/workspace` 与 `@lincyaw/web`；`workspace` 与 `mcp` 也不引用插件包（已有的“没有包引用插件”规则）。
-- 外部协议与厂商的客户端各只在一个适配器中：`@modelcontextprotocol/*` 只在 `mcp`（各包的 `test/` 另算）；`@jupyterlab/services` 与 `@xterm/*` 只在 `addon-exec-jupyter`；`mediabunny` 只在 `addon-lecture`；`simple-git` 只在各包的 `src/node/`。语音服务提供方没有 SDK，它们的接口只出现在 `addon-speech/src/node/engines/`，由代码评审守护。
+- 外部协议与厂商的客户端各只在一个适配器中：`@modelcontextprotocol/*` 只在 `mcp`（各包的 `test/` 另算）；`@jupyterlab/services` 与 `@xterm/*` 只在 `addon-exec-jupyter`；`mediabunny` 只在 `addon-lecture`；动画库 `gsap`、`animejs`、`motion`、`three`、`remotion` 与 `@remotion/*` 只在 `addon-motion` 的 `src/client/`；`simple-git` 只在各包的 `src/node/`。语音服务提供方没有 SDK，它们的接口只出现在 `addon-speech/src/node/engines/`，由代码评审守护。
 
 `scripts/check-layering.mjs` 中对应的五条规则：`node packages are framework-free`（`server`、`mcp` 的 `src/` 不引用 vue、`@slidev/*`、vitepress）；`only cli and workspace use the server`；`only the server uses mcp`（`@lincyaw/mcp` 只出现在 `server` 中，各包的 `test/` 另算）；`plugins use contracts, not the hosts`（`addon-*` 不引用上述四个包）；`protocol clients stay in their adapter`（上一条列表中的包名只出现在给定的目录中）。
 
@@ -266,12 +267,45 @@ interface HostAdapter {
 
 `provideStepScope(at, until?)` 与 `PmStepScope` 的可选 `until` 使用 IR 的绝对步骤，范围为 `[at, until)`；嵌套范围取交集，不改变原有的块内偏移。`useBlockStepRange()` 返回相对于当前作用域的有效范围，保留响应式 getter；需要跟随整个块的显示范围停止后台资源时，用 `useStepState(useBlockStepRange())`，而不是只判断 `from: 0`。阅读形态展开内容的语义仍由组件按 `useViewRole()` 决定。
 
+**步内时间。** 动画的视觉状态是（步骤，步内时间）的纯函数（5.3 节）。`useStepTime({ until? })` 给出组件所在步骤开始以来的毫秒数，`Infinity` 表示这一步已经停定（动画的终态）：
+
+- 现场放映：从导航（`NAVIGATION.position`）前进到这一步的时刻起按页面时间增长。后退到达的步骤、导航不在的页或步骤（组件的 `useCursor()` 与导航的位置不同，例如演讲者窗口中预告的下一页）、全部展开的文档视图以及减少动态效果时为 `Infinity`。
+- 讲授的回放与按帧导出：讲授插件经 `STEP_CLOCK.drive` 给出讲授到达当前步骤（最近的 `go` 事件）以来的时间，播放、跳转与导出的每一帧都由讲授的时刻决定；读者在回放中自己操作页面时（`elapsed` 为 undefined），以及关掉播放器时，回到页面时间：页面时间从讲授停下的位置接着走，动画不跳回这一步的开头。导出时驱动者的 `recording` 为 true：减少动态效果也照常画出动画，因为视频不能按观看者的设置减少动态效果。
+- `until` 是组件在一步中的动画时长：此后为 `Infinity`，宿主不再为它逐帧计时；没有动画在进行时宿主不请求动画帧。
+
+```ts
+interface StepClockDriver {
+  /** 自讲授到达当前步骤以来的毫秒数；undefined 时按页面时间 */
+  readonly elapsed: Readonly<Ref<number | undefined>>
+  /** 画面按帧录成视频：减少动态效果时动画仍按 elapsed 进行 */
+  readonly recording?: boolean
+}
+
+interface StepClock {
+  /** 由回放者驱动；返回的函数结束驱动 */
+  drive(driver: StepClockDriver): Unsubscribe
+  /** 组件异步准备画面（载入模块、建立 WebGL 上下文）时登记，settled 等它完成；画不出画面时登记一个失败的 work */
+  wait(work: Promise<unknown>): void
+  /** 没有登记的准备时立即兑现；有时等它们完成、页面再画一帧（准备好的画面可能挂载新的组件）之后兑现；
+   *  其中有失败的，以它的错误拒绝；按帧导出在每帧截图之前等它 */
+  settled(): Promise<void>
+}
+
+const STEP_CLOCK = defineService<StepClock>('presmium.stepClock')
+```
+
+`startHost` 提供 `STEP_CLOCK`（`@lincyaw/host` 的 `step-clock.ts`），`useStepTime` 读同一个时钟。与 `OPERATIONS` 一样，这是宿主自己的唯一实现，不能由插件替换：令牌只给回放者驱动时钟、给组件登记准备中的画面。组件按时间画面时，把动画库自己的时间轴暂停，只在时间变化时定位到对应的时刻（范例：动画插件的 `PmScene`、引导插件的光标）。
+
+**具名动作。** `useActions(element, actions, { clear })` 登记组件的具名动作，`element` 是组件在块中的一个元素，宿主由它找到块。返回的 `run(name)` 执行动作并报告 `click` 操作（数据 `{ block: '<章节>/<块>', action }`），录制的讲授记下它；讲解中的 ``{cue to=<块>}`click <动作>` `` 编为同一个操作（`ir.md` 2.9 节）。宿主在 `startHost` 中登记 `click` 的重放：调用这个块的组件的同名动作（`seeking` 为跳转中的快进）；跳转前的 `clear` 调用各组件的 `clear`。宿主记下每个块自上次 `clear` 以来的动作，组件挂载时补上它们：跳转到另一节时，回放者在同一个任务中重放到目标时刻，那一节的组件这时还没有挂载。动作改变的画面要是此前动作的函数（4.9 节）。
+
 `@lincyaw/host` 导出的组合式函数与组件：
 
 | 名称 | 作用 |
 |---|---|
 | `useStepState`、`useStepScope`、`useBlockStepRange`、`PmStepScope` | 块内步骤的状态、步骤作用域与包含父范围限制的有效显示范围（见上） |
-| `useCursor`、`useViewRole`、`usePresentationMode` | 当前位置、视图角色、形态 |
+| `useStepTime` | 步内时间（见上“步内时间”） |
+| `useActions` | 组件的具名动作，讲授的 `click` 经它重放（见上“具名动作”） |
+| `useCursor`、`useViewRole`、`usePresentationMode` | 当前位置（在页或章节中调用时为组件所在的页或章节及其步骤）、视图角色、形态 |
 | `useService`、`useStartReport` | 服务实现与内核启动报告，内核启动后才有值 |
 | `usePrefersReducedMotion` | 系统“减少动态效果”设置（5.5 节） |
 | `PmBoundary` | 错误边界（5.4 节）；属性 `resetKey` 变化时清除错误，组件修好后不刷新即恢复 |
@@ -286,7 +320,7 @@ interface HostAdapter {
 | `useSessionSnapshot()`、`claimFirst(group)` | 会话快照（`session` 服务的订阅），与“同一组中第一个实例拥有”的判断，会话与课堂插件共用 |
 | `currentLocale()` | 组件之外的界面语言，按 `CATALOG[currentLocale()]` 取文本 |
 | `useServer()` | 服务端的访问（4.7 节）：`available`、当前成员、`fetch(plugin, path)`、`events(plugin, path)`；静态产物中 `available` 为 false，组件据此隐藏或降级。可在组件外调用 |
-| `OPERATIONS`、`STATUS` | 宿主层的服务令牌：操作的报告与重放（4.9 节）、插件的状态摘要（4.7 节） |
+| `OPERATIONS`、`STATUS`、`STEP_CLOCK` | 宿主层的服务令牌：操作的报告与重放（4.9 节）、插件的状态摘要（4.7 节）、步内时间的时钟（见上） |
 
 **共享状态。** `createSharedStates(deck)` 返回适配器的 `useSharedState` 实现与同步传输的接入点（`transports.add`，`syncTransports` 服务把每个传输交给它），`deck` 是文稿标题。两种形态的宿主适配都用它，跨窗口、跨设备的状态只有这一套实现：
 
@@ -312,7 +346,8 @@ interface HostAdapter {
 | `presmium.syncTransports` | 宿主适配（两种形态：`remote` 共享状态；幻灯片形态另有 Slidev 经 `addSyncMethod` 同步的导航与圈画，其中按幻灯片序号记的页码、步号与圈画经传输时按章节 ID 与块 ID 换算，完整版与学生版之间因此对得上） | 会话（课堂的网络传输） |
 | `presmium.navigation` | 宿主适配（两种形态） | 会话（读取与设置位置：章节序号、步骤、视图与章节 ID `section`；两种形态另报告按 ID 的位置 `trail`（已到达的步骤的键）与 `back`（只给部分受众的章节：没有它的版本回退到的章节，即它之前最近的、学习者版本也有的章节，只给学生的章节也算；只给学生的章节则为之前最近的、所有版本都有的章节），`@lincyaw/kernel` 的 `FollowAnchor`（`packages/kernel/src/follow.ts`）；`go` 按章节 ID 定位、按 `trail` 求自己版本中的步号，版本中没有这一节时到 `back` 那一节的最后一步，也没有时停在原处，没有章节 ID 的位置按序号，`ir.md` 2.11 节） |
 | `presmium.toolbar` | 宿主适配（两种形态，由 `PmToolbar` 显示） | 需要工具栏入口的插件（如会话状态） |
-| `presmium.operations`（`OPERATIONS`） | 宿主适配（两种形态，`@lincyaw/host` 的实现） | 报告：IR 运行时（`go`）、执行插件（`run`）、引导插件（`spot`、`hint`）、讲授插件（`point`、`ink`）；录制与重放：讲授插件 |
+| `presmium.operations`（`OPERATIONS`） | 宿主适配（两种形态，`@lincyaw/host` 的实现） | 报告：IR 运行时（`go`）、执行插件（`run`）、引导插件（`spot`、`hint`）、讲授插件（`point`、`ink`）、组件的具名动作（`click`，经 `useActions`，由宿主重放）；录制与重放：讲授插件 |
+| `presmium.stepClock`（`STEP_CLOCK`） | 宿主适配（两种形态，`@lincyaw/host` 的实现） | 驱动：讲授插件（回放与按帧导出）；读取：组件经 `useStepTime`；登记准备中的画面：动画插件的 `PmScene` |
 | `presmium.status`（`STATUS`） | 宿主适配 | 登记：课堂插件的汇总（`presmium.classroom`：课堂状态 `status`、在线学习者人数 `learners`、提问数与未回答数 `questions`，按位置给出的 `quizzes`（各选项人数、作答与答对人数）、`predictions`（各选项人数、预测人数）、`pulse`（各档人数）、`exercises`（提交与通过人数）；不含昵称、参与者 ID 与学习者写下的文字）；读取：控制通道（送给 MCP 的 `get_classroom`） |
 | `presmium.speech`（`SPEECH`） | 语音插件：浏览器端经语音插件的路由（语音协议 `v1/*`），Node 端直接调用引擎 | 讲授插件（转写、合成、构建时合成）、讲授插件贡献的 agent 工具 |
 | `presmium.ask`（`ASK`，浏览器） | 读者问答插件（每个页面，静态产物也有） | 提问面板、课堂插件（课堂中的 AI 回答，用主讲自己的设置） |
@@ -324,7 +359,7 @@ interface HostAdapter {
 | `presmium.changeReview`（`CHANGE_REVIEW`，Node） | 工作区服务（git 仓库中的工作区） | 工作区服务的 `review` 路由，dsh bundle 的 `presmium-turns` 经它审阅会话的修改（10.7 节） |
 | `presmium.processSandbox`（`PROCESS_SANDBOX`，Node） | 运营者插件（没有内置的实现） | 编译器：放进 `RunContext.sandbox`，执行插件的子进程经它运行（4.6 节、10.6 节） |
 
-内核契约中的令牌（`executor`、`session`、`classroomStore`、`presenterPanels`、`speech`、`agent`、`ask`、`agentRuntime`、`revisions`、`documentFiles`、`documentLocks`、`approvals`、`mcpEndpoint`、`changeReview`、`processSandbox`）定义在 `packages/kernel/src/contracts.ts` 与它再导出的 `contracts/` 模块中；宿主层的令牌（`syncTransports`、`navigation`、`toolbar`、`operations`、`status`）定义在 `packages/host/src/contracts.ts`。服务替换时，提供方与使用方都不需要改动。Node 端的令牌（`speech` 的 Node 实现、`agentRuntime`、`revisions`、`documentFiles`、`documentLocks`、`approvals`、`mcpEndpoint`、`changeReview`、`processSandbox`）登记在编译器为每份文稿建立的 Node 端服务注册表中（`PresmiumNodePlugin.services`，服务端与工作区另行登记自己的实现），规则与浏览器端相同：一个令牌只有一个实现。
+内核契约中的令牌（`executor`、`session`、`classroomStore`、`presenterPanels`、`speech`、`agent`、`ask`、`agentRuntime`、`revisions`、`documentFiles`、`documentLocks`、`approvals`、`mcpEndpoint`、`changeReview`、`processSandbox`）定义在 `packages/kernel/src/contracts.ts` 与它再导出的 `contracts/` 模块中；宿主层的令牌（`syncTransports`、`navigation`、`toolbar`、`operations`、`status`、`stepClock`）定义在 `packages/host/src/contracts.ts`。服务替换时，提供方与使用方都不需要改动。Node 端的令牌（`speech` 的 Node 实现、`agentRuntime`、`revisions`、`documentFiles`、`documentLocks`、`approvals`、`mcpEndpoint`、`changeReview`、`processSandbox`）登记在编译器为每份文稿建立的 Node 端服务注册表中（`PresmiumNodePlugin.services`，服务端与工作区另行登记自己的实现），规则与浏览器端相同：一个令牌只有一个实现。
 
 `executor`、`session`、`classroomStore` 的接口（`RunRequest`、`SessionService`、`ParticipantRole` 等）是业务契约。它们放在内核包中是有意的：提供方与使用方是不同的插件，插件之间不互相引用（第 3 节），契约只能放在双方都依赖的共享内核中。内核的运行时（服务注册、启动、锚点、检查）不使用这些概念。见第 9.2 节。
 
@@ -1157,7 +1192,7 @@ export interface Operations {
 export const OPERATIONS = defineService<Operations>('presmium.operations')
 ```
 
-`OPERATIONS` 在两种宿主中是同一个实现（`@lincyaw/host` 的 `operations.ts`，由 `startHost` 与 `STATUS` 一起提供，不导出）：`replay` 调用登记的重放后，`replaying` 保持为 true 到下一个任务，期间同步发生的报告被丢弃。IR 运行时的部分是 `@lincyaw/viewer` 的 `syncViewerWithOperations(viewer, operations)`：位置或视图变化时同步报告 `go`（数据 `{ section,step,view }`，章节是 ID），重放 `go` 时先切到它的视图（隐藏的演讲者视图除外）再到达位置；网页主题在每次内核启动后接上它。
+`OPERATIONS` 在两种宿主中是同一个实现（`@lincyaw/host` 的 `operations.ts`，由 `startHost` 与 `STATUS` 一起提供，不导出）：`replay` 调用登记的重放后，`replaying` 保持为 true 到下一个任务，期间同步发生的报告被丢弃。IR 运行时的部分是 `@lincyaw/viewer` 的 `syncViewerWithOperations(viewer, operations)`：位置或视图变化时同步报告 `go`（数据 `{ section,step,view }`，章节是 ID），重放 `go` 时先切到它的视图（隐藏的演讲者视图除外）再到达位置；网页主题在每次内核启动后接上它。`click` 的重放由宿主自己登记，交给组件经 `useActions` 登记的具名动作（4.4 节）。讲授的播放器在播放、跳转与按帧导出时驱动宿主的 `STEP_CLOCK`：步内时间是讲授的时刻减去最近的 `go` 事件的时刻，所以动画在回放与视频中与讲解同步（4.4 节“步内时间”）。
 
 报告的分工（插件之间不互相引用，词汇是内核的共享契约）：IR 运行时报告 `go`（章节、步骤、视图）；执行插件报告 `run`（块与结果的缓存键）；引导插件报告 `spot`、`hint`；讲授插件自己报告指针 `point`（`elementFromPoint` → 最近的 `[data-block]` → 块内相对坐标，约 20 Hz，简化后保存）与工具栏的激光笔、荧光笔 `ink`。回放某一时刻：`clear()`，再按时间依次 `replay(…, true)` 此前的事件，最后一个事件不快进。
 
@@ -1376,7 +1411,7 @@ presmium.exec: { timeoutMs: 30000 }
 
 ### 5.3 步骤可逆
 
-插件组件的视觉状态必须是步骤的纯函数。组件在模板中用 `v-click` 标记向 Slidev 登记步骤，用 `useStepState` 读取状态。网页形态中 `v-click` 由兼容层处理：文档式直接显示，滚动叙事式随滚动显示。
+插件组件的视觉状态必须是步骤的纯函数；有动画的组件是（步骤，步内时间）的纯函数，时间取自 `useStepTime()`（4.4 节），不取自页面的时钟或动画库自己的播放，所以现场放映、讲授回放、跳转与按帧导出得到同一画面。组件在模板中用 `v-click` 标记向 Slidev 登记步骤，用 `useStepState` 读取状态。网页形态中 `v-click` 由兼容层处理：文档式直接显示，滚动叙事式随滚动显示。
 
 本地步骤：宿主以全部展开的最终状态渲染组件时（文档视图，`useHost().useStep()` 为无穷大），有内部步骤的组件可以给读者一个自己的步进控件，例如分步执行的上一步、下一步与滑块。读者选的本地步骤与执行结果一样是读者的输入，不写回宿主的步骤；组件的视觉状态是（章节步骤，本地步骤）的纯函数，仍然可逆。滚动叙事中没有讲解的步骤（组件的内部步骤）每步只占四分之一屏，读者不必滚过大片空白。
 
@@ -1386,7 +1421,7 @@ presmium.exec: { timeoutMs: 30000 }
 
 ### 5.5 减少动态效果
 
-所有动画读取 `usePrefersReducedMotion()`，开启时直接显示终态。
+所有动画读取 `usePrefersReducedMotion()`，开启时直接显示终态。按步内时间画的动画由 `useStepTime()` 处理：减少动态效果时它给出 `Infinity`；只有按帧导出的视频照常画出动画（4.4 节）。导出的页面本身按减少动态效果打开，其他界面的过渡直接到终态，每一帧因此只由讲授的时刻决定。
 
 ### 5.6 媒介限定与排版提示
 
@@ -1591,7 +1626,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 | `presmium-classroom-server` | `@lincyaw/classroom-server` | `--port <n>`（默认 1234，`0` 取空闲端口）、`--host <address>`（默认全部网卡）、`--deck <dir>`（归档写到 `<dir>/.presmium/classroom/`） | 课堂服务（y-websocket）；启动后打印服务地址与局域网地址。发布到静态托管的文稿用它（头部的 `presmium.session.server`）；`presmium dev` 与 `presmium serve` 在自己的端口上提供同一协议的课堂同步，不必另起进程（10.2 节） |
 | `presmium-language-server` | `@lincyaw/language-server` | `--stdio`、`--node-ipc`、`--socket=<port>` | 语言服务，VS Code 扩展启动它 |
 | `presmium-mcp [deck]` | `@lincyaw/mcp` | `--allow operate`（不加时不提供操作类工具） | 以 stdio 提供与 `/mcp` 相同的读取类工具，供编辑器中的 agent（Claude Code、Codex、VS Code）使用；没有放映位置与课堂 |
-| `presmium-lecture export [deck]` | `@lincyaw/slidev-addon-lecture` | `--track <id>`（默认合成的讲授 `script`，否则唯一的录制讲授）、`--out <file>`（只能是 `.webm`，默认 `<deck>/dist/<id>.webm`；不导出 MP4）、`--size <宽x高>`（默认 1280x720）、`--fps <n>`（默认 10） | 构建网页与讲授（工作目录 `.presmium/lecture-export`，结束后删除），用 Playwright 的 Chromium 逐帧播放讲授并截图，在另一个页面中用 Mediabunny 的 WebCodecs 路径把画面与音频（合成的片段或录音，各在其时刻）合成为 WebM（VP9 或 VP8、Opus）；合成的声音在文件的标签中带 `AIGC` 标识。退出码 0 完成，2 用法错误或失败 |
+| `presmium-lecture export [deck]` | `@lincyaw/slidev-addon-lecture` | `--track <id>`（默认合成的讲授 `script`，否则唯一的录制讲授）、`--out <file>`（只能是 `.webm`，默认 `<deck>/dist/<id>.webm`；不导出 MP4）、`--size <宽x高>`（默认 1280x720）、`--fps <n>`（默认 30）、`--burn <语言>`（把这种语言的字幕画进画面） | 构建网页与讲授（工作目录 `.presmium/lecture-export`，结束后删除），用 Playwright 的 Chromium 逐帧播放讲授并截图：每一帧先把讲授推进到这一帧的时刻，等组件准备好画面（`STEP_CLOCK.settled()`）再截图，动画按讲授的时刻画出（4.4 节“步内时间”）；某一帧画不出来（组件登记的准备失败，例如场景载入出错）时导出失败，指出这一帧的时刻；在另一个页面中用 Mediabunny 的 WebCodecs 路径把画面与音频（合成的片段或录音，各在其时刻）合成为 WebM（VP9 或 VP8、Opus），讲授轨的每种字幕成为一条 WebVTT 字幕轨（语言码取 ISO 639-2，不知道的语言给出警告），视频写完后也写在视频旁边（`<文件>.<语言>.vtt`）；`--burn` 画的字幕与字幕轨同样取文字，没有译文的句子不画；合成的声音在文件的标签中带 `AIGC` 标识。退出码 0 完成，2 用法错误或失败 |
 | `presmium-speech fake` | `@lincyaw/slidev-addon-speech` | `--port <n>`（默认取空闲端口）、`--host <地址>`（默认 `127.0.0.1`） | 确定性的假引擎，打印 `fake  <地址>`（`http://…/v1`，作为 `PRESMIUM_SPEECH_FAKE_URL`）。OpenAI 音频接口的形态加 Presmium 的扩展：`audio/voices`（音色 `alpha`、`beta` 与克隆音色 `cloned-lin`）、`audio/speech`、`audio/speech/timestamps`、`audio/transcriptions`；合成的 WAV（8 kHz，每词一个音调）在 `pmfk` 块中嵌入文字、音色与逐字时间，转写读回它们；`GET /requests` 列出收到的请求（方法、路径、`Authorization`），供用例计数 |
 | `presmium-speech consent` | `@lincyaw/slidev-addon-speech` | `<引擎> <音色> <记录文件>`、`--operator-dir <目录>`（默认为当前工作区的运营者目录或 `PRESMIUM_OPERATOR_DIR`，10.5 节；同样不能在工作区之中） | 运营者登记克隆音色的同意记录：记录是 JSON `{ speaker, scope, date, statementSha256 }`，校验后写入运营者目录中的 `<consentDir>/<引擎>/<音色>.json`（`consentDir` 取当前工作区配置的 `settings.presmium.speech.consentDir`，权限 0600）。与所有者经语音插件路由的登记效果相同（第 11 节） |
 
@@ -1828,7 +1863,12 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 | `ws` | MIT | Node 端连接内核与终端的 WebSocket（能带请求头，令牌不进地址；`@jupyterlab/services` 本身也依赖它） | addon-exec-jupyter |
 | `@noble/hashes` | MIT | 讲授的播放器在浏览器中计算译文原文的 SHA-256（不依赖安全上下文中的 `crypto.subtle`，过期的译文在任何浏览器中都能标出） | addon-lecture |
 | jsdom、DOMPurify（Node 端） | MIT、Apache-2.0 或 MPL-2.0 | 构建时清洗写进幻灯片的 HTML 输出（jsdom 是 DOMPurify 在 Node 中支持的 DOM） | render-slides |
-| Mediabunny（`mediabunny`） | MPL-2.0（文件级） | 录音为 Ogg/Opus（WebCodecs），摄像头与屏幕录为 WebM；导出视频时在 Chromium 页面中合成音视频（WebM）。`@mediabunny/server` 附带的 FFmpeg 是 GPL，不用它，不导出 MP4 | addon-lecture |
+| Mediabunny（`mediabunny`） | MPL-2.0（文件级） | 录音为 Ogg/Opus（WebCodecs），摄像头与屏幕录为 WebM；导出视频时在 Chromium 页面中合成音视频与 WebVTT 字幕轨（WebM）。`@mediabunny/server` 附带的 FFmpeg 是 GPL，不用它，不导出 MP4 | addon-lecture |
+| GSAP（`gsap`） | Standard "No Charge" GSAP License | 动画场景：GSAP 时间轴 | addon-motion |
+| Anime.js（`animejs`） | MIT | 动画场景：Anime.js 时间轴 | addon-motion |
+| Motion（`motion`） | MIT | 动画场景：Motion 的动画与序列 | addon-motion |
+| Three.js（`three`） | MIT | 动画场景：WebGL 三维画面 | addon-motion |
+| Remotion（`remotion`、`@remotion/player`），React（`react`、`react-dom`） | Remotion License；MIT | 动画场景：Remotion 的合成，以播放器的 `Thumbnail` 按帧画出 | addon-motion |
 | simple-git | MIT | 代码引用读取 git 中的文件、本地环境的仓库；工作区审阅直接运行 git，以控制 git 目录、对象库与钩子设置（10.7 节） | addon-code、addon-exec-local |
 | React | MIT | 工作台的面板（对等依赖），由 dsh 的外壳提供，Presmium 不自带 | workbench、dsh |
 | esbuild | MIT | 把 `@lincyaw/dsh` 的客户端部分构建为 dsh 的工厂格式 | dsh |
@@ -1847,7 +1887,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 
 语音服务没有采用 SDK：火山引擎没有 npm SDK，OpenAI 音频接口形态的服务用 `fetch` 即可；语音插件的适配器直接调用 HTTP 与 WebSocket 接口。
 
-不采用：ffmpeg.wasm（核心为 GPL）、Remotion（超过 3 人的公司需要商业许可）、Motion Canvas（2024 年底起停止维护）、TensorFlow.js 的 WebGPU 后端与 webgpu-torch（停更）、Jupyter Kernel Gateway（停更，浏览器跨域有缺陷）、Daytona 等 AGPL 许可的沙箱平台、edge-tts（非官方接口）、在进程内 mock 语音或模型的测试库。
+不采用：ffmpeg.wasm（核心为 GPL）、Motion Canvas（2024 年底起停止维护）、TensorFlow.js 的 WebGPU 后端与 webgpu-torch（停更）、Jupyter Kernel Gateway（停更，浏览器跨域有缺陷）、Daytona 等 AGPL 许可的沙箱平台、edge-tts（非官方接口）、在进程内 mock 语音或模型的测试库。
 
 ## 13. 工作台与 dsh
 

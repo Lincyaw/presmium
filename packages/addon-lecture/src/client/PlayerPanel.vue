@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { PmIcon, PmTabs, useMessages, useServer } from '@lincyaw/host'
 import { computed, ref } from 'vue'
-import { captionLanguages, clockText, isStale, LECTURE_MESSAGES, SCRIPT_TRACK, trackChapters, utteranceAt } from '../domain/index.ts'
+import { captionLanguages, captionText, clockText, isStale, LECTURE_MESSAGES, SCRIPT_TRACK, trackChapters, utteranceAt } from '../domain/index.ts'
 import type { Utterance } from '../domain/index.ts'
 import ChapterList from './ChapterList.vue'
 import { useLecturePlayback } from './playback.ts'
 import { serverEditing } from './source.ts'
-import { exporting, play, playing, useViewer } from './state.ts'
+import { burnedCaptions, exporting, play, playing, useViewer } from './state.ts'
 import TranscriptList from './TranscriptList.vue'
 
 defineProps<{ view: string }>()
@@ -17,6 +17,7 @@ const t = useMessages(LECTURE_MESSAGES)
 const viewer = useViewer()
 const server = useServer()
 const { player, status, failure, language, reloadTrack } = useLecturePlayback()
+if (burnedCaptions) language.value = burnedCaptions
 const captions = ref(false)
 const panel = ref<'transcript' | 'chapters'>()
 const sideTabs = computed(() => [{ value: 'transcript', label: t.value.player.transcript }, { value: 'chapters', label: t.value.player.chapters }])
@@ -38,6 +39,9 @@ function text(u: Utterance): string {
   const lang = language.value
   return lang && lang !== player.value?.track.lang ? u.translations?.[lang]?.text ?? u.text : u.text
 }
+
+// The captions an export draws on the frames are those of its subtitle track: a sentence without a translation has none.
+const burned = computed(() => (burnedCaptions && current.value && player.value ? captionText(player.value.track, current.value, burnedCaptions) : undefined))
 
 const stale = computed(() => {
   const p = player.value
@@ -82,14 +86,12 @@ function close() {
         {{ t.player.missing(playing) }}
         <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" @click="close">{{ t.player.close }}</button>
       </p>
-      <div
-        v-else-if="player && exporting"
-        class="pm-lecture-export"
-        :data-time="Math.round(time)"
-        :data-clip="current?.clip"
-      >
-        <span v-if="voice?.kind === 'synthetic'" class="pm-lecture-player__ai pm-ui-badge pm-ui-badge--accent pm-ui-badge--pill">{{ synthetic }}</span>
-      </div>
+      <template v-else-if="player && exporting">
+        <div class="pm-lecture-export" :data-time="Math.round(time)" :data-clip="current?.clip">
+          <span v-if="voice?.kind === 'synthetic'" class="pm-lecture-player__ai pm-ui-badge pm-ui-badge--accent pm-ui-badge--pill">{{ synthetic }}</span>
+        </div>
+        <p v-if="burned" class="pm-lecture-caption" :lang="burnedCaptions">{{ burned }}</p>
+      </template>
       <template v-else-if="player">
         <p v-if="captions && current" class="pm-lecture-caption" :lang="language" aria-live="polite" :data-stale="stale.has(current.id) ? 'true' : undefined">{{ text(current) }}<span v-if="stale.has(current.id)" class="pm-lecture-stale" role="img" :title="t.player.stale" :aria-label="t.player.stale"><PmIcon name="warning" size="1em" :stroke-width="2" /></span></p>
         <aside v-if="panel" class="pm-lecture-side" :aria-label="panel === 'transcript' ? t.player.transcript : t.player.chapters">
@@ -159,6 +161,9 @@ function close() {
 }
 .pm-lecture-layer > * {
   pointer-events: auto;
+}
+html.pm-lecture-exporting .pm-lecture-caption {
+  bottom: 2.5rem;
 }
 html.pm-lecture-exporting .pm-present__bar {
   display: none;

@@ -55,12 +55,12 @@ export interface LectureMessages {
   editor: {
     region: string
     transcribe: (provider: string) => string
-    transcribeConfirm: (id: string, provider: string) => string
+    transcribeConfirm: (id: string, provider: string, local: boolean) => string
     transcribing: string
     transcribed: (count: number) => string
     voice: string
     synthesize: (provider: string) => string
-    synthesizeConfirm: (provider: string, voice: string, count: number) => string
+    synthesizeConfirm: (provider: string, voice: string, count: number, local: boolean) => string
     synthesizing: string
     synthesized: string
     local: string
@@ -69,7 +69,7 @@ export interface LectureMessages {
     edit: (id: string) => string
     save: string
     saveSay: (provider: string) => string
-    saveSayConfirm: (provider: string) => string
+    saveSayConfirm: (provider: string, local: boolean) => string
     saving: string
     failed: (reason: string) => string
   }
@@ -131,12 +131,12 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
     editor: {
       region: '讲授的文字与语音',
       transcribe: provider => `转写（${provider}）`,
-      transcribeConfirm: (id, provider) => `把讲授 ${id} 的录音发给 ${provider} 转写？转写由该服务计费。`,
+      transcribeConfirm: (id, provider, local) => (local ? `用 ${provider} 转写讲授 ${id} 的录音？` : `把讲授 ${id} 的录音发给 ${provider} 转写？转写由该服务计费。`),
       transcribing: '正在转写…',
       transcribed: count => `已转写 ${count} 句`,
       voice: '音色',
       synthesize: provider => `重新合成（${provider}）`,
-      synthesizeConfirm: (provider, voice, count) => `用 ${provider} 的音色“${voice}”重新合成这段讲授的 ${count} 句话？合成由该服务计费，结果由 AI 生成。`,
+      synthesizeConfirm: (provider, voice, count, local) => `用 ${provider} 的音色“${voice}”重新合成这段讲授的 ${count} 句话？${local ? '' : '合成由该服务计费，'}结果由 AI 生成。`,
       synthesizing: '正在合成…',
       synthesized: '已重新合成',
       local: '本机，不外发',
@@ -145,7 +145,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       edit: id => `修改语音段 ${id}`,
       save: '保存',
       saveSay: provider => `保存并重新合成（${provider}）`,
-      saveSayConfirm: provider => `把改过的这句话发给 ${provider} 重新合成？合成由该服务计费，结果由 AI 生成。`,
+      saveSayConfirm: (provider, local) => (local ? `用 ${provider} 重新合成改过的这句话？结果由 AI 生成。` : `把改过的这句话发给 ${provider} 重新合成？合成由该服务计费，结果由 AI 生成。`),
       saving: '正在保存…',
       failed: reason => `失败：${reason}`,
     },
@@ -205,12 +205,12 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
     editor: {
       region: 'Words and voice of the lecture',
       transcribe: provider => `Transcribe (${provider})`,
-      transcribeConfirm: (id, provider) => `Send the audio of lecture ${id} to ${provider} for transcription? The service charges for it.`,
+      transcribeConfirm: (id, provider, local) => (local ? `Transcribe the audio of lecture ${id} with ${provider}?` : `Send the audio of lecture ${id} to ${provider} for transcription? The service charges for it.`),
       transcribing: 'Transcribing…',
       transcribed: count => `Transcribed ${count} sentences`,
       voice: 'Voice',
       synthesize: provider => `Say again (${provider})`,
-      synthesizeConfirm: (provider, voice, count) => `Say the ${count} sentences of this lecture again in the voice "${voice}" of ${provider}? The service charges for it; the result is AI-generated.`,
+      synthesizeConfirm: (provider, voice, count, local) => `Say the ${count} sentences of this lecture again in the voice "${voice}" of ${provider}? ${local ? 'The' : 'The service charges for it; the'} result is AI-generated.`,
       synthesizing: 'Synthesizing…',
       synthesized: 'Said again',
       local: 'on this machine, nothing sent',
@@ -219,7 +219,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       edit: id => `Edit utterance ${id}`,
       save: 'Save',
       saveSay: provider => `Save and say again (${provider})`,
-      saveSayConfirm: provider => `Send the corrected sentence to ${provider} to say it again? The service charges for it; the result is AI-generated.`,
+      saveSayConfirm: (provider, local) => (local ? `Say the corrected sentence again with ${provider}? The result is AI-generated.` : `Send the corrected sentence to ${provider} to say it again? The service charges for it; the result is AI-generated.`),
       saving: 'Saving…',
       failed: reason => `Failed: ${reason}`,
     },

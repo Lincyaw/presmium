@@ -15,6 +15,24 @@ export interface EngineDefinition {
   appid?: string
   model: string
   transcribeModel: string
+  /** False when the operator says the engine does not synthesize (`PRESMIUM_SPEECH_<ID>_MODEL=none`). */
+  synthesizes: boolean
+  /** False when the operator says the engine does not transcribe (`PRESMIUM_SPEECH_<ID>_TRANSCRIBE_MODEL=none`). */
+  transcribes: boolean
+}
+
+/** The model an operator writes for a use an engine does not have, e.g. an engine that only says text. */
+export const NO_MODEL = 'none'
+
+export type EngineUse = 'synthesize' | 'transcribe'
+
+export function engineDoes(engine: EngineDefinition, use: EngineUse): boolean {
+  return use === 'synthesize' ? engine.synthesizes : engine.transcribes
+}
+
+/** Why an engine named for a use cannot do it. */
+export function whyEngineCannot(engine: EngineDefinition, use: EngineUse): string {
+  return `speech engine "${engine.id}" does not ${use}: ${engineVariable(engine.id, use === 'synthesize' ? 'MODEL' : 'TRANSCRIBE_MODEL')} is ${NO_MODEL}`
 }
 
 export interface UnavailableEngine {
@@ -61,7 +79,7 @@ export function operatorEngines(names: Iterable<string>, secret: (name: string) 
     if (id === VOLCENGINE) {
       const key = value('KEY')
       if (!key) unavailable.push({ id, reason: `${engineVariable(id, 'KEY')} is not set` })
-      else engines.push({ id, kind: 'volcengine', url: VOLCENGINE_URL, provider: '火山引擎', key, appid: value('APPID'), model: 'seed-tts-2.0', transcribeModel: 'volc.bigasr.auc_turbo' })
+      else engines.push({ id, kind: 'volcengine', url: VOLCENGINE_URL, provider: '火山引擎', key, appid: value('APPID'), model: 'seed-tts-2.0', transcribeModel: 'volc.bigasr.auc_turbo', synthesizes: true, transcribes: true })
       continue
     }
     const missing = (['URL', 'PROVIDER'] as const).filter(suffix => !value(suffix)).map(suffix => engineVariable(id, suffix))
@@ -78,6 +96,7 @@ export function operatorEngines(names: Iterable<string>, secret: (name: string) 
       continue
     }
     const fake = id === FAKE
+    const none = (suffix: Suffix) => value(suffix)?.toLowerCase() === NO_MODEL
     engines.push({
       id,
       kind: fake ? 'fake' : 'openai',
@@ -86,6 +105,8 @@ export function operatorEngines(names: Iterable<string>, secret: (name: string) 
       key: value('KEY'),
       model: value('MODEL') ?? (fake ? 'fake-tts' : 'tts-1'),
       transcribeModel: value('TRANSCRIBE_MODEL') ?? (fake ? 'fake-stt' : 'whisper-1'),
+      synthesizes: !none('MODEL'),
+      transcribes: !none('TRANSCRIBE_MODEL'),
     })
   }
   engines.sort((a, b) => Number(b.id === VOLCENGINE) - Number(a.id === VOLCENGINE) || a.id.localeCompare(b.id))
@@ -105,8 +126,8 @@ export function engineInfo(engine: EngineDefinition, lang?: string): SpeechEngin
   return {
     id: engine.id,
     provider: providerName(engine, lang),
-    stt: true,
-    tts: true,
+    stt: engine.transcribes,
+    tts: engine.synthesizes,
     wordTimes: engine.kind !== 'openai',
     local: engine.kind === 'fake' || (engine.kind === 'openai' && isLoopback(engine.url)),
   }

@@ -213,7 +213,7 @@ export function trackDuration(track: LectureTrack): number {
     0,
     ...(track.audio ?? []).map(a => (a.start + a.duration) * 1000),
     ...track.utterances.map(u => u.t + u.d),
-    ...track.events.map(([t]) => t),
+    ...track.events.map(([t, type, data]) => (type === 'pause' && typeof data.ms === 'number' ? t + data.ms : t)),
   )
 }
 

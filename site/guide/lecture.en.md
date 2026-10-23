@@ -217,12 +217,17 @@ List `@lincyaw/slidev-addon-lecture` and `@lincyaw/slidev-addon-speech`, pick a 
 (lecture-speech)=
 ## Speech engines
 
-The operator defines speech engines in environment variables (`PRESMIUM_SPEECH_<ID>_URL`, `_PROVIDER` and, optionally, `_KEY`); the document names the engine's id only. Synthesized audio is cached in `.presmium/speech/`; once it is committed, others build without calling the speech service and without credentials. Synthesized speech is marked as AI generated in the player and in the audio's metadata, and cloning someone's voice needs a record of their consent.
+The operator defines speech engines in environment variables (`PRESMIUM_SPEECH_<ID>_URL`, `_PROVIDER` and, optionally, `_KEY`); the document names the engine's id only. An engine that only synthesizes or only transcribes has `none` as its other model (`_TRANSCRIBE_MODEL=none` or `_MODEL=none`), and each task goes to an engine that does it. Synthesized audio is cached in `.presmium/speech/`; once it is committed, others build without calling the speech service and without credentials. Synthesized speech is marked as AI generated in the player and in the audio's metadata, and cloning someone's voice needs a record of their consent.
 
 (lecture-recorded)=
 ## Recorded lectures
 
 A speaker can also record a lecture in the presentation view: the voice and the operations on the page (moving through steps, spotlights, ink) are recorded together in `lectures/<id>/track.json`, and the page replays the operations at their times. When the lecture changes, `presmium check` reports operations on blocks that no longer exist. `presmium-lecture export` exports a lecture as a video.
+
+(lecture-motion)=
+## Animations and video
+
+With `@lincyaw/slidev-addon-motion` in the document's `plugins`, `{scene}` places an animation written in code: a timeline in the document's `scenes/` written with GSAP, Anime.js, Motion, Three.js or Remotion, cut into steps by `:durations:`, with the narration following the steps paragraph by paragraph. Presenting plays one part a step; a lecture plays it on the narration's time, and a synthesized lecture stays on a step until its animation has played. `presmium-lecture export` exports the video by moving the lecture's time on a frame at a time, so animations, the cursor, clicks and captions are each at their moment; the captions are also the video's subtitle tracks and `.vtt` files next to it, and `--burn <language>` draws them on the picture.
 
 (assistant)=
 # The AI assistant and reader questions

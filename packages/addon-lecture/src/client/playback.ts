@@ -1,5 +1,5 @@
-import { OPERATIONS, useServer, useService } from '@lincyaw/host'
-import type { Operations } from '@lincyaw/host'
+import { OPERATIONS, STEP_CLOCK, useServer, useService } from '@lincyaw/host'
+import type { Operations, StepClock } from '@lincyaw/host'
 import { errorMessage } from '@lincyaw/kernel'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { audioSegments, LECTURE_ID, trackDuration } from '../domain/index.ts'
@@ -27,7 +27,7 @@ async function createClock(track: LectureTrack, source: LectureSource): Promise<
   return new MediaClock(length, media)
 }
 
-function installExportHook(player: LecturePlayer): void {
+function installExportHook(player: LecturePlayer, clock: StepClock | undefined): void {
   const frame = () => new Promise<void>(done => requestAnimationFrame(() => done()))
   Object.assign(window, {
     presmiumLecture: {
@@ -35,6 +35,7 @@ function installExportHook(player: LecturePlayer): void {
       async advance(at: number) {
         player.advanceTo(at)
         await nextTick()
+        await clock?.settled()
         await frame()
         await frame()
       },
@@ -46,6 +47,7 @@ export function useLecturePlayback() {
   const viewer = useViewer()
   const server = useServer()
   const operations = useService(OPERATIONS)
+  const stepClock = useService(STEP_CLOCK)
   const player = shallowRef<LecturePlayer>()
   const status = ref<'loading' | 'missing' | 'ready' | 'failed'>()
   const loadFailure = ref<string>()
@@ -54,6 +56,8 @@ export function useLecturePlayback() {
   const source = () => lectureSource(server, viewer.doc.value.config.presmium[LECTURE_ID])
 
   let loading = 0
+  // The lecture's time drives the animations of the components: playing, seeking and each exported frame.
+  let undrive = () => {}
   async function start(track: LectureTrack, from: LectureSource, ops: Operations, load: number, at = 0) {
     player.value?.pause()
     loadFailure.value = undefined
@@ -63,12 +67,15 @@ export function useLecturePlayback() {
       if (load !== loading) return clock.dispose()
       player.value?.dispose()
       player.value = new LecturePlayer(track, viewer.doc.value, ops, clock)
+      undrive()
+      undrive = stepClock.value?.drive({ elapsed: player.value.stepTime, recording: exporting }) ?? (() => {})
       language.value ??= track.lang
       status.value = 'ready'
       player.value.seek(at)
-      if (exporting) installExportHook(player.value)
+      if (exporting) installExportHook(player.value, stepClock.value)
     } catch (error) {
       if (load !== loading) return
+      undrive()
       player.value?.dispose()
       player.value = undefined
       loadFailure.value = errorMessage(error)
@@ -78,6 +85,7 @@ export function useLecturePlayback() {
 
   watch([playing, operations], async ([id, ops]) => {
     const load = ++loading
+    undrive()
     player.value?.dispose()
     player.value = undefined
     status.value = undefined
@@ -102,6 +110,7 @@ export function useLecturePlayback() {
   }, { immediate: true })
   onBeforeUnmount(() => {
     loading++
+    undrive()
     player.value?.dispose()
   })
 

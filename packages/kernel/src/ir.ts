@@ -141,6 +141,7 @@ export interface ComponentNode {
   fallback?: MdastNode
   assets?: Record<string, string>
   layer?: 'overlay'
+  durations?: number[]
 }
 
 export type DirectiveOptionType = 'string' | 'number' | 'boolean' | 'list'

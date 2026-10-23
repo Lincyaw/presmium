@@ -63,7 +63,7 @@ Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、
 ## 插件契约
 
 - `@lincyaw/kernel`：插件定义与清单、Node 端插件 `PresmiumNodePlugin` 的字段、`DirectiveSpec`、`RoleSpec`、`IRPass`、`Check`、`Finding`、`Renderer`、`RenderContext`、服务令牌与它们的接口（含 Node 端的服务）、服务端路由与 agent 工具，以及插件共用的纯函数。
-- `@lincyaw/host`：组件用的组合式函数（`useStepState`、`useService`、`useSharedState`、`useServer`、`useMessages` 等）、宿主的服务（`TOOLBAR` 的 `tools` 与 `settings` 槽位、`NAVIGATION`、`OPERATIONS`）、设计系统的令牌与组件。
+- `@lincyaw/host`：组件用的组合式函数（`useStepState`、`useStepTime`、`useActions`、`useService`、`useSharedState`、`useServer`、`useMessages` 等）、宿主的服务（`TOOLBAR` 的 `tools` 与 `settings` 槽位、`NAVIGATION`、`OPERATIONS`、`STEP_CLOCK`）、设计系统的令牌与组件。
 - `@lincyaw/viewer`：视图插件 `ViewerPlugin` 与它从上下文得到的注册函数、`useViewer`、`SectionView`、`BlockView`。
 - `@lincyaw/cli/testing`：插件的集成测试用的 `presmium`。
 - `@lincyaw/compiler`：`Compiler`、`Compilation`、`build`、`dev` 等编程接口。

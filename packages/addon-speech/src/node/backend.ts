@@ -18,7 +18,7 @@ export interface SynthesisResult {
 
 export interface SpeechBackend {
   listEngines(lang?: string): Promise<EnginesResponseBody>
-  defaultEngine(): Promise<string | undefined>
+  defaultSynthesisEngine(): Promise<string | undefined>
   voices(engine: string | undefined, lang?: string, signal?: AbortSignal): Promise<VoiceInfo[]>
   synthesize(request: SynthesisRequest, signal?: AbortSignal): Promise<SynthesisResult>
   transcribe(request: TranscriptionRequest, signal?: AbortSignal): Promise<Transcript>

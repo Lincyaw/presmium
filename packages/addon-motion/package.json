@@ -1,0 +1,59 @@
+{
+  "name": "@lincyaw/slidev-addon-motion",
+  "version": "1.0.0-rc.0",
+  "description": "Presmium plugin: animated scenes on the step's time, with GSAP, Anime.js, Motion, Three.js and Remotion",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lincyaw/presmium.git",
+    "directory": "packages/addon-motion"
+  },
+  "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/addon-motion#readme",
+  "bugs": "https://github.com/Lincyaw/presmium/issues",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    "./domain": "./src/domain/index.ts",
+    "./scene": "./src/client/scene.ts",
+    "./presmium": "./src/node/presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "components",
+    "src"
+  ],
+  "slidev": {},
+  "dependencies": {
+    "@remotion/player": "4.0.534",
+    "animejs": "4.5.0",
+    "gsap": "3.15.0",
+    "motion": "14.0.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "remotion": "4.0.534",
+    "three": "0.186.1",
+    "vue": "^3.5.42"
+  },
+  "peerDependencies": {
+    "@lincyaw/host": "workspace:^",
+    "@lincyaw/kernel": "workspace:^"
+  },
+  "devDependencies": {
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/host": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/three": "0.186.0"
+  }
+}

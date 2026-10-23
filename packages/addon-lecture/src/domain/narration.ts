@@ -1,4 +1,4 @@
-import { isRecord } from '@lincyaw/kernel'
+import { isRecord, parseDuration } from '@lincyaw/kernel'
 import type { MdastNode, WordSpan } from '@lincyaw/kernel'
 import { LECTURE_ID } from './track.ts'
 import { isWide } from './words.ts'
@@ -134,13 +134,6 @@ export function spokenText(node: MdastNode): SpokenText {
   return out.done()
 }
 
-export function duration(value: string): number | undefined {
-  const match = /^(\d+(?:\.\d+)?)\s*(ms|s)?$/.exec(value.trim())
-  if (!match) return undefined
-  const n = Number(match[1])
-  return Math.round(match[2] === 'ms' ? n : n * 1000)
-}
-
 export type CueCommand = 'next' | 'spot' | 'hint' | 'point' | 'click' | 'run' | 'ink' | 'pause' | 'mark'
 
 export const CUE_COMMANDS: readonly CueCommand[] = ['next', 'spot', 'hint', 'point', 'click', 'run', 'ink', 'pause', 'mark']
@@ -151,7 +144,7 @@ export function parseCue(command: string): { name: CueCommand, arg: string } | {
   const [name = '', ...rest] = command.trim().split(/\s+/)
   const arg = rest.join(' ')
   if (!(CUE_COMMANDS as readonly string[]).includes(name)) return { problem: `unknown cue command "${name}"; the commands are ${CUE_COMMANDS.join(', ')}` }
-  if (name === 'pause' && duration(arg) === undefined) return { problem: `pause needs a duration, e.g. "pause 800ms", not "${arg}"` }
+  if (name === 'pause' && parseDuration(arg) === undefined) return { problem: `pause needs a duration, e.g. "pause 800ms", not "${arg}"` }
   if ((name === 'click' || name === 'mark') && !arg) return { problem: `${name} needs ${name === 'click' ? 'the action of the component, e.g. "click reset"' : 'a name, e.g. "mark 合并"'}` }
   return { name: name as CueCommand, arg }
 }

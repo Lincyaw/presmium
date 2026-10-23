@@ -1,5 +1,4 @@
-import { isRecord } from '@lincyaw/kernel'
-import { duration } from './narration.ts'
+import { isRecord, parseDuration } from '@lincyaw/kernel'
 
 export interface LectureVoice {
   engine?: string
@@ -22,7 +21,7 @@ export function lectureVoice(config: Record<string, unknown> | undefined): Lectu
 export function lectureGap(config: Record<string, unknown> | undefined): number {
   const gap = config?.gap
   if (typeof gap === 'number' && gap >= 0) return gap
-  return (typeof gap === 'string' ? duration(gap) : undefined) ?? 500
+  return (typeof gap === 'string' ? parseDuration(gap) : undefined) ?? 500
 }
 
 export function lexiconOf(config: Record<string, unknown> | undefined): Record<string, string> | undefined {

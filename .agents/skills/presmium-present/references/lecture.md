@@ -35,7 +35,7 @@ renderers:
     voice: { engine: volcengine, voice: zh_female_xiaohe_uranus_bigtts }
 ```
 
-使用已有语音服务时沿用其引擎和音色。自定义引擎通过环境变量 `PRESMIUM_SPEECH_<ID>_URL`、`_PROVIDER` 与可选的 `_KEY` 定义；火山引擎可用 `PRESMIUM_SPEECH_VOLCENGINE_KEY`。确认目标服务与费用安排后再发起需要上传或计费的操作。
+使用已有语音服务时沿用其引擎和音色。自定义引擎通过环境变量 `PRESMIUM_SPEECH_<ID>_URL`、`_PROVIDER` 与可选的 `_KEY` 定义；火山引擎可用 `PRESMIUM_SPEECH_VOLCENGINE_KEY`。只合成或只转写的引擎把另一项的模型写成 `none`（`_TRANSCRIBE_MODEL=none` 或 `_MODEL=none`），转写与合成就各自交给能做的引擎，文稿不必点名。确认目标服务与费用安排后再发起需要上传或计费的操作。
 
 `presmium build --to web,lecture` 合成后用 `?view=lecture&track=script` 播放。合成片段保存在 `.presmium/speech/`，随 `speech.lock.json` 保存后，别人构建可沿用缓存。
 
@@ -55,4 +55,4 @@ renderers:
 pnpm exec presmium-lecture export --track <ID> --out lecture.webm
 ```
 
-默认 1280×720、10 fps，可用 `--size`、`--fps` 调整，输出 WebM。导出后打开文件核对起止、声音与画面同步。合成声音在文件元数据中保留 AI 生成标识。
+默认 1280×720、30 fps，可用 `--size`、`--fps` 调整，输出 WebM。每种字幕语言成为视频中的一条字幕轨，也写在视频旁边（`lecture.zh-CN.vtt`）；`--burn zh-CN` 另把这种语言的字幕画进画面，给不能切换字幕的播放器。动画场景（`{scene}`）与光标按讲授的时刻逐帧画出，所以导出比讲授本身慢，几分钟的讲授要导出几分钟。导出后打开文件核对起止、声音、字幕与画面同步。合成声音在文件元数据中保留 AI 生成标识。

@@ -1,4 +1,4 @@
-import { DOCUMENT_FILES } from '@lincyaw/kernel'
+import { DOCUMENT_FILES, speechEngineId } from '@lincyaw/kernel'
 import type { NodeServiceContext, SpeechWord, SynthesisRequest, TranscriptionRequest } from '@lincyaw/kernel'
 import type { DeckSpeechConfig } from '../domain/index.ts'
 import { applyLexicon, deckSpeechConfig } from '../domain/index.ts'
@@ -22,8 +22,17 @@ export class CachedSpeech implements SpeechBackend {
     return this.#inner.listEngines(lang)
   }
 
-  async defaultEngine() {
-    return this.#defaults.engine ?? this.#inner.defaultEngine()
+  async defaultSynthesisEngine() {
+    return this.#defaults.engine ?? this.#inner.defaultSynthesisEngine()
+  }
+
+  /** The engine that transcribes without one named: the deck's transcription engine, else its default engine when that one transcribes. */
+  async #transcriptionEngine(): Promise<string | undefined> {
+    if (this.#defaults.transcribe) return this.#defaults.transcribe
+    const named = this.#defaults.engine
+    if (!named) return undefined
+    const { engines } = await this.#inner.listEngines()
+    return engines.find(engine => engine.id === speechEngineId(named))?.stt ? named : undefined
   }
 
   voices(engine: string | undefined, lang?: string, signal?: AbortSignal) {
@@ -31,7 +40,7 @@ export class CachedSpeech implements SpeechBackend {
   }
 
   async synthesizeThroughCache(request: SynthesisRequest, signal?: AbortSignal): Promise<{ result: SynthesisResult, file: string }> {
-    const engine = request.engine ?? await this.defaultEngine()
+    const engine = request.engine ?? await this.defaultSynthesisEngine()
     if (!engine) return this.#write(await this.#inner.synthesize(request, signal), request)
     const key = cacheKey({ ...request, engine }, applyLexicon(request.text, request.lexicon))
     const hit = await this.cache.find(key)
@@ -86,8 +95,9 @@ export class CachedSpeech implements SpeechBackend {
     return this.#inner.consent(engine, voice, recorded, signal)
   }
 
-  transcribe(request: TranscriptionRequest, signal?: AbortSignal) {
-    return this.#inner.transcribe({ ...request, engine: request.engine ?? this.#defaults.transcribe ?? this.#defaults.engine }, signal)
+  async transcribe(request: TranscriptionRequest, signal?: AbortSignal) {
+    const engine = request.engine ?? await this.#transcriptionEngine()
+    return this.#inner.transcribe({ ...request, ...engine ? { engine } : {} }, signal)
   }
 }
 

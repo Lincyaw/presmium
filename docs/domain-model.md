@@ -15,6 +15,7 @@
 | 代码执行 Execution | `@lincyaw/slidev-addon-exec`、`@lincyaw/slidev-addon-exec-local` | 执行服务、运行记录、分步执行、回退、环境复刻 |
 | 执行环境 Environment | `@lincyaw/slidev-addon-exec-jupyter`、`@lincyaw/slidev-addon-exec-wasi`、`@lincyaw/slidev-addon-exec-webgpu`；会话与富输出也落在代码执行的两个包中 | 具名环境、环境提供方与指纹、执行会话、富输出、远端环境的凭据方式、部署模板、浏览器终端 |
 | 引导 Guidance | `@lincyaw/slidev-addon-guide` | 模拟光标、聚光、交互提示 |
+| 动画 Motion | `@lincyaw/slidev-addon-motion` | 动画场景：文稿 `scenes/` 中用 GSAP、Anime.js、Motion、Three.js 或 Remotion 写的时间轴，按步骤与步内时间画出 |
 | 富内容 Content | `@lincyaw/slidev-addon-content`；卡片、栅格、选项卡由编译器与渲染端直接支持 | 公式、图表、思维导图、媒体（含封面与字幕轨）、Web 组件、卡片与栅格 |
 | 发布 Publishing | `@lincyaw/slidev-addon-publish`；发布检查与受众筛选在编译器与 CLI 中 | 导出、离线、高对比度、可视化差异、发布检查、受众范围 |
 | 课堂 Classroom | `@lincyaw/slidev-addon-session`、`@lincyaw/slidev-addon-classroom`、`@lincyaw/classroom-server` | 会话、网络传输、跟随、笔记、测验、练习、提问、理解度、先预测再揭示 |
@@ -301,6 +302,21 @@
 - 媒体、封面与字幕文件随每种媒介发布；本地文件不存在时报错，带源码位置。
 - 卡片、栅格与选项卡在网页中完整显示；幻灯片中选项卡依次展开；notebook 降级为标题加段落，并列入构建报告。
 
+## 7B. 动画
+
+| 中文 | 标识符 | 含义 |
+|---|---|---|
+| 动画场景 | `PmScene`（`{scene}`） | 文稿 `scenes/<名>.ts` 中的一条时间轴，`:durations:` 把它切成块的各个内部步骤 |
+| 步内时间 | `useStepTime`（`@lincyaw/host`） | 组件所在步骤开始以来的毫秒数；停定的步骤为 `Infinity` |
+| 时间轴上的位置 | `timelinePosition` | 块内第 k 步、步内时间 t 时场景所在的时刻：前 k 步时长之和加上 `min(t, 第 k 步时长)` |
+| 具名动作 | `useActions`（`@lincyaw/host`） | 组件的动作，讲授的 `click` 与读者的点击都经它执行 |
+
+不变量：
+
+- 场景的画面只由（块内步骤，步内时间）决定，即只由时间轴上的位置决定；现场放映、讲授回放、跳转与按帧导出的同一时刻画面相同。
+- 场景在各步的时长写进组件节点的 `durations`；合成讲授时，一步至少停留到其中最长的动画演完，`{cue}`next`` 提前推进时构建给出警告（讲授 15 节）。
+- 场景文件不存在、时长写错是带源码位置的错误；notebook 与静态导出显示场景的说明文字（和可选的静止图片）。
+
 ## 8. 课堂
 
 | 中文 | 标识符 | 含义 |
@@ -519,7 +535,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 | 操作 | `Operation`（内核）、`OPERATIONS`（宿主） | 插件报告的语义化操作：`go`、`point`、`spot`、`hint`、`ink`、`select`、`click`、`run`、`scroll`、`mark`、`pause` |
 | 字锚 | `UtteranceAnchor`（事件数据的 `at`） | 把事件绑定到语音段的第几个字；改文字、换音色后按新的逐字时间重新计算事件时刻 |
 | 块指纹 | `LectureTrack.blocks` | 被事件引用的块的内容指纹，用于漂移检查 |
-| 时钟 | `TrackClock` | `now`、`play`、`pause`、`seek`、`rate`；有声明音频时用 `MediaClock` 同步录音或合成片段，未声明音频时用 `SilentClock`；加载失败的行为见 `ir.md` 9.4 节 |
+| 时钟 | `TrackClock` | `now`、`play`、`pause`、`seek`、`rate`；有声明音频时用 `MediaClock` 同步录音或合成片段，未声明音频时用 `SilentClock`；加载失败的行为见 `ir.md` 9.4 节。播放器由它驱动宿主的步内时间（`STEP_CLOCK`）：讲授的时刻减去最近的 `go` 事件的时刻 |
 | 音色 | `Voice` | 录制（说话人）或合成（引擎、模型、音色）；克隆音色要有同意记录 `ConsentRecord`（见下文“语音”） |
 | 讲授计划 | `LecturePlan` | `lecture` 渲染端从 IR 得到的每一步要说的文字与提示标记 |
 | 提示标记 | `{cue}` 角色 | 讲解中的行内标记：说到此处时推进一步、聚光、提示、指点、点击、运行、圈画、停顿或标记章节 |
@@ -540,6 +556,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 - 合成的语音在播放界面上标明由 AI 合成，并写入元数据；克隆音色默认关闭，必须有本人录制的同意声明（语音服务把关）。同意撤回之后，服务端不再给出、构建不再发布这个音色的片段，合成的讲授与换成这个音色的录制讲授都一样：片段按它在合成缓存中的键给出，每次由语音服务检查音色，从不为此重新合成（`SpeechService.cached`）。
 - **受众的版本按章节摘要失败即关闭**：讲授轨记下录制时每一节的摘要（`LectureTrack.ir.sections`）。为某个受众发布时（学生版的构建，IR 带 `meta.audience`），只保留摘要与这个版本中同一节的摘要相同的章节里说的话、音频与录像；摘要不同说明这一节在录制之后少了内容，声音与画面可能说出它。
 - 译文记录它所依据的原文摘要；原文改动后译文标记为过期，导出时提示。
+- **讲解与动画同步**：合成讲授时，一步在讲解说完、停顿 `gap` 之后推进，但至少停留到这一步中最长的动画演完（组件节点的 `durations`，计划中的 `holds`）；讲解中的 `{cue}`next`` 照常在它的字处推进，早于动画演完时构建给出警告；多等的时间记为 `pause` 事件（`hold: true`，写回讲解时不成为提示标记），讲授的时长包含最后一节的等待。回放与导出时动画按讲授的时刻画出，所以字幕、提示与动画在视频中同步。
 - 讲授计划在 `addon-lecture` 的 `src/domain/plan.ts`，由讲解（或单独的脚本）得到，合成的讲授的 ID 是 `script`；一个语音段合成的片段记在 `Utterance.clip`（合成缓存中的文件），`MediaClock` 播放它们。换音色重新合成时每个语音段保持它的时刻，只在前一段的新片段更长时后移，所以没有字锚的事件时刻不变、有字锚的随字移动。
 
 ### 语音
@@ -548,7 +565,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 |---|---|---|
 | 语音服务 | `SpeechService`（`SPEECH`） | 转写与合成；浏览器端经语音插件的路由（语音协议），Node 端直接调用引擎 |
 | 引擎 | `SpeechEngineInfo` | `volcengine`（默认的生产引擎）、OpenAI 音频接口形态的引擎（按地址接入，如 Groq、OpenAI、自建服务）、`fake`（CI）；其他服务作为新的适配器加入。`provider` 是服务提供方的名字，界面据此标明；它来自运营者的配置（火山引擎为“火山引擎”，英文界面为 Volcengine） |
-| 引擎定义 | 环境变量 `PRESMIUM_SPEECH_<ID>_URL`、`PRESMIUM_SPEECH_<ID>_PROVIDER`、可选的 `PRESMIUM_SPEECH_<ID>_KEY` | 运营者在服务端给出的引擎：地址、服务提供方的名字与凭据，凭据只发往同一组中的地址（火山引擎的地址与名字固定在适配器中，只给凭据）；缺少地址或服务提供方时引擎不可用；文稿只用 ID 选择引擎 |
+| 引擎定义 | 环境变量 `PRESMIUM_SPEECH_<ID>_URL`、`PRESMIUM_SPEECH_<ID>_PROVIDER`、可选的 `PRESMIUM_SPEECH_<ID>_KEY` | 运营者在服务端给出的引擎：地址、服务提供方的名字与凭据，凭据只发往同一组中的地址（火山引擎的地址与名字固定在适配器中，只给凭据）；缺少地址或服务提供方时引擎不可用；`PRESMIUM_SPEECH_<ID>_MODEL` 或 `_TRANSCRIBE_MODEL` 为 `none` 时引擎不合成或不转写，没有点名引擎时由能做的引擎做；文稿只用 ID 选择引擎 |
 | 同意记录 | `ConsentRecord`；`<consentDir>/<引擎>/<音色>.json` | 克隆音色的本人同意：说话人、范围、日期、同意声明录音的 sha256。放在运营者目录中的 `consentDir`（`settings.presmium.speech.consentDir`，默认 `consent`；运营者目录在工作区之外的用户状态目录中），只由所有者经服务端或运营者用 `presmium-speech consent` 登记，不随文稿提交 |
 | 语音协议 | `addon-speech` 的服务端贡献 `/__presmium/presmium.speech/v1/` | Presmium 与语音之间唯一的协议：OpenAI 音频接口的形态，加上返回逐词时间的 `/audio/speech/timestamps`；浏览器经它使用语音，只有服务端接触服务提供方；只给编辑者，请求体至多 32 MiB（转写的录音） |
 | 合成 | `Synthesis` | 音频、时长、逐字时间、缓存键、引擎信息与服务提供方；`synthetic: true` |

@@ -1,5 +1,5 @@
 import { PmBoundary, provideStepScope } from '@lincyaw/host'
-import { blockVisible, fnv1a64 } from '@lincyaw/kernel'
+import { blockVisible, componentProps, fnv1a64 } from '@lincyaw/kernel'
 import type { ComponentNode, IRBlock, IRSection } from '@lincyaw/kernel'
 import type { InjectionKey, PropType, VNode } from 'vue'
 import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, provide, shallowRef } from 'vue'
@@ -62,7 +62,7 @@ const ComponentView = defineComponent({
         ? { default: () => node.children!.map(child => h(BlockView, { key: child.id, block: child, section: props.section, step: props.step, expanded: props.expanded })) }
         : undefined
       const resetKey = props.expanded ? content.value : `${content.value}@${props.step}`
-      return h(PmBoundary, { name: node.name, resetKey }, () => h(component, { ...node.props }, children))
+      return h(PmBoundary, { name: node.name, resetKey }, () => h(component, componentProps(node), children))
     }
   },
 })

@@ -105,3 +105,16 @@ export interface Operations {
 }
 
 export const OPERATIONS = defineService<Operations>('presmium.operations')
+
+export interface StepClockDriver {
+  readonly elapsed: Readonly<Ref<number | undefined>>
+  readonly recording?: boolean
+}
+
+export interface StepClock {
+  drive(driver: StepClockDriver): Unsubscribe
+  wait(work: Promise<unknown>): void
+  settled(): Promise<void>
+}
+
+export const STEP_CLOCK = defineService<StepClock>('presmium.stepClock')

@@ -2,7 +2,7 @@ import { errorMessage, isRecord, jsonResponse, problemResponse } from '@lincyaw/
 import type { Route } from '@lincyaw/kernel'
 import { editUtterance, lexiconOf, resynthesizedTrack } from '../../domain/index.ts'
 import type { LectureTrack, Voice } from '../../domain/index.ts'
-import { synthesisEngine, transcriptionEngine } from '../engines.ts'
+import { whyNoTranscriptionEngine, synthesisEngine, transcriptionEngine } from '../engines.ts'
 import { latestDoc } from '../latest-ir.ts'
 import { writeTrack } from '../store.ts'
 import { clipVoice, synthesizeClip } from '../synthesize.ts'
@@ -51,7 +51,7 @@ export function editingRoutes(served: ServedDeck): Record<string, Route> {
         try {
           const track = served.getStoredTrack(id)
           if (action === 'transcribe' && request.method === 'POST') {
-            if (!(await transcriptionEngine(served.speech(), latestDoc(deckDir)))) throw new RouteRefusal(503, 'no speech engine transcribes: the operator defines one (PRESMIUM_SPEECH_<ID>_URL and _PROVIDER)')
+            if (!(await transcriptionEngine(served.speech(), latestDoc(deckDir)))) throw new RouteRefusal(503, whyNoTranscriptionEngine(latestDoc(deckDir)))
             const { track: transcribed, bound, provider } = await transcribeLecture(files, deckDir, track.id, served.speech(), latestDoc(deckDir), request.signal)
             ctx.log.info(`lecture ${id}: transcribed by ${provider}, ${transcribed.utterances.length} utterances, ${bound} events bound to words`)
             return jsonResponse({ provider, bound, track: transcribed })

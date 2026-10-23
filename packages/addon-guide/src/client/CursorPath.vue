@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { usePrefersReducedMotion, useStepScope, useStepState } from '@lincyaw/host'
+import { useHost, usePrefersReducedMotion, useStepScope, useStepState, useStepTime } from '@lincyaw/host'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import type { PlannedWaypoint } from '../domain/index.ts'
 import { centerIn } from './geometry.ts'
@@ -16,15 +16,37 @@ const index = computed(() => reached.filter(state => state.value.reached).length
 const point = computed(() => plan[index.value])
 const reduced = usePrefersReducedMotion()
 
+// The glide to a waypoint and the press of a click follow the step's time, so a lecture's video films them.
+const MOVE_MS = 500
+const PRESS_AT = 450
+const PRESS_MS = 400
+const hostStep = useHost().useStep()
+const stepTime = useStepTime({ until: PRESS_AT + PRESS_MS })
+const time = computed(() => (point.value && hostStep.value - scope.at.value === point.value.at ? stepTime.value : Infinity))
+
 const cursor = ref<HTMLElement>()
-const position = shallowRef<Point>()
+const from = shallowRef<Point>()
+const to = shallowRef<Point>()
 
 function measure() {
   const el = cursor.value
   const frame = el?.offsetParent
-  const target = resolveTarget(el, plan[Math.max(index.value, 0)]?.to)
-  if (frame instanceof HTMLElement && target) position.value = centerIn(target, frame) ?? position.value
+  if (!(frame instanceof HTMLElement)) return
+  const at = (i: number) => {
+    const target = resolveTarget(el, plan[i]?.to)
+    return target ? centerIn(target, frame) : undefined
+  }
+  to.value = at(Math.max(index.value, 0)) ?? to.value
+  from.value = index.value > 0 ? at(index.value - 1) ?? to.value : to.value
 }
+
+const position = computed((): Point | undefined => {
+  const [start, end] = [from.value, to.value]
+  if (!start || !end) return end
+  const k = 1 - (1 - Math.min(1, time.value / MOVE_MS)) ** 3
+  return { x: start.x + (end.x - start.x) * k, y: start.y + (end.y - start.y) * k }
+})
+const press = computed(() => Math.min(1, Math.max(0, (time.value - PRESS_AT) / PRESS_MS)))
 
 watch(index, measure, { flush: 'post' })
 
@@ -52,7 +74,7 @@ useTargetMark(cursor, () => point.value?.to, 'data-pm-cursor', () => (point.valu
     :data-waypoint="index"
     :data-action="point?.action ?? 'none'"
     :data-motion="reduced ? 'reduced' : 'full'"
-    :style="position && { transform: `translate(${position.x}px, ${position.y}px)` }"
+    :style="[position && { transform: `translate(${position.x}px, ${position.y}px)` }, { '--pm-cursor-press': press }]"
   >
     <span class="pm-cursor__ring" />
     <svg class="pm-cursor__arrow" width="20" height="26" viewBox="-2 -2 20 26">
@@ -72,7 +94,7 @@ useTargetMark(cursor, () => point.value?.to, 'data-pm-cursor', () => (point.valu
   z-index: 20;
   pointer-events: none;
   opacity: 0;
-  transition: transform 0.5s cubic-bezier(0.3, 0.7, 0.4, 1), opacity 0.2s;
+  transition: opacity 0.2s;
 }
 .pm-cursor:not([data-waypoint='-1']) {
   opacity: 1;
@@ -81,6 +103,8 @@ useTargetMark(cursor, () => point.value?.to, 'data-pm-cursor', () => (point.valu
   position: absolute;
   left: -2px;
   top: -2px;
+  /* The page's base styles cap an svg at the width of its box, which is 0 here. */
+  max-width: none;
   fill: #fff;
   stroke: #111;
   stroke-width: 1.5;
@@ -101,23 +125,11 @@ useTargetMark(cursor, () => point.value?.to, 'data-pm-cursor', () => (point.valu
   opacity: 0.35;
 }
 .pm-cursor[data-action='click'] .pm-cursor__ring {
-  opacity: 0.7;
-}
-.pm-cursor[data-motion='full'][data-action='click'] .pm-cursor__ring {
-  animation: pm-cursor-press 0.4s ease-out 0.45s both;
+  opacity: calc(0.7 * var(--pm-cursor-press, 1));
+  transform: scale(calc(2.2 - 1.2 * var(--pm-cursor-press, 1)));
 }
 .pm-cursor[data-motion='reduced'] {
   transition: none;
-}
-@keyframes pm-cursor-press {
-  from {
-    opacity: 0;
-    transform: scale(2.2);
-  }
-  to {
-    opacity: 0.7;
-    transform: scale(1);
-  }
 }
 </style>
 

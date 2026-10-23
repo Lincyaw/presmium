@@ -20,6 +20,7 @@ const ADAPTERS = [
   { name: '@jupyterlab/services', pattern: /^@jupyterlab\/services(\/|$)/, allowed: pkg => pkg === 'addon-exec-jupyter' },
   { name: '@xterm/*', pattern: /^@xterm\//, allowed: pkg => pkg === 'addon-exec-jupyter' },
   { name: 'mediabunny', pattern: /^mediabunny(\/|$)/, allowed: pkg => pkg === 'addon-lecture' },
+  { name: 'animation libraries', pattern: /^(gsap|animejs|motion|three|remotion|@remotion\/[\w-]+)(\/|$)/, allowed: (pkg, path) => pkg === 'addon-motion' && path.startsWith('src/client/') },
   { name: 'simple-git', pattern: /^simple-git(\/|$)/, allowed: (_pkg, path) => path.startsWith('src/node/') },
 ]
 

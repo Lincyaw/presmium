@@ -51,6 +51,15 @@ function publishTrack(track: LectureTrack, text: string, file: string, doc: IRDo
         hint: 'translate the utterance again',
       })
     }
+    if (captions.missing.length > 0) {
+      ctx.report({
+        checkId: LECTURE_ID,
+        severity: 'warning',
+        message: `lecture ${track.id}: the ${lang} captions leave out ${captions.missing.join(', ')}, which have no ${lang} translation`,
+        source: { file, line: utteranceLine(text, captions.missing[0]!) },
+        hint: 'translate those utterances too',
+      })
+    }
   }
   const titles = new Map(doc.sections.map(s => [s.id, s.title]))
   writeFileSync(join(out, 'chapters.vtt'), chaptersVtt(track, section => titles.get(section)))
@@ -68,6 +77,9 @@ async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: un
   synthesized.deck.findings.forEach(ctx.report)
   for (const failure of synthesized.failures) {
     ctx.report({ checkId: LECTURE_ID, severity: 'error', message: synthesisFailureMessage(failure), source: failure.source ?? source, hint: 'define the engine of the voice (PRESMIUM_SPEECH_<ID>_URL and _PROVIDER), or build where the synthesis cache (.presmium/speech/) has the clips' })
+  }
+  for (const cut of synthesized.cuts) {
+    ctx.report({ checkId: LECTURE_ID, severity: 'warning', message: `lecture ${SCRIPT_TRACK}: {cue}\`next\` moves on ${Math.round(cut.left)} ms before the animation of step ${cut.step} of section ${cut.section} has played`, source: cut.source ?? source, hint: 'say the cue later, or shorten the animation (:durations:)' })
   }
   const { track } = synthesized
   if (!track) return false

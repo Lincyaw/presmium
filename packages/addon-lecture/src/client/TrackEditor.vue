@@ -28,8 +28,8 @@ onMounted(async () => {
 const provider = (choice: { provider: string, local: boolean } | undefined) => (choice ? (choice.local ? `${choice.provider}（${t.value.editor.local}）` : choice.provider) : '')
 const voiceLabel = computed(() => choices.value?.synthesize?.voices.find(v => v.id === voice.value)?.label ?? voice.value)
 const question = computed(() => {
-  if (asking.value === 'transcribe') return t.value.editor.transcribeConfirm(props.track.id, provider(choices.value?.transcribe))
-  if (asking.value === 'synthesize') return t.value.editor.synthesizeConfirm(provider(choices.value?.synthesize), voiceLabel.value, props.track.utterances.length)
+  if (asking.value === 'transcribe') return t.value.editor.transcribeConfirm(props.track.id, provider(choices.value?.transcribe), choices.value?.transcribe?.local === true)
+  if (asking.value === 'synthesize') return t.value.editor.synthesizeConfirm(provider(choices.value?.synthesize), voiceLabel.value, props.track.utterances.length, choices.value?.synthesize?.local === true)
   return ''
 })
 

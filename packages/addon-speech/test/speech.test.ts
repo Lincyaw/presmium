@@ -387,3 +387,50 @@ describe('no engine defined', () => {
     expect((await fake.requests()).length).toBe(before)
   }, 240_000)
 })
+
+describe('engines that do one thing', () => {
+  let dir: string
+
+  beforeAll(() => {
+    // The deck's default engine only synthesizes: transcription without an engine named goes to the one that transcribes.
+    dir = testDeck('speech-uses', 'presmium:\n  presmium.speech: { engine: say }')
+  })
+
+  afterAll(() => remove(dir))
+
+  it('reports what each engine does; synthesis takes the deck\'s default engine and transcription the engine that transcribes; naming one for what it cannot do is refused', async () => {
+    const { dev: started, server } = await dev(dir, {
+      PRESMIUM_SPEECH_SAY_URL: fake.url,
+      PRESMIUM_SPEECH_SAY_PROVIDER: 'Says only',
+      PRESMIUM_SPEECH_SAY_KEY: 'say-key',
+      PRESMIUM_SPEECH_SAY_TRANSCRIBE_MODEL: 'none',
+      PRESMIUM_SPEECH_HEAR_URL: fake.url,
+      PRESMIUM_SPEECH_HEAR_PROVIDER: 'Hears only',
+      PRESMIUM_SPEECH_HEAR_KEY: 'hear-key',
+      PRESMIUM_SPEECH_HEAR_MODEL: 'none',
+    })
+    try {
+      const listed = await (await fetch(speechUrl(server, 'v1/engines'))).json() as { engines: { id: string, tts: boolean, stt: boolean }[] }
+      expect(listed.engines.map(({ id, tts, stt }) => ({ id, tts, stt }))).toEqual([{ id: 'hear', tts: false, stt: true }, { id: 'say', tts: true, stt: false }])
+
+      const before = (await fake.requests()).length
+      const said = await post(speechUrl(server, 'v1/audio/speech/timestamps'), { voice: 'alpha', input: SENTENCE, lang: 'zh-CN' })
+      expect(said.status, said.text).toBe(200)
+      expect(said.json<Timed>().provider).toBe('Says only')
+      const form = new FormData()
+      form.set('file', new Blob([Buffer.from(said.json<Timed>().audio, 'base64')], { type: 'audio/wav' }), 'clip.wav')
+      form.set('language', 'zh-CN')
+      const heard = await fetch(speechUrl(server, 'v1/audio/transcriptions'), { method: 'POST', body: form })
+      expect(heard.status).toBe(200)
+      const asked = (await fake.requests()).slice(before).filter(r => r.method === 'POST')
+      expect(asked.map(r => `${r.path} ${r.authorization}`)).toEqual(['/v1/audio/speech/timestamps Bearer say-key', '/v1/audio/transcriptions Bearer hear-key'])
+
+      form.set('engine', 'say')
+      const refused = await fetch(speechUrl(server, 'v1/audio/transcriptions'), { method: 'POST', body: form })
+      expect(refused.status).toBe(400)
+      expect(((await refused.json()) as { error: string }).error).toContain('speech engine "say" does not transcribe: PRESMIUM_SPEECH_SAY_TRANSCRIBE_MODEL is none')
+    } finally {
+      await started.stop()
+    }
+  }, 240_000)
+})

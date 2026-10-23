@@ -33,13 +33,19 @@ export function codeLines(block: Element): HTMLElement[] {
   return [...block.querySelectorAll<HTMLElement>('.pm-code .line')]
 }
 
+/** The `<section>/<block>` key of a block's element (`.pm-block[data-block]`). */
+export function blockKeyOf(block: HTMLElement): string | undefined {
+  const section = block.closest<HTMLElement>('[data-section]')?.dataset.section
+  return section ? blockKey(section, block.dataset.block!) : undefined
+}
+
 export function blockAt(x: number, y: number, options: { skip?: Element, within?: string } = {}): BlockPoint | undefined {
   if (typeof document === 'undefined') return undefined
   const { skip, within } = options
   const hit = document.elementsFromPoint(x, y).find(el => el !== skip && !skip?.contains(el))
   const element = hit?.closest<HTMLElement>(`${within ? `${within} ` : ''}.pm-block[data-block]`)
-  const section = element?.closest<HTMLElement>('[data-section]')?.dataset.section
-  if (!element || !section || !seen(element)) return undefined
+  const key = element && blockKeyOf(element)
+  if (!element || !key || !seen(element)) return undefined
   const box = element.getBoundingClientRect()
   if (!box.width || !box.height) return undefined
   const index = codeLines(element).findIndex((line) => {
@@ -47,7 +53,7 @@ export function blockAt(x: number, y: number, options: { skip?: Element, within?
     return y >= r.top && y < r.bottom
   })
   return {
-    key: blockKey(section, element.dataset.block!),
+    key,
     element,
     x: (x - box.left) / box.width,
     y: (y - box.top) / box.height,

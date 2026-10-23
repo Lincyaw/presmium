@@ -2,7 +2,7 @@ import { basename, relative } from 'node:path'
 import { errorMessage, remapWords } from '@lincyaw/kernel'
 import type { IRDocument, SpeechService, SynthesisRequest, WordSpan, WrittenWord } from '@lincyaw/kernel'
 import { irHash, plannedUtterances, referencedBlocks, SCRIPT_TRACK, scriptTrack, sectionHashes } from '../domain/index.ts'
-import type { Clip, LecturePlan, LectureTrack, LectureVoice, Voice } from '../domain/index.ts'
+import type { Clip, CutAnimation, LecturePlan, LectureTrack, LectureVoice, Voice } from '../domain/index.ts'
 import type { DeckPlan } from './plan.ts'
 import { deckPlan } from './plan.ts'
 
@@ -97,15 +97,17 @@ export interface SynthesizedLecture {
   track?: LectureTrack
   clips: Map<string, SynthesizedClip>
   failures: SynthesisFailure[]
+  /** Where `{cue}next` moves on before an animation has played. */
+  cuts: CutAnimation[]
 }
 
 export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech: SpeechService, signal?: AbortSignal): Promise<SynthesizedLecture> {
   const deck = deckPlan(doc, deckDir)
   const clips = new Map<string, SynthesizedClip>()
-  if (!deck.voice) return { deck, clips, failures: [] }
+  if (!deck.voice) return { deck, clips, failures: [], cuts: [] }
   const synthesized = await synthesizePlan(speech, deck.plan, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {} }, signal)
-  if (synthesized.failures.length > 0) return { deck, clips: synthesized.clips, failures: synthesized.failures }
-  const track = scriptTrack(deck.plan, synthesized.clips, {
+  if (synthesized.failures.length > 0) return { deck, clips: synthesized.clips, failures: synthesized.failures, cuts: [] }
+  const { track, cuts } = scriptTrack(deck.plan, synthesized.clips, {
     id: SCRIPT_TRACK,
     doc: relative(deckDir, doc.meta.entry) || doc.meta.entry,
     lang: deck.lang,
@@ -113,7 +115,7 @@ export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech
     voice: clipVoice(synthesized.clips.values(), deck.voice),
     gap: deck.gap,
   }, events => referencedBlocks(doc, events))
-  return { deck, track, clips: synthesized.clips, failures: [] }
+  return { deck, track, clips: synthesized.clips, failures: [], cuts }
 }
 
 export function synthesisFailureMessage(failure: SynthesisFailure): string {

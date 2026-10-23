@@ -7,6 +7,8 @@ import type { TrackClock } from './clock.ts'
 
 export class LecturePlayer {
   readonly time = shallowRef(0)
+  /** The time since the lecture reached its current step (ms); undefined while the viewer tries the page out. */
+  readonly stepTime = shallowRef<number | undefined>(0)
   readonly trying = shallowRef(false)
   readonly duration: number
   readonly events: TimedEvent[]
@@ -15,6 +17,9 @@ export class LecturePlayer {
   readonly track: LectureTrack
   readonly clock: TrackClock
   private readonly operations: Operations
+  // When the lecture reached the position of each event: a `go` that only changes the view (recorded
+  // as the presenter switched views) keeps the step's time, as the page's own clock does.
+  private readonly reached: number[]
   private applied = -1
   private frame = 0
   private readonly unsubscribe: () => void
@@ -31,6 +36,13 @@ export class LecturePlayer {
       if (event.type !== 'go') return { ...event, data }
       const { view: _view, ...position } = data
       return { ...event, data: position }
+    })
+    let position: string | undefined
+    let since = 0
+    this.reached = this.events.map((event) => {
+      const at = event.type === 'go' ? `${String(event.data.section)}\u0000${String(event.data.step)}` : position
+      if (at !== position) [position, since] = [at, event.t]
+      return since
     })
     this.duration = Math.max(trackDuration(track), this.events.at(-1)?.t ?? 0)
     this.unsubscribe = operations.subscribe(() => this.tryIt())
@@ -65,6 +77,7 @@ export class LecturePlayer {
     if (this.trying.value) return
     this.pause()
     this.trying.value = true
+    this.stepTime.value = undefined
   }
 
   back(): void {
@@ -83,7 +96,12 @@ export class LecturePlayer {
     const last = Math.max(lastIndexAt(this.events, t), this.events.findIndex(e => e.type === 'go'))
     for (let i = 0; i <= last; i++) this.apply(this.events[i]!, i < last)
     this.applied = last
+    this.setTime(t)
+  }
+
+  private setTime(t: number): void {
     this.time.value = t
+    this.stepTime.value = t - (this.reached[this.applied] ?? 0)
   }
 
   private apply(event: TimedEvent, seeking: boolean): void {
@@ -92,7 +110,7 @@ export class LecturePlayer {
 
   advanceTo(t: number): void {
     while (this.applied + 1 < this.events.length && this.events[this.applied + 1]!.t <= t) this.apply(this.events[++this.applied]!, false)
-    this.time.value = t
+    this.setTime(t)
   }
 
   private loop(): void {

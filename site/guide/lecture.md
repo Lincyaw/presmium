@@ -216,12 +216,17 @@ Python 与 JavaScript 在本机用 `python3`、`node` 运行。`@lincyaw/slidev-
 (lecture-speech)=
 ## 语音引擎
 
-语音引擎由运营者在环境变量中定义（`PRESMIUM_SPEECH_<ID>_URL`、`_PROVIDER`、可选的 `_KEY`），文稿只写引擎的 ID。合成的音频缓存在 `.presmium/speech/`，提交之后别人构建不再调用语音服务、不需要凭据。合成的语音在播放界面与音频元数据中标明由 AI 生成；克隆某人的音色要有本人的同意记录。
+语音引擎由运营者在环境变量中定义（`PRESMIUM_SPEECH_<ID>_URL`、`_PROVIDER`、可选的 `_KEY`），文稿只写引擎的 ID。只合成或只转写的引擎把另一项的模型写成 `none`（`_TRANSCRIBE_MODEL=none` 或 `_MODEL=none`），转写与合成各自交给能做的引擎。合成的音频缓存在 `.presmium/speech/`，提交之后别人构建不再调用语音服务、不需要凭据。合成的语音在播放界面与音频元数据中标明由 AI 生成；克隆某人的音色要有本人的同意记录。
 
 (lecture-recorded)=
 ## 录制的讲授
 
 讲者也可以在放映视图中录下自己的讲授：声音与页面上的操作（翻页、聚光、圈画）一起记录在 `lectures/<id>/track.json` 中，回放时页面按录制的时间重现操作。讲义改了以后，`presmium check` 报告引用了不存在的块的操作。`presmium-lecture export` 把讲授导出为视频。
+
+(lecture-motion)=
+## 动画与视频
+
+文稿的 `plugins` 加上 `@lincyaw/slidev-addon-motion` 后，`{scene}` 放进一段用代码写的动画：文稿目录 `scenes/` 中用 GSAP、Anime.js、Motion、Three.js 或 Remotion 写的一条时间轴，`:durations:` 把它切成几步，讲解逐段对应这些步。放映时每前进一步演一段；讲授按讲解的时间播放它，合成讲授时一步至少停留到动画演完。`presmium-lecture export` 一帧一帧推进讲授的时间来导出视频，动画、光标、点击与字幕都在各自的时刻，字幕另作为视频的字幕轨与旁边的 `.vtt` 文件，`--burn <语言>` 把字幕画进画面。
 
 (assistant)=
 # AI 助手与读者问答

@@ -113,7 +113,7 @@ steps: [解析, 启动, 渲染]
 :::
 ```
 
-这里的 `StepList` 是文稿目录下 `components/StepList.vue` 中的组件（插件 ID `deck`）；插件的组件也可以这样放进正文，例如 `PmContrastToggle`（高对比度开关，`@lincyaw/slidev-addon-publish`），两种形态都渲染。没有插件注册该组件时警告 `no plugin in plugins registers the component`。
+这里的 `StepList` 是文稿目录下 `components/StepList.vue` 中的组件（插件 ID `deck`），组件经 `@lincyaw/host` 取得步骤与服务；有动作的组件用 `useActions` 给动作起名，讲解中的 ``{cue to=<块>}`click <动作>` `` 在说到时执行它（下文“讲授的角色”）；插件的组件也可以这样放进正文，例如 `PmContrastToggle`（高对比度开关，`@lincyaw/slidev-addon-publish`），两种形态都渲染。没有插件注册该组件时警告 `no plugin in plugins registers the component`。
 
 ### `{include}`
 
@@ -469,6 +469,63 @@ markmap:
 ````
 
 生成 `PmYoutube`，降级为视频链接。
+
+## 动画 `presmium.motion`（`@lincyaw/slidev-addon-motion`）
+
+用代码写的动画：GSAP、Anime.js、Motion、Three.js 或 Remotion 的一条时间轴，按步骤与讲授的时间播放。现场放映时前进一步就演这一步的那一段，后退显示停定的画面；讲授回放与导出视频时动画跟着讲解的时刻走，同一时刻的画面总是相同。
+
+### `{scene}`
+
+参数为场景名：文稿目录 `scenes/` 下的文件去掉扩展名（`.ts`、`.js`、`.mjs`），可以带子目录，如 `bpe/merge`；正文为说明文字（无障碍描述，也是 notebook 与静态导出中显示的内容）。
+
+| 选项 | 类型 |
+|---|---|
+| `:durations:` | list：每一步的时长，写法同 `{cue}` 的 `pause`（`1.2`、`1.2s` 是秒，`800ms` 是毫秒）；第 k 个是块的第 k 步。省略时只有一步、时长 0 |
+| `:aspect:` | string：宽高比，默认 `16/9`（也可写 `4:3`） |
+| `:height:` | string：CSS 高度（如 `360px`），给出时不按宽高比 |
+| `:still:` | string：静止图片（相对于本文件），notebook 与静态导出中显示 |
+
+```md
+(bpe)=
+:::{scene} bpe-merge
+:durations: 1.2, 1.2, 1.4
+三个词的字节对合并：先合并 l 与 o，再合并 lo 与 w。
+:::
+
+字节对编码从单个字符开始。
+
+统计相邻的字节对，出现最多的是 l 和 o。
+
+把它们合并成新符号 lo。
+```
+
+块占的步数是时长的个数减一，讲解按 `docs/ir.md` 2.4 节逐段绑到这些步上。合成讲授时，一步至少停留到它的动画演完；讲解中的 ``{cue}`next` `` 照常在它的字处推进，早于动画演完时构建给出警告 `moves on … before the animation`，把提示标记往后挪或缩短 `:durations:`。
+
+场景文件默认导出一个场景（`@lincyaw/slidev-addon-motion/scene`）；各个库由插件提供，文稿不必另外安装。每个场景得到 `root`（画面的元素）、`at(k)`（第 k 步在时间轴上开始的毫秒数）、`durations`、`total`、`width`、`height` 与 `color(名)`（设计系统的颜色，如 `color('accent')`）：
+
+| 写法 | 返回 | 时间单位 |
+|---|---|---|
+| `gsapScene(({ root, gsap, at }) => …)` | GSAP 的时间轴（在以 `root` 为范围的 `gsap.context` 中建立，选择器只找场景中的元素） | 秒：`at(k) / 1000` |
+| `animeScene(({ root, anime, at }) => …)` | Anime.js 的时间轴，如 `anime.createTimeline({ autoplay: false })` | 毫秒 |
+| `motionScene(({ root, motion, at }) => …)` | `motion.animate(序列)`；同一元素的同一属性放在一个序列中（分开的动画在跳转时互相覆盖） | 秒 |
+| `threeScene(({ THREE, renderer, at, width, height }) => …)` | `{ render(ms), resize?(w, h), dispose?() }` 或只是 `render`；渲染器由插件建立并跟随画面大小 | 毫秒 |
+| `remotionScene(({ React, remotion, at }) => …)` | `{ component, fps, width, height }`：Remotion 的组件，用 `React.createElement` 写（场景文件不能写 JSX：幻灯片形态按 Vue 编译 JSX），按时刻画出对应的帧 | 帧 |
+| `defineScene((ctx) => …)` | 自己的画法：一个 `(ms) => void`，或 `{ seek, resize?, dispose? }` | 毫秒 |
+
+```ts
+// scenes/bpe-merge.ts
+import { gsapScene } from '@lincyaw/slidev-addon-motion/scene'
+
+export default gsapScene(({ root, gsap, at }) => {
+  root.innerHTML = '<span class="a">l</span><span class="b">o</span>'
+  const tl = gsap.timeline()
+  tl.from('.a, .b', { y: 20, opacity: 0, duration: 0.6 }, at(0) / 1000)
+  tl.to('.b', { x: -12, duration: 0.5 }, at(1) / 1000)
+  return tl
+})
+```
+
+画面只能由时间轴上的位置决定：不要在场景中读页面时间、启动自己的循环或按真实时间播放。全部展开的文档视图显示终态，读者可以在场景下方播放与拖动。场景不存在报 `the deck has no scenes/<名>.ts`，时长写错报 `:durations: takes durations`，诊断在指令的行上。
 
 ## 课堂 `presmium.classroom`（`@lincyaw/slidev-addon-classroom`）
 

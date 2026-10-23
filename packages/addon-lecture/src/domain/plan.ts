@@ -1,8 +1,8 @@
-import { irBlocks } from '@lincyaw/kernel'
+import { irBlocks, parseDuration } from '@lincyaw/kernel'
 import type { CodeNode, IRBlock, IRDocument, IRSection, MdastNode, RecordedRun, SourcePos, WordSpan } from '@lincyaw/kernel'
 import { blockKey, codeLineCount, lastNamedLine } from './drift.ts'
 import type { CueCommand, CueMark, SpokenText } from './narration.ts'
-import { duration, parseCue, spokenText, TARGETED } from './narration.ts'
+import { parseCue, spokenText, TARGETED } from './narration.ts'
 import { LECTURE_RENDERER, PLAYER_RENDERER } from './track.ts'
 
 export interface PlannedCue {
@@ -32,6 +32,7 @@ export interface PlannedSection {
   steps: number
   from: 'narration' | 'scriptFile'
   paragraphs: PlannedParagraph[]
+  holds: number[]
   webStep(step: number): number
 }
 
@@ -128,7 +129,7 @@ function planCues(spoken: SpokenText, at: Reader): PlannedCue[] {
       continue
     }
     if (name === 'pause' || name === 'mark') {
-      cues.push({ name, offset: mark.offset, data: name === 'pause' ? { ms: duration(arg)! } : { label: arg } })
+      cues.push({ name, offset: mark.offset, data: name === 'pause' ? { ms: parseDuration(arg)! } : { label: arg } })
       continue
     }
     const found = mark.to ? named(at.doc, at.section, mark.to) : at.target && { section: at.section, block: at.target }
@@ -209,6 +210,19 @@ function linesOf(node: MdastNode, section: SourcePos | undefined): SourcePos | u
   return section && typeof line === 'number' ? { file: section.file, line, ...typeof end === 'number' ? { endLine: end } : {} } : section
 }
 
+/** The least time of each step (ms): the longest animation of a component shown in it (`ComponentNode.durations`). */
+function stepHolds(section: IRSection): number[] {
+  const holds = Array.from({ length: section.steps + 1 }, () => 0)
+  for (const block of irBlocks(section.blocks)) {
+    if (block.node.type !== 'component' || !block.node.durations || !isShown(block)) continue
+    block.node.durations.forEach((ms, k) => {
+      const step = block.at + k
+      if (step <= section.steps) holds[step] = Math.max(holds[step]!, ms)
+    })
+  }
+  return holds
+}
+
 function stepTarget(section: IRSection, step: number): IRBlock | undefined {
   return section.blocks.filter(b => b.role === 'visual' && isShown(b) && b.at <= step).at(-1)
 }
@@ -235,13 +249,27 @@ export function lecturePlan(doc: IRDocument, scriptFile?: ScriptFileSections): L
       }
     }
     paragraphs.sort((a, b) => a.step - b.step)
-    return { id: section.id, title: section.title, steps: section.steps, from: fromScriptFile ? 'scriptFile' : 'narration', paragraphs, webStep: webSteps(section) }
+    return { id: section.id, title: section.title, steps: section.steps, from: fromScriptFile ? 'scriptFile' : 'narration', paragraphs, holds: stepHolds(section), webStep: webSteps(section) }
   })
   let n = 0
   for (const section of sections) {
     for (const paragraph of section.paragraphs) for (const piece of paragraph.pieces) if (piece.text) piece.id = `u${++n}`
   }
   return { sections, problems }
+}
+
+/** The most words of a section that transcription takes as hints (an engine's hotwords, or Whisper's prompt). */
+const HINT_WORDS = 100
+
+/**
+ * The words a speaker is likely to say in a section, its title's and its narration's, as hints for the
+ * transcription of a recording: they tell homophones apart (趟 and 烫, 数 and 树).
+ */
+export function sectionHints(section: PlannedSection, lang: string): string[] {
+  const segmenter = new Intl.Segmenter(lang, { granularity: 'word' })
+  const text = [section.title, ...section.paragraphs.flatMap(paragraph => paragraph.pieces.map(piece => piece.text))].join('\n')
+  const words = [...segmenter.segment(text)].filter(part => part.isWordLike).map(part => part.segment)
+  return [...new Set(words)].slice(0, HINT_WORDS)
 }
 
 export function plannedUtterances(plan: LecturePlan): (PlannedPiece & { id: string, section: string, step: number, source?: SourcePos })[] {

@@ -1,10 +1,10 @@
-import { mkdirSync, readFileSync, rmSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { open } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { build, Compiler, playwrightChromium, serveDirectory } from '@lincyaw/compiler'
-import { ABSOLUTE_URL, aigcLabel, aigcString } from '@lincyaw/kernel'
-import { audioSegments, parseTrack, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
+import { ABSOLUTE_URL, aigcLabel, aigcString, errorMessage } from '@lincyaw/kernel'
+import { audioSegments, clockText, parseTrack, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 
 export interface ExportOptions {
@@ -14,6 +14,8 @@ export interface ExportOptions {
   width?: number
   height?: number
   fps?: number
+  /** Draws the captions in this language on the frames (the soft subtitle tracks are always there). */
+  burn?: string
   log?: (line: string) => void
 }
 
@@ -22,14 +24,16 @@ export interface ExportResult {
   track: string
   frames: number
   duration: number
+  /** The captions written next to the video, a WebVTT file a language. */
+  captions: string[]
   warnings: string[]
 }
 
 const ENCODER = `<!doctype html><meta charset="utf-8"><title>presmium-lecture export</title>
 <script type="module">
-import { AudioBufferSource, CanvasSource, canEncodeAudio, getFirstEncodableVideoCodec, Output, QUALITY_HIGH, StreamTarget, WebMOutputFormat } from './mediabunny.mjs'
+import { AudioBufferSource, CanvasSource, canEncodeAudio, getFirstEncodableVideoCodec, Output, QUALITY_HIGH, StreamTarget, TextSubtitleSource, WebMOutputFormat } from './mediabunny.mjs'
 const RATE = 48000
-let output, video, audio, canvas, context, fps, total, done = 0, clips = []
+let output, video, audio, canvas, context, fps, total, done = 0, clips = [], subtitled = []
 const base64 = (bytes) => {
   let text = ''
   for (let i = 0; i < bytes.length; i += 0x8000) text += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
@@ -82,8 +86,15 @@ window.presmiumEncoder = {
       output.addAudioTrack(audio)
       clips = await Promise.all(options.audio.map(async a => ({ start: a.start, end: a.start + a.duration, samples: await decode(a.url) })))
     }
+    const subtitles = options.subtitles.map(({ language, name, vtt }) => {
+      const source = new TextSubtitleSource('webvtt')
+      output.addSubtitleTrack(source, { ...language ? { languageCode: language } : {}, name })
+      return { source, vtt }
+    })
     if (options.metadata) output.setMetadataTags(options.metadata)
     await output.start()
+    // The muxer interleaves the cues with the frames as they come, so the cues are not awaited here.
+    subtitled = subtitles.map(({ source, vtt }) => source.add(vtt))
   },
   async frame(jpeg, index) {
     const bitmap = await createImageBitmap(new Blob([bytes(jpeg)], { type: 'image/jpeg' }))
@@ -94,6 +105,7 @@ window.presmiumEncoder = {
   },
   async finish() {
     await audioUntil(total)
+    await Promise.all(subtitled)
     await output.finalize()
   },
 }
@@ -121,6 +133,25 @@ interface Chromium {
   }>
 }
 
+// ISO 639-2/T codes of the languages a lecture's captions are likely in (Matroska names a track's language so).
+const ISO_639_2: Record<string, string> = { zh: 'zho', en: 'eng', ja: 'jpn', ko: 'kor', fr: 'fra', de: 'deu', es: 'spa', it: 'ita', pt: 'por', ru: 'rus', ar: 'ara', hi: 'hin', vi: 'vie' }
+
+/** The ISO 639-2 code of a caption language: a three-letter language as it is, a two-letter one by the table. */
+function subtitleLanguage(lang: string): string | undefined {
+  const primary = lang.split('-')[0]!.toLowerCase()
+  return /^[a-z]{3}$/.test(primary) ? primary : ISO_639_2[primary]
+}
+
+interface CaptionFile {
+  lang: string
+  vtt: string
+}
+
+/** The captions the lecture renderer wrote for each language of the lecture. */
+function captionFiles(dir: string, langs: string[]): CaptionFile[] {
+  return langs.map(lang => ({ lang, vtt: readFileSync(join(dir, `captions.${lang}.vtt`), 'utf8') }))
+}
+
 function localAudio(track: LectureTrack, base: string): { url: string, start: number, duration: number }[] {
   return audioSegments(track).filter(segment => !ABSOLUTE_URL.test(segment.src)).map(({ src, start, duration }) => ({ url: `${base}${src}`, start, duration }))
 }
@@ -128,7 +159,7 @@ function localAudio(track: LectureTrack, base: string): { url: string, start: nu
 export async function exportVideo(options: ExportOptions): Promise<ExportResult> {
   const deckDir = resolve(options.deckDir)
   const log = options.log ?? (() => {})
-  const [width, height, fps] = [options.width ?? 1280, options.height ?? 720, options.fps ?? 10]
+  const [width, height, fps] = [options.width ?? 1280, options.height ?? 720, options.fps ?? 30]
   const work = join(deckDir, '.presmium', 'lecture-export')
   rmSync(work, { recursive: true, force: true })
   try {
@@ -141,13 +172,18 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
     const web = report.outputs.find(o => o.renderer === 'web')
     const lectures = report.outputs.find(o => o.renderer === 'lecture')
     if (!web || !lectures) throw new Error('the web form or the lectures were not built')
-    const index = JSON.parse(readFileSync(join(lectures.outDir, 'index.json'), 'utf8')) as { id: string }[]
+    const index = JSON.parse(readFileSync(join(lectures.outDir, 'index.json'), 'utf8')) as { id: string, captions?: string[] }[]
     const ids = index.map(entry => entry.id)
     const id = options.track ?? (ids.includes(SCRIPT_TRACK) ? SCRIPT_TRACK : ids.length === 1 ? ids[0] : undefined)
     if (!id || !ids.includes(id)) throw new Error(ids.length ? `name the lecture with --track: ${ids.join(', ')}` : 'the deck has no lecture: record one, or name a voice (renderers.lecture.voice)')
     const track = parseTrack(JSON.parse(readFileSync(join(lectures.outDir, id, 'track.json'), 'utf8'))).track!
     const file = resolve(options.out ?? join(deckDir, 'dist', `${id}.webm`))
     mkdirSync(dirname(file), { recursive: true })
+    const captions = captionFiles(join(lectures.outDir, id), index.find(entry => entry.id === id)?.captions ?? [])
+    if (options.burn && !captions.some(c => c.lang === options.burn)) throw new Error(`lecture ${id} has no captions in ${options.burn}: ${captions.map(c => c.lang).join(', ') || 'none'}`)
+    for (const { lang } of captions) {
+      if (!subtitleLanguage(lang)) warnings.push(`the subtitle track of the captions in ${lang} has no language code: its ISO 639-2 code is not known`)
+    }
 
     const mediabunny = join(dirname(createRequire(import.meta.url).resolve('mediabunny')), 'mediabunny.min.mjs')
     const server = await serveDirectory(work, {
@@ -163,7 +199,7 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
       const [player, encoder] = [await context.newPage(), await context.newPage()]
       const failures: string[] = []
       for (const page of [player, encoder]) page.on('pageerror', error => failures.push(String(error.message)))
-      await player.goto(`${server.url}${web.base}?view=lecture&track=${encodeURIComponent(id)}&export`)
+      await player.goto(`${server.url}${web.base}?view=lecture&track=${encodeURIComponent(id)}&export${options.burn ? `&captions=${encodeURIComponent(options.burn)}` : ''}`)
       await player.waitForFunction('Boolean(window.presmiumLecture)', undefined, { timeout: 120_000 })
       const duration = Math.max(trackDuration(track), await player.evaluate(() => (window as unknown as Hooks).presmiumLecture.duration, undefined))
       const frames = Math.max(1, Math.ceil(duration * fps / 1000))
@@ -181,18 +217,28 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
         fps,
         duration: frames * 1000 / fps,
         audio: localAudio(track, `${server.url}${lectures.base}${encodeURIComponent(id)}/`),
+        subtitles: captions.map(({ lang, vtt }) => ({ language: subtitleLanguage(lang), name: lang, vtt })),
         metadata: { title: compilation.doc.meta.title, ...label ? { comment: aigcString(label), raw: { AIGC: JSON.stringify(label) } } : {} },
       })
       log(`playing lecture ${id}: ${frames} frames at ${fps} fps, ${width}x${height}`)
       for (let i = 0; i < frames; i++) {
-        await player.evaluate(t => (window as unknown as Hooks).presmiumLecture.advance(t), Math.round(i * 1000 / fps))
+        const at = Math.round(i * 1000 / fps)
+        await player.evaluate(t => (window as unknown as Hooks).presmiumLecture.advance(t), at).catch((error: unknown) => {
+          throw new Error(`the frame at ${clockText(at)} cannot be drawn: ${errorMessage(error).replace(/^page\.evaluate: (Error: )?/, '')}`)
+        })
         const jpeg = await player.screenshot({ type: 'jpeg', quality: 85 })
         await encoder.evaluate(([data, n]) => (window as unknown as Hooks).presmiumEncoder.frame(data, n), [jpeg.toString('base64'), i] as [string, number])
         if (failures.length) throw new Error(failures.join('\n'))
         if ((i + 1) % Math.max(1, Math.round(frames / 10)) === 0) log(`  ${Math.round((i + 1) * 100 / frames)}%`)
       }
       await encoder.evaluate(() => (window as unknown as Hooks).presmiumEncoder.finish(), undefined)
-      return { file, track: id, frames, duration: frames * 1000 / fps, warnings }
+      // The captions go beside the video once the video is whole.
+      const sidecars = captions.map(({ lang, vtt }) => {
+        const sidecar = `${file.replace(/\.webm$/i, '')}.${lang}.vtt`
+        writeFileSync(sidecar, vtt)
+        return sidecar
+      })
+      return { file, track: id, frames, duration: frames * 1000 / fps, captions: sidecars, warnings }
     } finally {
       await handle.close()
       await browser.close()

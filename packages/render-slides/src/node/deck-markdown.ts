@@ -1,4 +1,4 @@
-import { deckLocale, docBlocks, errorMessage, escapeHtml, isProseRun, nodeMdast, withPublishedAssets } from '@lincyaw/kernel'
+import { componentProps, deckLocale, docBlocks, errorMessage, escapeHtml, isProseRun, nodeMdast, withPublishedAssets } from '@lincyaw/kernel'
 import type { CodeNode, ComponentNode, IRBlock, IRDocument, IRSection, LocalAsset, Locale, MdastNode, RenderContext } from '@lincyaw/kernel'
 import { originBar } from '@lincyaw/viewer/domain'
 import type { OriginPart } from '@lincyaw/viewer/domain'
@@ -208,7 +208,7 @@ function unfolded(node: MdastNode): MdastNode {
 }
 
 function tag(node: ComponentNode, gen: Generation, notes: IRBlock[]): string {
-  const attrs = Object.entries(node.props).map(([name, value]) => typeof value === 'string' && !node.assets?.[name]
+  const attrs = Object.entries(componentProps(node)).map(([name, value]) => typeof value === 'string' && !node.assets?.[name]
     ? ` ${name}="${escapeHtml(value).replace(/\n/g, '&#10;')}"`
     : ` :${name}='${JSON.stringify(value).replace(/'/g, '\\u0027').replace(/&/g, '\\u0026')}'`).join('')
   const children = node.children ? blocks(node.children, gen, notes, node.ownsCode !== false, true) : []

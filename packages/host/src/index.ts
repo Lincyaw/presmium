@@ -1,5 +1,7 @@
 import './design/design.css'
 
+export { useActions } from './actions.ts'
+export type { ActionOptions, ComponentAction } from './actions.ts'
 export { blockAt, blockElement, blockKey, codeLines, lineNumbers, linesText, splitBlockKey } from './blocks.ts'
 export type { BlockPoint } from './blocks.ts'
 export { componentErrors, PmBoundary } from './error-boundary.ts'
@@ -51,13 +53,15 @@ export { PmApprovals } from './approvals.ts'
 export { claimFirst } from './claim-first.ts'
 export { createServerClient, provideServer, useServer } from './server.ts'
 export { default as PmPresenterPanels } from './PresenterPanels.vue'
+export { useStepTime } from './step-clock.ts'
+export type { StepTimeOptions } from './step-clock.ts'
 export { PmStepScope, provideStepScope, useBlockStepRange, useStepScope } from './step-scope.ts'
 export { useSessionSnapshot } from './session.ts'
 export type { StepScope } from './step-scope.ts'
 export { createSharedStates } from './shared-state.ts'
 export type { SharedStates } from './shared-state.ts'
 export { default as PmToolbar } from './Toolbar.vue'
-export { NAVIGATION, OPERATIONS, STATUS, SYNC_TRANSPORTS, TOOLBAR } from './contracts.ts'
+export { NAVIGATION, OPERATIONS, STATUS, STEP_CLOCK, SYNC_TRANSPORTS, TOOLBAR } from './contracts.ts'
 export { joinWindows } from './windows.ts'
 export type { WindowChannel } from './windows.ts'
 export type {
@@ -70,6 +74,8 @@ export type {
   SharedStateScope,
   StatusProvider,
   StatusRegistry,
+  StepClock,
+  StepClockDriver,
   SyncPublish,
   SyncTransport,
   SyncTransports,

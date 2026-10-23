@@ -6,15 +6,18 @@ import { errorMessage } from '@lincyaw/kernel'
 import { clockText } from '../domain/index.ts'
 import { exportVideo } from './export.ts'
 
-const USAGE = `Usage: presmium-lecture export [deckDir] [--track <id>] [--out <file.webm>] [--size <width>x<height>] [--fps <n>]
+const USAGE = `Usage: presmium-lecture export [deckDir] [--track <id>] [--out <file.webm>] [--size <width>x<height>] [--fps <n>] [--burn <lang>]
 
 Builds the deck's web form and lectures, plays the lecture in Chromium
 (playwright-chromium) a frame at a time and writes it with its audio as a
-WebM video (VP9 or VP8, Opus). --track names the lecture (default: the
-synthesized one, else the only recorded one); --out the file (default
-<deckDir>/dist/<track>.webm); --size the window (default 1280x720); --fps the
-frames a second (default 10). MP4 is not written: it would need the GPL FFmpeg
-of @mediabunny/server.`
+WebM video (VP9 or VP8, Opus), with a WebVTT subtitle track for each language
+of its captions, and the captions next to it (<file>.<lang>.vtt). The
+animations follow the lecture's time frame by frame. --track names the
+lecture (default: the synthesized one, else the only recorded one); --out the
+file (default <deckDir>/dist/<track>.webm); --size the window (default
+1280x720); --fps the frames a second (default 30); --burn draws the captions
+in that language on the picture. MP4 is not written: it would need the GPL
+FFmpeg of @mediabunny/server.`
 
 function shown(file: string): string {
   const rel = relative(process.cwd(), file)
@@ -27,7 +30,7 @@ export async function main(argv: string[]): Promise<number> {
     args = parseArgs({
       args: argv,
       allowPositionals: true,
-      options: { track: { type: 'string' }, out: { type: 'string', short: 'o' }, size: { type: 'string' }, fps: { type: 'string' }, help: { type: 'boolean', short: 'h' } },
+      options: { track: { type: 'string' }, out: { type: 'string', short: 'o' }, size: { type: 'string' }, fps: { type: 'string' }, burn: { type: 'string' }, help: { type: 'boolean', short: 'h' } },
     })
   } catch (error) {
     console.error(`${errorMessage(error)}\n\n${USAGE}`)
@@ -64,10 +67,12 @@ export async function main(argv: string[]): Promise<number> {
       ...values.out ? { out: values.out } : {},
       ...size ? { width: Number(size[1]), height: Number(size[2]) } : {},
       ...fps ? { fps } : {},
+      ...values.burn ? { burn: values.burn } : {},
       log: line => console.error(line),
     })
     result.warnings.forEach(w => console.error(`warning: ${w}`))
     console.log(`exported ${shown(result.file)} (lecture ${result.track}, ${clockText(result.duration)}, ${result.frames} frames)`)
+    for (const file of result.captions) console.log(`captions ${shown(file)}`)
     return 0
   } catch (error) {
     console.error(`presmium-lecture: ${errorMessage(error)}`)

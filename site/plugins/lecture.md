@@ -116,6 +116,8 @@ const t = useMessages(MESSAGES)
 - **视觉状态是步骤的纯函数**：同一步骤总是同一画面，往回翻页也一样。`useStepState({ from, to })` 给出块内一段步骤的状态（`active`、`reached`、`done`），步骤从块出现的那一步算起；`useStepScope` 向宿主登记块内的第 k 步。
 - **跟随块的显示范围**：`useStepState(useBlockStepRange())` 包含块与父块的 `at`、`until` 限制，`until` 为隐藏的第一步；需要停止媒体等后台资源时使用它。原有 `useStepState({ from, to })` 仍描述组件自己的块内步骤。
 - **减少动态效果**：动画读 `usePrefersReducedMotion()`，开启时直接显示终态。
+- **按时间演的动画**：`useStepTime({ until })` 给出所在步骤开始以来的毫秒数，停定时（后退、文档视图、减少动态效果、`until` 之后）为 `Infinity`；讲授回放与导出视频时它由讲授的时刻驱动。画面是（步骤，步内时间）的纯函数：动画库的时间轴暂停，只在时间变化时定位。
+- **具名动作**：`useActions(元素, { 名: (seeking) => … }, { clear })` 给组件的动作起名，按钮调用返回的 `run(名)`；讲授录下这次点击，讲解中的 ``{cue to=<块>}`click <名>` `` 在说到时执行它。
 - **配置与服务**：`useSectionConfig(插件 ID)` 是全局配置合并本章节 `{config}` 的结果；`useService(令牌)` 取得浏览器端服务；`useSharedState` 在窗口或设备之间同步状态，键以插件 ID 开头。
 - **静态导出**：导出 PDF 与 PNG 时，带降级内容的组件由宿主换成降级内容；需要自己判断时读 `useStaticRender()`。
 - **错误隔离**：渲染端在每个插件组件外面包了一层边界，组件抛错只影响它自己，不要自己再包。

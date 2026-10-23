@@ -28,6 +28,7 @@
     "@lincyaw/slidev-addon-lecture": "workspace:*",
     "@lincyaw/slidev-addon-speech": "workspace:*",
     "@lincyaw/slidev-addon-content": "workspace:*",
+    "@lincyaw/slidev-addon-motion": "workspace:*",
     "@lincyaw/slidev-addon-publish": "workspace:*",
     "@lincyaw/slidev-addon-session": "workspace:*",
     "@lincyaw/slidev-addon-classroom": "workspace:*",

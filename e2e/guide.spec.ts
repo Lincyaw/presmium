@@ -68,11 +68,17 @@ const animations = (page: Page, selector: string) =>
 
 test('each step puts the cursor, spotlight and hint where the deck declares them', async ({ page }) => {
   await openGuide(page, 0)
+  const ring = page.locator('.pm-guide .pm-cursor__ring')
   for (const [step, expected] of STEPS.entries()) {
     if (step > 0) await page.keyboard.press('ArrowRight')
+    const ringAtFirst = await ring.evaluate(el => Number(getComputedStyle(el).opacity))
     await expect.poll(() => cues(page)).toEqual(expected)
     if (step > 0) await expect.poll(() => cursorOffset(page, CURSOR_AT[step]!)).toBeLessThan(1)
-    if (step === 3) expect(await animations(page, '.pm-guide .pm-cursor__ring')).toBe(1)
+    // The click presses the ring in on the step's time: faint as the step begins, then settled.
+    if (step === 3) {
+      expect(ringAtFirst).toBeLessThan(0.7)
+      await expect(ring).toHaveCSS('opacity', '0.7')
+    }
     if (step === 4) {
       await expect.poll(() => spotlightFits(page)).toBe(true)
       await expect(page.locator('.pm-spotlight-popover .driver-popover-title')).toHaveText('搜索结果')

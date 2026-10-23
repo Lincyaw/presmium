@@ -3,11 +3,22 @@ import type { HostAdapter, ViewRole } from '@lincyaw/host'
 import { isRecord } from '@lincyaw/kernel'
 import { configs, useNav, useSlideContext } from '@slidev/client'
 import { computed } from 'vue'
+import type { Ref } from 'vue'
 import { presmiumConfig } from '../domain/index.ts'
 import { sharedStates } from './shared-states.ts'
 
 function record(value: unknown): Record<string, unknown> {
   return isRecord(value) ? value : {}
+}
+
+/** The slide a component is on, when it is on one: its page and clicks, which differ from the navigation in a preview. */
+function useOwnSlide(): { page: Readonly<Ref<number>>, clicks: Readonly<Ref<number>> } | undefined {
+  try {
+    const { $page, $clicks } = useSlideContext()
+    return $page && $clicks ? { page: $page, clicks: $clicks } : undefined
+  } catch {
+    return undefined
+  }
 }
 
 function useFrontmatter(): () => Record<string, unknown> {
@@ -25,6 +36,8 @@ export function createSlidevHost(): HostAdapter {
     mode: 'slides',
     lang: configs.htmlAttrs?.lang,
     useCursor() {
+      const own = useOwnSlide()
+      if (own) return computed(() => ({ slide: own.page.value, step: own.clicks.value }))
       const { currentSlideNo, clicks } = useNav()
       return computed(() => ({ slide: currentSlideNo.value, step: clicks.value }))
     },

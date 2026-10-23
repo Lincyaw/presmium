@@ -45,6 +45,9 @@ export const playing = shallowRef<string | undefined>(fromUrl())
 
 export const exporting = typeof location !== 'undefined' && new URLSearchParams(location.search).has('export')
 
+/** The language whose captions an export draws on the frames (`presmium-lecture export --burn`). */
+export const burnedCaptions = exporting ? new URLSearchParams(location.search).get('captions') ?? undefined : undefined
+
 export function play(id: string | undefined): void {
   playing.value = id
   const url = new URL(location.href)

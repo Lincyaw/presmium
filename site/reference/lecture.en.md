@@ -64,7 +64,7 @@ The programming interface accepts `CompilerOptions.priority: 'interactive' | 'ba
 ## The plugin contract
 
 - `@lincyaw/kernel`: plugin definitions and manifests, the fields of the Node plugin `PresmiumNodePlugin`, `DirectiveSpec`, `RoleSpec`, `IRPass`, `Check`, `Finding`, `Renderer`, `RenderContext`, service tokens and their interfaces (the Node services included), server routes and agent tools, and the plain functions plugins share.
-- `@lincyaw/host`: the composables components use (`useStepState`, `useService`, `useSharedState`, `useServer`, `useMessages` and others), the host's services (the `tools` and `settings` slots of `TOOLBAR`, `NAVIGATION`, `OPERATIONS`), and the design system's tokens and components.
+- `@lincyaw/host`: the composables components use (`useStepState`, `useStepTime`, `useActions`, `useService`, `useSharedState`, `useServer`, `useMessages` and others), the host's services (the `tools` and `settings` slots of `TOOLBAR`, `NAVIGATION`, `OPERATIONS`, `STEP_CLOCK`), and the design system's tokens and components.
 - `@lincyaw/viewer`: the viewer plugin `ViewerPlugin` and what its context gives: the registration functions, `useViewer`, `SectionView` and `BlockView`.
 - `@lincyaw/cli/testing`: `presmium` for plugins' integration tests.
 - `@lincyaw/compiler`: the programming interface `Compiler`, `Compilation`, `build`, `dev` and the like.

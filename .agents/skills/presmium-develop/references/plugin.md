@@ -143,7 +143,8 @@ export default plugin
 - 不要在模板中自己包 `PmBoundary`：渲染端在每个插件组件外面包了一层，组件自身 `setup` 或模板抛错也只影响它自己（`docs/architecture.md` 5.4 节）。
 - 视觉状态是步骤的纯函数：`useStepState({ from, to })` 给出块内第 k 步的状态（`active`、`reached`、`done`），步骤从块的 `at` 算起，不要自己再减 `at`。用 `v-click="scope.step(k)"`（`const scope = useStepScope()`）向宿主登记块内第 k 步，范例见测试插件的 `e2e/fixtures/host/plugin/components/DemoStepper.vue`。
 - 跟随块的显示范围停止媒体等后台资源，用 `useStepState(useBlockStepRange())`；它包含当前块与父块的范围交集，`until` 为隐藏的第一步。渲染端经 `provideStepScope(at, until?)` 或 `PmStepScope` 传入绝对范围，原有块内步骤偏移不变；阅读形态展开内容的策略按 `useViewRole()` 判断。
-- 动画读 `usePrefersReducedMotion()`，开启时直接显示终态。
+- 动画读 `usePrefersReducedMotion()`，开启时直接显示终态。按时间演的动画用 `useStepTime({ until })`：它给出所在步骤开始以来的毫秒数，停定时（后退、文档视图、减少动态效果、`until` 之后）为 `Infinity`；讲授回放与导出视频时由讲授的时刻驱动。画面要是（步骤，步内时间）的纯函数：把动画库的时间轴暂停，只在时间变化时定位，不按页面时间自己播放。需要异步准备画面（载入模块、WebGL）时用 `useService(STEP_CLOCK).value?.wait(promise)` 登记，导出在截图前等它（`docs/architecture.md` 4.4 节，范例 `packages/addon-motion/src/client/SceneView.vue`）。
+- 组件的动作（重置、播放、下一项）用 `useActions(元素, { 名: (seeking) => … }, { clear })` 起名，按钮调用返回的 `run(名)`：讲授录下它（`click` 操作），讲解中的 ``{cue to=<块>}`click <名>` `` 在说到时执行它，跳转时宿主先 `clear` 再依次重放。
 - 界面文本：`const t = useMessages(CATALOG)`（`CATALOG` 为 `{ 'zh-CN': {...}, en: {...} }`），模板中用 `t.value.xxx`；组件之外用 `CATALOG[currentLocale()]`。语言由 `<html lang>` 决定，不要自己判断或观察它。
 - 配置：`useSectionConfig(POLL_ID)` 是全局配置合并本章节 `{config}` 后的结果。
 - 服务：`useService(TOKEN)`；跨窗口或跨设备的状态：`useSharedState('presmium.poll:<key>', initial, { scope: 'view' | 'local' | 'remote' })`，键以插件 ID 开头。

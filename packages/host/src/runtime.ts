@@ -1,8 +1,9 @@
 import { Kernel, PRESENTER_PANELS } from '@lincyaw/kernel'
 import type { EnvironmentSpec, Logger, PluginDefinition, PluginReport, PresentationMode, ServiceToken, StartReport } from '@lincyaw/kernel'
 import { shallowRef } from 'vue'
+import { connectActions } from './actions.ts'
 import { PmApprovals } from './approvals.ts'
-import { NAVIGATION, OPERATIONS, STATUS, SYNC_TRANSPORTS, TOOLBAR } from './contracts.ts'
+import { NAVIGATION, OPERATIONS, STATUS, STEP_CLOCK, SYNC_TRANSPORTS, TOOLBAR } from './contracts.ts'
 import type { Navigation, ServerClient, SyncTransports } from './contracts.ts'
 import { connectControl } from './control.ts'
 import { componentErrors } from './error-boundary.ts'
@@ -11,11 +12,13 @@ import { HOST_MESSAGES } from './messages.ts'
 import { createOperations } from './operations.ts'
 import { createPresenterPanels, createStatusRegistry, createToolbar } from './registries.ts'
 import { provideServer } from './server.ts'
+import { createStepClock } from './step-clock.ts'
 
 const registered: PluginDefinition[] = []
 const running = shallowRef<Kernel>()
 let starting: Promise<StartReport> | undefined
 let disconnect: (() => void) | undefined
+let stopClock: (() => void) | undefined
 const failures = shallowRef<PluginReport[]>([])
 let resumeHost: (() => Promise<StartReport>) | undefined
 let hostActive = true
@@ -66,6 +69,8 @@ export async function stopHost(): Promise<void> {
   starting = undefined
   disconnect?.()
   disconnect = undefined
+  stopClock?.()
+  stopClock = undefined
   await current.catch(() => undefined)
   const kernel = running.value
   running.value = undefined
@@ -123,7 +128,13 @@ export function startHost(options: HostStart): Promise<StartReport> {
       kernel.provide(SYNC_TRANSPORTS, options.transports)
       kernel.provide(NAVIGATION, options.navigation)
       kernel.provide(TOOLBAR, toolbar)
-      kernel.provide(OPERATIONS, createOperations())
+      const operations = createOperations()
+      connectActions(operations)
+      kernel.provide(OPERATIONS, operations)
+      stopClock?.()
+      const stepClock = createStepClock(options.navigation)
+      stopClock = stepClock.stop
+      kernel.provide(STEP_CLOCK, stepClock.clock)
       kernel.provide(STATUS, status)
       status.register({
         id: 'presmium.runtime',

@@ -11,6 +11,11 @@ export function findComponentRenderer(node: ComponentNode, extensions: readonly 
   return owner?.components?.[node.name]
 }
 
+/** What a renderer gives the component: its props, and the node's `durations` as the prop `durations`, kept once in the IR. */
+export function componentProps(node: ComponentNode): Record<string, unknown> {
+  return node.durations ? { ...node.props, durations: node.durations } : node.props
+}
+
 /** Whether a renderer extension renders the component (`findComponentRenderer` finds one). */
 export function hasRendererExtension(node: ComponentNode, extensions: readonly BoundRendererExtension[]): boolean {
   return findComponentRenderer(node, extensions) !== undefined
