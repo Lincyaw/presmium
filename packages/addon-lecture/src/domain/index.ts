@@ -21,6 +21,7 @@ export type { StepStop, TextPiece, TimedEvent, TrackChapter } from './timing.ts'
 export {
   audioSegments,
   CLIP_FILE,
+  defaultTrack,
   CLIPS_DIR,
   eventLine,
   formatTrack,

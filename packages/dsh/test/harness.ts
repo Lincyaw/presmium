@@ -93,12 +93,12 @@ export function git(dir: string, args: string[]): string {
   return execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', ...args], { cwd: dir, encoding: 'utf8' })
 }
 
-export function workspace(prefix: string, files: Record<string, string>, link: Record<string, string> = {}): Workspace {
+export function workspace(prefix: string, files: Record<string, string | Uint8Array>, link: Record<string, string> = {}): Workspace {
   mkdirSync(WORK, { recursive: true })
   const dir = mkdtempSync(join(WORK, `dsh-${prefix}-`))
-  for (const [file, text] of Object.entries(files)) {
+  for (const [file, content] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, file)), { recursive: true })
-    writeFileSync(join(dir, file), text)
+    writeFileSync(join(dir, file), content)
   }
   writeFileSync(join(dir, '.gitignore'), 'node_modules/\ndist/\n.presmium/\n')
   // A fixture's own manifest (with its settings, such as its previews being restartable) is kept.
@@ -135,7 +135,7 @@ export interface TestHome {
   acp(cwd: string, options?: { env?: Record<string, string | undefined> }): Promise<{ stderr: string, initialized: unknown }>
   web(cwd: string, port: number, options: { model?: FakeModel, env?: Record<string, string | undefined>, patches?: string[] }): Promise<Web>
   homeEntries(): string[]
-  workspace(prefix: string, files: Record<string, string>, link?: Record<string, string>): Workspace
+  workspace(prefix: string, files: Record<string, string | Uint8Array>, link?: Record<string, string>): Workspace
   close(): Promise<void>
 }
 

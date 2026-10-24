@@ -1,11 +1,11 @@
 import { createSharedStates, installHost, OPERATIONS, presmiumService } from '@lincyaw/host'
 import { previewAppearance } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
-import { createViewer, installViewer, OverlayViewOutlet, PageViewOutlet, registerComponent, syncViewerWithOperations } from '@lincyaw/viewer'
+import { createViewer, findView, installViewer, OverlayViewOutlet, PageViewOutlet, registerComponent, syncViewerWithOperations } from '@lincyaw/viewer'
 import type { Position } from '@lincyaw/viewer/domain'
 import { packages } from 'virtual:presmium-app/registry'
 import { computed, createApp, defineComponent, h, nextTick, ref, shallowRef, watch } from 'vue'
-import { webPages } from '../domain/index.ts'
+import { parsePositionQuery, webPages, withPositionQuery } from '../domain/index.ts'
 import { createWebHostAdapter } from '../client/host.ts'
 import { webPreview } from '../client/preview-frame.ts'
 import { clientOnly, createRuntimeLifecycle } from '../client/runtime.ts'
@@ -108,7 +108,10 @@ async function boot(): Promise<void> {
       if (force) throw error
     }
   }
-  const lifecycle = createRuntimeLifecycle({ modules: { plugins, viewers, restartable }, doc, viewer, shared, original, active, server: { document: config.document }, refresh })
+  let viewersReady: Promise<unknown> = Promise.resolve()
+  const lifecycle = createRuntimeLifecycle({ modules: { plugins, viewers, restartable }, doc, viewer, shared, original, active, server: { document: config.document }, refresh, onViewers: (ready) => {
+    viewersReady = ready
+  } })
 
   // A link to a section of another page turns to it.
   window.addEventListener('hashchange', () => {
@@ -144,6 +147,19 @@ async function boot(): Promise<void> {
   events.addEventListener('reload', () => location.reload())
   events.addEventListener('open', () => void (lifecycle.isRequested() && refresh()))
   if (lifecycle.isRequested()) await lifecycle.setActive(true).catch(error => console.error('[presmium] the document runtime did not start', error))
+
+  // The place and the view the address asks for (`?view=present&section=…`), as on the site; while an overlay view is
+  // shown its place stays in the address, so that a reload comes back to it.
+  const asked = parsePositionQuery(location.search, doc)
+  if (asked.section) viewer.show({ section: asked.section, step: asked.step ?? 0 })
+  if (asked.view) {
+    await viewersReady
+    if (findView(asked.view)) viewer.setView(asked.view)
+  }
+  watch([viewer.view, viewer.position], ([view, position]) => {
+    const search = withPositionQuery(location.search, findView(view)?.kind === 'overlay' ? { view, ...position } : undefined)
+    if (search !== location.search) history.replaceState(history.state, '', location.pathname + search + location.hash)
+  }, { immediate: true })
 }
 
 void boot().catch((error: unknown) => {

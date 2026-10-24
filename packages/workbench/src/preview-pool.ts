@@ -1,6 +1,7 @@
 import type { Finding, PreviewRenderer, PreviewReport } from '@lincyaw/kernel'
 import { connectPreview } from './preview.ts'
 import type { PreviewConnection } from './preview.ts'
+import { isVideo } from './workbench.ts'
 import type { Workbench } from './workbench.ts'
 
 // Retain loaded modules, not running documents. Unsupported previews are removed.
@@ -15,6 +16,8 @@ const PRELOAD_MAX_MS = 30_000
 export interface PreviewTarget {
   document: string
   renderer: PreviewRenderer
+  /** The web form's lecture (the video view), a page of its own. */
+  lecture?: boolean
   address?: string
   title: string
   reload: number
@@ -57,9 +60,10 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
   let uses = 0
   let disposed = false
   let preloading: HTMLIFrameElement | undefined
-  const keyOf = (target: PreviewTarget) => JSON.stringify([target.document, target.renderer])
+  const keyOf = (target: PreviewTarget) => JSON.stringify([target.document, target.renderer, target.lecture === true])
   const selected = (entry: Entry) => !disposed && desired !== undefined && keyOf(desired) === entry.key
     && workbench.state.document === entry.target.document && workbench.state.previewRenderer === entry.target.renderer
+    && (entry.target.lecture === true) === isVideo(workbench.state)
 
   const publishRuntimeFindings = (entry: Entry, clear = false) => {
     if (!entry.irRevision) return
@@ -102,10 +106,10 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     entry.frame.className = 'pmw-preview__frame'
     entry.frame.dataset.active = 'true'
     entry.frame.tabIndex = 0
-    entry.detach ??= workbench.attachPreview(entry.connection)
+    entry.detach ??= workbench.attachPreview(entry.connection, { lecture: entry.target.lecture === true })
     if (irRevision !== undefined) entry.irRevision = irRevision
     onStatus({ ready: true })
-    workbench.handlePreviewReport(entry.target.document, entry.target.renderer, { type: 'updated', revision: entry.irRevision })
+    workbench.handlePreviewReport(entry.target.document, entry.target.renderer, { type: 'updated', revision: entry.irRevision }, entry.target.lecture === true)
     publishRuntimeFindings(entry)
   }
   /** Asks the page to run (`active`) or to pause its runtime; settles with its `activity` report. */
@@ -171,7 +175,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     if (!selected(entry)) enqueue(() => pause(entry))
     else if (!entry.pending && entry.active) {
       show(entry, report.revision)
-      workbench.handlePreviewReport(target.document, target.renderer, report)
+      workbench.handlePreviewReport(target.document, target.renderer, report, target.lecture === true)
     } else if (!entry.pending) {
       enqueue(async () => {
         if (!selected(entry)) return
@@ -191,7 +195,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
       else entry.problems.set(key, { checkId: report.plugin ?? 'presmium.runtime', severity: report.level, message: report.message })
     }
     if (entry.active && (report.type === 'updated' || report.type === 'report')) publishRuntimeFindings(entry)
-    if (entry.active && selected(entry)) workbench.handlePreviewReport(entry.target.document, entry.target.renderer, report)
+    if (entry.active && selected(entry)) workbench.handlePreviewReport(entry.target.document, entry.target.renderer, report, entry.target.lecture === true)
   }
 
   const create = (target: PreviewTarget & { address: string }): Entry => {
@@ -199,6 +203,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     frame.title = target.title
     frame.dataset.document = target.document
     frame.dataset.renderer = target.renderer
+    if (target.lecture) frame.dataset.lecture = ''
     frame.dataset.previewCache = ''
     const key = keyOf(target)
     const connection = connectPreview(() => frame, target.address, {

@@ -4,7 +4,7 @@ import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { build, Compiler, playwrightChromium, serveDirectory } from '@lincyaw/compiler'
 import { ABSOLUTE_URL, aigcLabel, aigcString, errorMessage } from '@lincyaw/kernel'
-import { audioSegments, clockText, parseTrack, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
+import { audioSegments, clockText, defaultTrack, parseTrack, trackDuration } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 
 export interface ExportOptions {
@@ -178,7 +178,7 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
     if (!web || !lectures) throw new Error('the web form or the lectures were not built')
     const index = JSON.parse(readFileSync(join(lectures.outDir, 'index.json'), 'utf8')) as { id: string, captions?: string[] }[]
     const ids = index.map(entry => entry.id)
-    const id = options.track ?? (ids.includes(SCRIPT_TRACK) ? SCRIPT_TRACK : ids.length === 1 ? ids[0] : undefined)
+    const id = options.track ?? defaultTrack(ids)
     if (!id || !ids.includes(id)) throw new Error(ids.length ? `name the lecture with --track: ${ids.join(', ')}` : 'the deck has no lecture: record one, or name a voice (renderers.lecture.voice)')
     const track = parseTrack(JSON.parse(readFileSync(join(lectures.outDir, id, 'track.json'), 'utf8'))).track!
     const file = resolve(options.out ?? join(deckDir, 'dist', `${id}.webm`))

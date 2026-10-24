@@ -60,14 +60,23 @@ export function ExportPanel({ onClose }: { onClose(): void }) {
               {jobs.map(job => <JobItem key={job.id} job={job} label={label(job.target)} current={job.revision === revision} onPlay={() => setPlaying(job)} />)}
             </ol>
           )}
-      <PmDialog open={playing !== undefined} label={playing ? label(playing.target) : ''} closeLabel={t.close} onClose={() => setPlaying(undefined)}>
-        {playing?.main && (
-          <video className="pmw-export__video" controls autoPlay src={`${playing.url}${playing.main}`} crossOrigin="anonymous">
-            {Object.entries(playing.captions ?? {}).map(([lang, path]) => <track key={lang} kind="subtitles" srcLang={lang} label={lang} src={`${playing.url}${path}`} default={lang === locale} />)}
-          </video>
-        )}
-      </PmDialog>
+      <VideoDialog job={playing} label={playing ? label(playing.target) : ''} onClose={() => setPlaying(undefined)} />
     </section>
+  )
+}
+
+/** A video a job made, played in a dialog with its captions (those in the workbench's language shown). */
+export function VideoDialog({ job, label, onClose }: { job: CompileJob | undefined, label: string, onClose(): void }) {
+  const t = useMessages()
+  const locale = useWorkbenchState(state => state.locale)
+  return (
+    <PmDialog open={job !== undefined} label={label} closeLabel={t.close} onClose={onClose}>
+      {job?.main && (
+        <video className="pmw-export__video" controls autoPlay src={`${job.url}${job.main}`} crossOrigin="anonymous">
+          {Object.entries(job.captions ?? {}).map(([lang, path]) => <track key={lang} kind="subtitles" srcLang={lang} label={lang} src={`${job.url}${path}`} default={lang === locale} />)}
+        </video>
+      )}
+    </PmDialog>
   )
 }
 

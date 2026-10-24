@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useMessages, useServer } from '@lincyaw/host'
+import { isPreviewEmbedded } from '@lincyaw/kernel'
 import { onMounted, ref } from 'vue'
-import { clockText, LECTURE_ID, LECTURE_MESSAGES } from '../domain/index.ts'
+import { clockText, defaultTrack, LECTURE_ID, LECTURE_MESSAGES } from '../domain/index.ts'
 import type { LectureSummary } from './source.ts'
 import { lectureSource } from './source.ts'
 import { play, playing, useViewer } from './state.ts'
@@ -26,7 +27,11 @@ onMounted(async () => {
     lectures.value = await lectureSource(server, viewer.doc.value.config.presmium[LECTURE_ID]).list()
   } catch {
     failed.value = true
+    return
   }
+  // A workbench's video view plays the lecture its video is made of.
+  const shown = isPreviewEmbedded() ? defaultTrack(lectures.value.map(lecture => lecture.id)) : undefined
+  if (shown) open(shown)
 })
 </script>
 

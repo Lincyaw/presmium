@@ -5,7 +5,7 @@ import type { PreviewFrameStatus } from '../preview-pool.ts'
 import { PmButton, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { PointerPopover } from '../parts/PointerPopover.tsx'
-import { slideAspect } from '../workbench.ts'
+import { isVideo, lectureAddress, slideAspect } from '../workbench.ts'
 
 /** The open document as its readers see it (the web form or the slides), with the tools for what the author points at. */
 export function PreviewPanel({ active = true }: { active?: boolean }) {
@@ -22,7 +22,8 @@ export function PreviewPanel({ active = true }: { active?: boolean }) {
   const pool = useRef<ReturnType<typeof createPreviewPool>>()
   const [loads, setLoads] = useState(0)
   const [{ ready, mismatch, identityFailure }, setStatus] = useState<PreviewFrameStatus>({ ready: false })
-  const address = renderer === 'slides' ? preview?.slides : preview?.web
+  const lecture = useWorkbenchState(isVideo)
+  const address = renderer === 'slides' ? preview?.slides : preview?.web && (lecture ? lectureAddress(preview.web) : preview.web)
   const title = documents?.documents.find(doc => doc.dir === document)?.title ?? document ?? ''
 
   useLayoutEffect(() => {
@@ -37,9 +38,9 @@ export function PreviewPanel({ active = true }: { active?: boolean }) {
   }, [workbench])
   useLayoutEffect(() => {
     pool.current?.select(active && document !== undefined && !failure && !(renderer === 'slides' && preview && !preview.slides)
-      ? { document, renderer, address, title: t.previewTitle(title), reload: loads + reload }
+      ? { document, renderer, ...lecture ? { lecture } : {}, address, title: t.previewTitle(title), reload: loads + reload }
       : undefined)
-  }, [active, document, renderer, address, title, loads, reload, failure, t, workbench])
+  }, [active, document, renderer, lecture, address, title, loads, reload, failure, t, workbench])
 
   return (
     <section className="pmw-preview" aria-label={t.preview} data-ready={(active && document !== undefined && ready) || undefined}>
@@ -49,7 +50,7 @@ export function PreviewPanel({ active = true }: { active?: boolean }) {
       {!ready && !failure && !(renderer === 'slides' && preview && !preview.slides) && <p className="pmw-muted pmw-preview__loading">{t.previewLoading}</p>}
       {renderer === 'slides' && preview && !preview.slides && <p className="pmw-muted pmw-preview__loading">{t.noSlides}</p>}
       <div className="pmw-preview__stage">
-        <div ref={container} className="pmw-preview__frames" data-renderer={renderer} style={aspect === undefined ? undefined : { '--pmw-slide-aspect': aspect } as CSSProperties} />
+        <div ref={container} className="pmw-preview__frames" data-renderer={renderer} data-lecture={lecture || undefined} style={aspect === undefined ? undefined : { '--pmw-slide-aspect': aspect } as CSSProperties} />
         {ready && <PointerPopover />}
       </div>
     </section>

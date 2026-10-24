@@ -36,6 +36,11 @@ export const CLIPS_DIR = 'clips'
 
 export const SCRIPT_TRACK = 'script'
 
+/** The lecture a video is made of when none is named: the narrated script, else the only recorded one. */
+export function defaultTrack(ids: readonly string[]): string | undefined {
+  return ids.includes(SCRIPT_TRACK) ? SCRIPT_TRACK : ids.length === 1 ? ids[0] : undefined
+}
+
 export interface MediaSegment {
   section: string
   start: number

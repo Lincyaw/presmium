@@ -73,3 +73,32 @@ test('a job started elsewhere (as the AI\'s build) shows in the pane as it runs,
   await expect(video).toHaveAttribute('data-state', 'cancelled', { timeout: 60_000 })
   await expect(page.locator('button[data-aside="export"]')).not.toContainText('1')
 })
+
+test('the Video view plays the lecture its video is made of, beside the document, and makes the video file', async ({ page }) => {
+  await studio.open(page)
+  await page.locator('.pmw-home__card').filter({ hasText: '冒泡排序' }).locator('.pmw-home__open').click()
+  await expect(page.locator('.pmw-preview[data-ready="true"]')).toBeVisible({ timeout: 90_000 })
+  await page.getByRole('group', { name: '视图' }).getByRole('button', { name: '视频', exact: true }).click()
+  // A preview page of its own, the lecture's: the narrated presentation with its player.
+  const video = page.frameLocator('.pmw-preview__frame[data-lecture]')
+  await expect(video.locator('.pm-lecture-player')).toBeVisible({ timeout: 60_000 })
+  await expect(video.locator('.pm-present')).toBeVisible()
+  await video.locator('.pm-lecture-player__play').click()
+  await expect(video.locator('.pm-lecture-player')).toHaveAttribute('data-state', 'playing')
+  await expect.poll(async () => Number(await video.locator('.pm-lecture-player').getAttribute('data-time')), { timeout: 20_000 }).toBeGreaterThan(500)
+
+  // Back to the document: its page, as it was; the video's page is paused.
+  await page.getByRole('group', { name: '视图' }).getByRole('button', { name: '文档', exact: true }).click()
+  await expect(page.locator('.pmw-preview__frame:not([data-lecture])')).toBeVisible()
+  await expect(page.frameLocator('.pmw-preview__frame:not([data-lecture])').locator('.pm-sheet .pm-section').first()).toBeVisible()
+  await page.getByRole('group', { name: '视图' }).getByRole('button', { name: '放映', exact: true }).click()
+  await expect(page.frameLocator('.pmw-preview__frame:not([data-lecture])').locator('.pm-present')).toBeVisible()
+  await expect(page.frameLocator('.pmw-preview__frame:not([data-lecture])').locator('.pm-lecture-player')).toHaveCount(0)
+
+  await page.getByRole('group', { name: '视图' }).getByRole('button', { name: '视频', exact: true }).click()
+  const bar = page.getByRole('group', { name: '视频文件' })
+  await bar.getByRole('button', { name: '生成视频文件' }).click()
+  await expect(bar).toContainText(/排队中|正在生成|构建|录制画面/)
+  await bar.getByRole('button', { name: '取消' }).click()
+  await expect(bar.getByRole('button', { name: '生成视频文件' })).toBeVisible({ timeout: 60_000 })
+})

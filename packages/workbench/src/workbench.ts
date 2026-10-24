@@ -18,7 +18,11 @@ import type { WorkspaceClient } from './workspace-client.ts'
 export type WorkbenchMode = 'editing' | 'viewing'
 
 /** The view of the web form: the document as a page, or its presentation, slide by slide (the IR runtime's own). */
-export type WebView = 'document' | 'present'
+/**
+ * How the web form is shown: as a page, as its presentation (both in one preview page, switched in place), or as the
+ * video its lecture makes (the presentation narrated, in a preview page of its own, `?view=lecture`).
+ */
+export type WebView = 'document' | 'present' | 'video'
 
 /** What the author points at in the document: a block (or a section), or a passage selected in it. */
 export interface Pointer {
@@ -119,6 +123,9 @@ export interface WorkbenchStore {
   set(patch: Partial<WorkbenchState>): void
 }
 
+// The export of the lecture as a video (`@lincyaw/slidev-addon-lecture`).
+export const VIDEO_TARGET = 'video'
+
 /** The workspace's own routes: source paths are relative to the workspace root. */
 const WORKSPACE_SCOPE = ''
 
@@ -170,6 +177,23 @@ const DOCUMENT_RESET = {
   jobs: undefined, jobsFailure: undefined,
 } satisfies Partial<WorkbenchState>
 
+/** Whether the video is shown: the web form's lecture, in a preview page of its own. */
+export function isVideo(state: Pick<WorkbenchState, 'previewRenderer' | 'webView'>): boolean {
+  return state.previewRenderer === 'web' && state.webView === 'video'
+}
+
+/** Whether the document can be made into a video (a plugin exports it). */
+export function hasVideo(state: Pick<WorkbenchState, 'jobs'>): boolean {
+  return state.jobs?.targets.some(target => target.id === VIDEO_TARGET) === true
+}
+
+/** The address of the web form's page showing the lecture its video is made of. */
+export function lectureAddress(web: string): string {
+  const url = new URL(web)
+  url.searchParams.set('view', 'lecture')
+  return url.href
+}
+
 /** A free directory for a new document called `title`, beside most of the existing ones. */
 export function documentDirFor(title: string, taken: readonly string[]): string {
   const parents = new Map<string, number>()
@@ -206,6 +230,8 @@ export class Workbench {
   readonly #diagnostics: DocumentDiagnostics
   readonly #history: DocumentHistory
   readonly #jobs: DocumentJobs
+  // The page or the presentation is to be told its view when it is shown again (after the video's page).
+  #viewPending = false
   readonly #comments = new CommentStore()
   readonly #askers = new Set<(request: AgentRequest) => Promise<AgentAnswer | void>>()
   readonly #previewSinks = new Set<PreviewSink>()
@@ -381,6 +407,7 @@ export class Workbench {
     if (this.#state.document === dir) return
     this.#stopSubscriptions()
     this.#history.subscribeReview(dir)
+    this.#viewPending = false
     this.#set({ ...DOCUMENT_RESET, document: dir, previewRenderer: 'web', webView: 'document' })
     this.#record('document.open')
     try {
@@ -505,16 +532,21 @@ export class Workbench {
    * at the place the author is; from the slides, the web form is shown first.
    */
   setWebView(view: WebView): void {
-    if (view === this.#state.webView && this.#state.previewRenderer === 'web') return
+    const before = this.#state.webView
+    if (view === before && this.#state.previewRenderer === 'web') return
     this.#set({ webView: view })
     this.#record('view.set', { 'presmium.preview.view': view })
     if (this.#state.previewRenderer !== 'web') this.setPreviewRenderer('web')
+    // The video has a preview page of its own: the page or the presentation is told its view once it is shown again.
+    else if (before === 'video' || view === 'video') this.#viewPending = view !== 'video'
     else this.#showWebView()
   }
 
-  #showWebView(): void {
+  #showWebView(sinks: Iterable<PreviewSink> = this.#previewSinks): void {
+    if (this.#state.webView === 'video') return
     const section = this.#state.position?.section ?? this.#state.ir?.doc.sections[0]?.id
-    if (section !== undefined) this.#broadcast({ type: 'go', section, view: this.#state.webView })
+    if (section === undefined) return
+    for (const sink of sinks) sink.send({ type: 'go', section, view: this.#state.webView })
   }
 
   reloadPreview(): void {
@@ -811,8 +843,13 @@ export class Workbench {
     return this.#timed('changes.record', {}, () => this.#history.recordOutside(this.#messages.outsideChange), done => (done ? 'done' : 'refused'))
   }
 
-  attachPreview(sink: PreviewSink): () => void {
+  /** Attaches the shown preview; `lecture`: it is the video's page. */
+  attachPreview(sink: PreviewSink, { lecture = false } = {}): () => void {
     this.#previewSinks.add(sink)
+    if (!lecture && this.#viewPending) {
+      this.#viewPending = false
+      this.#showWebView([sink])
+    }
     sink.send({ type: 'appearance', dark: this.#state.isDark })
     sink.send({ type: 'pick', on: this.#state.mode === 'editing' })
     const reveal = this.#pendingReveal
@@ -823,15 +860,16 @@ export class Workbench {
     return () => this.#previewSinks.delete(sink)
   }
 
-  handlePreviewReport(document: string, renderer: PreviewRenderer, report: PreviewReport): void {
-    if (document !== this.#state.document || renderer !== this.#state.previewRenderer) return
+  /** A report of the shown preview; `lecture`: from the video's page. */
+  handlePreviewReport(document: string, renderer: PreviewRenderer, report: PreviewReport, lecture = false): void {
+    if (document !== this.#state.document || renderer !== this.#state.previewRenderer || lecture !== isVideo(this.#state)) return
     switch (report.type) {
       case 'ready':
       case 'updated':
         this.#set({ previewIrRevision: report.revision })
         this.#flashChanges()
         if (report.type === 'ready' && renderer === 'web') {
-          if (this.#state.webView !== 'document') this.#showWebView()
+          if (this.#state.webView === 'present') this.#showWebView()
           this.#prefetchSlides(document)
         }
         break
@@ -872,7 +910,7 @@ export class Workbench {
         if (at === this.#lastPosition) break
         this.#lastPosition = at
         this.#set({ position: { section: report.section, step: report.step, trail: report.trail, ...report.view ? { view: report.view } : {} } })
-        if (renderer === 'web' && report.view && (report.view === 'present') !== (this.#state.webView === 'present')) this.#set({ webView: report.view === 'present' ? 'present' : 'document' })
+        if (renderer === 'web' && !lecture && report.view && (report.view === 'present') !== (this.#state.webView === 'present')) this.#set({ webView: report.view === 'present' ? 'present' : 'document' })
         this.#record('preview.position', { 'presmium.section': report.section, 'presmium.step': report.step, 'presmium.preview.view': report.view })
         break
       }

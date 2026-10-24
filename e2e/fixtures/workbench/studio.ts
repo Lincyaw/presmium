@@ -21,13 +21,14 @@ import type { Running, TestHome, Web, Workspace } from '../../../packages/dsh/te
 const FIXTURE = fileURLToPath(new URL('./workspace', import.meta.url))
 
 /** The fixture workspace's files, by path. */
-function fixtureFiles(dir = FIXTURE): Record<string, string> {
-  const files: Record<string, string> = {}
+/** The files of a fixture, as bytes: a copy of an example has binary files (its narration's audio). */
+function fixtureFiles(dir = FIXTURE): Record<string, Uint8Array> {
+  const files: Record<string, Uint8Array> = {}
   for (const name of readdirSync(dir, { recursive: true, encoding: 'utf8' })) {
     // A copy made by an example's try.mjs links the repository's node_modules and has its own repository.
     if (name.split(/[\\/]/).some(part => part === 'node_modules' || part === '.git')) continue
     const path = join(dir, name)
-    if (statSync(path).isFile()) files[relative(dir, path)] = readFileSync(path, 'utf8')
+    if (statSync(path).isFile()) files[relative(dir, path)] = readFileSync(path)
   }
   return files
 }
