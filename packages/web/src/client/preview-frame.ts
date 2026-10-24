@@ -10,6 +10,8 @@ import { createViewerNavigation } from './host.ts'
 export interface WebPreviewOptions {
   origins: string[]
   document: string
+  /** The form the page shows: its pages, or its slides. */
+  renderer?: 'web' | 'slides'
 }
 
 export interface WebPreviewPage {
@@ -43,7 +45,7 @@ function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions
     return found ? [...irBlocks(found.blocks)].find(b => b.id === block)?.at : undefined
   }
   const frame: PreviewFrame | undefined = connectPreviewFrame({
-    renderer: 'web',
+    renderer: options.renderer ?? 'web',
     document: options.document,
     origins: options.origins,
     revision,

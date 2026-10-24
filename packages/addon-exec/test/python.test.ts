@@ -31,42 +31,6 @@ ${body}`)
 
 const FENCE = '```'
 
-it('shows the value of a last expression as Jupyter does: in the IR, the slides and the notebook; a `;` or None shows nothing', async () => {
-  const dir = deck(`
-## 值
-
-${FENCE}{code} python
-:run:
-counts = {'a': 3, 'b': 1}
-counts
-${FENCE}
-
-${FENCE}{code} python
-:run:
-counts = {'a': 3}
-counts;
-${FENCE}
-
-${FENCE}{code} python
-:run:
-print('printed')
-${FENCE}
-`)
-  const built = await presmium(dir, ['build', '--to', 'slides,notebook'])
-  expect(built.code, built.stdout + built.stderr).toBe(0)
-  const doc = JSON.parse(readFileSync(join(dir, 'dist/ir.json'), 'utf8')) as IRDocument
-  const [value, hidden, printed] = doc.sections[0]!.blocks.map(block => (block.node as CodeNode).outputs![0]!)
-  expect(value!.outputs).toEqual([{ output_type: 'execute_result', data: { 'text/plain': '{\'a\': 3, \'b\': 1}' }, metadata: {} }])
-  expect(hidden!.outputs).toEqual([])
-  expect(printed!.outputs).toEqual([{ output_type: 'stream', name: 'stdout', text: 'printed\n' }])
-
-  expect(readFileSync(join(dir, '.presmium/slides/slides.md'), 'utf8')).toContain('```text\n{\'a\': 3, \'b\': 1}\n```')
-  const notebook = JSON.parse(readFileSync(join(dir, 'dist/notebook/lecture.ipynb'), 'utf8')) as { cells: { cell_type: string, outputs?: Record<string, unknown>[] }[] }
-  expect(notebook.cells.find(cell => cell.cell_type === 'code')?.outputs).toEqual([
-    expect.objectContaining({ output_type: 'execute_result', data: { 'text/plain': ['{\'a\': 3, \'b\': 1}'] }, execution_count: 1 }),
-  ])
-}, 180_000)
-
 it('runs again the recordings an older runner made, where python3 runs: the runner\'s digest is part of the key', async () => {
   const dir = deck(`
 ## 旧的录制

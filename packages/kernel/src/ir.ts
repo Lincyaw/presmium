@@ -241,7 +241,6 @@ export interface RenderContext {
   lang?: string
   renderers: RendererId[]
   base: string
-  vitePlugins: unknown[]
   nodeVitePlugins?: NodeVitePlugin[]
   extensionFor(node: ComponentNode): ((node: ComponentNode, block: IRBlock) => unknown) | undefined
   portable(value: unknown, from: string): unknown
@@ -288,7 +287,6 @@ export interface Renderer {
   id: RendererId
   site?: boolean
   support(node: IRNode, extensions: BoundRendererExtension[]): Support
-  prepare?(doc: IRDocument, ctx: RenderContext): Promise<void>
   build(doc: IRDocument, ctx: RenderContext): Promise<RenderOutput>
   dev?(doc: IRDocument, ctx: RenderContext): Promise<RenderDevServer>
   buildSite?(site: SiteSpec, ctx: RenderContext): Promise<RenderOutput>

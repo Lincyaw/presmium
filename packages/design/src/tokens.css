@@ -110,6 +110,9 @@
   --pm-site-reading-width: 48rem;
   --pm-site-wide-width: 72rem;
 
+  /* A slide's text on its canvas (980 wide, scaled as a whole to the screen); its other sizes are relative to it. */
+  --pm-slide-text: 18px;
+
   --pm-z-site-header: 30;
   /* A presentation over the site, under the floating parts of its controls. */
   --pm-z-overlay-view: 130;

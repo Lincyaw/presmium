@@ -1,6 +1,0 @@
-{
-  "name": "presmium-publish-fixture-tall",
-  "private": true,
-  "type": "module",
-  "description": "Its own package, so each copy gets its own Vite cache and copies can run in parallel"
-}

@@ -52,3 +52,20 @@ export function findPackageBin(name: string, command: string, from: string): str
   const file = typeof bin === 'string' ? bin : bin?.[command]
   return file === undefined ? undefined : join(dirname(manifest), file)
 }
+
+/**
+ * Playwright's Chromium (`playwright-chromium`), as the deck installs it, else as `fallbackFrom` (a module's URL or a
+ * `package.json`) finds it.
+ */
+export async function playwrightChromium<T = unknown>(deckDir: string, fallbackFrom?: string): Promise<T> {
+  for (const from of [join(deckDir, 'package.json'), ...fallbackFrom ? [fallbackFrom] : []]) {
+    let entry: string
+    try {
+      entry = createRequire(from).resolve('playwright-chromium')
+    } catch {
+      continue
+    }
+    return (await import(pathToFileURL(entry).href) as { chromium: T }).chromium
+  }
+  throw new Error('this needs playwright-chromium: install it in the deck (and its browser with pnpm exec playwright install chromium)')
+}

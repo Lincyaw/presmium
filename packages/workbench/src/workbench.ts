@@ -1,4 +1,4 @@
-import { errorMessage, irBlocks, stepKeys, trailStep } from '@lincyaw/kernel'
+import { errorMessage, irBlocks, slideShape, stepKeys, trailStep } from '@lincyaw/kernel'
 import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, JobsAnswer, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPin, PreviewPoint, PreviewPosition, PreviewRect, PreviewRenderer, PreviewReport, ReviewChange, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
 import { CommentStore, newComment } from './comments.ts'
 import type { DocumentComment } from './comments.ts'
@@ -148,16 +148,14 @@ export function hasSlides(ir: IrAnswer | undefined): boolean {
   return !renderers || Object.keys(renderers).length === 0 || 'slides' in renderers
 }
 
-/** The width of the document's slides over their height: Slidev's `aspectRatio` (`16/9`, `4:3` or a number), 16:9 by default. */
+/** The width of the document's slides over their height (`renderers.slides.aspectRatio`), 16:9 by default. */
 export function slideAspect(ir: IrAnswer | undefined): number {
-  const given = ir?.doc.config.renderers?.slides?.aspectRatio
-  const [width, height] = typeof given === 'number' ? [given, 1] : typeof given === 'string' ? given.split(/[/:]/).map(Number) : []
-  const aspect = height === undefined ? width : (width ?? Number.NaN) / height
-  return aspect !== undefined && Number.isFinite(aspect) && aspect > 0 ? aspect : 16 / 9
+  if (!ir) return 16 / 9
+  const { width, height } = slideShape(ir.doc)
+  return width / height
 }
 
 // How long the author stays on a document's web form before its slides are started ahead of a switch.
-const PREFETCH_DELAY_MS = 1500
 // The document opened last, prepared when the workbench starts on the documents; at the latest this long after.
 const RECENT_KEY = 'presmium.workbench.recent'
 const PREWARM_IDLE_MS = 2000
@@ -248,9 +246,7 @@ export class Workbench {
   #lastPosition?: string
   /** The forms asked for ahead of the author (`web:<dir>`, `slides:<dir>`), and the wait before asking for the slides. */
   readonly #prefetched = new Set<string>()
-  #prefetchTimer?: ReturnType<typeof setTimeout>
   #prewarmed = false
-  readonly #preloaders = new Set<(address: string) => void>()
   /** What the author does, for the operator's collector when the host has one. */
   readonly telemetry: OperationLog
 
@@ -519,11 +515,6 @@ export class Workbench {
     this.#set({ previewRenderer: renderer, preview: undefined, previewFailure: undefined, previewIrRevision: undefined, pointer: undefined })
     this.#record('view.set')
     const document = this.#state.document
-    if (renderer === 'slides' && document !== undefined) {
-      // Asked for now: no need to start them ahead.
-      clearTimeout(this.#prefetchTimer)
-      this.#prefetched.add(`slides:${document}`)
-    }
     if (document !== undefined) void this.#readPreview(document)
   }
 
@@ -868,10 +859,7 @@ export class Workbench {
       case 'updated':
         this.#set({ previewIrRevision: report.revision })
         this.#flashChanges()
-        if (report.type === 'ready' && renderer === 'web') {
-          if (this.#state.webView === 'present') this.#showWebView()
-          this.#prefetchSlides(document)
-        }
+        if (report.type === 'ready' && renderer === 'web' && this.#state.webView === 'present') this.#showWebView()
         break
       case 'picked': {
         if (this.#state.editing || this.#state.mode !== 'editing') break
@@ -956,31 +944,6 @@ export class Workbench {
     void this.client.prefetchPreview(dir, 'web').catch(() => this.#prefetched.delete(`web:${dir}`))
   }
 
-  /**
-   * Once the author stays on the document's web form, asks the service to start its slides, so that switching to them
-   * does not wait for Slidev; the service starts them only when the machine has room.
-   */
-  #prefetchSlides(dir: string): void {
-    if (this.#prefetched.has(`slides:${dir}`) || this.#state.preview?.slides === undefined) return
-    clearTimeout(this.#prefetchTimer)
-    this.#prefetchTimer = setTimeout(() => {
-      if (this.#state.document !== dir || this.#state.previewRenderer !== 'web') return
-      this.#prefetched.add(`slides:${dir}`)
-      void this.client.prefetchPreview(dir, 'slides').then((answer) => {
-        // Slidev runs: its page is loaded once out of sight, so that the switch finds it in the browser's caches.
-        if (answer.prepared && answer.slides && this.#state.document === dir && this.#state.previewRenderer === 'web') {
-          for (const preload of this.#preloaders) preload(answer.slides)
-        }
-      }, () => this.#prefetched.delete(`slides:${dir}`))
-    }, PREFETCH_DELAY_MS)
-  }
-
-  /** Lets a preview panel load a page out of sight ahead of a switch to it. */
-  attachPreloader(preload: (address: string) => void): () => void {
-    this.#preloaders.add(preload)
-    return () => this.#preloaders.delete(preload)
-  }
-
   #broadcast(command: PreviewCommand): void {
     for (const sink of this.#previewSinks) sink.send(command)
   }
@@ -997,7 +960,6 @@ export class Workbench {
   }
 
   dispose(): void {
-    clearTimeout(this.#prefetchTimer)
     this.telemetry.stop()
     this.#stopSubscriptions()
     this.#diagnostics.dispose()

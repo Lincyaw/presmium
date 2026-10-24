@@ -4,7 +4,6 @@
 '@lincyaw/dsh': patch
 '@lincyaw/web': patch
 '@lincyaw/kernel': patch
-'@lincyaw/addon-core': patch
 ---
 
 The studio reads like an editor, and its styles take every value from the design tokens.

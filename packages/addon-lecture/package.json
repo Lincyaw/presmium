@@ -11,8 +11,6 @@
   "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/addon-lecture#readme",
   "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": [
-    "slidev-addon",
-    "slidev",
     "presmium"
   ],
   "type": "module",
@@ -34,7 +32,6 @@
     "bin",
     "src"
   ],
-  "slidev": {},
   "dependencies": {
     "@noble/hashes": "2.4.0",
     "jiti": "^2.7.0",

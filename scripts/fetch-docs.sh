@@ -20,7 +20,6 @@ fetch_paths() { # repo tag name pattern... (docs kept in several places; repo la
   (cd "$tmp/$name" && find . -path ./.git -prune -o -name '*.md' ! -name '*.zh.md' -print | cpio -pdm "$dest/$name" 2>/dev/null)
 }
 
-fetch slidevjs/slidev v53.0.0 docs slidev
 fetch_paths deepseek-ai/deepseek-harness dsh-v0.2.1-alpha.4 dsh \
   '/README.md' '/SAFETY.md' '/CONTRIBUTING.md' '/docs/' '!/docs/persistence-changes/' '!/docs/postmortem/' \
   '/apps/cli/*.md' '/apps/cli/reference/' '/packages/*/README.md' '/packages/*/*/README.md' \

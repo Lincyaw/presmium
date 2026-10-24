@@ -5,7 +5,7 @@ import { findView, syncViewerWithOperations } from '@lincyaw/viewer'
 import type { LiveUpdate } from '@lincyaw/viewer/domain'
 import { packages } from 'virtual:presmium-app/registry'
 import { computed, ref, shallowRef, watch } from 'vue'
-import { APP_CONFIG_ELEMENT, parsePositionQuery, UPDATE_EVENT, withPositionQuery } from '../domain/index.ts'
+import { APP_CONFIG_ELEMENT, parsePositionQuery, parsePrintQuery, UPDATE_EVENT, withPositionQuery } from '../domain/index.ts'
 import type { AppConfig, DevUpdateEvent } from '../domain/index.ts'
 import { webPreview } from '../client/preview-frame.ts'
 import { createRuntimeLifecycle } from '../client/runtime.ts'
@@ -107,11 +107,13 @@ async function bootDocument(): Promise<void> {
   const plugins = [...own.flatMap(([, pkg]) => pkg.plugins), ...bundle.plugins ?? []]
   const restartable = own.every(([, pkg]) => pkg.restartable) && bundle.restartable !== false
 
-  const preview = webPreview({ origins: config.origins, document: config.document })
+  const preview = webPreview({ origins: config.origins, document: config.document, renderer: config.form ?? 'web' })
   document.documentElement.classList.toggle(IN_WORKBENCH, preview.embedded)
   const dark = ref(config.rendered ? false : isDark())
   watch(dark, on => document.documentElement.classList.toggle('dark', on))
-  const { app, viewer, router, shared, active } = createPageApp({ config, doc, components, embedded: preview.embedded, ssr: config.rendered === true, dark })
+  // A slides page asked to print its slides: an export.
+  const print = config.form === 'slides' ? parsePrintQuery(location.search) : undefined
+  const { app, viewer, router, shared, active } = createPageApp({ config, doc, components, embedded: preview.embedded, ssr: config.rendered === true, dark, print })
   active.value = preview.active
   const original = shallowRef(doc)
   const refresh = async (force = false) => {

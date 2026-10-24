@@ -8,6 +8,8 @@ import { findView } from './registry.ts'
 
 export interface ViewerOptions {
   renderer?: string
+  /** The page shows only the slides (the slides form): its presentation has no page to go back to. */
+  slidesOnly?: boolean
   sectionHref?(id: string): string
   sectionHeading?(section: IRSection, step: number): VNodeChild
   diagnostics?: boolean
@@ -94,7 +96,8 @@ export function createViewer(initial: IRDocument, options: ViewerOptions = {}): 
     },
     setView(id) {
       const target = findView(id)
-      if (!target || id === view.value) return
+      // The slides alone have no page to show.
+      if (!target || id === view.value || (options.slidesOnly && target.kind === 'page')) return
       view.value = id
       if (target.kind === 'page') pageView.value = id
       restoring.value = true

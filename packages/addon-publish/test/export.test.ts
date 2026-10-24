@@ -33,15 +33,6 @@ it('reports the links that the PDF lost, located in the deck source', async () =
   expect(stdout).toContain('1 of 3 links kept')
 }, 180_000)
 
-it('exports PNG images, one per click step, the slide of a component in its static form included', async () => {
-  const dir = copyFixture('export')
-  const { code, stdout, stderr } = await bin('presmium-export', dir, '--format', 'png', '--with-clicks', '--output', 'pages', '--json')
-  expect(code, stderr).toBe(0)
-  expect(JSON.parse(stdout)).toMatchObject({ format: 'png', pages: 5, links: [] })
-  expect(readdirSync(join(dir, 'pages')).sort()).toEqual(['001-01.png', '002-01.png', '002-02.png', '003-01.png', '004-01.png'])
-  expect(readFileSync(join(dir, '.presmium/slides/slides.md'), 'utf8')).toMatch(/<a href="\/[0-9a-f]{8}-notes\.txt" target="_blank" rel="noopener">the notes<\/a>/)
-}, 180_000)
-
 async function exported(dir: string, ...args: string[]): Promise<Awaited<ReturnType<typeof bin>>> {
   const first = await bin('presmium-export', dir, ...args)
   return first.code === 2 && /Timeout|before the page showed/.test(first.stderr) ? bin('presmium-export', dir, ...args) : first
@@ -55,31 +46,6 @@ it('exports only the slides of a range', async () => {
   expect((await pdfLinks(join(dir, 'part.pdf'))).length).toBe(3)
 }, 180_000)
 
-it('fails, rather than pass for the slides, when slidev export captures the print page before it shows them; --wait lets the page settle', async () => {
-  const dir = copyFixture('late')
-  const early = await bin('presmium-export', dir, '--format', 'png', '--with-clicks', '--output', 'pages', '--json')
-  expect(early.code, early.stderr).toBe(2)
-  expect(early.stdout).toBe('')
-  expect(early.stderr).toContain('presmium-export: slidev export wrote 0 images, none of slide 1, 2 of the 2 slides exported: it captured the print page before the page showed every slide')
-  expect(early.stderr).toContain('let the page settle longer than 1000 ms with --wait <ms>')
-
-  const settled = await bin('presmium-export', dir, '--format', 'png', '--with-clicks', '--output', 'pages', '--wait', '20000', '--json')
-  expect(settled.code, settled.stderr).toBe(0)
-  expect(JSON.parse(settled.stdout)).toMatchObject({ format: 'png', pages: 3 })
-  expect(readdirSync(join(dir, 'pages')).sort()).toEqual(['001-01.png', '002-01.png', '002-02.png'])
-}, 180_000)
-
-it('fails when the PDF does not have the pages of the range, rather than pass for them with other pages', async () => {
-  const dir = copyFixture('late')
-  const exportRange = () => bin('presmium-export', dir, '--with-clicks', '--range', '2', '--output', 'part.pdf', '--json')
-  let result = await exportRange()
-  if (/Timeout/.test(result.stderr) && !result.stderr.includes('cannot be cut to the range')) result = await exportRange()
-  const { code, stdout, stderr } = result
-  expect(code, stderr).toBe(2)
-  expect(stdout).toBe('')
-  expect(stderr).toContain('presmium-export: the PDF has 1 pages where the range has 2 (3 for the whole deck); it cannot be cut to the range')
-}, 180_000)
-
 async function pdfText(file: string): Promise<string[]> {
   const pdf = await getDocument({ data: new Uint8Array(readFileSync(file)) }).promise
   const pages: string[] = []
@@ -89,22 +55,3 @@ async function pdfText(file: string): Promise<string[]> {
   }
   return pages
 }
-
-it('exports a page per slide: code that runs live is static code with its recorded output, once; a slide taller than its page is cut, not the others shrunk, and a run panel\'s keeps its output; a range exports its slides only', async () => {
-  const dir = copyFixture('tall')
-  const whole = await exported(dir, '--output', 'tall.pdf', '--json')
-  expect(whole.code, whole.stderr).toBe(0)
-  expect(JSON.parse(whole.stdout)).toMatchObject({ pages: 5 })
-  expect(readFileSync(join(dir, '.presmium/slides/slides.md'), 'utf8')).not.toContain('{monaco-run}')
-  const [tall, overflow, one, two, panel] = await pdfText(join(dir, 'tall.pdf'))
-  expect(tall!.match(/TALL-OUTPUT 42/g)).toHaveLength(1)
-  expect(tall).not.toContain('Click the play button')
-  expect(overflow).toContain('A block much taller than the slide.')
-  expect(one).toBe('After one')
-  expect(two).toBe('After two')
-  expect(panel).toContain('PANEL-OUTPUT 42')
-
-  const part = await exported(dir, '--range', '3-4', '--output', 'part.pdf', '--json')
-  expect(part.code, part.stderr).toBe(0)
-  expect(await pdfText(join(dir, 'part.pdf'))).toEqual(['After one', 'After two'])
-}, 240_000)

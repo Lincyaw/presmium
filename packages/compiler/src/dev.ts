@@ -6,7 +6,7 @@ import { errorMessage } from '@lincyaw/kernel'
 import type { Finding, RenderContext, RenderDevServer } from '@lincyaw/kernel'
 import type { Compilation, Compiler } from './compiler.ts'
 import { gitReadFiles } from './inputs.ts'
-import { nodeVitePlugins, planRenderRun, renderContext, renderFinding, selectRenderers, translationsFor, vitePluginsFor, WEB, writeIR } from './renderers.ts'
+import { nodeVitePlugins, planRenderRun, renderContext, renderFinding, selectRenderers, translationsFor, WEB, writeIR } from './renderers.ts'
 import type { InstalledRenderer, RenderRun } from './renderers.ts'
 import { viewFor } from './views.ts'
 
@@ -158,7 +158,6 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
       reported.push(renderFinding(compilation, 'warning', 'the plugins or renderers in the headmatter changed; restart presmium dev to load them in the dev servers'))
     }
     for (const { renderer, server, ctx } of servers) {
-      ctx.vitePlugins = vitePluginsFor(compilation, finding => reported.push(finding))
       ctx.nodeVitePlugins = nodeVitePlugins(compilation)
       await server.update(viewFor(compilation.doc, renderer)).catch((error: unknown) => {
         reported.push(renderFinding(compilation, 'error', `renderer ${renderer} failed to update: ${errorMessage(error)}`))

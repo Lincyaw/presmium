@@ -8,7 +8,7 @@ import { diffReport, pageStatus, pairPages, parsePageFile, parseWebFile, reportM
 import type { DiffSide, PageRef, VisualDiff, VisualDiffReport } from '../domain/index.ts'
 import { hasForm } from './deck.ts'
 import { git, run } from './process.ts'
-import { prepareSlidevProject, runSlidevExport } from './slidev-export.ts'
+import { exportSlides } from './export.ts'
 import { captureWeb } from './web-capture.ts'
 
 export interface DiffJob {
@@ -52,9 +52,7 @@ export async function visualDiff(job: DiffJob): Promise<{ report: VisualDiffRepo
       const compilation = await new Compiler(deck).compile()
       const wait = job.wait ?? 500
       if (hasForm(compilation, 'slides')) {
-        const project = await prepareSlidevProject(compilation)
-        warnings.push(...project.warnings.map(w => `${side.ref}: ${w}`))
-        await runSlidevExport(project, { format: 'png', withClicks: true, wait, output: join(out, label), env: { VITE_PRESMIUM_VISUAL_DIFF: '1' } })
+        await exportSlides(compilation, { deckDir: deck, format: 'png', withClicks: true, output: join(out, label) })
       }
       if (hasForm(compilation, 'web')) {
         for (const section of viewFor(compilation.doc, 'web').sections) sections.set(section.id, section.index)

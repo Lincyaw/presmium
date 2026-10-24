@@ -21,7 +21,7 @@ import { AgentSessionReviews } from './review/agent-session-reviews.ts'
 import { createTaskReviewService } from './review/task-reviews.ts'
 import { Revisions } from './revisions.ts'
 import { WORKSPACE_ID, workspaceRoutesPlugin } from './routes.ts'
-import { refreshDocumentVitePlugins, siteContext, siteDocument, siteIR, siteSpec, untranslatedFindings, webRenderer } from './site.ts'
+import { refreshDocumentVitePlugins, siteContext, siteDocument, siteDocumentIR, siteSpec, untranslatedFindings, webRenderer } from './site.ts'
 import { SourceEditor } from './source-editor.ts'
 import { createWorkbenchBackend } from './workbench-api.ts'
 import type { WorkbenchBackend } from './workbench-api.ts'
@@ -278,7 +278,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   })
   const running = server
   serverServices = running.services
-  workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, diagnostics: running.diagnostics, url: () => running.url, preview, stateDir, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
+  workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, diagnostics: running.diagnostics, url: () => running.url, preview, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
   history = openHistory()
   routesPlugin = {
     id: WORKSPACE_ID,
@@ -313,7 +313,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   const compileForSite = async (dir: string): Promise<IRDocument> => {
     const compilation = await compileSessionOf(dir).ready()
     refreshDocumentVitePlugins(spec, dir, compilation)
-    return workbench!.stampPreviewRevision(compilation, siteIR(compilation))
+    return workbench!.stampPreviewRevision(compilation, siteDocumentIR(compilation))
   }
   try {
     site = await startWorkspaceSite({ root, spec, bundled: options.bundled, stateDir, compile: compileForSite, stampPreviewRevision: (compilation, doc) => workbench!.stampPreviewRevision(compilation, doc), diagnostics: running.diagnostics, preview, log })
@@ -371,7 +371,7 @@ async function startWorkspaceSite(options: WorkspaceSiteOptions) {
     update: (dir: string, compilation: Compilation): Promise<void> => {
       refreshDocumentVitePlugins(spec, dir, compilation)
       const revision = irRevision(compilation.doc)
-      return dev.update(dir, options.stampPreviewRevision(compilation, siteIR(compilation))).then(() => {
+      return dev.update(dir, options.stampPreviewRevision(compilation, siteDocumentIR(compilation))).then(() => {
         if (options.diagnostics.irRevision(dir) === revision) options.diagnostics.clear(dir, 'preview', 'web')
       }, (error: unknown) => {
         const message = `the site did not take ${dir}: ${errorMessage(error)}`

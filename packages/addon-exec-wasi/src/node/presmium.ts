@@ -1,7 +1,6 @@
 import { createRequire } from 'node:module'
 import { environmentExecutor } from '@lincyaw/kernel'
 import type { EnvironmentProvider, PresmiumNodePlugin } from '@lincyaw/kernel'
-import { servedAssets } from '@lincyaw/kernel/node'
 import { EXEC_WASI_ID, execWasiConfig, WASI_EXECUTOR_ID, WASI_KIND } from '../domain/index.ts'
 import { wasiLanguage } from '../shared/wasi-runner.mjs'
 import { createWasiExecutor } from './executor.ts'
@@ -31,7 +30,6 @@ const plugin: PresmiumNodePlugin = {
   executors: [createWasiExecutor(WASI_EXECUTOR_ID)],
   environments: { [WASI_KIND]: wasi },
   assets: ({ config }) => [wasiAssets(execWasiConfig(config).runtimes)],
-  vitePlugins: ({ config }) => [servedAssets(wasiAssets(execWasiConfig(config).runtimes))],
 }
 
 export default plugin

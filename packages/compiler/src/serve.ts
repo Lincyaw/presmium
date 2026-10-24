@@ -1,7 +1,6 @@
 import { createReadStream, existsSync } from 'node:fs'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { createRequire } from 'node:module'
 import type { AddressInfo } from 'node:net'
 import { basename, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -93,15 +92,4 @@ export async function serveDirectory(root: string, options: ServeDirectoryOption
   }
 }
 
-export async function playwrightChromium<T = unknown>(deckDir: string, fallbackFrom?: string): Promise<T> {
-  for (const from of [join(deckDir, 'package.json'), ...fallbackFrom ? [fallbackFrom] : []]) {
-    let entry: string
-    try {
-      entry = createRequire(from).resolve('playwright-chromium')
-    } catch {
-      continue
-    }
-    return (await import(pathToFileURL(entry).href) as { chromium: T }).chromium
-  }
-  throw new Error('this needs playwright-chromium, as `slidev export` does: install it in the deck (and its browser with pnpm exec playwright install chromium)')
-}
+export { playwrightChromium } from '@lincyaw/kernel/node'

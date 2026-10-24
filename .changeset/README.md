@@ -15,14 +15,13 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `@lincyaw/cli` | npm | `presmium` 命令；`./testing` 供插件的集成测试运行 CLI |
 | `@lincyaw/viewer` | npm | IR 运行时 |
 | `@lincyaw/web` | npm | 网页渲染端 |
-| `@lincyaw/render-slides` | npm | 幻灯片渲染端与默认主题 |
+| `@lincyaw/render-slides` | npm | 幻灯片渲染端：查看器的幻灯片页面，导出 PDF、图片与 PowerPoint |
 | `@lincyaw/render-notebook` | npm | notebook 渲染端 |
 | `@lincyaw/server` | npm | `presmium dev` 与 `presmium serve` 的服务端 |
 | `@lincyaw/mcp` | npm | agent 环境（MCP）与 `presmium-mcp` |
 | `@lincyaw/workspace` | npm | 工作区服务 `presmium serve` |
 | `@lincyaw/language-server` | npm | 语言服务 |
 | `@lincyaw/classroom-server` | npm | 课堂同步服务 |
-| `@lincyaw/addon-core` | npm | 插件：幻灯片形态的宿主适配 |
 | `@lincyaw/addon-stage` | npm | 插件：讲台 |
 | `@lincyaw/addon-code` | npm | 插件：代码引用 |
 | `@lincyaw/addon-exec` | npm | 插件：执行面板与浏览器中的 Python |
@@ -49,7 +48,7 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `presmium-regression-fixture` | 否 | 集成测试的私有文稿与依赖（`e2e/fixtures/regression`） |
 | `presmium-docs` | 否 | 文档站（`site/`），一个 Presmium 工作区，`pnpm --filter presmium-docs build` 构建 |
 
-不在工作区中的测试替身也不发布：`packages/*/test/fixtures/**` 与 `e2e/fixtures/**` 中的插件与文稿都是 `private`，例如消费者安装测试的第三方插件 `presmium-plugin-hello`（`e2e/fixtures/consumer/plugin`）。`packages/render-slides/theme` 是幻灯片的默认主题，随 `@lincyaw/render-slides` 发布，不单独发布。
+不在工作区中的测试替身也不发布：`packages/*/test/fixtures/**` 与 `e2e/fixtures/**` 中的插件与文稿都是 `private`，例如消费者安装测试的第三方插件 `presmium-plugin-hello`（`e2e/fixtures/consumer/plugin`）。
 
 ## 记录一处修改
 

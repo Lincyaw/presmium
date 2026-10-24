@@ -20,7 +20,7 @@ function placeOf(context: AgentContext, webViewer: WebViewerAccess | undefined, 
     }
   }
   const position = slideNavigation?.position.value
-  const page = position && typeof document !== 'undefined' ? document.querySelector<HTMLElement>(`.slidev-page-${position.slide}`) : undefined
+  const page = position && typeof document !== 'undefined' ? document.querySelector<HTMLElement>(`.pm-slide[data-slide="${position.slide}"]`) : undefined
   const text = page?.innerText.trim() ?? ''
   const id = position?.section ?? context.section
   const title = page?.querySelector('h1, h2, h3')?.textContent?.trim() || document.title

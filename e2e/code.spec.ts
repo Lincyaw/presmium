@@ -33,29 +33,6 @@ async function openSlide(page: Page, id: string, heading: string) {
   return slide
 }
 
-test('the code block highlights the logical units one step after another', async ({ page }) => {
-  const units = [
-    ['if (items.length === 0)', 'throw new Error(\'cart is empty\')'],
-    ['const subtotal =', 'const discount ='],
-    ['return `total:'],
-  ]
-  const slide = await openSlide(page, 'code-steps', '分步高亮')
-  const lines = slide.locator('.slidev-code .line')
-  await expect(lines).toHaveCount(7)
-  const expectUnit = async (step: number) => {
-    const highlighted = lines.and(page.locator('.highlighted'))
-    await expect(highlighted).toHaveCount(units[step]!.length)
-    for (const [i, text] of units[step]!.entries()) await expect(highlighted.nth(i)).toContainText(text)
-  }
-  await expectUnit(0)
-  for (const step of [1, 2]) {
-    await page.keyboard.press('ArrowRight')
-    await expectUnit(step)
-  }
-  await page.keyboard.press('ArrowLeft')
-  await expectUnit(1)
-})
-
 test('the link points to the remote repository at the pinned commit and line range', async ({ page }) => {
   const commit = git('rev-parse', `${option('pin')}^{commit}`)
   const source = git('show', `${commit}:${FILE}`).split('\n')
@@ -66,34 +43,6 @@ test('the link points to the remote repository at the pinned commit and line ran
   await expect(ref.locator('a.pm-code-origin__file')).toHaveAttribute('href', `${option('repo')}/blob/${commit}/${FILE}#L${start}-L${end}`)
   await expect(ref.locator('.pm-code-origin__commit')).toHaveText(`@ ${commit.slice(0, 7)}`)
   await expect(ref.locator('.pm-code-origin__badge')).toHaveText('已锁定')
-})
-
-test('the multi-version code block switches versions with the steps, the file link with them', async ({ page }) => {
-  const commits = option('variants').split(',').map(rev => git('rev-parse', `${rev.trim()}^{commit}`))
-
-  const slide = await openSlide(page, 'code-variants', '多版本切换')
-  const ref = slide.locator('.pm-code-origin[data-anchor$="#total"]')
-  const code = slide.locator('.slidev-code')
-  const active = ref.locator('.pm-code-origin__variant[data-active]')
-  const file = ref.locator('a.pm-code-origin__file').filter({ visible: true })
-  const expectVersion = async (k: number) => {
-    const [start, end] = totalLines(commits[k]!)
-    await expect(code).toContainText(VERSIONS[k]!)
-    await expect(active).toHaveText(commits[k]!.slice(0, 7))
-    await expect(file).toHaveText(`${FILE}:${start}-${end}`)
-    await expect(file).toHaveAttribute('href', `${option('repo')}/blob/${commits[k]}/${FILE}#L${start}-L${end}`)
-  }
-  for (const [i, commit] of commits.entries()) {
-    await expect(ref.locator('.pm-code-origin__variant').nth(i)).toHaveAttribute('href', new RegExp(`/blob/${commit}/${FILE}#L\\d+-L\\d+$`))
-  }
-
-  for (const step of [0, 1, 2]) {
-    if (step > 0) await page.keyboard.press('ArrowRight')
-    await expectVersion(step)
-  }
-  await page.keyboard.press('ArrowLeft')
-  await expectVersion(1)
-  await expect(code).not.toContainText(VERSIONS[2]!)
 })
 
 test('the web form links the code to the remote repository at the pinned commit', async ({ page }) => {

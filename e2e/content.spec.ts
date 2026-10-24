@@ -29,26 +29,6 @@ test('formulas, Mermaid and PlantUML render as math, an svg diagram and a local 
   expect(await diagram.getAttribute('src')).not.toMatch(/^https?:/)
 })
 
-test('a {markmap} directive becomes a mindmap that fits its slide', async ({ page }) => {
-  await open(page, 'content-sequence')
-  await page.keyboard.press('ArrowRight')
-  const map = page.locator('.slidev-layout.pm-content-mindmap svg.pm-markmap')
-  await expect(map.locator('.markmap-node')).toHaveCount(13)
-  await expect(map.locator('.markmap-node').last()).toHaveText('富内容')
-
-  const fitted = () => map.evaluate((svg) => {
-    const box = svg.getBoundingClientRect()
-    const nodes = [...svg.querySelectorAll('.markmap-node')].map(node => node.getBoundingClientRect())
-    const left = Math.min(...nodes.map(r => r.left))
-    const right = Math.max(...nodes.map(r => r.right))
-    const top = Math.min(...nodes.map(r => r.top))
-    const bottom = Math.max(...nodes.map(r => r.bottom))
-    const inside = left >= box.left && right <= box.right && top >= box.top && bottom <= box.bottom
-    return inside && Math.max((right - left) / box.width, (bottom - top) / box.height) > 0.8
-  })
-  await expect.poll(fitted).toBe(true)
-})
-
 test('media directives give video, audio and an animated image from the build, with controls and sizes', async ({ page }) => {
   const slide = await open(page, 'content-media')
   const video = slide.locator('figure.pm-media video')
@@ -74,64 +54,6 @@ test('media directives give video, audio and an animated image from the build, w
   await expect(still).toHaveCount(1)
   await expect.poll(() => loaded(still)).toBe(96)
   expect(await still.getAttribute('src')).not.toMatch(/\.gif$/)
-})
-
-test('leaving a media slide pauses video and audio, and returning keeps playback under the speaker\'s control', async ({ page }) => {
-  await page.bringToFront()
-  const video = (await open(page, 'content-media')).locator('figure.pm-media video')
-  await expect.poll(() => media(video)).toBeCloseTo(3, 0)
-  const original = (await video.elementHandle())!
-  const audio = (await page.locator('.slidev-layout.pm-content-media audio').elementHandle())!
-  await original.evaluate((element: HTMLVideoElement) => element.play())
-  await audio.evaluate((element: HTMLAudioElement) => {
-    element.muted = true
-    element.loop = true
-    return element.play()
-  })
-  await expect.poll(() => original.evaluate((element: HTMLVideoElement) => element.currentTime)).toBeGreaterThan(0)
-  await page.keyboard.press('ArrowDown')
-  await expect(page.locator('.slidev-layout.pm-content-element')).toBeVisible()
-  const paused = () => Promise.all([original, audio].map(element => element.evaluate((media: HTMLMediaElement) => media.paused)))
-  await expect.poll(paused, { timeout: 3000 }).toEqual([true, true])
-  await original.evaluate((element: HTMLVideoElement) => element.play().catch(() => {}))
-  await expect.poll(paused, { timeout: 3000 }).toEqual([true, true])
-  await page.keyboard.press('ArrowUp')
-  await expect(page.locator('.slidev-layout.pm-content-media')).toBeVisible()
-  await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true)
-  await video.evaluate((element: HTMLVideoElement) => element.play())
-  await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(false)
-
-  const autoplay = (await open(page, 'content-autoplay')).locator('video')
-  await expect.poll(() => autoplay.evaluate((element: HTMLVideoElement) => element.paused)).toBe(false)
-  const automatic = (await autoplay.elementHandle())!
-  await page.keyboard.press('ArrowUp')
-  await expect(page.locator('.slidev-layout.pm-content-captions')).toBeVisible()
-  await expect.poll(() => automatic.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true)
-  await page.keyboard.press('ArrowDown')
-  await expect(page.locator('.slidev-layout.pm-content-autoplay')).toBeVisible()
-  await expect.poll(() => autoplay.evaluate((element: HTMLVideoElement) => element.paused)).toBe(false)
-
-  for (const form of ['web', 'slides']) {
-    if (form === 'web') await page.goto(`${content().web}/cards.html?view=present&section=content-media-range`)
-    else await open(page, 'content-media-range')
-    const scope = page.locator(form === 'web' ? '.pm-present' : '.slidev-layout.pm-content-media-range')
-    const ranged = scope.locator('video')
-    const held = (await ranged.elementHandle())!
-    await held.evaluate((element: HTMLVideoElement) => element.play())
-    await expect.poll(() => held.evaluate((element: HTMLVideoElement) => element.paused)).toBe(false)
-    await page.keyboard.press('ArrowRight')
-    if (form === 'web') {
-      await expect(scope).toHaveAttribute('data-step', '1')
-      await expect(scope.locator('.pm-step-range:has(video)')).toHaveAttribute('aria-hidden', 'true')
-      await expect(ranged).toBeHidden()
-    } else await expect(scope.locator('.pm-step-range')).toHaveClass(/slidev-vclick-hidden/)
-    await expect(ranged).toHaveCount(1)
-    await expect.poll(() => held.evaluate((element: HTMLVideoElement) => element.paused), { timeout: 3000 }).toBe(true)
-    await page.keyboard.press('ArrowLeft')
-    await expect.poll(() => ranged.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true)
-    await ranged.evaluate((element: HTMLVideoElement) => element.play())
-    await expect.poll(() => ranged.evaluate((element: HTMLVideoElement) => element.paused)).toBe(false)
-  }
 })
 
 test('an embedded web component keeps its own interactive state', async ({ page }) => {
@@ -284,28 +206,5 @@ renderers:
   test.afterAll(async () => {
     await site?.close()
     if (deck) rmSync(deck, { recursive: true, force: true })
-  })
-
-  test('a YouTube video and online video and audio show from their URLs in both forms, and the notebook links to them', async ({ page }) => {
-    await page.route(/youtube|example\.com/, route => route.abort())
-    const PLAYER = 'https://www.youtube-nocookie.com/embed/luoMHjh-XcQ?start=30'
-
-    await page.goto(`${site.url}/web/online.html`)
-    const section = page.locator('.pm-section[data-section="online"]')
-    await expect(section.locator('figure.pm-youtube iframe')).toHaveAttribute('src', PLAYER)
-    await expect(section.locator('figure.pm-youtube figcaption')).toHaveText('A talk on YouTube')
-    await expect(section.locator('figure.pm-media video')).toHaveAttribute('src', 'https://example.com/media/clip.mp4')
-    await expect(section.locator('figure.pm-media audio')).toHaveAttribute('src', 'https://example.com/media/tone.ogg')
-
-    await page.goto(`${site.url}/slides/online`)
-    const slide = page.locator('.slidev-layout.pm-online')
-    await expect(slide.locator('figure.pm-youtube iframe')).toHaveAttribute('src', PLAYER)
-    await expect(slide.locator('figure.pm-media video')).toHaveAttribute('src', 'https://example.com/media/clip.mp4')
-    await expect(slide.locator('figure.pm-media audio')).toHaveAttribute('src', 'https://example.com/media/tone.ogg')
-
-    const notebook = readdirSync(join(deck, 'dist/notebook')).find(file => file.endsWith('.ipynb'))!
-    const cells = readFileSync(join(deck, 'dist/notebook', notebook), 'utf8')
-    expect(cells).toContain('[A talk on YouTube](https://www.youtube.com/watch?v=luoMHjh-XcQ)')
-    expect(cells).toContain('[An online video](https://example.com/media/clip.mp4)')
   })
 })

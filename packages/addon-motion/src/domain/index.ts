@@ -3,7 +3,7 @@ export const MOTION_ID = 'presmium.motion'
 /** The directory of a deck's scenes, as `components/` holds its components. */
 export const SCENES_DIR = 'scenes'
 
-// Not .tsx nor .jsx: the slides form compiles JSX for Vue (Slidev's Vue JSX plugin), which React cannot render.
+// Not .tsx nor .jsx: the file does not tell which runtime its JSX is for (React's, Vue's).
 export const SCENE_EXTENSIONS = ['.ts', '.js', '.mjs'] as const
 
 /** The scene names a deck can use: the path under `scenes/` without its extension, `/` between folders. */

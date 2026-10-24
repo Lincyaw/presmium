@@ -11,8 +11,6 @@
   "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/addon-exec-local#readme",
   "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": [
-    "slidev-addon",
-    "slidev",
     "presmium"
   ],
   "type": "module",
@@ -30,13 +28,10 @@
   },
   "files": [
     "components",
-    "setup",
     "src"
   ],
-  "slidev": {},
   "dependencies": {
     "@devcontainers/cli": "0.89.0",
-    "@slidev/types": "53.0.0",
     "fflate": "^0.8.3",
     "jsonc-parser": "^3.3.1",
     "vue": "^3.5.42"
@@ -48,7 +43,6 @@
   "devDependencies": {
     "@lincyaw/cli": "workspace:*",
     "@lincyaw/host": "workspace:*",
-    "@lincyaw/kernel": "workspace:*",
-    "@slidev/client": "53.0.0"
+    "@lincyaw/kernel": "workspace:*"
   }
 }

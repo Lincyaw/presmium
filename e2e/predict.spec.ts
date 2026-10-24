@@ -65,18 +65,6 @@ test('the present view shows what a predict reveals at its step, without a predi
   await expect(stage.getByText(NARRATION)).toHaveCount(0)
 })
 
-test('in the slides, a predict\'s prompt stands between its question and its form, and what it reveals shows at its step', async ({ page }) => {
-  const REVEAL = '从字符开始，任何词都能切分，不会遇到词表之外的词。'
-  const wrapper = (predict: Locator) => predict.locator('.pm-predict__reveal > div', { hasText: REVEAL })
-  const why = (await openSlide(page, deck, 'why', '从字符开始', '?clicks=0')).locator('.pm-predict')
-  const top = async (text: string) => (await why.getByText(text).boundingBox())!.y
-  expect(await top('为什么 BPE 从单个字符开始合并？')).toBeLessThan(await top('写一句话就好。'))
-  expect(await top('写一句话就好。')).toBeLessThan((await why.getByLabel('你的预测').boundingBox())!.y)
-  await expect(wrapper(why)).toHaveClass(/slidev-vclick-hidden/)
-  const shown = (await openSlide(page, deck, 'why', '从字符开始', '?clicks=1')).locator('.pm-predict')
-  await expect(wrapper(shown)).not.toHaveClass(/slidev-vclick-hidden/)
-})
-
 test('a predict without choices shows what it reveals once the reader has written a prediction and saved it', async ({ page }) => {
   await page.goto(`${deck.web}/`)
   const why = predict(page, '为什么 BPE 从单个字符开始合并？')

@@ -1,6 +1,6 @@
 import type { StepRange } from '@lincyaw/kernel/contracts'
 import type { InjectionKey, MaybeRefOrGetter, Ref } from 'vue'
-import { computed, defineComponent, inject, provide, ref, toValue } from 'vue'
+import { computed, inject, provide, ref, toValue } from 'vue'
 
 const STEP_SCOPE: InjectionKey<Readonly<Ref<number>>> = Symbol('presmium.stepScope')
 const BLOCK_STEP_RANGE: InjectionKey<Readonly<Ref<StepRange>>> = Symbol('presmium.blockStepRange')
@@ -43,12 +43,3 @@ export function useBlockStepRange(): StepRange {
     },
   }
 }
-
-export const PmStepScope = defineComponent({
-  name: 'PmStepScope',
-  props: { at: { type: Number, default: 0 }, until: Number },
-  setup(props, { slots }) {
-    provideStepScope(() => props.at, () => props.until)
-    return () => slots.default?.()
-  },
-})

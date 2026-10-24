@@ -1,15 +1,11 @@
-import { createServer } from 'node:net'
-import type { AddressInfo } from 'node:net'
-import { join, relative, sep } from 'node:path'
-import { dev, relativeIR } from '@lincyaw/compiler'
-import type { Compilation, DevServers } from '@lincyaw/compiler'
+import { relative, sep } from 'node:path'
+import { relativeIR } from '@lincyaw/compiler'
+import type { Compilation } from '@lincyaw/compiler'
 import { errorMessage, PREVIEW_REVISION, pushStream } from '@lincyaw/kernel'
-import { irRevision, machineState, threadBudget, warmDevPage } from '@lincyaw/kernel/node'
-import type { MachineState } from '@lincyaw/kernel/node'
-import type { Finding, IrAnswer, IRDocument, IrEvent, Logger, PreviewAnswer, PreviewRenderer, ProxySpec } from '@lincyaw/kernel'
+import { irRevision } from '@lincyaw/kernel/node'
+import type { Finding, IrAnswer, IRDocument, IrEvent, Logger, PreviewAnswer, PreviewRenderer } from '@lincyaw/kernel'
 import type { DiagnosticStore, ServerHost } from '@lincyaw/server'
 import type { CompileSession } from './compile-session.ts'
-import { WORKSPACE_ID } from './routes.ts'
 
 export interface BuildAnswer {
   outputs: { renderer: string, outDir: string }[]
@@ -25,14 +21,12 @@ export interface WorkbenchApi {
   ir(document: string): Promise<IrAnswer>
   events(document: string, signal: AbortSignal): AsyncIterable<{ event: string, data: IrEvent }>
   /**
-   * The document's preview addresses, starting the dev server of `renderer`. `prefetch`: the workbench prepares the
-   * document ahead of the author's click (its web form, answered at once) or switch (its slides, answered once Slidev
-   * runs and its page is warmed, with `prepared`); the dev server starts only when the machine has room (`roomToPrefetch`).
+   * The document's preview addresses: the viewer app's page of the document, and the same page showing its slides.
+   * `prefetch`: the workbench prepares the document ahead of the author's click, answered at once.
    */
   preview(document: string, renderer?: PreviewRenderer, prefetch?: boolean): Promise<PreviewAnswer>
   build(document: string, to?: string[]): Promise<BuildAnswer>
   check(document: string): Promise<CheckAnswer>
-  proxies: ProxySpec[]
 }
 
 function withIrRevision(doc: IRDocument, revision: string): IRDocument {
@@ -43,23 +37,8 @@ function workspacePath(root: string, file: string): string {
   return relative(root, file).split(sep).join('/')
 }
 
-function freePort(): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const server = createServer()
-    server.once('error', reject)
-    server.listen(0, '127.0.0.1', () => {
-      const { port } = server.address() as AddressInfo
-      server.close(() => resolve(port))
-    })
-  })
-}
-
 function urlPath(dir: string): string {
   return dir.split('/').map(encodeURIComponent).join('/')
-}
-
-function slidesPath(dir: string): string {
-  return `slides/${dir ? `${urlPath(dir)}/` : ''}`
 }
 
 export interface WorkbenchBackendOptions {
@@ -69,7 +48,6 @@ export interface WorkbenchBackendOptions {
   diagnostics?: DiagnosticStore
   url(): string
   preview?: { origins: string[] }
-  stateDir: string
   log: Logger
   /** Starts the web dev server of a document ahead of its first request. */
   warmSite?(dir: string): Promise<void>
@@ -86,15 +64,6 @@ export interface WorkbenchBackend extends WorkbenchApi {
   close(): Promise<void>
 }
 
-// Slides started ahead of a switch: at most this many dev servers running, each with this much free memory left.
-const PREFETCH_SERVERS = 2
-const PREFETCH_MEMORY = 3 * 1024 ** 3
-
-/** Whether the machine has room to start a document's slides before the author asks: idle processors and free memory. */
-export function roomToPrefetch(running: number, machine: MachineState = machineState()): boolean {
-  return running < PREFETCH_SERVERS && threadBudget('interactive', process.env, machine) >= 2 && machine.free >= PREFETCH_MEMORY
-}
-
 export function createWorkbenchBackend(options: WorkbenchBackendOptions): WorkbenchBackend {
   const { root, log } = options
   const irRevisions = new WeakMap<Compilation, string>()
@@ -105,77 +74,12 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
     return known
   }
   const listeners = new Map<string, Set<(event: IrEvent) => void>>()
-  const slidesPreviews = new Map<string, Promise<DevServers | undefined>>()
-  const proxies: ProxySpec[] = []
-  let closed = false
 
   const eventOf = (dir: string, compilation: Compilation, changed: string[]): IrEvent => {
     const count = (severity: Finding['severity']) => compilation.doc.diagnostics.filter(finding => finding.severity === severity).length
     return { document: dir, revision: irRevisionOf(compilation), diagnostics: { errors: count('error'), warnings: count('warning') }, files: changed.map(file => workspacePath(root, file)) }
   }
-  const stamped = (compilation: Compilation): Compilation => (options.preview ? { ...compilation, doc: withIrRevision(compilation.doc, irRevisionOf(compilation)) } : compilation)
-
-  const startSlidesPreview = (dir: string) => {
-    let known = slidesPreviews.get(dir)
-    if (!known) {
-      let startupRevision: string | undefined
-      known = (async () => {
-        const session = options.compileSessionOf(dir)
-        const compilation = await session.ready()
-        startupRevision = irRevisionOf(compilation)
-        const configured = Object.keys(compilation.doc.config.renderers)
-        if (configured.length > 0 && !configured.includes('slides')) return undefined
-        const path = slidesPath(dir)
-        let startupErrors: string[] = []
-        const started = await dev(session.compiler, {
-          outDir: join(options.stateDir, 'preview', encodeURIComponent(dir) || '_'),
-          to: ['slides'],
-          compilation: stamped(compilation),
-          base: `/__presmium/${WORKSPACE_ID}/${path}`,
-          port: await freePort(),
-          ...options.preview ? { preview: { origins: options.preview.origins } } : {},
-          onCompile(compiled, findings) {
-            startupErrors = findings.filter(f => f.checkId === 'presmium.render' && f.severity === 'error').map(f => f.message)
-            const stampedRevision = compiled.doc.meta[PREVIEW_REVISION]
-            const revision = typeof stampedRevision === 'string' ? stampedRevision : irRevisionOf(compiled)
-            if (options.diagnostics?.irRevision(dir) === revision) options.diagnostics.replace({ document: dir, origin: 'preview', renderer: 'slides' }, findings.filter(f => f.checkId === 'presmium.render'), { root, irRevision: revision })
-            for (const finding of findings.filter(f => f.checkId === 'presmium.render')) log.warn(`the slides' preview of ${dir || '.'}: ${finding.message}`)
-          },
-        })
-        const server = started.servers[0]
-        if (!server || closed || slidesPreviews.get(dir) !== known) {
-          await started.close()
-          if (!server && !closed) throw new Error(startupErrors.join('\n') || 'the slides renderer did not start a preview server')
-          return undefined
-        }
-        const target = new URL(server.url)
-        proxies.push({ path: path.replace(/\/$/, ''), target: `${target.origin}${target.pathname.replace(/\/$/, '')}` })
-        proxies.sort((a, b) => b.path.length - a.path.length)
-        return started
-      })()
-      known.then((started) => {
-        if (!started && slidesPreviews.get(dir) === known) slidesPreviews.delete(dir)
-      }, (error: unknown) => {
-        log.warn(`the slides' preview of ${dir || '.'} did not start: ${errorMessage(error)}`)
-        if (options.diagnostics && options.diagnostics.irRevision(dir) === startupRevision) options.diagnostics.replace({ document: dir, origin: 'preview', renderer: 'slides' }, [{ checkId: 'presmium.preview', severity: 'error', message: errorMessage(error) }], { irRevision: startupRevision })
-        if (slidesPreviews.get(dir) === known) slidesPreviews.delete(dir)
-      })
-      slidesPreviews.set(dir, known)
-    }
-    return known
-  }
-
-  const stopSlidesPreview = async (dir: string) => {
-    const known = slidesPreviews.get(dir)
-    slidesPreviews.delete(dir)
-    const path = slidesPath(dir).replace(/\/$/, '')
-    const at = proxies.findIndex(proxy => proxy.path === path)
-    if (at >= 0) proxies.splice(at, 1)
-    await (await known?.catch(() => undefined))?.close()
-  }
-
   return {
-    proxies,
     async ir(document) {
       const compilation = await options.compileSessionOf(document).ready()
       let doc = relativeDocs.get(compilation)
@@ -194,32 +98,20 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
         return () => own.delete(listener)
       }, { signal })
     },
-    async preview(document, renderer, prefetch = false) {
+    async preview(document, _renderer, prefetch = false) {
       const base = options.url()
-      // The viewer app when it has what the document needs (an opened document waits for it), else the document's dev server.
-      const page = await options.viewerPage?.(document, !prefetch && renderer !== 'slides').catch((error: unknown) => {
+      // The viewer app's page once it has what the document needs (an opened document waits for it a while), else the
+      // document's page on the site.
+      const page = await options.viewerPage?.(document, !prefetch).catch((error: unknown) => {
         log.warn(`the viewer app cannot show ${document || '.'}: ${errorMessage(error)}`)
         return undefined
       })
       const web = page ? `${base}${page}` : `${base}/${document ? `${urlPath(document)}/` : ''}`
-      const slideURL = `${base}/__presmium/${WORKSPACE_ID}/${slidesPath(document)}`
+      if (prefetch && !page) void options.warmSite?.(document).catch(() => undefined)
       const compilation = await options.compileSessionOf(document).ready()
       const configured = Object.keys(compilation.doc.config.renderers)
-      const available = configured.length === 0 || configured.includes('slides')
-      if (!available) options.diagnostics?.clear(document, 'preview', 'slides')
-      if (renderer === 'web' && prefetch && !page && roomToPrefetch(0)) void options.warmSite?.(document).catch(() => undefined)
-      if (renderer === 'web' || !available) {
-        return { document, web, ...available ? { slides: slideURL } : {} }
-      }
-      if (prefetch && renderer === 'slides') {
-        if (!slidesPreviews.has(document) && !roomToPrefetch(slidesPreviews.size)) return { document, web, slides: slideURL, prepared: false }
-        // Started, and its page's modules transformed, so that the switch only loads them.
-        const started = await startSlidesPreview(document).catch(() => undefined)
-        if (started) await warmDevPage(started.servers[0]!.url)
-        return { document, web, slides: slideURL, prepared: started !== undefined }
-      }
-      const own = await (renderer === 'slides' ? startSlidesPreview(document) : startSlidesPreview(document).catch(() => undefined))
-      return { document, web, ...own ? { slides: slideURL } : {} }
+      const slides = configured.length === 0 || configured.includes('slides')
+      return { document, web, ...slides ? { slides: `${web}${web.includes('?') ? '&' : '?'}form=slides` } : {} }
     },
     async build(document, to) {
       return await options.serverHost.build(document, to ? { to } : {})
@@ -230,27 +122,13 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
     compiled(dir, compilation, changed) {
       const event = eventOf(dir, compilation, changed)
       for (const listener of listeners.get(dir) ?? []) listener(event)
-      const configured = Object.keys(compilation.doc.config.renderers)
-      if (configured.length > 0 && !configured.includes('slides')) {
-        options.diagnostics?.clear(dir, 'preview', 'slides')
-        void stopSlidesPreview(dir).catch((error: unknown) => log.warn(`the slides' preview of ${dir || '.'} did not stop: ${errorMessage(error)}`))
-        return
-      }
-      const known = slidesPreviews.get(dir)
-      if (known) void known.then(started => started?.update(stamped(compilation))).catch((error: unknown) => log.warn(`the slides' preview of ${dir || '.'} did not update: ${errorMessage(error)}`))
     },
     stampPreviewRevision(compilation, doc) {
       return options.preview ? withIrRevision(doc, irRevisionOf(compilation)) : doc
     },
     async documentsRemoved(dirs) {
-      for (const dir of dirs) {
-        await stopSlidesPreview(dir)
-        options.diagnostics?.forget(dir)
-      }
+      for (const dir of dirs) options.diagnostics?.forget(dir)
     },
-    async close() {
-      closed = true
-      for (const dir of [...slidesPreviews.keys()]) await stopSlidesPreview(dir)
-    },
+    async close() {},
   }
 }

@@ -82,32 +82,6 @@ test.describe('a deck with a site shell, published files and a translation', () 
     expect(await sitemap.text()).toContain('<loc>https://course.example.edu/web/chapter2.html</loc>')
   })
 
-  test('a starter file the body links downloads from the web form and the slides; a linked directory opens its file listing; a raw HTML video\'s poster loads', async ({ page }) => {
-    const starter = readFileSync(join(site.dir, 'starter/main.py'))
-    await page.goto(`${site.url}/web/start.html`)
-    const section = page.locator('.pm-section[data-section="starter"]')
-    expect(await download(page, await section.getByRole('link', { name: '起始代码', exact: true }).getAttribute('href'))).toEqual(starter)
-    const poster = await section.locator('video').getAttribute('poster')
-    expect(poster).toMatch(/^\/web\/media\/[\da-f]{8}-cover\.png$/)
-    expect(await download(page, poster)).toEqual(readFileSync(join(site.dir, 'media/cover.png')))
-
-    await section.getByRole('link', { name: '整个起始目录', exact: true }).click()
-    await expect(page).toHaveURL(/\/web\/media\/[\da-f]{8}-starter\/(?:index\.html)?$/)
-    await expect(page.getByRole('heading', { name: 'starter/' })).toBeVisible()
-    const saved = page.waitForEvent('download')
-    await page.getByRole('link', { name: 'data.csv' }).click()
-    expect(readFileSync((await (await saved).path())!)).toEqual(readFileSync(join(site.dir, 'starter/data.csv')))
-
-    const doc = JSON.parse(readFileSync(join(site.dir, 'dist/ir.json'), 'utf8')) as IRDocument
-    const slide = doc.sections.find(s => s.id === 'starter')!.index
-    await page.goto(`${site.url}/slides/${slide}`)
-    const content = page.locator('.slidev-page').filter({ has: page.locator('h1', { hasText: '起始代码' }) })
-    expect(await download(page, await content.getByRole('link', { name: '起始代码', exact: true }).getAttribute('href'))).toEqual(starter)
-    const listing = await download(page, await content.getByRole('link', { name: '整个起始目录', exact: true }).getAttribute('href'))
-    expect(listing.toString()).toContain('data.csv')
-    expect(await download(page, await content.locator('video').getAttribute('poster'))).toEqual(readFileSync(join(site.dir, 'media/cover.png')))
-  })
-
   test('a linked Markdown template and the README of a linked directory are published as files, not built as pages', async ({ page }) => {
     await page.goto(`${site.url}/web/start.html`)
     const section = page.locator('.pm-section[data-section="starter"]')

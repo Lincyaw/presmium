@@ -40,7 +40,6 @@
     "@lincyaw/addon-classroom": "workspace:*",
     "@lincyaw/addon-code": "workspace:*",
     "@lincyaw/addon-content": "workspace:*",
-    "@lincyaw/addon-core": "workspace:*",
     "@lincyaw/addon-exec": "workspace:*",
     "@lincyaw/addon-exec-jupyter": "workspace:*",
     "@lincyaw/addon-exec-local": "workspace:*",

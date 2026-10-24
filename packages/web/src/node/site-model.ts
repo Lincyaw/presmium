@@ -187,7 +187,6 @@ export function documentContext(ctx: RenderContext, site: SiteSpec, dir: string,
     pluginDirs,
     lang: doc.meta.lang,
     base: documentBase(ctx.base, dir),
-    vitePlugins: [],
     translations: entry?.translations,
     documentLink,
     localAsset(source, url) {

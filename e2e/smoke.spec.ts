@@ -9,7 +9,6 @@ import { SLIDES, WEB } from './urls.ts'
 
 const DEMO = fileURLToPath(new URL('../e2e/fixtures/regression', import.meta.url))
 const EXPORT = fileURLToPath(new URL('../packages/addon-publish/bin/presmium-export.mjs', import.meta.url))
-const PRINT = fileURLToPath(new URL('./fixtures/print', import.meta.url))
 const DEMO_DECK = { lock: 'e2e/fixtures/regression/.presmium/slides' }
 
 interface Section { id: string, index: number, title: string, depth: number, steps: number }
@@ -63,43 +62,12 @@ test('the lecture\'s slides export to a PDF, a page a slide, its links kept', DE
   }
 })
 
-test('the export waits for the print page to show every slide, and loads it again when a request of the page fails', async ({ browserName }) => {
-  test.skip(browserName !== 'chromium', 'the export runs in Playwright\'s Chromium whatever the browser under test')
-  test.setTimeout(300_000)
-  const dir = deckDir('print')
-  try {
-    cpSync(PRINT, dir, { recursive: true })
-    const exported = spawnSync(process.execPath, [EXPORT, dir, '--output', join(dir, 'print.pdf'), '--json'], { cwd: dir, encoding: 'utf8', timeout: 240_000 })
-    expect(exported.status, `${exported.stdout}\n${exported.stderr}`).toBe(0)
-    const report = JSON.parse(exported.stdout) as { pages: number, links: { url: string, pages: number[] }[] }
-    expect(report.pages).toBe(2)
-    expect(report.links.map(link => [link.url, link.pages])).toEqual([['https://example.com/one', [1]], ['https://example.com/two', [2]]])
-  } finally {
-    rmSync(dir, { recursive: true, force: true })
-  }
-})
-
 async function firstTurns(): Promise<[Section, Section][]> {
   const all = await sections()
   return [[all[0]!, all[1]!], [all[1]!, all[2]!]]
 }
 
 const FRAMEWORK_ERRORS = [/^Wake Lock permission request denied$/, /^Failed to patch FloatingVue\b/]
-
-test('the slides open on the cover and page from section to section, with no error in the console', async ({ page }) => {
-  const errors: string[] = []
-  page.on('console', message => void (message.type() === 'error' && errors.push(message.text())))
-  page.on('pageerror', error => void errors.push(error.message))
-  const turns = await firstTurns()
-  await page.goto(`${SLIDES}/1`)
-  await expect(page.locator('.slidev-page-1 h1')).toHaveText(turns[0]![0].title)
-  for (const [current, next] of turns) {
-    for (let step = 0; step <= current.steps; step++) await page.keyboard.press('ArrowRight')
-    await expect(page).toHaveURL(new RegExp(`/${next.index}(\\?|$)`))
-    await expect(page.locator(`.slidev-page-${next.index} h1`)).toHaveText(next.title)
-  }
-  expect(errors.filter(text => !FRAMEWORK_ERRORS.some(known => known.test(text)))).toEqual([])
-})
 
 test('the web form opens on the cover, goes to a section from the sidebar and pages in the present view', async ({ page }) => {
   const all = await sections()

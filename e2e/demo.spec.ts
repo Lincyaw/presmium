@@ -34,55 +34,6 @@ test('the chapter opens in the web form: the table its session wrote, the predic
   await expect(cards.first().locator('.pm-card__title a')).toHaveAttribute('href', 'https://github.com/karpathy/minbpe')
 })
 
-test('the chapter opens in the slides, the C program with the output recorded at build time', async ({ page }) => {
-  const doc = await irDocument(page)
-  for (const id of ['extend', 'extend-c']) {
-    const section = doc.sections.find(s => s.id === id)!
-    await page.goto(`${SLIDES}/${section.index}`)
-    await expect(page.locator(`.slidev-page-${section.index} h1`)).toHaveText(section.title)
-  }
-  const index = doc.sections.find(s => s.id === 'extend-c')!.index
-  await expect(page.locator(`.slidev-page-${index} .slidev-runner-output`)).toContainText('次数最多的一对 (97, 97) 就是 a a')
-})
-
-test('on its slide the compute shader stays legible, its run panel on the slide and the code scrolling', async ({ page }) => {
-  const doc = await irDocument(page)
-  const { index } = doc.sections.find(s => s.id === 'extend-gpu')!
-  await page.setViewportSize({ width: 1920, height: 1080 })
-  await page.goto(`${SLIDES}/${index}`)
-  const slide = page.locator(`.slidev-page-${index}`)
-  const code = slide.locator('.pm-run-panel__source pre').first()
-  await expect(code).toBeVisible()
-  await expect(code).toContainText('best[2] = counts[top];')
-  expect(await code.evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize) * (el.getBoundingClientRect().height / (el as HTMLElement).offsetHeight))).toBeGreaterThanOrEqual(18)
-  const bottom = (await slide.boundingBox())!
-  const run = (await slide.locator('.pm-run-panel__run').first().boundingBox())!
-  expect(run.y + run.height).toBeLessThanOrEqual(bottom.y + bottom.height)
-})
-
-test('on their slides the C program and the training code keep a projection size with no zoom, their editor scrolling and the output on the slide', async ({ page }) => {
-  const doc = await irDocument(page)
-  await page.setViewportSize({ width: 1920, height: 1080 })
-  for (const [id, last] of [['extend-c', 'return 0;'], ['extend-train', '个词元']] as const) {
-    const { index } = doc.sections.find(s => s.id === id)!
-    await page.goto(`${SLIDES}/${index}`)
-    const slide = page.locator(`.slidev-page-${index}`)
-    const editor = slide.locator('.slidev-monaco-container-inner').first()
-    await expect(slide.locator('.view-lines').first()).toBeVisible()
-    const size = await slide.locator('.view-lines').first().evaluate((el: HTMLElement) => Number.parseFloat(getComputedStyle(el).fontSize) * el.getBoundingClientRect().height / el.offsetHeight)
-    expect(size, id).toBeGreaterThanOrEqual(18)
-    const output = slide.locator('.slidev-runner-output').first()
-    await expect(output).toBeVisible()
-    const [frame, below] = [(await slide.boundingBox())!, (await output.boundingBox())!]
-    expect(below.y + below.height, id).toBeLessThanOrEqual(frame.y + frame.height + 1)
-    await editor.hover()
-    await expect(async () => {
-      await page.mouse.wheel(0, 2000)
-      await expect(slide.locator('.view-lines').first()).toContainText(last, { timeout: 1_000 })
-    }).toPass({ timeout: 20_000 })
-  }
-})
-
 test('the C program runs in the browser and prints what the build recorded', async ({ page }) => {
   test.setTimeout(300_000)
   await page.goto(`${WEB}/extend.html`)

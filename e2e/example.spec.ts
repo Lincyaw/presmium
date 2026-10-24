@@ -55,29 +55,6 @@ test.beforeAll(async () => {
 })
 test.afterAll(async () => { await site?.close() })
 
-test('the example\'s site has both lectures, each with its slides and its narrated lecture, from the committed voice', async ({ page }) => {
-  const errors: string[] = []
-  // Slidev asks to keep the screen on, which a headless browser denies.
-  page.on('pageerror', error => error.message.includes('Wake Lock') || errors.push(error.message))
-  await page.goto(site.url)
-  await expect(page.locator('.pm-site-home__document')).toHaveCount(LECTURES.length)
-  for (const { dir, title } of LECTURES) {
-    await page.goto(`${site.url}/${dir}/`)
-    await expect(page.locator('h1').first()).toContainText(title)
-    await expect(page.locator('.pm-diagnostics')).toHaveCount(0)
-    await expect(page.locator('.pm-scene').first()).toBeAttached()
-    // Each lecture's own narration, under its page: the two lectures' tracks have the same id.
-    const track = page.waitForResponse(response => response.url().endsWith(`/${dir}/lecture/script/track.json`) && response.ok())
-    const clip = page.waitForResponse(response => response.url().includes(`/${dir}/lecture/script/clips/`) && response.status() < 400)
-    await page.goto(`${site.url}/${dir}/?view=lecture&track=script`)
-    await track
-    await clip
-    await page.goto(`${site.url}/${dir}/slides/`)
-    await expect(page.locator('.slidev-page').first()).toBeAttached()
-  }
-  expect(errors).toEqual([])
-})
-
 test('the copy pnpm studio opens is its own repository, with the lectures, their voice and the notes for the AI, and checks clean without a speech engine', async ({ page }) => {
   const work = join(ROOT, '.presmium')
   mkdirSync(work, { recursive: true })

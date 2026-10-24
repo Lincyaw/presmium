@@ -3,8 +3,6 @@
   --pm-contrast-fg: #000000;
   --pm-contrast-link: #0030b0;
   --pm-contrast-border: #000000;
-
-  --slidev-theme-primary: var(--pm-contrast-link);
 }
 
 :is(:root, :root.dark)[data-pm-contrast='high'] {
@@ -29,28 +27,28 @@
   --pm-contrast-border: #ffffff;
 }
 
-:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) {
+:root[data-pm-contrast='high'] :is(.pm-document, .pm-slide) {
   background: var(--pm-contrast-bg) !important;
   color: var(--pm-contrast-fg) !important;
 }
 
-:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) *,
-:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) .shiki span {
+:root[data-pm-contrast='high'] :is(.pm-document, .pm-slide) *,
+:root[data-pm-contrast='high'] :is(.pm-document, .pm-slide) .shiki span {
   color: var(--pm-contrast-fg) !important;
   -webkit-text-fill-color: currentColor !important;
   text-shadow: none !important;
 }
 
-:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) *:not(:empty) {
+:root[data-pm-contrast='high'] :is(.pm-document, .pm-slide) *:not(:empty) {
   background-color: transparent !important;
   background-image: none !important;
 }
 
-:root[data-pm-contrast='high'] .slidev-layout h1 + p {
+:root[data-pm-contrast='high'] .pm-slide__title + .pm-block {
   opacity: 1 !important;
 }
 
-:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) pre .line[data-pm-dimmed] {
+:root[data-pm-contrast='high'] :is(.pm-document, .pm-slide) pre .line[data-pm-dimmed] {
   opacity: 0.6 !important;
 }
 
@@ -58,19 +56,19 @@
   opacity: 0.6 !important;
 }
 
-:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) :is(a, a *) {
+:root[data-pm-contrast='high'] :is(.pm-document, .pm-slide) :is(a, a *) {
   color: var(--pm-contrast-link) !important;
 }
 
-:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) a {
+:root[data-pm-contrast='high'] :is(.pm-document, .pm-slide) a {
   text-decoration: underline;
 }
 
-:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) :is(button, input, select, textarea, [role='button'], [role='tab']) {
+:root[data-pm-contrast='high'] :is(.pm-document, .pm-slide) :is(button, input, select, textarea, [role='button'], [role='tab']) {
   border: 1px solid var(--pm-contrast-border) !important;
 }
 
-:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) pre {
+:root[data-pm-contrast='high'] :is(.pm-document, .pm-slide) pre {
   outline: 1px solid var(--pm-contrast-border);
 }
 

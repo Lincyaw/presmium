@@ -71,6 +71,18 @@ export function currentPluginName(name: string): string {
   return name.startsWith(LEGACY_PLUGIN) ? PLUGIN + name.slice(LEGACY_PLUGIN.length) : name
 }
 
+// Plugins whose work the viewer does itself (the slides' host adapter, Slidev's); a headmatter may still list them.
+const RETIRED_PLUGINS: ReadonlySet<string> = new Set(['@lincyaw/addon-core'])
+
+export function isRetiredPlugin(name: string): boolean {
+  return RETIRED_PLUGINS.has(currentPluginName(name))
+}
+
+/** The plugins a headmatter lists, under their current names, the retired ones left out. */
+export function listedPlugins(names: readonly string[]): string[] {
+  return names.filter(name => !isRetiredPlugin(name)).map(currentPluginName)
+}
+
 const COMPILER_DIR = fileURLToPath(new URL('..', import.meta.url))
 const COMPILER_PACKAGE = JSON.parse(readFileSync(join(COMPILER_DIR, 'package.json'), 'utf8')) as { name: string, version: string }
 
@@ -134,7 +146,7 @@ export async function loadPlugins(deckDir: string, names: string[], sources?: Pl
 export async function loadOperatorPlugins(sources: PluginSources): Promise<{ plugins: LoadedPlugin[], problems: PluginProblem[] }> {
   const plugins: LoadedPlugin[] = []
   const problems: PluginProblem[] = []
-  for (const name of sources.listed.map(currentPluginName)) {
+  for (const name of listedPlugins(sources.listed)) {
     const dir = findPackageDir(name, resolve(sources.workspaceRoot), false) ?? bundledDir(name, sources)
     if (!dir) {
       problems.push({ name, severity: 'error', message: `operator plugin "${name}" (settings.presmium.workspace.plugins) is not installed at the workspace root ${sources.workspaceRoot}` })

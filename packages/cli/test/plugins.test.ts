@@ -38,19 +38,3 @@ it('loads no operator plugin the workspace does not list', async () => {
   expect(built.code, built.stdout + built.stderr).toBe(0)
   expect(ir(dir).meta.operatorStamp).toBeUndefined()
 })
-
-it('loads a plugin the headmatter lists under its old name, and says its current name', async () => {
-  // Below the regression deck, whose node_modules has the official plugins.
-  const work = fileURLToPath(new URL('../../../e2e/fixtures/regression/.presmium', import.meta.url))
-  mkdirSync(work, { recursive: true })
-  const dir = mkdtempSync(join(work, 'renamed-'))
-  dirs.push(dir)
-  writeFileSync(join(dir, 'lecture.md'), "---\ntitle: Renamed\nplugins:\n  - '@lincyaw/slidev-addon-core'\n---\n\n# Renamed\n\nText.\n")
-  const checked = await presmium(dir, ['check', '--json'])
-  expect(checked.code, checked.stdout + checked.stderr).toBe(0)
-  const { findings } = JSON.parse(checked.stdout) as { findings: { severity: string, message: string, source?: { line: number } }[] }
-  expect(findings).toEqual([expect.objectContaining({ severity: 'info', message: 'plugin "@lincyaw/slidev-addon-core" is now named "@lincyaw/addon-core"; the old name still works', source: expect.objectContaining({ line: 4 }) })])
-  const built = await presmium(dir, ['build', '--to', 'notebook', '--out', 'out'])
-  expect(built.code, built.stdout + built.stderr).toBe(0)
-  expect(ir(dir).config.plugins).toEqual(['@lincyaw/addon-core'])
-})

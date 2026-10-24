@@ -4,14 +4,13 @@ import type { App, ComputedRef, Ref } from 'vue'
 import { computed, getCurrentInstance, getCurrentScope, inject, onScopeDispose, readonly, ref } from 'vue'
 import { PmBoundary } from './error-boundary.ts'
 import { HOST, installed } from './host-key.ts'
-import { PmStepScope, useStepScope } from './step-scope.ts'
+import { useStepScope } from './step-scope.ts'
 import type { HostAdapter, SharedStateScope } from './contracts.ts'
 
 export function installHost(app: App, adapter: HostAdapter): void {
   installed.adapter = adapter
   app.provide(HOST, adapter)
   app.component('PmBoundary', PmBoundary)
-  app.component('PmStepScope', PmStepScope)
 }
 
 export function useHost(): HostAdapter {

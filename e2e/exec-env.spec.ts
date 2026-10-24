@@ -79,11 +79,3 @@ test('a Markdown table that hidden code prints shows as a table of the page, wit
   await expect(block.locator('.pm-code, .pm-code-block__run')).toHaveCount(0)
   await expect(block.locator('.pm-outputs')).toHaveClass(/pm-outputs--prose/)
 })
-
-test('in the slides, Python code with :run: live runs in the Monaco Runner and shows its output', async ({ page }) => {
-  const slide = await openSlide(page, deck(), 'slides-live', '幻灯片中的现场代码')
-  await expect(slide.locator('.slidev-runner-output .pm-run-hint')).toHaveText('按 运行这段代码')
-  await expect(slide.locator('.slidev-runner-output .pm-run-hint svg.pm-ui-icon')).toHaveCount(1)
-  await slide.getByRole('button', { name: 'Run code' }).click()
-  await expect(slide.locator('.slidev-runner-output')).toHaveText('45', RUNTIME)
-})

@@ -1,52 +1,11 @@
 import { FocusScope } from 'reka-ui'
 import { PmApprovals } from '@lincyaw/host'
-import type { Ref } from 'vue'
-import { defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { defineComponent, h, nextTick, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import { viewerMessages } from '../viewer-messages.ts'
 import { useViewer } from '../viewer-state.ts'
 import { overviewOpen, useActions } from './actions.ts'
-import { button, focusScope, layers, useCurrentSection, useModal, useOverlayBar, visuals } from './overlay.ts'
-
-interface Fitted {
-  width?: number
-  scale: number
-  height: number
-  shift: number
-}
-
-function useFit(frame: Readonly<Ref<HTMLElement | undefined>>, content: Readonly<Ref<HTMLElement | undefined>>) {
-  const fitted = ref<Fitted>()
-  const fit = () => {
-    const [outer, inner] = [frame.value, content.value]
-    if (!outer || !inner) return
-    const style = getComputedStyle(outer)
-    const available = {
-      height: outer.clientHeight - Number.parseFloat(style.paddingTop) - Number.parseFloat(style.paddingBottom) - 1,
-      width: outer.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight),
-    }
-    if (available.height <= 0 || available.width <= 0) return
-    inner.style.width = ''
-    const wide = Math.max(0, ...[...inner.querySelectorAll<HTMLElement>('pre, table, .pm-block, .pm-mermaid, .pm-math--display')].map(el => el.scrollWidth - el.clientWidth))
-    const width = available.width + wide
-    if (wide > 0) inner.style.width = `${width}px`
-    const natural = inner.offsetHeight
-    const scale = Math.min(1, available.width / width, available.height / natural)
-    const next = scale < 1 ? { width: wide > 0 ? width : undefined, scale, height: natural * scale, shift: (available.width - width * scale) / 2 } : undefined
-    if (JSON.stringify(next) !== JSON.stringify(fitted.value)) fitted.value = next
-    else if (next?.width) inner.style.width = `${next.width}px`
-  }
-  let observer: ResizeObserver | undefined
-  onMounted(() => {
-    observer = new ResizeObserver(fit)
-    if (frame.value) observer.observe(frame.value)
-  })
-  watch(content, (el, old) => {
-    if (old) observer?.unobserve(old)
-    if (el) observer?.observe(el)
-  }, { flush: 'post' })
-  onBeforeUnmount(() => observer?.disconnect())
-  return fitted
-}
+import { button, focusScope, layers, useCurrentSection, useModal, useOverlayBar } from './overlay.ts'
+import { SlideFace, SlideFit, useSlides } from './slide.ts'
 
 function moveInOverview(root: HTMLElement | undefined, key: string): boolean {
   const items = [...root?.querySelectorAll<HTMLElement>('.pm-overview__item') ?? []]
@@ -65,10 +24,8 @@ export const PresentView = defineComponent({
     const viewer = useViewer()
     const { section, step } = useCurrentSection(viewer, 'present')
     const root = shallowRef<HTMLElement>()
-    const frame = shallowRef<HTMLElement>()
-    const content = shallowRef<HTMLElement>()
     const bar = shallowRef<HTMLElement>()
-    const fitted = useFit(frame, content)
+    const { shape } = useSlides()
     useOverlayBar(bar)
     let ownsFullscreen = false
     const enterFullscreen = () => {
@@ -124,18 +81,8 @@ export const PresentView = defineComponent({
         'data-section': current.id,
         'data-step': step.value,
       }, [
-        h('div', { ref: frame, class: 'pm-present__slide' }, [
-          h('div', { class: 'pm-present__fit', style: fitted.value ? { height: `${fitted.value.height}px`, overflow: 'clip' } : undefined }, h('div', {
-            key: current.id,
-            ref: content,
-            class: 'pm-present__content',
-            style: fitted.value
-              ? { width: fitted.value.width ? `${fitted.value.width}px` : undefined, transform: `translateX(${fitted.value.shift}px) scale(${fitted.value.scale})` }
-              : undefined,
-          }, [
-            h('h1', { class: 'pm-present__title' }, current.title),
-            ...visuals(current, step.value),
-          ])),
+        h('div', { class: 'pm-present__slide' }, [
+          h(SlideFit, { shape: shape.value }, () => h(SlideFace, { key: current.id, section: current, step: step.value })),
           overviewOpen.value
             ? h('div', { 'class': 'pm-overview', 'role': 'dialog', 'aria-label': t.present.overview }, h('ol', { class: 'pm-overview__grid' }, sections.map(s => h('li', { key: s.id }, h('button', {
                 'type': 'button',
@@ -153,7 +100,7 @@ export const PresentView = defineComponent({
           button(t.present.overview, () => overviewOpen.value = !overviewOpen.value),
           viewer.options.openPresenter ? button(t.present.presenter, () => viewer.options.openPresenter!(viewer.position.value)) : null,
           button(t.present.fullscreen, enterFullscreen),
-          button(t.present.exit, () => viewer.setView(viewer.pageView.value)),
+          viewer.options.slidesOnly ? null : button(t.present.exit, () => viewer.setView(viewer.pageView.value)),
           h(PmApprovals, { placement: 'above' }),
         ]),
         ...layers('present', 'view'),

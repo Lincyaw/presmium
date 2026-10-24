@@ -11,8 +11,6 @@
   "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/web#readme",
   "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": [
-    "slidev-addon",
-    "slidev",
     "presmium",
     "renderer"
   ],
@@ -26,13 +24,12 @@
   "exports": {
     "./domain": "./src/domain/index.ts",
     "./presmium": "./src/node/presmium.ts",
+    "./slides": "./src/node/slides.ts",
     "./package.json": "./package.json"
   },
   "files": [
-    "custom-nav-controls.vue",
     "src"
   ],
-  "slidev": {},
   "dependencies": {
     "@vitejs/plugin-vue": "6.0.10",
     "escape-html": "1.0.3",
@@ -55,8 +52,6 @@
     "@lincyaw/host": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/viewer": "workspace:*",
-    "@slidev/client": "53.0.0",
-    "@slidev/types": "53.0.0",
     "@types/escape-html": "1.0.4",
     "@types/send": "^1.2.1"
   }

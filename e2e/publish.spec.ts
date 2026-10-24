@@ -38,21 +38,6 @@ async function checkExercise(exercise: Locator): Promise<void> {
   await expect(exercise.locator('.pm-exercise__report')).toHaveAttribute('data-executor', 'pyodide')
 }
 
-test('once loaded, the built deck reloads and plays offline, remote diagrams included', async ({ page, context }) => {
-  await openPublish(page)
-  await goOffline(page, context)
-  const slide = await openPublish(page)
-  await expect(slide.locator('pre.shiki')).toContainText('def add(a, b):')
-  await page.keyboard.press('ArrowLeft')
-  await expect(page).not.toHaveURL(slides('publish'))
-  await expect(slide).toBeHidden()
-  await expect(page.locator('.slidev-layout:visible h1')).toBeVisible()
-  await page.goto(slides(1))
-  await expect(page.locator('.slidev-page-1 .slidev-layout h1')).toHaveText('Presmium 功能测试文稿')
-  await page.goto(slides('content-sequence'))
-  await expect.poll(() => loaded(page.locator('.slidev-layout.pm-content-sequence').getByRole('img', { name: 'PlantUML 图' }))).toBeGreaterThan(0)
-})
-
 function textColors(root: Locator) {
   return root.evaluate((el) => {
     const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!
@@ -109,13 +94,6 @@ async function lowContrastTexts(slide: Locator): Promise<string[]> {
   return texts.filter(t => contrast(t.fg, t.bg) < 4.5).map(t => `${t.text} (${contrast(t.fg, t.bg).toFixed(2)})`)
 }
 
-test('offline, the slides still run Python: the service worker keeps the Pyodide runtime', async ({ page, context }) => {
-  await page.goto(slides(deck().slide('classroom-exercise')))
-  await goOffline(page, context)
-  await page.reload()
-  await checkExercise(page.locator('.slidev-layout .pm-exercise').filter({ visible: true }))
-})
-
 test('the high-contrast switch brings the text of the slide to WCAG AA and is remembered', async ({ page }) => {
   const slide = await openPublish(page)
   expect(await lowContrastTexts(slide)).not.toEqual([])
@@ -131,48 +109,8 @@ test('the high-contrast switch brings the text of the slide to WCAG AA and is re
   await expect(slide.getByRole('switch', { name: '高对比度' })).toHaveAttribute('aria-checked', 'true')
 })
 
-test('switched on in dark mode, high contrast brings the labels of a Mermaid diagram to AA', async ({ page }) => {
-  await page.emulateMedia({ colorScheme: 'dark' })
-  await page.goto(slides('content-diagrams'))
-  const slide = page.locator('.slidev-layout.pm-content-diagrams')
-  const label = slide.locator('.mermaid .edgeLabel p').first()
-  await expect(label).toHaveText('幻灯片')
-  expect((await lowContrastTexts(slide)).some(text => text.startsWith('幻灯片'))).toBe(true)
-
-  await page.getByRole('switch', { name: '高对比度' }).filter({ visible: true }).first().click()
-  await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
-  await expect.poll(() => lowContrastTexts(slide)).toEqual([])
-})
-
-test('high contrast keeps the opacity that other plugins give their step states', async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('presmium.publish.contrast', 'high'))
-  await page.goto(slides(`${deck().slide('guide')}?clicks=0`))
-  await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
-  await expect(page.locator('.slidev-layout.pm-guide .pm-cursor')).toHaveCSS('opacity', '0')
-})
-
 test.describe('every slide', () => {
   test.use({ serviceWorkers: 'block' })
-
-  for (const colorScheme of ['light', 'dark'] as const) {
-    test(`in high contrast, every slide reaches WCAG AA (${colorScheme})`, async ({ page }) => {
-      test.setTimeout(120_000)
-      await page.emulateMedia({ colorScheme })
-      await page.addInitScript(() => localStorage.setItem('presmium.publish.contrast', 'high'))
-      const failures: string[] = []
-      let no = 1
-      for (; ; no++) {
-        await page.goto(slides(`${no}?clicks=99`), { waitUntil: 'networkidle' })
-        const layout = page.locator(`.slidev-page-${no} .slidev-layout`)
-        await expect(layout.or(page.locator('.slidev-page-1 .slidev-layout')).filter({ visible: true }).first()).toBeVisible()
-        if (!(await layout.isVisible())) break
-        await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
-        failures.push(...(await lowContrastTexts(layout)).map(text => `slide ${no}: ${text}`))
-      }
-      expect(no).toBeGreaterThan(10)
-      expect(failures).toEqual([])
-    })
-  }
 })
 
 test.describe('web form', () => {

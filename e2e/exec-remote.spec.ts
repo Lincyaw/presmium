@@ -158,39 +158,6 @@ test.describe('static output, auth: prompt', () => {
   test.afterAll(async () => {
     await deck?.close()
   })
-
-  test('code runs once the learner pastes the token, which stays in this tab\'s sessionStorage and not in the output; the slides\' terminal uses it', async ({ page }) => {
-    test.setTimeout(180_000)
-    await page.goto(`${deck.web}/?section=remote`)
-    const where = block(page, 'where')
-    await expect(where.locator('.pm-output__stdout')).toHaveText(OUTPUT)
-    await expect(where.locator('.pm-code-block__run button').first()).toBeEnabled()
-    await where.locator('.pm-code-block__run button').first().click()
-    const dialog = page.getByRole('dialog', { name: '环境 lab 的令牌' })
-    await expect(dialog).toBeVisible()
-    await expect(dialog.locator('input.pm-ui-input[name="token"]')).toBeVisible()
-    expect(await lowContrast(page, '.pm-jupyter-token')).toEqual([])
-    await dialog.getByLabel('令牌').fill(jupyter!.token)
-    await dialog.getByRole('button', { name: '连接' }).click()
-    await expect(where.locator('.pm-outputs')).toHaveAttribute('data-source', 'live', KERNEL)
-    await expect(where.locator('.pm-output__stdout')).toHaveText(OUTPUT)
-
-    expect(await page.evaluate(() => sessionStorage.getItem('presmium.execJupyter.token:lab'))).toBe(jupyter!.token)
-    expect(await page.evaluate(() => JSON.stringify({ ...localStorage }))).not.toContain(jupyter!.token)
-    const leaking = files(join(deck.dir, 'dist')).filter(file => readFileSync(file).includes(jupyter!.token))
-    expect(leaking).toEqual([])
-
-    await page.goto(`${deck.slides}/${deck.slide('shell')}`)
-    const terminal = page.locator('.pm-terminal[data-env="lab"]')
-    await terminal.locator('.pm-terminal__open').click()
-    await expect(terminal).toHaveAttribute('data-state', 'open', KERNEL)
-    await expect(terminal.locator('.xterm-rows')).toContainText('$', KERNEL)
-    await terminal.locator('.xterm').click()
-    await page.keyboard.type('echo presmium-$((6*7))')
-    await page.keyboard.press('Enter')
-    await expect(terminal.locator('.xterm-rows')).toContainText('presmium-42')
-    await expect(page.getByRole('dialog')).toHaveCount(0)
-  })
 })
 
 test.describe('JupyterHub, auth: prompt with {user}', () => {

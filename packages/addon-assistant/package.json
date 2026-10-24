@@ -11,8 +11,6 @@
   "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/addon-assistant#readme",
   "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": [
-    "slidev-addon",
-    "slidev",
     "presmium"
   ],
   "type": "module",
@@ -29,12 +27,9 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "setup",
     "src"
   ],
-  "slidev": {},
   "dependencies": {
-    "@slidev/types": "53.0.0",
     "eventsource-parser": "4.1.2",
     "vue": "^3.5.42"
   },

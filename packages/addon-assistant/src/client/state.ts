@@ -55,7 +55,7 @@ export function trackSelection(): () => void {
     const node = selection.getRangeAt(0).commonAncestorContainer
     const element = node instanceof Element ? node : node.parentElement
     if (!text || element?.closest('.pm-assistant')) return
-    const section = element?.closest<HTMLElement>('[data-section]')?.dataset.section ?? (element?.closest('.slidev-page') ? slideNavigation.value?.position.value.section : undefined)
+    const section = element?.closest<HTMLElement>('[data-section]')?.dataset.section
     if (!section) return
     const block = element?.closest<HTMLElement>('[data-block]')
     selected.value = { text: text.slice(0, 4000), section, ...block?.dataset.block ? { block: block.dataset.block } : {} }

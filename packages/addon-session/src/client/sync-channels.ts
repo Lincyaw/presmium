@@ -15,7 +15,7 @@ export interface SyncChannelRoles {
   publishing(): boolean
 }
 
-/** The host's sync channels (shared state, Slidev's sync) carried through the classroom document. */
+/** The host's sync channels (shared state) carried through the classroom document. */
 export interface SyncChannels {
   transport: SyncTransport
   /** Observes the channels of the current document. */

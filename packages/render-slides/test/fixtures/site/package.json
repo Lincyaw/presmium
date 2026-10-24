@@ -1,9 +1,0 @@
-{
-  "name": "presmium-fixture-site",
-  "private": true,
-  "type": "module",
-  "exports": {
-    "./presmium": "./presmium.ts",
-    "./package.json": "./package.json"
-  }
-}

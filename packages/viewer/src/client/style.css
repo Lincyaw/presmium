@@ -646,33 +646,217 @@ html.pm-presenting {
 .pm-present__slide {
   position: relative;
   flex: 1;
-  width: 100%;
   min-height: 0;
-  max-width: min(92vw, 120rem);
-  margin: 0 auto;
-  padding: 5vh 4vw;
+  padding: 2vh 2vw;
+}
+
+/* A slide: its canvas, scaled as a whole to its box, and the Book layout on it. */
+
+.pm-slide-fit {
+  position: relative;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
-  font-size: clamp(1rem, min(2vw, 3.6vh), 1.75rem);
 }
 
-.pm-present__content {
-  transform-origin: top left;
+.pm-slide-fit__canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  box-shadow: var(--pm-shadow-page);
 }
 
-.pm-present .pm-present__slide :is(table, th, td) {
-  font-size: 1em;
+.pm-slide {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 1.9em 3.1em 2.6em;
+  overflow: hidden;
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-slide-text);
+  line-height: 1.6;
 }
 
-.pm-present .pm-present__slide :is(th, td) {
+.pm-slide :is(ul, ol) {
+  margin: 0.67em 0;
+  padding-inline-start: 1.3em;
+}
+
+.pm-slide li::marker {
+  color: var(--pm-color-accent);
+}
+
+.pm-slide :is(table, th, td) {
+  font-size: 0.95em;
+}
+
+.pm-slide :is(th, td) {
   padding: 0.3em 0.6em;
 }
 
-.pm-present .pm-present__slide ul {
-  padding-inline-start: 1.5em;
+.pm-slide__chapter {
+  display: flex;
+  align-items: center;
+  gap: 0.67em;
+  margin: 0 0 0.55em;
+  color: var(--pm-color-accent);
+  font-size: 0.67em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
 }
 
-.pm-present .pm-present__slide ol {
-  padding-inline-start: 2em;
+.pm-slide__chapter::after {
+  content: '';
+  flex: 1;
+  height: var(--pm-size-hairline);
+  background: var(--pm-color-line);
+}
+
+.pm-slide__body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pm-slide__content {
+  transform-origin: top left;
+}
+
+.pm-slide__content > .pm-block--markdown :is(p, ul, ol, blockquote) {
+  font-family: var(--pm-font-serif);
+}
+
+/* Over the reading styles of the document's headings (`.pm-document h2`). */
+.pm-slide .pm-slide__title {
+  margin: 0 0 0.45em;
+  padding: 0;
+  border: 0;
+  font-family: var(--pm-font-serif);
+  font-size: 2.2em;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.005em;
+}
+
+.pm-slide--cover {
+  justify-content: flex-end;
+  padding-bottom: 5.3em;
+}
+
+.pm-slide--cover .pm-slide__body {
+  flex: none;
+}
+
+.pm-slide--cover .pm-slide__title {
+  max-width: 85%;
+  font-size: 2.67em;
+  line-height: 1.12;
+}
+
+.pm-slide--cover .pm-slide__title::before {
+  content: '';
+  display: block;
+  width: 1em;
+  height: 0.07em;
+  margin-bottom: 0.45em;
+  border-radius: var(--pm-radius-chip);
+  background: var(--pm-color-accent);
+}
+
+.pm-slide--cover .pm-slide__content > .pm-block :is(p, ul, ol) {
+  max-width: 80%;
+  color: var(--pm-color-muted);
+  font-size: 1.1em;
+}
+
+.pm-slide--center .pm-slide__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  text-align: center;
+}
+
+.pm-slide--full {
+  padding: 0;
+}
+
+.pm-slide__footer {
+  position: absolute;
+  right: 3.1em;
+  bottom: 0.9em;
+  left: 3.1em;
+  display: flex;
+  align-items: center;
+  gap: 0.67em;
+  color: var(--pm-color-muted);
+  font-size: 0.61em;
+  line-height: 1.2;
+}
+
+.pm-slide__deck {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pm-slide__steps {
+  display: flex;
+  flex: none;
+  gap: 0.45em;
+  width: min(calc(var(--pm-slide-steps, 1) * 2em - 0.45em), 40%);
+  margin-left: auto;
+}
+
+.pm-slide__steps > span {
+  flex: 1;
+  min-width: 0.2em;
+  height: 0.27em;
+  border-radius: 0.2em;
+  background: var(--pm-color-line-strong);
+}
+
+.pm-slide__steps > span[data-done] {
+  background: var(--pm-color-accent);
+}
+
+.pm-slide__page {
+  margin-left: auto;
+  font-family: var(--pm-font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pm-slide__steps + .pm-slide__page {
+  margin-left: 0;
+}
+
+/* Every slide one after the other at the canvas's size, for printing. */
+
+.pm-slides-print__page {
+  position: relative;
+  overflow: hidden;
+  break-after: page;
+}
+
+@media print {
+  @page {
+    margin: 0;
+  }
+
+  html,
+  body {
+    margin: 0;
+  }
 }
 
 .pm-overview {
@@ -789,9 +973,12 @@ html.pm-presenting {
 }
 
 .pm-presenter__slide {
-  padding: 1rem;
-  border: 1px solid var(--pm-c-border);
-  border-radius: 0.5rem;
+  min-height: 0;
+}
+
+.pm-presenter__upcoming {
+  aspect-ratio: 16 / 9;
+  margin-bottom: 0.5rem;
 }
 
 .pm-presenter .pm-presenter__label {

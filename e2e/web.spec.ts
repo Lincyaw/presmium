@@ -380,48 +380,6 @@ test.describe('the reading fixture deck', () => {
     await expect(stepper).toBeHidden()
   })
 
-  test('a small link beside each section heading opens its slide at the step read; the slides open the section back', async ({ page }) => {
-    const index = deck.slide('reading')
-    await page.goto(deck.web('basics.html'))
-    const reading = page.locator('.pm-section[data-section="reading"]')
-    const link = reading.locator('h2').getByRole('link', { name: '在幻灯片中打开' })
-    expect(new URL((await link.getAttribute('href'))!, page.url()).pathname).toBe(`/slides/${index}`)
-    const [title, entry] = await Promise.all([reading.locator('h2').boundingBox(), link.boundingBox()])
-    expect(entry!.y).toBeLessThan(title!.y + title!.height)
-    expect((await shownText(reading.locator('h2')))[0]).toBe('阅读页面')
-    const scrolly = page.locator('.pm-section[data-section="scrolly"]')
-    await scrolly.locator('.pm-step[data-step="2"]').evaluate(el => el.scrollIntoView({ block: 'center' }))
-    await expect(scrolly).toHaveAttribute('data-step', '2')
-    const atStep = new URL((await scrolly.getByRole('link', { name: '在幻灯片中打开' }).getAttribute('href'))!, page.url())
-    expect(`${atStep.pathname}${atStep.search}`).toBe(`/slides/${index + 1}?clicks=2`)
-
-    await page.goto(deck.slides(String(index)))
-    await expect(page.locator(`.slidev-page-${index}`)).toContainText('上屏内容')
-    const toWeb = page.getByRole('link', { name: '在网页中阅读' })
-    await expect(toWeb).toHaveAttribute('href', new RegExp(`/web/\\?slide=${index}$`))
-    await page.goto((await toWeb.getAttribute('href'))!)
-    await expect(page).toHaveURL(/\/web\/basics\.html/)
-    await expect(page.locator('h2#reading')).toBeInViewport()
-
-    await page.goto(deck.web('?section=scrolly&step=2'))
-    await expect(scrolly).toHaveAttribute('data-step', '2')
-    await expect(scrolly.locator('.pm-step[data-step="2"]')).toBeInViewport()
-  })
-
-  test('without any deck configuration the slides offer "read on the web", which opens slide N at step S', async ({ page }) => {
-    expect(deck.doc.config.renderers.slides?.addons).toBeUndefined()
-    const index = deck.slide('scrolly')
-    await page.goto(deck.slides(`${index}?clicks=2`))
-    await expect(page.locator(`.slidev-page-${index}`)).toContainText('编译')
-    const link = page.getByRole('link', { name: '在网页中阅读' })
-    await expect(link).toHaveAttribute('href', new RegExp(`\\?slide=${index}&step=2$`))
-    await page.goto((await link.getAttribute('href'))!)
-    await expect(page).toHaveURL(/\/web\/basics\.html/)
-    const scrolly = page.locator('.pm-section[data-section="scrolly"]')
-    await expect(scrolly).toHaveAttribute('data-step', '2')
-    await expect(scrolly.locator('.pm-step[data-step="2"]')).toBeInViewport()
-  })
-
   test('a component counts its steps from its block in the web form too', async ({ page }) => {
     const stepper = async (section: string, step: number) => {
       await page.goto(deck.web(`advanced.html?view=present&section=${section}&step=${step}`))
@@ -643,21 +601,6 @@ test.describe('the fixture deck in the web form', () => {
     await expect.poll(disposals).toBe(before + 1)
   })
 
-  test('the plugins start in the web form as in the slides: the start reports agree', async ({ page }) => {
-    test.setTimeout(120_000)
-    const plugins = async () => {
-      await page.locator('.pm-presenter-panels summary').click()
-      await expect(page.locator('.pm-start-report [data-plugin="fixture.core.lifecycle"]')).toBeVisible()
-      const items = page.locator('.pm-start-report [data-plugin^="fixture.core."]')
-      return Object.fromEntries(await items.evaluateAll(list => list.map(li => [(li as HTMLElement).dataset.plugin, (li as HTMLElement).dataset.status])))
-    }
-    await page.goto(`${site()}?view=presenter&section=lifecycle`)
-    const web = await plugins()
-    expect(web['fixture.core.lifecycle']).toBe('started')
-    await page.goto(`${deck.url}/slides/presenter/${deck.slide('lifecycle')}`)
-    expect(await plugins()).toEqual(web)
-  })
-
   test('on a phone a long deck title does not widen any page, and the classroom badge stays on screen', async ({ page, browser }) => {
     const paths = await webPages(page, site())
     expect(paths.length).toBeGreaterThan(1)
@@ -688,25 +631,6 @@ test.describe('a deck that sets no renderer options', () => {
     })
   })
   test.afterAll(() => deck?.close())
-
-  test('goes from the web form to the slides and back, to the same section and step', async ({ page }) => {
-    expect(deck.doc.config.renderers).toEqual({})
-    const index = deck.slide('scrolly')
-    await page.goto(deck.web('basics.html'))
-    const scrolly = page.locator('.pm-section[data-section="scrolly"]')
-    await scrolly.locator('.pm-step[data-step="2"]').evaluate(el => el.scrollIntoView({ block: 'center' }))
-    await expect(scrolly).toHaveAttribute('data-step', '2')
-    await page.goto(new URL((await scrolly.getByRole('link', { name: '在幻灯片中打开' }).getAttribute('href'))!, page.url()).href)
-    await expect(page).toHaveURL(new RegExp(`/slides/${index}\\?clicks=2$`))
-    await expect(page.locator(`.slidev-page-${index}`)).toContainText('编译')
-
-    const back = page.getByRole('link', { name: '在网页中阅读' })
-    await expect(back).toHaveAttribute('href', new RegExp(`/web/\\?slide=${index}&step=2$`))
-    await page.goto((await back.getAttribute('href'))!)
-    await expect(page).toHaveURL(/\/web\/basics\.html/)
-    await expect(scrolly).toHaveAttribute('data-step', '2')
-    await expect(scrolly.locator('.pm-step[data-step="2"]')).toBeInViewport()
-  })
 })
 
 test.describe('a deck in French', () => {

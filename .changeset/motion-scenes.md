@@ -5,7 +5,6 @@
 "@lincyaw/compiler": minor
 "@lincyaw/addon-lecture": minor
 "@lincyaw/addon-guide": patch
-"@lincyaw/addon-core": patch
 "@lincyaw/viewer": patch
 "@lincyaw/render-slides": patch
 "@lincyaw/design": patch

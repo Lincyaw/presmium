@@ -23,41 +23,9 @@ async function expectExport(page: Page, env: Locator) {
   expect(strFromU8(files['README.md']!)).toContain('devcontainer exec --workspace-folder . python3 src/greet.py')
 }
 
-test('a built deck shows the snippet, needs the dev server to run it, and exports the environment', async ({ page }) => {
-  await page.goto(`${deck().slides}/${deck().slide('exec-local')}`)
-  const slide = page.locator('.slidev-page').filter({ has: page.locator('h1', { hasText: '本地环境' }) })
-  const env = slide.locator('.pm-local-env')
-  await expect(env).toHaveAttribute('data-state', 'disconnected')
-  await expect(env.locator('.pm-local-env__notice')).toHaveText('本地环境只在开发服务器中可用')
-  await expect(env.locator('pre')).toContainText('print(greet("Presmium"))')
-  await expect(env.locator('.pm-local-env__badge')).toHaveText('容器：.devcontainer/devcontainer.json')
-  await expect(env.locator('[data-action]')).toHaveCount(1)
-  await expectExport(page, env)
-  await expect(slide.locator('[data-pm-error]')).toHaveCount(0)
-})
-
 test('the web form exports the environment of the snippet', async ({ page }) => {
   await page.goto(`${deck().web}/exec-local.html`)
   const env = page.locator('.pm-local-env').first()
   await expect(env.locator('pre')).toContainText('print(greet("Presmium"))')
   await expectExport(page, env)
-})
-
-test('under presmium dev the snippet runs and exports, and nothing writes it back: no commit button, no commit route', async ({ page }) => {
-  test.setTimeout(300_000)
-  const dev = await startDev(deck().dir, 'slides')
-  try {
-    const env = page.locator('.pm-local-env').filter({ visible: true })
-    await openDevPage(page, `${dev.url.replace(/\/$/, '')}/${deck().slide('exec-local')}`, env.locator('[data-action="replicate"]'))
-    await expect(env).toHaveAttribute('data-state', 'connected')
-    await expect(env.locator('[data-action="run"]')).toHaveCount(1)
-    await expect(env.locator('[data-action="commit"]')).toHaveCount(0)
-    await expect(env).not.toContainText('提交')
-    for (const path of ['/__presmium/presmium.execLocal/commit', '/__presmium/exec-local/commit']) {
-      const res = await page.request.post(`${new URL(dev.url).origin}${path}`, { data: { file: 'src/greet.py', content: 'print(1)\n' } })
-      expect(res.status(), path).toBe(404)
-    }
-  } finally {
-    await dev.stop()
-  }
 })

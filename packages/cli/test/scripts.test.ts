@@ -24,24 +24,6 @@ function check(root: string, script: string): { code: number | null, output: str
   return { code: result.status, output: `${result.stdout}${result.stderr}` }
 }
 
-it('the layering check names the server and MCP modules that import browser packages, and IR runtime code that imports Slidev', () => {
-  const root = scratch()
-  cpSync(join(ROOT, 'scripts/check-layering.mjs'), join(root, 'scripts/check-layering.mjs'))
-  write(join(root, 'packages/mcp/src/probe.ts'), `import { createViewer } from '@lincyaw/viewer'\nimport { useServer } from '@lincyaw/host'\n`)
-  write(join(root, 'packages/server/src/probe.ts'), `export { webRenderer } from '@lincyaw/web/node'\n`)
-  write(join(root, 'packages/viewer/src/probe.ts'), `import { useNav } from '@slidev/client'\n`)
-  write(join(root, 'packages/kernel/src/probe.ts'), `import { copyPublished } from './node/index.ts'\n`)
-  write(join(root, 'packages/kernel/src/node/index.ts'), `import { cpSync } from 'node:fs'\n`)
-  const { code, output } = check(root, 'check-layering.mjs')
-  expect(code).toBe(1)
-  expect(output).toContain('packages/mcp/src/probe.ts: @lincyaw/viewer  (node packages are framework-free)')
-  expect(output).toContain('packages/mcp/src/probe.ts: @lincyaw/host  (node packages are framework-free)')
-  expect(output).toContain('packages/server/src/probe.ts: @lincyaw/web/node  (node packages are framework-free)')
-  expect(output).toContain('packages/viewer/src/probe.ts: @slidev/client  (IR runtime is form-neutral)')
-  expect(output).toContain('packages/kernel/src/probe.ts: ./node/index.ts  (kernel is framework-free)')
-  expect(output).not.toContain('packages/kernel/src/node/index.ts')
-})
-
 function skills(change: (skills: string) => void): { code: number | null, output: string } {
   const root = scratch()
   cpSync(join(ROOT, 'scripts/check-skills.mjs'), join(root, 'scripts/check-skills.mjs'))

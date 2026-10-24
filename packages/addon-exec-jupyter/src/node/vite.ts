@@ -1,5 +1,4 @@
 import { createRequire } from 'node:module'
-import { prebundleDependencies } from '@lincyaw/kernel/node'
 
 const require = createRequire(import.meta.url)
 
@@ -13,8 +12,4 @@ export function jupyterWsShim(): { name: string, enforce: 'pre', resolveId(sourc
       return source === 'ws' && importer?.includes('/@jupyterlab/services/') ? shim : undefined
     },
   }
-}
-
-export function jupyterPrebundle(): ReturnType<typeof prebundleDependencies> {
-  return prebundleDependencies('presmium:exec-jupyter-prebundle', '@lincyaw/addon-exec-jupyter', ['@jupyterlab/services', '@xterm/xterm', '@xterm/addon-fit'])
 }

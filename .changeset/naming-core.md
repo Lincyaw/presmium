@@ -12,7 +12,6 @@
 '@lincyaw/render-slides': patch
 '@lincyaw/render-notebook': patch
 '@lincyaw/classroom-server': patch
-'@lincyaw/addon-core': patch
 '@lincyaw/addon-code': patch
 '@lincyaw/addon-exec-jupyter': patch
 '@lincyaw/addon-exec-local': patch

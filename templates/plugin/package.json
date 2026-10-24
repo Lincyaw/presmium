@@ -5,9 +5,7 @@
   "type": "module",
   "keywords": [
     "presmium",
-    "presmium-plugin",
-    "slidev-addon",
-    "slidev"
+    "presmium-plugin"
   ],
   "engines": {
     "node": ">=22.19"
@@ -20,7 +18,6 @@
     "components",
     "src"
   ],
-  "slidev": {},
   "scripts": {
     "test": "vitest run",
     "check": "presmium check example",
@@ -40,7 +37,6 @@
     "@lincyaw/kernel": "^{{version}}",
     "@lincyaw/render-notebook": "^{{version}}",
     "@lincyaw/render-slides": "^{{version}}",
-    "@lincyaw/addon-core": "^{{version}}",
     "@lincyaw/web": "^{{version}}",
     "@types/node": "^22.19.0",
     "vitest": "^5.0.0",

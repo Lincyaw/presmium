@@ -28,9 +28,8 @@ it('build writes the IR, runs the deck renderers and reports what they cannot re
   const built = await presmium(dir, ['build', 'lecture', '--out', out])
   expect(built.code).toBe(0)
   expect(json(join(out, 'ir.json')).sections).toHaveLength(3)
-  const { config, outline, vite } = json(join(out, 'fixture/outline.json'))
+  const { config, outline } = json(join(out, 'fixture/outline.json'))
   expect(config).toEqual({ flavor: 'plain' })
-  expect(vite).toEqual(['fixture-vite-checked'])
   expect(outline['bpe-merge']).toEqual(['paragraph-1', 'list-1', 'paragraph-2', 'code-1'])
   expect(built.stdout).toContain('逐步演示#fixture-stepper-1: component node not supported by fixture')
 

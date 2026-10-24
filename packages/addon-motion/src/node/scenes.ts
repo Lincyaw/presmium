@@ -1,10 +1,8 @@
 import { existsSync, readdirSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
-import { literalGlob } from '@lincyaw/kernel/node'
 import { SCENE_EXTENSIONS, SCENE_NAME, SCENES_DIR } from '../domain/index.ts'
 
 export const SCENES_MODULE = 'virtual:presmium-motion/scenes'
-const RESOLVED = `\0${SCENES_MODULE}`
 
 /** The file of scene `name` in the deck (`scenes/<name>.ts` and the other extensions), if there is one. */
 export function sceneFile(deckDir: string, name: string): string | undefined {
@@ -34,49 +32,9 @@ export function deckScenes(deckDir: string): Map<string, string> {
   return scenes
 }
 
-interface ViteServer {
-  watcher: { add(path: string): void, on(event: string, listener: (file: string) => void): void }
-  moduleGraph: { getModuleById(id: string): unknown, invalidateModule(module: unknown): void }
-  ws: { send(payload: { type: 'full-reload' }): void }
-}
-
 /** The source of `virtual:presmium-motion/scenes`: each scene of the deck, by name, to an import of its file. */
 export function scenesModule(deckDir: string): string {
   const entries = [...deckScenes(deckDir)].map(([name, file]) => `  ${JSON.stringify(name)}: () => import(${JSON.stringify(file)}),`)
   return `export default {\n${entries.join('\n')}\n}\n`
 }
 
-/** The Vite plugin of both forms' dev servers and builds: `virtual:presmium-motion/scenes` from `scenesModule`. */
-export function scenesPlugin(deckDir: string) {
-  const root = join(deckDir, SCENES_DIR)
-  return {
-    name: 'presmium:motion-scenes',
-    // The scenes come through a virtual module, which Vite's dependency scan does not read: their files are scan entries,
-    // so the libraries they load (GSAP, Three.js, React…) are pre-bundled at once instead of found while the page loads.
-    config() {
-      const files = [...deckScenes(deckDir).values()]
-      return files.length > 0 ? { optimizeDeps: { entries: files.map(literalGlob) } } : undefined
-    },
-    resolveId(id: string) {
-      return id === SCENES_MODULE ? RESOLVED : undefined
-    },
-    load(id: string) {
-      return id === RESOLVED ? scenesModule(deckDir) : undefined
-    },
-    // Remotion's modules start with "use client", which the bundler reports and ignores: nothing for the author to do.
-    onLog(_level: string, log: { message?: string, id?: string }) {
-      return /Module level directives/.test(log.message ?? '') && /@remotion[\\/]/.test(`${log.id ?? ''} ${log.message ?? ''}`) ? false : undefined
-    },
-    configureServer(server: ViteServer) {
-      server.watcher.add(root)
-      const changed = (file: string) => {
-        if (!file.startsWith(root + sep)) return
-        const module = server.moduleGraph.getModuleById(RESOLVED)
-        if (module) server.moduleGraph.invalidateModule(module)
-        server.ws.send({ type: 'full-reload' })
-      }
-      server.watcher.on('add', changed)
-      server.watcher.on('unlink', changed)
-    },
-  }
-}

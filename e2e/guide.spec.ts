@@ -118,46 +118,6 @@ test('the spotlight and the beacon follow their targets when the window is resiz
   await expect.poll(() => beaconOffset(page)).toBeLessThan(2)
 })
 
-test('under the spotlight the host navigation and overview stay on top and usable', async ({ page }) => {
-  await openGuide(page, 4)
-  await expect.poll(() => cues(page)).toEqual(STEPS[4])
-  const nav = (name: string) => page.getByRole('button', { name }).click()
-  await nav('Go to next slide')
-  await expect.poll(() => cues(page)).toEqual(STEPS[5])
-  await nav('Go to previous slide')
-  await expect.poll(() => cues(page)).toEqual(STEPS[4])
-
-  const popover = (await page.locator('.pm-spotlight-popover').boundingBox())!
-  await nav('Show slide overview')
-  const first = page.locator('.slidev-page-1').last()
-  await expect(first).toBeVisible()
-  const covered = await page.evaluate(({ x, y }) => !document.elementFromPoint(x, y)?.closest('.driver-popover'), { x: popover.x + popover.width / 2, y: popover.y + popover.height / 2 })
-  expect(covered).toBe(true)
-  const thumbnail = (await first.boundingBox())!
-  await page.mouse.click(thumbnail.x + thumbnail.width / 2, thumbnail.y + thumbnail.height / 2)
-  await expect(page).toHaveURL(/\/1(\?|$)/)
-})
-
-test('stepping back undoes every cue and leaves the slide as a direct jump does', async ({ page }) => {
-  const slide = () => page.locator('.slidev-layout.pm-guide').evaluate((layout) => {
-    const copy = layout.cloneNode(true) as HTMLElement
-    for (const cursor of copy.querySelectorAll<HTMLElement>('.pm-cursor')) cursor.style.removeProperty('transform')
-    return copy.innerHTML
-  })
-  await openGuide(page, 0)
-  await expect.poll(() => cues(page)).toEqual(STEPS[0])
-  await expect.poll(() => cursorOffset(page, CURSOR_AT[0]!)).toBeLessThan(1)
-  const fresh = await slide()
-
-  await openGuide(page, STEPS.length - 1)
-  for (let step = STEPS.length - 1; step >= 0; step--) {
-    await expect.poll(() => cues(page)).toEqual(STEPS[step])
-    await expect.poll(() => cursorOffset(page, CURSOR_AT[step]!)).toBeLessThan(1)
-    if (step > 0) await page.keyboard.press('ArrowLeft')
-  }
-  expect(await slide()).toBe(fresh)
-})
-
 test('with reduced motion every cue shows its final state at once', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await openGuide(page, 0)

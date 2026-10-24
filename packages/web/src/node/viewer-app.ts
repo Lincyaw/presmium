@@ -42,8 +42,6 @@ const OWN_SHARED: Record<string, string[]> = {
 const NOT_SHARED = new Set(['./presmium', './package.json'])
 // The files a bundler loads as modules, by their extension.
 const MODULE_FILE = new Set(['.js', '.mjs', '.cjs', '.jsx', '.ts', '.mts', '.cts', '.tsx', '.vue'])
-// Slidev's client and its virtual modules (Slidev's documentation): the slides form's only.
-const SLIDES_CLIENT = (id: string) => id === '@slidev/client' || id.startsWith('@slidev/client/') || id.startsWith('#slidev/')
 const SHARED = 'virtual:presmium-app/shared:'
 // Builds kept unused this long are removed, the newest few always kept.
 const KEEP_MS = 7 * 24 * 3600_000
@@ -53,6 +51,18 @@ const KEEP_NEWEST = 3
 interface BuildContext {
   resolve(source: string, importer?: string): Promise<{ id: string, external?: boolean | 'absolute' | 'relative' } | null>
   load(options: { id: string, resolveDependencies?: boolean }): Promise<{ importedIds: string[], exports: string[] }>
+}
+
+/** A plugin package's `vite.config.ts`, as the app's builds read it: Vite plugins, and options of Vue's compiler. */
+interface PluginViteConfig {
+  plugins?: unknown[]
+  vue?: { template?: { compilerOptions?: { isCustomElement?: (tag: string) => boolean } } }
+}
+
+/** The options of Vue's plugin for the plugins' configurations: a tag is a custom element when one of them says so. */
+function vueOptions(configs: readonly (PluginViteConfig | undefined)[]) {
+  const tests = configs.flatMap(config => config?.vue?.template?.compilerOptions?.isCustomElement ?? [])
+  return tests.length > 0 ? { template: { compilerOptions: { isCustomElement: (tag: string) => tests.some(test => test(tag)) } } } : {}
 }
 
 /** A plugin package as the viewer app holds it: its browser modules, its public subpaths, its document modules. */
@@ -221,7 +231,6 @@ export async function appPlugin(name: string, dir: string): Promise<AppPlugin> {
   try {
     const node = await nodeEntry(dir, exports)
     documentModules = Object.keys(node?.documentModules?.({ deckDir: dir, workspaceRoot: dir, config: {} }) ?? {})
-    supported = !node?.vitePlugins || documentModules.length > 0
   } catch {
     supported = false
   }
@@ -345,26 +354,15 @@ export async function buildViewerApp(cacheDir: string, plugins: readonly AppPlug
     shared[specifier] = `${name}.js`
   }
   const documentModules = [...new Set(plugins.flatMap(p => p.documentModules))]
-  const viteConfigs = await Promise.all(plugins.flatMap(p => p.vite).map(async file => (await import(pathToFileURL(file).href) as { default?: { plugins?: unknown[] } }).default))
+  const viteConfigs = await Promise.all(plugins.flatMap(p => p.vite).map(async file => (await import(pathToFileURL(file).href) as { default?: PluginViteConfig }).default))
   const importer = join(work, 'main.ts')
   /**
    * The module the import map names for `specifier`: all the exports of its source, as the bundler finds them (its
-   * default export too when it has one). One whose modules import Slidev's client is the slides form's only: it throws.
+   * default export too when it has one).
    */
   const sharedModule = async (ctx: BuildContext, specifier: string): Promise<string> => {
     const resolved = await ctx.resolve(specifiers[specifier]!, importer)
     if (!resolved || resolved.external) throw new Error(`${specifier} cannot be resolved for the viewer app`)
-    const seen = new Set<string>()
-    const reaches = async (id: string): Promise<boolean> => {
-      if (seen.has(id)) return false
-      seen.add(id)
-      if (SLIDES_CLIENT(id)) return true
-      if (id.startsWith('\0')) return false
-      const info = await ctx.load({ id, resolveDependencies: true })
-      for (const imported of info.importedIds) if (await reaches(imported)) return true
-      return false
-    }
-    if (await reaches(resolved.id)) return `throw new Error(${JSON.stringify(`${specifier} is the slides form's only: it cannot run in the web form`)})\n`
     const source = JSON.stringify(resolved.id)
     const { exports } = await ctx.load({ id: resolved.id })
     return `export * from ${source}\n${exports.includes('default') ? `export { default } from ${source}\n` : ''}`
@@ -378,16 +376,14 @@ export async function buildViewerApp(cacheDir: string, plugins: readonly AppPlug
     logLevel: 'warn',
     mode: 'production',
     plugins: [
-      vue(),
+      vue(vueOptions(viteConfigs)),
       {
         name: 'presmium:viewer-app',
-        // Before Vite's resolution: Slidev's client stays an import, which the shared modules are checked for.
         enforce: 'pre' as const,
         resolveId(id: string) {
           if (id === REGISTRY) return `\0${REGISTRY}`
           if (id.startsWith(SHARED)) return `\0${id}`
           if (documentModules.includes(id)) return `${DOCUMENT_MODULE}${id}`
-          if (SLIDES_CLIENT(id)) return { id, external: true }
           return undefined
         },
         onLog: quietDirectives,
@@ -446,7 +442,7 @@ export async function buildViewerServer(app: ViewerApp, plugins: readonly AppPlu
   rmSync(work, { recursive: true, force: true })
   mkdirSync(work, { recursive: true })
   const documentModules = [...new Set(plugins.flatMap(p => p.documentModules))]
-  const viteConfigs = await Promise.all(plugins.flatMap(p => p.vite).map(async config => (await import(pathToFileURL(config).href) as { default?: { plugins?: unknown[] } }).default))
+  const viteConfigs = await Promise.all(plugins.flatMap(p => p.vite).map(async config => (await import(pathToFileURL(config).href) as { default?: PluginViteConfig }).default))
   const { build } = await import('vite')
   const { default: vue } = await import('@vitejs/plugin-vue')
   await build({
@@ -455,7 +451,7 @@ export async function buildViewerServer(app: ViewerApp, plugins: readonly AppPlu
     logLevel: 'warn',
     mode: 'production',
     plugins: [
-      vue(),
+      vue(vueOptions(viteConfigs)),
       {
         name: 'presmium:viewer-server',
         enforce: 'pre' as const,

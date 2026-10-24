@@ -1,4 +1,4 @@
-const LINES = ':is(.slidev-layout, .pm-document) pre .line'
+const LINES = ':is(.pm-document, .pm-slide) pre .line'
 const DIMMED = 'data-pm-dimmed'
 
 function mark(line: Element): void {

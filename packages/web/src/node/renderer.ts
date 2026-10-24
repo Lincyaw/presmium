@@ -1,5 +1,5 @@
 import { join, resolve } from 'node:path'
-import type { IRDocument, RenderContext, Renderer, SiteDevServer, SiteDocument, SiteSpec } from '@lincyaw/kernel'
+import type { IRDocument, RenderContext, RenderDevServer, Renderer, SiteDevServer, SiteDocument, SiteSpec } from '@lincyaw/kernel'
 import launchEditor from 'launch-editor'
 import { rendererConfig } from '../domain/index.ts'
 import { buildSite as buildPages } from './site-build.ts'
@@ -20,6 +20,38 @@ function documentWorkDir(ctx: RenderContext, dir: string): string {
   return join(ctx.workDir, 'documents', dir ? encodeURIComponent(dir) : '_')
 }
 
+/** The dev server of one document (`presmium dev`): its pages, or its slides. */
+export async function devDocument(doc: IRDocument, ctx: RenderContext, form: 'web' | 'slides'): Promise<RenderDevServer> {
+  let current = doc
+  const { port } = rendererConfig(ctx)
+  const server = await startSiteServer({
+    site: () => documentSite(current, ctx),
+    form,
+    ctx,
+    cacheDir: viewerAppCache(),
+    workDir: join(ctx.outDir, 'site'),
+    document: async () => current,
+    context: () => ctx,
+    nodePlugins: () => ctx.nodeVitePlugins ?? [],
+    translations: () => (form === 'web' ? ctx.translations ?? [] : []),
+    listen: { host: LOOPBACK, port: port ?? 0 },
+    openSource(file, line) {
+      if (!documentSourceFiles(current).has(file)) return
+      launchEditor(`${resolve(ctx.deckDir, file)}:${line}`, (opened, error) => {
+        console.error(`[presmium] could not open ${opened} in an editor${error ? `: ${error}` : ''}; set $EDITOR or $LAUNCH_EDITOR`)
+      })
+    },
+  })
+  return {
+    url: server.url,
+    async update(next) {
+      current = next
+      server.update('', next)
+    },
+    close: () => server.close(),
+  }
+}
+
 export const renderer: Renderer = {
   id: 'web',
   site: true,
@@ -32,35 +64,7 @@ export const renderer: Renderer = {
     return { outDir: ctx.outDir, skipped: [] }
   },
 
-  async dev(doc: IRDocument, ctx: RenderContext) {
-    let current = doc
-    const { port } = rendererConfig(ctx)
-    const server = await startSiteServer({
-      site: () => documentSite(current, ctx),
-      ctx,
-      cacheDir: viewerAppCache(),
-      workDir: join(ctx.outDir, 'site'),
-      document: async () => current,
-      context: () => ctx,
-      nodePlugins: () => ctx.nodeVitePlugins ?? [],
-      translations: () => ctx.translations ?? [],
-      listen: { host: LOOPBACK, port: port ?? 0 },
-      openSource(file, line) {
-        if (!documentSourceFiles(current).has(file)) return
-        launchEditor(`${resolve(ctx.deckDir, file)}:${line}`, (opened, error) => {
-          console.error(`[presmium] could not open ${opened} in an editor${error ? `: ${error}` : ''}; set $EDITOR or $LAUNCH_EDITOR`)
-        })
-      },
-    })
-    return {
-      url: server.url,
-      async update(next) {
-        current = next
-        server.update('', next)
-      },
-      close: () => server.close(),
-    }
-  },
+  dev: (doc, ctx) => devDocument(doc, ctx, 'web'),
 
   async buildSite(site: SiteSpec, ctx: RenderContext) {
     const documents: BuiltDocument[] = site.documents.flatMap((entry) => {

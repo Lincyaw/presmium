@@ -42,6 +42,8 @@ export interface AppConfig {
   base: string
   /** The language of the page; a translation's pages are below `<base><lang>/`. */
   lang: string
+  /** The form the page shows: the document's pages (`web`, by default), or its slides alone. */
+  form?: 'web' | 'slides'
   /** Where the page's IR is: JSON `{ revision, doc }`. */
   ir?: string
   /** The IR's changes as the dev server compiles them (server-sent events). */

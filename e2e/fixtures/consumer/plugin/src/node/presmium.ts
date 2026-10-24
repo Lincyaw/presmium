@@ -25,7 +25,6 @@ const plugin: PresmiumNodePlugin = {
   version: '1.0.0',
   kernel: '^1.0.0',
   directives: [hello],
-  vitePlugins: () => [{ name: 'acme:hello' }],
 }
 
 export default plugin

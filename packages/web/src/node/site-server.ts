@@ -7,7 +7,7 @@ import type { AddressInfo } from 'node:net'
 import type { Duplex } from 'node:stream'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { errorMessage, localRequestRefusal, previewFrameAncestors, safeDecodeURIComponent } from '@lincyaw/kernel'
+import { errorMessage, localRequestRefusal, previewFrameAncestors, safeDecodeURIComponent, viewFor } from '@lincyaw/kernel'
 import type { IRDocument, NodeVitePlugin, RenderContext, RuntimeAssets, SiteSpec } from '@lincyaw/kernel'
 import { spawnInteractiveNode } from '@lincyaw/kernel/node'
 import { diffDocuments } from '@lincyaw/viewer/domain'
@@ -46,8 +46,13 @@ const IMMUTABLE_MS = 365 * 24 * 3600_000
 const WAIT_MS = 15_000
 const IGNORED = /(?:^|[\\/])(?:node_modules|\.presmium|\.git|dist)(?:[\\/]|$)/
 
+/** What a page shows of a document: its pages, or its slides. */
+type Form = 'web' | 'slides'
+
 export interface SiteServerOptions {
   site(): SiteSpec
+  /** The form of the server's pages (`presmium dev --to slides` serves the slides); the workbench asks for either. */
+  form?: Form
   /** The site's render context: its path (`base`), the workspace, the operator's plugins, the previews' origins. */
   ctx: RenderContext
   /** Where viewer apps are kept, shared by every workspace. */
@@ -100,10 +105,10 @@ interface DocumentState {
   stale?: boolean
   watcher?: FSWatcher
   timer?: ReturnType<typeof setTimeout>
-  /** The published IR in each language (`''` the document's own). */
+  /** The published IR of each form and language (`slides:`, `web:` the document's own, `web:<lang>` a translation's). */
   published: Map<string, Published>
-  cache: PublicationCache
-  listeners: Set<{ res: ServerResponse, app: string, lang: string }>
+  caches: Map<Form, PublicationCache>
+  listeners: Set<{ res: ServerResponse, app: string, lang: string, form: Form }>
   assets?: Promise<RuntimeAssets[]>
 }
 
@@ -198,7 +203,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   const documents = () => options.site().documents.map(entry => entry.dir)
   const stateOf = (dir: string): DocumentState => {
     let state = states.get(dir)
-    if (!state) states.set(dir, state = { cache: new PublicationCache(), listeners: new Set(), published: new Map() })
+    if (!state) states.set(dir, state = { caches: new Map(), listeners: new Set(), published: new Map() })
     return state
   }
   const documentOf = async (dir: string): Promise<IRDocument> => {
@@ -376,30 +381,42 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     return { ready, done: Promise.all([built, state.building]) }
   }
 
-  const docs = () => new Map([...latest])
+  // A document as each form sees it (`{only}`): the server gets the document whole.
+  const views = new WeakMap<IRDocument, Map<Form, IRDocument>>()
+  const viewOf = (doc: IRDocument, form: Form): IRDocument => {
+    let known = views.get(doc)
+    if (!known) views.set(doc, known = new Map())
+    let view = known.get(form)
+    if (!view) known.set(form, view = viewFor(doc, form))
+    return view
+  }
+  const docs = () => new Map([...latest].map(([dir, doc]) => [dir, viewOf(doc, 'web')] as const))
 
-  /** The document's IR in a language as its pages read it: published, its files below its site path. */
-  const published = (dir: string, doc: IRDocument, lang = ''): Published => {
+  /** The document's IR in a form and language as its pages read it: published, its files below its site path. */
+  const published = (dir: string, doc: IRDocument, lang = '', form: Form = 'web'): Published => {
     const state = stateOf(dir)
-    const known = state.published.get(lang)
+    const key = `${form}:${lang}`
+    const known = state.published.get(key)
     if (known?.source === doc) return known
     const own = options.context(dir, doc)
     const docBase = documentBase(base, dir)
     const linked = isSingle(options.site()) ? undefined : documentPage(options.site(), base, docs())
-    const shown = publishedDocument(doc, own, join(options.workDir, 'media', segment(dir)), docBase, linked, lang ? undefined : state.cache)
+    let cache = state.caches.get(form)
+    if (!cache) state.caches.set(form, cache = new PublicationCache())
+    const shown = publishedDocument(lang ? doc : viewOf(doc, form), own, join(options.workDir, 'media', segment(dir)), docBase, linked, lang ? undefined : cache)
     const json = JSON.stringify(shown)
     const next = { source: doc, doc: shown, json, revision: irRevisionOfJson(json) }
-    state.published.set(lang, next)
+    state.published.set(key, next)
     return next
   }
 
   const translationOf = (dir: string, lang: string) => options.translations(dir).find(t => t.lang === lang)
 
   /** What a document's page in `lang` (`''` its own) tells the app. */
-  const documentConfig = (dir: string, doc: IRDocument, lang: string, page: WebPage | undefined, bundle: DocumentBundle | null | undefined, workbench: boolean): AppConfig => {
+  const documentConfig = (dir: string, doc: IRDocument, lang: string, page: WebPage | undefined, bundle: DocumentBundle | null | undefined, workbench: boolean, form: Form): AppConfig => {
     const site = options.site()
     const docBase = documentBase(base, dir)
-    const query = `document=${encodeURIComponent(dir)}${lang ? `&lang=${encodeURIComponent(lang)}` : ''}`
+    const query = `document=${encodeURIComponent(dir)}${lang ? `&lang=${encodeURIComponent(lang)}` : ''}${form === 'slides' ? '&form=slides' : ''}`
     const shown = lang ? translationOf(dir, lang)?.doc ?? doc : doc
     const own = doc.meta.lang ?? ctx.lang ?? 'zh-CN'
     const pages = lang ? translationPages(published(dir, shown, lang).doc, webPages(published(dir, doc).doc)) : undefined
@@ -408,10 +425,11 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
       document: dir,
       base: docBase,
       lang: lang || own,
+      ...form === 'slides' ? { form } : {},
       ir: `${base}${PREFIX}ir?${query}`,
       events: `${base}${PREFIX}events?${query}&app=${current!.manifest.key}`,
       ...bundle ? { bundle: `${base}${PREFIX}d/${segment(dir)}/${bundle.key}/${BUNDLE_ENTRY}` } : {},
-      search: `${base}${PREFIX}search?${query}`,
+      ...form === 'web' ? { search: `${base}${PREFIX}search?${query}` } : {},
       ...page ? { page: page.path } : {},
       ...pages ? { pages } : {},
       site: { ...documentSiteConfig({ site, base, dir, doc, lang: own, docs: docs(), workspace: !isSingle(site) }) },
@@ -450,7 +468,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   }
 
   /** A document's page (or its workbench page), once the app and the document's bundle are there. */
-  const documentPageResponse = async (res: ServerResponse, dir: string, lang: string, rest: string | undefined) => {
+  const documentPageResponse = async (res: ServerResponse, dir: string, lang: string, rest: string | undefined, form: Form = 'web') => {
     const { ready, done } = await prepare(dir)
     if (!ready()) await done
     if (!ready() || !current) return void res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end('the viewer app or the document\'s code could not be built; the server\'s log says why')
@@ -461,8 +479,10 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     const page = rest === undefined ? undefined : pageAt(pages, rest)
     if (rest !== undefined && !page) return plainPage(res, 'missing')
     const state = stateOf(dir)
-    html(res, 200, documentConfig(dir, doc, lang, page, state.bundle, rest === undefined), page && page.title !== shown.meta.title ? `${page.title} | ${shown.meta.title}` : shown.meta.title)
+    html(res, 200, documentConfig(dir, doc, lang, form === 'slides' ? undefined : page, state.bundle, rest === undefined, form), page && page.title !== shown.meta.title ? `${page.title} | ${shown.meta.title}` : shown.meta.title)
   }
+
+  const formOf = (url: URL): Form => (url.searchParams.get('form') === 'slides' ? 'slides' : url.searchParams.get('form') === 'web' ? 'web' : options.form ?? 'web')
 
   const irRoute = async (req: IncomingMessage, res: ServerResponse, url: URL) => {
     const dir = url.searchParams.get('document') ?? ''
@@ -471,7 +491,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     const doc = await documentOf(dir)
     const shown = lang ? translationOf(dir, lang)?.doc : doc
     if (!shown) return void res.writeHead(404).end()
-    const answer = published(dir, shown, lang)
+    const answer = published(dir, shown, lang, formOf(url))
     const etag = `"${answer.revision}"`
     const headers = { 'ETag': etag, [REVISION_HEADER]: answer.revision, 'Cache-Control': 'no-store' }
     if (req.headers['if-none-match'] === etag) return void res.writeHead(304, headers).end()
@@ -498,7 +518,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   const eventsRoute = (req: IncomingMessage, res: ServerResponse, url: URL) => {
     const dir = url.searchParams.get('document') ?? ''
     if (!documents().includes(dir)) return void res.writeHead(404).end()
-    const listener = { res, app: url.searchParams.get('app') ?? '', lang: url.searchParams.get('lang') ?? '' }
+    const listener = { res, app: url.searchParams.get('app') ?? '', lang: url.searchParams.get('lang') ?? '', form: formOf(url) }
     const state = stateOf(dir)
     res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no' })
     res.write('retry: 1000\n\n')
@@ -524,7 +544,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   const appRoute = async (req: IncomingMessage, res: ServerResponse, url: URL, rest: string) => {
     if (rest === 'view') {
       const dir = url.searchParams.get('document') ?? ''
-      return documents().includes(dir) ? documentPageResponse(res, dir, '', undefined) : plainPage(res, 'missing')
+      return documents().includes(dir) ? documentPageResponse(res, dir, '', undefined, formOf(url)) : plainPage(res, 'missing')
     }
     if (rest === 'ir') return irRoute(req, res, url)
     if (rest === 'search') return searchRoute(res, url)
@@ -538,10 +558,11 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   }
 
   /** A path below a document's site path: a page (its own, or a translation's), a published or run-time file, or its `public/`. */
-  const documentRoute = async (req: IncomingMessage, res: ServerResponse, dir: string, rest: string) => {
+  const documentRoute = async (req: IncomingMessage, res: ServerResponse, url: URL, dir: string, rest: string) => {
     const doc = await documentOf(dir)
     const own = options.context(dir, doc)
     const [first, ...others] = rest.split('/')
+    if (formOf(url) === 'slides' && (rest === '' || rest === 'index.html')) return documentPageResponse(res, dir, '', undefined, 'slides')
     if (first && others.length > 0 && translationOf(dir, first)) return documentPageResponse(res, dir, first, others.join('/'))
     if (rest === '' || rest.endsWith('.html')) {
       const pages = webPages(published(dir, doc).doc)
@@ -594,7 +615,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
       return void res.end()
     }
     if (dir === undefined) return siteRoute(res, rest)
-    return documentRoute(req, res, dir, dir ? rest.slice(dir.length + 1) : rest)
+    return documentRoute(req, res, url, dir, dir ? rest.slice(dir.length + 1) : rest)
   }
 
   // `presmium dev`: the Presmium server's routes below `/__presmium/`, WebSockets included, as the page's own.
@@ -637,12 +658,18 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
       if (!state) return
       // The plugins' run-time files follow their configuration of the document.
       state.assets = undefined
-      const before = state.published.get('')
-      const after = published(dir, doc)
-      for (const lang of [...state.published.keys()].filter(lang => lang)) state.published.delete(lang)
-      const update = before && diffDocuments(before.doc, after.doc)
-      if (before && !update) return
-      notify(dir, UPDATE_EVENT, lang => ({ revision: after.revision, ...!lang && before && update ? { base: before.revision, update } : {} } satisfies DevUpdateEvent))
+      for (const key of [...state.published.keys()].filter(key => !key.endsWith(':'))) state.published.delete(key)
+      // Each form's pages get the sections of their form that changed; a translation's read their IR again.
+      for (const form of new Set([...state.listeners].map(listener => listener.form))) {
+        const before = state.published.get(`${form}:`)
+        const after = published(dir, doc, '', form)
+        const update = before && diffDocuments(before.doc, after.doc)
+        if (before && !update) continue
+        const change = (lang: string): DevUpdateEvent => ({ revision: after.revision, ...!lang && before && update ? { base: before.revision, update } : {} })
+        for (const listener of state.listeners) {
+          if (listener.form === form) listener.res.write(`event: ${UPDATE_EVENT}\ndata: ${JSON.stringify(change(listener.lang))}\n\n`)
+        }
+      }
     },
     async app(dir, wait = false) {
       if (closed || !documents().includes(dir)) return undefined

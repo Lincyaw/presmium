@@ -11,8 +11,6 @@
   "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/addon-publish#readme",
   "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": [
-    "slidev-addon",
-    "slidev",
     "presmium"
   ],
   "type": "module",
@@ -35,21 +33,13 @@
   "files": [
     "bin",
     "components",
-    "index.html",
-    "setup",
-    "src",
-    "style.css"
+    "src"
   ],
-  "slidev": {},
   "dependencies": {
-    "@slidev/types": "53.0.0",
     "jiti": "^2.7.0",
     "pdf-lib": "^1.17.1",
     "pixelmatch": "^8.0.0",
     "pngjs": "^7.0.0",
-    "vite-plugin-pwa": "^1.3.0",
-    "vite-plugin-remote-assets": "^2.1.0",
-    "vite-plugin-webfont-dl": "^3.13.1",
     "vue": "^3.5.42"
   },
   "peerDependencies": {
@@ -64,9 +54,6 @@
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/render-slides": "workspace:*",
     "@lincyaw/web": "workspace:*",
-    "@slidev/cli": "53.0.0",
-    "@slidev/client": "53.0.0",
-    "@slidev/theme-default": "^0.25.0",
     "@types/pngjs": "^6.0.5",
     "pdfjs-dist": "5.7.284",
     "playwright-chromium": "1.64.1"

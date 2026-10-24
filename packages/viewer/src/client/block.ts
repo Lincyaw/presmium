@@ -1,4 +1,4 @@
-import { PmBoundary, provideStepScope } from '@lincyaw/host'
+import { PmBoundary, provideStepScope, useStaticRender } from '@lincyaw/host'
 import { blockVisible, componentProps, fnv1a64 } from '@lincyaw/kernel'
 import type { ComponentNode, IRBlock, IRSection } from '@lincyaw/kernel'
 import type { InjectionKey, PropType, VNode } from 'vue'
@@ -51,8 +51,11 @@ const ComponentView = defineComponent({
       const { props: values, children } = props.block.node as ComponentNode
       return fnv1a64(JSON.stringify([values, children ?? []]))
     })
+    // A printed page (an export) shows what the component's author gave for paper, where there is something.
+    const printed = useStaticRender()
     return () => {
       const node = props.block.node as ComponentNode
+      if (printed.value && node.fallback) return h('div', { 'class': 'pm-static-fallback', 'data-component': node.name }, fallbackOf(node, props.section.id))
       const component = findComponent(node.name)
       if (!component) {
         const fallback = fallbackOf(node, props.section.id)

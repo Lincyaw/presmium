@@ -14,12 +14,18 @@ export async function webRenderer(root: string, bundled?: string): Promise<Rende
   return renderer
 }
 
-export function siteIR(compilation: Compilation, doc: IRDocument = compilation.doc): IRDocument {
+/** The document as the workspace site has it, every form's blocks in it: its plugins named by their directories. */
+export function siteDocumentIR(compilation: Compilation, doc: IRDocument = compilation.doc): IRDocument {
   const dirs = doc.config.plugins.flatMap((name) => {
     const loaded = compilation.plugins.find(plugin => plugin.name === name)
     return loaded ? [loaded.dir] : []
   })
-  return viewFor({ ...doc, config: { ...doc.config, plugins: dirs } }, 'web')
+  return { ...doc, config: { ...doc.config, plugins: dirs } }
+}
+
+/** The document's web form on the workspace site. */
+export function siteIR(compilation: Compilation, doc: IRDocument = compilation.doc): IRDocument {
+  return viewFor(siteDocumentIR(compilation, doc), 'web')
 }
 
 export async function siteTranslations(compilation: Compilation): Promise<{ translations: NonNullable<SiteDocument['translations']>, findings: Finding[] }> {
@@ -62,7 +68,6 @@ export function siteContext(options: SiteContextOptions): RenderContext {
     pluginDirs: {},
     renderers: ['web'],
     base: options.base ?? '/',
-    vitePlugins: [],
     extensionFor: () => undefined,
     portable: (value, from) => portable(value, from, root),
     localAsset: (source, url) => publishedAsset(options, source, url, ctx.report),

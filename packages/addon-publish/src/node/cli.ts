@@ -4,21 +4,19 @@ import type { ParseArgsConfig } from 'node:util'
 import { DECK_ENTRY } from '@lincyaw/compiler'
 import { errorMessage } from '@lincyaw/kernel'
 import { isDeck } from './deck.ts'
-import { exportDeck } from './export.ts'
-import { EXPORT_TIMEOUT, EXPORT_WAIT } from './slidev-export.ts'
+import { EXPORT_TIMEOUT, exportDeck } from './export.ts'
 import { visualDiff } from './visual-diff.ts'
 
-const EXPORT_USAGE = `Usage: presmium-export [deckDir] [--format pdf|pptx|png] [--output <file.pdf | file.pptx | dir>] [--with-clicks] [--range <1,3-5>] [--dark] [--wait <ms>] [--timeout <ms>] [--json]
+const EXPORT_USAGE = `Usage: presmium-export [deckDir] [--format pdf|pptx|png] [--output <file.pdf | file.pptx | dir>] [--with-clicks] [--range <1,3-5>] [--dark] [--timeout <ms>] [--json]
 
-Renders the deck with the slides renderer and exports the Slidev deck it
-writes with \`slidev export\`: to PDF (default), then checks that every link
-the slides show (Markdown links, href and *link/*url attributes, code
-permalinks) is still a link in the PDF, and exits 1 when a link was lost; to
-PowerPoint (a picture of each slide, no links); or to PNG images, one per slide (per click step with --with-clicks), in the
---output directory, where links cannot be checked. The print page loads
-until the network is idle, within --timeout (default ${EXPORT_TIMEOUT}), and
-settles for --wait (default ${EXPORT_WAIT}) before it is captured; an export
-that lacks a slide fails (exit 2).`
+Builds the deck's slides and prints them in Chromium (playwright-chromium): to
+PDF (default), then checks that every link the slides show (Markdown links,
+href and *link/*url attributes, code permalinks) is still a link in the PDF,
+and exits 1 when a link was lost; to PowerPoint (a picture of each slide, its
+narration as the speaker notes, no links); or to PNG images, one per slide
+(per click step with --with-clicks), in the --output directory, where links
+cannot be checked. The print page must be ready within --timeout (default
+${EXPORT_TIMEOUT}); an export that lacks a page fails (exit 2).`
 
 const DIFF_USAGE = `Usage: presmium-diff <refA> <refB> [deckDir] [--out <dir>] [--threshold <ratio>] [--wait <ms>] [--install] [--json]
 
@@ -27,7 +25,7 @@ and click step, exported as PNG) and the web form (every page in the document
 view and every section in the present view, captured with playwright-chromium).
 Compares the images pixel by pixel and writes report.md and report.json
 (default directory <deckDir>/.presmium/diff). Exits 1 when a page differs by
-more than the threshold (a ratio of pixels, default 0). --wait lets each page
+more than the threshold (a ratio of pixels, default 0). --wait lets each web page
 settle before it is captured (default 500); a slides export that lacks a slide
 fails (exit 2). Both commits render with the host and addons
 installed for the deck; --install renders each commit with the dependencies of
@@ -60,7 +58,6 @@ export async function exportMain(argv: string[]): Promise<number> {
     'with-clicks': { type: 'boolean', short: 'c' },
     'range': { type: 'string' },
     'dark': { type: 'boolean' },
-    'wait': { type: 'string' },
     'timeout': { type: 'string' },
   }, EXPORT_USAGE)
   if (!args) return 2
@@ -74,9 +71,9 @@ export async function exportMain(argv: string[]): Promise<number> {
     console.error(EXPORT_USAGE)
     return 2
   }
-  const [wait, timeout] = [values.wait, values.timeout].map(value => (value === undefined ? undefined : Number(value)))
-  if ((wait !== undefined && !(wait >= 0)) || (timeout !== undefined && !(timeout > 0))) {
-    console.error(`--wait and --timeout take a number of milliseconds\n\n${EXPORT_USAGE}`)
+  const timeout = values.timeout === undefined ? undefined : Number(values.timeout)
+  if (timeout !== undefined && !(timeout > 0)) {
+    console.error(`--timeout takes a number of milliseconds\n\n${EXPORT_USAGE}`)
     return 2
   }
   const deckDir = deckOrError(positionals[0] ?? '.', EXPORT_USAGE)
@@ -89,7 +86,6 @@ export async function exportMain(argv: string[]): Promise<number> {
       withClicks: values['with-clicks'] as boolean | undefined,
       range: values.range as string | undefined,
       dark: values.dark as boolean | undefined,
-      wait,
       timeout,
     })
     const lost = result.links.filter(link => link.pages.length === 0)

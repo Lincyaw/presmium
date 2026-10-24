@@ -153,65 +153,6 @@ test.describe('static auth: prompt', () => {
   test.afterAll(async () => {
     await deck?.close()
   })
-
-  test('cancel and wrong-token retry work; a valid token stays in sessionStorage, with live webpage and slide execution and terminals', async ({ page, browser }) => {
-    test.setTimeout(240_000)
-    const seen: { url: string, token: boolean }[] = []
-    page.on('request', request => seen.push({ url: request.url(), token: `${request.url()} ${JSON.stringify(request.headers())}`.includes(jupyter!.token) }))
-    page.on('websocket', socket => seen.push({ url: socket.url(), token: socket.url().includes(jupyter!.token) }))
-    await page.goto(deck!.web, { waitUntil: 'domcontentloaded', timeout: 90_000 })
-    const where = block(page, 'where')
-    await expect(where.locator('.pm-output__stdout')).toHaveText(OUTPUT)
-    await where.locator('.pm-code-block__run button').first().click()
-    const dialog = page.getByRole('dialog', { name: '环境 lab 的令牌' })
-    await expect(dialog).toBeVisible()
-    await dialog.getByRole('button', { name: '取消' }).click()
-    await expect(where.locator('.pm-output__note')).toContainText('没有输入环境 lab 的令牌')
-    await expect(where.locator('.pm-outputs')).toHaveAttribute('data-source', 'recorded')
-    expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull()
-
-    await where.locator('.pm-code-block__run button').first().click()
-    await dialog.getByLabel('令牌').fill('incorrect-test-token')
-    await dialog.getByRole('button', { name: '连接' }).click()
-    // Jupyter's unauthenticated error response may omit CORS headers, so a
-    // browser cannot always distinguish a rejected token from a network error.
-    await expect(where.locator('.pm-output__note')).toContainText(/拒绝了令牌|无法连接环境 lab/, KERNEL)
-    await expect(where.locator('.pm-outputs')).toHaveAttribute('data-source', 'recorded')
-    expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull()
-
-    await where.locator('.pm-code-block__run button').first().click()
-    await dialog.getByLabel('令牌').fill(jupyter!.token)
-    await dialog.getByRole('button', { name: '连接' }).click()
-    await expect(where.locator('.pm-outputs')).toHaveAttribute('data-source', 'live', KERNEL)
-    await expect(where.locator('.pm-output__stdout')).toHaveText(OUTPUT)
-    expect((await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)) === jupyter!.token).toBe(true)
-    expect((await page.evaluate(() => JSON.stringify({ ...localStorage }))).includes(jupyter!.token)).toBe(false)
-    await terminalEcho(page)
-
-    await page.goto(`${deck!.slides}/${deck!.slide('remote')}`, { waitUntil: 'domcontentloaded', timeout: 90_000 })
-    const slide = page.locator('.slidev-page').filter({ visible: true })
-    await expect(slide.locator('.pm-run-recorded')).toHaveText('预录输出')
-    await slide.getByRole('button', { name: 'Run code' }).click()
-    await expect(slide.locator('.pm-run-recorded')).toHaveCount(0, KERNEL)
-    await expect(slide.locator('.slidev-runner-output .output-line')).toHaveText(['Jupyter CPython 42'])
-    await expect(page.getByRole('dialog')).toHaveCount(0)
-    await page.goto(`${deck!.slides}/${deck!.slide('shell')}`, { waitUntil: 'domcontentloaded', timeout: 90_000 })
-    await terminalEcho(page)
-    await expect(page.getByRole('dialog')).toHaveCount(0)
-
-    const tokenRequests = seen.filter(request => request.token)
-    expect(tokenRequests.length).toBeGreaterThan(0)
-    expect(tokenRequests.every(request => new URL(request.url).host === new URL(jupyter!.url).host)).toBe(true)
-    expect(artifactFiles(join(deck!.dir, 'dist')).filter(file => readFileSync(file).includes(jupyter!.token))).toEqual([])
-    const separate = await browser.newContext()
-    try {
-      const fresh = await separate.newPage()
-      await fresh.goto(deck!.web, { waitUntil: 'domcontentloaded', timeout: 90_000 })
-      expect(await fresh.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull()
-    } finally {
-      await separate.close()
-    }
-  })
 })
 
 test.describe('static auth: none', () => {

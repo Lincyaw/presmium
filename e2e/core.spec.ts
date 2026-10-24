@@ -124,51 +124,6 @@ test.describe('the fixture deck in the slides form', () => {
   })
   test.afterAll(() => deck?.close())
 
-  test('jumping to step 3 renders the same DOM as stepping there from step 0', async ({ page }) => {
-    const layout = page.locator('.slidev-layout.fx-steps').first()
-    await open(page, slide('steps', '?clicks=3'))
-    await expect(layout.locator('.demo-stepper')).toHaveAttribute('data-step', '3')
-    const expected = await layout.innerHTML()
-
-    await open(page, slide('steps'))
-    const stepper = layout.locator('.demo-stepper')
-    await expect(stepper).toHaveAttribute('data-step', '0')
-    for (const step of ['1', '2', '3']) {
-      await page.keyboard.press('ArrowRight')
-      await expect(stepper).toHaveAttribute('data-step', step)
-    }
-    expect(await layout.innerHTML()).toBe(expected)
-  })
-
-  test('a component counts its steps from its block: at its first internal step it looks the same wherever the block appears', async ({ page }) => {
-    const stepper = async (url: string, layout: string) => {
-      await open(page, url)
-      const stepper = page.locator(`.slidev-layout.${layout} .demo-stepper`).first()
-      await expect(stepper).toHaveAttribute('data-step', '1')
-      await expect(stepper.locator('li[data-status="active"]')).toHaveText('Parse')
-      return (await stepper.innerHTML()).replace(/ data-slidev-clicks-(start|end)="\d+"/g, '')
-    }
-    const early = await stepper(slide('steps', '?clicks=1'), 'fx-steps')
-    const late = await stepper(slide('late-steps', '?clicks=3'), 'fx-late-steps')
-    expect(late).toBe(early)
-
-    await page.keyboard.press('ArrowLeft')
-    await expect(page.locator('.slidev-layout.fx-late-steps .demo-stepper').first()).toHaveAttribute('data-step', '0')
-  })
-
-  test('narration becomes the speaker notes, highlighted at the step it belongs to', async ({ page }) => {
-    await open(page, presenter('steps'))
-    const notes = page.locator('.slidev-note')
-    const intro = notes.locator('p', { hasText: 'Here a component follows the steps' })
-    const first = notes.locator('p', { hasText: 'The first step highlights' })
-    await expect(intro).not.toHaveClass(/slidev-note-fade/)
-    await expect(first).toHaveClass(/slidev-note-fade/)
-
-    await page.keyboard.press('ArrowRight')
-    await expect(first).not.toHaveClass(/slidev-note-fade/)
-    await expect(intro).toHaveClass(/slidev-note-fade/)
-  })
-
   test('the slide shows the visual blocks only: no narration, no content limited to other renderers', async ({ page }) => {
     await open(page, slide('steps'))
     const steps = shown(page, 'steps')
@@ -257,21 +212,6 @@ test.describe('the fixture deck in the slides form', () => {
     await expect(await label('presmium-fixture-deck-with-a-title-too-long-for-a-phone')).toHaveText('cover')
   })
 
-  test('an en-US deck sets <html lang> and speaks English, also in a Chinese browser: the start report, the button to the web form', async ({ browser }) => {
-    const context = await browser.newContext({ locale: 'zh-CN' })
-    const page = await context.newPage()
-    await open(page, slide('global'))
-    await expect(page.locator('html')).toHaveAttribute('lang', 'en-US')
-    await expect(page.getByRole('link', { name: 'Read on the web' })).toHaveAttribute('href', new RegExp(`/web/\\?slide=${deck.slide('global')}$`))
-
-    await open(page, presenter('lifecycle'))
-    const panels = await openPanels(page)
-    await expect(panels.locator('[data-panel="presmium.core.start-report"] h3')).toHaveText('Start report')
-    await expect(panels.locator('[data-plugin="fixture.core.lifecycle"]')).toHaveText('fixture.core.lifecycle started')
-    expect(await page.evaluate(() => window.fixtureLang)).toBe('en-US')
-    await context.close()
-  })
-
   test('a plugin for another kernel, a throwing setup and a dependency cycle are reported; plugins are disposed when the page goes away', async ({ page }) => {
     await open(page, presenter('lifecycle'))
     const report = (await openPanels(page)).locator('.pm-start-report')
@@ -321,52 +261,5 @@ test.describe('the fixture deck in the slides form', () => {
     await a.getByRole('button', { name: 'Add one' }).click()
     await expect(count(b)).toHaveText('1')
     await expect(web.locator('.fx-shared__count').first()).toHaveText('0')
-  })
-
-  test('a remote plugin state goes to the other devices through the sync transports and comes back from them, in the order the changes happen', async ({ page }) => {
-    await open(page, slide('shared'))
-    const remote = shown(page, 'shared').locator('.fx-remote__count')
-    const published = () => page.evaluate(() => window.fixtureDevice!.published)
-    await shown(page, 'shared').getByRole('button', { name: 'Count on every device' }).click()
-    await expect(remote).toHaveText('1')
-    await expect.poll(async () => (await published()).at(-1)).toEqual({ value: 1, fromRemote: false })
-    await page.evaluate(() => window.fixtureDevice!.receive({ value: 5 }))
-    await expect(remote).toHaveText('5')
-
-    const button = `.slidev-page-${deck.slide('shared')} .fx-remote button`
-    await page.evaluate((button) => {
-      document.querySelector<HTMLButtonElement>(button)!.click()
-      window.fixtureDevice!.receive({ value: 9 })
-    }, button)
-    await expect(remote).toHaveText('9')
-    await page.evaluate((button) => {
-      window.fixtureDevice!.receive({ value: 20 })
-      document.querySelector<HTMLButtonElement>(button)!.click()
-    }, button)
-    await expect(remote).toHaveText('21')
-    expect((await published()).slice(-4)).toEqual([
-      { value: 6, fromRemote: false },
-      { value: 9, fromRemote: true },
-      { value: 20, fromRemote: true },
-      { value: 21, fromRemote: false },
-    ])
-  })
-
-  test('with reduced motion, turning a page and revealing an item animate nothing', async ({ page }) => {
-    const ready = async () => {
-      await open(page, slide('lifecycle'))
-      await expect(shown(page, 'lifecycle').locator('[data-pm-error="FixtureBroken"]')).toBeVisible()
-      await page.waitForLoadState('networkidle')
-    }
-    await ready()
-    expect(await animationsAfter(page, 'ArrowRight')).toBeGreaterThan(0)
-    await expect(page).toHaveURL(new RegExp(`/slides/${deck.slide('motion')}$`))
-
-    await page.emulateMedia({ reducedMotion: 'reduce' })
-    await ready()
-    expect(await animationsAfter(page, 'ArrowRight')).toBe(0)
-    await expect(page).toHaveURL(new RegExp(`/slides/${deck.slide('motion')}$`))
-    expect(await animationsAfter(page, 'ArrowRight')).toBe(0)
-    await expect(shown(page, 'motion').locator('li').nth(1)).not.toHaveClass(/slidev-vclick-hidden/)
   })
 })

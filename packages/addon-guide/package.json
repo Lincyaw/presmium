@@ -11,8 +11,6 @@
   "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/addon-guide#readme",
   "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": [
-    "slidev-addon",
-    "slidev",
     "presmium"
   ],
   "type": "module",
@@ -30,12 +28,9 @@
   },
   "files": [
     "components",
-    "setup",
     "src"
   ],
-  "slidev": {},
   "dependencies": {
-    "@slidev/types": "53.0.0",
     "driver.js": "^1.9.0",
     "vue": "^3.5.42"
   },
@@ -46,8 +41,7 @@
   "devDependencies": {
     "@lincyaw/host": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
-    "@lincyaw/viewer": "workspace:*",
-    "@slidev/client": "53.0.0"
+    "@lincyaw/viewer": "workspace:*"
   },
   "presmium": {
     "preview": {

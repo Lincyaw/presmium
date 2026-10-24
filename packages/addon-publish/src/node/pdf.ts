@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFString } from 'pdf-lib'
 
 export async function pdfLinks(file: string): Promise<string[][]> {
@@ -15,12 +15,4 @@ export async function pdfLinks(file: string): Promise<string[][]> {
     }
     return uris
   })
-}
-
-export async function keepPages(file: string, keep: (index: number) => boolean): Promise<void> {
-  const doc = await PDFDocument.load(await readFile(file), { updateMetadata: false })
-  for (let i = doc.getPageCount() - 1; i >= 0; i--) {
-    if (!keep(i)) doc.removePage(i)
-  }
-  await writeFile(file, await doc.save())
 }

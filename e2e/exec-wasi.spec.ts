@@ -35,20 +35,3 @@ test('a C program runs in the browser with the output recorded at compile time, 
   expect((await page.reload())?.fromServiceWorker()).toBe(true)
   expect(await run(await program(page))).toBe(recorded)
 })
-
-test('in the slides, the C program runs live in its Monaco runner; the runtimes\' licenses are published with both forms', async ({ page }) => {
-  test.setTimeout(300_000)
-  const slide = await openSlide(page, deck(), 'c-program', 'C 程序')
-  const output = slide.locator('.slidev-runner-output')
-  await expect(output.locator('.pm-run-recorded')).toHaveText('预录输出')
-  await expect(output).toContainText('1 + 2 + ... + 100 = 5050')
-  await expect(slide.locator('.pm-output')).toHaveCount(0)
-  await slide.getByRole('button', { name: 'Run code' }).click()
-  await expect(output).toHaveText('1 + 2 + ... + 100 = 5050', RUNTIME)
-
-  for (const form of [deck().slides, deck().web]) {
-    const licenses = await page.request.get(`${form}/wasi/LICENSES`)
-    expect(licenses.status()).toBe(200)
-    expect(await licenses.text()).toContain('clang.wasm, wasm-ld.wasm, clang-fs.tar.gz')
-  }
-})

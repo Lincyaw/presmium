@@ -37,7 +37,7 @@ function exportersOf(compilation: Compilation, loaded: LoadedPlugin): DocumentEx
   return (loaded.plugin?.exporters ?? []).map(exporter => ({ exporter, config: isRecord(config) ? config : {} }))
 }
 
-/** The renderers of one build, prepare or dev, and the base path of each. */
+/** The renderers of one build or dev, and the base path of each. */
 export interface RenderRun {
   ids: string[]
   bases: Map<string, string>
@@ -143,7 +143,6 @@ export function renderContext(compilation: Compilation, id: string, outDir: stri
     lang: doc.meta.lang,
     renderers: run.ids,
     base: run.bases.get(id) ?? '/',
-    vitePlugins: vitePluginsFor(compilation, report),
     nodeVitePlugins: nodeVitePlugins(compilation),
     extensionFor: node => findComponentRenderer(node, ctx.extensions),
     portable: (value, from) => portable(value, from, workspaceRoot),
@@ -163,25 +162,11 @@ export function renderContext(compilation: Compilation, id: string, outDir: stri
   return ctx
 }
 
-export function vitePluginsFor(compilation: Compilation, report: (finding: Finding) => void): unknown[] {
-  return compilation.plugins.flatMap((loaded) => {
-    const contribute = loaded.plugin?.vitePlugins
-    if (!contribute) return []
-    const config = compilation.doc.config.presmium[pluginId(loaded)]
-    try {
-      return contribute.call(loaded.plugin, { deckDir: compilation.deckDir, workspaceRoot: compilation.workspaceRoot, config: isRecord(config) ? config : {} })
-    } catch (error) {
-      report({ checkId: 'presmium.render', severity: 'error', message: `plugin ${pluginId(loaded)} failed to give its Vite plugins: ${errorMessage(error)}`, source: { file: compilation.entry, line: 1 } })
-      return []
-    }
-  })
-}
-
-/** The Node entries of the plugins whose browser parts need them (Vite plugins, run-time files, document modules), with their configuration. */
+/** The Node entries of the plugins whose browser parts need them (run-time files, document modules), with their configuration. */
 export function nodeVitePlugins(compilation: Pick<Compilation, 'plugins' | 'doc'>): NodeVitePlugin[] {
   return compilation.plugins.flatMap((loaded) => {
     const plugin = loaded.plugin
-    if (!loaded.entry || !(plugin?.vitePlugins || plugin?.assets || plugin?.documentModules)) return []
+    if (!loaded.entry || !(plugin?.assets || plugin?.documentModules)) return []
     const config = compilation.doc.config.presmium[pluginId(loaded)]
     return [{ id: pluginId(loaded), entry: loaded.entry, config: isRecord(config) ? config : {} }]
   })

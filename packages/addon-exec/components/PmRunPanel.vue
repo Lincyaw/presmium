@@ -251,12 +251,9 @@ function fieldSize(value: string | undefined): number {
   min-width: 0;
 }
 .pm-run-panel__source {
-  --slidev-code-margin: 0;
-  --slidev-code-radius: 0;
-
   font-size: 1.25em;
 }
-.pm-run-panel__source :deep(:is(.pm-code-block, .slidev-code-wrapper)) {
+.pm-run-panel__source :deep(.pm-code-block) {
   margin: 0;
 }
 .pm-run-panel__source :deep(pre) {

@@ -11,6 +11,8 @@ import { computed, readonly, ref } from 'vue'
 export interface WebHostAdapterOptions {
   lang: string
   shared: SharedStates
+  /** A printed page (an export of the slides): components show their static fallbacks. */
+  printed?: boolean
   /** Whether the page is dark, as its shell tells. */
   isDark(): Ref<boolean>
 }
@@ -23,7 +25,7 @@ function roleOf(view: string): ViewRole {
 export function createWebHostAdapter(viewer: Viewer, options: WebHostAdapterOptions): HostAdapter {
   const overlay = () => findView(viewer.view.value)?.kind === 'overlay'
   const role = computed(() => roleOf(viewer.view.value))
-  const staticRender = readonly(ref(false))
+  const staticRender = readonly(ref(options.printed === true))
   return {
     get mode(): PresentationMode {
       return overlay() ? 'slides' : 'document'

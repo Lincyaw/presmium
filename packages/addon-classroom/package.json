@@ -11,8 +11,6 @@
   "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/addon-classroom#readme",
   "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": [
-    "slidev-addon",
-    "slidev",
     "presmium"
   ],
   "type": "module",
@@ -30,12 +28,9 @@
   },
   "files": [
     "components",
-    "setup",
     "src"
   ],
-  "slidev": {},
   "dependencies": {
-    "@slidev/types": "53.0.0",
     "vue": "^3.5.42"
   },
   "peerDependencies": {
@@ -45,7 +40,6 @@
   "devDependencies": {
     "@lincyaw/cli": "workspace:*",
     "@lincyaw/host": "workspace:*",
-    "@lincyaw/kernel": "workspace:*",
-    "@slidev/client": "53.0.0"
+    "@lincyaw/kernel": "workspace:*"
   }
 }

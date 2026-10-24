@@ -11,8 +11,6 @@
   "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/addon-stage#readme",
   "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": [
-    "slidev-addon",
-    "slidev",
     "presmium"
   ],
   "type": "module",
@@ -29,14 +27,9 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "global-top.vue",
-    "setup",
-    "src",
-    "style.css"
+    "src"
   ],
-  "slidev": {},
   "dependencies": {
-    "@slidev/types": "53.0.0",
     "vue": "^3.5.42"
   },
   "peerDependencies": {
@@ -47,7 +40,6 @@
     "@lincyaw/cli": "workspace:*",
     "@lincyaw/host": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
-    "@lincyaw/viewer": "workspace:*",
-    "@slidev/client": "53.0.0"
+    "@lincyaw/viewer": "workspace:*"
   }
 }

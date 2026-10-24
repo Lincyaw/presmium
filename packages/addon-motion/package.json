@@ -11,8 +11,6 @@
   "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/addon-motion#readme",
   "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": [
-    "slidev-addon",
-    "slidev",
     "presmium"
   ],
   "type": "module",
@@ -32,7 +30,6 @@
     "components",
     "src"
   ],
-  "slidev": {},
   "dependencies": {
     "@remotion/player": "4.0.534",
     "animejs": "4.5.0",

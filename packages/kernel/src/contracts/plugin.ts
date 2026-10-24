@@ -112,11 +112,13 @@ export interface ExportContext {
   progress(phase: string, done?: number, total?: number): void
   /** A line of the job's log (a tool's output, a step). */
   log(line: string): void
+  /** What the one who asked for the export chose, as the exporter documents it (`presmium-export`'s `--with-clicks`). */
+  options: Record<string, unknown>
   /**
-   * Writes renderer `renderer`'s project for the document (its `prepare`, served at the root path, with `config` over the
-   * document's configuration of the renderer) and gives its directory: an exporter of the slides runs Slidev there.
+   * Builds the document with renderer `renderer` (at the root path, with `config` over the document's configuration of
+   * the renderer) and gives the directory of its output, the job's own: an exporter of the slides prints them from it.
    */
-  prepare(renderer: string, config?: Record<string, unknown>): Promise<string>
+  build(renderer: string, config?: Record<string, unknown>): Promise<string>
 }
 
 export interface ExportOutput {
@@ -155,14 +157,12 @@ export interface PresmiumNodePlugin {
   executors?: Executor[]
   renderer?: Renderer
   rendererExtensions?: Record<string, RendererContribution>
-  vitePlugins?(ctx: { deckDir: string, workspaceRoot: string, config: Record<string, unknown> }): unknown[]
   /** The files the plugin's browser code loads while it runs (a language runtime), for the document's configuration of the plugin. */
   assets?(ctx: { deckDir: string, workspaceRoot: string, config: Record<string, unknown> }): RuntimeAssets[]
   /**
    * The virtual modules of the plugin's browser code whose content depends on the document (e.g. the list of its scene
-   * files), by id, with their source. The dev servers get them from `vitePlugins`; the workbench's viewer app, prebuilt
-   * once for all documents, gets them from the document's own bundle, built with this source. Only their default export
-   * is read there.
+   * files), by id, with their source. The viewer app, prebuilt once for all documents, gets them from the document's own
+   * bundle, built with this source. Only their default export is read there.
    */
   documentModules?(ctx: { deckDir: string, workspaceRoot: string, config: Record<string, unknown> }): Record<string, string>
   /** The heavy outputs the plugin makes on request, as jobs of the workspace service. */

@@ -11,8 +11,6 @@
   "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/addon-content#readme",
   "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": [
-    "slidev-addon",
-    "slidev",
     "presmium"
   ],
   "type": "module",
@@ -31,18 +29,15 @@
   "files": [
     "components",
     "media",
-    "setup",
     "src",
     "vite.config.ts"
   ],
-  "slidev": {},
   "presmium": {
     "preview": {
       "restartable": true
     }
   },
   "dependencies": {
-    "@slidev/types": "53.0.0",
     "markmap-lib": "^0.18.12",
     "markmap-view": "^0.18.12",
     "plantuml-encoder": "^1.4.0",
@@ -55,7 +50,6 @@
   "devDependencies": {
     "@lincyaw/cli": "workspace:*",
     "@lincyaw/host": "workspace:*",
-    "@lincyaw/kernel": "workspace:*",
-    "@slidev/client": "53.0.0"
+    "@lincyaw/kernel": "workspace:*"
   }
 }

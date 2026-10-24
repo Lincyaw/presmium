@@ -7,7 +7,8 @@ import { BlockView } from '../block.ts'
 import { viewerMessages } from '../viewer-messages.ts'
 import { useViewer } from '../viewer-state.ts'
 import { useActions } from './actions.ts'
-import { button, focusScope, layers, useCurrentSection, useModal, useOverlayBar, visuals } from './overlay.ts'
+import { button, focusScope, layers, useCurrentSection, useModal, useOverlayBar } from './overlay.ts'
+import { SlideFace, SlideFit, useSlides } from './slide.ts'
 
 function clock(ms: number): string {
   const s = Math.floor(ms / 1000)
@@ -32,9 +33,11 @@ export const PresenterView = defineComponent({
     })
     onBeforeUnmount(() => clearInterval(timer))
 
+    const { shape } = useSlides()
+    const following = computed(() => nextPosition(viewer.doc.value, viewer.position.value))
     const upcoming = computed(() => {
       const t = viewerMessages()
-      const next = nextPosition(viewer.doc.value, viewer.position.value)
+      const next = following.value
       if (!next) return t.presenter.end
       const target = viewer.section(next.section)!
       if (next.section !== section.value?.id) return t.presenter.nextSection(target.title)
@@ -57,7 +60,7 @@ export const PresenterView = defineComponent({
           h(PmApprovals),
         ]),
         h('div', { class: 'pm-presenter__main' }, [
-          h('div', { key: current.id, class: 'pm-presenter__slide' }, [h('h1', { class: 'pm-present__title' }, current.title), ...visuals(current, step.value)]),
+          h('div', { class: 'pm-presenter__slide' }, h(SlideFit, { shape: shape.value }, () => h(SlideFace, { key: current.id, section: current, step: step.value, view: 'presenter' }))),
           h('div', { class: 'pm-presenter__side' }, [
             h('p', { class: 'pm-presenter__label' }, t.presenter.notes),
             h('div', { class: 'pm-presenter__notes' }, notes.length
@@ -69,6 +72,9 @@ export const PresenterView = defineComponent({
                 }, [h(BlockView, { block, section: current, step: step.value, expanded: true })]))
               : [h('p', { class: 'pm-presenter__empty' }, t.presenter.noNotes)]),
             h('p', { class: 'pm-presenter__label' }, t.presenter.upcoming),
+            following.value
+              ? h('div', { class: 'pm-presenter__upcoming', inert: '' }, h(SlideFit, { shape: shape.value }, () => h(SlideFace, { key: `${following.value!.section}@${following.value!.step}`, section: viewer.section(following.value!.section)!, step: following.value!.step, view: 'presenter-next' })))
+              : null,
             h('p', { class: 'pm-presenter__next' }, upcoming.value),
           ]),
         ]),

@@ -3,7 +3,6 @@
 '@lincyaw/addon-classroom': minor
 '@lincyaw/addon-code': minor
 '@lincyaw/addon-content': minor
-'@lincyaw/addon-core': minor
 '@lincyaw/addon-exec': minor
 '@lincyaw/addon-exec-jupyter': minor
 '@lincyaw/addon-exec-local': minor

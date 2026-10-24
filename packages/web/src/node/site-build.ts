@@ -105,20 +105,10 @@ async function renderPage(built: Built, file: string, config: AppConfig, title: 
   writeFileSync(file, pageHtml({ entry: appEntry(built.app), appUrl: built.appUrl, shared: built.app.manifest.shared, config, title, meta, body }))
 }
 
-async function buildDocumentPages(site: SiteSpec, ctx: RenderContext, built: Built, entry: BuiltDocument, docs: ReadonlyMap<string, IRDocument>, workspace: boolean): Promise<void> {
-  const { dir, doc, ctx: own } = entry
+/** A document's files beside its pages: its own code, its plugins' run-time files, its `public/`, the fonts' license. */
+async function documentFiles(ctx: RenderContext, built: Built, entry: BuiltDocument): Promise<{ code?: string, components: string[] }> {
+  const { dir, ctx: own } = entry
   const out = own.outDir
-  const base = documentBase(ctx.base, dir)
-  mkdirSync(out, { recursive: true })
-  const linked = workspace ? documentPage(site, ctx.base, docs) : undefined
-  const published = publishedDocument(doc, own, out, base, linked)
-  const pages = webPages(published)
-  const translations = entry.translations.map(({ lang, doc: translated }) => {
-    const shown = publishedDocument(translated, own, out, base, linked)
-    return { lang, doc: shown, pages: translationPages(shown, pages) }
-  })
-  const lang = doc.meta.lang ?? own.lang ?? 'zh-CN'
-
   // The document's own code, built to import the app's modules by name.
   const bundle: DocumentBundle | null = await buildDocumentBundle({
     deckDir: own.deckDir,
@@ -134,8 +124,24 @@ async function buildDocumentPages(site: SiteSpec, ctx: RenderContext, built: Bui
   copyPublic(own.deckDir, out)
   mkdirSync(dirname(join(out, FONT_LICENSE)), { recursive: true })
   writeFileSync(join(out, FONT_LICENSE), fontLicense(import.meta.url))
-
   const components = [...new Set([...own.plugins.flatMap(name => Object.keys(built.plugins.get(name)?.components ?? {})), ...bundle?.components ?? []])]
+  return { ...code ? { code } : {}, components }
+}
+
+async function buildDocumentPages(site: SiteSpec, ctx: RenderContext, built: Built, entry: BuiltDocument, docs: ReadonlyMap<string, IRDocument>, workspace: boolean): Promise<void> {
+  const { dir, doc, ctx: own } = entry
+  const out = own.outDir
+  const base = documentBase(ctx.base, dir)
+  mkdirSync(out, { recursive: true })
+  const linked = workspace ? documentPage(site, ctx.base, docs) : undefined
+  const published = publishedDocument(doc, own, out, base, linked)
+  const pages = webPages(published)
+  const translations = entry.translations.map(({ lang, doc: translated }) => {
+    const shown = publishedDocument(translated, own, out, base, linked)
+    return { lang, doc: shown, pages: translationPages(shown, pages) }
+  })
+  const lang = doc.meta.lang ?? own.lang ?? 'zh-CN'
+  const { code, components } = await documentFiles(ctx, built, entry)
   const others = workspace ? siteNeighbours(site, ctx.base, dir, docs).search : []
   const shell = siteShellBelow(site, ctx.base)
   const image = headImage(shell, url => publishedFile(own, out, base, { file: resolve(own.deckDir, doc.meta.entry), line: 1 }, url))
@@ -228,4 +234,33 @@ export async function buildSite(site: SiteSpec, ctx: RenderContext, documents: r
     ])
     await writeSitemap(join(ctx.outDir, 'sitemap.xml'), sitemap.hostname, ctx.base, pages)
   }
+}
+
+/**
+ * Builds a document's slides into `ctx.outDir`: one page that shows them (the slides form of the viewer), with the
+ * document's slides view (`{only} slides`), its code and files, as the web form's are built.
+ */
+export async function buildSlidesSite(doc: IRDocument, ctx: RenderContext, nodePlugins: readonly NodeVitePlugin[]): Promise<void> {
+  rmSync(ctx.outDir, { recursive: true, force: true })
+  const entry: BuiltDocument = { dir: '', doc, ctx, nodePlugins, translations: [] }
+  const built = await prepareApp(ctx, [entry])
+  mkdirSync(ctx.outDir, { recursive: true })
+  const published = publishedDocument(doc, ctx, ctx.outDir, ctx.base)
+  const { code } = await documentFiles(ctx, built, entry)
+  writeFileSync(join(ctx.outDir, 'ir.json'), JSON.stringify(published))
+  const lang = doc.meta.lang ?? ctx.lang ?? 'zh-CN'
+  const site: SiteSpec = { title: doc.meta.title, documents: [{ dir: '', title: doc.meta.title, doc }], config: ctx.config }
+  const config: AppConfig = {
+    kind: 'document',
+    document: '',
+    base: ctx.base,
+    lang,
+    form: 'slides',
+    ir: `${ctx.base}ir.json`,
+    ...code ? { bundle: `${ctx.base}${CODE_DIR}/${code}/${BUNDLE_ENTRY}` } : {},
+    site: documentSiteConfig({ site, base: ctx.base, dir: '', doc, lang, docs: new Map(), workspace: false }),
+    plugins: ctx.plugins,
+    origins: [],
+  }
+  writeFileSync(join(ctx.outDir, 'index.html'), pageHtml({ entry: appEntry(built.app), appUrl: built.appUrl, shared: built.app.manifest.shared, config, title: doc.meta.title }))
 }

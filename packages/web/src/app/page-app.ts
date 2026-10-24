@@ -2,13 +2,13 @@ import { createSharedStates, installHost, presmiumReport, presmiumService, setSi
 import type { HostAdapter, SharedStates } from '@lincyaw/host'
 import { deckLocale } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
-import { createViewer, installViewer, OverlayViewOutlet, PageViewOutlet, registerComponent } from '@lincyaw/viewer'
+import { createViewer, installViewer, OverlayViewOutlet, PageViewOutlet, registerComponent, SlidesPrint } from '@lincyaw/viewer'
 import type { Viewer } from '@lincyaw/viewer'
 import { FINAL_STEP } from '@lincyaw/viewer/domain'
 import type { App, Ref } from 'vue'
 import { createApp, createSSRApp, defineComponent, h, readonly, ref } from 'vue'
-import { slidesPositionUrl, WEB_MESSAGES, withPositionQuery } from '../domain/index.ts'
-import type { AppConfig } from '../domain/index.ts'
+import { positionUrl, WEB_MESSAGES, withPositionQuery } from '../domain/index.ts'
+import type { AppConfig, SlidesPrintQuery } from '../domain/index.ts'
 import { createWebHostAdapter } from '../client/host.ts'
 import { clientOnly } from '../client/runtime.ts'
 import { createPageRouter } from './router.ts'
@@ -34,6 +34,8 @@ export interface PageAppInput {
   ssr: boolean
   /** Whether the page is dark. */
   dark: Ref<boolean>
+  /** The slides printed one after the other (an export). */
+  print?: SlidesPrintQuery
 }
 
 export interface PageApp {
@@ -102,18 +104,20 @@ export function createPageApp(input: PageAppInput): PageApp {
   }
 
   const initial = input.doc
+  const slides = config.form === 'slides'
   // The router pages the document as the viewer has it now (a dev server's changes come to the viewer).
   let current: Viewer | undefined
   const router = createPageRouter(config, () => current?.doc.value ?? initial, !embedded)
-  const slides = embedded ? undefined : slidesBase(config)
+  const slidesUrl = embedded || slides ? undefined : slidesBase(config)
   const t = WEB_MESSAGES[deckLocale(config.lang)]
   const viewer = current = createViewer(initial, {
     renderer: 'web',
     sectionHref: router.sectionHref,
-    sectionHeading: slides
+    slidesOnly: slides,
+    sectionHeading: slidesUrl
       ? (section, step) => h('a', {
           'class': 'pm-open-slides',
-          'href': slidesPositionUrl(slides, config.site.links, section.index, step),
+          'href': positionUrl(slidesUrl, section.index, step),
           'title': t.openInSlides,
           'aria-label': t.openInSlides,
           'data-label': t.slides,
@@ -135,16 +139,21 @@ export function createPageApp(input: PageAppInput): PageApp {
           },
         },
   })
+  // The slides alone: the presentation, which a slides page opens on (or every slide, printed).
+  if (slides && !input.print) viewer.setView('present')
+  const print = input.print
   const app = create(defineComponent({
     name: 'PresmiumPageApp',
     setup() {
       return () => {
         if (!active.value) return null
+        if (print) return h(SlidesPrint, { steps: print.steps, slides: print.slides })
+        if (slides) return h('div', { class: 'pm-slides-page pm-document' }, [h(OverlayViewOutlet)])
         return embedded ? h(PreviewSheet, { router }) : h(DocumentSite, { config, router })
       }
     },
   }))
-  installHost(app, createWebHostAdapter(viewer, { lang: config.lang, shared, isDark: () => dark }))
+  installHost(app, createWebHostAdapter(viewer, { lang: config.lang, shared, isDark: () => dark, printed: print !== undefined }))
   installViewer(app, viewer)
   for (const [name, load] of Object.entries(input.components)) registerComponent(name, clientOnly(name, load))
   return { app, shared, active, viewer, router }

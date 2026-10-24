@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
-import { availableRenderers, build, documentExporters, prepare, serveDirectory } from '@lincyaw/compiler'
+import { availableRenderers, build, documentExporters, exportDocument, serveDirectory } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import { errorMessage } from '@lincyaw/kernel'
 import { lookup } from 'mime-types'
@@ -64,7 +64,6 @@ class Cancelled extends Error {
 }
 
 // Where an exporter's renderer project is written, inside the job's directory, removed when it ends.
-const PREPARED = '.prepare'
 
 const now = () => new Date().toISOString()
 const newId = () => `${Date.now().toString(36)}${randomBytes(4).toString('hex')}`
@@ -172,27 +171,8 @@ export function createJobs(options: JobsOptions): Jobs {
       job.main = mainFile(job.target, job.files)
       return
     }
-    const found = (await documentExporters(compilation)).find(({ exporter }) => exporter.id === job.target)
-    if (!found) throw new Error(`no plugin of the document exports ${job.target}`)
-    const output = await found.exporter.run({
-      deckDir: compilation.deckDir,
-      workspaceRoot: compilation.workspaceRoot,
-      config: found.config,
-      outDir: dir,
-      signal: controller.signal,
-      progress,
-      log,
-      async prepare(renderer, config = {}) {
-        const { renderers } = compilation.doc.config
-        const configured = { ...compilation, doc: { ...compilation.doc, config: { ...compilation.doc.config, renderers: { ...renderers, [renderer]: { ...renderers[renderer], ...config } } } } }
-        const report = await prepare(configured, { outDir: join(dir, PREPARED), to: [renderer], base: '/' })
-        const own = report.outputs.find(o => o.renderer === renderer)
-        if (!own) throw new Error(report.findings.filter(f => f.severity === 'error').map(f => f.message).join('; ') || `the ${renderer} renderer prepared nothing`)
-        return own.workDir
-      },
-    })
+    const output = await exportDocument(compilation, job.target, { outDir: dir, signal: controller.signal, progress, log })
     if (controller.signal.aborted) throw new Cancelled()
-    rmSync(join(dir, PREPARED), { recursive: true, force: true })
     job.warnings = output.warnings ?? []
     const named = output.files.map(file => file.split(sep).join('/'))
     const first = named.flatMap(path => (existsSync(join(dir, path)) ? [jobFile(dir, join(dir, path))] : []))

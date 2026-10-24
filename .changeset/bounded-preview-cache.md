@@ -7,7 +7,6 @@
 '@lincyaw/workbench': patch
 '@lincyaw/dsh': patch
 '@lincyaw/addon-content': patch
-'@lincyaw/addon-core': patch
 ---
 
 Reuse up to two loaded web preview windows when switching lectures. Inactive previews unmount document components, stop their runtime and control stream, and expire after two minutes. Resume refreshes the published IR without reloading JavaScript. Unsupported previews, changed runtime configurations, and plugins without an explicit restartable lifecycle fall back to reloading.

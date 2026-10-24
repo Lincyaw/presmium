@@ -6,7 +6,6 @@ import { dirname, join, relative, resolve, sep } from 'node:path'
 const root = new URL('..', import.meta.url).pathname
 const REFERENCE = /(?:\bfrom\s+|\bimport\s*\(\s*|\bimport\s+|\brequire\s*\(\s*)['"]([^'"]+)['"]/g
 const BUILTINS = new Set(builtinModules)
-const GLOBAL_LAYERS = ['global-top.vue', 'global-bottom.vue', 'custom-nav-controls.vue', 'slide-top.vue', 'slide-bottom.vue']
 
 const nodeBuiltin = spec => spec.startsWith('node:') || BUILTINS.has(spec) || BUILTINS.has(spec.split('/')[0])
 const vue = spec => /^(vue(\/|$)|@vue\/)/.test(spec)
@@ -28,13 +27,13 @@ const rules = [
   {
     name: 'domain is pure TS',
     dirs: ['src/domain'],
-    forbid: (spec, file, pkgDir) => vue(spec) || /^(vitepress|@slidev\/|@lincyaw\/host)/.test(spec) || nodeBuiltin(spec)
+    forbid: (spec, file, pkgDir) => vue(spec) || /^@lincyaw\/host/.test(spec) || nodeBuiltin(spec)
       || (target(spec, file, pkgDir) !== undefined && outside(target(spec, file, pkgDir), join('src', 'domain'))),
   },
   {
     name: 'shared code runs in Node and in the browser',
     dirs: ['src/shared'],
-    forbid: (spec, file, pkgDir) => vue(spec) || /^(vitepress|@slidev\/|@lincyaw\/host|@lincyaw\/kernel\/node)(\/|$)/.test(spec) || nodeBuiltin(spec)
+    forbid: (spec, file, pkgDir) => vue(spec) || /^@lincyaw\/(host|kernel\/node)(\/|$)/.test(spec) || nodeBuiltin(spec)
       || (target(spec, file, pkgDir) !== undefined && outside(target(spec, file, pkgDir), join('src', 'shared')) && outside(target(spec, file, pkgDir), join('src', 'domain'))),
   },
   {
@@ -42,21 +41,15 @@ const rules = [
     pkgs: ['kernel'],
     dirs: ['src'],
     skip: ['node'],
-    forbid: (spec, file, pkgDir) => vue(spec) || /^(vitepress|@slidev\/)/.test(spec) || nodeBuiltin(spec)
+    forbid: (spec, file, pkgDir) => vue(spec) || nodeBuiltin(spec)
       || (target(spec, file, pkgDir) !== undefined && !outside(target(spec, file, pkgDir), join('src', 'node'))),
   },
-  { name: 'kernel/node is framework-free', pkgs: ['kernel'], dirs: ['src/node'], forbid: spec => vue(spec) || /^(vitepress|@slidev\/)/.test(spec) },
-  { name: 'IR runtime is form-neutral', pkgs: ['viewer'], dirs: ['src'], forbid: spec => /^(vitepress|@slidev\/)/.test(spec) },
-  { name: 'host is form-neutral', pkgs: ['host'], dirs: ['src'], forbid: spec => /^(vitepress|@slidev\/)/.test(spec) },
-  { name: 'components use @lincyaw/host, not @slidev/client', dirs: ['components', 'src/client'], except: ['addon-core'], forbid: spec => /^@slidev\/client(\/|$)/.test(spec) },
-  { name: 'components use no Slidev package but @slidev/client', dirs: ['components', 'src/client'], forbid: spec => /^@slidev\/(?!client$)/.test(spec) },
-  { name: 'setup/ and global layers use only @slidev/client and @slidev/types of Slidev', dirs: ['setup'], files: GLOBAL_LAYERS, forbid: spec => /^@slidev\/(?!(client|types)$)/.test(spec) },
+  { name: 'kernel/node is framework-free', pkgs: ['kernel'], dirs: ['src/node'], forbid: spec => vue(spec) },
   { name: 'node adapters do not use vue', dirs: ['src/node'], forbid: spec => vue(spec) },
-  { name: 'no package uses vitepress (the web form is the viewer app)', dirs: ['.'], forbid: spec => /^vitepress/.test(spec) },
-  { name: 'no framework internals', dirs: ['.'], forbid: spec => /^@slidev\/client\/(?!index)|^vitepress\/dist|^@slidev\/cli\/dist/.test(spec) },
+  { name: 'no package uses Slidev or VitePress (both forms are the viewer app)', dirs: ['.'], forbid: spec => /^(vitepress|@slidev\/)/.test(spec) },
   { name: 'no package uses an addon', dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/addon-/.test(spec) },
   { name: 'relative imports stay in their package', dirs: ['.'], forbid: (spec, file, pkgDir) => target(spec, file, pkgDir) !== undefined && outside(target(spec, file, pkgDir), '.') },
-  { name: 'node packages are framework-free', pkgs: ['server', 'mcp'], dirs: ['src'], forbid: spec => vue(spec) || /^(vitepress|@slidev\/)/.test(spec) || /^@lincyaw\/(viewer|web|host)(\/|$)/.test(spec) },
+  { name: 'node packages are framework-free', pkgs: ['server', 'mcp'], dirs: ['src'], forbid: spec => vue(spec) || /^@lincyaw\/(viewer|web|host)(\/|$)/.test(spec) },
   { name: 'only cli and workspace use the server', pkgs: pkg => !['cli', 'workspace', 'server'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/server(\/|$)/.test(spec) },
   { name: 'only the server and the dsh bundle use mcp', pkgs: pkg => !['server', 'mcp', 'dsh'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/mcp(\/|$)/.test(spec) },
   { name: 'plugins use contracts, not the hosts', pkgs: pkg => pkg.startsWith('addon-'), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/(server|mcp|workspace|web)(\/|$)/.test(spec) },
@@ -74,7 +67,7 @@ const rules = [
 
 const DSH = /^@deepseek-ai\//
 const DSH_PACKAGES = ['dsh', 'studio']
-const isProductPackage = pkg => ['web', 'viewer', 'addon-core'].includes(pkg) || pkg.startsWith('render-')
+const isProductPackage = pkg => ['web', 'viewer'].includes(pkg) || pkg.startsWith('render-')
 
 const SOURCE = /\.(ts|tsx|vue|mts|mjs|js|jsx|cjs)$/
 
@@ -95,7 +88,6 @@ for (const pkg of readdirSync(join(root, 'packages'))) {
   for (const rule of rules.filter(r => applies(r, pkg))) {
     const checked = [
       ...rule.dirs.flatMap(dir => files(join(pkgDir, dir), rule.skip)),
-      ...(rule.files ?? []).map(file => join(pkgDir, file)).filter(existsSync),
     ]
     for (const file of checked) {
       for (const [, spec] of readFileSync(file, 'utf8').matchAll(REFERENCE)) {

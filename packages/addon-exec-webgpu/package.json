@@ -11,8 +11,6 @@
   "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/addon-exec-webgpu#readme",
   "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": [
-    "slidev-addon",
-    "slidev",
     "presmium"
   ],
   "type": "module",
@@ -29,13 +27,10 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "setup",
     "src"
   ],
-  "slidev": {},
   "dependencies": {
     "@jax-js/jax": "0.1.25",
-    "@slidev/types": "53.0.0",
     "playwright-chromium": "1.64.1",
     "yaml": "^2.9.1"
   },
@@ -46,7 +41,6 @@
   "devDependencies": {
     "@lincyaw/cli": "workspace:*",
     "@lincyaw/host": "workspace:*",
-    "@lincyaw/kernel": "workspace:*",
-    "@slidev/client": "53.0.0"
+    "@lincyaw/kernel": "workspace:*"
   }
 }

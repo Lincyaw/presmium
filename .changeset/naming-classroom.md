@@ -4,7 +4,6 @@
 '@lincyaw/addon-publish': patch
 '@lincyaw/addon-content': patch
 '@lincyaw/addon-code': patch
-'@lincyaw/addon-core': patch
 '@lincyaw/addon-stage': patch
 '@lincyaw/classroom-server': patch
 '@lincyaw/host': patch

@@ -11,8 +11,6 @@
   "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/addon-code#readme",
   "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": [
-    "slidev-addon",
-    "slidev",
     "presmium"
   ],
   "type": "module",
@@ -30,7 +28,6 @@
   "files": [
     "src"
   ],
-  "slidev": {},
   "dependencies": {
     "@ast-grep/lang-python": "^0.0.6",
     "@ast-grep/napi": "^0.50.0",

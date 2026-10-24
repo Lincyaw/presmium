@@ -1,8 +1,0 @@
-{
-  "name": "presmium-fixture-slides-future",
-  "private": true,
-  "type": "module",
-  "exports": {
-    "./presmium": "./presmium.ts"
-  }
-}

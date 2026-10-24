@@ -241,34 +241,3 @@ it('records what code writes to its streams, and fails a run whose promise rejec
   expect(rejected.outputs?.[0]).toMatchObject({ ok: false, exitCode: 1, stdout: 'started\n' })
   expect(rejected.outputs?.[0]?.stderr).toContain('Error: late')
 })
-
-it('builds the slides of a run panel in any language, without recorded output in the panel', async () => {
-  const dir = deck(`---
-plugins:
-  - ${CORE}
-  - ${ADDON}
-renderers:
-  slides:
-    package: ${SLIDES}
-    theme: none
----
-
-## 一种语言
-
-\`\`\`{run-panel} mylang
-say hello
-\`\`\`
-
-## Python
-
-\`\`\`{run-panel} python
-print(6 * 7)
-\`\`\`
-`)
-  const { code: exit, stdout, stderr } = await presmium(dir, ['build', '--to', 'slides', '--out', 'out'])
-  expect(exit, stdout + stderr).toBe(0)
-  const slides = readFileSync(join(dir, '.presmium/slides/slides.md'), 'utf8')
-  expect(slides).toContain('<PmRunPanel lang="mylang" code="say hello"')
-  expect(slides).toContain('<PmRunPanel lang="python" code="print(6 * 7)"')
-  expect(slides).not.toContain('pm-output')
-}, 120_000)

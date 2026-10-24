@@ -11,7 +11,7 @@ export const BUILTIN_ACTIONS: readonly ViewerAction[] = [
   { id: 'prev', keys: ['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'], run: (viewer) => { viewer.prev() } },
   { id: 'first', keys: ['Home'], run: viewer => viewer.go({ section: viewer.doc.value.sections[0]?.id ?? '', step: 0 }) },
   { id: 'last', keys: ['End'], run: viewer => viewer.go({ section: viewer.doc.value.sections.at(-1)?.id ?? '', step: Number.POSITIVE_INFINITY }) },
-  { id: 'exit', keys: ['Escape'], views: ['present'], run: viewer => viewer.setView(viewer.pageView.value) },
+  { id: 'exit', keys: ['Escape'], views: ['present'], run: viewer => (viewer.options.slidesOnly ? false : viewer.setView(viewer.pageView.value)) },
   {
     id: 'presenter',
     keys: ['p'],

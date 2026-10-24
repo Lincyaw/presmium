@@ -226,7 +226,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       routes[key] = { ...route, handle: (request, ctx) => (hasBearerToken(request, launcherToken) ? route.handle(request, ctx) : Promise.resolve(problemResponse(401, 'the workspace service\'s routes need its token: Authorization: Bearer <PRESMIUM_SERVICE_TOKEN>'))) }
     }
   }
-  return { routes, ...workbench ? { proxies: workbench.proxies } : {} }
+  return { routes }
 }
 
 function workbenchRoutes(workbench: WorkbenchApi): Record<string, Route> {

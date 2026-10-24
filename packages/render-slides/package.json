@@ -1,7 +1,7 @@
 {
   "name": "@lincyaw/render-slides",
   "version": "1.0.0-rc.0",
-  "description": "Presmium's slides renderer: writes the IR as a Slidev deck and builds it, with the default theme",
+  "description": "Presmium's slides renderer: the viewer's slides page, built as the web form is, and its exports as PDF, pictures and PowerPoint",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -12,7 +12,6 @@
   "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": [
     "presmium",
-    "slidev",
     "slides",
     "renderer"
   ],
@@ -28,34 +27,24 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "src",
-    "theme"
+    "src"
   ],
   "dependencies": {
-    "@slidev/cli": "53.0.0",
-    "@slidev/theme-default": "^0.25.0",
-    "dompurify": "3.4.17",
-    "jsdom": "29.1.1",
-    "mdast-util-from-markdown": "2.1.0",
-    "mdast-util-gfm": "^3.1.0",
-    "mdast-util-to-markdown": "^2.2.0",
-    "micromark-extension-gfm": "3.0.0",
-    "shiki": "^4.5.0",
-    "vue": "^3.5.42",
-    "yaml": "^2.9.1"
+    "pptxgenjs": "4.0.1"
   },
   "peerDependencies": {
-    "@lincyaw/host": "workspace:^",
     "@lincyaw/kernel": "workspace:^",
-    "@lincyaw/viewer": "workspace:^"
+    "@lincyaw/web": "workspace:^",
+    "playwright-chromium": "^1.40.0"
+  },
+  "peerDependenciesMeta": {
+    "playwright-chromium": {
+      "optional": true
+    }
   },
   "devDependencies": {
-    "@lincyaw/cli": "workspace:*",
-    "@lincyaw/host": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
-    "@lincyaw/viewer": "workspace:*",
-    "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "5.7.284",
+    "@lincyaw/web": "workspace:*",
     "playwright-chromium": "1.64.1"
   }
 }

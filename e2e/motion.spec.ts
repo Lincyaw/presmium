@@ -36,27 +36,6 @@ test.describe('scenes on the steps', () => {
     await expect(present).toHaveAttribute('data-step', '1')
     expect(await position(page, '.pm-present', 'bpe-merge')).toBe(BPE_ENDS[1])
   })
-
-  test('the slides count a scene\'s steps as the slide\'s clicks; the document view ends each scene and lets the reader play it', async ({ page }) => {
-    await page.goto(`${deck().slides}/${deck().slide('gsap')}?clicks=0`)
-    const slide = `.slidev-page-${deck().slide('gsap')}`
-    await expect(page.locator(`${slide} .pm-scene`)).toHaveAttribute('data-status', 'ready')
-    for (const step of [1, 2, 3]) {
-      await page.keyboard.press('ArrowRight')
-      await expect.poll(() => position(page, slide, 'bpe-merge')).toBe(BPE_ENDS[step])
-    }
-    await page.keyboard.press('ArrowRight')
-    await expect(page.locator(`.slidev-page-${deck().slide('anime')}`)).toBeVisible()
-
-    await page.goto(`${deck().web}/index.html`)
-    const scene = page.locator('.pm-section[data-section="gsap"] .pm-scene')
-    await expect(scene).toHaveAttribute('data-status', 'ready')
-    expect(await position(page, '.pm-section[data-section="gsap"]', 'bpe-merge')).toBe(BPE_ENDS[3])
-    await scene.getByRole('slider', { name: '动画进度' }).fill('600')
-    expect(await position(page, '.pm-section[data-section="gsap"]', 'bpe-merge')).toBe(600)
-    await scene.getByRole('button', { name: '播放动画' }).click()
-    await expect.poll(() => position(page, '.pm-section[data-section="gsap"]', 'bpe-merge')).toBe(BPE_ENDS[3])
-  })
 })
 
 async function startFake(): Promise<{ url: string, child: ChildProcess }> {

@@ -151,32 +151,3 @@ test('the static output has no console error, in the reading and the presenter v
   await expect(page.locator('.pm-assistant-toolbar').filter({ visible: true }).getByRole('button', { name: '提问' })).toBeVisible()
   expect(errors).toEqual([])
 })
-
-test('in the slides form, which has no IR runtime, a question goes with the current slide\'s text; a citation goes to its section\'s slide', async ({ page }) => {
-  test.setTimeout(600_000)
-  const slides = await buildFixture('assistant/ask', { to: 'slides', audience: 'student', link: { '@lincyaw/addon-assistant': 'packages/addon-assistant' } })
-  try {
-    await page.goto(`${slides.slides}/${slides.slide('merge')}`)
-    await expect(page.locator('.slidev-page').getByRole('heading', { name: '合并规则' })).toBeVisible()
-    await page.mouse.move(20, 700)
-    const panel = await openPanel(page)
-    await panel.getByLabel('地址').fill(model.url)
-    await panel.getByLabel('密钥').fill(KEY)
-    await panel.getByLabel('模型名').fill('stub-model')
-    await panel.getByRole('button', { name: '保存' }).click()
-    const before = model.received.length
-    await panel.getByLabel('问题').fill('这一页讲什么？')
-    await panel.getByRole('button', { name: '提问', exact: true }).click()
-    const citation = panel.getByRole('list', { name: '回答' }).getByRole('button', { name: '进阶内容' })
-    await expect(citation).toBeVisible()
-    const system = model.received.slice(before).find(r => r.method === 'POST')!.body.messages![0]!.content
-    expect(system).toContain('def merge(tokens, pair):')
-    expect(system).toContain('(id merge')
-    expect(system).not.toContain('later-section:')
-    expect(system).not.toContain('TEACHER-HINT-42')
-    await citation.click()
-    await expect(page.locator('.slidev-page').getByRole('heading', { name: '进阶内容' })).toBeVisible()
-  } finally {
-    await slides.close()
-  }
-})

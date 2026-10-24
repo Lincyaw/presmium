@@ -4,7 +4,6 @@
 "@lincyaw/workspace": patch
 "@lincyaw/web": patch
 "@lincyaw/render-slides": patch
-"@lincyaw/addon-core": patch
 "@lincyaw/addon-exec": patch
 "@lincyaw/addon-exec-local": patch
 "@lincyaw/cli": patch

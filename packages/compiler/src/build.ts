@@ -99,22 +99,3 @@ export async function availableRenderers(compilation: Compilation): Promise<stri
   return (await selectRenderers(compilation)).selected.map(({ renderer }) => renderer.id)
 }
 
-export async function prepare(compilation: Compilation, options: { outDir: string, to?: string[], base?: string }): Promise<{ outputs: Omit<RendererOutput, 'skipped'>[], findings: Finding[] }> {
-  const { selected, findings } = await selectRenderers(compilation, options.to)
-  const run = planRenderRun(compilation, selected, true, options.base)
-  const outputs: Omit<RendererOutput, 'skipped'>[] = []
-  for (const { renderer } of selected) {
-    const ctx = renderContext(compilation, renderer.id, join(options.outDir, renderer.id), join(compilation.deckDir, WORK_DIR, renderer.id), run, findings)
-    if (!renderer.prepare) {
-      findings.push(renderFinding(compilation, 'warning', `renderer ${renderer.id} prepares nothing`))
-      continue
-    }
-    try {
-      await renderer.prepare(viewFor(compilation.doc, renderer.id), ctx)
-      outputs.push({ renderer: renderer.id, outDir: ctx.outDir, workDir: ctx.workDir, base: ctx.base })
-    } catch (error) {
-      findings.push(renderFinding(compilation, 'error', `renderer ${renderer.id} failed: ${errorMessage(error)}`))
-    }
-  }
-  return { outputs, findings: [...compilation.doc.diagnostics, ...findings] }
-}

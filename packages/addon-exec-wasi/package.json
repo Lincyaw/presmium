@@ -11,8 +11,6 @@
   "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/addon-exec-wasi#readme",
   "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": [
-    "slidev-addon",
-    "slidev",
     "presmium"
   ],
   "type": "module",
@@ -30,14 +28,11 @@
   },
   "files": [
     "LICENSES",
-    "setup",
     "src"
   ],
-  "slidev": {},
   "dependencies": {
     "@runno/sandbox": "0.10.2",
-    "@runno/wasi": "0.10.0",
-    "@slidev/types": "53.0.0"
+    "@runno/wasi": "0.10.0"
   },
   "peerDependencies": {
     "@lincyaw/host": "workspace:^",
