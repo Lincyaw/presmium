@@ -5,6 +5,8 @@ import { SPEECH_ID } from '../domain/index.ts'
 import { browserSpeech } from './speech.ts'
 
 const plugin: PluginDefinition = {
+  // dispose releases everything setup made; a paused preview starts the same definition again.
+  restartable: true,
   manifest: {
     id: SPEECH_ID,
     version,

@@ -6,7 +6,7 @@
 // address; the first-use notice is read away.
 import { randomBytes } from 'node:crypto'
 import { spawn } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, symlinkSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, symlinkSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect } from '@playwright/test'
@@ -59,6 +59,9 @@ export async function startStudio(options: { port: number, model?: FakeModel, pa
       writeProfile(home.dshHome, profile, 'web', bundle)
     }
     const workspace = home.workspace(options.prefix ?? 'workbench', fixtureFiles(options.fixture))
+    // The copy's own components import packages from the node_modules it links.
+    const linked = options.fixture && join(options.fixture, 'node_modules')
+    if (linked && existsSync(linked)) symlinkSync(realpathSync(linked), join(workspace.dir, 'node_modules'), 'junction')
     const origin = `http://127.0.0.1:${options.port}`
     const token = randomBytes(24).toString('base64url')
     const process_ = running(spawn(process.execPath, [PRESMIUM_BIN, 'serve', workspace.dir, '--port', '0', '--preview-origin', origin], {

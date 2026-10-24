@@ -51,5 +51,10 @@
     "@lincyaw/compiler": "workspace:*",
     "@lincyaw/host": "workspace:*",
     "@lincyaw/kernel": "workspace:*"
+  },
+  "presmium": {
+    "preview": {
+      "restartable": true
+    }
   }
 }

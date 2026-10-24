@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { PreviewRenderer } from '@lincyaw/kernel'
+import type { IconName } from '@lincyaw/design'
 import { PmBadge, PmButton, PmIcon, PmIconButton, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
@@ -65,10 +65,9 @@ function NavigationPane({ onClose }: { onClose(): void }) {
   const t = useMessages()
   const workbench = useWorkbench()
   const doc = useWorkbenchState(state => state.ir?.doc)
-  const renderer = useWorkbenchState(state => state.previewRenderer)
+  const slides = useWorkbenchState(state => state.previewRenderer === 'slides' || state.webView === 'present')
   const current = useWorkbenchState(state => state.position?.section)
   const items = useMemo(() => documentOutline(doc), [doc])
-  const slides = renderer === 'slides'
   const top = Math.min(...items.map(item => item.depth))
   return (
     <nav className="pmw-navigation" aria-label={t.navigation}>
@@ -104,7 +103,7 @@ function NavigationPane({ onClose }: { onClose(): void }) {
 function StatusBar() {
   const t = useMessages()
   const doc = useWorkbenchState(state => state.ir?.doc)
-  const renderer = useWorkbenchState(state => state.previewRenderer)
+  const slides = useWorkbenchState(state => state.previewRenderer === 'slides' || state.webView === 'present')
   const section = useWorkbenchState(state => state.position?.section)
   const mode = useWorkbenchState(state => state.mode)
   const words = useMemo(() => countWords(doc), [doc])
@@ -112,7 +111,7 @@ function StatusBar() {
   const at = section === undefined ? -1 : doc?.sections.findIndex(s => s.id === section) ?? -1
   return (
     <footer className="pmw-statusbar" aria-label={t.statusBar}>
-      {at >= 0 && <span className="pmw-statusbar__item">{renderer === 'slides' ? t.slideOf(at + 1, total) : t.sectionOf(at + 1, total)}</span>}
+      {at >= 0 && <span className="pmw-statusbar__item">{slides ? t.slideOf(at + 1, total) : t.sectionOf(at + 1, total)}</span>}
       {doc && <span className="pmw-statusbar__item">{t.words(words)}</span>}
       <span className="pmw-spacer" />
       <span className="pmw-statusbar__item pmw-statusbar__mode" data-mode={mode}><PmIcon name={mode === 'editing' ? 'edit' : 'eye'} />{mode === 'editing' ? t.editingStatus : t.viewingStatus}</span>
@@ -138,7 +137,13 @@ function DocumentToolbar({ framed, aside, navigation, onNavigation, onAside }: {
   const undoLabel = history?.undo ? t.undoWhat(summaryOf(history.undo)) : t.nothingToUndo
   const redoTarget = history?.redo && history.revisions.find(r => r.id === history.redo)?.reverts
   const redoLabel = history?.redo ? t.redoWhat(summaryOf(redoTarget ?? history.redo)) : t.nothingToRedo
-  const views: PreviewRenderer[] = hasSlides ? ['web', 'slides'] : ['web']
+  const webView = useWorkbenchState(state => state.webView)
+  // The document, its presentation (the same page, switched at once) and, with a slides form, the slides.
+  const views: { id: string, icon: IconName, label: string, hint: string, pressed: boolean, show(): void }[] = [
+    { id: 'document', icon: 'document', label: t.renderers.web, hint: t.renderers.web, pressed: renderer === 'web' && webView === 'document', show: () => workbench.setWebView('document') },
+    { id: 'present', icon: 'play', label: t.present, hint: t.presentHint, pressed: renderer === 'web' && webView === 'present', show: () => workbench.setWebView('present') },
+    ...hasSlides ? [{ id: 'slides', icon: 'slides' as const, label: t.renderers.slides, hint: t.slidesHint, pressed: renderer === 'slides', show: () => workbench.setPreviewRenderer('slides') }] : [],
+  ]
   const modes: { id: WorkbenchMode, icon: 'edit' | 'eye', label: string, hint: string }[] = [
     { id: 'editing', icon: 'edit', label: t.editingMode, hint: t.editingHint },
     { id: 'viewing', icon: 'eye', label: t.viewingMode, hint: t.viewingHint },
@@ -157,12 +162,10 @@ function DocumentToolbar({ framed, aside, navigation, onNavigation, onAside }: {
         <button type="button" className="pmw-tool" aria-label={redoLabel} title={redoLabel} disabled={!history?.redo || busy} onClick={() => void workbench.redo()}><PmIcon name="redo" /></button>
         <SaveStatus />
       </span>
-      {views.length > 1 && <>
-        <span className="pmw-toolbar__divider" aria-hidden="true" />
-        <span className="pmw-toolbar__group" role="group" aria-label={t.view}>
-          {views.map(view => <button key={view} type="button" className="pmw-tool" aria-label={t.renderers[view]} title={t.renderers[view]} aria-pressed={renderer === view} onClick={() => workbench.setPreviewRenderer(view)}><PmIcon name={view === 'web' ? 'document' : 'slides'} /><span className="pmw-toolbar__label">{t.renderers[view]}</span></button>)}
-        </span>
-      </>}
+      <span className="pmw-toolbar__divider" aria-hidden="true" />
+      <span className="pmw-toolbar__group" role="group" aria-label={t.view}>
+        {views.map(view => <button key={view.id} type="button" className="pmw-tool" data-view={view.id} aria-label={view.label} title={view.hint} aria-pressed={view.pressed} onClick={view.show}><PmIcon name={view.icon} /><span className="pmw-toolbar__label">{view.label}</span></button>)}
+      </span>
       <span className="pmw-toolbar__divider" aria-hidden="true" />
       <span className="pmw-toolbar__group" role="group" aria-label={t.modeLabel}>
         {modes.map(item => <button key={item.id} type="button" className="pmw-tool" aria-label={item.label} aria-pressed={mode === item.id} title={item.hint} onClick={() => workbench.setMode(item.id)}><PmIcon name={item.icon} /><span className="pmw-toolbar__label">{item.label}</span></button>)}

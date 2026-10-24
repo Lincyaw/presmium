@@ -25,8 +25,8 @@ export interface WorkspaceClient {
   subscribeDiagnostics(document: string, snapshot: (event: DiagnosticSnapshot) => void, failed: () => void): () => void
   reportDiagnostics(report: PreviewDiagnostics): Promise<unknown>
   readPreview(document: string, renderer?: PreviewRenderer): Promise<PreviewAnswer>
-  /** Asks the service to start the document's slides ahead of a switch, when the machine has room. */
-  prefetchPreview(document: string, renderer: PreviewRenderer): Promise<void>
+  /** Asks the service to prepare a form of the document ahead of the author, when the machine has room. */
+  prefetchPreview(document: string, renderer: PreviewRenderer): Promise<PreviewAnswer>
   /** The MCP address and the workspace root, read once. */
   readWorkbenchInfo(): Promise<WorkbenchAnswer>
   readFocus(document: string): Promise<FocusAnswer>
@@ -141,9 +141,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     subscribeDiagnostics: (document, snapshot, failed) => subscribe(url('diagnostics/events', document), 'diagnostics', snapshot, failed),
     reportDiagnostics: report => post(url('diagnostics'), report),
     readPreview: (document, renderer) => call(url('preview', document, renderer ? { view: renderer } : {})),
-    prefetchPreview: async (document, renderer) => {
-      await call(url('preview', document, { view: renderer, prefetch: '1' }))
-    },
+    prefetchPreview: (document, renderer) => call(url('preview', document, { view: renderer, prefetch: '1' })),
     readWorkbenchInfo: () => {
       workbenchInfo ??= call<WorkbenchAnswer>(url('workbench')).catch((error: unknown) => {
         workbenchInfo = undefined

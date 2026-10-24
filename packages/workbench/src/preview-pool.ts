@@ -8,6 +8,9 @@ const LIMIT = 2
 const IDLE_MS = 120_000
 const ACTIVITY_MS = 1500
 const READY_MS = 45_000
+// A page loaded out of sight is removed this long after its load, its lazy modules and styles fetched; or at the latest.
+const PRELOAD_SETTLE_MS = 2000
+const PRELOAD_MAX_MS = 30_000
 
 export interface PreviewTarget {
   document: string
@@ -53,6 +56,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
   let requests = 0
   let uses = 0
   let disposed = false
+  let preloading: HTMLIFrameElement | undefined
   const keyOf = (target: PreviewTarget) => JSON.stringify([target.document, target.renderer])
   const selected = (entry: Entry) => !disposed && desired !== undefined && keyOf(desired) === entry.key
     && workbench.state.document === entry.target.document && workbench.state.previewRenderer === entry.target.renderer
@@ -262,9 +266,34 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
         create({ ...target, address })
       })
     },
+    /**
+     * Loads the page at `address` once out of sight, as Slidev's own embedding, then removes it: when it is shown, its
+     * modules, styles and the dev server's work are in the caches. One at a time.
+     */
+    preload(address: string) {
+      if (disposed || preloading) return
+      const frame = document.createElement('iframe')
+      const url = new URL(address, location.href)
+      url.searchParams.set('embedded', 'true')
+      frame.className = 'pmw-preview__preload'
+      frame.setAttribute('aria-hidden', 'true')
+      frame.tabIndex = -1
+      const done = () => {
+        clearTimeout(timer)
+        frame.remove()
+        if (preloading === frame) preloading = undefined
+      }
+      const timer = setTimeout(done, PRELOAD_MAX_MS)
+      frame.addEventListener('load', () => setTimeout(done, PRELOAD_SETTLE_MS), { once: true })
+      frame.src = url.href
+      preloading = frame
+      container.append(frame)
+    },
     dispose() {
       disposed = true
       generation++
+      preloading?.remove()
+      preloading = undefined
       for (const entry of [...entries.values()]) destroy(entry)
     },
   }

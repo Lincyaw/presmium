@@ -21,6 +21,8 @@ test.afterAll(async () => studio?.close())
 
 const preview = (page: Page) => page.frameLocator('.pmw-preview__frame')
 const views = (page: Page) => page.getByRole('group', { name: '视图' })
+// The slides' view: offered only when the document has a slides form (its document and its presentation always are).
+const slidesView = (page: Page) => views(page).getByRole('button', { name: '幻灯片', exact: true })
 /** Repairs the broken document: its slides renderer is installed. */
 function installSlidesRenderer(): void {
   const renderer = join(studio.workspace.dir, 'broken/slides-renderer')
@@ -59,8 +61,8 @@ test('a failed slides preview can return to web and retry after repair; renderer
   await openDocument(page, 'Web preview')
   await expect(page.getByText('这份文稿没有幻灯片。', { exact: true })).toBeHidden()
   await expect(preview(page).getByText('A working web preview.', { exact: true })).toBeVisible({ timeout: 120_000 })
-  // A document with no slides offers no view to switch to.
-  await expect(views(page)).toHaveCount(0)
+  // A document with no slides offers no slides to switch to.
+  await expect(slidesView(page)).toHaveCount(0)
 
   const file = join(studio.workspace.dir, 'web-only/lecture.md')
   const original = readFileSync(file, 'utf8')
@@ -76,9 +78,9 @@ test('a failed slides preview can return to web and retry after repair; renderer
   await selectView(page, 'slides')
   await expect(page.locator('.pmw-preview')).toHaveAttribute('data-ready', 'true', { timeout: 120_000 })
   await expect(preview(page).getByText('A working web preview.', { exact: true })).toBeVisible()
-  // Its slides gone again, the document shows its web form and the switch goes away.
+  // Its slides gone again, the document shows its web form and the slides' view goes away.
   writeFileSync(file, original)
-  await expect(views(page)).toHaveCount(0)
+  await expect(slidesView(page)).toHaveCount(0)
   await expect(page.locator('.pmw-preview__frame[data-renderer="web"]:visible')).toHaveCount(1)
   await expect(preview(page).getByText('A working web preview.', { exact: true })).toBeVisible()
 })

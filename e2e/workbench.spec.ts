@@ -221,6 +221,31 @@ test.describe('the root layout', () => {
     await page.screenshot({ path: test.info().outputPath('page-on-canvas.png'), animations: 'disabled' })
   })
 
+  test('Present shows the same page as its presentation, at the place the author is, and Document goes back at once; the navigation pane lists the slides', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await studio.open(page)
+    await openDocument(page, '分词入门')
+    await expect(preview(page).locator('.pm-sheet [data-section="words"]')).toBeVisible({ timeout: 120_000 })
+    const frame = page.locator('.pmw-preview__frame:visible')
+    const page_ = await frame.getAttribute('src')
+    const pane = page.getByRole('navigation', { name: '导航' })
+    const views = page.getByRole('group', { name: '视图' })
+    await pane.getByRole('button', { name: '合并', exact: true }).click()
+    await views.getByRole('button', { name: '放映', exact: true }).click()
+    await expect(preview(page).locator('.pm-present[data-section="merge"]')).toBeVisible()
+    // The workbench has its own controls: none of presenting's own.
+    await expect(preview(page).locator('.pm-present__bar')).toBeHidden()
+    await expect(page.locator('.pmw-statusbar')).toContainText('幻灯片 3 / 5')
+    await expect(pane.locator('.pmw-navigation__number')).toHaveText(['1', '2', '3', '4', '5'])
+    await pane.locator('.pmw-navigation__item').filter({ hasText: '延伸' }).click()
+    await expect(preview(page).locator('.pm-present[data-section="extend"]')).toBeVisible()
+    await views.getByRole('button', { name: '文档', exact: true }).click()
+    await expect(preview(page).locator('.pm-present')).toHaveCount(0)
+    await expect(preview(page).locator('[data-section="extend"]')).toBeInViewport()
+    // One page throughout: switching never loaded it again.
+    await expect(frame).toHaveAttribute('src', page_!)
+  })
+
   test('a double-clicked paragraph is edited in place; each edit is a version that undo and redo walk; formatted text goes to the AI instead', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await studio.open(page)

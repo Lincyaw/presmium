@@ -3,7 +3,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'nod
 import { fileURLToPath } from 'node:url'
 import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, isRecord, nodeMdast, NON_FILE_URL, safeDecodeURIComponent } from '@lincyaw/kernel'
 import type { DocumentLink, Finding, IRDocument, MdastNode, RenderContext, RenderOutput, SiteDevServer, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
-import { findInstalledPackage, FONT_LICENSE, fontLicense, isInside, linkBrowserDependencies } from '@lincyaw/kernel/node'
+import { findInstalledPackage, FONT_LICENSE, fontLicense, isInside, linkBrowserDependencies, warmDevPage } from '@lincyaw/kernel/node'
 import { pageLink, searchDocuments, sectionLinks, SITE_LABELS, siteShell, translationPages, urlPath, webPages } from '../domain/index.ts'
 import type { HomeDocument, Neighbour, SearchDocument, WebPage } from '../domain/index.ts'
 import { clientModules } from './client-modules.ts'
@@ -423,10 +423,15 @@ export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir:
 
   return {
     url: `http://${listenAddress === '0.0.0.0' || listenAddress === '::' ? '127.0.0.1' : listenAddress}:${proxy.port}${base}`,
+    async target(path: string) {
+      return `http://${LOOPBACK}:${await portFor(path)}`
+    },
     async warm(dir: string) {
       // Started ahead of a request only while few run: each dev server holds its own module graph.
       if (closed || documents.has(dir) || documents.size >= WARM_LIMIT || !site.documents.some(d => d.dir === dir)) return
-      await startDocument(dir)
+      const { port } = await startDocument(dir)
+      // The page and its modules transformed too, VitePress's own entry among them, before the author opens it.
+      await warmDevPage(`http://${LOOPBACK}:${port}${base}${dir ? `${encodeURI(dir)}/` : ''}`, stopping.signal)
     },
     async update(dir: string, doc: IRDocument) {
       if (closed) return

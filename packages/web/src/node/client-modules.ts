@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import { isRecord } from '@lincyaw/kernel'
 import type { NodeVitePlugin, RenderContext } from '@lincyaw/kernel'
 import { packageOf } from '@lincyaw/kernel/node'
@@ -18,7 +18,7 @@ export interface ClientModules {
   nodeVite: NodeVitePlugin[]
 }
 
-function collect(dir: string, name: string, modules: ClientModules, plugin: boolean): void {
+function collect(dir: string, name: string, modules: ClientModules, plugin: boolean, manifestDir = dir): void {
   let browser = false
   const components = join(dir, 'components')
   if (existsSync(components)) {
@@ -40,7 +40,15 @@ function collect(dir: string, name: string, modules: ClientModules, plugin: bool
     browser = true
     modules.vite.push(join(dir, VITE_CONFIG))
   }
-  if (browser && !isRestartablePackage(dir)) modules.restartable = false
+  if (browser && !isRestartablePackage(manifestDir)) modules.restartable = false
+}
+
+/** The directory of the document's own package: its own `package.json`, else the nearest one up to the workspace's root. */
+function deckPackage(deckDir: string, workspaceRoot: string): string | undefined {
+  for (let dir = deckDir; ; dir = dirname(dir)) {
+    if (existsSync(join(dir, 'package.json'))) return dir
+    if (dir === workspaceRoot || relative(workspaceRoot, dir).startsWith('..') || dirname(dir) === dir) return undefined
+  }
 }
 
 function readManifest(dir: string): Record<string, unknown> {
@@ -73,6 +81,6 @@ export function clientModules(ctx: RenderContext, nodeVite: NodeVitePlugin[]): C
     const { name: pkg } = dir ? readManifest(dir) : {}
     if (dir) collect(dir, typeof pkg === 'string' ? pkg : name, modules, true)
   }
-  collect(ctx.deckDir, 'deck', modules, false)
+  collect(ctx.deckDir, 'deck', modules, false, deckPackage(ctx.deckDir, ctx.workspaceRoot))
   return modules
 }

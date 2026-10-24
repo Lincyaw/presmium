@@ -7,6 +7,8 @@ import { hintCues, spotlightCues } from './operation-cues.ts'
 let unregister: Unsubscribe[] = []
 
 const plugin: PluginDefinition = {
+  // dispose releases everything setup made; a paused preview starts the same definition again.
+  restartable: true,
   manifest: {
     id: GUIDE_ID,
     version,

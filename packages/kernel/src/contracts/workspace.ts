@@ -237,6 +237,8 @@ export interface PreviewAnswer {
   document: string
   web: string
   slides?: string
+  /** To a `prefetch` request: whether the dev server was started and its page warmed (the machine had room). */
+  prepared?: boolean
 }
 
 /** @experimental */

@@ -8,6 +8,8 @@ import { readLecturesFlag } from './state.ts'
 let unregister: Unsubscribe[] = []
 
 const plugin: PluginDefinition = {
+  // dispose releases everything setup made; a paused preview starts the same definition again.
+  restartable: true,
   manifest: { id: LECTURE_ID, version, kernel: '^1.0.0', requires: [{ token: OPERATIONS, optional: true }] },
   setup(ctx) {
     readLecturesFlag(ctx.config)

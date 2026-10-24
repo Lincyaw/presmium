@@ -460,6 +460,36 @@ html.pm-in-workbench body {
   border-top: none;
 }
 
+/* The presentation in a workbench: the slide on the canvas, without the controls of presenting (the workbench has its own). */
+html.pm-in-workbench .pm-present {
+  align-items: center;
+  justify-content: center;
+  background: var(--pm-color-canvas);
+}
+
+html.pm-in-workbench .pm-present {
+  --pm-slide-width: min(100vw - 2 * var(--pm-space-6), (100vh - 2 * var(--pm-space-6)) * var(--pm-slide-aspect, 16 / 9));
+}
+
+html.pm-in-workbench .pm-present__slide {
+  flex: none;
+  box-sizing: border-box;
+  width: var(--pm-slide-width);
+  max-width: none;
+  aspect-ratio: var(--pm-slide-aspect, 16 / 9);
+  margin: 0;
+  padding: 4% 5%;
+  border-radius: var(--pm-radius-sheet);
+  background: var(--pm-color-surface);
+  box-shadow: var(--pm-shadow-page);
+  /* As on a full screen: the type is a fiftieth of the slide's width. */
+  font-size: calc(var(--pm-slide-width) / 50);
+}
+
+html.pm-in-workbench .pm-present__bar {
+  display: none;
+}
+
 /* A page in an editor has no permalinks to copy. */
 .pm-sheet.vp-doc .header-anchor {
   display: none;

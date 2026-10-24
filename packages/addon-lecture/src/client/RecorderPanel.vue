@@ -172,6 +172,11 @@ onBeforeUnmount(() => {
 </template>
 
 <style>
+/* Recording is for presenting, not for the preview of a workbench. */
+html.pm-in-workbench .pm-lecture-recorder {
+  display: none;
+}
+
 .pm-lecture-recorder {
   position: absolute;
   top: 0.5rem;

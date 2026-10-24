@@ -4,7 +4,7 @@ import { join, relative, sep } from 'node:path'
 import { dev, relativeIR } from '@lincyaw/compiler'
 import type { Compilation, DevServers } from '@lincyaw/compiler'
 import { errorMessage, PREVIEW_REVISION, pushStream } from '@lincyaw/kernel'
-import { irRevision, machineState, threadBudget } from '@lincyaw/kernel/node'
+import { irRevision, machineState, threadBudget, warmDevPage } from '@lincyaw/kernel/node'
 import type { MachineState } from '@lincyaw/kernel/node'
 import type { Finding, IrAnswer, IRDocument, IrEvent, Logger, PreviewAnswer, PreviewRenderer, ProxySpec } from '@lincyaw/kernel'
 import type { DiagnosticStore, ServerHost } from '@lincyaw/server'
@@ -26,8 +26,8 @@ export interface WorkbenchApi {
   events(document: string, signal: AbortSignal): AsyncIterable<{ event: string, data: IrEvent }>
   /**
    * The document's preview addresses, starting the dev server of `renderer`. `prefetch`: the workbench prepares the
-   * document ahead of the author's click (its web form) or switch (its slides); the dev server starts only when the machine
-   * has room (`roomToPrefetch`), and the answer does not tell whether it started.
+   * document ahead of the author's click (its web form, answered at once) or switch (its slides, answered once Slidev
+   * runs and its page is warmed, with `prepared`); the dev server starts only when the machine has room (`roomToPrefetch`).
    */
   preview(document: string, renderer?: PreviewRenderer, prefetch?: boolean): Promise<PreviewAnswer>
   build(document: string, to?: string[]): Promise<BuildAnswer>
@@ -204,9 +204,12 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
       if (renderer === 'web' || !available) {
         return { document, web, ...available ? { slides: slideURL } : {} }
       }
-      if (prefetch && renderer === 'slides' && !slidesPreviews.has(document)) {
-        if (roomToPrefetch(slidesPreviews.size)) void startSlidesPreview(document).catch(() => undefined)
-        return { document, web, slides: slideURL }
+      if (prefetch && renderer === 'slides') {
+        if (!slidesPreviews.has(document) && !roomToPrefetch(slidesPreviews.size)) return { document, web, slides: slideURL, prepared: false }
+        // Started, and its page's modules transformed, so that the switch only loads them.
+        const started = await startSlidesPreview(document).catch(() => undefined)
+        if (started) await warmDevPage(started.servers[0]!.url)
+        return { document, web, slides: slideURL, prepared: started !== undefined }
       }
       const own = await (renderer === 'slides' ? startSlidesPreview(document) : startSlidesPreview(document).catch(() => undefined))
       return { document, web, ...own ? { slides: slideURL } : {} }

@@ -32,7 +32,8 @@ export function PreviewPanel({ active = true }: { active?: boolean }) {
       void workbench.openDocument(document)
     })
     pool.current = current
-    return () => { current.dispose(); pool.current = undefined }
+    const detach = workbench.attachPreloader(address => current.preload(address))
+    return () => { detach(); current.dispose(); pool.current = undefined }
   }, [workbench])
   useLayoutEffect(() => {
     pool.current?.select(active && document !== undefined && !failure && !(renderer === 'slides' && preview && !preview.slides)

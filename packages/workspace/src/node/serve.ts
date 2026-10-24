@@ -230,9 +230,15 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     listenAddress: options.listenAddress,
     port: options.port,
     stateFile,
-    forward: () => {
+    forward: async (path) => {
       lookAtDisk()
-      return site?.forward()
+      if (!site) return undefined
+      // Straight to the dev server of the path's document, not through the site's router: one hop less per module.
+      try {
+        return await site.target(path)
+      } catch {
+        return site.forward()
+      }
     },
     settings: config.settings,
     approvals: config.approvals,
@@ -341,6 +347,7 @@ async function startWorkspaceSite(options: WorkspaceSiteOptions) {
   log.info(`the workspace site's dev router is at ${origin} (this machine only; pages reach it through serve)`)
   return {
     forward: (): string => origin,
+    target: (path: string): Promise<string> => dev.target?.(path) ?? Promise.resolve(origin),
     update: (dir: string, compilation: Compilation): Promise<void> => {
       refreshDocumentVitePlugins(spec, dir, compilation)
       const revision = irRevision(compilation.doc)

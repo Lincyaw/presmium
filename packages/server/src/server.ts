@@ -32,7 +32,8 @@ export interface ServerOptions {
   serverHost?: ServerHost
   settings?: Record<string, Record<string, unknown>>
   approvals?: Partial<Record<ApprovalKind, ApprovalPolicy>>
-  forward?(): string | undefined
+  /** The origin to forward a path of the site to (in `serve`): the dev server that serves it. */
+  forward?(path: string): string | undefined | Promise<string | undefined>
   operatorDir?: string
   stateFile?: string
   mcp?(request: Request, access: McpCaller): Promise<Response>
@@ -161,7 +162,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
       const proxy = await proxyOf(target, requestedDocument(req.headers, url), member, url.search)
       return proxy ?? { kind: 'fetch' }
     }
-    const forward = options.mode === 'serve' ? options.forward?.() : undefined
+    const forward = options.mode === 'serve' ? await options.forward?.(path) : undefined
     if (!forward) return { kind: 'answer', response: problemResponse(404, 'not found') }
     const site = new URL(forward)
     const lan = !isLoopback(header(req.headers, 'host'))

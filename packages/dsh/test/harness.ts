@@ -101,7 +101,8 @@ export function workspace(prefix: string, files: Record<string, string>, link: R
     writeFileSync(join(dir, file), text)
   }
   writeFileSync(join(dir, '.gitignore'), 'node_modules/\ndist/\n.presmium/\n')
-  writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: dir.split('/').at(-1)!.toLowerCase(), private: true, type: 'module' })}\n`)
+  // A fixture's own manifest (with its settings, such as its previews being restartable) is kept.
+  if (!('package.json' in files)) writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: dir.split('/').at(-1)!.toLowerCase(), private: true, type: 'module' })}\n`)
   for (const [name, path] of Object.entries(link)) {
     mkdirSync(dirname(join(dir, 'node_modules', name)), { recursive: true })
     symlinkSync(path, join(dir, 'node_modules', name), 'junction')

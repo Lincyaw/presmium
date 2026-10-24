@@ -64,3 +64,19 @@ export function prebundleDependencies(name: string, pkg: string, dependencies: r
     },
   }
 }
+
+const MODULE_SCRIPT = /<script\b[^>]*\btype=["']module["'][^>]*\bsrc=["']([^"']+)["']/g
+
+/**
+ * Asks a dev server for the page at `url` and for the module scripts it starts with, as a browser would, so that the
+ * server transforms them, and through Vite's pre-transforms what they import, before the author opens the page.
+ * Best effort: a failure only leaves the work to the browser.
+ */
+export async function warmDevPage(url: string, signal?: AbortSignal): Promise<void> {
+  try {
+    const page = await fetch(url, { signal, headers: { Accept: 'text/html' } })
+    if (!page.ok) return
+    const scripts = [...(await page.text()).matchAll(MODULE_SCRIPT)].map(match => new URL(match[1]!, page.url).href)
+    await Promise.all(scripts.map(src => fetch(src, { signal }).then(response => response.arrayBuffer()).catch(() => undefined)))
+  } catch {}
+}

@@ -315,6 +315,8 @@ export interface SiteDevServer {
   update(dir: string, doc: IRDocument): Promise<void>
   /** Starts the dev server of document `dir` ahead of its first request (the author is about to open it); may decline. */
   warm?(dir: string): Promise<void>
+  /** The origin of the dev server that serves `path` (started on first use), so that a host forwards to it directly. */
+  target?(path: string): Promise<string>
   close(): Promise<void>
 }
 

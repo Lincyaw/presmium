@@ -16,6 +16,9 @@ import type { WorkspaceClient } from './workspace-client.ts'
 /** `editing`: blocks are picked, commented on and edited in place; `viewing`: the document reads as its readers see it. */
 export type WorkbenchMode = 'editing' | 'viewing'
 
+/** The view of the web form: the document as a page, or its presentation, slide by slide (the IR runtime's own). */
+export type WebView = 'document' | 'present'
+
 /** What the author points at in the document: a block (or a section), or a passage selected in it. */
 export interface Pointer {
   target: PreviewAnchor
@@ -66,6 +69,8 @@ export interface WorkbenchState {
   ir?: IrAnswer
   mode: WorkbenchMode
   previewRenderer: PreviewRenderer
+  /** In the web form: the page or the presentation, both in the same page, switched without loading it again. */
+  webView: WebView
   previewReload: number
   preview?: PreviewAnswer
   previewFailure?: string
@@ -142,6 +147,9 @@ export function slideAspect(ir: IrAnswer | undefined): number {
 
 // How long the author stays on a document's web form before its slides are started ahead of a switch.
 const PREFETCH_DELAY_MS = 1500
+// The document opened last, prepared when the workbench starts on the documents; at the latest this long after.
+const RECENT_KEY = 'presmium.workbench.recent'
+const PREWARM_IDLE_MS = 2000
 
 /** The numbers on the blocks of the comments not yet sent, in order. */
 function commentPins(comments: readonly DocumentComment[]): PreviewPin[] {
@@ -209,6 +217,8 @@ export class Workbench {
   /** The forms asked for ahead of the author (`web:<dir>`, `slides:<dir>`), and the wait before asking for the slides. */
   readonly #prefetched = new Set<string>()
   #prefetchTimer?: ReturnType<typeof setTimeout>
+  #prewarmed = false
+  readonly #preloaders = new Set<(address: string) => void>()
   /** What the author does, for the operator's collector when the host has one. */
   readonly telemetry: OperationLog
 
@@ -219,6 +229,7 @@ export class Workbench {
       isDark: options.isDark ?? false,
       mode: 'editing',
       previewRenderer: 'web',
+      webView: 'document',
       previewReload: 0,
       isDiagnosticsUnavailable: false,
       canRepairDiagnostics: false,
@@ -314,6 +325,7 @@ export class Workbench {
   async loadDocuments(): Promise<void> {
     try {
       this.#set({ documents: await this.client.readDocuments(), documentsFailure: undefined, isBundleDisabled: false })
+      this.#prewarmRecent()
     } catch (error) {
       this.#set({ documentsFailure: errorMessage(error), isBundleDisabled: error instanceof WorkspaceServerError && error.status === 404 })
     }
@@ -362,8 +374,11 @@ export class Workbench {
     if (this.#state.document === dir) return
     this.#stopSubscriptions()
     this.#history.subscribeReview(dir)
-    this.#set({ ...DOCUMENT_RESET, document: dir, previewRenderer: 'web' })
+    this.#set({ ...DOCUMENT_RESET, document: dir, previewRenderer: 'web', webView: 'document' })
     this.#record('document.open')
+    try {
+      localStorage.setItem(RECENT_KEY, dir)
+    } catch {}
     this.#diagnostics.subscribe(dir)
     this.#unsubscribeIr = this.client.subscribeIr(dir, event => void this.#handleIrEvent(dir, event), () => void this.#readIr(dir))
     void this.client.readWorkbenchInfo().then(({ root }) => {
@@ -475,6 +490,23 @@ export class Workbench {
       this.#prefetched.add(`slides:${document}`)
     }
     if (document !== undefined) void this.#readPreview(document)
+  }
+
+  /**
+   * Shows the web form as a page or as its presentation. The page is the same (and stays loaded): the view changes there,
+   * at the place the author is; from the slides, the web form is shown first.
+   */
+  setWebView(view: WebView): void {
+    if (view === this.#state.webView && this.#state.previewRenderer === 'web') return
+    this.#set({ webView: view })
+    this.#record('view.set', { 'presmium.preview.view': view })
+    if (this.#state.previewRenderer !== 'web') this.setPreviewRenderer('web')
+    else this.#showWebView()
+  }
+
+  #showWebView(): void {
+    const section = this.#state.position?.section ?? this.#state.ir?.doc.sections[0]?.id
+    if (section !== undefined) this.#broadcast({ type: 'go', section, view: this.#state.webView })
   }
 
   reloadPreview(): void {
@@ -714,6 +746,9 @@ export class Workbench {
   /** Shows a section in the preview: from the navigation pane, the section to read or the slide to show. */
   goToSection(section: string): void {
     this.#record('navigate', { 'presmium.section': section })
+    // Where the author is from now on (the navigation pane, the status bar, a switch of view), until the page reports it.
+    this.#set({ position: { section, step: 0, trail: [], ...this.#state.position?.view ? { view: this.#state.position.view } : {} } })
+    this.#lastPosition = undefined
     if (this.#previewSinks.size === 0) {
       this.#pendingReveal = { section }
       return
@@ -778,7 +813,10 @@ export class Workbench {
       case 'updated':
         this.#set({ previewIrRevision: report.revision })
         this.#flashChanges()
-        if (report.type === 'ready' && renderer === 'web') this.#prefetchSlides(document)
+        if (report.type === 'ready' && renderer === 'web') {
+          if (this.#state.webView !== 'document') this.#showWebView()
+          this.#prefetchSlides(document)
+        }
         break
       case 'picked': {
         if (this.#state.editing || this.#state.mode !== 'editing') break
@@ -817,6 +855,7 @@ export class Workbench {
         if (at === this.#lastPosition) break
         this.#lastPosition = at
         this.#set({ position: { section: report.section, step: report.step, trail: report.trail, ...report.view ? { view: report.view } : {} } })
+        if (renderer === 'web' && report.view && (report.view === 'present') !== (this.#state.webView === 'present')) this.#set({ webView: report.view === 'present' ? 'present' : 'document' })
         this.#record('preview.position', { 'presmium.section': report.section, 'presmium.step': report.step, 'presmium.preview.view': report.view })
         break
       }
@@ -830,6 +869,26 @@ export class Workbench {
       default:
         break
     }
+  }
+
+  /**
+   * When the workbench starts on the documents, the one the author opened last is likely next: once the page is idle,
+   * it is prepared as when the mouse rests on it.
+   */
+  #prewarmRecent(): void {
+    if (this.#prewarmed || this.#state.document !== undefined) return
+    this.#prewarmed = true
+    let recent: string | null = null
+    try {
+      recent = localStorage.getItem(RECENT_KEY)
+    } catch {}
+    if (recent === null || !this.#state.documents?.documents.some(doc => doc.dir === recent)) return
+    const dir = recent
+    const prepare = () => {
+      if (this.#state.document === undefined) this.prefetchDocument(dir)
+    }
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(prepare, { timeout: PREWARM_IDLE_MS })
+    else setTimeout(prepare, PREWARM_IDLE_MS)
   }
 
   /**
@@ -852,8 +911,19 @@ export class Workbench {
     this.#prefetchTimer = setTimeout(() => {
       if (this.#state.document !== dir || this.#state.previewRenderer !== 'web') return
       this.#prefetched.add(`slides:${dir}`)
-      void this.client.prefetchPreview(dir, 'slides').catch(() => this.#prefetched.delete(`slides:${dir}`))
+      void this.client.prefetchPreview(dir, 'slides').then((answer) => {
+        // Slidev runs: its page is loaded once out of sight, so that the switch finds it in the browser's caches.
+        if (answer.prepared && answer.slides && this.#state.document === dir && this.#state.previewRenderer === 'web') {
+          for (const preload of this.#preloaders) preload(answer.slides)
+        }
+      }, () => this.#prefetched.delete(`slides:${dir}`))
     }, PREFETCH_DELAY_MS)
+  }
+
+  /** Lets a preview panel load a page out of sight ahead of a switch to it. */
+  attachPreloader(preload: (address: string) => void): () => void {
+    this.#preloaders.add(preload)
+    return () => this.#preloaders.delete(preload)
   }
 
   #broadcast(command: PreviewCommand): void {

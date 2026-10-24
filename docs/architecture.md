@@ -53,11 +53,16 @@ MyST 源码 + 真实代码文件
 
 工作台按当前选中的媒介请求预览：打开网页不等待 Slidev，切到幻灯片才启动它。预览答复同时绑定文稿、媒介与请求序号，切换后到达的旧答复不覆盖当前页面。等待幻灯片启动或启动失败时仍可切回网页。页面的模块加载、初始化与 iframe 重载另有开销，不能用返回预览地址的时间代表页面可见时间。
 
-工作台在作者动手之前预先准备（`preview` 的 `prefetch=1`）：鼠标在文稿列表的一项上停 150 ms 或键盘焦点到达它时，工作区服务编译这份文稿并启动它的网页开发服务器（`SiteDevServer.warm`；已有 3 份文稿的开发服务器在运行时不再预先启动）；网页预览就绪、作者在网页上停留 1.5 s 后，启动它的幻灯片（同时最多 2 个幻灯片开发服务器）。两者都只在机器有余量时进行（`roomToPrefetch`：交互档线程预算至少 2，空闲内存至少 3 GiB），作者已经切到幻灯片时不再预先启动。
+工作台在作者动手之前预先准备（`preview` 的 `prefetch=1`），都只在机器有余量时进行（`roomToPrefetch`：交互档线程预算至少 2，空闲内存至少 3 GiB）：
+
+- 鼠标在文稿列表的一项上停 150 ms 或键盘焦点到达它时，以及工作台启动在文稿列表上、页面空闲时对上次打开的文稿（浏览器的 `localStorage`），工作区服务编译这份文稿、启动它的网页开发服务器（`SiteDevServer.warm`；已有 3 份文稿的开发服务器在运行时不再预先启动），并像浏览器一样请求它的页面与入口模块（`@lincyaw/kernel/node` 的 `warmDevPage`），Vite 由此预先转换页面用到的模块。
+- 网页预览就绪、作者在网页上停留 1.5 s 后，工作区服务启动幻灯片（同时最多 2 个幻灯片开发服务器）并预热它的页面，之后才答复，答复的 `prepared` 说明是否准备好；准备好时工作台在一个看不见的 iframe 里完整加载一次幻灯片的页面（Slidev 的 `embedded`）再移除，浏览器缓存、Vite 的转换与 UnoCSS 的样式由此都已就绪。作者已经切到幻灯片时不再预先准备。
+
+工作区服务把网站的路径直接转发到这份文稿的开发服务器（`SiteDevServer.target`），不再经站点的路由，一页数百个模块各少一次转发。
 
 开发服务器的依赖预打包一次完成：Vite 从扫描入口找出所有要预打包的依赖，扫描漏掉的依赖要等页面加载时发现，每发现一批就重新打包一次，最后重载整页。网页的扫描入口是生成的主题（`optimizeDeps.entries`），主题与插件、组件、viewer 的模块之间用相对路径导入（Vite 5 的扫描不跟进写成绝对路径的导入）；经虚拟模块加载、扫描读不到的文件由提供它的插件在自己的 Vite 插件的 `config()` 中加入 `optimizeDeps.entries`（如动画插件的场景文件），两种形态都用到。网页的开发服务器启动时预先转换主题及其导入（`server.warmup`）。依赖的预打包结果按文稿缓存在工作区服务的状态目录中，再次启动时复用。工作区服务转发页面请求到开发服务器的连接保持复用（keep-alive），一页数百个模块不再各开一个连接。
 
-工作台的每个预览面板最多保留两个已加载的 iframe，按最近使用顺序淘汰；非当前预览先经 `activity` 确认停止，再启动另一份文稿。网页暂停时真正卸载布局内的文稿、工具栏、播放器等组件，停止插件内核与控制流，保留该窗口的模块和文稿数据；闲置两分钟后移除。恢复时读取最新已发布 IR，配置或语言变化、暂停超时或缺少能力时销毁重载。组件、viewer、client 模块及 Vite 注入的每个包（包括文稿本地模块）须在 `package.json` 声明 `presmium.preview.restartable: true`；内核插件还须显式声明 `PluginDefinition.restartable: true`，承诺 `dispose` 完整释放后台资源且同一份定义可再次 `setup`。任一来源未声明、加载失败或混入不支持的插件时不缓存该预览。当前只有 core、content 包声明此能力，带执行、录制等后台任务的插件继续重载。线程和优先级预算保持有效，不提前打开未访问的讲义。
+工作台的每个预览面板最多保留两个已加载的 iframe，按最近使用顺序淘汰；非当前预览先经 `activity` 确认停止，再启动另一份文稿。网页暂停时真正卸载布局内的文稿、工具栏、播放器等组件，停止插件内核与控制流，保留该窗口的模块和文稿数据；闲置两分钟后移除。恢复时读取最新已发布 IR，配置或语言变化、暂停超时或缺少能力时销毁重载。组件、viewer、client 模块及 Vite 注入的每个包（包括文稿本地模块：文稿目录的 `package.json`，没有时为工作区根目录的）须在 `package.json` 声明 `presmium.preview.restartable: true`；内核插件还须显式声明 `PluginDefinition.restartable: true`，承诺 `dispose` 完整释放后台资源且同一份定义可再次 `setup`。任一来源未声明、加载失败或混入不支持的插件时不缓存该预览。core、content、guide、lecture、speech、motion 包与示例工作区声明了此能力（讲授的录制在面板卸载时停止媒体轨道与上传计时器，动画场景在组件卸载时 `dispose`），带执行等后台任务的插件继续重载。幻灯片的预览没有 `activity`，切走即销毁。
 
 网页 IR 与工作台 IR 端点支持 `ETag` / `If-None-Match`，每次恢复仍验证当前修订，未变化时返回 304，省去大份 IR 的传输与解析。工作台客户端最多保留两份已解析 IR，响应文本的 UTF-16 大小合计 16 MiB；这是缓存计量上限，不是对象堆内存硬限额。修改后仍返回新快照，旧请求不能覆盖较新的缓存或当前文稿的 IR。
 
@@ -1955,7 +1960,7 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 
 ### 13.3 预览协议
 
-工作台经 `postMessage` 驱动嵌在 iframe 中的产物页面：工作台发 `go`、`highlight`、`pick`、`pins`、`marks`、`appearance`，产物发 `ready`、`position`、`picked`、`selection`、`updated`、`report`；只传章节、块与步骤的 ID（步号按完整文稿编号，幻灯片形态用 `trail` 换算），源码位置由工作台从 IR 得出。预览代理只在工作区服务启动的开发服务器的页面中（`RenderContext.preview`），地址带 `presmium-preview=<nonce>`、在 iframe 中、来源在允许的列表中才启动；双方核对 `origin`、`source` 与 nonce；预览页面带 `frame-ancestors`。静态构建不带预览代理。嵌在工作台中时（`isPreviewEmbedded()`），网页形态只显示一张放在画布上的纸，不带站点的导航栏、搜索、侧栏、本页目录与标题的永久链接；幻灯片形态的放映器去掉黑边与控制条，比例由工作台的画布保持（`design-dsh.md` 7.3 节）。产物在 DOM 上写锚点 `data-section`、`.pm-block[data-block]`、`data-step`，幻灯片形态有同样的块级锚点。消息的字段与握手见 `design-dsh.md` 第 4 节。
+工作台经 `postMessage` 驱动嵌在 iframe 中的产物页面：工作台发 `go`、`highlight`、`pick`、`pins`、`marks`、`appearance`，产物发 `ready`、`position`、`picked`、`selection`、`updated`、`report`；只传章节、块与步骤的 ID（步号按完整文稿编号，幻灯片形态用 `trail` 换算），源码位置由工作台从 IR 得出。预览代理只在工作区服务启动的开发服务器的页面中（`RenderContext.preview`），地址带 `presmium-preview=<nonce>`、在 iframe 中、来源在允许的列表中才启动；双方核对 `origin`、`source` 与 nonce；预览页面带 `frame-ancestors`。静态构建不带预览代理。嵌在工作台中时（`isPreviewEmbedded()`，网页的 `<html>` 带 `pm-in-workbench` 类），网页形态只显示一张放在画布上的纸，不带站点的导航栏、搜索、侧栏、本页目录与标题的永久链接，放映视图画成画布上的一张幻灯片、没有放映时的控制条；插件只用于放映、录制的界面也凭这个类隐藏（如讲授的录制工具条）；幻灯片形态的放映器去掉黑边与控制条，比例由工作台的画布保持（`design-dsh.md` 7.3 节）。产物在 DOM 上写锚点 `data-section`、`.pm-block[data-block]`、`data-step`，幻灯片形态有同样的块级锚点。消息的字段与握手见 `design-dsh.md` 第 4 节。
 
 实现：
 
