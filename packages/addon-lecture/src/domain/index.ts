@@ -32,6 +32,7 @@ export {
   PLAYER_RENDERER,
   SCRIPT_TRACK,
   sortEvents,
+  spokenDuration,
   TRACK_ID,
   TRACK_VERSION,
   trackDuration,

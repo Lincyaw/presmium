@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -101,4 +101,30 @@ test('the Video view plays the lecture its video is made of, beside the document
   await expect(bar).toContainText(/排队中|正在生成|构建|录制画面/)
   await bar.getByRole('button', { name: '取消' }).click()
   await expect(bar.getByRole('button', { name: '生成视频文件' })).toBeVisible({ timeout: 60_000 })
+})
+
+test('a sentence the voice cannot say yet plays silent in the Video view with its caption, and the video file says why it is not made', async ({ page }) => {
+  // A new sentence: not in the synthesis cache, and this machine names no engine for the voice.
+  const lecture = join(studio.workspace.dir, 'bubble-sort/lecture.md')
+  writeFileSync(lecture, readFileSync(lecture, 'utf8').replace('用一个动画讲清楚冒泡排序的一趟。', '这一句是新写的，还没有合成语音。'))
+  await studio.open(page)
+  await page.locator('.pmw-home__card').filter({ hasText: '冒泡排序' }).locator('.pmw-home__open').click()
+  await expect(page.locator('.pmw-preview[data-ready="true"]')).toBeVisible({ timeout: 90_000 })
+  await page.getByRole('group', { name: '视图' }).getByRole('button', { name: '视频', exact: true }).click()
+  const video = page.frameLocator('.pmw-preview__frame[data-lecture]')
+  await expect(video.locator('.pm-lecture-player [data-unsaid]')).toContainText('有 1 句还没能合成语音', { timeout: 60_000 })
+  await video.locator('.pm-lecture-player__play').click()
+  // Its caption is shown above the player, captions off or on.
+  await expect(video.locator('.pm-lecture-caption')).toBeVisible()
+  await expect(video.locator('.pm-lecture-caption')).toContainText('这一句是新写的')
+  await expect.poll(async () => Number(await video.locator('.pm-lecture-player').getAttribute('data-time')), { timeout: 20_000 }).toBeGreaterThan(500)
+
+  const bar = page.getByRole('group', { name: '视频文件' })
+  await bar.getByRole('button', { name: /生成视频文件|重新生成/ }).click()
+  await expect(bar).toHaveAttribute('data-state', /queued|running/)
+  await expect(bar.locator('progress')).toBeVisible()
+  await expect(bar).toHaveAttribute('data-state', 'failed', { timeout: 180_000 })
+  await expect(bar.getByRole('alert')).toContainText('没能完成')
+  await bar.getByRole('button', { name: '日志' }).click()
+  await expect(page.getByRole('heading', { name: '导出' })).toBeVisible()
 })

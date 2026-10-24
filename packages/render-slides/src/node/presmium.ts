@@ -36,7 +36,14 @@ function slidesExporter(format: 'pdf' | 'pptx', label: Record<string, string>): 
       const dir = await ctx.prepare('slides', { liveCode: false })
       ctx.progress('export')
       const file = `slides.${format}`
-      await runSlidev(['export', 'slides.md', '--format', format, '--output', join(ctx.outDir, file), '--wait-until', 'networkidle', '--timeout', String(EXPORT_TIMEOUT)], dir, ctx.log, ctx.signal)
+      const exported = () => runSlidev(['export', 'slides.md', '--format', format, '--output', join(ctx.outDir, file), '--wait-until', 'networkidle', '--timeout', String(EXPORT_TIMEOUT)], dir, ctx.log, ctx.signal)
+      // A deck's first export can fail while Vite optimizes its dependencies and reloads the print page; the second
+      // finds them optimized.
+      await exported().catch(async (error: unknown) => {
+        if (ctx.signal.aborted) throw error
+        ctx.log('the export failed; once more, with the dependencies the first run optimized')
+        await exported()
+      })
       return { files: [file] }
     },
   }

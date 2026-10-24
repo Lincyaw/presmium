@@ -171,7 +171,8 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
     const compilation = await new Compiler(deckDir).compile()
     const report = await build(compilation, { outDir: work, to: ['web', 'lecture'] })
     const errors = report.findings.filter(f => f.severity === 'error')
-    if (errors.length > 0) throw new Error(`the build failed:\n${errors.map(f => `  ${f.message}`).join('\n')}`)
+    // The first reason first: a one-line summary (a workbench shows it) says what to fix.
+    if (errors.length > 0) throw new Error(`${errors[0]!.message}${errors.length > 1 ? ` (and ${errors.length - 1} more)` : ''}\n${errors.map(f => `  ${f.message}`).join('\n')}`)
     const warnings = report.findings.filter(f => f.severity === 'warning').map(f => f.message)
     const web = report.outputs.find(o => o.renderer === 'web')
     const lectures = report.outputs.find(o => o.renderer === 'lecture')

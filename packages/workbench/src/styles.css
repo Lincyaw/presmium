@@ -821,6 +821,19 @@
   accent-color: var(--pm-color-accent);
 }
 
+.pmw-videobar__error {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--pm-color-danger);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pmw-videobar[data-state='failed'] {
+  background: var(--pm-color-danger-soft);
+}
+
 /* The Export pane: what the document can be made into, and what was made. */
 
 .pmw-export__hint {

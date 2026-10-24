@@ -28,6 +28,21 @@ export interface Utterance {
   step?: number
   translations?: Record<string, Translation>
   clip?: string
+  /**
+   * Why the sentence has no audio: a synthesized lecture whose engine could not say it. It plays silent for the length it
+   * would take to say (`spokenDuration`), its caption shown; only a lecture's preview has such sentences.
+   */
+  unsaid?: string
+}
+
+// The time a voice takes for a word, as the synthesized lectures of the example say theirs (about 0.34 s in Chinese).
+const WORD_MS = 360
+const MIN_SAID_MS = 500
+
+/** About how long a voice takes to say `text`: by its words, as `Intl.Segmenter` finds them in the language. */
+export function spokenDuration(text: string, lang: string): number {
+  const words = [...new Intl.Segmenter(lang, { granularity: 'word' }).segment(text)].filter(segment => segment.isWordLike).length
+  return Math.max(MIN_SAID_MS, words * WORD_MS)
 }
 
 export const CLIP_FILE = /^[0-9a-f]{32}\.(wav|ogg)$/
@@ -107,6 +122,7 @@ function utterance(value: unknown, problems: string[], i: number): Utterance | u
     ...isNumber(value.step) ? { step: value.step } : {},
     ...translations ? { translations } : {},
     ...typeof value.clip === 'string' && CLIP_FILE.test(value.clip) ? { clip: value.clip } : {},
+    ...typeof value.unsaid === 'string' ? { unsaid: value.unsaid } : {},
   }
 }
 

@@ -42,6 +42,7 @@ export interface LectureMessages {
     failed: (reason: string) => string
     missing: (id: string) => string
     dropped: (count: number) => string
+    unsaid: (count: number) => string
     stale: string
     jump: (time: string) => string
     step: (step: number) => string
@@ -118,6 +119,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       failed: reason => `讲授加载失败：${reason}`,
       missing: id => `找不到讲授 ${id}`,
       dropped: count => `讲义改动后有 ${count} 个操作失效，回放时略过`,
+      unsaid: count => `有 ${count} 句还没能合成语音，按估计的时长静音播放，并显示字幕`,
       stale: '译文过期：原句在翻译之后改过',
       jump: time => `跳到 ${time}`,
       step: step => `第 ${step} 步`,
@@ -192,6 +194,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       failed: reason => `Lecture could not be loaded: ${reason}`,
       missing: id => `Lecture ${id} not found`,
       dropped: count => `${count} actions no longer match the deck and are skipped`,
+      unsaid: count => `${count} sentences could not be said yet: they play silent for about the time they take, with their captions`,
       stale: 'Outdated translation: the sentence changed after it was translated',
       jump: time => `Go to ${time}`,
       step: step => `Step ${step}`,

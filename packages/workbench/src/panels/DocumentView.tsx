@@ -47,7 +47,7 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   return (
     <div className="pmw-document" data-aside={aside ?? undefined} data-navigation={navigation || undefined}>
       <DocumentToolbar framed={framed} aside={aside} navigation={navigation} onNavigation={() => setNavigation(shown => !shown)} onAside={next => setAside(current => (current === next ? null : next))} />
-      {video && <VideoFileBar />}
+      {video && <VideoFileBar onLog={() => setAside('export')} />}
       <DocumentNotices />
       <div className="pmw-document__body">
         {navigation && <NavigationPane onClose={() => setNavigation(false)} />}
@@ -220,10 +220,11 @@ function SaveStatus() {
  * Above the video: its file, made from the content as it is now or before, being made, or not yet; to make, play or
  * download (the same job as in the Export pane).
  */
-function VideoFileBar() {
+function VideoFileBar({ onLog }: { onLog(): void }) {
   const t = useMessages()
   const workbench = useWorkbench()
   const job = useWorkbenchState(state => state.jobs?.jobs.find(own => own.target === VIDEO_TARGET && own.state !== 'cancelled'))
+  const failure = useWorkbenchState(state => state.jobsFailure)
   const label = useWorkbenchState(state => {
     const target = state.jobs?.targets.find(own => own.id === VIDEO_TARGET)
     return target?.label[state.locale] ?? t.video
@@ -233,24 +234,30 @@ function VideoFileBar() {
   const making = job?.state === 'queued' || job?.state === 'running'
   const progress = job?.state === 'running' ? job.progress : undefined
   const done = job?.state === 'done' ? job : undefined
+  const failed = job?.state === 'failed' ? job : undefined
   const main = done?.main && `${done.url}${done.main}`
+  const phase = progress && (t.jobPhases[progress.phase] ?? progress.phase)
   return (
-    <div className="pmw-videobar" role="group" aria-label={t.videoFile}>
+    <div className="pmw-videobar" role="group" aria-label={t.videoFile} data-state={job?.state}>
       <PmIcon name="video" />
       <span className="pmw-videobar__label">{t.videoFile}</span>
-      <span className="pmw-videobar__status">
-        {!job && t.noVideoFile}
-        {making && (progress?.total ? t.jobProgress(t.jobPhases[progress.phase] ?? progress.phase, progress.done, progress.total) : t.jobStates[job.state])}
-        {job?.state === 'failed' && t.outputFailed(job.error?.split('\n')[0] ?? '')}
-        {done && (done.revision === revision ? t.currentContent : t.olderContent)}
-      </span>
-      {making && progress?.total !== undefined && <progress className="pmw-videobar__progress" max={progress.total} value={progress.done ?? 0} aria-label={label} />}
+      {!job && !failure && <span className="pmw-videobar__status">{t.noVideoFile}</span>}
+      {making && (
+        <span className="pmw-videobar__status" role="status">
+          {phase ? t.jobProgress(phase, progress?.done, progress?.total) : t.jobStates[job.state]}
+        </span>
+      )}
+      {/* Until the frames are counted, the bar only says the file is being made. */}
+      {making && <progress className="pmw-videobar__progress" max={progress?.total ?? 1} value={progress?.total ? progress.done ?? 0 : undefined} aria-label={label} />}
+      {(failed || failure) && <span className="pmw-videobar__error" role="alert" title={failed?.error ?? failure}>{t.outputFailed(failed?.error?.split('\n')[0] ?? failure ?? '')}</span>}
+      {done && <span className="pmw-videobar__status">{done.revision === revision ? t.currentContent : t.olderContent}</span>}
       <span className="pmw-spacer" />
+      {(making || failed) && <PmButton small onClick={onLog}>{t.outputLog}</PmButton>}
       {main && <PmButton small icon="play" onClick={() => setPlaying(true)}>{t.playVideoFile}</PmButton>}
       {main && <a className="pm-ui-button pm-ui-button--small" href={`${main}?download`}><PmIcon name="download" />{t.downloadOutput}</a>}
       {making
         ? <PmButton small onClick={() => void workbench.cancelJob(job.id)}>{t.cancelOutput}</PmButton>
-        : (!done || done.revision !== revision) && <PmButton small variant="accent" icon="export" onClick={() => void workbench.startJob(VIDEO_TARGET)}>{done ? t.remakeVideoFile : t.makeVideoFile}</PmButton>}
+        : (!done || done.revision !== revision) && <PmButton small variant="accent" icon="export" onClick={() => void workbench.startJob(VIDEO_TARGET)}>{done || failed ? t.remakeVideoFile : t.makeVideoFile}</PmButton>}
       <VideoDialog job={playing ? done : undefined} label={label} onClose={() => setPlaying(false)} />
     </div>
   )

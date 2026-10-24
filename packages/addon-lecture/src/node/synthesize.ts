@@ -94,7 +94,10 @@ export async function synthesizePlan(speech: SpeechService, plan: LecturePlan, o
 
 export interface SynthesizedLecture {
   deck: DeckPlan
+  /** The lecture, every sentence said; none when one could not be. */
   track?: LectureTrack
+  /** The lecture to play while some sentences could not be said: those are silent (`Utterance.unsaid`). */
+  preview?: LectureTrack
   clips: Map<string, SynthesizedClip>
   failures: SynthesisFailure[]
   /** Where `{cue}next` moves on before an animation has played. */
@@ -106,7 +109,7 @@ export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech
   const clips = new Map<string, SynthesizedClip>()
   if (!deck.voice) return { deck, clips, failures: [], cuts: [] }
   const synthesized = await synthesizePlan(speech, deck.plan, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {} }, signal)
-  if (synthesized.failures.length > 0) return { deck, clips: synthesized.clips, failures: synthesized.failures, cuts: [] }
+  const unsaid = new Map(synthesized.failures.map(failure => [failure.id, failure.reason]))
   const { track, cuts } = scriptTrack(deck.plan, synthesized.clips, {
     id: SCRIPT_TRACK,
     doc: relative(deckDir, doc.meta.entry) || doc.meta.entry,
@@ -114,8 +117,9 @@ export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech
     ir: { hash: irHash(doc), sections: sectionHashes(doc) },
     voice: clipVoice(synthesized.clips.values(), deck.voice),
     gap: deck.gap,
-  }, events => referencedBlocks(doc, events))
-  return { deck, track, clips: synthesized.clips, failures: [], cuts }
+  }, events => referencedBlocks(doc, events), unsaid)
+  if (synthesized.failures.length > 0) return { deck, preview: track, clips: synthesized.clips, failures: synthesized.failures, cuts: [] }
+  return { deck, track, preview: track, clips: synthesized.clips, failures: [], cuts }
 }
 
 export function synthesisFailureMessage(failure: SynthesisFailure): string {

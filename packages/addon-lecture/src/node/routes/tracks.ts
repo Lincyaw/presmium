@@ -26,7 +26,8 @@ export function trackRoutes(served: ServedDeck): Record<string, Route> {
   const synthesizeScriptTrack = (): Promise<LectureTrack> => {
     const doc = compiled()
     if (pendingScriptTrack?.doc === doc) return pendingScriptTrack.made
-    const made = synthesizeLecture(doc, deckDir, served.speech()).then(({ deck, track, failures, clips }) => {
+    // A sentence that could not be said plays silent, its caption shown: the lecture still plays on its timeline.
+    const made = synthesizeLecture(doc, deckDir, served.speech()).then(({ deck, preview: track, failures, clips }) => {
       if (!deck.voice) throw new RouteRefusal(404, `no lecture ${SCRIPT_TRACK}: renderers.lecture.voice names no voice`)
       if (!track) throw new RouteRefusal(502, failures.map(synthesisFailureMessage).join('\n'))
       const names = [...new Set([...clips.values()].map(clip => clip.file))].sort()

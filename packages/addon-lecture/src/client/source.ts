@@ -20,9 +20,20 @@ function summaries(value: unknown): LectureSummary[] {
   return Array.isArray(value) ? value.filter((v): v is LectureSummary => isRecord(v) && typeof v.id === 'string') : []
 }
 
+/** Why the server refused: its `{ error }`, or the text it answered (a proxy's), else the status. */
+async function refusal(response: Response): Promise<string> {
+  const text = (await response.text().catch(() => '')).trim()
+  let body: unknown
+  try {
+    body = JSON.parse(text)
+  } catch {}
+  if (isRecord(body) && typeof body.error === 'string') return body.error
+  return text && !text.startsWith('<') ? `HTTP ${response.status}: ${text.slice(0, 300)}` : `HTTP ${response.status}`
+}
+
 async function readTrackAnswer(response: Response): Promise<LectureTrack | undefined> {
   if (response.status === 404) return undefined
-  if (!response.ok) throw new Error(`HTTP ${response.status}`)
+  if (!response.ok) throw new Error(await refusal(response))
   const { track, problems } = parseTrack(await response.json())
   if (!track) throw new Error(problems.join('; '))
   return track

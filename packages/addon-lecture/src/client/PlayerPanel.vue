@@ -33,6 +33,8 @@ const chapter = computed(() => chapterList.value.filter(c => c.t <= time.value).
 const languages = computed(() => (player.value ? captionLanguages(player.value.track) : []))
 const current = computed(() => (player.value ? utteranceAt(player.value.track, time.value) : undefined))
 const voice = computed(() => player.value?.track.voice)
+// The sentences the engine could not say yet: silent, their captions shown.
+const unsaid = computed(() => player.value?.track.utterances.filter(u => u.unsaid) ?? [])
 const synthetic = computed(() => (voice.value?.kind === 'synthetic' && voice.value.provider ? t.value.player.syntheticBy(voice.value.provider) : t.value.player.synthetic))
 
 function text(u: Utterance): string {
@@ -93,7 +95,6 @@ function close() {
         <p v-if="burned" class="pm-lecture-caption" :lang="burnedCaptions">{{ burned }}</p>
       </template>
       <template v-else-if="player">
-        <p v-if="captions && current" class="pm-lecture-caption" :lang="language" aria-live="polite" :data-stale="stale.has(current.id) ? 'true' : undefined">{{ text(current) }}<span v-if="stale.has(current.id)" class="pm-lecture-stale" role="img" :title="t.player.stale" :aria-label="t.player.stale"><PmIcon name="warning" size="1em" :stroke-width="2" /></span></p>
         <aside v-if="panel" class="pm-lecture-side" :aria-label="panel === 'transcript' ? t.player.transcript : t.player.chapters">
           <PmTabs :model-value="panel" :tabs="sideTabs" :label="t.player.sideTabs" @update:model-value="panel = $event as 'transcript' | 'chapters'">
             <TranscriptList
@@ -109,42 +110,47 @@ function close() {
             <ChapterList v-else :chapters="chapterList" :events="player.events" :time="time" @seek="seekTo" />
           </PmTabs>
         </aside>
-        <div class="pm-lecture-player" role="region" :aria-label="t.player.region" :data-state="state" :data-time="Math.round(time)" :data-clip="current?.clip">
-          <p v-if="player.dropped > 0" class="pm-lecture-player__notice">{{ t.player.dropped(player.dropped) }}</p>
-          <p v-if="state === 'trying'" class="pm-lecture-player__notice">{{ t.player.trying }}</p>
-          <div class="pm-lecture-player__row">
-            <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small pm-lecture-player__play" @click="toggle">{{ state === 'playing' ? t.player.pause : t.player.play }}</button>
-            <span class="pm-lecture-player__time">{{ t.player.time(clockText(time), clockText(player.duration)) }}</span>
-            <input
-              class="pm-lecture-player__seek pm-ui-checkbox"
-              type="range"
-              min="0"
-              :max="player.duration"
-              step="100"
-              :value="Math.round(time)"
-              :aria-label="t.player.seek"
-              @change="onSeek"
-            >
-            <span v-if="chapter" class="pm-lecture-player__chapter">{{ chapter.title }}</span>
-            <label class="pm-lecture-player__field">
-              {{ t.player.rate }}
-              <select class="pm-ui-select" :value="player.clock.rate.value" @change="onRate">
-                <option v-for="r in RATES" :key="r" :value="r">{{ r }}×</option>
-              </select>
-            </label>
-            <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :aria-pressed="captions" @click="captions = !captions">{{ t.player.captions }}</button>
-            <label v-if="languages.length > 1" class="pm-lecture-player__field">
-              {{ t.player.language }}
-              <select v-model="language" class="pm-ui-select">
-                <option v-for="lang in languages" :key="lang" :value="lang">{{ lang }}</option>
-              </select>
-            </label>
-            <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :aria-pressed="panel === 'transcript'" @click="panel = panel === 'transcript' ? undefined : 'transcript'">{{ t.player.transcript }}</button>
-            <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :aria-pressed="panel === 'chapters'" @click="panel = panel === 'chapters' ? undefined : 'chapters'">{{ t.player.chapters }}</button>
-            <button v-if="state === 'trying'" type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small pm-lecture-player__back" @click="player.back()">{{ t.player.back }}</button>
-            <button v-else type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small pm-lecture-player__try" @click="player.tryIt()">{{ t.player.tryIt }}</button>
-            <span v-if="voice?.kind === 'synthetic'" class="pm-lecture-player__ai pm-ui-badge pm-ui-badge--accent pm-ui-badge--pill">{{ synthetic }}</span>
-            <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :aria-label="t.player.close" @click="close"><PmIcon name="close" size="1em" /></button>
+        <!-- The caption above the player, however tall the player is. -->
+        <div class="pm-lecture-dock">
+          <p v-if="(captions || current?.unsaid) && current" class="pm-lecture-caption" :lang="language" aria-live="polite" :data-stale="stale.has(current.id) ? 'true' : undefined">{{ text(current) }}<span v-if="stale.has(current.id)" class="pm-lecture-stale" role="img" :title="t.player.stale" :aria-label="t.player.stale"><PmIcon name="warning" size="1em" :stroke-width="2" /></span></p>
+          <div class="pm-lecture-player" role="region" :aria-label="t.player.region" :data-state="state" :data-time="Math.round(time)" :data-clip="current?.clip">
+            <p v-if="player.dropped > 0" class="pm-lecture-player__notice">{{ t.player.dropped(player.dropped) }}</p>
+            <p v-if="unsaid.length > 0" class="pm-lecture-player__notice" data-unsaid :title="unsaid[0]!.unsaid">{{ t.player.unsaid(unsaid.length) }}</p>
+            <p v-if="state === 'trying'" class="pm-lecture-player__notice">{{ t.player.trying }}</p>
+            <div class="pm-lecture-player__row">
+              <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small pm-lecture-player__play" @click="toggle">{{ state === 'playing' ? t.player.pause : t.player.play }}</button>
+              <span class="pm-lecture-player__time">{{ t.player.time(clockText(time), clockText(player.duration)) }}</span>
+              <input
+                class="pm-lecture-player__seek pm-ui-checkbox"
+                type="range"
+                min="0"
+                :max="player.duration"
+                step="100"
+                :value="Math.round(time)"
+                :aria-label="t.player.seek"
+                @change="onSeek"
+              >
+              <span v-if="chapter" class="pm-lecture-player__chapter">{{ chapter.title }}</span>
+              <label class="pm-lecture-player__field">
+                {{ t.player.rate }}
+                <select class="pm-ui-select" :value="player.clock.rate.value" @change="onRate">
+                  <option v-for="r in RATES" :key="r" :value="r">{{ r }}×</option>
+                </select>
+              </label>
+              <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :aria-pressed="captions" @click="captions = !captions">{{ t.player.captions }}</button>
+              <label v-if="languages.length > 1" class="pm-lecture-player__field">
+                {{ t.player.language }}
+                <select v-model="language" class="pm-ui-select">
+                  <option v-for="lang in languages" :key="lang" :value="lang">{{ lang }}</option>
+                </select>
+              </label>
+              <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :aria-pressed="panel === 'transcript'" @click="panel = panel === 'transcript' ? undefined : 'transcript'">{{ t.player.transcript }}</button>
+              <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :aria-pressed="panel === 'chapters'" @click="panel = panel === 'chapters' ? undefined : 'chapters'">{{ t.player.chapters }}</button>
+              <button v-if="state === 'trying'" type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small pm-lecture-player__back" @click="player.back()">{{ t.player.back }}</button>
+              <button v-else type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small pm-lecture-player__try" @click="player.tryIt()">{{ t.player.tryIt }}</button>
+              <span v-if="voice?.kind === 'synthetic'" class="pm-lecture-player__ai pm-ui-badge pm-ui-badge--accent pm-ui-badge--pill">{{ synthetic }}</span>
+              <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :aria-label="t.player.close" @click="close"><PmIcon name="close" size="1em" /></button>
+            </div>
           </div>
         </div>
       </template>
@@ -181,6 +187,28 @@ html.pm-lecture-exporting .pm-present__bar {
   color: var(--pm-color-ink);
   font-family: var(--pm-font-sans);
   font-size: var(--pm-text-md);
+}
+.pm-lecture-dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--pm-overlay-bar, 3rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pm-space-2);
+  pointer-events: none;
+}
+.pm-lecture-dock > * {
+  pointer-events: auto;
+}
+.pm-lecture-dock > .pm-lecture-player {
+  position: static;
+  align-self: stretch;
+}
+.pm-lecture-dock > .pm-lecture-caption {
+  position: static;
+  transform: none;
 }
 .pm-lecture-player__row {
   display: flex;

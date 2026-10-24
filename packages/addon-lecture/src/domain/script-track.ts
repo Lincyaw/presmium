@@ -2,7 +2,7 @@ import type { SourcePos, TrackEvent, WrittenWord } from '@lincyaw/kernel'
 import type { LecturePlan, PlannedCue } from './plan.ts'
 import { wordTime } from './timing.ts'
 import type { LectureTrack, TrackBlock, Utterance, Voice } from './track.ts'
-import { sortEvents, TRACK_VERSION } from './track.ts'
+import { sortEvents, spokenDuration, TRACK_VERSION } from './track.ts'
 import { charOffset, trackWords, wordIndexAt } from './words.ts'
 
 export interface Clip {
@@ -38,7 +38,11 @@ function anchorAt(utterance: Utterance, words: readonly WrittenWord[] | undefine
  * The synthesized lecture's timeline. A step lasts as long as its longest animation, except where the
  * narration says `{cue}next` before then: the cue keeps the word it is bound to, and `cuts` list it.
  */
-export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>, head: ScriptHead, blocks: (events: TrackEvent[]) => Record<string, TrackBlock>): { track: LectureTrack, cuts: CutAnimation[] } {
+/**
+ * The lecture of `plan` said with `clips`. `unsaid`: the sentences without a clip, by id, with the reason; each plays
+ * silent for the time it would take to say, so that a preview keeps the lecture's timeline.
+ */
+export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>, head: ScriptHead, blocks: (events: TrackEvent[]) => Record<string, TrackBlock>, unsaid: ReadonlyMap<string, string> = new Map()): { track: LectureTrack, cuts: CutAnimation[] } {
   const cuts: CutAnimation[] = []
   const events: TrackEvent[] = []
   const utterances: Utterance[] = []
@@ -73,6 +77,9 @@ export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>,
           if (piece.id && clip) {
             utterance = { id: piece.id, t, d: Math.round(clip.duration * 1000), text: piece.text, section: section.id, step: section.webStep(current), clip: clip.file }
             if (clip.words?.length) utterance.words = trackWords(clip.words, t)
+            utterances.push(utterance)
+          } else if (piece.id && unsaid.has(piece.id)) {
+            utterance = { id: piece.id, t, d: spokenDuration(piece.text, head.lang), text: piece.text, section: section.id, step: section.webStep(current), unsaid: unsaid.get(piece.id)! }
             utterances.push(utterance)
           }
           const cue = (c: PlannedCue, data: Record<string, unknown>): number => {
