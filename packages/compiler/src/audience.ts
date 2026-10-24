@@ -185,7 +185,6 @@ function lift(scope: MdastNode, audience: string[], depth: number, out: MdastNod
 export function filterForAudience(doc: IRDocument, name: string, marks: AudienceMark[] = []): { doc: IRDocument, removed: Removed[], keeps: (finding: Finding) => boolean } {
   const removed: Removed[] = []
   const sections: IRSection[] = []
-  const compacted = new Set<string>()
   for (const section of doc.sections) {
     if (!includesAudience(section.audience, name)) {
       removed.push({ source: section.source, audience: section.audience!, title: section.title, blocks: section.blocks })
@@ -202,13 +201,10 @@ export function filterForAudience(doc: IRDocument, name: string, marks: Audience
       return [node === block.node ? block : { ...block, node }]
     })
     const blocks = keep(section.blocks)
-    if (dropped) compacted.add(section.id)
     sections.push(dropped ? compactSteps({ ...section, blocks }) : same(blocks, section.blocks) ? section : { ...section, blocks })
   }
   const marked = marks.filter(mark => !includesAudience(mark.audience, name)).map(mark => mark.source)
   if (removed.length === 0 && marked.length === 0) return { doc, removed, keeps: () => true }
-  const kept = new Set(sections.map(section => section.id))
-  sections.forEach((section, i) => sections[i] = withViewKeys(section, kept, compacted.has(section.id)))
   const spans = [...leftOut(doc, name, removed), ...marked]
   const keeps = ({ source: at }: Finding) => !at || !spans.some(span => at.file === span.file && (at.line ?? 0) >= span.line && (at.line ?? 0) <= (span.endLine ?? span.line))
   return {
@@ -383,34 +379,6 @@ function withoutLeaks(view: IRDocument, removed: Removed[], name: string): IRDoc
     return blocks.length === section.blocks.length ? section : compactSteps({ ...section, blocks })
   })
   return findings.length === 0 ? view : { ...view, sections, diagnostics: [...view.diagnostics, ...findings] }
-}
-
-const STEPS_KEY = 'presmiumSteps'
-const BACK_KEY = 'presmiumBack'
-
-function withViewKeys(section: IRSection, sections: ReadonlySet<string>, compacted: boolean): IRSection {
-  const hints = section.hints.slides
-  const back = isRecord(hints) && typeof hints[BACK_KEY] === 'string' && !sections.has(hints[BACK_KEY])
-  if (!isRecord(hints) || (!(compacted && STEPS_KEY in hints) && !back)) return section
-  const paths = new Set<string>()
-  const visit = (blocks: readonly IRBlock[], prefix: string) => {
-    for (const block of blocks) {
-      paths.add(prefix + block.id)
-      if (block.node.type === 'component' && block.node.children) visit(block.node.children, `${prefix}${block.id}/`)
-    }
-  }
-  visit(section.blocks, '')
-  const has = (key: string) => paths.has(key) || paths.has(key.replace(/\+\d+$/, '')) || (key.endsWith('-') && paths.has(key.slice(0, -1)))
-  const own: Record<string, unknown> = { ...hints }
-  const steps = hints[STEPS_KEY]
-  if (compacted && Array.isArray(steps)) {
-    const left = steps.map(keys => (Array.isArray(keys) ? keys.filter(key => typeof key === 'string' && has(key)) : []))
-    const closed = left.filter((keys, i) => i === 0 || keys.length > 0)
-    if (closed.length > 1) own[STEPS_KEY] = closed
-    else delete own[STEPS_KEY]
-  }
-  if (back) delete own[BACK_KEY]
-  return { ...section, hints: { ...section.hints, slides: own } }
 }
 
 /** The texts of a block that the leak scan splits into sentences: its own source, without recorded output. */

@@ -9,7 +9,6 @@ process.env.TMPDIR = realpathSync(tmpdir())
 const EXPORTS = [
   'packages/addon-publish/test/export.test.ts',
   'packages/addon-publish/test/diff.test.ts',
-  'packages/render-slides/test/slides.test.ts',
 ]
 
 export default defineConfig({

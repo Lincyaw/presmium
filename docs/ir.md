@@ -66,7 +66,7 @@ execute: { rerun: environment } # 可选：另一运行环境的执行录制重�
 
 站点路径 `base` 的默认值：同一次构建同时生成网页与幻灯片、两者都没有设置 `base` 时，网页为 `/web/`、幻灯片为 `/slides/`，`dist/` 整体作为一个站点部署（网页在 `dist/web`，幻灯片在 `dist/slides`）；只生成其中一种时为 `/`。`presmium dev` 中每个开发服务器有自己的地址，`base` 默认为 `/`。
 
-网页的每个章节标题旁有到幻灯片对应页的链接，地址由幻灯片的 `base` 得出：`<幻灯片的 base>?slide=<页号>`，有步骤时另带 `&step=<步>`。两种形态分开部署时，在 `presmium: { presmium.web: { slidesUrl } }` 中写明幻灯片的地址。
+网页的每个章节标题旁有到幻灯片对应页的链接，地址由幻灯片的 `base` 得出：`<幻灯片的 base>?slide=<页号>`，有步骤时另带 `&step=<步>`。两种形态分开部署时，在 `presmium: { presmium.web: { slidesUrl } }` 中写明幻灯片的地址。幻灯片放映栏的“在网页中阅读”以同样的查询参数链到网页的同一位置，地址默认是幻灯片旁的 `../web`，分开部署时在 `presmium.web` 的 `webUrl` 中写明。
 
 其他头部字段：
 
