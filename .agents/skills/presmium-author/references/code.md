@@ -25,7 +25,7 @@ print(sum([1, 2, 3]))
 ```
 ````
 
-网页给现场代码显示运行按钮；幻灯片中的 Python、JavaScript、TypeScript 使用 Monaco Runner。执行面板适合带参数的例子，分步执行适合解释运行过程，写法查 [指令参考](directives.md)。
+网页与幻灯片给现场代码显示运行按钮；没有分步高亮与多版本的现场代码还可以在运行前就地修改（“编辑代码”，Mod-Enter 运行，“还原代码”回到原样）。执行面板适合带参数的例子，分步执行适合解释运行过程，写法查 [指令参考](directives.md)。
 
 浏览器 Python 使用 Pyodide，现有内置运行环境只有标准库；依赖 numpy、matplotlib 等的例子优先用编译时输出，或选择合适的远端环境。C、C++、Ruby、SQL 可用 `@lincyaw/addon-exec-wasi`，其运行时会增加发布体积。GPU 和远端内核只在任务需要时配置。
 

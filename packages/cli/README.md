@@ -15,7 +15,7 @@ pnpm add -g @lincyaw/presmium
 In a project that picks its own renderers and plugins, install the CLI with them (Node.js 22.19 or later):
 
 ```sh
-pnpm add -D @lincyaw/cli @lincyaw/web @lincyaw/render-slides @lincyaw/render-notebook @lincyaw/addon-core
+pnpm add -D @lincyaw/cli @lincyaw/web @lincyaw/render-slides @lincyaw/render-notebook
 ```
 
 ## Commands

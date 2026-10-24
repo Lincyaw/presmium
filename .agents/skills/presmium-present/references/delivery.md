@@ -20,33 +20,32 @@ pnpm exec sirv dist/web --port 8080
 
 ```sh
 presmium build --to web,slides
-pnpm exec sirv dist --single slides/index.html --port 8080
+pnpm exec sirv dist --port 8080
 ```
 
-网页从 `/web/` 打开，幻灯片从 `/slides/` 打开。上面的回落适合本机演示；正式托管最好只对 `/slides/*` 回落到 `/slides/index.html`，或配置 `renderers.slides.routerMode: hash`，避免网页不存在的地址也落到幻灯片。
+网页从 `/web/` 打开，幻灯片从 `/slides/` 打开。幻灯片是一个页面（`index.html`），页与步骤写在地址的查询中（`?slide=<页号>&step=<步>`），托管时不需要 SPA 回落。
 
-只构建幻灯片、未设 `base` 时，可用 `pnpm exec sirv dist/slides --single --port 8080`。已有子路径时按该路径服务产物，不要把 `/slides/` 的产物误当根站点。
+只构建幻灯片、未设 `base` 时，可用 `pnpm exec sirv dist/slides --port 8080`。已有子路径时按该路径服务产物，不要把 `/slides/` 的产物误当根站点。
 
-网页章节标题旁可跳到幻灯片，幻灯片导航可回网页。分开部署时配置两边的实际地址，检查两个方向和当前步骤是否正确：
+网页章节标题旁可跳到幻灯片的同一页。分开部署时用 `slidesUrl` 配置幻灯片的实际地址，检查跳转到的页与步骤是否正确：
 
 ```yaml
 presmium:
   presmium.web:
     slidesUrl: https://example.com/slides/
-    webUrl: https://example.com/web/
 ```
 
 ## 导出 PDF 或图片
 
-文稿需列出 `@lincyaw/addon-publish`。项目中使用：
+文稿需列出 `@lincyaw/addon-publish`。导出在 Chromium 中打印幻灯片，项目中要装 `playwright-chromium`（`pnpm add -D playwright-chromium`，再 `pnpm exec playwright install chromium`）。项目中使用：
 
 ```sh
 pnpm exec presmium-export --format pdf --output lecture.pdf
 ```
 
-用 `--with-clicks` 把每一步展开为一页，`--range 1,3-5` 选择页，`--dark` 导出暗色，`--format png` 改为图片，`--format pptx` 改为 PowerPoint（每张幻灯片是一张图）。在工作台中，命令栏的“导出”同样能生成幻灯片 PDF、PowerPoint 与讲授视频，不需要文稿列出发布插件，生成的文件可以打开、播放与下载。`presmium-export` 会按导出所需的根路径准备文稿，避免静态站点子路径导致媒体丢失。
+用 `--with-clicks` 把每一步展开为一页，`--range 1,3-5` 选择页，`--dark` 导出暗色，`--format png` 改为图片，`--format pptx` 改为 PowerPoint（每张幻灯片是一张图，讲解是演讲者备注）。在工作台中，命令栏的“导出”同样能生成幻灯片 PDF、图片、PowerPoint 与讲授视频，不需要文稿列出发布插件，生成的文件可以打开、播放与下载。`presmium-export` 以根路径另构建一份幻灯片再打印，静态站点的子路径不影响导出。
 
-导出后检查页数、缺页、长代码溢出，以及关键链接。运行面板在纸面上显示静态降级与录制输出。缺页或超时时先读错误，再重试或调整 `--wait`、`--timeout`，不能把不完整文件当成完成。
+导出后检查页数、缺页、长代码溢出，以及关键链接。运行面板在纸面上显示静态降级与录制输出。缺页或超时时先读错误，再重试或调整 `--timeout`，不能把不完整文件当成完成。
 
 ## 给学生可运行的 notebook
 

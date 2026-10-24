@@ -1,6 +1,6 @@
 # 新增一个插件
 
-以假想的插件 `presmium.poll`（包 `@lincyaw/addon-poll`）为例，从源码语法走到两种浏览器形态与静态渲染端。约定的出处：`docs/architecture.md` 第 3 节（包内分层）、4.2 节（Node 端插件）、第 5 节（插件约定）；`docs/ir.md` 第 5、6 节。对照现成的插件读：`packages/addon-guide`（指令 → 组件，浮层）、`packages/addon-content`（指令、编译步骤、幻灯片扩展）、`packages/addon-exec`（执行器、两种渲染端扩展、浏览器服务）、`packages/addon-classroom`（编译步骤、notebook 扩展、依赖服务）。
+以假想的插件 `presmium.poll`（包 `@lincyaw/addon-poll`）为例，从源码语法走到两种浏览器形态与静态渲染端。约定的出处：`docs/architecture.md` 第 3 节（包内分层）、4.2 节（Node 端插件）、第 5 节（插件约定）；`docs/ir.md` 第 5、6 节。对照现成的插件读：`packages/addon-guide`（指令 → 组件，浮层）、`packages/addon-content`（指令、编译步骤、notebook 扩展、`vite.config.ts`）、`packages/addon-exec`（执行器、notebook 扩展、运行时文件、浏览器服务）、`packages/addon-classroom`（编译步骤、notebook 扩展、依赖服务）。
 
 ## 1. 包的结构
 
@@ -12,7 +12,7 @@ packages/addon-poll/
 │   ├── node/presmium.ts Node 端入口：默认导出 PresmiumNodePlugin
 │   └── client/          浏览器端：index.ts、plugin.ts（内核插件）、viewer.ts（可选，IR 运行时扩展）
 ├── components/PmPoll.vue 组件，文件名即组件名
-└── setup/main.ts        Slidev 约定：幻灯片形态注册内核插件
+└── vite.config.ts       可选：查看器构建用的 Vite 插件与 Vue 选项
 ```
 
 `package.json`（照 `packages/addon-guide/package.json`）：
@@ -26,7 +26,7 @@ packages/addon-poll/
   "repository": { "type": "git", "url": "git+https://github.com/Lincyaw/presmium.git", "directory": "packages/addon-poll" },
   "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/addon-poll#readme",
   "bugs": "https://github.com/Lincyaw/presmium/issues",
-  "keywords": ["slidev-addon", "slidev", "presmium"],
+  "keywords": ["presmium"],
   "type": "module",
   "engines": { "node": ">=22.19" },
   "publishConfig": { "access": "public" },
@@ -36,11 +36,10 @@ packages/addon-poll/
     "./presmium": "./src/node/presmium.ts",
     "./package.json": "./package.json"
   },
-  "files": ["components", "setup", "src"],
-  "slidev": {},
+  "files": ["components", "src"],
   "dependencies": { "vue": "^3.5.42" },
   "peerDependencies": { "@lincyaw/host": "workspace:^", "@lincyaw/kernel": "workspace:^" },
-  "devDependencies": { "@lincyaw/cli": "workspace:*", "@lincyaw/host": "workspace:*", "@lincyaw/kernel": "workspace:*", "@slidev/client": "53.0.0", "@slidev/types": "53.0.0" }
+  "devDependencies": { "@lincyaw/cli": "workspace:*", "@lincyaw/host": "workspace:*", "@lincyaw/kernel": "workspace:*", "@lincyaw/viewer": "workspace:*" }
 }
 ```
 
@@ -55,12 +54,11 @@ packages/addon-poll/
 
 | 位置 | 可以引用 | 不得引用 |
 |---|---|---|
-| `src/domain/` | `@lincyaw/kernel`、纯计算库、`src/domain/` 内的相对路径 | vue 与 `@vue/*`、`@slidev/*`、vitepress、`@lincyaw/host`、Node 内置模块（`node:fs` 与 `fs` 都算） |
-| `components/`、`src/client/` | `src/domain/`、`@lincyaw/kernel`、`@lincyaw/host`、vue | `@slidev/*`、vitepress（只有 `addon-core` 可以用 `@slidev/client`） |
-| `setup/`、全局图层（`global-top.vue` 等） | 以上全部，加 `@slidev/client` 的公开导出与 `@slidev/types` | Slidev 的其他包、vitepress |
+| `src/domain/` | `@lincyaw/kernel`、纯计算库、`src/domain/` 内的相对路径 | vue 与 `@vue/*`、`@lincyaw/host`、Node 内置模块（`node:fs` 与 `fs` 都算） |
+| `components/`、`src/client/` | `src/domain/`、`@lincyaw/kernel`、`@lincyaw/host`、vue；视图插件以类型引用 `@lincyaw/viewer` | `@lincyaw/server`、`mcp`、`workspace`、`web` |
 | `src/node/` | `src/domain/`、`@lincyaw/kernel`、Node 库 | vue 与 `@vue/*` |
 
-另外：不引用插件包（`@lincyaw/addon-*`，对渲染端与 IR 运行时同样适用），相对路径不离开本包，不引用框架内部路径（`@slidev/client/` 的子路径、`vitepress/dist`、`@slidev/cli/dist`）。两个插件要共用的契约放进 `@lincyaw/kernel`（业务服务契约，如 `EXECUTOR`、`SESSION`）或 `@lincyaw/host`（宿主层令牌，如 `TOOLBAR`、`NAVIGATION`）。
+另外：任何包都不引用 `vitepress` 与 `@slidev/*`（两种形态都是查看器）；不引用插件包（`@lincyaw/addon-*`，对渲染端与 IR 运行时同样适用），相对路径不离开本包，不引用依赖的内部路径。两个插件要共用的契约放进 `@lincyaw/kernel`（业务服务契约，如 `EXECUTOR`、`SESSION`）或 `@lincyaw/host`（宿主层令牌，如 `TOOLBAR`、`NAVIGATION`）。
 
 ## 3. 指令：源码 → IR
 
@@ -125,12 +123,12 @@ export default plugin
 | `anchors` | `(ctx) => AnchorString[]` | `presmium check --update-lock` 要记录的锚点 |
 | `renderer` | `Renderer` | 本插件就是一个渲染端（见 SKILL.md） |
 | `rendererExtensions` | `{ [渲染端 ID]: { components: { [组件名]: (node, block, ctx) => unknown } } }` | 见第 7 节 |
-| `vitePlugins` | `(ctx: { deckDir, workspaceRoot, config }) => unknown[]` | 两种形态的统一 Vite 扩展入口，渲染端在开发与构建中加载。只在 Node 端入口声明一次，不另建 Slidev 的注册入口；加载契约见 `docs/ir.md` 第 5、6 节。插件经虚拟模块加载文稿的文件时，Vite 的依赖扫描读不到它们：在 Vite 插件的 `config()` 中返回 `{ optimizeDeps: { entries } }`（路径经 `@lincyaw/kernel/node` 的 `literalGlob`），否则这些文件用到的库在页面加载时才被发现，开发服务器重新预打包并重载整页（参照 `addon-motion` 的 `scenesPlugin`）。虚拟模块的内容随文稿而变时，同时声明 `documentModules`，否则工作台预先打包的查看器显示不了这个插件的文稿 |
-| `documentModules` | `(ctx: { deckDir, workspaceRoot, config }) => Record<string, string>` | 插件浏览器代码导入的、内容随文稿而变的虚拟模块，按 ID 给出源码（只读默认导出）。开发服务器由 `vitePlugins` 提供这些模块；工作台的查看器预先打包，从文稿的代码包得到它们。有 `vitePlugins` 而没有它的插件，文稿改由开发服务器显示（参照 `addon-motion`） |
-| `exporters` | `Exporter[]` | 文稿的重的输出（PDF、视频等），作者在工作台的“导出”或 AI 的 `build` 开始，作为工作区服务的任务运行：在 `ctx.outDir` 中写文件，报告 `progress` 与 `log`，`signal` 中止时停下自己的进程；要渲染端的项目时用 `ctx.prepare(renderer, config)`。返回 `files`（先打开的在前）与视频的 `captions`（参照 `render-slides` 的 `pdf`、`pptx` 与 `addon-lecture` 的 `video`） |
+| `assets` | `(ctx: { deckDir, workspaceRoot, config }) => RuntimeAssets[]` | 浏览器端代码运行时加载的文件（语言运行时等）：`{ name, prefix, types, emitted?, source(file) }`，在文稿的站点路径下的 `<prefix><文件>` 提供，构建时复制 `emitted`（默认全部）进站点；浏览器端用 `@lincyaw/host` 的 `siteBase()` 拼地址，不用 `import.meta.env.BASE_URL`（参照 `addon-exec` 的 `pyodideAssets`、`addon-exec-wasi`） |
+| `documentModules` | `(ctx: { deckDir, workspaceRoot, config }) => Record<string, string>` | 插件浏览器代码导入的、内容随文稿而变的虚拟模块，按 ID 给出源码（只读默认导出）。查看器为一组插件预先构建一次，从文稿自己的代码包得到它们，开发、预览与构建都一样（参照 `addon-motion` 的场景列表） |
+| `exporters` | `Exporter[]` | 文稿的重的输出（PDF、视频等），作者在工作台的“导出”或 AI 的 `build` 开始，作为工作区服务的任务运行：在 `ctx.outDir` 中写文件，报告 `progress` 与 `log`，`signal` 中止时停下自己的进程；要渲染端的产物时用 `ctx.build(renderer, config?)`，它以 `/` 为站点路径构建并给出输出目录；`ctx.options` 是请求导出的一方的选择（如 `presmium-export` 的 `--with-clicks`）；编译器的 `exportDocument` 也运行导出器。返回 `files`（先打开的在前）与视频的 `captions`（参照 `render-slides` 的 `pdf`、`pptx` 与 `addon-lecture` 的 `video`） |
 | `services` | `(ctx: NodeServiceContext) => [令牌, 实现][]` | Node 端服务；编译步骤、渲染端、检查项与服务端贡献经 `ctx.service?.(令牌)` 取用。`ctx.config` 是文稿的 `presmium.<插件 ID>`，`ctx.settings` 是运营者在工作区根目录 `presmium.workspace.yaml` 的 `settings.<插件 ID>`（文稿改不了），还有 `secret(name)`、`operatorDir`、调用时取用其他服务的 `service?.(令牌)`（如宿主的 `DOCUMENT_FILES`）。服务按当前配置与语言在每次编译时创建，各编译结果保留自己的服务快照；服务端贡献单独按挂载周期使用快照（`docs/architecture.md` 4.6、10.2 节）。一个令牌只有一个实现，重复的被忽略并警告 |
 | `server` | `(ctx: ServerContext) => { routes?, proxies?, close? }` | 挂在 `/__presmium/<插件 ID>/` 下的路由（Fetch API 的 `handle(request, { member, document, rest })`，`role` 默认 `editor`；请求体默认至多 1 MiB，超过的得到 413，要收更大的请求体（如录制的分块）时写 `maxBody`；回答用 `@lincyaw/kernel` 的 `jsonResponse(data, status?)`（带 `no-store`）与 `problemResponse(status, message)`）与反向代理（路径有 `..` 或编码的 `/` 时得到 400）；每份文稿在挂载时创建，配置变化的处理见 `docs/architecture.md` 10.2 节。浏览器经 `useServer().fetch(插件 ID, 路径)` 调用。需要确认时 `ctx.service(APPROVALS).request({ kind, scope, title, from, member })`。写文稿时经 `ctx.service(DOCUMENT_FILES)?.write(changes)`（路径相对于 `ctx.workspaceRoot`；按字节位置写入用变更的 `at`），宿主未提供该服务时才直接写；`dev` 与 `serve` 的服务范围见 `docs/architecture.md` 4.5、10.2 节。Node 服务与 agent 工具同样（`NodeServiceContext.service`、`AgentToolContext.service`），范例是讲授插件的 `deckFiles`（`addon-lecture/src/node/store.ts`）与语音插件的合成缓存 |
-| `roles` | `RoleSpec[]` | 行内角色 ``{名 key=value}`内容` ``（选项写成 `key=value`）；IR 中为 `presmiumRole` 节点，渲染端显示 `children`，没有子内容的在演讲者窗口与备注中显示标记 `〔名 value〕` |
+| `roles` | `RoleSpec[]` | 行内角色 ``{名 key=value}`内容` ``（选项写成 `key=value`）；IR 中为 `presmiumRole` 节点，渲染端显示 `children`，没有子内容的在演讲者窗口中显示标记 `〔名 value〕` |
 | `operator` | `boolean` | 运营者插件：列在 `settings.presmium.workspace.plugins` 中、安装在工作区根目录时每份文稿都加载；`presmium serve` 的首页（文档 `''`）也挂上它的服务端部分；页面只加载文稿列出的插件的浏览器部分。首页不是文档：服务端部分在那里的 `ctx.deckDir` 与 `ctx.workspaceRoot` 都是 serve 的一个空目录（不是工作区根目录），路由在首页只回答不需要文档的请求，不读写文件 |
 | `environments` | `{ [kind]: EnvironmentProvider { create(name, spec, ctx), probe? } }` | 具名环境的提供方：为头部 `execute.environments` 中该 `kind` 的环境创建编译时执行器，ID 必须是 `environmentExecutor(name)`（`presmium.env.<名>`）；`probe` 供 `presmium check --env`。浏览器端同一插件在 `setup` 中按 `ctx.environments` 为同类环境登记同 ID 的执行器（范例：`addon-exec-local` 的 `devcontainer`） |
 | `tools` | `AgentTool { name, description, input, kind, run(input, ctx) }` | agent 工具：MCP 服务（`/mcp` 与 `presmium-mcp`）以 `name`（小写加下划线，与内置工具同名的被忽略）列出，`input` 是对象的 JSON Schema（MCP 另加可选的 `document`）；`kind` 为 `read` 的每个令牌都能用，`operate`、`spend` 只给作者的令牌，先经 `APPROVALS` 确认再调用。`run` 的 `ctx` 有 `document`、`member`、`service`（Node 端服务）、`signal`，返回 JSON 数据或文字 |
@@ -144,39 +142,29 @@ export default plugin
 
 - 不要在模板中自己包 `PmBoundary`：渲染端在每个插件组件外面包了一层，组件自身 `setup` 或模板抛错也只影响它自己（`docs/architecture.md` 5.4 节）。
 - 视觉状态是步骤的纯函数：`useStepState({ from, to })` 给出块内第 k 步的状态（`active`、`reached`、`done`），步骤从块的 `at` 算起，不要自己再减 `at`。用 `v-click="scope.step(k)"`（`const scope = useStepScope()`）向宿主登记块内第 k 步，范例见测试插件的 `e2e/fixtures/host/plugin/components/DemoStepper.vue`。
-- 跟随块的显示范围停止媒体等后台资源，用 `useStepState(useBlockStepRange())`；它包含当前块与父块的范围交集，`until` 为隐藏的第一步。渲染端经 `provideStepScope(at, until?)` 或 `PmStepScope` 传入绝对范围，原有块内步骤偏移不变；阅读形态展开内容的策略按 `useViewRole()` 判断。
+- 跟随块的显示范围停止媒体等后台资源，用 `useStepState(useBlockStepRange())`；它包含当前块与父块的范围交集，`until` 为隐藏的第一步。渲染端经 `provideStepScope(at, until?)` 传入绝对范围，原有块内步骤偏移不变；阅读形态展开内容的策略按 `useViewRole()` 判断。
 - 动画读 `usePrefersReducedMotion()`，开启时直接显示终态。按时间演的动画用 `useStepTime({ until })`：它给出所在步骤开始以来的毫秒数，停定时（后退、文档视图、减少动态效果、`until` 之后）为 `Infinity`；讲授回放与导出视频时由讲授的时刻驱动。画面要是（步骤，步内时间）的纯函数：把动画库的时间轴暂停，只在时间变化时定位，不按页面时间自己播放。需要异步准备画面（载入模块、WebGL）时用 `useService(STEP_CLOCK).value?.wait(promise)` 登记，导出在截图前等它（`docs/architecture.md` 4.4 节，范例 `packages/addon-motion/src/client/SceneView.vue`）。
 - 组件的动作（重置、播放、下一项）用 `useActions(元素, { 名: (seeking) => … }, { clear })` 起名，按钮调用返回的 `run(名)`：讲授录下它（`click` 操作），讲解中的 ``{cue to=<块>}`click <名>` `` 在说到时执行它，跳转时宿主先 `clear` 再依次重放。
 - 界面文本：`const t = useMessages(CATALOG)`（`CATALOG` 为 `{ 'zh-CN': {...}, en: {...} }`），模板中用 `t.value.xxx`；组件之外用 `CATALOG[currentLocale()]`。语言由 `<html lang>` 决定，不要自己判断或观察它。
 - 配置：`useSectionConfig(POLL_ID)` 是全局配置合并本章节 `{config}` 后的结果。
 - 服务：`useService(TOKEN)`；跨窗口或跨设备的状态：`useSharedState('presmium.poll:<key>', initial, { scope: 'view' | 'local' | 'remote' })`，键以插件 ID 开头。
-- 静态导出：带 `fallback` 的组件在 PDF、PNG 中由宿主换成降级内容；需要自己判断时读 `useStaticRender()`。
+- 静态导出：带 `fallback` 的组件在 PDF、PowerPoint 与 PNG 中由宿主换成降级内容；需要自己判断时读 `useStaticRender()`。
 - 绘制在其他内容之上、自身不占版面的浮层组件，由指令把节点标为 `layer: 'overlay'`（例如引导插件的 `{cursor}`），渲染端不给它单独的位置。
 - 全部展开的文档视图（`useHost().useStep()` 为无穷大）中，有内部步骤的组件可以给读者自己的步进控件；视觉状态是（章节步骤，本地步骤）的纯函数（`docs/architecture.md` 5.3 节，范例 `packages/addon-exec/components/PmStepRun.vue`）。
 - 持有 Worker、定时器等资源的服务在插件的 `dispose` 中释放：页面从往返缓存恢复时内核会再次启动插件。 只有确认 `dispose` 完整停止 Worker、排队任务、流式请求、媒体轨道与计时器，且同一插件定义可再次 `setup` 时，才在 `PluginDefinition` 上声明 `restartable: true`。此外，组件、viewer、client 模块与 Vite 注入的每个来源包（含文稿本地模块）都须在 `package.json` 声明 `presmium.preview.restartable: true`；任一来源未声明或加载失败时工作台销毁该预览，避免缓存留下后台工作。可缓存网页切走时仍会真正卸载组件并停止内核，不能用隐藏或 `KeepAlive` 代替清理。
 - 工作台的预览中网页的 `<html>` 带 `pm-in-workbench` 类：只在放映、录制时才有意义的界面（录制工具条、放映控制）在这时用 CSS 隐藏，作者在工作台里编辑时看不到它们（`packages/addon-lecture/src/client/RecorderPanel.vue`）。
-- 样式与控件用设计系统（`docs/architecture.md` 5.10 节）：颜色、字体、间距、圆角与阴影只用 `@lincyaw/host` 的令牌（`var(--pm-color-ink)`、`var(--pm-color-muted)`、`var(--pm-color-accent)`、`var(--pm-font-sans)`、`var(--pm-space-3)`、`var(--pm-radius-control)` 等），不写死颜色，暗色随令牌切换；按钮、输入框、徽标、卡片、分段控件、标签页、弹层、抽屉、对话框、菜单、空状态与提示用 `PmButton`、`PmIconButton`、`PmField`（类 `pm-ui-input`、`pm-ui-select`、`pm-ui-textarea`）、`PmBadge`、`PmCard`、`PmSegmented`、`PmTabs`、`PmPopover`、`PmDrawer`、`PmDialog`、`PmMenu`、`PmEmpty`、`PmNotice`，图标用 `PmIcon`（`ICONS` 中的名字），不用 emoji；也可以直接用 `pm-ui-*` 类。文字对背景达到 WCAG AA，标识输入框与选中状态的边框对相邻颜色达到 3:1（用 `line-strong`），`e2e/design.spec.ts` 与 `e2e/fixtures/contrast.ts` 的 `lowContrast` 两项都查（`e2e/plugin-ui.spec.ts` 用后者查插件组件与幻灯片主题）。文稿中的组件（幻灯片、放映视图按字号缩放）在根元素上把 `--pm-text-sm`、`--pm-text-md` 设为 em，控件随周围的文字缩放（`packages/addon-classroom/src/client/style.css`）；工具栏中的弹层与面板保持宿主的字号。幻灯片形态中 Slidev 的重置样式让 `[type=button]` 透明、特异性与 `pm-ui-button` 相同，`addon-core/style.css` 补回按钮的填充。
+- 样式与控件用设计系统（`docs/architecture.md` 5.10 节）：颜色、字体、间距、圆角与阴影只用 `@lincyaw/host` 的令牌（`var(--pm-color-ink)`、`var(--pm-color-muted)`、`var(--pm-color-accent)`、`var(--pm-font-sans)`、`var(--pm-space-3)`、`var(--pm-radius-control)` 等），不写死颜色，暗色随令牌切换；按钮、输入框、徽标、卡片、分段控件、标签页、弹层、抽屉、对话框、菜单、空状态与提示用 `PmButton`、`PmIconButton`、`PmField`（类 `pm-ui-input`、`pm-ui-select`、`pm-ui-textarea`）、`PmBadge`、`PmCard`、`PmSegmented`、`PmTabs`、`PmPopover`、`PmDrawer`、`PmDialog`、`PmMenu`、`PmEmpty`、`PmNotice`，图标用 `PmIcon`（`ICONS` 中的名字），不用 emoji；也可以直接用 `pm-ui-*` 类。文字对背景达到 WCAG AA，标识输入框与选中状态的边框对相邻颜色达到 3:1（用 `line-strong`），`e2e/design.spec.ts` 与 `e2e/fixtures/contrast.ts` 的 `lowContrast` 两项都查（`e2e/plugin-ui.spec.ts` 用后者查插件组件与幻灯片）。文稿中的组件（幻灯片、放映视图按字号缩放）在根元素上把 `--pm-text-sm`、`--pm-text-md` 设为 em，控件随周围的文字缩放（`packages/addon-classroom/src/client/style.css`）；工具栏中的弹层与面板保持宿主的字号。
 
 ## 6. 浏览器端注册
 
 - `src/client/plugin.ts` 默认导出 `PluginDefinition`：`{ manifest: { id: POLL_ID, version, kernel: '^1.0.0', provides?, requires?: [{ token, optional? }] }, setup(ctx) { ctx.provide(TOKEN, impl) }, dispose?() {} }`，`version` 取自包的 `package.json`（`import { version } from '../../package.json'`）。没有浏览器端服务时可以不写。
-  - 网页形态：`@lincyaw/web` 自动导入 `plugins` 中每个包的这个文件并注册。
-  - 幻灯片形态：`setup/main.ts` 注册它：
-
-    ```ts
-    import { registerPresmiumPlugin } from '@lincyaw/host'
-    import { defineAppSetup } from '@slidev/types'
-    import pollPlugin from '../src/client/plugin.ts'
-
-    export default defineAppSetup(() => {
-      registerPresmiumPlugin(pollPlugin)
-    })
-    ```
+  - 查看器（网页与幻灯片两种形态）自动导入 `plugins` 中每个包的这个文件并注册。
+- 查看器为一组插件预先构建一次（`@lincyaw/web` 的 `viewer-app.ts`，缓存在 `$XDG_CACHE_HOME/presmium/viewer-app/`）。插件需要的 Vite 插件或 Vue 的自定义元素写在包根目录的 `vite.config.ts` 中，默认导出 `{ plugins, vue: { template: { compilerOptions: { isCustomElement } } } }`（参照 `addon-exec-jupyter`、`addon-content`）。
 
 - 工具栏项：`ctx.tryGet(TOOLBAR)?.register({ id, title, component, order?, slot?, icon? })`，在 `dispose` 中取消。`slot`：`tools`（默认，页面的工具栏）、`settings`、`status`（状态栏）。组件用 `useToolbarPlacement()` 得知自己画在哪里（`bar` 或 `status`）；打开面板的项用 `PmToolbarEntry`（`name`、`label`、`closeLabel`、`icon`、`v-model:open`），它是带文字的按钮与弹层（弹层留在窗口内）。
-- `components/*.vue`：幻灯片形态由 Slidev 自动注册；网页形态由 `@lincyaw/web` 按文件名注册（文稿自己的 `components/` 覆盖同名组件；文稿自己的组件以插件 ID `deck` 登记）。
+- `components/*.vue`：查看器按文件名注册，两种形态相同（文稿自己的 `components/` 覆盖同名组件；文稿自己的组件以插件 ID `deck` 登记，编进文稿自己的代码包）。
 - 讲授能录下、回放的操作（`docs/ir.md` 9.2 节）：用户做了一件值得重放的事时 `presmiumService(OPERATIONS)?.report({ type, data })`（数据以章节、块 `<章节>/<块>` 与相对坐标为坐标，不用像素）；在内核插件的 `setup` 中 `ctx.tryGet(OPERATIONS)?.onReplay(type, { apply(data, seeking), clear() })` 登记重放，`dispose` 中取消。视觉状态要是“此前的操作”的函数：依次重放与跳转后的一次折叠（`clear()` 后以 `seeking` 为 true 重放）必须得到同一画面。范例：`packages/addon-guide/src/client/operation-cues.ts`（`spot`、`hint`）、`packages/addon-lecture/src/client/pointer-ink.ts`（`point`、`ink`）。
-- `src/client/viewer.ts`（只用于网页形态）默认导出视图插件 `(ctx) => void`；`ctx` 有 `registerView`、`registerNodeRenderer`、`registerComponent`、`registerAction`、`registerLayer`、`useViewer`、`SectionView`、`BlockView`。`registerLayer` 的 `scope` 默认 `'viewport'`，用于播放器、课堂状态与黑屏；需要以视图为基准定位的冻结画面、徽标与录制面板用 `'view'`。两者都在模态焦点范围内，完整契约见 `docs/architecture.md` 5.1 节。只以类型方式引用 `@lincyaw/viewer`（`import type { ViewerPlugin } from '@lincyaw/viewer'`）。范例：`packages/addon-stage/src/client/viewer.ts`（动作与图层）、`packages/viewer/test/fixtures/plugin-deck/plugin/src/client/viewer.ts`（视图）。
+- `src/client/viewer.ts`（两种形态都用）默认导出视图插件 `(ctx) => void`；`ctx` 有 `registerView`、`registerNodeRenderer`、`registerComponent`、`registerAction`、`registerLayer`、`useViewer`、`SectionView`、`BlockView`。`registerLayer` 的 `scope` 默认 `'viewport'`，用于播放器、课堂状态与黑屏；需要以视图为基准定位的冻结画面、徽标与录制面板用 `'view'`；`'slide'` 画在每张幻灯片上，用画布的坐标，属性另有这张幻灯片的 `section` 与 `step`（讲台插件的绘图）；`'bar'` 是放映控制条中的控件（讲台插件的画笔）。前两者在模态焦点范围内，完整契约见 `docs/architecture.md` 5.1 节。只以类型方式引用 `@lincyaw/viewer`（`import type { ViewerPlugin } from '@lincyaw/viewer'`）。范例：`packages/addon-stage/src/client/viewer.ts`（动作与图层）、`packages/viewer/test/fixtures/plugin-deck/plugin/src/client/viewer.ts`（视图）。
 
 ## 7. 静态渲染端：扩展与 `fallback`
 
@@ -184,7 +172,7 @@ export default plugin
 
 | 渲染端 | 有扩展 | 没有扩展 |
 |---|---|---|
-| `slides` | 写入扩展返回的 Slidev Markdown；扩展抛错时报告警告并改用组件标签 | 写组件标签 `<PmPoll question="…" :choices='[…]'>`，子块放进插槽（子块中的代码块不带运行控件与录制输出）；有 `fallback` 时外面包 `PmStaticFallback`，导出 PDF 时显示降级内容；最外层都包 `PmBoundary` |
+| `slides` | 不用扩展 | 与 `web` 相同（幻灯片是查看器的页面）；导出打印的页面中，有 `fallback` 的组件显示降级内容 |
 | `notebook` | 写入扩展返回的单元格；返回 `undefined` 时退回 `fallback`，返回 `[]` 时什么都不写 | 渲染 `fallback`；也没有 `fallback` 时写一行说明并链接网页版，构建报告列出该块 |
 | `web` | — | IR 运行时按组件名找到组件；找不到时显示 `fallback` |
 

@@ -25,7 +25,7 @@ presmium-plugin-poll/
 │   ├── node/presmium.ts Node 端入口：默认导出 PresmiumNodePlugin
 │   └── client/          浏览器端：plugin.ts（内核插件）、viewer.ts（可选，IR 运行时的扩展）
 ├── components/PmPoll.vue 组件，文件名就是组件名
-├── setup/main.ts        幻灯片形态中注册内核插件（Slidev 的约定）
+├── vite.config.ts       可选：查看器的构建用到的 Vite 插件与 Vue 的选项
 └── test/                集成测试
 ```
 
@@ -37,14 +37,13 @@ presmium-plugin-poll/
   "name": "presmium-plugin-poll",
   "version": "1.0.0",
   "type": "module",
-  "keywords": ["slidev-addon", "presmium"],
+  "keywords": ["presmium"],
   "exports": {
     "./presmium": "./src/node/presmium.ts",
     "./client": "./src/client/plugin.ts",
     "./package.json": "./package.json"
   },
-  "files": ["components", "setup", "src"],
-  "slidev": {},
+  "files": ["components", "src"],
   "peerDependencies": {
     "@lincyaw/host": "^1.0.0",
     "@lincyaw/kernel": "^1.0.0"
@@ -59,7 +58,7 @@ presmium-plugin-poll/
 }
 ```
 
-- 每个插件包本身也是一个 Slidev 插件（`slidev` 字段、`components/`、`setup/`），幻灯片形态因此认得它的组件。
+- 查看器按约定的位置找到插件的浏览器端代码：`components/` 中的组件、`src/client/plugin.ts`（内核插件）、`src/client/viewer.ts`（视图插件）与包根目录的 `vite.config.ts`。网页与幻灯片是同一个查看器，为文稿用到的一组插件预先构建一次。
 - 对 `@lincyaw/kernel`、`@lincyaw/host`、`@lincyaw/viewer`、`@lincyaw/compiler` 中用到的包写成对等依赖：插件与应用共用一份 Presmium。已安装的 Presmium 不满足对等依赖时，加载器给出诊断 `presmium.plugins` 而不加载插件，构建不会崩溃。
 - 源码以 `.ts` 与 `.vue` 直接发布，不预编译；相对导入写 `.ts` 扩展名。
 
@@ -73,12 +72,11 @@ Node 端入口与浏览器端的插件清单都写 `version` 与 `kernel`：`ver
 
 | 位置 | 可以引用 | 不得引用 |
 |---|---|---|
-| `src/domain/` | `@lincyaw/kernel`、纯计算的库 | vue、`@lincyaw/host`、`@slidev/*`、vitepress、Node 的内置模块 |
-| `components/`、`src/client/` | `src/domain/`、`@lincyaw/kernel`、`@lincyaw/host`、vue | `@slidev/*`、vitepress |
-| `setup/` | 以上全部，加 `@slidev/client` 的公开导出与 `@slidev/types` | Slidev 的其他包、vitepress |
+| `src/domain/` | `@lincyaw/kernel`、纯计算的库 | vue、`@lincyaw/host`、Node 的内置模块 |
+| `components/`、`src/client/` | `src/domain/`、`@lincyaw/kernel`、`@lincyaw/host`、vue；视图插件另以类型引用 `@lincyaw/viewer` | `@lincyaw/web`、`@lincyaw/server` 等宿主的包 |
 | `src/node/` | `src/domain/`、`@lincyaw/kernel`、Node 的库 | vue |
 
-不要引用框架的内部路径，也不要引用别的插件包：两个插件要共用的契约放进内核（业务服务）或宿主（宿主层的令牌）。
+两种形态都是查看器，插件不用 `@slidev/*` 与 vitepress。不要引用框架的内部路径，也不要引用别的插件包：两个插件要共用的契约放进内核（业务服务）或宿主（宿主层的令牌）。
 
 (plugin-components)=
 # 组件
@@ -86,7 +84,7 @@ Node 端入口与浏览器端的插件清单都写 `version` 与 `kernel`：`ver
 (plugin-components-host)=
 ## 只经过宿主
 
-组件放在 `components/` 下，网页与幻灯片都用它。它只从 `@lincyaw/host` 取得步骤状态与服务，不直接用 Slidev 或 VitePress，所以两种形态都能渲染：
+组件放在 `components/` 下，网页与幻灯片都用它。它只从 `@lincyaw/host` 取得步骤状态与服务，所以两种形态都能渲染：
 
 ```vue
 <script setup lang="ts">
@@ -119,14 +117,16 @@ const t = useMessages(MESSAGES)
 - **按时间演的动画**：`useStepTime({ until })` 给出所在步骤开始以来的毫秒数，停定时（后退、文档视图、减少动态效果、`until` 之后）为 `Infinity`；讲授回放与导出视频时它由讲授的时刻驱动。画面是（步骤，步内时间）的纯函数：动画库的时间轴暂停，只在时间变化时定位。
 - **具名动作**：`useActions(元素, { 名: (seeking) => … }, { clear })` 给组件的动作起名，按钮调用返回的 `run(名)`；讲授录下这次点击，讲解中的 ``{cue to=<块>}`click <名>` `` 在说到时执行它。
 - **配置与服务**：`useSectionConfig(插件 ID)` 是全局配置合并本章节 `{config}` 的结果；`useService(令牌)` 取得浏览器端服务；`useSharedState` 在窗口或设备之间同步状态，键以插件 ID 开头。
-- **静态导出**：导出 PDF 与 PNG 时，带降级内容的组件由宿主换成降级内容；需要自己判断时读 `useStaticRender()`。
+- **静态导出**：导出 PDF、PowerPoint 与 PNG 时，带降级内容的组件由宿主换成降级内容；需要自己判断时读 `useStaticRender()`。
 - **错误隔离**：渲染端在每个插件组件外面包了一层边界，组件抛错只影响它自己，不要自己再包。
 - **样式**：颜色、字体与间距只用设计系统的令牌（`var(--pm-color-ink)`、`var(--pm-space-3)` 等），控件用 `PmButton`、`PmField`、`PmDialog` 这类宿主组件，图标用 `PmIcon`，暗色随令牌切换。
 
 (plugin-components-register)=
 ## 浏览器端注册
 
-`src/client/plugin.ts` 默认导出内核插件（`PluginDefinition`）：清单写 `id`、`version`、`kernel`、提供与需要的服务，`setup(ctx)` 中 `ctx.provide(令牌, 实现)`，`dispose` 中释放 Worker 与定时器。网页形态自动导入它；幻灯片形态由 `setup/main.ts` 用 `registerPresmiumPlugin` 注册。
+`src/client/plugin.ts` 默认导出内核插件（`PluginDefinition`）：清单写 `id`、`version`、`kernel`、提供与需要的服务，`setup(ctx)` 中 `ctx.provide(令牌, 实现)`，`dispose` 中释放 Worker 与定时器。查看器在两种形态中都自动导入它。
+
+插件的浏览器端代码运行时要加载的文件（如语言运行时）由 Node 端入口的 `assets(ctx)` 声明（`RuntimeAssets`）：它们在文稿的站点路径下的 `prefix` 中提供，构建时复制进站点；浏览器端用 `@lincyaw/host` 的 `siteBase()` 得到文稿的站点路径，不用 `import.meta.env.BASE_URL`。内容随文稿变化的虚拟模块（如文稿的场景文件列表）由 `documentModules(ctx)` 给出源码，编进文稿自己的代码包。插件需要的 Vite 插件，或要让 Vue 把某些标签当作自定义元素，写在包根目录的 `vite.config.ts` 中，默认导出 `{ plugins, vue: { template: { compilerOptions: { isCustomElement } } } }`，查看器构建时用它。
 
 只有确认浏览器模块可在卸载后安全重建时，才在插件包或文稿目录的 `package.json` 中声明 `presmium: { preview: { restartable: true } }`；此承诺涵盖组件、viewer、client 模块及 Vite 注入的代码。内核插件还须在 `PluginDefinition` 上声明 `restartable: true`，承诺 `dispose` 停止全部后台工作，且同一份定义可以再次 `setup`。工作台据此决定网页预览能否保留已加载的模块：切走时卸载文稿组件并停止内核，切回时重新启动。任一来源未声明或加载失败时，工作台会销毁该预览再加载；不能为提速跳过执行、流式问答、录制与媒体资源的清理。
 
@@ -242,7 +242,7 @@ const plugin: PresmiumNodePlugin = {
 (plugin-views-viewer)=
 ## IR 运行时的扩展
 
-网页形态由 IR 运行时 `@lincyaw/viewer` 渲染。插件的 `src/client/viewer.ts` 默认导出一个视图插件 `(ctx) => void`，可以注册新的运行时视图（`registerView`，如放映视图）、节点的渲染（`registerNodeRenderer`）、组件（`registerComponent`）、动作（`registerAction`）与图层（`registerLayer`）。只以类型方式引用 `@lincyaw/viewer`：
+网页与幻灯片两种形态都由 IR 运行时 `@lincyaw/viewer` 渲染。插件的 `src/client/viewer.ts` 默认导出一个视图插件 `(ctx) => void`，可以注册新的运行时视图（`registerView`，如放映视图）、节点的渲染（`registerNodeRenderer`）、组件（`registerComponent`）、动作（`registerAction`）与图层（`registerLayer`）。图层的 `scope` 决定它在哪里：`viewport`（整个窗口之上，默认）、`view`（视图之上）、`slide`（每张幻灯片上，用画布的坐标，属性另有这张幻灯片的 `section` 与 `step`）、`bar`（放映的控制条中的控件）。只以类型方式引用 `@lincyaw/viewer`：
 
 ```ts
 import type { ViewerPlugin } from '@lincyaw/viewer'
@@ -270,7 +270,7 @@ export default plugin
 (plugin-renderers-extensions)=
 ## 给已有的渲染端扩展
 
-插件的组件在幻灯片与 notebook 中怎样出现，由 `rendererExtensions` 决定：`slides` 的扩展返回 Slidev 的 Markdown，`notebook` 的扩展返回单元格（字符串是 Markdown 单元格，对象可以是代码单元格）。没有扩展时，幻灯片写组件的标签，notebook 显示 `fallback`。
+插件的组件在网页与幻灯片中是同一个 Vue 组件。它在 notebook 中怎样出现，由 `rendererExtensions` 的 `notebook` 决定：扩展返回单元格（字符串是 Markdown 单元格，对象可以是代码单元格）。没有扩展时，notebook 显示 `fallback`。
 
 ```ts
 rendererExtensions: {
@@ -301,7 +301,7 @@ export const MESSAGES = {
 (plugin-testing-integration)=
 ## 只写集成测试
 
-插件的测试真正运行 CLI、构建产物、打开浏览器，不对单个函数做隔离测试，也不 mock Slidev 与 VitePress；每条验收标准一到两个用例。`@lincyaw/cli/testing` 的 `presmium(cwd, args)` 在子进程中运行真正的 `presmium` 命令：
+插件的测试真正运行 CLI、构建产物、打开浏览器，不对单个函数做隔离测试，也不 mock 宿主框架；每条验收标准一到两个用例。`@lincyaw/cli/testing` 的 `presmium(cwd, args)` 在子进程中运行真正的 `presmium` 命令：
 
 ```ts
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'

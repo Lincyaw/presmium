@@ -12,8 +12,6 @@
 ---
 title: 分词入门
 lang: zh-CN
-plugins:
-  - '@lincyaw/addon-core'
 renderers:
   web: {}
   slides: {}
@@ -65,7 +63,7 @@ renderers:
 
 ## 某种形态放不下或不适用
 
-先精简一页要表达的内容，再决定是否拆节。`{hints}` 可给幻灯片设置局部缩放、布局，或给网页设置滚动叙事。不要选需要 `::right::` 插槽的 Slidev 布局，MyST 文稿不能提供它。
+先精简一页要表达的内容，再决定是否拆节。`{hints}` 可给幻灯片设置缩放（`zoom`）、布局（`layout`：`default`、`cover`、`center`、`full`）与类名（`class`），或给网页设置滚动叙事。幻灯片的内容超出画布时整体缩小，仍要先精简。
 
 用 `{only} web, notebook` 等限制媒介。被限制的内容不会占用其他媒介的步骤，需在两边检查前后顺序。教师专用内容属于受众筛选，见 [发布与复现](publishing.md)，不能用媒介限定代替。
 

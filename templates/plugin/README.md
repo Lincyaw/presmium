@@ -39,7 +39,6 @@ pnpm add -D {{name}}
 
 ```yaml
 plugins:
-  - '@lincyaw/addon-core'
   - '{{name}}'
 ```
 

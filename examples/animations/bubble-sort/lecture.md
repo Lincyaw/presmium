@@ -2,7 +2,6 @@
 title: 冒泡排序
 lang: zh-CN
 plugins:
-  - '@lincyaw/addon-core'
   - '@lincyaw/addon-motion'
   - '@lincyaw/addon-guide'
   - '@lincyaw/addon-lecture'

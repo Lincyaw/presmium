@@ -17,13 +17,13 @@ plugins:
   - '@lincyaw/addon-exec'
 ```
 
-It is a Presmium plugin and a Slidev addon: its components work on the web page and in the slides. It needs `@lincyaw/cli` and the renderers in the same project, and declares the Presmium packages it shares with them as peer dependencies (Presmium 1.x).
+It is a Presmium plugin: its components work on the web page and in the slides. It needs `@lincyaw/cli` and the renderers in the same project, and declares the Presmium packages it shares with them as peer dependencies (Presmium 1.x).
 
 ## What it provides
 
 - `{run-panel}`: a panel that runs code with parameters, at build time and in the browser. It shows final expression values and rich display outputs, includes values in run comparisons, and preserves rich outputs in notebooks. Panels with `:session:` provide Reset session to repeat a demonstration from scratch.
 - `{step-run}`: Python traced line by line in the browser, a line per step.
-- Run buttons for code blocks with `:run: live` or `both`, and the browser executors.
+- Run buttons for code blocks with `:run: live` or `both`, in the pages and the slides, and the browser executors. Code shown without steps or variants can be edited in place before it runs (Edit the code; Mod-Enter runs; Restore the code).
 
 ## Configuration
 

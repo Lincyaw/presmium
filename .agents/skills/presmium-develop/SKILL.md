@@ -71,7 +71,7 @@ dsh 给 agent 的说明（`packages/dsh/src/node/context.ts` 的指南与文稿�
 - 插件之间通过服务契约协作，不直接引用另一个插件。`src/domain` 保持纯 TS；Node 适配器与浏览器适配器各自处理外部系统。
 - 修改源码的能力属于工作台与工作区；产物经带版本的预览协议与工作台通信。DeepSeek Harness 的接口只在 `dsh` 与启动器 `studio` 中出现。
 
-不引用 Slidev、VitePress 的内部路径，不 fork 或打补丁。查框架接口先查 `vendor/docs/slidev`、`vendor/docs/vitepress`，缺失时 `pnpm docs:fetch`；不读框架编译产物。现有未文档化的依赖及守护用例在 `docs/architecture.md` 的已知风险部分。
+不引用依赖的内部路径，不 fork 或打补丁；任何包都不用 `vitepress` 与 `@slidev/*`（网页与幻灯片都是查看器）。查框架接口先查 `vendor/docs/`（DeepSeek Harness 与 MCP TypeScript SDK），缺失时 `pnpm docs:fetch`；不读框架编译产物。现有未文档化的依赖及守护用例在 `docs/architecture.md` 的已知风险部分。
 
 ## 实现时守住会影响用户的约定
 

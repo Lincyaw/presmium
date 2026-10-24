@@ -2,7 +2,6 @@
 title: 代码写成的动画
 lang: zh-CN
 plugins:
-  - '@lincyaw/addon-core'
   - '@lincyaw/addon-motion'
   - '@lincyaw/addon-guide'
   - '@lincyaw/addon-lecture'

@@ -9,7 +9,7 @@
 | 内核 Kernel | `@lincyaw/kernel` | 插件清单、服务注册、锚点契约、检查契约、步骤契约、IR 契约，以及插件共用的服务契约 |
 | 编译 Compilation | `@lincyaw/compiler`、`@lincyaw/cli` | 解析 MyST 源码、执行编译步骤与行内角色、编译时执行与缓存（含执行会话）、受众筛选、生成 IR、运行检查 |
 | 渲染 Rendering | `@lincyaw/viewer`、`@lincyaw/web`、`@lincyaw/render-slides`、`@lincyaw/render-notebook` | 从 IR 生成各媒介或在浏览器中动态渲染 IR，声明支持程度并降级；运行时视图；站点外壳、文件发布与译本；工作区站点 |
-| 宿主适配 Host | `@lincyaw/host`、`@lincyaw/addon-core`、`@lincyaw/web`、`@lincyaw/server` | 形态无关的宿主接口，及其 Slidev、VitePress 两个实现；服务端：插件的服务端贡献、请求来源的检查、操作确认、控制通道 |
+| 宿主适配 Host | `@lincyaw/host`、`@lincyaw/web`、`@lincyaw/server` | 形态无关的宿主接口，及其在查看器上的实现（网页与幻灯片两种形态共用）；服务端：插件的服务端贡献、请求来源的检查、操作确认、控制通道 |
 | 讲台 Stage | `@lincyaw/addon-stage` | 基础内容、步骤备注、冻结画面、圈画标注 |
 | 代码引用 CodeRef | `@lincyaw/addon-code` | 引用、锁定、漂移、跳转、分步高亮、多版本 |
 | 代码执行 Execution | `@lincyaw/addon-exec`、`@lincyaw/addon-exec-local` | 执行服务、运行记录、分步执行、回退、环境复刻 |
@@ -27,7 +27,7 @@
 
 网页形态的站点外壳、文件发布与译本属于渲染上下文，见第 9 节；工作区站点的组织属于工作区，网页渲染端负责构建它。
 
-文稿模型（章节、块、步骤、讲解）由 Presmium 以 IR 的形式自己定义，这是核心领域，也是各上下文之间的公开语言（Published Language）。Slidev、VitePress 只作为渲染端与浏览器宿主，负责排版、放映、搜索等它们擅长的部分。
+文稿模型（章节、块、步骤、讲解）由 Presmium 以 IR 的形式自己定义，这是核心领域，也是各上下文之间的公开语言（Published Language）。网页与幻灯片两种形态都由 Presmium 自己的查看器从 IR 渲染（IR 运行时 `@lincyaw/viewer` 加 `@lincyaw/web` 的站点外壳），排版、放映与搜索都在其中。
 
 ## 2. 上下文映射
 
@@ -35,7 +35,7 @@
    源码（MyST）──► 编译 ──► IR（公开语言）──► 渲染：网页 · 幻灯片 · notebook · 讲授（lecture）
                     ▲                               │
   插件的指令、角色、编译步骤、执行器、环境提供方       ▼
-                                  宿主适配（防腐层：Slidev / VitePress）+ 服务端（presmium dev / serve）
+                                  宿主适配（防腐层：查看器的宿主接口）+ 服务端（presmium dev / serve）
                                                     │ 共享内核契约
                                              ┌──────▼───────┐
                          ┌──────────────────►│     内核      │◄──────────────────────┐
@@ -46,7 +46,7 @@
 ```
 
 - **内核是共享内核**：所有上下文只依赖内核的契约，彼此之间不直接依赖。多个插件共用的业务服务契约（`executor`、`session`、`classroomStore`、`speech`、`agent`、`agentRuntime`、`revisions`、`approvals`、`mcpEndpoint` 与操作词汇 `TrackEvent`）也放在内核包中，因为提供方与使用方是不同的插件（`architecture.md` 4.5 节）。
-- **宿主适配是防腐层**：插件的组件与浏览器端代码（`components/`、`src/client/`）不引用 `@slidev/*` 与 vitepress，只通过 `@lincyaw/host` 获取步骤状态、服务与形态信息，因此同一个组件可以在两种形态中运行。只在幻灯片形态中加载的部分（插件包的 `setup/` 与全局图层）可以使用 `@slidev/client` 的公开导出；只有网页渲染端使用 vitepress。领域层（`src/domain/`）不引用 Vue。完整规则见 `architecture.md` 第 3 节。服务端（`@lincyaw/server`）是宿主适配在 Node 端的对应物：插件只经 `ServerContext`、`RequestContext` 与 `approvals` 使用它，浏览器端只经 `useServer()`。
+- **宿主适配是防腐层**：插件的组件与浏览器端代码（`components/`、`src/client/`）只通过 `@lincyaw/host` 获取步骤状态、服务与形态信息，因此同一个组件可以在两种形态中运行；查看器插件（`src/client/viewer.ts`）另经 `ViewerPluginContext` 登记视图、动作与图层。领域层（`src/domain/`）不引用 Vue。完整规则见 `architecture.md` 第 3 节。服务端（`@lincyaw/server`）是宿主适配在 Node 端的对应物：插件只经 `ServerContext`、`RequestContext` 与 `approvals` 使用它，浏览器端只经 `useServer()`。
 - **上下文之间通过服务协作**：例如课堂的练习校验使用代码执行提供的 `executor` 服务；测验、笔记等功能使用会话插件提供的 `session` 服务，会话插件可以整体替换。
 - **外部系统只经防腐层接入**：每个外部系统只在一个适配器中出现，适配器说一种标准协议（`architecture.md` 第 3 节的检查规则）。
 
@@ -173,25 +173,25 @@
 
 ## 4. 宿主适配
 
-`@lincyaw/host` 定义形态无关的宿主接口 `HostAdapter`（`architecture.md` 4.4 节），`@lincyaw/addon-core` 与 `@lincyaw/web` 分别实现。
+`@lincyaw/host` 定义形态无关的宿主接口 `HostAdapter`（`architecture.md` 4.4 节），`@lincyaw/web` 在查看器上实现（`createWebHostAdapter`）。网页与幻灯片两种形态都是这个查看器，所以下表只有一种实现：幻灯片形态是它的幻灯片页（`?form=slides`，打开放映视图），导出打印的是同一个页面（`print` 视图）。
 
-| 中文 | 标识符 | 幻灯片形态（Slidev） | 网页形态（VitePress + IR 运行时） |
-|---|---|---|---|
-| 形态 | `PresentationMode` | `'slides'` | `'document'` |
-| 光标 | `Cursor { slide, step }` | `useNav()` 的当前页与 `$clicks` | 当前章节与步骤：文档视图全部展开，滚动叙事视图由滚动推导，放映视图由键盘推进 |
-| 步骤状态 | `useStep()`（绝对步骤），组件用 `useStepState(range)`（相对于块的步骤作用域） | 由 `$clicks` 推导 | 文档视图恒为已到达（`Infinity`）；其他视图由当前步骤推导 |
-| 视图角色 | `ViewRole` | 听众、演讲者 | 读者；放映视图的演讲者窗口为演讲者 |
-| 共享状态 | 组件用 `useSharedState(key, initial, { scope })`，作用域 `SharedStateScope` | `createSharedStates`：`view` 只在本视图，`local` 与 `remote` 经 BroadcastChannel 在本机的窗口之间传递（通道按文稿标题与基础路径区分），`remote` 另是同步通道 | 同左 |
-| 同步传输 | `SyncTransport` | `syncTransports` 服务把每个传输接入全部 `remote` 共享状态；另经 `addSyncMethod` 接入 Slidev 同步的导航与圈画 | `syncTransports` 服务把每个传输接入全部 `remote` 共享状态；跟随主讲通过导航服务实现 |
-| 导航 | `Navigation` | 当前页与步骤，`go()` 跳转 | IR 运行时的章节、步骤与视图，`go()` 跳转 |
-| 错误边界 | `PmBoundary` | Vue `onErrorCaptured` | 同左 |
-| 演讲者面板 | `PresenterPanel` | 只在演讲者视图中显示的全局图层 | 放映视图的演讲者窗口中显示 |
-| 工具栏 | `ToolbarItem` | 导航栏中的控件 | 顶部导航栏与手机导航菜单中的控件 |
-| 操作 | `Operations`（`OPERATIONS`）、`Operation` | 服务同样存在；幻灯片形态不录制讲授，导航不报告 | IR 运行时报告 `go`，执行插件报告 `run`，引导插件报告 `spot`、`hint`；讲授插件录制与重放 |
-| 服务端访问 | `useServer()`、`ServerClient` | `presmium dev` 中可用（开发服务器代理 `/__presmium/`）；静态产物中 `available` 为 false | 同左；`presmium serve` 中同样（成员是本机作者） |
-| 状态摘要 | `StatusRegistry`（`STATUS`） | 插件登记的 JSON 摘要（如课堂的作答统计），经控制通道送到服务端，供 agent 读取 | 同左 |
+| 中文 | 标识符 | 查看器中的实现 |
+|---|---|---|
+| 形态 | `PresentationMode` | 浮层视图（放映、演讲者，幻灯片页也是放映视图）中为 `'slides'`，其他视图中为 `'document'` |
+| 光标 | `Cursor { slide, step }` | 组件所在的章节与步骤；不在章节中时是当前位置：文档视图全部展开，滚动叙事视图由滚动推导，放映视图由键盘推进 |
+| 步骤状态 | `useStep()`（绝对步骤），组件用 `useStepState(range)`（相对于块的步骤作用域） | 组件所在章节的步骤；文档视图恒为已到达（`Infinity`） |
+| 视图角色 | `ViewRole` | 演讲者视图为演讲者，其他浮层视图为听众，文档与滚动叙事视图为读者 |
+| 共享状态 | 组件用 `useSharedState(key, initial, { scope })`，作用域 `SharedStateScope` | `createSharedStates`：`view` 只在本视图，`local` 与 `remote` 经 BroadcastChannel 在本机的窗口之间传递（通道按名字与站点路径区分），`remote` 另是同步通道 |
+| 同步传输 | `SyncTransport` | `syncTransports` 服务把每个传输接入全部 `remote` 共享状态（幻灯片上的绘图也在其中）；跟随主讲通过导航服务实现 |
+| 导航 | `Navigation` | IR 运行时的章节、步骤与视图，`go()` 跳转 |
+| 错误边界 | `PmBoundary` | Vue `onErrorCaptured` |
+| 演讲者面板 | `PresenterPanel` | 放映视图的演讲者窗口中显示 |
+| 工具栏 | `ToolbarItem` | 顶部导航栏与手机导航菜单中的控件 |
+| 操作 | `Operations`（`OPERATIONS`）、`Operation` | IR 运行时报告 `go`，执行插件报告 `run`，引导插件报告 `spot`、`hint`；讲授插件录制与重放 |
+| 服务端访问 | `useServer()`、`ServerClient` | `presmium dev` 中可用（开发服务器代理 `/__presmium/`）；`presmium serve` 中同样（成员是本机作者）；静态产物中 `available` 为 false |
+| 状态摘要 | `StatusRegistry`（`STATUS`） | 插件登记的 JSON 摘要（如课堂的作答统计），经控制通道送到服务端，供 agent 读取 |
 
-**步骤可逆约定**：插件组件的视觉状态必须是步骤的纯函数。组件通过 `v-click` 标记向宿主登记步骤（网页形态由兼容层处理），用 `useStepState` 读取状态，不在点击事件回调中修改不可回放的状态。
+**步骤可逆约定**：插件组件的视觉状态必须是步骤的纯函数。组件通过 `v-click` 标记向宿主登记步骤（由查看器的兼容层处理，两种形态相同），用 `useStepState` 读取状态，不在点击事件回调中修改不可回放的状态。
 
 **操作可重放约定**：插件把用户的操作（不是重放引起的变化）以章节、块与锚点为坐标报告给 `OPERATIONS`，并为自己的操作类型登记重放；重放某一时刻的状态等于从空状态依次应用此前的全部操作。宿主在重放时把 `replaying` 置为 true，插件此时不报告。
 
@@ -300,7 +300,7 @@
 不变量：
 
 - 媒体、封面与字幕文件随每种媒介发布；本地文件不存在时报错，带源码位置。
-- 卡片、栅格与选项卡在网页中完整显示；幻灯片中选项卡依次展开；notebook 降级为标题加段落，并列入构建报告。
+- 卡片、栅格与选项卡在网页与幻灯片中完整显示；notebook 降级为标题加段落，并列入构建报告。
 
 ## 7B. 动画
 
@@ -355,11 +355,11 @@
 
 ## 9. 网页形态
 
-网页形态由 IR 生成，不由幻灯片转换：VitePress 提供外壳（导航、侧栏、页内大纲、搜索、深色模式），页面正文由 IR 运行时 `@lincyaw/viewer` 在浏览器中动态渲染（`ir.md` 第 8 节）。
+网页形态由 IR 生成，不由幻灯片转换：Presmium 自己的站点外壳提供导航、章节列表、页内大纲、上一章与下一章、搜索、语言、明暗与手机布局，页面正文由 IR 运行时 `@lincyaw/viewer` 渲染；构建的站点在服务端渲染每一页，浏览器中再接管（`ir.md` 第 8 节）。幻灯片形态是同一个查看器的幻灯片页。
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
-| 网页页面 | `WebPage` | 一个 VitePress 页面：同一源文件中连续的若干章节；第一个页面是 `index` |
+| 网页页面 | `WebPage` | 站点的一个页面：同一源文件中连续的若干章节；第一个页面是 `index` |
 | 章节视图 | `SectionView` | 一个章节在页面中的呈现：标题、上屏内容与讲解按源码顺序排列 |
 | 排版方式 | `SectionLayout` | `document`（文档式，默认）或 `scrolly`（滚动叙事式），由 `{hints}` 声明 |
 | 运行时视图 | `ViewDefinition` | 文档、滚动叙事、放映三种视图，以及插件注册的视图 |
@@ -367,7 +367,7 @@
 | 形态映射 | 章节 ID 与 `index` | 章节 `index` 即幻灯片页号，章节 ID 即网页锚点；两种形态据此互相跳转 |
 | 站点外壳 | `renderers.web` 的 `nav`、`footer`、`head`、`sitemap` | 顶部导航、页脚、页面元数据（描述、OG）与站点地图 |
 | 发布的文件 | `RenderContext.localAsset` 给出的发布名 | 正文链接的本地文件、目录的文件清单页、原始 HTML 中 `src`、`poster` 引用的文件 |
-| 译本 | 头部 `translations`、`RenderContext.translations` | 同一文稿的其他语言版本，网页按 VitePress 的 `locales` 切换 |
+| 译本 | 头部 `translations`、`RenderContext.translations` | 同一文稿的其他语言版本，在网页的 `/<语言>/` 下，由语言菜单切换 |
 
 不变量：
 
@@ -657,12 +657,12 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 | session | 不带限定时只指课堂会话（`SessionService`、`SESSION`、`SessionSnapshot`） | 执行会话写 runSession（IR 与执行请求的字段 `RunSpec.session`、`RunRequest.session` 是契约，不改）；工作区服务中一份文档的编译与开发服务器写 `CompileSession`；dsh 的会话写 agentSession；编译器 `dev()` 返回的一组开发服务器写 `DevServers`；浏览器的 `sessionStorage` 照旧 |
 | service | 内核的服务：由 `ServiceToken` 标识、经 `provide`、`get`、`tryGet` 取得的实现，浏览器端与 Node 端相同 | 进程或 HTTP 服务写 server（`presmium serve` 是 workspace server）；浏览器的 Service Worker 写全称 `serviceWorker`；懒加载的第三方模块写 `load<库名>`（如 `loadJupyterServices`） |
 | place | 文档中的位置：章节加块（`{ section, block }`，如 `RunRequest.place`、课堂的 `Place`） | 代码在哪里运行写 runsIn（`Executor.runsIn`）；界面中放东西的位置写 slot 或 placement（`ToolbarSlot`、`ToolbarPlacement`、`PopoverPlacement`）；源码中的位置写 source（`SourcePos`）；主讲的位置写 position |
-| runner | 执行器在子进程或 Worker 中启动的运行器脚本（`runner.py`、`runner.mjs`） | 执行代码的服务写 executor；怎样启动子进程的说明写 launch spec；每种语言的命令表写 commands；一次运行写 run；Slidev 的 code runner 沿用框架的名字，只出现在 `setup/code-runners.ts` |
+| runner | 执行器在子进程或 Worker 中启动的运行器脚本（`runner.py`、`runner.mjs`） | 执行代码的服务写 executor；怎样启动子进程的说明写 launch spec；每种语言的命令表写 commands；一次运行写 run |
 | follow | 课堂中学习者跟随主讲（`FollowMode`、主讲的位置、`followedPlace`） | 订阅一个流写 subscribe（`subscribeDevUpdates`）；把一处的变化记录或同步到另一处写 record 或 sync（运行时视图与 `OPERATIONS` 之间）；监视文件写 watch；预览随编辑器光标移动写 sync |
 | view | IR 运行时的视图（`ViewDefinition`：文档、滚动叙事、放映与演讲者；位置中的 `view` 字段）与视图的角色 `ViewRole`；一个渲染端看到的 IR（`viewFor(doc, renderer)`） | 按受众筛选的 IR 是受众版本（`audienceDocument`，筛选这一步是 `filterForAudience`）；预览的是哪种媒介写 renderer（`'web' \| 'slides'`）；源码与预览的分栏写 layout；以 View 结尾的组件只是两种：IR 运行时的视图（`PresentView`、`ScrollyView`）与渲染一种内容的组件（`MarkdownView`、`CodeView`、`SectionView`），其他界面组件以它做的事命名（编辑一份文档的是 `DocumentEditor`，审阅的面板是 `ReviewPanel`） |
 | revision | 工作区的一次修改，即一个 git 提交（`Revision`、`REVISIONS`、`HistoryRevision`） | IR 的内容哈希写 irRevision（`irRevision()`；预览协议与诊断中的字段 `revision` 不改）；执行器影响输出的代码版本是 `Executor.revision`，只作执行器的字段；编译时按 git 引用读到的文件写 `GitRead` |
 | preview | 嵌在另一个界面（工作台、VS Code）中的产物页面，以及它们之间的预览协议（`PREVIEW_PROTOCOL`、`PreviewCommand`、`PreviewReport`；产物一侧是 `connectPreviewFrame`，返回 `PreviewFrame`） | `presmium dev` 的页面本身写 dev server；嵌入的 iframe 的状态写 `PreviewFrameStatus` |
-| theme | 框架的主题：VitePress 主题（网页渲染端的 `theme`）、Slidev 主题（`render-slides/theme`）、dsh 的界面主题 | 明暗写 appearance 或 dark（`useAppearance`、预览命令 `appearance`、`HostAdapter.useDarkMode`）；设计系统的取值写 design token |
+| theme | 框架的主题：dsh 的界面主题、代码高亮（Shiki）的主题 | 明暗写 appearance 或 dark（`useAppearance`、预览命令 `appearance`、`HostAdapter.useDarkMode`）；设计系统的取值写 design token |
 | cue | 讲解中在某一步触发的提示动作：`{cue}` 角色、讲授计划中的提示标记、引导插件的提示目标（`CueTarget`） | 页面上指出的一处写 target；讲授的指点写 point |
 | mark | 必须带限定：受众标记 `AudienceMark`、作者标记（页面上显示的 `{cue}` 与 `{say}` 位置，`AUTHOR_MARKS_CLASS`）、角色的文字记号 `roleMark`、讲授的操作 `mark`（标记章节）、分步执行的行标记 `StepMark` | 圈画写 ink；指点写 point；高亮写 highlight |
 | script | 讲授脚本：讲解本身或 `renderers.lecture.script` 给出的文件（合成讲授的 ID `script`） | 浏览器与 Node 中运行 JavaScript、TypeScript 的执行器写 `ScriptExecutor`，常量按运行之处区分（`BROWSER_SCRIPT_EXECUTOR_ID`、`NODE_SCRIPT_EXECUTOR_ID`）；`package.json` 的 scripts 与 HTML 的 `<script>` 照旧 |
@@ -673,7 +673,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 
 - **read 只表示 I/O**：读文件、请求、流（`SourceReader.read`、`Parser.read` 读文件并解析）。文本变成结构写 parse（`parseAnchor`、`parseFrontmatter`）；把 unknown 收窄成具体类型写 `to*` 或 `as*`（`toPreviewCommand`、`toExecuteConfig`），不合法时返回 undefined 或给出诊断。
 - **get 找不到时抛错**；找不到时返回 undefined 的写 `tryGet` 或 `find*`（`ServiceRegistry.get` 与 `tryGet`）。Context 上返回 undefined 的服务查找沿用契约中的 `service(token)`。
-- **执行动作的函数以动词开头**（`buildToDist`、`runAllChecks`、`linkBrowserDependencies`、`enqueueCompile`）；只计算、不改外部状态的函数可以用名词短语（`viewFor`、`stepTrail`）。函数有写文件、连网络、启动进程这类副作用时，名字要说出来。
+- **执行动作的函数以动词开头**（`buildToDist`、`runAllChecks`、`writeServiceWorker`、`enqueueCompile`）；只计算、不改外部状态的函数可以用名词短语（`viewFor`、`stepTrail`）。函数有写文件、连网络、启动进程这类副作用时，名字要说出来。
 - **布尔值与返回布尔值的函数用 `is*`、`has*`、`can*`**（`isInside`、`includesAudience` 这类以动词说出判断的也可以）。
 - **工厂写 `create*`**，组合式函数写 `use*`，服务令牌是大写常量加 `defineService`。
 - **缩写**：名字写全称（`implementation`、`passContext`、`ref`，不写 `impl`、`pctx`、`rev`）；`ctx` 只作参数名；已有契约的字段 `src`（`SourceReader`）保留。

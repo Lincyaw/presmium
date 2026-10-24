@@ -19,7 +19,7 @@ pnpm add -g ./packages/presmium    # the global presmium command, running these 
 
 `pnpm studio` prepares an independent copy of the example `examples/animations` in `.presmium/example-workspace` on first launch (a git repository of its own, with the narration's synthesis cache and an `AGENTS.md` for the AI) and reuses its editable documents on later launches. The file tree, source editor and previews work without a model. Open the full URL printed in the terminal (default port 4320); press Ctrl+C to stop. To edit another lecture or workspace, run `pnpm studio <dir>`; options such as `--port 4321` are forwarded to the workbench.
 
-The framework documentation the code is written against is fetched with `pnpm docs:fetch` into `vendor/docs/slidev` and `vendor/docs/vitepress` (not committed). Read it there rather than the frameworks' compiled code.
+The framework documentation the code is written against (DeepSeek Harness and the MCP TypeScript SDK) is fetched with `pnpm docs:fetch` into `vendor/docs/` (not committed). Read it there rather than the frameworks' compiled code.
 
 ## Commands
 
@@ -36,7 +36,7 @@ The framework documentation the code is written against is fetched with `pnpm do
 
 ## Tests
 
-- **Integration tests only.** Tests run the real CLI, build real outputs, start real servers and open real browsers. No unit tests of single functions, and no mocks of Slidev or VitePress.
+- **Integration tests only.** Tests run the real CLI, build real outputs, start real servers and open real browsers. No unit tests of single functions, and no mocks of the host frameworks.
 - **Few cases.** One or two cases per behavior.
 - **Where.** End-to-end tests are `e2e/<context>.spec.ts`; tests that need no browser are `packages/<pkg>/test/*.test.ts`. A spec that needs a document of its own keeps it in `e2e/fixtures/<group>/` and builds it in `beforeAll` with the real `presmium build`.
 
@@ -45,9 +45,9 @@ The framework documentation the code is written against is fetched with `pnpm do
 `scripts/check-layering.mjs` (part of `pnpm test`) enforces the layers of `docs/architecture.md` section 3:
 
 - `src/domain/` is plain TypeScript: no Vue, no frameworks, no Node built-ins.
-- Components and `src/client/` get step state and services through `@lincyaw/host` only; they do not import `@slidev/*` (only `addon-core` may) or `vitepress` (only `web` may).
-- `setup/` and global layers, loaded in the slides only, may use the public exports of `@slidev/client`.
-- No package imports a plugin package, and nothing imports the internal paths of Slidev or VitePress. Depend on maintained components through their public interfaces; do not fork or patch them.
+- Components and `src/client/` get step state and services through `@lincyaw/host` only.
+- No package imports `vitepress` or `@slidev/*`: the web form and the slides are both the viewer.
+- No package imports a plugin package, and nothing imports the internal paths of a dependency. Depend on maintained components through their public interfaces; do not fork or patch them.
 
 Other conventions:
 

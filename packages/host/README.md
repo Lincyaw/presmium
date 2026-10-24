@@ -1,6 +1,6 @@
 # @lincyaw/host
 
-Presmium's host interface for plugin components: step state, services, shared state, interface text and the design system, the same in the web form (VitePress) and in the slides (Slidev).
+Presmium's host interface for plugin components: step state, services, shared state, interface text, the site path and the design system, the same in the web form and in the slides (both are the viewer).
 
 Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
 
@@ -23,7 +23,7 @@ const t = useMessages({ 'zh-CN': { done: '完成' }, 'en': { done: 'Done' } })
 </template>
 ```
 
-Components get everything through this package, never from `@slidev/*` or `vitepress`, so both forms render them. It also provides the design system: the `Pm*` components (`PmButton`, `PmDialog`, `PmIcon` and others) in Vue, over the `--pm-*` tokens, the classes and the fonts (IBM Plex Sans, IBM Plex Mono and Source Serif 4, SIL Open Font License 1.1) of `@lincyaw/design`, which it loads into every page.
+Components get everything through this package, so both forms render them; browser code finds the site path with `siteBase()`, not `import.meta.env.BASE_URL`. It also provides the design system: the `Pm*` components (`PmButton`, `PmDialog`, `PmIcon` and others) in Vue, over the `--pm-*` tokens, the classes and the fonts (IBM Plex Sans, IBM Plex Mono and Source Serif 4, SIL Open Font License 1.1) of `@lincyaw/design`, which it loads into every page.
 
 The interactive primitives wrap Reka UI; positioning, dismissal, keyboard navigation and focus management come from the library. Theme observation uses VueUse, and the shared icon names map to Lucide.
 

@@ -2,7 +2,7 @@
 title: Plugin guide
 lang: en
 description: Extend Presmium with components, directives, services, server routes, views and renderers
-translationOf: { entry: lecture.md, digest: e770f00d1e06895e332033eb453cedc025787a502e3a6e8fb9dbdd9cc8704189 }
+translationOf: { entry: lecture.md, digest: 3d59afde880818ca6bc3c90a06fc601a15e7b7ae6a2b9742a97536400ea4ad7c }
 ---
 
 (plugins)=
@@ -26,7 +26,7 @@ presmium-plugin-poll/
 │   ├── node/presmium.ts the Node entry: exports a PresmiumNodePlugin by default
 │   └── client/          the browser side: plugin.ts (kernel plugin), viewer.ts (optional, extends the IR runtime)
 ├── components/PmPoll.vue a component, named after its file
-├── setup/main.ts        registers the kernel plugin in the slides (Slidev's convention)
+├── vite.config.ts       optional: Vite plugins and Vue options for the viewer's build
 └── test/                integration tests
 ```
 
@@ -38,14 +38,13 @@ presmium-plugin-poll/
   "name": "presmium-plugin-poll",
   "version": "1.0.0",
   "type": "module",
-  "keywords": ["slidev-addon", "presmium"],
+  "keywords": ["presmium"],
   "exports": {
     "./presmium": "./src/node/presmium.ts",
     "./client": "./src/client/plugin.ts",
     "./package.json": "./package.json"
   },
-  "files": ["components", "setup", "src"],
-  "slidev": {},
+  "files": ["components", "src"],
   "peerDependencies": {
     "@lincyaw/host": "^1.0.0",
     "@lincyaw/kernel": "^1.0.0"
@@ -60,7 +59,7 @@ presmium-plugin-poll/
 }
 ```
 
-- Every plugin package is a Slidev addon too (the `slidev` field, `components/`, `setup/`), so the slides know its components.
+- The viewer finds a plugin's browser code at fixed places: the components in `components/`, `src/client/plugin.ts` (the kernel plugin), `src/client/viewer.ts` (the viewer plugin) and `vite.config.ts` at the package's root. The web form and the slides are the same viewer, built once ahead of time for the set of plugins a document uses.
 - `@lincyaw/kernel`, `@lincyaw/host`, `@lincyaw/viewer` and `@lincyaw/compiler`, those the plugin uses, are peer dependencies: the plugin shares the application's one copy of Presmium. When the installed Presmium does not satisfy them, the loader reports `presmium.plugins` and leaves the plugin out; the build does not crash.
 - The source is published as `.ts` and `.vue`, not compiled first; relative imports name the `.ts` extension.
 
@@ -74,12 +73,11 @@ The Node entry and the browser plugin's manifest both declare `version` and `ker
 
 | Where | May import | Must not import |
 |---|---|---|
-| `src/domain/` | `@lincyaw/kernel`, libraries of plain computation | vue, `@lincyaw/host`, `@slidev/*`, vitepress, Node's built-in modules |
-| `components/`, `src/client/` | `src/domain/`, `@lincyaw/kernel`, `@lincyaw/host`, vue | `@slidev/*`, vitepress |
-| `setup/` | all of the above, plus the public exports of `@slidev/client` and `@slidev/types` | Slidev's other packages, vitepress |
+| `src/domain/` | `@lincyaw/kernel`, libraries of plain computation | vue, `@lincyaw/host`, Node's built-in modules |
+| `components/`, `src/client/` | `src/domain/`, `@lincyaw/kernel`, `@lincyaw/host`, vue; a viewer plugin also imports the types of `@lincyaw/viewer` | the hosts' packages, such as `@lincyaw/web` and `@lincyaw/server` |
 | `src/node/` | `src/domain/`, `@lincyaw/kernel`, Node libraries | vue |
 
-Never import a framework's internal paths, nor another plugin package: contracts two plugins share belong in the kernel (business services) or the host (host tokens).
+Both forms are the viewer, so plugins use neither `@slidev/*` nor vitepress. Never import a framework's internal paths, nor another plugin package: contracts two plugins share belong in the kernel (business services) or the host (host tokens).
 
 (plugin-components)=
 # Components
@@ -87,7 +85,7 @@ Never import a framework's internal paths, nor another plugin package: contracts
 (plugin-components-host)=
 ## Through the host only
 
-Components live in `components/`, and the web form and the slides both use them. A component gets the step state and services from `@lincyaw/host` only and never uses Slidev or VitePress directly, so either form can render it:
+Components live in `components/`, and the web form and the slides both use them. A component gets the step state and services from `@lincyaw/host` only, so either form can render it:
 
 ```vue
 <script setup lang="ts">
@@ -120,14 +118,16 @@ const t = useMessages(MESSAGES)
 - **Animations in time**: `useStepTime({ until })` gives the milliseconds since the component's step began, `Infinity` once the step is settled (after going back, in the document view, under reduced motion, from `until` on); a lecture's playback and video export drive it with the lecture's time. The look is a pure function of (step, time in the step): pause the animation library's timeline and seek it when the time changes.
 - **Named actions**: `useActions(element, { name: (seeking) => … }, { clear })` names the component's actions, and its buttons call the returned `run(name)`; a recorded lecture keeps the click, and ``{cue to=<block>}`click <name>` `` in the narration runs it when it is said.
 - **Configuration and services**: `useSectionConfig(plugin id)` is the global configuration merged with the section's `{config}`; `useService(token)` gets a browser service; `useSharedState` keeps state in step across windows or devices, under a key that starts with the plugin id.
-- **Static export**: when exporting PDF and PNG, the host replaces a component that has a fallback with its fallback; read `useStaticRender()` to decide yourself.
+- **Static export**: when exporting PDF, PowerPoint and PNG, the host replaces a component that has a fallback with its fallback; read `useStaticRender()` to decide yourself.
 - **Error isolation**: renderers wrap every plugin component in a boundary, so a component that throws breaks only itself; do not wrap it again.
 - **Styles**: colors, fonts and spacing come only from the design system's tokens (`var(--pm-color-ink)`, `var(--pm-space-3)` and so on), controls are the host's components such as `PmButton`, `PmField` and `PmDialog`, icons are `PmIcon`, and dark mode follows the tokens.
 
 (plugin-components-register)=
 ## Registering the browser side
 
-`src/client/plugin.ts` exports the kernel plugin (`PluginDefinition`) by default: its manifest names `id`, `version`, `kernel` and the services it provides and requires; `setup(ctx)` calls `ctx.provide(token, implementation)`, and `dispose` releases workers and timers. The web form imports it by itself; in the slides, `setup/main.ts` registers it with `registerPresmiumPlugin`.
+`src/client/plugin.ts` exports the kernel plugin (`PluginDefinition`) by default: its manifest names `id`, `version`, `kernel` and the services it provides and requires; `setup(ctx)` calls `ctx.provide(token, implementation)`, and `dispose` releases workers and timers. The viewer imports it by itself, in both forms.
+
+Files that a plugin's browser code loads while it runs (such as a language runtime) are declared by the Node entry's `assets(ctx)` (`RuntimeAssets`): they are served below the document's site path at `prefix`, and a build copies them into the site. Browser code gets the document's site path from `siteBase()` of `@lincyaw/host`, not from `import.meta.env.BASE_URL`. Virtual modules whose content depends on the document (such as the list of its scene files) get their source from `documentModules(ctx)` and are built into the document's own code bundle. Vite plugins the plugin needs, or tags Vue should take as custom elements, go in `vite.config.ts` at the package's root, whose default export is `{ plugins, vue: { template: { compilerOptions: { isCustomElement } } } }`; the viewer's build uses it.
 
 Set `presmium: { preview: { restartable: true } }` in the plugin package or document directory's `package.json` only when its browser modules can safely be rebuilt after unmounting. This promise covers components, viewer and client modules, and code injected through Vite. Kernel plugins must also set `restartable: true` on `PluginDefinition`, promising that `dispose` stops all background work and the same definition can run `setup` again. The workbench uses these declarations to retain loaded web preview modules: leaving a lecture unmounts its components and stops the kernel; returning starts it again. A missing declaration or failed module load causes the preview to be destroyed and reloaded. Execution, streaming answers, recording, and media must still be cleaned up.
 
@@ -243,7 +243,7 @@ An `AgentTool` in `tools` becomes an MCP tool: `name`, `description`, the JSON S
 (plugin-views-viewer)=
 ## Extending the IR runtime
 
-The IR runtime `@lincyaw/viewer` renders the web form. A plugin's `src/client/viewer.ts` exports a viewer plugin `(ctx) => void` by default, which can register runtime views (`registerView`, such as the present view), node renderers (`registerNodeRenderer`), components (`registerComponent`), actions (`registerAction`) and layers (`registerLayer`). It imports `@lincyaw/viewer` for its types only:
+The IR runtime `@lincyaw/viewer` renders the web form and the slides alike. A plugin's `src/client/viewer.ts` exports a viewer plugin `(ctx) => void` by default, which can register runtime views (`registerView`, such as the present view), node renderers (`registerNodeRenderer`), components (`registerComponent`), actions (`registerAction`) and layers (`registerLayer`). A layer's `scope` says where it goes: `viewport` (over the whole window, the default), `view` (over the view), `slide` (on each slide, in the canvas's coordinates, its props also giving the slide's `section` and `step`) or `bar` (a control in the presentation bar). It imports `@lincyaw/viewer` for its types only:
 
 ```ts
 import type { ViewerPlugin } from '@lincyaw/viewer'
@@ -271,7 +271,7 @@ A renderer is the `renderer` field of a Node entry: `id`, `support(node)` (`full
 (plugin-renderers-extensions)=
 ## Extending the existing renderers
 
-`rendererExtensions` decides how a plugin's components appear in the slides and the notebook: a `slides` extension returns Slidev Markdown, a `notebook` extension returns cells (a string is a Markdown cell, an object may be a code cell). Without an extension, the slides write the component's tag and the notebook shows its `fallback`.
+A plugin's components are the same Vue components in the web form and in the slides. How they appear in the notebook is up to the `notebook` entry of `rendererExtensions`: the extension returns cells (a string is a Markdown cell, an object may be a code cell). Without an extension, the notebook shows the component's `fallback`.
 
 ```ts
 rendererExtensions: {
@@ -302,7 +302,7 @@ Components use `useMessages(MESSAGES)`, other code `MESSAGES[currentLocale()]`. 
 (plugin-testing-integration)=
 ## Integration tests only
 
-A plugin's tests run the real CLI, build real outputs and open a real browser; they do not test single functions in isolation, nor mock Slidev or VitePress, and each acceptance criterion gets one or two cases. `presmium(cwd, args)` of `@lincyaw/cli/testing` runs the real `presmium` command in a child process:
+A plugin's tests run the real CLI, build real outputs and open a real browser; they do not test single functions in isolation, nor mock the host frameworks, and each acceptance criterion gets one or two cases. `presmium(cwd, args)` of `@lincyaw/cli/testing` runs the real `presmium` command in a child process:
 
 ```ts
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'

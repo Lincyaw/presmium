@@ -13,8 +13,8 @@
         ▼
    IR（JSON，版本化）
         │
-        ├── web       IR 运行时（浏览器内动态渲染）+ VitePress 外壳；主媒介，支持全部节点
-        ├── slides    Slidev 幻灯片（可选的高保真渲染端：导出 PDF、绘图、录制）
+        ├── web       IR 运行时（浏览器内动态渲染）+ 站点外壳；主媒介，支持全部节点
+        ├── slides    同一个查看器的幻灯片页（每节一张；绘图、录制，导出 PDF、图片、PowerPoint）
         ├── notebook  Jupyter .ipynb
         └── 其他渲染端（插件提供）
 ```
@@ -42,13 +42,13 @@ presmium:                      # 各插件的全局配置，键为插件 ID
   presmium.code: { repo: https://github.com/org/repo }
 renderers:                     # 要构建的渲染端及其配置
   web: {}
-  slides: {}                   # 不写 theme 时是 Presmium 的“书卷”主题；theme: default 是 Slidev 的默认主题
+  slides: {}                   # 每节一张幻灯片，画布默认 980 宽、16:9
   notebook: {}
 execute: { rerun: environment } # 可选：另一运行环境的执行录制重新执行（第 4 节）
 ---
 ```
 
-官方插件以前叫 `@lincyaw/slidev-addon-*`，`plugins`（与运营者的插件列表）写旧名时仍然加载：编译器把它换成现在的 `@lincyaw/addon-*`，IR 的 `config.plugins` 中是新名，每个旧名给一条 `info`（`presmium.plugins`）。
+官方插件以前叫 `@lincyaw/slidev-addon-*`，`plugins`（与运营者的插件列表）写旧名时仍然加载：编译器把它换成现在的 `@lincyaw/addon-*`，IR 的 `config.plugins` 中是新名，每个旧名给一条 `info`（`presmium.plugins`）。`@lincyaw/addon-core`（幻灯片以前的宿主适配）不再需要：头部还列着它时照常编译，它不加载，`presmium check` 给一条 `info`，提示从 `plugins` 中去掉。
 
 多文件文稿用 MyST 的 `{include}` 指令引入。入口文件可以以 UTF-8 BOM 开头（Windows 记事本等编辑器会写入），编译器读取头部前去掉它。
 
@@ -59,14 +59,14 @@ execute: { rerun: environment } # 可选：另一运行环境的执行录制重�
 | 渲染端 | 选项 |
 |---|---|
 | `web` | `base`（站点路径）、`port`（开发服务器端口） |
-| `slides` | `base`、`port`；其余选项写进生成的 Slidev 文稿头部，如 `theme`（不写时是随渲染端安装的“书卷”主题 `packages/render-slides/theme/`，`architecture.md` 5.12 节；`default` 等是 Slidev 的主题）、`routerMode`（`hash` 时页地址为 `/#/<页号>`）、`exportFilename`、`addons`。每一页的头部另有 `presmiumChapter`（这一页所在的章，主题把它写在标题上方） |
+| `slides` | `base`、`port`、`aspectRatio`（画布的宽高比：`16/9`、`4:3` 或一个数，默认 16:9）、`canvasWidth`（画布的宽，默认 980）。每节一张幻灯片，画在这块画布上，按“书卷”版式（`architecture.md` 5.12 节）：标题上方是这一页所在的章，页脚是文稿的标题、这一页的步骤与页码；整张按比例缩放到屏幕 |
 | `notebook` | `kernel`：内核名（默认 `python3`），或 `{ name, language, display_name }`，与内核同语言的代码成为代码单元格；`webUrl`：网页版的地址，notebook 显示不了的组件附上指向它的链接 |
-| `web`（站点外壳） | `nav`：顶部导航，`[{ text, link }]`（VitePress `themeConfig.nav` 的形状）；`footer`：`{ message, copyright }`；`head`：`{ description, image }`，写成页面的 `description` 与 OG 元数据（`og:title`、`og:description`、`og:image`）；`sitemap`：`{ hostname }`，生成 `sitemap.xml` |
+| `web`（站点外壳） | `nav`：顶部导航，`[{ text, link }]`，一项可以用 `items`（同样的列表）代替 `link`，成为一组；`footer`：`{ message, copyright }`；`head`：`{ description, image }`，写成页面的 `description` 与 OG 元数据（`og:title`、`og:description`、`og:image`）；`sitemap`：`{ hostname }`，生成 `sitemap.xml` |
 | `lecture`（讲授插件提供） | `voice`：`{ engine, voice, rate, style }`，写了 `voice` 才合成讲义的讲授（合成要花钱，所以要显式选用音色；`engine` 省略时用 `presmium.speech.engine`）；`script`：单独的讲授脚本文件（2.9 节）；`gap`：一步说完之后推进前的停顿，默认 `500ms`（毫秒数或 `800ms`、`1.5s`）。`lecture` 是站点渲染端：与网页一同构建时输出在 `dist/lecture/`，网页的讲授视图从 `../lecture/` 读取 |
 
 站点路径 `base` 的默认值：同一次构建同时生成网页与幻灯片、两者都没有设置 `base` 时，网页为 `/web/`、幻灯片为 `/slides/`，`dist/` 整体作为一个站点部署（网页在 `dist/web`，幻灯片在 `dist/slides`）；只生成其中一种时为 `/`。`presmium dev` 中每个开发服务器有自己的地址，`base` 默认为 `/`。
 
-两种形态互跳的链接由两边的 `base` 得出：网页链到 `<幻灯片的 base><页号>`，幻灯片链到网页的对应章节。两种形态分开部署时，在 `presmium: { presmium.web: { slidesUrl, webUrl } }` 中写明幻灯片与网页的地址。
+网页的每个章节标题旁有到幻灯片对应页的链接，地址由幻灯片的 `base` 得出：`<幻灯片的 base>?slide=<页号>`，有步骤时另带 `&step=<步>`。两种形态分开部署时，在 `presmium: { presmium.web: { slidesUrl } }` 中写明幻灯片的地址。
 
 其他头部字段：
 
@@ -119,10 +119,10 @@ notebook 中显示不了的组件（没有 notebook 扩展，也没有 `fallback
 | 媒介 | 上屏内容 | 讲解 |
 |---|---|---|
 | 网页 | 按原顺序显示 | 按原顺序显示为正文 |
-| 幻灯片 | 显示在页面上 | 成为演讲备注，按步骤切分 |
+| 幻灯片 | 显示在页面上 | 显示在演讲者窗口中，按步骤切分；导出的 PowerPoint 中是演讲者备注 |
 | notebook | Markdown 或代码单元格 | Markdown 单元格 |
 
-讲解与表格单元格中的原始 HTML 标签，若不是 HTML 元素，也不是 `<svg>` 中的 SVG 元素或 `<math>` 中的 MathML 元素（例如 agent 轨迹中的 `<reminder>`、`<system-reminder>`），按字面显示为文字：编译器把它们写成 IR 中的文本，三种媒介都显示标签本身，幻灯片的构建也不因没有闭合的这类标签失败。其他位置的原始 HTML 照常作为 HTML（例如正文中的 Web 组件）。
+讲解与表格单元格中的原始 HTML 标签，若不是 HTML 元素，也不是 `<svg>` 中的 SVG 元素或 `<math>` 中的 MathML 元素（例如 agent 轨迹中的 `<reminder>`、`<system-reminder>`），按字面显示为文字：编译器把它们写成 IR 中的文本，三种媒介都显示标签本身。其他位置的原始 HTML 照常作为 HTML（例如正文中的 Web 组件）。
 
 ### 2.4 步骤
 
@@ -155,7 +155,7 @@ web: { layout: scrolly }
 
 `lecture` 的用法：`{only} lecture` 中的文字只在讲授中说出、不显示；`{only} web, slides` 中的讲解只显示、不说（2.9 节）。
 
-`{hints}` 放在章节内，为各渲染端提供排版提示；渲染端不认识的提示直接忽略。`slides` 下的键写进这一页 Slidev 的 frontmatter。注意 Slidev 的 `two-cols` 等布局需要 `::right::` 这样的插槽标记，MyST 写不出来，选不需要插槽的布局（如 `center`、`full`）。
+`{hints}` 放在章节内，为各渲染端提供排版提示；渲染端不认识的提示直接忽略。`slides` 下的键给这一页幻灯片：`layout`（`default`：章在标题上方，页脚有文稿标题、步骤与页码；`cover`：封面，大标题，文稿多于一节时第一节默认是它；`center`：内容居中；`full`：没有页脚与边距）、`class`（加在这张幻灯片上的类名）与 `zoom`（内容的缩放，如 `0.8`）。
 
 ```md
 :::{config}
@@ -167,7 +167,7 @@ presmium.exec: { timeoutMs: 30000 }
 
 - 位置：章节顶层，或章节内的 `{slide}`、`{only}` 中；不生成块，也不占步骤。放在第一个 `##` 之前时属于封面章节。
 - 合并：同一章节的多个 `{config}` 按源码顺序合并，同一插件的选项后写的覆盖先写的。编译器在转换本章节的块之前读取它们，所以章节中任何位置的指令都看到完整的章节配置。
-- 生效：在该章节中合并在文稿头部的全局配置之上，交给指令（`DirectiveContext.config`）与编译步骤（`PassContext.configFor(section)`）；浏览器端用 `useSectionConfig(<插件 ID>)` 读取。幻灯片渲染端把它写入该页 frontmatter 的 `presmium`，封面章节的写入 `presmiumSection`（封面页的 frontmatter 就是 Slidev 文稿的头部，其中的 `presmium` 已是全局配置）；网页形态从 IR 读取（`architecture.md` 5.2 节）。
+- 生效：在该章节中合并在文稿头部的全局配置之上，交给指令（`DirectiveContext.config`）与编译步骤（`PassContext.configFor(section)`）；浏览器端用 `useSectionConfig(<插件 ID>)` 读取，网页与幻灯片两种形态都从 IR 读取（`architecture.md` 5.2 节）。
 - 读取章节配置的选项：执行插件的 `presmium.exec.timeoutMs`（本章节中代码在编译时与浏览器中运行的超时，代码块与指令上的 `:timeout:` 优先）、代码引用插件的 `presmium.code.repo`（本章节 `{code-ref}` 的永久链接所用的仓库，`:repo:` 优先）。插件的其他选项只读全局配置。
 
 ### 2.6 示例
@@ -291,7 +291,7 @@ MyST 的角色写作 ``{名}`内容` ``，角色名之后可以写选项：``{cu
 - 选项只能写成 `key=value`（只写键是 myst-parser 的语法错误），按 `RoleSpec.options` 声明的类型读出（`list` 按空白与逗号拆开）；`children` 抛错时是错误级诊断，节点保留 `value` 的文字。插件不能登记与 MyST 自带角色同名的角色（错误级诊断 `presmium.plugins`），两个插件登记同名角色时后者的被忽略。
 - MyST 自带的角色（`{sub}`、`{sup}`、`{kbd}`、`{abbr}` 等）与编译器内置的 `{button}`（2.10 节）不经这个扩展点。
 
-渲染：网页、幻灯片与 notebook 显示 `children`。演讲者窗口与幻灯片的演讲者备注中，以及页面显示作者用的标记时（`<html>` 的类 `pm-author-marks`：预览协议的 `marks`），没有子内容的角色显示一个标记 `〔<名> <value>〕`，作者能看见提示标记的位置。
+渲染：网页、幻灯片与 notebook 显示 `children`。演讲者窗口中，以及页面显示作者用的标记时（`<html>` 的类 `pm-author-marks`：预览协议的 `marks`），没有子内容的角色显示一个标记 `〔<名> <value>〕`，作者能看见提示标记的位置。
 
 ### 2.9 讲授脚本
 
@@ -391,7 +391,7 @@ print(answer_key())
 - 每个指令都接受 `:audience:`（逗号分隔的受众名），与 `:reveal:`、`:label:` 一样是通用选项；讲解段落要标受众时用 `{only}` 包起来。嵌在另一个指令正文中或列表项中的 MyST 指令（`{tab-set}` 中的 `{tab-item}`、`{grid}` 中的 `{card}`、`{note}` 中的 `{tip}`、列表项中的 `{code}`）同样可以写；`{include}` 上的 `:audience:` 让包含进来的全部内容只给这些受众，其中开始章节的标题开出的章节也是。
 - `{audience} <受众>` 放在章节顶层（不生成块，同 `{hints}`），把整个章节标为只给这些受众，例如教师指南的一节。
 - 编译器把它们写入 `IRBlock.audience` 与 `IRSection.audience`；嵌在块中的指令给出的 mdast 节点带 `data.audience`（受众名的列表，mdast 的 `data` 字段，渲染端不读它）。不带受众的内容对所有受众可见。
-- `presmium build --audience student` 编译时去掉受众不含 `student` 的章节与块（步骤随之压缩），所有渲染端都拿不到它们；不带 `--audience` 的构建包含全部内容。构建结束后扫描产物（页面、`ir.json`、搜索索引、幻灯片的备注与 notebook），被去掉的内容中较长的句子（12 个字符以上）出现在产物中就是错误级诊断 `presmium.audience`，位置是被去掉的块（例如它的文字又经代码输出或另一个文件漏进来）。
+- `presmium build --audience student` 编译时去掉受众不含 `student` 的章节与块（步骤随之压缩），所有渲染端都拿不到它们；不带 `--audience` 的构建包含全部内容。构建结束后扫描产物（页面、`ir.json`、搜索索引、幻灯片与 notebook），被去掉的内容中较长的句子（12 个字符以上）出现在产物中就是错误级诊断 `presmium.audience`，位置是被去掉的块（例如它的文字又经代码输出或另一个文件漏进来）。
 - `presmium serve` 只供运行它的那个用户使用（本机作者，看到全部内容）；学习者得到的是学生版的构建（`presmium build --audience student`），发布为静态站点。服务端与 MCP 只给出完整的文稿（`architecture.md` 10.3 节）。
 
 `presmium check` 的发布检查（每个渲染端按自己的视图检查，只出现在某个媒介中的内容只在该媒介中检查）：
@@ -408,7 +408,7 @@ print(answer_key())
 
 - **写法的细节**：`{audience}` 没有正文（写了正文是警告，正文被忽略）；同一节写了几个 `{audience}` 时取交集。`:audience:` 写在 `{slide}`、`{only}` 上时其中的块都带它，内层的 `:audience:` 与外层取交集（同 `{only}` 的渲染端）；它是通用选项，不交给插件的指令，也不成为 `{component}` 的属性。`:audience:` 没有写受众名是错误，这时内容不给任何受众（带 `--audience` 的构建与学生视图都没有它）；`{audience}` 没有写受众名同样是错误，整节同样不给任何受众，只在不带受众的完整版中（失败即关闭）。
 - **嵌套的指令与 `{include}`**：块以外更深一层的 MyST 指令（另一个指令的 MyST 正文中、列表项中）在转换时被展开成它的 mdast（`blocks.ts` 的 `clean`），带 `:audience:` 时它给出的每个顶层节点写上 `data.audience`（与已有的取交集）；筛选时这些节点从所在的块中去掉（块与块 ID 留下，步骤不变），插件指令的正文经 `parse` 得到的 mdast（组件的属性与 `fallback`）同样筛选。嵌在 MyST 正文中的 Presmium 指令与插件指令照旧被丢弃并警告。`{include}` 在第 1 步展开：编译器的解析器（`audience.ts` 的 `AudienceParser`，按公开的 `read` 包装 `Parser`）把带 `:audience:` 的 `{include}` 放进一个受众范围节点，在其中展开；第 2 步之前（`liftScopes`）范围中开始章节的标题被取出，仍然开出章节，标题后的范围节点让该章节只给这些受众（同 `{audience}`），第一个标题之前的内容留在范围中，转换时其中的块带这些受众（同 `{only}` 上的 `:audience:`）；范围在 `{slide}`、`{only}` 的正文中同样如此，在块中（另一个指令的正文中）时它的节点写上 `data.audience`。同一个文件既按受众又不按受众包含时，各处按各自的写法。带 `:audience:` 的 `{include}` 引入的文件开出章节时，写在 `{include}` 之后、下一个标题之前的内容按 MyST 的拼接属于它开出的最后一节，所以同样只给这些受众：编译给出警告 `presmium.audience`（`this content follows an {include} with :audience: whose file opens a section…`，位置是这段内容），提示在 `{include}` 之后写一个标题另开一节，或把内容移到 `{include}` 之前；内容自己带 `:audience:` 且它的受众都在这一节的受众之中（例如只给教师的 `{only}`）时不警告。
-- **何时去掉**：编译器在步骤编排（第 5 步）之后、插件的编译步骤与编译时执行之前去掉其他受众的章节与块（`packages/compiler/src/audience.ts` 的 `filterForAudience`），而不是在第 2、3 步：块 ID 因此与完整文稿的相同（课堂笔记、讲授轨与问答引用的块 ID 在学生版与完整版中一致），剩下的步骤按 `viewFor` 的办法压缩（不写 `stepMap`），章节重新编号。位置（章节序号与步骤）因此不一致：教师的章节或步骤在前时，学生版中同一个块的位置比完整版中的靠前，没有记录两者的对应。所以课堂按 ID 跟随：窗口的位置（宿主的 `NavigationPosition`）带上章节 ID `section`，两种形态另带上按 ID 的位置（`@lincyaw/kernel` 的 `FollowAnchor`（`packages/kernel/src/follow.ts`），宿主契约还没有声明这两个字段，由两种形态的 `navigation` 与会话插件之间传递）：`trail` 是本节已到达的步骤的键，每一步的键说明这一步由什么占用：`<块 ID>` 是在这一步出现的块，`<块 ID>+<k>` 是它的第 k 个内部状态（列表的下一项、下一组高亮的行），`<块 ID>-` 是在这一步消失的块，组件的子块写成 `<组件的块 ID>/<子块 ID>`（`stepKeys`）；`back` 只在只给部分受众的章节上有，是没有这一节的版本回退到的章节（`backSection`）：学习者的版本（受众 `student`）没有的章节（只给教师的），回退到它之前最近的、学习者版本也有的章节，即不带受众或受众中有 `student` 的章节，只给学生的章节也算；只给学生的章节（教师的版本没有它）回退到它之前最近的、不带受众的章节。主讲的位置连同它们写进课堂；学习者的窗口在自己的版本中求位置（`followedPlace`）：到这个 ID 的章节，步号是自己这一节中最后一个键在 `trail` 之中的步骤（没有时为 0；没有 `trail`，或 `trail` 与自己这一节到主讲的步号为止的键相同（同一版本）时，取主讲的步号），所以主讲翻过只给教师的步骤时学习者不动，之后的步骤一一对应，与编译器压缩步骤的结果相同；学习者的版本没有这一节（教师专用）时到 `back` 那一节的最后一步，也没有它时停在原处。两种形态都不按主讲的序号回退：那会重新带来按序号跟错的问题。课堂总览（演讲者面板中的提问、理解度、测验、预测与练习）按章节 ID 以本窗口自己的版本给位置编号，不用学习者写入的序号：课堂插件的编译步骤 `presmium.classroom.places` 把学生版也有的章节（不带受众，或受众中有 `student`）的序号写进插件配置 `presmium.classroom.sections`（其他章节不写，免得学生版说出教师章节的 ID）。网页形态在运行时从自己的 IR 求这些键；幻灯片形态从每张幻灯片的 frontmatter 读出：addon-core 的编译步骤 `presmium.core.slide-sections` 把每节的 ID、它在幻灯片形态的视图中的各步的键（有步骤时）与 `back`（有时）写进它的 `hints.slides`（`presmiumId`、`presmiumSteps`、`presmiumBack`），幻灯片渲染端照常把它们写进这张幻灯片的 frontmatter（受众的内容在插件的编译步骤之前去掉，所以学生版只写出它有的章节与它自己的步骤）。在编译好的完整文稿上筛选出的学生视图（`Compilation.forAudience`，例如 `build` 以 `audience` 选项构建的幻灯片）中，插件的编译步骤已经在完整文稿上运行过：编译器的 `audienceView` 在视图中改写这些键，去掉了块的章节中 `presmiumSteps` 只留视图有的块的键，空出的步骤合并（与视图压缩步骤的结果相同），指向视图没有的章节的 `presmiumBack` 去掉，所以学生视图的 `ir.json` 与幻灯片不说出教师专用块的标签，学习者在其中照样按块跟随。`{predict}` 之后紧跟只给教师的 `:reveal:` 时，学生版中它揭示的是之后下一步出现的内容（为受众编译时揭示内容在插件的编译步骤之前已经去掉，2.13 节），或什么也不揭示并警告，是已知的限制：把揭示内容与 `{predict}` 标为同样的受众。幻灯片形态的课堂还转发主讲的 Slidev 同步状态，其中按幻灯片序号记的部分也按 ID 换算（addon-core 的 `syncTransports`）：导航状态带上页的章节 ID、`trail` 与 `back`，学习者换成自己版本中的页码与步号（与 `navigation` 的 `go` 同样求得），总步数用自己的，主讲的光标只在同一节时显示，无处可去时不取页码、步号与光标，停在原处；绘图按章节 ID 记，学习者把它放到自己版本中同一节的幻灯片上，没有的节不显示。被去掉的代码不执行，插件的编译步骤与渲染端都看不到它们；不带受众的构建不做这些筛选。带 `--audience` 的 `presmium build` 不删除执行缓存中的录制（只编译了一部分代码）。被去掉的章节与块中的诊断（例如被去掉的章节写错的角色名、引入失败的文件名）不进入这次编译的 IR 与构建报告，因为它们会说出被去掉的内容；章节的范围从它的标题到同一文件中下一节之前（所以没有生成块的一行，如引入失败的 `{include}`，也在其中），另加它在别的文件中的块；源码中标了受众而不含这个受众的地方同样（`audience.ts` 的 `audienceMarks`：带 `:audience:` 的 `{include}` 所在的几行，所以引入失败的诊断也在其中；任何深度上带 `:audience:` 的指令，例如公开的 `{note}` 中给教师的 `{tip}`，从它的开头到结尾），即使它没有生成块。被去掉的诊断只留下一条计数 `presmium.audience`（位置是入口第 1 行，级别是其中最高的）：`<n> findings are in the content left out for student, not shown here: presmium check without --audience shows them`，所以这样的构建仍以错误结束。
+- **何时去掉**：编译器在步骤编排（第 5 步）之后、插件的编译步骤与编译时执行之前去掉其他受众的章节与块（`packages/compiler/src/audience.ts` 的 `filterForAudience`），而不是在第 2、3 步：块 ID 因此与完整文稿的相同（课堂笔记、讲授轨与问答引用的块 ID 在学生版与完整版中一致），剩下的步骤按 `viewFor` 的办法压缩（不写 `stepMap`），章节重新编号。位置（章节序号与步骤）因此不一致：教师的章节或步骤在前时，学生版中同一个块的位置比完整版中的靠前，没有记录两者的对应。所以课堂按 ID 跟随：窗口的位置（宿主的 `NavigationPosition`）带上章节 ID `section`，两种形态另带上按 ID 的位置（`@lincyaw/kernel` 的 `FollowAnchor`（`packages/kernel/src/follow.ts`），宿主契约还没有声明这两个字段，由两种形态的 `navigation` 与会话插件之间传递）：`trail` 是本节已到达的步骤的键，每一步的键说明这一步由什么占用：`<块 ID>` 是在这一步出现的块，`<块 ID>+<k>` 是它的第 k 个内部状态（列表的下一项、下一组高亮的行），`<块 ID>-` 是在这一步消失的块，组件的子块写成 `<组件的块 ID>/<子块 ID>`（`stepKeys`）；`back` 只在只给部分受众的章节上有，是没有这一节的版本回退到的章节（`backSection`）：学习者的版本（受众 `student`）没有的章节（只给教师的），回退到它之前最近的、学习者版本也有的章节，即不带受众或受众中有 `student` 的章节，只给学生的章节也算；只给学生的章节（教师的版本没有它）回退到它之前最近的、不带受众的章节。主讲的位置连同它们写进课堂；学习者的窗口在自己的版本中求位置（`followedPlace`）：到这个 ID 的章节，步号是自己这一节中最后一个键在 `trail` 之中的步骤（没有时为 0；没有 `trail`，或 `trail` 与自己这一节到主讲的步号为止的键相同（同一版本）时，取主讲的步号），所以主讲翻过只给教师的步骤时学习者不动，之后的步骤一一对应，与编译器压缩步骤的结果相同；学习者的版本没有这一节（教师专用）时到 `back` 那一节的最后一步，也没有它时停在原处。两种形态都不按主讲的序号回退：那会重新带来按序号跟错的问题。课堂总览（演讲者面板中的提问、理解度、测验、预测与练习）按章节 ID 以本窗口自己的版本给位置编号，不用学习者写入的序号：课堂插件的编译步骤 `presmium.classroom.places` 把学生版也有的章节（不带受众，或受众中有 `student`）的序号写进插件配置 `presmium.classroom.sections`（其他章节不写，免得学生版说出教师章节的 ID）。两种形态都是查看器，在运行时从自己的 IR 求这些键（受众的内容在插件的编译步骤之前去掉，所以学生版只有它有的章节与它自己的步骤）；在编译好的完整文稿上筛选出的学生视图（`Compilation.forAudience`，例如 `build` 以 `audience` 选项构建的幻灯片）中同样从视图的 IR 求键，所以学生视图不说出教师专用块的标签，学习者在其中照样按块跟随。`{predict}` 之后紧跟只给教师的 `:reveal:` 时，学生版中它揭示的是之后下一步出现的内容（为受众编译时揭示内容在插件的编译步骤之前已经去掉，2.13 节），或什么也不揭示并警告，是已知的限制：把揭示内容与 `{predict}` 标为同样的受众。幻灯片上的绘图按章节 ID 记（讲台插件的共享状态 `presmium.stage.drawings`），学习者把它画在自己版本中同一节的幻灯片上，没有这一节时不显示。被去掉的代码不执行，插件的编译步骤与渲染端都看不到它们；不带受众的构建不做这些筛选。带 `--audience` 的 `presmium build` 不删除执行缓存中的录制（只编译了一部分代码）。被去掉的章节与块中的诊断（例如被去掉的章节写错的角色名、引入失败的文件名）不进入这次编译的 IR 与构建报告，因为它们会说出被去掉的内容；章节的范围从它的标题到同一文件中下一节之前（所以没有生成块的一行，如引入失败的 `{include}`，也在其中），另加它在别的文件中的块；源码中标了受众而不含这个受众的地方同样（`audience.ts` 的 `audienceMarks`：带 `:audience:` 的 `{include}` 所在的几行，所以引入失败的诊断也在其中；任何深度上带 `:audience:` 的指令，例如公开的 `{note}` 中给教师的 `{tip}`，从它的开头到结尾），即使它没有生成块。被去掉的诊断只留下一条计数 `presmium.audience`（位置是入口第 1 行，级别是其中最高的）：`<n> findings are in the content left out for student, not shown here: presmium check without --audience shows them`，所以这样的构建仍以错误结束。
 - **泄漏扫描**：被去掉的每个块与章节（标题、正文中的每段文字、代码的每行、组件的属性与 `fallback`）按句末标点（`。！？!?；;`、换行与句点后的空白）分句，取 12 个字符以上的句子；留下的内容自己的源码（不含录制输出）中也有的句子不算。构建结束后读输出目录中的每个文本文件（跳过图片、音视频、字体、WebAssembly 等与含 NUL 字节的文件），还原 JavaScript 与 JSON 字符串的转义和 HTML 的字符引用，再去掉标签读一遍（高亮的代码被拆进标签），一个被去掉的块只报告第一句命中：`content only for teacher is in the build for student: "<句子>" in <文件>`。
 - **学生视图**：`Compilation.audienceDocument(name)` 在编译好的完整文稿上做同样的筛选（另去掉位于被去掉的章节与块中、不含这个受众的受众标记中的诊断）；`build(compilation, { audience })` 用它（见下文“译本与宿主的构建”），块 ID 与完整文稿相同。服务端与 MCP 不给出学生视图（`presmium serve` 只供本机作者使用；`ServerHost` 与 MCP 没有视图参数）。为某个受众编译的 IR 与这样的视图都带 `meta.audience`（受众名），插件据此知道它为谁发布（如讲授渲染端，6.3 节）。交叉引用在视图自己的副本中重新解析（完整的编译填入的引用文字先去掉）：指向被去掉的章节的 `{ref}` 不带它的标题（同带 `--audience` 的构建，那里它报告 `target not found`），图与公式按视图中的顺序编号。插件的编译步骤与编译时执行这时已经在完整文稿上运行过，它们从被去掉的内容派生、写到别处的文字不在筛选之内；所以视图还按泄漏扫描的句子检查留下的每个块（序列化的节点，不含图片数据），含有被去掉内容的句子（例如代码的录制输出打印了它）的块也从视图中去掉，视图的诊断中加一条错误 `presmium.audience`：`the block shows content only for teacher (written at <文件>:<行>); it is left out of the view for student`，只写位置，不引用内容（学习者可能读到视图的诊断）。`build` 以 `audience`、`scan: 'written'` 与 `quote: false` 构建时，构建后同样扫描它写出的 `ir.json` 与各渲染端的目录（`Compilation.audienceCompilation(name).scan`），诊断不引用句子。
 - **发布检查**：`presmium.links`、`presmium.forbid` 在 `presmium check`、语言服务与服务端的 `ServerHost.check`（MCP 的 `get_diagnostics`）中运行（`Compilation.check()`，即编译器的 `runAllChecks`，在插件的检查项之后调用 `Compilation.publishChecks`），不在 `presmium build` 中运行；`presmium.directive` 的 MyST 错误在每次编译中报告。检查的渲染端是头部 `renderers` 配置的，没有配置时是三个内置渲染端加插件提供的渲染端；同一处问题在几个视图中都有时只报告一次，只在部分视图中有时消息末尾写 `(in slides)` 等。`presmium.links` 检查链接、图片、定义、卡片的 `:link:`、组件 `assets` 中的地址与原始 HTML 的 `href`、`src`、`poster`：本地文件相对于写它的源文件，`/…` 在文稿的 `public/` 中，指向目录也算存在，在仓库（工作区）之外是错误；片段可以是章节 ID、块 ID、mdast 的 `identifier`、`label`，标题的 slug，脚注 `fn-<标识>` 与原始 HTML 的 `id`、`name`；`<路径>.md#片段`（或指向含 `lecture.md` 的目录）指向本文稿时按本文稿检查，指向另一份文档时按它的源码（展开 `{include}`，按 `sectionDepth` 分节，不加载它的插件）检查。诊断的行是块中写有这个地址（或命中文字）的那一行，找不到时是块的第一行。`presmium.forbid` 的正则以 JavaScript 的 `RegExp` 编译（无效时报告在头部该行），匹配章节标题、块的文字（含链接目标与原始 HTML）、代码（含多版本）与录制输出（流、错误、`text/*` 与 JSON 的数据）。`presmium.directive` 由 myst-parser 留下的 `mystDirectiveError`、`mystRoleError` 节点给出（它们不进入 IR）；消息附上该 MyST 指令不接受的选项（如 `{csv-table} takes no :file:`），myst-parser 对其他选项的警告不报告。lychee 检查失败的外部链接是警告。
@@ -427,9 +427,9 @@ translationOf: { entry: lecture.md, digest: 3f9a…c2 }
 ```
 
 - 译本是同一目录中的另一个入口文件，插件与渲染端配置取自原文，章节标签与原文相同，以便两种语言互相跳转。
-- `presmium build` 同时编译原文与译本；网页渲染端用 VitePress 的 `locales` 把译本放在 `/<语言>/` 下，页面上可以切换语言，切换后停在同一章节。幻灯片与 notebook 只构建原文。
+- `presmium build` 同时编译原文与译本；网页渲染端把译本放在 `/<语言>/` 下，页面上可以切换语言，切换后停在同一章节。幻灯片与 notebook 只构建原文。
 - `digest` 是原文的摘要：原文入口及其 `{include}` 的文件规范化后的 sha256（只看内容，不看路径）。原文改动后 `presmium check` 报告译本过期（`presmium.translations`，警告级），提示中给出新的摘要，译者核对后写回译本头部。
-- 摘要是原文标题与各文件正文的 sha256（十六进制 64 位）：文件依次为入口与 IR 中出现的被引入文件（按出现的顺序），各去掉 BOM 与头部，换行统一为 `\n`，去掉末尾空白，文件之间以 `\0` 分隔；所以只改头部的其他字段（如增加一个译本）不使译本过期。编译原文时检查它声明的每个译本：不在文稿目录中（按真实路径，指向别处的符号链接不算）的报在原文头部该行；没有 `translationOf` 的、`translationOf.entry` 指的不是这份原文的、摘要不同的报在译本的头部（摘要不同时在 `digest` 一行），消息给出新的摘要。网页渲染端所在的 `presmium build` 与 `presmium dev` 中，编译器以原文头部的 `plugins`、`presmium`、`renderers`、`execute`、`sectionDepth`、`checks` 与译本自己的其余头部编译每个译本（直接从译本自己的入口编译：`CompilerOptions.headmatter` 替换入口头部中的这些字段，译本没有写 `lang`、`title` 时取声明的语言与原文的标题；`CompilerOptions.deckDir` 让译本作为原文文稿目录中的文件编译，插件、`public/`、组件与执行缓存都是这份文稿的；其余编译选项取原文的 `Compilation.options`，宿主服务也在其中；原文为某个受众编译时译本同样，2.11 节；文稿目录中不写任何文件），交给网页渲染端的 `RenderContext.translations`；译本的诊断随构建报告给出。过期检查在去掉受众内容之前进行，经编译器的 `report` 并入诊断，所以学生版的构建与完整版按同一摘要检查。译本的章与原文的章以第一个章节的 ID 对应，取原文那一页的路径，语言菜单（VitePress 的 `i18nRouting`）因此停在同一章同一节；搜索框按语言各有索引。`presmium dev` 中译本随原文重新编译，并监视译本的文件；译本的页面在重新载入时得到新的内容。工作区站点：工作区根目录的 `presmium build` 像单独构建文档那样编译每份文档的译本（`@lincyaw/workspace` 的 `siteTranslations`，经编译器的 `compileTranslations`），放进 `SiteDocument.translations`；网页渲染端把它们交给该文档的 `RenderContext.translations`，译本在 `/<文档目录>/<语言>/` 下，页面有语言菜单；首页为译本的每种语言另有一个 locale `/<语言>/`，列出那种语言的文档（没有这种译本的文档列出原文），标题取工作区配置的 `site.locales.<语言>.title`（不写时用 `title`）；译本中链接另一份文档时，那份文档有同一语言的译本就到达译本的页面（导航栏的“文档”与跨文档的上一章、下一章仍到原语言）；站点地图含译本的页面。译本的诊断随构建报告给出。`presmium serve` 的预览不编译译本，声明了译本的文档在那里得到警告 `presmium.translations`（位置是头部写着该译本的一行）：`translation "en" (lecture.en.md) is not in the workspace site of presmium serve, which shows the originals; presmium build at the workspace root publishes it (or presmium build <文档目录> for this document alone)`。
+- 摘要是原文标题与各文件正文的 sha256（十六进制 64 位）：文件依次为入口与 IR 中出现的被引入文件（按出现的顺序），各去掉 BOM 与头部，换行统一为 `\n`，去掉末尾空白，文件之间以 `\0` 分隔；所以只改头部的其他字段（如增加一个译本）不使译本过期。编译原文时检查它声明的每个译本：不在文稿目录中（按真实路径，指向别处的符号链接不算）的报在原文头部该行；没有 `translationOf` 的、`translationOf.entry` 指的不是这份原文的、摘要不同的报在译本的头部（摘要不同时在 `digest` 一行），消息给出新的摘要。网页渲染端所在的 `presmium build` 与 `presmium dev` 中，编译器以原文头部的 `plugins`、`presmium`、`renderers`、`execute`、`sectionDepth`、`checks` 与译本自己的其余头部编译每个译本（直接从译本自己的入口编译：`CompilerOptions.headmatter` 替换入口头部中的这些字段，译本没有写 `lang`、`title` 时取声明的语言与原文的标题；`CompilerOptions.deckDir` 让译本作为原文文稿目录中的文件编译，插件、`public/`、组件与执行缓存都是这份文稿的；其余编译选项取原文的 `Compilation.options`，宿主服务也在其中；原文为某个受众编译时译本同样，2.11 节；文稿目录中不写任何文件），交给网页渲染端的 `RenderContext.translations`；译本的诊断随构建报告给出。过期检查在去掉受众内容之前进行，经编译器的 `report` 并入诊断，所以学生版的构建与完整版按同一摘要检查。译本的章与原文的章以第一个章节的 ID 对应，取原文那一页的路径，语言菜单因此停在同一章同一节；搜索框按语言各有索引。`presmium dev` 中译本随原文重新编译，并监视译本的文件；译本的页面得知更新后重新读取自己的 IR。工作区站点：工作区根目录的 `presmium build` 像单独构建文档那样编译每份文档的译本（`@lincyaw/workspace` 的 `siteTranslations`，经编译器的 `compileTranslations`），放进 `SiteDocument.translations`；网页渲染端把它们交给该文档的 `RenderContext.translations`，译本在 `/<文档目录>/<语言>/` 下，页面有语言菜单；首页为译本的每种语言另有一个 locale `/<语言>/`，列出那种语言的文档（没有这种译本的文档列出原文），标题取工作区配置的 `site.locales.<语言>.title`（不写时用 `title`）；译本中链接另一份文档时，那份文档有同一语言的译本就到达译本的页面（导航栏的“文档”与跨文档的上一章、下一章仍到原语言）；站点地图含译本的页面。译本的诊断随构建报告给出。`presmium serve` 的预览不编译译本，声明了译本的文档在那里得到警告 `presmium.translations`（位置是头部写着该译本的一行）：`translation "en" (lecture.en.md) is not in the workspace site of presmium serve, which shows the originals; presmium build at the workspace root publishes it (or presmium build <文档目录> for this document alone)`。
 
 ### 2.13 先预测再揭示
 
@@ -569,7 +569,9 @@ IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的�
 | `executors` | 编译时执行用的执行器（第 4 节“执行”） |
 | `renderer` | 本插件提供的渲染端（第 6 节） |
 | `rendererExtensions` | 按渲染端 ID 提供的扩展，例如 notebook 渲染端把某个组件转换为单元格 |
-| `vitePlugins` | 两种形态的开发服务器与构建加入的 Vite 插件，例如本地环境插件的开发服务器端点 |
+| `assets` | 插件的浏览器端代码运行时加载的文件（`RuntimeAssets`，如 Pyodide、WASI 运行时）：在文稿的站点路径下的 `<prefix>` 中提供，构建时复制进站点 |
+| `documentModules` | 插件浏览器端代码中随文稿变化的虚拟模块（如文稿的场景文件列表）：查看器从文稿自己的代码包中取得它们 |
+| `exporters` | 按需生成的重型输出（幻灯片的 PDF、讲授的视频），作为工作区服务的任务运行，也由编译器的 `exportDocument` 运行 |
 | `roles` | 行内角色规格（2.8 节） |
 | `services` | Node 端服务实现，编译步骤（`PassContext.service`）与渲染端（`RenderContext.service`）使用，例如 `lecture` 渲染端经 `SPEECH` 合成 |
 | `environments` | 具名环境的提供方（2.7 节、第 4 节） |
@@ -579,7 +581,7 @@ IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的�
 - 指令与编译步骤通过 `ctx.src`、`ctx.resolvers` 读取文件，编译器记录读过的文件与读取时的 git 版本；其他方式读取的文件用 `ctx.watch(...files)` 声明。`presmium dev` 在这些文件或命名该版本的 git 引用（`HEAD`、所在分支、`packed-refs`）变化时重新编译。编译器只知道传给 `ctx.src`、`ctx.resolvers` 的版本名：插件若先把分支或标签名（如 `{code-ref}` 的 `:pin:`、`:variants:`）解析为提交再读取，要自己用 `ctx.watch` 声明这些名字对应的 git 引用文件，否则这些分支前进时不会重新编译。`presmium dev` 在一次编译所依赖的文件都被监听之后才报告这次编译；编译开始后改动、监听前未能察觉的文件，按修改时间补一次编译。
 - 渲染端扩展的组件转换函数为 `(node, block, ctx)`，`ctx` 是正在运行的渲染端的 `RenderContext`（输出目录、工作目录、渲染端配置），例如据此写出相对于渲染产物的路径。编译器把 `ctx` 绑定后交给渲染端，渲染端以 `(node, block)` 调用。
 - 浏览器端（网页、幻灯片）按 `component` 节点的组件名，查找插件注册的 Vue 组件。组件仍只依赖 `@lincyaw/host`。浏览器端的注册约定见 `architecture.md` 第 5 节。
-- 文稿自己的组件：文稿目录下 `components/` 中的 `.vue` 文件由编译器以插件 ID `deck` 登记，可以用 `{component}` 放进正文，两种形态都渲染（网页由 IR 运行时注册，幻灯片由 Slidev 的 `components/` 约定注册），编辑器的补全也列出它们。这些组件只能引用 `@lincyaw/host`、`@lincyaw/kernel` 与 vue，文稿的 `package.json` 要依赖 `@lincyaw/host`（`architecture.md` 5.1 节）。
+- 文稿自己的组件：文稿目录下 `components/` 中的 `.vue` 文件由编译器以插件 ID `deck` 登记，可以用 `{component}` 放进正文，两种形态都渲染（由 IR 运行时注册，组件编进文稿自己的代码包），编辑器的补全也列出它们。这些组件只能引用 `@lincyaw/host`、`@lincyaw/kernel` 与 vue，文稿的 `package.json` 要依赖 `@lincyaw/host`（`architecture.md` 5.1 节）。
 
 ### 5.1 指令一览
 
@@ -653,7 +655,6 @@ interface Renderer {
   id: string                                     // 'web' | 'slides' | 'notebook' | ...
   site?: boolean                                 // 生成以站点路径（base）服务的网站
   support(node: IRNode, extensions: BoundRendererExtension[]): 'full' | 'degraded' | 'none'
-  prepare?(doc: IRDocument, ctx: RenderContext): Promise<void>         // 只生成工作目录（如 Slidev 文稿），不构建
   build(doc: IRDocument, ctx: RenderContext): Promise<RenderOutput>
   dev?(doc: IRDocument, ctx: RenderContext): Promise<RenderDevServer>   // update() 接收新的 IR
 }
@@ -670,18 +671,15 @@ interface Renderer {
 | `localAsset(source, url)` | 块中引用的本地文件：相对于块所在的源文件，或 `/...`（文稿的 `public/`）；按 URL 解码（转义不完整时保留原文），给出 `{ file, name, directory }`：文件（或准备好的目录）、发布名 `<内容哈希前 8 位>-<文件名>` 与是否目录（宿主自己的上下文可以不写 `directory`）；远程地址、文件不存在，或是一份文档的源码（`documentLink` 给出的链接，按解码后的真实文件名判断，经符号链接的也算）时为空。渲染端用 `@lincyaw/kernel` 的 `publishedUrl(found, url, { prefix })` 写地址、`@lincyaw/kernel/node` 的 `copyPublished(found, dir)` 复制 |
 | `documentLink(source, url)` | 块中的地址指向的文档：工作区中一份文档的入口文件 `<文档目录>/lecture.md` 或它的目录，给出 `{ dir, fragment }`（文档目录相对于工作区根目录，`#片段` 解码后的章节 ID 或标签）；其他地址为空。可选：宿主自己的上下文可以没有它 |
 | `renderers`、`base` | 本次构建或开发运行的全部渲染端，与本渲染端的站点路径（2.1 节） |
-| `vitePlugins` | 插件在当前进程中提供的 Vite 插件（第 5 节） |
-| `nodeVitePlugins` | 已解析的 Node 端 Vite 入口描述，供另起进程的渲染端生成配置；形状与加载规则见下文 |
+| `nodeVitePlugins` | 声明了 `assets` 或 `documentModules` 的插件的 Node 入口描述，网页与幻灯片渲染端据此取得运行时文件与文稿模块；形状与加载规则见下文 |
 
-`nodeVitePlugins` 中的每项是 `NodeVitePlugin { id, entry, config }`：插件 ID、加载器已经解析并校验的 Node 入口文件、当前编译得到的插件配置。编译器的 `nodeVitePlugins(compilation)` 从已加载插件派生这些描述，工作区站点通过各份 `SiteDocument.nodeVitePlugins` 携带。网页与幻灯片渲染端据此生成导入，不重新解析插件的 `exports` 或猜测入口。没有 Node 端 Vite 贡献时可省略；手工组装上下文且 `vitePlugins` 非空时，必须同时提供入口描述，否则渲染端报错。
+`nodeVitePlugins` 中的每项是 `NodeVitePlugin { id, entry, config }`：插件 ID、加载器已经解析并校验的 Node 入口文件、当前编译得到的插件配置。编译器的 `nodeVitePlugins(compilation)` 从已加载插件中声明了 `assets` 或 `documentModules` 的派生这些描述，工作区站点通过各份 `SiteDocument.nodeVitePlugins` 携带。网页与幻灯片渲染端据此加载插件的 Node 入口，不重新解析插件的 `exports` 或猜测入口。没有这样的插件时可省略。
 
-渲染端发布插件配置时，把位于 `workspaceRoot` 内的绝对路径改为相对路径（网页相对于文稿目录，幻灯片相对于生成的 Slidev 文稿所在目录），产物因此不随检出位置变化（`architecture.md` 4.2 节）。工作目录存放渲染途中生成、跨次构建保留的文件：`build` 中为 `<文稿>/.presmium/<渲染端 ID>`，`dev` 中与输出目录相同；用到它的渲染端自行创建，并使它不进入 git。幻灯片渲染端把生成的 Slidev 文稿（`slides.md`）写在工作目录中，`slidev export` 与发布插件的导出、视觉差异都在这里进行；构建报告的每个输出都给出 `workDir`。生成的文稿按幻灯片的站点路径写出（链接到的本地文件与组件属性中的文件地址带上 `base`），而 `slidev export` 总在根路径服务文稿：`base` 不是 `/` 时（例如同时构建两种形态的默认 `/slides/`），构建报告提示改用 `presmium-export`，它为导出另写一份以 `/` 为 `base` 的文稿。
+渲染端发布插件配置时，把位于 `workspaceRoot` 内的绝对路径改为相对路径（相对于文稿目录），产物因此不随检出位置变化（`architecture.md` 4.2 节）。工作目录存放渲染途中生成、跨次构建保留的文件：`build` 中为 `<文稿>/.presmium/<渲染端 ID>`，`dev` 中与输出目录相同；用到它的渲染端自行创建，并使它不进入 git。构建报告的每个输出都给出 `workDir`。导出另构建一份以 `/` 为站点路径的幻灯片（`ExportContext.build`），在 Chromium 中打印它（`presmium-export`）。
 
-各渲染端用同一套规则把 MyST 降为标准 Markdown（`@lincyaw/kernel` 的 `lowerMyst`）：幻灯片中图注独立成段，`{dropdown}` 写成 `<details>`，定义列表保留结构，`#标签` 的交叉引用链接到目标章节所在的页。卡片、栅格与选项卡（2.10 节）按选项 `cards`：`element`（幻灯片渲染端显式传入；不写 `cards` 而写了 `iframes: 'element'` 时也是它）写成带类名的 `<div>`（`pm-grid` 带 `--pm-grid-columns`、`pm-card`、`pm-card__header`、`pm-card__title`、`pm-card__footer`、`pm-tabs__item`、`pm-tabs__title`），按钮为 `pm-button` 中的链接，样式在幻灯片的 `style.css`；没有目标的 `{button}`（`class: 'button'` 的 `span`）由幻灯片渲染端写成 `<span class="pm-button pm-button--text">`，与带链接的按钮同样的样式；`headings`（默认，notebook）写成四级小标题加内容，栅格、卡片与选项卡列为降级。插件组件由渲染端包在错误边界 `PmBoundary` 中，组件自身出错只影响它自己（`architecture.md` 5.4 节）；扩展抛错时渲染端在块的位置报告警告，改为写组件标签或 `fallback`。幻灯片中有 `fallback` 的组件包在 `PmStaticFallback` 中，PDF、PNG 导出显示 `fallback`；其中带 `data-static="open"` 的 `<details>` 写成展开的（导出不能点开）。
+网页与幻灯片由查看器从 mdast 直接渲染。notebook 渲染端用 `@lincyaw/kernel` 的 `lowerMyst` 把 MyST 降为标准 Markdown（见下文）：卡片、栅格与选项卡（2.10 节）按选项 `cards` 的默认值 `headings` 写成四级小标题加内容，列为降级（`element` 写成带类名的 `<div>`）。插件组件由渲染端包在错误边界 `PmBoundary` 中，组件自身出错只影响它自己（`architecture.md` 5.4 节）；扩展抛错时渲染端在块的位置报告警告，改为写组件标签或 `fallback`。导出打印的幻灯片（`useStaticRender()` 为 true）中，有 `fallback` 的组件显示 `fallback`。
 
-渲染端发布块中引用的本地文件：Markdown 中的图片与链接，以及组件在 `assets` 中声明的属性。网页把文件发布在站点的 `media/` 下；幻灯片把它们复制到生成的 Slidev 文稿的 `public/`，从站点根路径引用（构建时加上站点路径，翻页预加载也不会请求不存在的相对路径），链接到的文件在新标签页中打开；notebook 把它们复制到 notebook 旁边的 `media/`。文件名中的 `#`、`?` 写作 `%23`、`%3F`，转义不完整的地址不使构建失败。幻灯片的讲解（演讲者备注）是 Slidev 原样显示的 HTML，不经 Vite 处理，其中的图片因此也写成带站点路径的地址。
-
-幻灯片渲染端把每页写成 Slidev 编译的 Vue 模板。`slidev build` 因某一页失败时（例如原始 HTML 的标签没有闭合），错误报告在源码中：该页的章节里只有一个块含原始 HTML 时报告在这个块的位置，否则在章节标题处，而不是生成的 `slides.md__slidev_<页号>.md`。
+渲染端发布块中引用的本地文件：Markdown 中的图片与链接，以及组件在 `assets` 中声明的属性。网页与幻灯片把文件发布在站点的 `media/` 下；notebook 把它们复制到 notebook 旁边的 `media/`。文件名中的 `#`、`?` 写作 `%23`、`%3F`，转义不完整的地址不使构建失败。
 
 notebook 渲染端把 Markdown 写成 Jupyter 能显示的 CommonMark、GFM 表格、内联 HTML 与 `$` 公式，不写 MyST 语法：提示框（`{note}` 等）与旁注写成带粗体标题的引用块，`{list-table}` 等表格写成 GFM 表格，`{dropdown}` 写成 `<details>`，图写成图片加斜体标题，公式写成 `$$`，`{sub}`、`{sup}`、`{kbd}`、`{abbr}` 等角色写成内联 HTML，交叉引用写成它的文字。正文中的 `$`（如价格）写作 `\$`，不被 Jupyter 当作公式；表格单元格中的行内内容直接拼接，只在换行与块级内容处断开。没有对应写法的节点（如 `{embed}`、`{iframe}`）保留其中的文字，并作为降级在构建报告中逐块列出（警告，带源码位置）。网页与幻灯片把 `{iframe}` 写成 figure 中的 `<iframe>`。
 
@@ -692,9 +690,9 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 | 渲染端 | 处理 |
 |---|---|
 | 网页（IR 运行时） | 每个输出按 MIME 类型选择渲染器，顺序同 JupyterLab：`text/html`（DOMPurify 清洗后内联显示；只在浏览器中清洗，服务端渲染与清洗之前显示 `text/plain`）、`text/markdown`（`mdast-util-from-markdown` 与 GFM 转为 mdast 后照正文显示，其中的原始 HTML 作为文字）、`text/latex`（KaTeX）、`image/svg+xml`、`image/png`、`image/jpeg`、`image/gif`、`application/json`、`text/plain`；`stream` 与 `error` 的 ANSI 转义转为样式。插件可以为新的类型注册渲染器（`registerNodeRenderer('mime:<类型>')`），优先于内置的。`echo: false` 的代码块不显示代码，`text/markdown` 输出不加输出框 |
-| 幻灯片 | 录制的输出写进 Slidev 文稿：图片为 `<img>`（base64 超过 16 KB 时作为文件发布），`text/markdown` 为 Markdown（其中的原始 HTML 作为文字），`text/html` 放进没有脚本权限的沙箱 iframe（`srcdoc`），`text/latex` 为公式，其他为文本；带 `live` 或 `both` 的 Python、JavaScript、TypeScript 与 C、C++、Ruby、SQL 代码块（没有高亮步骤与多版本时）写成 `{monaco-run}`，点运行按钮执行，执行器、会话与超时经生成文稿头部的 `presmiumRuns` 交给执行插件的 code runner（`architecture.md` 4.6、9.2 节）；每张幻灯片只有一个输出区：运行器的输出区在明确运行之前显示录制的输出并标明“预录输出”（经 Slidev 公开的 `runnerOptions`），不另写录制块与占位，`presmium-export` 写的导出文稿把可运行代码写成静态的高亮代码加录制输出；`echo: false` 的代码块只写输出，Markdown 输出不加输出框 |
+| 幻灯片 | 与网页相同，幻灯片是查看器的页面：带 `live` 或 `both` 的代码块在幻灯片上点运行按钮执行，运行之前可以就地编辑（8.1 节） |
 | notebook | 把 `outputs` 原样写入代码单元格的 `outputs`（`execution_count` 按顺序编号）；`echo: false` 的单元格带元数据 `jupyter.source_hidden` |
-| 静态导出（PDF、PNG） | 使用录制的输出，同幻灯片 |
+| 静态导出（PDF、PNG、PowerPoint） | 打印的幻灯片页使用录制的输出，可运行的代码不运行，也不能编辑 |
 
 ### 6.2 发布的文件
 
@@ -703,22 +701,22 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 - **正文链接**：链接到本地文件（起始代码、数据、模板）时，网页把文件发布在 `media/` 下并改写链接，与幻灯片、notebook 一致。
 - **目录**：链接到本地目录时，网页与幻灯片生成一个文件清单页 `media/<哈希>-<目录名>/index.html`（列出目录中的文件，每个文件可以下载），notebook 把目录复制到 `media/` 并链接到它。
 - **原始 HTML**：原始 HTML 中 `src`、`poster`、`href` 引用的本地文件同样发布并改写地址。
-- **Markdown 文件**：链接到的 `.md` 文件（模板、起始目录中的 `README.md`）按原样发布、按字节下载：网页渲染端生成的 VitePress 配置写 `srcExclude: ['public/**']`，VitePress 不把发布目录与文稿自己的 `public/` 中的 Markdown 当作页面编译，所以模板中像 HTML 的占位（`<answer>`）与 `{{ x }}` 不使构建失败，也不产生多余的页面。
+- **Markdown 文件**：链接到的 `.md` 文件（模板、起始目录中的 `README.md`）按原样发布、按字节下载，不当作页面。
 - **链接到文档**：指向工作区中另一份文档的入口文件或目录的链接（`[延伸](../bpe/lecture.md#extend-c)`、`[BPE 分词](../bpe/)`，`RenderContext.documentLink`）不发布文档的源码。工作区站点把它改写为那份文档的页面：`#片段` 是章节 ID 时到这一节所在的页（不是这一页开头的一节时带上 `#<章节 ID>`，例如 `/bpe/extend.html#extend-c`），是块或图的标签时到它所在章节的页并带上片段，没有片段时到文档的第一页；开发站点中还没有编译的文档链接到它的目录；不在站点中的文档保留原链接。单份文稿的构建（三种媒介，含 `--audience student`）保留原链接，并在该行给出警告 `presmium.links`：`<地址> is not published: it is the source of the document <目录>, which a workspace site links as its page; this build keeps the link as written`。发布的目录中含 `lecture.md` 的子目录（另一份文档）不随它发布。
 - 无法发布的本地引用（文件不存在、指向文稿所在仓库之外）是警告级诊断，带源码位置；`presmium check` 的 `presmium.links` 报告同样的问题（2.11 节）。
-- `RenderContext.localAsset` 对目录也给出结果：文稿目录之内（不是文稿目录本身，也不含 `lecture.md`，所以工作区中指向另一份文档的相对链接仍是链接）的目录，在 `<文稿>/.presmium/files/<哈希>-<目录名>/` 中准备一份副本（目录中的普通文件，不含隐藏文件、`node_modules` 与符号链接；哈希取路径与内容）与文件清单页 `index.html`（按文稿语言，每个文件带 `download`；目录自己有 `index.html` 时不写），渲染端像发布文件一样复制它：网页链接到 `<base>media/<哈希>-<目录名>/index.html`，幻灯片到 `<base><哈希>-<目录名>/index.html`，notebook 到 `media/<哈希>-<目录名>/`。网页中指向站内页面之外（文件清单页、工作区中的其他文档）的链接整页载入（VitePress 路由的 `onBeforeRouteChange`），不显示路由的 404。幻灯片中原始 HTML 的 `src`、`poster` 与图片一样写成从根起的路径（Vue 的模板编译按 `public/` 解析并加上站点路径），`href` 带站点路径。诊断的检查 ID 是 `presmium.links`，行号是块中写有该地址的行；“仓库之外”只对 git 仓库中的文稿适用（不在仓库中的文稿没有这条限制），工作区站点中是工作区根目录之外；以 `/` 开头而 `public/` 中没有的地址是站内路径，不报告。同一引用在几个渲染端中只报告一次。
+- `RenderContext.localAsset` 对目录也给出结果：文稿目录之内（不是文稿目录本身，也不含 `lecture.md`，所以工作区中指向另一份文档的相对链接仍是链接）的目录，在 `<文稿>/.presmium/files/<哈希>-<目录名>/` 中准备一份副本（目录中的普通文件，不含隐藏文件、`node_modules` 与符号链接；哈希取路径与内容）与文件清单页 `index.html`（按文稿语言，每个文件带 `download`；目录自己有 `index.html` 时不写），渲染端像发布文件一样复制它：网页与幻灯片链接到 `<base>media/<哈希>-<目录名>/index.html`，notebook 到 `media/<哈希>-<目录名>/`。网页中只有到本文档其他页面的链接在页面内切换，其他链接（文件清单页、工作区中的其他文档）整页载入。诊断的检查 ID 是 `presmium.links`，行号是块中写有该地址的行；“仓库之外”只对 git 仓库中的文稿适用（不在仓库中的文稿没有这条限制），工作区站点中是工作区根目录之外；以 `/` 开头而 `public/` 中没有的地址是站内路径，不报告。同一引用在几个渲染端中只报告一次。
 - 链接指向的目录本身是隐藏目录或 `node_modules`，或位于其中（相对文稿目录的任何一级）时不发布，警告 `<地址> is not published: hidden directories and node_modules are not published`（`presmium check` 的 `presmium.links` 同样报告）；目录中的隐藏文件与 `node_modules` 照旧不复制。目录的哈希由各文件的内容哈希组成，每个文件的哈希在其大小、inode、修改时间与状态改变时间不变时不重新读取（`@lincyaw/compiler` 的 `fileHash`，单个文件的发布名也用它；两秒之内改过的文件不缓存，时间戳的精度之内同样大小的改动因此不会留下旧的哈希），所以开发服务器每次更新重新发布目录时只查看文件的状态。直接链接到一个文件时照常发布，不论它的名字是否以 `.` 开头（插件经同一接口发布它们放在 `.presmium/` 中的文件，例如 `addon-publish` 离线下载的图片）。原始 HTML 中的地址由 HTML 解析器（parse5，按浏览器解析片段的方式，带源码位置）找出：只有元素真正的 `src`、`poster`、`href` 属性被改写，属性之外的文字（`<code> href=x</code>`、注释、脚本中的代码）不变，也不报告；`presmium.links` 的检查与片段的 `id`、`name` 同样经解析得到。编译器与工作区站点共用这些代码（`packages/compiler/src/assets.ts`，工作区经 `@lincyaw/compiler` 引用）。
 
 ### 6.3 讲授渲染端、工作区站点与译本
 
 - **`lecture`**：讲授插件提供的站点渲染端。它把自己的视图（`viewFor(doc, 'lecture')`）编为讲授计划（每一步要说的文字与提示标记，2.9 节），经 `RenderContext.service(SPEECH)` 合成（先查合成缓存，命中的段落不重新合成，全部命中时不向引擎发请求；只为缺失的段落调用引擎并写入缓存；缺失又没有可用的引擎时报错并指出段落），写出 `dist/lecture/<id>/track.json`、音频片段与 `index.json`（讲授列表）；文稿目录 `lectures/` 中录制的讲授轨与音频一并发布。网页的讲授视图从同一站点的 `../lecture/` 读取，分开部署时在 `presmium.lecture.url` 中写明地址。录制的讲授发布为 `dist/lecture/<id>/track.json`、它的本地音频与录像（`audio/`、`video/`，外部地址的不复制）、`captions.<语言>.vtt`（讲授轨的语言与每种译文各一份，过期的译文带 `NOTE stale` 并给出警告，没有译文的句子不进这种语言的字幕并给出警告）、`chapters.vtt` 与 `events.vtt`；`index.json` 的每项为 `{ id, lang, voice, duration, captions }`。`presmium dev` 中讲授视图读服务端的路由（9.4 节），这个渲染端的开发服务器只打印路由的地址。写了 `renderers.lecture.voice` 时构建先合成 `script`：片段（合成缓存中的文件）复制到 `dist/lecture/<id>/clips/`，重新合成过的录制讲授的片段同样发布：录制讲授的片段按键经语音服务的 `SpeechService.cached` 取得，语音服务检查它的音色，克隆音色的同意撤回之后这份讲授不发布（错误级诊断 `lecture <id> is not published: …`），缓存中没有的片段照旧是警告、这一句无声；讲授插件需要语音插件提供的 `SPEECH`（没有时是错误）；缺少片段又不能合成的语音段各是一条错误级诊断（带段落的源码位置），这时不发布 `script`。每份讲授都发布成功时，`.presmium/speech.lock.json` 只留下这些讲授用到的键（格式不变）。`presmium dev` 与 `presmium serve` 中 `script` 由服务端在页面请求它时按最近一次编译的 IR 说出：每次请求都经语音服务从合成缓存重新取一遍（命中缓存的段落不发请求，引擎只合成缓存缺的段落，同一 IR 同时到达的请求共用一次），所以语音服务每次都检查克隆音色的同意；片段 `tracks/<id>/clips/<键>` 按它在合成缓存中的键给出：`script` 的片段是最近取得的至多 8 份不同讲授中的（每份讲授按它的片段只存一次：同一份 IR 无论取得多少次，或说的相同的另一份 IR，都只占一份，最近取得的排在最后），所以页面已加载的讲授在 `presmium dev` 重新编译、别的窗口多次取得新的讲授之后照样能播放；录制讲授的片段是它的语音段写明的（换音色重新合成的）；给出之前语音服务按键从缓存取它并检查音色（`SpeechService.cached`），不请引擎合成，所以缓存文件被删的片段得到 404 而不重新合成，同意撤回之后片段得到 403，讲授得到 502 与原因（不引用话语）。计划取自 IR 的讲授渲染端视图（`viewFor(doc, 'lecture')`），与构建、`presmium check` 和 agent 工具相同。讲授视图只在有讲授时出现在“视图”菜单中（没有时不请求 `index.json`）：静态构建由编译步骤写进插件配置的 `presmium.lecture.lectures` 决定（文稿写了 `presmium.lecture.url`，或文稿的构建运行讲授渲染端，即 `renderers` 中有 `lecture` 或没有列出渲染端，并且有音色或录制的讲授），服务端下由 `GET tracks` 决定，第一次录制保存之后菜单随即出现；合成缓存命中时，语音服务每个进程向引擎要一次音色列表（不合成任何东西）来判断音色是否克隆；讲授与语音的文件都不经链接、不等待 FIFO 打开；回放的转写以每句的原文为底显示词的片段，空格与标点照旧；过期的译文在字幕与转写中带标记；导出的视频没有放映视图的控制条；克隆音色的同意在合成缓存命中时也检查，撤回的同意使已缓存的片段也不再发布。学生版：为某个受众编译的 IR 带 `meta.audience`（`presmium build --audience student` 与 `Compilation.forAudience`）；这样的构建发布录制的讲授时，只保留讲授轨记下的章节摘要（`ir.sections`）与学生版 IR 中这一节的摘要相同的章节中说的话、音频与录像，以及那里的事件（`go` 照旧，播放仍走过全部章节）；摘要不同说明这一节在录制之后少了内容（教师专用的块，或录制后移入教师章节的内容），录下的声音与画面可能说出它，所以失败即关闭：没有每一节摘要的旧讲授轨只在整个 IR 的摘要相同时保留；什么也不剩的讲授不发布。
 - **工作区站点**：网页渲染端实现 `buildSite` 与 `devSite`（`architecture.md` 4.10 节）：首页是文档列表（搜索与标签），或工作区配置指定的一份文档；每份文档在 `/<文档目录>/` 下，内部仍按章分页；搜索索引包含全部文档；页末的上一章与下一章跨越文档，按工作区配置中的顺序。
-- **译本**：网页渲染端把 `RenderContext.translations` 中的每个译本构建为 VitePress 的一个 locale（`/<语言>/`），语言菜单在两种语言的同一章节之间切换。
-- **站点外壳**：写进生成的 VitePress 配置：`themeConfig.nav`、`themeConfig.footer`、`description`、`head`（`og:type`、`og:description`、`og:image`；`og:title` 取每页的标题，由 `transformHead` 在构建时写入）、`sitemap`（`hostname` 加上站点路径）。默认主题在有侧栏的页面上不显示页脚，章节页面另在 `doc-after` 插槽中显示同样的页脚。`head.image` 是本地文件时随站点发布在 `media/` 下，有 `sitemap.hostname` 时写成完整地址。工作区站点：工作区配置 `site` 的 `nav`、`footer`、`head`、`sitemap` 作用于首页与每份文档（文档页面中的导航链接改写为相对于页面的路径，因为 VitePress 给站内链接加上的是文档自己的 `base`）；整个站点只有首页项目生成 `sitemap.xml`，以 `transformItems` 加入每份文档的页面；`site.home` 指定首页文档时，首页 `index.html` 以头部的刷新与页面脚本转到 `/<文档目录>/`，文档列表改在 `documents.html`，文档页面导航栏中的“文档列表”链接到它。每份文档的搜索索引另含其他文档的章节（结果的标题前加上那份文档的标题），文档的第一页的“上一章”是前一份文档的最后一章，最后一页的“下一章”是后一份文档的第一页（`presmium serve` 中按已编译的文档给出，没有编译的给出文档目录与标题）。
+- **译本**：网页渲染端把 `RenderContext.translations` 中的每个译本构建在 `/<语言>/` 下（各有自己的 `ir.json` 与搜索索引），语言菜单在两种语言的同一章节之间切换。
+- **站点外壳**：Presmium 自己的站点外壳（`@lincyaw/web` 的页面应用）画出 `nav`（顶部导航，手机布局中在菜单里）与 `footer`（每页的页脚）；`head` 写进每页的 HTML：`description` 与 `og:type`、`og:title`（每页的标题）、`og:description`、`og:image`；`sitemap` 生成 `sitemap.xml`（`hostname` 加上站点路径）。`head.image` 是本地文件时随站点发布在 `media/` 下，有 `sitemap.hostname` 时写成完整地址。工作区站点：工作区配置 `site` 的 `nav`、`footer`、`head`、`sitemap` 作用于首页与每份文档；整个站点只有一个 `sitemap.xml`，含每份文档的页面与译本的页面；`site.home` 指定首页文档时，首页 `index.html` 以头部的刷新与页面脚本转到 `/<文档目录>/`，文档列表改在 `documents.html`，文档页面导航栏中的“文档列表”链接到它。每份文档的搜索索引另含其他文档的章节（结果的标题前加上那份文档的标题），文档的第一页的“上一章”是前一份文档的最后一章，最后一页的“下一章”是后一份文档的第一页（`presmium serve` 中按已编译的文档给出，没有编译的给出文档目录与标题）。
 
 ### 6.4 行内角色
 
-`presmiumRole` 节点：各渲染端显示 `children`；演讲者备注（幻灯片）与演讲者窗口（网页）中，以及页面显示作者用的标记时（`pm-author-marks`，网页，与工作区服务预览中的幻灯片），没有子内容的角色显示标记 `〔<名> <value>〕`（2.8 节）。notebook 只写 `children`。
+`presmiumRole` 节点：各渲染端显示 `children`；演讲者窗口中，以及页面显示作者用的标记时（`pm-author-marks`，网页，与工作区服务预览中的幻灯片），没有子内容的角色显示标记 `〔<名> <value>〕`（2.8 节）。notebook 只写 `children`。
 
 ### 6.5 降级
 
@@ -751,7 +749,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 `@lincyaw/viewer` 是浏览器中的 IR 运行时：它读取 IR，用 Vue 动态渲染章节与块，不经过任何 Markdown 生成或静态编译。
 
 - `markdown` 节点：mdast 转为 hast 后渲染为 Vue 虚拟节点；代码高亮用 Shiki，公式用 KaTeX，图表在客户端渲染。
-- `code` 节点：按 `highlight` 与当前步骤高亮行，显示录制输出；`run.when` 含 `live` 时接入执行面板。
+- `code` 节点：按 `highlight` 与当前步骤高亮行，显示录制输出；`run.when` 含 `live` 时接入执行面板。照原样运行的代码（没有分步高亮与多版本）可以在运行之前就地编辑：“编辑代码”打开 CodeMirror 6 编辑器（第一次编辑时才加载），Mod-Enter 运行，“完成编辑”收起编辑器，“还原代码”回到源码中的代码；打印的页面不能编辑。网页与幻灯片相同。
 - `component` 节点：按组件名从插件注册表中取 Vue 组件渲染；组件只依赖 `@lincyaw/host`。
 
 ### 8.2 运行时视图
@@ -774,17 +772,17 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 
 ```
 保存源码 → presmium dev 增量编译受影响的章节 → 比较章节内容哈希
-        → 通过 WebSocket 推送变化的章节 → 运行时替换这些章节并重渲染
+        → 经服务器推送事件（SSE）推送变化的章节 → 运行时替换这些章节并重渲染
 ```
 
 - 不生成文件，不刷新页面；当前视图、章节、步骤与滚动位置保持不变。
 - 编译诊断随推送一起到达，在页面上标出出错的章节。
 - 目标：保存到画面更新 300 ms 以内。
 
-### 8.4 与 VitePress、Slidev 的关系
+### 8.4 站点外壳与幻灯片页
 
-- **VitePress 是网页的外壳**：提供导航、侧栏、页内大纲、深色模式、移动端适配和搜索界面；页面正文由 IR 运行时渲染；搜索索引由网页渲染端从 IR 文本生成（每个章节一个文档），在开发与构建中都替换 VitePress 本地搜索的索引模块（`architecture.md` 9.1 节）。
-- **Slidev 是可选的高保真渲染端**：用于导出 PDF、圈画标注、录制等 Slidev 擅长的功能；实时预览不依赖 Slidev。
+- **网页的外壳是 Presmium 自己的**（`@lincyaw/web` 的页面应用）：导航、章节列表、页内大纲、上一章与下一章、深色模式、手机布局、语言菜单和搜索界面；页面正文由 IR 运行时渲染；搜索索引由网页渲染端从 IR 文本生成（每个章节一个文档，MiniSearch，中文按词切分），构建时写成 `search.json`（`architecture.md` 9.1 节）。预先打包的查看器（为一组插件构建一次，存在用户的缓存 `$XDG_CACHE_HOME/presmium/viewer-app/` 中）显示每一页：工作台中、`presmium dev` 与 `presmium serve` 中、构建的站点中。构建的站点只复制一份查看器（`<base>_app/<键>/`），每份文档是它页面旁边的数据：`ir.json`、`search.json`、文稿自己的代码 `_code/<键>/document.js`、发布的文件与插件的运行时文件；每一页先在服务端渲染，浏览器中再接管。
+- **幻灯片是同一个查看器的幻灯片页**（`?form=slides`）：每节一张，画在固定大小的画布上（默认 980 宽、16:9），整张按比例缩放；绘图（讲台插件）与录制在放映视图中；导出（PDF、图片、PowerPoint）在 Chromium 中打印这个页面。
 
 ## 9. 讲授轨格式
 
