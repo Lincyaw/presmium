@@ -20,7 +20,7 @@ const studioPortOffset = Number(process.env.PRESMIUM_E2E_STUDIO_PORT_OFFSET ?? 0
 
 const preview = (page: Page): FrameLocator => page.frameLocator('.pmw-preview__frame')
 const conversation = (page: Page) => page.locator('[data-pmw-slot="main:conversation"]')
-const activity = (page: Page) => page.getByRole('navigation', { name: '导航' })
+const activity = (page: Page) => page.getByRole('navigation', { name: '应用栏' })
 const tools = (page: Page) => page.getByRole('toolbar', { name: '对所选内容的操作' })
 
 async function showConversation(page: Page): Promise<void> {
@@ -122,7 +122,8 @@ test.describe('the root layout', () => {
     // The documents by their titles only: no directories, files, branches or addresses.
     await expect(page.locator('.pmw-home__card')).toHaveCount(2)
     await expect(page.locator('.pmw-frame__centre')).not.toContainText(/lectures\/|MCP|master|presmium\.workspace/)
-    await expect(activity(page).locator('[data-activity]')).toHaveText(['文稿', 'AI 助手', '更多', '设置', '帮助'])
+    await expect(activity(page).locator('[data-activity]')).toHaveCount(5)
+    for (const name of ['文稿', 'AI 助手', '更多', '设置', '帮助']) await expect(activity(page).getByRole('button', { name, exact: true })).toBeVisible()
     // One workspace: the conversation offers no other, nor another agent preset.
     await expect(conversation(page).getByRole('button', { name: '选择工作区' })).toBeHidden()
     await expect(conversation(page).locator('[data-slot="conversation.hero.agentPreset"]')).toBeHidden()
@@ -196,11 +197,28 @@ test.describe('the root layout', () => {
         await expect(panel).toBeVisible()
         await expect(panel.getByText(label, { exact: true }).first()).toBeVisible()
       }
-      await activity(page).locator(width === 390 ? '[data-activity="document"]' : '[data-activity="documents"]').click()
+      await activity(page).locator('[data-activity="document"]').click()
       await expect(page.locator('.pmw-frame__panel')).toHaveCount(0)
-      await expect(page.locator('.pmw-toolbar__title')).toHaveText('分词入门')
+      await expect(page.locator('.pmw-appbar__title')).toHaveText('分词入门')
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     }
+  })
+
+  test('the document lies as one page on the canvas, without the site\'s navigation; the navigation pane goes to a section and the status bar follows', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await studio.open(page)
+    await openDocument(page, '分词入门')
+    await expect(preview(page).locator('.pm-sheet [data-section="words"]')).toBeVisible({ timeout: 120_000 })
+    // None of the reader's site: no menus, search, sidebar or outline of the page.
+    await expect(preview(page).getByRole('navigation')).toHaveCount(0)
+    await expect(preview(page).getByRole('button', { name: /搜索|Search/ })).toHaveCount(0)
+    const pane = page.getByRole('navigation', { name: '导航' })
+    await expect(pane.locator('.pmw-navigation__item')).toHaveText(['分词入门', '词元', '合并', '延伸', '问题'])
+    await pane.getByRole('button', { name: '延伸', exact: true }).click()
+    await expect(preview(page).locator('[data-section="extend"]')).toBeInViewport()
+    await expect(pane.getByRole('button', { name: '延伸', exact: true })).toHaveAttribute('aria-current', 'location')
+    await expect(page.locator('.pmw-statusbar')).toContainText('第 4 节，共 5 节')
+    await page.screenshot({ path: test.info().outputPath('page-on-canvas.png'), animations: 'disabled' })
   })
 
   test('a double-clicked paragraph is edited in place; each edit is a version that undo and redo walk; formatted text goes to the AI instead', async ({ page }) => {
@@ -227,7 +245,7 @@ test.describe('the root layout', () => {
     await page.getByRole('button', { name: '撤消：编辑“词元”（Ctrl+Z）' }).click()
     await expect.poll(() => readFileSync(file, 'utf8')).toContain('这一段要改的词是 alpha。')
     await expect(preview(page).locator('[data-section="words"]')).not.toContainText('beta', { timeout: 60_000 })
-    await page.locator('.pmw-toolbar__title').click()
+    await page.locator('.pmw-appbar__title').click()
     await page.keyboard.press('Control+y')
     await expect.poll(() => readFileSync(file, 'utf8')).toContain('这一段要改的词是 alpha beta。')
     await page.getByRole('button', { name: '版本历史', exact: true }).click()
@@ -383,9 +401,9 @@ test.describe('the root layout', () => {
     const dialog = page.getByRole('dialog', { name: '新建文稿' })
     await dialog.getByLabel('标题').fill('第三讲')
     await dialog.getByRole('button', { name: '创建' }).click()
-    await expect(page.locator('.pmw-toolbar__title')).toHaveText('第三讲')
+    await expect(page.locator('.pmw-appbar__title')).toHaveText('第三讲')
     expect(commits()).toBe(before + 1)
-    await page.getByRole('button', { name: '返回文稿列表' }).click()
+    await page.locator('[data-activity="documents"]').click()
     await expect(card('第三讲')).toBeVisible()
 
     await card('第三讲').getByRole('button', { name: '“第三讲”的更多操作' }).click()
@@ -456,7 +474,7 @@ test.describe('the conversation', () => {
     await conversation(page).getByRole('button', { name: '对话记录', exact: true }).click()
     await expect(page.locator('[data-pmw-slot="sidebar"]')).toBeVisible()
     if (width === 390) await activity(page).locator('[data-activity="document"]').click()
-    await expect(page.locator('.pmw-toolbar__title')).toHaveText('分词入门')
+    await expect(page.locator('.pmw-appbar__title')).toHaveText('分词入门')
     await expect(page.locator('.pmw-preview__frame')).toBeVisible()
     if (width === 1440) await page.screenshot({ path: test.info().outputPath('chat-toolbar.png') })
   })
@@ -480,7 +498,7 @@ test.describe('the conversation', () => {
     await tools(page).getByRole('button', { name: '关闭', exact: true }).click()
     await expect(tools(page)).toBeHidden()
     await expect.poll(async () => (await (await page.request.get(`${studio.web.url}/api/presmium/focus?document=lectures/intro`)).json()).focus).toEqual([])
-    await page.getByRole('button', { name: '返回文稿列表' }).click()
+    await page.locator('[data-activity="documents"]').click()
     await openDocument(page, 'Second lecture')
     before = model.received.length
     await send(page, '现在讲的是哪份文档')

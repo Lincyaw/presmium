@@ -10,12 +10,16 @@ type Step = 'tools' | 'comment' | 'rewrite'
 const GAP = 10
 const MARGIN = 8
 
-/** Where the popover goes in the stage: below the pointer (above it when there is no room), inside the stage. */
-function placement(pointer: Pointer, size: { width: number, height: number }, stage: { width: number, height: number }) {
-  const rect = pointer.rect!
-  const x = pointer.quote ? rect.x : pointer.point?.x ?? rect.x
-  const below = pointer.quote ? rect.y + rect.height : pointer.point?.y ?? rect.y + rect.height
-  const above = pointer.quote ? rect.y : pointer.point?.y ?? rect.y
+/**
+ * Where the popover goes in the stage: below the pointer (above it when there is no room), inside the stage. The
+ * pointer is in the preview's viewport, which lies at `offset` in the stage (a slide sits on the canvas).
+ */
+function placement(pointer: Pointer, size: { width: number, height: number }, stage: { width: number, height: number }, offset: { x: number, y: number }) {
+  const rect = { ...pointer.rect!, x: pointer.rect!.x + offset.x, y: pointer.rect!.y + offset.y }
+  const point = pointer.point && { x: pointer.point.x + offset.x, y: pointer.point.y + offset.y }
+  const x = pointer.quote ? rect.x : point?.x ?? rect.x
+  const below = pointer.quote ? rect.y + rect.height : point?.y ?? rect.y + rect.height
+  const above = pointer.quote ? rect.y : point?.y ?? rect.y
   let top = below + GAP
   if (top + size.height > stage.height - MARGIN && above - GAP - size.height >= MARGIN) top = above - GAP - size.height
   const left = Math.max(MARGIN, Math.min(x - 16, stage.width - size.width - MARGIN))
@@ -44,7 +48,10 @@ export function PointerPopover() {
     const element = box.current
     const stage = element?.parentElement
     if (!pointer?.rect || !element || !stage) return setPosition(undefined)
-    setPosition(placement(pointer, { width: element.offsetWidth, height: element.offsetHeight }, { width: stage.clientWidth, height: stage.clientHeight }))
+    const frame = stage.querySelector('.pmw-preview__frame')?.getBoundingClientRect()
+    const origin = stage.getBoundingClientRect()
+    const offset = frame ? { x: frame.left - origin.left, y: frame.top - origin.top } : { x: 0, y: 0 }
+    setPosition(placement(pointer, { width: element.offsetWidth, height: element.offsetHeight }, { width: stage.clientWidth, height: stage.clientHeight }, offset))
   }, [pointer, step, failure])
   useEffect(() => {
     if (!pointer) return

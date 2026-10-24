@@ -1,6 +1,6 @@
 import { componentErrors, presmiumReport } from '@lincyaw/host'
 import type { NavigationPosition } from '@lincyaw/host'
-import { connectPreviewFrame, irBlocks, isPreviewActive, PREVIEW_REVISION, stepKeys, stepTrail } from '@lincyaw/kernel'
+import { connectPreviewFrame, irBlocks, isPreviewActive, isPreviewEmbedded, PREVIEW_REVISION, stepKeys, stepTrail } from '@lincyaw/kernel'
 import type { FollowAnchor, PreviewFrame } from '@lincyaw/kernel'
 import type { Viewer } from '@lincyaw/viewer'
 import type { Ref } from 'vue'
@@ -22,11 +22,13 @@ export interface WebPreviewPage {
 export interface WebPreview {
   /** False when the workbench paused the preview before the page loaded again. */
   active: boolean
+  /** The page is in a workbench: it shows the document as a page, without the site's navigation. */
+  embedded: boolean
   connect(page: WebPreviewPage): void
 }
 
 export function webPreview(options: WebPreviewOptions): WebPreview {
-  return { active: isPreviewActive(), connect: page => connectWebPreviewFrame(page, options) }
+  return { active: isPreviewActive(), embedded: isPreviewEmbedded(), connect: page => connectWebPreviewFrame(page, options) }
 }
 
 function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions): void {

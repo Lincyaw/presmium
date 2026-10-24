@@ -6,21 +6,20 @@ export const RIGHTBAR_MAX_RATIO = 0.7
 export const RIGHTBAR_DEFAULT_RATIO = 0.45
 export const SIDE_COLLAPSE = 1024
 export const NARROW = 768
-export const ACTIVITY = 72
 export const SIDE_DEFAULT = 264
 export const SIDE_MIN = 200
 export const SIDE_MAX = 420
 export const CONVERSATION_DEFAULT = 400
 export const CONVERSATION_MIN = 320
 export const CONVERSATION_MAX = 640
-/** The width of one resize handle between two columns. */
-export const HANDLE = 8
+/** The width of one resize handle between two columns: a hairline, with a wider area to grab. */
+export const HANDLE = 1
 
 export const clamp = (px: number, min: number, max: number) => Math.min(max, Math.max(min, Math.round(px)))
 
-/** The width left for the rightbar column: the viewport less the activity bar, the side panel, the conversation, the centre's minimum and `handles` resize handles. */
+/** The width left for the rightbar column: the viewport less the side panel, the conversation, the centre's minimum and `handles` resize handles. */
 export function rightbarRoom(viewport: number, side: number, conversation: number, handles: number): number {
-  return viewport - ACTIVITY - side - conversation - CENTRE_MIN - handles * HANDLE
+  return viewport - side - conversation - CENTRE_MIN - handles * HANDLE
 }
 
 /** What the side panel shows: the chat history (DeepSeek Harness's sessions). */

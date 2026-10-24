@@ -4,6 +4,13 @@
   --pm-color-bg: #f7f5f0;
   --pm-color-surface: #ffffff;
   --pm-color-sunk: #efebe3;
+  /* The editor's frame around a document, and the ground the page or slide lies on. */
+  --pm-color-chrome: #f9f8f5;
+  --pm-color-canvas: #e7e5e0;
+  /* A flat control under the mouse, and the edge of a pressed one. */
+  --pm-color-hover: color-mix(in srgb, var(--pm-color-ink) 7%, transparent);
+  --pm-color-accent-line: color-mix(in srgb, var(--pm-color-accent) 30%, transparent);
+  --pm-color-backdrop: rgb(28 27 25 / 32%);
   --pm-color-code: #fbfaf7;
   --pm-color-ink: #1c1b19;
   --pm-color-muted: #5c584f;
@@ -42,6 +49,7 @@
   --pm-leading-reading: 1.85;
   --pm-tracking-label: 0.06em;
 
+  --pm-space-px: 2px;
   --pm-space-1: 0.25rem;
   --pm-space-2: 0.5rem;
   --pm-space-3: 0.75rem;
@@ -57,17 +65,42 @@
   --pm-radius-panel: 14px;
   --pm-radius-chip: 4px;
   --pm-radius-pill: 999px;
+  --pm-radius-tool: 4px;
+  --pm-radius-sheet: 2px;
+
+  --pm-size-hairline: 1px;
+  --pm-size-stroke: 2px;
+  --pm-size-rule: 3px;
+  --pm-size-dot: 0.4375rem;
+  --pm-size-icon-sm: 0.8125rem;
+  --pm-size-icon: 1rem;
+  --pm-size-logo: 1.375rem;
+  --pm-size-badge: 1.25rem;
+  --pm-size-avatar: 1.75rem;
+  --pm-size-divider: 1.25rem;
+  --pm-size-tool: 1.875rem;
+  --pm-size-touch: 2.5rem;
+  --pm-size-row: 3rem;
 
   --pm-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   --pm-shadow-float: 0 1px 2px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.08);
+  --pm-shadow-page: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1), 0 8px 24px rgba(0, 0, 0, 0.06);
 
   --pm-duration-fast: 120ms;
   --pm-duration: 200ms;
+  --pm-duration-spin: 900ms;
+  --pm-duration-pulse: 1200ms;
   --pm-ease: cubic-bezier(0.2, 0, 0, 1);
 
-  --pm-activity-width: 56px;
-  --pm-sidebar-width: 252px;
+  /* The editor's frame: its bars, panes and the page on the canvas. */
+  --pm-appbar-height: 2.5rem;
+  --pm-appbar-height-touch: 3rem;
+  --pm-toolbar-height: 2.5rem;
   --pm-statusbar-height: 1.75rem;
+  --pm-pane-header-height: 2.25rem;
+  --pm-navigation-width: 15rem;
+  --pm-aside-width: 20rem;
+  --pm-sheet-width: 52rem;
 
   --pm-z-popover: 1000;
   --pm-z-dialog: 1100;
@@ -80,6 +113,9 @@
   --pm-color-bg: #161614;
   --pm-color-surface: #1f1e1b;
   --pm-color-sunk: #2a2925;
+  --pm-color-chrome: #24231f;
+  --pm-color-canvas: #121210;
+  --pm-color-backdrop: rgb(0 0 0 / 55%);
   --pm-color-code: #1a1917;
   --pm-color-ink: #edeae3;
   --pm-color-muted: #a9a498;
@@ -104,6 +140,7 @@
 
   --pm-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
   --pm-shadow-float: 0 1px 2px rgba(0, 0, 0, 0.32), 0 8px 24px rgba(0, 0, 0, 0.32);
+  --pm-shadow-page: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
 @media (prefers-reduced-motion: reduce) {

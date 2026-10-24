@@ -7,7 +7,7 @@ import type { Viewer } from '@lincyaw/viewer'
 import { applyUpdate } from '@lincyaw/viewer/domain'
 import type { LiveUpdate, Position } from '@lincyaw/viewer/domain'
 import type { Router, SiteData, Theme } from 'vitepress'
-import { inBrowser, useData, withBase } from 'vitepress'
+import { Content, inBrowser, useData, withBase } from 'vitepress'
 import DefaultTheme from 'vitepress/theme-without-fonts'
 import type { Component, ComputedRef, Ref, ShallowRef } from 'vue'
 import { computed, defineAsyncComponent, defineComponent, h, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
@@ -138,6 +138,17 @@ let preview: WebPreview | undefined
 let setActive: WebPreviewPage['setActive'] = async () => {}
 let viewersReady: Promise<unknown> = Promise.resolve()
 
+/** The document in a workbench: one page on the canvas, as an editor shows it, with no navigation of the site. */
+const PreviewSheet = defineComponent({
+  name: 'PresmiumPreviewSheet',
+  setup() {
+    return () => h('div', { class: 'pm-sheet-canvas' }, [
+      h('article', { class: 'pm-sheet vp-doc' }, [h(Content)]),
+      h('div', { class: 'vp-doc pm-overlay-views' }, [h(OverlayViewOutlet)]),
+    ])
+  },
+})
+
 const Layout = defineComponent({
   name: 'PresmiumLayout',
   setup() {
@@ -180,7 +191,7 @@ const Layout = defineComponent({
         copyright ? h('p', { class: 'pm-site-footer__copyright', innerHTML: copyright }) : null,
       ])
     }
-    return () => active.value ? h(DefaultTheme.Layout, null, {
+    return () => !active.value ? null : embeddedPreview.value ? h(PreviewSheet) : h(DefaultTheme.Layout, null, {
       'nav-bar-content-after': () => [home(), h(ViewMenu, { class: 'pm-view-menu--bar' }), h(PmToolbar, { class: 'pm-toolbar--bar' })],
       'nav-screen-content-after': () => [home(), h(ViewMenu, { class: 'pm-view-menu--screen' }), h(PmToolbar, { class: 'pm-toolbar--screen' })],
       'doc-after': footer,
@@ -188,7 +199,7 @@ const Layout = defineComponent({
         h('div', { class: 'vp-doc pm-overlay-views' }, [h(OverlayViewOutlet)]),
         viewer.view.value === 'presenter' ? h(PmPresenterPanels, { to: '.pm-presenter__side', docked: true }) : null,
       ],
-    }) : null
+    })
   },
 })
 
@@ -431,7 +442,10 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
       for (const [name, load] of Object.entries(input.components)) registerComponent(name, clientOnly(name, load))
       if (!inBrowser) return
       preview = input.preview
-      if (preview) active.value = preview.active
+      if (preview) {
+        active.value = preview.active
+        embeddedPreview.value = preview.embedded
+      }
       const { original, locale } = translation
       const lifecycle = createRuntimeLifecycle({ input, options, viewer, shared, original, refresh: force => refresh(force) })
       setActive = lifecycle.setActive

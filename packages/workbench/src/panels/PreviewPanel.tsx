@@ -1,9 +1,11 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { createPreviewPool } from '../preview-pool.ts'
 import type { PreviewFrameStatus } from '../preview-pool.ts'
 import { PmButton, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { PointerPopover } from '../parts/PointerPopover.tsx'
+import { slideAspect } from '../workbench.ts'
 
 /** The open document as its readers see it (the web form or the slides), with the tools for what the author points at. */
 export function PreviewPanel({ active = true }: { active?: boolean }) {
@@ -15,6 +17,7 @@ export function PreviewPanel({ active = true }: { active?: boolean }) {
   const failure = useWorkbenchState(state => state.previewFailure)
   const renderer = useWorkbenchState(state => state.previewRenderer)
   const reload = useWorkbenchState(state => state.previewReload)
+  const aspect = useWorkbenchState(state => (state.previewRenderer === 'slides' ? slideAspect(state.ir) : undefined))
   const container = useRef<HTMLDivElement>(null)
   const pool = useRef<ReturnType<typeof createPreviewPool>>()
   const [loads, setLoads] = useState(0)
@@ -45,7 +48,7 @@ export function PreviewPanel({ active = true }: { active?: boolean }) {
       {!ready && !failure && !(renderer === 'slides' && preview && !preview.slides) && <p className="pmw-muted pmw-preview__loading">{t.previewLoading}</p>}
       {renderer === 'slides' && preview && !preview.slides && <p className="pmw-muted pmw-preview__loading">{t.noSlides}</p>}
       <div className="pmw-preview__stage">
-        <div ref={container} className="pmw-preview__frames" />
+        <div ref={container} className="pmw-preview__frames" data-renderer={renderer} style={aspect === undefined ? undefined : { '--pmw-slide-aspect': aspect } as CSSProperties} />
         {ready && <PointerPopover />}
       </div>
     </section>

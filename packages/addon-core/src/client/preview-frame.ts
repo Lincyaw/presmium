@@ -67,7 +67,12 @@ export function connectSlidesPreviewFrame(options: SlidesPreviewOptions): void {
   })
   if (!frame) return
   const style = document.createElement('style')
-  style.textContent = '.slidev-layout { user-select: text; }'
+  // In a workbench the slide lies on the editor's canvas: no letterbox, and the workbench has its own navigation.
+  style.textContent = [
+    '.slidev-layout { user-select: text; }',
+    ':root { --slidev-slide-container-background: var(--pm-color-canvas); }',
+    '#slide-container > div:has(> nav) { display: none !important; }',
+  ].join('\n')
   document.head.append(style)
   watch(() => navigation.position.value, () => frame.moved())
   watch([currentSlideNo, clicks], () => void nextTick(frame.redraw))

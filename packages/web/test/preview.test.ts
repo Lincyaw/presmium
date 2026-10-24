@@ -10,7 +10,7 @@ import { expect, it } from 'vitest'
 
 const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
 
-it('keeps standalone resource navigation outside embedded previews, retaining teaching views and section navigation in the preview', async () => {
+it('keeps standalone resource navigation outside embedded previews; an embedded preview is one page with none of the site\'s navigation', async () => {
   const dir = mkdtempSync(join(FIXTURES, '.preview-'))
   mkdirSync(join(dir, 'talk'))
   mkdirSync(join(dir, 'node_modules/@lincyaw'), { recursive: true })
@@ -68,9 +68,9 @@ renderers:
     await browserExpect(frame.locator('html')).toHaveAttribute('data-presmium-preview', 'on', { timeout: 30_000 })
     await browserExpect(frame.getByRole('link', { name: '文档列表', exact: true })).toHaveCount(0)
     await browserExpect(frame.getByRole('link', { name: '在幻灯片中打开', exact: true })).toHaveCount(0)
-    const views = frame.getByRole('combobox', { name: '视图', exact: true }).filter({ visible: true })
-    await browserExpect(views.locator('option[value="present"]')).toHaveText('放映')
-    await browserExpect(frame.getByRole('link', { name: '查询', exact: true }).first()).toBeVisible()
+    await browserExpect(frame.locator('.pm-sheet').getByText('课堂中的代码演示。')).toBeVisible()
+    await browserExpect(frame.getByRole('navigation')).toHaveCount(0)
+    await browserExpect(frame.getByRole('combobox', { name: '视图', exact: true })).toHaveCount(0)
 
     await page.goto(`${web}?presmium-preview=standalone-parameter`)
     await browserExpect(page.getByRole('link', { name: '文档列表', exact: true }).filter({ visible: true })).toBeVisible()

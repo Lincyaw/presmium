@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
@@ -21,6 +21,15 @@ test.afterAll(async () => studio?.close())
 
 const preview = (page: Page) => page.frameLocator('.pmw-preview__frame')
 const views = (page: Page) => page.getByRole('group', { name: '视图' })
+/** Repairs the broken document: its slides renderer is installed. */
+function installSlidesRenderer(): void {
+  const renderer = join(studio.workspace.dir, 'broken/slides-renderer')
+  if (existsSync(renderer)) return
+  mkdirSync(renderer)
+  writeFileSync(join(renderer, 'package.json'), JSON.stringify({ name: 'preview-recovery-renderer', private: true, type: 'module', exports: { './presmium': './plugin.ts' } }))
+  writeFileSync(join(renderer, 'plugin.ts'), `export { default } from ${JSON.stringify(SLIDES)}\n`)
+}
+
 async function openDocument(page: Page, title: string): Promise<void> {
   await page.locator('.pmw-home__card').filter({ hasText: title }).locator('.pmw-home__open').click()
   await expect(page.locator('.pmw-preview__frame')).toHaveAttribute('title', title)
@@ -40,10 +49,7 @@ test('a failed slides preview can return to web and retry after repair; renderer
   await selectView(page, 'slides')
   await expect(failure).toBeVisible()
 
-  const renderer = join(studio.workspace.dir, 'broken/slides-renderer')
-  mkdirSync(renderer)
-  writeFileSync(join(renderer, 'package.json'), JSON.stringify({ name: 'preview-recovery-renderer', private: true, type: 'module', exports: { './presmium': './plugin.ts' } }))
-  writeFileSync(join(renderer, 'plugin.ts'), `export { default } from ${JSON.stringify(SLIDES)}\n`)
+  installSlidesRenderer()
   await page.locator('.pmw-preview').getByRole('button', { name: '重试', exact: true }).click()
   await expect(failure).toBeHidden()
   await expect(page.locator('.pmw-preview')).toHaveAttribute('data-ready', 'true', { timeout: 120_000 })
@@ -75,4 +81,25 @@ test('a failed slides preview can return to web and retry after repair; renderer
   await expect(views(page)).toHaveCount(0)
   await expect(page.locator('.pmw-preview__frame[data-renderer="web"]:visible')).toHaveCount(1)
   await expect(preview(page).getByText('A working web preview.', { exact: true })).toBeVisible()
+})
+
+test('a slide lies on the canvas at the deck\'s proportions, without the player\'s controls; the navigation pane lists the slides', async ({ page }) => {
+  installSlidesRenderer()
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await studio.open(page)
+  await openDocument(page, 'Recoverable preview')
+  await selectView(page, 'slides')
+  await expect(page.locator('.pmw-preview')).toHaveAttribute('data-ready', 'true', { timeout: 120_000 })
+  await expect(preview(page).getByText('The recovered slide.', { exact: true })).toBeVisible()
+  const frame = (await page.locator('.pmw-preview__frame:visible').boundingBox())!
+  const stage = (await page.locator('.pmw-preview__stage').boundingBox())!
+  expect(Math.abs(frame.width / frame.height - 16 / 9)).toBeLessThan(0.02)
+  expect(frame.x).toBeGreaterThan(stage.x)
+  expect(frame.y).toBeGreaterThan(stage.y)
+  expect(frame.x + frame.width).toBeLessThan(stage.x + stage.width)
+  expect(frame.y + frame.height).toBeLessThan(stage.y + stage.height)
+  await preview(page).locator('#slide-container').hover({ position: { x: 20, y: frame.height - 20 } })
+  await expect(preview(page).locator('#slide-container nav')).toBeHidden()
+  await expect(page.getByRole('navigation', { name: '导航' }).locator('.pmw-navigation__item')).toHaveText(['1Recoverable preview'])
+  await expect(page.locator('.pmw-statusbar')).toContainText('幻灯片 1 / 1')
 })

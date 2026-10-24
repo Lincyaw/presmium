@@ -1,12 +1,11 @@
 import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
 import { DocumentView, HomePanel, PmDialog, PmIcon, PmMenu, useWorkbenchState, WorkbenchProvider } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
-import type { IconName } from '@lincyaw/design'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import { Logo } from './brand.tsx'
 import { mainViewAgentSession } from './document-context.ts'
-import { ACTIVITY, clamp, CONVERSATION_MAX, CONVERSATION_MIN, NARROW, RIGHTBAR_MAX_RATIO, RIGHTBAR_MIN, rightbarRoom, SIDE_COLLAPSE, SIDE_MAX, SIDE_MIN } from './layout.ts'
+import { clamp, CONVERSATION_MAX, CONVERSATION_MIN, NARROW, RIGHTBAR_MAX_RATIO, RIGHTBAR_MIN, rightbarRoom, SIDE_COLLAPSE, SIDE_MAX, SIDE_MIN } from './layout.ts'
 import type { LayoutActions, LayoutState, NarrowPane } from './layout.ts'
 import { useClientMessages } from './messages.ts'
 import { isSamePath } from './paths.ts'
@@ -183,7 +182,7 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
   const centre = <>
     {panel !== null && <div className="pmw-frame__panel" data-pmw-slot={`main:${activePanel}`}>{panel}</div>}
     {retainedDocument.current && <div className="pmw-frame__document" hidden={!documentShown}>
-      <DocumentView active={documentShown} />
+      <DocumentView active={documentShown} framed />
     </div>}
     {panel === null && (document_ === undefined || (narrow && pane === 'documents')) && <HomePanel />}
   </>
@@ -198,11 +197,11 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
       data-rightbar-fullscreen={info.isRightbarFullscreen || undefined}
     >
       <a className="pmw-frame__skip" href="#pmw-centre">{t.skip}</a>
-      <ActivityBar workbench={workbench} info={info} actions={actions} activePanel={activePanel} globalPanels={globalPanels} pane={pane} narrow={narrow} openSettings={openSettings} openHelp={() => setHelpOpen(true)} />
+      <AppBar workbench={workbench} info={info} actions={actions} activePanel={activePanel} globalPanels={globalPanels} pane={pane} narrow={narrow} openSettings={openSettings} openHelp={() => setHelpOpen(true)} />
 
       <Group className="pmw-frame__panels" disabled={narrow} onLayoutChanged={(layout, meta) => {
         if (!meta.isUserInteraction) return
-        const width = info.viewportWidth - ACTIVITY
+        const width = info.viewportWidth
         if (layout.sessions !== undefined) actions.setSideWidth(layout.sessions * width / 100)
         if (layout.sessions === 0 && sideShown) actions.toggleSidebar()
         if (layout.conversation !== undefined) {
@@ -244,7 +243,7 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
   )
 }
 
-interface ActivityBarProps {
+interface AppBarProps {
   workbench: Workbench
   info: LayoutState['layoutInfo']
   actions: LayoutActions
@@ -256,60 +255,71 @@ interface ActivityBarProps {
   openHelp(): void
 }
 
-/** The activity bar: the documents, the open document (on a narrow screen), the AI assistant; more, settings and help. */
-function ActivityBar({ workbench, info, actions, activePanel, globalPanels, pane, narrow, openSettings, openHelp }: ActivityBarProps) {
+/**
+ * The bar across the top, as an editor has: the brand and where the author is (the documents, the open document or a
+ * global panel), then the AI assistant, more (plugins, automation), settings and help. On a narrow screen the places
+ * are the panes it switches between.
+ */
+function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, narrow, openSettings, openHelp }: AppBarProps) {
   const t = useClientMessages(workbench)
   const document_ = useWorkbenchState(state => state.document)
   const documentTitle = useWorkbenchState(state => state.documents?.documents.find(doc => doc.dir === state.document)?.title)
   const working = useWorkbenchState(state => Boolean(state.review?.running))
   const panels = useSyncExternalStore(globalPanels.subscribe, globalPanels.getSnapshot)
   const chatShown = narrow ? pane === 'conversation' || pane === 'sessions' : info.isConversationOpen
-
-  const items: { id: 'documents' | 'document' | 'assistant', icon: IconName, label: string, title?: string, pressed: boolean, busy?: boolean }[] = [
-    { id: 'documents', icon: 'folder', label: t.documents, pressed: activePanel === null && (narrow ? pane === 'documents' : document_ === undefined) },
-    ...narrow && document_ !== undefined ? [{ id: 'document' as const, icon: 'document' as const, label: t.document, title: documentTitle, pressed: activePanel === null && pane === 'preview' }] : [],
-    { id: 'assistant', icon: 'sparkle', label: t.assistant, pressed: chatShown, busy: working },
-  ]
-  const activate = (id: typeof items[number]['id']) => {
-    if (id === 'assistant') {
-      if (narrow) actions.showNarrowPane(chatShown ? (document_ === undefined ? 'documents' : 'preview') : 'conversation')
-      else actions.setConversationOpen(!info.isConversationOpen)
-      return
-    }
-    // From a global panel, the first click gives back what was under it.
-    const fromPanel = activePanel !== null
-    actions.selectPanel(null)
-    if (id === 'documents') {
-      if (fromPanel && !narrow) return
-      workbench.closeDocument()
-      if (narrow) actions.showNarrowPane('documents')
-    } else actions.showNarrowPane('preview')
-  }
   const more = panels.map(({ options }) => ({ id: options.id!, label: typeof options.label === 'function' ? options.label() : options.label ?? options.id! }))
+  const panelLabel = activePanel === null ? undefined : more.find(item => item.id === activePanel)?.label
+  const atDocuments = activePanel === null && (narrow ? pane === 'documents' : document_ === undefined)
+  const atDocument = activePanel === null && document_ !== undefined && (!narrow || pane === 'preview')
+
+  const showDocuments = () => {
+    actions.selectPanel(null)
+    workbench.closeDocument()
+    if (narrow) actions.showNarrowPane('documents')
+  }
+  const showDocument = () => {
+    actions.selectPanel(null)
+    if (narrow) actions.showNarrowPane('preview')
+  }
+  const toggleAssistant = () => {
+    if (narrow) actions.showNarrowPane(chatShown ? (document_ === undefined ? 'documents' : 'preview') : 'conversation')
+    else actions.setConversationOpen(!info.isConversationOpen)
+  }
 
   return (
-    <nav className="pmw-activity" aria-label={t.activity}>
-      <span className="pmw-activity__logo"><Logo size={28} /></span>
-      {items.map(item => (
-        <button key={item.id} type="button" className="pmw-activity__button" data-activity={item.id} title={item.title ?? item.label} aria-pressed={item.pressed} onClick={() => activate(item.id)}>
-          <PmIcon name={item.icon} />
-          <span className="pmw-activity__label">{item.label}</span>
-          {item.busy && <span className="pmw-activity__busy" aria-hidden="true" />}
-        </button>
-      ))}
-      <span className="pmw-activity__end">
-        {more.length > 0 && (
-          <span className="pmw-activity__more" data-activity="more">
-            <PmMenu label={t.more} placement="above-start" items={more} onSelect={(id) => {
-              actions.selectPanel(activePanel === id ? null : id)
-              if (narrow) actions.showNarrowPane('documents')
-            }} />
-            <span className="pmw-activity__label" aria-hidden="true">{t.more}</span>
-          </span>
+    <nav className="pmw-appbar" aria-label={t.activity}>
+      <span className="pmw-appbar__brand"><Logo /><span className="pmw-brand-name">{t.product}</span></span>
+      <ol className="pmw-appbar__places">
+        <li>
+          <button type="button" className="pmw-appbar__place" data-activity="documents" title={t.documents} aria-current={atDocuments ? 'page' : undefined} onClick={showDocuments}>
+            <PmIcon name="folder" /><span className="pmw-appbar__label">{t.documents}</span>
+          </button>
+        </li>
+        {document_ !== undefined && (
+          <li>
+            <button type="button" className="pmw-appbar__place pmw-appbar__title" data-activity="document" title={documentTitle ?? t.document} aria-current={atDocument ? 'page' : undefined} onClick={showDocument}>
+              <PmIcon name="document" /><span className="pmw-appbar__label">{documentTitle ?? t.document}</span>
+            </button>
+          </li>
         )}
-        <button type="button" className="pmw-activity__button" data-activity="settings" title={t.settings} onClick={openSettings}><PmIcon name="sliders" /><span className="pmw-activity__label">{t.settings}</span></button>
-        <button type="button" className="pmw-activity__button" data-activity="help" title={t.help} onClick={openHelp}><PmIcon name="help" /><span className="pmw-activity__label">{t.help}</span></button>
-      </span>
+        {panelLabel && <li><span className="pmw-appbar__place" aria-current="page"><span className="pmw-appbar__label">{panelLabel}</span></span></li>}
+      </ol>
+      <span className="pmw-spacer" />
+      <button type="button" className="pmw-appbar__button pmw-appbar__assistant" data-activity="assistant" title={t.assistant} aria-pressed={chatShown} onClick={toggleAssistant}>
+        <PmIcon name="sparkle" /><span className="pmw-appbar__label">{t.assistant}</span>
+        {working && <span className="pmw-appbar__busy" aria-hidden="true" />}
+      </button>
+      <span className="pmw-appbar__divider" aria-hidden="true" />
+      {more.length > 0 && (
+        <span className="pmw-appbar__more" data-activity="more">
+          <PmMenu label={t.more} items={more} onSelect={(id) => {
+            actions.selectPanel(activePanel === id ? null : id)
+            if (narrow) actions.showNarrowPane('documents')
+          }} />
+        </span>
+      )}
+      <button type="button" className="pmw-appbar__button" data-activity="settings" aria-label={t.settings} title={t.settings} onClick={openSettings}><PmIcon name="sliders" /></button>
+      <button type="button" className="pmw-appbar__button" data-activity="help" aria-label={t.help} title={t.help} onClick={openHelp}><PmIcon name="help" /></button>
     </nav>
   )
 }

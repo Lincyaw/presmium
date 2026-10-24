@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { PreviewRenderer } from '@lincyaw/kernel'
 import { PmBadge, PmButton, PmIcon, PmIconButton, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
+import { countWords, documentOutline } from '../outline.ts'
 import { hasSlides as hasSlidesForm, isAgentChanging } from '../workbench.ts'
 import type { WorkbenchMode } from '../workbench.ts'
 import { CommentsPanel } from './CommentsPanel.tsx'
@@ -13,10 +14,18 @@ export type DocumentAside = 'comments' | 'history'
 
 const isTyping = (target: EventTarget | null) => target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select, [contenteditable]') !== null)
 
-/** The open document: its toolbar, what needs the author's attention, the document itself and its comments or history. */
-export function DocumentView({ active = true }: { active?: boolean }) {
+// The navigation pane starts open where there is room for it beside the page.
+const ROOMY = '(min-width: 1280px)'
+
+/**
+ * The open document as an editor shows it: the command bar, what needs the author's attention, the navigation pane,
+ * the page (or the slide) on its canvas, the comments or the history, and the status bar. `framed`: the layout around
+ * it shows the document's title and the way back to the documents, so the command bar does not.
+ */
+export function DocumentView({ active = true, framed = false }: { active?: boolean, framed?: boolean }) {
   const workbench = useWorkbench()
   const [aside, setAside] = useState<DocumentAside | null>(null)
+  const [navigation, setNavigation] = useState(() => typeof matchMedia === 'function' && matchMedia(ROOMY).matches)
   useEffect(() => {
     if (!active) return
     const keys = (event: KeyboardEvent) => {
@@ -34,10 +43,11 @@ export function DocumentView({ active = true }: { active?: boolean }) {
     return () => window.removeEventListener('keydown', keys)
   }, [active, workbench])
   return (
-    <div className="pmw-document" data-aside={aside ?? undefined}>
-      <DocumentToolbar aside={aside} onAside={next => setAside(current => (current === next ? null : next))} />
+    <div className="pmw-document" data-aside={aside ?? undefined} data-navigation={navigation || undefined}>
+      <DocumentToolbar framed={framed} aside={aside} navigation={navigation} onNavigation={() => setNavigation(shown => !shown)} onAside={next => setAside(current => (current === next ? null : next))} />
       <DocumentNotices />
       <div className="pmw-document__body">
+        {navigation && <NavigationPane onClose={() => setNavigation(false)} />}
         <PreviewPanel active={active} />
         {aside && (
           <aside className="pmw-document__aside" aria-label={aside}>
@@ -45,11 +55,72 @@ export function DocumentView({ active = true }: { active?: boolean }) {
           </aside>
         )}
       </div>
+      <StatusBar />
     </div>
   )
 }
 
-function DocumentToolbar({ aside, onAside }: { aside: DocumentAside | null, onAside(aside: DocumentAside): void }) {
+/** The document's sections, or its slides: where the preview is, and a click to go to another. */
+function NavigationPane({ onClose }: { onClose(): void }) {
+  const t = useMessages()
+  const workbench = useWorkbench()
+  const doc = useWorkbenchState(state => state.ir?.doc)
+  const renderer = useWorkbenchState(state => state.previewRenderer)
+  const current = useWorkbenchState(state => state.position?.section)
+  const items = useMemo(() => documentOutline(doc), [doc])
+  const slides = renderer === 'slides'
+  const top = Math.min(...items.map(item => item.depth))
+  return (
+    <nav className="pmw-navigation" aria-label={t.navigation}>
+      <header className="pmw-pane__header">
+        <h2 className="pmw-pane__title">{slides ? t.renderers.slides : t.navigation}</h2>
+        <PmIconButton icon="close" label={t.closeNavigation} small onClick={onClose} />
+      </header>
+      {items.length === 0
+        ? <p className="pmw-muted pmw-navigation__empty">{t.noSections}</p>
+        : (
+            <ol className="pmw-navigation__list" data-kind={slides ? 'slides' : 'headings'}>
+              {items.map(item => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    className="pmw-navigation__item"
+                    data-depth={slides ? undefined : Math.min(item.depth - top, 3)}
+                    aria-current={item.id === current ? 'location' : undefined}
+                    onClick={() => workbench.goToSection(item.id)}
+                  >
+                    {slides && <span className="pmw-navigation__number">{item.number}</span>}
+                    <span className="pmw-navigation__title">{item.title}</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          )}
+    </nav>
+  )
+}
+
+/** Where the author is, how long the document is, and what the mode lets them do. */
+function StatusBar() {
+  const t = useMessages()
+  const doc = useWorkbenchState(state => state.ir?.doc)
+  const renderer = useWorkbenchState(state => state.previewRenderer)
+  const section = useWorkbenchState(state => state.position?.section)
+  const mode = useWorkbenchState(state => state.mode)
+  const words = useMemo(() => countWords(doc), [doc])
+  const total = doc?.sections.length ?? 0
+  const at = section === undefined ? -1 : doc?.sections.findIndex(s => s.id === section) ?? -1
+  return (
+    <footer className="pmw-statusbar" aria-label={t.statusBar}>
+      {at >= 0 && <span className="pmw-statusbar__item">{renderer === 'slides' ? t.slideOf(at + 1, total) : t.sectionOf(at + 1, total)}</span>}
+      {doc && <span className="pmw-statusbar__item">{t.words(words)}</span>}
+      <span className="pmw-spacer" />
+      <span className="pmw-statusbar__item pmw-statusbar__mode" data-mode={mode}><PmIcon name={mode === 'editing' ? 'edit' : 'eye'} />{mode === 'editing' ? t.editingStatus : t.viewingStatus}</span>
+    </footer>
+  )
+}
+
+function DocumentToolbar({ framed, aside, navigation, onNavigation, onAside }: { framed: boolean, aside: DocumentAside | null, navigation: boolean, onNavigation(): void, onAside(aside: DocumentAside): void }) {
   const t = useMessages()
   const workbench = useWorkbench()
   const title = useWorkbenchState(state => state.documents?.documents.find(doc => doc.dir === state.document)?.title ?? state.ir?.doc.meta.title ?? '')
@@ -73,33 +144,42 @@ function DocumentToolbar({ aside, onAside }: { aside: DocumentAside | null, onAs
     { id: 'viewing', icon: 'eye', label: t.viewingMode, hint: t.viewingHint },
   ]
   return (
-    <header className="pmw-toolbar">
-      <PmIconButton icon="arrow-left" label={t.back} onClick={() => workbench.closeDocument()} />
-      <h1 className="pmw-toolbar__title" title={title}>{title}</h1>
+    <header className="pmw-toolbar" role="toolbar" aria-label={t.commands}>
+      {!framed && <>
+        <PmIconButton icon="arrow-left" label={t.back} small onClick={() => workbench.closeDocument()} />
+        <h1 className="pmw-toolbar__title" title={title}>{title}</h1>
+        <span className="pmw-toolbar__divider" aria-hidden="true" />
+      </>}
+      <button type="button" className="pmw-tool" aria-pressed={navigation} aria-label={t.navigationPane} title={t.navigationPane} onClick={onNavigation}><PmIcon name="navigation" /></button>
+      <span className="pmw-toolbar__divider" aria-hidden="true" />
       <span className="pmw-toolbar__group" role="group" aria-label={`${t.undo} / ${t.redo}`}>
-        <PmIconButton icon="undo" label={undoLabel} disabled={!history?.undo || busy} onClick={() => void workbench.undo()} />
-        <PmIconButton icon="redo" label={redoLabel} disabled={!history?.redo || busy} onClick={() => void workbench.redo()} />
+        <button type="button" className="pmw-tool" aria-label={undoLabel} title={undoLabel} disabled={!history?.undo || busy} onClick={() => void workbench.undo()}><PmIcon name="undo" /></button>
+        <button type="button" className="pmw-tool" aria-label={redoLabel} title={redoLabel} disabled={!history?.redo || busy} onClick={() => void workbench.redo()}><PmIcon name="redo" /></button>
+        <SaveStatus />
       </span>
-      <SaveStatus />
-      <span className="pmw-spacer" />
-      {views.length > 1 && (
-        <span className="pm-ui-segmented" role="group" aria-label={t.view}>
-          {views.map(view => <button key={view} type="button" className="pm-ui-segmented__option" aria-label={t.renderers[view]} title={t.renderers[view]} aria-pressed={renderer === view} onClick={() => workbench.setPreviewRenderer(view)}><PmIcon name={view === 'web' ? 'document' : 'slides'} size={15} /><span className="pmw-toolbar__label">{t.renderers[view]}</span></button>)}
+      {views.length > 1 && <>
+        <span className="pmw-toolbar__divider" aria-hidden="true" />
+        <span className="pmw-toolbar__group" role="group" aria-label={t.view}>
+          {views.map(view => <button key={view} type="button" className="pmw-tool" aria-label={t.renderers[view]} title={t.renderers[view]} aria-pressed={renderer === view} onClick={() => workbench.setPreviewRenderer(view)}><PmIcon name={view === 'web' ? 'document' : 'slides'} /><span className="pmw-toolbar__label">{t.renderers[view]}</span></button>)}
         </span>
-      )}
-      <span className="pm-ui-segmented" role="group" aria-label={t.modeLabel}>
-        {modes.map(item => <button key={item.id} type="button" className="pm-ui-segmented__option" aria-label={item.label} aria-pressed={mode === item.id} title={item.hint} onClick={() => workbench.setMode(item.id)}><PmIcon name={item.icon} size={15} /><span className="pmw-toolbar__label">{item.label}</span></button>)}
+      </>}
+      <span className="pmw-toolbar__divider" aria-hidden="true" />
+      <span className="pmw-toolbar__group" role="group" aria-label={t.modeLabel}>
+        {modes.map(item => <button key={item.id} type="button" className="pmw-tool" aria-label={item.label} aria-pressed={mode === item.id} title={item.hint} onClick={() => workbench.setMode(item.id)}><PmIcon name={item.icon} /><span className="pmw-toolbar__label">{item.label}</span></button>)}
       </span>
+      <span className="pmw-spacer" />
       {openComments > 0 && (
-        <PmButton variant="accent" icon="sparkle" aria-label={t.sendComments(openComments)} title={t.sendComments(openComments)} disabled={asking} onClick={() => void workbench.askAgentAboutComments()}>
+        <PmButton small variant="accent" icon="sparkle" aria-label={t.sendComments(openComments)} title={t.sendComments(openComments)} disabled={asking} onClick={() => void workbench.askAgentAboutComments()}>
           <span className="pmw-toolbar__label">{t.sendComments(openComments)}</span>
         </PmButton>
       )}
-      <PmButton icon="comment" aria-label={openComments > 0 ? `${t.comments} (${openComments})` : t.comments} title={t.comments} aria-pressed={aside === 'comments'} onClick={() => onAside('comments')}>
-        <span className="pmw-toolbar__label">{t.comments}</span>
-        {openComments > 0 && <PmBadge tone="accent" pill>{openComments}</PmBadge>}
-      </PmButton>
-      <PmButton icon="versions" aria-label={t.versionHistory} title={t.versionHistory} aria-pressed={aside === 'history'} onClick={() => onAside('history')}><span className="pmw-toolbar__label">{t.versionHistory}</span></PmButton>
+      <span className="pmw-toolbar__group" role="group" aria-label={`${t.comments} / ${t.versionHistory}`}>
+        <button type="button" className="pmw-tool" aria-label={openComments > 0 ? `${t.comments} (${openComments})` : t.comments} title={t.comments} aria-pressed={aside === 'comments'} onClick={() => onAside('comments')}>
+          <PmIcon name="comment" /><span className="pmw-toolbar__label">{t.comments}</span>
+          {openComments > 0 && <PmBadge tone="accent" pill>{openComments}</PmBadge>}
+        </button>
+        <button type="button" className="pmw-tool" aria-label={t.versionHistory} title={t.versionHistory} aria-pressed={aside === 'history'} onClick={() => onAside('history')}><PmIcon name="versions" /><span className="pmw-toolbar__label">{t.versionHistory}</span></button>
+      </span>
     </header>
   )
 }

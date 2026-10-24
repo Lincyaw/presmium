@@ -1470,14 +1470,16 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 | 组 | 令牌 | 说明 |
 |---|---|---|
-| 颜色 | `--pm-color-bg`、`surface`、`sunk`、`code`、`ink`、`muted`、`line`、`line-strong`、`accent`、`accent-soft`、`on-accent`、`selected`、`ok`、`ok-soft`、`warn`、`warn-soft`、`danger`、`danger-soft`、`add`、`del`、`gutter`、`syntax-key`、`syntax-string`、`syntax-keyword` | 取值见 `packages/design/src/tokens.css`。`ok` 在 `ok-soft` 上达到 AA；`line-strong` 在 `bg`、`surface`、`sunk` 上达到 3:1（WCAG 1.4.11）。源码编辑器的行号用 `muted`（5.11 节）；`danger` 与 `del` 同色 |
+| 颜色 | `--pm-color-bg`、`surface`、`sunk`、`chrome`、`canvas`、`hover`、`backdrop`、`code`、`ink`、`muted`、`line`、`line-strong`、`accent`、`accent-soft`、`accent-line`、`on-accent`、`selected`、`ok`、`ok-soft`、`warn`、`warn-soft`、`danger`、`danger-soft`、`add`、`del`、`gutter`、`syntax-key`、`syntax-string`、`syntax-keyword` | 取值见 `packages/design/src/tokens.css`。`ok` 在 `ok-soft` 上达到 AA；`line-strong` 在 `bg`、`surface`、`sunk` 上达到 3:1（WCAG 1.4.11）。源码编辑器的行号用 `muted`（5.11 节）；`danger` 与 `del` 同色。`chrome` 是编辑台围在文稿四周的界面（各种栏与窗格），`canvas` 是纸张或幻灯片下面的画布；`hover` 是鼠标下的扁平控件，`accent-line` 是按下的控件的边，`backdrop` 是模态遮罩 |
 | 字体 | `--pm-font-sans`、`--pm-font-serif`、`--pm-font-mono` | IBM Plex Sans、Source Serif 4、IBM Plex Mono，后接中文的系统字体 |
 | 字号 | `--pm-text-xs`、`sm`、`md`、`lg`、`reading`、`title`、`display` | 12、13、14（界面）、16、17（阅读）、20、32 px，以 rem 表示，跟随读者的字号 |
 | 行高 | `--pm-leading-tight`、`ui`、`reading` | 1.25、1.6、1.85 |
-| 间距 | `--pm-space-1` 至 `--pm-space-10` | 4 px 网格 |
-| 圆角 | `--pm-radius-control`、`small`、`card`、`panel`、`chip`、`pill` | 8、6、12、14、4、999 px |
-| 阴影 | `--pm-shadow`、`--pm-shadow-float` | 只用于分段控件的选中项与浮层；不用渐变 |
-| 动效 | `--pm-duration-fast`、`--pm-duration`、`--pm-ease` | 系统要求减少动态效果时时长为 0 |
+| 间距 | `--pm-space-px`、`--pm-space-1` 至 `--pm-space-10` | 4 px 网格，`px` 是 2 px 的微调 |
+| 圆角 | `--pm-radius-control`、`small`、`card`、`panel`、`chip`、`pill`、`tool`、`sheet` | 8、6、12、14、4、999、4、2 px；`tool` 是编辑台的命令与导航项，`sheet` 是画布上的纸张 |
+| 尺寸 | `--pm-size-hairline`、`stroke`、`rule`、`dot`、`icon-sm`、`icon`、`logo`、`badge`、`avatar`、`divider`、`tool`、`touch`、`row` | 细线 1 px、描边与焦点环 2 px、引文的竖线 3 px；圆点、图标、标志、编号徽标与头像；分隔线的高度、命令按钮、窄屏的触控目标与列表行的高度 |
+| 编辑台 | `--pm-appbar-height`、`--pm-appbar-height-touch`、`--pm-toolbar-height`、`--pm-statusbar-height`、`--pm-pane-header-height`、`--pm-navigation-width`、`--pm-aside-width`、`--pm-sheet-width` | 应用栏、命令栏、状态栏与窗格标题的高度，导航窗格与批注、版本历史窗格的宽度，画布上纸张的宽度 |
+| 阴影 | `--pm-shadow`、`--pm-shadow-float`、`--pm-shadow-page` | 前两个只用于分段控件的选中项与浮层；`page` 是画布上的纸张与幻灯片；不用渐变 |
+| 动效 | `--pm-duration-fast`、`--pm-duration`、`--pm-duration-spin`、`--pm-duration-pulse`、`--pm-ease` | 系统要求减少动态效果时前两个为 0；`spin` 是忙碌的转圈，`pulse` 是活动的圆点 |
 | 外壳 | `--pm-activity-width`、`--pm-sidebar-width`、`--pm-statusbar-height`、`--pm-z-popover`、`--pm-z-dialog` | 工作台的列宽、状态栏高与浮层的层级 |
 
 **字体**：三种西文字体的拉丁子集随 `@lincyaw/design` 发布（`fonts.css`；`@lincyaw/host` 也列出这三个包，站点的字体许可证由它们写出，Fontsource 的 `@fontsource/ibm-plex-sans`、`@fontsource/source-serif-4`、`@fontsource/ibm-plex-mono`，SIL OFL 1.1），打包进产物，不从网络加载。中文先用系统字体：黑体为 PingFang SC、Microsoft YaHei、Noto Sans CJK SC，宋体为 Songti SC、Noto Serif CJK SC、Source Han Serif SC。网页形态的主题扩展 `vitepress/theme-without-fonts`，不打包 VitePress 的 Inter。
@@ -1644,6 +1646,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 |---|---|---|---|
 | VitePress 1.6 本地搜索的虚拟模块 `/@localSearchIndex`、`/@localSearchIndexroot`（有译本时另有每种语言的 `/@localSearchIndex<语言>`），以及搜索框对索引模块的热更新：开发与构建中都拦截这些模块，换成网页渲染端从 IR 生成的索引（与 VitePress 同样的 MiniSearch 索引，每个章节一个文档，按文稿顺序加入；工作区站点中另有其他文档的章节）。构建中索引因此确定，产物与 Service Worker 的缓存版本在每次构建中相同（VitePress 并发建索引，顺序取决于页面完成的先后）；开发中索引随编辑更新（VitePress 1.6 开发模式只在启动时建索引） | `packages/web/src/node/vite-plugins.ts` | `e2e/web.spec.ts`“a Chinese keyword is found within 300 ms”与“search keeps working offline”（构建）、`e2e/viewer.spec.ts`“a keyword written while the server runs can be searched”（开发）、`e2e/site.spec.ts`“a word only another document holds is found”（工作区站点）、`cli/test/repro.test.ts`（重复构建的字节一致） | VitePress 固定为 1.6.4；VitePress 提供确定的构建索引与开发中的索引更新后移除拦截 |
 | Slidev 的根组件钩子 `setup/root.ts`（`defineRootSetup` 只出现在 `@slidev/types` 的类型中，文档没有列出），以及它在全部 `setup/main.ts` 之后运行的顺序：幻灯片形态在这里启动内核，发布插件在这里读取打印模式 | `packages/addon-core/setup/root.ts`、`packages/addon-publish/setup/root.ts` | `e2e/core.spec.ts`（启动报告与服务依赖）、`addon-publish/test/export.test.ts` 与 `diff.test.ts`（打印与视觉差异的样式） | 改用文档化的钩子或全局图层 |
+| Slidev 播放页的 CSS 变量 `--slidev-slide-container-background`（`pages/play.vue` 的内联样式，文档没有列出）与导航栏的结构 `#slide-container > div:has(> nav)`：工作台的预览中幻灯片外的底色换成画布色，放映控制条隐藏（工作台有自己的导航窗格） | `packages/addon-core/src/client/preview-frame.ts` | `e2e/preview-recovery.spec.ts`“a slide lies on the canvas at the deck's proportions” | Slidev 提供嵌入时隐藏控制条的选项后改用 |
 | Slidev 幻灯片内容层的类名 `.slidev-slide-content`：冻结画面复制它的各层 | `packages/addon-stage/global-top.vue` | `e2e/stage.spec.ts`“f freezes the audience view” | 改用全局图层自己的结构 |
 | Slidev 演讲者备注的类名 `.slidev-note-with-clicks`、`.slidev-note-fade`：突出当前步骤的备注 | `packages/addon-stage/style.css` | `e2e/stage.spec.ts`“presenter notes highlight the current step” | 没有文档化的替代，由用例守护 |
 | Slidev 绘图的状态 `drawingState`（`@slidev/client` 导出，形状为页号到该页 SVG 的映射，文档没有描述）与开发服务器保存标注的文件名 `<页号>.svg`：舞台插件把标注写回文稿的 `.presmium/drawings/`，删除一页的全部标注时删去该文件 | `packages/addon-stage/setup/main.ts`、`packages/addon-stage/setup/vite-plugins.ts` | `addon-stage/test/drawings.test.ts` | Slidev 提供写回标注的钩子后改用 |
@@ -1948,7 +1951,7 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 
 ### 13.3 预览协议
 
-工作台经 `postMessage` 驱动嵌在 iframe 中的产物页面：工作台发 `go`、`highlight`、`pick`、`pins`、`marks`、`appearance`，产物发 `ready`、`position`、`picked`、`selection`、`updated`、`report`；只传章节、块与步骤的 ID（步号按完整文稿编号，幻灯片形态用 `trail` 换算），源码位置由工作台从 IR 得出。预览代理只在工作区服务启动的开发服务器的页面中（`RenderContext.preview`），地址带 `presmium-preview=<nonce>`、在 iframe 中、来源在允许的列表中才启动；双方核对 `origin`、`source` 与 nonce；预览页面带 `frame-ancestors`。静态构建不带预览代理。产物在 DOM 上写锚点 `data-section`、`.pm-block[data-block]`、`data-step`，幻灯片形态有同样的块级锚点。消息的字段与握手见 `design-dsh.md` 第 4 节。
+工作台经 `postMessage` 驱动嵌在 iframe 中的产物页面：工作台发 `go`、`highlight`、`pick`、`pins`、`marks`、`appearance`，产物发 `ready`、`position`、`picked`、`selection`、`updated`、`report`；只传章节、块与步骤的 ID（步号按完整文稿编号，幻灯片形态用 `trail` 换算），源码位置由工作台从 IR 得出。预览代理只在工作区服务启动的开发服务器的页面中（`RenderContext.preview`），地址带 `presmium-preview=<nonce>`、在 iframe 中、来源在允许的列表中才启动；双方核对 `origin`、`source` 与 nonce；预览页面带 `frame-ancestors`。静态构建不带预览代理。嵌在工作台中时（`isPreviewEmbedded()`），网页形态只显示一张放在画布上的纸，不带站点的导航栏、搜索、侧栏、本页目录与标题的永久链接；幻灯片形态的放映器去掉黑边与控制条，比例由工作台的画布保持（`design-dsh.md` 7.3 节）。产物在 DOM 上写锚点 `data-section`、`.pm-block[data-block]`、`data-step`，幻灯片形态有同样的块级锚点。消息的字段与握手见 `design-dsh.md` 第 4 节。
 
 实现：
 

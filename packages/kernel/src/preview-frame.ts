@@ -81,6 +81,11 @@ export function previewFrameAncestors(origins: readonly string[]): string {
   return `frame-ancestors ${origins.length > 0 ? origins.join(' ') : "'none'"}`
 }
 
+/** Whether the page is embedded by a workbench as its preview (the frame may still be refused when no origin is allowed). */
+export function isPreviewEmbedded(): boolean {
+  return typeof window !== 'undefined' && window.parent !== window && previewNonce() !== undefined
+}
+
 export function isPreviewActive(): boolean {
   if (typeof window === 'undefined' || window.parent === window) return true
   const nonce = previewNonce()

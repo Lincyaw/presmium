@@ -1,5 +1,5 @@
 import { errorMessage, irBlocks, stepKeys, trailStep } from '@lincyaw/kernel'
-import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPin, PreviewPoint, PreviewRect, PreviewRenderer, PreviewReport, ReviewChange, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
+import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPin, PreviewPoint, PreviewPosition, PreviewRect, PreviewRenderer, PreviewReport, ReviewChange, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
 import { CommentStore, newComment } from './comments.ts'
 import type { DocumentComment } from './comments.ts'
 import { DocumentDiagnostics } from './diagnostics.ts'
@@ -71,6 +71,8 @@ export interface WorkbenchState {
   previewFailure?: string
   /** The IR revision the preview shows. */
   previewIrRevision?: string
+  /** Where the preview is: the section the author reads, or the slide and its step. */
+  position?: PreviewPosition
   diagnostics?: DiagnosticSnapshot
   isDiagnosticsUnavailable: boolean
   canRepairDiagnostics: boolean
@@ -130,6 +132,14 @@ export function hasSlides(ir: IrAnswer | undefined): boolean {
   return !renderers || Object.keys(renderers).length === 0 || 'slides' in renderers
 }
 
+/** The width of the document's slides over their height: Slidev's `aspectRatio` (`16/9`, `4:3` or a number), 16:9 by default. */
+export function slideAspect(ir: IrAnswer | undefined): number {
+  const given = ir?.doc.config.renderers?.slides?.aspectRatio
+  const [width, height] = typeof given === 'number' ? [given, 1] : typeof given === 'string' ? given.split(/[/:]/).map(Number) : []
+  const aspect = height === undefined ? width : (width ?? Number.NaN) / height
+  return aspect !== undefined && Number.isFinite(aspect) && aspect > 0 ? aspect : 16 / 9
+}
+
 /** The numbers on the blocks of the comments not yet sent, in order. */
 function commentPins(comments: readonly DocumentComment[]): PreviewPin[] {
   return comments.filter(comment => comment.status === 'open' && comment.block).map((comment, i) => ({ id: comment.id, section: comment.section, block: comment.block!, label: String(i + 1) }))
@@ -137,7 +147,7 @@ function commentPins(comments: readonly DocumentComment[]): PreviewPin[] {
 
 /** What opening or closing a document clears. */
 const DOCUMENT_RESET = {
-  ir: undefined, preview: undefined, previewFailure: undefined, previewIrRevision: undefined,
+  ir: undefined, preview: undefined, previewFailure: undefined, previewIrRevision: undefined, position: undefined,
   diagnostics: undefined, isDiagnosticsUnavailable: false, isRepairingDiagnostics: false, diagnosticsRepairFailure: undefined,
   pointer: undefined, editing: undefined, save: { kind: 'idle' }, editFallback: undefined,
   focus: [], isFocusPending: false, focusFailure: undefined, comments: [],
@@ -690,6 +700,16 @@ export class Workbench {
     this.#broadcast({ type: 'highlight', target })
   }
 
+  /** Shows a section in the preview: from the navigation pane, the section to read or the slide to show. */
+  goToSection(section: string): void {
+    this.#record('navigate', { 'presmium.section': section })
+    if (this.#previewSinks.size === 0) {
+      this.#pendingReveal = { section }
+      return
+    }
+    this.#broadcast({ type: 'go', section })
+  }
+
   /** Shows the place of a line of a source file: in the document holding the file, opened when it is another. */
   async revealSource(path: string, line = 1): Promise<boolean> {
     this.#record('reveal.source', { 'presmium.path': path, 'presmium.line': line })
@@ -784,6 +804,7 @@ export class Workbench {
         const at = `${report.section}\0${report.step}\0${report.view ?? ''}`
         if (at === this.#lastPosition) break
         this.#lastPosition = at
+        this.#set({ position: { section: report.section, step: report.step, trail: report.trail, ...report.view ? { view: report.view } : {} } })
         this.#record('preview.position', { 'presmium.section': report.section, 'presmium.step': report.step, 'presmium.preview.view': report.view })
         break
       }

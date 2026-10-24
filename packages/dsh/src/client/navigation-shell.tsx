@@ -51,6 +51,7 @@ export function registerNavigationShell(ctx: DshClientContext, workbench: Workbe
     function ConversationActions() {
       const t = useClientMessages(workbench)
       return <div className="pmw-chat-actions pm-ui" role="group" aria-label={t.conversation}>
+        <span className="pmw-chat-actions__title" aria-hidden="true">{t.conversation}</span>
         <PmIconButton icon="plus" label={t.newConversation} small onClick={() => void startSession()} />
         <PmIconButton icon="history" label={t.conversationHistory} small onClick={() => actions.showHistory()} />
         <PmIconButton icon="close" label={t.hideConversation} small onClick={() => {

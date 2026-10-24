@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react'
 
 const zh = {
   product: 'Presmium',
-  activity: '导航',
+  activity: '应用栏',
   skip: '跳到内容',
   documents: '文稿',
   document: '当前文稿',
@@ -30,7 +30,7 @@ const zh = {
     '单击一段内容或选中文字，旁边会出现工具条：编辑文字、新建批注、AI 改写。',
     '双击文字可以直接修改，按 Enter 保存，按 Esc 取消。',
     '修改会自动保存为一个版本。用撤消（Ctrl+Z）和恢复（Ctrl+Y）逐步回退或重做，“版本历史”里能看到每一次修改。',
-    '批注是写给 AI 的修改意见：一条条写下，写完后点顶栏的“发送批注给 AI”一起发出。',
+    '批注是写给 AI 的修改意见：一条条写下，写完后点命令栏的“发送批注给 AI”一起发出。',
     '“查看”模式下文稿和读者看到的一样，链接和互动内容都可以使用。',
     '右侧的 AI 助手可以收起；AI 修改文稿时，顶部会显示进度，改完自动保存为一个版本。',
   ],
@@ -42,7 +42,7 @@ export type ClientMessages = typeof zh
 
 const en: ClientMessages = {
   product: 'Presmium',
-  activity: 'Navigation',
+  activity: 'App bar',
   skip: 'Skip to content',
   documents: 'Documents',
   document: 'Document',
@@ -69,7 +69,7 @@ const en: ClientMessages = {
     'Click a block or select some text and a toolbar appears beside it: Edit text, New Comment, Rewrite with AI.',
     'Double-click text to change it right there. Enter saves, Esc cancels.',
     'Every change is saved as a version. Undo (Ctrl+Z) and Redo (Ctrl+Y) step back and forth; Version History lists every change.',
-    'Comments are notes for the AI: write them one by one, then send them together with Send comments to AI in the toolbar.',
+    'Comments are notes for the AI: write them one by one, then send them together with Send comments to AI in the command bar.',
     'In Viewing mode the document looks as your readers see it; links and interactive content work.',
     'The AI assistant on the right can be hidden. While the AI edits, the top of the document shows it; its changes are saved as one version.',
   ],

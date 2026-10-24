@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { errorMessage } from '@lincyaw/kernel'
 import type { DocumentSummary } from '@lincyaw/kernel'
-import { PmButton, PmCard, PmDialog, PmEmpty, PmField, PmIcon, PmMenu, PmNotice } from '../components.tsx'
+import { PmButton, PmDialog, PmEmpty, PmField, PmIcon, PmMenu, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 
 type Editing =
@@ -44,7 +44,7 @@ export function HomePanel() {
     <section className="pmw-home" aria-labelledby="pmw-home-title">
       <header className="pmw-home__bar">
         <h1 id="pmw-home-title" className="pmw-home__title">{answer?.title ?? t.documents}</h1>
-        {operable && <PmButton variant="primary" icon="plus" onClick={() => setEditing({ op: 'create' })}>{t.newDocument}</PmButton>}
+        {operable && <PmButton variant="accent" icon="plus" onClick={() => setEditing({ op: 'create' })}>{t.newDocument}</PmButton>}
       </header>
       {failure && <PmNotice tone="danger">{bundleDisabled ? t.bundleDisabled : failure}</PmNotice>}
       {done && <PmNotice tone="ok">{done}</PmNotice>}
@@ -67,9 +67,8 @@ export function HomePanel() {
               <ul className="pmw-home__cards" aria-label={t.allDocuments}>
                 {shown.map(doc => (
                   <li key={doc.dir} className="pmw-home__card" data-document={doc.dir}>
-                    <PmCard variant="interactive">
                       <button type="button" className="pmw-home__open" onClick={() => void workbench.openDocument(doc.dir)}>
-                        <span className="pmw-home__doc-icon" aria-hidden="true"><PmIcon name="document" size={22} /></span>
+                        <span className="pmw-home__doc-icon" aria-hidden="true"><PmIcon name="document" size={18} /></span>
                         <span className="pmw-home__doc-title">{doc.title}</span>
                       </button>
                       {operable && (
@@ -87,7 +86,6 @@ export function HomePanel() {
                           }}
                         />
                       )}
-                    </PmCard>
                   </li>
                 ))}
               </ul>
