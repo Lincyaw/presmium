@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url'
 import resolve from 'enhanced-resolve'
 import { parse } from 'es-module-lexer/js'
 
-const PROVIDED = /^(?:vue|@vue\/.*|vitepress|@slidev\/.*)$/
+const PROVIDED = /^(?:vue|@vue\/.*|@slidev\/.*)$/
 const PRESMIUM = /^@lincyaw\//
 const IMPORT = /(?:^|\n)\s*(?:import|export)(?!\s+type\b)[^'"`;]*?\bfrom\s*['"]([^'"./][^'"]*)['"]|(?:^|\n)\s*import\s*['"]([^'"./][^'"]*)['"]|\bimport\(\s*['"]([^'"./][^'"]*)['"]\s*\)/g
 const SOURCE = /\.(?:[cm]?[jt]s|vue)$/

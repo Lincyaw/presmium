@@ -74,21 +74,20 @@ describe('presmium serve: the workspace service for a workbench', () => {
   }, 120_000)
 
   it('loads neither the workspace\'s nor the operator plugin\'s browser parts, and its home page is the documents\' cards', async () => {
+    const config = (html: string) => JSON.parse(/<script type="application\/json" id="presmium-app">(.*?)<\/script>/s.exec(html)![1]!) as { kind: string, plugins?: string[], origins: string[], documents?: { dir: string }[] }
     const index = await raw(`${url}/`)
     expect(index.status).toBe(200)
-    const homeTheme = await raw(`${url}/.vitepress/theme/index.ts`)
-    expect(homeTheme.status).toBe(200)
-    expect(homeTheme.text).toContain('createWorkspaceHomeTheme')
-    expect(homeTheme.text).not.toMatch(/addon-assistant|packages\/workspace\/src\/client/)
-    const homeConfig = readFileSync(join(home, 'cache/presmium/serve', serveState(), 'site/full/home/site/.vitepress/config.mjs'), 'utf8')
-    expect(homeConfig).toMatch(/site\.themeConfig\.presmium = \{ home: true, documents: data\.documents \}/)
-    expect((await raw(`${url}/talk/`)).status).toBe(200)
-    const addons = await raw(`${url}/talk/.vitepress/theme/addons.ts`)
-    expect(addons.status).toBe(200)
-    expect(addons.text).toContain('addon-core')
-    expect(addons.text).not.toMatch(/addon-assistant|packages\/workspace\/src\/client/)
-    const theme = await raw(`${url}/talk/.vitepress/theme/index.ts`)
-    expect(theme.text).toContain('web/src/client/preview-frame.ts')
+    const home = config(index.text)
+    expect(home.kind).toBe('home')
+    expect(home.documents?.map(doc => doc.dir)).toContain('talk')
+    expect(home.plugins ?? []).toEqual([])
+    const talk = await raw(`${url}/talk/`)
+    expect(talk.status).toBe(200)
+    const page = config(talk.text)
+    expect(page.kind).toBe('document')
+    // The workspace's IR names each plugin by its directory.
+    expect(page.plugins, JSON.stringify(page.plugins)).toEqual([expect.stringMatching(/[\\/]addon-core$/)])
+    expect(page.origins).toEqual([WORKBENCH])
   }, 300_000)
 
   it('answers the IR with its revision, pushes the revision of a saved source, gives the previews\' addresses, builds outside the document and checks', async () => {

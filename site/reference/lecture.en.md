@@ -2,7 +2,7 @@
 title: Interfaces and versions
 lang: en
 description: Which interfaces stay stable under semantic versioning, and the version rules of the packages, the IR and the plugin contract
-translationOf: { entry: lecture.md, digest: 2b7794afb342504be83afa15caed21915921ba025d7b17662844b39ddb469e36 }
+translationOf: { entry: lecture.md, digest: 1577d8e815f9767cd7dd2a7b9dfef984561dfdb772b6a189bcd3927bd4bb7add }
 ---
 
 (reference)=

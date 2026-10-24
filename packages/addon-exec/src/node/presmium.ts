@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module'
+import { servedAssets } from '@lincyaw/kernel/node'
 import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 import { EXEC_ID } from '../domain/index.ts'
 import { browserImportsCheck } from './browser-imports.ts'
@@ -21,7 +22,8 @@ const plugin: PresmiumNodePlugin = {
   checks: [browserImportsCheck],
   executors: [pythonExecutor, scriptExecutor],
   rendererExtensions,
-  vitePlugins: () => [pyodideAssets(), execPrebundle()],
+  assets: () => [pyodideAssets()],
+  vitePlugins: () => [servedAssets(pyodideAssets()), execPrebundle()],
 }
 
 export default plugin

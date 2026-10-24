@@ -1,7 +1,7 @@
 {
   "name": "@lincyaw/web",
   "version": "1.0.0-rc.0",
-  "description": "Presmium's web renderer: a VitePress site around the IR runtime, with search and form switching",
+  "description": "Presmium's web renderer: one prebuilt viewer that shows the web form in the workbench, in a dev server and as a built site, with search and form switching",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -14,7 +14,6 @@
     "slidev-addon",
     "slidev",
     "presmium",
-    "vitepress",
     "renderer"
   ],
   "type": "module",
@@ -26,7 +25,6 @@
   },
   "exports": {
     "./domain": "./src/domain/index.ts",
-    "./client": "./src/client/index.ts",
     "./presmium": "./src/node/presmium.ts",
     "./package.json": "./package.json"
   },
@@ -37,13 +35,14 @@
   "slidev": {},
   "dependencies": {
     "@vitejs/plugin-vue": "6.0.10",
+    "escape-html": "1.0.3",
     "http-proxy-3": "2.0.1",
     "katex": "0.18.10",
     "launch-editor": "2.14.1",
     "minisearch": "7.2.0",
     "send": "1.2.1",
+    "sitemap": "9.0.1",
     "vite": "8.3.4",
-    "vitepress": "1.6.4",
     "vue": "^3.5.42"
   },
   "peerDependencies": {
@@ -58,6 +57,7 @@
     "@lincyaw/viewer": "workspace:*",
     "@slidev/client": "53.0.0",
     "@slidev/types": "53.0.0",
+    "@types/escape-html": "1.0.4",
     "@types/send": "^1.2.1"
   }
 }

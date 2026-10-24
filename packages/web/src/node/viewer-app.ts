@@ -5,24 +5,30 @@ import { homedir } from 'node:os'
 import { dirname, extname, join, relative, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { isRecord } from '@lincyaw/kernel'
-import { findInstalledPackage } from '@lincyaw/kernel/node'
+import { findInstalledPackage, FONT_LICENSE, fontLicense } from '@lincyaw/kernel/node'
 import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 import { collectBrowserModules, emptyClientModules } from './client-modules.ts'
 
 /**
- * The workbench's viewer app, prebuilt once for a set of plugin packages (as a PDF viewer is for every PDF): the web
- * form's runtime with every browser module of those plugins, lazily loaded, and the modules a document's own bundle may
- * import (Vue, Presmium's packages, the plugins' public subpaths) as entries of their own, which an import map names.
- * A build is kept under the cache by a key of what it was built from, and found again by any later session.
+ * The viewer app, prebuilt once for a set of plugin packages (as a PDF viewer is for every PDF): the web form's runtime
+ * with every browser module of those plugins, lazily loaded, and the modules a document's own bundle may import (Vue,
+ * Presmium's packages, the plugins' public subpaths) as entries of their own, which an import map names. It shows every
+ * page of the web form: in the workbench, in a dev server and in a built site, whose pages it also renders on the
+ * server first (`buildViewerServer`). A build is kept under the cache by a key of what it was built from, and found
+ * again by any later session.
  */
 
 const WEB_DIR = fileURLToPath(new URL('../..', import.meta.url))
 const APP_MAIN = fileURLToPath(new URL('../app/main.ts', import.meta.url))
+const APP_SERVER = fileURLToPath(new URL('../app/server.ts', import.meta.url))
 const DOCUMENT_MODULES = fileURLToPath(new URL('../app/document-modules.ts', import.meta.url))
-const APP_HTML = fileURLToPath(new URL('../app/index.html', import.meta.url))
 const REGISTRY = 'virtual:presmium-app/registry'
 const DOCUMENT_MODULE = '\0presmium-document-module:'
 export const APP_MANIFEST = 'manifest.json'
+// Vite's own manifest of the build: the entry's file and its styles and imports.
+const BUILD_MANIFEST = '.vite/manifest.json'
+const SERVER_DIR = 'server'
+const SERVER_ENTRY = 'server.mjs'
 const NOT_SOURCE = new Set(['node_modules', 'test', 'dist', '.presmium', '.git'])
 const OWN_PACKAGES = ['@lincyaw/host', '@lincyaw/kernel', '@lincyaw/viewer', '@lincyaw/design']
 // The subpaths of Presmium's packages that run in the browser (`./node` of the kernel does not).
@@ -52,6 +58,8 @@ interface BuildContext {
 /** A plugin package as the viewer app holds it: its browser modules, its public subpaths, its document modules. */
 export interface AppPlugin {
   name: string
+  /** Its package's own name, which reports name it by. */
+  packageName: string
   dir: string
   fingerprint: string
   components: Record<string, string>
@@ -80,6 +88,40 @@ export interface ViewerAppManifest {
 export interface ViewerApp {
   dir: string
   manifest: ViewerAppManifest
+}
+
+/** What a page loads to run the app: its script, with the styles and the modules it imports, below the app's directory. */
+export interface AppEntry {
+  script: string
+  css: string[]
+  preload: string[]
+}
+
+interface BuildManifestChunk {
+  file: string
+  isEntry?: boolean
+  css?: string[]
+  imports?: string[]
+}
+
+/** The app's entry as Vite's build manifest gives it: its file, its styles and the chunks it imports at once. */
+export function appEntry(app: ViewerApp): AppEntry {
+  const chunks = JSON.parse(readFileSync(join(app.dir, BUILD_MANIFEST), 'utf8')) as Record<string, BuildManifestChunk>
+  const main = Object.entries(chunks).find(([source, chunk]) => chunk.isEntry && source.endsWith('main.ts'))?.[1]
+  if (!main) throw new Error(`the viewer app at ${app.dir} has no entry in its build manifest`)
+  const preload = new Set<string>()
+  const css = new Set(main.css ?? [])
+  const walk = (keys: readonly string[] = []) => {
+    for (const key of keys) {
+      const chunk = chunks[key]
+      if (!chunk || preload.has(chunk.file)) continue
+      preload.add(chunk.file)
+      for (const file of chunk.css ?? []) css.add(file)
+      walk(chunk.imports)
+    }
+  }
+  walk(main.imports)
+  return { script: main.file, css: [...css], preload: [...preload] }
 }
 
 /** Where viewer apps are kept: the user's cache, shared by every workspace and session. */
@@ -185,6 +227,7 @@ export async function appPlugin(name: string, dir: string): Promise<AppPlugin> {
   }
   return {
     name,
+    packageName: typeof manifest.name === 'string' ? manifest.name : name,
     dir,
     fingerprint: fingerprint(dir),
     components: Object.fromEntries(modules.components),
@@ -242,16 +285,18 @@ function cleanViewerApps(cacheDir: string, keep: string): void {
   }
 }
 
-function registrySource(plugins: readonly AppPlugin[]): string {
-  const load = (file: string) => `() => import(${JSON.stringify(file)})`
+/** The browser modules of each plugin, lazily loaded; on the server, the components' names only (they render once mounted). */
+function registrySource(plugins: readonly AppPlugin[], ssr = false): string {
+  const load = (file: string) => (ssr ? 'never' : `() => import(${JSON.stringify(file)})`)
   const entries = plugins.map(p => `  ${JSON.stringify(p.name)}: {
+    name: ${JSON.stringify(p.packageName)},
     components: {${Object.entries(p.components).map(([name, file]) => `\n      ${JSON.stringify(name)}: ${load(file)},`).join('')}
     },
-    plugins: [${p.plugins.map(load).join(', ')}],
-    viewers: [${p.viewers.map(load).join(', ')}],
+    plugins: [${ssr ? '' : p.plugins.map(load).join(', ')}],
+    viewers: [${ssr ? '' : p.viewers.map(load).join(', ')}],
     restartable: ${p.restartable},
   },`)
-  return `export const packages = {\n${entries.join('\n')}\n}\n`
+  return `${ssr ? 'const never = () => new Promise(() => {})\n' : ''}export const packages = {\n${entries.join('\n')}\n}\n`
 }
 
 /** Leaves out the bundler's notes on "use client" (Remotion's modules start with it; it means nothing here). */
@@ -290,10 +335,9 @@ export async function buildViewerApp(cacheDir: string, plugins: readonly AppPlug
   const vueDir = findInstalledPackage('vue', WEB_DIR)
   if (!vueDir) throw new Error('vue is not installed beside @lincyaw/web')
   symlinkSync(dirname(vueDir), join(work, 'node_modules'), 'junction')
-  writeFileSync(join(work, 'index.html'), readFileSync(APP_HTML, 'utf8'))
   writeFileSync(join(work, 'main.ts'), `import ${JSON.stringify(APP_MAIN)}\n`)
   const specifiers = sharedSpecifiers(plugins)
-  const input: Record<string, string> = { index: join(work, 'index.html') }
+  const input: Record<string, string> = { main: join(work, 'main.ts') }
   const shared: Record<string, string> = {}
   for (const specifier of Object.keys(specifiers)) {
     const name = sharedName(specifier)
@@ -361,6 +405,7 @@ export async function buildViewerApp(cacheDir: string, plugins: readonly AppPlug
       outDir: join(work, 'out'),
       emptyOutDir: true,
       target: 'es2022',
+      manifest: true,
       reportCompressedSize: false,
       chunkSizeWarningLimit: 100_000,
       rollupOptions: {
@@ -376,6 +421,9 @@ export async function buildViewerApp(cacheDir: string, plugins: readonly AppPlug
   })
   const manifest: ViewerAppManifest = { key, core, plugins: Object.fromEntries(plugins.map(p => [p.name, p.fingerprint])), shared, documentModules, builtAt: new Date().toISOString() }
   writeFileSync(join(work, 'out', APP_MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`)
+  // The license of the fonts the app's styles bring, beside them wherever the app goes.
+  mkdirSync(dirname(join(work, 'out', FONT_LICENSE)), { recursive: true })
+  writeFileSync(join(work, 'out', FONT_LICENSE), fontLicense(import.meta.url))
   // Another session may have built the same app meanwhile: its build stays, since its pages may be loading from it.
   if (!existsSync(join(out, APP_MANIFEST))) {
     rmSync(out, { recursive: true, force: true })
@@ -384,4 +432,64 @@ export async function buildViewerApp(cacheDir: string, plugins: readonly AppPlug
   rmSync(work, { recursive: true, force: true })
   cleanViewerApps(cacheDir, out)
   return { dir: out, manifest: JSON.parse(readFileSync(join(out, APP_MANIFEST), 'utf8')) as ViewerAppManifest }
+}
+
+/**
+ * The app's server-side render (`app/server.ts`) for the same plugins, beside the app: a module that renders a built
+ * site's pages to HTML. The plugins' components are only names there, so nothing of theirs is bundled; built the first
+ * time a site is built with this app.
+ */
+export async function buildViewerServer(app: ViewerApp, plugins: readonly AppPlugin[]): Promise<string> {
+  const file = join(app.dir, SERVER_DIR, SERVER_ENTRY)
+  if (existsSync(file)) return file
+  const work = join(app.dir, `.${SERVER_DIR}-${process.pid}`)
+  rmSync(work, { recursive: true, force: true })
+  mkdirSync(work, { recursive: true })
+  const documentModules = [...new Set(plugins.flatMap(p => p.documentModules))]
+  const viteConfigs = await Promise.all(plugins.flatMap(p => p.vite).map(async config => (await import(pathToFileURL(config).href) as { default?: { plugins?: unknown[] } }).default))
+  const { build } = await import('vite')
+  const { default: vue } = await import('@vitejs/plugin-vue')
+  await build({
+    configFile: false,
+    root: WEB_DIR,
+    logLevel: 'warn',
+    mode: 'production',
+    plugins: [
+      vue(),
+      {
+        name: 'presmium:viewer-server',
+        enforce: 'pre' as const,
+        resolveId(id: string) {
+          if (id === REGISTRY) return `\0${REGISTRY}`
+          if (documentModules.includes(id)) return `${DOCUMENT_MODULE}${id}`
+          return undefined
+        },
+        onLog: quietDirectives,
+        load(id: string) {
+          if (id === `\0${REGISTRY}`) return registrySource(plugins, true)
+          if (id.startsWith(DOCUMENT_MODULE)) return `import { documentModule } from ${JSON.stringify(DOCUMENT_MODULES)}\nexport default documentModule(${JSON.stringify(id.slice(DOCUMENT_MODULE.length))})\n`
+          return undefined
+        },
+      },
+      ...viteConfigs.flatMap(config => config?.plugins ?? []) as never[],
+    ],
+    resolve: { dedupe: ['vue'] },
+    ssr: { noExternal: true, target: 'node' },
+    build: {
+      ssr: APP_SERVER,
+      outDir: work,
+      emptyOutDir: true,
+      target: 'node22',
+      reportCompressedSize: false,
+      chunkSizeWarningLimit: 100_000,
+      rollupOptions: { output: { format: 'es', entryFileNames: SERVER_ENTRY, chunkFileNames: 'chunks/[name]-[hash].mjs' } },
+    },
+  })
+  // Another build of the same site may have written it meanwhile.
+  if (!existsSync(file)) {
+    rmSync(join(app.dir, SERVER_DIR), { recursive: true, force: true })
+    renameSync(work, join(app.dir, SERVER_DIR))
+  }
+  rmSync(work, { recursive: true, force: true })
+  return file
 }

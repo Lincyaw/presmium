@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { statSync } from 'node:fs'
 import { join } from 'node:path'
 import { irBlocks, mapHtmlUrls, NON_FILE_URL, publishedUrl, withPublishedAssets } from '@lincyaw/kernel'
@@ -6,6 +7,11 @@ import { copyPublished } from '@lincyaw/kernel/node'
 import katex from 'katex'
 
 export const MEDIA = 'media'
+
+/** The IR revision of an IR written as JSON. */
+export function irRevisionOfJson(json: string): string {
+  return createHash('sha256').update(json).digest('hex').slice(0, 16)
+}
 
 const LINKED = new Set(['image', 'link', 'definition', 'card'])
 

@@ -2,18 +2,7 @@ import { createReadStream, readFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createRequire } from 'node:module'
 import { join, resolve } from 'node:path'
-
-export interface ServedAssets {
-  name: string
-  /** The directory below the site's base where the files are served and written, e.g. `pyodide/`. */
-  prefix: string
-  /** The files the dev server serves, with their content types. */
-  types: Readonly<Record<string, string>>
-  /** The files a build writes; default: all that are served. */
-  emitted?: readonly string[]
-  /** The path of a file on disk. */
-  source(file: string): string
-}
+import type { RuntimeAssets } from '../contracts/plugin.ts'
 
 export interface ServedAssetsPlugin {
   name: string
@@ -22,8 +11,8 @@ export interface ServedAssetsPlugin {
   generateBundle(this: { emitFile(file: { type: 'asset', fileName: string, source: Uint8Array }): string }): void
 }
 
-/** A Vite plugin that serves files of an installed package at `<base><prefix>` and writes them into the build (not the SSR build). */
-export function servedAssets(assets: ServedAssets): ServedAssetsPlugin {
+/** A Vite plugin that serves a plugin's run-time files at `<base><prefix>` and writes them into the build (not the SSR build): the slides form's. */
+export function servedAssets(assets: RuntimeAssets): ServedAssetsPlugin {
   let base = '/'
   let ssr = false
   return {

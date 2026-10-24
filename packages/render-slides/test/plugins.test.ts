@@ -32,10 +32,19 @@ function fixture(): string {
       writeFileSync(join(dependency, 'View.vue'), '<template><p><slot /></p></template>')
       writeFileSync(join(root, 'components/Shared.vue'), `<script setup>\nimport SourceView from 'fixture-source-view'\n</script>\n<template><SourceView>${name.toUpperCase()}_COMPONENT</SourceView></template>`)
     } else writeFileSync(join(root, 'components/Shared.vue'), `<template><p>${name.toUpperCase()}_COMPONENT</p></template>`)
-    writeFileSync(join(root, 'plugin.mjs'), `export default {
+    // The first plugin's configuration reaches the web form as a run-time file (\`assets\`), the slides through its Vite plugin.
+    writeFileSync(join(root, 'plugin.mjs'), `import { mkdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+export default {
   id: 'fixture.${name}',
   rendererExtensions: { notebook: { components: { Shared: () => '${name.toUpperCase()}_STATIC' } } },
-  ${name === 'first' ? `vitePlugins: ({ config }) => [{ name: 'fixture-vite', generateBundle() { this.emitFile({ type: 'asset', fileName: 'vite-config.txt', source: config.message }) } }],` : ''}
+  ${name === 'first' ? `vitePlugins: ({ config }) => [{ name: 'fixture-vite', generateBundle() { this.emitFile({ type: 'asset', fileName: 'vite-config.txt', source: config.message }) } }],
+  assets({ deckDir, config }) {
+    const dir = join(deckDir, '.presmium', 'fixture')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'vite-config.txt'), config.message)
+    return [{ name: 'fixture-file', prefix: '', types: { 'vite-config.txt': 'text/plain' }, source: file => join(dir, file) }]
+  },` : ''}
 }`)
   }
   writeFileSync(join(dir, '.gitignore'), '*\n')
@@ -72,7 +81,8 @@ it('builds conditional Node exports and an installed Vue source dependency, with
     expect(readFileSync(join(output, 'vite-config.txt'), 'utf8')).toBe('conditional-exports')
     const scripts = javascript(output)
     expect(scripts).toContain('FIRST_COMPONENT')
-    expect(scripts).not.toContain('SECOND_COMPONENT')
+    // The web form's viewer is one for the plugins, holding each one's components; the page shows the first plugin's.
+    if (form === 'slides') expect(scripts).not.toContain('SECOND_COMPONENT')
   }
   const notebook = readFileSync(join(dir, 'dist/notebook/lecture.ipynb'), 'utf8')
   expect(notebook).toContain('FIRST_STATIC')

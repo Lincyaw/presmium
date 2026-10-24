@@ -103,8 +103,8 @@ test.describe('a workspace served on this machine', () => {
     await openDevPage(page, `${home}intro/`, section)
     await expect(section.locator('pre').first()).toContainText('print("在工作区之内")')
     await expect(section.locator('pre').nth(1)).toContainText(SENTINEL)
-    const ir = await page.evaluate(async () => (await fetch('/intro/@lincyaw/ir')).text())
-    const { doc } = JSON.parse(ir) as { doc: { diagnostics: { checkId: string, severity: string }[] } }
+    const ir = await page.evaluate(async () => (await fetch('/__app/ir?document=intro')).text())
+    const doc = JSON.parse(ir) as { diagnostics: { checkId: string, severity: string }[] }
     expect(doc.diagnostics.filter(d => d.severity === 'error')).toEqual([])
   })
 

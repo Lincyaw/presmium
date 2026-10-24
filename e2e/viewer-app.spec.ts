@@ -52,7 +52,7 @@ let loaded: { app: string, bundle: string } | undefined
 
 async function pageFiles(page: import('@playwright/test').Page): Promise<{ app: string, bundle: string }> {
   return await page.evaluate(() => ({
-    app: document.querySelector('base')!.getAttribute('href')!,
+    app: document.querySelector('script[type="module"][src]')!.getAttribute('src')!,
     bundle: (JSON.parse(document.getElementById('presmium-app')!.textContent!) as { bundle: string }).bundle,
   }))
 }
@@ -63,7 +63,7 @@ test.beforeAll(() => {
   dir = mkdtempSync(join(work, 'e2e-viewer-app-'))
   rmSync(dir, { recursive: true })
   execFileSync(process.execPath, [join(ROOT, 'examples/animations/try.mjs'), dir], { stdio: 'pipe' })
-  cpSync(fileURLToPath(new URL('./fixtures/viewer-app/vite-only', import.meta.url)), join(dir, 'vite-only'), { recursive: true })
+  cpSync(fileURLToPath(new URL('./fixtures/viewer-app/runtime-files', import.meta.url)), join(dir, 'runtime-files'), { recursive: true })
   cache = mkdtempSync(join(work, 'e2e-viewer-cache-'))
 })
 
@@ -116,8 +116,10 @@ test('a second session takes the viewer and the bundles from the cache', async (
   expect(served.output()).not.toContain('was bundled')
 })
 
-test('a lecture whose plugin brings Vite plugins of its own is shown by its dev server', async ({ request }) => {
-  const response = await request.get(`${served!.url}/__app/view?document=vite-only&presmium-preview=nonce`, { maxRedirects: 0 })
-  expect(response.status()).toBe(302)
-  expect(response.headers().location).toBe('/vite-only/?presmium-preview=nonce')
+test('a lecture whose plugin has run-time files of its own is shown by the viewer, with those files below its site path', async ({ request }) => {
+  const page = await request.get(`${served!.url}/__app/view?document=runtime-files`)
+  expect(page.status()).toBe(200)
+  const file = await request.get(`${served!.url}/runtime-files/fixture/runtime.txt`)
+  expect(file.status()).toBe(200)
+  expect(await file.text()).toBe('a run-time file of the plugin\n')
 })

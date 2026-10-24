@@ -49,40 +49,14 @@ export function sectionLinks(pages: readonly WebPage[], prefix = ''): Record<str
     [id, i === 0 ? pageLink(page, prefix) : `${pageLink(page, prefix)}#${encodeURIComponent(id)}`])))
 }
 
-export interface SidebarItem {
-  text?: string
-  link?: string
-  items?: SidebarItem[]
-}
-
-export function sidebar(doc: IRDocument, pages: readonly WebPage[], prefix = ''): SidebarItem[] {
-  const links = sectionLinks(pages, prefix)
-  const titles = new Map(doc.sections.map(section => [section.id, section.title]))
-  const chapters = pages.map((page): SidebarItem => {
-    const items = page.sections.slice(1).map(id => ({ text: titles.get(id) ?? id, link: links[id]! }))
-    return { text: page.title, link: pageLink(page, prefix), ...items.length ? { items } : {} }
-  })
-  return [{ items: chapters }]
-}
-
-export function pageOf(pages: readonly WebPage[], relativePath: string): WebPage | undefined {
-  const path = relativePath.replace(/\.md$/, '')
-  return pages.find(page => page.path === path)
-}
-
+/** A page of another document the pager goes on to. */
 export interface Neighbour {
   text: string
   link: string
 }
 
-export function neighbour(page: WebPage | undefined, prefix = ''): Neighbour | undefined {
-  return page && { text: page.title, link: pageLink(page, prefix) }
-}
-
-export function pageMarkdown(page: WebPage, prev?: Neighbour, next?: Neighbour): string {
-  const link = (other?: Neighbour) => (other ? JSON.stringify(other) : 'false')
-  return ['---', `title: ${JSON.stringify(page.title)}`, 'outline: [2, 3]', `prev: ${link(prev)}`, `next: ${link(next)}`, '---', '', '<PresmiumPage />', ''].join('\n')
-}
+/** The fields of a document's search index (MiniSearch's), and those its results carry. */
+export const SEARCH_FIELDS = { fields: ['title', 'titles', 'text'], storeFields: ['title', 'titles'] }
 
 export interface SearchDocument {
   id: string

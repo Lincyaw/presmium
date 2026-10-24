@@ -2,7 +2,7 @@
 title: Author guide
 lang: en
 description: Write lectures in MyST Markdown and publish them as web pages, slides, notebooks and narrated lectures
-translationOf: { entry: lecture.md, digest: 6c617e97491ec38361271e63a62dde690d1aab91eff9b29fe5aa2e2c9b68722c }
+translationOf: { entry: lecture.md, digest: 7a4ba99423cbd87f5d820a91503db80f7f920b92e0a6925b07c3e055b481e277 }
 ---
 
 (guide)=

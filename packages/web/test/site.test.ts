@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { presmium } from '@lincyaw/cli/testing'
@@ -22,8 +22,8 @@ async function build() {
   expect(code, stdout + stderr).toBe(0)
 }
 
-it('runs the Vite plugins of the deck\'s plugins with their configuration, renders math at build time and precaches woff2 fonts only', () => {
-  expect(readFileSync(join(web(), 'fixture-vite.txt'), 'utf8')).toBe('来自文稿的配置')
+it('publishes the run-time files of the deck\'s plugins for their configuration, renders math at build time and precaches woff2 fonts only', () => {
+  expect(readFileSync(join(web(), 'fixture/message.txt'), 'utf8')).toBe('来自文稿的配置')
   expect(readFileSync(join(web(), 'index.html'), 'utf8')).toContain('class="katex"')
   const worker = readFileSync(join(web(), 'presmium-sw.js'), 'utf8')
   expect(worker).toMatch(/KaTeX_Main-Regular[\w.-]*\.woff2/)
@@ -52,5 +52,4 @@ it('publishes the current version of an image only, after it changed', async () 
   expect(readFileSync(join(web(), 'media', charts[0]!), 'utf8')).toContain('#dc2626')
   const worker = readFileSync(join(web(), 'presmium-sw.js'), 'utf8')
   expect(worker.match(/chart\.svg/g)).toHaveLength(1)
-  expect(existsSync(join(deck, '.presmium/web/build/site/public/media'))).toBe(true)
 }, 300_000)

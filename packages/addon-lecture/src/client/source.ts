@@ -1,3 +1,4 @@
+import { siteBase } from '@lincyaw/host'
 import type { ServerClient } from '@lincyaw/host'
 import { ABSOLUTE_URL, isRecord } from '@lincyaw/kernel'
 import { LECTURE_ID, parseTrack } from '../domain/index.ts'
@@ -121,7 +122,7 @@ export function staticSource(bases: readonly string[]): LectureSource {
  * the web form, where a document's own build puts them.
  */
 export function staticBases(config: Record<string, unknown> | undefined): string[] {
-  const site = new URL(import.meta.env.BASE_URL ?? '/', location.href)
+  const site = new URL(siteBase(), location.href)
   const configured = typeof config?.url === 'string' && config.url ? config.url : undefined
   return (configured ? [configured] : ['lecture/', '../lecture/']).map((base) => {
     const url = new URL(base, site).href

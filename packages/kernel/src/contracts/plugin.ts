@@ -127,6 +127,22 @@ export interface ExportOutput {
   warnings?: string[]
 }
 
+/**
+ * Files of an installed package that a plugin's browser code loads while it runs (Pyodide, the WASI runtimes): served
+ * below the document's site path at `<base><prefix><file>` and copied there into a built site.
+ */
+export interface RuntimeAssets {
+  name: string
+  /** The directory below the document's site path, e.g. `pyodide/`. */
+  prefix: string
+  /** The files that are served, with their content types. */
+  types: Readonly<Record<string, string>>
+  /** The files a build copies; default: all that are served. */
+  emitted?: readonly string[]
+  /** The path of a file on disk. */
+  source(file: string): string
+}
+
 export interface PresmiumNodePlugin {
   id: string
   version?: string
@@ -140,6 +156,8 @@ export interface PresmiumNodePlugin {
   renderer?: Renderer
   rendererExtensions?: Record<string, RendererContribution>
   vitePlugins?(ctx: { deckDir: string, workspaceRoot: string, config: Record<string, unknown> }): unknown[]
+  /** The files the plugin's browser code loads while it runs (a language runtime), for the document's configuration of the plugin. */
+  assets?(ctx: { deckDir: string, workspaceRoot: string, config: Record<string, unknown> }): RuntimeAssets[]
   /**
    * The virtual modules of the plugin's browser code whose content depends on the document (e.g. the list of its scene
    * files), by id, with their source. The dev servers get them from `vitePlugins`; the workbench's viewer app, prebuilt

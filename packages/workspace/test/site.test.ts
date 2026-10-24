@@ -4,10 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { FIXTURES, presmium, remove, workspace } from './helpers.ts'
 
 function searchIndex(site: string): string {
-  const chunks = join(site, 'assets/chunks')
-  const file = readdirSync(chunks).find(name => name.startsWith('@localSearchIndexroot'))
-  if (!file) throw new Error(`no search index in ${chunks}`)
-  return readFileSync(join(chunks, file), 'utf8')
+  return readFileSync(join(site, 'search.json'), 'utf8')
 }
 
 describe('presmium build of a workspace', () => {
@@ -34,12 +31,12 @@ describe('presmium build of a workspace', () => {
 
     const alpha = readFileSync(join(site, 'alpha/index.html'), 'utf8')
     expect(alpha).toContain('甲文档的第一章')
-    expect(alpha).toContain('src="/alpha/assets/')
+    expect(alpha).toContain('src="/_app/')
     expect(readFileSync(join(site, 'beta/index.html'), 'utf8')).toContain('乙文档讲 quokkaland')
     expect(readFileSync(join(site, 'beta/more.html'), 'utf8')).toContain('乙文档的第二章')
 
     for (const doc of ['alpha', 'beta']) {
-      expect(readFileSync(join(site, doc, 'vite-config.txt'), 'utf8')).toBe(`${doc}-vite`)
+      expect(readFileSync(join(site, doc, 'fixture/message.txt'), 'utf8')).toBe(`${doc}-vite`)
       expect(searchIndex(join(site, doc))).toContain('zymurgy')
       expect(searchIndex(join(site, doc))).toContain('quokkaland')
     }
@@ -54,7 +51,7 @@ describe('presmium build of a workspace', () => {
       expect(built.code, built.stderr).toBe(0)
       const site = join(sub, 'dist/web')
       expect(readFileSync(join(site, 'index.html'), 'utf8')).toMatch(/<a class="pm-site-home__link" href="\/course\/alpha\/">甲文档<\/a>/)
-      expect(readFileSync(join(site, 'alpha/index.html'), 'utf8')).toContain('src="/course/alpha/assets/')
+      expect(readFileSync(join(site, 'alpha/index.html'), 'utf8')).toContain('src="/course/_app/')
 
       const wrong: string[] = []
       for (const file of readdirSync(site, { recursive: true, encoding: 'utf8' }).filter(name => name.endsWith('.html'))) {

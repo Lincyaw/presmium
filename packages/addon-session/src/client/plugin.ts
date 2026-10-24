@@ -1,4 +1,4 @@
-import { currentLocale, NAVIGATION, SYNC_TRANSPORTS, TOOLBAR, useServer } from '@lincyaw/host'
+import { currentLocale, NAVIGATION, siteBase, SYNC_TRANSPORTS, TOOLBAR, useServer } from '@lincyaw/host'
 import { CLASSROOM_STORE, isRecord, PRESENTER_PANELS, SESSION } from '@lincyaw/kernel'
 import type { PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
 import { watch } from 'vue'
@@ -46,7 +46,7 @@ export const sessionPlugin: PluginDefinition = {
     const connection = createClassroomConnection({
       server: server && reachableServer(server, location.hostname),
       navigation: ctx.tryGet(NAVIGATION),
-      base: new URL(import.meta.env.BASE_URL, location.href).href,
+      base: new URL(siteBase(), location.href).href,
       storage: tryStorage(() => window.localStorage),
       tabStorage: tryStorage(() => window.sessionStorage),
     })

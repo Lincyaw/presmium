@@ -1,4 +1,4 @@
-import { STATUS } from '@lincyaw/host'
+import { siteBase, STATUS } from '@lincyaw/host'
 import { EXECUTOR } from '@lincyaw/kernel'
 import type { PluginDefinition } from '@lincyaw/kernel'
 import { version } from '../../package.json'
@@ -23,7 +23,7 @@ export const execPlugin: PluginDefinition = {
     pyodide?.dispose()
     script?.dispose()
     pyodide = createPyodideExecutor({
-      indexURL: config.pyodideURL ?? `${import.meta.env.BASE_URL}pyodide/`,
+      indexURL: config.pyodideURL ?? `${siteBase()}pyodide/`,
       timeoutMs: config.timeoutMs,
       loadTimeoutMs: config.loadTimeoutMs,
       maxTraceEvents: config.maxTraceEvents,

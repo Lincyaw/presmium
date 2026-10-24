@@ -28,7 +28,7 @@ const RICH = '.pm-math, .pm-mermaid'
 
 async function webPages(page: Page, site = WEB): Promise<string[]> {
   await page.goto(site)
-  const hrefs = await page.locator('.VPSidebar a').evaluateAll(links => links.map(a => (a as HTMLAnchorElement).pathname))
+  const hrefs = await page.locator('.pm-site-sidebar a').evaluateAll(links => links.map(a => (a as HTMLAnchorElement).pathname))
   return [...new Set(hrefs)]
 }
 
@@ -170,33 +170,33 @@ test.describe('the reading fixture deck', () => {
 
   test('the sidebar lists the chapters, each with its sections; a section opens its page at its anchor', async ({ page }) => {
     await page.goto(deck.web('basics.html'))
-    const chapters = page.locator('.VPSidebar .VPSidebarItem.level-1')
+    const sidebar = page.getByRole('navigation', { name: '侧边栏导航', exact: true })
+    const chapters = sidebar.locator('.pm-site-sidebar__chapter')
     await expect(chapters).toHaveCount(CHAPTERS.length)
     for (const [i, chapter] of CHAPTERS.entries()) {
       const item = chapters.nth(i)
-      await expect(item.locator(':scope > .item a')).toHaveText(chapter.title)
-      await expect(item.locator(':scope > .item a')).toHaveAttribute('href', chapter.path)
+      await expect(item.locator('.pm-site-sidebar__link')).toHaveText(chapter.title)
+      await expect(item.locator('.pm-site-sidebar__link')).toHaveAttribute('href', chapter.path)
       const titles = chapter.sections.slice(1).map(id => deck.doc.sections.find(s => s.id === id)!.title)
-      await expect(item.locator('.VPSidebarItem.level-2 a')).toHaveText(titles)
+      await expect(item.locator('.pm-site-sidebar__section')).toHaveText(titles)
     }
-    await expect(page.locator('.VPSidebar .VPSidebarItem.level-3')).toHaveCount(0)
-    await expect(chapters.first().locator(':scope > .item .text')).toHaveCSS('font-weight', '600')
-    await expect(chapters.nth(1).locator('.VPSidebarItem.level-2 .text').first()).not.toHaveCSS('font-weight', '600')
+    await expect(chapters.first().locator('.pm-site-sidebar__link')).toHaveCSS('font-weight', '600')
+    await expect(chapters.nth(1).locator('.pm-site-sidebar__section').first()).not.toHaveCSS('font-weight', '600')
 
-    await page.locator('.VPSidebar').getByRole('link', { name: '步骤作用域' }).click()
+    await sidebar.getByRole('link', { name: '步骤作用域' }).click()
     await expect(page).toHaveURL(/\/web\/advanced\.html#steps$/)
     await expect(page.locator('h2#steps')).toBeInViewport()
-    await page.locator('.VPSidebar').getByRole('link', { name: '第三章 宽内容' }).click()
+    await sidebar.getByRole('link', { name: '第三章 宽内容' }).click()
     await expect(page).toHaveURL(/\/web\/wide-content\.html$/)
     await expect(page.locator('h1#wide-content')).toBeInViewport()
   })
 
   test('the page outline lists the sections of the chapter, also after moving to another page', async ({ page }) => {
-    const outline = page.locator('.VPDocAsideOutline .VPDocOutlineItem.root > li > a')
+    const outline = page.locator('.pm-site__aside .pm-site-outline__link')
     await page.goto(deck.web('advanced.html'))
     await expect(outline).toHaveText(['步进组件', '步骤作用域', '执行面板与图表', '现场运行'])
 
-    await page.locator('.VPSidebar').getByRole('link', { name: '阅读页面' }).click()
+    await page.getByRole('navigation', { name: '侧边栏导航', exact: true }).getByRole('link', { name: '阅读页面' }).click()
     await expect(page).toHaveURL(/\/web\/basics\.html$/)
     await expect(outline).toHaveText(['阅读页面', '滚动叙事'])
     await outline.nth(1).click()
@@ -287,7 +287,7 @@ test.describe('the reading fixture deck', () => {
     const input = await openSearch(page)
     await input.fill('滚动叙事')
     const first = results(page).first()
-    await expect(first.locator('.title.main')).toContainText('滚动叙事')
+    await expect(first.locator('.pm-site-search__title')).toContainText('滚动叙事')
     await first.click()
     await expect(page).toHaveURL(/\/web\/basics\.html#scrolly$/)
     await expect(page.locator('h2#scrolly')).toBeInViewport()
@@ -385,14 +385,14 @@ test.describe('the reading fixture deck', () => {
     await page.goto(deck.web('basics.html'))
     const reading = page.locator('.pm-section[data-section="reading"]')
     const link = reading.locator('h2').getByRole('link', { name: '在幻灯片中打开' })
-    expect(new URL((await link.getAttribute('href'))!).pathname).toBe(`/slides/${index}`)
+    expect(new URL((await link.getAttribute('href'))!, page.url()).pathname).toBe(`/slides/${index}`)
     const [title, entry] = await Promise.all([reading.locator('h2').boundingBox(), link.boundingBox()])
     expect(entry!.y).toBeLessThan(title!.y + title!.height)
     expect((await shownText(reading.locator('h2')))[0]).toBe('阅读页面')
     const scrolly = page.locator('.pm-section[data-section="scrolly"]')
     await scrolly.locator('.pm-step[data-step="2"]').evaluate(el => el.scrollIntoView({ block: 'center' }))
     await expect(scrolly).toHaveAttribute('data-step', '2')
-    const atStep = new URL((await scrolly.getByRole('link', { name: '在幻灯片中打开' }).getAttribute('href'))!)
+    const atStep = new URL((await scrolly.getByRole('link', { name: '在幻灯片中打开' }).getAttribute('href'))!, page.url())
     expect(`${atStep.pathname}${atStep.search}`).toBe(`/slides/${index + 1}?clicks=2`)
 
     await page.goto(deck.slides(String(index)))
@@ -455,7 +455,7 @@ test.describe('the reading fixture deck', () => {
     await page.goto(deck.web('advanced.html'))
     const diagram = page.locator('.pm-section[data-section="panel"] .pm-mermaid')
     await expect(diagram).toHaveAttribute('data-theme', 'default')
-    await page.locator('.VPNavBar .VPSwitchAppearance').filter({ visible: true }).click()
+    await page.getByRole('button', { name: /^切换到(深色|浅色)模式$/ }).filter({ visible: true }).click()
     await expect(page.locator('html')).toHaveClass(/dark/)
     await expect(diagram).toHaveAttribute('data-theme', 'dark')
   })
@@ -502,19 +502,18 @@ test.describe('the reading fixture deck', () => {
   test('a zh-CN deck speaks Chinese around the content: skip link, appearance switch, chapter links, menus, search keys, 404 page', async ({ page, browser }) => {
     await page.goto(deck.web('basics.html'))
     await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
-    await expect(page.locator('.VPSkipLink')).toHaveText('跳到正文')
-    await expect(page.locator('.VPNavBar .VPSwitchAppearance').filter({ visible: true })).toHaveAttribute('title', /^切换到(深色|浅色)模式$/)
-    await expect(page.locator('.VPDocFooter .pager-link .desc')).toHaveText(['上一章', '下一章'])
+    await expect(page.locator('.pm-site__skip')).toHaveText('跳到正文')
+    await expect(page.getByRole('button', { name: /^切换到(深色|浅色)模式$/ }).filter({ visible: true })).toHaveAttribute('title', /^切换到(深色|浅色)模式$/)
+    await expect(page.locator('.pm-site-pager__label')).toHaveText(['上一章', '下一章'])
     for (const name of ['侧边栏导航', '翻页']) await expect(page.getByRole('navigation', { name, exact: true })).toBeAttached()
-    await page.locator('.VPDocFooter .pager-link.next').click()
+    await page.locator('.pm-site-pager__link--next').click()
     await expect(page).not.toHaveURL(/basics\.html/)
     for (const name of ['侧边栏导航', '翻页']) await expect(page.getByRole('navigation', { name, exact: true })).toBeAttached()
     await openSearch(page)
-    const keys = page.locator('.VPLocalSearchBox')
+    const keys = page.locator('.pm-site-search__keys')
     for (const label of ['回车键', '上箭头', '下箭头', 'Esc 键']) await expect(keys.getByLabel(label, { exact: true })).toBeAttached()
     await page.keyboard.press('Escape')
-    await expect(page.locator('.VPNavBarHamburger')).toHaveAttribute('aria-label', '打开导航菜单')
-    await expect(page.locator('.VPNavBarExtra > button')).toHaveAttribute('aria-label', '更多导航')
+    await expect(page.locator('.pm-site-header__menu')).toHaveAttribute('aria-label', '打开导航菜单')
     const context = await phone(browser)
     const mobile = await context.newPage()
     await mobile.goto(deck.web('basics.html'))
@@ -524,8 +523,8 @@ test.describe('the reading fixture deck', () => {
     await context.close()
 
     await page.goto(deck.web('no-such-page.html'))
-    await expect(page.locator('.NotFound')).toContainText('页面不存在')
-    await expect(page.locator('.NotFound').getByRole('link')).toHaveText('返回首页')
+    await expect(page.locator('.pm-site-missing')).toContainText('页面不存在')
+    await expect(page.locator('.pm-site-missing').getByRole('link')).toHaveText('返回首页')
   })
 })
 
@@ -604,17 +603,17 @@ test.describe('the fixture deck in the web form', () => {
     await expect(menu).toHaveValue(value!)
   })
 
-  test('an en-US deck sets <html lang> and speaks English: the VitePress chrome, the links to the slides, the start report', async ({ page }) => {
+  test('an en-US deck sets <html lang> and speaks English: the site around the content, the links to the slides, the start report', async ({ page }) => {
     await page.goto(site())
     await expect(page.locator('html')).toHaveAttribute('lang', 'en-US')
-    await expect(page.locator('.DocSearch-Button-Placeholder')).toHaveText('Search')
-    await expect(page.locator('.VPDocAsideOutline .outline-title')).toHaveText('On this page')
+    await expect(page.locator('.pm-site-search-button__text')).toHaveText('Search')
+    await expect(page.locator('.pm-site__aside .pm-site-outline__title')).toHaveText('On this page')
     await expect(page.locator('.pm-view-menu--bar')).toHaveAttribute('aria-label', 'View')
     await expect(page.locator('.pm-section[data-section="global"]').getByRole('link', { name: 'Open in the slides' })).toHaveAttribute('href', /\/slides\/2$/)
     await expect(page.getByRole('link', { name: /^Next chapter/ })).toBeVisible()
     const input = await openSearch(page)
     await input.fill('nothing like this')
-    await expect(page.locator('.VPLocalSearchBox')).toContainText('No results for')
+    await expect(page.locator('.pm-site-search__empty')).toContainText('No results for')
 
     await page.goto(`${site()}?view=presenter&section=lifecycle`)
     await page.locator('.pm-presenter-panels summary').click()
@@ -665,7 +664,7 @@ test.describe('the fixture deck in the web form', () => {
     const context = await phone(browser)
     const mobile = await context.newPage()
     await expectNoSidewaysScroll(mobile, deck.url, paths)
-    await expect(mobile.locator('.VPNavBarTitle .title span')).toHaveCSS('text-overflow', 'ellipsis')
+    await expect(mobile.locator('.pm-site-header__title')).toHaveCSS('text-overflow', 'ellipsis')
 
     await mobile.goto(`${site()}?room=fixture-room`)
     const badge = mobile.getByRole('region', { name: 'Classroom status' })
@@ -697,7 +696,7 @@ test.describe('a deck that sets no renderer options', () => {
     const scrolly = page.locator('.pm-section[data-section="scrolly"]')
     await scrolly.locator('.pm-step[data-step="2"]').evaluate(el => el.scrollIntoView({ block: 'center' }))
     await expect(scrolly).toHaveAttribute('data-step', '2')
-    await page.goto((await scrolly.getByRole('link', { name: '在幻灯片中打开' }).getAttribute('href'))!)
+    await page.goto(new URL((await scrolly.getByRole('link', { name: '在幻灯片中打开' }).getAttribute('href'))!, page.url()).href)
     await expect(page).toHaveURL(new RegExp(`/slides/${index}\\?clicks=2$`))
     await expect(page.locator(`.slidev-page-${index}`)).toContainText('编译')
 
@@ -729,8 +728,8 @@ test.describe('a deck in French', () => {
     await page.goto(site.web)
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr')
     await expect(page.locator('.pm-view-menu--bar')).toHaveAttribute('aria-label', 'View')
-    await expect(page.locator('.VPDocAsideOutline .outline-title')).toHaveText('On this page')
-    await expect(page.locator('.DocSearch-Button-Placeholder')).toHaveText('Search')
+    await expect(page.locator('.pm-site__aside .pm-site-outline__title')).toHaveText('On this page')
+    await expect(page.locator('.pm-site-search-button__text')).toHaveText('Search')
   })
 })
 

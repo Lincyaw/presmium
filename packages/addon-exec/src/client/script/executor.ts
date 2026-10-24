@@ -1,3 +1,4 @@
+import { siteBase } from '@lincyaw/host'
 import { failedRun } from '@lincyaw/kernel'
 import type { Executor, RunResult } from '@lincyaw/kernel'
 import { isScript, isTypeScript, SCRIPT_IMPORTS } from '../../domain/index.ts'
@@ -9,7 +10,7 @@ export const BROWSER_SCRIPT_EXECUTOR_ID = 'js-worker'
 export type ScriptExecutor = Executor & { dispose(): void }
 
 function imports(): Record<string, string> {
-  return Object.fromEntries(Object.entries(SCRIPT_IMPORTS).map(([name, path]) => [name, new URL(`${import.meta.env.BASE_URL}${path}`, location.href).href]))
+  return Object.fromEntries(Object.entries(SCRIPT_IMPORTS).map(([name, path]) => [name, new URL(`${siteBase()}${path}`, location.href).href]))
 }
 
 export function createScriptExecutor(options: { timeoutMs: number }): ScriptExecutor {

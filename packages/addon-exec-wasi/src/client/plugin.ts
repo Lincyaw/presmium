@@ -1,3 +1,4 @@
+import { siteBase } from '@lincyaw/host'
 import { environmentExecutor, EXECUTOR } from '@lincyaw/kernel'
 import type { PluginDefinition } from '@lincyaw/kernel'
 import { version } from '../../package.json'
@@ -19,7 +20,7 @@ export const execWasiPlugin: PluginDefinition = {
     const router = ctx.tryGet(EXECUTOR)
     if (!router) return
     executors?.dispose()
-    executors = createWasiExecutors({ runtimeURL: `${import.meta.env.BASE_URL}${RUNTIME_DIR}`, loadTimeoutMs: execWasiConfig(ctx.config).loadTimeoutMs })
+    executors = createWasiExecutors({ runtimeURL: `${siteBase()}${RUNTIME_DIR}`, loadTimeoutMs: execWasiConfig(ctx.config).loadTimeoutMs })
     router.register(executors.executor(WASI_EXECUTOR_ID))
     for (const [name, spec] of Object.entries(ctx.environments ?? {})) {
       if (spec.kind === WASI_KIND) router.register(executors.executor(environmentExecutor(name), spec.languages))

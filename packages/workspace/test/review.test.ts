@@ -260,13 +260,15 @@ describe('the review routes of presmium serve', () => {
     }
   }, 180_000)
 
-  it('GET preview without --preview-origin: the previews\' addresses, and no page may frame the slides', async () => {
+  it('GET preview without --preview-origin: the previews\' addresses, and no page may frame them', async () => {
     const preview = await route('preview?document=intro', 'intro')
     expect(preview.status, preview.text).toBe(200)
     const { web, slides } = preview.json<{ web: string, slides: string }>()
-    expect(web).toBe(`${url}/intro/`)
-    const page = await raw(slides)
-    expect(page.status).toBe(200)
-    expect(page.headers['content-security-policy']).toBe("frame-ancestors 'none'")
+    expect(web).toBe(`${url}/__app/view?document=intro`)
+    for (const address of [web, slides]) {
+      const page = await raw(address)
+      expect(page.status, address).toBe(200)
+      expect(page.headers['content-security-policy'], address).toBe("frame-ancestors 'none'")
+    }
   }, 300_000)
 })

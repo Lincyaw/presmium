@@ -2,7 +2,7 @@
   "name": "presmium-fixture-site",
   "private": true,
   "type": "module",
-  "description": "Test-only plugin of packages/web/test: a Vite plugin the site builds with",
+  "description": "Test-only plugin of packages/web/test: a run-time file the site publishes",
   "exports": {
     "./presmium": { "import": "./presmium.ts", "default": "./presmium.ts" },
     "./package.json": "./package.json"

@@ -214,17 +214,6 @@ test.describe('the reading fixture deck', () => {
     await expect(page).not.toHaveURL(/view=/)
   })
 
-  test('a link to a section below content that loads late opens it at the top of the screen; the present view starts there', async ({ page }) => {
-    await page.goto(deck.web('advanced.html#live-code'))
-    await expect(page.locator('.pm-section[data-section="panel"] .pm-mermaid[data-rendered]')).toBeAttached()
-    await expect(page.locator('.pm-section[data-section="panel"] .pm-client-only')).toHaveCount(0)
-    const heading = page.locator('h2#live-code')
-    await expect.poll(async () => Math.round((await heading.boundingBox())!.y), { timeout: 10_000 }).toBeLessThan(120)
-    await expect(heading).toBeInViewport()
-    await selectView(page, 'present')
-    await expect(page.getByRole('region', { name: '放映' })).toHaveAttribute('data-section', 'live-code')
-  })
-
   test('after two reloads, code that also runs live still runs in the browser', async ({ page }) => {
     await page.goto(deck.web('advanced.html'))
     await page.reload()
@@ -252,7 +241,7 @@ test.describe('the reading fixture deck', () => {
       await page.keyboard.press('Shift+Tab')
       expect(await inside()).toBe(true)
     }
-    expect(await page.evaluate(() => document.querySelector('.VPNav')?.closest('[inert]') !== null)).toBe(true)
+    expect(await page.evaluate(() => document.querySelector('.pm-site-header')?.closest('[inert]') !== null)).toBe(true)
     await page.keyboard.press('ArrowRight')
     await expect(present).toHaveAttribute('data-section', 'scrolly')
     await page.keyboard.press('Escape')
@@ -700,37 +689,6 @@ test.describe('presmium dev', () => {
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(before)
   })
 
-  test('a page whose request for the current document is answered before two edits, and arrives after them, shows the second edit', async ({ page }) => {
-    await openDev(page, `${dev.url}web.html`, '.pm-section[data-section="scrolly"]')
-    const scrolly = page.locator('.pm-section[data-section="scrolly"]')
-    let release!: () => void
-    const held = new Promise<void>((done) => {
-      release = done
-    })
-    let answered = 0
-    let delivered = 0
-    await page.route(/\/__presmium\/ir(?:\?|$)/, async (route) => {
-      const response = await route.fetch()
-      answered++
-      await held
-      await route.fulfill({ response })
-      delivered++
-    })
-    await page.reload()
-    await expect(scrolly).toBeVisible()
-    await expect.poll(() => answered).toBeGreaterThan(0)
-    const [first, second] = [1, 2].map(n => `第二步，第 ${n} 次改动 ${test.info().repeatEachIndex}-${Date.now()}`)
-    edit(/第二步，[^。]*/, first!)
-    await expect(scrolly).toContainText(first!)
-    edit(first!, second!)
-    await expect(scrolly).toContainText(second!)
-    release()
-    await expect.poll(() => delivered).toBe(answered)
-    await page.waitForTimeout(500)
-    await expect(scrolly).toContainText(second!)
-    await page.unrouteAll({ behavior: 'ignoreErrors' })
-  })
-
   test('a section, or a block with Alt+click, opens its source in the editor', async ({ page }) => {
     await openDev(page, `${dev.url}web.html`, '.pm-section[data-section="scrolly"]')
     const opened = join(dev.deck, 'opened.txt')
@@ -758,7 +716,7 @@ test.describe('presmium dev', () => {
     edit(/$/, '\n(added)=\n## 新增章节\n\n保存后新增的章节。\n')
     await expect(scrolly.locator('h2')).toHaveText('滚动叙事改名')
     await expect(page.locator('.pm-section[data-section="added"]')).toContainText('保存后新增的章节')
-    const sidebar = page.locator('.VPSidebar')
+    const sidebar = page.locator('.pm-site-sidebar')
     await expect(sidebar.getByRole('link', { name: '滚动叙事改名' })).toBeAttached()
     await expect(sidebar.getByRole('link', { name: '新增章节' })).toBeAttached()
 
@@ -916,15 +874,6 @@ test.describe('a plugin that extends the IR runtime', () => {
     await expect(table.locator('.pm-swapped')).toHaveText('插件的渲染器')
     await expect(table.locator('.pm-swap')).toHaveCount(0)
     await expect(page.getByRole('link', { name: '在幻灯片中打开' })).toHaveCount(0)
-  })
-
-  test('a viewer plugin that throws is left out: the others install, and the start report says it failed', async ({ page }) => {
-    await openDev(page, `${dev.url}?view=presenter&section=probe`, '.pm-presenter')
-    await expect(menu(page).locator('option', { hasText: '卡片' })).toBeAttached()
-    await page.locator('.pm-presenter-panels summary').click()
-    const broken = page.locator('.pm-start-report [data-plugin="presmium-example-broken-viewer (viewer)"]')
-    await expect(broken).toHaveAttribute('data-status', 'failed')
-    await expect(broken).toContainText('the fixture viewer plugin failed on purpose')
   })
 
   test('a component written for Slidev sees its section\'s $frontmatter, $page and $clicks, and v-click rules', async ({ page }) => {

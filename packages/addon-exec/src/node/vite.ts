@@ -1,8 +1,8 @@
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { prebundleDependencies, servedAssets } from '@lincyaw/kernel/node'
-import type { ServedAssetsPlugin } from '@lincyaw/kernel/node'
+import type { RuntimeAssets } from '@lincyaw/kernel'
+import { prebundleDependencies } from '@lincyaw/kernel/node'
 
 const PYODIDE_DIR = 'pyodide/'
 const LICENSES = 'LICENSES'
@@ -16,10 +16,10 @@ const TYPES: Record<string, string> = {
   [LICENSES]: 'text/plain; charset=utf-8',
 }
 
-/** Serves Pyodide's runtime at `<base>pyodide/` and copies it into the build. */
-export function pyodideAssets(): ServedAssetsPlugin {
+/** Pyodide's runtime, at `<base>pyodide/`. */
+export function pyodideAssets(): RuntimeAssets {
   const dir = dirname(createRequire(import.meta.url).resolve('pyodide/package.json'))
-  return servedAssets({ name: 'presmium:pyodide-runtime', prefix: PYODIDE_DIR, types: TYPES, source: file => (file === LICENSES ? LICENSES_FILE : join(dir, file)) })
+  return { name: 'presmium:pyodide-runtime', prefix: PYODIDE_DIR, types: TYPES, source: file => (file === LICENSES ? LICENSES_FILE : join(dir, file)) }
 }
 
 export function execPrebundle(): ReturnType<typeof prebundleDependencies> {

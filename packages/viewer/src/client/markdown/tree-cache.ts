@@ -1,6 +1,7 @@
 import type { IRDocument, MdastNode } from '@lincyaw/kernel'
 import type { Root } from 'hast'
 import type { Viewer } from '../viewer-state.ts'
+import { footnoteSections } from '../../domain/index.ts'
 import { markdownToHast } from './handlers.ts'
 import type { MarkdownLinks } from './handlers.ts'
 
@@ -11,27 +12,45 @@ interface CachedTree {
   bytes: number
 }
 
-interface DocumentTrees {
+interface ViewerTrees {
+  /** What the trees' links were made from: the sections' addresses and titles and where the footnotes are. */
+  links: string
   nodes: Map<MdastNode, Map<string, CachedTree>>
   recent: Map<CachedTree, true>
   bytes: number
 }
 
-const TREE_LIMIT = 256
-const TREE_BYTES = 4 << 20
-const viewerTrees = new WeakMap<Viewer, WeakMap<IRDocument, DocumentTrees>>()
+// Enough for every Markdown block of a long document, so that an edit converts only the blocks it changed.
+const TREE_LIMIT = 4096
+const TREE_BYTES = 16 << 20
+const viewerTrees = new WeakMap<Viewer, ViewerTrees>()
+const signatures = new WeakMap<IRDocument, string>()
 
-/** The HAST tree of a Markdown node, kept per viewer and document (least recently used first out) so that remounts reuse it. */
+/**
+ * What a Markdown node's links read from the whole document: each section's address and title (a reference's text and
+ * target) and the sections of the footnotes. Most edits leave it as it was, and the trees of the nodes they did not
+ * touch stay; a new title or a moved section changes it.
+ */
+function linkSignature(viewer: Viewer, doc: IRDocument): string {
+  let known = signatures.get(doc)
+  if (known === undefined) {
+    const sections = doc.sections.map(section => [section.id, section.title, viewer.options.sectionHref?.(section.id) ?? ''])
+    signatures.set(doc, known = JSON.stringify([sections, [...footnoteSections(doc)]]))
+  }
+  return known
+}
+
+/**
+ * The HAST tree of a Markdown node, kept per viewer (least recently used first out) so that remounts, and the nodes a
+ * change of the document left as they were (`applyUpdate` keeps their objects), reuse it.
+ */
 export function cachedTree(viewer: Viewer, doc: IRDocument, node: MdastNode, prefix: string, links: MarkdownLinks, locale: string): Root {
   const key = JSON.stringify([prefix, locale])
-  let documentTrees = viewerTrees.get(viewer)
-  if (!documentTrees) {
-    documentTrees = new WeakMap()
-    viewerTrees.set(viewer, documentTrees)
-  }
-  let cache = documentTrees.get(doc)
-  const known = cache?.nodes.get(node)?.get(key)
-  if (cache && known) {
+  const signature = linkSignature(viewer, doc)
+  let cache = viewerTrees.get(viewer)
+  if (cache?.links !== signature) viewerTrees.set(viewer, cache = { links: signature, nodes: new Map(), recent: new Map(), bytes: 0 })
+  const known = cache.nodes.get(node)?.get(key)
+  if (known) {
     cache.recent.delete(known)
     cache.recent.set(known, true)
     return known.tree
@@ -40,10 +59,6 @@ export function cachedTree(viewer: Viewer, doc: IRDocument, node: MdastNode, pre
   // Only immutable HAST survives component unmounts; no VNodes or mounted resources are retained.
   const bytes = JSON.stringify(tree).length * 2 // UTF-16 JSON size is a soft heap estimate.
   if (bytes > TREE_BYTES) return tree
-  if (!cache) {
-    cache = { nodes: new Map(), recent: new Map(), bytes: 0 }
-    documentTrees.set(doc, cache)
-  }
   const entry: CachedTree = { node, key, tree, bytes }
   const variants = cache.nodes.get(node) ?? new Map<string, CachedTree>()
   variants.set(key, entry)

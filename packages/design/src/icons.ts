@@ -1,4 +1,4 @@
-import { ArrowLeft, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleCheck, CircleHelp, CircleX, Columns2, Contrast, Copy, Download, ExternalLink, Eye, FileDiff, FileOutput, FileText, Film, Folder, Globe, GitBranch, GitFork, History, Info, MessageSquare, MessageSquarePlus, MessagesSquare, Moon, MoreHorizontal, PanelLeft, PanelLeftClose, Pause, Pencil, PenLine, Play, Plug, Plus, Presentation, Redo2, Save, Search, SlidersHorizontal, Sparkles, Sun, Trash2, TriangleAlert, Undo2, Users, X } from 'lucide'
+import { ArrowLeft, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleCheck, CircleHelp, CircleX, Columns2, Contrast, Copy, Download, ExternalLink, Eye, FileDiff, FileOutput, FileText, Film, Folder, Globe, GitBranch, GitFork, History, Info, Languages, Menu, MessageSquare, MessageSquarePlus, MessagesSquare, Moon, MoreHorizontal, PanelLeft, PanelLeftClose, Pause, Pencil, PenLine, Play, Plug, Plus, Presentation, Redo2, Save, Search, SlidersHorizontal, Sparkles, Sun, Trash2, TriangleAlert, Undo2, Users, X } from 'lucide'
 import type { IconNode } from 'lucide'
 
 // Presmium's semantic names stay stable across the Vue and React components and the generated HTML.
@@ -15,6 +15,7 @@ export const ICONS = {
   comment: MessageSquare, 'comment-add': MessageSquarePlus, chat: MessagesSquare, versions: History,
   eye: Eye, 'edit-text': PenLine, resolved: CircleCheck, navigation: PanelLeft,
   export: FileOutput, download: Download, video: Film, website: Globe, notebook: BookOpen,
+  menu: Menu, language: Languages,
 } satisfies Record<string, IconNode>
 
 export type IconName = keyof typeof ICONS

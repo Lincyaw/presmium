@@ -55,7 +55,7 @@ onMounted(async () => {
 .pm-lecture-view {
   position: fixed;
   inset: 0;
-  z-index: calc(var(--vp-z-index-local-nav, 32) + 100);
+  z-index: var(--pm-z-overlay-view);
   overflow: auto;
   padding: 2rem;
   background: var(--pm-color-bg);

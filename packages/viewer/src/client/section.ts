@@ -1,5 +1,5 @@
 import { isChapterTitle, narrationAt } from '@lincyaw/kernel'
-import type { IRBlock, IRSection } from '@lincyaw/kernel'
+import type { Finding, IRBlock, IRSection } from '@lincyaw/kernel'
 import type { PropType, VNodeChild } from 'vue'
 import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, provide, ref, shallowRef, toRef } from 'vue'
 import { FINAL_STEP, sectionDiagnostics } from '../domain/index.ts'
@@ -36,13 +36,18 @@ export const SectionView = defineComponent({
     })
     onBeforeUnmount(() => untrack?.())
 
+    // Read from the whole document, they change the section only when their own value does: an edit elsewhere renders it not again.
     const heading = computed(() => (isChapterTitle(viewer.doc.value, props.section) ? 'h1' : 'h2'))
+    const findings = computed<Finding[]>((before) => {
+      const now = viewer.options.diagnostics ? sectionDiagnostics(props.section, viewer.doc.value.diagnostics) : []
+      return before && JSON.stringify(before) === JSON.stringify(now) ? before : now
+    })
 
     return () => {
       const { section, layout } = props
       const t = viewerMessages().section
       const current = step.value
-      const problems = viewer.options.diagnostics ? sectionDiagnostics(section, viewer.doc.value.diagnostics) : []
+      const problems = findings.value
       const body = layout === 'scrolly' && section.blocks.some(b => b.role === 'visual')
         ? [
             h('div', { class: 'pm-stage pm-board' }, blockViews(section.blocks.filter(b => b.role === 'visual'), section, current, false)),

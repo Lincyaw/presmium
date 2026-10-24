@@ -1,5 +1,5 @@
 {
-  "name": "presmium-fixture-viewer-app-vite-only",
+  "name": "presmium-fixture-viewer-app-runtime-files",
   "private": true,
   "type": "module",
   "presmium": { "preview": { "restartable": true } },

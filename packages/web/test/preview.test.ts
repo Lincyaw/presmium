@@ -72,7 +72,9 @@ renderers:
     await browserExpect(frame.getByRole('navigation')).toHaveCount(0)
     await browserExpect(frame.getByRole('combobox', { name: '视图', exact: true })).toHaveCount(0)
 
-    await page.goto(`${web}?presmium-preview=standalone-parameter`)
+    const standalone = new URL(web)
+    standalone.searchParams.set('presmium-preview', 'standalone-parameter')
+    await page.goto(standalone.href)
     await browserExpect(page.getByRole('link', { name: '文档列表', exact: true }).filter({ visible: true })).toBeVisible()
   } finally {
     await browser?.close()

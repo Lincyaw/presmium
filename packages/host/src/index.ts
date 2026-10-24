@@ -63,6 +63,7 @@ export type { SharedStates } from './shared-state.ts'
 export { default as PmToolbar } from './Toolbar.vue'
 export { NAVIGATION, OPERATIONS, STATUS, STEP_CLOCK, SYNC_TRANSPORTS, TOOLBAR } from './contracts.ts'
 export { joinWindows } from './windows.ts'
+export { setSiteBase, siteBase } from './site.ts'
 export type { WindowChannel } from './windows.ts'
 export type {
   HostAdapter,

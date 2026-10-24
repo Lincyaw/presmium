@@ -37,7 +37,7 @@ export function styleDiagrams(on: boolean): void {
   if (!shadowSheet) {
     shadowSheet = new CSSStyleSheet()
     const page = new CSSStyleSheet()
-    page.replaceSync(rules(`:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) ${DIAGRAM}`))
+    page.replaceSync(rules(`:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) ${DIAGRAM}`))
     document.adoptedStyleSheets = [...document.adoptedStyleSheets, page]
   }
   shadowSheet.replaceSync(on ? rules(DIAGRAM) : '')

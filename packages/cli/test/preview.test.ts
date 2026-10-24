@@ -1,7 +1,11 @@
 import { spawn } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { createServer } from 'node:http'
+import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { serveDirectory } from '@lincyaw/compiler'
+import { chromium, expect as browserExpect } from '@playwright/test'
 import { afterAll, beforeAll, expect, it } from 'vitest'
 import { BIN, presmium } from './helpers.ts'
 
@@ -24,21 +28,36 @@ afterAll(() => {
   rmSync(`${dir}.home`, { recursive: true, force: true })
 })
 
-function matching(root: string, pattern: RegExp): string[] {
-  return readdirSync(root, { recursive: true, encoding: 'utf8' }).filter(file => /\.(?:html|js|mjs|css|json)$/.test(file) && pattern.test(readFileSync(join(root, file), 'utf8')))
-}
-
-it('builds the web form and the slides without the preview agent; the slides have the sections\' and the blocks\' anchors', async () => {
+it('builds a web form that takes no preview, even framed by another site that asks for one, and slides without the preview agent', async () => {
   const { code, stdout, stderr } = await presmium(dir, ['build', '--to', 'web,slides', '--out', 'out'], env)
   expect(code, stdout + stderr).toBe(0)
-  for (const form of ['web', 'slides']) {
-    const files = readdirSync(join(dir, 'out', form), { recursive: true, encoding: 'utf8' })
-    expect(files.some(file => file.endsWith('.js')), form).toBe(true)
-    expect(matching(join(dir, 'out', form), AGENT), form).toEqual([])
+  const config = JSON.parse(/<script type="application\/json" id="presmium-app">(.*?)<\/script>/s.exec(readFileSync(join(dir, 'out/web/index.html'), 'utf8'))![1]!) as { origins: string[] }
+  expect(config.origins).toEqual([])
+  const site = await serveDirectory(join(dir, 'out/web'))
+  const framing = createServer((_req, res) => res.writeHead(200, { 'Content-Type': 'text/html' }).end(`<iframe src="${new URL('/?presmium-preview=probe', site.url).href}" style="width:800px;height:600px"></iframe>`))
+  await new Promise<void>(resolve => framing.listen(0, '127.0.0.1', resolve))
+  const browser = await chromium.launch()
+  try {
+    const page = await browser.newPage()
+    const told: unknown[] = []
+    await page.exposeFunction('told', (data: unknown) => told.push(data))
+    await page.addInitScript(() => window.addEventListener('message', event => void (window as unknown as { told(data: unknown): void }).told(event.data)))
+    await page.goto(`http://127.0.0.1:${(framing.address() as AddressInfo).port}/`)
+    const frame = page.frameLocator('iframe')
+    await browserExpect(frame.locator('.pm-section').first()).toBeVisible({ timeout: 60_000 })
+    await page.waitForTimeout(1000)
+    await browserExpect(frame.locator('html')).not.toHaveAttribute('data-presmium-preview', 'on')
+    expect(told).toEqual([])
+  } finally {
+    await browser.close()
+    await site.close()
+    framing.close()
   }
-  const slides = readFileSync(join(dir, '.presmium/slides/slides.md'), 'utf8')
-  expect(slides).toContain('<div class="pm-slide-section" data-section="start">\n\n# Start\n\n<div class="pm-block" data-block="intro" data-section="start" data-step="0">\n\nA block of the first section.\n\n</div>')
-  expect(slides).toContain('<div class="pm-block" data-block="later" data-section="start" data-step="1">\n\n<div v-click="1">\n\nA block of its first step.')
+  const slides = readdirSync(join(dir, 'out/slides'), { recursive: true, encoding: 'utf8' }).filter(file => /\.(?:html|js|mjs|css|json)$/.test(file) && AGENT.test(readFileSync(join(dir, 'out/slides', file), 'utf8')))
+  expect(slides).toEqual([])
+  const markdown = readFileSync(join(dir, '.presmium/slides/slides.md'), 'utf8')
+  expect(markdown).toContain('<div class="pm-slide-section" data-section="start">\n\n# Start\n\n<div class="pm-block" data-block="intro" data-section="start" data-step="0">\n\nA block of the first section.\n\n</div>')
+  expect(markdown).toContain('<div class="pm-block" data-block="later" data-section="start" data-step="1">\n\n<div v-click="1">\n\nA block of its first step.')
   expect(existsSync(join(dir, '.presmium/slides/setup'))).toBe(false)
 }, 300_000)
 
@@ -74,15 +93,15 @@ async function served(url: string, path: string): Promise<Response> {
   return response
 }
 
-const devTheme = (args: string[]) => dev(['--to', 'web', ...args], 'web', async web => ({
-  index: await (await served(web, '.vitepress/theme/index.ts')).text(),
-  addons: await (await served(web, '.vitepress/theme/addons.ts')).text(),
-}))
-
 it('runs presmium dev without the preview agent', async () => {
-  const plain = await devTheme([])
-  expect(plain.addons).toContain('addon-core')
-  expect(plain.index).not.toContain('client/preview-frame.ts')
+  const plain = await dev(['--to', 'web'], 'web', async (web) => {
+    const response = await served(web, '')
+    return { csp: response.headers.get('content-security-policy'), html: await response.text() }
+  })
+  const config = JSON.parse(/<script type="application\/json" id="presmium-app">(.*?)<\/script>/s.exec(plain.html)![1]!) as { origins: string[], plugins: string[] }
+  expect(config.plugins).toContain('@lincyaw/addon-core')
+  expect(config.origins).toEqual([])
+  expect(plain.csp).toBeNull()
 
   const deck = join(dir, '.presmium/dev/slides')
   const page = await dev(['--to', 'slides'], 'slides', async (slides) => {

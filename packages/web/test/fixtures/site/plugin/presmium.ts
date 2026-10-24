@@ -1,17 +1,18 @@
-// A plugin whose Node entry adds a Vite plugin (`vitePlugins`): in a build of the site it writes a
-// file with the plugin's configuration, so the test sees that the site's Vite ran it with that.
+// A plugin with run-time files of its own (`assets`): it writes one with its configuration and serves it as
+// `fixture/message.txt`, so the test sees that the site published it, for that configuration.
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+
 interface Context { deckDir: string, workspaceRoot: string, config: Record<string, unknown> }
-interface Emitter { emitFile(file: { type: 'asset', fileName: string, source: string }): void }
 
 export default {
   id: 'fixture.site',
   version: '0.1.0',
   kernel: '^1.0.0',
-  vitePlugins: ({ config }: Context) => [{
-    name: 'fixture-site',
-    apply: 'build',
-    generateBundle(this: Emitter) {
-      this.emitFile({ type: 'asset', fileName: 'fixture-vite.txt', source: String(config.message) })
-    },
-  }],
+  assets({ deckDir, config }: Context) {
+    const dir = join(deckDir, '.presmium', 'fixture')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'message.txt'), String(config.message))
+    return [{ name: 'fixture-site', prefix: 'fixture/', types: { 'message.txt': 'text/plain; charset=utf-8' }, source: (file: string) => join(dir, file) }]
+  },
 }

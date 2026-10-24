@@ -103,6 +103,16 @@
   --pm-aside-width: 20rem;
   --pm-sheet-width: 52rem;
 
+  /* A document's site: its header, the chapters beside the page, the page's sections, the measure of its text. */
+  --pm-site-header-height: 3.5rem;
+  --pm-site-sidebar-width: 17rem;
+  --pm-site-outline-width: 14rem;
+  --pm-site-reading-width: 48rem;
+  --pm-site-wide-width: 72rem;
+
+  --pm-z-site-header: 30;
+  /* A presentation over the site, under the floating parts of its controls. */
+  --pm-z-overlay-view: 130;
   --pm-z-popover: 1000;
   --pm-z-dialog: 1100;
   --pm-z-screen: 1200;

@@ -1,6 +1,6 @@
 # Presmium
 
-讲义与演示系统：MyST 源码由 `@lincyaw/compiler` 编译为中间表示（IR），由可插拔的渲染端生成网页（主媒介，VitePress 外壳 + IR 运行时 `@lincyaw/viewer`）、幻灯片（Slidev）、notebook 等媒介，支持实时渲染。插件组件在网页与幻灯片两种形态中共用。
+讲义与演示系统：MyST 源码由 `@lincyaw/compiler` 编译为中间表示（IR），由可插拔的渲染端生成网页（主媒介：预先打包的查看器，即网站外壳 + IR 运行时 `@lincyaw/viewer`，文稿是数据）、幻灯片（Slidev）、notebook 等媒介，支持实时渲染。插件组件在网页与幻灯片两种形态中共用。
 
 ## 必读
 
@@ -12,9 +12,9 @@
 
 ## 约定
 
-- 依赖优先：能用现成组件就用，通过公开接口定制；不 fork、不打补丁、不引用 Slidev 或 VitePress 的内部路径。
-- 查框架接口先读本地文档 `vendor/docs/slidev`、`vendor/docs/vitepress`（缺失时运行 `pnpm docs:fetch`），不读框架的编译产物。
-- 分层（`docs/architecture.md` 第 3 节，`scripts/check-layering.mjs` 检查）：`src/domain` 为纯 TS；组件与 `src/client` 只通过 `@lincyaw/host` 获取步骤状态与服务，不用 `@slidev/*`（`addon-core` 除外）；只在幻灯片形态加载的 `setup/` 与全局图层可以用 `@slidev/client` 的公开导出；只有 `web` 使用 vitepress；插件包之间不互相引用。
+- 依赖优先：能用现成组件就用，通过公开接口定制；不 fork、不打补丁、不引用 Slidev 的内部路径。
+- 查框架接口先读本地文档 `vendor/docs/slidev`（缺失时运行 `pnpm docs:fetch`），不读框架的编译产物。
+- 分层（`docs/architecture.md` 第 3 节，`scripts/check-layering.mjs` 检查）：`src/domain` 为纯 TS；组件与 `src/client` 只通过 `@lincyaw/host` 获取步骤状态与服务，不用 `@slidev/*`（`addon-core` 除外）；只在幻灯片形态加载的 `setup/` 与全局图层可以用 `@slidev/client` 的公开导出；不使用 vitepress（网页形态是查看器）；插件包之间不互相引用。
 - 界面文本有中文与英文（`docs/architecture.md` 5.7 节）：每个包维护自己的 zh-CN 与 en 文本，按 `<html lang>`（由文稿头部的 `lang` 决定，默认 `zh-CN`）选择，没有对应文本时看 `navigator.language`；组件可以用 `@lincyaw/host` 的 `useLocale`、`useMessages(catalog)`。编译时写入产物的文本按文稿的 `lang`。
 - 前端样式（与 aegis-ui 相同的纪律）：设计令牌是视觉的唯一来源，在 `packages/design/src/tokens.css`（颜色令牌的名字另在 `tokens.ts` 的 `COLORS`，表在 `docs/architecture.md` 的设计系统一节）。组件与界面的 CSS 不写原始颜色（十六进制、`rgb()` 等）、px 与 ms/s，px 只出现在 `@media` 断点中；颜色混合、控件与图标尺寸、栏高与窗格宽、圆角、阴影、时长都引用令牌，没有合适的先在 `tokens.css` 加一个，暗色只覆盖颜色与阴影。React 与 Vue 组件中图标与标志的大小由 CSS 的尺寸令牌决定，不在组件里写数字。`scripts/check-tokens.mjs` 检查工作台与 studio 外框的样式，其他包的旧样式改动时迁入它的范围。
 - 先修组件再修页面：界面问题先看 `@lincyaw/design` 的 `pm-ui-*`、工作台的通用组件（`packages/workbench/src/components.tsx`）是否缺能力，补在那里，不在单个页面或面板中另写一套。界面改动在亮色与暗色、桌面与 768 px 以下的四种组合中看过才算完成。

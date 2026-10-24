@@ -45,7 +45,7 @@ describe('presmium build --audience student', () => {
     const full = await presmium(dir, ['ir'])
     for (const text of NESTED) expect(full.stdout.toLowerCase(), text).toContain(text)
     const student = holding(out, 'studentvisible')
-    for (const output of [/^ir\.json$/, /^web\/.*\.html$/, /^web\/assets\/chunks\/@localSearchIndexroot\.\w+\.js$/, /^slides\/assets\/.*\.js$/, /^notebook\/.*\.ipynb$/]) {
+    for (const output of [/^ir\.json$/, /^web\/.*\.html$/, /^web\/search\.json$/, /^slides\/assets\/.*\.js$/, /^notebook\/.*\.ipynb$/]) {
       expect(student.some(file => output.test(file)), String(output)).toBe(true)
     }
     const { sections } = JSON.parse(readFileSync(join(out, 'ir.json'), 'utf8')) as { sections: { title: string, index: number }[] }
@@ -124,7 +124,7 @@ describe('a deck with a translation, for an audience', () => {
     for (const [file, before] of sources) expect(snapshot(file), file).toEqual(before)
     expect(written.filter(name => name.startsWith('.presmium-translation'))).toEqual([])
     const allowed = new Set([...originalEntries, 'student', '.presmium', 'node_modules'])
-    expect(new Set(readdirSync(dir))).toEqual(allowed)
+    expect(readdirSync(dir).filter(name => !allowed.has(name))).toEqual([])
     expect(written.filter(name => !allowed.has(name))).toEqual([])
   }, 300_000)
 

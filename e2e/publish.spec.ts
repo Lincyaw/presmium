@@ -198,7 +198,7 @@ test.describe('web form', () => {
 
   test('a page that places no switch of its own has the high-contrast switch in the navigation bar', async ({ page }) => {
     await page.goto(`${deck().web}/code.html`)
-    await expect(page.locator('.vp-doc .pm-contrast-toggle')).toHaveCount(0)
+    await expect(page.locator('.pm-site__article .pm-contrast-toggle')).toHaveCount(0)
     const toggle = page.getByRole('switch', { name: '高对比度' }).filter({ visible: true })
     await expect(toggle).toHaveCount(1)
     await toggle.click()
@@ -220,7 +220,7 @@ test.describe('web form', () => {
         let dimmed = 0
         for (const file of pages) {
           await page.goto(`${deck().web}/${file}`, { waitUntil: 'networkidle' })
-          const content = page.locator('.vp-doc:not(.pm-overlay-views)')
+          const content = page.locator('.pm-site__article')
           await expect(content).toBeVisible()
           await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
           dimmed += await page.locator('.pm-section--scrolly > .pm-track .pm-block--narration.pm-hidden').count()

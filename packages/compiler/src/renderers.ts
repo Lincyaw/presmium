@@ -177,9 +177,11 @@ export function vitePluginsFor(compilation: Compilation, report: (finding: Findi
   })
 }
 
+/** The Node entries of the plugins whose browser parts need them (Vite plugins, run-time files, document modules), with their configuration. */
 export function nodeVitePlugins(compilation: Pick<Compilation, 'plugins' | 'doc'>): NodeVitePlugin[] {
   return compilation.plugins.flatMap((loaded) => {
-    if (!loaded.entry || !loaded.plugin?.vitePlugins) return []
+    const plugin = loaded.plugin
+    if (!loaded.entry || !(plugin?.vitePlugins || plugin?.assets || plugin?.documentModules)) return []
     const config = compilation.doc.config.presmium[pluginId(loaded)]
     return [{ id: pluginId(loaded), entry: loaded.entry, config: isRecord(config) ? config : {} }]
   })

@@ -1,3 +1,4 @@
+import { siteBase } from '@lincyaw/host'
 import type { ClassroomStore } from '@lincyaw/kernel'
 
 type Data = Record<string, Record<string, unknown>>
@@ -80,6 +81,6 @@ export function layeredStore(first: ClassroomStore, second: ClassroomStore): Cla
 let kept: ClassroomStore | undefined
 
 export function browserStore(): ClassroomStore {
-  kept ??= createBrowserStore(`presmium.classroom:${new URL(import.meta.env.BASE_URL, location.href).pathname}`)
+  kept ??= createBrowserStore(`presmium.classroom:${new URL(siteBase(), location.href).pathname}`)
   return kept
 }

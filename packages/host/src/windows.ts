@@ -1,3 +1,5 @@
+import { siteBase } from './site.ts'
+
 type Message = { join: true } | { value: unknown }
 
 export interface WindowChannel {
@@ -6,7 +8,7 @@ export interface WindowChannel {
 }
 
 function deckChannel(name: string): string {
-  return `${name} @ ${import.meta.env?.BASE_URL ?? '/'}`
+  return `${name} @ ${siteBase()}`
 }
 
 export function joinWindows(name: string, receive: (value: unknown) => void, known: () => unknown): WindowChannel | undefined {

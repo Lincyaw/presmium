@@ -181,7 +181,11 @@ export interface FixtureDeck {
 function builtBase(dir: string): string {
   const index = join(dir, 'index.html')
   if (!existsSync(index)) return '/'
-  return /(?:src|href)="(\/[^"]*?)assets\//.exec(readFileSync(index, 'utf8'))?.[1] ?? '/'
+  const html = readFileSync(index, 'utf8')
+  // A page of the web form says its site path (its configuration's `base`); the slides' is that of their assets.
+  const config = /<script type="application\/json" id="presmium-app">(.*?)<\/script>/s.exec(html)?.[1]
+  if (config) return (JSON.parse(config) as { base: string }).base
+  return /(?:src|href)="(\/[^"]*?)assets\//.exec(html)?.[1] ?? '/'
 }
 
 /** Builds and serves the fixture deck e2e/fixtures/<name>. */

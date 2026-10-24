@@ -34,11 +34,14 @@ export interface DocumentBundle {
   /** The files the bundle was built from, by path, with their size and time then. */
   inputs: Record<string, string>
   restartable: boolean
+  /** The names of the document's own components. */
+  components: string[]
 }
 
 interface DocumentCode {
   key: string
   entry: string
+  components: string[]
   /** The document modules' sources, by id. */
   generated: Record<string, string>
   restartable: boolean
@@ -77,13 +80,13 @@ ${ids.map((id, i) => `  ${JSON.stringify(id)}: module${i},`).join('\n')}
 export const restartable = ${modules.restartable}
 `
   const key = createHash('sha256').update(JSON.stringify([input.externals.toSorted(), entry, generated])).digest('hex').slice(0, 16)
-  return { key, entry, generated, restartable: modules.restartable }
+  return { key, entry, generated, restartable: modules.restartable, components: [...modules.components.keys()] }
 }
 
 function readBundle(dir: string): DocumentBundle | undefined {
   try {
     const bundle = JSON.parse(readFileSync(join(dir, BUNDLE_MANIFEST), 'utf8')) as DocumentBundle
-    return Object.entries(bundle.inputs).every(([file, known]) => stamp(file) === known) ? { ...bundle, dir } : undefined
+    return Object.entries(bundle.inputs).every(([file, known]) => stamp(file) === known) ? { ...bundle, components: bundle.components ?? [], dir } : undefined
   } catch {
     return undefined
   }
@@ -184,7 +187,7 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
   const content = createHash('sha256').update(readFileSync(join(work, 'out', BUNDLE_ENTRY))).digest('hex').slice(0, 8)
   const name = `${code.key}-${content}`
   const out = join(input.outDir, name)
-  const bundle: DocumentBundle = { key: name, dir: out, inputs, restartable: code.restartable }
+  const bundle: DocumentBundle = { key: name, dir: out, inputs, restartable: code.restartable, components: code.components }
   writeFileSync(join(work, 'out', BUNDLE_MANIFEST), `${JSON.stringify(bundle, null, 2)}\n`)
   rmSync(out, { recursive: true, force: true })
   renameSync(join(work, 'out'), out)

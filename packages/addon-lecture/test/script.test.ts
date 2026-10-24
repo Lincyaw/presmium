@@ -507,9 +507,15 @@ describe('presmium dev with a cloned voice', () => {
       expect(clipRefused.status, clip).toBe(403)
       expect(await clipRefused.text()).toContain(`${consent} is missing`)
     }
-    const refused = await route('tracks/script')
-    expect(refused.status).toBe(502)
-    expect(await refused.text()).toContain(`${consent} is missing`)
+    // The lecture still plays on its timeline, every sentence silent, the missing consent the reason, no clip given.
+    const silent = await route('tracks/script')
+    expect(silent.status).toBe(200)
+    const { utterances } = await silent.json() as { utterances: { clip?: string, unsaid?: string }[] }
+    expect(utterances.length).toBeGreaterThan(0)
+    for (const utterance of utterances) {
+      expect(utterance.clip).toBeUndefined()
+      expect(utterance.unsaid).toContain(`${consent} is missing`)
+    }
     expect(await syntheses()).toBe(asked)
     for (const clip of [...clips, ...recorded]) expect(existsSync(join(dir, '.presmium/speech', clip))).toBe(true)
 

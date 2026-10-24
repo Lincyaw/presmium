@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module'
 import { environmentExecutor, errorMessage } from '@lincyaw/kernel'
 import type { EnvironmentProvider, PresmiumNodePlugin } from '@lincyaw/kernel'
-import { minimalRunEnv } from '@lincyaw/kernel/node'
+import { minimalRunEnv, servedAssets } from '@lincyaw/kernel/node'
 import { adapterChoice, EXEC_WEBGPU_ID, WEBGPU_EXECUTOR_ID, WEBGPU_KIND } from '../domain/index.ts'
 import { createChromiumExecutor, findChromiumAdapter } from './recorder.ts'
 import { jaxAssets } from './vite.ts'
@@ -26,7 +26,8 @@ const plugin: PresmiumNodePlugin = {
   kernel: '^1.0.0',
   executors: [createChromiumExecutor({ id: WEBGPU_EXECUTOR_ID, adapter: 'auto' })],
   environments: { [WEBGPU_KIND]: webgpu },
-  vitePlugins: () => [jaxAssets()],
+  assets: () => [jaxAssets()],
+  vitePlugins: () => [servedAssets(jaxAssets())],
 }
 
 export default plugin

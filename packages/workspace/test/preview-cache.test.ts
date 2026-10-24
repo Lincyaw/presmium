@@ -17,9 +17,9 @@ it('updates cached preview sections and still republishes a changed local image 
     const url = (await waitFor(child, /^serve {2}(http\S+)$/m))[1]!
     expect((await raw(`${url}/talk/`)).status).toBe(200)
     const preview = async () => {
-      const response = await raw(`${url}/talk/@lincyaw/ir`)
+      const response = await raw(`${url}/__app/ir?document=talk`)
       expect(response.status, response.text).toBe(200)
-      return response.json<{ doc: IRDocument }>().doc
+      return response.json<IRDocument>()
     }
     const first = await preview()
     expect(JSON.stringify(first)).toContain('katex')

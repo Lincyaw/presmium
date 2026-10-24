@@ -5,20 +5,6 @@
   --pm-contrast-border: #000000;
 
   --slidev-theme-primary: var(--pm-contrast-link);
-  --vp-c-bg: var(--pm-contrast-bg);
-  --vp-c-bg-alt: var(--pm-contrast-bg);
-  --vp-c-bg-soft: var(--pm-contrast-bg);
-  --vp-c-bg-elv: var(--pm-contrast-bg);
-  --vp-c-text-1: var(--pm-contrast-fg);
-  --vp-c-text-2: var(--pm-contrast-fg);
-  --vp-c-text-3: var(--pm-contrast-fg);
-  --vp-c-brand-1: var(--pm-contrast-link);
-  --vp-c-brand-2: var(--pm-contrast-link);
-  --vp-c-brand-3: var(--pm-contrast-link);
-  --vp-c-divider: var(--pm-contrast-border);
-  --vp-code-color: var(--pm-contrast-fg);
-  --vp-code-bg: var(--pm-contrast-bg);
-  --vp-code-block-bg: var(--pm-contrast-bg);
 }
 
 :is(:root, :root.dark)[data-pm-contrast='high'] {
@@ -43,19 +29,19 @@
   --pm-contrast-border: #ffffff;
 }
 
-:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) {
+:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) {
   background: var(--pm-contrast-bg) !important;
   color: var(--pm-contrast-fg) !important;
 }
 
-:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) *,
-:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) .shiki span {
+:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) *,
+:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) .shiki span {
   color: var(--pm-contrast-fg) !important;
   -webkit-text-fill-color: currentColor !important;
   text-shadow: none !important;
 }
 
-:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) *:not(:empty) {
+:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) *:not(:empty) {
   background-color: transparent !important;
   background-image: none !important;
 }
@@ -64,7 +50,7 @@
   opacity: 1 !important;
 }
 
-:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) pre .line[data-pm-dimmed] {
+:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) pre .line[data-pm-dimmed] {
   opacity: 0.6 !important;
 }
 
@@ -72,19 +58,19 @@
   opacity: 0.6 !important;
 }
 
-:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) :is(a, a *) {
+:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) :is(a, a *) {
   color: var(--pm-contrast-link) !important;
 }
 
-:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) a {
+:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) a {
   text-decoration: underline;
 }
 
-:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) :is(button, input, select, textarea, [role='button'], [role='tab']) {
+:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) :is(button, input, select, textarea, [role='button'], [role='tab']) {
   border: 1px solid var(--pm-contrast-border) !important;
 }
 
-:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) pre {
+:root[data-pm-contrast='high'] :is(.slidev-layout, .pm-document) pre {
   outline: 1px solid var(--pm-contrast-border);
 }
 

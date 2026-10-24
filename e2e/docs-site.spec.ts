@@ -37,17 +37,14 @@ function workspace(files: Record<string, string>): string {
 }
 
 async function contents(page: Page): Promise<{ href: string, text: string }[]> {
-  const links = page.locator('.VPSidebar a.VPLink')
+  const links = page.locator('.pm-site-sidebar a')
   await expect(links.first()).toBeVisible()
   return links.evaluateAll(anchors => anchors.map(a => ({ href: new URL((a as HTMLAnchorElement).href).pathname, text: a.textContent?.trim() ?? '' })))
 }
 
 async function switchTo(page: Page, language: string) {
-  const menu = page.locator('.VPNavBarTranslations')
-  await expect(async () => {
-    await menu.getByRole('button').hover()
-    await menu.getByRole('link', { name: language }).click({ timeout: 2000 })
-  }).toPass({ timeout: 20_000 })
+  await page.getByRole('button', { name: /^(切换语言|Change language)$/ }).filter({ visible: true }).click()
+  await page.getByRole('link', { name: language, exact: true }).click()
 }
 
 test.describe('the documentation site', () => {
@@ -118,13 +115,13 @@ test.describe('the documentation site', () => {
     await expect(page).toHaveURL(`${site.url}/reference/en/versions.html`)
     await expect(page.locator('html')).toHaveAttribute('lang', 'en')
     await page.goto(`${site.url}/plugins/`)
-    await page.locator('.VPDoc').getByRole('link', { name: '接口与版本' }).click()
+    await page.locator('.pm-site__article').getByRole('link', { name: '接口与版本' }).click()
     await expect(page).toHaveURL(`${site.url}/reference/versions.html`)
   })
 
   test('the API reference is generated from the source, under the navigation bar\'s API', async ({ page }) => {
     await page.goto(`${site.url}/reference/en/`)
-    await page.locator('.VPNavBar').getByRole('link', { name: 'API', exact: true }).click()
+    await page.locator('.pm-site-header').getByRole('link', { name: 'API', exact: true }).click()
     await expect(page).toHaveURL(`${site.url}/api/`)
     await page.getByRole('link', { name: '@lincyaw/kernel' }).first().click()
     await page.locator('.col-content').getByRole('link', { name: 'index', exact: true }).click()
@@ -167,7 +164,7 @@ test.describe('the documentation site\'s build fails', () => {
     expect(code, output).toBe(1)
     expect(output).toContain('checked notes/lecture.md: no problems')
     expect(output).toContain('dead link: /index.html -> /nowhere/')
-    expect(output).toContain('dead link: /notes/index.html -> ../nowhere/')
+    expect(output).toContain('dead link: /notes/index.html -> /nowhere/')
     expect(output).toMatch(/^\d+ dead links in the built site$/m)
   })
 })

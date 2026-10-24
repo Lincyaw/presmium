@@ -148,10 +148,10 @@ test('students can inspect eight units, change actual file work, fix recovery, a
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   await page.goto(`${deck.web}/`)
-  await expect(page.locator('.VPSidebar').getByRole('link', { name: /^单元 [1-8]：/ })).toHaveCount(8)
+  await expect(page.locator('.pm-site-sidebar').getByRole('link', { name: /^单元 [1-8]：/ })).toHaveCount(8)
   const section = (id: string) => page.locator(`.pm-section[data-section="${id}"]`)
   const openSection = async (id: string) => {
-    const href = await page.locator(`.VPSidebar a[href$="#${id}"]`).getAttribute('href')
+    const href = await page.locator(`.pm-site-sidebar a[href$="#${id}"]`).getAttribute('href')
     expect(href, `sidebar link to ${id}`).toBeTruthy()
     await page.goto(new URL(href!, `${deck.web}/`).href)
     await expect(section(id)).toBeVisible()

@@ -51,7 +51,7 @@ describe('presmium serve on this machine', () => {
       req.end()
     })
     expect(await ask({ Host: 'rebind.attacker.example' })).toBe(403)
-    expect(await ask({ Host: 'rebind.attacker.example' }, '/intro/@lincyaw/ir')).toBe(403)
+    expect(await ask({ Host: 'rebind.attacker.example' }, '/__app/ir?document=intro')).toBe(403)
     expect(await ask({ 'Host': `127.0.0.1:${port}`, 'Sec-Fetch-Site': 'cross-site' })).toBe(403)
     expect(await ask({ Host: `127.0.0.1:${port}` })).not.toBe(403)
   }, 180_000)
@@ -126,9 +126,9 @@ describe('presmium serve on this machine', () => {
 })
 
 async function siteIR(url: string, dir: string, headers: Record<string, string> = {}): Promise<{ text: string, doc: { diagnostics: { checkId: string, severity: string, message: string }[] } }> {
-  const answer = await raw(`${url}/${dir}/@lincyaw/ir`, { headers })
+  const answer = await raw(`${url}/__app/ir?document=${encodeURIComponent(dir)}`, { headers })
   expect(answer.status, answer.text).toBe(200)
-  return { text: answer.text, doc: answer.json<{ doc: { diagnostics: { checkId: string, severity: string, message: string }[] } }>().doc }
+  return { text: answer.text, doc: answer.json<{ diagnostics: { checkId: string, severity: string, message: string }[] }>() }
 }
 
 describe('the plugins of presmium serve are those the deck lists, as in presmium dev', () => {

@@ -119,7 +119,7 @@ it('serves the web form and the slides with presmium dev', async () => {
   }
 }, 300_000)
 
-it('serves a workspace with presmium serve, its sites outside the project, the browser dependencies pre-bundled', async () => {
+it('serves a workspace with presmium serve, its sites outside the project, with the viewer built from the installed packages', async () => {
   const ws = join(project, 'ws')
   mkdirSync(join(ws, 'intro'), { recursive: true })
   cpSync(join(FIXTURES, 'deck/lecture.md'), join(ws, 'intro/lecture.md'))
@@ -135,12 +135,14 @@ it('serves a workspace with presmium serve, its sites outside the project, the b
       expect(page.status, path).toBe(200)
       expect(await page.text(), path).toContain('id="app"')
     }
-    const kernel = await fetch(`${url}/intro/@fs${join(installed('@lincyaw/kernel'), 'src/services.ts')}`)
+    // The pages run the viewer built from the installed packages: their modules bundled with their dependencies.
+    const html = await (await fetch(`${url}/intro/`)).text()
+    const app = /<script type="module" src="([^"]+\/)assets\//.exec(html)![1]!
+    const { imports } = JSON.parse(/<script type="importmap">(.*?)<\/script>/s.exec(html)![1]!) as { imports: Record<string, string> }
+    const kernel = await fetch(new URL(imports['@lincyaw/kernel']!, url))
     expect(kernel.status).toBe(200)
-    const code = await kernel.text()
-    expect(code).toMatch(/^import .*semver.* from "[^"]+"/m)
-    expect(code).not.toContain('node_modules/semver/')
-    const license = await fetch(`${url}/presmium/fonts/LICENSE`)
+    expect(await kernel.text()).not.toMatch(/node_modules\/semver\//)
+    const license = await fetch(new URL(`${app}presmium/fonts/LICENSE`, url))
     expect(license.status).toBe(200)
     const text = await license.text()
     for (const line of FONT_LICENSE) expect(text).toContain(line)

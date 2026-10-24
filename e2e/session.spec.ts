@@ -18,7 +18,7 @@ const badge = (page: Page) => page.getByRole('region', { name: '课堂状态' })
 test('without a classroom server the deck shows and reads as before, and its build shows no classroom', async ({ page }) => {
   await page.goto(`${offline().web}/session.html`)
   await expect(page.locator('.pm-section[data-section="session-follow"]')).toContainText('回到主讲进度')
-  await expect(page.locator('.VPNav')).toBeVisible()
+  await expect(page.locator('.pm-site-header')).toBeVisible()
   await expect(panelButton(page)).toHaveCount(0)
   await expect(badge(page)).toHaveCount(0)
 

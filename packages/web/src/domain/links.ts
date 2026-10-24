@@ -5,18 +5,7 @@ export function urlPath(path: string): string {
   return encodeURI(path).replace(/[#?]/g, char => encodeURIComponent(char))
 }
 
-export function samePage(a: string, b: string): boolean {
-  const page = (path: string) => path.replace(/(?:\.html|\/)$/, '')
-  return page(a) === page(b)
-}
-
 export const SERVICE_WORKER = 'presmium-sw.js'
-
-export const SOURCE_ENDPOINT = '/__presmium/source'
-
-export const IR_ENDPOINT = '/__presmium/ir'
-
-export const SERVER_PROXY = '^/__presmium/(?!(?:ir|source)(?:[/?]|$))'
 
 export const SLIDE_PARAM = 'slide'
 

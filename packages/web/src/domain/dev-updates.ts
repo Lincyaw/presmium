@@ -1,9 +1,12 @@
-/** The Vite event by which the dev server pushes a document's update to the page. */
-export const UPDATE_EVENT = 'presmium:update'
+/** The event by which a dev server tells a page that its document changed. */
+export const UPDATE_EVENT = 'ir'
 
-/** An update of the IR from the IR revision `base` to the IR revision `revision`. */
+/**
+ * A change of the document from the IR revision `base` to `revision`: the sections that changed (`update`) when the
+ * page has `base`; otherwise the page reads the whole IR again.
+ */
 export interface DevUpdateEvent<Update = unknown> {
-  update: Update
-  base: string
   revision: string
+  base?: string
+  update?: Update
 }

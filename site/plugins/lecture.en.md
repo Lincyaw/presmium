@@ -2,7 +2,7 @@
 title: Plugin guide
 lang: en
 description: Extend Presmium with components, directives, services, server routes, views and renderers
-translationOf: { entry: lecture.md, digest: 30337fc3c95304d3cbd7fe948e88112844860573c793ad5fa33703906c3cf9de }
+translationOf: { entry: lecture.md, digest: e770f00d1e06895e332033eb453cedc025787a502e3a6e8fb9dbdd9cc8704189 }
 ---
 
 (plugins)=

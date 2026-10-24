@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { appendFileSync, cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PRESMIUM_BIN } from '@lincyaw/cli/testing'
@@ -9,9 +9,10 @@ const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
 const deck = mkdtempSync(join(FIXTURES, '.directory-'))
 afterAll(() => rmSync(deck, { recursive: true, force: true }))
 
-function published(text: string): { name?: string, shown: boolean } {
-  const file = join(deck, 'dev/web/ir.json')
-  const ir = existsSync(file) ? readFileSync(file, 'utf8') : ''
+/** The document as the dev server gives its pages: the published name of the linked directory, and whether `text` is in it. */
+async function published(site: string, text: string): Promise<{ name?: string, shown: boolean }> {
+  const response = await fetch(`${site}__app/ir?document=`).catch(() => undefined)
+  const ir = response?.ok ? await response.text() : ''
   return { name: /media\/([\da-f]{8}-starter)\/index\.html/.exec(ir)?.[1], shown: ir.includes(text) }
 }
 
@@ -26,17 +27,18 @@ it('keeps a linked directory\'s published name while its files do not change, an
   child.stderr.on('data', (chunk: Buffer) => output += chunk)
   try {
     await expect.poll(() => output, { timeout: 120_000 }).toContain('watching;')
-    await expect.poll(() => published('').name, { timeout: 60_000 }).toBeDefined()
-    const first = published('').name!
+    const site = /^web {2}(http\S+)$/m.exec(output)![1]!
+    await expect.poll(async () => (await published(site, '')).name, { timeout: 60_000 }).toBeDefined()
+    const first = (await published(site, '')).name!
 
     appendFileSync(join(deck, 'lecture.md'), '\n第一次修改。\n')
-    await expect.poll(() => published('第一次修改').shown, { timeout: 60_000 }).toBe(true)
-    expect(published('').name).toBe(first)
+    await expect.poll(async () => (await published(site, '第一次修改')).shown, { timeout: 60_000 }).toBe(true)
+    expect((await published(site, '')).name).toBe(first)
 
     writeFileSync(join(deck, 'starter/data.csv'), 'x,y\n3,4\n')
     appendFileSync(join(deck, 'lecture.md'), '\n第二次修改。\n')
-    await expect.poll(() => published('第二次修改').shown, { timeout: 60_000 }).toBe(true)
-    const second = published('').name!
+    await expect.poll(async () => (await published(site, '第二次修改')).shown, { timeout: 60_000 }).toBe(true)
+    const second = (await published(site, '')).name!
     expect(second).not.toBe(first)
     expect(readFileSync(join(deck, '.presmium/files', second, 'data.csv'), 'utf8')).toBe('x,y\n3,4\n')
   } finally {

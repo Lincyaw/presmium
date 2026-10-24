@@ -96,7 +96,7 @@ function viteFsAllow(ctx: RenderContext, packages: string[]): string[] {
 function viteConfigModule(ctx: RenderContext, entries: NodeVitePlugin[], optimize: { include: string[], exclude: string[] }, allow: string[]): string {
   const imports = entries.map(({ entry }, i) => `import plugin${i} from ${JSON.stringify(entry)}\n`).join('')
   const deck = JSON.stringify({ deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot })
-  const plugins = entries.map(({ config }, i) => `    ...plugin${i}.vitePlugins({ ...deck, config: ${JSON.stringify(config)} }),\n`).join('')
+  const plugins = entries.map(({ config }, i) => `    ...plugin${i}.vitePlugins?.({ ...deck, config: ${JSON.stringify(config)} }) ?? [],\n`).join('')
   const server = {
     ...ctx.server ? { proxy: { '^/__presmium/': { target: ctx.server.url, ws: true } }, fs: { allow } } : {},
     ...ctx.preview ? { headers: { 'Content-Security-Policy': previewFrameAncestors(ctx.preview.origins) } } : {},

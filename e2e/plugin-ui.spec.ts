@@ -10,7 +10,7 @@ const LINK = { '@lincyaw/addon-assistant': 'packages/addon-assistant', '@lincyaw
 
 async function scheme(page: Page, dark: boolean): Promise<void> {
   await page.addInitScript((on) => {
-    localStorage.setItem('vitepress-theme-appearance', on ? 'dark' : 'light')
+    localStorage.setItem('presmium-appearance', on ? 'dark' : 'light')
     localStorage.setItem('slidev-color-schema', on ? 'dark' : 'light')
   }, dark)
 }
