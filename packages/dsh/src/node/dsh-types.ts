@@ -78,6 +78,36 @@ export interface DshWorkspaces {
   delete(id: string): Promise<boolean>
 }
 
+/** The OTLP channels of dsh's `otel` service (`@deepseek-ai/dsh-otel`): each with its own exporter and queue. */
+export interface DshOtelChannelOptions {
+  exporter: { url: string, headers?: Record<string, string> }
+  scope: { name: string, version?: string }
+  resourceAttributes: Record<string, string>
+  onFailure(message: string, error?: Error): void
+}
+
+export type DshOtelScalar = string | number | boolean
+
+export interface DshOtel {
+  createEventReporter(options: DshOtelChannelOptions & { processor: { scheduledDelayMillis?: number, maxExportBatchSize?: number, maxQueueSize?: number } }): {
+    emit(record: { eventName: string, body: string, timestamp: number, attributes?: Record<string, DshOtelScalar> }): void
+    shutdown(signal?: AbortSignal): Promise<void>
+  }
+  createSessionLogReporter(options: DshOtelChannelOptions & { processor?: { scheduledDelayMillis?: number, maxExportBatchSize?: number, maxQueueSize?: number } }): {
+    reportSessionLog(record: { sessionId: string, event: DshSessionEvent, attributes?: Record<string, DshOtelScalar> }): void
+    stopPending(): void
+    shutdown(): Promise<void>
+  }
+}
+
+/** One event of a session's log, as dsh records it. */
+export interface DshSessionEvent {
+  type: string
+  seq: number
+  time: number
+  data: unknown
+}
+
 export interface DshContext {
   get(name: string): unknown
   provide(name: string, value: unknown): void

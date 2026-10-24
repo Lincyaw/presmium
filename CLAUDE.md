@@ -24,7 +24,7 @@
 
 ## 命令
 
-- `pnpm studio [目录]`：启动浏览器编辑工作台，首次自动在 `.presmium/example-workspace` 准备示例 `examples/animations` 的独立副本（自己的 git 仓库，带合成缓存与给 AI 的 `AGENTS.md`），后续复用；可指定讲义或工作区，支持 `--port`、`--host`、`--help`。打开终端打印的完整网址，`Ctrl+C` 停止；编辑和预览不需要模型。
+- `pnpm studio [目录]`：启动浏览器编辑工作台，首次自动在 `.presmium/example-workspace` 准备示例 `examples/animations` 的独立副本（自己的 git 仓库，带合成缓存与给 AI 的 `AGENTS.md`），后续复用；可指定讲义或工作区，支持 `--port`、`--host`、`--help`。打开终端打印的完整网址，`Ctrl+C` 停止；编辑和预览不需要模型。设置 `PRESMIUM_TELEMETRY_URL`（运营者的 OTLP/HTTP 日志地址）后，作者在工作台的操作与每个会话的 AI 轨迹持续上传并可互相关联（`docs/design-dsh.md` 6.7 节）；不设置时不采集。
 
 - `pnpm test`：分层检查 + 技能检查（`scripts/check-skills.mjs`，技能在 `.agents/skills`）+ 插件声明检查（`scripts/check-plugins.mjs`）+ 包的发布检查（`scripts/check-packages.mjs`，按 `.changeset/README.md` 的表）+ 类型检查（`scripts/check-types.mjs`，`tsconfig.json` 与 `packages/workbench/tsconfig.json`，不报依赖包源码内部的错误）+ 集成测试（Vitest，`packages/<pkg>/test/`，含消费者安装测试 `packages/cli/test/consumer.test.ts`；运行 `slidev export` 的用例是 `export` 项目，在其他用例之后运行，单独运行用 `pnpm exec vitest run --project export`）
 - `pnpm demo:build`、`pnpm demo:check`、`pnpm demo:ir`：构建、检查和输出唯一公开示例 `examples/animations` 的两讲（冒泡排序、代码写成的动画）；站点在 `examples/animations/dist/web/`，每讲的幻灯片、notebook 与讲授汇入 `<讲义>/slides/`、`<讲义>/notebook/`、`<讲义>/lecture/`。讲解的语音从随讲义提交的合成缓存（`<讲义>/.presmium/speech/`）取得，构建不需要语音引擎；改过的句子要配置引擎重新合成。

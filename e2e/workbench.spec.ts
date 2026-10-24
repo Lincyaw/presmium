@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { FrameLocator, Page } from '@playwright/test'
+import { fakeCollector } from '../packages/dsh/src/node/fake-collector.ts'
 import { fakeModel } from '../packages/dsh/src/node/fake-model.ts'
 import type { FakeModel } from '../packages/dsh/src/node/fake-model.ts'
 import { BRAND_SLOTS, EXPERIMENTAL_GROUP, LAYOUT_MEMBERS, ONBOARDING, ROOT_CHILDREN, SHELL_MODULES, UI_LAYOUT } from '../packages/dsh/src/client/contract.ts'
@@ -633,5 +634,56 @@ test.describe('the bundle turned off', () => {
     expect(await api.call('pluginManager/setBundleEnabled', { name: '@lincyaw/dsh', enabled: true })).toMatchObject({ changed: true })
     await page.reload()
     await expect(page.locator('.pmw-home__card')).toHaveCount(2)
+  })
+})
+
+test.describe('the operator\'s collector', () => {
+  let studio: Studio
+  let model: FakeModel
+  let otlp: Awaited<ReturnType<typeof fakeCollector>>
+
+  test.beforeAll(async () => {
+    test.setTimeout(400_000)
+    otlp = await fakeCollector()
+    model = await fakeModel([{ text: '收到批注。' }])
+    studio = await startStudio({ port: 5671 + studioPortOffset, model, prefix: 'telemetry', env: { PRESMIUM_TELEMETRY_URL: `${otlp.url}/v1/logs` } })
+  })
+
+  test.afterAll(async () => {
+    await studio?.close()
+    await model?.close()
+    await otlp?.close()
+  })
+
+  test('the author\'s operations reach the collector in order, and a comment sent to the AI leads to the turn it started', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await studio.open(page)
+    await openDocument(page, '分词入门')
+    const quote = '最常相邻的一对合并成一个新词元。'
+    await expect(preview(page).getByText(quote)).toBeVisible({ timeout: 120_000 })
+    await select(page, quote)
+    await tools(page).getByRole('button', { name: '新建批注' }).click()
+    await page.getByRole('textbox', { name: '新建批注' }).fill('这里是什么意思')
+    await page.getByRole('button', { name: '发布', exact: true }).click()
+    await page.locator('.pmw-toolbar').getByRole('button', { name: '发送 1 条批注给 AI' }).click()
+    await expect(conversation(page)).toContainText('收到批注。', { timeout: 60_000 })
+
+    const operations = () => otlp.logged.filter(record => typeof record.attributes['presmium.operation'] === 'string')
+    const named = (name: string) => operations().find(record => record.attributes['presmium.operation'] === name)
+    await expect.poll(() => ['document.open', 'point', 'comment.add', 'agent.ask', 'ui.click'].filter(name => !named(name)), { timeout: 30_000 }).toEqual([])
+    const client = named('document.open')!.attributes['presmium.client.id']
+    expect(operations().every(record => record.attributes['presmium.client.id'] === client)).toBe(true)
+    const order = ['document.open', 'point', 'comment.add', 'agent.ask'].map(name => named(name)!.attributes['presmium.seq'] as number)
+    expect([...order].sort((a, b) => a - b)).toEqual(order)
+    expect(named('comment.add')!.attributes).toMatchObject({ 'presmium.document': 'lectures/intro', 'presmium.text': '这里是什么意思', 'presmium.quote': quote })
+    const ask = named('agent.ask')!.attributes
+    expect(ask).toMatchObject({ 'presmium.ask.kind': 'comments', 'presmium.outcome': 'sent' })
+    expect(String(ask['presmium.ask.text'])).toContain('这里是什么意思')
+    // The request's id leads to the session's user message, and its turn to everything the model and its tools did.
+    const message = () => otlp.logged.find(record => record.attributes.sessionId === ask['dsh.session.id'] && JSON.parse(String(record.attributes.content)).data?.source?.rpcId === ask['dsh.request.id'])
+    await expect.poll(() => Boolean(message()), { timeout: 30_000 }).toBe(true)
+    const turn = message()!.attributes['presmium.turn']
+    await expect.poll(() => otlp.logged.some(record => record.attributes.sessionId === ask['dsh.session.id'] && record.attributes['presmium.turn'] === turn && JSON.parse(String(record.attributes.content)).type === 'assistant/message'), { timeout: 30_000 }).toBe(true)
+    expect(message()!.attributes['presmium.document']).toBe('lectures/intro')
   })
 })

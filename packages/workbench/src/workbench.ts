@@ -7,6 +7,8 @@ import { DocumentHistory } from './history.ts'
 import { localeOf, MESSAGES } from './messages.ts'
 import type { AgentPlace, Locale } from './messages.ts'
 import { changedPlaces, findPlaceAtLine, findPlaceSource } from './places.ts'
+import { OperationLog } from './telemetry.ts'
+import type { OperationValue } from './telemetry.ts'
 import { applyRenderedEdit } from './text-edit.ts'
 import { workspaceClient, WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
@@ -45,6 +47,12 @@ export interface EditFallback {
 export interface AgentRequest {
   text: string
   focus: FocusReport[]
+}
+
+/** Where the host put a request: the conversation's session and the request's id, which its user message carries. */
+export interface AgentAnswer {
+  session: string
+  request: string
 }
 
 export interface WorkbenchState {
@@ -172,7 +180,7 @@ export class Workbench {
   readonly #diagnostics: DocumentDiagnostics
   readonly #history: DocumentHistory
   readonly #comments = new CommentStore()
-  readonly #askers = new Set<(request: AgentRequest) => Promise<void>>()
+  readonly #askers = new Set<(request: AgentRequest) => Promise<AgentAnswer | void>>()
   readonly #previewSinks = new Set<PreviewSink>()
   #unsubscribeIr?: () => void
   #previewReads = 0
@@ -184,6 +192,9 @@ export class Workbench {
   #pendingReveal?: PreviewAnchor
   /** The AI's changes to show on the document once the preview has them. */
   #pendingFlash?: ReviewChange[]
+  #lastPosition?: string
+  /** What the author does, for the operator's collector when the host has one. */
+  readonly telemetry: OperationLog
 
   constructor(options: { client?: WorkspaceClient, locale?: Locale, isDark?: boolean } = {}) {
     this.client = options.client ?? workspaceClient()
@@ -212,9 +223,30 @@ export class Workbench {
     }
     this.#diagnostics = new DocumentDiagnostics(this.client, store)
     this.#history = new DocumentHistory(this.client, store, (changes) => {
+      this.#record('ai.change', { 'presmium.files': changes.map(change => change.path).join('\n'), 'presmium.added': changes.reduce((n, c) => n + c.added, 0), 'presmium.removed': changes.reduce((n, c) => n + c.removed, 0) })
       this.#pendingFlash = changes
       this.#flashChanges()
     })
+    this.telemetry = new OperationLog(() => this.client.readTelemetry(), (batch, beacon) => this.client.sendTelemetry(batch, beacon), this.#state.locale)
+    void this.telemetry.start()
+  }
+
+  /** Records an operation of the author, with the document, the view and the mode it was done in. */
+  #record(name: string, attributes: Record<string, OperationValue> = {}): void {
+    this.telemetry.record(name, { 'presmium.document': this.#state.document, 'presmium.view': this.#state.previewRenderer, 'presmium.mode': this.#state.mode, ...attributes })
+  }
+
+  /** Does an operation that takes time and records it once done, with its outcome and how long it took. */
+  async #timed<T>(name: string, attributes: Record<string, OperationValue>, work: () => Promise<T>, outcome: (value: T) => string = () => 'done'): Promise<T> {
+    const started = Date.now()
+    try {
+      const value = await work()
+      this.#record(name, { ...attributes, 'presmium.outcome': outcome(value), 'presmium.ms': Date.now() - started })
+      return value
+    } catch (error) {
+      this.#record(name, { ...attributes, 'presmium.outcome': 'failed', 'presmium.error': errorMessage(error), 'presmium.ms': Date.now() - started })
+      throw error
+    }
   }
 
   get state(): WorkbenchState {
@@ -231,11 +263,12 @@ export class Workbench {
   onRepairDiagnostics = (repairer: (diagnostics: readonly Diagnostic[]) => void | Promise<void>): (() => void) => this.#diagnostics.onRepair(repairer)
 
   requestRepairDiagnostics(): Promise<void> {
+    this.#record('diagnostics.repair')
     return this.#diagnostics.requestRepair()
   }
 
   /** The host's way to hand a request to the conversation's agent. */
-  onAgentRequest = (asker: (request: AgentRequest) => Promise<void>): (() => void) => {
+  onAgentRequest = (asker: (request: AgentRequest) => Promise<AgentAnswer | void>): (() => void) => {
     this.#askers.add(asker)
     return () => this.#askers.delete(asker)
   }
@@ -250,13 +283,16 @@ export class Workbench {
   }
 
   setLocale(locale: Locale): void {
-    if (locale !== this.#state.locale) this.#set({ locale })
+    if (locale === this.#state.locale) return
+    this.#set({ locale })
+    this.#record('locale.set', { 'presmium.locale': locale })
   }
 
   setDark(isDark: boolean): void {
     if (isDark === this.#state.isDark) return
     this.#set({ isDark })
     this.#broadcast({ type: 'appearance', dark: isDark })
+    this.#record('appearance.set', { 'presmium.dark': isDark })
   }
 
   async loadDocuments(): Promise<void> {
@@ -267,11 +303,14 @@ export class Workbench {
     }
   }
 
-  async operateDocument(operation: DocumentOperation): Promise<OperationAnswer> {
-    const answer = await this.client.operateDocument(operation)
-    if (operation.op !== 'create' && operation.op !== 'copy' && this.#state.document === operation.dir) this.closeDocument()
-    await this.loadDocuments()
-    return answer
+  operateDocument(operation: DocumentOperation): Promise<OperationAnswer> {
+    const attributes = Object.fromEntries(Object.entries(operation).filter(([, value]) => typeof value === 'string').map(([key, value]) => [`presmium.op.${key}`, value as string]))
+    return this.#timed(`document.${operation.op}`, attributes, async () => {
+      const answer = await this.client.operateDocument(operation)
+      if (operation.op !== 'create' && operation.op !== 'copy' && this.#state.document === operation.dir) this.closeDocument()
+      await this.loadDocuments()
+      return answer
+    })
   }
 
   /** Makes a document called `title` from the template, in a directory of its own; answers the directory. */
@@ -292,13 +331,15 @@ export class Workbench {
   }
 
   /** Changes the title in a document's front matter; the change is a revision of its own. */
-  async retitleDocument(dir: string, title: string): Promise<void> {
-    const { doc } = await this.client.readIr(dir)
-    const entry = doc.meta.entry
-    const source = await this.client.readSource(WORKSPACE_SCOPE, entry)
-    await this.client.saveSource(WORKSPACE_SCOPE, entry, withTitle(source.content, title), source.version, this.#messages.retitled(title))
-    await this.loadDocuments()
-    if (this.#state.document === dir) void this.#history.read(dir)
+  retitleDocument(dir: string, title: string): Promise<void> {
+    return this.#timed('document.retitle', { 'presmium.op.dir': dir, 'presmium.title': title }, async () => {
+      const { doc } = await this.client.readIr(dir)
+      const entry = doc.meta.entry
+      const source = await this.client.readSource(WORKSPACE_SCOPE, entry)
+      await this.client.saveSource(WORKSPACE_SCOPE, entry, withTitle(source.content, title), source.version, this.#messages.retitled(title))
+      await this.loadDocuments()
+      if (this.#state.document === dir) void this.#history.read(dir)
+    })
   }
 
   async openDocument(dir: string): Promise<void> {
@@ -306,6 +347,7 @@ export class Workbench {
     this.#stopSubscriptions()
     this.#history.subscribeReview(dir)
     this.#set({ ...DOCUMENT_RESET, document: dir, previewRenderer: 'web' })
+    this.#record('document.open')
     this.#diagnostics.subscribe(dir)
     this.#unsubscribeIr = this.client.subscribeIr(dir, event => void this.#handleIrEvent(dir, event), () => void this.#readIr(dir))
     void this.client.readWorkbenchInfo().then(({ root }) => {
@@ -318,6 +360,7 @@ export class Workbench {
   }
 
   closeDocument(): void {
+    if (this.#state.document !== undefined) this.#record('document.close')
     this.#stopSubscriptions()
     this.#set({ ...DOCUMENT_RESET, document: undefined })
     void this.loadDocuments()
@@ -354,10 +397,13 @@ export class Workbench {
     if (!changes || !ir || this.#state.previewIrRevision !== ir.revision || this.#previewSinks.size === 0) return
     this.#pendingFlash = undefined
     const targets = changedPlaces(ir.doc, changes)
-    if (targets.length > 0) this.#broadcast({ type: 'flash', targets })
+    if (targets.length === 0) return
+    this.#broadcast({ type: 'flash', targets })
+    this.#record('ai.change.shown', { 'presmium.places': targets.map(target => [target.section, target.block].filter(Boolean).join(':')).join('\n') })
   }
 
   retryDiagnostics(): void {
+    this.#record('diagnostics.retry')
     this.#diagnostics.retry()
   }
 
@@ -397,6 +443,7 @@ export class Workbench {
     if (mode === this.#state.mode) return
     if (this.#state.editing) this.#broadcast({ type: 'edit', target: null })
     this.#set({ mode })
+    this.#record('mode.set')
     this.point(undefined)
     this.#broadcast({ type: 'pick', on: mode === 'editing' })
   }
@@ -404,17 +451,24 @@ export class Workbench {
   setPreviewRenderer(renderer: PreviewRenderer): void {
     if (renderer === this.#state.previewRenderer) return
     this.#set({ previewRenderer: renderer, preview: undefined, previewFailure: undefined, previewIrRevision: undefined, pointer: undefined })
+    this.#record('view.set')
     const document = this.#state.document
     if (document !== undefined) void this.#readPreview(document)
   }
 
   reloadPreview(): void {
+    this.#record('preview.reload')
+    this.#reloadPreview()
+  }
+
+  #reloadPreview(): void {
     this.#set({ previewReload: this.#state.previewReload + 1 })
     const address = this.#state.previewRenderer === 'slides' ? this.#state.preview?.slides : this.#state.preview?.web
     if (!address) this.retryPreview()
   }
 
   retryPreview(): void {
+    this.#record('preview.retry')
     if (this.#state.document !== undefined) void this.#readPreview(this.#state.document)
   }
 
@@ -434,6 +488,7 @@ export class Workbench {
   /** Points at a block or a passage (none: stops pointing): the preview outlines it and the conversation is told. */
   point(pointer: Pointer | undefined): void {
     const pointed = this.#state.pointer !== undefined || this.#state.focus.length > 0
+    if (pointer) this.#record('point', { 'presmium.section': pointer.target.section, 'presmium.block': pointer.target.block, 'presmium.step': pointer.step, 'presmium.quote': pointer.quote, 'presmium.editable': pointer.isEditable })
     this.#set({ pointer, askFailure: undefined })
     this.#broadcast({ type: 'highlight', target: pointer?.target ?? null })
     if (pointer) this.setFocus([this.#focusReportOf(pointer)])
@@ -448,6 +503,8 @@ export class Workbench {
   /** Edits the target's text in place in the preview; none ends editing without saving. */
   editText(target: PreviewAnchor | null, at?: PreviewPoint): void {
     if (target && (isAgentChanging(this.#state) || !this.isEditable(target))) return
+    if (target) this.#record('edit.start', { 'presmium.section': target.section, 'presmium.block': target.block })
+    else if (this.#state.editing) this.#record('edit.cancel', { 'presmium.section': this.#state.editing.section, 'presmium.block': this.#state.editing.block })
     if (target) {
       this.#set({ pointer: undefined, editFallback: undefined })
       this.#broadcast({ type: 'highlight', target: null })
@@ -469,11 +526,14 @@ export class Workbench {
     if (document === undefined || !doc) return
     const source = this.#sourceOf(target, doc)
     const title = doc.sections.find(s => s.id === target.section)?.title ?? ''
+    const started = Date.now()
+    const saved = (outcome: string, error?: string) => this.#record('edit.save', { 'presmium.section': target.section, 'presmium.block': target.block, 'presmium.before': before, 'presmium.after': after, 'presmium.outcome': outcome, 'presmium.error': error, 'presmium.ms': Date.now() - started })
     this.#set({ save: { kind: 'saving' }, editFallback: undefined })
     this.#edits = this.#edits.then(async () => {
       const fallBack = () => {
+        saved('fallback')
         this.#set({ save: { kind: 'idle' }, editFallback: { target, before, after } })
-        this.reloadPreview()
+        this.#reloadPreview()
       }
       if (!source) return fallBack()
       try {
@@ -489,20 +549,23 @@ export class Workbench {
             if (attempt > 0 || !(error instanceof WorkspaceServerError && error.answer.conflict)) throw error
           }
         }
+        saved('saved')
         if (this.#state.document === document) {
           this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
           void this.#history.read(document)
         }
       } catch (error) {
-        if (this.#state.document !== document) return
         const locked = error instanceof WorkspaceServerError && error.answer.locked
+        saved(locked ? 'locked' : 'failed', errorMessage(error))
+        if (this.#state.document !== document) return
         this.#set({ save: locked ? { kind: 'locked' } : { kind: 'failed', message: errorMessage(error) } })
-        this.reloadPreview()
+        this.#reloadPreview()
       }
     })
   }
 
   dismissEditFallback(): void {
+    this.#record('edit.fallback.dismiss')
     this.#set({ editFallback: undefined })
   }
 
@@ -524,23 +587,27 @@ export class Workbench {
 
   /** Hands `instruction` about what the author points at (or `focus`) to the conversation's agent. */
   askAgent(instruction: string, focus: FocusReport[] = this.#state.pointer ? [this.#focusReportOf(this.#state.pointer)] : []): Promise<boolean> {
-    return this.#ask(focus, places => this.#messages.agentRequest(instruction, [...places.values()]))
+    return this.#ask('request', focus, places => this.#messages.agentRequest(instruction, [...places.values()]))
   }
 
   /**
    * Sets `focus` as the document's focus, then sends the agent the message `compose` writes from the places, by focus id.
    * The message names places as the author sees them; the agent's document context has their source ranges.
    */
-  async #ask(focus: FocusReport[], compose: (places: Map<string, AgentPlace>) => string): Promise<boolean> {
+  async #ask(kind: 'request' | 'comments', focus: FocusReport[], compose: (places: Map<string, AgentPlace>) => string): Promise<boolean> {
     const document = this.#state.document
     const asker = [...this.#askers][0]
     const t = this.#messages
     if (document === undefined) return false
+    // The request's id joins the operation to the conversation: the session's user message carries it, and its turn follows.
+    const asked = (attributes: Record<string, OperationValue>) => this.#record('agent.ask', { 'presmium.ask.kind': kind, 'presmium.focus': focus.map(item => [item.id, item.section, item.block].filter(Boolean).join(':')).join('\n'), ...attributes })
     if (!asker) {
+      asked({ 'presmium.outcome': 'no-conversation' })
       this.#set({ askFailure: t.noConversation })
       return false
     }
     this.#set({ isAsking: true, askFailure: undefined })
+    let text: string | undefined
     try {
       if (focus.length > 0) {
         this.setFocus(focus)
@@ -548,11 +615,14 @@ export class Workbench {
       }
       const located = this.#state.focus as (FocusReport & Partial<Focus>)[]
       const places = new Map(located.map(item => [item.id, this.#describe(item)]))
-      await asker({ text: compose(places), focus })
+      text = compose(places)
+      const answer = await asker({ text, focus })
+      asked({ 'presmium.ask.text': text, 'presmium.outcome': 'sent', 'dsh.session.id': answer?.session, 'dsh.request.id': answer?.request })
       if (this.#state.document === document) this.#set({ isAsking: false, pointer: undefined })
       this.#broadcast({ type: 'highlight', target: null })
       return true
     } catch (error) {
+      asked({ 'presmium.ask.text': text, 'presmium.outcome': 'failed', 'presmium.error': errorMessage(error) })
       if (this.#state.document === document) this.#set({ isAsking: false, askFailure: errorMessage(error) })
       return false
     }
@@ -582,16 +652,19 @@ export class Workbench {
   addComment(text: string, pointer = this.#state.pointer): DocumentComment | undefined {
     if (!pointer || !text.trim()) return undefined
     const comment = newComment(pointer.target, text.trim(), pointer.quote)
+    this.#record('comment.add', { 'presmium.comment': comment.id, 'presmium.section': comment.section, 'presmium.block': comment.block, 'presmium.quote': comment.quote, 'presmium.text': comment.text })
     this.#writeComments([...this.#state.comments, comment])
     this.point(undefined)
     return comment
   }
 
   setCommentStatus(id: string, status: DocumentComment['status']): void {
+    this.#record('comment.status', { 'presmium.comment': id, 'presmium.status': status })
     this.#writeComments(this.#state.comments.map(comment => (comment.id === id ? { ...comment, status } : comment)))
   }
 
   removeComment(id: string): void {
+    this.#record('comment.remove', { 'presmium.comment': id })
     this.#writeComments(this.#state.comments.filter(comment => comment.id !== id))
   }
 
@@ -600,13 +673,14 @@ export class Workbench {
     const chosen = this.#state.comments.filter(comment => ids.includes(comment.id))
     if (chosen.length === 0) return false
     const focus = chosen.map((comment, i): FocusReport => ({ id: `comment-${i + 1}`, from: this.#state.previewRenderer, section: comment.section, ...comment.block ? { block: comment.block } : {}, ...comment.quote ? { quote: comment.quote } : {} }))
-    const asked = await this.#ask(focus, places => this.#messages.commentsRequest(chosen.map((comment, i) => ({ ...places.get(focus[i]!.id) ?? this.#describe(focus[i]!), text: comment.text }))))
+    const asked = await this.#ask('comments', focus, places => this.#messages.commentsRequest(chosen.map((comment, i) => ({ ...places.get(focus[i]!.id) ?? this.#describe(focus[i]!), text: comment.text }))))
     if (asked) this.#writeComments(this.#state.comments.map(comment => (ids.includes(comment.id) ? { ...comment, status: 'sent' as const } : comment)))
     return asked
   }
 
   /** Shows a section, or a block of it, in the preview (the next one attached, when none is). */
   revealPlace(section: string, block?: string): void {
+    this.#record('reveal.place', { 'presmium.section': section, 'presmium.block': block })
     const target: PreviewAnchor = { section, ...block ? { block } : {} }
     if (this.#previewSinks.size === 0) {
       this.#pendingReveal = target
@@ -618,6 +692,7 @@ export class Workbench {
 
   /** Shows the place of a line of a source file: in the document holding the file, opened when it is another. */
   async revealSource(path: string, line = 1): Promise<boolean> {
+    this.#record('reveal.source', { 'presmium.path': path, 'presmium.line': line })
     const documents = this.#state.documents?.documents ?? []
     const holder = [...documents].sort((a, b) => b.dir.length - a.dir.length).find(doc => !doc.dir || path.startsWith(`${doc.dir}/`))
     if (!holder) return false
@@ -630,27 +705,27 @@ export class Workbench {
   }
 
   undo(): Promise<boolean> {
-    return this.#history.undo()
+    return this.#timed('history.undo', {}, () => this.#history.undo(), done => (done ? 'done' : 'refused'))
   }
 
   redo(): Promise<boolean> {
-    return this.#history.redo()
+    return this.#timed('history.redo', {}, () => this.#history.redo(), done => (done ? 'done' : 'refused'))
   }
 
   revertRevision(id: string): Promise<boolean> {
-    return this.#history.revert(id)
+    return this.#timed('history.revert', { 'presmium.revision': id }, () => this.#history.revert(id), done => (done ? 'done' : 'refused'))
   }
 
   acceptReview(): Promise<boolean> {
-    return this.#history.acceptReview()
+    return this.#timed('review.accept', {}, () => this.#history.acceptReview(), done => (done ? 'done' : 'refused'))
   }
 
   rejectReview(): Promise<boolean> {
-    return this.#history.rejectReview()
+    return this.#timed('review.reject', {}, () => this.#history.rejectReview(), done => (done ? 'done' : 'refused'))
   }
 
   recordOutsideChanges(): Promise<boolean> {
-    return this.#history.recordOutside(this.#messages.outsideChange)
+    return this.#timed('changes.record', {}, () => this.#history.recordOutside(this.#messages.outsideChange), done => (done ? 'done' : 'refused'))
   }
 
   attachPreview(sink: PreviewSink): () => void {
@@ -704,7 +779,16 @@ export class Workbench {
       case 'edited':
         this.#saveEdit(report.target, report.before, report.after)
         break
+      case 'position': {
+        // Where the author reads or presents: recorded when it moves to another section, step or view.
+        const at = `${report.section}\0${report.step}\0${report.view ?? ''}`
+        if (at === this.#lastPosition) break
+        this.#lastPosition = at
+        this.#record('preview.position', { 'presmium.section': report.section, 'presmium.step': report.step, 'presmium.preview.view': report.view })
+        break
+      }
       case 'shortcut':
+        this.#record('shortcut', { 'presmium.command': report.command })
         if (report.command === 'dismiss') {
           if (this.#state.pointer) this.point(undefined)
         } else if (report.command === 'undo') void this.undo()
@@ -730,6 +814,7 @@ export class Workbench {
   }
 
   dispose(): void {
+    this.telemetry.stop()
     this.#stopSubscriptions()
     this.#diagnostics.dispose()
   }

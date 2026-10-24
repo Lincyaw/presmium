@@ -35,6 +35,7 @@
     "./skills": "./entries/skills.mjs",
     "./routes": "./entries/routes.mjs",
     "./turns": "./entries/turns.mjs",
+    "./telemetry": "./entries/telemetry.mjs",
     "./launch": "./src/node/launch.ts",
     "./testing": "./src/node/fake-model.ts",
     "./package.json": "./package.json"

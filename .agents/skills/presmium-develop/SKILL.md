@@ -50,6 +50,8 @@ description: "帮助开发者评估 Presmium 架构、定位故障、实现或�
 
 dsh 给 agent 的说明（`packages/dsh/src/node/context.ts` 的指南与文稿快照、`web.patch.yml` 的 persona）描述系统而不规定步骤：东西在哪、agent 负责什么、哪个工具说明什么，事实给全，路径都相对工作区根目录；作者的消息与批注就是要做的事，回答按作者看到的内容说，不提内部实现（`docs/design-dsh.md` 6.4、6.6 节）。工作区特有的约定（生成的文件、需要一起改的文件）写进工作区的 AGENTS.md。评估 agent 时看会话轨迹：用了几步、在哪里探索了上下文本该给出的事实、哪条说明让它多做了。
 
+观测数据（`docs/design-dsh.md` 6.7 节）只在配置了 `PRESMIUM_TELEMETRY_URL` 时采集：`presmium-telemetry` 行导出每个会话的全部事件，工作台的 `OperationLog` 记录作者的操作并经 `/api/presmium/telemetry` 交给宿主。新增作者能做的操作时，在 `Workbench` 的对应方法中用 `#record`（耗时的用 `#timed`）记下它；交给 AI 的请求要带回会话与请求的 ID（`AgentAnswer`），关联靠它。验证用 `packages/dsh/src/node/fake-collector.ts` 接收上传，见 `packages/dsh/test/telemetry.test.ts` 与 `e2e/workbench.spec.ts` 中的“the operator's collector”。
+
 新建与历史入口放在对话栏顶部，历史仍用 Harness 的会话列表。新建通过公开的 `uiWorkspace.startSession` 指定当前工作区，保持当前文稿；不模拟点击隐藏的侧栏按钮。
 
 活动栏只有文稿、AI 助手，底部是更多、设置与帮助；对话记录从对话头部打开。对话记录中选中会话时必须直接显示聊天，重新选中当前会话也一样；不能只观察会话 ID 变化。`ctx.layout.selectPanel(null)` 按 Harness 契约唤起会话，对话中指向文稿 Markdown 的链接经 `LayoutController.showDocument()` 显示文稿中的那一处。分别验证后台启动绑定不抢视图、链接不展开聊天，以及对话记录恢复聊天与草稿。

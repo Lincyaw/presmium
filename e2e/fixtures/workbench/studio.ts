@@ -40,7 +40,7 @@ export interface Studio {
   close(): Promise<void>
 }
 
-export async function startStudio(options: { port: number, model?: FakeModel, patches?: string[], prefix?: string, fixture?: string, isolateClient?: boolean }): Promise<Studio> {
+export async function startStudio(options: { port: number, model?: FakeModel, patches?: string[], prefix?: string, fixture?: string, isolateClient?: boolean, env?: Record<string, string> }): Promise<Studio> {
   const home = testHome(options.prefix ?? 'workbench')
   try {
     if (options.isolateClient) {
@@ -71,7 +71,7 @@ export async function startStudio(options: { port: number, model?: FakeModel, pa
       web = await home.web(workspace.dir, options.port, {
         ...options.model ? { model: options.model } : {},
         ...options.patches ? { patches: options.patches } : {},
-        env: { PRESMIUM_SERVICE_URL: url, PRESMIUM_SERVICE_TOKEN: token, PRESMIUM_WORKSPACE: root },
+        env: { ...options.env, PRESMIUM_SERVICE_URL: url, PRESMIUM_SERVICE_TOKEN: token, PRESMIUM_WORKSPACE: root },
       })
       const started = web
       return {

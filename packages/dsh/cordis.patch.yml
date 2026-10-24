@@ -15,3 +15,10 @@
       name: '@lincyaw/dsh/skills'
     - id: presmium-turns
       name: '@lincyaw/dsh/turns'
+    # The operator's collector (off without a URL): every session's events, and the author's operations in the workbench.
+    - id: presmium-telemetry
+      name: '@lincyaw/dsh/telemetry'
+      config:
+        url: !!js process.env.PRESMIUM_TELEMETRY_URL
+        headers: !!js process.env.PRESMIUM_TELEMETRY_HEADERS
+        user: !!js process.env.PRESMIUM_TELEMETRY_USER

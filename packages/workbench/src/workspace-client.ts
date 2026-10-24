@@ -1,4 +1,5 @@
 import type { DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
+import type { OperationBatch } from './telemetry.ts'
 
 /** A route of the workspace server answered with an error. */
 export class WorkspaceServerError extends Error {
@@ -41,6 +42,10 @@ export interface WorkspaceClient {
   undo(document: string, expect?: string): Promise<RevertResult>
   /** Puts back the change the latest undo took back. */
   redo(document: string, expect?: string): Promise<RevertResult>
+  /** Whether the host collects the workbench's operations for its operator. */
+  readTelemetry(): Promise<{ enabled: boolean }>
+  /** Sends a batch of operations; `beacon` hands it to the browser to deliver while the page goes away. */
+  sendTelemetry(batch: OperationBatch, beacon?: boolean): Promise<void>
 }
 
 export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
@@ -154,5 +159,12 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     revertRevision: (document, id) => post(url('revisions/revert', document), { id }),
     undo: (document, expect) => post(url('history/undo', document), expect ? { expect } : {}),
     redo: (document, expect) => post(url('history/redo', document), expect ? { expect } : {}),
+    readTelemetry: () => call(url('telemetry')),
+    sendTelemetry: async (batch, beacon) => {
+      const body = JSON.stringify(batch)
+      if (beacon && navigator.sendBeacon?.(url('telemetry'), new Blob([body], { type: 'application/json' }))) return
+      const response = await fetch(url('telemetry'), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body, keepalive: Boolean(beacon) })
+      if (!response.ok) throw new Error(`the operations were not taken: HTTP ${response.status}`)
+    },
   }
 }

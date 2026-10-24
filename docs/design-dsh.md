@@ -266,8 +266,9 @@ dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达�
 | `presmium-context` | 全部 | 指南放进 system 消息；文稿快照与焦点按界面选中的文稿取得，每一步之前重读（6.4 节） | `ctx.systemPrompt.section`、`context`、`agent/pre-step` |
 | `presmium-skills` | 全部 | 登记 `presmium-author` 等技能 | `ctx.skills.register` |
 | `presmium-turns` | 全部 | 第一次写文件之前取锁并打开审阅，每个工具调用之后记检查点，接受时提交；撤销后通知会话（6.5 节） | `tools/execute`、turn 事件、`workspace/changes`、`Agent.inject` |
+| `presmium-telemetry` | 全部 | 运营者的观测数据（6.7 节）：配置了 `PRESMIUM_TELEMETRY_URL` 时，把每个会话的全部事件与工作台报告的作者操作经 OTLP 发给运营者的采集端；没有配置时什么也不建、不发 | `ctx.otel.createSessionLogReporter`、`createEventReporter`、`session/event`、`ctx.provide('presmiumTelemetry')` |
 | `presmium-routes` | web | 把 `/api/presmium/*` 转到工作区服务与服务端（精确路径，必须在 `/api` 下），流式的回答原样返回 | `ctx.connection.fetch.register`、`admit()` |
-| `presmium-workbench` | web | 客户端部分：根布局插件、面板、主题、品牌、语言；网页标题与图标；精确路由 `/api/presmium/workbench`（回答 `{ mcp }`，即工作区服务的 MCP 地址，供首页的 MCP 卡片） | `dsh.client`、`ctx.webServer.tapIndex`、`ctx.connection.fetch.register` |
+| `presmium-workbench` | web | 客户端部分：根布局插件、面板、主题、品牌、语言；网页标题与图标；精确路由 `/api/presmium/workbench`（回答 `{ mcp }`，即工作区服务的 MCP 地址，供首页的 MCP 卡片）与 `/api/presmium/telemetry`（作者的操作，交给 `presmiumTelemetry`，6.7 节） | `dsh.client`、`ctx.webServer.tapIndex`、`ctx.connection.fetch.register` |
 
 客户端的行是包名本身：dsh 的模块系统只把名字是整包名（`@lincyaw/dsh`）的 Loader 行当作客户端的来源，`@lincyaw/dsh/<行>` 这样的子路径不算，一个包也只能有一个这样的行。所以 `presmium-workbench` 行的 `name` 是 `@lincyaw/dsh`。
 
@@ -321,12 +322,30 @@ dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达�
 
 启动器每次启动都以 `--patch` 传入 `packages/dsh/profile.patch.yml`，web 载体另加 `packages/dsh/web.patch.yml`（6.1 节；两者随 bundle 发布）。`--patch` 在 profile 自己的补丁与 `$DSH_HOME/cordis.patch.yml` 之后生效，用户在 dsh 界面中的改动（写进 profile 的 `cordis.patch.yml`）因此不能把隐私相关的行重新打开，启动器也不改写 profile 的补丁。
 
-- **隐私**：关掉 `session-log-deepseek`、`session-telemetry-otel`、`plugin-package-inventory-deepseek` 三个上传行；环境变量 `DSH_TELEMETRY_MODE=DISABLED`。这些上传随每个模型请求带出（`dsh_session_log` 一次约 69 KB、`dsh_plugin_packages`），所以“没有出站连接”说明不了问题；没有模型时零请求的前提也是关掉这三行。
+- **隐私**：关掉 `session-log-deepseek`、`session-telemetry-otel`、`plugin-package-inventory-deepseek` 三个上传行；环境变量 `DSH_TELEMETRY_MODE=DISABLED`。这些上传随每个模型请求带出（`dsh_session_log` 一次约 69 KB、`dsh_plugin_packages`），所以“没有出站连接”说明不了问题；没有模型时零请求的前提也是关掉这三行。运营者自己要收集数据时用 Presmium 的观测数据（6.7 节），发往运营者配置的采集端，不经 DeepSeek。
 - **技能**：skill-filesystem 的 `agentsHome` 与环境变量 `DSH_AGENTS_HOME` 都指向 Presmium 状态目录中的空目录。
 - **第一次使用**：工作区控制器的 `documentsDirectory` 指向 Presmium 的状态目录，并在启动时登记好文档的工作区。两者都做到，第一次使用就不会在 `~/Documents` 下建目录。
 - **沙箱**：`workspace-write`，确认策略为 ask。
 - **persona**：headless 与 acp 的 persona 是 `system-prompt` 行的 `personaPrefix`，补丁整体替换这一行的配置，换成 Presmium 的说明。web 载体用 `web.patch.yml` 中声明的预设 `preset-authoring` 承载工作台中的角色：作者是可能不懂代码的教师，只看到读者看到的文稿；作者的消息与批注就是要做的事；按作者看到的内容说话，不提文件、路径、行号、语法、命令、工具、沙箱与 git。`agent-preset-registry` 默认使用该预设；预设内的 `persona` 行遮蔽部署级的 `personaPrefix`，所以两段文字各自完整。写作的发布会原则在 `presmium-author` 技能中，改写内容时加载。预设只带写讲义需要的工具，不带定时任务、目标与子 agent（含 workflow）。dsh 自带的 `preset-standard` 等仍可选，选中时仍是“You are a coding agent powered by …”。
 - **界面**（`web.patch.yml`）：关掉 `ui-layout` 与 `ui-sidebar`（由 Presmium 的根布局与导航外壳替换；退路模式下同时重新打开）、`ui-brand-official`、`ui-settings-account`、`account-controller`、`deepseek-account`、`llm-deepseek-account`、`web-search-deepseek`（DeepSeek 的搜索服务）与 `ui-settings-session-log`（上传会话日志的设置）。插件页中的实验插件与插件市场没有可关的行：它们是 dsh 安装自带的可选 bundle 与按需的官方目录，由插件页的“实验插件”组列出；工作台按这个组的 DOM 属性 `data-plugin-group="extensions"` 隐藏它。确切的行 ID 以锁定的版本为准，由升级闸门第 1 组核对；这个属性由第 3 组核对。
+
+### 6.7 观测数据
+
+运营者（例如做研究的团队）需要分析作者怎样使用工作台、AI 怎样完成每个请求时，在启动 `presmium studio` 的环境中配置自己的 OTLP/HTTP 日志采集端：
+
+| 环境变量 | 作用 |
+|---|---|
+| `PRESMIUM_TELEMETRY_URL` | 采集端的日志地址，如 `http://collector:4318/v1/logs`；没有它时不采集，页面也不记录 |
+| `PRESMIUM_TELEMETRY_HEADERS` | 发往采集端的请求头，`键=值,键=值`，值按 URL 编码（与 `OTEL_EXPORTER_OTLP_HEADERS` 相同），如 `authorization=Bearer%20<令牌>` |
+| `PRESMIUM_TELEMETRY_USER` | 可选，资源属性 `user.id`：这台机器的使用者在研究中的代号 |
+
+`presmium-telemetry` 行用 dsh 的 `otel` 服务建两个各自排队、批量发送、重试的通道，资源属性是 `service.name=presmium-studio`、版本、`presmium.installation.id`（状态目录中的随机 ID，区分不同的安装）与可选的 `user.id`。dsh 自己的 `session-telemetry-otel` 只在用户提交反馈后上传，不适合持续采集，所以仍然关掉。
+
+- **会话轨迹**：每个会话的每个事件（`session/event`：用户消息、系统提示与上下文、每一步的模型请求与回答、工具调用与结果、用量、turn 的起止……）原样成为一条 `session-log` 记录，格式与 dsh 自己的会话日志相同（`sessionId`、`content` 是事件的 JSON），另带 `presmium.turn`（所在的 turn）、`presmium.document`（会话当时的文稿）与 `presmium.workspace`。内容完整，不删减。
+- **作者的操作**：工作台（`@lincyaw/workbench` 的 `OperationLog`）先问宿主是否采集（`GET /api/presmium/telemetry`），采集时按发生顺序记录作者的每个操作，每两秒或满 200 条批量交给宿主（`POST /api/presmium/telemetry`），页面隐藏或关闭时用 `sendBeacon` 补发；宿主检查名称与属性的大小后作为普通事件发出，事件名是 `presmium.workbench.<操作>`。每条带页面这次加载的 `presmium.client.id`、这个浏览器的 `presmium.browser.id`、顺序号 `presmium.seq`、当时的文稿、视图与模式。操作有：打开与关闭文稿，新建、复制、重命名、删除文稿，视图与模式的切换，在文稿中指向某处（节、块、步骤与选中的文字），就地编辑的开始、取消与保存（前后的文字、结果与耗时），批注的新建、状态与删除，交给 AI 的请求（改写、批注、修复；发出的文字），撤消、恢复、撤消某个版本、接受与拒绝审阅，从对话打开源码位置，作者在文稿中的位置（换节、换步或换视图时），快捷键，AI 的修改成立（改了哪些文件）与在文稿上闪烁的位置，以及页面上每个控件的点击（控件的名称、角色与所在区域）。
+- **关联**：交给 AI 的请求（`agent.ask`）带 `dsh.session.id` 与 `dsh.request.id`。会话中这条请求的用户消息带同一个 ID（`content` 中的 `data.source.rpcId`），它所在的 turn（`presmium.turn`）的全部记录就是 AI 为它做的事；AI 的修改成立时的 `ai.change` 与 `ai.change.shown` 接在后面。作者直接在对话中输入的消息只在会话轨迹中。
+
+交付是尽力而为：队列在内存中，采集端不可用时会重试，超出队列、进程退出（退出时最多等 3 秒）或页面关闭而 `sendBeacon` 失败时会丢失记录。会话事件同时保存在 dsh 的会话目录中，需要时可以据此补发。工作台界面中不提示采集；告知使用者由运营者负责。
 
 ## 7. 工作台
 

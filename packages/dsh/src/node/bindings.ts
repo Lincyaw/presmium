@@ -223,6 +223,11 @@ export class DocumentBindings {
     return agent ? this.#bound.get(agent.session.id) : undefined
   }
 
+  /** The document the session works on now, if it is bound to one. */
+  documentOf(agentSessionId: string): string | undefined {
+    return this.#bound.get(agentSessionId)?.document.dir
+  }
+
   failureOf(agent: DshAgent): string | undefined {
     return this.#failures.get(agent.session.id)
   }

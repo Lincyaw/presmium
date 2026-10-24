@@ -1,5 +1,5 @@
 import { selectedDocument } from '@lincyaw/workbench'
-import type { Workbench } from '@lincyaw/workbench'
+import type { AgentAnswer, Workbench } from '@lincyaw/workbench'
 import { mainViewAgentSession, postDocumentContext } from './document-context.ts'
 import { CLIENT_MESSAGES } from './messages.ts'
 
@@ -22,7 +22,7 @@ export function registerAgentRequests(ctx: DshClientContext, workbench: Workbenc
       if (!row || !binding) return
       const id = row.id
       const t = () => CLIENT_MESSAGES[workbench.state.locale]
-      const prompt = async (document: string | null, text: string) => {
+      const prompt = async (document: string | null, text: string): Promise<AgentAnswer> => {
         const isCurrent = () => active === binding && inner.sessions.binding(id) === binding
           && mainViewAgentSession(inner.sessions.list.getSnapshot().byId)?.id === id
           && selectedDocument(workbench.state) === document
@@ -35,6 +35,7 @@ export function registerAgentRequests(ctx: DshClientContext, workbench: Workbenc
           const result = await binding.session.prompt([{ type: 'text', text }], 'queue', undefined, submission.requestId)
           if (!result.ok) throw new Error(result.error.message)
           inner.layout.selectPanel(null)
+          return { session: id, request: submission.requestId }
         } catch (error) {
           submission.abandon()
           throw error
@@ -43,7 +44,9 @@ export function registerAgentRequests(ctx: DshClientContext, workbench: Workbenc
       const offRepair = workbench.onRepairDiagnostics(async (diagnostics) => {
         const document = selectedDocument(workbench.state)
         if (diagnostics.some(diagnostic => diagnostic.document !== document)) throw new Error(t().repairStale)
-        await prompt(document, `${t().repairRequest}\n${JSON.stringify(diagnostics.slice(0, 20))}`)
+        const text = `${t().repairRequest}\n${JSON.stringify(diagnostics.slice(0, 20))}`
+        const answer = await prompt(document, text)
+        workbench.telemetry.record('agent.ask', { 'presmium.document': document ?? undefined, 'presmium.ask.kind': 'repair', 'presmium.ask.text': text, 'presmium.outcome': 'sent', 'dsh.session.id': answer.session, 'dsh.request.id': answer.request })
       })
       const offAsk = workbench.onAgentRequest(request => prompt(selectedDocument(workbench.state), request.text))
       offRequests = () => { offRepair(); offAsk() }
