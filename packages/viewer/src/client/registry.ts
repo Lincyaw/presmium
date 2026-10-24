@@ -19,11 +19,15 @@ export interface ViewerAction {
   views?: readonly string[]
 }
 
+/**
+ * A plugin's layer of the overlay views: over the whole viewport, over the view, on each slide (its props also give the
+ * slide's `section` and `step`, on the canvas's coordinates), or in the view's bar (a control).
+ */
 export interface ViewerLayer {
   id: string
   component: Component
   views?: readonly string[]
-  scope?: 'view' | 'viewport'
+  scope?: 'view' | 'viewport' | 'slide' | 'bar'
 }
 
 const OVERLAY_VIEWS: readonly string[] = ['present', 'presenter']

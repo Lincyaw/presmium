@@ -1,4 +1,4 @@
-import { currentLocale, OPERATIONS, useService, useStartReport } from '@lincyaw/host'
+import { currentLocale, OPERATIONS, useService, useStartReport, useStaticRender } from '@lincyaw/host'
 import type { Operations } from '@lincyaw/host'
 import { blockState, EXECUTOR, errorMessage, failedRun } from '@lincyaw/kernel'
 import type { CodeNode, IRBlock, RecordedRun, RunRequest, RunResult } from '@lincyaw/kernel'
@@ -8,6 +8,7 @@ import { originBar } from '../../domain/index.ts'
 import type { OriginPart } from '../../domain/index.ts'
 import { useSectionContext } from '../section-context.ts'
 import { viewerMessages } from '../viewer-messages.ts'
+import { CodeEditor } from './code-editor.ts'
 import { CodeView, VariantView } from './code-view.ts'
 import { isProseOutput, runOutput } from './outputs.ts'
 
@@ -62,6 +63,10 @@ export const CodeBlockView = defineComponent({
     const fallback = ref<string>()
     const running = ref(false)
     const mounted = ref(false)
+    const printed = useStaticRender()
+    // The code as the reader edited it, run in place of the block's own; and whether its editor is open.
+    const edited = ref<string>()
+    const editing = ref(false)
     let current: AbortController | undefined
     const stop = () => {
       current?.abort()
@@ -87,7 +92,7 @@ export const CodeBlockView = defineComponent({
       current = controller
       running.value = true
       const { lang, args, stdin, timeoutMs, executor: named, session } = node.run
-      const request: RunRequest = { lang, code: node.value, args, stdin, timeoutMs, executor: named, session, ...section ? { place: { section: section.section.value.id, block: props.block.id } } : {} }
+      const request: RunRequest = { lang, code: edited.value ?? node.value, args, stdin, timeoutMs, executor: named, session, ...section ? { place: { section: section.section.value.id, block: props.block.id } } : {} }
       const started = Date.now()
       let result: RunResult
       try {
@@ -122,6 +127,8 @@ export const CodeBlockView = defineComponent({
     watch(() => (props.block.node as CodeNode).value, () => {
       stop()
       show(undefined)
+      edited.value = undefined
+      editing.value = false
     })
 
     return () => {
@@ -136,11 +143,25 @@ export const CodeBlockView = defineComponent({
           : [h(VariantView, { key: 'variant', lang: node.lang, value: variants[shown]!.value })]
       const echo = node.echo !== false
       const runnable = !owned?.value && echo && node.run && node.run.when !== 'compile'
+      // Code that runs as it is shown can be edited before it runs: not code shown in steps or variants, nor printed.
+      const editable = runnable && !variants.length && !node.highlight?.length && !printed.value
       const t = viewerMessages().code
       const available = mounted.value && executor.value
+      if (editable && (editing.value || edited.value !== undefined)) {
+        listings.splice(0, listings.length, editing.value
+          ? h(CodeEditor, { key: 'editor', lang: node.lang, value: edited.value ?? node.value, onChange: (value: string) => edited.value = value, onRun: run })
+          : h(CodeView, { lang: node.lang, value: edited.value! }))
+      }
       const controls = runnable
         ? h('div', { class: 'pm-code-block__run' }, [
             h('button', { type: 'button', disabled: running.value || !available, onClick: run }, running.value ? t.running : live.value ? t.rerun : t.run),
+            editable ? h('button', { 'type': 'button', 'class': 'pm-code-block__edit', 'aria-pressed': String(editing.value), 'onClick': () => editing.value = !editing.value }, editing.value ? t.doneEditing : t.edit) : null,
+            editable && edited.value !== undefined && edited.value !== node.value
+              ? h('button', { type: 'button', class: 'pm-code-block__revert', onClick: () => {
+                  edited.value = undefined
+                  editing.value = false
+                } }, t.revert)
+              : null,
             node.run!.session ? h('button', { 'type': 'button', 'class': 'pm-code-block__reset', 'disabled': !available, 'data-session': node.run!.session, 'onClick': resetRunSession }, t.resetRunSession) : null,
             mounted.value && !executor.value && report.value ? h('span', { class: 'pm-code-block__hint' }, t.unavailable) : null,
           ])

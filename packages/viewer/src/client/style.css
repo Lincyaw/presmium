@@ -840,6 +840,46 @@ html.pm-presenting {
   margin-left: 0;
 }
 
+/* A runnable code block's code, edited before it runs (CodeMirror). */
+.pm-code-editor {
+  margin: 0.5em 0;
+  border: var(--pm-size-hairline) solid var(--pm-color-line-strong);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-code);
+  font-size: 0.875em;
+}
+
+.pm-code-editor .cm-editor {
+  border-radius: inherit;
+}
+
+.pm-code-editor .cm-editor.cm-focused {
+  outline: var(--pm-size-stroke) solid var(--pm-color-accent);
+  outline-offset: var(--pm-space-px);
+}
+
+.pm-code-editor .cm-scroller {
+  padding: 0.5em 0;
+  font-family: var(--pm-font-mono);
+  line-height: 1.6;
+}
+
+.pm-code-editor .cm-content {
+  caret-color: var(--pm-color-ink);
+  color: var(--pm-color-ink);
+}
+
+.pm-code-editor .cm-cursor {
+  border-left-color: var(--pm-color-ink);
+}
+
+/* Plugins' layers on a slide (drawings): over its content, on the canvas's coordinates; a layer takes the pointer itself. */
+.pm-slide__layers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 /* Every slide one after the other at the canvas's size, for printing. */
 
 .pm-slides-print__page {

@@ -1,4 +1,6 @@
-export { CLEAR_DRAWING, DRAWINGS_DIR, SCREEN_KEY, STAGE_ID } from './config.ts'
+export { DRAWINGS_DIR, DRAWINGS_KEY, DRAWINGS_ROUTE, SCREEN_KEY, STAGE_ID } from './config.ts'
+export { drawingFile, drawingSection, INKS, PEN_WIDTH } from './drawings.ts'
+export type { PenMode } from './drawings.ts'
 export { placeFootnotes } from './footnotes.ts'
 export { MESSAGES } from './messages.ts'
 export type { StageMessages } from './messages.ts'

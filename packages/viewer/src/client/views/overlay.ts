@@ -3,6 +3,7 @@ import type { Ref } from 'vue'
 import { computed, h, onBeforeUnmount, onMounted, provide } from 'vue'
 import { BlockView } from '../block.ts'
 import { listLayers } from '../registry.ts'
+import type { ViewerLayer } from '../registry.ts'
 import { SECTION_CONTEXT } from '../section-context.ts'
 import type { Viewer } from '../viewer-state.ts'
 
@@ -65,6 +66,6 @@ export function button(label: string, onClick: () => void) {
   return h('button', { type: 'button', class: 'pm-present__button', onClick }, label)
 }
 
-export function layers(view: string, scope: 'view' | 'viewport') {
-  return listLayers(view).filter(layer => (layer.scope ?? 'viewport') === scope).map(layer => h(layer.component, { key: layer.id, view }))
+export function layers(view: string, scope: NonNullable<ViewerLayer['scope']>, props: Record<string, unknown> = {}) {
+  return listLayers(view).filter(layer => (layer.scope ?? 'viewport') === scope).map(layer => h(layer.component, { key: layer.id, view, ...props }))
 }

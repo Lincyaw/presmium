@@ -37,6 +37,9 @@ const zh = {
     running: '运行中…',
     unavailable: '执行服务不可用',
     resetRunSession: '重置会话',
+    edit: '编辑代码',
+    doneEditing: '完成编辑',
+    revert: '还原代码',
   },
   markdown: {
     admonitions: {
@@ -93,6 +96,9 @@ const en: Messages = {
     running: 'Running…',
     unavailable: 'Execution service unavailable',
     resetRunSession: 'Reset session',
+    edit: 'Edit the code',
+    doneEditing: 'Done editing',
+    revert: 'Restore the code',
   },
   markdown: {
     admonitions: {

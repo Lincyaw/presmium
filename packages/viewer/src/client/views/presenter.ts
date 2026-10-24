@@ -57,6 +57,7 @@ export const PresenterView = defineComponent({
           button(t.presenter.restart, () => started.value = now.value = Date.now()),
           button(t.present.prev, () => viewer.prev()),
           button(t.present.next, () => viewer.next()),
+          ...layers('presenter', 'bar'),
           h(PmApprovals),
         ]),
         h('div', { class: 'pm-presenter__main' }, [

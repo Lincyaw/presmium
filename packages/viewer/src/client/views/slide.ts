@@ -5,7 +5,7 @@ import type { PropType } from 'vue'
 import { computed, defineComponent, h, onBeforeUnmount, onMounted, provide, ref, shallowRef, watch } from 'vue'
 import { SECTION_CONTEXT } from '../section-context.ts'
 import { useViewer } from '../viewer-state.ts'
-import { visuals } from './overlay.ts'
+import { layers, visuals } from './overlay.ts'
 
 /**
  * A slide: one section at one step on a canvas of a fixed size (980 wide and 16:9 unless the document's slides say
@@ -136,6 +136,7 @@ export const SlideFace = defineComponent({
             : null,
           h('span', { class: 'pm-slide__page' }, `${section.index} / ${sections.length}`),
         ]),
+        h('div', { class: 'pm-slide__layers' }, layers(props.view, 'slide', { section: section.id, step })),
       ])
     }
   },

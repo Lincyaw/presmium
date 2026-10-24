@@ -101,6 +101,7 @@ export const PresentView = defineComponent({
           viewer.options.openPresenter ? button(t.present.presenter, () => viewer.options.openPresenter!(viewer.position.value)) : null,
           button(t.present.fullscreen, enterFullscreen),
           viewer.options.slidesOnly ? null : button(t.present.exit, () => viewer.setView(viewer.pageView.value)),
+          ...layers('present', 'bar'),
           h(PmApprovals, { placement: 'above' }),
         ]),
         ...layers('present', 'view'),

@@ -1,6 +1,7 @@
 import type { ViewerPluginContext } from '@lincyaw/viewer'
 import type { Component } from 'vue'
 import { defineComponent, h, shallowRef, watch } from 'vue'
+import { drawingLayer, penControls, togglePen } from './drawings.ts'
 import { messages } from './locale.ts'
 import { useScreen } from './screen.ts'
 
@@ -56,9 +57,14 @@ const BlackLayer: Component = defineComponent({
   },
 })
 
-export default function stageViewerPlugin({ registerAction, registerLayer }: ViewerPluginContext): void {
+export default function stageViewerPlugin({ registerAction, registerLayer, useViewer }: ViewerPluginContext): void {
+  const Drawing = drawingLayer(useViewer)
+  const Pen = penControls(useViewer)
   registerAction({ id: 'presmium.stage.black', keys: ['b'], run: () => useScreen().toggle('black') })
   registerAction({ id: 'presmium.stage.freeze', keys: ['f'], run: () => useScreen().toggle('frozen') })
+  registerAction({ id: 'presmium.stage.draw', keys: ['d'], run: () => togglePen() })
+  registerLayer({ id: 'presmium.stage.drawing', component: Drawing, views: ['present', 'presenter', 'print'], scope: 'slide' })
+  registerLayer({ id: 'presmium.stage.pen', component: Pen, scope: 'bar' })
   registerLayer({ id: 'presmium.stage.screen', component: ScreenLayer, scope: 'view' })
   registerLayer({ id: 'presmium.stage.black', component: BlackLayer, views: ['present'], scope: 'viewport' })
 }
