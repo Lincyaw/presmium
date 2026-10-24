@@ -5,12 +5,14 @@ import type { FollowAnchor, IRSection, PresentationMode, StepKeys } from '@lincy
 import { findView, useSectionContext } from '@lincyaw/viewer'
 import type { Viewer } from '@lincyaw/viewer'
 import { FINAL_STEP } from '@lincyaw/viewer/domain'
-import { useData } from 'vitepress'
+import type { Ref } from 'vue'
 import { computed, readonly, ref } from 'vue'
 
 export interface WebHostAdapterOptions {
   lang: string
   shared: SharedStates
+  /** Whether the page is dark, as its shell tells. */
+  isDark(): Ref<boolean>
 }
 
 function roleOf(view: string): ViewRole {
@@ -55,7 +57,7 @@ export function createWebHostAdapter(viewer: Viewer, options: WebHostAdapterOpti
     useSharedState: options.shared.sharedState,
     getService: presmiumService,
     startReport: presmiumReport,
-    useDarkMode: () => useData().isDark,
+    useDarkMode: options.isDark,
   }
 }
 

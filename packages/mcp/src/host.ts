@@ -9,6 +9,7 @@ import type {
   Focus,
   IRDocument,
   Member,
+  OutputJobs,
   RunResult,
   ServiceToken,
 } from '@lincyaw/kernel'
@@ -63,6 +64,8 @@ export interface McpHost {
   watchDiagnostics?(listener: (document: string) => void): () => void
   check(document: string): Promise<Finding[]>
   build(document: string, options: { to?: string[] }): Promise<{ outputs: { renderer: string, outDir: string }[], findings: Finding[] }>
+  /** The builds and exports as jobs the workbench shows, where the host runs them so (the workspace service). */
+  jobs?: OutputJobs
   run(document: string, target: { section: string, block: string }, signal?: AbortSignal): Promise<RunResult>
   approve(request: ApprovalRequest, signal?: AbortSignal): Promise<boolean>
   offers(kind: ApprovalKind): boolean

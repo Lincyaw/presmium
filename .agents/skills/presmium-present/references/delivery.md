@@ -44,7 +44,7 @@ presmium:
 pnpm exec presmium-export --format pdf --output lecture.pdf
 ```
 
-用 `--with-clicks` 把每一步展开为一页，`--range 1,3-5` 选择页，`--dark` 导出暗色，`--format png` 改为图片。`presmium-export` 会按导出所需的根路径准备文稿，避免静态站点子路径导致媒体丢失。
+用 `--with-clicks` 把每一步展开为一页，`--range 1,3-5` 选择页，`--dark` 导出暗色，`--format png` 改为图片，`--format pptx` 改为 PowerPoint（每张幻灯片是一张图）。在工作台中，命令栏的“导出”同样能生成幻灯片 PDF、PowerPoint 与讲授视频，不需要文稿列出发布插件，生成的文件可以打开、播放与下载。`presmium-export` 会按导出所需的根路径准备文稿，避免静态站点子路径导致媒体丢失。
 
 导出后检查页数、缺页、长代码溢出，以及关键链接。运行面板在纸面上显示静态降级与录制输出。缺页或超时时先读错误，再重试或调整 `--wait`、`--timeout`，不能把不完整文件当成完成。
 

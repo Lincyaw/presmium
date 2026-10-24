@@ -1,6 +1,8 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import type { CompileJob, JobsAnswer } from '@lincyaw/kernel'
+import { connectPresmiumMcp } from '@lincyaw/mcp/client'
 import type { Child } from './helpers.ts'
 import { cleanEnv, FIXTURES, presmiumProcess, raw, remove, waitFor, workspace } from './helpers.ts'
 
@@ -112,7 +114,7 @@ describe('presmium serve: the workspace service for a workbench', () => {
 
     const preview = await route('preview?document=talk')
     expect(preview.status, preview.text).toBe(200)
-    expect(preview.json()).toEqual({ document: 'talk', web: `${url}/talk/`, slides: `${url}/__presmium/presmium.workspace/slides/talk/` })
+    expect(preview.json()).toEqual({ document: 'talk', web: `${url}/__app/view?document=talk`, slides: `${url}/__presmium/presmium.workspace/slides/talk/` })
 
     const build = await route('build?document=talk', { method: 'POST', json: { to: ['web'] } })
     expect(build.status, build.text).toBe(200)
@@ -145,6 +147,40 @@ describe('presmium serve: the workspace service for a workbench', () => {
       expect(answer.headers['content-security-policy'], page).toBe(`frame-ancestors ${WORKBENCH}`)
     }
   }, 300_000)
+
+  it('makes a document into its outputs as jobs: the files below /__outputs/, a revision made once, the same jobs for the AI', async () => {
+    const answer = (await route('jobs?document=talk')).json<JobsAnswer>()
+    expect(answer.targets.map(target => target.id)).toContain('web')
+    const started = await route('jobs?document=talk', { method: 'POST', json: { target: 'web' } })
+    expect(started.status, started.text).toBe(200)
+    const { id } = started.json<CompileJob>()
+    let job = started.json<CompileJob>()
+    for (const until = Date.now() + 300_000; job.state === 'queued' || job.state === 'running';) {
+      if (Date.now() > until) throw new Error(`the job is still ${job.state}`)
+      await new Promise(done => setTimeout(done, 500))
+      job = (await route('jobs?document=talk')).json<JobsAnswer>().jobs.find(own => own.id === id)!
+    }
+    expect(job, job.error).toMatchObject({ state: 'done', target: 'web', main: 'web/index.html' })
+    // The site is built for the job's address: its pages and their assets load from there.
+    const page = await raw(`${job.url}${job.main}`)
+    expect(page.status).toBe(200)
+    expect(page.text).toContain(`/__outputs/${id}/web/`)
+    expect(job.files.find(file => file.path === 'web/index.html')?.type).toBe('text/html')
+    // The same revision is not made again.
+    expect((await route('jobs?document=talk', { method: 'POST', json: { target: 'web' } })).json<CompileJob>().id).toBe(id)
+
+    const { token } = JSON.parse(readFileSync(join(home, 'cache/presmium/serve', serveState(), 'server.json'), 'utf8')) as { token: string }
+    const client = await connectPresmiumMcp(`${url}/mcp`, token)
+    try {
+      const called = await client.call('get_builds', { document: 'talk' })
+      expect(called.isError, called.text).toBe(false)
+      const builds = JSON.parse(called.text) as { targets: { id: string }[], jobs: { id: string, state: string, main?: string }[] }
+      expect(builds.targets.map(target => target.id)).toContain('web')
+      expect(builds.jobs[0]).toMatchObject({ id, state: 'done', main: `${job.url}web/index.html` })
+    } finally {
+      await client.close()
+    }
+  }, 600_000)
 
   function serveState(): string {
     const state = /its token is in (\S+)\/server\.json/.exec(serve.output())?.[1]

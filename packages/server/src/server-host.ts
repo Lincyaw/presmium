@@ -1,6 +1,6 @@
 import type { Compilation } from '@lincyaw/compiler'
 import { pluginId } from '@lincyaw/compiler'
-import type { DocumentSummary, Finding, IRDocument, Member, PresmiumNodePlugin, RunResult, ServiceToken } from '@lincyaw/kernel'
+import type { DocumentSummary, Finding, IRDocument, Member, OutputJobs, PresmiumNodePlugin, RunResult, ServiceToken } from '@lincyaw/kernel'
 
 export interface ServedPlugin {
   id: string
@@ -53,4 +53,6 @@ export interface ServerHost {
   check(document: string): Promise<Finding[]>
   build(document: string, options?: { to?: string[] }): Promise<{ outputs: { renderer: string, outDir: string }[], findings: Finding[] }>
   run(document: string, target: { section: string, block: string }, signal?: AbortSignal): Promise<RunResult>
+  /** The documents' builds and exports as jobs, where the host runs them so (the workspace service). */
+  jobs?: OutputJobs
 }

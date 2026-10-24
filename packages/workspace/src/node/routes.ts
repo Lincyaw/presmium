@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
-import { hasRole, isRecord, jsonResponse, problemResponse, sseResponse } from '@lincyaw/kernel'
-import type { ChangesAnswer, CommitAnswer, DocumentOperation, DocumentsAnswer, Member, PresmiumNodePlugin, RequestContext, RevertResult, RevisionsAnswer, Route, SavedAnswer, ServerContribution } from '@lincyaw/kernel'
+import { hasRole, isRecord, jsonResponse, problemResponse, pushStream, sseResponse } from '@lincyaw/kernel'
+import type { ChangesAnswer, CommitAnswer, CompileJob, DocumentOperation, DocumentsAnswer, JobsAnswer, Member, PresmiumNodePlugin, RequestContext, RevertResult, RevisionsAnswer, Route, SavedAnswer, ServerContribution } from '@lincyaw/kernel'
 import { hasBearerToken } from '@lincyaw/server'
 import { REVERT_TRAILER, saveSummary, trailers } from '../domain/commit-message.ts'
 import { documentSummaries, listDocuments } from './config.ts'
@@ -16,6 +16,7 @@ import type { AgentSessionReviews } from './review/agent-session-reviews.ts'
 import { MAX_SOURCE } from './source-editor.ts'
 import type { SourceEditor } from './source-editor.ts'
 import { listTemplates } from './templates.ts'
+import type { Jobs } from './jobs.ts'
 import type { WorkbenchApi } from './workbench-api.ts'
 import { documentDirOf } from './writer.ts'
 
@@ -33,6 +34,7 @@ export interface WorkspaceRoutesOptions {
   reviews?: AgentSessionReviews
   documentsChanged(change: DocumentsChange): Promise<void> | void
   workbench?: WorkbenchApi
+  jobs?: Jobs
   launcherToken?: string
 }
 
@@ -206,6 +208,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       })),
     },
     ...workbench ? workbenchRoutes(workbench) : {},
+    ...options.jobs ? jobRoutes(options.jobs) : {},
     ...reviews ? reviewRoutes(reviews) : {},
     'changes/discard': {
       role: 'editor',
@@ -265,6 +268,48 @@ function workbenchRoutes(workbench: WorkbenchApi): Record<string, Route> {
     'check': {
       role: 'editor',
       handle: (request, ctx) => catchRequestErrors(async () => (request.method === 'POST' ? jsonResponse(await workbench.check(ctx.document)) : problemResponse(405, 'POST'))),
+    },
+  }
+}
+
+/**
+ * The document's builds and exports (`jobs`): `GET` what it can be made into and its jobs, `POST { target }` starts one;
+ * `jobs/cancel` (`POST { id }`); `jobs/events`, each change of the document's jobs as it happens (SSE, event `job`).
+ */
+function jobRoutes(jobs: Jobs): Record<string, Route> {
+  const own = (document: string, id: unknown) => {
+    const job = typeof id === 'string' ? jobs.get(id) : undefined
+    return job?.document === document ? job : undefined
+  }
+  return {
+    'jobs': {
+      role: 'editor',
+      handle: (request, ctx) => catchRequestErrors(async () => {
+        if (request.method === 'GET') return jsonResponse({ targets: await jobs.targets(ctx.document), jobs: jobs.list(ctx.document) } satisfies JobsAnswer)
+        if (request.method !== 'POST') return problemResponse(405, 'GET, POST')
+        const body: unknown = await request.json().catch(() => undefined)
+        if (!isRecord(body) || typeof body.target !== 'string') return problemResponse(400, '{ target: a renderer or an export of the document }')
+        return jsonResponse(await jobs.start(ctx.document, body.target))
+      }),
+    },
+    'jobs/cancel': {
+      role: 'editor',
+      handle: (request, ctx) => catchRequestErrors(async () => {
+        if (request.method !== 'POST') return problemResponse(405, 'POST')
+        const body: unknown = await request.json().catch(() => undefined)
+        const job = own(ctx.document, isRecord(body) ? body.id : undefined)
+        return job ? jsonResponse(jobs.cancel(job.id)) : problemResponse(404, 'no such job of the document')
+      }),
+    },
+    'jobs/events': {
+      role: 'editor',
+      handle: async (request, ctx) => {
+        if (request.method !== 'GET') return problemResponse(405, 'GET')
+        const events = pushStream<{ event: string, data: CompileJob }>(push => jobs.subscribe((job) => {
+          if (job.document === ctx.document) push({ event: 'job', data: job })
+        }), { signal: request.signal })
+        return sseResponse(events, request.signal)
+      },
     },
   }
 }

@@ -53,6 +53,9 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
       return findings
     },
     build: (document, build) => host().build(document, build),
+    get jobs() {
+      return host().jobs
+    },
     run: (document, target, signal) => host().run(document, target, signal),
     approve: (request, signal) => control.approvals.request(request, signal),
     offers: kind => control.policy(kind) !== 'off',

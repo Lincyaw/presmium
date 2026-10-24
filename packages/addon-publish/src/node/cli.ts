@@ -8,13 +8,13 @@ import { exportDeck } from './export.ts'
 import { EXPORT_TIMEOUT, EXPORT_WAIT } from './slidev-export.ts'
 import { visualDiff } from './visual-diff.ts'
 
-const EXPORT_USAGE = `Usage: presmium-export [deckDir] [--format pdf|png] [--output <file.pdf | dir>] [--with-clicks] [--range <1,3-5>] [--dark] [--wait <ms>] [--timeout <ms>] [--json]
+const EXPORT_USAGE = `Usage: presmium-export [deckDir] [--format pdf|pptx|png] [--output <file.pdf | file.pptx | dir>] [--with-clicks] [--range <1,3-5>] [--dark] [--wait <ms>] [--timeout <ms>] [--json]
 
 Renders the deck with the slides renderer and exports the Slidev deck it
 writes with \`slidev export\`: to PDF (default), then checks that every link
 the slides show (Markdown links, href and *link/*url attributes, code
-permalinks) is still a link in the PDF, and exits 1 when a link was lost; or
-to PNG images, one per slide (per click step with --with-clicks), in the
+permalinks) is still a link in the PDF, and exits 1 when a link was lost; to
+PowerPoint (a picture of each slide, no links); or to PNG images, one per slide (per click step with --with-clicks), in the
 --output directory, where links cannot be checked. The print page loads
 until the network is idle, within --timeout (default ${EXPORT_TIMEOUT}), and
 settles for --wait (default ${EXPORT_WAIT}) before it is captured; an export
@@ -70,7 +70,7 @@ export async function exportMain(argv: string[]): Promise<number> {
     return 0
   }
   const format = values.format ?? 'pdf'
-  if (positionals.length > 1 || (format !== 'pdf' && format !== 'png')) {
+  if (positionals.length > 1 || (format !== 'pdf' && format !== 'png' && format !== 'pptx')) {
     console.error(EXPORT_USAGE)
     return 2
   }
@@ -99,6 +99,8 @@ export async function exportMain(argv: string[]): Promise<number> {
       result.warnings.forEach(w => console.error(`warning: ${w}`))
       if (format === 'png') {
         console.log(`exported ${shown(result.output)} (${result.pages} images); links are not checked in images`)
+      } else if (format === 'pptx') {
+        console.log(`exported ${shown(result.output)} (${result.pages} slides, each a picture)`)
       } else {
         console.log(`exported ${shown(result.output)} (${result.pages} pages)`)
         for (const link of lost) console.log(`${shown(link.source.file)}:${link.source.line}  link lost  ${link.url} (slide ${link.slide})`)

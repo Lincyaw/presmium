@@ -17,6 +17,10 @@ export interface ExportOptions {
   /** Draws the captions in this language on the frames (the soft subtitle tracks are always there). */
   burn?: string
   log?: (line: string) => void
+  /** How many of the video's frames are drawn. */
+  progress?: (done: number, total: number) => void
+  /** Stops the export between two frames; it then rejects with the signal's reason. */
+  signal?: AbortSignal
 }
 
 export interface ExportResult {
@@ -25,7 +29,7 @@ export interface ExportResult {
   frames: number
   duration: number
   /** The captions written next to the video, a WebVTT file a language. */
-  captions: string[]
+  captions: { lang: string, file: string }[]
   warnings: string[]
 }
 
@@ -222,6 +226,7 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
       })
       log(`playing lecture ${id}: ${frames} frames at ${fps} fps, ${width}x${height}`)
       for (let i = 0; i < frames; i++) {
+        options.signal?.throwIfAborted()
         const at = Math.round(i * 1000 / fps)
         await player.evaluate(t => (window as unknown as Hooks).presmiumLecture.advance(t), at).catch((error: unknown) => {
           throw new Error(`the frame at ${clockText(at)} cannot be drawn: ${errorMessage(error).replace(/^page\.evaluate: (Error: )?/, '')}`)
@@ -230,13 +235,14 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
         await encoder.evaluate(([data, n]) => (window as unknown as Hooks).presmiumEncoder.frame(data, n), [jpeg.toString('base64'), i] as [string, number])
         if (failures.length) throw new Error(failures.join('\n'))
         if ((i + 1) % Math.max(1, Math.round(frames / 10)) === 0) log(`  ${Math.round((i + 1) * 100 / frames)}%`)
+        options.progress?.(i + 1, frames)
       }
       await encoder.evaluate(() => (window as unknown as Hooks).presmiumEncoder.finish(), undefined)
       // The captions go beside the video once the video is whole.
       const sidecars = captions.map(({ lang, vtt }) => {
         const sidecar = `${file.replace(/\.webm$/i, '')}.${lang}.vtt`
         writeFileSync(sidecar, vtt)
-        return sidecar
+        return { lang, file: sidecar }
       })
       return { file, track: id, frames, duration: frames * 1000 / fps, captions: sidecars, warnings }
     } finally {

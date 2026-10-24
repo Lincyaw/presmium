@@ -15,6 +15,8 @@ import { publishedFile } from './publish.ts'
 import type { DocumentPage } from './publish.ts'
 import { runVitepressBuild, startVitepressDev } from './vitepress-process.ts'
 import { browserPackages, headImageUrl, languageLabel, linkFrameworkPackages, OG_TITLE, openGraphHead, presmiumRoot, removeStaleLocaleDirectories, SRC_EXCLUDE, viteFsAllow, writeIfChanged } from './vitepress-project.ts'
+import { viewerAppCache } from './viewer-app.ts'
+import { createViewerService, isViewerPath } from './viewer-service.ts'
 import { startWorkspaceDevProxy } from './workspace-dev-proxy.ts'
 
 const HOME_THEME = fileURLToPath(new URL('../client/workspace-home-theme.ts', import.meta.url))
@@ -334,7 +336,7 @@ export async function buildSite(site: SiteSpec, ctx: RenderContext): Promise<Ren
   if (!single && ctx.config.home !== false) {
     const work = join(ctx.workDir, 'home')
     const root = writeHome(work, site, ctx, siteModules(ctx))
-    const code = await runVitepressBuild(root, ctx.outDir)
+    const code = await runVitepressBuild(root, ctx.outDir, ctx.log)
     if (code !== 0) throw new Error(`vitepress build of the home page exited with code ${code}`)
   }
   const docs = new Map(site.documents.flatMap(entry => (entry.doc ? [[entry.dir, entry.doc] as const] : [])))
@@ -418,17 +420,39 @@ export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir:
     return (await startHome()).port
   }
 
+  // The workbench's previews: the prebuilt viewer app, the document as data, once it has what the document needs.
+  const viewer = createViewerService({
+    base,
+    cacheDir: viewerAppCache(),
+    workDir: join(ctx.workDir, 'viewer'),
+    workspaceRoot: ctx.workspaceRoot,
+    origins: ctx.preview?.origins ?? [],
+    documents: () => site.documents.map(entry => entry.dir),
+    async document(dir) {
+      const doc = latest.get(dir) ?? await compile(dir)
+      if (!latest.has(dir)) latest.set(dir, doc)
+      return latest.get(dir)!
+    },
+    context: (dir, doc) => documentContext(ctx, site, dir, doc, documentWorkDir(ctx, dir), documentWorkDir(ctx, dir)),
+    nodePlugins: dir => site.documents.find(entry => entry.dir === dir)?.nodeVitePlugins,
+    documentPage: link => documentPage(site, base, latest)(link),
+  })
+
   const listenAddress = typeof ctx.config.host === 'string' && ctx.config.host ? ctx.config.host : '127.0.0.1'
-  const proxy = await startWorkspaceDevProxy(portFor, { address: listenAddress, port: Number(ctx.config.port) || 0, target: LOOPBACK })
+  const proxy = await startWorkspaceDevProxy(portFor, { address: listenAddress, port: Number(ctx.config.port) || 0, target: LOOPBACK }, viewer.handle)
 
   return {
     url: `http://${listenAddress === '0.0.0.0' || listenAddress === '::' ? '127.0.0.1' : listenAddress}:${proxy.port}${base}`,
     async target(path: string) {
-      return `http://${LOOPBACK}:${await portFor(path)}`
+      return `http://${LOOPBACK}:${isViewerPath(base, path) ? proxy.port : await portFor(path)}`
     },
+    app: (dir, wait) => viewer.app(dir, wait),
     async warm(dir: string) {
       // Started ahead of a request only while few run: each dev server holds its own module graph.
-      if (closed || documents.has(dir) || documents.size >= WARM_LIMIT || !site.documents.some(d => d.dir === dir)) return
+      if (closed || !site.documents.some(d => d.dir === dir)) return
+      // Shown in the viewer app: what it needs is built, and no dev server started.
+      if (await viewer.supports(dir).catch(() => false)) return void await viewer.app(dir).catch(() => undefined)
+      if (documents.has(dir) || documents.size >= WARM_LIMIT) return
       const { port } = await startDocument(dir)
       // The page and its modules transformed too, VitePress's own entry among them, before the author opens it.
       await warmDevPage(`http://${LOOPBACK}:${port}${base}${dir ? `${encodeURI(dir)}/` : ''}`, stopping.signal)
@@ -441,12 +465,14 @@ export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir:
       if (entry) Object.assign(entry, known)
       else site.documents.push(known)
       for (const [other, document] of linking) Object.assign(document.workspace!, siteLinks(site, base, other, latest))
+      viewer.update(dir, doc)
       const running = documents.get(dir)
       if (running) await (await running).update(doc)
     },
     async close() {
       closed = true
       stopping.abort()
+      viewer.close()
       await proxy.close()
       const all = [...documents.values(), ...home ? [home] : []]
       documents.clear()

@@ -1,4 +1,4 @@
-import { AUTHOR_MARKS_CLASS, PREVIEW_NAME, PREVIEW_PARAM, previewEnvelope, toPreviewCommand } from './contracts/preview.ts'
+import { AUTHOR_MARKS_CLASS, PREVIEW_APPEARANCE_PARAM, PREVIEW_NAME, PREVIEW_PARAM, previewEnvelope, toPreviewCommand } from './contracts/preview.ts'
 import type { PreviewAnchor, PreviewCommand, PreviewCommandType, PreviewPin, PreviewPoint, PreviewPosition, PreviewRect, PreviewReport } from './contracts/preview.ts'
 import { errorMessage } from './errors.ts'
 
@@ -75,6 +75,13 @@ function previewNonce(): string | undefined {
   if (!window.name.startsWith(framePrefix())) return undefined
   const own = window.name.slice(framePrefix().length)
   return (own.endsWith(PAUSED) ? own.slice(0, -PAUSED.length) : own) || undefined
+}
+
+/** The appearance the workbench loaded the preview with, if it said. */
+export function previewAppearance(): 'dark' | 'light' | undefined {
+  if (typeof window === 'undefined') return undefined
+  const given = new URL(window.location.href).searchParams.get(PREVIEW_APPEARANCE_PARAM)
+  return given === 'dark' || given === 'light' ? given : undefined
 }
 
 /** The Content-Security-Policy that lets only the workbench's origins embed a preview page. */

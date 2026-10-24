@@ -4,7 +4,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path'
 import { parseDuration } from '@lincyaw/kernel'
 import type { ComponentNode, DirectiveSpec, MdastNode, PresmiumNodePlugin } from '@lincyaw/kernel'
 import { MOTION_ID, SCENE_EXTENSIONS, SCENE_NAME, SCENES_DIR } from '../domain/index.ts'
-import { sceneFile, scenesPlugin } from './scenes.ts'
+import { sceneFile, SCENES_MODULE, scenesModule, scenesPlugin } from './scenes.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
@@ -65,6 +65,7 @@ const plugin: PresmiumNodePlugin = {
   kernel: '^1.0.0',
   directives: [scene],
   vitePlugins: ({ deckDir }) => [scenesPlugin(deckDir)],
+  documentModules: ({ deckDir }) => ({ [SCENES_MODULE]: scenesModule(deckDir) }),
 }
 
 export default plugin

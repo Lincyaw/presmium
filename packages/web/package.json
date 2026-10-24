@@ -36,10 +36,13 @@
   ],
   "slidev": {},
   "dependencies": {
+    "@vitejs/plugin-vue": "6.0.10",
     "http-proxy-3": "2.0.1",
     "katex": "0.18.10",
     "launch-editor": "2.14.1",
     "minisearch": "7.2.0",
+    "send": "1.2.1",
+    "vite": "8.3.4",
     "vitepress": "1.6.4",
     "vue": "^3.5.42"
   },
@@ -54,6 +57,7 @@
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/viewer": "workspace:*",
     "@slidev/client": "53.0.0",
-    "@slidev/types": "53.0.0"
+    "@slidev/types": "53.0.0",
+    "@types/send": "^1.2.1"
   }
 }

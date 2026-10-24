@@ -1,11 +1,12 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { errorMessage, findComponentRenderer, isRecord } from '@lincyaw/kernel'
-import type { BoundRendererExtension, ComponentNode, ComponentRenderer, Finding, IRBlock, IRDocument, NodeVitePlugin, RenderContext, RenderOutput, Renderer } from '@lincyaw/kernel'
+import type { BoundRendererExtension, ComponentNode, ComponentRenderer, Exporter, Finding, IRBlock, IRDocument, NodeVitePlugin, RenderContext, RenderOutput, Renderer } from '@lincyaw/kernel'
 import { documentLink, publishedAsset } from './assets.ts'
 import type { Compilation, Compiler } from './compiler.ts'
 import { portable } from './paths.ts'
 import { loadPlugin, pluginId } from './plugins.ts'
+import type { LoadedPlugin } from './plugins.ts'
 import { compileTranslations } from './translations.ts'
 import type { CompiledTranslation } from './translations.ts'
 import { viewFor } from './views.ts'
@@ -21,6 +22,19 @@ export const WEB = 'web'
 export interface InstalledRenderer {
   renderer: Renderer
   package: string
+  /** The exporters of the renderer's package, with its configuration in the document. */
+  exporters: DocumentExporter[]
+}
+
+/** An exporter a document can use, with its plugin's configuration in the document. */
+export interface DocumentExporter {
+  exporter: Exporter
+  config: Record<string, unknown>
+}
+
+function exportersOf(compilation: Compilation, loaded: LoadedPlugin): DocumentExporter[] {
+  const config = compilation.doc.config.presmium[pluginId(loaded)]
+  return (loaded.plugin?.exporters ?? []).map(exporter => ({ exporter, config: isRecord(config) ? config : {} }))
 }
 
 /** The renderers of one build, prepare or dev, and the base path of each. */
@@ -32,8 +46,9 @@ export interface RenderRun {
 async function installedRenderers(compilation: Compilation): Promise<{ renderers: Map<string, InstalledRenderer>, missing: Map<string, string> }> {
   const renderers = new Map<string, InstalledRenderer>()
   const missing = new Map<string, string>()
-  for (const { name, plugin } of compilation.plugins) {
-    if (plugin?.renderer && !renderers.has(plugin.renderer.id)) renderers.set(plugin.renderer.id, { renderer: plugin.renderer, package: name })
+  for (const loaded of compilation.plugins) {
+    const { name, plugin } = loaded
+    if (plugin?.renderer && !renderers.has(plugin.renderer.id)) renderers.set(plugin.renderer.id, { renderer: plugin.renderer, package: name, exporters: exportersOf(compilation, loaded) })
   }
   const config = compilation.doc.config.renderers
   for (const id of new Set([...Object.keys(DEFAULT_RENDERER_PACKAGES), ...Object.keys(config)])) {
@@ -45,7 +60,7 @@ async function installedRenderers(compilation: Compilation): Promise<{ renderers
     }
     const { loaded, problem } = await loadPlugin(pkg, compilation.deckDir, compilation.pluginSources)
     const renderer = loaded?.plugin?.renderer
-    if (renderer?.id === id) renderers.set(id, { renderer, package: pkg })
+    if (loaded && renderer?.id === id) renderers.set(id, { renderer, package: pkg, exporters: exportersOf(compilation, loaded) })
     else missing.set(id, problem?.message ?? `package ${pkg} provides no renderer "${id}"`)
   }
   return { renderers, missing }
@@ -63,6 +78,16 @@ export async function selectRenderers(compilation: Compilation, to?: string[]): 
     else findings.push(renderFinding(compilation, to ? 'error' : 'warning', `renderer ${id} is not installed: ${missing.get(id) ?? 'unknown renderer id'}`))
   }
   return { selected, findings }
+}
+
+/** The exporters of the document's plugins and of its renderers' packages; one id once, the plugins' first. */
+export async function documentExporters(compilation: Compilation): Promise<DocumentExporter[]> {
+  const { selected } = await selectRenderers(compilation)
+  const found = new Map<string, DocumentExporter>()
+  for (const own of [...compilation.plugins.flatMap(loaded => exportersOf(compilation, loaded)), ...selected.flatMap(installed => installed.exporters)]) {
+    if (!found.has(own.exporter.id)) found.set(own.exporter.id, own)
+  }
+  return [...found.values()]
 }
 
 export function configuredBase(value: unknown): string | undefined {

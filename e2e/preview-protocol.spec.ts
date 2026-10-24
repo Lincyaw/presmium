@@ -533,7 +533,9 @@ test('the agent answers no other origin, no other nonce, and does not start out 
   await page.unrouteAll()
 
   const { web } = await route<{ web: string }>('preview?document=talk')
-  await page.goto(`${web}?presmium-preview=${randomUUID()}`)
+  const outside = new URL(web)
+  outside.searchParams.set('presmium-preview', randomUUID())
+  await page.goto(outside.href)
   await expect(page.locator('.pm-block[data-block="alpha-text"]')).toBeVisible({ timeout: 60_000 })
   await page.waitForTimeout(1000)
   await expect(page.locator('html')).not.toHaveAttribute('data-presmium-preview')

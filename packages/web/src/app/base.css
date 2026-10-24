@@ -1,0 +1,105 @@
+/* The viewer app's page: the same resets as the web form's site (VitePress's), so that components look the same. */
+
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+
+html {
+  line-height: 1.4;
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  width: 100%;
+  min-height: 100vh;
+  background: var(--pm-color-bg);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: 1rem;
+  line-height: 1.5rem;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:is(h1, h2, h3, h4, h5, h6) {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+:is(p, blockquote, figure, fieldset) {
+  margin: 0;
+}
+
+:is(ol, ul) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+:is(strong, b) {
+  font-weight: 600;
+}
+
+:is(pre, code, kbd, samp) {
+  font-family: var(--pm-font-mono);
+}
+
+:is(img, svg, video, canvas, audio, iframe, embed, object) {
+  display: block;
+}
+
+:is(img, video) {
+  max-width: 100%;
+  height: auto;
+}
+
+:is(button, input, optgroup, select, textarea) {
+  padding: 0;
+  border: 0;
+  color: inherit;
+  line-height: inherit;
+}
+
+button {
+  background-color: transparent;
+  background-image: none;
+  font-family: inherit;
+}
+
+:is(button, [role='button']):enabled {
+  cursor: pointer;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+input {
+  background-color: transparent;
+}
+
+textarea {
+  resize: vertical;
+}
+
+fieldset {
+  padding: 0;
+}
+
+:is(h1, h2, h3, h4, h5, h6, li, p) {
+  overflow-wrap: break-word;
+}

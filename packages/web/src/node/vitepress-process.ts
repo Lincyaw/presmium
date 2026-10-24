@@ -1,7 +1,7 @@
 import { realpathSync } from 'node:fs'
 import { createServer } from 'node:net'
 import type { AddressInfo } from 'node:net'
-import { findPackageBin, spawnBackgroundNode, spawnInteractiveNode } from '@lincyaw/kernel/node'
+import { findPackageBin, forEachLine, spawnBackgroundNode, spawnInteractiveNode } from '@lincyaw/kernel/node'
 import type { DevMessage } from './vite-plugins.ts'
 
 function vitepressBin(): string {
@@ -10,10 +10,11 @@ function vitepressBin(): string {
   return bin
 }
 
-/** Runs `vitepress build`; resolves to its exit code. */
-export function runVitepressBuild(root: string, outDir: string): Promise<number> {
+/** Runs `vitepress build`, its output to `log` a line at a time (else to this process's stderr); resolves to its exit code. */
+export function runVitepressBuild(root: string, outDir: string, log?: (line: string) => void): Promise<number> {
   return new Promise((done) => {
-    const child = spawnBackgroundNode(vitepressBin(), ['build', realpathSync(root), '--outDir', outDir], { stdio: ['ignore', 2, 2] })
+    const child = spawnBackgroundNode(vitepressBin(), ['build', realpathSync(root), '--outDir', outDir], { stdio: log ? ['ignore', 'pipe', 'pipe'] : ['ignore', 2, 2] })
+    if (log) for (const stream of [child.stdout, child.stderr]) forEachLine(stream, log)
     child.on('exit', code => done(code ?? 1))
     child.on('error', () => done(1))
   })

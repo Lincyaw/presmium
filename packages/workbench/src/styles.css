@@ -786,6 +786,155 @@
   justify-self: start;
 }
 
+/* The Export pane: what the document can be made into, and what was made. */
+
+.pmw-export__hint {
+  margin: 0 var(--pm-space-3);
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-xs);
+  line-height: var(--pm-leading-ui);
+}
+
+.pmw-export__targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pm-space-2);
+  margin: 0;
+  padding: 0 var(--pm-space-3);
+  list-style: none;
+}
+
+.pmw-export__subtitle {
+  margin: var(--pm-space-2) var(--pm-space-3) 0;
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-xs);
+  font-weight: 600;
+}
+
+.pmw-export__video {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  border-radius: var(--pm-radius-small);
+  background: var(--pm-color-sunk);
+}
+
+.pmw-jobs {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0 var(--pm-space-3);
+  list-style: none;
+}
+
+.pmw-job {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--pm-space-1) var(--pm-space-2);
+  padding: var(--pm-space-2) 0;
+  border-bottom: var(--pm-size-hairline) solid var(--pm-color-line);
+}
+
+.pmw-job__icon {
+  display: grid;
+  place-items: center;
+  width: var(--pm-size-avatar);
+  height: var(--pm-size-avatar);
+  border-radius: 50%;
+  background: var(--pm-color-sunk);
+  color: var(--pm-color-muted);
+}
+
+.pmw-job[data-state='running'] .pmw-job__icon {
+  background: var(--pm-color-accent-soft);
+  color: var(--pm-color-accent);
+}
+
+.pmw-job[data-state='failed'] .pmw-job__icon {
+  background: var(--pm-color-danger-soft);
+  color: var(--pm-color-danger);
+}
+
+.pmw-job__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pm-space-1);
+  min-width: 0;
+}
+
+.pmw-job__title {
+  margin: 0;
+  font-size: var(--pm-text-sm);
+  font-weight: 600;
+}
+
+.pmw-job__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pm-space-1);
+  margin: 0;
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-xs);
+}
+
+.pmw-job__progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pm-space-1);
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-xs);
+}
+
+.pmw-job__progress progress {
+  width: 100%;
+  height: var(--pm-space-1);
+  accent-color: var(--pm-color-accent);
+}
+
+.pmw-job__error {
+  margin: 0;
+  color: var(--pm-color-danger);
+  font-size: var(--pm-text-xs);
+  overflow-wrap: anywhere;
+}
+
+.pmw-job__log summary {
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-xs);
+  cursor: pointer;
+}
+
+.pmw-job__log-lines {
+  display: flex;
+  flex-direction: column-reverse;
+  max-height: calc(var(--pm-size-row) * 5);
+  margin-top: var(--pm-space-1);
+  overflow: auto;
+  border-radius: var(--pm-radius-small);
+  background: var(--pm-color-code);
+}
+
+.pmw-job__log pre {
+  margin: 0;
+  padding: var(--pm-space-2);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-mono);
+  font-size: var(--pm-text-xs);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.pmw-job__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pm-space-2);
+}
+
+.pmw-job__actions:empty {
+  display: none;
+}
+
 /* Radix owns positioning, layering and keyboard/focus behavior; these are visual tokens only. */
 .pmw-overlay { position: relative; inset: auto; transform: none; }
 .pmw-dialog-overlay { position: fixed; inset: 0; z-index: calc(var(--pm-z-dialog) - 1); background: var(--pm-color-backdrop); }

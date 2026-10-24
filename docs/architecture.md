@@ -53,10 +53,18 @@ MyST 源码 + 真实代码文件
 
 工作台按当前选中的媒介请求预览：打开网页不等待 Slidev，切到幻灯片才启动它。预览答复同时绑定文稿、媒介与请求序号，切换后到达的旧答复不覆盖当前页面。等待幻灯片启动或启动失败时仍可切回网页。页面的模块加载、初始化与 iframe 重载另有开销，不能用返回预览地址的时间代表页面可见时间。
 
-工作台在作者动手之前预先准备（`preview` 的 `prefetch=1`），都只在机器有余量时进行（`roomToPrefetch`：交互档线程预算至少 2，空闲内存至少 3 GiB）：
+工作台的网页预览是**预先打包的查看器**（`packages/web/src/node/viewer-app.ts`、`document-bundle.ts`、`viewer-service.ts`，页面 `packages/web/src/app/`），像 PDF 查看器对待每一份 PDF：网页形态的运行时（IR 运行时、宿主、插件的浏览器模块）为工作区用到的一组插件打包一次，文稿只是数据。
 
-- 鼠标在文稿列表的一项上停 150 ms 或键盘焦点到达它时，以及工作台启动在文稿列表上、页面空闲时对上次打开的文稿（浏览器的 `localStorage`），工作区服务编译这份文稿、启动它的网页开发服务器（`SiteDevServer.warm`；已有 3 份文稿的开发服务器在运行时不再预先启动），并像浏览器一样请求它的页面与入口模块（`@lincyaw/kernel/node` 的 `warmDevPage`），Vite 由此预先转换页面用到的模块。
-- 网页预览就绪、作者在网页上停留 1.5 s 后，工作区服务启动幻灯片（同时最多 2 个幻灯片开发服务器）并预热它的页面，之后才答复，答复的 `prepared` 说明是否准备好；准备好时工作台在一个看不见的 iframe 里完整加载一次幻灯片的页面（Slidev 的 `embedded`）再移除，浏览器缓存、Vite 的转换与 UnoCSS 的样式由此都已就绪。作者已经切到幻灯片时不再预先准备。
+- **查看器**：Vite 构建，插件的组件、浏览器插件与 viewer 插件都是按需加载的分块；Vue、Presmium 的包给浏览器的子路径与插件 `exports` 中除 Node 端入口外的子路径（第 3 节）各是一个入口，由页面的导入映射（import map）按名字给出；入口的导出（含默认导出）按打包器解析的结果，依赖图走到 Slidev 客户端的子路径只属于幻灯片形态，它的入口一执行就报错。按 Presmium 的源码、构建工具的版本与各插件的指纹（源码目录为文件的路径、大小与时间，`node_modules` 中的包为名字与版本）保存在用户的缓存目录（`$XDG_CACHE_HOME/presmium/viewer-app/`），所有工作区与会话共用，一周没用过的删除，最新的三份保留。一组插件只多不变时，旧查看器的页面照常运行；Presmium 或插件的代码改了，它们重载到新的查看器。
+- **文稿的代码包**：文稿自己的组件、浏览器插件与 viewer 插件，加上插件为它生成的文稿模块（`PresmiumNodePlugin.documentModules`，如动画插件的场景列表），打成一个小包，查看器导入映射中的名字不打进去；查看器中插件对文稿模块的导入是一个代理，读当前文稿的包给出的默认导出。包按代码与内容命名，记下构建它的文件的大小与时间；文稿目录的文件变化时重新核对，代码变了才重新构建，页面随后重载，只改文字时不重载。
+- **构建**：在一个常驻的子进程中进行（交互档资源；30 秒没有任务就退出），查看器与代码包同时构建（包按名字导入的模块在查看器构建之前就能算出）。示例的两讲：查看器约 1.3～2.7 秒（只在第一次），一讲的代码包 0.05～0.6 秒。
+- **服务**：工作区站点的路由在 `<base>__app/` 下回答页面（`view?document=`，带导入映射、`<base>` 与文稿的地址）、IR（`ir`，`ETag`）、修改（`events`，SSE：`ir` 读新 IR，`reload` 重载）、查看器与代码包的文件（地址带内容的键，`immutable`）与发布的媒体。工作区服务把这些路径转给站点的路由。
+- **打开**：工作台打开文稿时，`preview` 等查看器与代码包就绪（最多 15 秒），之后答复查看器的页面；超时、构建失败或插件带别的 Vite 插件时答复文稿的开发服务器，查看器的页面也会把这样的文稿重定向过去。预先准备（`prefetch`）只开始构建、不等待，能由查看器显示的文稿不再启动网页开发服务器。
+
+工作台在作者动手之前预先准备（`preview` 的 `prefetch=1`）：
+
+- 鼠标在文稿列表的一项上停 150 ms 或键盘焦点到达它时，以及工作台启动在文稿列表上、页面空闲时对上次打开的文稿（浏览器的 `localStorage`），工作区服务编译这份文稿，准备查看器与它的代码包；查看器不能显示它时，机器有余量（`roomToPrefetch`：交互档线程预算至少 2，空闲内存至少 3 GiB）就启动它的网页开发服务器（`SiteDevServer.warm`；已有 3 份文稿的开发服务器在运行时不再预先启动），并像浏览器一样请求它的页面与入口模块（`@lincyaw/kernel/node` 的 `warmDevPage`）。
+- 网页预览就绪、作者在网页上停留 1.5 s 后，机器有余量时工作区服务启动幻灯片（同时最多 2 个幻灯片开发服务器）并预热它的页面，之后才答复，答复的 `prepared` 说明是否准备好；准备好时工作台在一个看不见的 iframe 里完整加载一次幻灯片的页面（Slidev 的 `embedded`）再移除，浏览器缓存、Vite 的转换与 UnoCSS 的样式由此都已就绪。作者已经切到幻灯片时不再预先准备。
 
 工作区服务把网站的路径直接转发到这份文稿的开发服务器（`SiteDevServer.target`），不再经站点的路由，一页数百个模块各少一次转发。
 
@@ -212,6 +220,8 @@ VS Code 扩展的安装包包含语言服务、编译器与网页渲染运行时
 | `renderer` | 本插件提供的渲染端（网页、幻灯片、notebook 各是一个插件） |
 | `rendererExtensions` | 本插件为其他渲染端提供的组件转换，例如 notebook 中组件如何变成单元格 |
 | `vitePlugins(ctx)` | 运行 Vite 的渲染端在开发服务器与构建中加入的 Vite 插件；`ctx` 为 `{ deckDir, workspaceRoot, config }`，`config` 是本插件的 `presmium.<插件 ID>`（编译步骤写回的值也在其中）。例如本地环境插件以此给两种形态的开发服务器加上自己的端点 |
+| `documentModules(ctx)` | 插件浏览器代码导入的、内容随文稿而变的虚拟模块（如文稿的场景文件列表），按模块 ID 给出源码，`ctx` 同上；只读它们的默认导出。开发服务器经 `vitePlugins` 得到它们；工作台的查看器预先打包、不带文稿，从文稿自己的代码包得到（1.1 节）。有 `vitePlugins` 却没有 `documentModules` 的插件，查看器认为它的 Vite 插件做了别的事，它的文稿改由开发服务器显示 |
+| `exporters` | 文稿的重的输出，按需作为工作区服务的任务生成（13.7 节）：`Exporter` 有 `id`（不与渲染端重名）、按语言的 `label`、`available(doc, config)` 与 `run(ctx)`。`ctx` 给出文稿目录、本插件的配置、任务自己的空目录 `outDir`、取消用的 `signal`、`progress(phase, done?, total?)`、`log(line)`，以及 `prepare(renderer, config?)`：写出某个渲染端为文稿生成的项目（根路径）并给出它的目录。`run` 返回 `files`（第一个是要先打开的）、视频的 `captions`（语言到字幕文件）与 `warnings`。渲染端所在的包也可以声明（幻灯片渲染端的 `pdf`、`pptx`），讲授插件的 `video` |
 | `version`、`kernel` | 插件的版本（与 `package.json` 一致，官方插件在 Node 端与浏览器端都读 `package.json`）与兼容的内核版本范围；内核版本 `KERNEL_VERSION` 是插件契约的版本，与包的版本分开，现在为 `1.0.0`，契约有不兼容的改动时升主版本（`site/reference/lecture.md` 的版本规则）。编译器不加载范围不含当前内核的插件，渲染端也不使用它（幻灯片不把它作为 Slidev 插件，网页不注册它）。字段在契约中是可选的，官方插件都声明，`scripts/check-plugins.mjs` 检查（并入 `pnpm test`） |
 | `roles` | MyST 行内角色规格（`RoleSpec`，4.10 节），例如讲授插件的 `{cue}`、`{say}` |
 | `services(ctx)` | Node 端服务实现，例如语音插件的 `SPEECH`；编译步骤、渲染端、检查项与服务端贡献经 `service(token)` 使用（4.6 节）。`ctx.settings` 是运营者给本插件的设置（4.7 节），不来自文稿 |
@@ -227,7 +237,7 @@ VS Code 扩展的安装包包含语言服务、编译器与网页渲染运行时
 插件从哪里加载（10.2 节）：`presmium dev`、`serve`、`build`、`check` 都按文稿的 `plugins` 从文稿目录向上查找 `node_modules`，也接受相对于文稿的路径，替换渲染端的 `renderers.<id>.package`（`ir.md` 2.1 节）同样如此；随 CLI 安装的 Presmium 自己的包（渲染端）在找不到时从 CLI 加载。运营者插件另列在工作区配置的 `settings.presmium.workspace.plugins` 中，安装在工作区根目录，每份文档与工作区首页都加载它们。
 
 - 编译步骤 `IRPass` 可以声明 `after: 'execute'`，在编译时执行之后运行，此时代码节点已有 `outputs`（执行插件以此把编译时输出写进执行面板的 `fallback`）。渲染端 `Renderer` 可以提供 `prepare(doc, ctx)`：只生成工作目录、不构建（幻灯片渲染端写出 Slidev 文稿），编译器在 `build` 旁导出 `prepare(compilation, { to, outDir, base })`，发布插件的导出与视觉差异用它（`base` 换掉渲染端的站点路径：`slidev export` 在根路径服务生成的文稿，导出时传 `/`）。构建报告的每个输出给出 `outDir`、`workDir` 与站点路径 `base`。
-- 渲染上下文 `RenderContext` 另有 `lang`（文稿语言）、`pluginDirs`（编译器加载的插件目录）、`extensionFor(node)`（各渲染端选中同一插件的扩展）、`portable(value, from)`、`localAsset(source, url)`（本地文件）、`renderers` 与 `base`（站点路径）、`vitePlugins` 与 `nodeVitePlugins`，见 `ir.md` 第 6 节。
+- 渲染上下文 `RenderContext` 另有 `log(line)`（构建工具的输出逐行交给运行它的任务；启动工具的渲染端给出，如 VitePress 与 Slidev 的构建）、`lang`（文稿语言）、`pluginDirs`（编译器加载的插件目录）、`extensionFor(node)`（各渲染端选中同一插件的扩展）、`portable(value, from)`、`localAsset(source, url)`（本地文件）、`renderers` 与 `base`（站点路径）、`vitePlugins` 与 `nodeVitePlugins`，见 `ir.md` 第 6 节。
 - `@lincyaw/kernel` 还导出插件共用的纯函数：`irBlocks`、`docBlocks`（遍历块，含组件的子块）、`nodeMdast`、`errorMessage`、`isRecord`、`failedRun`、`languageId`（`py`、`python3`、`ipython*` 归为 `python`，`js`、`mjs` 归为 `javascript`，`ts` 归为 `typescript`）、`lowerMyst`（MyST 降为标准 Markdown；卡片、栅格与选项卡按选项 `cards` 保留结构或降为小标题，`ir.md` 第 6 节）与 `deckLocale`。各包共用这些实现。
 - 指令与编译步骤的上下文提供 `watch(...files)`：声明 `ctx.src`、`ctx.resolvers` 之外读取的文件，`presmium dev` 在它们变化时重新编译（`ir.md` 第 5 节）。
 - 组件转换函数为 `(node, block, ctx)`，`ctx` 是所服务渲染端的 `RenderContext`；插件据此得到输出目录与工作目录（例如幻灯片渲染端生成的 Slidev 文稿所在目录），不为此依赖渲染端的包。
@@ -1483,7 +1493,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 | 字体 | `--pm-font-sans`、`--pm-font-serif`、`--pm-font-mono` | IBM Plex Sans、Source Serif 4、IBM Plex Mono，后接中文的系统字体 |
 | 字号 | `--pm-text-xs`、`sm`、`md`、`lg`、`reading`、`title`、`display` | 12、13、14（界面）、16、17（阅读）、20、32 px，以 rem 表示，跟随读者的字号 |
 | 行高 | `--pm-leading-tight`、`ui`、`reading` | 1.25、1.6、1.85 |
-| 间距 | `--pm-space-px`、`--pm-space-1` 至 `--pm-space-10` | 4 px 网格，`px` 是 2 px 的微调 |
+| 间距 | `--pm-space-px`、`--pm-space-1` 至 `--pm-space-12` | 4 px 网格，`px` 是 2 px 的微调 |
 | 圆角 | `--pm-radius-control`、`small`、`card`、`panel`、`chip`、`pill`、`tool`、`sheet` | 8、6、12、14、4、999、4、2 px；`tool` 是编辑台的命令与导航项，`sheet` 是画布上的纸张 |
 | 尺寸 | `--pm-size-hairline`、`stroke`、`rule`、`dot`、`icon-sm`、`icon`、`logo`、`badge`、`avatar`、`divider`、`tool`、`touch`、`row` | 细线 1 px、描边与焦点环 2 px、引文的竖线 3 px；圆点、图标、标志、编号徽标与头像；分隔线的高度、命令按钮、窄屏的触控目标与列表行的高度 |
 | 编辑台 | `--pm-appbar-height`、`--pm-appbar-height-touch`、`--pm-toolbar-height`、`--pm-statusbar-height`、`--pm-pane-header-height`、`--pm-navigation-width`、`--pm-aside-width`、`--pm-sheet-width` | 应用栏、命令栏、状态栏与窗格标题的高度，导航窗格与批注、版本历史窗格的宽度，画布上纸张的宽度 |
@@ -1964,12 +1974,13 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 
 实现：
 
-- **契约与代理**：`packages/kernel/src/contracts/preview.ts` 有 `PREVIEW_PROTOCOL`、两个方向的消息类型（`PreviewCommand`、`PreviewReport`）、两边共用的收窄函数 `toPreviewCommand`、`toPreviewReport`（核对信封、版本、nonce 与字段，不认识的一律丢弃；`selection` 的内容在字段 `selection` 中，没有选中时为 `null`，与 `highlight` 的 `target` 一样）；不依赖框架的产物一侧在 `packages/kernel/src/preview-frame.ts`（另有开发服务器的 `Content-Security-Policy` 用的 `previewFrameAncestors`），`connectPreviewFrame(page)` 返回 `PreviewFrame`：按锚点框出（`[data-preview-highlight]`，不在页面中的先由形态带进来）、在块的元素之中画编号标记（`.pm-preview-pin`）、点选（捕获阶段的点击，控件与链接照常，鼠标下的块加浅色细框，报告块的框、鼠标位置与连击次数）、文字选中（`selectionchange`，带选区的框）、点选或选区的框随滚动与尺寸变化重报（`rect`，每帧再看一次，直到连续两帧不变）、就地编辑（`edit`：元素加 `contenteditable` 与 `[data-preview-editing]`，按键在窗口的捕获阶段截下；取消或没有改动时按 `MutationObserver` 的记录倒着撤销浏览器的改动，页面框架持有的节点因此不变）、作者用的标记（`<html>` 的类 `pm-author-marks`，`AUTHOR_MARKS_CLASS`）、位置（至多每 150 ms）、页面重新渲染后重画（`MutationObserver`），`ready` 之前的问题攒到 `ready` 之后再发。这些都只对页面看得见的块：宿主的规则（排版了、不在 `[inert]` 与 `.pm-hidden` 之下）加上形态自己的规则（`PreviewPage.seen`；幻灯片中是点击还没显示或已经隐藏的块，即 Slidev 文档写明的类 `.slidev-vclick-hidden`，以及逐项出现的列表在第一项的点击之前），看不见的块不框（先由形态带到它出现的那一步）、不画标记、点不中（点在它的位置上得到章节）。nonce 另记在 iframe 的 `window.name` 中，同一个框架中换了地址或刷新后代理照样启动。两种形态各自只给出位置、跳转、明暗、修订号与问题：网页 `packages/web/src/client/preview-frame.ts`（IR 运行时的 `navigation`、VitePress 的明暗开关），只由预览开发服务器生成的主题导入（`ThemeInput.preview`）；幻灯片 `packages/addon-core/src/client/preview-frame.ts`（幻灯片的 `navigation`、Slidev 的 `useDarkMode`；预览中幻灯片的文字可以选中），只由 render-slides 在预览时写进生成文稿的 `setup/root.ts`。静态构建与 `presmium dev` 的页面不加载这两个文件，内核中的代理在构建中被摇掉（`packages/cli/test/preview.test.ts` 扫描两种形态的构建产物）。插件启动失败与组件出错（宿主的启动报告与 `componentErrors`）各报告一次。
+- **契约与代理**：`packages/kernel/src/contracts/preview.ts` 有 `PREVIEW_PROTOCOL`、两个方向的消息类型（`PreviewCommand`、`PreviewReport`）、两边共用的收窄函数 `toPreviewCommand`、`toPreviewReport`（核对信封、版本、nonce 与字段，不认识的一律丢弃；`selection` 的内容在字段 `selection` 中，没有选中时为 `null`，与 `highlight` 的 `target` 一样）；不依赖框架的产物一侧在 `packages/kernel/src/preview-frame.ts`（另有开发服务器的 `Content-Security-Policy` 用的 `previewFrameAncestors`），`connectPreviewFrame(page)` 返回 `PreviewFrame`：按锚点框出（`[data-preview-highlight]`，不在页面中的先由形态带进来）、在块的元素之中画编号标记（`.pm-preview-pin`）、点选（捕获阶段的点击，控件与链接照常，鼠标下的块加浅色细框，报告块的框、鼠标位置与连击次数）、文字选中（`selectionchange`，带选区的框）、点选或选区的框随滚动与尺寸变化重报（`rect`，每帧再看一次，直到连续两帧不变）、就地编辑（`edit`：元素加 `contenteditable` 与 `[data-preview-editing]`，按键在窗口的捕获阶段截下；取消或没有改动时按 `MutationObserver` 的记录倒着撤销浏览器的改动，页面框架持有的节点因此不变）、作者用的标记（`<html>` 的类 `pm-author-marks`，`AUTHOR_MARKS_CLASS`）、位置（至多每 150 ms）、页面重新渲染后重画（`MutationObserver`），`ready` 之前的问题攒到 `ready` 之后再发。这些都只对页面看得见的块：宿主的规则（排版了、不在 `[inert]` 与 `.pm-hidden` 之下）加上形态自己的规则（`PreviewPage.seen`；幻灯片中是点击还没显示或已经隐藏的块，即 Slidev 文档写明的类 `.slidev-vclick-hidden`，以及逐项出现的列表在第一项的点击之前），看不见的块不框（先由形态带到它出现的那一步）、不画标记、点不中（点在它的位置上得到章节）。nonce 另记在 iframe 的 `window.name` 中，同一个框架中换了地址或刷新后代理照样启动。两种形态各自只给出位置、跳转、明暗、修订号与问题：网页 `packages/web/src/client/preview-frame.ts`（IR 运行时的 `navigation`、明暗开关），由工作台的查看器（`packages/web/src/app/main.ts`）与预览开发服务器生成的主题（`ThemeInput.preview`）导入；幻灯片 `packages/addon-core/src/client/preview-frame.ts`（幻灯片的 `navigation`、Slidev 的 `useDarkMode`；预览中幻灯片的文字可以选中），只由 render-slides 在预览时写进生成文稿的 `setup/root.ts`。静态构建与 `presmium dev` 的页面不加载这两个文件，内核中的代理在构建中被摇掉（`packages/cli/test/preview.test.ts` 扫描两种形态的构建产物）。插件启动失败与组件出错（宿主的启动报告与 `componentErrors`）各报告一次。
 - **修订号**：工作区服务以编译结果 IR 的哈希为修订号（`GET ir`），写进交给预览开发服务器的 IR 的 `meta`（键 `PREVIEW_REVISION`，即 `presmiumRevision`）；网页从 IR 运行时的文档读出，页面换上新的 IR 后发 `updated`；幻灯片由生成文稿的 Vite 插件读 `preview.json`，经 Vite 的 WebSocket 推送（`presmium:revision`，在幻灯片的热更新之后）。
 - **步号**：`position`、`picked` 的 `step` 是页面自己的步号，都带 `trail`（`picked` 是块出现的那一步的，`PreviewPage.stepOf`），工作台用内核的 `trailStep` 换算成完整文稿的步号，与控制通道的位置相同；`go` 带 `trail` 时按它定位（`followedPlace`），只带 `step` 时按页面的步号。只给网页的块在幻灯片中不占步骤，端到端用例的文稿就有这样一步。
 - **幻灯片的锚点**：每一页的标题与块包在章节的锚点 `<div class="pm-slide-section" data-section>` 中（`display: contents`，不改变版式；演讲者备注留在它之后，Slidev 只认页末的注释），每个顶层上屏块包在 `<div class="pm-block" data-block data-section data-step>` 中（点击的包装在它之内），静态构建中同样存在，所以宿主的 `blockElement`（`[data-section] .pm-block[data-block]`）在幻灯片中同样找得到块；生成文稿的样式（`render-slides/src/node/deck-base.css`）让主题“书卷”对段落与列表的规则对锚点中的同样有效，预览的幻灯片上没有子内容的角色是一个空的 `.pm-role-mark`，只在 `pm-author-marks` 时以 `::before` 显示标记（构建与 `presmium dev` 的幻灯片照旧只在演讲者备注中有标记）。网页的 `PmRoleMark` 同样看这个类。
-- **`frame-ancestors`**：预览页面的 `Content-Security-Policy: frame-ancestors <--preview-origin 的源>`（没有时 `'none'`）：网页由 `@lincyaw/web` 的 Vite 插件 `presmiumFrame` 给 VitePress 的全部回答加上（VitePress 自己回答的页面不带 `server.headers`），幻灯片由生成文稿的 `server.headers`。
-- **工作区服务**（`packages/workspace/src/node/workbench-api.ts`、`routes.ts`、`serve.ts`）：`GET ir` 回答修订号、IR 与诊断（路径相对于工作区根目录，与 `source` 路由一致）；`GET ir/events` 是 SSE，先发当前的修订号（文档还没有编译过时，连接时开始第一次编译，发它的修订号），之后每次编译一条（事件 `revision`：修订号、错误与警告数、引起这次编译的文件，相对于工作区根目录）；`GET preview` 回答网页（工作区站点中这份文档的页面）与幻灯片的地址，幻灯片是每份文档在第一次请求时启动的 Slidev 开发服务器，从文档会话的编译结果更新（编译器的 `dev` 的 `DevOptions.compilation`，不另行编译），经工作区插件的代理挂在服务的 `/__presmium/presmium.workspace/slides/<目录>/` 下，所以每个预览都与服务同源，`--host` 时也只用服务的端口；`POST build`（`{ to? }`，写到服务的状态目录）与 `POST check`。无界面模式不传入工作区的浏览器插件与运营者插件的浏览器部分，首页写成没有服务端的文档卡片（`RenderContext.preview` 的站点）。环境中有 `PRESMIUM_SERVICE_TOKEN` 时，工作区插件的每条路由都要 `Authorization: Bearer <令牌>`（401），代理与服务端自己的路由不受影响。用例：`packages/workspace/test/service.test.ts`、`e2e/preview-protocol.spec.ts`。
+- **`frame-ancestors`**：预览页面的 `Content-Security-Policy: frame-ancestors <--preview-origin 的源>`（没有时 `'none'`）：查看器的页面由站点的路由加上，网页的开发服务器由 `@lincyaw/web` 的 Vite 插件 `presmiumFrame` 给 VitePress 的全部回答加上（VitePress 自己回答的页面不带 `server.headers`），幻灯片由生成文稿的 `server.headers`。
+- **首次绘制的明暗**：工作台的地址带 `presmium-appearance=dark|light`（`PREVIEW_APPEARANCE_PARAM`，内核的 `previewAppearance()`），查看器在页面头部就照它设好 `<html>` 的 `dark` 类，没有时照系统；之后由 `appearance` 命令跟随。
+- **工作区服务**（`packages/workspace/src/node/workbench-api.ts`、`routes.ts`、`serve.ts`）：`GET ir` 回答修订号、IR 与诊断（路径相对于工作区根目录，与 `source` 路由一致）；`GET ir/events` 是 SSE，先发当前的修订号（文档还没有编译过时，连接时开始第一次编译，发它的修订号），之后每次编译一条（事件 `revision`：修订号、错误与警告数、引起这次编译的文件，相对于工作区根目录）；`GET preview` 回答网页（查看器显示这份文档的页面，查看器不能显示时为工作区站点中这份文档的开发页面，1.1 节）与幻灯片的地址，幻灯片是每份文档在第一次请求时启动的 Slidev 开发服务器，从文档会话的编译结果更新（编译器的 `dev` 的 `DevOptions.compilation`，不另行编译），经工作区插件的代理挂在服务的 `/__presmium/presmium.workspace/slides/<目录>/` 下，所以每个预览都与服务同源，`--host` 时也只用服务的端口；`POST build`（`{ to? }`，写到服务的状态目录）与 `POST check`。无界面模式不传入工作区的浏览器插件与运营者插件的浏览器部分，首页写成没有服务端的文档卡片（`RenderContext.preview` 的站点）。环境中有 `PRESMIUM_SERVICE_TOKEN` 时，工作区插件的每条路由都要 `Authorization: Bearer <令牌>`（401），代理与服务端自己的路由不受影响。用例：`packages/workspace/test/service.test.ts`、`e2e/preview-protocol.spec.ts`。
 
 ### 13.4 bundle、确认与工具
 
@@ -2006,3 +2017,16 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 ### 13.6 `presmium serve` 与 `presmium dev`
 
 `presmium serve` 是工作区服务加产物：首页是文档卡片（与工作区站点的构建相同），文档的页面是产物的开发服务器，带预览代理（只回应 `--preview-origin` 列出的来源）；文档管理、源码编辑、审阅与修改历史经工作区服务的路由，由工作台使用。`presmium dev` 是一份文稿的实时预览。两者的页面都不编辑源码。
+
+### 13.7 编译任务
+
+重的输出统一成工作区服务的任务（`packages/workspace/src/node/jobs.ts`），像 Overleaf 的编译：渲染端的构建（网站、幻灯片网站、notebook、讲授轨）与插件的导出器（`PresmiumNodePlugin.exporters`：幻灯片 PDF、PowerPoint，讲授视频）。
+
+- **运行**：一次一个，按开始的先后排队；每个任务有状态（排队、运行、完成、失败、取消）、进度（阶段与完成数）、日志的最后 400 行（构建工具与导出器的输出，`RenderContext.log`、`ExportContext.log`）与产物。取消时排队的任务立即结束，运行中的导出器由 `signal` 停下它的进程；渲染端的构建没有取消契约，跑完后标为取消。任务每变一次 `sequence` 加一，客户端收到的事件与答复先后不定时，保留序号大的那份。
+- **产物**：每个任务一个目录（服务状态目录的 `outputs/<任务>/`），每份文稿的每种输出保留最近 3 个；完成的任务记下 `job.json`，服务重启后仍在。同一份文稿、同一种输出、同一个 IR 修订号已经完成或正在进行时不再生成，直接答复那个任务。服务把 `/__outputs/` 转给只服务这个目录的静态服务器（编译器的 `serveDirectory`，文件经 Express 的 `send`：类型、Range、校验与条件请求按 HTTP 规范；`?download` 用 `content-disposition` 要求下载；工作台的来源经 `cors` 可读，视频的字幕要用），与预览一样在服务自己的地址上，不需要令牌。渲染端的构建以任务的地址为根路径（`BuildOptions.base`），站点在那里直接打开。每个文件带媒体类型（`mime-types`，按扩展名）。
+- **路由**（工作区插件）：`GET jobs` 回答可生成的输出（`targets`）与这份文稿的任务，`POST jobs { target }` 开始一个；`POST jobs/cancel { id }`；`GET jobs/events` 是 SSE（事件 `job`）。dsh 照样代理这三条。
+- **AI**：MCP 的 `build` 在有任务的宿主中开始任务（`to` 可以是渲染端与导出器），默认等它们结束，`wait: false` 立即返回；`get_builds` 列出可生成的输出与最近的任务（状态、进度、日志末尾、错误、文件与地址）。服务端宿主的 `build`（`POST build`）同样经任务，作者在工作台的“导出”中看到 AI 开始的任务。
+- **工作台**：命令栏右边的“导出”打开导出面板（`design-dsh.md` 7.3 节）。
+
+用例：`packages/workspace/test/service.test.ts`（路由、产物地址、同一修订不重复、MCP 的 `get_builds`）、`e2e/export.spec.ts`（导出面板生成 PDF 与 notebook，打开与下载；别处开始的任务在面板中出现并可取消）。
+

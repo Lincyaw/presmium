@@ -1,4 +1,4 @@
-import type { DirectiveSpec, IRPass, Renderer, RendererContribution, RoleSpec } from '../ir.ts'
+import type { DirectiveSpec, IRDocument, IRPass, Renderer, RendererContribution, RoleSpec } from '../ir.ts'
 import type { AgentTool } from './agent.ts'
 import type { AnchorResolver, AnchorString } from './anchors.ts'
 import type { Check, CheckContext } from './checks.ts'
@@ -85,6 +85,48 @@ export type KernelEvent =
   | DomainEvent<'kernel.plugin.disabled', { id: string; reason: string }>
   | DomainEvent<'kernel.plugin.failed', { id: string; error: string }>
 
+/**
+ * A heavy output of a document that the plugin makes on request, as a job of the workspace service (the slides as a PDF,
+ * the lecture as a video): the job shows its progress and log, and keeps the files for the author and the AI.
+ */
+export interface Exporter {
+  /** Unique among the outputs of a document, renderers' ids included (e.g. `pdf`, `video`). */
+  id: string
+  /** What the author sees, by language (`zh-CN`, `en`). */
+  label: Record<string, string>
+  /** Whether the document can be exported so (e.g. it has the slides form); every document when left out. */
+  available?(doc: IRDocument, config: Record<string, unknown>): boolean
+  run(ctx: ExportContext): Promise<ExportOutput>
+}
+
+export interface ExportContext {
+  deckDir: string
+  workspaceRoot: string
+  /** The plugin's configuration in the document (`presmium.<plugin id>`). */
+  config: Record<string, unknown>
+  /** An empty directory, the job's own, for the files. */
+  outDir: string
+  /** Aborted when the author cancels the job: the exporter stops its processes and rejects. */
+  signal: AbortSignal
+  /** Where the job is: a phase, and how far through it. */
+  progress(phase: string, done?: number, total?: number): void
+  /** A line of the job's log (a tool's output, a step). */
+  log(line: string): void
+  /**
+   * Writes renderer `renderer`'s project for the document (its `prepare`, served at the root path, with `config` over the
+   * document's configuration of the renderer) and gives its directory: an exporter of the slides runs Slidev there.
+   */
+  prepare(renderer: string, config?: Record<string, unknown>): Promise<string>
+}
+
+export interface ExportOutput {
+  /** The files made, below `outDir`, the one to show first. */
+  files: string[]
+  /** The WebVTT captions of the first file (a video), by language, among `files`. */
+  captions?: Record<string, string>
+  warnings?: string[]
+}
+
 export interface PresmiumNodePlugin {
   id: string
   version?: string
@@ -98,6 +140,15 @@ export interface PresmiumNodePlugin {
   renderer?: Renderer
   rendererExtensions?: Record<string, RendererContribution>
   vitePlugins?(ctx: { deckDir: string, workspaceRoot: string, config: Record<string, unknown> }): unknown[]
+  /**
+   * The virtual modules of the plugin's browser code whose content depends on the document (e.g. the list of its scene
+   * files), by id, with their source. The dev servers get them from `vitePlugins`; the workbench's viewer app, prebuilt
+   * once for all documents, gets them from the document's own bundle, built with this source. Only their default export
+   * is read there.
+   */
+  documentModules?(ctx: { deckDir: string, workspaceRoot: string, config: Record<string, unknown> }): Record<string, string>
+  /** The heavy outputs the plugin makes on request, as jobs of the workspace service. */
+  exporters?: Exporter[]
   services?(ctx: NodeServiceContext): [ServiceToken<unknown>, unknown][]
   environments?: Record<string, EnvironmentProvider>
   server?(ctx: ServerContext): ServerContribution | Promise<ServerContribution>

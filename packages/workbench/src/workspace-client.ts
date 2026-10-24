@@ -1,4 +1,4 @@
-import type { DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
+import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
 import type { OperationBatch } from './telemetry.ts'
 
 /** A route of the workspace server answered with an error. */
@@ -44,6 +44,13 @@ export interface WorkspaceClient {
   undo(document: string, expect?: string): Promise<RevertResult>
   /** Puts back the change the latest undo took back. */
   redo(document: string, expect?: string): Promise<RevertResult>
+  /** What the document can be made into, and its builds and exports. */
+  readJobs(document: string): Promise<JobsAnswer>
+  /** Starts a build or an export of the document (or answers the one already made from this revision). */
+  startJob(document: string, target: string): Promise<CompileJob>
+  cancelJob(document: string, id: string): Promise<CompileJob>
+  /** Each change of the document's jobs, as it happens. */
+  subscribeJobs(document: string, changed: (job: CompileJob) => void, failed?: () => void): () => void
   /** Whether the host collects the workbench's operations for its operator. */
   readTelemetry(): Promise<{ enabled: boolean }>
   /** Sends a batch of operations; `beacon` hands it to the browser to deliver while the page goes away. */
@@ -158,6 +165,10 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     readChanges: document => call(url('changes', document)),
     commitChanges: (document, message, paths) => post(url('changes/commit', document), { message, ...paths ? { paths } : {} }),
     discardChanges: (document, paths) => post(url('changes/discard', document), paths ? { paths } : {}),
+    readJobs: document => call(url('jobs', document)),
+    startJob: (document, target) => post(url('jobs', document), { target }),
+    cancelJob: (document, id) => post(url('jobs/cancel', document), { id }),
+    subscribeJobs: (document, changed, failed) => subscribe(url('jobs/events', document), 'job', changed, failed),
     readRevisions: document => call(url('revisions', document, { limit: '50' })),
     revertRevision: (document, id) => post(url('revisions/revert', document), { id }),
     undo: (document, expect) => post(url('history/undo', document), expect ? { expect } : {}),

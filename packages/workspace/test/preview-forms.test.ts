@@ -18,11 +18,12 @@ it('returns the web preview without starting Slidev, then starts slides only whe
 
     const web = await route('document=talk&view=web')
     expect(web.status, web.text).toBe(200)
-    const addresses = { document: 'talk', web: `${url}/talk/`, slides: `${url}/__presmium/presmium.workspace/slides/talk/` }
+    // The web form is the workbench's viewer app (built for the document once it is asked for).
+    const addresses = { document: 'talk', web: `${url}/__app/view?document=talk`, slides: `${url}/__presmium/presmium.workspace/slides/talk/` }
     expect(web.json()).toEqual(addresses)
     expect(existsSync(join(state, 'preview'))).toBe(false)
     const only = await route('document=fresh&view=web')
-    expect(only.json()).toEqual({ document: 'fresh', web: `${url}/fresh/` })
+    expect(only.json()).toEqual({ document: 'fresh', web: `${url}/__app/view?document=fresh` })
     expect((await route('document=talk&view=unsupported')).status).toBe(400)
 
     const slides = await route('document=talk&view=slides')

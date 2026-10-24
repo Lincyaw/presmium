@@ -1,3 +1,5 @@
+@import './document.css';
+
 :root {
   --vp-font-family-base: var(--pm-font-sans);
   --vp-font-family-mono: var(--pm-font-mono);

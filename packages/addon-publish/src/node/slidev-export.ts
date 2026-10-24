@@ -35,7 +35,7 @@ export async function prepareSlidevProject(compilation: Compilation): Promise<Sl
 }
 
 export interface SlidevExportOptions {
-  format: 'pdf' | 'png'
+  format: 'pdf' | 'png' | 'pptx'
   output: string
   withClicks?: boolean
   range?: string
@@ -43,6 +43,8 @@ export interface SlidevExportOptions {
   wait?: number
   timeout?: number
   env?: Record<string, string>
+  log?: (line: string) => void
+  signal?: AbortSignal
 }
 
 export function shownSlideCount(compilation: Compilation): number {
@@ -65,8 +67,8 @@ export async function runSlidevExport(project: SlidevProject, job: SlidevExportO
   if (job.dark) args.push('--dark')
   if (job.format === 'png') await Promise.all((await images(job.output)).map(file => rm(join(job.output, file))))
   const nodeOptions = [job.env?.NODE_OPTIONS ?? process.env.NODE_OPTIONS, ...TYPESCRIPT_IMPORT].filter(Boolean).join(' ')
-  await run(project.dir, 'slidev', args, { ...job.env, NODE_OPTIONS: nodeOptions })
-  if (job.format === 'pdf') return []
+  await run(project.dir, 'slidev', args, { ...job.env, NODE_OPTIONS: nodeOptions }, { ...job.log ? { log: job.log } : {}, ...job.signal ? { signal: job.signal } : {} })
+  if (job.format !== 'png') return []
 
   const slides = exportedSlides(shownSlideCount(project.compilation), parseRange(job.range))
   const written = await images(job.output)

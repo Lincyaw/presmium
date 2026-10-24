@@ -7,10 +7,11 @@ import { countWords, documentOutline } from '../outline.ts'
 import { hasSlides as hasSlidesForm, isAgentChanging } from '../workbench.ts'
 import type { WorkbenchMode } from '../workbench.ts'
 import { CommentsPanel } from './CommentsPanel.tsx'
+import { ExportPanel } from './ExportPanel.tsx'
 import { HistoryPanel } from './HistoryPanel.tsx'
 import { PreviewPanel } from './PreviewPanel.tsx'
 
-export type DocumentAside = 'comments' | 'history'
+export type DocumentAside = 'comments' | 'history' | 'export'
 
 const isTyping = (target: EventTarget | null) => target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select, [contenteditable]') !== null)
 
@@ -51,7 +52,7 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
         <PreviewPanel active={active} />
         {aside && (
           <aside className="pmw-document__aside" aria-label={aside}>
-            {aside === 'comments' ? <CommentsPanel onClose={() => setAside(null)} /> : <HistoryPanel onClose={() => setAside(null)} />}
+            {aside === 'comments' ? <CommentsPanel onClose={() => setAside(null)} /> : aside === 'export' ? <ExportPanel onClose={() => setAside(null)} /> : <HistoryPanel onClose={() => setAside(null)} />}
           </aside>
         )}
       </div>
@@ -129,6 +130,8 @@ function DocumentToolbar({ framed, aside, navigation, onNavigation, onAside }: {
   const hasSlides = useWorkbenchState(state => hasSlidesForm(state.ir))
   const mode = useWorkbenchState(state => state.mode)
   const openComments = useWorkbenchState(state => state.comments.filter(comment => comment.status === 'open').length)
+  // Builds and exports being made, the author's or the AI's.
+  const making = useWorkbenchState(state => state.jobs?.jobs.filter(job => job.state === 'queued' || job.state === 'running').length ?? 0)
   const asking = useWorkbenchState(state => state.isAsking)
   const summaryOf = (id: string | undefined) => {
     const revision = id ? history?.revisions.find(r => r.id.startsWith(id) || id.startsWith(r.id)) : undefined
@@ -176,12 +179,16 @@ function DocumentToolbar({ framed, aside, navigation, onNavigation, onAside }: {
           <span className="pmw-toolbar__label">{t.sendComments(openComments)}</span>
         </PmButton>
       )}
-      <span className="pmw-toolbar__group" role="group" aria-label={`${t.comments} / ${t.versionHistory}`}>
+      <span className="pmw-toolbar__group" role="group" aria-label={`${t.comments} / ${t.versionHistory} / ${t.exportPane}`}>
         <button type="button" className="pmw-tool" aria-label={openComments > 0 ? `${t.comments} (${openComments})` : t.comments} title={t.comments} aria-pressed={aside === 'comments'} onClick={() => onAside('comments')}>
           <PmIcon name="comment" /><span className="pmw-toolbar__label">{t.comments}</span>
           {openComments > 0 && <PmBadge tone="accent" pill>{openComments}</PmBadge>}
         </button>
         <button type="button" className="pmw-tool" aria-label={t.versionHistory} title={t.versionHistory} aria-pressed={aside === 'history'} onClick={() => onAside('history')}><PmIcon name="versions" /><span className="pmw-toolbar__label">{t.versionHistory}</span></button>
+        <button type="button" className="pmw-tool" data-aside="export" aria-label={making > 0 ? `${t.exportPane} (${making})` : t.exportPane} title={t.exportHint} aria-pressed={aside === 'export'} onClick={() => onAside('export')}>
+          <PmIcon name="export" /><span className="pmw-toolbar__label">{t.exportPane}</span>
+          {making > 0 && <PmBadge tone="accent" pill>{making}</PmBadge>}
+        </button>
       </span>
     </header>
   )

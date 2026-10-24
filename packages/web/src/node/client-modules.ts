@@ -18,7 +18,8 @@ export interface ClientModules {
   nodeVite: NodeVitePlugin[]
 }
 
-function collect(dir: string, name: string, modules: ClientModules, plugin: boolean, manifestDir = dir): void {
+/** Adds the browser modules of the package at `dir` to `modules` (a plugin's components do not replace those already there). */
+export function collectBrowserModules(dir: string, name: string, modules: ClientModules, plugin: boolean, manifestDir: string | undefined = dir): void {
   let browser = false
   const components = join(dir, 'components')
   if (existsSync(components)) {
@@ -44,7 +45,7 @@ function collect(dir: string, name: string, modules: ClientModules, plugin: bool
 }
 
 /** The directory of the document's own package: its own `package.json`, else the nearest one up to the workspace's root. */
-function deckPackage(deckDir: string, workspaceRoot: string): string | undefined {
+export function deckPackage(deckDir: string, workspaceRoot: string): string | undefined {
   for (let dir = deckDir; ; dir = dirname(dir)) {
     if (existsSync(join(dir, 'package.json'))) return dir
     if (dir === workspaceRoot || relative(workspaceRoot, dir).startsWith('..') || dirname(dir) === dir) return undefined
@@ -60,15 +61,20 @@ function readManifest(dir: string): Record<string, unknown> {
   }
 }
 
-function isRestartablePackage(dir: string | undefined): boolean {
+export function isRestartablePackage(dir: string | undefined): boolean {
   if (!dir) return false
   const { presmium } = readManifest(dir)
   return isRecord(presmium) && isRecord(presmium.preview) && presmium.preview.restartable === true
 }
 
+/** No browser modules yet. */
+export function emptyClientModules(nodeVite: NodeVitePlugin[] = []): ClientModules {
+  return { restartable: true, components: new Map(), plugins: [], viewers: [], vite: [], nodeVite }
+}
+
 /** The browser modules of the document and its plugins: components, browser and viewer plugins, Vite configurations. */
 export function clientModules(ctx: RenderContext, nodeVite: NodeVitePlugin[]): ClientModules {
-  const modules: ClientModules = { restartable: true, components: new Map(), plugins: [], viewers: [], vite: [], nodeVite }
+  const modules = emptyClientModules(nodeVite)
   for (const { entry } of nodeVite) {
     try {
       if (!isRestartablePackage(packageOf(entry))) modules.restartable = false
@@ -79,8 +85,8 @@ export function clientModules(ctx: RenderContext, nodeVite: NodeVitePlugin[]): C
   for (const name of ctx.plugins) {
     const dir = ctx.pluginDirs[name]
     const { name: pkg } = dir ? readManifest(dir) : {}
-    if (dir) collect(dir, typeof pkg === 'string' ? pkg : name, modules, true)
+    if (dir) collectBrowserModules(dir, typeof pkg === 'string' ? pkg : name, modules, true)
   }
-  collect(ctx.deckDir, 'deck', modules, false, deckPackage(ctx.deckDir, ctx.workspaceRoot))
+  collectBrowserModules(ctx.deckDir, 'deck', modules, false, deckPackage(ctx.deckDir, ctx.workspaceRoot))
   return modules
 }

@@ -1,0 +1,173 @@
+/*
+ * The typography of a document as the web form shows it (`.pm-document`, the host of the page view): the same in
+ * VitePress's site, where it is loaded after VitePress's own document styles, and in the workbench's viewer app, which
+ * has no VitePress at all. Every property VitePress's document styles set on these elements is set here.
+ */
+
+.pm-document :is(h1, h2, h3, h4, h5, h6) {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-weight: 600;
+  outline: none;
+  overflow-wrap: break-word;
+}
+
+.pm-document h1 {
+  letter-spacing: -0.02em;
+  line-height: 2.5rem;
+  font-size: 1.75rem;
+}
+
+@media (min-width: 768px) {
+  .pm-document h1 {
+    font-size: 2rem;
+  }
+}
+
+.pm-document h2 {
+  margin: var(--pm-space-12) 0 var(--pm-space-4);
+  padding-top: var(--pm-space-6);
+  border-top: var(--pm-size-hairline) solid var(--pm-color-line);
+  letter-spacing: -0.02em;
+  line-height: 2rem;
+  font-size: 1.5rem;
+}
+
+.pm-document h3 {
+  margin: var(--pm-space-8) 0 0;
+  letter-spacing: -0.01em;
+  line-height: 1.75rem;
+  font-size: 1.25rem;
+}
+
+.pm-document h4 {
+  margin: var(--pm-space-6) 0 0;
+  letter-spacing: -0.01em;
+  line-height: 1.5rem;
+  font-size: 1.125rem;
+}
+
+.pm-document :is(h5, h6) {
+  line-height: 1.5rem;
+  font-size: 1rem;
+}
+
+.pm-document :is(p, summary) {
+  margin: var(--pm-space-4) 0;
+}
+
+.pm-document p {
+  overflow-wrap: break-word;
+  line-height: 1.75rem;
+}
+
+.pm-document blockquote {
+  margin: var(--pm-space-4) 0;
+  padding-left: var(--pm-space-4);
+  border-left: var(--pm-size-stroke) solid var(--pm-color-line);
+  color: var(--pm-color-muted);
+}
+
+.pm-document blockquote > p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.pm-document a {
+  color: var(--pm-color-accent);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: var(--pm-space-px);
+}
+
+.pm-document a:hover {
+  color: color-mix(in srgb, var(--pm-color-accent) 88%, var(--pm-color-ink));
+}
+
+.pm-document :is(strong, b) {
+  font-weight: 600;
+}
+
+.pm-document :is(ul, ol) {
+  margin: var(--pm-space-4) 0;
+  padding-left: 1.25rem;
+}
+
+.pm-document ul {
+  list-style: disc;
+}
+
+.pm-document ol {
+  list-style: decimal;
+}
+
+.pm-document li {
+  overflow-wrap: break-word;
+}
+
+.pm-document li + li {
+  margin-top: var(--pm-space-2);
+}
+
+.pm-document li > :is(ol, ul) {
+  margin: var(--pm-space-2) 0 0;
+}
+
+.pm-document table {
+  display: block;
+  margin: var(--pm-space-5) 0;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.pm-document tr {
+  border-top: var(--pm-size-hairline) solid var(--pm-color-line);
+  background-color: var(--pm-color-bg);
+}
+
+.pm-document tr:nth-child(2n) {
+  background-color: var(--pm-color-sunk);
+}
+
+.pm-document :is(th, td) {
+  padding: var(--pm-space-2) var(--pm-space-4);
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
+  font-size: var(--pm-text-md);
+}
+
+.pm-document th {
+  background-color: var(--pm-color-sunk);
+  color: var(--pm-color-muted);
+  font-weight: 600;
+  text-align: left;
+}
+
+.pm-document hr {
+  margin: var(--pm-space-4) 0;
+  border: 0;
+  border-top: var(--pm-size-hairline) solid var(--pm-color-line);
+}
+
+.pm-document :not(pre) > code {
+  padding: var(--pm-space-px) var(--pm-space-1);
+  border-radius: var(--pm-radius-chip);
+  background-color: var(--pm-color-sunk);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-mono);
+  font-size: 0.875em;
+}
+
+.pm-document :is(h1, h2, h3) > code {
+  font-size: 0.9em;
+}
+
+.pm-document a > code {
+  color: inherit;
+}
+
+.pm-document :is(img, video) {
+  max-width: 100%;
+  height: auto;
+}

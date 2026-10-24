@@ -12,9 +12,10 @@ export interface WorkspaceDevProxy {
 
 /**
  * Serves the workspace site in development on one port: each request, WebSockets included, goes to the dev server of the
- * path's document or of the home page (`portFor`), on the loopback address `target`; requests from other sites are refused.
+ * path's document or of the home page (`portFor`), on the loopback address `target`, unless `handle` answers it here;
+ * requests from other sites are refused.
  */
-export async function startWorkspaceDevProxy(portFor: (path: string) => Promise<number>, listen: { address: string, port: number, target: string }): Promise<WorkspaceDevProxy> {
+export async function startWorkspaceDevProxy(portFor: (path: string) => Promise<number>, listen: { address: string, port: number, target: string }, handle?: (req: IncomingMessage, res: ServerResponse) => boolean): Promise<WorkspaceDevProxy> {
   // A page loads hundreds of modules: the connections to the dev servers are kept and reused, not opened for each.
   const agent = new Agent({ keepAlive: true, maxSockets: 64 })
   const proxy = createProxyServer({ ws: true, xfwd: false, agent })
@@ -35,6 +36,7 @@ export async function startWorkspaceDevProxy(portFor: (path: string) => Promise<
       res.end(refused)
       return
     }
+    if (handle?.(req, res)) return
     const path = pathOf(req)
     portFor(path).then(
       port => proxy.web(req, res, { target: `http://${listen.target}:${port}` }),

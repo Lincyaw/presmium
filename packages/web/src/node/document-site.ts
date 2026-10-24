@@ -68,7 +68,7 @@ export async function buildDocument(doc: IRDocument, ctx: RenderContext, workDir
   const published = publish(doc)
   writeProject(published)
   writeIfChanged(join(files.publicDir, 'ir.json'), JSON.stringify(published))
-  const code = await runVitepressBuild(files.root, ctx.outDir)
+  const code = await runVitepressBuild(files.root, ctx.outDir, ctx.log)
   if (code !== 0) throw new Error(`vitepress build exited with code ${code}`)
   if (offlineEnabled(doc.config.presmium)) writeServiceWorker(ctx.outDir, options.base)
 }

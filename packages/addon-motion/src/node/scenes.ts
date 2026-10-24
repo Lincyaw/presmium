@@ -40,7 +40,13 @@ interface ViteServer {
   ws: { send(payload: { type: 'full-reload' }): void }
 }
 
-/** The Vite plugin of both forms: `virtual:presmium-motion/scenes` maps each scene of the deck to an import of its file. */
+/** The source of `virtual:presmium-motion/scenes`: each scene of the deck, by name, to an import of its file. */
+export function scenesModule(deckDir: string): string {
+  const entries = [...deckScenes(deckDir)].map(([name, file]) => `  ${JSON.stringify(name)}: () => import(${JSON.stringify(file)}),`)
+  return `export default {\n${entries.join('\n')}\n}\n`
+}
+
+/** The Vite plugin of both forms' dev servers and builds: `virtual:presmium-motion/scenes` from `scenesModule`. */
 export function scenesPlugin(deckDir: string) {
   const root = join(deckDir, SCENES_DIR)
   return {
@@ -55,9 +61,7 @@ export function scenesPlugin(deckDir: string) {
       return id === SCENES_MODULE ? RESOLVED : undefined
     },
     load(id: string) {
-      if (id !== RESOLVED) return undefined
-      const entries = [...deckScenes(deckDir)].map(([name, file]) => `  ${JSON.stringify(name)}: () => import(${JSON.stringify(file)}),`)
-      return `export default {\n${entries.join('\n')}\n}\n`
+      return id === RESOLVED ? scenesModule(deckDir) : undefined
     },
     // Remotion's modules start with "use client", which the bundler reports and ignores: nothing for the author to do.
     onLog(_level: string, log: { message?: string, id?: string }) {

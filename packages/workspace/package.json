@@ -33,6 +33,11 @@
     "@lincyaw/compiler": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/server": "workspace:*",
+    "mime-types": "3.0.2",
     "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@lincyaw/mcp": "workspace:*",
+    "@types/mime-types": "^3.0.1"
   }
 }

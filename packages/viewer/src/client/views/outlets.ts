@@ -62,7 +62,7 @@ export const PageViewOutlet = defineComponent({
     }, { immediate: true })
 
     const sections = computed(() => props.sections.flatMap(id => viewer.section(id) ?? []))
-    return () => h('div', { 'class': 'pm-view-host', 'aria-busy': viewer.restoring.value ? 'true' : undefined }, [
+    return () => h('div', { 'class': 'pm-view-host pm-document', 'aria-busy': viewer.restoring.value ? 'true' : undefined }, [
       pageView.value ? h(pageView.value.component, { sections: sections.value }) : null,
     ])
   },

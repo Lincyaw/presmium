@@ -9,13 +9,15 @@ import { EXPORT_WAIT, incompleteExport, prepareSlidevProject, runSlidevExport, s
 
 export interface ExportJob {
   deckDir: string
-  format?: 'pdf' | 'png'
+  format?: 'pdf' | 'png' | 'pptx'
   output?: string
   withClicks?: boolean
   range?: string
   dark?: boolean
   wait?: number
   timeout?: number
+  log?: (line: string) => void
+  signal?: AbortSignal
 }
 
 export interface ExportedLink {
@@ -26,7 +28,7 @@ export interface ExportedLink {
 }
 
 export interface ExportResult {
-  format: 'pdf' | 'png'
+  format: 'pdf' | 'png' | 'pptx'
   output: string
   pages: number
   links: ExportedLink[]
@@ -39,10 +41,12 @@ export async function exportDeck(job: ExportJob): Promise<ExportResult> {
   const { compilation, warnings } = project
   const filename = compilation.doc.config.renderers.slides?.exportFilename
   const name = job.output ? resolve(job.output) : resolve(compilation.deckDir, String(filename ?? 'slides-export'))
-  const output = format === 'png' || name.endsWith('.pdf') ? name : `${name}.pdf`
+  const output = format === 'png' || name.endsWith(`.${format}`) ? name : `${name}.${format}`
   const images = await runSlidevExport(project, { ...job, format, output })
 
   if (format === 'png') return { format, output, pages: images.length, links: [], warnings }
+  // A PowerPoint file has a picture of each slide: no links to check.
+  if (format === 'pptx') return { format, output, pages: shownSlideCount(compilation), links: [], warnings }
   const range = parseRange(job.range)
   warnings.push(...await checkAndTrimPages(output, compilation, range, Boolean(job.withClicks), job.wait ?? EXPORT_WAIT))
   const links = await locateLinks(slideLinks(viewFor(compilation.doc, 'slides'), range))

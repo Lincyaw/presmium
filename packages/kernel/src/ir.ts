@@ -248,6 +248,8 @@ export interface RenderContext {
   localAsset(source: SourcePos, url: string): LocalAsset | undefined
   documentLink?(source: SourcePos, url: string): DocumentLink | undefined
   report(finding: Finding): void
+  /** A line of the build's output (a tool's), for the job that runs it; renderers that start tools give theirs. */
+  log?(line: string): void
   service?<T>(token: ServiceToken<T>): T | undefined
   translations?: { lang: string, doc: IRDocument }[]
   server?: { url: string }
@@ -317,6 +319,12 @@ export interface SiteDevServer {
   warm?(dir: string): Promise<void>
   /** The origin of the dev server that serves `path` (started on first use), so that a host forwards to it directly. */
   target?(path: string): Promise<string>
+  /**
+   * The address (below the site's URL) of the workbench's viewer app showing document `dir`, once the app (prebuilt for
+   * the workspace's plugins) and the document's own bundle are built: they are started when missing, and waited for a
+   * while with `wait`. Undefined until then, and for a document whose plugins the app cannot run (its dev server shows it).
+   */
+  app?(dir: string, wait?: boolean): Promise<string | undefined>
   close(): Promise<void>
 }
 

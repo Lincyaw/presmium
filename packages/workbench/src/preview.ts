@@ -1,4 +1,4 @@
-import { isPreviewEnvelope, PREVIEW_PARAM, PREVIEW_PROTOCOL, previewEnvelope, toPreviewReport } from '@lincyaw/kernel'
+import { isPreviewEnvelope, PREVIEW_APPEARANCE_PARAM, PREVIEW_PARAM, PREVIEW_PROTOCOL, previewEnvelope, toPreviewReport } from '@lincyaw/kernel'
 import type { PreviewCommand, PreviewCommandType, PreviewReport } from '@lincyaw/kernel'
 
 export interface PreviewHandlers {
@@ -19,10 +19,12 @@ function nonce(): string {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`
 }
 
-export function connectPreview(frame: () => HTMLIFrameElement | null, address: string, handlers: PreviewHandlers): PreviewConnection {
+/** `dark`: the workbench's appearance as the page loads, which its first paint takes (the `appearance` command follows it). */
+export function connectPreview(frame: () => HTMLIFrameElement | null, address: string, handlers: PreviewHandlers, options: { dark?: boolean } = {}): PreviewConnection {
   const url = new URL(address)
   const own = nonce()
   url.searchParams.set(PREVIEW_PARAM, own)
+  if (options.dark !== undefined) url.searchParams.set(PREVIEW_APPEARANCE_PARAM, options.dark ? 'dark' : 'light')
   const origin = url.origin
   const latest = new Map<string, PreviewCommand>()
   let ready = false

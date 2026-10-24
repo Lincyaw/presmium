@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
-import { build, buildSummary, Compiler, pluginLogger, runBlock, workspacePlugins } from '@lincyaw/compiler'
+import { Compiler, pluginLogger, runBlock, workspacePlugins } from '@lincyaw/compiler'
 import type { Compilation, CompilerOptions } from '@lincyaw/compiler'
 import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, REVISIONS } from '@lincyaw/kernel'
 import { irRevision } from '@lincyaw/kernel/node'
@@ -15,6 +15,7 @@ import { DocumentOperations, documentsDiff } from './document-operations.ts'
 import type { DocumentsChange } from './document-operations.ts'
 import { RequestError } from './errors.ts'
 import { Git } from './git.ts'
+import { createJobs, OUTPUTS_PATH } from './jobs.ts'
 import { DocumentLocks } from './locks.ts'
 import { AgentSessionReviews } from './review/agent-session-reviews.ts'
 import { createTaskReviewService } from './review/task-reviews.ts'
@@ -85,6 +86,15 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   let workbench: WorkbenchBackend | undefined
   let history: WorkspaceHistory | undefined
   let routesPlugin: ServedPlugin | undefined
+  // The builds and exports, as jobs the workbench and the AI start and follow.
+  const jobs = createJobs({
+    stateDir,
+    url: () => server?.url ?? '',
+    compilation: dir => compileSessionOf(dir).ready(),
+    revision: compilation => irRevision(compilation.doc),
+    origins: preview.origins,
+    log,
+  })
 
   const compileSessionOf = (dir: string): CompileSession => {
     const known = compileSessions.get(dir)
@@ -192,10 +202,17 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     },
     async build(document, buildOptions = {}) {
       await ready
-      const compilation = await compileSessionOf(document).ready()
-      const outDir = join(stateDir, 'builds', encodeURIComponent(document) || '_')
-      return buildSummary(await build(compilation, { outDir, to: buildOptions.to }))
+      // As jobs, which the workbench shows: one a renderer, waited for.
+      const targets = buildOptions.to ?? (await jobs.targets(document)).filter(target => target.kind === 'render').map(target => target.id)
+      const ended = await Promise.all((await Promise.all(targets.map(target => jobs.start(document, target)))).map(job => jobs.wait(job.id)))
+      const outputs = ended.filter(job => job.state === 'done').map(job => ({ renderer: job.target, outDir: jobs.directory(job) }))
+      const findings: Finding[] = ended.flatMap(job => [
+        ...job.state === 'failed' ? [{ checkId: 'presmium.render', severity: 'error' as const, message: `${job.target}: ${job.error ?? job.state}` }] : [],
+        ...job.warnings.map(message => ({ checkId: 'presmium.render', severity: 'warning' as const, message })),
+      ])
+      return { outputs, findings }
     },
+    jobs,
     async run(document, target, signal) {
       await ready
       return runBlock(await compileSessionOf(document).ready(), target, signal)
@@ -232,6 +249,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     stateFile,
     forward: async (path) => {
       lookAtDisk()
+      if (path.startsWith(OUTPUTS_PATH)) return await jobs.origin()
       if (!site) return undefined
       // Straight to the dev server of the path's document, not through the site's router: one hop less per module.
       try {
@@ -260,7 +278,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   })
   const running = server
   serverServices = running.services
-  workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, diagnostics: running.diagnostics, url: () => running.url, preview, stateDir, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve() })
+  workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, diagnostics: running.diagnostics, url: () => running.url, preview, stateDir, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
   history = openHistory()
   routesPlugin = {
     id: WORKSPACE_ID,
@@ -271,6 +289,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       ...history ? { revisions: history.revisions, operations: history.operations, reviews: history.agentSessionReviews } : {},
       documentsChanged,
       workbench,
+      jobs,
       ...launcherToken ? { launcherToken } : {},
     }),
     config: {},
@@ -312,6 +331,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     async close() {
       history?.agentSessionReviews.close()
       for (const session of compileSessions.values()) session.close()
+      await jobs.close()
       await workbench?.close()
       await site?.close()
       await running.close()
@@ -360,6 +380,7 @@ async function startWorkspaceSite(options: WorkspaceSiteOptions) {
       })
     },
     warm: (dir: string): Promise<void> => dev.warm?.(dir) ?? Promise.resolve(),
+    app: (dir: string, wait: boolean): Promise<string | undefined> => dev.app?.(dir, wait) ?? Promise.resolve(undefined),
     close: (): Promise<void> => dev.close(),
   }
 }

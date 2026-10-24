@@ -1,7 +1,8 @@
 import { rm } from 'node:fs/promises'
 import { createRequire } from 'node:module'
+import { join } from 'node:path'
 import { hasRendererExtension } from '@lincyaw/kernel'
-import type { PresmiumNodePlugin, RenderContext } from '@lincyaw/kernel'
+import type { Exporter, IRDocument, PresmiumNodePlugin, RenderContext } from '@lincyaw/kernel'
 import { slidevMarkdown } from './deck-markdown.ts'
 import { SLIDEV_DIR, updateDeck, writeDeck, writeIrRevision } from './deck-project.ts'
 import { reportBuildFailure, runSlidev, startSlidevDev } from './slidev-cli.ts'
@@ -10,6 +11,35 @@ const { version } = createRequire(import.meta.url)('../../package.json') as { ve
 
 function baseArgs(ctx: RenderContext): string[] {
   return ctx.base !== '/' ? ['--base', ctx.base] : []
+}
+
+const EXPORT_TIMEOUT = 120_000
+
+/** Whether the document has the slides form: its configuration names it, or names no renderer. */
+function hasSlides(doc: IRDocument): boolean {
+  const named = Object.keys(doc.config.renderers)
+  return named.length === 0 || named.includes('slides')
+}
+
+/**
+ * The slides as one file, by `slidev export` in the project the renderer writes (at the root path, its live code off):
+ * a PDF, or a PowerPoint file with a picture of each slide. `presmium-export` (@lincyaw/slidev-addon-publish) also
+ * checks the PDF's links.
+ */
+function slidesExporter(format: 'pdf' | 'pptx', label: Record<string, string>): Exporter {
+  return {
+    id: format,
+    label,
+    available: hasSlides,
+    async run(ctx) {
+      ctx.progress('prepare')
+      const dir = await ctx.prepare('slides', { liveCode: false })
+      ctx.progress('export')
+      const file = `slides.${format}`
+      await runSlidev(['export', 'slides.md', '--format', format, '--output', join(ctx.outDir, file), '--wait-until', 'networkidle', '--timeout', String(EXPORT_TIMEOUT)], dir, ctx.log, ctx.signal)
+      return { files: [file] }
+    },
+  }
 }
 
 const plugin: PresmiumNodePlugin = {
@@ -27,7 +57,7 @@ const plugin: PresmiumNodePlugin = {
       const dir = ctx.workDir
       await writeDeck(dir, ctx, slidevMarkdown(doc, ctx, dir), doc)
       await rm(ctx.outDir, { recursive: true, force: true })
-      await runSlidev(['build', 'slides.md', '--out', ctx.outDir, ...baseArgs(ctx)], dir).catch((error: unknown) => {
+      await runSlidev(['build', 'slides.md', '--out', ctx.outDir, ...baseArgs(ctx)], dir, ctx.log).catch((error: unknown) => {
         throw reportBuildFailure(error, doc, ctx)
       })
       ctx.report({
@@ -52,6 +82,10 @@ const plugin: PresmiumNodePlugin = {
       }
     },
   },
+  exporters: [
+    slidesExporter('pdf', { 'zh-CN': '幻灯片 PDF', 'en': 'Slides as PDF' }),
+    slidesExporter('pptx', { 'zh-CN': '幻灯片 PowerPoint', 'en': 'Slides as PowerPoint' }),
+  ],
 }
 
 export default plugin

@@ -1,6 +1,6 @@
 import { errorMessage, irBlocks, nodeMdast } from '@lincyaw/kernel'
 import type { IRDocument, MdastNode, RenderContext } from '@lincyaw/kernel'
-import { findPackageBin, spawnBackgroundNode, spawnInteractiveNode } from '@lincyaw/kernel/node'
+import { findPackageBin, forEachLine, spawnBackgroundNode, spawnInteractiveNode } from '@lincyaw/kernel/node'
 
 function slidevBin(): string {
   const bin = findPackageBin('@slidev/cli', 'slidev', import.meta.url)
@@ -16,15 +16,27 @@ export class SlidevError extends Error {
   }
 }
 
-/** Runs a Slidev command in the project's directory; rejects with its output when it fails. */
-export function runSlidev(args: string[], cwd: string): Promise<void> {
+/**
+ * Runs a Slidev command in the project's directory, its output a line at a time to `log`; rejects with its output when
+ * it fails, and with the signal's reason when `signal` stops it.
+ */
+export function runSlidev(args: string[], cwd: string, log?: (line: string) => void, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(signal.reason as Error)
     const child = spawnBackgroundNode(slidevBin(), args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] })
     let output = ''
     child.stdout!.on('data', (chunk: Buffer) => output += chunk)
     child.stderr!.on('data', (chunk: Buffer) => output += chunk)
+    if (log) for (const stream of [child.stdout, child.stderr]) forEachLine(stream, log)
+    const stop = () => child.kill('SIGTERM')
+    signal?.addEventListener('abort', stop, { once: true })
     child.on('error', reject)
-    child.on('close', code => code === 0 ? resolve() : reject(new SlidevError(`slidev ${args[0]} exited with code ${code}`, output)))
+    child.on('close', (code) => {
+      signal?.removeEventListener('abort', stop)
+      if (signal?.aborted) reject(signal.reason as Error)
+      else if (code === 0) resolve()
+      else reject(new SlidevError(`slidev ${args[0]} exited with code ${code}`, output))
+    })
   })
 }
 

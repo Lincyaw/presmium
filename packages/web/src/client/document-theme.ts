@@ -1,27 +1,22 @@
-import { componentErrors, createServerClient, createSharedStates, currentLocale, installHost, OPERATIONS, pluginsOf, PmIcon, PmPresenterPanels, PmToolbar, presmiumReport, presmiumService, provideServer, registerPresmiumPlugin, reportPluginFailure, setHostActive, startHost, stopHost } from '@lincyaw/host'
-import type { ServerClient, SharedStates, SyncTransports } from '@lincyaw/host'
-import { errorMessage } from '@lincyaw/kernel'
+import { createSharedStates, currentLocale, installHost, OPERATIONS, PmIcon, PmPresenterPanels, PmToolbar, presmiumService, stopHost } from '@lincyaw/host'
 import type { IRDocument } from '@lincyaw/kernel'
-import { createViewer, findView, installViewer, OverlayViewOutlet, PmComponentFallback, registerComponent, syncViewerWithOperations, tryInstallViewerPlugin, useViewer, withSlideGlobals } from '@lincyaw/viewer'
+import { createViewer, findView, installViewer, OverlayViewOutlet, registerComponent, syncViewerWithOperations, useViewer } from '@lincyaw/viewer'
 import type { Viewer } from '@lincyaw/viewer'
 import { applyUpdate } from '@lincyaw/viewer/domain'
 import type { LiveUpdate, Position } from '@lincyaw/viewer/domain'
 import type { Router, SiteData, Theme } from 'vitepress'
 import { Content, inBrowser, useData, withBase } from 'vitepress'
 import DefaultTheme from 'vitepress/theme-without-fonts'
-import type { Component, ComputedRef, Ref, ShallowRef } from 'vue'
-import { computed, defineAsyncComponent, defineComponent, h, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
+import type { ComputedRef, Ref, ShallowRef } from 'vue'
+import { computed, defineComponent, h, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
 import { IR_ENDPOINT, offlineEnabled, parsePositionQuery, samePage, sectionLinks, SERVICE_WORKER, sidebar, slidesPositionUrl, SOURCE_ENDPOINT, translationPages, UPDATE_EVENT, WEB_MESSAGES, webPages, withPositionQuery } from '../domain/index.ts'
 import type { CrossFormLinks, DevUpdateEvent, WebPage } from '../domain/index.ts'
 import { createViewerNavigation, createWebHostAdapter } from './host.ts'
 import { PAGES, PresmiumPage, ViewMenu } from './page.ts'
 import type { WebPreview, WebPreviewPage } from './preview-frame.ts'
+import { clientOnly, createRuntimeLifecycle } from './runtime.ts'
+import type { ViewerModule } from './runtime.ts'
 import './style.css'
-
-export interface ViewerModule {
-  name: string
-  load: () => Promise<unknown>
-}
 
 export interface ThemeInput {
   doc: IRDocument
@@ -40,59 +35,6 @@ interface ThemeOptions {
   document?: string
   home?: string
   ir?: string
-}
-
-/** Registers the browser plugins of the document and starts them, unless the runtime was disabled while their modules loaded. */
-async function startRuntime(loaders: ThemeInput['plugins'], doc: IRDocument, viewer: Viewer, transports: SyncTransports, server: ServerClient | undefined, enabled: () => boolean): Promise<{ started: boolean, restartable: boolean }> {
-  const config = doc.config.presmium
-  let failed = false
-  const modules = await Promise.all(loaders.map(load => load().catch((error) => {
-    failed = true
-    console.error('[presmium] a plugin module failed to load', error)
-    return {}
-  })))
-  const plugins = modules.flatMap(module => pluginsOf(module))
-  const restartable = !failed && plugins.every(plugin => plugin.restartable === true)
-  if (!enabled()) return { started: false, restartable }
-  plugins.forEach(registerPresmiumPlugin)
-  await startHost({ mode: 'document', config, navigation: createViewerNavigation(viewer), transports, server, environments: doc.config.execute?.environments })
-  return { started: true, restartable }
-}
-
-function clientOnly(name: string, load: () => Promise<unknown>): Component {
-  const loaded = defineAsyncComponent(() => load().then(module => withSlideGlobals((module as { default: Component }).default)))
-  return defineComponent({
-    name,
-    inheritAttrs: false,
-    setup(_, { attrs, slots }) {
-      const mounted = ref(false)
-      onMounted(() => {
-        mounted.value = true
-      })
-      return () => (mounted.value
-        ? h(loaded, attrs, slots)
-        : h('div', { 'class': 'pm-client-only', 'data-component': name }, [h(PmComponentFallback)]))
-    },
-  })
-}
-
-async function loadViewerPlugins(modules: ViewerModule[]): Promise<boolean> {
-  let valid = true
-  await Promise.all(modules.map(async ({ name, load }) => {
-    const id = `${name} (viewer)`
-    try {
-      const reason = tryInstallViewerPlugin(((await load()) as { default?: unknown }).default, id)
-      if (reason) {
-        valid = false
-        reportPluginFailure(id, reason)
-      }
-    } catch (error) {
-      valid = false
-      console.error(`[presmium] ${id} failed to load`, error)
-      reportPluginFailure(id, errorMessage(error))
-    }
-  }))
-  return valid
 }
 
 /** Registers the offline service worker, or unregisters it when the document turned offline support off. */
@@ -322,83 +264,6 @@ function installRouterHooks(router: Router, siteData: Ref<SiteData>, translation
   }
 }
 
-interface RuntimeLifecycleInput {
-  input: ThemeInput
-  options: ThemeOptions
-  viewer: Viewer
-  shared: SharedStates
-  original: ShallowRef<IRDocument>
-  /** Fetches the current IR from the dev server; `force` fails when it cannot. */
-  refresh(force?: boolean): Promise<void>
-}
-
-interface RuntimeLifecycle {
-  /** Whether the runtime was last asked to be active. */
-  isRequested(): boolean
-  setActive: WebPreviewPage['setActive']
-}
-
-/**
- * Starts and pauses the document's runtime, the browser plugins and the page, as a preview asks: a paused page unmounts and
- * stops its plugins; on resuming it fetches the current IR and restarts them, or fails when they cannot restart safely.
- */
-function createRuntimeLifecycle({ input, options, viewer, shared, original, refresh }: RuntimeLifecycleInput): RuntimeLifecycle {
-  let requested = active.value
-  let runtimeStarted = false
-  let restartable = false
-  let viewersLoaded = false
-  let viewersValid = false
-  let wasPaused = !requested
-  let queue = Promise.resolve()
-  const runtimeConfig = JSON.stringify(input.doc.config)
-  const pauseMedia = () => {
-    for (const media of document.querySelectorAll('audio, video')) (media as HTMLMediaElement).pause()
-  }
-  const setActive: WebPreviewPage['setActive'] = (on) => {
-    requested = on
-    const change = queue.then(async () => {
-      if (!on) {
-        if (!restartable || componentErrors().length > 0 || presmiumReport()?.plugins.some(plugin => plugin.status !== 'started')) {
-          throw new Error('the document runtime cannot safely restart; reload the preview')
-        }
-        pauseMedia()
-        active.value = false
-        await nextTick()
-        await setHostActive(false)
-        wasPaused = true
-        return
-      }
-      if (wasPaused) {
-        await refresh(true)
-        if (JSON.stringify(original.value.config) !== runtimeConfig || original.value.meta.lang !== input.doc.meta.lang) {
-          throw new Error('the document runtime configuration changed; reload the preview')
-        }
-      }
-      if (!runtimeStarted) {
-        if (!viewersLoaded) {
-          viewersReady = loadViewerPlugins(input.viewers ?? [])
-          viewersValid = await viewersReady === true
-          viewersLoaded = true
-        }
-        const server = requested && options.server ? createServerClient({ document: options.document }) : undefined
-        if (requested) provideServer(server)
-        const runtime = await startRuntime(input.plugins, viewer.doc.value, viewer, shared.transports, server, () => requested)
-        runtimeStarted = runtime.started
-        restartable = input.restartable === true && viewersValid && runtime.restartable
-      } else await setHostActive(true)
-      wasPaused = false
-      // A queued pause checks the completed initial load before disposing anything.
-      if (requested) {
-        active.value = true
-        await nextTick()
-      }
-    })
-    queue = change.catch(() => undefined)
-    return change
-  }
-  return { isRequested: () => requested, setActive }
-}
-
 export function createPresmiumTheme(input: ThemeInput): Theme {
   return {
     extends: DefaultTheme,
@@ -438,7 +303,7 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
       })
       installRouterHooks(router, siteData, translation, pages, viewer)
       const shared = createSharedStates(input.doc.meta.title)
-      installHost(app, createWebHostAdapter(viewer, { lang: siteData.value.lang, shared }))
+      installHost(app, createWebHostAdapter(viewer, { lang: siteData.value.lang, shared, isDark: () => useData().isDark }))
       installViewer(app, viewer)
       app.provide(PAGES, { pages, prefix: translation.prefix })
       app.component('PresmiumPage', PresmiumPage)
@@ -451,7 +316,19 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
         document.documentElement.classList.toggle(IN_WORKBENCH, preview.embedded)
       }
       const { original, locale } = translation
-      const lifecycle = createRuntimeLifecycle({ input, options, viewer, shared, original, refresh: force => refresh(force) })
+      const lifecycle = createRuntimeLifecycle({
+        modules: { plugins: input.plugins, viewers: input.viewers, restartable: input.restartable },
+        doc: input.doc,
+        viewer,
+        shared,
+        original,
+        active,
+        ...options.server ? { server: { document: options.document } } : {},
+        refresh: force => refresh(force),
+        onViewers: (ready) => {
+          viewersReady = ready
+        },
+      })
       setActive = lifecycle.setActive
       watch(() => presmiumService(OPERATIONS), (operations, _, onCleanup) => {
         if (operations) onCleanup(syncViewerWithOperations(viewer, operations))

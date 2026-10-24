@@ -7,6 +7,7 @@
 import { randomBytes } from 'node:crypto'
 import { spawn } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, symlinkSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect } from '@playwright/test'
@@ -42,7 +43,19 @@ export interface Studio {
   close(): Promise<void>
 }
 
-export async function startStudio(options: { port: number, model?: FakeModel, patches?: string[], prefix?: string, fixture?: string, isolateClient?: boolean, env?: Record<string, string> }): Promise<Studio> {
+/** `env` goes to the workbench (dsh), `serviceEnv` to the workspace service. */
+/**
+ * Where Playwright keeps its browsers for this machine (Playwright's documented defaults, or PLAYWRIGHT_BROWSERS_PATH):
+ * a service with a test's own cache directory still finds them, e.g. for `slidev export`.
+ */
+export function playwrightBrowsers(): string {
+  if (process.env.PLAYWRIGHT_BROWSERS_PATH) return process.env.PLAYWRIGHT_BROWSERS_PATH
+  if (process.platform === 'darwin') return join(homedir(), 'Library', 'Caches', 'ms-playwright')
+  if (process.platform === 'win32') return join(process.env.LOCALAPPDATA ?? join(homedir(), 'AppData', 'Local'), 'ms-playwright')
+  return join(process.env.XDG_CACHE_HOME ?? join(homedir(), '.cache'), 'ms-playwright')
+}
+
+export async function startStudio(options: { port: number, model?: FakeModel, patches?: string[], prefix?: string, fixture?: string, isolateClient?: boolean, env?: Record<string, string>, serviceEnv?: Record<string, string> }): Promise<Studio> {
   const home = testHome(options.prefix ?? 'workbench')
   try {
     if (options.isolateClient) {
@@ -66,7 +79,7 @@ export async function startStudio(options: { port: number, model?: FakeModel, pa
     const token = randomBytes(24).toString('base64url')
     const process_ = running(spawn(process.execPath, [PRESMIUM_BIN, 'serve', workspace.dir, '--port', '0', '--preview-origin', origin], {
       cwd: workspace.dir,
-      env: home.env({ PRESMIUM_SERVICE_TOKEN: token }),
+      env: home.env({ ...options.serviceEnv, PRESMIUM_SERVICE_TOKEN: token }),
       stdio: ['ignore', 'pipe', 'pipe'],
     }))
     let web: Web | undefined

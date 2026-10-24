@@ -31,6 +31,10 @@ export interface BuildOptions {
   audience?: string
   quote?: boolean
   scan?: 'outDir' | 'written'
+  /** The path every renderer's output is served at, in place of each renderer's own. */
+  base?: string
+  /** The renderers' tools' output, a line at a time (`RenderContext.log`). */
+  log?(line: string): void
 }
 
 export async function build(whole: Compilation, options: BuildOptions): Promise<BuildReport> {
@@ -41,13 +45,14 @@ export async function build(whole: Compilation, options: BuildOptions): Promise<
   const ir = await writeIR(relativeIR(doc, compilation.deckDir, compilation.workspaceRoot), options.outDir)
   const { selected, findings } = await selectRenderers(compilation, options.to)
   if (selected.length === 0) findings.push(renderFinding(compilation, 'warning', `no renderer available; only the IR was written to ${ir}`))
-  const run = planRenderRun(compilation, selected, true)
+  const run = planRenderRun(compilation, selected, true, options.base)
   const translated = await translationsFor(compilation, run)
   findings.push(...translated.findings)
   const render = async ({ renderer }: InstalledRenderer) => {
     const reported: Finding[] = []
     const ctx = renderContext(compilation, renderer.id, join(options.outDir, renderer.id), join(compilation.deckDir, WORK_DIR, renderer.id), run, reported)
     if (renderer.id === WEB) ctx.translations = translated.views
+    if (options.log) ctx.log = options.log
     const view = viewFor(doc, renderer.id)
     const unsupported = unsupportedBlocks(view, renderer, ctx.extensions)
     try {
@@ -87,6 +92,11 @@ function unique(findings: Finding[]): Finding[] {
     seen.add(key)
     return true
   })
+}
+
+/** The renderers the document is made with: those its configuration names, else every installed one. */
+export async function availableRenderers(compilation: Compilation): Promise<string[]> {
+  return (await selectRenderers(compilation)).selected.map(({ renderer }) => renderer.id)
 }
 
 export async function prepare(compilation: Compilation, options: { outDir: string, to?: string[], base?: string }): Promise<{ outputs: Omit<RendererOutput, 'skipped'>[], findings: Finding[] }> {

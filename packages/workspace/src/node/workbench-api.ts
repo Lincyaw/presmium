@@ -73,6 +73,8 @@ export interface WorkbenchBackendOptions {
   log: Logger
   /** Starts the web dev server of a document ahead of its first request. */
   warmSite?(dir: string): Promise<void>
+  /** The path of the document's page in the viewer app, once it can be shown there (prepared when not; `wait`: a while). */
+  viewerPage?(dir: string, wait: boolean): Promise<string | undefined>
 }
 
 /** The workbench's API with what the workspace server tells it: each compilation, the documents removed, closing. */
@@ -194,13 +196,18 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
     },
     async preview(document, renderer, prefetch = false) {
       const base = options.url()
-      const web = `${base}/${document ? `${urlPath(document)}/` : ''}`
+      // The viewer app when it has what the document needs (an opened document waits for it), else the document's dev server.
+      const page = await options.viewerPage?.(document, !prefetch && renderer !== 'slides').catch((error: unknown) => {
+        log.warn(`the viewer app cannot show ${document || '.'}: ${errorMessage(error)}`)
+        return undefined
+      })
+      const web = page ? `${base}${page}` : `${base}/${document ? `${urlPath(document)}/` : ''}`
       const slideURL = `${base}/__presmium/${WORKSPACE_ID}/${slidesPath(document)}`
       const compilation = await options.compileSessionOf(document).ready()
       const configured = Object.keys(compilation.doc.config.renderers)
       const available = configured.length === 0 || configured.includes('slides')
       if (!available) options.diagnostics?.clear(document, 'preview', 'slides')
-      if (renderer === 'web' && prefetch && roomToPrefetch(0)) void options.warmSite?.(document).catch(() => undefined)
+      if (renderer === 'web' && prefetch && !page && roomToPrefetch(0)) void options.warmSite?.(document).catch(() => undefined)
       if (renderer === 'web' || !available) {
         return { document, web, ...available ? { slides: slideURL } : {} }
       }

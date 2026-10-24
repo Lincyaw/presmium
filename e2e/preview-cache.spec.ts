@@ -88,7 +88,8 @@ test.describe('the bounded workbench preview pool', () => {
     page.on('requestfinished', request => controls.delete(request))
     page.on('requestfailed', request => controls.delete(request))
     page.on('response', response => {
-      if (new URL(response.url()).pathname.endsWith('/@lincyaw/ir')) snapshots.push(response.status())
+      // The document's IR, from the viewer app or from a dev server.
+      if (/\/(?:__app\/ir|@lincyaw\/ir)$/.test(new URL(response.url()).pathname)) snapshots.push(response.status())
     })
 
     await studio.open(page)

@@ -241,6 +241,74 @@ export interface PreviewAnswer {
   prepared?: boolean
 }
 
+/** @experimental What a document can be made into: its renderers and its plugins' exporters. */
+export interface OutputTarget {
+  id: string
+  kind: 'render' | 'export'
+  /** By language; a renderer's id when its plugin gave none. */
+  label: Record<string, string>
+}
+
+/** @experimental */
+export type JobState = 'queued' | 'running' | 'done' | 'failed' | 'cancelled'
+
+/** @experimental A file a job made, below the job's address. */
+export interface JobFile {
+  path: string
+  size: number
+  /** Its media type, by its extension. */
+  type: string
+}
+
+/** @experimental A build or an export of a document, run by the workspace service one at a time. */
+export interface CompileJob {
+  id: string
+  /** Grows with each change of the job: of two copies, a client keeps the one with the greater. */
+  sequence: number
+  document: string
+  target: string
+  kind: OutputTarget['kind']
+  state: JobState
+  /** The IR revision it was made from: a job of the same target and revision is not run again. */
+  revision: string
+  /** Taken from an earlier job of the same target and revision. */
+  cached?: boolean
+  progress?: { phase: string, done?: number, total?: number }
+  createdAt: string
+  startedAt?: string
+  finishedAt?: string
+  /** The address its files are below (`<url><path>`). */
+  url: string
+  files: JobFile[]
+  /** The file to open first: a site's page, the video, the PDF. */
+  main?: string
+  /** The WebVTT captions of the main file (a video), by language. */
+  captions?: Record<string, string>
+  error?: string
+  warnings: string[]
+  /** The last lines of its log. */
+  log: string[]
+}
+
+/** @experimental The documents' builds and exports as jobs, as a host offers them (the workspace service). */
+export interface OutputJobs {
+  /** What the document can be made into. */
+  targets(document: string): Promise<OutputTarget[]>
+  /** The jobs of the document (all, without one), newest first. */
+  list(document?: string): CompileJob[]
+  /** Starts a job of `target` for the document as it is now, or answers the one already made from this revision. */
+  start(document: string, target: string): Promise<CompileJob>
+  /** Settles once the job has ended. */
+  wait(id: string): Promise<CompileJob>
+  cancel(id: string): CompileJob | undefined
+}
+
+/** @experimental */
+export interface JobsAnswer {
+  targets: OutputTarget[]
+  jobs: CompileJob[]
+}
+
 /** @experimental */
 export interface WorkbenchAnswer {
   mcp: string

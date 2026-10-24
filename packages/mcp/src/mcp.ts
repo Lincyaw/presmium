@@ -4,7 +4,7 @@ import { createMcpHandler, fromJsonSchema, McpServer, ResourceTemplate, UriTempl
 import type { AuthInfo, CallToolResult, JsonSchemaType, Variables } from '@modelcontextprotocol/server'
 import { serveStdio } from '@modelcontextprotocol/server/stdio'
 import { deckLocale, diagnosticOf, docBlocks, errorMessage, hasRole, isPresentingRole, isRecord, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
-import type { AgentTool, ApprovalKind, ApprovalScope, CodeNode, DiagnosticSnapshot, DocumentSummary, Finding, IRDocument } from '@lincyaw/kernel'
+import type { AgentTool, ApprovalKind, ApprovalScope, CodeNode, CompileJob, DiagnosticSnapshot, DocumentSummary, Finding, IRDocument } from '@lincyaw/kernel'
 import { codeRef, deckInfo, diagnosticsOf, findBlock, findSection, locate, outputsOf, relativeToDeck, runInfo, search, sectionDetail, sectionSummary, stepDetail } from './deck.ts'
 import type { McpCaller, McpHost, McpProcess } from './host.ts'
 import { MCP_MESSAGES } from './messages.ts'
@@ -94,6 +94,28 @@ async function position(call: Call, document?: string) {
       ...found.role ? { role: found.role } : {},
       reported: new Date(found.at).toISOString(),
     },
+  }
+}
+
+const RECENT_JOBS = 10
+const LOG_TAIL = 30
+const LISTED_FILES = 20
+
+/** A job as the AI reads it: where it is, what it made and where (the files below `url`), the end of its log. */
+function jobSummary(job: CompileJob, logLines = 0) {
+  return {
+    id: job.id,
+    target: job.target,
+    state: job.state,
+    revision: job.revision,
+    ...job.progress ? { progress: job.progress } : {},
+    ...job.error ? { error: job.error } : {},
+    ...job.warnings.length ? { warnings: job.warnings } : {},
+    url: job.url,
+    ...job.main ? { main: `${job.url}${job.main}` } : {},
+    files: job.files.slice(0, LISTED_FILES).map(file => file.path),
+    ...job.files.length > LISTED_FILES ? { moreFiles: job.files.length - LISTED_FILES } : {},
+    ...logLines > 0 && job.log.length ? { log: job.log.slice(-logLines) } : {},
   }
 }
 
@@ -258,18 +280,43 @@ const TOOLS: ToolSpec[] = [
   },
   {
     name: 'build',
-    description: 'Builds the deck with its renderers (or those named), once a person allows it; returns the output directories and the findings.',
-    properties: { ...DOCUMENT, to: { type: 'array', items: { type: 'string' }, description: 'Renderer ids, e.g. ["web"]; default: the deck\'s renderers.' } },
+    description: 'Builds or exports the deck once a person allows it: its renderers (e.g. web, slides, notebook, lecture) and the exports its plugins offer (e.g. pdf, pptx, video; get_builds lists them). Where the host runs them as jobs, the workbench shows them and keeps their files; wait: false returns at once (get_builds follows them). Returns each job\'s state, files and address, else the output directories and the findings.',
+    properties: {
+      ...DOCUMENT,
+      to: { type: 'array', items: { type: 'string' }, description: 'What to make, e.g. ["slides", "pdf"]; default: the deck\'s renderers.' },
+      wait: { type: 'boolean', description: 'Wait for the jobs to end (default true).' },
+    },
     kind: 'operate',
     run: async (call) => {
       const document = await call.document()
       const to = Array.isArray(call.args.to) ? call.args.to.filter((id): id is string => typeof id === 'string') : undefined
       await call.approve('operate', m => m.build(to?.join(', ') || m.allRenderers))
+      const { jobs } = call.host
+      if (jobs) {
+        const targets = to?.length ? to : (await jobs.targets(document)).filter(target => target.kind === 'render').map(target => target.id)
+        const started = await Promise.all(targets.map(target => jobs.start(document, target)))
+        const ended = call.args.wait === false ? started : await Promise.all(started.map(job => jobs.wait(job.id)))
+        return { jobs: ended.map(job => jobSummary(job)) }
+      }
       const { doc } = await call.compiled()
       const report = await call.host.build(document, { to })
       return {
         outputs: report.outputs.map(o => ({ renderer: o.renderer, outDir: relativeToDeck(doc, { file: o.outDir, line: 1 }).file })),
         diagnostics: diagnosticsOf(doc, report.findings),
+      }
+    },
+  },
+  {
+    name: 'get_builds',
+    description: 'What the deck can be made into (renderers and exports) and its latest builds and exports: state, progress, the end of the log, the error, the files and their address.',
+    properties: { ...DOCUMENT },
+    kind: 'read',
+    run: async (call) => {
+      const jobs = call.host.jobs!
+      const document = await call.document()
+      return {
+        targets: (await jobs.targets(document)).map(target => ({ id: target.id, kind: target.kind, label: target.label })),
+        jobs: jobs.list(document).slice(0, RECENT_JOBS).map(job => jobSummary(job, LOG_TAIL)),
       }
     },
   },
@@ -321,6 +368,7 @@ function hostSupports(host: McpHost, name: string): boolean {
   switch (name) {
     case 'get_position': return Boolean(host.positions)
     case 'get_classroom': return Boolean(host.classroomStatus)
+    case 'get_builds': return Boolean(host.jobs)
     case 'navigate': return Boolean(host.positions && host.navigate)
     case 'classroom_start':
     case 'classroom_end': return Boolean(host.positions && host.setClassroom)

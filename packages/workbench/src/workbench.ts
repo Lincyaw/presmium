@@ -1,9 +1,10 @@
 import { errorMessage, irBlocks, stepKeys, trailStep } from '@lincyaw/kernel'
-import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPin, PreviewPoint, PreviewPosition, PreviewRect, PreviewRenderer, PreviewReport, ReviewChange, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
+import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, JobsAnswer, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPin, PreviewPoint, PreviewPosition, PreviewRect, PreviewRenderer, PreviewReport, ReviewChange, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
 import { CommentStore, newComment } from './comments.ts'
 import type { DocumentComment } from './comments.ts'
 import { DocumentDiagnostics } from './diagnostics.ts'
 import { DocumentHistory } from './history.ts'
+import { DocumentJobs } from './jobs.ts'
 import { localeOf, MESSAGES } from './messages.ts'
 import type { AgentPlace, Locale } from './messages.ts'
 import { changedPlaces, findPlaceAtLine, findPlaceSource } from './places.ts'
@@ -101,6 +102,9 @@ export interface WorkbenchState {
   isHistoryBusy: boolean
   isAsking: boolean
   askFailure?: string
+  /** What the document can be made into, and its builds and exports (the author's and the AI's). */
+  jobs?: JobsAnswer
+  jobsFailure?: string
 }
 
 export interface PreviewSink {
@@ -163,6 +167,7 @@ const DOCUMENT_RESET = {
   pointer: undefined, editing: undefined, save: { kind: 'idle' }, editFallback: undefined,
   focus: [], isFocusPending: false, focusFailure: undefined, comments: [],
   review: undefined, history: undefined, outside: undefined, historyFailure: undefined, askFailure: undefined,
+  jobs: undefined, jobsFailure: undefined,
 } satisfies Partial<WorkbenchState>
 
 /** A free directory for a new document called `title`, beside most of the existing ones. */
@@ -200,6 +205,7 @@ export class Workbench {
   readonly #listeners = new Set<Listener>()
   readonly #diagnostics: DocumentDiagnostics
   readonly #history: DocumentHistory
+  readonly #jobs: DocumentJobs
   readonly #comments = new CommentStore()
   readonly #askers = new Set<(request: AgentRequest) => Promise<AgentAnswer | void>>()
   readonly #previewSinks = new Set<PreviewSink>()
@@ -249,6 +255,7 @@ export class Workbench {
       set: patch => workbench.#set(patch),
     }
     this.#diagnostics = new DocumentDiagnostics(this.client, store)
+    this.#jobs = new DocumentJobs(this.client, store)
     this.#history = new DocumentHistory(this.client, store, (changes) => {
       this.#record('ai.change', { 'presmium.files': changes.map(change => change.path).join('\n'), 'presmium.added': changes.reduce((n, c) => n + c.added, 0), 'presmium.removed': changes.reduce((n, c) => n + c.removed, 0) })
       this.#pendingFlash = changes
@@ -380,6 +387,7 @@ export class Workbench {
       localStorage.setItem(RECENT_KEY, dir)
     } catch {}
     this.#diagnostics.subscribe(dir)
+    this.#jobs.subscribe(dir)
     this.#unsubscribeIr = this.client.subscribeIr(dir, event => void this.#handleIrEvent(dir, event), () => void this.#readIr(dir))
     void this.client.readWorkbenchInfo().then(({ root }) => {
       this.#comments.setRoot(root)
@@ -790,6 +798,15 @@ export class Workbench {
     return this.#timed('review.reject', {}, () => this.#history.rejectReview(), done => (done ? 'done' : 'refused'))
   }
 
+  /** Makes the document into `target` (a renderer, or an export of its plugins) as a job of the workspace server. */
+  startJob(target: string): Promise<void> {
+    return this.#timed('job.start', { 'presmium.job.target': target }, () => this.#jobs.start(target))
+  }
+
+  cancelJob(id: string): Promise<void> {
+    return this.#timed('job.cancel', { 'presmium.job.id': id }, () => this.#jobs.cancel(id))
+  }
+
   recordOutsideChanges(): Promise<boolean> {
     return this.#timed('changes.record', {}, () => this.#history.recordOutside(this.#messages.outsideChange), done => (done ? 'done' : 'refused'))
   }
@@ -938,6 +955,7 @@ export class Workbench {
     this.#unsubscribeIr = undefined
     this.#history.stop()
     this.#diagnostics.stop()
+    this.#jobs.stop()
   }
 
   dispose(): void {

@@ -72,7 +72,7 @@ export async function main(argv: string[]): Promise<number> {
     })
     result.warnings.forEach(w => console.error(`warning: ${w}`))
     console.log(`exported ${shown(result.file)} (lecture ${result.track}, ${clockText(result.duration)}, ${result.frames} frames)`)
-    for (const file of result.captions) console.log(`captions ${shown(file)}`)
+    for (const { file } of result.captions) console.log(`captions ${shown(file)}`)
     return 0
   } catch (error) {
     console.error(`presmium-lecture: ${errorMessage(error)}`)
