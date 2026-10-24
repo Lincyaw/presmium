@@ -1,4 +1,4 @@
-import { createServer } from 'node:http'
+import { Agent, createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import type { Duplex } from 'node:stream'
@@ -15,7 +15,9 @@ export interface WorkspaceDevProxy {
  * path's document or of the home page (`portFor`), on the loopback address `target`; requests from other sites are refused.
  */
 export async function startWorkspaceDevProxy(portFor: (path: string) => Promise<number>, listen: { address: string, port: number, target: string }): Promise<WorkspaceDevProxy> {
-  const proxy = createProxyServer({ ws: true, xfwd: false })
+  // A page loads hundreds of modules: the connections to the dev servers are kept and reused, not opened for each.
+  const agent = new Agent({ keepAlive: true, maxSockets: 64 })
+  const proxy = createProxyServer({ ws: true, xfwd: false, agent })
   proxy.on('error', (error: Error, _req: unknown, res: unknown) => {
     const response = res as ServerResponse | Duplex | undefined
     if (response && 'writeHead' in response && !response.headersSent) {
@@ -58,6 +60,7 @@ export async function startWorkspaceDevProxy(portFor: (path: string) => Promise<
     port,
     async close() {
       proxy.close()
+      agent.destroy()
       await new Promise<void>((done) => {
         server.close(() => done())
         server.closeAllConnections()

@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
+import { literalGlob } from '@lincyaw/kernel/node'
 import { SCENE_EXTENSIONS, SCENE_NAME, SCENES_DIR } from '../domain/index.ts'
 
 export const SCENES_MODULE = 'virtual:presmium-motion/scenes'
@@ -44,6 +45,12 @@ export function scenesPlugin(deckDir: string) {
   const root = join(deckDir, SCENES_DIR)
   return {
     name: 'presmium:motion-scenes',
+    // The scenes come through a virtual module, which Vite's dependency scan does not read: their files are scan entries,
+    // so the libraries they load (GSAP, Three.js, React…) are pre-bundled at once instead of found while the page loads.
+    config() {
+      const files = [...deckScenes(deckDir).values()]
+      return files.length > 0 ? { optimizeDeps: { entries: files.map(literalGlob) } } : undefined
+    },
     resolveId(id: string) {
       return id === SCENES_MODULE ? RESOLVED : undefined
     },

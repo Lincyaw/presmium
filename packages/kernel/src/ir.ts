@@ -313,6 +313,8 @@ export interface SiteSpec {
 export interface SiteDevServer {
   url: string
   update(dir: string, doc: IRDocument): Promise<void>
+  /** Starts the dev server of document `dir` ahead of its first request (the author is about to open it); may decline. */
+  warm?(dir: string): Promise<void>
   close(): Promise<void>
 }
 

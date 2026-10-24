@@ -134,6 +134,8 @@ function localizeHiddenLabels(): void {
 const slidesBase = ref<string>()
 const active = ref(true)
 const embeddedPreview = ref(false)
+// On <html> while the page is a workbench's preview: the styles draw the page on the editor's canvas.
+const IN_WORKBENCH = 'pm-in-workbench'
 let preview: WebPreview | undefined
 let setActive: WebPreviewPage['setActive'] = async () => {}
 let viewersReady: Promise<unknown> = Promise.resolve()
@@ -159,6 +161,7 @@ const Layout = defineComponent({
       preview = undefined
       connecting?.connect({ viewer, dark: isDark, setActive })
       embeddedPreview.value = document.documentElement.dataset.presmiumPreview === 'on'
+      document.documentElement.classList.toggle(IN_WORKBENCH, embeddedPreview.value)
       localizeHiddenLabels()
       watch(() => page.value.relativePath, () => void nextTick(localizeHiddenLabels), { flush: 'post' })
       watch(active, () => void nextTick(localizeHiddenLabels), { flush: 'post' })
@@ -445,6 +448,7 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
       if (preview) {
         active.value = preview.active
         embeddedPreview.value = preview.embedded
+        document.documentElement.classList.toggle(IN_WORKBENCH, preview.embedded)
       }
       const { original, locale } = translation
       const lifecycle = createRuntimeLifecycle({ input, options, viewer, shared, original, refresh: force => refresh(force) })

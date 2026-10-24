@@ -4,7 +4,8 @@ import { join, relative, sep } from 'node:path'
 import { dev, relativeIR } from '@lincyaw/compiler'
 import type { Compilation, DevServers } from '@lincyaw/compiler'
 import { errorMessage, PREVIEW_REVISION, pushStream } from '@lincyaw/kernel'
-import { irRevision } from '@lincyaw/kernel/node'
+import { irRevision, machineState, threadBudget } from '@lincyaw/kernel/node'
+import type { MachineState } from '@lincyaw/kernel/node'
 import type { Finding, IrAnswer, IRDocument, IrEvent, Logger, PreviewAnswer, PreviewRenderer, ProxySpec } from '@lincyaw/kernel'
 import type { DiagnosticStore, ServerHost } from '@lincyaw/server'
 import type { CompileSession } from './compile-session.ts'
@@ -23,7 +24,12 @@ export interface CheckAnswer {
 export interface WorkbenchApi {
   ir(document: string): Promise<IrAnswer>
   events(document: string, signal: AbortSignal): AsyncIterable<{ event: string, data: IrEvent }>
-  preview(document: string, renderer?: PreviewRenderer): Promise<PreviewAnswer>
+  /**
+   * The document's preview addresses, starting the dev server of `renderer`. `prefetch`: the workbench prepares the
+   * document ahead of the author's click (its web form) or switch (its slides); the dev server starts only when the machine
+   * has room (`roomToPrefetch`), and the answer does not tell whether it started.
+   */
+  preview(document: string, renderer?: PreviewRenderer, prefetch?: boolean): Promise<PreviewAnswer>
   build(document: string, to?: string[]): Promise<BuildAnswer>
   check(document: string): Promise<CheckAnswer>
   proxies: ProxySpec[]
@@ -65,6 +71,8 @@ export interface WorkbenchBackendOptions {
   preview?: { origins: string[] }
   stateDir: string
   log: Logger
+  /** Starts the web dev server of a document ahead of its first request. */
+  warmSite?(dir: string): Promise<void>
 }
 
 /** The workbench's API with what the workspace server tells it: each compilation, the documents removed, closing. */
@@ -74,6 +82,15 @@ export interface WorkbenchBackend extends WorkbenchApi {
   stampPreviewRevision(compilation: Compilation, doc: IRDocument): IRDocument
   documentsRemoved(dirs: string[]): Promise<void>
   close(): Promise<void>
+}
+
+// Slides started ahead of a switch: at most this many dev servers running, each with this much free memory left.
+const PREFETCH_SERVERS = 2
+const PREFETCH_MEMORY = 3 * 1024 ** 3
+
+/** Whether the machine has room to start a document's slides before the author asks: idle processors and free memory. */
+export function roomToPrefetch(running: number, machine: MachineState = machineState()): boolean {
+  return running < PREFETCH_SERVERS && threadBudget('interactive', process.env, machine) >= 2 && machine.free >= PREFETCH_MEMORY
 }
 
 export function createWorkbenchBackend(options: WorkbenchBackendOptions): WorkbenchBackend {
@@ -175,7 +192,7 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
         return () => own.delete(listener)
       }, { signal })
     },
-    async preview(document, renderer) {
+    async preview(document, renderer, prefetch = false) {
       const base = options.url()
       const web = `${base}/${document ? `${urlPath(document)}/` : ''}`
       const slideURL = `${base}/__presmium/${WORKSPACE_ID}/${slidesPath(document)}`
@@ -183,8 +200,13 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
       const configured = Object.keys(compilation.doc.config.renderers)
       const available = configured.length === 0 || configured.includes('slides')
       if (!available) options.diagnostics?.clear(document, 'preview', 'slides')
+      if (renderer === 'web' && prefetch && roomToPrefetch(0)) void options.warmSite?.(document).catch(() => undefined)
       if (renderer === 'web' || !available) {
         return { document, web, ...available ? { slides: slideURL } : {} }
+      }
+      if (prefetch && renderer === 'slides' && !slidesPreviews.has(document)) {
+        if (roomToPrefetch(slidesPreviews.size)) void startSlidesPreview(document).catch(() => undefined)
+        return { document, web, slides: slideURL }
       }
       const own = await (renderer === 'slides' ? startSlidesPreview(document) : startSlidesPreview(document).catch(() => undefined))
       return { document, web, ...own ? { slides: slideURL } : {} }

@@ -351,6 +351,9 @@ export async function buildSite(site: SiteSpec, ctx: RenderContext): Promise<Ren
   return { outDir: ctx.outDir, skipped: [] }
 }
 
+// The documents' dev servers running at most for `warm` to start another.
+const WARM_LIMIT = 3
+
 export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir: string) => Promise<IRDocument>): Promise<SiteDevServer> {
   const extra = siteModules(ctx)
   const shared = viteFsAllow(presmiumRoot(), ...Object.values(ctx.pluginDirs))
@@ -420,6 +423,11 @@ export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir:
 
   return {
     url: `http://${listenAddress === '0.0.0.0' || listenAddress === '::' ? '127.0.0.1' : listenAddress}:${proxy.port}${base}`,
+    async warm(dir: string) {
+      // Started ahead of a request only while few run: each dev server holds its own module graph.
+      if (closed || documents.has(dir) || documents.size >= WARM_LIMIT || !site.documents.some(d => d.dir === dir)) return
+      await startDocument(dir)
+    },
     async update(dir: string, doc: IRDocument) {
       if (closed) return
       latest.set(dir, doc)

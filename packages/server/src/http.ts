@@ -1,5 +1,6 @@
 import { timingSafeEqual } from 'node:crypto'
-import { createServer } from 'node:http'
+import { Agent, createServer } from 'node:http'
+import { Agent as HttpsAgent } from 'node:https'
 import type { IncomingHttpHeaders, IncomingMessage, Server, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import type { Duplex } from 'node:stream'
@@ -96,6 +97,9 @@ export interface ProxyTarget {
 }
 
 export function createProxy() {
+  // A page loads hundreds of modules: the connections to the targets are kept and reused, not opened for each.
+  const agents = { http: new Agent({ keepAlive: true, maxSockets: 64 }), https: new HttpsAgent({ keepAlive: true, maxSockets: 64 }) }
+  const agentFor = (target: string) => (target.startsWith('https:') || target.startsWith('wss:') ? agents.https : agents.http)
   const proxy = createProxyServer({ ws: true, xfwd: false })
   proxy.on('error', (error: Error, _req: unknown, res: unknown) => {
     const response = res as ServerResponse | Duplex | undefined
@@ -109,13 +113,17 @@ export function createProxy() {
   return {
     web(req: IncomingMessage, res: ServerResponse, to: ProxyTarget): void {
       req.url = to.path
-      proxy.web(req, res, { target: to.target, headers: to.headers })
+      proxy.web(req, res, { target: to.target, headers: to.headers, agent: agentFor(to.target) })
     },
     ws(req: IncomingMessage, socket: Duplex, head: Buffer, to: ProxyTarget): void {
       req.url = to.path
-      proxy.ws(req, socket, head, { target: to.target, headers: to.headers })
+      proxy.ws(req, socket, head, { target: to.target, headers: to.headers, agent: agentFor(to.target) })
     },
-    close: () => proxy.close(),
+    close: () => {
+      proxy.close()
+      agents.http.destroy()
+      agents.https.destroy()
+    },
   }
 }
 

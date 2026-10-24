@@ -99,3 +99,25 @@ test('the copy pnpm studio opens is its own repository, with the lectures, their
     rmSync(dir, { recursive: true, force: true })
   }
 })
+
+test('a new copy\'s lecture opens with every library pre-bundled at once: the page is not reloaded to take one found late', async ({ page }) => {
+  const work = join(ROOT, '.presmium')
+  mkdirSync(work, { recursive: true })
+  const dir = mkdtempSync(join(work, 'e2e-example-'))
+  let server: Awaited<ReturnType<typeof serve>> | undefined
+  try {
+    execFileSync(process.execPath, [join(EXAMPLE, 'try.mjs'), dir], { stdio: 'pipe' })
+    server = await serve(dir)
+    let loads = 0
+    page.on('load', () => loads++)
+    page.on('pageerror', error => { throw error })
+    await page.goto(`${server.url}/bubble-sort/`, { timeout: 120_000 })
+    // The scene draws with GSAP, which only the scene's file loads: a library Vite would otherwise find this late.
+    await expect(page.locator('.bs__bar').first()).toBeVisible({ timeout: 120_000 })
+    await page.waitForLoadState('networkidle')
+    expect(loads).toBe(1)
+  } finally {
+    await stop(server?.child)
+    rmSync(dir, { recursive: true, force: true })
+  }
+})

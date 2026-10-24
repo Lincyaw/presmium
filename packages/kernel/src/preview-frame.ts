@@ -55,7 +55,8 @@ const HEADINGS = 'h1, h2, h3, h4, h5, h6'
 const notText = () => `.${PIN_CLASS}, .header-anchor`
 const COMMANDS: PreviewCommandType[] = ['go', 'highlight', 'pick', 'pins', 'marks', 'appearance', 'edit', 'flash']
 
-const STYLE = `
+// A function for the same reason as `notText`.
+const frameStyle = () => `
 [${HIGHLIGHT}] { outline: 2px solid var(--pm-color-accent, #1d6b7a) !important; outline-offset: 4px; border-radius: 2px; }
 [${HOVER}] { outline: 1px solid color-mix(in srgb, var(--pm-color-accent, #1d6b7a) 50%, transparent) !important; outline-offset: 3px; border-radius: 4px; cursor: pointer; }
 [${EDITING}] { outline: 2px solid var(--pm-color-accent, #1d6b7a) !important; outline-offset: 3px; border-radius: 4px; cursor: text; }
@@ -700,7 +701,7 @@ function installStyle(): void {
   if (document.getElementById(STYLE_ID)) return
   const style = document.createElement('style')
   style.id = STYLE_ID
-  style.textContent = STYLE
+  style.textContent = frameStyle()
   document.head.append(style)
 }
 

@@ -249,9 +249,10 @@ function workbenchRoutes(workbench: WorkbenchApi): Record<string, Route> {
       role: 'editor',
       handle: (request, ctx) => catchRequestErrors(async () => {
         if (request.method !== 'GET') return problemResponse(405, 'GET')
-        const renderer = new URL(request.url).searchParams.get('view') ?? undefined
+        const params = new URL(request.url).searchParams
+        const renderer = params.get('view') ?? undefined
         if (renderer !== undefined && renderer !== 'web' && renderer !== 'slides') return problemResponse(400, 'view must be web or slides')
-        return jsonResponse(await workbench.preview(ctx.document, renderer))
+        return jsonResponse(await workbench.preview(ctx.document, renderer, params.get('prefetch') === '1'))
       }),
     },
     'build': {

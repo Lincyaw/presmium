@@ -254,7 +254,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   })
   const running = server
   serverServices = running.services
-  workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, diagnostics: running.diagnostics, url: () => running.url, preview, stateDir, log })
+  workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, diagnostics: running.diagnostics, url: () => running.url, preview, stateDir, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve() })
   history = openHistory()
   routesPlugin = {
     id: WORKSPACE_ID,
@@ -352,6 +352,7 @@ async function startWorkspaceSite(options: WorkspaceSiteOptions) {
         log.warn(message)
       })
     },
+    warm: (dir: string): Promise<void> => dev.warm?.(dir) ?? Promise.resolve(),
     close: (): Promise<void> => dev.close(),
   }
 }

@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync,
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { backgroundPriority, NODE_RESOURCE_ARGS, resourceEnvironment } from '@lincyaw/kernel/node'
+import { machineState, NODE_RESOURCE_ARGS, nodeResourceArgs, resourceEnvironment } from '@lincyaw/kernel/node'
 export { bracketIPv6 } from '@lincyaw/kernel/node'
 
 export type Carrier = 'web' | 'headless' | 'acp'
@@ -41,7 +41,7 @@ export function dshBin(from = PACKAGE_DIR): string {
 }
 
 export function launchEnv(dshHome: string, env: NodeJS.ProcessEnv = process.env): Record<string, string> {
-  return resourceEnvironment({ DSH_HOME: dshHome, DSH_AGENTS_HOME: join(dshHome, 'agents'), DSH_TELEMETRY_MODE: 'DISABLED', PRESMIUM_MAX_THREADS: env.PRESMIUM_MAX_THREADS })
+  return resourceEnvironment({ DSH_HOME: dshHome, DSH_AGENTS_HOME: join(dshHome, 'agents'), DSH_TELEMETRY_MODE: 'DISABLED', PRESMIUM_MAX_THREADS: env.PRESMIUM_MAX_THREADS }, 'interactive')
 }
 
 /** The variables a launcher sets for the processes it starts; they are never inherited from its own environment. */
@@ -70,12 +70,14 @@ export interface LaunchedProcess {
 }
 
 /**
- * Starts `node <args>` under the watchdog, in a process group of its own and at background priority. The watchdog
- * ends the group when the launcher's pipe to it closes, so the group ends with the launcher, after `kill -9` too.
+ * Starts `node <args>` under the watchdog, in a process group of its own, with the interactive thread budget at normal
+ * priority: the author waits for the workspace service and DeepSeek Harness. The watchdog ends the group when the
+ * launcher's pipe to it closes, so the group ends with the launcher, after `kill -9` too.
  */
 export function launchNode(name: string, args: string[], options: { cwd: string, env: Record<string, string>, onOutput?(text: string): void }): LaunchedProcess {
-  const child = spawn(process.execPath, [...NODE_RESOURCE_ARGS, WATCHDOG, process.execPath, ...NODE_RESOURCE_ARGS, ...args], { cwd: options.cwd, env: resourceEnvironment(options.env), detached: true, stdio: ['pipe', 'pipe', 'pipe'] })
-  backgroundPriority(child.pid)
+  const machine = machineState()
+  const node = nodeResourceArgs('interactive', options.env, machine)
+  const child = spawn(process.execPath, [...NODE_RESOURCE_ARGS, WATCHDOG, process.execPath, ...node, ...args], { cwd: options.cwd, env: resourceEnvironment(options.env, 'interactive', machine), detached: true, stdio: ['pipe', 'pipe', 'pipe'] })
   child.stdin!.on('error', () => {})
   let output: string | undefined = ''
   const waiting = new Set<() => void>()

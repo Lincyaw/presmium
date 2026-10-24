@@ -1,9 +1,25 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { createRequire, findPackageJSON } from 'node:module'
-import { dirname, join } from 'node:path'
+import { dirname, isAbsolute, join, relative, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 export const TYPESCRIPT_IMPORT: readonly string[] = ['--import', new URL('./strip-types.mjs', import.meta.url).href]
+
+/**
+ * The import specifier of `file` in a module generated in `dir`: relative where it can be (Vite's dependency scan does
+ * not follow an import written as an absolute path), else absolute (another drive on Windows).
+ */
+export function importSpecifier(dir: string, file: string): string {
+  const path = relative(dir, file)
+  if (isAbsolute(path)) return file
+  const posix = path.split(sep).join('/')
+  return posix.startsWith('.') ? posix : `./${posix}`
+}
+
+/** `file` as a glob that matches only it: Vite's `optimizeDeps.entries` are globs. */
+export function literalGlob(file: string): string {
+  return file.split(sep).join('/').replace(/[\\*?[\]{}()!@+|]/g, '\\$&')
+}
 
 export function packageOf(file: string): string | undefined {
   const manifest = findPackageJSON(pathToFileURL(file))

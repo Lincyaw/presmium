@@ -428,12 +428,12 @@ html.pm-presenting {
 
 /* In a workbench: the document as one page on the editor's canvas, as a word processor shows it. */
 
-html[data-presmium-preview='on'] {
+html.pm-in-workbench {
   --vp-nav-height: 0rem;
   background: var(--pm-color-canvas);
 }
 
-html[data-presmium-preview='on'] body {
+html.pm-in-workbench body {
   background: var(--pm-color-canvas);
 }
 

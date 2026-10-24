@@ -1,6 +1,6 @@
 import { errorMessage, irBlocks, nodeMdast } from '@lincyaw/kernel'
 import type { IRDocument, MdastNode, RenderContext } from '@lincyaw/kernel'
-import { findPackageBin, spawnBackgroundNode } from '@lincyaw/kernel/node'
+import { findPackageBin, spawnBackgroundNode, spawnInteractiveNode } from '@lincyaw/kernel/node'
 
 function slidevBin(): string {
   const bin = findPackageBin('@slidev/cli', 'slidev', import.meta.url)
@@ -30,7 +30,8 @@ export function runSlidev(args: string[], cwd: string): Promise<void> {
 
 /** Starts Slidev's dev server for the project and resolves with its address once it prints it. */
 export function startSlidevDev(dir: string, args: string[]): Promise<{ url: string, close(): Promise<void> }> {
-  const child = spawnBackgroundNode(slidevBin(), ['slides.md', ...args], { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] })
+  // The author waits for the preview: the dev server takes the interactive thread budget, at normal priority.
+  const child = spawnInteractiveNode(slidevBin(), ['slides.md', ...args], { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] })
   const exited = new Promise<void>(resolve => child.once('exit', () => resolve()))
   const close = async () => {
     if (child.exitCode === null) child.kill('SIGTERM')

@@ -1,7 +1,7 @@
 import { realpathSync } from 'node:fs'
 import { createServer } from 'node:net'
 import type { AddressInfo } from 'node:net'
-import { findPackageBin, spawnBackgroundNode } from '@lincyaw/kernel/node'
+import { findPackageBin, spawnBackgroundNode, spawnInteractiveNode } from '@lincyaw/kernel/node'
 import type { DevMessage } from './vite-plugins.ts'
 
 function vitepressBin(): string {
@@ -40,7 +40,8 @@ export interface VitepressDevProcess {
 export async function startVitepressDev(root: string, port: number | undefined, receive: (message: DevMessage) => void, options: { host?: string, signal?: AbortSignal } = {}): Promise<VitepressDevProcess> {
   const listen = port === 0 ? await findFreePort(options.host ?? '127.0.0.1') : port
   const args = ['dev', realpathSync(root), ...(listen ? ['--port', String(listen)] : []), ...(options.host ? ['--host', options.host] : [])]
-  const child = spawnBackgroundNode(vitepressBin(), args, { stdio: ['ignore', 'inherit', 'inherit', 'ipc'] })
+  // The author waits for the preview: the dev server takes the interactive thread budget, at normal priority.
+  const child = spawnInteractiveNode(vitepressBin(), args, { stdio: ['ignore', 'inherit', 'inherit', 'ipc'] })
   const exited = new Promise<void>(resolve => child.once('exit', () => resolve()))
   const stop = () => {
     if (child.exitCode === null) child.kill('SIGTERM')

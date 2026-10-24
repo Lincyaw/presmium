@@ -140,6 +140,9 @@ export function slideAspect(ir: IrAnswer | undefined): number {
   return aspect !== undefined && Number.isFinite(aspect) && aspect > 0 ? aspect : 16 / 9
 }
 
+// How long the author stays on a document's web form before its slides are started ahead of a switch.
+const PREFETCH_DELAY_MS = 1500
+
 /** The numbers on the blocks of the comments not yet sent, in order. */
 function commentPins(comments: readonly DocumentComment[]): PreviewPin[] {
   return comments.filter(comment => comment.status === 'open' && comment.block).map((comment, i) => ({ id: comment.id, section: comment.section, block: comment.block!, label: String(i + 1) }))
@@ -203,6 +206,9 @@ export class Workbench {
   /** The AI's changes to show on the document once the preview has them. */
   #pendingFlash?: ReviewChange[]
   #lastPosition?: string
+  /** The forms asked for ahead of the author (`web:<dir>`, `slides:<dir>`), and the wait before asking for the slides. */
+  readonly #prefetched = new Set<string>()
+  #prefetchTimer?: ReturnType<typeof setTimeout>
   /** What the author does, for the operator's collector when the host has one. */
   readonly telemetry: OperationLog
 
@@ -463,6 +469,11 @@ export class Workbench {
     this.#set({ previewRenderer: renderer, preview: undefined, previewFailure: undefined, previewIrRevision: undefined, pointer: undefined })
     this.#record('view.set')
     const document = this.#state.document
+    if (renderer === 'slides' && document !== undefined) {
+      // Asked for now: no need to start them ahead.
+      clearTimeout(this.#prefetchTimer)
+      this.#prefetched.add(`slides:${document}`)
+    }
     if (document !== undefined) void this.#readPreview(document)
   }
 
@@ -767,6 +778,7 @@ export class Workbench {
       case 'updated':
         this.#set({ previewIrRevision: report.revision })
         this.#flashChanges()
+        if (report.type === 'ready' && renderer === 'web') this.#prefetchSlides(document)
         break
       case 'picked': {
         if (this.#state.editing || this.#state.mode !== 'editing') break
@@ -820,6 +832,30 @@ export class Workbench {
     }
   }
 
+  /**
+   * The author is about to open a document (the mouse rests on it in the list): asks the service to compile it and start
+   * its web dev server, once a document; the service does so only when the machine has room.
+   */
+  prefetchDocument(dir: string): void {
+    if (this.#prefetched.has(`web:${dir}`) || dir === this.#state.document) return
+    this.#prefetched.add(`web:${dir}`)
+    void this.client.prefetchPreview(dir, 'web').catch(() => this.#prefetched.delete(`web:${dir}`))
+  }
+
+  /**
+   * Once the author stays on the document's web form, asks the service to start its slides, so that switching to them
+   * does not wait for Slidev; the service starts them only when the machine has room.
+   */
+  #prefetchSlides(dir: string): void {
+    if (this.#prefetched.has(`slides:${dir}`) || this.#state.preview?.slides === undefined) return
+    clearTimeout(this.#prefetchTimer)
+    this.#prefetchTimer = setTimeout(() => {
+      if (this.#state.document !== dir || this.#state.previewRenderer !== 'web') return
+      this.#prefetched.add(`slides:${dir}`)
+      void this.client.prefetchPreview(dir, 'slides').catch(() => this.#prefetched.delete(`slides:${dir}`))
+    }, PREFETCH_DELAY_MS)
+  }
+
   #broadcast(command: PreviewCommand): void {
     for (const sink of this.#previewSinks) sink.send(command)
   }
@@ -835,6 +871,7 @@ export class Workbench {
   }
 
   dispose(): void {
+    clearTimeout(this.#prefetchTimer)
     this.telemetry.stop()
     this.#stopSubscriptions()
     this.#diagnostics.dispose()

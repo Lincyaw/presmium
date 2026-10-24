@@ -70,7 +70,7 @@ Jupyter 的本地完整功能检查复用同一个隔离 Python，依次运行�
 - `e2e/exec-remote-local.spec.ts` 验证代理、静态网页与幻灯片、`prompt` 和 `none`、令牌重试与浏览器会话隔离；只构建其最小文稿。
 - `e2e/exec-remote-hub-local.spec.ts` 验证真实 JupyterHub 用户发现与 `/user/<名字>/` 路由。Python 另需 `jupyterhub`，`PRESMIUM_TEST_JUPYTER_PROXY` 指向 `configurable-http-proxy` 的 JavaScript 入口，不能指向包管理器生成的 shell 包装脚本。用例自行创建单用户 Hub、代理和用户服务。
 
-后两项用对应文件名运行定向 Playwright，带 `--project chromium --no-deps --workers=1`。服务端原生线程预算仍为 1、libuv 为 2；在本地进程验证通过不代表 Docker 镜像、GPU、gVisor 或 Kubernetes 部署已验证。
+后两项用对应文件名运行定向 Playwright，带 `--project chromium --no-deps --workers=1`。这些后台进程的原生线程预算仍为 1、libuv 为 2；在本地进程验证通过不代表 Docker 镜像、GPU、gVisor 或 Kubernetes 部署已验证。
 
 ## 运行与判断
 

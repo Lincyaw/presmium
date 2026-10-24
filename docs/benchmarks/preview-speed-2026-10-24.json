@@ -1,0 +1,537 @@
+{
+ "measuredAt": "2026-10-24T05:39:27.441Z",
+ "machine": {
+  "logicalCpus": 24,
+  "loadAverage1m": "about 11 (a shared host)",
+  "node": "v22.22.1"
+ },
+ "method": "scripts in the session scratchpad: presmium serve on a fresh copy of examples/animations (cold) or a second start of the same copy (warm); Chromium loads each preview in an iframe as the workbench does; times from setting the iframe address to the first .pm-section or .slidev-layout visible",
+ "runs": {
+  "before_cold": [
+   {
+    "name": "workspace copied"
+   },
+   {
+    "name": "serve listening",
+    "ms": 362
+   },
+   {
+    "name": "bubble-sort preview?view=web",
+    "ms": 80
+   },
+   {
+    "name": "bubble-sort-web visible",
+    "visibleMs": 4269,
+    "requests": 250
+   },
+   {
+    "name": "bubble-sort preview?view=slides",
+    "ms": 1133
+   },
+   {
+    "name": "bubble-sort-slides visible",
+    "visibleMs": 7863,
+    "requests": 250
+   },
+   {
+    "name": "libraries preview?view=web",
+    "ms": 47
+   },
+   {
+    "name": "libraries-web visible",
+    "visibleMs": 4840,
+    "requests": 250
+   },
+   {
+    "name": "libraries preview?view=slides",
+    "ms": 1109
+   },
+   {
+    "name": "libraries-slides visible",
+    "visibleMs": 7329,
+    "requests": 250
+   },
+   {
+    "name": "bubble-sort-web-again visible",
+    "visibleMs": 791,
+    "requests": 250
+   },
+   {
+    "name": "edit to new IR revision",
+    "ms": 23
+   }
+  ],
+  "before_cold_cpu": [
+   {
+    "name": "workspace copied"
+   },
+   {
+    "name": "serve listening",
+    "ms": 405
+   },
+   {
+    "name": "bubble-sort preview?view=web",
+    "ms": 100
+   },
+   {
+    "name": "bubble-sort-web visible",
+    "visibleMs": 4485,
+    "requests": 371
+   },
+   {
+    "name": "bubble-sort preview?view=slides",
+    "ms": 1245
+   },
+   {
+    "name": "bubble-sort-slides visible",
+    "visibleMs": 7819,
+    "requests": 581
+   },
+   {
+    "name": "libraries preview?view=web",
+    "ms": 26
+   },
+   {
+    "name": "libraries-web visible",
+    "visibleMs": 4801,
+    "requests": 445
+   },
+   {
+    "name": "libraries preview?view=slides",
+    "ms": 1303
+   },
+   {
+    "name": "libraries-slides visible",
+    "visibleMs": 7339,
+    "requests": 580
+   },
+   {
+    "name": "bubble-sort-web-again visible",
+    "visibleMs": 789,
+    "requests": 394
+   },
+   {
+    "name": "edit to new IR revision",
+    "ms": 35
+   }
+  ],
+  "before_cold_sameWorkspace": [
+   {
+    "name": "workspace copied"
+   },
+   {
+    "name": "serve listening",
+    "ms": 345
+   },
+   {
+    "name": "bubble-sort preview?view=web",
+    "ms": 99
+   },
+   {
+    "name": "bubble-sort-web visible",
+    "visibleMs": 4225,
+    "requests": 373
+   },
+   {
+    "name": "bubble-sort preview?view=slides",
+    "ms": 1160
+   },
+   {
+    "name": "bubble-sort-slides visible",
+    "visibleMs": 7823,
+    "requests": 573
+   },
+   {
+    "name": "libraries preview?view=web",
+    "ms": 22
+   },
+   {
+    "name": "libraries-web visible",
+    "visibleMs": 4336,
+    "requests": 371
+   },
+   {
+    "name": "libraries preview?view=slides",
+    "ms": 1103
+   },
+   {
+    "name": "libraries-slides visible",
+    "visibleMs": 4805,
+    "requests": 600
+   },
+   {
+    "name": "bubble-sort-web-again visible",
+    "visibleMs": 790,
+    "requests": 450
+   },
+   {
+    "name": "edit to new IR revision",
+    "ms": 27
+   }
+  ],
+  "before_warm_sameWorkspace": [
+   {
+    "name": "workspace copied"
+   },
+   {
+    "name": "serve listening",
+    "ms": 367
+   },
+   {
+    "name": "bubble-sort preview?view=web",
+    "ms": 75
+   },
+   {
+    "name": "bubble-sort-web visible",
+    "visibleMs": 1324,
+    "requests": 371
+   },
+   {
+    "name": "bubble-sort preview?view=slides",
+    "ms": 1107
+   },
+   {
+    "name": "bubble-sort-slides visible",
+    "visibleMs": 3304,
+    "requests": 589
+   },
+   {
+    "name": "libraries preview?view=web",
+    "ms": 19
+   },
+   {
+    "name": "libraries-web visible",
+    "visibleMs": 1296,
+    "requests": 371
+   },
+   {
+    "name": "libraries preview?view=slides",
+    "ms": 1083
+   },
+   {
+    "name": "libraries-slides visible",
+    "visibleMs": 2299,
+    "requests": 576
+   },
+   {
+    "name": "bubble-sort-web-again visible",
+    "visibleMs": 296,
+    "requests": 428
+   },
+   {
+    "name": "edit to new IR revision",
+    "ms": 60018
+   }
+  ],
+  "threads12_only_cold": [
+   {
+    "name": "workspace copied"
+   },
+   {
+    "name": "serve listening",
+    "ms": 346
+   },
+   {
+    "name": "bubble-sort preview?view=web",
+    "ms": 100
+   },
+   {
+    "name": "bubble-sort-web visible",
+    "visibleMs": 1874,
+    "requests": 373
+   },
+   {
+    "name": "bubble-sort preview?view=slides",
+    "ms": 1308
+   },
+   {
+    "name": "bubble-sort-slides visible",
+    "visibleMs": 2824,
+    "requests": 571
+   },
+   {
+    "name": "libraries preview?view=web",
+    "ms": 18
+   },
+   {
+    "name": "libraries-web visible",
+    "visibleMs": 1814,
+    "requests": 375
+   },
+   {
+    "name": "libraries preview?view=slides",
+    "ms": 1115
+   },
+   {
+    "name": "libraries-slides visible",
+    "visibleMs": 3332,
+    "requests": 580
+   },
+   {
+    "name": "bubble-sort-web-again visible",
+    "visibleMs": 289,
+    "requests": 375
+   },
+   {
+    "name": "edit to new IR revision",
+    "ms": 24
+   }
+  ],
+  "after_cold": [
+   {
+    "name": "workspace copied"
+   },
+   {
+    "name": "serve listening",
+    "ms": 364
+   },
+   {
+    "name": "bubble-sort preview?view=web",
+    "ms": 92
+   },
+   {
+    "name": "bubble-sort-web visible",
+    "visibleMs": 1866,
+    "requests": 380
+   },
+   {
+    "name": "bubble-sort preview?view=slides",
+    "ms": 1121
+   },
+   {
+    "name": "bubble-sort-slides visible",
+    "visibleMs": 2803,
+    "requests": 569
+   },
+   {
+    "name": "libraries preview?view=web",
+    "ms": 23
+   },
+   {
+    "name": "libraries-web visible",
+    "visibleMs": 1793,
+    "requests": 371
+   },
+   {
+    "name": "libraries preview?view=slides",
+    "ms": 1105
+   },
+   {
+    "name": "libraries-slides visible",
+    "visibleMs": 2796,
+    "requests": 585
+   },
+   {
+    "name": "bubble-sort-web-again visible",
+    "visibleMs": 306,
+    "requests": 463
+   },
+   {
+    "name": "edit to new IR revision",
+    "ms": 23
+   }
+  ],
+  "after_warm": [
+   {
+    "name": "workspace copied"
+   },
+   {
+    "name": "serve listening",
+    "ms": 364
+   },
+   {
+    "name": "bubble-sort preview?view=web",
+    "ms": 75
+   },
+   {
+    "name": "bubble-sort-web visible",
+    "visibleMs": 1236,
+    "requests": 381
+   },
+   {
+    "name": "bubble-sort preview?view=slides",
+    "ms": 1047
+   },
+   {
+    "name": "bubble-sort-slides visible",
+    "visibleMs": 3302,
+    "requests": 601
+   },
+   {
+    "name": "libraries preview?view=web",
+    "ms": 29
+   },
+   {
+    "name": "libraries-web visible",
+    "visibleMs": 1304,
+    "requests": 461
+   },
+   {
+    "name": "libraries preview?view=slides",
+    "ms": 1024
+   },
+   {
+    "name": "libraries-slides visible",
+    "visibleMs": 2291,
+    "requests": 581
+   },
+   {
+    "name": "bubble-sort-web-again visible",
+    "visibleMs": 305,
+    "requests": 463
+   },
+   {
+    "name": "edit to new IR revision",
+    "ms": 46
+   }
+  ],
+  "after_warm_click": [
+   {
+    "name": "workspace copied"
+   },
+   {
+    "name": "serve listening",
+    "ms": 366
+   },
+   {
+    "name": "bubble-sort preview?view=web",
+    "ms": 73
+   },
+   {
+    "name": "bubble-sort-web visible",
+    "visibleMs": 1193,
+    "requests": 375
+   },
+   {
+    "name": "bubble-sort preview?view=slides",
+    "ms": 1075
+   },
+   {
+    "name": "bubble-sort-slides visible",
+    "visibleMs": 3330,
+    "requests": 601
+   },
+   {
+    "name": "libraries preview?view=web",
+    "ms": 22
+   },
+   {
+    "name": "libraries-web visible",
+    "visibleMs": 1325,
+    "requests": 459
+   },
+   {
+    "name": "libraries preview?view=slides",
+    "ms": 1012
+   },
+   {
+    "name": "libraries-slides visible",
+    "visibleMs": 2309,
+    "requests": 581
+   },
+   {
+    "name": "bubble-sort-web-again visible",
+    "visibleMs": 305,
+    "requests": 463
+   },
+   {
+    "name": "edit to new IR revision",
+    "ms": 51
+   }
+  ],
+  "after_warm_hover600ms": [
+   {
+    "name": "workspace copied"
+   },
+   {
+    "name": "serve listening",
+    "ms": 366
+   },
+   {
+    "name": "bubble-sort preview?view=web",
+    "ms": 3
+   },
+   {
+    "name": "bubble-sort-web visible",
+    "visibleMs": 599,
+    "requests": 372
+   },
+   {
+    "name": "bubble-sort preview?view=slides",
+    "ms": 1077
+   },
+   {
+    "name": "bubble-sort-slides visible",
+    "visibleMs": 2796,
+    "requests": 592
+   },
+   {
+    "name": "libraries preview?view=web",
+    "ms": 2
+   },
+   {
+    "name": "libraries-web visible",
+    "visibleMs": 846,
+    "requests": 484
+   },
+   {
+    "name": "libraries preview?view=slides",
+    "ms": 1029
+   },
+   {
+    "name": "libraries-slides visible",
+    "visibleMs": 2300,
+    "requests": 585
+   },
+   {
+    "name": "bubble-sort-web-again visible",
+    "visibleMs": 307,
+    "requests": 463
+   },
+   {
+    "name": "edit to new IR revision",
+    "ms": 44
+   }
+  ]
+ },
+ "workbenchBenchAfter": {
+  "boot": {
+   "studioReadyMs": 3319.1262420000003,
+   "browserLaunchMs": 41.62860499999988,
+   "workbenchOpenMs": 550.9247780000001,
+   "totalMs": 3936.1098739999998
+  },
+  "opens": [
+   {
+    "title": "冒泡排序",
+    "phase": "first-open",
+    "elapsedMs": 2391,
+    "requests": 461
+   },
+   {
+    "title": "代码写成的动画",
+    "phase": "first-open",
+    "elapsedMs": 3360,
+    "requests": 850
+   },
+   {
+    "title": "冒泡排序",
+    "phase": "warm-return",
+    "elapsedMs": 1344,
+    "requests": 851
+   },
+   {
+    "title": "代码写成的动画",
+    "phase": "warm-return",
+    "elapsedMs": 393,
+    "requests": 496
+   },
+   {
+    "title": "冒泡排序",
+    "phase": "warm-return",
+    "elapsedMs": 349,
+    "requests": 476
+   }
+  ]
+ }
+}
