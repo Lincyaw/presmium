@@ -6,7 +6,7 @@ import { openSlide, useFixture } from './fixtures/deck.ts'
 test.describe.configure({ mode: 'default' })
 const deck = useFixture('exec-webgpu', {
   to: 'web,slides',
-  link: { '@lincyaw/slidev-addon-exec-webgpu': 'packages/addon-exec-webgpu' },
+  link: { '@lincyaw/addon-exec-webgpu': 'packages/addon-exec-webgpu' },
   edit(dir) {
     // This bounded smoke checks the shader; the dedicated suite covers Python and jax-js.
     const file = join(dir, 'lecture.md')

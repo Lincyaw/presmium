@@ -27,7 +27,7 @@ function deckOf(ctx: AgentToolContext): { deckDir: string, doc: IRDocument, file
 
 function speechOf(ctx: AgentToolContext): SpeechService {
   const speech = ctx.service(SPEECH)
-  if (!speech) throw new Error('no speech service: the deck needs @lincyaw/slidev-addon-speech')
+  if (!speech) throw new Error('no speech service: the deck needs @lincyaw/addon-speech')
   return speech
 }
 

@@ -1,5 +1,5 @@
 {
-  "name": "@lincyaw/slidev-addon-core",
+  "name": "@lincyaw/addon-core",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: the host adapter of the slides form (Slidev)",
   "license": "Apache-2.0",

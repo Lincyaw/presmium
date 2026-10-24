@@ -2,9 +2,9 @@
 title: 课堂会话测试文稿
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-stage'
-  - '@lincyaw/slidev-addon-session'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-stage'
+  - '@lincyaw/addon-session'
   - ./host/plugin
 renderers:
   web: {}

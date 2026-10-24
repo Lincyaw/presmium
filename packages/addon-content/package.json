@@ -1,5 +1,5 @@
 {
-  "name": "@lincyaw/slidev-addon-content",
+  "name": "@lincyaw/addon-content",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: rich content: diagrams, mind maps, media, and web components",
   "license": "Apache-2.0",

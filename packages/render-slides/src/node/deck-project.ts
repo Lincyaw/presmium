@@ -12,7 +12,7 @@ import type { SlidevDeck } from './deck-markdown.ts'
 /** Where the Slidev project is written, from the deck's directory. */
 export const SLIDEV_DIR = '.presmium/slides'
 
-const ADDON_CORE = '@lincyaw/slidev-addon-core'
+const ADDON_CORE = '@lincyaw/addon-core'
 const PREVIEW_FILE = 'preview.json'
 
 const BASE_STYLE = fileURLToPath(new URL('./deck-base.css', import.meta.url))

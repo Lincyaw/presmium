@@ -189,7 +189,7 @@ describe('presmium serve: a document with a translation', () => {
   afterAll(() => remove(dir))
 
   it('says in the diagnostics that the workspace site leaves the translation out', async () => {
-    dir = workspace('translated-local', 'translated', { '@lincyaw/slidev-addon-exec': 'packages/addon-exec', '@lincyaw/web': 'packages/web' })
+    dir = workspace('translated-local', 'translated', { '@lincyaw/addon-exec': 'packages/addon-exec', '@lincyaw/web': 'packages/web' })
     cpSync(TRANSLATED, join(dir, 'course'), { recursive: true })
     cpSync(join(FIXTURES, 'plugins/presmium-fixture-token'), join(dir, 'node_modules/presmium-fixture-token'), { recursive: true })
     const config = join(dir, 'presmium.workspace.yaml')

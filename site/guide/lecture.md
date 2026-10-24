@@ -36,7 +36,7 @@ presmium new        # 问你要哪种项目（讲义、工作区或插件），�
 title: 二分查找
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/addon-core'
 ---
 
 # 二分查找
@@ -87,8 +87,8 @@ def search(xs, x):
 title: BPE 分词
 lang: zh-CN                 # 文稿语言：<html lang>、界面语言与写进产物的文字都按它，默认 zh-CN
 plugins:                    # 用到的插件包
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-code'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-code'
 presmium:                   # 各插件的配置，键为插件 ID
   presmium.code: { repo: https://github.com/org/repo }
 renderers:                  # 默认构建的渲染端及其配置
@@ -136,7 +136,7 @@ sectionDepth: 2             # 开始章节的标题级别，默认 2
 (syntax-code)=
 ## 引用真实的代码
 
-`@lincyaw/slidev-addon-code` 的 `{code-ref}` 引用仓库中的代码而不复制它：锚点写成 `region:src/bpe.py#merge`（代码中的 `#region` 注释）、`symbol:src/bpe.py#BPE.merge`（语法树中的声明）或 `pattern:`（ast-grep 模式）。`:pin:` 读取某个提交中的代码并生成永久链接；锁定的代码在工作区中变了时，`presmium check` 给出漂移的警告与差异。
+`@lincyaw/addon-code` 的 `{code-ref}` 引用仓库中的代码而不复制它：锚点写成 `region:src/bpe.py#merge`（代码中的 `#region` 注释）、`symbol:src/bpe.py#BPE.merge`（语法树中的声明）或 `pattern:`（ast-grep 模式）。`:pin:` 读取某个提交中的代码并生成永久链接；锁定的代码在工作区中变了时，`presmium check` 给出漂移的警告与差异。
 
 (media)=
 # 媒介
@@ -149,7 +149,7 @@ sectionDepth: 2             # 开始章节的标题级别，默认 2
 | `web` | `@lincyaw/web` | 静态网站：每章一页，可以搜索，带导航与页脚 |
 | `slides` | `@lincyaw/render-slides` | Slidev 幻灯片，默认主题“书卷”；可导出 PDF 与 PNG |
 | `notebook` | `@lincyaw/render-notebook` | Jupyter notebook：讲解是 Markdown 单元格，代码是代码单元格 |
-| `lecture` | `@lincyaw/slidev-addon-lecture` | 讲授：讲解合成为语音，配合页面上的操作回放 |
+| `lecture` | `@lincyaw/addon-lecture` | 讲授：讲解合成为语音，配合页面上的操作回放 |
 
 `presmium build --to web,slides` 只构建列出的渲染端。插件的组件在网页与幻灯片中是同一个组件；notebook 这样的静态媒介显示组件的降级内容，没有降级内容时写一行说明并链接网页版。
 
@@ -189,12 +189,12 @@ print(sum(range(10)))
 (execution-languages)=
 ## 语言与执行器
 
-Python 与 JavaScript 在本机用 `python3`、`node` 运行。`@lincyaw/slidev-addon-exec-wasi` 让 C、C++、Ruby 与 SQL 在 WebAssembly 中运行，构建与浏览器用同一份运行时；`@lincyaw/slidev-addon-exec-webgpu` 在浏览器的 GPU 上运行 WGSL 计算着色器。
+Python 与 JavaScript 在本机用 `python3`、`node` 运行。`@lincyaw/addon-exec-wasi` 让 C、C++、Ruby 与 SQL 在 WebAssembly 中运行，构建与浏览器用同一份运行时；`@lincyaw/addon-exec-webgpu` 在浏览器的 GPU 上运行 WGSL 计算着色器。
 
 (execution-environments)=
 ## 具名环境
 
-头部的 `execute.environments` 声明具名的运行环境，代码块用 `:env: <名字>` 选择：`devcontainer`（`@lincyaw/slidev-addon-exec-local`，本地容器）、`jupyter`（`@lincyaw/slidev-addon-exec-jupyter`，远端的 Jupyter）、`wasi`、`webgpu`。头部不写凭据：凭据只来自运行 `presmium` 的环境变量，如 `PRESMIUM_ENV_<名字>_TOKEN`。`presmium check --env` 连接每个声明的环境。
+头部的 `execute.environments` 声明具名的运行环境，代码块用 `:env: <名字>` 选择：`devcontainer`（`@lincyaw/addon-exec-local`，本地容器）、`jupyter`（`@lincyaw/addon-exec-jupyter`，远端的 Jupyter）、`wasi`、`webgpu`。头部不写凭据：凭据只来自运行 `presmium` 的环境变量，如 `PRESMIUM_ENV_<名字>_TOKEN`。`presmium check --env` 连接每个声明的环境。
 
 (execution-cache)=
 ## 缓存与沙箱
@@ -207,7 +207,7 @@ Python 与 JavaScript 在本机用 `python3`、`node` 运行。`@lincyaw/slidev-
 (lecture-script)=
 ## 讲解就是脚本
 
-列出 `@lincyaw/slidev-addon-lecture` 与 `@lincyaw/slidev-addon-speech`，在 `renderers.lecture.voice` 中选一个音色，`presmium build --to web,lecture` 就把每一步的讲解合成为一段讲授：播放时页面按讲解推进步骤。讲解中可以写行内的提示：
+列出 `@lincyaw/addon-lecture` 与 `@lincyaw/addon-speech`，在 `renderers.lecture.voice` 中选一个音色，`presmium build --to web,lecture` 就把每一步的讲解合成为一段讲授：播放时页面按讲解推进步骤。讲解中可以写行内的提示：
 
 - ``{cue}`next` `` 在这里推进一步，``{cue}`pause 2s` `` 停顿两秒；
 - ``{cue to=code-1 lines=2-3}`spot` `` 在说到下一个字时聚光代码的两行；
@@ -226,7 +226,7 @@ Python 与 JavaScript 在本机用 `python3`、`node` 运行。`@lincyaw/slidev-
 (lecture-motion)=
 ## 动画与视频
 
-文稿的 `plugins` 加上 `@lincyaw/slidev-addon-motion` 后，`{scene}` 放进一段用代码写的动画：文稿目录 `scenes/` 中用 GSAP、Anime.js、Motion、Three.js 或 Remotion 写的一条时间轴，`:durations:` 把它切成几步，讲解逐段对应这些步。放映时每前进一步演一段；讲授按讲解的时间播放它，合成讲授时一步至少停留到动画演完。`presmium-lecture export` 一帧一帧推进讲授的时间来导出视频，动画、光标、点击与字幕都在各自的时刻，字幕另作为视频的字幕轨与旁边的 `.vtt` 文件，`--burn <语言>` 把字幕画进画面。
+文稿的 `plugins` 加上 `@lincyaw/addon-motion` 后，`{scene}` 放进一段用代码写的动画：文稿目录 `scenes/` 中用 GSAP、Anime.js、Motion、Three.js 或 Remotion 写的一条时间轴，`:durations:` 把它切成几步，讲解逐段对应这些步。放映时每前进一步演一段；讲授按讲解的时间播放它，合成讲授时一步至少停留到动画演完。`presmium-lecture export` 一帧一帧推进讲授的时间来导出视频，动画、光标、点击与字幕都在各自的时刻，字幕另作为视频的字幕轨与旁边的 `.vtt` 文件，`--burn <语言>` 把字幕画进画面。
 
 (assistant)=
 # AI 助手与读者问答
@@ -234,7 +234,7 @@ Python 与 JavaScript 在本机用 `python3`、`node` 运行。`@lincyaw/slidev-
 (assistant-ask)=
 ## 读者问答
 
-文稿的 `plugins` 加上 `@lincyaw/slidev-addon-assistant` 后，页面上有“提问”：读者就当前一节提问，或先选中一段文字再问，回答中的引用点了就跳到那一节。静态站点同样有这个功能，不需要服务端。
+文稿的 `plugins` 加上 `@lincyaw/addon-assistant` 后，页面上有“提问”：读者就当前一节提问，或先选中一段文字再问，回答中的引用点了就跳到那一节。静态站点同样有这个功能，不需要服务端。
 
 回答来自读者自己填写的模型服务（OpenAI 兼容的 Chat Completions 接口的地址、密钥与模型名），设置只保存在读者的浏览器中；问题连同当前一节的文字从浏览器直接发给该服务，费用由读者自己承担。面板写明这一点，也写明同一站点的脚本能读到密钥。
 

@@ -62,7 +62,7 @@ slides: { class: pm-content-tabs, routeAlias: content-tabs }
 slides: { class: pm-content-captions, routeAlias: content-captions }
 :::
 
-```{video} @lincyaw/slidev-addon-content/media/clip.webm
+```{video} @lincyaw/addon-content/media/clip.webm
 :controls:
 :muted:
 :width: 280
@@ -79,7 +79,7 @@ slides: { class: pm-content-captions, routeAlias: content-captions }
 slides: { class: pm-content-autoplay, routeAlias: content-autoplay }
 :::
 
-```{video} @lincyaw/slidev-addon-content/media/clip.webm
+```{video} @lincyaw/addon-content/media/clip.webm
 :autoplay:
 :controls:
 :loop:
@@ -98,7 +98,7 @@ slides: { class: pm-content-media-range, routeAlias: content-media-range }
 :at: 0
 :until: 1
 
-```{video} @lincyaw/slidev-addon-content/media/clip.webm
+```{video} @lincyaw/addon-content/media/clip.webm
 :controls:
 :muted:
 :loop:

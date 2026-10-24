@@ -70,7 +70,7 @@ async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: un
   const source = { file: doc.meta.entry, line: 1 }
   const speech = ctx.service?.(SPEECH)
   if (!speech) {
-    ctx.report({ checkId: LECTURE_ID, severity: 'error', message: `renderers.lecture.voice: the lecture is said through the speech service, which no plugin provides; add @lincyaw/slidev-addon-speech to plugins`, source })
+    ctx.report({ checkId: LECTURE_ID, severity: 'error', message: `renderers.lecture.voice: the lecture is said through the speech service, which no plugin provides; add @lincyaw/addon-speech to plugins`, source })
     return false
   }
   const synthesized = await synthesizeLecture(doc, ctx.deckDir, speech)
@@ -103,7 +103,7 @@ function publishedTrack(doc: IRDocument, deckDir: string): (track: LectureTrack)
 async function recordedClipFiles(track: LectureTrack, speech: SpeechService | undefined): Promise<{ clipFiles: Map<string, string>, refused?: string }> {
   const clipFiles = new Map<string, string>()
   for (const clip of clipsOf(track)) {
-    if (!speech) return { clipFiles, refused: 'its clips are given through the speech service, which checks a cloned voice\'s consent, and no plugin provides it; add @lincyaw/slidev-addon-speech to plugins' }
+    if (!speech) return { clipFiles, refused: 'its clips are given through the speech service, which checks a cloned voice\'s consent, and no plugin provides it; add @lincyaw/addon-speech to plugins' }
     try {
       const found = await cachedClip(speech, clip)
       if (found) clipFiles.set(clip, found.audio)

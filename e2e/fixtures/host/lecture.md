@@ -2,7 +2,7 @@
 title: 宿主适配测试文稿
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/addon-core'
   - ./plugin
   - ./services
 renderers:

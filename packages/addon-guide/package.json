@@ -1,5 +1,5 @@
 {
-  "name": "@lincyaw/slidev-addon-guide",
+  "name": "@lincyaw/addon-guide",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: guidance cues: a simulated cursor, spotlights and hints",
   "license": "Apache-2.0",

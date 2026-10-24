@@ -15,7 +15,7 @@ license file.
 ===============================================================
 
 Pyodide 314.0.7 (npm package pyodide), with CPython 3.14.2
-    Published at <base>pyodide/ by @lincyaw/slidev-addon-exec, with the
+    Published at <base>pyodide/ by @lincyaw/addon-exec, with the
     texts of these licenses at <base>pyodide/LICENSES (the package's
     LICENSES file):
     Pyodide              Mozilla Public License 2.0; source code at
@@ -32,7 +32,7 @@ Pyodide 314.0.7 (npm package pyodide), with CPython 3.14.2
                          libraries: Apache License 2.0 with LLVM Exceptions
 
 WebAssembly runtimes of Runno (@runno/sandbox 0.10.2, @runno/wasi 0.10.0)
-    Published at <base>wasi/ by @lincyaw/slidev-addon-exec-wasi, with the
+    Published at <base>wasi/ by @lincyaw/addon-exec-wasi, with the
     texts of these licenses at <base>wasi/LICENSES (the package's LICENSES
     file):
     clang, wasm-ld 8.0.1 University of Illinois/NCSA Open Source License
@@ -43,7 +43,7 @@ WebAssembly runtimes of Runno (@runno/sandbox 0.10.2, @runno/wasi 0.10.0)
     Runno                MIT License, Copyright (c) Benjamin Taylor
 
 jax-js 0.1.25 (@jax-js/jax)
-    Published at <base>presmium/jax-js/ by @lincyaw/slidev-addon-exec-webgpu,
+    Published at <base>presmium/jax-js/ by @lincyaw/addon-exec-webgpu,
     with its license at <base>presmium/jax-js/LICENSE:
     MIT License, Copyright (c) 2025 Eric Zhang
 

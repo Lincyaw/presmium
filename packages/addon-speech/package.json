@@ -1,5 +1,5 @@
 {
-  "name": "@lincyaw/slidev-addon-speech",
+  "name": "@lincyaw/addon-speech",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: speech services: the speech routes, engine adapters, the synthesis cache, and presmium-speech",
   "license": "Apache-2.0",

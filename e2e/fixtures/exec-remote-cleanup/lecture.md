@@ -2,9 +2,9 @@
 title: Jupyter 生命周期回归
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-exec'
-  - '@lincyaw/slidev-addon-exec-jupyter'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-exec'
+  - '@lincyaw/addon-exec-jupyter'
 execute:
   environments:
     lab: { kind: jupyter, auth: proxy }

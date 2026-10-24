@@ -3,4 +3,4 @@
 title: 译本与受众
 settings:
   presmium.workspace:
-    plugins: ['@lincyaw/slidev-addon-exec', '@lincyaw/web']
+    plugins: ['@lincyaw/addon-exec', '@lincyaw/web']

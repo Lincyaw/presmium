@@ -13,7 +13,7 @@ afterAll(() => dirs.forEach(dir => rmSync(dir, { recursive: true, force: true })
 const DECK = `---
 title: 受众
 plugins:
-  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/addon-core'
 renderers:
   slides: {}
 ---

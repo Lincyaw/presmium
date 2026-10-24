@@ -1,5 +1,5 @@
-// @ts-nocheck: @lincyaw/slidev-addon-motion resolves from the deck the tests build (its node_modules link it), not from e2e/.
-import { threeScene } from '@lincyaw/slidev-addon-motion/scene'
+// @ts-nocheck: @lincyaw/addon-motion resolves from the deck the tests build (its node_modules link it), not from e2e/.
+import { threeScene } from '@lincyaw/addon-motion/scene'
 
 // Word vectors with Three.js: scattered points gather into three clusters, then the camera moves in on
 // one of them. The look is computed from the time only (a seeded scatter, eased paths), never from frames.

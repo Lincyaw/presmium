@@ -2,7 +2,7 @@
 title: 基础交互
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/addon-core'
   - ./plugin
 renderers:
   web: {}

@@ -51,7 +51,7 @@ function withServer(dir: string, server: string): void {
   const file = join(dir, 'lecture.md')
   const text = readFileSync(file, 'utf8')
     .replace('renderers:\n', `presmium:\n  presmium.session:\n    server: ${server}\nrenderers:\n`)
-    .replace(`  - '@lincyaw/slidev-addon-session'\n`, `  - '@lincyaw/slidev-addon-session'\n  - ./core/deck/plugin\n`)
+    .replace(`  - '@lincyaw/addon-session'\n`, `  - '@lincyaw/addon-session'\n  - ./core/deck/plugin\n`)
   writeFileSync(file, `${text}\n\`\`\`{include} remote.md\n\`\`\`\n`)
 }
 

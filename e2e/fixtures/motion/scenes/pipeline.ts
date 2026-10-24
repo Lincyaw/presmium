@@ -1,5 +1,5 @@
-// @ts-nocheck: @lincyaw/slidev-addon-motion resolves from the deck the tests build (its node_modules link it), not from e2e/.
-import { animeScene } from '@lincyaw/slidev-addon-motion/scene'
+// @ts-nocheck: @lincyaw/addon-motion resolves from the deck the tests build (its node_modules link it), not from e2e/.
+import { animeScene } from '@lincyaw/addon-motion/scene'
 
 // The compile pipeline drawn with Anime.js: the MyST source, the IR, then the media it renders to.
 // The boxes are placed by an outer group, so the animated transform of the inner one only moves them a little.

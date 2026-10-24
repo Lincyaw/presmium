@@ -1,4 +1,4 @@
-# @lincyaw/slidev-addon-guide
+# @lincyaw/addon-guide
 
 Guidance: a simulated cursor, spotlights and hints that follow the steps.
 
@@ -7,14 +7,14 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 ## Install
 
 ```sh
-pnpm add -D @lincyaw/slidev-addon-guide
+pnpm add -D @lincyaw/addon-guide
 ```
 
 List it in the headmatter of the documents that use it:
 
 ```yaml
 plugins:
-  - '@lincyaw/slidev-addon-guide'
+  - '@lincyaw/addon-guide'
 ```
 
 It is a Presmium plugin and a Slidev addon: its components work on the web page and in the slides. It needs `@lincyaw/cli` and the renderers in the same project, and declares the Presmium packages it shares with them as peer dependencies (Presmium 1.x).

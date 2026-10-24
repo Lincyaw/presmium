@@ -1,8 +1,8 @@
 ---
 title: 读者提问测试文稿
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-assistant'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-assistant'
 renderers:
   web: {}
 ---

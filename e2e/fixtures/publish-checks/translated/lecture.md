@@ -3,7 +3,7 @@ title: 受众与译本
 lang: zh-CN
 translations: { en: lecture.en.md }
 plugins:
-  - '@lincyaw/slidev-addon-exec'
+  - '@lincyaw/addon-exec'
 renderers:
   web: {}
 ---

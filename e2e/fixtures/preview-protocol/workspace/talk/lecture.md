@@ -2,7 +2,7 @@
 title: Preview Protocol
 lang: en
 plugins:
-  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/addon-core'
   - ./plugin
 renderers:
   web: {}

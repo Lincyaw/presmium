@@ -1,4 +1,4 @@
-import { gsapScene } from '@lincyaw/slidev-addon-motion/scene'
+import { gsapScene } from '@lincyaw/addon-motion/scene'
 
 // One pass of bubble sort over 5 2 4 1 3: the 5 is compared with its right neighbour and swapped
 // until it reaches the end. Each step of the deck plays one part of this GSAP timeline.

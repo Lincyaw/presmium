@@ -2,8 +2,8 @@
 title: 执行环境测试文稿
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-exec'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-exec'
   - ./lab
 execute:
   environments:

@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { FIXTURES, ROOT, testHome, toolResults, turns } from './harness.ts'
 import type { Service, TestHome } from './harness.ts'
 
-const LECTURE = '---\ntitle: 确认\nplugins:\n  - \'@lincyaw/slidev-addon-exec\'\n---\n\n# 确认\n\n(first)=\n## 第一节\n\n先算六乘七。\n\n```{code} python\n:run:\nprint(6 * 7)\n```\n'
+const LECTURE = '---\ntitle: 确认\nplugins:\n  - \'@lincyaw/addon-exec\'\n---\n\n# 确认\n\n(first)=\n## 第一节\n\n先算六乘七。\n\n```{code} python\n:run:\nprint(6 * 7)\n```\n'
 const RUN = { tool: 'presmium__run_code', input: { section: 'first', block: 'code-1' } }
 const FULL_ACCESS = join(FIXTURES, 'full-access.patch.yml')
 
@@ -27,7 +27,7 @@ describe('[gate] Presmium\'s approval policy in DeepSeek Harness', () => {
       dirs[policy] = home.workspace(`policy-${policy}`, {
         'presmium.workspace.yaml': `title: 确认\napprovals: { operate: ${policy} }\n`,
         'lecture.md': LECTURE,
-      }, { '@lincyaw/slidev-addon-exec': join(ROOT, 'packages/addon-exec') }).dir
+      }, { '@lincyaw/addon-exec': join(ROOT, 'packages/addon-exec') }).dir
       services[policy] = await home.serve(dirs[policy]!)
     }))
   }, 240_000)

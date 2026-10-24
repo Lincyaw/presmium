@@ -7,10 +7,10 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 ## Install
 
 ```sh
-pnpm add -D @lincyaw/cli @lincyaw/render-slides @lincyaw/slidev-addon-core
+pnpm add -D @lincyaw/cli @lincyaw/render-slides @lincyaw/addon-core
 ```
 
-List `@lincyaw/slidev-addon-core` in the document's `plugins`: it is the host adapter of the slides.
+List `@lincyaw/addon-core` in the document's `plugins`: it is the host adapter of the slides.
 
 ## Configuration
 

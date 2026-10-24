@@ -2,9 +2,9 @@
 title: 脚本化讲授测试文稿
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-guide'
-  - '@lincyaw/slidev-addon-lecture'
-  - '@lincyaw/slidev-addon-speech'
+  - '@lincyaw/addon-guide'
+  - '@lincyaw/addon-lecture'
+  - '@lincyaw/addon-speech'
 renderers:
   web:
     port: 5324

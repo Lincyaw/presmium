@@ -127,7 +127,7 @@ function crossSite(url: string, path: string): Promise<number> {
 const CLASS = `---
 title: 课堂
 plugins:
-  - '@lincyaw/slidev-addon-session'
+  - '@lincyaw/addon-session'
 ---
 
 (class-one)=

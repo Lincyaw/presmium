@@ -4,4 +4,4 @@ title: Service workspace
 documents: ['*/lecture.md']
 settings:
   presmium.workspace:
-    plugins: ['@lincyaw/slidev-addon-assistant']
+    plugins: ['@lincyaw/addon-assistant']

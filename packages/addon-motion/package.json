@@ -1,5 +1,5 @@
 {
-  "name": "@lincyaw/slidev-addon-motion",
+  "name": "@lincyaw/addon-motion",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: animated scenes on the step's time, with GSAP, Anime.js, Motion, Three.js and Remotion",
   "license": "Apache-2.0",

@@ -2,9 +2,9 @@
 title: 重的幻灯片
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-exec'
-  - '@lincyaw/slidev-addon-content'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-exec'
+  - '@lincyaw/addon-content'
 renderers:
   slides:
     theme: default

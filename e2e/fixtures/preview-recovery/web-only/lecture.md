@@ -1,6 +1,6 @@
 ---
 title: Web preview
-plugins: ['@lincyaw/slidev-addon-core']
+plugins: ['@lincyaw/addon-core']
 renderers:
   web: {}
 ---

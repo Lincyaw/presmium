@@ -151,11 +151,11 @@ describe('the plugins of presmium serve are those the deck lists, as in presmium
 })
 
 function execWorkspace(prefix: string): string {
-  const dir = workspace(prefix, 'exec', { '@lincyaw/slidev-addon-exec': 'packages/addon-exec' })
+  const dir = workspace(prefix, 'exec', { '@lincyaw/addon-exec': 'packages/addon-exec' })
   writeFileSync(join(dir, 'presmium.workspace.yaml'), `title: 编译时执行
 settings:
   presmium.workspace:
-    plugins: ['@lincyaw/slidev-addon-exec']
+    plugins: ['@lincyaw/addon-exec']
 `)
   return dir
 }

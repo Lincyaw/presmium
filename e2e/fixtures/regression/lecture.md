@@ -2,19 +2,19 @@
 title: BPE 分词
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-stage'
-  - '@lincyaw/slidev-addon-code'
-  - '@lincyaw/slidev-addon-exec'
-  - '@lincyaw/slidev-addon-exec-wasi'
-  - '@lincyaw/slidev-addon-exec-webgpu'
-  - '@lincyaw/slidev-addon-guide'
-  - '@lincyaw/slidev-addon-content'
-  - '@lincyaw/slidev-addon-publish'
-  - '@lincyaw/slidev-addon-session'
-  - '@lincyaw/slidev-addon-classroom'
-  - '@lincyaw/slidev-addon-lecture'
-  - '@lincyaw/slidev-addon-speech'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-stage'
+  - '@lincyaw/addon-code'
+  - '@lincyaw/addon-exec'
+  - '@lincyaw/addon-exec-wasi'
+  - '@lincyaw/addon-exec-webgpu'
+  - '@lincyaw/addon-guide'
+  - '@lincyaw/addon-content'
+  - '@lincyaw/addon-publish'
+  - '@lincyaw/addon-session'
+  - '@lincyaw/addon-classroom'
+  - '@lincyaw/addon-lecture'
+  - '@lincyaw/addon-speech'
 presmium:
   presmium.code:
     repo: https://github.com/Lincyaw/presmium

@@ -72,7 +72,7 @@ test.beforeAll(async () => {
   lecture = join(work, 'lecture')
   const source = join(lecture, 'lecture.md')
   writeFileSync(source, readFileSync(source, 'utf8')
-    .replace(/^( {2}- '@lincyaw\/slidev-addon-core'.*)$/m, `$1\n  - ${packed.name}\nrenderers:\n  web: { port: ${PORTS.web} }\n  slides: { port: ${PORTS.slides} }`)
+    .replace(/^( {2}- '@lincyaw\/addon-core'.*)$/m, `$1\n  - ${packed.name}\nrenderers:\n  web: { port: ${PORTS.web} }\n  slides: { port: ${PORTS.slides} }`)
     .concat('\n(greeting)=\n## 问候\n\n:::{greeting} 读者\n:::\n'))
   await install(lecture, tarballs, { [packed.name]: `file:${packed.file}` })
   await sh(process.execPath, [presmiumBin(lecture), 'build', '--to', 'web,slides'], lecture)

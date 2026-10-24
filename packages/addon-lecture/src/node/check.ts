@@ -62,7 +62,7 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
   const speech = ctx.service?.(SPEECH)
   const source = { file: ctx.ir.meta.entry, line: 1 }
   if (!speech) {
-    findings.push({ checkId: LECTURE_ID, severity: 'error', message: 'renderers.lecture.voice: the lecture is said through the speech service, which no plugin provides; add @lincyaw/slidev-addon-speech to plugins', source })
+    findings.push({ checkId: LECTURE_ID, severity: 'error', message: 'renderers.lecture.voice: the lecture is said through the speech service, which no plugin provides; add @lincyaw/addon-speech to plugins', source })
     return findings
   }
   if (await synthesisEngine(speech, view, deck.voice.engine).catch(() => undefined)) return findings

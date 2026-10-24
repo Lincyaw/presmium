@@ -1,5 +1,5 @@
 {
-  "name": "@lincyaw/slidev-addon-publish",
+  "name": "@lincyaw/addon-publish",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: publishing: offline sites, high contrast, PDF and image export (presmium-export), visual diffs (presmium-diff)",
   "license": "Apache-2.0",

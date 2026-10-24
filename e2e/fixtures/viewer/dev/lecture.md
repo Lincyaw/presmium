@@ -2,7 +2,7 @@
 title: 实时预览测试文稿
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-exec'
+  - '@lincyaw/addon-exec'
   - ./plugin
 renderers:
   web: {}

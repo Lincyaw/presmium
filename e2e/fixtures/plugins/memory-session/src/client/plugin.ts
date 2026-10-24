@@ -1,6 +1,6 @@
 /**
  * Another implementation of the `session` and `classroomStore` services, in place of
- * @lincyaw/slidev-addon-session: no server, the classroom lives in memory and reaches the deck's
+ * @lincyaw/addon-session: no server, the classroom lives in memory and reaches the deck's
  * other tabs in the same browser through a BroadcastChannel. `?as=presenter` opens a tab as the
  * presenter, `?as=<name>` as a learner of that name, no `as` outside the classroom. The web form
  * registers this file as it registers every plugin's `src/client/plugin.ts`. It imports nothing

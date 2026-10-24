@@ -1,5 +1,5 @@
 {
-  "name": "@lincyaw/slidev-addon-exec-jupyter",
+  "name": "@lincyaw/addon-exec-jupyter",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: remote Jupyter kernels at build time and in the browser, and a browser terminal",
   "license": "Apache-2.0",

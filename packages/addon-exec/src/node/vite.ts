@@ -23,5 +23,5 @@ export function pyodideAssets(): ServedAssetsPlugin {
 }
 
 export function execPrebundle(): ReturnType<typeof prebundleDependencies> {
-  return prebundleDependencies('presmium:exec-prebundle', '@lincyaw/slidev-addon-exec', ['diff', 'sucrase'])
+  return prebundleDependencies('presmium:exec-prebundle', '@lincyaw/addon-exec', ['diff', 'sucrase'])
 }

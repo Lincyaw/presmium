@@ -1,6 +1,6 @@
 # 新增一个插件
 
-以假想的插件 `presmium.poll`（包 `@lincyaw/slidev-addon-poll`）为例，从源码语法走到两种浏览器形态与静态渲染端。约定的出处：`docs/architecture.md` 第 3 节（包内分层）、4.2 节（Node 端插件）、第 5 节（插件约定）；`docs/ir.md` 第 5、6 节。对照现成的插件读：`packages/addon-guide`（指令 → 组件，浮层）、`packages/addon-content`（指令、编译步骤、幻灯片扩展）、`packages/addon-exec`（执行器、两种渲染端扩展、浏览器服务）、`packages/addon-classroom`（编译步骤、notebook 扩展、依赖服务）。
+以假想的插件 `presmium.poll`（包 `@lincyaw/addon-poll`）为例，从源码语法走到两种浏览器形态与静态渲染端。约定的出处：`docs/architecture.md` 第 3 节（包内分层）、4.2 节（Node 端插件）、第 5 节（插件约定）；`docs/ir.md` 第 5、6 节。对照现成的插件读：`packages/addon-guide`（指令 → 组件，浮层）、`packages/addon-content`（指令、编译步骤、幻灯片扩展）、`packages/addon-exec`（执行器、两种渲染端扩展、浏览器服务）、`packages/addon-classroom`（编译步骤、notebook 扩展、依赖服务）。
 
 ## 1. 包的结构
 
@@ -19,7 +19,7 @@ packages/addon-poll/
 
 ```json
 {
-  "name": "@lincyaw/slidev-addon-poll",
+  "name": "@lincyaw/addon-poll",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: polls",
   "license": "Apache-2.0",
@@ -60,7 +60,7 @@ packages/addon-poll/
 | `setup/`、全局图层（`global-top.vue` 等） | 以上全部，加 `@slidev/client` 的公开导出与 `@slidev/types` | Slidev 的其他包、vitepress |
 | `src/node/` | `src/domain/`、`@lincyaw/kernel`、Node 库 | vue 与 `@vue/*` |
 
-另外：不引用插件包（`@lincyaw/slidev-addon-*`，对渲染端与 IR 运行时同样适用），相对路径不离开本包，不引用框架内部路径（`@slidev/client/` 的子路径、`vitepress/dist`、`@slidev/cli/dist`）。两个插件要共用的契约放进 `@lincyaw/kernel`（业务服务契约，如 `EXECUTOR`、`SESSION`）或 `@lincyaw/host`（宿主层令牌，如 `TOOLBAR`、`NAVIGATION`）。
+另外：不引用插件包（`@lincyaw/addon-*`，对渲染端与 IR 运行时同样适用），相对路径不离开本包，不引用框架内部路径（`@slidev/client/` 的子路径、`vitepress/dist`、`@slidev/cli/dist`）。两个插件要共用的契约放进 `@lincyaw/kernel`（业务服务契约，如 `EXECUTOR`、`SESSION`）或 `@lincyaw/host`（宿主层令牌，如 `TOOLBAR`、`NAVIGATION`）。
 
 ## 3. 指令：源码 → IR
 

@@ -18,7 +18,7 @@ let dir: string | undefined
 test.beforeAll(async () => {
   test.setTimeout(180_000)
   jupyter = await startLocalJupyter(localPython!)
-  dir = deckDir('exec-remote-cleanup', { '@lincyaw/slidev-addon-exec-jupyter': 'packages/addon-exec-jupyter' })
+  dir = deckDir('exec-remote-cleanup', { '@lincyaw/addon-exec-jupyter': 'packages/addon-exec-jupyter' })
   cpSync(fileURLToPath(new URL('./fixtures/exec-remote-cleanup/lecture.md', import.meta.url)), join(dir, 'lecture.md'))
   dev = await startDev(dir, 'web', {
     NODE_ENV: 'development',

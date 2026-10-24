@@ -12,14 +12,14 @@
 '@lincyaw/render-slides': patch
 '@lincyaw/render-notebook': patch
 '@lincyaw/classroom-server': patch
-'@lincyaw/slidev-addon-core': patch
-'@lincyaw/slidev-addon-code': patch
-'@lincyaw/slidev-addon-exec-jupyter': patch
-'@lincyaw/slidev-addon-exec-local': patch
-'@lincyaw/slidev-addon-lecture': patch
-'@lincyaw/slidev-addon-publish': patch
-'@lincyaw/slidev-addon-session': patch
-'@lincyaw/slidev-addon-speech': patch
+'@lincyaw/addon-core': patch
+'@lincyaw/addon-code': patch
+'@lincyaw/addon-exec-jupyter': patch
+'@lincyaw/addon-exec-local': patch
+'@lincyaw/addon-lecture': patch
+'@lincyaw/addon-publish': patch
+'@lincyaw/addon-session': patch
+'@lincyaw/addon-speech': patch
 '@lincyaw/dsh': patch
 '@lincyaw/studio': patch
 '@lincyaw/workbench': patch
@@ -36,4 +36,4 @@ Name the kernel's, the compiler's and the host's public API after what each name
 - `@lincyaw/mcp`: `McpDocument` to the kernel's `DocumentSummary`.
 - `@lincyaw/viewer`: `FollowAnchor`, `backSection`, `followedPlace`, `stepKeys`, `stepTrail`, `trailStep` and `StepKeys` are imported from `@lincyaw/kernel`.
 - `@lincyaw/workbench`: `PreviewView`, `WorkspaceDocument`, `RevertAnswer`, `ReviewView` and `ReviewFollowed` to `PreviewRenderer`, `DocumentSummary`, `RevertResult`, `ReviewSnapshot` and `ReviewUpdate`.
-- `@lincyaw/slidev-addon-publish`: `OFFLINE_MESSAGES` to the kernel's `OFFLINE_REQUESTS`.
+- `@lincyaw/addon-publish`: `OFFLINE_MESSAGES` to the kernel's `OFFLINE_REQUESTS`.

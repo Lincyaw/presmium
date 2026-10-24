@@ -62,6 +62,15 @@ interface PluginPackage {
 
 const PRESMIUM_SCOPE = '@lincyaw/'
 
+// The official plugins were named after Slidev's addons; a headmatter that still lists them gets the current packages.
+const LEGACY_PLUGIN = '@lincyaw/slidev-addon-'
+const PLUGIN = '@lincyaw/addon-'
+
+/** A plugin's package as the headmatter lists it, under its current name. */
+export function currentPluginName(name: string): string {
+  return name.startsWith(LEGACY_PLUGIN) ? PLUGIN + name.slice(LEGACY_PLUGIN.length) : name
+}
+
 const COMPILER_DIR = fileURLToPath(new URL('..', import.meta.url))
 const COMPILER_PACKAGE = JSON.parse(readFileSync(join(COMPILER_DIR, 'package.json'), 'utf8')) as { name: string, version: string }
 
@@ -125,7 +134,7 @@ export async function loadPlugins(deckDir: string, names: string[], sources?: Pl
 export async function loadOperatorPlugins(sources: PluginSources): Promise<{ plugins: LoadedPlugin[], problems: PluginProblem[] }> {
   const plugins: LoadedPlugin[] = []
   const problems: PluginProblem[] = []
-  for (const name of sources.listed) {
+  for (const name of sources.listed.map(currentPluginName)) {
     const dir = findPackageDir(name, resolve(sources.workspaceRoot), false) ?? bundledDir(name, sources)
     if (!dir) {
       problems.push({ name, severity: 'error', message: `operator plugin "${name}" (settings.presmium.workspace.plugins) is not installed at the workspace root ${sources.workspaceRoot}` })

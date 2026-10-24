@@ -2,12 +2,12 @@
 title: 书卷样式
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-exec'
-  - '@lincyaw/slidev-addon-session'
-  - '@lincyaw/slidev-addon-classroom'
-  - '@lincyaw/slidev-addon-publish'
-  - '@lincyaw/slidev-addon-assistant'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-exec'
+  - '@lincyaw/addon-session'
+  - '@lincyaw/addon-classroom'
+  - '@lincyaw/addon-publish'
+  - '@lincyaw/addon-assistant'
   - ./host/plugin
 renderers:
   web: {}

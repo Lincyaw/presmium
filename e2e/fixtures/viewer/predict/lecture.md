@@ -2,8 +2,8 @@
 title: 预测与讲解
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-classroom'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-classroom'
 renderers:
   web: {}
 ---

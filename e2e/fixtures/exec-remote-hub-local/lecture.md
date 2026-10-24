@@ -2,9 +2,9 @@
 title: 本地 JupyterHub 协议验证
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-exec'
-  - '@lincyaw/slidev-addon-exec-jupyter'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-exec'
+  - '@lincyaw/addon-exec-jupyter'
 execute:
   environments:
     hub: { kind: jupyter, auth: prompt, url: '__HUB_URL__user/{user}/' }

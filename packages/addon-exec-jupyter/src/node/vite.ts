@@ -16,5 +16,5 @@ export function jupyterWsShim(): { name: string, enforce: 'pre', resolveId(sourc
 }
 
 export function jupyterPrebundle(): ReturnType<typeof prebundleDependencies> {
-  return prebundleDependencies('presmium:exec-jupyter-prebundle', '@lincyaw/slidev-addon-exec-jupyter', ['@jupyterlab/services', '@xterm/xterm', '@xterm/addon-fit'])
+  return prebundleDependencies('presmium:exec-jupyter-prebundle', '@lincyaw/addon-exec-jupyter', ['@jupyterlab/services', '@xterm/xterm', '@xterm/addon-fit'])
 }

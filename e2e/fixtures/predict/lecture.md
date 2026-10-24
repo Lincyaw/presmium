@@ -2,9 +2,9 @@
 title: 先预测再揭示
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-session'
-  - '@lincyaw/slidev-addon-classroom'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-session'
+  - '@lincyaw/addon-classroom'
 presmium:
   presmium.session:
     # e2e/predict.spec.ts puts the address of the classroom server it starts here.

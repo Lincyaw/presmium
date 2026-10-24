@@ -11,7 +11,7 @@ import type { Hub, Jupyter } from './fixtures/exec-remote/jupyter.ts'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const FIXTURE = join(ROOT, 'e2e/fixtures/exec-remote')
-const LINK = { '@lincyaw/slidev-addon-exec-jupyter': 'packages/addon-exec-jupyter' }
+const LINK = { '@lincyaw/addon-exec-jupyter': 'packages/addon-exec-jupyter' }
 const JUPYTER_PORT = 5338
 const HUB_PORT = 5337
 const OUTPUT = '远端内核 CPython 42\n'

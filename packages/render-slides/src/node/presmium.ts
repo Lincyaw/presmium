@@ -23,7 +23,7 @@ function hasSlides(doc: IRDocument): boolean {
 
 /**
  * The slides as one file, by `slidev export` in the project the renderer writes (at the root path, its live code off):
- * a PDF, or a PowerPoint file with a picture of each slide. `presmium-export` (@lincyaw/slidev-addon-publish) also
+ * a PDF, or a PowerPoint file with a picture of each slide. `presmium-export` (@lincyaw/addon-publish) also
  * checks the PDF's links.
  */
 function slidesExporter(format: 'pdf' | 'pptx', label: Record<string, string>): Exporter {
@@ -72,7 +72,7 @@ const plugin: PresmiumNodePlugin = {
         severity: 'info',
         message: ctx.base === '/'
           ? `Slidev deck in ${SLIDEV_DIR}/slides.md; export it with \`slidev export ${SLIDEV_DIR}/slides.md\``
-          : `Slidev deck in ${SLIDEV_DIR}/slides.md, written for the base ${ctx.base}; \`slidev export\` serves it at the root, where the local files it links are not found: export with \`presmium-export\` (@lincyaw/slidev-addon-publish)`,
+          : `Slidev deck in ${SLIDEV_DIR}/slides.md, written for the base ${ctx.base}; \`slidev export\` serves it at the root, where the local files it links are not found: export with \`presmium-export\` (@lincyaw/addon-publish)`,
       })
       return { outDir: ctx.outDir, skipped: [] }
     },

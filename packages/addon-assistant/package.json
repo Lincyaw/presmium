@@ -1,5 +1,5 @@
 {
-  "name": "@lincyaw/slidev-addon-assistant",
+  "name": "@lincyaw/addon-assistant",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: readers ask an AI about the lecture, with their own model service, in the browser",
   "license": "Apache-2.0",

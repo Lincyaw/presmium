@@ -2,7 +2,7 @@
 title: An English Deck
 lang: en-US
 plugins:
-  - '@lincyaw/slidev-addon-stage'
+  - '@lincyaw/addon-stage'
 renderers:
   web: {}
 ---

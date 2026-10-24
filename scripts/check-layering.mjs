@@ -55,7 +55,7 @@ const rules = [
   { name: 'node adapters do not use vue', dirs: ['src/node'], forbid: spec => vue(spec) },
   { name: 'only web uses vitepress', dirs: ['.'], except: ['web'], forbid: spec => /^vitepress/.test(spec) },
   { name: 'no framework internals', dirs: ['.'], forbid: spec => /^@slidev\/client\/(?!index)|^vitepress\/dist|^@slidev\/cli\/dist/.test(spec) },
-  { name: 'no package uses an addon', dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/slidev-addon-/.test(spec) },
+  { name: 'no package uses an addon', dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/addon-/.test(spec) },
   { name: 'relative imports stay in their package', dirs: ['.'], forbid: (spec, file, pkgDir) => target(spec, file, pkgDir) !== undefined && outside(target(spec, file, pkgDir), '.') },
   { name: 'node packages are framework-free', pkgs: ['server', 'mcp'], dirs: ['src'], forbid: spec => vue(spec) || /^(vitepress|@slidev\/)/.test(spec) || /^@lincyaw\/(viewer|web|host)(\/|$)/.test(spec) },
   { name: 'only cli and workspace use the server', pkgs: pkg => !['cli', 'workspace', 'server'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/server(\/|$)/.test(spec) },

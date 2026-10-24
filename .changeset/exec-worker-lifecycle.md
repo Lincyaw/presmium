@@ -1,5 +1,5 @@
 ---
-"@lincyaw/slidev-addon-exec": patch
+"@lincyaw/addon-exec": patch
 ---
 
 开发预览提前预打包 JavaScript 与 TypeScript 执行器的 sucrase 依赖，避免首次运行触发页面重载并丢失输出。

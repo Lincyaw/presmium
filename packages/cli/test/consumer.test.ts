@@ -77,7 +77,7 @@ it('packs every public package with its license and the files its exports and co
     }
     expect(files.filter(file => file.startsWith('test/')), name).toEqual([])
   }
-  const plugin = JSON.parse(readFileSync(join(installed('@lincyaw/slidev-addon-core'), 'package.json'), 'utf8')) as { license: string, peerDependencies: Record<string, string>, dependencies?: Record<string, string> }
+  const plugin = JSON.parse(readFileSync(join(installed('@lincyaw/addon-core'), 'package.json'), 'utf8')) as { license: string, peerDependencies: Record<string, string>, dependencies?: Record<string, string> }
   expect(plugin.license).toBe('Apache-2.0')
   expect(plugin.peerDependencies['@lincyaw/kernel']).toMatch(/^\^\d+\.\d+\.\d+/)
   expect(Object.keys(plugin.dependencies ?? {}).filter(name => name.startsWith('@lincyaw/'))).toEqual([])

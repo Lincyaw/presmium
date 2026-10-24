@@ -12,7 +12,7 @@ let site: Awaited<ReturnType<typeof serve>> | undefined
 
 test.beforeAll(async () => {
   test.setTimeout(180_000)
-  dir = deckDir('publish-smoke', { '@lincyaw/slidev-addon-publish': 'packages/addon-publish' })
+  dir = deckDir('publish-smoke', { '@lincyaw/addon-publish': 'packages/addon-publish' })
   cpSync(new URL('./fixtures/publish-smoke', import.meta.url), dir, { recursive: true })
   const image = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20"><rect width="40" height="20" fill="#175cd3"/></svg>'
   const origin = createServer((_, response) => response.writeHead(200, { 'Content-Type': 'image/svg+xml' }).end(image))

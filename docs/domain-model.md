@@ -9,21 +9,21 @@
 | 内核 Kernel | `@lincyaw/kernel` | 插件清单、服务注册、锚点契约、检查契约、步骤契约、IR 契约，以及插件共用的服务契约 |
 | 编译 Compilation | `@lincyaw/compiler`、`@lincyaw/cli` | 解析 MyST 源码、执行编译步骤与行内角色、编译时执行与缓存（含执行会话）、受众筛选、生成 IR、运行检查 |
 | 渲染 Rendering | `@lincyaw/viewer`、`@lincyaw/web`、`@lincyaw/render-slides`、`@lincyaw/render-notebook` | 从 IR 生成各媒介或在浏览器中动态渲染 IR，声明支持程度并降级；运行时视图；站点外壳、文件发布与译本；工作区站点 |
-| 宿主适配 Host | `@lincyaw/host`、`@lincyaw/slidev-addon-core`、`@lincyaw/web`、`@lincyaw/server` | 形态无关的宿主接口，及其 Slidev、VitePress 两个实现；服务端：插件的服务端贡献、请求来源的检查、操作确认、控制通道 |
-| 讲台 Stage | `@lincyaw/slidev-addon-stage` | 基础内容、步骤备注、冻结画面、圈画标注 |
-| 代码引用 CodeRef | `@lincyaw/slidev-addon-code` | 引用、锁定、漂移、跳转、分步高亮、多版本 |
-| 代码执行 Execution | `@lincyaw/slidev-addon-exec`、`@lincyaw/slidev-addon-exec-local` | 执行服务、运行记录、分步执行、回退、环境复刻 |
-| 执行环境 Environment | `@lincyaw/slidev-addon-exec-jupyter`、`@lincyaw/slidev-addon-exec-wasi`、`@lincyaw/slidev-addon-exec-webgpu`；会话与富输出也落在代码执行的两个包中 | 具名环境、环境提供方与指纹、执行会话、富输出、远端环境的凭据方式、部署模板、浏览器终端 |
-| 引导 Guidance | `@lincyaw/slidev-addon-guide` | 模拟光标、聚光、交互提示 |
-| 动画 Motion | `@lincyaw/slidev-addon-motion` | 动画场景：文稿 `scenes/` 中用 GSAP、Anime.js、Motion、Three.js 或 Remotion 写的时间轴，按步骤与步内时间画出 |
-| 富内容 Content | `@lincyaw/slidev-addon-content`；卡片、栅格、选项卡由编译器与渲染端直接支持 | 公式、图表、思维导图、媒体（含封面与字幕轨）、Web 组件、卡片与栅格 |
-| 发布 Publishing | `@lincyaw/slidev-addon-publish`；发布检查与受众筛选在编译器与 CLI 中 | 导出、离线、高对比度、可视化差异、发布检查、受众范围 |
-| 课堂 Classroom | `@lincyaw/slidev-addon-session`、`@lincyaw/slidev-addon-classroom`、`@lincyaw/classroom-server` | 会话、网络传输、跟随、笔记、测验、练习、提问、理解度、先预测再揭示 |
+| 宿主适配 Host | `@lincyaw/host`、`@lincyaw/addon-core`、`@lincyaw/web`、`@lincyaw/server` | 形态无关的宿主接口，及其 Slidev、VitePress 两个实现；服务端：插件的服务端贡献、请求来源的检查、操作确认、控制通道 |
+| 讲台 Stage | `@lincyaw/addon-stage` | 基础内容、步骤备注、冻结画面、圈画标注 |
+| 代码引用 CodeRef | `@lincyaw/addon-code` | 引用、锁定、漂移、跳转、分步高亮、多版本 |
+| 代码执行 Execution | `@lincyaw/addon-exec`、`@lincyaw/addon-exec-local` | 执行服务、运行记录、分步执行、回退、环境复刻 |
+| 执行环境 Environment | `@lincyaw/addon-exec-jupyter`、`@lincyaw/addon-exec-wasi`、`@lincyaw/addon-exec-webgpu`；会话与富输出也落在代码执行的两个包中 | 具名环境、环境提供方与指纹、执行会话、富输出、远端环境的凭据方式、部署模板、浏览器终端 |
+| 引导 Guidance | `@lincyaw/addon-guide` | 模拟光标、聚光、交互提示 |
+| 动画 Motion | `@lincyaw/addon-motion` | 动画场景：文稿 `scenes/` 中用 GSAP、Anime.js、Motion、Three.js 或 Remotion 写的时间轴，按步骤与步内时间画出 |
+| 富内容 Content | `@lincyaw/addon-content`；卡片、栅格、选项卡由编译器与渲染端直接支持 | 公式、图表、思维导图、媒体（含封面与字幕轨）、Web 组件、卡片与栅格 |
+| 发布 Publishing | `@lincyaw/addon-publish`；发布检查与受众筛选在编译器与 CLI 中 | 导出、离线、高对比度、可视化差异、发布检查、受众范围 |
+| 课堂 Classroom | `@lincyaw/addon-session`、`@lincyaw/addon-classroom`、`@lincyaw/classroom-server` | 会话、网络传输、跟随、笔记、测验、练习、提问、理解度、先预测再揭示 |
 | 编辑 Editing | `@lincyaw/language-server`、`presmium-vscode` | 编辑器中的诊断、跳转、悬停、补全，编辑器与预览同步 |
-| 智能体 Agent | `@lincyaw/mcp`、`@lincyaw/dsh`、`@lincyaw/slidev-addon-assistant` | agent 环境（MCP 与 dsh 的工具）、焦点、学习者问答 |
+| 智能体 Agent | `@lincyaw/mcp`、`@lincyaw/dsh`、`@lincyaw/addon-assistant` | agent 环境（MCP 与 dsh 的工具）、焦点、学习者问答 |
 | 工作区 Workspace | `@lincyaw/workspace` | 工作区服务、文档管理、修改历史与撤销（重做）、修改审阅、工作区站点 |
 | 工作台 Workbench | `@lincyaw/workbench`、`@lincyaw/dsh`、`@lincyaw/studio`；`@lincyaw/design` 与产物共用 | 作者编写文稿的界面：文稿列表、文稿视图（就地编辑、批注、AI 改写）、版本历史、对话与焦点；DeepSeek Harness 的防腐层（bundle）；`presmium studio` |
-| 讲授 Lecture（含语音 Speech） | `@lincyaw/slidev-addon-lecture`、`@lincyaw/slidev-addon-speech` | 讲授轨、录制、回放、脚本化讲授、导出视频、转写回写；语音服务（语音协议 `v1/*`）、引擎、合成缓存、字幕译文 |
+| 讲授 Lecture（含语音 Speech） | `@lincyaw/addon-lecture`、`@lincyaw/addon-speech` | 讲授轨、录制、回放、脚本化讲授、导出视频、转写回写；语音服务（语音协议 `v1/*`）、引擎、合成缓存、字幕译文 |
 
 网页形态的站点外壳、文件发布与译本属于渲染上下文，见第 9 节；工作区站点的组织属于工作区，网页渲染端负责构建它。
 
@@ -173,7 +173,7 @@
 
 ## 4. 宿主适配
 
-`@lincyaw/host` 定义形态无关的宿主接口 `HostAdapter`（`architecture.md` 4.4 节），`@lincyaw/slidev-addon-core` 与 `@lincyaw/web` 分别实现。
+`@lincyaw/host` 定义形态无关的宿主接口 `HostAdapter`（`architecture.md` 4.4 节），`@lincyaw/addon-core` 与 `@lincyaw/web` 分别实现。
 
 | 中文 | 标识符 | 幻灯片形态（Slidev） | 网页形态（VitePress + IR 运行时） |
 |---|---|---|---|

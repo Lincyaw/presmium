@@ -1,6 +1,6 @@
 ---
 "@lincyaw/kernel": patch
-"@lincyaw/slidev-addon-exec": patch
+"@lincyaw/addon-exec": patch
 "@lincyaw/viewer": patch
 ---
 

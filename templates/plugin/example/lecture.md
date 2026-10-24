@@ -2,7 +2,7 @@
 title: Greeting
 lang: en
 plugins:
-  - '@lincyaw/slidev-addon-core'   # the host of the slides form: plugin components and exports need it
+  - '@lincyaw/addon-core'   # the host of the slides form: plugin components and exports need it
   - ..                              # this plugin, by its directory; a document elsewhere names its package
 renderers:
   web: {}

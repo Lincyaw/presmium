@@ -72,7 +72,7 @@ it('the skill check fails on an unknown command, an unknown option and a directi
     writeFileSync(file, readFileSync(file, 'utf8').replace('### `{quiz}`', '### `{quizz}`'))
   })
   expect(directive.code).toBe(1)
-  expect(directive.output).toMatch(/has no section for \{quiz\} \(declared by @lincyaw\/slidev-addon-classroom\)/)
+  expect(directive.output).toMatch(/has no section for \{quiz\} \(declared by @lincyaw\/addon-classroom\)/)
 
   expect(skills(() => {}).code).toBe(0)
 }, 120_000)

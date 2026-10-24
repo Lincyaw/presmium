@@ -1,4 +1,4 @@
-import { gsapScene } from '@lincyaw/slidev-addon-motion/scene'
+import { gsapScene } from '@lincyaw/addon-motion/scene'
 
 // Byte pair encoding on "low lower lowest": the tokens come in, the most frequent pair lights up,
 // then "l o" merges into "lo" and "lo w" into "low". Each step is a part of one GSAP timeline.

@@ -1,4 +1,4 @@
-import { remotionScene } from '@lincyaw/slidev-addon-motion/scene'
+import { remotionScene } from '@lincyaw/addon-motion/scene'
 
 // A Remotion title card: the title springs in, the subtitle types itself, then both rise for the badge.
 // The card is in the page, not in an iframe, so its text sets its own line heights over the page's styles.

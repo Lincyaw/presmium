@@ -37,7 +37,7 @@ export function createServedDeck(ctx: ServerContext): ServedDeck {
     policy: mediaPolicy(ctx.settings),
     speech() {
       const found = ctx.service(SPEECH)
-      if (!found) throw new RouteRefusal(503, 'no speech service: add @lincyaw/slidev-addon-speech to the deck\'s plugins')
+      if (!found) throw new RouteRefusal(503, 'no speech service: add @lincyaw/addon-speech to the deck\'s plugins')
       return found
     },
     configuredVoice() {

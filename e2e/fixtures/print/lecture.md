@@ -1,8 +1,8 @@
 ---
 title: Print fixture
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-publish'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-publish'
   - ./slow-start
 renderers:
   slides:

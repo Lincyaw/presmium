@@ -11,7 +11,7 @@ import type { DevServer } from './fixtures/deck.ts'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const FIXTURE = join(ROOT, 'e2e/fixtures/lecture-script')
-const LINK = { '@lincyaw/slidev-addon-lecture': 'packages/addon-lecture', '@lincyaw/slidev-addon-speech': 'packages/addon-speech' }
+const LINK = { '@lincyaw/addon-lecture': 'packages/addon-lecture', '@lincyaw/addon-speech': 'packages/addon-speech' }
 const PROVIDER = 'Presmium fake'
 
 test.use({ launchOptions: { args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] } })

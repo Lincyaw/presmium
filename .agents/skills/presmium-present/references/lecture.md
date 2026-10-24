@@ -4,7 +4,7 @@
 
 ## 录制一遍
 
-文稿列出 `@lincyaw/slidev-addon-lecture`；指针、聚光等重放还需引导插件。在文稿目录运行 `presmium dev --to web`，进入放映视图，用右上角录制栏开始。
+文稿列出 `@lincyaw/addon-lecture`；指针、聚光等重放还需引导插件。在文稿目录运行 `presmium dev --to web`，进入放映视图，用右上角录制栏开始。
 
 按需要选择麦克风、摄像头和屏幕，允许浏览器相应权限。翻页、推进、聚光和标注随声音记录。停止后保存；离开放映视图也会结束录制。先录一小节并回放，确认声音和操作同步，再录完整讲授。
 
@@ -26,7 +26,7 @@ presmium build --to web,lecture
 
 ## 用讲解合成讲授
 
-文稿另列出 `@lincyaw/slidev-addon-speech`，在 `renderers.lecture.voice` 选择引擎与音色。语音引擎由运营者环境配置，凭据不写进文稿。例如：
+文稿另列出 `@lincyaw/addon-speech`，在 `renderers.lecture.voice` 选择引擎与音色。语音引擎由运营者环境配置，凭据不写进文稿。例如：
 
 ```yaml
 renderers:

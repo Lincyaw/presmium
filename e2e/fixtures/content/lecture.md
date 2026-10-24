@@ -2,9 +2,9 @@
 title: 富内容测试文稿
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-content'
-  - '@lincyaw/slidev-addon-publish'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-content'
+  - '@lincyaw/addon-publish'
   - ./plugin
 renderers:
   web: {}

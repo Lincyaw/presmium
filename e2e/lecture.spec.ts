@@ -10,7 +10,7 @@ import type { DevServer } from './fixtures/deck.ts'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const FIXTURE = join(ROOT, 'e2e/fixtures/lecture')
-const LINK = { '@lincyaw/slidev-addon-lecture': 'packages/addon-lecture' }
+const LINK = { '@lincyaw/addon-lecture': 'packages/addon-lecture' }
 
 test.use({ launchOptions: { args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] } })
 

@@ -1,5 +1,5 @@
 {
-  "name": "@lincyaw/slidev-addon-stage",
+  "name": "@lincyaw/addon-stage",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: presenter notes per step, freezing the audience view, and annotations",
   "license": "Apache-2.0",

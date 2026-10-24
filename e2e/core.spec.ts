@@ -55,7 +55,7 @@ async function animationsAfter(page: Page, key: string): Promise<number> {
 const DEV_DECK = `---
 title: 开发服务器
 plugins:
-  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/addon-core'
 renderers:
   slides: {}
 ---

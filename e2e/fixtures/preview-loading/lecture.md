@@ -1,6 +1,6 @@
 ---
 title: 分词入门
-plugins: ['@lincyaw/slidev-addon-core']
+plugins: ['@lincyaw/addon-core']
 renderers:
   web: {}
   slides: {}

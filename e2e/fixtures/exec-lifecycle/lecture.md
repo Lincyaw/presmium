@@ -2,8 +2,8 @@
 title: 浏览器执行生命周期
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-exec'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-exec'
 renderers:
   web: {}
 ---

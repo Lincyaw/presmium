@@ -11,7 +11,7 @@ import type { LocalJupyter } from '../packages/addon-exec-jupyter/test/local-jup
 test.describe.configure({ mode: 'default' })
 test.skip(!localPython, 'set PRESMIUM_TEST_JUPYTER_PYTHON to a Python with jupyter_server and ipykernel installed')
 
-const LINK = { '@lincyaw/slidev-addon-exec-jupyter': 'packages/addon-exec-jupyter' }
+const LINK = { '@lincyaw/addon-exec-jupyter': 'packages/addon-exec-jupyter' }
 const OUTPUT = 'Jupyter CPython 42\n'
 const TOKEN_KEY = 'presmium.execJupyter.token:lab'
 const KERNEL = { timeout: 60_000 }

@@ -1,7 +1,7 @@
 /**
  * <presmium-demo-counter label="…" start="…">: a button that counts its clicks, a web component
  * written with the DOM's own API. Tags that start with `presmium-` are custom elements to the slides
- * form (@lincyaw/slidev-addon-content's Vue options), so the deck can write it as it is.
+ * form (@lincyaw/addon-content's Vue options), so the deck can write it as it is.
  */
 const TAG = 'presmium-demo-counter'
 

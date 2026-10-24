@@ -2,7 +2,7 @@
 title: Un cours
 lang: fr
 plugins:
-  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/addon-core'
 renderers:
   slides: {}
   notebook: {}

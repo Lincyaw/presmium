@@ -1,5 +1,5 @@
 {
-  "name": "@lincyaw/slidev-addon-exec-local",
+  "name": "@lincyaw/addon-exec-local",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: run code in a local container from the repository's devcontainer definition, and export the environment",
   "license": "Apache-2.0",

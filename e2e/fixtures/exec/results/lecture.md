@@ -2,8 +2,8 @@
 title: 查询结果与重置
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-exec'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-exec'
 renderers:
   web: {}
   slides: { theme: default }

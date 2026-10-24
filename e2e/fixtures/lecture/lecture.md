@@ -2,8 +2,8 @@
 title: 讲授测试文稿
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-guide'
-  - '@lincyaw/slidev-addon-lecture'
+  - '@lincyaw/addon-guide'
+  - '@lincyaw/addon-lecture'
 renderers:
   web:
     port: 5323

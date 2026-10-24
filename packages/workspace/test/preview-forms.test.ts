@@ -7,7 +7,7 @@ it('returns the web preview without starting Slidev, then starts slides only whe
   const dir = workspace('preview-forms', join(FIXTURES, 'service'))
   const cache = join(dir, '.cache')
   writeFileSync(join(dir, 'presmium.workspace.yaml'), "title: Preview forms\ndocuments: ['*/lecture.md']\n")
-  writeFileSync(join(dir, 'talk/lecture.md'), "---\ntitle: Preview forms\nplugins: ['@lincyaw/slidev-addon-core']\nrenderers:\n  web: {}\n  slides: {}\n---\n# Preview forms\n\n:::{slide}\nOne slide.\n:::\n")
+  writeFileSync(join(dir, 'talk/lecture.md'), "---\ntitle: Preview forms\nplugins: ['@lincyaw/addon-core']\nrenderers:\n  web: {}\n  slides: {}\n---\n# Preview forms\n\n:::{slide}\nOne slide.\n:::\n")
   writeFileSync(join(dir, 'fresh/lecture.md'), '---\ntitle: Web only\nrenderers:\n  web: {}\n---\n# Web only\n')
   const child = presmiumProcess(dir, ['serve', '--port', '0'], cleanEnv({ XDG_CACHE_HOME: cache, XDG_STATE_HOME: join(dir, '.state') }))
   try {
@@ -45,7 +45,7 @@ it('starts the slides ahead of a switch only when the machine has room, and says
     const dir = workspace(`preview-prefetch-${room}`, join(FIXTURES, 'service'))
     const cache = join(dir, '.cache')
     writeFileSync(join(dir, 'presmium.workspace.yaml'), "title: Prefetch\ndocuments: ['*/lecture.md']\n")
-    writeFileSync(join(dir, 'talk/lecture.md'), "---\ntitle: Prefetch\nplugins: ['@lincyaw/slidev-addon-core']\nrenderers:\n  web: {}\n  slides: {}\n---\n# Prefetch\n\n:::{slide}\nOne slide.\n:::\n")
+    writeFileSync(join(dir, 'talk/lecture.md'), "---\ntitle: Prefetch\nplugins: ['@lincyaw/addon-core']\nrenderers:\n  web: {}\n  slides: {}\n---\n# Prefetch\n\n:::{slide}\nOne slide.\n:::\n")
     // One thread for the processes the author waits for: no room to start anything ahead.
     const child = presmiumProcess(dir, ['serve', '--port', '0'], cleanEnv({ XDG_CACHE_HOME: cache, XDG_STATE_HOME: join(dir, '.state'), ...room ? {} : { PRESMIUM_MAX_THREADS: '1' } }))
     try {

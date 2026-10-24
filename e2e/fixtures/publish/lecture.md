@@ -2,16 +2,16 @@
 title: Presmium 功能测试文稿
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-stage'
-  - '@lincyaw/slidev-addon-code'
-  - '@lincyaw/slidev-addon-exec'
-  - '@lincyaw/slidev-addon-exec-local'
-  - '@lincyaw/slidev-addon-guide'
-  - '@lincyaw/slidev-addon-content'
-  - '@lincyaw/slidev-addon-publish'
-  - '@lincyaw/slidev-addon-session'
-  - '@lincyaw/slidev-addon-classroom'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-stage'
+  - '@lincyaw/addon-code'
+  - '@lincyaw/addon-exec'
+  - '@lincyaw/addon-exec-local'
+  - '@lincyaw/addon-guide'
+  - '@lincyaw/addon-content'
+  - '@lincyaw/addon-publish'
+  - '@lincyaw/addon-session'
+  - '@lincyaw/addon-classroom'
   - ./host/plugin
   - ./host/services
   - ./content/plugin

@@ -1,5 +1,5 @@
 {
-  "name": "@lincyaw/slidev-addon-session",
+  "name": "@lincyaw/addon-session",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: classroom sessions, sync across devices, and following the presenter",
   "license": "Apache-2.0",

@@ -1,5 +1,5 @@
 {
-  "name": "@lincyaw/slidev-addon-classroom",
+  "name": "@lincyaw/addon-classroom",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: classroom features: anchored notes, quizzes, checked exercises, questions, feedback, and predict-then-reveal",
   "license": "Apache-2.0",

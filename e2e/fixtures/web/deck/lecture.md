@@ -2,9 +2,9 @@
 title: 网页阅读测试文稿
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-exec'
-  - '@lincyaw/slidev-addon-publish'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-exec'
+  - '@lincyaw/addon-publish'
   - ./plugin
 renderers:
   web: { base: /web/ }

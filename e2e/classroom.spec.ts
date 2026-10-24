@@ -33,10 +33,10 @@ function writeClassroomDeck(deck: string, server?: string): void {
 title: Presmium Classroom Features
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-exec'
-  - '@lincyaw/slidev-addon-session'
-  - '@lincyaw/slidev-addon-classroom'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-exec'
+  - '@lincyaw/addon-session'
+  - '@lincyaw/addon-classroom'
 ${session}renderers:
   web: {}
   slides:
@@ -481,9 +481,9 @@ test.describe('an English deck', () => {
 title: Classroom in English
 lang: en-US
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-session'
-  - '@lincyaw/slidev-addon-classroom'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-session'
+  - '@lincyaw/addon-classroom'
 presmium:
   presmium.session:
     server: ${server.url}
@@ -558,9 +558,9 @@ test.describe('a deck in a language without messages', () => {
 title: Classe
 lang: fr
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-session'
-  - '@lincyaw/slidev-addon-classroom'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-session'
+  - '@lincyaw/addon-classroom'
 presmium:
   presmium.session:
     server: ws://127.0.0.1:9
@@ -600,9 +600,9 @@ test.describe('another session implementation', () => {
     deck = writeDeck('memory-session', `
 title: Memory classroom
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-exec'
-  - '@lincyaw/slidev-addon-classroom'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-exec'
+  - '@lincyaw/addon-classroom'
   - '${join(FIXTURES, 'memory-session')}'
 renderers:
   web: {}
@@ -653,9 +653,9 @@ test('notes stay attached to their section and to a labelled code block when the
   const deck = writeDeck('notes', `
 title: Notes
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-code'
-  - '@lincyaw/slidev-addon-classroom'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-code'
+  - '@lincyaw/addon-classroom'
 renderers:
   web: {}
 `, ['notes.md'])

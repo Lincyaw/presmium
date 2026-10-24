@@ -22,23 +22,23 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `@lincyaw/workspace` | npm | 工作区服务 `presmium serve` |
 | `@lincyaw/language-server` | npm | 语言服务 |
 | `@lincyaw/classroom-server` | npm | 课堂同步服务 |
-| `@lincyaw/slidev-addon-core` | npm | 插件：幻灯片形态的宿主适配 |
-| `@lincyaw/slidev-addon-stage` | npm | 插件：讲台 |
-| `@lincyaw/slidev-addon-code` | npm | 插件：代码引用 |
-| `@lincyaw/slidev-addon-exec` | npm | 插件：执行面板与浏览器中的 Python |
-| `@lincyaw/slidev-addon-exec-local` | npm | 插件：本地容器 |
-| `@lincyaw/slidev-addon-exec-wasi` | npm | 插件：WebAssembly 运行时 |
-| `@lincyaw/slidev-addon-exec-webgpu` | npm | 插件：浏览器 GPU |
-| `@lincyaw/slidev-addon-exec-jupyter` | npm | 插件：远端 Jupyter 环境与浏览器终端 |
-| `@lincyaw/slidev-addon-guide` | npm | 插件：引导 |
-| `@lincyaw/slidev-addon-content` | npm | 插件：富内容 |
-| `@lincyaw/slidev-addon-motion` | npm | 插件：动画场景（GSAP、Anime.js、Motion、Three.js、Remotion） |
-| `@lincyaw/slidev-addon-publish` | npm | 插件：离线、高对比度、导出与视觉差异 |
-| `@lincyaw/slidev-addon-session` | npm | 插件：课堂会话与同步 |
-| `@lincyaw/slidev-addon-classroom` | npm | 插件：课堂功能 |
-| `@lincyaw/slidev-addon-assistant` | npm | 插件：AI 助手与读者问答 |
-| `@lincyaw/slidev-addon-lecture` | npm | 插件：讲授轨与导出视频 |
-| `@lincyaw/slidev-addon-speech` | npm | 插件：语音服务 |
+| `@lincyaw/addon-core` | npm | 插件：幻灯片形态的宿主适配 |
+| `@lincyaw/addon-stage` | npm | 插件：讲台 |
+| `@lincyaw/addon-code` | npm | 插件：代码引用 |
+| `@lincyaw/addon-exec` | npm | 插件：执行面板与浏览器中的 Python |
+| `@lincyaw/addon-exec-local` | npm | 插件：本地容器 |
+| `@lincyaw/addon-exec-wasi` | npm | 插件：WebAssembly 运行时 |
+| `@lincyaw/addon-exec-webgpu` | npm | 插件：浏览器 GPU |
+| `@lincyaw/addon-exec-jupyter` | npm | 插件：远端 Jupyter 环境与浏览器终端 |
+| `@lincyaw/addon-guide` | npm | 插件：引导 |
+| `@lincyaw/addon-content` | npm | 插件：富内容 |
+| `@lincyaw/addon-motion` | npm | 插件：动画场景（GSAP、Anime.js、Motion、Three.js、Remotion） |
+| `@lincyaw/addon-publish` | npm | 插件：离线、高对比度、导出与视觉差异 |
+| `@lincyaw/addon-session` | npm | 插件：课堂会话与同步 |
+| `@lincyaw/addon-classroom` | npm | 插件：课堂功能 |
+| `@lincyaw/addon-assistant` | npm | 插件：AI 助手与读者问答 |
+| `@lincyaw/addon-lecture` | npm | 插件：讲授轨与导出视频 |
+| `@lincyaw/addon-speech` | npm | 插件：语音服务 |
 | `@lincyaw/dsh` | npm | DeepSeek Harness 的 bundle：工作台的宿主部分（工具、确认策略、文稿上下文、技能、路由）与客户端部分（根布局、面板、主题与品牌）；0.x、实验性，版本号不随统一版本（`docs/design-dsh.md` 12 节）；技能在打包时从 `.agents/skills` 复制，客户端部分在打包时预编译（`build/client.mjs`，`docs/design-dsh.md` 7.8 节） |
 | `@lincyaw/studio` | npm | `presmium studio`：组装 Presmium 的 profile，启动并监管 DeepSeek Harness（精确版本的依赖）与工作区服务，只打印一个网址；命令 `presmium-studio`（`pnpm add -g @lincyaw/studio`），依赖 `presmium`，项目里装了它时 `presmium studio` 转交给它；0.x、实验性，版本号不随统一版本 |
 | `@lincyaw/workbench` | npm | 工作台的 React 面板与工作区服务的客户端（首页、文件树、源码编辑器、问题、预览）；0.x、实验性，版本号不随统一版本，由 `@lincyaw/dsh` 的客户端部分打包使用 |

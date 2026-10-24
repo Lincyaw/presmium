@@ -4,7 +4,7 @@
 
 ## 准备站点与服务
 
-文稿列出 `@lincyaw/slidev-addon-session`、`@lincyaw/slidev-addon-classroom`；代码练习校验还需要执行插件。给学生构建静态版本，受众标记见 `presmium-author`。
+文稿列出 `@lincyaw/addon-session`、`@lincyaw/addon-classroom`；代码练习校验还需要执行插件。给学生构建静态版本，受众标记见 `presmium-author`。
 
 需要独立课堂服务时安装 `pnpm add -g @lincyaw/classroom-server`，在文稿目录运行：
 

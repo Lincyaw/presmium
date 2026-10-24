@@ -39,7 +39,7 @@ pnpm add -D {{name}}
 
 ```yaml
 plugins:
-  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/addon-core'
   - '{{name}}'
 ```
 

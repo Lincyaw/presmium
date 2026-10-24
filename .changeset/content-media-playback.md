@@ -1,5 +1,5 @@
 ---
-"@lincyaw/slidev-addon-content": patch
+"@lincyaw/addon-content": patch
 "@lincyaw/host": patch
 "@lincyaw/viewer": patch
 "@lincyaw/render-slides": patch

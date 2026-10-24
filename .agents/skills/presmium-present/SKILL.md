@@ -38,7 +38,7 @@ description: "帮助讲者用 Presmium 完成放映、学生访问与课堂互�
 
 全屏使用底栏的“全屏”按钮。把放映窗口放到投影屏，演讲者窗口留在自己的屏幕；窗口中有当前步骤讲解、下一步预告、计时器和课堂面板。两个窗口在同一浏览器、同一源下同步，弹窗被拦截时允许它。
 
-黑屏与冻结需要头部列出 `@lincyaw/slidev-addon-stage`；聚光与提示需要 `@lincyaw/slidev-addon-guide`。缺少功能时先核对插件，再重新构建。
+黑屏与冻结需要头部列出 `@lincyaw/addon-stage`；聚光与提示需要 `@lincyaw/addon-guide`。缺少功能时先核对插件，再重新构建。
 
 定位与恢复：网页地址支持 `?view=present&section=<章节ID>&step=<步>`，演讲者窗口用 `view=presenter`。放映时地址随位置更新，刷新可以回到原处。
 

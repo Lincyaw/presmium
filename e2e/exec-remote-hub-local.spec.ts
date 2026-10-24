@@ -15,7 +15,7 @@ let site: Awaited<ReturnType<typeof serve>> | undefined
 test.beforeAll(async () => {
   test.setTimeout(240_000)
   hub = await startLocalHub(localHubPython!, localHubProxy!)
-  dir = deckDir('exec-remote-hub-local', { '@lincyaw/slidev-addon-exec-jupyter': 'packages/addon-exec-jupyter' })
+  dir = deckDir('exec-remote-hub-local', { '@lincyaw/addon-exec-jupyter': 'packages/addon-exec-jupyter' })
   const lecture = readFileSync(new URL('./fixtures/exec-remote-hub-local/lecture.md', import.meta.url), 'utf8')
   writeFileSync(join(dir, 'lecture.md'), lecture.replace('__HUB_URL__', hub.url))
   await presmium(['build', '--to', 'web'], dir)

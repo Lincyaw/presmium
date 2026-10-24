@@ -36,8 +36,8 @@
 title: BPE 分词
 lang: zh-CN                    # 文稿的语言：两种形态的 <html lang>、界面语言、编译时写入产物的文字
 plugins:                       # 插件包名；presmium serve 中只能是运营者列出的包（第 10 节）
-  - '@lincyaw/slidev-addon-code'
-  - '@lincyaw/slidev-addon-exec'
+  - '@lincyaw/addon-code'
+  - '@lincyaw/addon-exec'
 presmium:                      # 各插件的全局配置，键为插件 ID
   presmium.code: { repo: https://github.com/org/repo }
 renderers:                     # 要构建的渲染端及其配置
@@ -47,6 +47,8 @@ renderers:                     # 要构建的渲染端及其配置
 execute: { rerun: environment } # 可选：另一运行环境的执行录制重新执行（第 4 节）
 ---
 ```
+
+官方插件以前叫 `@lincyaw/slidev-addon-*`，`plugins`（与运营者的插件列表）写旧名时仍然加载：编译器把它换成现在的 `@lincyaw/addon-*`，IR 的 `config.plugins` 中是新名，每个旧名给一条 `info`（`presmium.plugins`）。
 
 多文件文稿用 MyST 的 `{include}` 指令引入。入口文件可以以 UTF-8 BOM 开头（Windows 记事本等编辑器会写入），编译器读取头部前去掉它。
 
@@ -230,7 +232,7 @@ print(markdown_table(model.summary()))
 
 WASI 与 WebGPU 的执行器按语言登记（`c`、`cpp`、`ruby`、`sql`；`wgsl`），不声明环境也能运行；声明 `kind: wasi` 或 `kind: webgpu` 的环境只是为了用 `:env:` 明确选择。
 
-WebAssembly 插件 `@lincyaw/slidev-addon-exec-wasi` 的执行器 ID 为 `presmium.wasi`，语言名另接受 `c++`、`cc`、`cxx`（C++）、`rb`（Ruby）与 `sqlite`（SQL）；`kind: wasi` 的环境可以用 `languages` 限定语言。C 与 C++ 由 WebAssembly 中的 clang 8 编译（与 Runno 相同的 `-O2 -Werror`：默认开启的警告也按错误处理；编译错误是这次运行的输出，退出码为编译器的），SQL 在内存数据库中执行，Ruby 为 3.2。编译时与浏览器中用同一份二进制运行，构建机不需要工具链。程序可以读 `RunRequest.files`（放在根目录，C 程序以绝对路径 `/<名字>` 打开）与标准输入，编译时得到清理过的环境变量（`RunContext.env`），浏览器中没有环境变量；不支持参数（`args`）与会话（`:session:` 被忽略，每次运行是一个独立的程序）。插件的编译步骤把浏览器中运行的代码需要的运行时写进 `config.presmium['presmium.execWasi'].runtimes`，两种形态只发布这些运行时（C 与 C++ 约 52 MB）。插件配置 `presmium.execWasi.loadTimeoutMs`：浏览器中下载与编译运行时的时限，默认 120 秒。`wgsl` 计算着色器用 `{run-panel} wgsl` 运行，`:params:` 是 YAML 写的缓冲区与派发说明（`buffers`、`dispatch`、`entry`、`repeat`、`features`），结果是读回的缓冲区摘要与计时。
+WebAssembly 插件 `@lincyaw/addon-exec-wasi` 的执行器 ID 为 `presmium.wasi`，语言名另接受 `c++`、`cc`、`cxx`（C++）、`rb`（Ruby）与 `sqlite`（SQL）；`kind: wasi` 的环境可以用 `languages` 限定语言。C 与 C++ 由 WebAssembly 中的 clang 8 编译（与 Runno 相同的 `-O2 -Werror`：默认开启的警告也按错误处理；编译错误是这次运行的输出，退出码为编译器的），SQL 在内存数据库中执行，Ruby 为 3.2。编译时与浏览器中用同一份二进制运行，构建机不需要工具链。程序可以读 `RunRequest.files`（放在根目录，C 程序以绝对路径 `/<名字>` 打开）与标准输入，编译时得到清理过的环境变量（`RunContext.env`），浏览器中没有环境变量；不支持参数（`args`）与会话（`:session:` 被忽略，每次运行是一个独立的程序）。插件的编译步骤把浏览器中运行的代码需要的运行时写进 `config.presmium['presmium.execWasi'].runtimes`，两种形态只发布这些运行时（C 与 C++ 约 52 MB）。插件配置 `presmium.execWasi.loadTimeoutMs`：浏览器中下载与编译运行时的时限，默认 120 秒。`wgsl` 计算着色器用 `{run-panel} wgsl` 运行，`:params:` 是 YAML 写的缓冲区与派发说明（`buffers`、`dispatch`、`entry`、`repeat`、`features`），结果是读回的缓冲区摘要与计时。
 
 ````md
 ```{run-panel} wgsl
@@ -613,7 +615,7 @@ IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的�
 | WebAssembly `presmium.execWasi` | 无指令；语言为 `c`、`cpp`、`ruby`、`sql` 的代码（带 `:run:` 的代码块，或执行面板）由它运行（2.7 节） | — | 全局配置 `loadTimeoutMs`；环境 `kind: wasi` | 执行器 `presmium.wasi`；编译步骤 `presmium.execWasi.runtimes` 写出两种形态要发布的运行时 |
 | 引导 `presmium.guide` | `{cursor}` | 正文每行一个路径点：`[move\|hover\|click] <CSS 选择器>`，动作默认为 `move` | — | `PmCursor`；第 k 个路径点在块的第 k 步，步数为路径点数减一 |
 | | `{spotlight}`、`{hint}` | 参数为目标的 CSS 选择器；正文为弹出说明 | `:title:`（说明标题）、`:span:`（持续的步数，默认 0） | `PmSpotlight`、`PmHint` |
-| 动画 `presmium.motion` | `{scene}` | 参数为场景名：文稿目录 `scenes/` 下的文件去掉扩展名（`.ts`、`.js`、`.mjs`；不收 JSX，幻灯片形态按 Vue 编译 JSX），可带子目录，如 `bpe/merge`；正文为说明文字 | `:durations:`（每一步的时长，写法同 `{cue}` 的 `pause`：`1.2`、`1.2s` 或 `800ms`；默认一步、时长 0）、`:aspect:`（宽高比，默认 `16/9`）、`:height:`（CSS 高度，给出时不按宽高比）、`:still:`（静止图片，随产物发布，降级内容中显示） | `PmScene`；步数为时长的个数减一，组件节点的 `durations` 即这些时长。场景文件默认导出 `gsapScene`、`animeScene`、`motionScene`、`threeScene`、`remotionScene` 或 `defineScene` 的结果（`@lincyaw/slidev-addon-motion/scene`）：一条时间轴，第 k 步演它的第 k 段；画面只由时间轴上的位置决定（`architecture.md` 4.4 节“步内时间”）。全部展开的文档视图显示终态，读者可以播放与拖动；notebook 与静态导出显示说明文字与静止图片。场景不存在、时长写错是错误 |
+| 动画 `presmium.motion` | `{scene}` | 参数为场景名：文稿目录 `scenes/` 下的文件去掉扩展名（`.ts`、`.js`、`.mjs`；不收 JSX，幻灯片形态按 Vue 编译 JSX），可带子目录，如 `bpe/merge`；正文为说明文字 | `:durations:`（每一步的时长，写法同 `{cue}` 的 `pause`：`1.2`、`1.2s` 或 `800ms`；默认一步、时长 0）、`:aspect:`（宽高比，默认 `16/9`）、`:height:`（CSS 高度，给出时不按宽高比）、`:still:`（静止图片，随产物发布，降级内容中显示） | `PmScene`；步数为时长的个数减一，组件节点的 `durations` 即这些时长。场景文件默认导出 `gsapScene`、`animeScene`、`motionScene`、`threeScene`、`remotionScene` 或 `defineScene` 的结果（`@lincyaw/addon-motion/scene`）：一条时间轴，第 k 步演它的第 k 段；画面只由时间轴上的位置决定（`architecture.md` 4.4 节“步内时间”）。全部展开的文档视图显示终态，读者可以播放与拖动；notebook 与静态导出显示说明文字与静止图片。场景不存在、时长写错是错误 |
 | 富内容 `presmium.content` | `{markmap}` | 正文为标题与列表；开头的 YAML 块可写 `markmap` 选项 | — | `PmMarkmap`，降级为嵌套列表 |
 | | `{video}`、`{audio}`、`{animation}` | 参数为媒体文件路径（相对于本文件，或包路径）；正文为说明文字 | `:controls:`、`:autoplay:`、`:loop:`、`:muted:`、`:width:`、`:height:`、`:alt:`；`{animation}` 另有 `:still:`（减少动态效果时的静止图片）；`{video}` 另有 `:poster:`、`:captions:`、`:captions-default:`（2.14 节） | `PmMedia`，降级为文件链接；媒体、封面与字幕文件由渲染端随产物发布（组件的 `assets`） |
 | | `{youtube}` | 参数为 YouTube 视频 ID 或链接；正文为说明文字 | `:start:`（开始的秒数）、`:width:`、`:height:` | `PmYoutube`，降级为视频链接 |
@@ -888,7 +890,7 @@ templates: templates/document        # 新建文档的模板目录；默认使�
 settings:                            # 插件的运营者设置，键为插件 ID（ServerContext.settings、NodeServiceContext.settings）
   presmium.workspace:
     plugins:                         # 运营者插件：安装在工作区根目录的包，每份文档都加载它们
-      - '@lincyaw/slidev-addon-speech'
+      - '@lincyaw/addon-speech'
   presmium.assistant:
     review: required                 # agent 的修改先审阅后提交；默认 auto：每个 turn 结束时提交
     reviewTimeoutMs: 1800000         # 等待审阅而没有页面跟随的审阅在这之后回滚（默认 30 分钟）

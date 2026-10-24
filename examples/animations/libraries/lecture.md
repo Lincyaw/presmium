@@ -2,11 +2,11 @@
 title: 代码写成的动画
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-motion'
-  - '@lincyaw/slidev-addon-guide'
-  - '@lincyaw/slidev-addon-lecture'
-  - '@lincyaw/slidev-addon-speech'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-motion'
+  - '@lincyaw/addon-guide'
+  - '@lincyaw/addon-lecture'
+  - '@lincyaw/addon-speech'
 renderers:
   web: {}
   slides: {}

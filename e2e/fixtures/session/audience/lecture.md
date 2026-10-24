@@ -2,9 +2,9 @@
 title: 跟随与受众
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-session'
-  - '@lincyaw/slidev-addon-classroom'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-session'
+  - '@lincyaw/addon-classroom'
 renderers:
   web: {}
   slides:

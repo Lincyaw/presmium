@@ -25,7 +25,7 @@ import { NodeServices } from './node-services.ts'
 import { parseFrontmatter, sourceOf, withoutBom } from './parser.ts'
 import type { Parser } from './parser.ts'
 import { DECK_ENTRY } from './paths.ts'
-import { DECK_PLUGIN, directoryComponents, loadOperatorPlugins, loadPlugins, pluginId } from './plugins.ts'
+import { currentPluginName, DECK_PLUGIN, directoryComponents, loadOperatorPlugins, loadPlugins, pluginId } from './plugins.ts'
 import type { LoadedPlugin, PluginProblem, PluginSources } from './plugins.ts'
 import { resolveReferences } from './references.ts'
 import { hasPluginSyntax, moveSection, SectionCache } from './section-cache.ts'
@@ -205,7 +205,7 @@ export class Compiler {
       ir: IR_VERSION,
       meta: { ...rest, title: titleOf(headmatter, this.entry), lang: run.lang, entry: this.entry },
       config: {
-        plugins: stringList(headmatter.plugins),
+        plugins: stringList(headmatter.plugins).map(currentPluginName),
         presmium: isRecord(presmium) ? presmium : {},
         renderers: isRecord(renderers) ? recordOfRecords(renderers) : {},
         ...Object.keys(execute).length > 0 ? { execute } : {},
@@ -262,7 +262,8 @@ export class Compiler {
       return isRecord(config) ? config : {}
     }
 
-    const loaded = await this.#loadPlugins(stringList(headmatter.plugins), workspace)
+    const listed = stringList(headmatter.plugins)
+    const loaded = await this.#loadPlugins(listed.map(currentPluginName), workspace)
     const { plugins } = loaded
     const problems = [...loaded.problems]
     const services = new NodeServices(this.options.services)
@@ -280,6 +281,9 @@ export class Compiler {
     const service = <T>(token: ServiceToken<T>) => services.tryGet(token)
     const at = (name: string) => ({ file: this.entry, line: frontmatterLine(text, name) })
     for (const p of problems) report({ checkId: 'presmium.plugins', severity: p.severity, message: p.message, source: at(p.name) })
+    for (const name of listed) {
+      if (currentPluginName(name) !== name) report({ checkId: 'presmium.plugins', severity: 'info', message: `plugin "${name}" is now named "${currentPluginName(name)}"; the old name still works`, source: at(name) })
+    }
     const execute = toExecuteConfig(headmatter.execute, report, at)
     checkSecrets(headmatter, report, at)
     return { workspace, headmatter, lang, plugins, configOf, service, execute, inputs, findings, report, at, signal: options.signal }

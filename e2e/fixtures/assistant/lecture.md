@@ -1,9 +1,9 @@
 ---
 title: 助手端到端测试文稿
 plugins:
-  - '@lincyaw/slidev-addon-session'
-  - '@lincyaw/slidev-addon-classroom'
-  - '@lincyaw/slidev-addon-assistant'
+  - '@lincyaw/addon-session'
+  - '@lincyaw/addon-classroom'
+  - '@lincyaw/addon-assistant'
 renderers:
   web:
     port: 5363

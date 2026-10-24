@@ -6,7 +6,7 @@ import { lowContrast } from './fixtures/contrast.ts'
 import { useFixture } from './fixtures/deck.ts'
 import { startClassroomServer } from './fixtures/plugins/decks.ts'
 
-const LINK = { '@lincyaw/slidev-addon-assistant': 'packages/addon-assistant', '@lincyaw/host': 'packages/host' }
+const LINK = { '@lincyaw/addon-assistant': 'packages/addon-assistant', '@lincyaw/host': 'packages/host' }
 
 async function scheme(page: Page, dark: boolean): Promise<void> {
   await page.addInitScript((on) => {

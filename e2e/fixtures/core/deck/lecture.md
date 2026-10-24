@@ -2,9 +2,9 @@
 title: Presmium Fixture Deck With A Title Too Long For A Phone
 lang: en-US
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-session'
-  - '@lincyaw/slidev-addon-stage'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-session'
+  - '@lincyaw/addon-stage'
   - ./plugin
   # The components and kernel plugins of e2e/fixtures/host, copied here by ../deck.ts.
   - ./host/plugin

@@ -1,7 +1,7 @@
 ---
 title: 编译时执行
 plugins:
-  - '@lincyaw/slidev-addon-exec'
+  - '@lincyaw/addon-exec'
 ---
 
 # 执行

@@ -2,7 +2,7 @@
 title: Installed from tarballs
 lang: en
 plugins:
-  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/addon-core'
   - presmium-plugin-hello
 renderers:
   web: {}

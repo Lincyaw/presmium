@@ -1,7 +1,7 @@
 ---
 title: Reproducible builds
 plugins:
-  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/addon-core'
   - ./plugin
 presmium:
   fixture.repro: { data: ./img, site: /tmp }

@@ -2,8 +2,8 @@
 title: 发布核心验证
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-publish'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-publish'
 renderers:
   web: {}
 ---

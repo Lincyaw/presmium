@@ -1,5 +1,5 @@
 {
-  "name": "@lincyaw/slidev-addon-code",
+  "name": "@lincyaw/addon-code",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: code references into a git repository: region and syntax anchors, locked commits, links, drift checks and step highlights",
   "license": "Apache-2.0",

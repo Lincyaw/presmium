@@ -2,9 +2,9 @@
 title: 远端环境测试文稿
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-exec'
-  - '@lincyaw/slidev-addon-exec-jupyter'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-exec'
+  - '@lincyaw/addon-exec-jupyter'
 # The spec runs templates/env/compose/compose.yaml and gives the operator's pair
 # (PRESMIUM_ENV_LAB_URL, PRESMIUM_ENV_LAB_TOKEN) to the build and the dev server; the static
 # build for `auth: prompt` replaces the environment with one the learner pastes a token for.

@@ -1,5 +1,5 @@
-import { motionScene } from '@lincyaw/slidev-addon-motion/scene'
-import type { MotionSequence } from '@lincyaw/slidev-addon-motion/scene'
+import { motionScene } from '@lincyaw/addon-motion/scene'
+import type { MotionSequence } from '@lincyaw/addon-motion/scene'
 
 // Attention weights with Motion: the bars grow, the query moves on and the weights shift, then the
 // strongest key lights up. One Motion sequence; `at` places each part at its step (seconds).

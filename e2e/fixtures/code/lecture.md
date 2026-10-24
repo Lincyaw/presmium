@@ -2,8 +2,8 @@
 title: 代码引用测试文稿
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-code'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-code'
 renderers:
   web: {}
   slides:

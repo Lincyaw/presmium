@@ -123,7 +123,7 @@ export interface WorkbenchStore {
   set(patch: Partial<WorkbenchState>): void
 }
 
-// The export of the lecture as a video (`@lincyaw/slidev-addon-lecture`).
+// The export of the lecture as a video (`@lincyaw/addon-lecture`).
 export const VIDEO_TARGET = 'video'
 
 /** The workspace's own routes: source paths are relative to the workspace root. */

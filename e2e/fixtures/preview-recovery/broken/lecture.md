@@ -1,6 +1,6 @@
 ---
 title: Recoverable preview
-plugins: ['@lincyaw/slidev-addon-core']
+plugins: ['@lincyaw/addon-core']
 renderers:
   web: {}
   slides: { package: './slides-renderer' }

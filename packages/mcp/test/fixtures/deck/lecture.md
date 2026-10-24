@@ -1,7 +1,7 @@
 ---
 title: MCP 测试文稿
 plugins:
-  - '@lincyaw/slidev-addon-exec'
+  - '@lincyaw/addon-exec'
   - ./plugin
 renderers:
   notebook: {}

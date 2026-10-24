@@ -12,7 +12,7 @@
 | 产物 | 渲染端从 IR 生成、能单独部署的东西：网页、幻灯片、notebook、讲授。静态构建的结果与开发服务器实时提供的页面都算。产物用 Vue（VitePress、Slidev） |
 | 工作台 | 作者编写文稿用的界面：外壳、文稿列表、文稿视图（在文稿上就地编辑、批注、AI 改写）、版本历史、对话、讲授的面板。它是 `presmium studio` 的页面 |
 | 工作区服务 | `presmium serve` 中不含界面的部分：编译会话、产物的开发服务器、文档与源码的路由、修改历史与审阅、MCP |
-| bundle | dsh 的扩展包，由 dsh 的插件与配置补丁组成。Presmium 的 bundle 是 `@lincyaw/dsh`。它不是 Presmium 自己的插件包（`@lincyaw/slidev-addon-*`） |
+| bundle | dsh 的扩展包，由 dsh 的插件与配置补丁组成。Presmium 的 bundle 是 `@lincyaw/dsh`。它不是 Presmium 自己的插件包（`@lincyaw/addon-*`） |
 | 行 | dsh 配置树中的一项：一个插件、它的配置与是否启用，以 ID 标识（如 `ui-layout`） |
 | 载体 | dsh 的运行形态：`web`（网页客户端）、`headless`（命令行）、`acp`（经 ACP 被别的程序驱动） |
 | profile | dsh 的一套安装与配置（`$DSH_HOME/profiles/<名>/`）：列出的 bundle、它们的补丁与用户在界面中的改动 |
@@ -58,7 +58,7 @@
 | 层 | 包 | 框架 | 依赖 dsh | 没有模型时 | 版本 |
 |---|---|---|---|---|---|
 | 核心 | `kernel`、`compiler`、`cli`、`server`、`mcp`、`language-server`、`workspace`（Node 部分，即工作区服务）、`classroom-server`、`create-presmium`、`presmium-vscode` | TS、Node | 否 | 全部可用 | 1.x |
-| 产物 | `web`（VitePress 加 `viewer`）、`render-slides` 加 `slidev-addon-core`、`render-notebook`、讲授插件的渲染端、各插件的组件，宿主接口 `host` | Vue | 否 | 全部可用；读者问答用读者自己的模型服务 | 1.x |
+| 产物 | `web`（VitePress 加 `viewer`）、`render-slides` 加 `addon-core`、`render-notebook`、讲授插件的渲染端、各插件的组件，宿主接口 `host` | Vue | 否 | 全部可用；读者问答用读者自己的模型服务 | 1.x |
 | 工作台 | `design`（与产物共用）、`workbench`、`dsh`、`studio` | React 18（由 dsh 的外壳提供） | 只有 `dsh` 与 `studio` | 除对话外都可用 | 0.x，实验性（`design` 随 `host` 为 1.x） |
 
 ### 2.2 进程与端口
@@ -185,7 +185,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 |---|---|
 | 消息类型与 `PREVIEW_PROTOCOL = 1` | `packages/kernel/src/contracts/preview.ts`；产物与工作台都只依赖这里 |
 | 网页的预览代理 | `packages/web/src/client/preview-frame.ts`：用 IR 运行时的 viewer 跳转、取位置、找章节与块的元素，实现 `marks`（`packages/viewer/src/client/markdown/role-mark.ts` 的 `PmRoleMark` 看它） |
-| 幻灯片的预览代理 | `slidev-addon-core` 的客户端，用宿主的 `NAVIGATION` 与 `blockElement` |
+| 幻灯片的预览代理 | `addon-core` 的客户端，用宿主的 `NAVIGATION` 与 `blockElement` |
 | 工作台一侧 | `@lincyaw/workbench` 的预览面板 |
 | 静态构建 | 不带预览代理；用例扫描构建产物 |
 

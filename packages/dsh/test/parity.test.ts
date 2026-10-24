@@ -10,7 +10,7 @@ import type { Service, TestHome, Workspace } from './harness.ts'
 const LECTURE = `---
 title: 一张工具表
 plugins:
-  - '@lincyaw/slidev-addon-exec'
+  - '@lincyaw/addon-exec'
   - presmium-fixture-dsh
 ---
 
@@ -54,7 +54,7 @@ describe('[gate] one tool table for MCP and DeepSeek Harness', () => {
   beforeAll(async () => {
     home = testHome('parity')
     ws = home.workspace('parity', { 'presmium.workspace.yaml': 'title: 一张工具表\napprovals: { operate: allow }\n', 'lecture.md': LECTURE }, {
-      '@lincyaw/slidev-addon-exec': join(ROOT, 'packages/addon-exec'),
+      '@lincyaw/addon-exec': join(ROOT, 'packages/addon-exec'),
       'presmium-fixture-dsh': join(FIXTURES, 'plugin'),
     })
     service = await home.serve(ws.dir)

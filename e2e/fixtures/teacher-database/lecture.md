@@ -2,15 +2,15 @@
 title: 从零写一个 Python 数据库
 lang: zh-CN
 plugins:
-  - '@lincyaw/slidev-addon-core'
-  - '@lincyaw/slidev-addon-code'
-  - '@lincyaw/slidev-addon-exec'
-  - '@lincyaw/slidev-addon-session'
-  - '@lincyaw/slidev-addon-classroom'
-  - '@lincyaw/slidev-addon-stage'
-  - '@lincyaw/slidev-addon-guide'
-  - '@lincyaw/slidev-addon-lecture'
-  - '@lincyaw/slidev-addon-publish'
+  - '@lincyaw/addon-core'
+  - '@lincyaw/addon-code'
+  - '@lincyaw/addon-exec'
+  - '@lincyaw/addon-session'
+  - '@lincyaw/addon-classroom'
+  - '@lincyaw/addon-stage'
+  - '@lincyaw/addon-guide'
+  - '@lincyaw/addon-lecture'
+  - '@lincyaw/addon-publish'
 renderers:
   web: {}
   slides: {}

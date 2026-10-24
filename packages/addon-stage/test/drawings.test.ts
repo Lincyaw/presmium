@@ -14,7 +14,7 @@ const ENV = Object.fromEntries(Object.entries(process.env).filter(([name]) => na
 const LECTURE = `---
 title: Drawings
 plugins:
-  - '@lincyaw/slidev-addon-stage'
+  - '@lincyaw/addon-stage'
 renderers:
   slides: {}
 ---

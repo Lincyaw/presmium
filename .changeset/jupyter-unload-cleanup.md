@@ -1,5 +1,5 @@
 ---
-"@lincyaw/slidev-addon-exec-jupyter": patch
+"@lincyaw/addon-exec-jupyter": patch
 ---
 
 代理模式下离开讲义页面时，由服务端完成 Jupyter 内核与执行目录的清理，避免页面卸载后残留目录。临时执行及普通插件销毁等待清理完成，并回收启动失败时创建的目录。
