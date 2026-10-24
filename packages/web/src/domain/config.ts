@@ -5,10 +5,12 @@ export const WEB_ID = 'presmium.web'
 
 /** The settings that link the web form and the slides to each other. */
 export interface CrossFormLinks {
+  /** The document has slides: at `slidesUrl`, else beside its web form (`../slides`). */
   slides?: boolean
   slidesUrl?: string
+  /** The document has a web form: at `webUrl`, else beside its slides (`../web`). */
+  web?: boolean
   webUrl?: string
-  routerMode?: 'history' | 'hash'
 }
 
 export interface NavItem {
@@ -73,11 +75,13 @@ export function crossFormLinks(presmium: unknown, renderers?: unknown): CrossFor
   const configured = isRecord(renderers) ? renderers : {}
   const slides = configured.slides
   const slidesUrl = url(config.slidesUrl)
+  const webUrl = url(config.webUrl)
+  const none = Object.keys(configured).length === 0
   return {
-    slides: Boolean(slidesUrl) || slides !== undefined || Object.keys(configured).length === 0,
+    slides: Boolean(slidesUrl) || slides !== undefined || none,
     slidesUrl,
-    webUrl: url(config.webUrl),
-    routerMode: isRecord(slides) && slides.routerMode === 'hash' ? 'hash' : 'history',
+    web: Boolean(webUrl) || configured.web !== undefined || none,
+    webUrl,
   }
 }
 

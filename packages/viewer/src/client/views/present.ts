@@ -3,6 +3,7 @@ import { PmApprovals } from '@lincyaw/host'
 import { defineComponent, h, nextTick, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import { viewerMessages } from '../viewer-messages.ts'
 import { useViewer } from '../viewer-state.ts'
+import type { Viewer } from '../viewer-state.ts'
 import { overviewOpen, useActions } from './actions.ts'
 import { button, focusScope, layers, useCurrentSection, useModal, useOverlayBar } from './overlay.ts'
 import { SlideFace, SlideFit, useSlides } from './slide.ts'
@@ -16,6 +17,12 @@ function moveInOverview(root: HTMLElement | undefined, key: string): boolean {
   if (!(key in moves)) return false
   items[Math.min(Math.max(at + moves[key]!, 0), items.length - 1)]!.focus()
   return true
+}
+
+/** The slides form's way out: a link to the same place on the document's page, when there is one. */
+function pageLink(viewer: Viewer) {
+  const link = viewer.options.pageLink?.(viewer.position.value)
+  return link ? h('a', { class: 'pm-present__button', href: link.href }, link.label) : null
 }
 
 export const PresentView = defineComponent({
@@ -100,7 +107,7 @@ export const PresentView = defineComponent({
           button(t.present.overview, () => overviewOpen.value = !overviewOpen.value),
           viewer.options.openPresenter ? button(t.present.presenter, () => viewer.options.openPresenter!(viewer.position.value)) : null,
           button(t.present.fullscreen, enterFullscreen),
-          viewer.options.slidesOnly ? null : button(t.present.exit, () => viewer.setView(viewer.pageView.value)),
+          viewer.options.slidesOnly ? pageLink(viewer) : button(t.present.exit, () => viewer.setView(viewer.pageView.value)),
           ...layers('present', 'bar'),
           h(PmApprovals, { placement: 'above' }),
         ]),

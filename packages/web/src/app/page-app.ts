@@ -90,6 +90,13 @@ function slidesBase(config: AppConfig): string | undefined {
   return links.slidesUrl ?? new URL('../slides', new URL(config.base, 'http://site')).pathname
 }
 
+/** Where the document's web form is, when it has one: the address it names, or the `web/` beside its slides. */
+function webBase(config: AppConfig): string | undefined {
+  const { links } = config.site
+  if (!links.web) return undefined
+  return links.webUrl ?? new URL('../web', new URL(config.base, 'http://site')).pathname
+}
+
 export function createPageApp(input: PageAppInput): PageApp {
   const { config, embedded, dark } = input
   setSiteBase(config.base)
@@ -109,11 +116,20 @@ export function createPageApp(input: PageAppInput): PageApp {
   let current: Viewer | undefined
   const router = createPageRouter(config, () => current?.doc.value ?? initial, !embedded)
   const slidesUrl = embedded || slides ? undefined : slidesBase(config)
+  const webUrl = embedded || !slides ? undefined : webBase(config)
   const t = WEB_MESSAGES[deckLocale(config.lang)]
   const viewer = current = createViewer(initial, {
     renderer: 'web',
     sectionHref: router.sectionHref,
     slidesOnly: slides,
+    ...webUrl
+      ? {
+          pageLink: (position: { section: string, step: number }) => {
+            const index = (current?.doc.value ?? initial).sections.findIndex(s => s.id === position.section) + 1
+            return { href: positionUrl(webUrl, Math.max(index, 1), position.step), label: t.readOnWeb }
+          },
+        }
+      : {},
     sectionHeading: slidesUrl
       ? (section, step) => h('a', {
           'class': 'pm-open-slides',

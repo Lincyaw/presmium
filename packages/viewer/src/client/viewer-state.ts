@@ -10,6 +10,8 @@ export interface ViewerOptions {
   renderer?: string
   /** The page shows only the slides (the slides form): its presentation has no page to go back to. */
   slidesOnly?: boolean
+  /** Where the slides form's presentation leaves for the same place on another page (the web form). */
+  pageLink?(position: Position): { href: string, label: string } | undefined
   sectionHref?(id: string): string
   sectionHeading?(section: IRSection, step: number): VNodeChild
   diagnostics?: boolean
