@@ -1,6 +1,6 @@
 # @lincyaw/viewer
 
-Presmium's IR runtime: renders compiled documents in the browser with Vue, in pluggable runtime views (the document, scrollytelling, the present view, the presenter view), and applies live updates without reloading. The web form and the slides are both this runtime: a slide is a section on a canvas of a fixed size, scaled as a whole. Runnable code blocks can be edited in place before they run (CodeMirror 6, loaded the first time a block is edited).
+Presmium's IR runtime: renders compiled documents in the browser with React, in pluggable runtime views (the document, scrollytelling, the present view, the presenter view), and applies live updates without reloading. The web form and the slides are both this runtime: a slide is a section on a canvas of a fixed size, scaled as a whole. Runnable code blocks can be edited in place before they run (CodeMirror 6, loaded the first time a block is edited).
 
 Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
 
@@ -20,6 +20,8 @@ const plugin: ViewerPlugin = (ctx) => {
 }
 export default plugin
 ```
+
+Author editing uses a lazily loaded BlockNote canvas, sharing IR block IDs with animation and step narration. Saves go through the workbench back to MyST; independent readers and presentations do not load the editor. Viewer state exposes host stores; React extensions subscribe with `useStore(viewer.position)` or `useStore(viewer.doc)`.
 
 ## Documentation
 

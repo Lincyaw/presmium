@@ -6,7 +6,7 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 
 ## Usage
 
-Plugin components do not import it: `@lincyaw/host` loads it into every page and draws the components in Vue (`PmButton`, `PmIcon` and the others); the workbench's panels draw the same classes in React (`@lincyaw/workbench`). A page outside both loads the styles itself:
+Plugin components do not import it: `@lincyaw/host` loads it into every page and draws the components in React (`PmButton`, `PmIcon` and the others); the workbench's panels draw the same classes in React (`@lincyaw/workbench`). A page outside both loads the styles itself:
 
 ```ts
 import '@lincyaw/design/design.css'

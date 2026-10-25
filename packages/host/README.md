@@ -10,22 +10,21 @@ Plugins declare it as a peer dependency (`"@lincyaw/host": "^1.0.0"`); a documen
 
 ## Usage
 
-```vue
-<script setup lang="ts">
+```tsx
 import { useMessages, useStepState } from '@lincyaw/host'
 
-const shown = useStepState({ from: 1 })
-const t = useMessages({ 'zh-CN': { done: '完成' }, 'en': { done: 'Done' } })
-</script>
-
-<template>
-  <p v-if="shown.reached">{{ t.done }}</p>
-</template>
+export default function Completion() {
+  const shown = useStepState({ from: 1 })
+  const t = useMessages({ 'zh-CN': { done: '完成' }, en: { done: 'Done' } })
+  return shown.reached ? <p>{t.done}</p> : null
+}
 ```
 
-Components get everything through this package, so both forms render them; browser code finds the site path with `siteBase()`, not `import.meta.env.BASE_URL`. It also provides the design system: the `Pm*` components (`PmButton`, `PmDialog`, `PmIcon` and others) in Vue, over the `--pm-*` tokens, the classes and the fonts (IBM Plex Sans, IBM Plex Mono and Source Serif 4, SIL Open Font License 1.1) of `@lincyaw/design`, which it loads into every page.
+Components get everything through this package, so both forms render them; browser code finds the site path with `siteBase()`, not `import.meta.env.BASE_URL`. It also provides the design system: the `Pm*` components (`PmButton`, `PmDialog`, `PmIcon` and others) in React, over the `--pm-*` tokens, the classes and the fonts (IBM Plex Sans, IBM Plex Mono and Source Serif 4, SIL Open Font License 1.1) of `@lincyaw/design`, which it loads into every page.
 
-The interactive primitives wrap Reka UI; positioning, dismissal, keyboard navigation and focus management come from the library. Theme observation uses VueUse, and the shared icon names map to Lucide.
+The interactive primitives wrap Radix Primitives; positioning, dismissal, keyboard navigation and focus management come from the library. Theme observation uses host React hooks, and shared icon names map to Lucide.
+
+Hooks return ordinary React values. `useSharedState` returns `[value, setValue]`; service observables use `Store<T>` and `useStore(store)`. Outside components, read services with `presmiumService` and server access with `serverClient()`, then release subscriptions in plugin disposal.
 
 ## Experimental parts
 

@@ -583,7 +583,7 @@ export class Workbench {
     const dir = this.#state.document
     const answer = this.#state.ir
     const section = answer?.doc.sections.find(s => s.id === report.section)
-    const result = (error?: string) => this.#broadcast({ type: 'blocks-result', section: report.section, request: report.request, ...error ? { error } : { revision: this.#state.ir?.revision } })
+    const result = (error?: string, revision = this.#state.ir?.revision) => this.#broadcast({ type: 'blocks-result', section: report.section, request: report.request, ...error ? { error } : { revision } })
     if (dir === undefined || !answer || !section) return result(this.#messages.blockUnknown)
     if (this.#state.mode !== 'editing' || isAgentChanging(this.#state)) return result(this.#messages.saveLocked)
     if (report.revision !== answer.revision) return result(this.#messages.blockConflict)
@@ -593,16 +593,19 @@ export class Workbench {
       const content = writeBodyBlocks(answer.doc, section, source.content, report.blocks)
       // Refuse stale maps even if another save finished while the file was read.
       if (this.#state.ir?.revision !== answer.revision) throw new Error(this.#messages.blockConflict)
-      if (content !== source.content) await this.client.saveSource(WORKSPACE_SCOPE, source.path, content, source.version, this.#messages.editedBody(section.title))
+      const saved = content !== source.content ? await this.client.saveSource(WORKSPACE_SCOPE, source.path, content, source.version, this.#messages.editedBody(section.title)) : { version: source.version }
       if (this.#state.document !== dir) return
       await this.#readIr(dir)
+      const revision = this.#state.ir?.revision
+      const confirmed = await this.client.readSource(WORKSPACE_SCOPE, source.path)
+      if (confirmed.version !== saved.version) throw new Error(this.#messages.blockConflict)
       await this.#history.read(dir)
       this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
       this.#record('blocks.save', { 'presmium.section': section.id, 'presmium.blocks': report.blocks.length })
-      result()
+      result(undefined, revision)
     } catch (error) {
       const reason = errorMessage(error)
-      const message = reason === 'block-multiple-files' ? this.#messages.blockFiles : reason === 'block-mixed-container' ? this.#messages.blockContainer : reason
+      const message = reason === 'block-step-order' ? this.#messages.blockStepOrder : reason === 'block-multiple-files' ? this.#messages.blockFiles : reason === 'block-mixed-container' ? this.#messages.blockContainer : reason
       if (this.#state.document === dir) this.#set({ save: { kind: 'failed', message } })
       result(message)
     }

@@ -11,6 +11,7 @@ Keep the existing frontmatter. A minimal new lecture:
 ````md
 ---
 title: Introduction to tokenization
+contentModel: blocks
 lang: en
 renderers:
   web: {}
@@ -31,14 +32,24 @@ First look at the fragments that repeat.
 - Merge the most frequent pair
 :::
 
+:::{narration}
+:at: 0
+:mode: during
+
 Count first, then merge. Each merge changes what the next count sees.
+:::
 
 :::{slide}
 :reveal:
 After a merge, count again.
 :::
 
-This paragraph is spoken when the summary is revealed.
+:::{narration}
+:at: 1
+:mode: after
+
+This paragraph is spoken after the summary appears.
+:::
 ````
 
 `lang` sets the language of the product's interface and of text written at compile time; the default is `zh-CN`. The official plugins and the three basic renderers (`web`, `slides`, `notebook`) are installed with `presmium`; to use a plugin's directives, still list the package that provides it under `plugins` in the frontmatter.
