@@ -2,6 +2,10 @@ export const EDITOR_MESSAGES = {
   'zh-CN': {
     editor: '正文块编辑器',
     animation: '动画',
+    newPage: '新建页面',
+    pages: '页面',
+    pageTimeout: '页面创建未收到确认。正文草稿已保留，请检查页面导航后重试。',
+    pageUnavailable: '暂时无法创建页面，请重试。',
     save: '保存正文',
     reload: '重新加载',
     saving: '正在保存…',
@@ -16,6 +20,10 @@ export const EDITOR_MESSAGES = {
   en: {
     editor: 'Body block editor',
     animation: 'Animation',
+    newPage: 'New page',
+    pages: 'Pages',
+    pageTimeout: 'Page creation was not acknowledged. Body drafts are kept; check page navigation before trying again.',
+    pageUnavailable: 'The page could not be created. Try again.',
     save: 'Save body',
     reload: 'Reload',
     saving: 'Saving…',

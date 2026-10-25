@@ -42,6 +42,7 @@ import type { SideMenuProps } from '@blocknote/react'
 import { BlockView } from '../block.ts'
 import { useViewer } from '../viewer-state.ts'
 import { bodySaveQueue } from './save-queue.ts'
+import { pageCreation } from './pages.ts'
 import { EDITOR_MESSAGES } from './messages.ts'
 import { SourceBlock } from './source/source-block.tsx'
 import { sourceSession } from './source/session.ts'
@@ -336,6 +337,13 @@ export default function MountedEditor({ section }: { section: IRSection }) {
   const prepared = useRef<ReturnType<typeof prepare>>()
   const ready = useRef(false)
   const queue = useMemo(() => bodySaveQueue(viewer), [viewer])
+  const pages = useMemo(() => pageCreation(viewer), [viewer])
+  const pageBusy = useStore(pages.busy)
+  useEffect(() => pages.register(section.id, () => {
+    const first = editor.document[0]
+    if (first) editor.setTextCursorPosition(first, 'start')
+    editor.focus()
+  }), [pages, section.id, editor])
   const saved = useStore(queue.state)[section.id]
   const state = saved?.status ?? 'saved'
   const failure =
@@ -494,7 +502,7 @@ export default function MountedEditor({ section }: { section: IRSection }) {
   const [creating, setCreating] = useState(false)
   const [creationError, setCreationError] = useState('')
   const insertScene = async () => {
-    if (creating) return
+    if (creating || pages.busy.getSnapshot()) return
     setCreating(true)
     setCreationError('')
     const selected = editor.getTextCursorPosition().block
@@ -506,11 +514,27 @@ export default function MountedEditor({ section }: { section: IRSection }) {
     }
     finally { setCreating(false) }
   }
+  const insertPage = async () => {
+    if (creating || pages.busy.getSnapshot()) return
+    setCreating(true)
+    setCreationError('')
+    try { await pages.create(section.id) }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      setCreationError(message === 'page-timeout' ? t.pageTimeout : message === 'page-unavailable' ? t.pageUnavailable : message === 'save-timeout' ? t.timeout : message === 'revision-conflict' ? t.conflict : message)
+    }
+    finally { setCreating(false) }
+  }
   return (
     <EDITING.Provider value={context}>
       <div
         className="pm-block-editor pm-ui"
         aria-label={t.editor}
+        onFocusCapture={(event) => {
+          if (!ready.current || !(event.target instanceof HTMLElement) || !event.target.isContentEditable || event.target.closest('.pm-source-block')) return
+          const current = editor.getTextCursorPosition().block
+          reportPreview({ type: 'narrate', section: section.id, step: context.stepFor(current.id), navigate: false })
+        }}
         onKeyDown={(event) => {
           if (event.key === 's' && (event.metaKey || event.ctrlKey)) {
             event.preventDefault()
@@ -556,6 +580,7 @@ export default function MountedEditor({ section }: { section: IRSection }) {
         {creationError && <div className="pm-ui-notice pm-ui-notice--danger" role="alert">{creationError}</div>}
         <BlockNoteView
           editor={editor}
+          editable={!pageBusy}
           theme={appearance.dark ? 'dark' : 'light'}
           slashMenu={false}
           sideMenu={false}
@@ -567,7 +592,7 @@ export default function MountedEditor({ section }: { section: IRSection }) {
             timer.current = setTimeout(() => queue.flush(), 700)
           }}
           onSelectionChange={() => {
-            if (!ready.current) return
+            if (!ready.current || !editor.isFocused()) return
             const current = editor.getTextCursorPosition().block
             if (current.id === lastSelected.current) return
             lastSelected.current = current.id
@@ -593,6 +618,13 @@ export default function MountedEditor({ section }: { section: IRSection }) {
               filterSuggestionItems(
                 [
                   ...getDefaultReactSlashMenuItems(editor),
+                  {
+                    title: t.newPage,
+                    onItemClick: insertPage,
+                    aliases: ['page', 'new page', '页面', '新建页面'],
+                    group: t.pages,
+                    icon: <PmIcon name="document" />,
+                  },
                   ...(doc.config.presmium['presmium.motion'] !== undefined ? [{
                     title: t.animation,
                     onItemClick: insertScene,

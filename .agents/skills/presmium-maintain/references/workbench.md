@@ -26,6 +26,8 @@ rejected (6.5).
 
 ## Editing on the document
 
+Pages contain blocks and correspond to IR sections (one slide in Present). The page list's plus and the block menu's New page insert a distinct page after the current one; adding an ordinary block stays within its page. Flush body drafts before a page insertion, preserve existing source and narration, and focus the new page only once it is present in the IR. Verify insertion order, independent editing and presentation, and undo/redo; refuse ambiguous cross-file boundaries instead of guessing.
+
 Source/preview is a view of one block, not a picker that replaces it with another animation. Preserve its block ID and step bindings. The workbench resolves the source from the current IR anchor, checks the opened version and edit lock, and saves through the existing source/history path. Show when multiple blocks share a definition file. Keep source drafts through view switches and preview reloads; on conflicts or failed saves retain the draft instead of overwriting a newer file. Verify the source/preview loop separately from page and step navigation.
 
 Editing happens on the document page. The preview protocol's `pick` reports the position of a click or a

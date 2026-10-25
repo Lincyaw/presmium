@@ -71,6 +71,8 @@ export type PreviewCommand =
   | { type: 'source-result', section: string, block: string, request: number, source?: PreviewSource, error?: string }
   | { type: 'source-saved', section: string, block: string, request: number, sourceVersion?: string, error?: string }
   | { type: 'source-created', section: string, request: number, block?: string, error?: string }
+  | { type: 'page-insert', section: string, id: string, request: number }
+  | { type: 'page-created', section: string, request: number, page?: string, error?: string }
   | { type: 'go', section: string, step?: number, trail?: string[], view?: string }
   | { type: 'highlight', target: PreviewAnchor | null }
   | { type: 'pick', on: boolean }
@@ -94,6 +96,8 @@ export type PreviewReport =
   | { type: 'source-save', section: string, block: string, request: number, path: string, base: string, content: string, part?: 'definition' | 'block' }
   | { type: 'source-create', section: string, id: string, after?: string, request: number, revision: string }
   | { type: 'source-draft', dirty: boolean }
+  | { type: 'page-create', section: string, id: string, request: number, revision: string }
+  | { type: 'page-create-error', request: number, error: string }
   | { type: 'narrate', section: string, step: number, navigate?: boolean }
   | { type: 'ready', renderer: 'web' | 'slides', document: string, revision?: string, capabilities: PreviewCommandType[] }
   | ({ type: 'position' } & PreviewPosition)
@@ -132,6 +136,7 @@ const MAX_EDITED = 200_000
 const bounded = (value: unknown, max: number): value is string => text(value) && value.length > 0 && value.length <= max
 const sourceTarget = (m: Record<string, unknown>) => bounded(m.section, 200) && bounded(m.block, 200) && request(m.request)
 const sourcePart = (value: unknown): value is 'definition' | 'block' => value === 'definition' || value === 'block'
+const pageId = (value: unknown): value is string => text(value) && /^page-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value)
 const sourceValue = (value: unknown): value is PreviewSource => isRecord(value) && sourcePart(value.part) && bounded(value.path, 4096) && bounded(value.language, 100) && text(value.content) && value.content.length <= MAX_EDITED && bounded(value.version, 200) && request(value.shared) && value.shared > 0
 
 export function isPreviewEnvelope(data: unknown, nonce: string): data is PreviewEnvelope<{ type: string }> {
@@ -146,6 +151,8 @@ export function toPreviewCommand(data: unknown, nonce: string): PreviewCommand |
     case 'source-result': return sourceTarget(m) && optional(m.source, sourceValue) && optional(m.error, text) ? { type: 'source-result', section: m.section as string, block: m.block as string, request: m.request as number, ...m.source === undefined ? {} : { source: m.source as PreviewSource }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
     case 'source-saved': return sourceTarget(m) && optional(m.sourceVersion, (value): value is string => bounded(value, 200)) && optional(m.error, text) ? { type: 'source-saved', section: m.section as string, block: m.block as string, request: m.request as number, ...m.sourceVersion === undefined ? {} : { sourceVersion: m.sourceVersion as string }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
     case 'source-created': return bounded(m.section, 200) && request(m.request) && optional(m.block, (value): value is string => bounded(value, 200)) && optional(m.error, text) ? { type: 'source-created', section: m.section, request: m.request, ...m.block === undefined ? {} : { block: m.block as string }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
+    case 'page-insert': return bounded(m.section, 200) && pageId(m.id) && request(m.request) ? { type: 'page-insert', section: m.section, id: m.id, request: m.request } : undefined
+    case 'page-created': return bounded(m.section, 200) && request(m.request) && optional(m.page, pageId) && optional(m.error, text) ? { type: 'page-created', section: m.section, request: m.request, ...m.page === undefined ? {} : { page: m.page as string }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
     case 'go': return text(m.section) && optional(m.step, step) && optional(m.trail, strings) && optional(m.view, text) ? { type: 'go', section: m.section, ...m.step === undefined ? {} : { step: m.step as number }, ...m.trail ? { trail: m.trail as string[] } : {}, ...m.view ? { view: m.view as string } : {} } : undefined
     case 'highlight': return m.target === null || anchor(m.target) ? { type: 'highlight', target: m.target === null ? null : { section: m.target.section, ...m.target.block ? { block: m.target.block } : {} } } : undefined
     case 'pick':
@@ -170,6 +177,8 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
     case 'source-save': return sourceTarget(m) && optional(m.part, sourcePart) && bounded(m.path, 4096) && bounded(m.base, 200) && text(m.content) && m.content.length <= MAX_EDITED ? { type: 'source-save', section: m.section as string, block: m.block as string, request: m.request as number, path: m.path as string, base: m.base as string, content: m.content, ...m.part === undefined ? {} : { part: m.part as 'definition' | 'block' } } : undefined
     case 'source-create': return bounded(m.section, 200) && text(m.id) && /^scene-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(m.id) && request(m.request) && bounded(m.revision, 200) && optional(m.after, (value): value is string => bounded(value, 200)) ? { type: 'source-create', section: m.section, id: m.id, request: m.request, revision: m.revision, ...m.after === undefined ? {} : { after: m.after as string } } : undefined
     case 'source-draft': return typeof m.dirty === 'boolean' ? { type: 'source-draft', dirty: m.dirty } : undefined
+    case 'page-create': return bounded(m.section, 200) && pageId(m.id) && request(m.request) && bounded(m.revision, 200) ? { type: 'page-create', section: m.section, id: m.id, request: m.request, revision: m.revision } : undefined
+    case 'page-create-error': return request(m.request) && bounded(m.error, 4000) ? { type: 'page-create-error', request: m.request, error: m.error } : undefined
     case 'narrate': return text(m.section) && step(m.step) && optional(m.navigate, (value): value is boolean => typeof value === 'boolean') ? { type: 'narrate', section: m.section, step: m.step, ...m.navigate === undefined ? {} : { navigate: m.navigate as boolean } } : undefined
     case 'ready': return (m.renderer === 'web' || m.renderer === 'slides') && text(m.document) && optional(m.revision, text) && strings(m.capabilities) ? { type: 'ready', renderer: m.renderer, document: m.document, ...m.revision ? { revision: m.revision as string } : {}, capabilities: m.capabilities as PreviewCommandType[] } : undefined
     case 'position': return text(m.section) && step(m.step) && strings(m.trail) && optional(m.view, text) ? { type: 'position', section: m.section, step: m.step, trail: m.trail, ...m.view ? { view: m.view as string } : {} } : undefined

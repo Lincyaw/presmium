@@ -57,7 +57,7 @@ const HEADINGS = 'h1, h2, h3, h4, h5, h6'
 // Inside an edited element: the frame's pins and a heading's anchor link, which the caret does not enter. A function for
 // the same reason as `framePrefix`: a module-level template keeps this module in static builds.
 const notText = () => `.${PIN_CLASS}, .header-anchor, .pm-content-marks`
-const COMMANDS: PreviewCommandType[] = ['go', 'highlight', 'pick', 'pins', 'marks', 'appearance', 'edit', 'flash', 'blocks-result', 'source-result', 'source-saved', 'source-created']
+const COMMANDS: PreviewCommandType[] = ['go', 'highlight', 'pick', 'pins', 'marks', 'appearance', 'edit', 'flash', 'blocks-result', 'source-result', 'source-saved', 'source-created', 'page-insert', 'page-created']
 
 // A function for the same reason as `notText`.
 const frameStyle = () => `
@@ -847,6 +847,8 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
         case 'source-result': return void window.dispatchEvent(new CustomEvent('presmium:source-result', { detail: command }))
         case 'source-saved': return void window.dispatchEvent(new CustomEvent('presmium:source-saved', { detail: command }))
         case 'source-created': return void window.dispatchEvent(new CustomEvent('presmium:source-created', { detail: command }))
+        case 'page-insert': return void window.dispatchEvent(new CustomEvent('presmium:page-insert', { detail: command }))
+        case 'page-created': return void window.dispatchEvent(new CustomEvent('presmium:page-created', { detail: command }))
         case 'go': return page.go(command)
         case 'highlight': return highlight.show(command.target)
         case 'pick': return picking.set(command.on)

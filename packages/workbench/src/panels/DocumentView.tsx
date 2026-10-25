@@ -70,28 +70,33 @@ function NavigationPane({ onClose }: { onClose(): void }) {
   const doc = useWorkbenchState(state => state.ir?.doc)
   const slides = useWorkbenchState(state => state.previewRenderer === 'slides' || state.webView !== 'document')
   const current = useWorkbenchState(state => state.position?.section)
+  const editing = useWorkbenchState(state => state.mode === 'editing')
+  const creating = useWorkbenchState(state => Boolean(state.isCreatingPage))
+  const canCreate = useWorkbenchState(state => state.previewRenderer === 'web' && state.webView === 'document' && Boolean(state.previewIrRevision) && !state.editing && !isAgentChanging(state))
+  const pages = editing || slides
   const items = useMemo(() => documentOutline(doc), [doc])
   const top = Math.min(...items.map(item => item.depth))
   return (
     <nav className="pmw-navigation" aria-label={t.navigation}>
       <header className="pmw-pane__header">
-        <h2 className="pmw-pane__title">{slides ? t.renderers.slides : t.navigation}</h2>
+        <h2 className="pmw-pane__title">{editing ? t.pages : slides ? t.renderers.slides : t.navigation}</h2>
+        {editing && <PmIconButton icon="plus" label={t.newPage} small disabled={!canCreate || creating || !items.length} onClick={() => workbench.createPage()} />}
         <PmIconButton icon="close" label={t.closeNavigation} small onClick={onClose} />
       </header>
       {items.length === 0
         ? <p className="pmw-muted pmw-navigation__empty">{t.noSections}</p>
         : (
-            <ol className="pmw-navigation__list" data-kind={slides ? 'slides' : 'headings'}>
+            <ol className="pmw-navigation__list" data-kind={pages ? 'slides' : 'headings'}>
               {items.map(item => (
                 <li key={item.id}>
                   <button
                     type="button"
                     className="pmw-navigation__item"
-                    data-depth={slides ? undefined : Math.min(item.depth - top, 3)}
+                    data-depth={pages ? undefined : Math.min(item.depth - top, 3)}
                     aria-current={item.id === current ? 'location' : undefined}
                     onClick={() => workbench.goToSection(item.id)}
                   >
-                    {slides && <span className="pmw-navigation__number">{item.number}</span>}
+                    {pages && <span className="pmw-navigation__number">{item.number}</span>}
                     <span className="pmw-navigation__title">{item.title}</span>
                   </button>
                 </li>
@@ -130,7 +135,7 @@ function DocumentToolbar({ framed, aside, navigation, onNavigation, onAside }: {
   const narrationDirty = useWorkbenchState(state => state.narrationDirty)
   const title = useWorkbenchState(state => state.documents?.documents.find(doc => doc.dir === state.document)?.title ?? state.ir?.doc.meta.title ?? '')
   const history = useWorkbenchState(state => state.history)
-  const busy = useWorkbenchState(state => state.isHistoryBusy || Boolean(state.editing) || isAgentChanging(state))
+  const busy = useWorkbenchState(state => state.isHistoryBusy || Boolean(state.editing) || Boolean(state.isCreatingPage) || isAgentChanging(state))
   const renderer = useWorkbenchState(state => state.previewRenderer)
   const mode = useWorkbenchState(state => state.mode)
   const openComments = useWorkbenchState(state => state.comments.filter(comment => comment.status === 'open').length)

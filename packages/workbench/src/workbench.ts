@@ -14,6 +14,7 @@ import { applyRenderedEdit } from './text-edit.ts'
 import { writeStepNarration } from './narration.ts'
 import type { StepNarrationDraft } from './narration.ts'
 import { bodyBlocks, writeBodyBlocks } from './block-edit.ts'
+import { writePage } from './page-edit.ts'
 import { blockSourceTarget, previewBlockSource, readBlockSource, savedBlockSource, writeBlockSource } from './block-source.ts'
 import type { BlockSourceDraft } from './block-source.ts'
 import { workspaceClient, WorkspaceServerError } from './workspace-client.ts'
@@ -90,6 +91,7 @@ export interface WorkbenchState {
   narration?: { section: string, step: number }
   narrationDirty?: boolean
   sourceDirty?: boolean
+  isCreatingPage?: boolean
   diagnostics?: DiagnosticSnapshot
   isDiagnosticsUnavailable: boolean
   canRepairDiagnostics: boolean
@@ -177,6 +179,7 @@ const DOCUMENT_RESET = {
   narration: undefined,
   narrationDirty: false,
   sourceDirty: false,
+  isCreatingPage: false,
   ir: undefined, preview: undefined, previewFailure: undefined, previewIrRevision: undefined, position: undefined,
   diagnostics: undefined, isDiagnosticsUnavailable: false, isRepairingDiagnostics: false, diagnosticsRepairFailure: undefined,
   pointer: undefined, editing: undefined, save: { kind: 'idle' }, editFallback: undefined,
@@ -202,11 +205,13 @@ export function documentDirFor(title: string, taken: readonly string[]): string 
 
 /** The front matter of `source` with its `title` set to `title`. */
 export function withTitle(source: string, title: string): string {
+  const bom = source.startsWith('\uFEFF') ? '\uFEFF' : ''
+  source = source.slice(bom.length)
   const line = `title: ${JSON.stringify(title)}`
   const head = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(source)
-  if (!head) return `---\n${line}\n---\n\n${source}`
+  if (!head) return `${bom}---\n${line}\n---\n\n${source}`
   const body = /^title:.*$/m.test(head[1]!) ? head[1]!.replace(/^title:.*$/m, line) : `${line}\n${head[1]}`
-  return `---\n${body}\n---\n${source.slice(head[0].length)}`
+  return `${bom}---\n${body}\n---\n${source.slice(head[0].length)}`
 }
 
 /**
@@ -231,6 +236,8 @@ export class Workbench {
   #focusWriting: Promise<void> = Promise.resolve()
   #edits: Promise<void> = Promise.resolve()
   readonly #blockSources = new Map<string, BlockSourceDraft>()
+  #pageRequest?: { document: string, section: string, id: string, request: number, timer: ReturnType<typeof setTimeout> }
+  #pageSequence = Date.now()
   /** A place to show that no preview could take yet (none was attached, e.g. the chat covered the document). */
   #pendingReveal?: PreviewAnchor
   /** The AI's changes to show on the document once the preview has them. */
@@ -552,7 +559,7 @@ export class Workbench {
     const target = this.#state.ir?.doc.sections.find(s => s.id === section)
     if (!target || !Number.isInteger(step) || step < 0 || step > target.steps) return
     this.point(undefined)
-    this.#set({ narration: { section, step } })
+    this.#set({ narration: { section, step }, ...!navigate ? { position: { section, step, trail: [], view: this.#state.webView } } : {} })
     if (navigate) this.#broadcast({ type: 'go', section, step, ...(this.#state.webView === 'present' ? { view: 'present' } : {}) })
     this.#record('narration.select', { 'presmium.section': section, 'presmium.step': step })
   }
@@ -626,6 +633,76 @@ export class Workbench {
     if (reason === 'source-large') return this.#messages.sourceLarge
     if (reason === 'source-refresh') return this.#messages.sourceRefresh
     return reason
+  }
+
+  /** The canvas finishes pending body edits before asking to insert a page into their source. */
+  createPage(after = this.#state.position?.section): void {
+    if (this.#state.isCreatingPage || this.#state.mode !== 'editing' || this.#state.webView !== 'document' || this.#state.previewRenderer !== 'web' || isAgentChanging(this.#state)) return
+    const dir = this.#state.document
+    const doc = this.#state.ir?.doc
+    const section = doc?.sections.find(section => section.id === after) ?? doc?.sections[0]
+    if (dir === undefined || !section || !this.#previewSinks.size) return
+    const request = ++this.#pageSequence
+    const id = `page-${crypto.randomUUID()}`
+    this.#beginPageRequest(dir, section.id, id, request)
+    this.#broadcast({ type: 'page-insert', section: section.id, id, request })
+  }
+
+  #beginPageRequest(document: string, section: string, id: string, request: number): void {
+    const timer = setTimeout(() => {
+      if (this.#pageRequest?.request !== request) return
+      this.#endPageRequest(request)
+      if (this.#state.document === document) this.#set({ save: { kind: 'failed', message: this.#messages.pageTimeout } })
+    }, 40_000)
+    this.#pageRequest = { document, section, id, request, timer }
+    this.#set({ isCreatingPage: true })
+  }
+
+  #endPageRequest(request: number): void {
+    if (this.#pageRequest?.request !== request) return
+    clearTimeout(this.#pageRequest.timer)
+    this.#pageRequest = undefined
+    this.#set({ isCreatingPage: false })
+  }
+
+  async #createPage(report: Extract<PreviewReport, { type: 'page-create' }>): Promise<void> {
+    const dir = this.#state.document
+    const pending = this.#pageRequest
+    const reply = (page?: string, error?: string) => {
+      if (this.#state.document === dir) this.#broadcast({ type: 'page-created', section: report.section, request: report.request, ...page ? { page } : {}, ...error ? { error } : {} })
+    }
+    if (pending && (pending.request !== report.request || pending.id !== report.id || pending.section !== report.section)) return reply(undefined, this.#messages.saveLocked)
+    if (dir === undefined || this.#state.mode !== 'editing' || isAgentChanging(this.#state)) {
+      this.#endPageRequest(report.request)
+      return reply(undefined, this.#messages.saveLocked)
+    }
+    if (!pending) this.#beginPageRequest(dir, report.section, report.id, report.request)
+    try {
+      const answer = this.#state.ir
+      const section = answer?.doc.sections.find(section => section.id === report.section)
+      if (!answer || !section || answer.doc.sections.some(section => section.id === report.id)) throw new Error(this.#messages.blockUnknown)
+      if (report.revision !== answer.revision) throw new Error(this.#messages.blockConflict)
+      const source = await this.client.readSource(WORKSPACE_SCOPE, section.source.file)
+      const content = writePage(answer.doc, section, source.content, report.id, this.#messages.untitledPage)
+      if (this.#state.document !== dir || this.#state.ir?.revision !== answer.revision) throw new Error(this.#messages.blockConflict)
+      this.#set({ save: { kind: 'saving' } })
+      await this.client.saveSource(WORKSPACE_SCOPE, source.path, content, source.version, this.#messages.createdPage)
+      if (this.#state.document !== dir) return
+      await this.#waitForSourceBlock(dir, report.id)
+      await this.#history.read(dir)
+      if (this.#state.document !== dir) return
+      this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
+      this.goToSection(report.id)
+      this.#record('page.create', { 'presmium.section': report.id, 'presmium.after': section.id })
+      reply(report.id)
+    } catch (error) {
+      const reason = errorMessage(error)
+      const message = ['page-boundary', 'page-multiple-files'].includes(reason) ? this.#messages.pageBoundary : this.#sourceError(error)
+      if (this.#state.document === dir) this.#set({ save: { kind: 'failed', message } })
+      reply(undefined, message)
+    } finally {
+      this.#endPageRequest(report.request)
+    }
   }
 
   #rememberBlockSource(key: string, draft: BlockSourceDraft): void {
@@ -737,7 +814,7 @@ export class Workbench {
   }
 
   /** Filesystem compilation is asynchronous; a completed IR request can still describe the pre-insert document. */
-  #waitForSourceBlock(dir: string, section: string, block: string): Promise<void> {
+  #waitForSourceBlock(dir: string, section: string, block?: string): Promise<void> {
     return new Promise((resolve, reject) => {
       let finished = false
       let unsubscribe = () => {}
@@ -752,7 +829,7 @@ export class Workbench {
       const check = () => {
         if (this.#state.document !== dir) return finish(new Error('source-changed'))
         const page = this.#state.ir?.doc.sections.find(page => page.id === section)
-        if (page && [...irBlocks(page.blocks)].some(candidate => candidate.id === block)) finish()
+        if (page && (block === undefined || [...irBlocks(page.blocks)].some(candidate => candidate.id === block))) finish()
       }
       const timer = setTimeout(() => finish(new Error('source-refresh')), 20_000)
       unsubscribe = this.subscribe(check)
@@ -983,7 +1060,7 @@ export class Workbench {
   goToSection(section: string): void {
     this.#record('navigate', { 'presmium.section': section })
     // Where the author is from now on (the navigation pane, the status bar, a switch of view), until the page reports it.
-    this.#set({ position: { section, step: 0, trail: [], ...this.#state.position?.view ? { view: this.#state.position.view } : {} } })
+    this.#set({ position: { section, step: 0, trail: [], ...this.#state.position?.view ? { view: this.#state.position.view } : {} }, ...this.#state.narration ? { narration: { section, step: 0 } } : {} })
     this.#lastPosition = undefined
     if (this.#previewSinks.size === 0) {
       this.#pendingReveal = { section }
@@ -1007,14 +1084,17 @@ export class Workbench {
   }
 
   undo(): Promise<boolean> {
+    if (this.#state.isCreatingPage) return Promise.resolve(false)
     return this.#timed('history.undo', {}, () => this.#history.undo(), done => (done ? 'done' : 'refused'))
   }
 
   redo(): Promise<boolean> {
+    if (this.#state.isCreatingPage) return Promise.resolve(false)
     return this.#timed('history.redo', {}, () => this.#history.redo(), done => (done ? 'done' : 'refused'))
   }
 
   revertRevision(id: string): Promise<boolean> {
+    if (this.#state.isCreatingPage) return Promise.resolve(false)
     return this.#timed('history.revert', { 'presmium.revision': id }, () => this.#history.revert(id), done => (done ? 'done' : 'refused'))
   }
 
@@ -1071,6 +1151,16 @@ export class Workbench {
         break
       case 'source-draft':
         if (this.#state.sourceDirty !== report.dirty) this.#set({ sourceDirty: report.dirty })
+        break
+      case 'page-create':
+        this.#edits = this.#edits.then(() => this.#createPage(report))
+        break
+      case 'page-create-error':
+        if (this.#pageRequest?.request === report.request) {
+          this.#endPageRequest(report.request)
+          const message = ['page-timeout', 'save-timeout'].includes(report.error) ? this.#messages.pageTimeout : report.error === 'revision-conflict' ? this.#messages.blockConflict : report.error === 'page-unavailable' ? this.#messages.blockUnknown : report.error
+          this.#set({ save: { kind: 'failed', message } })
+        }
         break
       case 'narrate':
         if (this.#state.mode === 'editing') this.selectNarration(report.section, report.step, report.navigate !== false)
@@ -1170,6 +1260,10 @@ export class Workbench {
   }
 
   #stopSubscriptions(): void {
+    if (this.#pageRequest) {
+      clearTimeout(this.#pageRequest.timer)
+      this.#pageRequest = undefined
+    }
     this.#focusVersion++
     this.#pendingReveal = undefined
     this.#pendingFlash = undefined

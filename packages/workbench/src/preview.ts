@@ -42,7 +42,10 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
     if (report.type === 'ready') {
       ready = true
       capabilities = Object.freeze([...report.capabilities])
-      for (const command of latest.values()) post(command)
+      for (const command of latest.values()) {
+        post(command)
+        if (command.type === 'page-insert') latest.delete(command.type)
+      }
     }
     handlers.report(report)
   }
@@ -57,7 +60,8 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
       return capabilities
     },
     send(command) {
-      latest.set(command.type, command)
+      // Queue a mutation until the first ready report, but never replay it after a reload.
+      if (command.type !== 'page-insert' || !ready) latest.set(command.type, command)
       if (ready) post(command)
     },
     dispose() {

@@ -8,6 +8,8 @@ import {
 } from 'react'
 import type { ReactNode } from 'react'
 import type { IRSection } from '@lincyaw/kernel'
+import { useViewer } from '../viewer-state.ts'
+import { pageCreation } from './pages.ts'
 const MountedEditor = lazy(() => import('./mounted-editor.tsx'))
 function editing() {
   return (
@@ -31,9 +33,13 @@ export function SectionBlockEditor({
   section: IRSection
   children?: ReactNode
 }) {
+  const viewer = useViewer()
   const active = useSyncExternalStore(subscribe, editing, () => false)
   const sentinel = useRef<HTMLDivElement>(null)
   const [seen, setSeen] = useState(false)
+  useEffect(() => {
+    if (active) pageCreation(viewer)
+  }, [active, viewer])
   useEffect(() => {
     if (!active || seen) return
     const observer = new IntersectionObserver(

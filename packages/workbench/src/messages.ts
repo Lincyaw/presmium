@@ -12,6 +12,12 @@ export interface AgentPlace {
 
 // Names of commands follow Microsoft Word's (撤消/Undo, 新建批注/New Comment, 版本历史/Version History…).
 const zh = {
+  pages: '页面',
+  newPage: '新建页面',
+  untitledPage: '未命名页面',
+  createdPage: '新建页面',
+  pageTimeout: '新建页面未收到确认。请检查文稿后重试。',
+  pageBoundary: '无法确定此页面的源码边界，请在源码中新增页面。',
   blockUnknown: '未找到对应的页面。',
   blockConflict: '文稿已更新，当前草稿已保留。请重新加载后继续编辑。',
   blockFiles: '此页面包含多个源文件，请分别编辑各文件中的内容块。',
@@ -216,6 +222,12 @@ const zh = {
 export type WorkbenchMessages = typeof zh
 
 const en: WorkbenchMessages = {
+  pages: 'Pages',
+  newPage: 'New page',
+  untitledPage: 'Untitled page',
+  createdPage: 'New page',
+  pageTimeout: 'Page creation was not acknowledged. Check the document before trying again.',
+  pageBoundary: 'The source boundary of this page is unclear. Add the page in the source.',
   blockUnknown: 'The page could not be found.',
   blockConflict: 'The document changed. Your draft is kept. Reload before continuing.',
   blockFiles: 'This page includes multiple source files. Edit each file’s blocks separately.',

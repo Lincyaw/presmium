@@ -127,7 +127,7 @@ export class SourceEditor {
     if (BINARY.test(path) || bytes.includes(0)) throw new RequestError(415, `${path} is not a text file`)
     let content: string
     try {
-      content = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+      content = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes)
     } catch {
       throw new RequestError(415, `${path} is not UTF-8 text`)
     }
