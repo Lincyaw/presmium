@@ -9,6 +9,7 @@ export interface Clip {
   file: string
   duration: number
   words?: WrittenWord[]
+  speech?: Voice
 }
 
 export interface ScriptHead {
@@ -77,6 +78,7 @@ export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>,
           let utterance: Utterance | undefined
           if (piece.id && clip) {
             utterance = { id: piece.id, t, d: Math.round(clip.duration * 1000), text: piece.text, section: section.id, step: section.webStep(current), clip: clip.file }
+            if (clip.speech) utterance.voice = clip.speech
             if (clip.words?.length) utterance.words = trackWords(clip.words, t)
             utterances.push(utterance)
           } else if (piece.id && unsaid.has(piece.id)) {

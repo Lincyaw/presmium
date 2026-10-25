@@ -1,10 +1,47 @@
-import { isRecord, parseDuration } from '@lincyaw/kernel'
+import { documentVoice, irBlocks, isRecord, parseDuration, resolvedVoice, speechVoice, voiceOverrides } from '@lincyaw/kernel'
+import type { IRDocument, IRSection, SpeechVoice, VoiceTarget } from '@lincyaw/kernel'
 
 export interface LectureVoice {
   engine?: string
   voice: string
   rate?: number
   style?: string
+}
+
+export interface NarrationVoice { voice?: SpeechVoice, issue?: string, target?: VoiceTarget }
+
+export function configuredLectureVoice(doc: IRDocument): LectureVoice | undefined {
+  const overrides = voiceOverrides(doc)
+  return documentVoice(doc) ?? Object.values(overrides.pages)[0] ?? overrides.steps[0]?.voice
+}
+
+/** Resolve against the complete IR before renderer filtering compacts its steps. */
+export function prepareNarrationVoices(doc: IRDocument): void {
+  const overrides = voiceOverrides(doc)
+  for (const section of doc.sections) {
+    const bindings = Object.fromEntries([...irBlocks(section.blocks)].filter(block => block.role === 'narration').map(block => {
+      const resolved = resolvedVoice(doc, section, block.at)
+      const unsafe = resolved.reason && overrides.steps.some(entry => entry.section === section.id)
+      return [block.id, { ...resolved.editable ? { target: resolved.target } : {}, ...unsafe ? { issue: resolved.reason } : resolved.voice ? { voice: resolved.voice } : { issue: 'voice-unset' } }]
+    }))
+    section.config = { ...section.config, 'presmium.lecture': { ...section.config?.['presmium.lecture'], resolvedNarrationVoices: bindings } }
+  }
+}
+
+export function narrationVoice(doc: IRDocument, section: IRSection, block?: string, step = 0): NarrationVoice {
+  const configured = section.config?.['presmium.lecture']?.resolvedNarrationVoices
+  const mapped = block && isRecord(configured) ? configured[block] : undefined
+  if (isRecord(mapped)) return { ...speechVoice(mapped.voice) ? { voice: speechVoice(mapped.voice) } : {}, ...typeof mapped.issue === 'string' ? { issue: mapped.issue } : {}, ...isRecord(mapped.target) ? { target: mapped.target as unknown as VoiceTarget } : {} }
+  const overrides = voiceOverrides(doc)
+  if (!block && typeof doc.config.renderers.lecture?.script === 'string' && doc.config.renderers.lecture.script) {
+    if (overrides.steps.some(entry => entry.section === section.id)) return { issue: 'script-file' }
+    const voice = overrides.pages[section.id] ?? documentVoice(doc)
+    return voice ? { voice } : { issue: 'voice-unset' }
+  }
+  if (section.stepMap && overrides.steps.some(entry => entry.section === section.id)) return { issue: 'voice-step-binding-unavailable' }
+  const resolved = resolvedVoice(doc, section, step)
+  if (resolved.reason && overrides.steps.some(entry => entry.section === section.id)) return { issue: resolved.reason }
+  return { ...resolved.editable ? { target: resolved.target } : {}, ...resolved.voice ? { voice: resolved.voice } : { issue: 'voice-unset' } }
 }
 
 export function lectureVoice(config: Record<string, unknown> | undefined): LectureVoice | undefined {

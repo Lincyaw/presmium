@@ -19,6 +19,7 @@ import type { SourceEditor } from './source-editor.ts'
 import { listTemplates } from './templates.ts'
 import type { Jobs } from './jobs.ts'
 import type { WorkbenchApi } from './workbench-api.ts'
+import { voiceSettingsRoutes } from './voice-settings.ts'
 import { documentDirOf } from './writer.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
@@ -229,6 +230,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       })),
     },
     ...workbench ? workbenchRoutes(workbench) : {},
+    ...workbench ? voiceSettingsRoutes({ editor, workbench, revisions }) : {},
     ...options.jobs ? jobRoutes(options.jobs) : {},
     ...reviews ? reviewRoutes(reviews) : {},
     'changes/discard': {
@@ -252,6 +254,14 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
 
 function workbenchRoutes(workbench: WorkbenchApi): Record<string, Route> {
   return {
+    'voice-catalog': {
+      role: 'editor',
+      handle: (request, ctx) => catchRequestErrors(async () => {
+        if (request.method !== 'GET') return problemResponse(405, 'GET')
+        const params = new URL(request.url).searchParams
+        return jsonResponse(await workbench.voiceCatalog(ctx.document, params.get('engine') || undefined, params.get('lang') || undefined, request.signal))
+      }),
+    },
     'ir': {
       role: 'editor',
       handle: (request, ctx) => catchRequestErrors(async () => {

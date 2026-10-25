@@ -1,5 +1,6 @@
 import { irBlocks, parseDuration } from '@lincyaw/kernel'
-import type { CodeNode, IRBlock, IRDocument, IRSection, MdastNode, RecordedRun, SourcePos, WordSpan } from '@lincyaw/kernel'
+import type { CodeNode, IRBlock, IRDocument, IRSection, MdastNode, RecordedRun, SourcePos, SpeechVoice, VoiceTarget, WordSpan } from '@lincyaw/kernel'
+import { narrationVoice } from './config.ts'
 import { blockKey, codeLineCount, lastNamedLine } from './drift.ts'
 import type { CueCommand, CueMark, SpokenText } from './narration.ts'
 import { parseCue, spokenText, TARGETED } from './narration.ts'
@@ -25,6 +26,9 @@ export interface PlannedParagraph {
   mode?: 'during' | 'after'
   pieces: PlannedPiece[]
   source?: SourcePos
+  voice?: SpeechVoice
+  voiceIssue?: string
+  voiceTarget?: VoiceTarget
 }
 
 export interface PlannedSection {
@@ -239,14 +243,16 @@ export function lecturePlan(doc: IRDocument, scriptFile?: ScriptFileSections): L
         const spoken = spokenText(node)
         const source = linesOf(node, heading)
         const cues = planCues(spoken, { doc, section, target: stepTarget(section, step), source, scriptFile: true, problems })
-        paragraphs.push({ step, pieces: pieces(spoken, cues), ...source ? { source } : {} })
+        const voice = narrationVoice(doc, section, undefined, step)
+        paragraphs.push({ step, pieces: pieces(spoken, cues), ...source ? { source } : {}, voice: voice.voice, voiceIssue: voice.issue, voiceTarget: voice.target })
       }))
     } else {
       for (const { block, target } of narration(section)) {
         if (block.node.type !== 'markdown') continue
         const spoken = spokenText(block.node.mdast)
         const cues = planCues(spoken, { doc, section, target, source: block.source, problems })
-        paragraphs.push({ step: Math.min(block.at, section.steps), mode: block.node.narration?.mode, pieces: pieces(spoken, cues), source: block.source })
+        const voice = narrationVoice(doc, section, block.id, block.at)
+        paragraphs.push({ step: Math.min(block.at, section.steps), mode: block.node.narration?.mode, pieces: pieces(spoken, cues), source: block.source, voice: voice.voice, voiceIssue: voice.issue, voiceTarget: voice.target })
       }
     }
     paragraphs.sort((a, b) => a.step - b.step)
@@ -273,8 +279,8 @@ export function sectionHints(section: PlannedSection, lang: string): string[] {
   return [...new Set(words)].slice(0, HINT_WORDS)
 }
 
-export function plannedUtterances(plan: LecturePlan): (PlannedPiece & { id: string, section: string, step: number, source?: SourcePos })[] {
+export function plannedUtterances(plan: LecturePlan): (PlannedPiece & { id: string, section: string, step: number, source?: SourcePos, voice?: SpeechVoice, voiceIssue?: string, voiceTarget?: VoiceTarget })[] {
   return plan.sections.flatMap(section => section.paragraphs.flatMap(paragraph => paragraph.pieces
     .filter((piece): piece is PlannedPiece & { id: string } => Boolean(piece.id))
-    .map(piece => ({ ...piece, section: section.id, step: paragraph.step, ...paragraph.source ? { source: paragraph.source } : {} }))))
+    .map(piece => ({ ...piece, section: section.id, step: paragraph.step, voice: paragraph.voice, voiceIssue: paragraph.voiceIssue, voiceTarget: paragraph.voiceTarget, ...paragraph.source ? { source: paragraph.source } : {} }))))
 }

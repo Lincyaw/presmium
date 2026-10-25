@@ -51,6 +51,7 @@ export async function synthesizeClip(speech: SpeechService, said: { text: string
     model: synthesis.model,
     voice: synthesis.voice,
     provider: synthesis.provider,
+    speech: { kind: 'synthetic', engine: synthesis.engine, model: synthesis.model, voice: synthesis.voice, provider: synthesis.provider },
   }
 }
 
@@ -85,7 +86,9 @@ export async function synthesizePlan(speech: SpeechService, plan: LecturePlan, o
   const failures: SynthesisFailure[] = []
   await each(plannedUtterances(plan), async (u) => {
     try {
-      clips.set(u.id, await synthesizeClip(speech, u, options, signal))
+      signal?.throwIfAborted()
+      if (u.voiceIssue) throw new Error(u.voiceIssue)
+      clips.set(u.id, await synthesizeClip(speech, u, { ...options, voice: u.voice ?? options.voice }, signal))
     } catch (error) {
       failures.push({ id: u.id, section: u.section, text: u.text, ...u.source ? { source: { file: u.source.file, line: u.source.line } } : {}, reason: errorMessage(error) })
     }

@@ -1,6 +1,6 @@
 import { isRecord } from '@lincyaw/kernel'
 import type { Finding, IRDocument } from '@lincyaw/kernel'
-import { LECTURE_ID, lectureGap, lecturePlan, lectureVoice, lexiconOf } from '../domain/index.ts'
+import { configuredLectureVoice, LECTURE_ID, lectureGap, lecturePlan, lexiconOf } from '../domain/index.ts'
 import type { LecturePlan, LectureVoice } from '../domain/index.ts'
 import { readScriptFile } from './script-file.ts'
 
@@ -30,7 +30,7 @@ export function deckPlan(doc: IRDocument, deckDir: string): DeckPlan {
   const plan = lecturePlan(doc, scriptFile)
   findings.push(...plan.problems.filter(p => !p.reportedAtCompile).map((p): Finding => ({ checkId: LECTURE_ID, severity: 'warning', message: p.message, ...p.source ? { source: { file: p.source.file, line: p.source.line } } : {} })))
   const own = doc.config.presmium[LECTURE_ID]
-  const voice = lectureVoice(config)
+  const voice = configuredLectureVoice(doc)
   const lexicon = lexiconOf(isRecord(own) ? own : undefined)
   return { plan, ...voice ? { voice } : {}, lang: doc.meta.lang ?? 'zh-CN', ...lexicon ? { lexicon } : {}, gap: lectureGap(config), findings }
 }

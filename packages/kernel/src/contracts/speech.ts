@@ -41,6 +41,15 @@ export interface SpeechEngineInfo {
   tts: boolean
   wordTimes: boolean
   local: boolean
+  /** Absent means the provider has not declared a supported authoring range. */
+  parameters?: { rate?: { min: number, max: number, step?: number }, styles?: string[] }
+}
+
+export interface SpeechVoice {
+  engine?: string
+  voice: string
+  rate?: number
+  style?: string
 }
 
 export interface VoiceInfo {
@@ -74,6 +83,8 @@ export interface TranscriptionRequest {
 
 export interface SpeechService {
   engines(): Promise<SpeechEngineInfo[]>
+  /** The actual default in this document's scoped service; absent means its identity is unknown. */
+  defaultSynthesisEngine?(): Promise<string | undefined>
   voices(engine: string, lang?: string): Promise<VoiceInfo[]>
   /** Lists registered voices without synthesis. Absence means catalogue availability is unknown. */
   voiceCatalog?(engine?: string, lang?: string, signal?: AbortSignal): Promise<VoiceCatalog>

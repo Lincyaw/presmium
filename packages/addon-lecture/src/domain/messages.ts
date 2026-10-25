@@ -21,6 +21,7 @@ export interface LectureMessages {
     clear: string
   }
   player: {
+    playbackTimeout: string
     region: string
     play: string
     pause: string
@@ -98,6 +99,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       clear: '清除标记',
     },
     player: {
+      playbackTimeout: '工作台未及时确认播放权限，请重试播放。',
       region: '讲授回放',
       play: '播放',
       pause: '暂停',
@@ -173,6 +175,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       clear: 'Clear marks',
     },
     player: {
+      playbackTimeout: 'The workbench did not acknowledge playback. Try playing again.',
       region: 'Lecture playback',
       play: 'Play',
       pause: 'Pause',

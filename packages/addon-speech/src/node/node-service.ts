@@ -1,3 +1,4 @@
+import { speechEngineId } from '@lincyaw/kernel'
 import type { NodeServiceContext, SpeechService, Synthesis } from '@lincyaw/kernel'
 import { createDeckSpeech } from './cached-speech.ts'
 
@@ -17,6 +18,10 @@ export function nodeSpeech(ctx: NodeServiceContext): SpeechService {
   return {
     async engines() {
       return (await speech.listEngines(ctx.lang)).engines.map(({ model: _model, transcribeModel: _transcribe, ...info }) => info)
+    },
+    async defaultSynthesisEngine() {
+      const selected = await speech.defaultSynthesisEngine()
+      return selected ? (await speech.listEngines()).engines.find(engine => engine.tts && engine.id === speechEngineId(selected))?.id : undefined
     },
     voices: (engine, lang) => speech.voices(engine, lang),
     voiceCatalog: (engine, lang, signal) => speech.voiceCatalog(engine, lang, signal),

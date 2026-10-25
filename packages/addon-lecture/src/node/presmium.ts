@@ -1,5 +1,6 @@
 import { createRequire } from 'node:module'
 import { basename, join } from 'node:path'
+import { VOICEOVER } from '@lincyaw/kernel'
 import type { Exporter, PresmiumNodePlugin } from '@lincyaw/kernel'
 import { LECTURE_ID } from '../domain/index.ts'
 import { lectureCheck } from './check.ts'
@@ -46,7 +47,7 @@ const plugin: PresmiumNodePlugin = {
   server: lectureServer,
   roles: [cueRole, sayRole],
   passes: [rememberLatestIrPass],
-  services: ctx => [[LECTURE_DECK, { deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot }]],
+  services: ctx => [[LECTURE_DECK, { deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot }], [VOICEOVER, { version: 1, preview: true }]],
   tools: lectureTools,
   exporters: [videoExporter],
 }

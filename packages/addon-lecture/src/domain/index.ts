@@ -1,5 +1,5 @@
 export { dropChangedSections, trimToDeck } from './audience.ts'
-export { lectureGap, lectureVoice, lexiconOf } from './config.ts'
+export { configuredLectureVoice, lectureGap, lectureVoice, lexiconOf, narrationVoice, prepareNarrationVoices } from './config.ts'
 export type { LectureVoice } from './config.ts'
 export { blockDrift, blockKey, blockOf, eventDrift, irHash, playedBlocks, referencedBlocks, sectionHashes, trackBlock, unchanged } from './drift.ts'
 export type { BlockDrift, EventDrift, Grade } from './drift.ts'

@@ -3,11 +3,11 @@ import { dirname, join } from 'node:path'
 import { workspaceSettings } from '@lincyaw/compiler'
 import { errorMessage, SPEECH } from '@lincyaw/kernel'
 import type { IRDocument, RenderContext, Renderer, SpeechService } from '@lincyaw/kernel'
-import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, dropChangedSections, eventsVtt, formatTrack, LECTURE_ID, LECTURE_RENDERER, lectureVoice, SCRIPT_TRACK, trackDuration, trimToDeck, utteranceLine } from '../domain/index.ts'
+import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, dropChangedSections, eventsVtt, formatTrack, LECTURE_ID, LECTURE_RENDERER, SCRIPT_TRACK, trackDuration, trimToDeck, utteranceLine } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 import { cachedClip, clipKeys } from './clips.ts'
 import { latestDoc } from './latest-ir.ts'
-import { lectureConfig } from './plan.ts'
+import { deckPlan } from './plan.ts'
 import { mediaFile, mediaPolicy, publishedMedia, readTrack, TRACK_FILE, trackIds } from './store.ts'
 import type { MediaPolicy } from './store.ts'
 import { synthesisFailureMessage, synthesizeLecture } from './synthesize.ts'
@@ -125,7 +125,7 @@ export const lectureRenderer: Renderer = {
   async build(doc, ctx) {
     const index: unknown[] = []
     const tracks: LectureTrack[] = []
-    const synthesize = Boolean(lectureVoice(lectureConfig(doc)))
+    const synthesize = Boolean(deckPlan(doc, ctx.deckDir).voice)
     const policy = mediaPolicy(workspaceSettings(ctx.workspaceRoot).settings[LECTURE_ID] ?? {})
     const published = publishedTrack(doc, ctx.deckDir)
     let complete = !synthesize || await publishSynthesized(doc, ctx, index, tracks)

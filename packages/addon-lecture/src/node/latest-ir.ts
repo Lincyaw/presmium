@@ -2,8 +2,7 @@ import { resolve } from 'node:path'
 import { viewFor } from '@lincyaw/compiler'
 import { isRecord } from '@lincyaw/kernel'
 import type { IRDocument, IRPass } from '@lincyaw/kernel'
-import { LECTURE_ID, LECTURE_RENDERER, lectureVoice } from '../domain/index.ts'
-import { lectureConfig } from './plan.ts'
+import { configuredLectureVoice, LECTURE_ID, LECTURE_RENDERER, prepareNarrationVoices } from '../domain/index.ts'
 import { trackIds } from './store.ts'
 
 const views = new WeakMap<IRDocument, IRDocument>()
@@ -35,7 +34,7 @@ function writeLecturesFlag(doc: IRDocument, deckDir: string): void {
   const own = isRecord(doc.config.presmium[LECTURE_ID]) ? doc.config.presmium[LECTURE_ID] as Record<string, unknown> : {}
   const renderers = Object.keys(doc.config.renderers)
   const built = renderers.length === 0 || renderers.includes(LECTURE_RENDERER)
-  const lectures = typeof own.url === 'string' || (built && (Boolean(lectureVoice(lectureConfig(doc))) || trackIds(deckDir).length > 0))
+  const lectures = typeof own.url === 'string' || (built && (Boolean(configuredLectureVoice(doc)) || trackIds(deckDir).length > 0))
   doc.config.presmium = { ...doc.config.presmium, [LECTURE_ID]: { ...own, lectures } }
 }
 
@@ -44,6 +43,9 @@ export const rememberLatestIrPass: IRPass = {
   after: 'execute',
   order: 1000,
   run(doc, ctx) {
+    try { prepareNarrationVoices(doc) } catch (error) {
+      ctx.report({ checkId: LECTURE_ID, severity: 'error', message: error instanceof Error ? error.message : String(error), source: { file: doc.meta.entry, line: 1 } })
+    }
     rememberLatestIr(doc, ctx.deckDir)
     writeLecturesFlag(doc, ctx.deckDir)
   },

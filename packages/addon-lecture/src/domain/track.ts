@@ -28,6 +28,8 @@ export interface Utterance {
   step?: number
   translations?: Record<string, Translation>
   clip?: string
+  /** Exact provider/voice metadata of this sentence, when a scripted track uses multiple voices. */
+  voice?: Voice
   /**
    * Why the sentence has no audio: a synthesized lecture whose engine could not say it. It plays silent for the length it
    * would take to say (`spokenDuration`), its caption shown; only a lecture's preview has such sentences.
@@ -122,6 +124,7 @@ function utterance(value: unknown, problems: string[], i: number): Utterance | u
     ...isNumber(value.step) ? { step: value.step } : {},
     ...translations ? { translations } : {},
     ...typeof value.clip === 'string' && CLIP_FILE.test(value.clip) ? { clip: value.clip } : {},
+    ...isRecord(value.voice) ? { voice: voice(value.voice) } : {},
     ...typeof value.unsaid === 'string' ? { unsaid: value.unsaid } : {},
   }
 }

@@ -1,9 +1,9 @@
 import { relative, sep } from 'node:path'
 import { relativeIR } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
-import { errorMessage, PREVIEW_REVISION, pushStream } from '@lincyaw/kernel'
+import { errorMessage, PREVIEW_REVISION, pushStream, SPEECH, speechEngineId, VOICEOVER } from '@lincyaw/kernel'
 import { irRevision } from '@lincyaw/kernel/node'
-import type { Finding, IrAnswer, IRDocument, IrEvent, Logger, PreviewAnswer, PreviewRenderer } from '@lincyaw/kernel'
+import type { Finding, IrAnswer, IRDocument, IrEvent, Logger, PreviewAnswer, PreviewRenderer, VoiceCatalogAnswer } from '@lincyaw/kernel'
 import type { DiagnosticStore, ServerHost } from '@lincyaw/server'
 import type { CompileSession } from './compile-session.ts'
 
@@ -19,6 +19,8 @@ export interface CheckAnswer {
 /** What the workbench's routes ask of the workspace server: a document's IR and its changes, its previews, builds and checks. */
 export interface WorkbenchApi {
   ir(document: string): Promise<IrAnswer>
+  voiceCatalog(document: string, engine?: string, lang?: string, signal?: AbortSignal): Promise<VoiceCatalogAnswer>
+  voiceCapabilities(document: string): Promise<{ voiceover: boolean, preview: boolean, defaultEngine?: string }>
   events(document: string, signal: AbortSignal): AsyncIterable<{ event: string, data: IrEvent }>
   /**
    * The document's preview addresses: the viewer app's page of the document, and the same page showing its slides.
@@ -81,6 +83,23 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
     return { document: dir, revision: irRevisionOf(compilation), diagnostics: { errors: count('error'), warnings: count('warning') }, files: changed.map(file => workspacePath(root, file)) }
   }
   return {
+    async voiceCapabilities(document) {
+      const compilation = await options.compileSessionOf(document).ready()
+      const capability = compilation.service(VOICEOVER)
+      const defaultEngine = await compilation.service(SPEECH)?.defaultSynthesisEngine?.()
+      return { voiceover: capability?.version === 1, preview: capability?.preview === true, ...defaultEngine ? { defaultEngine } : {} }
+    },
+    async voiceCatalog(document, engine, lang, signal) {
+      const compilation = await options.compileSessionOf(document).ready()
+      const speech = compilation.service(SPEECH)
+      if (!speech) return { engines: [], catalog: { status: 'unavailable', reason: 'not-configured', voices: [] } }
+      const engines = await speech.engines()
+      const preferred = engine ?? await speech.defaultSynthesisEngine?.()
+      const chosen = preferred ? engines.find(candidate => candidate.tts && candidate.id === speechEngineId(preferred)) : undefined
+      if (!chosen) return { engines, catalog: { status: 'unavailable', reason: 'not-configured', voices: [] } }
+      const catalog = await speech.voiceCatalog?.(chosen.id, lang ?? compilation.doc.meta.lang, signal) ?? { status: 'unavailable' as const, reason: 'unknown' as const, voices: [] }
+      return { engines, catalog, ...catalog.status === 'available' ? { engine: chosen.id } : {} }
+    },
     async ir(document) {
       const compilation = await options.compileSessionOf(document).ready()
       let doc = relativeDocs.get(compilation)

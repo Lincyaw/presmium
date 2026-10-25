@@ -51,6 +51,7 @@ export { APPROVAL_KINDS, hasRole, isPresentingRole, LOCAL_AUTHOR } from './acces
 export { pushStream } from './push-stream.ts'
 export type { PushStream, PushStreamOptions } from './push-stream.ts'
 export { aigcLabel, aigcString, speechEngineId } from './speech.ts'
+export { documentVoice, resolvedVoice, speechVoice, stepVoiceReason, voiceOverrides, voiceTarget } from './voice.ts'
 export { isCjk } from './speech-words.ts'
 export { componentCode } from './component-code.ts'
 export { jupyterKernelLanguage } from './jupyter-kernel.ts'

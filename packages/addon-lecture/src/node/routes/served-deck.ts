@@ -1,9 +1,8 @@
 import { DOCUMENT_FILES, SPEECH } from '@lincyaw/kernel'
 import type { ServerContext, SpeechService } from '@lincyaw/kernel'
-import { lectureVoice } from '../../domain/index.ts'
+import { configuredLectureVoice } from '../../domain/index.ts'
 import type { LectureTrack, LectureVoice } from '../../domain/index.ts'
 import { latestDoc } from '../latest-ir.ts'
-import { lectureConfig } from '../plan.ts'
 import { deckFiles, mediaPolicy, readTrack, trackDir } from '../store.ts'
 import type { DeckFiles, MediaPolicy } from '../store.ts'
 
@@ -42,7 +41,7 @@ export function createServedDeck(ctx: ServerContext): ServedDeck {
     },
     configuredVoice() {
       const doc = latestDoc(deckDir)
-      return doc ? lectureVoice(lectureConfig(doc)) : undefined
+      return doc ? configuredLectureVoice(doc) : undefined
     },
     findStoredTrack,
     getStoredTrack(id) {
