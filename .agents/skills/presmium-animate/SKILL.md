@@ -70,20 +70,14 @@ Find the moment, then do what its row says.
 
 ## Setup for scenes
 
-`{scene}` comes from the plugin `@lincyaw/addon-motion`, which `@lincyaw/presmium` does **not** include. In the document folder (or any folder above it, such as a workspace root):
-
-```sh
-pnpm add @lincyaw/addon-motion
-```
-
-and list it in the frontmatter of `lecture.md`:
+`{scene}` comes from the plugin `@lincyaw/addon-motion`, which is installed together with `presmium`. List it in the frontmatter of `lecture.md`:
 
 ```yaml
 plugins:
   - '@lincyaw/addon-motion'
 ```
 
-Presmium looks for a listed plugin in `node_modules` of the document folder and of each folder above it. Without the install, `presmium check` reports `cannot load plugin "@lincyaw/addon-motion": package not found from <dir>` and `{scene}: unknown directive` on every scene. The animation libraries come with the plugin; do not install them.
+Without that line, `presmium check` reports `{scene}: unknown directive` on every scene. The animation libraries come with the plugin; do not install them.
 
 ## The gallery
 
@@ -91,7 +85,7 @@ This skill's folder holds `gallery/`, working example documents: `gallery/<libra
 
 - **To read one:** open the scene file, then search its `lecture.md` for `{scene} <name>`: the block shows the `:durations:`, and the paragraphs after it the narration of each step.
 - **To reuse one:** copy the scene file into your document's `scenes/`. The D3 scenes also import helpers from `scenes/kit/`; copy that folder with them.
-- **To see one running:** copy the whole `gallery/<library>/` folder into the user's project (somewhere with `@lincyaw/addon-motion` installed, see above), and run `presmium dev <copied folder> --to web`. Open the `web` address it prints.
+- **To see one running:** copy the whole `gallery/<library>/` folder into the user's project and run `presmium dev <copied folder> --to web`. Open the `web` address it prints.
 
 ## Writing a scene
 

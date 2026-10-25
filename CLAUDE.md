@@ -8,7 +8,7 @@
 - 领域模型（DDD）：`docs/domain-model.md`
 - 架构、契约、测试策略：`docs/architecture.md`
 - 工作台（基于 DeepSeek Harness）的设计：`docs/design-dsh.md`
-- 契约源码：`packages/kernel/src/contracts/`（`contracts.ts` 汇总导出）、`packages/kernel/src/ir.ts`、`packages/host/src/contracts.ts`
+- 契约源码：`packages/kernel/src/contracts/` 与汇总导出它们的 `packages/kernel/src/contracts.ts`、`packages/kernel/src/ir.ts`、`packages/host/src/contracts.ts`
 
 ## 约定
 
@@ -21,8 +21,7 @@
 - 步骤可逆：组件的视觉状态是步骤的纯函数。
 - 技能：面向讲义作者、讲者与开发者的技能在 `.agents/skills`（Codex 读取），`.claude/skills` 是指向它的软链接，`AGENTS.md` 是指向本文件的软链接；改动指令、命令或开发流程时同步更新技能，`scripts/check-skills.mjs` 检查二者一致。
 - 源码以 `.ts`、`.vue` 直接发布，不预编译；相对导入写 `.ts` 扩展名。
-- 测试：只写集成测试（真实运行 CLI、构建产物、服务、浏览器），不写单元测试，不 mock 宿主框架；每个行为一到两个用例。需要专用文稿的端到端用例把测试文稿放在 `e2e/fixtures/<组>/`，在 `beforeAll` 中构建。
-- 测试成本：日常开发只运行改动直接涉及的定向集成测试，以及相关的轻量结构检查；默认单个 worker，只构建用例需要的文稿与媒介。定向验证通过后停止，不自动扩大测试范围。除非用户明确要求全量验证，不运行 `pnpm test`、`pnpm verify`、完整 `pnpm e2e` 或全部 17 讲的 demo 构建与检查，也不以收尾或合并前检查为由自动运行它们。报告实际通过、跳过和未运行的范围。
+- 测试：不写新测试，日常不运行测试套件；改动弄坏的已有测试直接删除，不去适配。验证靠真实运行（构建文稿、启动服务、在浏览器中打开）与性能测量，另加相关的轻量结构检查（`scripts/check-*.mjs`）。已有测试是集成测试（真实运行 CLI、构建产物、服务、浏览器，不 mock 宿主框架），只在用户明确要求时运行：默认单个 worker，只构建用例需要的文稿与形态；除非用户要求全量验证，不运行 `pnpm test`、`pnpm verify`、完整 `pnpm e2e` 或示例两讲的完整构建与检查（`pnpm demo:build`、`pnpm demo:check`），也不以收尾或合并前检查为由运行它们。报告实际运行、通过与未运行的范围。
 
 ## 命令
 

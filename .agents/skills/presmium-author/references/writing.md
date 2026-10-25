@@ -66,7 +66,7 @@ Frontmatter keys used here:
 - `renderers`: the forms to build, by id, each with its options (`{}` for none). `presmium build` without `--to` builds these.
 - `plugins` (not needed in this example): the plugin packages whose directives the document uses. A directive from a plugin works only when its package is listed here.
 
-The `web`, `slides` and `notebook` forms and most official plugins (`@lincyaw/addon-*`) are installed together with `presmium`; the `lecture` form comes from the plugin `@lincyaw/addon-lecture`. A listed plugin that is neither installed with `presmium` nor in the project gets the error `cannot load plugin "<name>": package not found`; install it with `pnpm add <package>`.
+The `web`, `slides` and `notebook` forms and the official plugins (`@lincyaw/addon-*`) are installed together with `presmium`; the `lecture` form comes from the plugin `@lincyaw/addon-lecture`. A listed plugin that is neither installed with `presmium` nor in the project gets the error `cannot load plugin "<name>": package not found`; install it with `pnpm add <package>`.
 
 ## Sections
 
