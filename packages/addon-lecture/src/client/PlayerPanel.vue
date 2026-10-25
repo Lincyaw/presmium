@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { PmIcon, PmTabs, useMessages, useServer } from '@lincyaw/host'
-import { computed, ref } from 'vue'
-import { captionLanguages, captionText, clockText, isStale, LECTURE_MESSAGES, SCRIPT_TRACK, trackChapters, utteranceAt } from '../domain/index.ts'
+import { isPreviewEmbedded } from '@lincyaw/kernel'
+import { computed, ref, watch } from 'vue'
+import { captionLanguages, captionText, clockText, defaultTrack, isStale, LECTURE_ID, LECTURE_MESSAGES, SCRIPT_TRACK, trackChapters, utteranceAt } from '../domain/index.ts'
 import type { Utterance } from '../domain/index.ts'
 import ChapterList from './ChapterList.vue'
 import { useLecturePlayback } from './playback.ts'
-import { serverEditing } from './source.ts'
-import { burnedCaptions, exporting, play, playing, useViewer } from './state.ts'
+import { lectureSource, serverEditing } from './source.ts'
+import { burnedCaptions, exporting, lecturesAvailable, play, playing, useViewer } from './state.ts'
 import TranscriptList from './TranscriptList.vue'
 
 defineProps<{ view: string }>()
@@ -17,6 +18,22 @@ const t = useMessages(LECTURE_MESSAGES)
 const viewer = useViewer()
 const server = useServer()
 const { player, status, failure, language, reloadTrack } = useLecturePlayback()
+// A presentation can play its configured lecture directly. Opening it prepares the track, without autoplaying audio.
+watch([() => server.available, lecturesAvailable], async ([available], _before, onCleanup) => {
+  let active = true
+  onCleanup(() => { active = false })
+  // The workbench can open the presentation before its host has connected. Wait for that connection instead of
+  // mistaking it for a static site and looking for a published lecture/index.json that does not exist here.
+  if (playing.value || exporting || (!available && (isPreviewEmbedded() || !lecturesAvailable.value))) return
+  const source = lectureSource(server, viewer.doc.value.config.presmium[LECTURE_ID])
+  try {
+    const tracks = await source.list()
+    if (active && !playing.value) play(defaultTrack(tracks.map(track => track.id)))
+  } catch (error) {
+    console.warn('[presmium] the presentation could not list its lectures', error)
+  }
+}, { immediate: true })
+
 if (burnedCaptions) language.value = burnedCaptions
 const captions = ref(false)
 const panel = ref<'transcript' | 'chapters'>()
@@ -160,13 +177,17 @@ function close() {
 
 <style>
 .pm-lecture-layer {
-  position: fixed;
-  inset: 0;
-  z-index: calc(var(--pm-cue-z, 1000) + 3);
+  position: relative;
+  flex: 0 0 auto;
+  z-index: var(--pm-z-lecture-player);
   pointer-events: none;
 }
 .pm-lecture-layer > * {
   pointer-events: auto;
+}
+html.pm-lecture-exporting .pm-lecture-layer {
+  position: fixed;
+  inset: 0;
 }
 html.pm-lecture-exporting .pm-lecture-caption {
   bottom: 2.5rem;
@@ -176,10 +197,7 @@ html.pm-lecture-exporting .pm-present__bar {
 }
 .pm-lecture-player,
 .pm-lecture-player__status {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: var(--pm-overlay-bar, 3rem);
+  position: relative;
   margin: 0;
   padding: var(--pm-space-2) var(--pm-space-4);
   border-top: 1px solid var(--pm-color-line);
@@ -189,10 +207,7 @@ html.pm-lecture-exporting .pm-present__bar {
   font-size: var(--pm-text-md);
 }
 .pm-lecture-dock {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: var(--pm-overlay-bar, 3rem);
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -254,7 +269,7 @@ html.pm-lecture-exporting .pm-present__bar {
   text-align: center;
 }
 .pm-lecture-side {
-  position: absolute;
+  position: fixed;
   top: 0.5rem;
   right: 0.5rem;
   bottom: calc(var(--pm-overlay-bar, 3rem) + 4rem);

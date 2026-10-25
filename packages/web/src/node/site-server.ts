@@ -673,13 +673,17 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     },
     async app(dir, wait = false) {
       if (closed || !documents().includes(dir)) return undefined
+      const started = Date.now()
       const { ready, done } = await prepare(dir)
+      const cached = ready()
       if (wait && !ready()) {
         let timer: ReturnType<typeof setTimeout> | undefined
         await Promise.race([done, new Promise(resolve => timer = setTimeout(resolve, WAIT_MS))])
         clearTimeout(timer)
       }
-      return ready() ? `${base}${PREFIX}view?document=${encodeURIComponent(dir)}` : undefined
+      const available = ready()
+      log(`[viewer] document=${JSON.stringify(dir || '.')} cache=${cached ? 'hit' : 'miss'} wait=${wait} state=${available ? 'ready' : 'building'} elapsedMs=${Date.now() - started}`)
+      return available ? `${base}${PREFIX}view?document=${encodeURIComponent(dir)}` : undefined
     },
     async warm(dir) {
       if (closed || !documents().includes(dir)) return

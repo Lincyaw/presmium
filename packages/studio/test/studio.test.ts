@@ -210,7 +210,7 @@ describe('presmium studio installed from the packed packages', () => {
       await browser.close()
       expect(await running.stop()).toBe(0)
     }
-    expect(running.stderr()).toBe('')
+    expect(running.stderr()).toContain('presmium studio: log ')
   }, 600_000)
 })
 
@@ -232,6 +232,15 @@ describe('presmium studio in a fresh home, with the model of the environment', (
     await model?.close()
     home?.close()
     if (ws) rmSync(ws, { recursive: true, force: true })
+  })
+
+  it('shows service diagnostics in stderr and keeps timestamped service logs without forwarding the host login URL', async () => {
+    expect((await api.fetch('/api/presmium/ir?document=lectures/alpha')).status).toBe(200)
+    await expect.poll(() => running.stderr()).toContain('[compile] document="lectures/alpha" state=compiled elapsedMs=')
+    expect(running.stderr()).toContain(`presmium studio: log ${join(home.dshHome, 'presmium-studio.log')}`)
+    expect(running.stdout()).toBe(`studio  ${running.url}\n`)
+    expect(running.stderr()).not.toContain('dsh web:')
+    expect(readFileSync(join(home.dshHome, 'presmium-studio.log'), 'utf8')).toMatch(/\d{4}-\d{2}-\d{2}T[^\n]+ \[serve\] .*\[compile\]/)
   })
 
   it('runs the first session at the workspace root, with nothing under ~/Documents or outside the test\'s directory', async () => {

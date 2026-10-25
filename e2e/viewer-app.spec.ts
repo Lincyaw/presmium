@@ -1,6 +1,6 @@
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
@@ -122,4 +122,25 @@ test('a lecture whose plugin has run-time files of its own is shown by the viewe
   const file = await request.get(`${served!.url}/runtime-files/fixture/runtime.txt`)
   expect(file.status()).toBe(200)
   expect(await file.text()).toBe('a run-time file of the plugin\n')
+})
+
+test('an existing lecture with legacy plugin and scene imports opens with only the renamed packages installed', async ({ page }) => {
+  await stop(served)
+  const lecture = join(dir, 'bubble-sort/lecture.md')
+  writeFileSync(lecture, readFileSync(lecture, 'utf8').replaceAll('@lincyaw/addon-', '@lincyaw/slidev-addon-'))
+  const scene = join(dir, 'bubble-sort/scenes/bubble.ts')
+  writeFileSync(scene, readFileSync(scene, 'utf8').replaceAll('@lincyaw/addon-', '@lincyaw/slidev-addon-') + `
+import { gsapScene as currentScene } from '@lincyaw/addon-motion/scene'
+if (gsapScene !== currentScene) throw new Error('legacy and current scene imports must share one runtime')
+`)
+  expect(existsSync(join(dir, 'node_modules/@lincyaw/slidev-addon-motion'))).toBe(false)
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  served = await serve(dir, cache)
+  await page.goto(`${served.url}/bubble-sort/`, { timeout: 120_000 })
+  await expect(page.locator('.bs__bar').first()).toBeVisible({ timeout: 60_000 })
+  await expect(page.locator('.compare-count')).toContainText(/比较(?:的)?次数/)
+  expect(errors).toEqual([])
+  expect(served.output()).not.toContain('could not be bundled')
+  expect(served.output()).not.toContain('failed to resolve import')
 })

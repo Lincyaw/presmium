@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs'
+import { relative } from 'node:path'
 import { errorMessage, jsonResponse, problemResponse } from '@lincyaw/kernel'
 import type { IRDocument, Route } from '@lincyaw/kernel'
 import { CLIPS_DIR, SCRIPT_TRACK, trackDuration } from '../../domain/index.ts'
@@ -26,10 +27,15 @@ export function trackRoutes(served: ServedDeck): Record<string, Route> {
   const synthesizeScriptTrack = (): Promise<LectureTrack> => {
     const doc = compiled()
     if (pendingScriptTrack?.doc === doc) return pendingScriptTrack.made
+    const started = Date.now()
+    const document = JSON.stringify(relative(served.ctx.workspaceRoot, deckDir) || '.')
+    served.ctx.log.info(`[lecture] document=${document} track=${SCRIPT_TRACK} state=preparing`)
     // A sentence that could not be said plays silent, its caption shown: the lecture still plays on its timeline.
     const made = synthesizeLecture(doc, deckDir, served.speech()).then(({ deck, preview: track, failures, clips }) => {
+      for (const failure of failures) served.ctx.log.warn(`[lecture] section=${JSON.stringify(failure.section)} source=${JSON.stringify(failure.source)} ${synthesisFailureMessage(failure)}`)
       if (!deck.voice) throw new RouteRefusal(404, `no lecture ${SCRIPT_TRACK}: renderers.lecture.voice names no voice`)
       if (!track) throw new RouteRefusal(502, failures.map(synthesisFailureMessage).join('\n'))
+      served.ctx.log.info(`[lecture] document=${document} track=${SCRIPT_TRACK} state=${failures.length ? 'silent-fallback' : 'ready'} elapsedMs=${Date.now() - started} clips=${clips.size} unsaid=${failures.length}`)
       const names = [...new Set([...clips.values()].map(clip => clip.file))].sort()
       const key = names.join('\n')
       recentClipSets.delete(key)
@@ -41,7 +47,10 @@ export function trackRoutes(served: ServedDeck): Record<string, Route> {
     const done = () => {
       if (pendingScriptTrack?.made === made) pendingScriptTrack = undefined
     }
-    made.then(done, done)
+    made.then(done, (error: unknown) => {
+      served.ctx.log.warn(`[lecture] document=${document} track=${SCRIPT_TRACK} state=failed elapsedMs=${Date.now() - started} error=${errorMessage(error)}`)
+      done()
+    })
     return made
   }
 

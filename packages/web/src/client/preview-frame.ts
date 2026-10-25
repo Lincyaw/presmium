@@ -3,8 +3,9 @@ import type { NavigationPosition } from '@lincyaw/host'
 import { connectPreviewFrame, irBlocks, isPreviewActive, isPreviewEmbedded, PREVIEW_REVISION, stepKeys, stepTrail } from '@lincyaw/kernel'
 import type { FollowAnchor, PreviewFrame } from '@lincyaw/kernel'
 import type { Viewer } from '@lincyaw/viewer'
+import { findView } from '@lincyaw/viewer'
 import type { Ref } from 'vue'
-import { nextTick, watch } from 'vue'
+import { nextTick, shallowRef, watch, watchEffect } from 'vue'
 import { createViewerNavigation } from './host.ts'
 
 export interface WebPreviewOptions {
@@ -36,6 +37,17 @@ export function webPreview(options: WebPreviewOptions): WebPreview {
 function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions): void {
   const { viewer, dark } = page
   const navigation = createViewerNavigation(viewer)
+  const pendingGo = shallowRef<Parameters<typeof navigation.go>[0]>()
+  // Preview ready can precede async viewer-plugin registration and the lecture list. Keep the latest requested view
+  // until it is available instead of losing a first switch to video while this window is still starting.
+  watchEffect(() => {
+    const destination = pendingGo.value
+    if (!destination) return
+    const view = destination.view && findView(destination.view)
+    if (destination.view && (!view || view.hidden)) return
+    pendingGo.value = undefined
+    navigation.go(destination)
+  })
   const revision = () => {
     const value = viewer.doc.value.meta[PREVIEW_REVISION]
     return typeof value === 'string' ? value : undefined
@@ -53,7 +65,7 @@ function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions
       const { section, step, trail, view } = navigation.position.value as NavigationPosition & FollowAnchor
       return section === undefined ? undefined : { section, step, trail: trail ?? [], ...view ? { view } : {} }
     },
-    go: ({ section, step, trail, view }) => navigation.go({ slide: 0, step: step ?? 0, section, ...trail ? { trail } : {}, ...view ? { view } : {} }),
+    go: ({ section, step, trail, view }) => { pendingGo.value = { slide: 0, step: step ?? 0, section, ...trail ? { trail } : {}, ...view ? { view } : {} } },
     reveal: ({ section, block }) => viewer.show({ section, step: (block && blockStep(section, block)) || 0 }),
     setDark(value) {
       dark.value = value

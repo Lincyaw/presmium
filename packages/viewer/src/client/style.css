@@ -618,7 +618,7 @@ html.pm-presenting {
 .pm-presenter {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--pm-z-overlay-view);
   display: flex;
   flex-direction: column;
   background: var(--pm-c-bg);

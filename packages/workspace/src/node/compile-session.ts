@@ -72,6 +72,7 @@ export class CompileSession {
           for (const file of this.#changedFiles) changed.add(file)
           this.#changedFiles.clear()
           const started = Date.now()
+          this.#log.info(`[compile] document=${JSON.stringify(this.dir || '.')} state=started changed=${changed.size}`)
           const controller = this.#controller = new AbortController()
           try {
             compilation = await this.compiler.compile({ signal: controller.signal })
@@ -80,6 +81,7 @@ export class CompileSession {
             throw error
           }
           this.#watch(compilation, started)
+          this.#log.info(`[compile] document=${JSON.stringify(this.dir || '.')} state=compiled elapsedMs=${Date.now() - started} sections=${compilation.doc.sections.length} diagnostics=${compilation.doc.diagnostics.length}`)
         } while (!this.#closed && version !== this.#version)
         if (!compilation) throw new Error('the compilation did not complete')
         if (this.#closed) return compilation

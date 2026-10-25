@@ -147,7 +147,10 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
         // Before Vite's own resolution: the app's modules stay imports by name.
         enforce: 'pre' as const,
         resolveId(id: string) {
-          if (externals.has(id)) return { id, external: true }
+          // Headmatter aliases already load the renamed plugins. Older document code must import the same shared
+          // modules too, rather than resolving the removed packages or bundling a second copy of their runtime.
+          const shared = externals.has(id) ? id : id.replace(/^@lincyaw\/slidev-addon-/, '@lincyaw/addon-')
+          if (externals.has(shared)) return { id: shared, external: true }
           return generated[id] === undefined ? undefined : `${DOCUMENT_MODULE}${id}`
         },
         load(id: string) {

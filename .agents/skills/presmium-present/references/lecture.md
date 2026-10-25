@@ -4,7 +4,7 @@
 
 ## 录制一遍
 
-文稿列出 `@lincyaw/addon-lecture`；指针、聚光等重放还需引导插件。在文稿目录运行 `presmium dev --to web`，进入放映视图，用右上角录制栏开始。
+文稿列出 `@lincyaw/addon-lecture`；指针、聚光等重放还需引导插件。在文稿目录运行 `presmium dev --to web`，进入放映视图，用右上角录制栏开始；已有默认讲授时先关闭播放器，再录制。
 
 按需要选择麦克风、摄像头和屏幕，允许浏览器相应权限。翻页、推进、聚光和标注随声音记录。停止后保存；离开放映视图也会结束录制。先录一小节并回放，确认声音和操作同步，再录完整讲授。
 
@@ -20,7 +20,7 @@
 presmium build --to web,lecture
 ```
 
-保留 `dist/web/` 与 `dist/lecture/` 的相对位置，按 [发布、导出与离线](delivery.md) 服务整个站点。网页地址加 `?view=lecture&track=<ID>`，也可从“视图”选择讲授。分开部署时在头部写 `presmium: { presmium.lecture: { url: <回放资源地址> } }`。
+保留 `dist/web/` 与 `dist/lecture/` 的相对位置，按 [发布、导出与离线](delivery.md) 服务整个站点。网页地址加 `?view=present&track=<ID>`；进入放映时会准备讲解脚本或唯一的录制轨，点击播放后开始。多个录制轨从放映控制条的播放按钮选择；旧 `view=lecture` 链接仍可使用。分开部署时在头部写 `presmium: { presmium.lecture: { url: <回放资源地址> } }`。
 
 验证声音、字幕、逐字稿跳转、章节定位和“我来试试”后返回讲授。改稿后运行 `presmium check`，处理 `presmium.lecture` 报告的失效引用；不能只因音频还能播放就认为回放有效。
 
@@ -37,7 +37,7 @@ renderers:
 
 使用已有语音服务时沿用其引擎和音色。自定义引擎通过环境变量 `PRESMIUM_SPEECH_<ID>_URL`、`_PROVIDER` 与可选的 `_KEY` 定义；火山引擎可用 `PRESMIUM_SPEECH_VOLCENGINE_KEY`。只合成或只转写的引擎把另一项的模型写成 `none`（`_TRANSCRIBE_MODEL=none` 或 `_MODEL=none`），转写与合成就各自交给能做的引擎，文稿不必点名。确认目标服务与费用安排后再发起需要上传或计费的操作。
 
-`presmium build --to web,lecture` 合成后用 `?view=lecture&track=script` 播放。合成片段保存在 `.presmium/speech/`，随 `speech.lock.json` 保存后，别人构建可沿用缓存。
+`presmium build --to web,lecture` 合成后用 `?view=present&track=script` 播放。合成片段保存在 `.presmium/speech/`，随 `speech.lock.json` 保存后，别人构建可沿用缓存。
 
 讲解中 `{cue}` 安排聚光、推进与停顿，`{say}` 改读法；语法见作者技能的指令参考。写了音色却缺引擎或片段时，检查会指出缺少的句子；只想发布现场录制时不要额外配置合成音色。
 

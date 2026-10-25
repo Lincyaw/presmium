@@ -116,6 +116,7 @@
   --pm-z-site-header: 30;
   /* A presentation over the site, under the floating parts of its controls. */
   --pm-z-overlay-view: 130;
+  --pm-z-lecture-player: 134;
   --pm-z-popover: 1000;
   --pm-z-dialog: 1100;
   --pm-z-screen: 1200;

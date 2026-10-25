@@ -23,6 +23,8 @@ export interface StudioOptions {
   listenAddress?: string
   env?: NodeJS.ProcessEnv
   presmium?: string
+  /** Live workspace-service output; the complete host output is also kept in `Studio.log`. */
+  onServiceOutput?(text: string): void
 }
 
 export interface Studio {
@@ -83,7 +85,7 @@ class Log {
     const lines = ((this.#rest.get(name) ?? '') + text).split('\n')
     this.#rest.set(name, lines.pop()!)
     if (lines.length === 0) return
-    const out = lines.map(line => `[${name}] ${line}\n`).join('')
+    const out = lines.map(line => `${new Date().toISOString()} [${name}] ${line}\n`).join('')
     if (this.#bytes + out.length > LOG_BYTES) {
       closeSync(this.#fd)
       renameSync(this.file, `${this.file}.1`)
@@ -131,7 +133,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
         ...origins.flatMap(origin => ['--preview-origin', origin]),
       ],
       env,
-      onOutput: text => log.write('serve', text),
+      onOutput: text => { log.write('serve', text); options.onServiceOutput?.(text) },
     })
     started.push(server.process)
     const { url, root } = await server.ready

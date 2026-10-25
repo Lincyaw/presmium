@@ -55,12 +55,13 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
 
   let studio
   try {
-    studio = await startStudio({ dir, port: portOf(values.port), ...values.host ? { listenAddress: values.host } : {}, ...options.presmium ? { presmium: options.presmium } : {} })
+    studio = await startStudio({ dir, port: portOf(values.port), onServiceOutput: text => process.stderr.write(text), ...values.host ? { listenAddress: values.host } : {}, ...options.presmium ? { presmium: options.presmium } : {} })
   } catch (error) {
     process.stderr.write(`presmium studio: ${error instanceof Error ? error.message : String(error)}\n`)
     return 2
   }
   process.stdout.write(`studio  ${studio.url}\n`)
+  process.stderr.write(`presmium studio: log ${studio.log}\n`)
   if (values.host && values.host !== '127.0.0.1' && values.host !== '::1') {
     process.stderr.write(`presmium studio: listening on ${values.host}, on the local network, with no login: anyone who reaches port ${new URL(studio.url).port} (and the previews' port ${new URL(studio.workspaceServerUrl).port}) with the address above works in this workspace as you (edits, runs code, uses your model). Use it on a network you trust; without --host it listens on this machine only.\n`)
   }
