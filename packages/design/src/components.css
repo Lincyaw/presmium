@@ -6,6 +6,8 @@
 }
 
 .pm-ui-icon {
+  width: var(--pm-size-icon);
+  height: var(--pm-size-icon);
   flex: none;
   vertical-align: middle;
 }
@@ -579,7 +581,7 @@
   list-style: none;
 }
 
-/* Reka positions the outer wrapper; the content participates in its layout. */
+/* Radix positions the outer wrapper; the content participates in its layout. */
 .pm-ui-floating {
   position: relative;
   inset: auto;

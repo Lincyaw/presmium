@@ -21,7 +21,7 @@ import {
   useCreateBlockNote,
   useExtensionState,
 } from '@blocknote/react'
-import { PmIcon, useAppearance, useMessages, useStore } from '@lincyaw/host'
+import { PmIcon, PmMenu, useAppearance, useMessages, useStore } from '@lincyaw/host'
 import { PREVIEW_REVISION, reportPreview } from '@lincyaw/kernel'
 import type {
   IRBlock,
@@ -47,6 +47,7 @@ import './style.css'
 
 interface SceneChoice {
   name: string
+  label: string
   durations: number[]
   original?: IRBlock
 }
@@ -127,30 +128,28 @@ const sceneSpec = createReactBlockSpec(
           contentEditable={false}
         >
           <div className="pm-block-editor__scene-tools">
-            <label>
+            <span className="pm-block-editor__scene-name" title={name}>
               <PmIcon name="video" />
-              <select
-                aria-label={t.scene}
-                value={name}
-                onChange={(event) => {
-                  const choice = context.scenes.find(
-                    (s) => s.name === event.target.value,
-                  )
-                  editor.updateBlock(block, {
-                    props: {
-                      scene: event.target.value,
-                      durations: JSON.stringify(choice?.durations ?? [1000]),
-                    },
-                  })
-                }}
-              >
-                {context.scenes.map((s) => (
-                  <option key={s.name} value={s.name}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <span>{selected?.label ?? name}</span>
+            </span>
+            <PmMenu
+              label={t.replaceAnimation}
+              items={context.scenes.map((scene) => ({
+                id: scene.name,
+                label: scene.label,
+                icon: scene.name === name ? 'check' : 'video',
+              }))}
+              onSelect={(name) => {
+                const choice = context.scenes.find((s) => s.name === name)
+                if (!choice || choice.name === block.props.scene) return
+                editor.updateBlock(block, {
+                  props: {
+                    scene: choice.name,
+                    durations: JSON.stringify(choice.durations),
+                  },
+                })
+              }}
+            />
             <button
               type="button"
               className="pm-ui-icon-button pm-ui-icon-button--small"
@@ -276,6 +275,11 @@ function body(section: IRSection) {
     (b) => b.role === 'visual' || (b.only && !b.only.includes('lecture')),
   )
 }
+const bodySignature = (section: IRSection) =>
+  JSON.stringify(
+    body(section),
+    (key, value) => key === 'source' || key === 'position' ? undefined : value,
+  )
 const signature = (block: EditorBlock) =>
   JSON.stringify([block.type, block.props, block.content, block.children])
 
@@ -364,6 +368,7 @@ export default function MountedEditor({ section }: { section: IRSection }) {
         ? t.timeout
         : (saved?.error ?? '')
   const revision = useRef(String(doc.meta[PREVIEW_REVISION] ?? ''))
+  const loadedBody = useRef('')
   const timer = useRef<ReturnType<typeof setTimeout>>()
   const lastSelected = useRef('')
   const known = useMemo(
@@ -377,13 +382,14 @@ export default function MountedEditor({ section }: { section: IRSection }) {
         if (block.node.type === 'component' && block.node.name === 'PmScene')
           found.set(String(block.node.props.scene), {
             name: String(block.node.props.scene),
+            label: page.title,
             durations: block.node.durations ?? [1000],
             original: block,
           })
     const configured = doc.config.presmium['presmium.motion'] as
       { scenes?: string[] } | undefined
     for (const name of configured?.scenes ?? [])
-      if (!found.has(name)) found.set(name, { name, durations: [1000] })
+      if (!found.has(name)) found.set(name, { name, label: name, durations: [1000] })
     return [...found.values()]
   }, [doc])
   const context = useMemo(
@@ -502,6 +508,7 @@ export default function MountedEditor({ section }: { section: IRSection }) {
       blocks.length ? blocks : [{ type: 'paragraph' }],
     )
     revision.current = String(doc.meta[PREVIEW_REVISION] ?? '')
+    loadedBody.current = bodySignature(section)
     ready.current = true
   }
   useLayoutEffect(() => {
@@ -510,6 +517,12 @@ export default function MountedEditor({ section }: { section: IRSection }) {
   useEffect(() => {
     const updated = String(doc.meta[PREVIEW_REVISION] ?? '')
     if (updated === revision.current || queue.draft(section.id)) return
+    // Saving another page changes the document revision without changing this editor's content.
+    // Retain its selection and NodeViews rather than replacing every block under the user's caret.
+    if (loadedBody.current === bodySignature(section)) {
+      revision.current = updated
+      return
+    }
     load()
   }, [section, doc])
   useEffect(
@@ -519,8 +532,8 @@ export default function MountedEditor({ section }: { section: IRSection }) {
     },
     [queue, section.id],
   )
-  const insertScene = () => {
-    const choice = scenes[0]
+  const insertScene = (name: string) => {
+    const choice = scenes.find((scene) => scene.name === name)
     if (!choice) return
     editor.insertBlocks(
       [
@@ -549,16 +562,21 @@ export default function MountedEditor({ section }: { section: IRSection }) {
         }}
       >
         <div className="pm-block-editor__tools">
-          <button
-            type="button"
-            className="pm-ui-icon-button pm-ui-icon-button--small"
-            title={scenes.length ? t.insertAnimation : t.noScene}
-            aria-label={t.insertAnimation}
-            disabled={!scenes.length}
-            onClick={insertScene}
-          >
-            <PmIcon name="video" />
-          </button>
+          <PmMenu
+            label={t.insertAnimation}
+            icon="plus"
+            placement="below-end"
+            items={
+              scenes.length
+                ? scenes.map((scene) => ({
+                    id: scene.name,
+                    label: scene.label,
+                    icon: 'video',
+                  }))
+                : [{ id: '', label: t.noScene, disabled: true }]
+            }
+            onSelect={insertScene}
+          />
           <span className="pm-block-editor__status" role="status">
             {state === 'saving'
               ? t.saving
@@ -629,17 +647,13 @@ export default function MountedEditor({ section }: { section: IRSection }) {
               filterSuggestionItems(
                 [
                   ...getDefaultReactSlashMenuItems(editor),
-                  ...(scenes.length
-                    ? [
-                        {
-                          title: t.animation,
-                          onItemClick: insertScene,
-                          aliases: ['animation', 'scene', '动画'],
-                          group: t.animation,
-                          icon: <PmIcon name="video" />,
-                        },
-                      ]
-                    : []),
+                  ...scenes.map((scene) => ({
+                    title: scene.label,
+                    onItemClick: () => insertScene(scene.name),
+                    aliases: ['animation', 'scene', '动画', scene.name],
+                    group: t.animation,
+                    icon: <PmIcon name="video" />,
+                  })),
                 ],
                 query,
               )

@@ -35,3 +35,39 @@ renderers:
 
 第二步的讲解。
 :::
+
+(empty)=
+## 空白页面
+
+(late)=
+## 分步定位
+
+::::{slide}
+:at: 0
+
+(late-first)=
+:::{scene} later
+:durations: 1000ms, 1000ms, 1000ms, 1000ms
+:height: 40rem
+:::
+::::
+
+::::{slide}
+:at: 4
+
+(late-second)=
+:::{scene} later
+:durations: 1000ms, 1000ms, 1000ms, 1000ms
+:height: 40rem
+:::
+::::
+
+::::{slide}
+:at: 8
+
+(late-third)=
+:::{scene} later
+:durations: 1000ms, 1000ms, 1000ms, 1000ms
+:height: 40rem
+:::
+::::
