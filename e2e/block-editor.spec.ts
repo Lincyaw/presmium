@@ -347,3 +347,52 @@ test('fits every edited body paragraph on cover and regular presentation pages',
   }
   expect(errors).toEqual([])
 })
+
+test('keeps the left selection edge visible and offers only a compact comment action', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await studio.open(page)
+  await page.locator('.pmw-home__card').filter({ hasText: '块编辑' }).locator('.pmw-home__open').click()
+  await expect(page.locator('.pmw-preview[data-ready="true"]')).toBeVisible({ timeout: 90_000 })
+  const frame = page.frameLocator('.pmw-preview__frame[data-renderer="web"]')
+  await page.locator('.pmw-navigation__item').filter({ hasText: '正文页面' }).click()
+  await page.getByRole('button', { name: '关闭导航窗格', exact: true }).click()
+  await page.getByRole('group', { name: '视图', exact: true }).getByRole('button', { name: '放映', exact: true }).click()
+  const paragraph = frame.locator('.pm-present .pm-block--markdown p').first()
+  const popover = page.locator('.pmw-pointer')
+  const toolbar = popover.getByRole('toolbar')
+  for (const width of [1440, 390]) for (const scheme of ['light', 'dark'] as const) {
+    await page.setViewportSize({ width, height: 1000 })
+    await page.emulateMedia({ colorScheme: scheme })
+    await paragraph.click()
+    await expect(toolbar).toBeVisible()
+    await expect(toolbar.getByRole('button')).toHaveCount(1)
+    const comment = toolbar.getByRole('button', { name: '新建批注', exact: true })
+    expect(await comment.textContent()).toBe('')
+    await expect(comment.locator('svg')).toHaveCount(1)
+    expect((await popover.boundingBox())!.width).toBeLessThan(50)
+    await expect(frame.locator('[data-preview-highlight]')).toHaveCount(1)
+    expect(await frame.locator('[data-preview-highlight]').evaluate(element => {
+      const style = getComputedStyle(element), rect = element.getBoundingClientRect()
+      const body = element.closest('.pm-slide__body')!.getBoundingClientRect()
+      const scale = rect.width / (element as HTMLElement).offsetWidth
+      const outside = (Number.parseFloat(style.outlineWidth) + Number.parseFloat(style.outlineOffset)) * scale
+      const text = document.createRange()
+      text.selectNodeContents(element.querySelector('p')!)
+      const glyphs = text.getBoundingClientRect()
+      return Number.parseFloat(style.outlineWidth) > 0 && outside <= 0 && rect.left - outside >= body.left - 1 && rect.right + outside <= body.right + 1 && glyphs.left >= body.left - 1
+    })).toBe(true)
+    await page.screenshot({ path: test.info().outputPath(`comment-edge-${width}-${scheme}.png`) })
+  }
+  await toolbar.getByRole('button', { name: '新建批注', exact: true }).click()
+  await page.getByRole('textbox', { name: '新建批注', exact: true }).fill('此处需要补充说明。')
+  await page.getByRole('button', { name: '发布', exact: true }).click()
+  await expect(popover).toHaveCount(0)
+  await expect(frame.locator('.pm-preview-pin')).toHaveText('1')
+  await paragraph.click()
+  await expect(toolbar).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(popover).toHaveCount(0)
+  expect(errors).toEqual([])
+})

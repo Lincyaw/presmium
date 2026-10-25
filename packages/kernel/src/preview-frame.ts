@@ -61,9 +61,9 @@ const COMMANDS: PreviewCommandType[] = ['go', 'highlight', 'pick', 'pins', 'mark
 
 // A function for the same reason as `notText`.
 const frameStyle = () => `
-[${HIGHLIGHT}] { outline: 2px solid var(--pm-color-accent, #1d6b7a) !important; outline-offset: 4px; border-radius: 2px; }
-[${HOVER}] { outline: 1px solid color-mix(in srgb, var(--pm-color-accent, #1d6b7a) 50%, transparent) !important; outline-offset: 3px; border-radius: 4px; cursor: pointer; }
-[${EDITING}] { outline: 2px solid var(--pm-color-accent, #1d6b7a) !important; outline-offset: 3px; border-radius: 4px; cursor: text; }
+[${HIGHLIGHT}] { outline: var(--pm-size-stroke) solid var(--pm-color-accent) !important; outline-offset: calc(-1 * var(--pm-size-stroke)); border-radius: var(--pm-radius-control); }
+[${HOVER}] { outline: var(--pm-size-hairline) solid color-mix(in srgb, var(--pm-color-accent) 50%, transparent) !important; outline-offset: calc(-1 * var(--pm-size-hairline)); border-radius: var(--pm-radius-control); cursor: pointer; }
+[${EDITING}] { outline: var(--pm-size-stroke) solid var(--pm-color-accent) !important; outline-offset: calc(-1 * var(--pm-size-stroke)); border-radius: var(--pm-radius-control); cursor: text; }
 [${POSITIONED}] { position: relative; }
 [${PINNED}] { background: color-mix(in srgb, var(--pm-color-accent, #1d6b7a) 7%, transparent); box-shadow: inset 3px 0 0 var(--pm-color-accent, #1d6b7a); border-radius: 2px; }
 @keyframes pm-preview-flash { 0%, 100% { box-shadow: none; } 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--pm-color-accent, #1d6b7a) 35%, transparent), inset 0 0 0 100vmax color-mix(in srgb, var(--pm-color-accent, #1d6b7a) 16%, transparent); } }

@@ -92,7 +92,7 @@ To edit in VS Code, download the `.vsix` for the system and processor from the G
 
 When the user already has an editor, edit the source directly. To edit in the browser, install `pnpm add -g @lincyaw/studio` and open the workbench with `presmium-studio <directory>`; for a project-local install use `pnpm add -D @lincyaw/studio` and `pnpm exec presmium studio <directory>`. Open the full address printed in the terminal; `Ctrl+C` stops it. Editing, saving and previewing work without a model.
 
-A lecture opened in the workbench starts with the document and its content previews. In edit mode, ordinary body text uses the block editor directly; generated content has source and preview within its block. Section headings and compatible preview text retain the double-click text editor: Enter saves, Esc cancels. Selected preview text and blocks offer **New Comment** and **Rewrite with AI**. When a structure cannot be edited safely, keep the original and use the block's source or ask the AI to rewrite it. View mode shows what the reader sees.
+A lecture opened in the workbench starts with the document and its content previews. In edit mode, ordinary body text uses the block editor directly; generated content has source and preview within its block. Section headings and compatible preview text retain the double-click text editor: Enter saves, Esc cancels. Selected preview text and blocks offer one compact **New Comment** icon. Its form keeps Post, Cancel and Escape; Escape from the icon clears the selection. To request AI changes, use the chat with the current selection or send comments. When a structure cannot be edited safely, keep the original and use the block's source or ask the AI to rewrite it. View mode shows what the reader sees.
 
 A page contains its body blocks and becomes one slide in Present. Use the plus in the page list, or choose **New page** in the block menu, to insert a separate page after the current one; then edit its title and body directly. Ordinary block creation stays in the current page. Page creation saves pending body edits first and supports Undo and Redo.
 
@@ -110,7 +110,7 @@ The lecture's command bar has the **Navigation Pane** (list of sections or slide
 
 In a narrow window, opening history or files hides the chat so it does not cover the lecture; switch back to the chat from the activity bar, and drafts are kept. Side panels can also be shown full screen and return to the split view when closed.
 
-The workbench labels follow the interface language; in Chinese they are 编辑文字, 新建批注, AI 改写, 版本历史, 发送 N 条批注给 AI, 批注, 让 AI 修复, 新建对话, 对话记录, AI 助手, 更多, 导航窗格.
+The workbench labels follow the interface language; in Chinese they are 新建批注, 版本历史, 发送 N 条批注给 AI, 批注, 让 AI 修复, 新建对话, 对话记录, AI 助手, 更多, 导航窗格.
 
 `presmium dev` previews one lecture; `presmium serve` previews a workspace; both serve the full lecture. To share with students, build the student version explicitly, see [Publishing and reproduction](references/publishing.md).
 

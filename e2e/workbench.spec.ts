@@ -297,19 +297,21 @@ test.describe('the root layout', () => {
     await expect(preview(page).getByText('转到第二讲')).toBeVisible({ timeout: 60_000 })
   })
 
-  test('a click or a selection opens the toolbar beside it; comments are numbered on their blocks, listed, and sent to the AI together', async ({ page }) => {
+  test('a click or a selection opens the comment action; comments are numbered on their content, listed, and sent to the AI together', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await studio.open(page)
     await openDocument(page, '分词入门')
-    const block = preview(page).getByText('最常相邻的一对合并成一个新词元。')
+    // This legacy fixture stores prose as narration; its page headings stay editable on the authoring canvas.
+    const block = preview(page).getByRole('heading', { name: '合并', exact: true })
     await expect(block).toBeVisible({ timeout: 120_000 })
     await block.click()
     await expect(tools(page)).toBeVisible()
     const at = (await block.boundingBox())!
     const popover = (await page.locator('.pmw-pointer').boundingBox())!
     expect(Math.abs(popover.y - (at.y + at.height))).toBeLessThan(60)
-    await expect(preview(page).locator('[data-preview-highlight]')).toContainText('最常相邻的一对')
-    await expect(tools(page).getByRole('button', { name: '编辑文字' })).toBeVisible()
+    await expect(preview(page).locator('[data-preview-highlight]')).toContainText('合并')
+    await expect(tools(page).getByRole('button')).toHaveCount(1)
+    await expect(tools(page).getByRole('button', { name: '新建批注' })).toHaveText('')
     await tools(page).getByRole('button', { name: '新建批注' }).click()
     await page.getByRole('textbox', { name: '新建批注' }).fill('这里加一个例子')
     await page.getByRole('button', { name: '发布', exact: true }).click()
@@ -318,7 +320,7 @@ test.describe('the root layout', () => {
     const send = page.locator('.pmw-toolbar').getByRole('button', { name: '发送 1 条批注给 AI' })
     await expect(send).toBeVisible()
 
-    await select(page, '这一段要改的词是')
+    await select(page, '词元')
     await expect(tools(page)).toBeVisible()
     await page.screenshot({ path: test.info().outputPath('pointer-toolbar.png'), animations: 'disabled' })
     await page.keyboard.press('Escape')
@@ -353,22 +355,22 @@ test.describe('the root layout', () => {
     await expect(comments.locator('.pmw-comment')).toContainText('已解决')
   })
 
-  test('Rewrite with AI hands the selected passage and the request to the AI; the changed block blinks on the document; the change is one version, undone from the history', async ({ page }) => {
+  test('selected focus from chat reaches the AI; the changed block blinks on the document; the change is one version, undone from the history', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await studio.open(page)
     await openDocument(page, '分词入门')
-    await expect(preview(page).getByText('最常相邻的一对合并成一个新词元。')).toBeVisible({ timeout: 120_000 })
-    await select(page, '最常相邻的一对合并成一个新词元。')
-    await tools(page).getByRole('button', { name: 'AI 改写' }).click()
-    await expect(page.locator('.pmw-pointer__quote')).toContainText('最常相邻的一对')
-    await page.getByRole('textbox', { name: 'AI 改写' }).fill('举个例子')
+    await showConversation(page)
+    await expect(preview(page).getByRole('heading', { name: '合并', exact: true })).toBeVisible({ timeout: 120_000 })
+    await select(page, '合并')
+    await expect(tools(page)).toBeVisible()
     const before = model.received.length
-    await page.getByRole('button', { name: '发送', exact: true }).click()
+    await send(page, '举个例子')
     await expect.poll(() => asked(model, before), { timeout: 60_000 }).toContain('举个例子')
-    expect(asked(model, before)).toContain('最常相邻的一对')
     // The source range is the context's focus; the author's message names no file.
     expect(asked(model, before)).not.toContain('lecture.md')
-    expect(model.received.slice(before).flatMap(request => texts(request.body.messages)).findLast(text => text.includes('<presmium-document>'))).toContain('"file":"lectures/intro/lecture.md"')
+    const focus = model.received.slice(before).flatMap(request => texts(request.body.messages)).findLast(text => text.includes('<presmium-document>')) ?? ''
+    expect(focus).toContain('合并')
+    expect(focus).toContain('"file":"lectures/intro/lecture.md"')
     const lecture = join(studio.workspace.dir, 'lectures/intro/lecture.md')
     await expect.poll(() => readFileSync(lecture, 'utf8'), { timeout: 60_000 }).toContain('例如 a 与 b 合成 ab。')
     // When the turn's change stands, the block it changed blinks where the author reads; the others do not.
@@ -504,7 +506,7 @@ test.describe('the conversation', () => {
     if (width === 1440) await page.screenshot({ path: test.info().outputPath('chat-toolbar.png') })
   })
 
-  test('what the author points at reaches the model with its document and source range, and goes when the toolbar is closed or the document changes', async ({ page }) => {
+  test('what the author points at reaches the model with its document and source range, and goes on Escape or when the document changes', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await studio.open(page)
     await openDocument(page, '分词入门')
@@ -520,7 +522,7 @@ test.describe('the conversation', () => {
     expect(context(before)).toContain('"file":"lectures/intro/lecture.md"')
     await expect(conversation(page)).toContainText('已看到选中的内容。')
     await select(page, quote)
-    await tools(page).getByRole('button', { name: '关闭', exact: true }).click()
+    await page.keyboard.press('Escape')
     await expect(tools(page)).toBeHidden()
     await expect.poll(async () => (await (await page.request.get(`${studio.web.url}/api/presmium/focus?document=lectures/intro`)).json()).focus).toEqual([])
     await page.locator('[data-activity="documents"]').click()

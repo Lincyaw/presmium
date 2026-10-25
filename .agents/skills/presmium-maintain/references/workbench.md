@@ -31,8 +31,10 @@ Pages contain blocks and correspond to IR sections (one slide in Present). The p
 Source/preview is a view of one block, not a picker that replaces it with another animation. Preserve its block ID and step bindings. The workbench resolves the source from the current IR anchor, checks the opened version and edit lock, and saves through the existing source/history path. Show when multiple blocks share a definition file. Keep source drafts through view switches and preview reloads; on conflicts or failed saves retain the draft instead of overwriting a newer file. Verify the source/preview loop separately from page and step navigation.
 
 Editing happens on the document page. The preview protocol's `pick` reports the position of a click or a
-selection, and the workbench draws a toolbar beside the pointer; `edit` makes one block editable; `edited`
-returns the text before and after; `packages/workbench/src/text-edit.ts` maps the difference back to the
+selection, and the workbench draws one compact New Comment icon beside the pointer. Keep its accessible
+name, comment form, Post, Cancel and Escape; do not add edit, AI rewrite or close buttons to that toolbar.
+AI requests use chat with the selected focus or comments. Double-click text uses `edit` to make one block
+editable; `edited` returns the text before and after; `packages/workbench/src/text-edit.ts` maps the difference back to the
 source by the block's source lines in the IR, and refuses to write back across formatting marks, handing the
 change to the AI instead (7.3 "就地编辑"). When you change this chain verify that edits in plain text, inside
 emphasis and inside a link are written back correctly, that an edit across a link leaves the file unchanged,
@@ -48,7 +50,7 @@ change clearing redo, and that an AI turn becomes one version when it ends.
 
 A preview connection is bound to the document and form it was opened with; navigating to another lecture
 inside the preview follows the current document through `ready.document`. Verify that after switching the
-selection enters the new document's chat context, and that closing the toolbar clears the focus.
+selection enters the new document's chat context, and that Escape dismisses the toolbar and clears the focus.
 
 The workbench has only two entries, Document and Present, sharing one web viewer and one iframe
 (`docs/architecture.md` 1.1). The slides are what Present shows; with a lecture configured, Present prepares
@@ -68,8 +70,8 @@ source.
 - dsh injects the concrete diagnostics before a model step; a failed subscription is reported as
   unavailable; notifications do not start the model by themselves.
 - The workbench only says "some content could not be shown correctly"; the raw text is under "Details".
-  "Let AI fix it", AI rewrite and comments all go to the current session through
-  `packages/dsh/src/client/agent-requests.ts` and keep the input draft.
+  "Let AI fix it" and comments go to the current session through
+  `packages/dsh/src/client/agent-requests.ts` and keep the input draft. Chat requests retain the selected focus.
 - When judging the agent's environment feedback, tell apart `get_diagnostics` (source and checks),
   `get_outputs` (compiled recordings) and `get_runtime` (plugin and component failures, live execution and
   session resets that the author's browser actually reported). They are reported through the existing
