@@ -120,25 +120,3 @@ test('the disk course builds from real source and measured evidence, persists be
   expect(replay).toContain('LSM重开查询:')
   expect(replay).toContain('"native_files": true')
 })
-
-async function slideFits(slide: Locator, id: string): Promise<void> {
-  await expect(slide.locator('h1')).toBeVisible()
-  const overflow = await slide.evaluate(frame => {
-    const box = frame.getBoundingClientRect()
-    const footer = frame.querySelector('.pm-book-footer')?.getBoundingClientRect()
-    const contentBottom = footer ? Math.min(box.bottom, footer.top - 4) : box.bottom
-    return [...frame.querySelectorAll('h1, .slidev-layout > *, pre, table, .pm-code-origin')]
-      .filter(element => !element.closest('.pm-book-footer'))
-      .filter(element => {
-        const style = getComputedStyle(element)
-        return style.display !== 'none' && style.visibility !== 'hidden' && element.getBoundingClientRect().height > 0
-      })
-      .filter(element => {
-        const content = element.getBoundingClientRect()
-        return content.top < box.top - 2 || content.bottom > contentBottom + 2 || content.right > box.right + 2 || content.left < box.left - 2
-      }).map(element => ({ tag: element.tagName, text: element.textContent?.trim().slice(0, 100),
-        beyondBottom: Math.round(element.getBoundingClientRect().bottom - contentBottom),
-        beyondRight: Math.round(element.getBoundingClientRect().right - box.right) }))
-  })
-  expect.soft(overflow, `${id}: projected content stays inside the slide`).toEqual([])
-}

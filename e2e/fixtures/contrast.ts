@@ -53,7 +53,7 @@ export function lowContrast(page: Page, scope = 'body', except?: string): Promis
       return false
     }
     const shown = (element: Element) => {
-      if (within(element, '[aria-hidden="true"], :disabled, [aria-disabled="true"], .slidev-vclick-hidden')) return false
+      if (within(element, '[aria-hidden="true"], :disabled, [aria-disabled="true"]')) return false
       if (skip && within(element, skip)) return false
       if (!element.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return false
       const box = element.getBoundingClientRect()

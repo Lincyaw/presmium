@@ -1,13 +1,16 @@
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
-import { jsonResponse } from '@lincyaw/kernel'
+import { join, relative, sep } from 'node:path'
+import { DOCUMENT_FILES, jsonResponse } from '@lincyaw/kernel'
 import type { Route, ServerContext } from '@lincyaw/kernel'
 import { DRAWINGS_DIR, drawingFile, drawingSection } from '../domain/index.ts'
 
 // A slide's drawing: an SVG of strokes.
 const MAX_DRAWING = 4 << 20
 
-/** The drawings of the document, kept below its `.presmium/drawings/` while the presenter draws in a server's page. */
+/**
+ * The drawings of the document, kept below its `.presmium/drawings/` while the presenter draws in a server's page:
+ * written through the workspace's document files where there are (they keep within the workspace), else directly.
+ */
 export function drawingsRoute(ctx: ServerContext): Route {
   const dir = join(ctx.deckDir, DRAWINGS_DIR)
   return {
@@ -32,7 +35,11 @@ export function drawingsRoute(ctx: ServerContext): Route {
       }
       const file = join(dir, drawingFile(section))
       const svg = await request.text()
-      if (svg) {
+      const files = ctx.service(DOCUMENT_FILES)
+      if (files) {
+        const path = relative(ctx.workspaceRoot, file).split(sep).join('/')
+        await files.write([svg ? { path, content: Buffer.from(svg) } : { path, remove: true }])
+      } else if (svg) {
         await mkdir(dir, { recursive: true })
         await writeFile(file, svg)
       } else await rm(file, { force: true })

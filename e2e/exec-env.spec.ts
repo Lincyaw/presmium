@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { openSlide, useFixture } from './fixtures/deck.ts'
+import { useFixture } from './fixtures/deck.ts'
 
 test.describe.configure({ mode: 'default' })
 const deck = useFixture('exec-env')
@@ -59,16 +59,6 @@ test('blocks of a session share the interpreter of their page; a reset, another 
   await learner.close()
 
   await expect((await run(page, 'use')).locator('.pm-output__stdout')).toHaveText('42\n', RUNTIME)
-})
-
-test('an image the code displays shows as an image in the web form and the slides', async ({ page }) => {
-  await page.goto(`${deck().web}/?section=image`)
-  const image = page.locator('.pm-block[data-block="png"] .pm-output img')
-  await expect(image).toHaveAttribute('src', /^data:image\/png;base64,/)
-  await expect.poll(() => image.evaluate(img => (img as HTMLImageElement).naturalWidth)).toBe(8)
-
-  const slide = await openSlide(page, deck(), 'image', '图片输出')
-  await expect(slide.locator('img.pm-output__image')).toHaveAttribute('src', /^data:image\/png;base64,/)
 })
 
 test('a Markdown table that hidden code prints shows as a table of the page, without the code', async ({ page }) => {

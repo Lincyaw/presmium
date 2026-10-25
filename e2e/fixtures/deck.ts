@@ -244,11 +244,3 @@ export function useFixture(name: string, options?: FixtureOptions): () => Fixtur
     return deck
   }
 }
-
-/** Opens the slide of section `id` of a built deck and resolves with it, once its heading `heading` shows. */
-export async function openSlide(page: Page, deck: FixtureDeck, id: string, heading: string, query = ''): Promise<Locator> {
-  await page.goto(`${deck.slides}/${deck.slide(id)}${query}`)
-  const slide = page.locator('.slidev-page').filter({ has: page.locator('h1', { hasText: heading }) })
-  await expect(slide).toBeVisible()
-  return slide
-}

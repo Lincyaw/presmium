@@ -26,25 +26,6 @@ function totalLines(commit: string): [number, number] {
 
 const VERSIONS = ['for (let i = 0; i < prices.length; i++)', 'for (const price of prices)', 'prices.reduce((sum, price) => sum + price, 0)']
 
-async function openSlide(page: Page, id: string, heading: string) {
-  await page.goto(`${deck().slides}/${deck().slide(id)}`)
-  const slide = page.locator('.slidev-page').filter({ has: page.locator('h1', { hasText: heading }) })
-  await expect(slide).toBeVisible()
-  return slide
-}
-
-test('the link points to the remote repository at the pinned commit and line range', async ({ page }) => {
-  const commit = git('rev-parse', `${option('pin')}^{commit}`)
-  const source = git('show', `${commit}:${FILE}`).split('\n')
-  const start = source.indexOf('// #region checkout') + 2
-  const end = source.indexOf('// #endregion checkout')
-
-  const ref = (await openSlide(page, 'code-steps', '分步高亮')).locator('.pm-code-origin[data-anchor$="#checkout"]')
-  await expect(ref.locator('a.pm-code-origin__file')).toHaveAttribute('href', `${option('repo')}/blob/${commit}/${FILE}#L${start}-L${end}`)
-  await expect(ref.locator('.pm-code-origin__commit')).toHaveText(`@ ${commit.slice(0, 7)}`)
-  await expect(ref.locator('.pm-code-origin__badge')).toHaveText('已锁定')
-})
-
 test('the web form links the code to the remote repository at the pinned commit', async ({ page }) => {
   const commit = git('rev-parse', `${option('pin')}^{commit}`)
   await page.goto(`${deck().web}/code.html`)

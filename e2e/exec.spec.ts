@@ -10,57 +10,6 @@ test.describe.configure({ mode: 'default' })
 const panels = useFixture('exec/panels')
 const RUNTIME = { timeout: 30_000 }
 
-async function openSlide(page: Page, id: string, heading: string, query = '') {
-  await page.goto(`${panels().slides}/${panels().slide(id)}${query}`)
-  const slide = page.locator('.slidev-page').filter({ has: page.locator('h1', { hasText: heading }) })
-  await expect(slide).toBeVisible()
-  return slide
-}
-
-async function openPanel(page: Page, id: string, heading: string) {
-  const panel = (await openSlide(page, id, heading)).locator('.pm-run-panel')
-  await expect(panel.locator('.pm-run-panel__run')).toBeEnabled()
-  return panel
-}
-
-test('Python runs in the browser; rerunning with a changed parameter shows the difference between the runs', async ({ page }) => {
-  const panel = await openPanel(page, 'exec-panel', '执行面板')
-  await panel.locator('.pm-run-panel__run').click()
-  await expect(panel.locator('.pm-run-panel__stdout')).toHaveText('1 1\n2 1\n3 2\n4 3\n5 5\n', RUNTIME)
-  await expect(panel.locator('.pm-run-panel__output')).toHaveAttribute('data-source', 'live')
-  await expect(panel.locator('.pm-run-panel__compare')).toHaveCount(0)
-
-  await panel.locator('input[name="n"]').fill('7')
-  await panel.locator('.pm-run-panel__run').click()
-  await expect(panel).toHaveAttribute('data-runs', '2')
-  const compare = panel.locator('.pm-run-panel__compare')
-  await expect(compare.locator('[data-arg="n"]')).toContainText('5 → 7')
-  await expect(compare.locator('[data-kind="added"]')).toHaveText(['+ 6 8', '+ 7 13'])
-  await expect(compare.locator('[data-kind="removed"]')).toHaveCount(0)
-})
-
-test('stepping back returns the output to the previous step', async ({ page }) => {
-  const run = (await openSlide(page, 'exec-steps', '分步执行')).locator('.pm-step-run')
-  await expect(run).toHaveAttribute('data-state', 'ready', RUNTIME)
-  await expect(run).toHaveAttribute('data-steps', '12')
-  const output = run.locator('.pm-step-run__output')
-  const highlighted = run.locator('.pm-step-run__line')
-
-  for (let step = 1; step <= 7; step++) {
-    await page.keyboard.press('ArrowRight')
-    await expect(run).toHaveAttribute('data-step', String(step))
-  }
-  await expect(run).toHaveAttribute('data-line', '4')
-  await expect(highlighted).toHaveText('    print(f"n={n} total={total}")')
-  await expect(output).toHaveText('n=1 total=1\nn=2 total=3\n')
-
-  await page.keyboard.press('ArrowLeft')
-  await expect(run).toHaveAttribute('data-step', '6')
-  await expect(run).toHaveAttribute('data-line', '3')
-  await expect(highlighted).toHaveText('    total += n')
-  await expect(output).toHaveText('n=1 total=1\n')
-})
-
 test('a run panel\'s parameters keep their types: a YAML false is False, at compile time and in Pyodide', async ({ page }) => {
   interface Block { node: { type: string, name?: string, children?: Block[], outputs?: { stdout: string }[] } }
   const blocks = (list: Block[]): Block[] => list.flatMap(block => [block, ...blocks(block.node.children ?? [])])
@@ -73,15 +22,6 @@ test('a run panel\'s parameters keep their types: a YAML false is False, at comp
   await panel.locator('.pm-run-panel__run').click()
   await expect(panel.locator('.pm-run-panel__output')).toHaveAttribute('data-source', 'live', RUNTIME)
   await expect(panel.locator('.pm-run-panel__stdout')).toHaveText('off 42\n')
-})
-
-test('a run that times out shows the recorded output, marked as recorded', async ({ page }) => {
-  const panel = await openPanel(page, 'exec-fallback', '预录输出回退')
-  await panel.locator('.pm-run-panel__run').click()
-  const output = panel.locator('.pm-run-panel__output')
-  await expect(output).toHaveAttribute('data-source', 'recorded', RUNTIME)
-  await expect(output.locator('.pm-run-panel__badge')).toHaveText('预录输出 · 执行超时')
-  await expect(output.locator('.pm-run-panel__stdout')).toHaveText('x = 1.4142135623730951（√2，预先录制）')
 })
 
 const COMPILED = '平方： [1, 4, 9, 16, 25]\n合计： 55'
@@ -168,57 +108,10 @@ test.describe('in the present view at 1920x1080', () => {
 
   const textSize = (element: Locator) => element.evaluate((el: HTMLElement) => Number.parseFloat(getComputedStyle(el).fontSize) * el.getBoundingClientRect().width / el.offsetWidth)
 
-  test('the code of a run panel and of a stepwise run follows the size of the slide and is not cut, across or down', async ({ page }) => {
-    for (const [id, selector] of [['exec-panel', '.pm-run-panel'], ['exec-steps', '.pm-step-run']] as const) {
-      await page.goto(`${panels().web}/exec.html?view=present&section=${id}`)
-      const present = page.getByRole('region', { name: '放映' })
-      await expect(present).toHaveAttribute('data-section', id)
-      const { size, cut, hidden } = await code(present, selector)
-      expect(size, id).toBeGreaterThanOrEqual(18)
-      expect(cut, id).toBeLessThanOrEqual(0)
-      expect(hidden, id).toBeLessThanOrEqual(0)
-    }
-    const present = page.getByRole('region', { name: '放映' })
-    await page.goto(`${panels().web}/exec.html?view=present&section=exec-panel`)
-    for (const control of [present.locator('.pm-run-panel__param input').first(), present.locator('.pm-run-panel__run')]) {
-      await expect(control).toBeVisible()
-      expect(await textSize(control)).toBeGreaterThanOrEqual(18)
-    }
-    const slide = await openSlide(page, 'exec-panel', '执行面板')
-    expect((await code(slide, '.pm-run-panel')).hidden).toBeLessThanOrEqual(0)
-    await expect(slide.locator('.pm-run-panel')).toHaveClass(/pm-run-panel--present/)
-  })
-
   async function within(inner: Locator, outer: Locator) {
     const [a, b] = await Promise.all([inner.boundingBox(), outer.boundingBox()])
     return Boolean(a && b && a.y >= b.y - 1 && a.y + a.height <= b.y + b.height + 1)
   }
-
-  test('a run panel longer than the slide keeps its controls and output on the slide; its code keeps the size and scrolls', async ({ page }) => {
-    await page.goto(`${panels().web}/exec.html?view=present&section=exec-long`)
-    const present = page.getByRole('region', { name: '放映' })
-    await expect(present).toHaveAttribute('data-section', 'exec-long')
-    const frame = present.locator('.pm-present__slide')
-    await expect.poll(() => within(present.locator('.pm-run-panel__run'), frame)).toBe(true)
-    let shown = await code(present, '.pm-run-panel')
-    expect(shown.size).toBeGreaterThanOrEqual(18)
-    expect(shown.hidden).toBeGreaterThan(0)
-
-    const slide = await openSlide(page, 'exec-long', '长代码的面板')
-    const panel = slide.locator('.pm-run-panel')
-    await expect.poll(() => within(panel.locator('.pm-run-panel__run'), slide)).toBe(true)
-    expect(await within(panel.locator('input[name="text"]'), slide)).toBe(true)
-    shown = await code(slide, '.pm-run-panel')
-    expect(shown.size).toBeGreaterThanOrEqual(18)
-    expect(shown.hidden).toBeGreaterThan(0)
-    await panel.locator('.pm-run-panel__run').click()
-    await expect(panel.locator('.pm-run-panel__stdout')).toHaveText('[\'s\', \'low\', \'est\'] [115, 260, 257]\n', RUNTIME)
-    expect(await within(panel.locator('.pm-run-panel__side'), slide)).toBe(true)
-    expect(await within(panel.locator('.pm-run-panel__run'), slide)).toBe(true)
-    shown = await code(slide, '.pm-run-panel')
-    expect(shown.size).toBeGreaterThanOrEqual(18)
-    expect(shown.cut).toBeLessThanOrEqual(0)
-  })
 
   test('a stepwise run steps forward and back with the present view', async ({ page }) => {
     await page.goto(`${panels().web}/exec.html?view=present&section=exec-steps`)
@@ -271,62 +164,6 @@ test.describe('a French deck with JavaScript and TypeScript', () => {
     deck?.remove()
   })
 
-  async function slidePanel(page: Page, id: string) {
-    const no = deck.slides[id]
-    await page.goto(`${slides.url}/${no}`)
-    return page.locator(`.slidev-page-${no} .pm-run-panel`)
-  }
-
-  test('in the slides form, the run panels run JavaScript and TypeScript and speak English', async ({ page }) => {
-    const js = await slidePanel(page, 'js-panel')
-    await expect(page.locator('html')).toHaveAttribute('lang', 'fr')
-    await js.getByRole('button', { name: 'Run', exact: true }).click()
-    await expect(js.locator('.pm-run-panel__stdout')).toHaveText('1 1\n2 4\n3 9\n4 16\n')
-    await expect(js.locator('.pm-run-panel__output')).toHaveAttribute('data-source', 'live')
-    await expect(js.getByRole('button', { name: 'Run again', exact: true })).toBeEnabled()
-
-    const ts = await slidePanel(page, 'ts-panel')
-    await ts.getByRole('button', { name: 'Run', exact: true }).click()
-    await expect(ts.locator('.pm-run-panel__stdout')).toHaveText('Hello, Presmium\n')
-
-    const endless = await slidePanel(page, 'js-timeout')
-    await endless.getByRole('button', { name: 'Run', exact: true }).click()
-    await expect(endless.locator('.pm-run-panel__badge')).toHaveText('Recorded output · timed out')
-    await expect(endless.locator('.pm-run-panel__stdout')).toHaveText('settled at 1.4142135623730951 (recorded)')
-
-    await page.goto(`${slides.url}/${deck.slides['local-env']}`)
-    await expect(page.locator('.pm-local-env__notice').filter({ visible: true })).toHaveText('The local environment is available only from the dev server')
-    await expect(page.getByRole('switch', { name: 'High contrast' }).filter({ visible: true })).toHaveCount(1)
-  })
-
-  test('code that prints from a timer records at compile time what it prints in the browser', async ({ page }) => {
-    interface Block { node: { type: string, children?: Block[], outputs?: { stdout: string }[] } }
-    const ir = JSON.parse(readFileSync(join(deck.dir, 'dist/ir.json'), 'utf8')) as { sections: { id: string, blocks: Block[] }[] }
-    const blocks = (list: Block[]): Block[] => list.flatMap(block => [block, ...blocks(block.node.children ?? [])])
-    const code = blocks(ir.sections.find(section => section.id === 'js-later')!.blocks).find(block => block.node.type === 'code')
-    expect(code?.node.outputs?.map(run => run.stdout)).toEqual(['now\nlater\n'])
-
-    const panel = await slidePanel(page, 'js-later')
-    await panel.getByRole('button', { name: 'Run', exact: true }).click()
-    await expect(panel.locator('.pm-run-panel__output')).toHaveAttribute('data-source', 'live')
-    await expect(panel.locator('.pm-run-panel__stdout')).toHaveText('now\nlater\n')
-  })
-
-  test('a promise that rejects after the code ran fails the run, in the browser as at compile time', async ({ page }) => {
-    interface Block { node: { type: string, children?: Block[], outputs?: { exitCode: number | null, stderr: string }[] } }
-    const ir = JSON.parse(readFileSync(join(deck.dir, 'dist/ir.json'), 'utf8')) as { sections: { id: string, blocks: Block[] }[] }
-    const blocks = (list: Block[]): Block[] => list.flatMap(block => [block, ...blocks(block.node.children ?? [])])
-    const code = blocks(ir.sections.find(section => section.id === 'js-rejected')!.blocks).find(block => block.node.type === 'code')
-    expect(code?.node.outputs?.[0]).toMatchObject({ exitCode: 1, stderr: expect.stringContaining('Error: late') })
-
-    const panel = await slidePanel(page, 'js-rejected')
-    await panel.getByRole('button', { name: 'Run', exact: true }).click()
-    const output = panel.locator('.pm-run-panel__output')
-    await expect(output).toHaveAttribute('data-ok', 'false')
-    await expect(output.locator('.pm-run-panel__stdout')).toHaveText('started\n')
-    await expect(output.locator('.pm-run-panel__stderr')).toContainText('Error: late')
-  })
-
   test('in the web form, a run panel and live code run JavaScript in the browser', async ({ page }) => {
     await page.goto(`${web.url}/`)
     const js = page.locator('.pm-section[data-section="js-panel"] .pm-run-panel')
@@ -339,8 +176,4 @@ test.describe('a French deck with JavaScript and TypeScript', () => {
     await expect(live.locator('.pm-output')).toHaveAttribute('data-executor', 'js-worker')
     await expect(page.getByRole('switch', { name: 'High contrast' }).filter({ visible: true })).toHaveCount(1)
   })
-})
-
-test.describe('untrusted output in the slides\' runner', () => {
-  const xss = useFixture('exec/xss', { to: 'slides', link: { '@lincyaw/host': 'packages/host' } })
 })

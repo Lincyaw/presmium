@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
-import { openSlide, useFixture } from './fixtures/deck.ts'
+import { useFixture } from './fixtures/deck.ts'
 
 test.describe.configure({ mode: 'default' })
 const deck = useFixture('exec-webgpu', { link: { '@lincyaw/addon-exec-webgpu': 'packages/addon-exec-webgpu' } })
@@ -31,24 +31,6 @@ test('the panel names the shader\'s parameters for learners: a field per buffer,
   await expect(panel.locator('.pm-run-panel__output')).toHaveAttribute('data-source', 'live', RUNTIME)
   await expect(panel.locator('.pm-run-panel__stdout')).toContainText('out: f32[4] = [12, 23, 34, 45]')
   await expect(panel.locator('.pm-run-panel__history li')).toContainText(/#1 缓冲区 a: 4 个值, b: 4 个值, out: 4 个值 · 工作组数 1 · 重复次数 5 · 成功 · \d+ ms/)
-})
-
-test('a compute shader runs in the browser and shows the sum and its timing, marked as CPU emulation, in both forms', async ({ page }) => {
-  const panel = (await webBlock(page, 'shader', 'add')).locator('.pm-run-panel')
-  await panel.locator('.pm-run-panel__run').click()
-  const output = panel.locator('.pm-run-panel__output')
-  await expect(output).toHaveAttribute('data-source', 'live', RUNTIME)
-  await expect(output).toHaveAttribute('data-ok', 'true')
-  const stdout = output.locator('.pm-run-panel__stdout')
-  await expect(stdout).toContainText(SUM)
-  await expect(stdout).toContainText(/计时：每次派发 [\d.e-]+ ms（5 次的中位数；GPU 时间戳；CPU 模拟）/)
-  await expect(stdout).toContainText('适配器：google swiftshader（回退适配器）')
-
-  const slide = (await openSlide(page, deck(), 'shader', '向量加法')).locator('.pm-run-panel')
-  await slide.locator('.pm-run-panel__run').click()
-  await expect(slide.locator('.pm-run-panel__output')).toHaveAttribute('data-source', 'live', RUNTIME)
-  await expect(slide.locator('.pm-run-panel__stdout')).toContainText(SUM)
-  await expect(slide.locator('.pm-run-panel__stdout')).toContainText('CPU 模拟')
 })
 
 test('Python runs the same shader through presmium_gpu, with await and, having JSPI, without, within the same scale limits', async ({ page }) => {

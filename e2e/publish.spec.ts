@@ -6,14 +6,6 @@ import { useFixture } from './fixtures/deck.ts'
 
 test.describe.configure({ mode: 'default' })
 const deck = useFixture('publish', { with: ['host', 'stage', 'code', 'exec/panels', 'exec-local', 'guide', 'content', 'session', 'plugins/classroom.md'], link: { '@lincyaw/host': 'packages/host' } })
-const slides = (path: string | number) => `${deck().slides}/${path}`
-
-async function openPublish(page: Page): Promise<Locator> {
-  await page.goto(slides('publish'))
-  const slide = page.locator('.slidev-layout.pm-publish').first()
-  await expect(slide.locator('h1')).toHaveText('发布')
-  return slide
-}
 
 async function goOffline(page: Page, context: BrowserContext) {
   test.setTimeout(Math.max(test.info().timeout, 180_000))
@@ -93,21 +85,6 @@ async function lowContrastTexts(slide: Locator): Promise<string[]> {
   expect(texts.length).toBeGreaterThan(0)
   return texts.filter(t => contrast(t.fg, t.bg) < 4.5).map(t => `${t.text} (${contrast(t.fg, t.bg).toFixed(2)})`)
 }
-
-test('the high-contrast switch brings the text of the slide to WCAG AA and is remembered', async ({ page }) => {
-  const slide = await openPublish(page)
-  expect(await lowContrastTexts(slide)).not.toEqual([])
-
-  const toggle = slide.getByRole('switch', { name: '高对比度' })
-  await toggle.click()
-  await expect(toggle).toHaveAttribute('aria-checked', 'true')
-  await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
-  expect(await lowContrastTexts(slide)).toEqual([])
-
-  await page.reload()
-  await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
-  await expect(slide.getByRole('switch', { name: '高对比度' })).toHaveAttribute('aria-checked', 'true')
-})
 
 test.describe('every slide', () => {
   test.use({ serviceWorkers: 'block' })

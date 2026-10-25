@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { IRBlock } from '../packages/kernel/src/ir.ts'
-import { openSlide, presmium, useFixture } from './fixtures/deck.ts'
+import { presmium, useFixture } from './fixtures/deck.ts'
 
 test.describe.configure({ mode: 'default' })
 const teacher = useFixture('teacher-database', {

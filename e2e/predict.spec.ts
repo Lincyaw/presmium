@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
-import { buildFixture, openDevPage, openSlide, startDev } from './fixtures/deck.ts'
+import { buildFixture, openDevPage, startDev } from './fixtures/deck.ts'
 import type { DevServer, FixtureDeck } from './fixtures/deck.ts'
 import { startClassroomServer } from './fixtures/plugins/decks.ts'
 

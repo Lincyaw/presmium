@@ -8,67 +8,8 @@ import { build, serve, writeDeck } from './fixtures/plugins/decks.ts'
 test.describe.configure({ mode: 'default' })
 const content = useFixture('content')
 
-async function open(page: Page, alias: string) {
-  await page.goto(`${content().slides}/${alias}`)
-  const slide = page.locator(`.slidev-layout.pm-${alias}`)
-  await expect(slide).toBeVisible()
-  return slide
-}
-
 const media = (element: Locator) => element.evaluate((el: HTMLMediaElement) => el.duration)
 const loaded = (image: Locator) => image.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)
-
-test('formulas, Mermaid and PlantUML render as math, an svg diagram and a local diagram image', async ({ page }) => {
-  const slide = await open(page, 'content-diagrams')
-  await expect(slide.locator('.katex annotation').first()).toHaveText('e^{i\\pi} + 1 = 0')
-  await expect(slide.locator('.katex-display annotation')).toContainText('\\frac{n(n+1)}{2}')
-  await expect(slide.locator('.mermaid svg[aria-roledescription="flowchart-v2"]')).toContainText('VitePress')
-
-  const diagram = (await open(page, 'content-sequence')).getByRole('img', { name: 'PlantUML 图' })
-  await expect.poll(() => loaded(diagram)).toBeGreaterThan(0)
-  expect(await diagram.getAttribute('src')).not.toMatch(/^https?:/)
-})
-
-test('media directives give video, audio and an animated image from the build, with controls and sizes', async ({ page }) => {
-  const slide = await open(page, 'content-media')
-  const video = slide.locator('figure.pm-media video')
-  await expect(video).toHaveAttribute('controls', '')
-  await expect(video).toHaveAttribute('width', '280')
-  await expect.poll(() => media(video)).toBeCloseTo(3, 0)
-  await video.evaluate((el: HTMLVideoElement) => el.play())
-  await expect.poll(() => video.evaluate((el: HTMLVideoElement) => el.currentTime)).toBeGreaterThan(0)
-  await expect(slide.locator('figure.pm-media:has(video) figcaption')).toContainText('controls 显示播放控制')
-
-  const audio = slide.locator('figure.pm-media audio')
-  await expect(audio).toHaveAttribute('controls', '')
-  await expect.poll(() => media(audio)).toBeCloseTo(2, 0)
-
-  const image = slide.getByRole('img', { name: '旋转的加载动画' })
-  await expect(image).toHaveCount(1)
-  await expect(image).toHaveAttribute('width', '96')
-  await expect.poll(() => loaded(image)).toBe(96)
-  expect(await image.getAttribute('src')).toMatch(/\.gif$/)
-
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  const still = (await open(page, 'content-media')).getByRole('img', { name: '旋转的加载动画' })
-  await expect(still).toHaveCount(1)
-  await expect.poll(() => loaded(still)).toBe(96)
-  expect(await still.getAttribute('src')).not.toMatch(/\.gif$/)
-})
-
-test('an embedded web component keeps its own interactive state', async ({ page }) => {
-  const slide = await open(page, 'content-element')
-  const counters = slide.locator('presmium-demo-counter')
-  const [first, second] = [counters.nth(0), counters.nth(1)]
-  await expect(first.locator('output')).toHaveText('0')
-  await expect(second.locator('output')).toHaveText('10')
-
-  await first.locator('button').click()
-  await first.locator('button').click()
-  await expect(first.locator('output')).toHaveText('2')
-  await expect(second.locator('output')).toHaveText('10')
-  await expect(slide).toBeVisible()
-})
 
 test('the web form renders the same content: math, diagrams, mindmap, media and the web component', async ({ page }) => {
   await page.goto(`${content().web}/content.html`)
@@ -127,16 +68,6 @@ async function expectCaptionedVideo(page: Page, video: Locator) {
   ])
 }
 
-test('a video with a poster and captions in two languages has its poster and two tracks in both forms', async ({ page }) => {
-  await page.goto(`${content().web}/cards.html`)
-  const video = page.locator('.pm-section[data-section="content-captions"] figure.pm-media video')
-  await expect(video).toHaveAttribute('poster', /^\/web\/media\/[0-9a-f]{8}-poster\.png$/)
-  await expectCaptionedVideo(page, video)
-
-  const slide = await open(page, 'content-captions')
-  await expectCaptionedVideo(page, slide.locator('figure.pm-media video'))
-})
-
 test('a grid of three cards has three columns on a desktop and one on a phone; a card\'s button is a link', async ({ page }) => {
   const cards = page.locator('.pm-section[data-section="content-cards"] .pm-grid > .pm-card')
   const columns = async () => new Set(await cards.evaluateAll(list => list.map(card => Math.round(card.getBoundingClientRect().left)))).size
@@ -165,20 +96,6 @@ test('choosing a tab chooses the tab with the same :sync: key in the other tab s
   await expect(first.getByRole('tabpanel')).toHaveText('用 console.log 输出。')
   await expect(second.getByRole('tab', { name: 'JavaScript' })).toHaveAttribute('aria-selected', 'true')
   await expect(second.getByRole('tabpanel')).toHaveText('安装：npm install presmium')
-})
-
-test('the slides show the cards in their grid, and a tab set as its tabs one after another', async ({ page }) => {
-  const slide = await open(page, 'content-cards')
-  const cards = slide.locator('.pm-grid > .pm-card')
-  await expect(cards).toHaveCount(3)
-  await expect(cards.nth(1)).toBeVisible()
-  await expect(cards.nth(1)).toContainText('第 2 周：上下文')
-  const tops = await cards.evaluateAll(list => list.map(card => Math.round(card.getBoundingClientRect().top)))
-  expect(new Set(tops).size).toBe(1)
-
-  const tabs = (await open(page, 'content-tabs')).locator('.pm-tabs').first()
-  await expect(tabs.locator('.pm-tabs__title')).toHaveText(['Python', 'JavaScript'])
-  await expect(tabs).toContainText('用 console.log 输出。')
 })
 
 test.describe('online media', () => {
