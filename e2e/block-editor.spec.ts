@@ -216,6 +216,9 @@ test('reveals the content of later steps instead of returning to the page headin
 test('creates independent pages from navigation and the block menu after saving the current body', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
+  page.on('console', message => {
+    if (message.type() === 'error' && message.text().startsWith('[presmium.')) errors.push(message.text())
+  })
   await page.setViewportSize({ width: 1440, height: 1000 })
   await studio.open(page)
   await page.locator('.pmw-home__card').filter({ hasText: '块编辑' }).locator('.pmw-home__open').click()
@@ -265,6 +268,13 @@ test('creates independent pages from navigation and the block menu after saving 
   const retainedScene = frame.locator('[data-section="animation"] .pm-scene')
   await retainedScene.scrollIntoViewIfNeeded()
   await expect(retainedScene).toHaveAttribute('data-status', 'ready', { timeout: 20_000 })
+  const frameTime = await retainedScene.evaluate(() => performance.timeOrigin)
+  const sceneFile = join(studio.workspace.dir, 'zh/scenes/steps.ts')
+  writeFileSync(sceneFile, readFileSync(sceneFile, 'utf8').replace('xPercent: 100', 'xPercent: 101'))
+  await expect.poll(() => frame.locator('html').evaluate(() => performance.timeOrigin), { timeout: 60_000 }).not.toBe(frameTime)
+  await expect(frame.locator('.pm-section')).toHaveCount(originalPages + 2)
+  await retainedScene.scrollIntoViewIfNeeded()
+  await expect(retainedScene).toHaveAttribute('data-status', 'ready')
   await added.scrollIntoViewIfNeeded()
   for (const width of [1440, 390]) for (const scheme of ['light', 'dark'] as const) {
     await page.setViewportSize({ width, height: 1000 })

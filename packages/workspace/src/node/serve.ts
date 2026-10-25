@@ -134,9 +134,19 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
 
   const spec: SiteSpec = siteSpec(config, docs().map(doc => siteDocument(doc)))
   const refreshSpec = (): DocumentsChange => {
-    const before = spec.documents.map(doc => doc.dir)
+    const retained = new Map(spec.documents.map(doc => [doc.dir, doc]))
+    const before = [...retained.keys()]
     const now = docs()
-    spec.documents.splice(0, spec.documents.length, ...now.map(doc => siteDocument(doc)))
+    const listed = now.map(doc => {
+      const summary = siteDocument(doc)
+      const known = retained.get(doc.dir)
+      if (!known) return summary
+      // Undoing prose also refreshes the list: retain compiled document modules and translations.
+      delete known.lang
+      delete known.tags
+      return Object.assign(known, summary)
+    })
+    spec.documents.splice(0, spec.documents.length, ...listed)
     return documentsDiff(before, now.map(doc => doc.dir))
   }
 
