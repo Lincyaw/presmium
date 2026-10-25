@@ -7,7 +7,7 @@ description: "帮助用户把内容写成可阅读、可演示的 Presmium 讲�
 
 从用户要讲清楚的内容出发，交付能阅读、能按预期演示的讲义。先弄清读者会看到什么、讲者需要怎样推进，再选择语法与插件。
 
-本仓库唯一公开示例是 `examples/animations/` 的两讲：冒泡排序（代码、GSAP 动画、讲解点击的计数组件、光标提示与讲授）和代码写成的动画（GSAP、Anime.js、Motion、Three.js、Remotion 各一节）。要写动画、分步讲解或讲授时先看它们的 `lecture.md` 与 `scenes/`；做动画（选库、各库的写法与效果合集 `examples/animations/gallery/`、让动画对上讲解）用 presmium-animate 技能。`pnpm demo:check` 检查两讲，`pnpm demo:build` 构建网页、幻灯片、notebook 与讲授。`pnpm studio` 默认准备并复用独立副本 `.presmium/example-workspace`。
+本仓库唯一公开示例是 `examples/animations/` 的两讲：冒泡排序（代码、GSAP 动画、讲解点击的计数组件、光标提示与讲授）和代码写成的动画（GSAP、Anime.js、Motion、Three.js、Remotion 各一节）。要写动画、分步讲解或讲授时先看它们的 `lecture.md` 与 `scenes/`；做动画（按教学场景选做法、各库的写法与技能自带的效果合集、让动画对上讲解）用 presmium-animate 技能。`pnpm demo:check` 检查两讲，`pnpm demo:build` 构建网页、幻灯片、notebook 与讲授。`pnpm studio` 默认准备并复用独立副本 `.presmium/example-workspace`。
 
 ## 找到这次任务的入口
 

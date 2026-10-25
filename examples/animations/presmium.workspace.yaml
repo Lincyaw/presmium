@@ -1,7 +1,6 @@
 title: 'Presmium 示例：用代码讲课'
 documents:
   - '*/lecture.md'
-  - 'gallery/*/lecture.md'
 site:
   footer:
     message: 'Presmium 示例'

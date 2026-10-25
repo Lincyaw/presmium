@@ -127,3 +127,31 @@ renderers:
 说完这半句，{cue}`pause 1s` 停一秒再说下半句。
 
 第二步，{cue to=pause-scene}`spot` 聚光落在这个场景上。
+
+(with-code)=
+## 场景与代码一起走
+
+(sort-code)=
+```python
+def bubble_pass(a):
+    for i in range(len(a) - 1):
+        if a[i] > a[i + 1]:
+            a[i], a[i + 1] = a[i + 1], a[i]
+    return a
+```
+
+(bubble)=
+:::{scene} bubble
+:durations: 1.0, 0.8, 1.0, 1.0, 1.5
+5 2 4 1 3 的一趟冒泡：5 与右边的数逐个比较、交换，最后停在末尾。
+:::
+
+代码和场景放在同一节：场景占五步，讲解逐段对应，提示标记指向代码。先看这五个数。
+
+第一次比较 5 和 2，{cue to=sort-code lines=3}`spot` 这一行做比较。
+
+5 比 2 大，{cue to=sort-code lines=4}`spot` 这一行交换它们。
+
+再比较 5 和 4，又是前面大，再交换。
+
+5 继续往后，越过 1 和 3，{cue}`pause 300ms` 停在最后，这一趟结束。

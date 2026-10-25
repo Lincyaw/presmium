@@ -1,6 +1,6 @@
 # Teaching scenarios and how to animate them
 
-Each entry: what the viewer should see change, step by step, and how to build it. "Gallery" names a scene in `examples/animations/gallery/<library>/scenes/` (on GitHub: https://github.com/Lincyaw/presmium/tree/main/examples/animations/gallery). Directives without a library (`{slide}`, `{code-ref}`, `{spotlight}` …) are in `presmium-author/references/directives.md`.
+Each entry: what the viewer should see change, step by step, and how to build it. "Gallery" names a scene in this skill's `gallery/<library>/scenes/<name>.ts`. Directives without a library (`{slide}`, `{code-ref}`, `{spotlight}` …) are in `presmium-author/references/directives.md`.
 
 ## 1. Pacing and attention (usually no scene)
 
@@ -10,7 +10,7 @@ Each entry: what the viewer should see change, step by step, and how to build it
 | A diagram built up piece by piece | Several blocks with `:reveal:`, or one `{slide}` per state with `:at:`/`:until:` | Static pieces don't need a scene; use a scene only when pieces *move* |
 | Replace a result with the next one (before → after, wrong → right) | Two `{slide}` blocks: `:at: 0` `:until: 1`, then `:at: 1` | Reversible, no code |
 | Look here | ``{cue to=<block>}`spot` ``, `point`, `ink` in the narration; `{spotlight}`, `{hint}` as blocks | `ink` circles with a marker; `spot` dims the rest |
-| Show where to click in a UI or a component | `{cursor}` (`move`, `hover`, `click` per step) and ``{cue}`click <action>` `` | `examples/animations/bubble-sort` clicks a counter |
+| Show where to click in a UI or a component | `{cursor}` (`move`, `hover`, `click` per step) and ``{cue}`click <action>` `` | A component names its actions with `useActions` |
 | Learner guesses first, then sees | `{predict}` followed by a `:reveal:` block (the reveal can be a scene) | The scene's first step is the answer |
 | Draw on the slide live | The stage's pen (`d`) | Saved with the lecture when served |
 
@@ -37,7 +37,7 @@ Run the algorithm in plain JS while building the scene, record its events (compa
 | Searching | Pointers move, range narrows | GSAP keyframes, Motion `steps()` for discrete hops | gsap `keyframes`; motion `scan` |
 | Graph traversal, shortest path | Visit node (fill), traverse edge (draw), frontier per level | GSAP DrawSVG or Anime `createDrawable` on overlay edges | gsap `draw-svg`; anime `graph-bfs`; d3 `force-path` |
 | Trees: insert, grow, recursion trees | Node pops in, edge draws to parent, level by level | Motion springs; D3 `hierarchy` + tree layout for positions | motion `spring-tree`; d3 `tree-morph` |
-| Merge / split / combine items (BPE, union-find, Huffman) | Two items highlight → collapse into one → new item appears elsewhere | GSAP collapse + `set` text | gsap `merge`; `libraries/bpe-merge` |
+| Merge / split / combine items (BPE, union-find, Huffman) | Two items highlight → collapse into one → new item appears elsewhere | GSAP collapse + `set` text | gsap `merge` |
 | Grids and tables: DP, convolution, flood fill | Cells fill in order, a wave from a cell | Stagger with `grid`/`from`, or delays by distance | gsap `stagger-grid`; anime `grid-ripple`; motion `ripple` |
 | Search with candidates (beam search, top-k) | Candidates scored, losers leave, winners move to slots | GSAP `Flip.fit` vars; Remotion reverse spring | gsap `flip-fit`; remotion `beam-prune` |
 | Clustering, iterative refinement | Points recolor, centroids move, repeat | Seeded data; one round per step | gsap `seeded`; anime `kmeans-seeded`; d3 `voronoi-lloyd` |
@@ -77,9 +77,9 @@ Run the algorithm in plain JS while building the scene, record its events (compa
 
 | Scenario | Gallery |
 |---|---|
-| Tokenization (BPE merges, splitting text into tokens) | `libraries/bpe-merge`; gsap `merge`; anime `token-split` |
-| Attention weights and masks | anime `attention-heat`; motion `heatmap`; `libraries/attention` |
-| Embeddings and clusters in space | three `clusters`; `libraries/embedding` |
+| Tokenization (BPE merges, splitting text into tokens) | gsap `merge`; anime `token-split` |
+| Attention weights and masks | anime `attention-heat`; motion `heatmap` |
+| Embeddings and clusters in space | three `clusters` |
 | Forward pass through layers | anime `nn-sync`; motion `flow` (pulses forward, then backward) |
 | Training curves, overfitting | motion `draw`, `morph` |
 | Gradient descent, momentum, loss surfaces | three `descent`; anime `descent-canvas`; motion `canvas` |
@@ -92,7 +92,7 @@ Run the algorithm in plain JS while building the scene, record its events (compa
 | Scenario | Build | Gallery |
 |---|---|---|
 | Request/response, packets on a link, protocol handshakes | Motion path or `times` keyframes per leg; one step per message | gsap `motion-path`; anime `packet-path`; motion `packet`; remotion `loop-pulse` |
-| Pipelines and architecture diagrams assembling | Boxes drawn then filled, links drawn, outputs fan out | anime `draw-fill`; `libraries/pipeline` |
+| Pipelines and architecture diagrams assembling | Boxes drawn then filled, links drawn, outputs fan out | anime `draw-fill` |
 | Signal or data flowing through a network | Dash pulses along edges (`pathOffset`) | motion `flow` |
 | State machines and protocols | SVG states; active state recolored, transition edge drawn; MorphSVG when a state changes kind | gsap `draw-svg`, `morph-svg`; static version: `mermaid` |
 | Bits, counters, registers | Discrete `set` changes per tick | anime `binary-set`; motion `scan` |
@@ -125,7 +125,7 @@ Run the algorithm in plain JS while building the scene, record its events (compa
 
 | Scenario | Do | Gallery |
 |---|---|---|
-| Title card, chapter opener | Remotion | remotion `spring-pop`; `libraries/title-card` |
+| Title card, chapter opener | Remotion | remotion `spring-pop` |
 | Speaker name, caption bar | Remotion | remotion `lower-third` |
 | Panels replacing each other (step 1 → step 2 → step 3) | Remotion `Series`; or `{slide}` blocks | remotion `series-transition`, `wipe` |
 | A process in stages with a timer | Remotion `measureSpring` chain | remotion `spring-chain` |

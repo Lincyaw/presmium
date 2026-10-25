@@ -1,6 +1,7 @@
 packages:
   - packages/*
   - examples/*
+  - .agents/skills/presmium-animate/gallery
   - e2e/fixtures/regression
   - site
 allowBuilds:

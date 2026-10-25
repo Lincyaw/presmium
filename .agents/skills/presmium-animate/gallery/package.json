@@ -1,0 +1,17 @@
+{
+  "name": "presmium-animate-gallery",
+  "private": true,
+  "type": "module",
+  "description": "The effect gallery of the presmium-animate skill: one lecture per animation library, built here to check its scenes",
+  "dependencies": {
+    "@lincyaw/addon-lecture": "workspace:*",
+    "@lincyaw/addon-motion": "workspace:*",
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/compiler": "workspace:*",
+    "@lincyaw/host": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
+    "@lincyaw/viewer": "workspace:*",
+    "@lincyaw/web": "workspace:*",
+    "vue": "^3.5.42"
+  }
+}

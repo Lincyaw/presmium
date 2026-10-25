@@ -1,6 +1,6 @@
 # Choosing a library and writing the moves
 
-Every library here is driven the same way: the scene builds a timeline (or a drawing function), Presmium pauses it and seeks it to the time it needs. What differs is what each library draws well. Every pitfall below was hit while building the gallery lectures in `examples/animations/gallery/<library>/` and checked by seeking each scene forward and back in a browser, in light and dark.
+Every library here is driven the same way: the scene builds a timeline (or a drawing function), Presmium pauses it and seeks it to the time it needs. What differs is what each library draws well. Every pitfall below was hit while building this skill's gallery lectures (`gallery/<library>/`) and checked by seeking each scene forward and back in a browser, in light and dark.
 
 ## Pick by the picture
 
@@ -18,7 +18,7 @@ One scene uses one library. A page that needs a diagram and a 3D view gets two s
 
 ## Find an effect
 
-Open the scene file named here, in `examples/animations/gallery/<library>/scenes/`.
+Open the scene file named here, in this skill's `gallery/<library>/scenes/`.
 
 | Effect | Where |
 |---|---|

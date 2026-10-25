@@ -29,7 +29,7 @@ Start from what the learner should see change, not from a library. Many moments 
 | Title cards, captions, panel transitions | Scene, **Remotion** | §10 |
 | Footage you already have; static diagrams | `{video}`, `{youtube}`, `{animation}`; `mermaid`, `{markmap}` | §10 |
 
-`references/scenarios.md` has, per scenario, what each step shows, how to build it and the gallery scene to start from. The gallery is `examples/animations/gallery/<library>/` in the Presmium repository (https://github.com/Lincyaw/presmium/tree/main/examples/animations/gallery): 111 working scenes, one effect per section.
+`references/scenarios.md` has, per scenario, what each step shows, how to build it and the gallery scene to start from. The gallery comes with this skill: `gallery/<library>/` (gsap, anime, motion, d3, three, remotion) holds one lecture per library with 13–23 working scenes, one effect per section, in `gallery/<library>/scenes/<name>.ts`; `gallery/timeline/` shows the timing rules, and a scene moving with a code block and its narration.
 
 ## Writing a scene
 
@@ -49,4 +49,4 @@ Start from what the learner should see change, not from a library. Many moments 
 - **Size to the picture.** The scene's root is a size container: lay out in `%`, `cqw`/`cqh` or an SVG `viewBox`; Remotion and Three.js scale themselves.
 - **No JSX** in scene files (`React.createElement` for Remotion).
 
-The `{scene}` directive's options and errors: `presmium-author/references/directives.md`, "动画 `presmium.motion`". A full lecture where a scene, code and a component move with the narration: `examples/animations/bubble-sort/`.
+The `{scene}` directive's options and errors: `presmium-author/references/directives.md`, "动画 `presmium.motion`". Read the gallery's `lecture.md` next to a scene to see its `:durations:` and narration.

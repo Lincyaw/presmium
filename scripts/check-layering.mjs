@@ -80,15 +80,24 @@ function files(dir, skip = []) {
   })
 }
 
+// What a package lists in `presmium.generated` is copied in when it is packed (the dsh bundle's skills with their
+// gallery scenes): not the package's own source.
+function generated(pkgDir) {
+  const manifest = join(pkgDir, 'package.json')
+  const paths = existsSync(manifest) ? JSON.parse(readFileSync(manifest, 'utf8')).presmium?.generated ?? [] : []
+  return file => paths.some(path => !relative(join(pkgDir, path), file).startsWith('..'))
+}
+
 const applies = (rule, pkg) => (typeof rule.pkgs === 'function' ? rule.pkgs(pkg) : !rule.pkgs || rule.pkgs.includes(pkg)) && !rule.except?.includes(pkg)
 
 const violations = []
 for (const pkg of readdirSync(join(root, 'packages'))) {
   const pkgDir = join(root, 'packages', pkg)
+  const copied = generated(pkgDir)
   for (const rule of rules.filter(r => applies(r, pkg))) {
     const checked = [
       ...rule.dirs.flatMap(dir => files(join(pkgDir, dir), rule.skip)),
-    ]
+    ].filter(file => !copied(file))
     for (const file of checked) {
       for (const [, spec] of readFileSync(file, 'utf8').matchAll(REFERENCE)) {
         if (rule.forbid(spec, file, pkgDir)) violations.push(`${relative(root, file)}: ${spec}  (${rule.name})`)

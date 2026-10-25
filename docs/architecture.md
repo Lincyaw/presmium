@@ -131,7 +131,7 @@ presmium/
 ├── scripts/                 结构检查：check-layering.mjs、check-skills.mjs、check-plugins.mjs、check-packages.mjs（发布的包）、check-types.mjs（类型）；consumer.ts（消费者安装）
 ├── .changeset/              版本与发布（changesets，预发布模式 rc）；README.md 是哪些包公开发布的表
 ├── .github/workflows/       CI（ci.yml）
-├── .agents/skills/          仓库技能：presmium-author、presmium-animate、presmium-present、presmium-develop（.claude/skills 是指向它的软链接，AGENTS.md 是指向 CLAUDE.md 的软链接）
+├── .agents/skills/          仓库技能：presmium-author、presmium-animate（带效果合集 `gallery/`，是私有工作区包 `presmium-animate-gallery`，在原处构建以检查场景）、presmium-present、presmium-develop（.claude/skills 是指向它的软链接，AGENTS.md 是指向 CLAUDE.md 的软链接）
 └── docs/
 ```
 
@@ -1588,7 +1588,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 ## 6. 示例文稿约定
 
-唯一公开示例位于 `examples/animations/`：两讲为 Presmium 写的中文讲义。`bubble-sort/`（冒泡排序）从代码讲到一趟冒泡的 GSAP 动画，讲解点击文稿自己的计数组件、光标指向按钮，再合成为带字幕的讲授；`libraries/`（代码写成的动画）用 GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节场景（4.4 节的步骤时间），最后是讲到哪里点哪里与讲授视频。`gallery/<库>/` 是各库的效果合集（gsap、anime、motion、d3、three、remotion，只构建网页），一节一个效果，是 presmium-animate 技能按效果查找的示例；`gallery/timeline/` 用同一个场景演示动画的步怎样对上讲解与提示标记。每讲的 `scenes/` 是场景源码，`components/` 是讲义的组件，`.presmium/speech/` 与 `speech.lock.json` 是讲解的合成缓存（音色 `edge`），随讲义提交：没有语音引擎的环境（CI、新的检出）照样能检查、构建与播放讲授，改过的句子才需要引擎。
+唯一公开示例位于 `examples/animations/`：两讲为 Presmium 写的中文讲义。`bubble-sort/`（冒泡排序）从代码讲到一趟冒泡的 GSAP 动画，讲解点击文稿自己的计数组件、光标指向按钮，再合成为带字幕的讲授；`libraries/`（代码写成的动画）用 GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节场景（4.4 节的步骤时间），最后是讲到哪里点哪里与讲授视频。每讲的 `scenes/` 是场景源码，`components/` 是讲义的组件，`.presmium/speech/` 与 `speech.lock.json` 是讲解的合成缓存（音色 `edge`），随讲义提交：没有语音引擎的环境（CI、新的检出）照样能检查、构建与播放讲授，改过的句子才需要引擎。
 
 `pnpm studio` 首次用示例的 `try.mjs` 复制到独立的 `.presmium/example-workspace`（自己的 git 仓库，带合成缓存与给 AI 的 `AGENTS.md`），之后复用用户可编辑的副本。`pnpm demo:check` 检查两讲；`pnpm demo:build` 构建工作区站点，并把每讲的幻灯片、notebook 与讲授放进 `<讲义>/slides/`、`<讲义>/notebook/`、`<讲义>/lecture/`，站点在 `examples/animations/dist/web/`。讲授视图先找页面下的 `lecture/`，再找网页形态旁边的 `../lecture/`（单讲构建的位置），所以同一站点中几讲的讲授互不冲突。
 

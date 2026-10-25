@@ -4,7 +4,6 @@ Two lectures in Chinese, written for this repository, that show what Presmium do
 
 - `bubble-sort/` (冒泡排序): one pass of bubble sort, from the code to an animation, a counter the narration clicks and a guided cursor, ending in a narrated lecture.
 - `libraries/` (代码写成的动画): one section for each animation library a scene can be written with: GSAP, Anime.js, Motion, Three.js and Remotion, then the narration's clicks and the lecture video.
-- `gallery/<library>/`: an effect gallery for each library (gsap, anime, motion, d3, three, remotion), one effect per section, web form only; `gallery/timeline/` shows how a scene's steps line up with the narration and cues. Before writing a scene, find the closest effect here and start from its scene file; the presmium-animate skill indexes them by effect.
 
 In each lecture's directory:
 

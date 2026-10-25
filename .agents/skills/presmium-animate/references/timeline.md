@@ -1,6 +1,6 @@
 # Putting a scene on the lecture's timeline
 
-A scene is one timeline. `:durations:` cuts it into steps, the narration after the block is bound to those steps paragraph by paragraph, and `{cue}` marks move or act at a word. This file is about making the picture and the words land together. Every timing below was measured on a synthesized lecture. `examples/animations/gallery/timeline/` holds one section per rule with a scene whose dots light up one per step; give it a `lecture` renderer with a voice to hear each rule and read its `track.json`.
+A scene is one timeline. `:durations:` cuts it into steps, the narration after the block is bound to those steps paragraph by paragraph, and `{cue}` marks move or act at a word. This file is about making the picture and the words land together. Every timing below was measured on a synthesized lecture. This skill's `gallery/timeline/` holds one section per rule with a scene whose dots light up one per step; give it a `lecture` renderer with a voice to hear each rule and read its `track.json`.
 
 ## The model
 
@@ -67,7 +67,7 @@ Steps are counted per section. A block that spans several steps and has no `:rev
 
 Write `:reveal:` on a second scene (or any later multi-step block) that should start after the first one finished. Other multi-step blocks (`{code-ref}` with `:steps:`, `:reveal: items` lists, components with `:span:`) follow the same rule from `docs/ir.md` 2.4.
 
-To make the scene and other blocks react to the same sentence, keep them single-step and aim cues at them from the scene's narration. `examples/animations/bubble-sort/lecture.md` puts a code block, a counter component and the scene in one section; the scene's paragraphs spotlight lines of the code with ``{cue to=sort-code lines=3-4}`spot` `` and click the counter with ``{cue to=stats}`click compare` ``.
+To make the scene and other blocks react to the same sentence, keep them single-step and aim cues at them from the scene's narration. The last section of `gallery/timeline/lecture.md` puts a code block and a bubble-sort scene in one section; the scene's paragraphs spotlight the comparing and the swapping line with ``{cue to=sort-code lines=3}`spot` `` and ``{cue to=sort-code lines=4}`spot` ``. A component in the section can be clicked the same way, ``{cue to=<block>}`click <action>` ``, for the actions it names with `useActions`.
 
 ## Checking it
 
