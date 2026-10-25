@@ -55,6 +55,9 @@
   --pm-leading-ui: 1.6;
   --pm-leading-reading: 1.85;
   --pm-tracking-label: 0.06em;
+  --pm-weight-regular: 400;
+  --pm-weight-medium: 500;
+  --pm-weight-semibold: 600;
 
   --pm-space-px: 2px;
   --pm-space-1: 0.25rem;
@@ -98,6 +101,13 @@
   --pm-control-time-width: 7rem;
   --pm-canvas-min-width: 30rem;
   --pm-opacity-disabled: 0.55;
+  --pm-dialog-width: 40rem;
+  --pm-drawer-width: 25rem;
+  --pm-popover-min-width: 18rem;
+  --pm-popover-max-width: 32rem;
+  --pm-menu-min-width: 12rem;
+  --pm-shadow-control-focus: 0 0 0 var(--pm-space-px) var(--pm-color-accent-line);
+  --pm-shadow-control-error-focus: 0 0 0 calc(var(--pm-space-px) * 3) var(--pm-color-accent-line);
 
   --pm-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   --pm-shadow-float: 0 1px 2px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.08);

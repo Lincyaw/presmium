@@ -27,14 +27,15 @@
   },
   "devDependencies": {
     "@changesets/cli": "3.0.3",
+    "@lincyaw/addon-motion": "workspace:*",
     "@playwright/test": "1.64.1",
     "@types/node": "^22.19.0",
-    "sirv-cli": "^3.0.1",
-    "typescript": "^6.0.3",
-    "vitest": "^4.0.0",
     "@types/react": "18.3.28",
     "@types/react-dom": "^18.3.7",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "sirv-cli": "^3.0.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.0.0"
   }
 }

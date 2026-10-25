@@ -22,11 +22,13 @@ export {
   PmPopover,
   PmSegmented,
   PmTabs,
+  PmTabPanel,
+  PmTooltip,
   PmToolbarEntry,
   provideToolbarPlacement,
   useToolbarPlacement,
 } from './design/components.ts'
-export type { ButtonVariant, Choice, MenuItem, PopoverPlacement, Tone } from './design/components.ts'
+export type { ButtonVariant, Choice, ControlDensity, MenuItem, PopoverPlacement, Tone } from './design/components.ts'
 export { iconMarkup, ICONS } from '@lincyaw/design'
 export type { IconName } from '@lincyaw/design'
 export { useAppearance } from './design/appearance.ts'
