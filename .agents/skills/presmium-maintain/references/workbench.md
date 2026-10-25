@@ -1,8 +1,10 @@
 # The workbench and the dsh bundle
 
 The workbench (`packages/workbench`, React) runs as a client plugin of DeepSeek Harness inside the bundle
-`@lincyaw/dsh` (`packages/dsh`), launched by `packages/studio`. The design is `docs/design-dsh.md`; this file
-keeps the rules to act on and what to verify when you change each part. Section numbers below are of
+`@lincyaw/dsh` (`packages/dsh`), launched by `packages/studio`. The integration design is
+`docs/design-dsh.md`; the single UI/UX decision source is `docs/rfc-workbench-uiux.md`. The RFC supersedes
+the older interface design and describes targets to implement, not capabilities already verified in the
+running service. This file keeps the implementation boundaries and checks. Section numbers below are of
 `docs/design-dsh.md` unless another file is named.
 
 ## Who it is for
@@ -12,9 +14,13 @@ the document, edit it directly or hand it to the AI, undo at any time. Professio
 Code extension's job.
 
 - Keep authoring on the document: ordinary text is edited as blocks; generated content offers source and preview within the same block. Read the actual definition declared in the IR, or the block's MyST fragment when it has none. Do not turn the workbench into a project-wide IDE, file tree or raw problem panel, and keep git vocabulary out of the authoring flow.
-- UI copy uses conventional product terminology: concise noun labels such as “讲解文本” and precise options such as “与动画同步” and “动画结束后”. Avoid conversational questions such as “这一刻要讲什么” in fields or controls.
-- Command names follow Word: Undo, Redo, New Comment, Version History, Accept and Reject, Editing and
-  Viewing. Both the zh-CN and the en text are complete.
+- UI copy follows the RFC terminology table: authored script, voiceover, captions and transcription have
+  distinct meanings and save targets. Do not restore conversational player labels or use captions as a
+  second editable body. Keep complete zh-CN and en messages, including tooltips and accessible names.
+- Use icon-first toolbars on desktop as well as narrow screens, through the design system's semantic
+  Lucide mappings and `PmIconButton`. Preserve concise text for page identities, fields, meaningful options,
+  errors and confirmations. Every icon action needs a localized accessible name and a discoverable label;
+  the RFC section 3.2 is the authoritative action/icon mapping.
 
 ## Workspaces, sessions and the current document
 
@@ -36,7 +42,7 @@ name, comment form, Post, Cancel and Escape; do not add edit, AI rewrite or clos
 AI requests use chat with the selected focus or comments. Double-click text uses `edit` to make one block
 editable; `edited` returns the text before and after; `packages/workbench/src/text-edit.ts` maps the difference back to the
 source by the block's source lines in the IR, and refuses to write back across formatting marks, handing the
-change to the AI instead (7.3 "就地编辑"). When you change this chain verify that edits in plain text, inside
+change to the AI instead (7.3 compatibility editing). When you change this chain verify that edits in plain text, inside
 emphasis and inside a link are written back correctly, that an edit across a link leaves the file unchanged,
 and that Markdown characters are escaped.
 
@@ -52,13 +58,23 @@ A preview connection is bound to the document and form it was opened with; navig
 inside the preview follows the current document through `ready.document`. Verify that after switching the
 selection enters the new document's chat context, and that Escape dismisses the toolbar and clears the focus.
 
-The workbench has only two entries, Document and Present, sharing one web viewer and one iframe
-(`docs/architecture.md` 1.1). The slides are what Present shows; with a lecture configured, Present prepares
-the player, and it plays only after a click; video files come only from Export. Verify that after a normal
-click time advances, pause works, the player unmounts on return to Document and the window identity is kept;
-DOM visibility or a module cache hit is not enough. The player and the captions take their own space: in
-light and dark, desktop and narrow, the slide fits completely in the remaining canvas. A cold start also
-covers the handshake arriving before the viewer plugin registers.
+The RFC defines Content and Sequence as authoring workspaces, with Present and Export as actions. Keep
+them on the same web viewer and iframe (`docs/architecture.md` 1.1); runtime view IDs do not define extra
+workspace tabs. Use the RFC section 6 selection/draft table when changing navigation: an old draft stays
+bound to its old source while the inspector immediately follows the new selection, and save callbacks keep
+their original target and version. The IR has no stable Step ID; convert full-document and media-filtered
+steps through the existing trail/map instead of treating array indexes as identity.
+
+Verify actual time advancing after Play, pause and seeking, direct first/last and reverse step jumps, and
+the return position after Present. There must be only one active media clock. Opening, switching steps or
+compiling must not silently synthesize voiceover in the target workflow; the existing script route still
+needs migration, so check the request path rather than assuming the RFC has implemented it. Editing the
+current step invalidates its old audio and pauses at that step, while unrelated updates preserve valid
+position. Audience views contain no author editor; video comes from Export using the same lecture plan.
+
+In light and dark, desktop and narrow, the slide fits completely in the remaining canvas and captions and
+controls do not cover the body. Include pure text and mixed pages. A cold start also covers the handshake
+arriving before the viewer plugin registers. DOM visibility or a module cache hit is not enough.
 
 ## Diagnostics and agent feedback
 
@@ -108,8 +124,9 @@ author's operations and hands them to the host through `/api/presmium/telemetry`
   click on the hidden sidebar button.
 - The top app bar holds the logo and the path (documents, current document, global panels); on the right,
   AI assistant, More, Settings and Help. The chat history opens from the chat header.
-- The document view looks like a word processor (7.3): command bar, navigation pane, the paper or the slide
-  on a canvas, status bar. In the web form the preview shows only the paper (the page app's `PreviewSheet`,
+- Follow the RFC layout: page list and body blocks in Content; final-frame preview, page timeline and
+  selected-step properties in Sequence; clean audience canvas in Present. Assistant and other auxiliary
+  tools open on demand. In the web form the preview shows only the paper (the page app's `PreviewSheet`,
   `packages/web/src/app/page-app.ts`); never bring the site's navigation back into the workbench.
 - Selecting a session in the chat history shows the chat directly, also when reselecting the current session;
   do not rely only on watching the session ID change. `ctx.layout.selectPanel(null)` brings up the session as

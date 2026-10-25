@@ -34,7 +34,8 @@ Architecture reviews and read-only investigations need no code change.
 
 Read the root `AGENTS.md` (a link to `CLAUDE.md`) first. Then, by task: `docs/domain-model.md`
 (responsibilities and invariants), `docs/architecture.md` (boundaries and trade-offs), `docs/ir.md` (syntax
-to IR); for the workbench also `docs/design-dsh.md`; for studio debugging `docs/debugging.md`. Public
+to IR); for the workbench also `docs/design-dsh.md` and `docs/rfc-workbench-uiux.md` (the UI/UX decision
+source; target behavior is distinct from implemented behavior); for studio debugging `docs/debugging.md`. Public
 interfaces and the versioning rules for users are in `site/reference/lecture.md`.
 
 The source is the contract: `packages/kernel/src/contracts/` (exported together from `contracts.ts`) for

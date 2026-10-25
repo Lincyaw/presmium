@@ -66,7 +66,7 @@ MyST 源码 + 真实代码文件
 
 工作台的每个预览面板最多保留两个已加载的 iframe，按最近使用顺序淘汰；非当前预览先经 `activity` 确认停止，再启动另一份文稿。页面暂停时真正卸载布局内的文稿、工具栏、播放器等组件，停止插件内核与控制流，保留该窗口的模块和文稿数据；闲置两分钟后移除。恢复时读取最新已发布 IR，配置或语言变化、暂停超时或缺少能力时销毁重载。组件、viewer、client 模块、`vite.config.ts` 及给出运行时文件或文稿模块的 Node 端入口所在的每个包（包括文稿本地模块：文稿目录的 `package.json`，没有时为工作区根目录的）须在 `package.json` 声明 `presmium.preview.restartable: true`；内核插件还须显式声明 `PluginDefinition.restartable: true`，承诺 `dispose` 完整释放后台资源且同一份定义可再次 `setup`。任一来源未声明、加载失败或混入不支持的插件时不缓存该预览。content、guide、lecture、speech、motion 包与示例工作区声明了此能力（讲授的录制在面板卸载时停止媒体轨道与上传计时器，动画场景在组件卸载时 `dispose`），带执行等后台任务的插件继续重载。网页与幻灯片的预览是同一种页面，规则相同。
 
-工作台只提供文档与放映两个视图，共用一个网页 iframe，经预览协议切换。幻灯片是放映的画面，讲授是放映中的可选播放控件，视频文件从导出生成。进入放映时准备默认讲授轨，点击后才播放；返回文档时卸载播放器并释放媒体与讲授选择。网页预览暂存最新的 `go` 指令，等异步视图插件注册且视图可用后执行。放映层与讲授控件的层级统一由设计令牌定义，播放器必须可接受正常点击；播放器和字幕在放映布局中占据独立空间，幻灯片按剩余空间缩放，不互相遮挡。按帧导出时恢复覆盖层，以保持导出画布大小。
+工作台与放映复用同一网页查看器，通过预览协议定位与切换运行时视图。网页预览暂存最新 `go` 指令，异步视图插件注册且可用后执行。放映层、播放器与字幕的层级和留白由设计令牌定义，按帧导出恢复覆盖层以保持画布大小。作者工作区、播放器生命周期和目标交互以 [UI/UX RFC](rfc-workbench-uiux.md) 为准，不能由运行时视图名推导另一套导航入口。
 
 网页 IR 与工作台 IR 端点支持 `ETag` / `If-None-Match`，每次恢复仍验证当前修订，未变化时返回 304，省去大份 IR 的传输与解析。工作台客户端最多保留两份已解析 IR，响应文本的 UTF-16 大小合计 16 MiB；这是缓存计量上限，不是对象堆内存硬限额。修改后仍返回新快照，旧请求不能覆盖较新的缓存或当前文稿的 IR。
 
@@ -1213,9 +1213,11 @@ export const OPERATIONS = defineService<Operations>('presmium.operations')
 
 报告的分工（插件之间不互相引用，词汇是内核的共享契约）：IR 运行时报告 `go`（章节、步骤、视图）；执行插件报告 `run`（块与结果的缓存键）；引导插件报告 `spot`、`hint`；讲授插件自己报告指针 `point`（`elementFromPoint` → 最近的 `[data-block]` → 块内相对坐标，约 20 Hz，简化后保存）与工具栏的激光笔、荧光笔 `ink`。回放某一时刻：`clear()`，再按时间依次 `replay(…, true)` 此前的事件，最后一个事件不快进。
 
-引导插件包含内核插件 `src/client/plugin.ts`（两种形态都登记 `spot`、`hint` 的重放）与视图插件 `src/client/viewer.ts`（放映视图与演讲者窗口中 `s`、`h` 给指针下的块加上或取消聚光、提示并报告）；这种聚光持续到位置离开它的章节或步骤（`span`），由 `NAVIGATION.position` 的同步观察者结束，所以现场、依次重放与跳转后的折叠一致。讲授插件 `@lincyaw/addon-lecture`：`src/domain/`（讲授轨的读写与每项一行的格式、`at` 的时刻、章节、漂移分级、块指纹与 IR 哈希、VTT、路径简化、重录一节的拼接）、`src/node/`（服务端路由、检查项 `presmium.lecture`、站点渲染端 `lecture`）、`src/client/`（内核插件登记 `point`、`ink` 的重放；视图 `lecture`；放映视图上的录制与播放两个图层；`SilentClock`、`MediaClock`；Mediabunny 只在 `src/client/media.ts` 中）。视图插件只以类型引用 `@lincyaw/viewer`，拿不到章节上下文（`SECTION_CONTEXT`），自己画不出按步骤显示的幻灯片，所以回放的“真实页面”是放映视图：`lecture` 视图切到放映视图并保留 URL 的 `track` 参数，播放器是放映视图上的图层，重放 `go` 时去掉 `view`。嵌在工作台中时（`isPreviewEmbedded()`），`lecture` 视图直接打开视频用的那一讲（`defaultTrack`：有合成的 `script` 用它，否则是唯一的那一条录音；导出视频的默认同此），这是工作台“视频”视图的页面（`design-dsh.md` 7.3 节）。独立的讲授视图需要放映组件或章节上下文，当前视图插件接口未提供它们。`run` 的重放没有 `clear`（`packages/viewer/src/client/code/code-block.ts`），跳回运行之前的时刻时已显示的录制输出不消失。
+引导插件包含内核插件 `src/client/plugin.ts`（两种形态都登记 `spot`、`hint` 的重放）与视图插件 `src/client/viewer.ts`（放映视图与演讲者窗口中 `s`、`h` 给指针下的块加上或取消聚光、提示并报告）；这种聚光持续到位置离开它的章节或步骤（`span`），由 `NAVIGATION.position` 的同步观察者结束，所以现场、依次重放与跳转后的折叠一致。讲授插件 `@lincyaw/addon-lecture`：`src/domain/`（讲授轨的读写与每项一行的格式、`at` 的时刻、章节、漂移分级、块指纹与 IR 哈希、VTT、路径简化、重录一节的拼接）、`src/node/`（服务端路由、检查项 `presmium.lecture`、站点渲染端 `lecture`）、`src/client/`（内核插件登记 `point`、`ink` 的重放；视图 `lecture`；放映视图上的录制与播放两个图层；`SilentClock`、`MediaClock`；Mediabunny 只在 `src/client/media.ts` 中）。视图插件只以类型引用 `@lincyaw/viewer`，拿不到章节上下文（`SECTION_CONTEXT`），自己画不出按步骤显示的幻灯片，所以回放的“真实页面”是放映视图：`lecture` 视图切到放映视图并保留 URL 的 `track` 参数，播放器是放映视图上的图层，重放 `go` 时去掉 `view`。嵌在工作台中时（`isPreviewEmbedded()`），`lecture` 视图直接打开视频用的那一讲（`defaultTrack`：有合成的 `script` 用它，否则是唯一的那一条录音；导出视频的默认同此），这是现有讲授视图的默认轨选择机制；工作台不设置独立视频工作区，目标播放入口见 [UI/UX RFC](rfc-workbench-uiux.md) 第 7 节。独立的讲授视图需要放映组件或章节上下文，当前视图插件接口未提供它们。`run` 的重放没有 `clear`（`packages/viewer/src/client/code/code-block.ts`），跳回运行之前的时刻时已显示的录制输出不消失。
 
 讲授插件的 `src/domain/` 包含讲解的读法（`narration.ts`：显示与说的两份文字、`{cue}` 的位置、命令与时长）、讲授计划（`plan.ts`：每节每步的段落、在 `pause` 处切开的语音段、提示标记的目标与操作数据，单独的脚本代替所在章节的讲解）、合成的时间线（`script-track.ts`：`scriptTrack`）、逐字的处理（`words.ts`：分词、把说的文字的逐字时间换回显示的文字、改文字后的重新对齐、换音色后的字锚换算）与讲授轨的编辑（`editing.ts`：转写得到语音段并绑定事件、改一句、换音色重新合成）；`Utterance.clip` 与合成音色的 `provider`。`src/node/` 提供行内角色 `{cue}`、`{say}`（`roles.ts`）、读单独的脚本（`script-file.ts`）、讲授计划（`plan.ts`）、最近一次编译的 IR（`latest-ir.ts`：编译步骤 `presmium.lecture.keep` 在编译时执行之后记下每个文稿目录的 IR，服务端的路由与 agent 工具由此得到 IR，因为 `ServerContext` 与 `AgentToolContext` 没有编译结果）、经 `SPEECH` 的合成与转写（`synthesize.ts`、`transcribe.ts`；引擎的选择在 `engines.ts`，按键取合成缓存中的片段在 `clips.ts`；没有逐字时间时的对齐与锁定文件的清理经 `SpeechService.alignWords`、`pruneLock` 由语音服务完成，讲授插件不读写合成缓存的文件）、站点渲染端的 `script` 与 `clips/`、检查项的计划部分、编辑的路由（`routes/`：讲授与片段 `tracks.ts`、编辑 `editing.ts`、录制 `recordings.ts`）、agent 工具（`tools.ts`）与 `presmium-lecture export`（`export.ts`、`cli.ts`）。`src/client/` 用 `MediaClock` 播放每个语音段的片段、播放器的 `advanceTo`（按时间应用事件，播放与导出共用）、导出模式（地址加 `&export`：没有控件，`window.presmiumLecture.advance(t)`）、编辑面板 `TrackEditor.tsx` 与逐字稿中每句的修改（`TranscriptList.tsx`）。交互与构建的边界：转写与合成的确认是页面上写明服务提供方的确认框，不经 `APPROVALS`（编辑者点按钮就是确认；agent 的计费工具仍经 MCP 的确认）；`presmium serve` 在进程内编译文稿，所以 `script` 在那里同样按需合成（`ir.md` 6.3 节）；合成不了的句子（不在合成缓存中，引擎没有定义或没有回答）不让讲授失败：服务端回答的 `script` 是预览，这些句子没有片段，带 `Utterance.unsaid`（原因），按 `spokenDuration` 估计的时长（`Intl.Segmenter` 分出的词，每词约 0.36 秒）静音，播放器写明有几句没有语音并显示它们的字幕，时间线照常播放；构建、导出视频与 agent 工具仍要求每句都已合成（`SynthesizedLecture.track` 只在全部合成时存在，预览是 `preview`），导出失败的第一行写出第一条原因；合成音色的讲授中改一句要先确认，确认框写明服务提供方；路由、agent 工具与检查都按讲授渲染端的视图（`viewFor(doc,'lecture')`，讲授插件已依赖编译器）计划，与构建一致；`presmium check` 只查找，不向语音引擎发请求；合成讲授的 `go` 由讲授视图的步号经它的 `stepMap` 换回 IR 的步号，所以只在网页形态不压缩步骤时（没有只在幻灯片或 notebook 中显示的上屏块）就是网页的步号；当前渲染上下文没有网页视图的步号映射。
+
+迁移边界：以上是当前讲授实现，`script` 路由仍可能按需合成。目标工作台要求进入、跳步和编译只查询缓存，生成配音由作者显式触发，见 [UI/UX RFC 第 5.2 节](rfc-workbench-uiux.md#52-讲稿与配音属性)；此行为尚需实现，不应将 RFC 作为当前接口已完成解耦的证明。
 
 转写回写的读法在讲授插件的 `src/domain/writeback.ts`：由事件写回提示标记（`cueFor`）、逐字稿拼成的讲解草稿（`narrationDraft`）、一步讲解在源码中的位置（`narrationPlace`，取自讲授计划，所以单独的讲授脚本中的段落同样找得到）、要翻译的语音段与摘要（`translationItems`）；agent 经 `track_narration`、`track_translations`（`src/node/tools.ts`）取得它们，写入在会话的审阅之中。
 
@@ -1547,11 +1549,11 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 
 查看器的作者画布用 React BlockNote，按需加载；阅读与放映只运行 IR 渲染器。正文、列表、标题、代码和动画共享块的选择、排序与转换入口，无法无损转换的插件内容保留为自定义块。普通正文直接编辑，动画、图表等代码生成的内容在同一个块内切换源码与预览；切换保持块 ID、步骤与位置，不通过场景目录替换当前内容。块内源码编辑复用按需加载的 CodeMirror，工作台不提供项目级 IDE 或全局文件树。
 
-组件可在 `ComponentNode.definition` 声明生成内容的代码文件与语言。作者编辑画布据块锚点请求源码，工作台按当前 IR 解析定义文件；没有该元数据时读取该块的 MyST 片段。多个块引用同一定义时显示共享引用数，保存会更新这些块。浏览器只传当前块、已打开的文件与版本，工作台核对绑定和编辑锁后走现有源码保存与历史，不允许预览页面任意读写工作区文件。源码草稿在应用前独立保留，不按输入字符反复构建，版本冲突与保存失败不丢稿。具体协议和草稿生命周期见 `design-dsh.md` 7.3 节。
+组件可在 `ComponentNode.definition` 声明生成内容的代码文件与语言。作者编辑画布据块锚点请求源码，工作台按当前 IR 解析定义文件；没有该元数据时读取该块的 MyST 片段。多个块引用同一定义时显示共享引用数，保存会更新这些块。浏览器只传当前块、已打开的文件与版本，工作台核对绑定和编辑锁后走现有源码保存与历史，不允许预览页面任意读写工作区文件。源码草稿在应用前独立保留，不按输入字符反复构建，版本冲突与保存失败不丢稿。现有协议见 `design-dsh.md` 7.3 节，目标草稿生命周期见 [UI/UX RFC 第 6 节](rfc-workbench-uiux.md#6-统一位置草稿与编译状态)。
 
-正文编辑、块内源码与右侧步骤讲解面板分别负责正文、生成代码和讲解，通过同一个 IR 块 ID、页码与步骤定位。动画的步进和放映的步骤跳转同步更新讲解目标；页码与步号只改变当前状态，不改写内容。
+正文编辑、块内源码与讲稿编辑分别写回正文、生成代码和讲解来源，通过 IR 章节、块、步骤与 `trail` 定位。当前 IR 不含稳定 Step ID；完整与特定媒介的步号需显式换算。选择、播放与草稿的目标交互由 [UI/UX RFC 第 6 节](rfc-workbench-uiux.md#6-统一位置草稿与编译状态) 定义。
 
-BlockNote 文档是编辑中的状态。工作台接收有序块列表，将变化写回 MyST，沿用源码版本冲突、保存与撤销，再由编译器生成 IR。保留块标签与媒介、受众和步骤范围；跨文件或讲解混合在容器中的范围拒绝猜测性重写。迁移期间移动正文时，把原有隐式讲解固定成显式的步骤绑定，避免讲解随正文顺序漂移。具体协议与界面见 `design-dsh.md` 7.3 节。
+BlockNote 文档是编辑中的状态。工作台接收有序块列表，将变化写回 MyST，沿用源码版本冲突、保存与撤销，再由编译器生成 IR。保留块标签与媒介、受众和步骤范围；跨文件或讲解混合在容器中的范围拒绝猜测性重写。迁移期间移动正文时，把原有隐式讲解固定成显式的步骤绑定，避免讲解随正文顺序漂移。现有协议见 `design-dsh.md` 7.3 节；工作区、选择和时序的目标交互见 [UI/UX RFC](rfc-workbench-uiux.md)。
 
 #### 保存与产物中的临时执行编辑
 
@@ -2031,7 +2033,7 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 - **产物**：每个任务一个目录（服务状态目录的 `outputs/<任务>/`），每份文稿的每种输出保留最近 3 个；完成的任务记下 `job.json`，服务重启后仍在。同一份文稿、同一种输出、同一个 IR 修订号已经完成或正在进行时不再生成，直接答复那个任务。服务把 `/__outputs/` 转给只服务这个目录的静态服务器（编译器的 `serveDirectory`，文件经 Express 的 `send`：类型、Range、校验与条件请求按 HTTP 规范；`?download` 用 `content-disposition` 要求下载；工作台的来源经 `cors` 可读，视频的字幕要用），与预览一样在服务自己的地址上，不需要令牌。渲染端的构建以任务的地址为根路径（`BuildOptions.base`），站点在那里直接打开。每个文件带媒体类型（`mime-types`，按扩展名）。
 - **路由**（工作区插件）：`GET jobs` 回答可生成的输出（`targets`）与这份文稿的任务，`POST jobs { target }` 开始一个；`POST jobs/cancel { id }`；`GET jobs/events` 是 SSE（事件 `job`）。dsh 照样代理这三条。
 - **AI**：MCP 的 `build` 在有任务的宿主中开始任务（`to` 可以是渲染端与导出器），默认等它们结束，`wait: false` 立即返回；`get_builds` 列出可生成的输出与最近的任务（状态、进度、日志末尾、错误、文件与地址）。服务端宿主的 `build`（`POST build`）同样经任务，作者在工作台的“导出”中看到 AI 开始的任务。
-- **工作台**：命令栏右边的“导出”打开导出面板；“视频”视图上方的视频文件条是同一种任务（`design-dsh.md` 7.3 节）。
+- **工作台**：导出入口读取同一任务来源，目标格式、状态和放映关系见 [UI/UX RFC 第 8 节](rfc-workbench-uiux.md#8-导出与输出一致性)，不另设视频工作区。
 
 用例：`packages/workspace/test/service.test.ts`（路由、产物地址、同一修订不重复、MCP 的 `get_builds`）、`e2e/export.spec.ts`（导出面板生成 PDF 与 notebook，打开与下载；别处开始的任务在面板中出现并可取消）。
 
