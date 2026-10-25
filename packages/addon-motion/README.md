@@ -1,6 +1,6 @@
 # @lincyaw/addon-motion
 
-Animations written in code: timelines made with GSAP, Anime.js, Motion, Three.js or Remotion, played on the steps of a lecture and on the time of its narration.
+Animations written in code: timelines made with GSAP, Anime.js, Motion, Three.js, Remotion or D3, played on the steps of a lecture and on the time of its narration.
 
 Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
 
@@ -22,7 +22,7 @@ It is a Presmium plugin and a Slidev addon: its component works on the web page 
 ## What it provides
 
 - `{scene}`: a scene of the document's `scenes/`, cut into steps by `:durations:`. Each step plays its part of the timeline; going back shows the step settled; a lecture plays it on the narration's time, and a video export draws it frame by frame.
-- `@lincyaw/addon-motion/scene`: `gsapScene`, `animeScene`, `motionScene`, `threeScene`, `remotionScene` and `defineScene`, to write a scene with each library.
+- `@lincyaw/addon-motion/scene`: `gsapScene`, `animeScene`, `motionScene`, `threeScene`, `remotionScene`, `d3Scene` and `defineScene`, to write a scene with each library.
 
 ## Documentation
 

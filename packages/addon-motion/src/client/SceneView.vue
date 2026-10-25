@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PmIcon, STEP_CLOCK, useHost, useMessages, useService, useStepScope, useStepTime } from '@lincyaw/host'
+import { PmIcon, STEP_CLOCK, useAppearance, useHost, useMessages, useService, useStepScope, useStepTime } from '@lincyaw/host'
 import { errorMessage } from '@lincyaw/kernel'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { MOTION_MESSAGES, stepStarts, timelinePosition } from '../domain/index.ts'
@@ -49,6 +49,21 @@ function play() {
   frame = requestAnimationFrame(tick)
 }
 
+/**
+ * A CSS color as `rgb()` or `rgba()`: tokens written with `color-mix()` or a space-separated `rgb()` become a form
+ * every library reads (three.js ignores the others; GSAP cannot tween them). The browser resolves it on a 1x1 canvas.
+ */
+let swatch: CanvasRenderingContext2D | null | undefined
+function resolvedColor(css: string): string {
+  swatch ??= document.createElement('canvas').getContext('2d', { willReadFrequently: true })
+  if (!css || !swatch) return css
+  swatch.clearRect(0, 0, 1, 1)
+  swatch.fillStyle = css
+  swatch.fillRect(0, 0, 1, 1)
+  const [r, g, b, a] = swatch.getImageData(0, 0, 1, 1).data
+  return a === 255 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${Math.round(a! / 255 * 1000) / 1000})`
+}
+
 function scrub(event: Event) {
   playing.value = false
   cancelAnimationFrame(frame)
@@ -91,16 +106,21 @@ function draw(ms: number) {
   }
 }
 
-onMounted(() => {
-  preloadScenes()
-  const root = stage.value!
+let built: { width: number, height: number } | undefined
+let rebuilding: ReturnType<typeof setTimeout> | undefined
+
+/** Makes the scene in the stage, after disposing the one there; it is drawn at the current place. */
+function build(root: HTMLElement): Promise<void> {
   const work = (async () => {
     const definition = await loadScene(props.scene)
     if (!definition) {
       status.value = 'missing'
       throw new Error(`the deck has no scene ${props.scene}`)
     }
+    dispose()
+    root.replaceChildren()
     const box = root.getBoundingClientRect()
+    built = { width: box.width, height: box.height }
     const made = await definition.create({
       root,
       durations,
@@ -108,7 +128,7 @@ onMounted(() => {
       total,
       width: box.width || 640,
       height: box.height || 360,
-      color: name => getComputedStyle(root).getPropertyValue(`--pm-color-${name}`).trim(),
+      color: name => resolvedColor(getComputedStyle(root).getPropertyValue(`--pm-color-${name}`).trim()),
     })
     if (disposed) return made.dispose?.()
     instance = made
@@ -120,10 +140,42 @@ onMounted(() => {
   work.catch((error: unknown) => {
     if (status.value !== 'missing') fail(error)
   })
+  return work
+}
+
+/** Builds the scene again a moment after the last call: its colors and measured layout were taken when it was made. */
+function rebuildSoon(root: HTMLElement) {
+  clearTimeout(rebuilding)
+  rebuilding = setTimeout(() => {
+    if (!disposed && status.value === 'ready') void build(root)
+  }, 150)
+}
+
+function dispose() {
+  try {
+    instance?.dispose?.()
+  } catch (error) {
+    console.error(`[presmium.motion] disposing the scene ${props.scene} failed`, error)
+  }
+  instance = undefined
+}
+
+const { dark } = useAppearance()
+
+onMounted(() => {
+  preloadScenes()
+  const root = stage.value!
+  void build(root)
+  watch(dark, () => rebuildSoon(root))
   observer = new ResizeObserver(() => {
     const box = root.getBoundingClientRect()
     if (!instance || !box.width || !box.height) return
-    instance.resize?.(box.width, box.height)
+    // A scene that cannot follow a new size (one that measured its layout when built) is made again for it.
+    if (!instance.resize) {
+      if (built && (Math.abs(box.width - built.width) > 1 || Math.abs(box.height - built.height) > 1)) rebuildSoon(root)
+      return
+    }
+    instance.resize(box.width, box.height)
     draw(shown.value)
   })
   observer.observe(root)
@@ -135,13 +187,9 @@ watch(shown, draw, { flush: 'sync' })
 onBeforeUnmount(() => {
   disposed = true
   cancelAnimationFrame(frame)
+  clearTimeout(rebuilding)
   observer?.disconnect()
-  try {
-    instance?.dispose?.()
-  } catch (error) {
-    console.error(`[presmium.motion] disposing the scene ${props.scene} failed`, error)
-  }
-  instance = undefined
+  dispose()
 })
 
 const box = computed(() => (props.height ? { height: props.height } : { aspectRatio: (props.aspect ?? '16/9').replace('/', ' / ') }))
@@ -187,6 +235,8 @@ const notice = computed(() => {
 .pm-scene__stage {
   position: absolute;
   inset: 0;
+  /* A scene can size its layout to the picture with cqw and cqh. */
+  container-type: size;
 }
 .pm-scene__notice {
   position: absolute;

@@ -100,7 +100,7 @@ presmium/
 │   ├── addon-exec-local/    @lincyaw/addon-exec-local   容器执行、环境复刻
 │   ├── addon-guide/         @lincyaw/addon-guide
 │   ├── addon-content/       @lincyaw/addon-content
-│   ├── addon-motion/        @lincyaw/addon-motion       动画场景：GSAP、Anime.js、Motion、Three.js、Remotion，按步内时间画出
+│   ├── addon-motion/        @lincyaw/addon-motion       动画场景：GSAP、Anime.js、Motion、Three.js、Remotion、D3，按步内时间画出
 │   ├── addon-publish/       @lincyaw/addon-publish
 │   ├── addon-session/       @lincyaw/addon-session      会话与网络同步
 │   ├── addon-classroom/     @lincyaw/addon-classroom
@@ -131,7 +131,7 @@ presmium/
 ├── scripts/                 结构检查：check-layering.mjs、check-skills.mjs、check-plugins.mjs、check-packages.mjs（发布的包）、check-types.mjs（类型）；consumer.ts（消费者安装）
 ├── .changeset/              版本与发布（changesets，预发布模式 rc）；README.md 是哪些包公开发布的表
 ├── .github/workflows/       CI（ci.yml）
-├── .agents/skills/          仓库技能：presmium-author、presmium-present、presmium-develop（.claude/skills 是指向它的软链接，AGENTS.md 是指向 CLAUDE.md 的软链接）
+├── .agents/skills/          仓库技能：presmium-author、presmium-animate、presmium-present、presmium-develop（.claude/skills 是指向它的软链接，AGENTS.md 是指向 CLAUDE.md 的软链接）
 └── docs/
 ```
 
@@ -1588,7 +1588,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 ## 6. 示例文稿约定
 
-唯一公开示例位于 `examples/animations/`：两讲为 Presmium 写的中文讲义。`bubble-sort/`（冒泡排序）从代码讲到一趟冒泡的 GSAP 动画，讲解点击文稿自己的计数组件、光标指向按钮，再合成为带字幕的讲授；`libraries/`（代码写成的动画）用 GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节场景（4.4 节的步骤时间），最后是讲到哪里点哪里与讲授视频。每讲的 `scenes/` 是场景源码，`components/` 是讲义的组件，`.presmium/speech/` 与 `speech.lock.json` 是讲解的合成缓存（音色 `edge`），随讲义提交：没有语音引擎的环境（CI、新的检出）照样能检查、构建与播放讲授，改过的句子才需要引擎。
+唯一公开示例位于 `examples/animations/`：两讲为 Presmium 写的中文讲义。`bubble-sort/`（冒泡排序）从代码讲到一趟冒泡的 GSAP 动画，讲解点击文稿自己的计数组件、光标指向按钮，再合成为带字幕的讲授；`libraries/`（代码写成的动画）用 GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节场景（4.4 节的步骤时间），最后是讲到哪里点哪里与讲授视频。`gallery/<库>/` 是各库的效果合集（gsap、anime、motion、d3、three、remotion，只构建网页），一节一个效果，是 presmium-animate 技能按效果查找的示例；`gallery/timeline/` 用同一个场景演示动画的步怎样对上讲解与提示标记。每讲的 `scenes/` 是场景源码，`components/` 是讲义的组件，`.presmium/speech/` 与 `speech.lock.json` 是讲解的合成缓存（音色 `edge`），随讲义提交：没有语音引擎的环境（CI、新的检出）照样能检查、构建与播放讲授，改过的句子才需要引擎。
 
 `pnpm studio` 首次用示例的 `try.mjs` 复制到独立的 `.presmium/example-workspace`（自己的 git 仓库，带合成缓存与给 AI 的 `AGENTS.md`），之后复用用户可编辑的副本。`pnpm demo:check` 检查两讲；`pnpm demo:build` 构建工作区站点，并把每讲的幻灯片、notebook 与讲授放进 `<讲义>/slides/`、`<讲义>/notebook/`、`<讲义>/lecture/`，站点在 `examples/animations/dist/web/`。讲授视图先找页面下的 `lecture/`，再找网页形态旁边的 `../lecture/`（单讲构建的位置），所以同一站点中几讲的讲授互不冲突。
 
@@ -1891,6 +1891,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 | Motion（`motion`） | MIT | 动画场景：Motion 的动画与序列 | addon-motion |
 | Three.js（`three`） | MIT | 动画场景：WebGL 三维画面 | addon-motion |
 | Remotion（`remotion`、`@remotion/player`），React（`react`、`react-dom`） | Remotion License；MIT | 动画场景：Remotion 的合成，以播放器的 `Thumbnail` 按帧画出 | addon-motion |
+| D3（`d3`） | ISC | 动画场景：比例尺、坐标轴、布局与形状生成器建出的图形，按时刻插值画出（不用 D3 的过渡） | addon-motion |
 | simple-git | MIT | 代码引用读取 git 中的文件、本地环境的仓库；工作区审阅直接运行 git，以控制 git 目录、对象库与钩子设置（10.7 节） | addon-code、addon-exec-local |
 | React | MIT | 工作台的面板（对等依赖），由 dsh 的外壳提供，Presmium 不自带 | workbench、dsh |
 | esbuild | MIT | 把 `@lincyaw/dsh` 的客户端部分构建为 dsh 的工厂格式 | dsh |

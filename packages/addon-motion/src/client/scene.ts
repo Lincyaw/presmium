@@ -1,4 +1,5 @@
 import type * as AnimeModule from 'animejs'
+import type * as D3Module from 'd3'
 import type { gsap as Gsap } from 'gsap'
 import type * as MotionModule from 'motion'
 import type * as ReactModule from 'react'
@@ -18,7 +19,7 @@ export interface SceneContext {
   /** The size of `root` when the scene is created (CSS pixels). */
   width: number
   height: number
-  /** A color of the design system as the page shows it now: `color('accent')` is `--pm-color-accent`. */
+  /** A color of the design system as the page shows it now, as `rgb()` or `rgba()`: `color('accent')` is `--pm-color-accent`. */
   color(name: string): string
 }
 
@@ -49,18 +50,49 @@ export function defineScene(create: (ctx: SceneContext) => Made | Promise<Made>)
 
 type GsapAnimation = ReturnType<typeof Gsap.timeline> | ReturnType<typeof Gsap.to>
 
+/** GSAP's plugins that draw the same at the same time; ScrambleText (random each render) and the scroll and drag ones are left out. */
+async function gsapPlugins(gsap: typeof Gsap) {
+  // Each plugin registers itself with `window.gsap` when it loads. GSAP sets that global only when nothing holds the
+  // name, and an element with the id `gsap` (a section labelled `(gsap)=`) does, so the plugins would find the element.
+  const page = window as unknown as { gsap?: unknown }
+  if (page.gsap !== gsap) page.gsap = gsap
+  const [{ SplitText }, { TextPlugin }, { DrawSVGPlugin }, { MorphSVGPlugin }, { MotionPathPlugin }, { CustomEase }, { CustomBounce }, { CustomWiggle }, { Physics2DPlugin }, { PhysicsPropsPlugin }, { Flip }] = await Promise.all([
+    import('gsap/SplitText'),
+    import('gsap/TextPlugin'),
+    import('gsap/DrawSVGPlugin'),
+    import('gsap/MorphSVGPlugin'),
+    import('gsap/MotionPathPlugin'),
+    import('gsap/CustomEase'),
+    import('gsap/CustomBounce'),
+    import('gsap/CustomWiggle'),
+    import('gsap/Physics2DPlugin'),
+    import('gsap/PhysicsPropsPlugin'),
+    import('gsap/Flip'),
+  ])
+  return { SplitText, TextPlugin, DrawSVGPlugin, MorphSVGPlugin, MotionPathPlugin, CustomEase, CustomBounce, CustomWiggle, Physics2DPlugin, PhysicsPropsPlugin, Flip }
+}
+
+export type GsapPlugins = Awaited<ReturnType<typeof gsapPlugins>>
+
 /**
  * A GSAP timeline (or tween), built in a `gsap.context` scoped to `ctx.root`, so selectors find the
  * scene's elements and disposing reverts them. Times are seconds, as in GSAP: `ctx.at(k) / 1000`.
+ * `plugins` are registered before `build`: tweens can use `drawSVG`, `morphSVG`, `motionPath`, `text`,
+ * `physics2D`, `physicsProps`, and the scene can call `plugins.SplitText.create`, `plugins.CustomEase.create`.
  */
-export function gsapScene(build: (ctx: SceneContext & { gsap: typeof Gsap }) => GsapAnimation): SceneDefinition {
+export function gsapScene(build: (ctx: SceneContext & { gsap: typeof Gsap, plugins: GsapPlugins }) => GsapAnimation): SceneDefinition {
   return {
     engine: 'gsap',
     async create(ctx) {
       const { gsap } = await import('gsap')
+      const plugins = await gsapPlugins(gsap)
+      // A tweened box on its own 3D layer is drawn a little differently from the same box at rest, so a frame would
+      // depend on how it was reached; scenes keep 2D transforms.
+      gsap.config({ force3D: false })
+      gsap.registerPlugin(...Object.values(plugins))
       let animation: GsapAnimation | undefined
       const context = gsap.context(() => {
-        animation = build({ ...ctx, gsap })
+        animation = build({ ...ctx, gsap, plugins })
       }, ctx.root)
       animation?.pause()
       return {
@@ -82,8 +114,17 @@ export function animeScene(build: (ctx: SceneContext & { anime: typeof AnimeModu
       const scope = anime.createScope({ root: ctx.root })
       const animation = scope.execute(() => build({ ...ctx, anime }))
       animation.pause()
+      // Until a tween has been reached once it shows the element's own value, not its from-value: going to the end and
+      // back sets them all up, so a time looks the same whatever was shown before it.
+      animation.seek(animation.duration, true)
+      animation.seek(0, true)
       return {
-        seek: ms => void animation.seek(ms, true),
+        // From the start each time: going back past a later tween that gives its own from-value does not restore
+        // the value before it, so a time is reached the same way whichever time was shown before.
+        seek(ms) {
+          animation.seek(0, true)
+          animation.seek(ms, true)
+        },
         dispose: () => scope.revert(),
       }
     },
@@ -106,6 +147,9 @@ export function motionScene(build: (ctx: SceneContext & { motion: typeof MotionM
       return {
         seek(ms) {
           for (const control of controls) control.time = ms / 1000
+          // Only what the browser animates (opacity, background color, filter, clip-path) shows at once; transforms,
+          // SVG, CSS variables and function segments wait for Motion's next frame, so it is drawn now.
+          for (const step of ['update', 'preRender', 'render'] as const) motion.frameSteps[step].process(motion.frameData)
         },
         dispose() {
           for (const control of controls) control.cancel()
@@ -122,22 +166,38 @@ export interface ThreeView {
   dispose?(): void
 }
 
+/** The three.js addons a scene can use: HTML labels, lines wider than a pixel, and geometries the core lacks. */
+async function threeAddons() {
+  const [{ CSS2DRenderer, CSS2DObject }, { Line2 }, { LineGeometry }, { LineMaterial }, { ParametricGeometry }, { RoundedBoxGeometry }, { ConvexGeometry }] = await Promise.all([
+    import('three/addons/renderers/CSS2DRenderer.js'),
+    import('three/addons/lines/Line2.js'),
+    import('three/addons/lines/LineGeometry.js'),
+    import('three/addons/lines/LineMaterial.js'),
+    import('three/addons/geometries/ParametricGeometry.js'),
+    import('three/addons/geometries/RoundedBoxGeometry.js'),
+    import('three/addons/geometries/ConvexGeometry.js'),
+  ])
+  return { CSS2DRenderer, CSS2DObject, Line2, LineGeometry, LineMaterial, ParametricGeometry, RoundedBoxGeometry, ConvexGeometry }
+}
+
+export type ThreeAddons = Awaited<ReturnType<typeof threeAddons>>
+
 /**
  * A Three.js scene: the adapter makes the WebGL renderer in `ctx.root` and keeps it the size of
  * `root`; `build` adds the scene and returns how to draw it at a time.
  */
-export function threeScene(build: (ctx: SceneContext & { THREE: typeof ThreeModule, renderer: ThreeModule.WebGLRenderer }) => ThreeView | ThreeView['render']): SceneDefinition {
+export function threeScene(build: (ctx: SceneContext & { THREE: typeof ThreeModule, renderer: ThreeModule.WebGLRenderer, addons: ThreeAddons }) => ThreeView | ThreeView['render']): SceneDefinition {
   return {
     engine: 'three',
     async create(ctx) {
-      const THREE = await import('three')
+      const [THREE, addons] = await Promise.all([import('three'), threeAddons()])
       // The drawing buffer is kept so a screenshot of a frame (the lecture's video) shows it.
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true })
       renderer.setPixelRatio(window.devicePixelRatio)
       renderer.setSize(ctx.width, ctx.height, false)
       Object.assign(renderer.domElement.style, { width: '100%', height: '100%', display: 'block' })
       ctx.root.append(renderer.domElement)
-      const made = build({ ...ctx, THREE, renderer })
+      const made = build({ ...ctx, THREE, renderer, addons })
       const view: ThreeView = typeof made === 'function' ? { render: made } : made
       return {
         seek: ms => view.render(ms),
@@ -152,6 +212,21 @@ export function threeScene(build: (ctx: SceneContext & { THREE: typeof ThreeModu
           renderer.domElement.remove()
         },
       }
+    },
+  }
+}
+
+/**
+ * A D3 scene: D3 turns the data into shapes (scales, axes, layouts, shape generators), and the scene draws them at
+ * a time with D3's interpolators and eases. `build` returns the drawing function `(ms) => void` (or a `Scene`);
+ * transitions run on D3's own timer, so they have no place here.
+ */
+export function d3Scene(build: (ctx: SceneContext & { d3: typeof D3Module }) => Made | Promise<Made>): SceneDefinition {
+  return {
+    engine: 'd3',
+    async create(ctx) {
+      const d3 = await import('d3')
+      return scene(await build({ ...ctx, d3 }))
     },
   }
 }

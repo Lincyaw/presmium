@@ -226,7 +226,7 @@ Python 与 JavaScript 在本机用 `python3`、`node` 运行。`@lincyaw/addon-e
 (lecture-motion)=
 ## 动画与视频
 
-文稿的 `plugins` 加上 `@lincyaw/addon-motion` 后，`{scene}` 放进一段用代码写的动画：文稿目录 `scenes/` 中用 GSAP、Anime.js、Motion、Three.js 或 Remotion 写的一条时间轴，`:durations:` 把它切成几步，讲解逐段对应这些步。放映时每前进一步演一段；讲授按讲解的时间播放它，合成讲授时一步至少停留到动画演完。`presmium-lecture export` 一帧一帧推进讲授的时间来导出视频，动画、光标、点击与字幕都在各自的时刻，字幕另作为视频的字幕轨与旁边的 `.vtt` 文件，`--burn <语言>` 把字幕画进画面。
+文稿的 `plugins` 加上 `@lincyaw/addon-motion` 后，`{scene}` 放进一段用代码写的动画：文稿目录 `scenes/` 中用 GSAP、Anime.js、Motion、Three.js、Remotion 或 D3 写的一条时间轴，`:durations:` 把它切成几步，讲解逐段对应这些步。放映时每前进一步演一段；讲授按讲解的时间播放它，合成讲授时一步至少停留到动画演完。`presmium-lecture export` 一帧一帧推进讲授的时间来导出视频，动画、光标、点击与字幕都在各自的时刻，字幕另作为视频的字幕轨与旁边的 `.vtt` 文件，`--burn <语言>` 把字幕画进画面。
 
 (assistant)=
 # AI 助手与读者问答

@@ -227,7 +227,7 @@ A speaker can also record a lecture in the presentation view: the voice and the 
 (lecture-motion)=
 ## Animations and video
 
-With `@lincyaw/addon-motion` in the document's `plugins`, `{scene}` places an animation written in code: a timeline in the document's `scenes/` written with GSAP, Anime.js, Motion, Three.js or Remotion, cut into steps by `:durations:`, with the narration following the steps paragraph by paragraph. Presenting plays one part a step; a lecture plays it on the narration's time, and a synthesized lecture stays on a step until its animation has played. `presmium-lecture export` exports the video by moving the lecture's time on a frame at a time, so animations, the cursor, clicks and captions are each at their moment; the captions are also the video's subtitle tracks and `.vtt` files next to it, and `--burn <language>` draws them on the picture.
+With `@lincyaw/addon-motion` in the document's `plugins`, `{scene}` places an animation written in code: a timeline in the document's `scenes/` written with GSAP, Anime.js, Motion, Three.js, Remotion or D3, cut into steps by `:durations:`, with the narration following the steps paragraph by paragraph. Presenting plays one part a step; a lecture plays it on the narration's time, and a synthesized lecture stays on a step until its animation has played. `presmium-lecture export` exports the video by moving the lecture's time on a frame at a time, so animations, the cursor, clicks and captions are each at their moment; the captions are also the video's subtitle tracks and `.vtt` files next to it, and `--burn <language>` draws them on the picture.
 
 (assistant)=
 # The AI assistant and reader questions

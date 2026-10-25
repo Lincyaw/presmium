@@ -428,6 +428,9 @@ importers:
       animejs:
         specifier: 4.5.0
         version: 4.5.0(@types/three@0.186.0)(three@0.186.1)
+      d3:
+        specifier: 7.9.0
+        version: 7.9.0
       gsap:
         specifier: 3.15.0
         version: 3.15.0
@@ -459,6 +462,9 @@ importers:
       '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
+      '@types/d3':
+        specifier: 7.4.3
+        version: 7.4.3
       '@types/react':
         specifier: 19.3.0
         version: 19.3.0
