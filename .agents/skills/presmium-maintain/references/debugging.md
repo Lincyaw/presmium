@@ -1,0 +1,101 @@
+# Debugging the studio and measuring performance
+
+The full procedure, with the evidence files and their fields, is `docs/debugging.md`. This file keeps the
+order of work and the rules for judging the evidence.
+
+## Start from the running service
+
+For slow switches or exports, look at the `pnpm studio` terminal first: stderr forwards the workspace
+service's log live, and startup prints the path of the persistent log (by default
+`~/.local/state/presmium/studio/presmium-studio.log`, following `XDG_STATE_HOME`). The log carries UTC times
+and the process each line comes from (`docs/design-dsh.md` 11.2). Align document, phase, cache or fallback
+and duration by the preview request number (`[preview N]`) or the job ID (`[job]`).
+
+- A backend preview `ready` only means the address is ready; the browser may still be stuck loading
+  resources or in the handshake. Do not claim the page works from it.
+- dsh's output is only in the log file. It contains the login token in the launch address; never copy it
+  into a report.
+
+## Collect evidence with `pnpm debug:studio`
+
+For a stalling or broken front end, in this order:
+
+1. Read the current service log, the current diagnostics resource
+   (`presmium://diagnostics?document=<document directory>`) and `get_runtime`. `get_diagnostics` runs the
+   checks; it does not replace observing the browser.
+2. Reproduce in an isolated copy: `pnpm debug:studio <workspace> --document <document directory>`. It copies
+   the workspace and runs its own state directory, service ports and Chromium; the original files and running
+   services are left alone. Before navigation it captures page and iframe exceptions, console warnings and
+   errors, HTTP and network failures, slow requests, long tasks and the preview handshake, and puts the
+   backend log on the same timeline. On a timeout it saves pending requests, frame state and screenshots.
+3. Read `summary.json` in the output directory (default `.presmium/debug/<time>/`) first, then
+   `events.jsonl` for the failing step. Do not stop at the exit code or at the backend address being ready.
+4. Narrow with `--views` (for example `document,present,document`) and `--timeout <ms>`; `--headed` shows
+   the window. Do not widen to full test suites.
+
+Rules for judging:
+
+- Every switch waits for the real content: sections in Document, the viewer's `.pm-slide` layout in
+  Present, the lecture player when one is configured. Without runtime window feedback the front end is not
+  known to be error-free.
+- When the problem only happens in the author's original tab, also check that tab's console and network; a
+  clean browser passing does not replace the original session.
+- Keep a baseline before the fix; after the fix rerun with the same document, view order, wait budget and
+  load.
+- After an upgrade, verify on the workspace copy the author is actually using (including source imports of
+  the old plugin names `@lincyaw/slidev-addon-*`, which the compiler and the document bundler map to
+  `@lincyaw/addon-*`); a freshly copied example passing does not prove the old copy compatible. Do not delete
+  the author's copy, rewrite their sources or externalize unresolved modules to get past an error.
+
+## Comparing preview architectures
+
+When comparing the compiled preview with a dev server, separate the one-time runtime build, the document
+code build and the plain-text incremental update; do not implement "compiled" as rebuilding the whole site on
+every edit. Before evaluating a framework switch or a rewrite, check whether the bottleneck is repeated
+loading and module transformation. The historical baseline (before Slidev and VitePress were removed) is
+`docs/benchmarks/preview-architecture-2026-10-24.md`; today the web page and the slides both use Presmium's
+own prebuilt viewer.
+
+## Performance changes
+
+Follow `docs/architecture.md` 1.1, which also holds the resource budget environment variables, cache limits
+and soft limits.
+
+- Record cold start, edit-to-compile and save-to-preview latency; separate CPU time, real waiting time and the
+  test budget. Compare before and after alternately under the same load, and check that IR, equation
+  numbers, source line numbers and old snapshots are unchanged.
+- Tests and benchmarks use one worker and the default resource budget (interactive processes the author
+  waits for take threads by machine state, background processes take 1). Do not drop validation to reach
+  100 ms.
+- Preview loading: first check that Vite's dependency pre-bundling finishes in one round (`DEBUG=vite:deps`
+  shows no "new dependencies found" or "reloading"); for plugin files loaded through virtual modules see
+  `optimizeDeps.entries` in `presmium-develop/references/plugin.md`.
+- Incremental compilation covers cross-block references, footnotes, fences, includes and plugin external
+  dependencies; consecutive saves verify that the old task is cancelled and only the latest result is
+  published.
+
+### Workbench open and switch latency
+
+`node scripts/bench-workbench-preview.mjs <output>.json --rounds 3` starts one isolated workbench and
+Chromium, records two first opens and three returns, and times until the preview is ready and the first
+section is visible. `--example` measures the example's two lectures (with animations). It does not build the
+full example or run test suites.
+
+- Separate the time of the preview address request from the iframe load; record the system load; do not
+  count compile time as page latency.
+- Record the total automation time and the browser's real click-to-ready time, never mixed.
+- For cache work also check: the same iframe and window are reused, a return loads zero new scripts, the
+  document's components and control flow stop when paused, a hidden edit comes back as the latest content,
+  the two-frame limit holds, and the destroy fallback works when a package or kernel plugin does not pass
+  both `restartable` declarations (including viewer-only packages without a kernel plugin). The targeted
+  test is `e2e/preview-cache.spec.ts`.
+- Tests and scripts snapshot the isolated workbench client so parallel rebuilds do not trigger Harness hot
+  replacement; parallel sessions running targeted Playwright pass `--output <own directory>` to avoid
+  colliding artifacts.
+- Earlier measurements: `docs/benchmarks/workbench-preview-2026-10-21.md` (first investigation) and
+  `docs/benchmarks/preview-cache-2026-10-21.md` (cache lifecycle, real-course measurements, remaining
+  latency). Report the real system load; a small document or the best round does not show that every case
+  reaches 100 ms.
+
+The performance e2e cases run after the other Chromium cases; alone, run
+`pnpm exec playwright test e2e/perf.spec.ts --no-deps`.
