@@ -2,7 +2,8 @@
 
 The workbench (`packages/workbench`, React) runs as a client plugin of DeepSeek Harness inside the bundle
 `@lincyaw/dsh` (`packages/dsh`), launched by `packages/studio`. The integration design is
-`docs/design-dsh.md`; the single UI/UX decision source is `docs/rfc-workbench-uiux.md`. The RFC supersedes
+`docs/design-dsh.md`; the single UI/UX decision source is `docs/rfc-workbench-uiux.md`, and the formal
+control/style/asset implementation spec is `docs/design-system.md`. The RFC supersedes
 the older interface design and describes targets to implement, not capabilities already verified in the
 running service. This file keeps the implementation boundaries and checks. Section numbers below are of
 `docs/design-dsh.md` unless another file is named.
@@ -18,10 +19,14 @@ client).
 ## Who it is for
 
 The workbench serves teachers who are not technical (7.3). Keep the simple loop first: point at a problem on
-the document, edit it directly or hand it to the AI, undo at any time. Professional code editing is the VS
-Code extension's job.
+the document, edit it directly or hand it to the AI, undo at any time. Technical users edit project files
+in VS Code's native editor; the extension provides preview, diagnostic navigation and export.
 
-- Keep authoring on the document: ordinary text is edited as blocks; generated content offers source and preview within the same block. Read the actual definition declared in the IR, or the block's MyST fragment when it has none. Do not turn the workbench into a project-wide IDE, file tree or raw problem panel, and keep git vocabulary out of the authoring flow.
+- Keep target Web authoring on content, public parameters, material previews, chat and comments. Do not
+  expose implementation source, IR, a file tree or raw stacks as the ordinary author's workflow. Tauri
+  reuses this Web workflow; code and raw IR belong to the technical project entry. The current MyST source
+  pipeline remains in use; the RFC's IR-native project mode needs its own validated source adapter and
+  must not treat edits to generated `dist/ir.json` as an editable source format.
 - UI copy follows the RFC terminology table: authored script, voiceover, captions and transcription have
   distinct meanings and save targets. Do not restore conversational player labels or use captions as a
   second editable body. Keep complete zh-CN and en messages, including tooltips and accessible names.
@@ -29,6 +34,11 @@ Code extension's job.
   Lucide mappings and `PmIconButton`. Preserve concise text for page identities, fields, meaningful options,
   errors and confirmations. Every icon action needs a localized accessible name and a discoverable label;
   the RFC section 3.2 is the authoritative action/icon mapping.
+- Implement public controls from `docs/design-system.md` before business layout. Do not restyle a public
+  button or input through business CSS, inline styles or page-specific descendants. Missing tokens,
+  states and behavior go into the shared layer and the corresponding Figma variant first. When touching
+  legacy styles, migrate that scope rather than adding overrides. Low-fidelity prototype controls are not
+  approved visual specifications.
 
 ## Workspaces, sessions and the current document
 
@@ -43,7 +53,13 @@ committed to the workspace's git repository) or rejects.
 
 Pages contain blocks and correspond to IR sections (one slide in Present). The page list's plus and the block menu's New page insert a distinct page after the current one; adding an ordinary block stays within its page. Flush body drafts before a page insertion, preserve existing source and narration, and focus the new page only once it is present in the IR. Verify insertion order, independent editing and presentation, and undo/redo; refuse ambiguous cross-file boundaries instead of guessing.
 
-Source/preview is a view of one block, not a picker that replaces it with another animation. Preserve its block ID and step bindings. The workbench resolves the source from the current IR anchor, checks the opened version and edit lock, and saves through the existing source/history path. Show when multiple blocks share a definition file. Keep source drafts through view switches and preview reloads; on conflicts or failed saves retain the draft instead of overwriting a newer file. Verify the source/preview loop separately from page and step navigation.
+Generated content in the target Web UI is changed through public parameters, chat or comments, with
+shared-material scope and review visible. The existing source/preview paths are compatibility interfaces,
+not the target ordinary author UI and not a scene-replacement picker. Their save boundary remains:
+resolve the actual definition or MyST fragment from the current IR anchor, check the opened version and
+edit lock, then use the existing source/history path. Preserve block IDs, step bindings and existing source
+drafts through switches and reloads; conflicts or failed saves must not overwrite a newer file. Hiding the
+source UI does not remove these real service contracts or permit a second source of truth.
 
 Editing happens on the document page. The preview protocol's `pick` reports the position of a click or a
 selection, and the workbench draws one compact New Comment icon beside the pointer. Keep its accessible

@@ -33,7 +33,7 @@ what change after which action, and which real run showed it.
 | Add a directive, component or interaction | `presmium-develop/references/plugin.md`, an existing plugin with similar behavior, [packaging](references/packaging.md) | It compiles, works in the web page and the slides, static outputs degrade sensibly, docs and skills list it |
 | Extend a renderer or the runtime view | The `Renderer` contract (`packages/kernel/src/ir.ts`) or the `ViewerPluginContext` contract (`packages/viewer/src/client/viewer-plugins.ts`) and a similar implementation | The renderer works from the IR only, never re-reads the MyST source; support levels and missing content are reported; positions and steps are right |
 | Change editing, preview sync or agent behavior | Workspace routes (`packages/workspace/src/node/routes.ts`), the preview protocol, the host adapter; [workbench and dsh](references/workbench.md) | After a save, an outside change, a reconnect or a review, source and preview still agree |
-| Change the workbench's look or a UI primitive | `packages/design/src/tokens.css`, `pm-ui-*` of `@lincyaw/design`, `packages/workbench/src/components.tsx`; [Repository conventions](#repository-conventions) | `node scripts/check-tokens.mjs` passes; seen in light and dark, on desktop and below 768 px |
+| Change the workbench's look or a UI primitive | `docs/design-system.md`, `packages/design/src/tokens.css`, `pm-ui-*` of `@lincyaw/design`, `packages/workbench/src/components.tsx`; [Repository conventions](#repository-conventions) | Public components and Figma variants implement the spec before business layout; relevant checks pass; seen in light and dark, on desktop and below 768 px |
 | Upgrade dsh | [workbench and dsh](references/workbench.md#upgrading-dsh), `docs/design-dsh.md` sections 12 and 16 | The five upgrade-gate groups pass (see [Verify](#verify-the-behavior-you-changed)) |
 | Change loading, dependencies or publishing; add an official package; release | The package's `exports`, peer dependencies, `.changeset/README.md`; [packaging](references/packaging.md) | Installed outside the monorepo it still builds and runs; structure checks pass |
 | Build or change the VS Code extension | [packaging](references/packaging.md#the-vs-code-extension), `packages/vscode/README.md` | The VSIX's service starts a preview outside the repository and the package works in an ordinary VS Code window |
@@ -50,7 +50,8 @@ changed](#verify-the-behavior-you-changed).
 Read the root `AGENTS.md` (a link to `CLAUDE.md`) first; its verification rules are authoritative.
 Then, by task: `docs/domain-model.md` (responsibilities and invariants), `docs/architecture.md` (boundaries
 and trade-offs), `docs/ir.md` (syntax to IR); for the workbench also `docs/design-dsh.md` and
-`docs/rfc-workbench-uiux.md` (the UI/UX decision source; targets are distinct from implemented behavior);
+`docs/rfc-workbench-uiux.md` (the UI/UX decision source; targets are distinct from implemented behavior)
+and `docs/design-system.md` (formal controls, style ownership, asset registry and migration requirements);
 for studio debugging `docs/debugging.md`. The docs are in Chinese and cited here by section number.
 What 1.x keeps stable for users and the rules for package versions, `IR_VERSION` and `KERNEL_VERSION`
 are in `site/reference/lecture.md` (the page "接口与版本").
@@ -103,10 +104,13 @@ the slides are both pages of Presmium's own prebuilt viewer (`docs/architecture.
   `tokens.ts` `COLORS` and the design-system table of `docs/architecture.md` (5.10). After touching workbench
   or studio-frame styles run `node scripts/check-tokens.mjs`; move older styles of other packages into its
   scope when you change them.
-- **Fix the primitive before the page.** A UI problem is first checked against `@lincyaw/design`'s
-  `pm-ui-*` and the workbench's shared components (`packages/workbench/src/components.tsx`); add the
-  capability there, not a second implementation in one panel. A UI change is done only after it was seen in
-  light and dark, on desktop and below 768 px.
+- **Fix the primitive before the page.** Follow `docs/design-system.md`. Check `@lincyaw/design`'s
+  `pm-ui-*` and the workbench's shared components (`packages/workbench/src/components.tsx`); add missing
+  capability and the matching Figma component variant there before composing business screens. Business
+  CSS owns layout, not private overrides of a public control's colors, dimensions, typography, borders or
+  states, whether by descendant selector, business class or inline style. Migrate legacy styles in the
+  touched scope instead of adding another override. A UI change is done only after it was seen in light
+  and dark, on desktop and below 768 px; a wireframe or a passing token check is not visual acceptance.
 - **Resources and fallbacks.** New components have an understandable static fallback; Workers, timers and
   subscriptions are released when their lifetime ends. Behavior that only recovers after a reload is not
   done.

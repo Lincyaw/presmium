@@ -1,4 +1,4 @@
-import { Captions, Clock3, Layers, ArrowLeft, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleCheck, CircleHelp, CircleX, Code2, Columns2, Contrast, Copy, Download, ExternalLink, Eye, FileDiff, FileOutput, FileText, Film, Folder, Globe, GitBranch, GitFork, History, Info, Languages, LayoutGrid, Maximize2, Menu, MessageSquare, MessageSquarePlus, MessagesSquare, Minimize2, Moon, MoreHorizontal, PanelLeft, PanelLeftClose, Pause, Pencil, PenLine, Play, Plug, Plus, Presentation, Redo2, Save, Search, SlidersHorizontal, Sparkles, Sun, Trash2, TriangleAlert, Undo2, Users, X } from 'lucide'
+import { Captions, Clock3, Layers, ArrowLeft, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleCheck, CircleHelp, CircleX, Code2, Columns2, Contrast, Copy, Download, ExternalLink, Eye, FileDiff, FileOutput, FileText, Film, Folder, Globe, GitBranch, GitFork, History, Info, Languages, LayoutGrid, LoaderCircle, Maximize2, Menu, MessageSquare, MessageSquarePlus, MessagesSquare, Minimize2, Moon, MoreHorizontal, PanelLeft, PanelLeftClose, Pause, Pencil, PenLine, Play, Plug, Plus, Presentation, Redo2, Save, Search, SlidersHorizontal, Sparkles, Sun, Trash2, TriangleAlert, Undo2, Users, X, Clapperboard, AudioLines, Scissors, Mic, Volume2, Upload, Image, Link, RefreshCw, Minus, Scan, AlignStartVertical, ArrowRightToLine } from 'lucide'
 import type { IconNode } from 'lucide'
 
 // Presmium's semantic names stay stable across React components and the generated HTML.
@@ -17,7 +17,11 @@ export const ICONS = {
   export: FileOutput, download: Download, video: Film, website: Globe, notebook: BookOpen,
   menu: Menu, language: Languages,
   code: Code2,
-  captions: Captions, timing: Clock3, steps: Layers,
+  captions: Captions, timing: Clock3, steps: Layers, loading: LoaderCircle,
+  arrange: Clapperboard, audio: AudioLines, scissors: Scissors, microphone: Mic,
+  volume: Volume2, upload: Upload, image: Image, link: Link, refresh: RefreshCw,
+  minus: Minus, fit: Scan,
+  'timing-during': AlignStartVertical, 'timing-after': ArrowRightToLine,
   overview: LayoutGrid, fullscreen: Maximize2, 'exit-fullscreen': Minimize2,
 } satisfies Record<string, IconNode>
 

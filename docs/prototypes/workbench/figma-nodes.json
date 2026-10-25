@@ -1,0 +1,820 @@
+{
+  "fileKey": "CjQ5JFn3PuGXx0NgwYrCR8",
+  "designUrl": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8",
+  "prototypeUrl": "https://www.figma.com/proto/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-2&starting-point-node-id=9%3A2",
+  "pageId": "5:227",
+  "designSystem": {
+    "pageId": "21:2",
+    "overview": {
+      "nodeId": "25:144",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-144"
+    },
+    "specimens": {
+      "D01": {
+        "nodeId": "25:178",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-178"
+      },
+      "D02": {
+        "nodeId": "25:268",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-268"
+      },
+      "D03": {
+        "nodeId": "25:358",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-358"
+      },
+      "D04": {
+        "nodeId": "25:441",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-441"
+      }
+    },
+    "components": {
+      "Button": {
+        "nodeId": "22:251",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=22-251"
+      },
+      "IconButton": {
+        "nodeId": "22:311",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=22-311"
+      },
+      "FieldControl": {
+        "nodeId": "22:395",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=22-395"
+      },
+      "Choice": {
+        "nodeId": "22:431",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=22-431"
+      },
+      "Menu": {
+        "nodeId": "25:524",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-524"
+      },
+      "Tabs": {
+        "nodeId": "25:537",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-537"
+      },
+      "Tooltip": {
+        "nodeId": "25:558",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-558"
+      },
+      "Range": {
+        "nodeId": "25:561",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-561"
+      },
+      "Dialog": {
+        "nodeId": "25:565",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-565"
+      },
+      "ButtonCompact": {
+        "nodeId": "34:4487",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=34-4487"
+      },
+      "IconButtonCompact": {
+        "nodeId": "34:4673",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=34-4673"
+      },
+      "FieldControlCompact": {
+        "nodeId": "34:4724",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=34-4724"
+      },
+      "FieldControlTouch": {
+        "nodeId": "34:4845",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=34-4845"
+      },
+      "Timing": {
+        "nodeId": "35:546",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=35-546"
+      },
+      "StatusChip": {
+        "nodeId": "41:8",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=41-8"
+      }
+    },
+    "variantCounts": {
+      "regular": {
+        "Button": 30,
+        "IconButton": 12,
+        "FieldControl": 27,
+        "Choice": 18
+      },
+      "compact": {
+        "Button": 30,
+        "IconButton": 12,
+        "FieldControl": 27
+      },
+      "touch": {
+        "FieldControl": 27
+      },
+      "Timing": 2,
+      "StatusChip": 3
+    },
+    "elevationStyles": {
+      "Control/Light": "S:742cbffd8ac27f492f2a1e40a44dc5228aeebcec,",
+      "Float/Light": "S:ddd72b1d33d8f85c38e65ff28b2c50abfe8509cf,",
+      "Page/Light": "S:6395fda0e45c5f1131530e6e2d881b3d81dac9ad,",
+      "Control/Dark": "S:8a5897a56b34626863b5e0f97a26ff27ba1949c9,",
+      "Float/Dark": "S:4b1296c1ee10ac41a8209177ec03e2aa333bf44c,",
+      "Page/Dark": "S:e35d4f3586a70c5603641033685956d6d8a656cc,"
+    },
+    "floatingExamples": {
+      "Light": {
+        "nodeId": "48:502",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=48-502"
+      },
+      "Dark": {
+        "nodeId": "48:551",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=48-551"
+      }
+    },
+    "componentGuides": {
+      "Presmium/Button": {
+        "nodeId": "63:540",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=63-540"
+      },
+      "Presmium/IconButton": {
+        "nodeId": "63:543",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=63-543"
+      },
+      "Presmium/FieldControl": {
+        "nodeId": "63:546",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=63-546"
+      },
+      "Presmium/Choice": {
+        "nodeId": "63:549",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=63-549"
+      },
+      "Presmium/ButtonCompact": {
+        "nodeId": "63:552",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=63-552"
+      },
+      "Presmium/IconButtonCompact": {
+        "nodeId": "63:555",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=63-555"
+      },
+      "Presmium/FieldControlCompact": {
+        "nodeId": "63:558",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=63-558"
+      },
+      "Presmium/FieldControlTouch": {
+        "nodeId": "63:561",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=63-561"
+      }
+    },
+    "tokens": {
+      "collectionId": "VariableCollectionId:21:4",
+      "sourceCollectionId": "VariableCollectionId:21:3",
+      "modes": {
+        "Light": "21:1",
+        "Dark": "21:2"
+      },
+      "variables": [
+        {
+          "id": "VariableID:21:5",
+          "name": "color/bg",
+          "type": "COLOR",
+          "css": "var(--pm-color-bg)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:21:8",
+          "name": "color/surface",
+          "type": "COLOR",
+          "css": "var(--pm-color-surface)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:21:11",
+          "name": "color/sunk",
+          "type": "COLOR",
+          "css": "var(--pm-color-sunk)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:21:14",
+          "name": "color/chrome",
+          "type": "COLOR",
+          "css": "var(--pm-color-chrome)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:21:17",
+          "name": "color/ink",
+          "type": "COLOR",
+          "css": "var(--pm-color-ink)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:21:20",
+          "name": "color/muted",
+          "type": "COLOR",
+          "css": "var(--pm-color-muted)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:21:23",
+          "name": "color/line",
+          "type": "COLOR",
+          "css": "var(--pm-color-line)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:21:26",
+          "name": "color/line-strong",
+          "type": "COLOR",
+          "css": "var(--pm-color-line-strong)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:21:29",
+          "name": "color/accent",
+          "type": "COLOR",
+          "css": "var(--pm-color-accent)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:21:32",
+          "name": "color/accent-soft",
+          "type": "COLOR",
+          "css": "var(--pm-color-accent-soft)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:21:35",
+          "name": "color/on-accent",
+          "type": "COLOR",
+          "css": "var(--pm-color-on-accent)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:21:38",
+          "name": "color/selected",
+          "type": "COLOR",
+          "css": "var(--pm-color-selected)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:21:41",
+          "name": "color/danger",
+          "type": "COLOR",
+          "css": "var(--pm-color-danger)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:21:44",
+          "name": "color/danger-soft",
+          "type": "COLOR",
+          "css": "var(--pm-color-danger-soft)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:21:48",
+          "name": "geometry/controlHeight",
+          "type": "FLOAT",
+          "css": "var(--pm-control-height)",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ]
+        },
+        {
+          "id": "VariableID:21:50",
+          "name": "geometry/compactHeight",
+          "type": "FLOAT",
+          "css": "var(--pm-size-tool)",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ]
+        },
+        {
+          "id": "VariableID:21:52",
+          "name": "geometry/hitArea",
+          "type": "FLOAT",
+          "css": "var(--pm-control-hit-area)",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ]
+        },
+        {
+          "id": "VariableID:21:54",
+          "name": "geometry/icon",
+          "type": "FLOAT",
+          "css": "var(--pm-size-icon)",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ]
+        },
+        {
+          "id": "VariableID:21:56",
+          "name": "geometry/iconLg",
+          "type": "FLOAT",
+          "css": "var(--pm-size-icon-lg)",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ]
+        },
+        {
+          "id": "VariableID:21:58",
+          "name": "geometry/radius",
+          "type": "FLOAT",
+          "css": "var(--pm-radius-control)",
+          "scopes": [
+            "CORNER_RADIUS"
+          ]
+        },
+        {
+          "id": "VariableID:21:60",
+          "name": "geometry/radiusSmall",
+          "type": "FLOAT",
+          "css": "var(--pm-radius-small)",
+          "scopes": [
+            "CORNER_RADIUS"
+          ]
+        },
+        {
+          "id": "VariableID:21:62",
+          "name": "geometry/gap4",
+          "type": "FLOAT",
+          "css": "var(--pm-space-1)",
+          "scopes": [
+            "GAP"
+          ]
+        },
+        {
+          "id": "VariableID:21:64",
+          "name": "geometry/gap8",
+          "type": "FLOAT",
+          "css": "var(--pm-space-2)",
+          "scopes": [
+            "GAP"
+          ]
+        },
+        {
+          "id": "VariableID:21:66",
+          "name": "geometry/gap12",
+          "type": "FLOAT",
+          "css": "var(--pm-space-3)",
+          "scopes": [
+            "GAP"
+          ]
+        },
+        {
+          "id": "VariableID:21:68",
+          "name": "geometry/gap16",
+          "type": "FLOAT",
+          "css": "var(--pm-space-4)",
+          "scopes": [
+            "GAP"
+          ]
+        },
+        {
+          "id": "VariableID:21:70",
+          "name": "geometry/stroke",
+          "type": "FLOAT",
+          "css": "var(--pm-size-hairline)",
+          "scopes": [
+            "STROKE_FLOAT"
+          ]
+        },
+        {
+          "id": "VariableID:21:72",
+          "name": "geometry/focus",
+          "type": "FLOAT",
+          "css": "var(--pm-space-px)",
+          "scopes": [
+            "STROKE_FLOAT"
+          ]
+        },
+        {
+          "id": "VariableID:34:319",
+          "name": "geometry/textareaCompact",
+          "type": "FLOAT",
+          "css": "var(--pm-narration-editor-compact-height)",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ]
+        },
+        {
+          "id": "VariableID:35:548",
+          "name": "geometry/numberWidth",
+          "type": "FLOAT",
+          "css": "var(--pm-control-number-width)",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ]
+        },
+        {
+          "id": "VariableID:35:550",
+          "name": "geometry/timeWidth",
+          "type": "FLOAT",
+          "css": "var(--pm-control-time-width)",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ]
+        },
+        {
+          "id": "VariableID:43:387",
+          "name": "geometry/canvasMinWidth",
+          "type": "FLOAT",
+          "css": "var(--pm-canvas-min-width)",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ]
+        },
+        {
+          "id": "VariableID:59:540",
+          "name": "color/primary-hover",
+          "type": "COLOR",
+          "css": "var(--pm-color-primary-hover)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:59:543",
+          "name": "color/primary-pressed",
+          "type": "COLOR",
+          "css": "var(--pm-color-primary-pressed)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:59:546",
+          "name": "color/accent-hover",
+          "type": "COLOR",
+          "css": "var(--pm-color-accent-hover)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:59:549",
+          "name": "color/accent-pressed",
+          "type": "COLOR",
+          "css": "var(--pm-color-accent-pressed)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:59:553",
+          "name": "state/disabled-opacity",
+          "type": "FLOAT",
+          "css": "var(--pm-opacity-disabled)",
+          "scopes": [
+            "OPACITY"
+          ]
+        }
+      ],
+      "textStyles": {
+        "display": "S:fcb5acdeda76d51440b034862a29235690371d84,",
+        "title": "S:58b85f86de27b025e943713542eedabe7d35d41c,",
+        "body": "S:9bb8d10a0fe1932a12f4e7971e93990b770f7bbb,",
+        "label": "S:bdf56d0b98f40036b3d67c33ef54a8bb2d1dd2cb,",
+        "hint": "S:2c5230dc425cd5d0e3bdc21dbf9956e744afd1f4,",
+        "compact-body": "S:1edf9094b40628d04136dac8b16437d8e00a3d61,",
+        "touch-body": "S:2f05cf731fee2bb513dda7986612d4c910c3a1b2,"
+      },
+      "opacityUnit": {
+        "figma": "percent",
+        "css": "fraction",
+        "figmaDisabled": 55,
+        "cssDisabled": 0.55
+      }
+    },
+    "icons": {
+      "plus": "22:2",
+      "play": "22:6",
+      "check": "22:9",
+      "close": "22:12",
+      "search": "22:16",
+      "refresh": "22:20",
+      "warning": "22:26",
+      "more": "22:31",
+      "chevron-right": "22:36",
+      "comment": "22:39",
+      "audio": "22:42",
+      "export": "22:50",
+      "overview": "40:496",
+      "captions": "40:502",
+      "fullscreen": "40:506",
+      "slides": "40:512",
+      "steps": "40:517",
+      "chevron-left": "40:522",
+      "document": "40:525",
+      "image": "40:532",
+      "sparkle": "40:537",
+      "loading": "65:543"
+    }
+  },
+  "nodes": {
+    "P00": {
+      "nodeId": "9:2",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-2"
+    },
+    "P01": {
+      "nodeId": "9:3",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-3"
+    },
+    "P02": {
+      "nodeId": "9:4",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-4"
+    },
+    "P03": {
+      "nodeId": "9:5",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-5"
+    },
+    "P04": {
+      "nodeId": "9:6",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-6"
+    },
+    "P05": {
+      "nodeId": "9:7",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-7"
+    },
+    "P06": {
+      "nodeId": "9:8",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-8"
+    },
+    "P07": {
+      "nodeId": "9:9",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-9"
+    },
+    "P08": {
+      "nodeId": "9:10",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-10"
+    },
+    "P09": {
+      "nodeId": "9:11",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-11"
+    },
+    "P10": {
+      "nodeId": "9:12",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-12"
+    },
+    "P11": {
+      "nodeId": "9:13",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-13"
+    },
+    "P12": {
+      "nodeId": "9:14",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-14"
+    },
+    "P13": {
+      "nodeId": "9:15",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-15"
+    },
+    "P14": {
+      "nodeId": "9:16",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-16"
+    },
+    "P15": {
+      "nodeId": "9:17",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-17"
+    },
+    "P16": {
+      "nodeId": "9:18",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-18"
+    },
+    "P17": {
+      "nodeId": "9:19",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-19"
+    },
+    "P18": {
+      "nodeId": "9:20",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-20"
+    },
+    "P19": {
+      "nodeId": "9:21",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-21"
+    },
+    "P20": {
+      "nodeId": "9:22",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-22"
+    },
+    "P21": {
+      "nodeId": "9:23",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-23"
+    },
+    "P22": {
+      "nodeId": "9:24",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-24"
+    },
+    "P23": {
+      "nodeId": "9:25",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-25"
+    },
+    "P24": {
+      "nodeId": "9:26",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-26"
+    },
+    "P25": {
+      "nodeId": "9:27",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-27"
+    },
+    "P26": {
+      "nodeId": "9:28",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-28"
+    },
+    "P27": {
+      "nodeId": "9:29",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-29"
+    },
+    "P28": {
+      "nodeId": "9:30",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-30"
+    },
+    "P29": {
+      "nodeId": "9:31",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-31"
+    },
+    "P30": {
+      "nodeId": "9:32",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-32"
+    },
+    "S01": {
+      "nodeId": "9:33",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-33"
+    },
+    "S02": {
+      "nodeId": "9:34",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-34"
+    },
+    "S03": {
+      "nodeId": "9:35",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-35"
+    },
+    "S04": {
+      "nodeId": "9:36",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-36"
+    },
+    "S05": {
+      "nodeId": "9:37",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-37"
+    },
+    "S06": {
+      "nodeId": "9:38",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-38"
+    },
+    "S07": {
+      "nodeId": "9:39",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-39"
+    },
+    "S08": {
+      "nodeId": "9:40",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-40"
+    },
+    "M01": {
+      "nodeId": "9:41",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-41"
+    },
+    "M02": {
+      "nodeId": "9:42",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-42"
+    }
+  },
+  "interactions": {
+    "pageId": "40:4644",
+    "stateCount": 30,
+    "overview": {
+      "nodeId": "40:4645",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4645"
+    },
+    "prototypeUrl": "https://www.figma.com/proto/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4645&starting-point-node-id=40%3A4645",
+    "nodes": {
+      "I00": {
+        "nodeId": "40:4645",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4645"
+      },
+      "I01": {
+        "nodeId": "40:4646",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4646"
+      },
+      "I02": {
+        "nodeId": "40:4647",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4647"
+      },
+      "I03": {
+        "nodeId": "40:4648",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4648"
+      },
+      "I04": {
+        "nodeId": "40:4649",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4649"
+      },
+      "I05": {
+        "nodeId": "40:4650",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4650"
+      },
+      "I06": {
+        "nodeId": "40:4651",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4651"
+      },
+      "I07": {
+        "nodeId": "40:4652",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4652"
+      },
+      "I08": {
+        "nodeId": "40:4653",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4653"
+      },
+      "I09": {
+        "nodeId": "40:4654",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4654"
+      },
+      "I10": {
+        "nodeId": "40:4655",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4655"
+      },
+      "I11": {
+        "nodeId": "40:4656",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4656"
+      },
+      "I12": {
+        "nodeId": "40:4657",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4657"
+      }
+    }
+  },
+  "designBaseline": "2026-10-25"
+}

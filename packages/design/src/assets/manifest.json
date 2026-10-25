@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "owner": "@lincyaw/design",
+  "ownerRole": "Registry maintainer; not the copyright owner of third-party assets.",
+  "scope": "Application UI assets only; project materials and generated content are excluded.",
+  "assets": [
+    {
+      "id": "semantic-icons",
+      "kind": "icon-library",
+      "sourcePackage": "lucide",
+      "license": "ISC",
+      "source": "https://lucide.dev",
+      "entry": "../icons.ts",
+      "usage": "Semantic UI icons; consumers use the shared icon map rather than copying SVG paths."
+    },
+    {
+      "id": "ui-font",
+      "kind": "font",
+      "sourcePackage": "@fontsource/ibm-plex-sans",
+      "license": "OFL-1.1",
+      "source": "https://fontsource.org/fonts/ibm-plex-sans",
+      "entry": "../fonts.css",
+      "usage": "Application interface typography with the declared CJK system fallbacks."
+    },
+    {
+      "id": "reading-font",
+      "kind": "font",
+      "sourcePackage": "@fontsource/source-serif-4",
+      "license": "OFL-1.1",
+      "source": "https://fontsource.org/fonts/source-serif-4",
+      "entry": "../fonts.css",
+      "usage": "Document reading typography."
+    },
+    {
+      "id": "code-font",
+      "kind": "font",
+      "sourcePackage": "@fontsource/ibm-plex-mono",
+      "license": "OFL-1.1",
+      "source": "https://fontsource.org/fonts/ibm-plex-mono",
+      "entry": "../fonts.css",
+      "usage": "Authored teaching code and technical surfaces."
+    }
+  ],
+  "newAssetRequirements": [
+    "Register source, license, owner, usage, local entry and required light/dark variants before use.",
+    "For new product assets, record the author or provider, required attribution, permitted modifications and the license evidence; registry maintenance does not imply ownership or extra permissions.",
+    "For new product assets, register the original source file, exported variants, applicable resolution or cropping rules, Figma node URL and consuming code locations.",
+    "Do not invent missing authorization details for existing dependency assets; keep their declared license and distribution pipeline, and resolve unknown rights before adding new product files.",
+    "Keep UI images and marks under this directory; reference a named asset instead of embedding an ad hoc data URL in a business component.",
+    "Keep font binaries and their licenses with the declared dependency/build pipeline.",
+    "Do not put user uploads, generated teaching assets or credentials in this registry."
+  ]
+}

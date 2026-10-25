@@ -1480,6 +1480,10 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 
 ### 5.10 设计系统
 
+正式控件、样式文件职责、素材入库、Figma 第 02 页组件映射与遗留迁移以 [控件与视觉实现规范](design-system.md) 为准。业务 CSS 只组合布局，不临时重写公共控件外观；缺少能力先补公共层与 Figma 变体。本节记录现有实现边界，不能用低保真线框或结构检查代替正式视觉验收。
+
+本轮新增 regular 高度、触屏热区、短数值／时间宽度、compact 讲稿高度和较大图标的目标令牌；桌面编辑默认使用 compact，取值以视觉规范为准。现有 `components.css` 的常规按钮／输入仍使用 2rem 最小高度，`--pm-size-touch` 仍是 2.5rem。新令牌已登记不代表旧控件已迁移，实际尺寸与状态应按规范逐项统一。
+
 > **工作台**：令牌、`pm-ui-*` 的类、字体与图标在 `@lincyaw/design`（`packages/design/src/`；`@lincyaw/host` 引用它，React 组件与 `useAppearance` 留在 `host`），工作台的 React 面板（`@lincyaw/workbench` 的 `components.tsx`）用同一层，dsh 自己的面板经它的 `--dsw-*` 令牌映射（`design-dsh.md` 7.5 节，第 13 节）。
 
 产物的 React 通用交互由依赖实现：`@lincyaw/host` 的弹窗、抽屉、菜单、浮层和标签页封装 Radix Primitives；查看器的内容标签页与放映焦点范围也使用 Radix。文稿标签的 `sync` 联动、背景页面禁用与步骤导航由 Presmium 维护。主题由宿主的 React hook 与浏览器观察器同步；图标由 Lucide 提供，`@lincyaw/design` 保留语义名称与框架无关的节点和 HTML 接口。读者问答的 SSE 事件边界由 eventsource-parser 解析。
@@ -1492,13 +1496,13 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 
 | 组 | 令牌 | 说明 |
 |---|---|---|
-| 颜色 | `--pm-color-bg`、`surface`、`sunk`、`chrome`、`canvas`、`hover`、`backdrop`、`code`、`ink`、`muted`、`line`、`line-strong`、`accent`、`accent-soft`、`accent-line`、`on-accent`、`selected`、`ok`、`ok-soft`、`warn`、`warn-soft`、`danger`、`danger-soft`、`add`、`del`、`gutter`、`syntax-key`、`syntax-string`、`syntax-keyword`、`qr-paper`、`qr-ink` | 二维码的 paper/ink 在暗色中保留固定对比。其余取值见 `packages/design/src/tokens.css`。`ok` 在 `ok-soft` 上达到 AA；`line-strong` 在 `bg`、`surface`、`sunk` 上达到 3:1（WCAG 1.4.11）。源码编辑器的行号用 `muted`（5.11 节）；`danger` 与 `del` 同色。`chrome` 是编辑台围在文稿四周的界面（各种栏与窗格），`canvas` 是纸张或幻灯片下面的画布；`hover` 是鼠标下的扁平控件，`accent-line` 是按下的控件的边，`backdrop` 是模态遮罩 |
+| 颜色 | `--pm-color-bg`、`surface`、`sunk`、`chrome`、`canvas`、`hover`、`primary-hover`、`primary-pressed`、`accent-hover`、`accent-pressed`、`backdrop`、`code`、`ink`、`muted`、`line`、`line-strong`、`accent`、`accent-soft`、`accent-line`、`on-accent`、`selected`、`ok`、`ok-soft`、`warn`、`warn-soft`、`danger`、`danger-soft`、`add`、`del`、`gutter`、`syntax-key`、`syntax-string`、`syntax-keyword`、`qr-paper`、`qr-ink` | 二维码的 paper/ink 在暗色中保留固定对比。其余取值见 `packages/design/src/tokens.css`。`ok` 在 `ok-soft` 上达到 AA；`line-strong` 在 `bg`、`surface`、`sunk` 上达到 3:1（WCAG 1.4.11）。源码编辑器的行号用 `muted`（5.11 节）；`danger` 与 `del` 同色。`chrome` 是编辑台围在文稿四周的界面（各种栏与窗格），`canvas` 是纸张或幻灯片下面的画布；`hover` 是鼠标下的扁平控件，`accent-line` 是按下的控件的边，`backdrop` 是模态遮罩 |
 | 字体 | `--pm-font-sans`、`--pm-font-serif`、`--pm-font-mono` | IBM Plex Sans、Source Serif 4、IBM Plex Mono，后接中文的系统字体 |
 | 字号 | `--pm-text-xs`、`sm`、`md`、`lg`、`reading`、`title`、`display` | 12、13、14（界面）、16、17（阅读）、20、32 px，以 rem 表示，跟随读者的字号 |
 | 行高 | `--pm-leading-tight`、`ui`、`reading` | 1.25、1.6、1.85 |
 | 间距 | `--pm-space-px`、`--pm-space-1` 至 `--pm-space-12` | 4 px 网格，`px` 是 2 px 的微调 |
 | 圆角 | `--pm-radius-control`、`small`、`card`、`panel`、`chip`、`pill`、`tool`、`sheet` | 8、6、12、14、4、999、4、2 px；`tool` 是编辑台的命令与导航项，`sheet` 是画布上的纸张 |
-| 尺寸 | `--pm-size-hairline`、`stroke`、`rule`、`dot`、`icon-sm`、`icon`、`logo`、`badge`、`avatar`、`divider`、`tool`、`touch`、`row` | 细线 1 px、描边与焦点环 2 px、引文的竖线 3 px；圆点、图标、标志、编号徽标与头像；分隔线的高度、命令按钮、窄屏的触控目标与列表行的高度 |
+| 尺寸 | `--pm-size-hairline`、`stroke`、`rule`、`dot`、`icon-sm`、`icon`、`icon-lg`、`logo`、`badge`、`avatar`、`divider`、`tool`、`touch`、`row`；`--pm-control-height`、`--pm-control-hit-area` | 细线、描边、图标、标志和行高；新增正式控件高度与有效热区令牌，旧控件使用情况与待迁移项见视觉规范 |
 | 编辑台 | `--pm-appbar-height`、`--pm-appbar-height-touch`、`--pm-toolbar-height`、`--pm-statusbar-height`、`--pm-pane-header-height`、`--pm-navigation-width`、`--pm-aside-width`、`--pm-sheet-width` | 应用栏、命令栏、状态栏与窗格标题的高度，导航窗格与批注、版本历史窗格的宽度，画布上纸张的宽度 |
 | 阴影 | `--pm-shadow`、`--pm-shadow-float`、`--pm-shadow-page` | 前两个只用于分段控件的选中项与浮层；`page` 是画布上的纸张与幻灯片；不用渐变 |
 | 动效 | `--pm-duration-fast`、`--pm-duration`、`--pm-duration-spin`、`--pm-duration-pulse`、`--pm-ease` | 系统要求减少动态效果时前两个为 0；`spin` 是忙碌的转圈，`pulse` 是活动的圆点 |
@@ -1522,13 +1526,13 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 | `PmTabs` | 标签页与所选标签的面板（默认插槽，得到所选的 `value`；面板以它的标签为名）；方向键切换并移动焦点，到头时回到另一端 |
 | `PmPopover` | 依附于触发器的弹层；会超出窗口时横向移入，离窗口两侧 1 rem（如手机宽度下站点菜单中的工具栏项） |
 | `PmDrawer` | 活动栏旁、与窗口等高的面板 |
-| `PmDialog` | 对话框：不是模态的，页面仍可操作；移到文档末尾，不受工具栏的布局影响 |
+| `PmDialog` | Radix 对话框包装；workbench 与 host 的遮罩和关闭策略当前有差异，正式模态与焦点协议见视觉规范，不凭是否绘制遮罩判断语义 |
 | `PmMenu` | 菜单：打开时焦点在第一项，方向键移动，到头时回到另一端；选中一项或按 Escape 后焦点回到按钮；同样留在窗口内 |
 | `PmEmpty` | 空状态 |
 | `PmNotice` | 提示，`status`，失败时为 `alert` |
 | `PmToolbarEntry` | 打开面板的工具栏项：在活动栏中是图标按钮与抽屉，在其他位置是带文字的按钮与弹层（状态栏中向上弹出） |
 
-弹层、抽屉、对话框与菜单按 Escape 关闭，焦点回到触发器；弹层、抽屉与菜单在外部按下时关闭，对话框不关。文字对背景达到 WCAG AA（1.4.3）；标识控件与状态的图形达到 3:1（1.4.11）：输入框与搜索框由边框标识，分段控件的选中项由边框标识，都用 `line-strong`；按钮由文字标识，边框可以用 `line`；复选框由浏览器绘制，颜色取 `accent`。另有 `pm-ui-search`（搜索框）、`pm-ui-kbd`、`pm-ui-heading`（卡片与分区的小标题）、`pm-ui-list`、`pm-ui-dot`（状态点）、`pm-ui-code`、`pm-ui-link` 等类。
+浮层的焦点、Escape 和外部关闭由 Radix 封装处理；历史对话框说明与当前包装存在差异，统一后的目标行为见 [视觉规范第 5 节](design-system.md#5-状态与行为合同)。文字对背景达到 WCAG AA（1.4.3）；标识控件与状态的图形达到 3:1（1.4.11）：输入框与搜索框由边框标识，分段控件的选中项由边框标识，都用 `line-strong`；按钮由文字标识，边框可以用 `line`；复选框由浏览器绘制，颜色取 `accent`。另有 `pm-ui-search`（搜索框）、`pm-ui-kbd`、`pm-ui-heading`（卡片与分区的小标题）、`pm-ui-list`、`pm-ui-dot`（状态点）、`pm-ui-code`、`pm-ui-link` 等类。
 
 `useAppearance()` 给出当前是否为暗色与切换的方法。宿主适配可以提供 `HostAdapter.useDarkMode`（查看器的页面给出页面的明暗），这样切换与页面的明暗一致，站点外壳的开关另把读者的选择记在本站点的 `localStorage`（`presmium-appearance`，页面头部在第一次绘制之前读它）；没有时 `useAppearance` 直接设 `<html>` 的 `dark` 类。
 
@@ -1542,6 +1546,8 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 - **阅读页**：颜色与字体只取令牌，IR 运行时与插件同样，因此也用书卷的颜色。标题与 Markdown 块用衬线体，阅读正文 17 px、行高 1.85；组件保持界面的无衬线体。
 
 ### 5.11 浏览器中的源码编辑
+
+本节记录现有与兼容编辑接口及其保存边界，不定义普通 Web 作者的入口。目标 Web 通过内容、公开参数、对话和批注修改文稿，代码与 IR 留在技术入口，见 [UI/UX RFC 第 1 节](rfc-workbench-uiux.md#1-决策与边界)；隐藏源码界面不取消下述版本、来源和事务校验。IR 原生项目仍是待实现能力，不能将生成的 `dist/ir.json` 当作可直接写回的源文件。
 
 #### 正文块与步骤讲解
 

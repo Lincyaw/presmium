@@ -1,0 +1,580 @@
+{
+  "version": 1,
+  "screens": [
+    {
+      "id": "P01",
+      "title": "项目列表",
+      "section": "素材创作",
+      "layout": "library",
+      "purpose": "查找已有项目，或从空白和素材开始创作。",
+      "nav": [{ "label": "最近项目", "target": "P01" }, { "label": "新建项目", "target": "P02" }],
+      "panels": [
+        { "title": "最近打开", "kind": "list", "lines": ["代码写成的动画 · 今天 14:32", "冒泡排序 · 昨天 18:05", "数据库课程 · 3 天前"] },
+        { "title": "所选项目", "kind": "status", "lines": ["代码写成的动画", "8 页 · 26 个步骤", "上次导出：演示视频", "所有修改已保存"] }
+      ],
+      "fields": [{ "label": "搜索项目", "value": "输入项目名称" }],
+      "actions": [{ "label": "新建项目", "icon": "plus", "target": "P02", "primary": true }, { "label": "打开项目", "icon": "document", "target": "P08", "primary": false }, { "label": "项目设置", "icon": "more", "target": "P29", "primary": false }],
+      "states": ["暂无项目", "项目已复制", "项目无法打开，请重试"],
+      "features": ["项目搜索", "新建项目", "打开项目", "复制项目", "重命名项目", "删除项目"],
+      "entry": "启动工作台，或从项目标题返回项目列表。",
+      "success": "打开所选项目，并恢复其有效的页面和步骤位置。",
+      "failure": "保留项目列表，显示无法打开的项目和重试入口。"
+    },
+    {
+      "id": "P02",
+      "title": "新建创作任务",
+      "section": "素材创作",
+      "layout": "dialog",
+      "purpose": "明确创作目标，选择空白编辑或让助手处理素材。",
+      "nav": [{ "label": "项目列表", "target": "P01" }, { "label": "导入素材", "target": "P03" }],
+      "panels": [
+        { "title": "创作目标", "kind": "form", "lines": ["项目名称：代码写成的动画", "受众：首次接触动画编程的学生", "用途：课堂讲解与课后回看", "目标时长：12 分钟"] },
+        { "title": "开始方式", "kind": "list", "lines": ["从素材生成：整理材料并提出创作方案", "空白项目：直接编写页面和正文", "参考已有项目：保留内容结构作为起点"] }
+      ],
+      "fields": [{ "label": "项目名称", "value": "代码写成的动画" }, { "label": "受众", "value": "入门学生" }, { "label": "语言", "value": "简体中文" }, { "label": "目标时长", "value": "12 分钟" }, { "label": "创作要求", "value": "用逐步演示解释动画的生成过程" }],
+      "actions": [{ "label": "添加素材", "icon": "plus", "target": "P03", "primary": true }, { "label": "创建空白项目", "icon": "document", "target": "P08", "primary": false }, { "label": "取消", "icon": "close", "target": "P01", "primary": false }],
+      "states": ["请填写项目名称", "创作要求已保存", "创建失败，已保留填写内容"],
+      "features": ["创作目标设置", "受众设置", "语言设置", "时长目标", "空白创作", "素材驱动创作"],
+      "entry": "从项目列表点击新建项目。",
+      "success": "建立项目，并进入素材导入或空白内容编辑。",
+      "failure": "保留表单，指出缺失字段或创建失败原因。"
+    },
+    {
+      "id": "P03",
+      "title": "批量导入素材",
+      "section": "素材创作",
+      "layout": "dialog",
+      "purpose": "一次添加文件、链接和文本，逐项管理导入结果。",
+      "nav": [{ "label": "创作任务", "target": "P02" }, { "label": "素材库", "target": "P04" }],
+      "panels": [
+        { "title": "添加材料", "kind": "form", "lines": ["拖入文档、图片、音频或视频", "粘贴资料链接，可每行填写一条", "直接添加说明、笔记或讲义文本"] },
+        { "title": "导入队列", "kind": "status", "lines": ["动画课程.pdf · 已导入", "演示参考.mp4 · 处理中 68%", "课程笔记 · 已导入", "参考链接 · 暂时无法访问"] }
+      ],
+      "fields": [{ "label": "资料链接", "value": "粘贴链接，每行一条" }, { "label": "文本材料", "value": "补充课程笔记或素材说明" }],
+      "actions": [{ "label": "继续整理", "icon": "check", "target": "P05", "primary": true }, { "label": "查看已导入素材", "icon": "eye", "target": "P04", "primary": false }, { "label": "重试失败项", "icon": "redo", "target": "P03", "primary": false }],
+      "states": ["已导入 3 项，1 项需要处理", "正在解析材料，可稍后继续", "失败项目已保留，支持单独重试"],
+      "features": ["批量文件导入", "链接导入", "文本导入", "逐项进度", "部分失败重试", "移除导入项"],
+      "entry": "从新建任务或素材库添加材料。",
+      "success": "可用材料进入素材库，未完成项目继续显示各自状态。",
+      "failure": "明确失败项目，允许移除或重试，不撤销已成功的导入。"
+    },
+    {
+      "id": "P04",
+      "title": "素材库与详情",
+      "section": "素材创作",
+      "layout": "library",
+      "purpose": "查看原始材料、生成素材及引用关系，并管理替换影响。",
+      "nav": [{ "label": "项目", "target": "P01" }, { "label": "内容", "target": "P08" }, { "label": "素材", "target": "P04" }],
+      "panels": [
+        { "title": "项目素材", "kind": "list", "lines": ["动画课程.pdf · 原始材料", "编译流程演示 · 生成动画", "课程封面.png · 图片", "中文配音片段 · 已生成"] },
+        { "title": "编译流程演示", "kind": "canvas", "lines": ["动画预览 · 4 个步骤", "用于第 2 页、第 5 页", "依据：动画课程.pdf，第 12–15 页", "更新素材将影响 2 处引用"] }
+      ],
+      "fields": [{ "label": "搜索素材", "value": "按名称或内容查找" }, { "label": "素材类型", "value": "全部" }],
+      "actions": [{ "label": "添加素材", "icon": "plus", "target": "P03", "primary": true }, { "label": "插入当前页", "icon": "document", "target": "P08", "primary": false }, { "label": "描述修改", "icon": "sparkle", "target": "P12", "primary": false }],
+      "states": ["素材尚未用于页面", "替换将影响 2 处引用", "原文件缺失，请重新关联"],
+      "features": ["素材搜索", "原始材料预览", "生成动画预览", "来源依据", "引用位置", "替换影响检查", "素材删除"],
+      "entry": "从项目工作区打开素材，或查看导入结果。",
+      "success": "预览所选素材，能够定位引用页或插入到当前页面。",
+      "failure": "保留引用关系，并显示重新关联或重新生成入口。"
+    },
+    {
+      "id": "P05",
+      "title": "创作方案与大纲",
+      "section": "素材创作",
+      "layout": "workspace",
+      "purpose": "在正式生成前确认内容安排和素材使用方案。",
+      "nav": [{ "label": "素材", "target": "P04" }, { "label": "创作方案", "target": "P05" }, { "label": "对话", "target": "P12" }],
+      "panels": [
+        { "title": "页面大纲", "kind": "list", "lines": ["01 课程目标 · 纯文字", "02 从材料到画面 · 逐步动画", "03 动画时间与讲解 · 对照演示", "04 小结与练习 · 图文"] },
+        { "title": "创作方案", "kind": "form", "lines": ["预计 8 页，约 12 分钟", "每个重点概念安排 3–5 个步骤", "先建立画面，再补充步骤讲稿", "资料中未覆盖的结论将单独标识"] }
+      ],
+      "fields": [{ "label": "讲解风格", "value": "清晰、正式，适合入门课程" }, { "label": "需要补充", "value": "是否加入课堂练习" }],
+      "actions": [{ "label": "开始生成", "icon": "sparkle", "target": "P06", "primary": true }, { "label": "调整方案", "icon": "comment-add", "target": "P12", "primary": false }, { "label": "补充材料", "icon": "plus", "target": "P03", "primary": false }],
+      "states": ["方案可编辑", "需要确认 1 项信息", "材料已更新，建议重新检查方案"],
+      "features": ["大纲确认", "页面安排", "内容类型规划", "步骤规划", "创作约束", "资料缺口提示"],
+      "entry": "材料导入完成后，助手提出可编辑方案。",
+      "success": "作者确认方案，进入生成任务。",
+      "failure": "保留方案和原始材料，明确需要补充或确认的信息。"
+    },
+    {
+      "id": "P06",
+      "title": "生成任务",
+      "section": "素材创作",
+      "layout": "task",
+      "purpose": "了解助手的处理进度，并处理需要补充信息或局部失败的任务。",
+      "nav": [{ "label": "创作方案", "target": "P05" }, { "label": "任务进度", "target": "P06" }, { "label": "内容", "target": "P08" }],
+      "panels": [
+        { "title": "任务进度", "kind": "status", "lines": ["材料分析 · 已完成", "资料补充 · 已完成", "页面与动画生成 · 5 / 8 页", "画面检查 · 等待前序完成"] },
+        { "title": "需要关注", "kind": "list", "lines": ["第 3 页演示已可预览", "第 6 页资料不足，等待补充", "其他页面继续生成", "离开此界面不会取消任务"] }
+      ],
+      "fields": [{ "label": "补充说明", "value": "为第 6 页提供参考依据或调整要求" }],
+      "actions": [{ "label": "查看已有结果", "icon": "eye", "target": "P07", "primary": true }, { "label": "补充说明", "icon": "comment-add", "target": "P12", "primary": false }, { "label": "取消任务", "icon": "close", "target": "P05", "primary": false }],
+      "states": ["正在生成，可在后台继续", "等待作者补充信息", "部分失败，已完成内容保留", "任务已取消"],
+      "features": ["阶段进度", "后台生成", "增量结果", "需要补充信息", "局部失败", "任务取消", "重试生成"],
+      "entry": "确认创作方案，或重新生成所选内容。",
+      "success": "生成结果可逐项预览和采用，不直接覆盖已确认内容。",
+      "failure": "保留已完成结果，并提供失败项目的原因和重试入口。"
+    },
+    {
+      "id": "P07",
+      "title": "生成结果审阅",
+      "section": "素材创作",
+      "layout": "workspace",
+      "purpose": "检查生成的页面、动画和讲稿，再决定采用范围。",
+      "nav": [{ "label": "任务", "target": "P06" }, { "label": "生成结果", "target": "P07" }, { "label": "内容", "target": "P08" }],
+      "panels": [
+        { "title": "本次结果", "kind": "list", "lines": ["8 页内容 · 26 个步骤", "6 个动画素材 · 可预览", "26 段讲稿 · 尚未生成配音", "2 项内容需要作者确认"] },
+        { "title": "第 2 页预览", "kind": "canvas", "lines": ["从材料到画面", "正文、动画与步骤标记", "依据：动画课程.pdf，第 12–15 页", "采用后仍可逐页编辑"] }
+      ],
+      "fields": [{ "label": "采用范围", "value": "全部已检查内容" }],
+      "actions": [{ "label": "采用所选结果", "icon": "check", "target": "P08", "primary": true }, { "label": "继续调整", "icon": "sparkle", "target": "P12", "primary": false }, { "label": "返回任务", "icon": "undo", "target": "P06", "primary": false }],
+      "states": ["待检查 2 项", "所选结果已采用", "原有内容存在更新，请重新对照"],
+      "features": ["生成页面预览", "动画素材预览", "讲稿检查", "来源依据", "逐项采用", "批量采用", "继续生成"],
+      "entry": "从生成任务查看已有或完整结果。",
+      "success": "选中结果成为可编辑内容，并记录本次修改。",
+      "failure": "冲突内容不自动覆盖，保留结果供重新对照。"
+    },
+    {
+      "id": "P08",
+      "title": "内容编辑",
+      "section": "内容编辑",
+      "layout": "workspace",
+      "purpose": "直接编辑页面中的正文和内容块，并查看生成画面。",
+      "nav": [{ "label": "内容", "target": "P08" }, { "label": "素材", "target": "P04" }, { "label": "编排", "target": "P16" }],
+      "panels": [
+        { "title": "页面", "kind": "list", "lines": ["01 课程目标", "02 从材料到画面 · 当前页", "03 动画时间与讲解", "04 小结与练习"] },
+        { "title": "当前页面", "kind": "canvas", "lines": ["从材料到画面", "一份内容可以用于阅读、演示和视频。", "动画预览：输入、结构、组件、画面", "页 2 · 步骤 1–4"] },
+        { "title": "编辑状态", "kind": "status", "lines": ["正文直接在页面内编辑", "讲稿在编排中按步骤编辑", "所有修改已保存"] }
+      ],
+      "fields": [],
+      "actions": [{ "label": "插入内容块", "icon": "plus", "target": "P10", "primary": false }, { "label": "描述修改", "icon": "sparkle", "target": "P12", "primary": true }, { "label": "放映", "icon": "slides", "target": "P25", "primary": false }, { "label": "导出", "icon": "export", "target": "P27", "primary": false }],
+      "states": ["正文保存中", "画面正在更新", "显示上次可用画面", "本地草稿可恢复"],
+      "features": ["正文块编辑", "纯文字页面", "混合内容页面", "动画预览", "页步骤标记", "自动保存", "工作区切换"],
+      "entry": "打开项目、采用生成结果，或从编排返回。",
+      "success": "正文、块预览与已保存版本一致，选择位置保持有效。",
+      "failure": "保留输入和上次画面，以可理解的原因提示恢复操作。"
+    },
+    {
+      "id": "P09",
+      "title": "页面管理",
+      "section": "内容编辑",
+      "layout": "dialog",
+      "purpose": "以页为单位新增、重排和管理内容。",
+      "nav": [{ "label": "内容", "target": "P08" }, { "label": "页面管理", "target": "P09" }],
+      "panels": [
+        { "title": "页面顺序", "kind": "list", "lines": ["01 课程目标", "02 从材料到画面 · 已选中", "03 动画时间与讲解", "在当前页之后添加新页面"] },
+        { "title": "所选页面", "kind": "status", "lines": ["4 个步骤 · 4 段讲稿", "2 处素材引用", "删除页面同时移除其讲稿绑定", "可从版本历史恢复"] }
+      ],
+      "fields": [{ "label": "页面标题", "value": "从材料到画面" }],
+      "actions": [{ "label": "新建页面", "icon": "plus", "target": "P08", "primary": true }, { "label": "复制页面", "icon": "copy", "target": "P08", "primary": false }, { "label": "删除所选页", "icon": "trash", "target": "P09", "primary": false }, { "label": "完成", "icon": "check", "target": "P08", "primary": false }],
+      "states": ["页面已移动，步骤绑定保留", "新页正在准备", "无法移动此页，原内容已保留"],
+      "features": ["新建独立页面", "页面重命名", "页面复制", "页面重排", "页面删除", "关联内容提示"],
+      "entry": "页面栏的加号或页级更多菜单。",
+      "success": "修改后聚焦对应页面，原有页面与步骤仍可访问。",
+      "failure": "不移动选择到未创建页面，并保留原文与关联内容。"
+    },
+    {
+      "id": "P10",
+      "title": "插入与转换内容块",
+      "section": "内容编辑",
+      "layout": "dialog",
+      "purpose": "在当前页添加内容，或转换已有正文块类型。",
+      "nav": [{ "label": "内容", "target": "P08" }, { "label": "素材库", "target": "P04" }],
+      "panels": [
+        { "title": "插入内容", "kind": "list", "lines": ["文本：段落、标题、列表、引用", "媒体：图片、音频、视频", "演示：动画、图表、公式", "从素材库选择已有内容"] },
+        { "title": "当前选择", "kind": "status", "lines": ["第 2 页 · 正文块", "转换保留可兼容的文字和格式", "复杂演示块不会直接转为普通段落", "新建页面属于独立页级操作"] }
+      ],
+      "fields": [{ "label": "查找内容类型", "value": "输入名称" }],
+      "actions": [{ "label": "插入文本", "icon": "document", "target": "P08", "primary": true }, { "label": "选择素材", "icon": "plus", "target": "P04", "primary": false }, { "label": "生成动画", "icon": "sparkle", "target": "P12", "primary": false }],
+      "states": ["内容插入当前页", "此内容暂不支持转换", "插入失败，原内容未改变"],
+      "features": ["正文类型选择", "块类型转换", "媒体插入", "动画插入", "图表与公式入口", "块级与页级区分"],
+      "entry": "块旁加号、斜杠菜单或块类型菜单。",
+      "success": "内容块插入当前页，并聚焦其可编辑区域。",
+      "failure": "显示不支持的转换或失败原因，原块保持完整。"
+    },
+    {
+      "id": "P11",
+      "title": "内容块属性",
+      "section": "内容编辑",
+      "layout": "workspace",
+      "purpose": "调整内容的布局和显示范围，生成内容通过描述修改。",
+      "nav": [{ "label": "内容", "target": "P08" }, { "label": "块属性", "target": "P11" }, { "label": "编排", "target": "P16" }],
+      "panels": [
+        { "title": "所选内容", "kind": "canvas", "lines": ["编译流程演示", "第 2 页 · 4 个步骤", "当前选择保留在画面中", "布局调整即时预览"] },
+        { "title": "属性", "kind": "form", "lines": ["宽度：适应页面", "对齐：居中", "出现范围：步骤 1–4", "素材引用：编译流程演示"] }
+      ],
+      "fields": [{ "label": "宽度", "value": "适应页面" }, { "label": "对齐", "value": "居中" }, { "label": "显示范围", "value": "步骤 1–4" }],
+      "actions": [{ "label": "描述修改", "icon": "sparkle", "target": "P12", "primary": true }, { "label": "替换素材", "icon": "more", "target": "P04", "primary": false }, { "label": "编辑步骤", "icon": "arrange", "target": "P16", "primary": false }],
+      "states": ["属性已保存", "共享素材将影响 2 处引用", "此内容不支持当前布局"],
+      "features": ["块级属性", "布局调整", "内容对齐", "显示范围", "素材替换", "共享引用提示", "生成内容描述修改"],
+      "entry": "选择内容块并打开属性。",
+      "success": "属性作用于所选块，并保留当前页与步骤。",
+      "failure": "保留上次有效属性，不隐藏选中内容。"
+    },
+    {
+      "id": "P12",
+      "title": "对话修改",
+      "section": "内容编辑",
+      "layout": "workspace",
+      "purpose": "通过自然语言和素材附件调整内容，并保留明确修改范围。",
+      "nav": [{ "label": "内容", "target": "P08" }, { "label": "素材", "target": "P04" }, { "label": "对话", "target": "P12" }],
+      "panels": [
+        { "title": "当前范围", "kind": "canvas", "lines": ["第 2 页 · 步骤 3", "所选内容：编译流程演示", "修改其他页面前将提示范围变化", "原画面保持可见"] },
+        { "title": "AI 助手", "kind": "list", "lines": ["你：突出当前步骤，其余内容降低对比度。", "助手：将调整所选步骤的强调方式。", "依据：当前演示与课程笔记", "完成后可对照并决定是否采用"] }
+      ],
+      "fields": [{ "label": "修改范围", "value": "当前步骤" }, { "label": "输入要求", "value": "突出当前步骤，其余内容降低对比度" }, { "label": "附件", "value": "课程笔记" }],
+      "actions": [{ "label": "发送要求", "icon": "sparkle", "target": "P06", "primary": true }, { "label": "添加素材", "icon": "plus", "target": "P03", "primary": false }, { "label": "查看修改", "icon": "eye", "target": "P14", "primary": false }],
+      "states": ["当前页与步骤已附带", "正在修改，可继续补充要求", "需要确认修改范围", "发送失败，输入已保留"],
+      "features": ["自然语言修改", "上下文范围", "素材附件", "持续对话", "任务反馈", "范围变更提示", "输入草稿保留"],
+      "entry": "助手图标、内容描述修改或发送批注。",
+      "success": "助手处理明确目标，结果进入可审阅状态。",
+      "failure": "保留输入、附件与原选择，明确重试或补充入口。"
+    },
+    {
+      "id": "P13",
+      "title": "批注微调",
+      "section": "内容编辑",
+      "layout": "workspace",
+      "purpose": "以内容选区为锚点记录微调要求，并可批量交给助手。",
+      "nav": [{ "label": "内容", "target": "P08" }, { "label": "批注", "target": "P13" }, { "label": "对话", "target": "P12" }],
+      "panels": [
+        { "title": "所选内容", "kind": "canvas", "lines": ["第 2 页 · 步骤 3", "编译流程演示中的当前节点", "选区边缘只显示新建批注图标", "批注编号不进入放映或导出"] },
+        { "title": "项目批注", "kind": "list", "lines": ["01 当前节点增加强调 · 未发送", "02 调整图注位置 · 已发送", "03 统一术语 · 已解决", "选中批注可回到对应内容"] }
+      ],
+      "fields": [{ "label": "批注内容", "value": "当前节点增加强调，并保持其他步骤不变" }],
+      "actions": [{ "label": "保存批注", "icon": "comment-add", "target": "P13", "primary": true }, { "label": "发送未处理批注", "icon": "sparkle", "target": "P12", "primary": false }, { "label": "返回内容", "icon": "close", "target": "P08", "primary": false }],
+      "states": ["批注已保存", "2 条批注等待发送", "原位置已变化，请重新定位", "发送失败，批注仍保留"],
+      "features": ["选区批注", "单图标悬浮入口", "位置锚点", "批注批量发送", "解决与重开", "批注删除", "失效位置恢复"],
+      "entry": "选择正文或预览内容后点击批注图标。",
+      "success": "批注绑定所选内容，发送后可追踪处理结果。",
+      "failure": "原位置失效时保留批注文本，不自动绑定其他内容。"
+    },
+    {
+      "id": "P14",
+      "title": "AI 修改审阅",
+      "section": "内容编辑",
+      "layout": "workspace",
+      "purpose": "以视觉对照确认助手的修改，选择接受范围。",
+      "nav": [{ "label": "内容", "target": "P08" }, { "label": "修改审阅", "target": "P14" }, { "label": "对话", "target": "P12" }],
+      "panels": [
+        { "title": "修改对照", "kind": "canvas", "lines": ["修改前：所有节点保持相同对比度", "修改后：当前节点突出显示", "第 2 页 · 步骤 3", "正文与讲稿未改变"] },
+        { "title": "本次影响", "kind": "list", "lines": ["1 个页面 · 1 个步骤", "动画强调方式已调整", "批注 01 等待确认", "采用后记录为一次修改"] }
+      ],
+      "fields": [{ "label": "采用范围", "value": "当前修改" }],
+      "actions": [{ "label": "接受修改", "icon": "check", "target": "P08", "primary": true }, { "label": "拒绝修改", "icon": "close", "target": "P08", "primary": false }, { "label": "继续调整", "icon": "sparkle", "target": "P12", "primary": false }],
+      "states": ["修改等待确认", "部分修改已采用", "当前内容已有新修改，请重新对照"],
+      "features": ["视觉前后对照", "修改影响范围", "全部接受", "局部采用", "拒绝修改", "继续调整", "并发修改保护"],
+      "entry": "助手完成一轮修改，或从任务结果打开审阅。",
+      "success": "确认的修改进入项目历史，未确认内容保持可处理。",
+      "failure": "新旧版本不一致时停止覆盖，并保留双方内容。"
+    },
+    {
+      "id": "P15",
+      "title": "版本历史与草稿恢复",
+      "section": "内容编辑",
+      "layout": "workspace",
+      "purpose": "查看修改来源和视觉差异，恢复版本或保留冲突草稿。",
+      "nav": [{ "label": "内容", "target": "P08" }, { "label": "版本历史", "target": "P15" }],
+      "panels": [
+        { "title": "修改记录", "kind": "list", "lines": ["今天 14:32 · 你 · 更新步骤讲稿", "今天 14:26 · AI 助手 · 调整动画强调", "今天 14:10 · 你 · 新建页面", "昨天 18:05 · 项目初稿"] },
+        { "title": "所选版本", "kind": "canvas", "lines": ["第 2 页的修改对照", "查看历史不会覆盖当前内容", "本地仍有 1 处未保存讲稿", "恢复前可保留当前草稿"] }
+      ],
+      "fields": [],
+      "actions": [{ "label": "恢复此修改", "icon": "undo", "target": "P08", "primary": true }, { "label": "保留本地草稿", "icon": "check", "target": "P08", "primary": false }, { "label": "关闭历史", "icon": "close", "target": "P08", "primary": false }],
+      "states": ["当前版本", "此修改已撤消", "检测到外部更新，本地草稿已保留", "恢复失败，当前内容未改变"],
+      "features": ["版本记录", "修改来源", "视觉差异", "撤消与恢复", "外部更新冲突", "本地草稿恢复"],
+      "entry": "工具栏历史图标或保存冲突提示。",
+      "success": "指定修改恢复后，重新定位有效页面，并保留其他草稿。",
+      "failure": "不覆盖当前项目，提供重新读取与保留草稿入口。"
+    },
+    {
+      "id": "P16",
+      "title": "编排工作区",
+      "section": "编排配音",
+      "layout": "timeline",
+      "purpose": "将画面、配音和字幕按步骤安排在同一时间线上。",
+      "nav": [{ "label": "内容", "target": "P08" }, { "label": "编排", "target": "P16" }, { "label": "素材", "target": "P04" }],
+      "panels": [
+        { "title": "画面预览", "kind": "canvas", "lines": ["第 2 页 · 步骤 3 / 4", "当前步骤：渲染组件", "画面与放映保持一致", "00:12.0 / 00:26.0"] },
+        { "title": "页面时间线", "kind": "timeline", "lines": ["画面：步骤 1｜步骤 2｜步骤 3｜步骤 4", "配音：各步骤的讲稿片段", "字幕：跟随对应配音与文本", "播放头：当前步骤起点"] },
+        { "title": "所选步骤", "kind": "form", "lines": ["讲稿已填写", "配音时机：同步播放", "音色：项目默认", "配音：需要更新"] }
+      ],
+      "fields": [],
+      "actions": [{ "label": "播放预览", "icon": "play", "target": "P16", "primary": true }, { "label": "编辑讲稿", "icon": "edit-text", "target": "P18", "primary": false }, { "label": "剪辑属性", "icon": "scissors", "target": "P22", "primary": false }, { "label": "步骤总览", "icon": "steps", "target": "P17", "primary": false }],
+      "states": ["播放已暂停", "正在准备当前步骤", "配音待更新，预览使用静音占位", "画面加载失败，可重试"],
+      "features": ["最终画面预览", "页面时间线", "三轨对齐", "播放头定位", "播放暂停", "缩放适配", "步骤属性联动"],
+      "entry": "从内容工作区切换到编排，保留当前页与步骤。",
+      "success": "画面、播放头与属性始终指向同一步骤。",
+      "failure": "暂停并显示具体步骤状态，保留有效选择和草稿。"
+    },
+    {
+      "id": "P17",
+      "title": "页面与步骤总览",
+      "section": "编排配音",
+      "layout": "dialog",
+      "purpose": "快速定位任意页面或步骤，并查找缺失的讲稿与配音。",
+      "nav": [{ "label": "编排", "target": "P16" }, { "label": "步骤总览", "target": "P17" }],
+      "panels": [
+        { "title": "当前页步骤", "kind": "list", "lines": ["1 解析材料 · 讲稿与配音就绪", "2 建立结构 · 讲稿与配音就绪", "3 渲染组件 · 当前步骤 · 配音过期", "4 输出演示 · 缺少讲稿"] },
+        { "title": "页面", "kind": "list", "lines": ["01 课程目标 · 1 步", "02 从材料到画面 · 4 步", "03 动画时间与讲解 · 5 步", "04 小结与练习 · 2 步"] }
+      ],
+      "fields": [{ "label": "查找步骤", "value": "输入页面或步骤名称" }],
+      "actions": [{ "label": "定位所选步骤", "icon": "check", "target": "P16", "primary": true }, { "label": "补充讲稿", "icon": "edit-text", "target": "P18", "primary": false }, { "label": "关闭总览", "icon": "close", "target": "P16", "primary": false }],
+      "states": ["当前页共 4 个步骤", "未找到匹配步骤", "原步骤已变化，请重新选择"],
+      "features": ["完整步骤列表", "直接跳步", "跨页定位", "步骤搜索", "缺少讲稿标记", "配音状态标记"],
+      "entry": "编排或放映中的步骤总览图标。",
+      "success": "暂停播放并定位所选步骤，不要求播放此前步骤。",
+      "failure": "保留当前位置，说明失效目标或未找到内容。"
+    },
+    {
+      "id": "P18",
+      "title": "步骤讲稿",
+      "section": "编排配音",
+      "layout": "timeline",
+      "purpose": "编辑当前步骤的讲解，并设置与画面的播放关系。",
+      "nav": [{ "label": "编排", "target": "P16" }, { "label": "步骤", "target": "P17" }, { "label": "讲稿", "target": "P18" }],
+      "panels": [
+        { "title": "当前步骤", "kind": "canvas", "lines": ["第 2 页 · 步骤 3", "渲染组件", "编辑前已暂停播放", "正文内容仍在内容工作区编辑"] },
+        { "title": "讲稿与时机", "kind": "form", "lines": ["讲稿：根据内容结构生成对应画面。", "同步播放：画面与配音同时开始", "动画结束后播放：画面完成后开始配音", "讲稿修改后需要更新配音"] },
+        { "title": "步骤时间线", "kind": "timeline", "lines": ["动画：3 秒", "配音：约 5 秒，待生成", "同步时总长约 5.5 秒", "动画结束后播放时总长约 8.5 秒"] }
+      ],
+      "fields": [{ "label": "讲稿", "value": "根据内容结构生成对应画面，并保持每个步骤的关系。" }, { "label": "配音时机", "value": "同步播放" }, { "label": "结束后停顿", "value": "0.5 秒" }],
+      "actions": [{ "label": "选择音色", "icon": "audio", "target": "P19", "primary": true }, { "label": "生成配音", "icon": "sparkle", "target": "P21", "primary": false }, { "label": "返回编排", "icon": "close", "target": "P16", "primary": false }],
+      "states": ["讲稿自动保存中", "此步骤尚无讲稿", "配音已过期，字幕已更新", "保存失败，草稿已保留"],
+      "features": ["按步骤讲稿", "空讲稿", "讲稿自动保存", "同步配音", "动画结束后配音", "结束停顿", "配音失效提示"],
+      "entry": "选择步骤后打开讲稿属性，或从作者演练进入。",
+      "success": "讲稿与当前步骤绑定，字幕和时序计划更新。",
+      "failure": "保留原目标草稿，不能把失败响应写入其他步骤。"
+    },
+    {
+      "id": "P19",
+      "title": "音色选择",
+      "section": "编排配音",
+      "layout": "dialog",
+      "purpose": "查找适合当前语言的配音音色，并试听可用声音。",
+      "nav": [{ "label": "讲稿", "target": "P18" }, { "label": "音色", "target": "P19" }, { "label": "配音设置", "target": "P20" }],
+      "panels": [
+        { "title": "可用音色", "kind": "list", "lines": ["清晰讲解 · 中文 · 火山引擎", "自然叙述 · 中文、英文 · 火山引擎", "稳重说明 · 中文 · 本机语音", "所选音色：清晰讲解"] },
+        { "title": "音色详情", "kind": "form", "lines": ["支持语言：简体中文", "声音来源：火山引擎", "可试听标准示例", "当前讲稿试听将生成一个预览片段"] }
+      ],
+      "fields": [{ "label": "查找音色", "value": "输入名称" }, { "label": "语言", "value": "中文" }, { "label": "服务", "value": "全部可用服务" }],
+      "actions": [{ "label": "试听音色", "icon": "play", "target": "P19", "primary": false }, { "label": "使用所选音色", "icon": "check", "target": "P20", "primary": true }, { "label": "连接语音服务", "icon": "sliders", "target": "P29", "primary": false }],
+      "states": ["正在播放试听", "此音色不支持当前语言", "暂无可用音色，请连接语音服务", "试听失败，可重试"],
+      "features": ["音色目录", "音色搜索", "语言筛选", "服务来源", "标准示例试听", "当前讲稿试听", "音色可用状态"],
+      "entry": "从讲稿属性选择音色。",
+      "success": "确认音色后进入参数与应用范围设置，尚不覆盖其他步骤。",
+      "failure": "保留原音色，明确不支持语言或服务不可用原因。"
+    },
+    {
+      "id": "P20",
+      "title": "音色参数与应用范围",
+      "section": "编排配音",
+      "layout": "dialog",
+      "purpose": "试听当前讲稿，并明确音色继承和覆盖的范围。",
+      "nav": [{ "label": "音色目录", "target": "P19" }, { "label": "应用范围", "target": "P20" }, { "label": "讲稿", "target": "P18" }],
+      "panels": [
+        { "title": "声音预览", "kind": "form", "lines": ["清晰讲解 · 中文 · 火山引擎", "试听文本：根据内容结构生成对应画面。", "语速仅在所选服务支持时显示", "朗读风格仅列出服务支持的选项"] },
+        { "title": "继承与覆盖", "kind": "list", "lines": ["当前步骤：继承项目默认音色", "应用当前步骤：创建此步骤的覆盖", "设为项目默认：其他继承步骤随之更新", "已有独立音色覆盖保持不变，除非明确选择替换"] }
+      ],
+      "fields": [{ "label": "音色", "value": "清晰讲解" }, { "label": "应用范围", "value": "当前步骤" }, { "label": "语速", "value": "1.0 倍 · 服务支持" }, { "label": "朗读风格", "value": "当前服务未提供此选项" }, { "label": "已有覆盖", "value": "保留其他步骤的独立设置" }],
+      "actions": [{ "label": "试听当前讲稿", "icon": "play", "target": "P20", "primary": false }, { "label": "应用设置", "icon": "check", "target": "P18", "primary": true }, { "label": "生成受影响配音", "icon": "sparkle", "target": "P21", "primary": false }],
+      "states": ["将更新当前步骤", "将更新 12 个继承步骤，保留 3 个独立覆盖", "此服务不支持所选参数", "设置已保存，受影响配音需要更新"],
+      "features": ["当前讲稿试听", "能力相关语速", "能力相关风格", "当前步骤覆盖", "本页应用范围", "项目默认继承", "覆盖影响确认"],
+      "entry": "确认音色，或编辑项目默认配音设置。",
+      "success": "仅在明确范围内应用设置，并标识需重新生成的配音。",
+      "failure": "不应用服务不支持的参数，原设置与音频保留。"
+    },
+    {
+      "id": "P21",
+      "title": "配音生成与更新",
+      "section": "编排配音",
+      "layout": "task",
+      "purpose": "显式生成选定范围的配音，管理可用、过期和失败片段。",
+      "nav": [{ "label": "编排", "target": "P16" }, { "label": "配音任务", "target": "P21" }, { "label": "音色", "target": "P19" }],
+      "panels": [
+        { "title": "生成范围", "kind": "form", "lines": ["第 2 页 · 4 个步骤", "使用清晰讲解音色", "服务来源：火山引擎", "只生成缺失或需要更新的片段"] },
+        { "title": "片段状态", "kind": "status", "lines": ["步骤 1 · 可播放 · 4.2 秒", "步骤 2 · 已完成 · 5.1 秒", "步骤 3 · 生成中", "步骤 4 · 生成失败，可单独重试"] }
+      ],
+      "fields": [{ "label": "生成范围", "value": "当前页面" }, { "label": "更新方式", "value": "缺失与过期片段" }],
+      "actions": [{ "label": "开始生成", "icon": "sparkle", "target": "P21", "primary": true }, { "label": "重试失败片段", "icon": "redo", "target": "P21", "primary": false }, { "label": "返回编排", "icon": "arrange", "target": "P16", "primary": false }, { "label": "取消生成", "icon": "close", "target": "P18", "primary": false }],
+      "states": ["生成中 2 / 4", "部分失败，已完成片段可用", "语音服务未连接", "讲稿有新修改，旧任务结果未替换当前配音"],
+      "features": ["显式生成配音", "步骤范围", "页面范围", "项目范围", "增量更新", "失败重试", "任务取消与版本校验"],
+      "entry": "讲稿、音色设置或导出检查中的生成配音入口。",
+      "success": "对应版本的片段就绪，时间线采用实际时长。",
+      "failure": "不影响正文与画面，失败步骤默认使用静音占位并显示字幕。"
+    },
+    {
+      "id": "P22",
+      "title": "基础剪辑属性",
+      "section": "编排配音",
+      "layout": "timeline",
+      "purpose": "调整步骤停留和节目停顿，并裁切导入媒体、设置音量。",
+      "nav": [{ "label": "编排", "target": "P16" }, { "label": "剪辑属性", "target": "P22" }, { "label": "素材", "target": "P04" }],
+      "panels": [
+        { "title": "画面与节目时序", "kind": "timeline", "lines": ["静态画面停留：4.0 秒", "步骤结束停顿：0.5 秒", "生成动画使用已定义的步骤时长", "生成动画的步骤结构通过描述修改调整"] },
+        { "title": "导入媒体裁切", "kind": "form", "lines": ["所选媒体：演示参考.mp4", "入点 00:02.0，出点 00:08.0", "裁切保留原素材，可恢复完整区间", "此处裁切只作用于导入的音视频"] },
+        { "title": "音量与片段操作", "kind": "form", "lines": ["音量：80%", "静音：关闭", "可复制、删除或重排所选片段", "生成动画按步骤调整，不在此处任意剪断"] }
+      ],
+      "fields": [{ "label": "静态停留", "value": "4.0 秒" }, { "label": "节目停顿", "value": "0.5 秒" }, { "label": "媒体入点／出点", "value": "00:02.0 / 00:08.0" }, { "label": "音量", "value": "80%" }, { "label": "静音", "value": "关闭" }],
+      "actions": [{ "label": "预览所选片段", "icon": "play", "target": "P22", "primary": true }, { "label": "应用调整", "icon": "check", "target": "P16", "primary": false }, { "label": "调整动画步骤", "icon": "sparkle", "target": "P12", "primary": false }, { "label": "恢复原区间", "icon": "undo", "target": "P22", "primary": false }],
+      "states": ["裁切区间有效 · 6.0 秒", "出点必须晚于入点", "此动画不提供媒体裁切", "调整已保存，可撤消"],
+      "features": ["静态画面停留", "节目停顿", "导入媒体入出点", "非破坏性裁切", "音量与静音", "片段复制删除重排", "程序动画编辑边界"],
+      "entry": "选择步骤或导入媒体片段，打开剪辑属性。",
+      "success": "调整反映在同一时间线、放映与导出中，原素材保留。",
+      "failure": "拒绝越界时长或裁切区间，保留上次有效设置。"
+    },
+    {
+      "id": "P23",
+      "title": "录音与转写",
+      "section": "编排配音",
+      "layout": "dialog",
+      "purpose": "用作者录音作为配音来源，并明确转写与讲稿的关系。",
+      "nav": [{ "label": "编排", "target": "P16" }, { "label": "录音", "target": "P23" }, { "label": "讲稿", "target": "P18" }],
+      "panels": [
+        { "title": "录音", "kind": "status", "lines": ["输入设备：系统默认麦克风", "当前范围：第 2 页 · 步骤 3", "录音时长：00:18", "结束后可试听、重录或转写"] },
+        { "title": "转写文本", "kind": "form", "lines": ["来源：当前录音", "根据内容结构生成对应画面。", "修改转写不会直接覆盖作者讲稿", "采用为讲稿前显示目标与文本差异"] }
+      ],
+      "fields": [{ "label": "输入设备", "value": "系统默认麦克风" }, { "label": "转写文本", "value": "根据内容结构生成对应画面。" }],
+      "actions": [{ "label": "开始或暂停录音", "icon": "record", "target": "P23", "primary": true }, { "label": "结束并试听", "icon": "play", "target": "P23", "primary": false }, { "label": "采用为讲稿", "icon": "check", "target": "P18", "primary": false }, { "label": "返回编排", "icon": "close", "target": "P16", "primary": false }],
+      "states": ["请允许访问麦克风", "录音已暂停", "转写失败，录音已保留", "已有讲稿，采用前需要对照"],
+      "features": ["录音设备", "开始暂停结束", "录音试听", "重录", "语音转写", "转写来源", "显式采用为讲稿"],
+      "entry": "编排的配音来源菜单选择录音。",
+      "success": "录音和转写保存在对应来源，讲稿仅在明确采用后更新。",
+      "failure": "设备或转写失败不会丢失已有录音与讲稿。"
+    },
+    {
+      "id": "P24",
+      "title": "字幕设置",
+      "section": "编排配音",
+      "layout": "dialog",
+      "purpose": "调整字幕显示与样式，保持字幕和配音来源对应。",
+      "nav": [{ "label": "编排", "target": "P16" }, { "label": "字幕", "target": "P24" }, { "label": "讲稿", "target": "P18" }],
+      "panels": [
+        { "title": "字幕预览", "kind": "canvas", "lines": ["画面底部字幕安全区", "根据内容结构生成对应画面。", "字幕与控制条均不遮挡正文", "长句按有效宽度换行"] },
+        { "title": "显示属性", "kind": "form", "lines": ["字幕来源：当前步骤讲稿", "语言：简体中文", "位置：画面下方独立区域", "修改文字请编辑讲稿或录音转写"] }
+      ],
+      "fields": [{ "label": "显示字幕", "value": "开启" }, { "label": "字幕来源", "value": "跟随当前配音来源" }, { "label": "样式", "value": "标准" }, { "label": "位置", "value": "底部安全区" }, { "label": "语言", "value": "简体中文" }],
+      "actions": [{ "label": "应用样式", "icon": "check", "target": "P16", "primary": true }, { "label": "修改讲稿", "icon": "edit-text", "target": "P18", "primary": false }, { "label": "查看放映效果", "icon": "slides", "target": "P25", "primary": false }],
+      "states": ["字幕跟随讲稿更新", "当前步骤没有字幕文本", "旧配音与新字幕不会混用"],
+      "features": ["字幕开关", "字幕来源关系", "字幕样式", "字幕位置", "安全区", "字幕语言", "长句换行"],
+      "entry": "编排或放映中的字幕设置入口。",
+      "success": "样式统一作用于预览、放映和对应导出配置。",
+      "failure": "无文本或来源失效时明确提示，不创建独立重复讲稿。"
+    },
+    {
+      "id": "P25",
+      "title": "观众放映",
+      "section": "放映交付",
+      "layout": "present",
+      "purpose": "完整呈现最终画面与字幕，常用控制保持紧凑。",
+      "nav": [{ "label": "返回编排", "target": "P16" }, { "label": "演讲者视图", "target": "P26" }],
+      "panels": [
+        { "title": "放映画面", "kind": "canvas", "lines": ["从材料到画面", "当前演示：渲染组件", "根据内容结构生成对应画面。", "第 2 页 · 步骤 3 / 4"] },
+        { "title": "播放状态", "kind": "status", "lines": ["播放已暂停", "方向键切换步骤，空格播放或暂停", "观众画面不显示编辑器与助手", "字幕和控件占独立布局空间"] }
+      ],
+      "fields": [],
+      "actions": [{ "label": "播放或暂停", "icon": "play", "target": "P25", "primary": true }, { "label": "步骤总览", "icon": "steps", "target": "P17", "primary": false }, { "label": "演讲者视图", "icon": "slides", "target": "P26", "primary": false }, { "label": "退出放映", "icon": "close", "target": "P16", "primary": false }],
+      "states": ["画面与配音已就绪", "无配音，使用静音预览与字幕", "手动跳步后已暂停", "当前页面需要调整以完整显示"],
+      "features": ["干净观众画面", "播放暂停", "前后步骤", "步骤总览", "全屏", "字幕显示", "放映退出恢复位置"],
+      "entry": "内容或编排中的放映图标。",
+      "success": "画面、步骤、字幕与已准备的播放版本一致。",
+      "failure": "保留可用画面和当前步骤，显示可恢复的播放状态。"
+    },
+    {
+      "id": "P26",
+      "title": "作者演练与演讲者视图",
+      "section": "放映交付",
+      "layout": "present",
+      "purpose": "让作者控制讲解、检查下一画面，并暂停编辑当前步骤讲稿。",
+      "nav": [{ "label": "观众画面", "target": "P25" }, { "label": "编排", "target": "P16" }],
+      "panels": [
+        { "title": "当前与下一画面", "kind": "canvas", "lines": ["当前：第 2 页 · 步骤 3", "下一步：输出演示", "演讲计时：04:28", "观众窗口仅同步播放内容"] },
+        { "title": "当前讲稿", "kind": "form", "lines": ["根据内容结构生成对应画面。", "编辑前暂停当前播放", "修改只出现在作者工作台", "保存后留在当前页和步骤"] }
+      ],
+      "fields": [{ "label": "讲稿", "value": "根据内容结构生成对应画面。" }],
+      "actions": [{ "label": "继续播放", "icon": "play", "target": "P26", "primary": true }, { "label": "编辑当前讲稿", "icon": "edit-text", "target": "P18", "primary": false }, { "label": "查看观众画面", "icon": "eye", "target": "P25", "primary": false }, { "label": "结束演练", "icon": "close", "target": "P16", "primary": false }],
+      "states": ["观众窗口已连接", "观众窗口尚未打开", "当前讲稿已更新，配音需要更新", "演练已暂停"],
+      "features": ["当前下一画面", "演讲计时", "作者讲稿", "演练暂停编辑", "观众窗口隔离", "同步播放位置", "结束演练"],
+      "entry": "从放映打开演讲者视图，或打开作者讲稿。",
+      "success": "作者完成检查或修改后，明确继续播放，观众屏不显示作者工具。",
+      "failure": "窗口失联或讲稿更新时暂停，保留位置和编辑内容。"
+    },
+    {
+      "id": "P27",
+      "title": "导出设置与检查",
+      "section": "放映交付",
+      "layout": "dialog",
+      "purpose": "选择交付格式和范围，检查素材、配音及当前版本是否可输出。",
+      "nav": [{ "label": "内容", "target": "P08" }, { "label": "编排", "target": "P16" }, { "label": "导出任务", "target": "P28" }],
+      "panels": [
+        { "title": "导出配置", "kind": "form", "lines": ["视频 · MP4 · 1920 × 1080", "范围：全部页面", "配音：包含已确认片段", "字幕：内嵌，另附字幕文件"] },
+        { "title": "导出检查", "kind": "status", "lines": ["8 页画面 · 已就绪", "25 / 26 段配音有效", "第 2 页步骤 3 需要更新配音", "输出使用当前已保存版本"] }
+      ],
+      "fields": [{ "label": "格式", "value": "MP4 视频" }, { "label": "导出范围", "value": "全部页面" }, { "label": "分辨率／帧率", "value": "1920 × 1080 / 30 fps" }, { "label": "配音", "value": "包含配音" }, { "label": "字幕", "value": "内嵌与独立字幕文件" }],
+      "actions": [{ "label": "开始导出", "icon": "export", "target": "P28", "primary": true }, { "label": "更新缺失配音", "icon": "audio", "target": "P21", "primary": false }, { "label": "定位问题步骤", "icon": "steps", "target": "P17", "primary": false }, { "label": "取消", "icon": "close", "target": "P16", "primary": false }],
+      "states": ["检查通过，可以导出", "存在过期配音，暂不能导出有声视频", "有未保存修改，尚未包含在输出中", "可明确选择无配音输出"],
+      "features": ["格式选择", "导出范围", "分辨率与帧率", "配音选择", "字幕方式", "输出版本", "缺失资源定位"],
+      "entry": "工作台或技术入口的导出操作。",
+      "success": "有效配置进入导出队列，并关联明确版本。",
+      "failure": "未满足的检查项可定位和修复，不生成缺失内容的伪成功产物。"
+    },
+    {
+      "id": "P28",
+      "title": "导出任务与结果",
+      "section": "放映交付",
+      "layout": "task",
+      "purpose": "跟踪输出进度，处理失败，并预览或下载已完成产物。",
+      "nav": [{ "label": "编排", "target": "P16" }, { "label": "导出设置", "target": "P27" }, { "label": "任务记录", "target": "P28" }],
+      "panels": [
+        { "title": "当前任务", "kind": "status", "lines": ["代码写成的动画 · MP4 视频", "正在生成画面 · 68%", "剩余阶段：合并配音与字幕", "可取消任务并继续编辑项目"] },
+        { "title": "已完成产物", "kind": "list", "lines": ["演示视频 · 昨天 18:05 · 可预览", "讲义 PDF · 昨天 18:10 · 可下载", "网页版本 · 昨天 18:12 · 可打开", "旧版本产物与当前修改分开标识"] }
+      ],
+      "fields": [],
+      "actions": [{ "label": "预览产物", "icon": "play", "target": "P28", "primary": true }, { "label": "下载", "icon": "download", "target": "P28", "primary": false }, { "label": "重试失败任务", "icon": "redo", "target": "P27", "primary": false }, { "label": "返回编排", "icon": "close", "target": "P16", "primary": false }],
+      "states": ["任务排队中", "导出完成", "导出失败，展开原因与相关记录", "任务已取消，已有产物保留"],
+      "features": ["导出队列", "阶段进度", "取消导出", "失败原因", "任务重试", "产物预览下载", "产物版本记录"],
+      "entry": "开始导出，或从工具栏打开任务记录。",
+      "success": "对应版本的文件可预览、下载或打开，任务状态可回查。",
+      "failure": "显示失败阶段和恢复入口，不覆盖此前可用产物。"
+    },
+    {
+      "id": "P29",
+      "title": "服务与应用设置",
+      "section": "放映交付",
+      "layout": "dialog",
+      "purpose": "管理可选的创作与语音服务，并说明本地或离线可用范围。",
+      "nav": [{ "label": "项目", "target": "P01" }, { "label": "内容", "target": "P08" }, { "label": "音色", "target": "P19" }],
+      "panels": [
+        { "title": "连接的服务", "kind": "list", "lines": ["AI 助手 · 已连接", "语音火山引擎 · 已连接 · 支持配音", "语音本机语音 · 未连接", "服务不可用不影响已有内容编辑"] },
+        { "title": "应用与本地状态", "kind": "status", "lines": ["应用语言：简体中文", "外观：跟随系统", "桌面版变体：本地项目与素材可用", "离线时可编辑和预览，联网生成任务等待连接"] }
+      ],
+      "fields": [{ "label": "服务名称", "value": "语音火山引擎" }, { "label": "连接凭据", "value": "已安全保存，不显示原值" }, { "label": "应用语言", "value": "简体中文" }, { "label": "外观", "value": "跟随系统" }, { "label": "桌面本地素材", "value": "此设备可用" }],
+      "actions": [{ "label": "检查连接", "icon": "check", "target": "P29", "primary": true }, { "label": "返回音色选择", "icon": "audio", "target": "P19", "primary": false }, { "label": "返回内容", "icon": "close", "target": "P08", "primary": false }],
+      "states": ["服务连接正常", "无法连接，请检查服务设置", "当前离线，联网任务已暂停", "桌面本地项目可继续编辑"],
+      "features": ["模型服务配置", "语音服务配置", "连接检查", "凭据隐藏", "界面语言与外观", "Tauri 本地状态变体", "离线可用范围"],
+      "entry": "应用设置，或服务未连接状态中的设置入口。",
+      "success": "连接状态可见，返回原功能后重新读取可用能力。",
+      "failure": "保留非联网功能与已配置内容，不在界面泄露凭据。"
+    },
+    {
+      "id": "P30",
+      "title": "VS Code 预览与导出",
+      "section": "技术入口",
+      "layout": "vscode",
+      "purpose": "让技术用户自行编辑工程文件，插件仅提供预览、定位与导出。",
+      "nav": [{ "label": "工程预览", "target": "P30" }, { "label": "导出", "target": "P27" }, { "label": "Web 内容工作区", "target": "P08" }],
+      "panels": [
+        { "title": "VS Code 原生编辑器", "kind": "canvas", "lines": ["lesson.ir.json · 用户直接编辑", "页面与步骤使用工程中的已有标识", "文件修改由编辑器保存", "不嵌入第二套文稿编辑工具"] },
+        { "title": "Presmium 预览", "kind": "canvas", "lines": ["第 2 页 · 步骤 3 / 4", "渲染当前有效工程版本", "点击问题可回到对应文件位置", "无效版本保留上次可用画面"] },
+        { "title": "输出", "kind": "status", "lines": ["当前预览版本已就绪", "预览与导出使用同一工程结果", "可查看对应页面与步骤", "转换与写回格式由独立工程规则决定"] }
+      ],
+      "fields": [{ "label": "预览范围", "value": "当前工程" }, { "label": "页面与步骤", "value": "2 · 3" }],
+      "actions": [{ "label": "刷新预览", "icon": "redo", "target": "P30", "primary": true }, { "label": "导出", "icon": "export", "target": "P27", "primary": false }, { "label": "定位问题", "icon": "eye", "target": "P30", "primary": false }],
+      "states": ["预览已更新", "当前文件有误，显示上次有效画面", "工程资源缺失，可定位到文件", "导出使用指定的有效版本"],
+      "features": ["原生工程文件编辑边界", "原始 IR 技术入口", "预览刷新", "页面步骤定位", "诊断回跳", "预览导出一致", "不承担 Web 创作功能"],
+      "entry": "在 VS Code 打开 Presmium 工程并启动预览面板。",
+      "success": "用户保存的有效文件更新预览，并可交给同一输出流程。",
+      "failure": "无效工程保留上次预览，错误可定位，不擅自改写用户文件。"
+    }
+  ]
+}

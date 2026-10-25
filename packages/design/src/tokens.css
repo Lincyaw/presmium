@@ -12,6 +12,10 @@
   --pm-color-canvas: #e7e5e0;
   /* A flat control under the mouse, and the edge of a pressed one. */
   --pm-color-hover: color-mix(in srgb, var(--pm-color-ink) 7%, transparent);
+  --pm-color-primary-hover: color-mix(in srgb, var(--pm-color-ink) 88%, var(--pm-color-bg));
+  --pm-color-primary-pressed: color-mix(in srgb, var(--pm-color-ink) 80%, var(--pm-color-bg));
+  --pm-color-accent-hover: color-mix(in srgb, var(--pm-color-accent) 88%, var(--pm-color-bg));
+  --pm-color-accent-pressed: color-mix(in srgb, var(--pm-color-accent) 80%, var(--pm-color-bg));
   --pm-color-accent-line: color-mix(in srgb, var(--pm-color-accent) 30%, transparent);
   --pm-color-backdrop: rgb(28 27 25 / 32%);
   --pm-color-code: #fbfaf7;
@@ -78,6 +82,7 @@
   --pm-size-dot: 0.4375rem;
   --pm-size-icon-sm: 0.8125rem;
   --pm-size-icon: 1rem;
+  --pm-size-icon-lg: 1.25rem;
   --pm-size-logo: 1.375rem;
   --pm-size-badge: 1.25rem;
   --pm-size-avatar: 1.75rem;
@@ -85,6 +90,14 @@
   --pm-size-tool: 1.875rem;
   --pm-size-touch: 2.5rem;
   --pm-size-row: 3rem;
+
+  /* Target control geometry; shared primitives migrate to these together. */
+  --pm-control-height: 2.25rem;
+  --pm-control-hit-area: 2.75rem;
+  --pm-control-number-width: 5rem;
+  --pm-control-time-width: 7rem;
+  --pm-canvas-min-width: 30rem;
+  --pm-opacity-disabled: 0.55;
 
   --pm-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   --pm-shadow-float: 0 1px 2px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.08);
@@ -107,6 +120,7 @@
   --pm-sheet-width: 52rem;
   --pm-scene-max-width: 44rem;
   --pm-narration-editor-height: 12rem;
+  --pm-narration-editor-compact-height: 5rem;
   --pm-tooltip-width: 18rem;
 
   /* A document's site: its header, the chapters beside the page, the page's sections, the measure of its text. */
