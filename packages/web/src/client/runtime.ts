@@ -4,8 +4,10 @@ import { errorMessage } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import { PmComponentFallback, tryInstallViewerPlugin, withSlideGlobals } from '@lincyaw/viewer'
 import type { Viewer } from '@lincyaw/viewer'
-import type { Component, Ref, ShallowRef } from 'vue'
-import { defineAsyncComponent, defineComponent, h, nextTick, onMounted, ref } from 'vue'
+import { createElement as h, useEffect, useState } from 'react'
+import type { ComponentType } from 'react'
+import type { Store } from '@lincyaw/host'
+import { flushSync } from 'react-dom'
 import { createViewerNavigation } from './host.ts'
 
 /** The document's runtime, apart from the shell that shows it (the site, the slides page, or the workbench's preview). */
@@ -40,21 +42,15 @@ export async function startRuntime(loaders: RuntimeModules['plugins'], doc: IRDo
 }
 
 /** A component of the document, rendered once mounted (its module may touch the browser), with a placeholder until then. */
-export function clientOnly(name: string, load: () => Promise<unknown>): Component {
-  const loaded = defineAsyncComponent(() => load().then(module => withSlideGlobals((module as { default: Component }).default)))
-  return defineComponent({
-    name,
-    inheritAttrs: false,
-    setup(_, { attrs, slots }) {
-      const mounted = ref(false)
-      onMounted(() => {
-        mounted.value = true
-      })
-      return () => (mounted.value
-        ? h(loaded, attrs, slots)
-        : h('div', { 'class': 'pm-client-only', 'data-component': name }, [h(PmComponentFallback)]))
-    },
-  })
+export function clientOnly(name: string, load: () => Promise<unknown>): ComponentType<any> {
+  let pending: Promise<ComponentType<any>> | undefined
+  return function ClientOnly(props: Record<string, unknown>) {
+    const [component, setComponent] = useState<ComponentType<any>>()
+    const [error, setError] = useState<unknown>()
+    useEffect(() => { let disposed = false; pending ??= load().then(module => withSlideGlobals((module as { default: ComponentType<any> }).default)); pending.then(value => { if (!disposed) setComponent(() => value) }, reason => { if (!disposed) setError(reason) }); return () => { disposed = true } }, [])
+    if (error) throw error
+    return component ? h(component, props) : h('div', { className: 'pm-client-only', 'data-component': name }, h(PmComponentFallback))
+  }
 }
 
 export async function loadViewerPlugins(modules: ViewerModule[]): Promise<boolean> {
@@ -83,9 +79,9 @@ export interface RuntimeLifecycleInput {
   viewer: Viewer
   shared: SharedStates
   /** The document as last fetched, in its own language. */
-  original: ShallowRef<IRDocument>
+  original: Store<IRDocument>
   /** Whether the page shows its content; a paused page unmounts it. */
-  active: Ref<boolean>
+  active: Store<boolean>
   /** The server client of the document, when the page has a server. */
   server?: { document?: string }
   /** Fetches the current IR; `force` fails when it cannot. */
@@ -105,7 +101,7 @@ export interface RuntimeLifecycle {
  * stops its plugins; on resuming it fetches the current IR and restarts them, or fails when they cannot restart safely.
  */
 export function createRuntimeLifecycle({ modules, doc, viewer, shared, original, active, server: serverOptions, refresh, onViewers }: RuntimeLifecycleInput): RuntimeLifecycle {
-  let requested = active.value
+  let requested = active.getSnapshot()
   let runtimeStarted = false
   let restartable = false
   let viewersLoaded = false
@@ -124,15 +120,15 @@ export function createRuntimeLifecycle({ modules, doc, viewer, shared, original,
           throw new Error('the document runtime cannot safely restart; reload the preview')
         }
         pauseMedia()
-        active.value = false
-        await nextTick()
+        flushSync(() => active.set(false))
+        await Promise.resolve()
         await setHostActive(false)
         wasPaused = true
         return
       }
       if (wasPaused) {
         await refresh(true)
-        if (JSON.stringify(original.value.config) !== runtimeConfig || original.value.meta.lang !== doc.meta.lang) {
+        if (JSON.stringify(original.getSnapshot().config) !== runtimeConfig || original.getSnapshot().meta.lang !== doc.meta.lang) {
           throw new Error('the document runtime configuration changed; reload the preview')
         }
       }
@@ -145,15 +141,15 @@ export function createRuntimeLifecycle({ modules, doc, viewer, shared, original,
         }
         const server = requested && serverOptions ? createServerClient(serverOptions) : undefined
         if (requested) provideServer(server)
-        const runtime = await startRuntime(modules.plugins, viewer.doc.value, viewer, shared.transports, server, () => requested)
+        const runtime = await startRuntime(modules.plugins, viewer.doc.getSnapshot(), viewer, shared.transports, server, () => requested)
         runtimeStarted = runtime.started
         restartable = modules.restartable === true && viewersValid && runtime.restartable
       } else await setHostActive(true)
       wasPaused = false
       // A queued pause checks the completed initial load before disposing anything.
       if (requested) {
-        active.value = true
-        await nextTick()
+        flushSync(() => active.set(true))
+        await Promise.resolve()
       }
     })
     queue = change.catch(() => undefined)

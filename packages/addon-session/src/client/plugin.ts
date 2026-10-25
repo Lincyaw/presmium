@@ -1,24 +1,24 @@
-import { currentLocale, NAVIGATION, siteBase, SYNC_TRANSPORTS, TOOLBAR, useServer } from '@lincyaw/host'
+import { currentLocale, NAVIGATION, siteBase, SYNC_TRANSPORTS, TOOLBAR, serverClient } from '@lincyaw/host'
 import { CLASSROOM_STORE, isRecord, PRESENTER_PANELS, SESSION } from '@lincyaw/kernel'
 import type { PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
-import { watch } from 'vue'
 import { version } from '../../package.json'
 import { localServer, MESSAGES, reachableServer, SESSION_ID, toSessionConfig } from '../domain/index.ts'
 import type { LocalClassroom } from '../domain/index.ts'
 import { createClassroomConnection } from './classroom-connection.ts'
 import { tryStorage } from './membership-storage.ts'
-import SessionPanel from './SessionPanel.vue'
-import SessionToolbar from './SessionToolbar.vue'
+import SessionPanel from './SessionPanel.tsx'
+import SessionToolbar from './SessionToolbar.tsx'
 
 let cleanup: Unsubscribe[] = []
 
 const SERVER_WAIT_MS = 5000
 
 async function fetchLocalServer(): Promise<{ server: string, params: Record<string, string> } | undefined> {
-  const client = useServer()
+  let client = serverClient()
   const available = client.available || await new Promise<boolean>((resolve) => {
     const timer = setTimeout(() => done(false), SERVER_WAIT_MS)
-    const stop = watch(() => client.available, ready => ready && done(true))
+    const poll = setInterval(() => { client = serverClient(); if (client.available) done(true) }, 50)
+    const stop = () => clearInterval(poll)
     function done(ready: boolean) {
       clearTimeout(timer)
       stop()

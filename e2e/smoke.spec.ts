@@ -67,7 +67,7 @@ async function firstTurns(): Promise<[Section, Section][]> {
   return [[all[0]!, all[1]!], [all[1]!, all[2]!]]
 }
 
-const FRAMEWORK_ERRORS = [/^Wake Lock permission request denied$/, /^Failed to patch FloatingVue\b/]
+const FRAMEWORK_ERRORS = [/^Wake Lock permission request denied$/]
 
 test('the web form opens on the cover, goes to a section from the sidebar and pages in the present view', async ({ page }) => {
   const all = await sections()

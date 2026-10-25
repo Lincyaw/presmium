@@ -7,7 +7,7 @@ A [Presmium](https://github.com/Lincyaw/presmium) plugin. A document that lists 
 :::
 ```
 
-and gets a greeting card in the web page and in the slides (one Vue component for both), a paragraph in
+and gets a greeting card in the web page and in the slides (one React component for both), a paragraph in
 the notebook. Under `presmium dev` and `presmium serve` the card can wave, through the plugin's server
 route.
 
@@ -25,7 +25,7 @@ pnpm build         # the example's web page, slides and notebook, in example/dis
 |---|---|
 | `src/domain/index.ts` | The plugin's id and its text in Chinese and English: pure TypeScript |
 | `src/node/presmium.ts` | What the compiler loads: the `{greeting}` directive and the server route `waves` |
-| `components/GreetingCard.vue` | The component, in the web page and the slides; it uses `@lincyaw/host` only |
+| `components/GreetingCard.tsx` | The component, in the web page and the slides; it uses `@lincyaw/host` only |
 | `example/lecture.md` | A document that uses the plugin, by its directory |
 | `test/plugin.test.ts` | Integration tests (Vitest) |
 

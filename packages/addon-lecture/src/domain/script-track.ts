@@ -71,6 +71,7 @@ export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>,
       }
       const paragraphs = section.paragraphs.filter(p => p.step === step)
       for (const paragraph of paragraphs) {
+        if (paragraph.mode === 'after') hold()
         for (const piece of paragraph.pieces) {
           const clip = piece.id ? clips.get(piece.id) : undefined
           let utterance: Utterance | undefined

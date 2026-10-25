@@ -9,7 +9,7 @@ import { quietDirectives } from './viewer-app.ts'
 /**
  * A document's own browser code, apart from the viewer app that shows it: its components, browser and viewer plugins,
  * and the document modules its plugins generate for it (`PresmiumNodePlugin.documentModules`), as one small bundle that
- * imports Vue, Presmium's packages and the plugins' public subpaths by name, from the app, through its import map.
+ * imports React, Presmium's packages and the plugins' public subpaths by name, from the app, through its import map.
  */
 
 const BUNDLE_MANIFEST = 'bundle.json'
@@ -132,16 +132,15 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
   const externals = new Set(input.externals)
   const inputs: Record<string, string> = {}
   const { build } = await import('vite')
-  const { default: vue } = await import('@vitejs/plugin-vue')
   await build({
     configFile: false,
     root: input.deckDir,
     base: './',
     logLevel: 'warn',
     mode: 'production',
+    esbuild: { jsx: 'automatic' },
     publicDir: false,
     plugins: [
-      vue(),
       {
         name: 'presmium:document-bundle',
         // Before Vite's own resolution: the app's modules stay imports by name.
@@ -167,7 +166,7 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
         onLog: quietDirectives,
       },
     ],
-    resolve: { dedupe: ['vue'] },
+    resolve: { dedupe: ['react', 'react-dom'] },
     build: {
       outDir: join(work, 'out'),
       emptyOutDir: true,

@@ -83,3 +83,19 @@ Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、
 - 契约 `Focus`、`FocusReport`、`McpIssueOptions`，工作区服务的路由的数据类型（`@lincyaw/kernel` 中如 `DocumentsAnswer`、`IrAnswer`、`ReviewSnapshot`），`@lincyaw/host` 的 `useToolbarPlacement`、`provideToolbarPlacement`。
 
 命令 `presmium serve`、工作区配置文件与 Node 端的服务是公开接口；读者问答（`ASK` 与提问面板）是产物的一部分，也是公开接口。插件不要依赖实验性接口，依赖时在自己的对等依赖中写确切的版本。
+
+
+## 按步骤编辑讲解
+
+工作台的字幕图标打开步骤讲解窗格。文档中的图标旁是页码与步号；点击动画下的步号，或放映底栏的步骤菜单，直接选择要编辑的一步。每一步可编辑独立字幕，并选择“与动画同步”或“动画结束后”，保存后进入版本历史。界面步号从 1 开始，源码的 `:at:` 从 0 开始。
+
+```md
+:::{narration}
+:at: 1
+:mode: after
+
+这是第二步完成之后要讲的内容。
+:::
+```
+
+`during`（默认）与本步骤动画同时开始；`after` 等本步骤最长动画结束。字幕与语音、视频导出共用这条时序。动画完成时刻来自 `{scene}` 的 `:durations:`；没有动画的步骤不额外等待。

@@ -4,7 +4,7 @@ import { join, relative } from 'node:path'
 
 // The stylesheets held to the design tokens: their colours, sizes and durations come from
 // `packages/design/src/tokens.css`. px is allowed only in a media query, which cannot read a custom property.
-const SCOPE = ['packages/workbench/src', 'packages/dsh/src/client', 'packages/web/src/app']
+const SCOPE = ['examples/animations/libraries/components', 'examples/animations/bubble-sort/components', 'templates/plugin/components', 'packages/addon-session/src/client', 'packages/addon-classroom/components', 'packages/addon-classroom/src/client', 'packages/addon-assistant/src/client', 'packages/workbench/src', 'packages/dsh/src/client', 'packages/web/src/app', 'packages/design/src', 'packages/addon-motion/src/client', 'packages/viewer/src/client/views', 'packages/viewer/src/client/editing']
 
 const root = new URL('..', import.meta.url).pathname
 const RAW = [
@@ -18,7 +18,7 @@ function stylesheets(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name)
     if (entry.isDirectory()) return entry.name === 'node_modules' ? [] : stylesheets(path)
-    return entry.name.endsWith('.css') ? [path] : []
+    return entry.name.endsWith('.css') && path !== join(root, 'packages/design/src/tokens.css') ? [path] : []
   })
 }
 

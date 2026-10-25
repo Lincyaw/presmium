@@ -82,6 +82,8 @@ export interface MarkdownNode {
   type: 'markdown'
   mdast: MdastNode
   reveal?: 'items'
+  /** An explicitly authored step's speech starts with, or after, its animation. */
+  narration?: { mode: 'during' | 'after' }
 }
 
 export interface CodeOrigin {

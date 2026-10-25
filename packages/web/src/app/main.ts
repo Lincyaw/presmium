@@ -1,10 +1,9 @@
-import { OPERATIONS, pluginsOf, presmiumService, registerPresmiumPlugin, startHost } from '@lincyaw/host'
+import { OPERATIONS, pluginsOf, presmiumService, registerPresmiumPlugin, startHost, createStore, observe, runtimeRevision } from '@lincyaw/host'
 import { previewAppearance } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import { findView, syncViewerWithOperations } from '@lincyaw/viewer'
 import type { LiveUpdate } from '@lincyaw/viewer/domain'
 import { packages } from 'virtual:presmium-app/registry'
-import { computed, ref, shallowRef, watch } from 'vue'
 import { APP_CONFIG_ELEMENT, parsePositionQuery, parsePrintQuery, UPDATE_EVENT, withPositionQuery } from '../domain/index.ts'
 import type { AppConfig, DevUpdateEvent } from '../domain/index.ts'
 import { webPreview } from '../client/preview-frame.ts'
@@ -12,7 +11,7 @@ import { createRuntimeLifecycle } from '../client/runtime.ts'
 import type { ViewerModule } from '../client/runtime.ts'
 import { setDocumentModules } from './document-modules.ts'
 import { createPageApp } from './page-app.ts'
-import { forgetIndex } from './site/search.ts'
+import { forgetIndex } from './site/search.tsx'
 import './base.css'
 import './site.css'
 
@@ -76,17 +75,17 @@ function registerServiceWorker(url: string): void {
 /** A page that shows no document: its plugins (the operator's) run with no position. */
 async function bootPage(): Promise<void> {
   // A rendered page is hydrated as it was rendered, light; its appearance follows once it is the browser's.
-  const dark = ref(config.rendered ? false : isDark())
+  const dark = createStore(config.rendered ? false : isDark())
   const { app, shared } = createPageApp({ config, components: {}, embedded: false, ssr: config.rendered === true, dark })
-  watch(dark, on => document.documentElement.classList.toggle('dark', on))
-  app.mount('#app')
-  dark.value = isDark()
+  observe(dark, on => document.documentElement.classList.toggle('dark', on))
+  await app.mount('#app')
+  dark.set(isDark())
   const modules = await Promise.all(used(config.plugins ?? []).flatMap(([, own]) => own.plugins).map(load => load().catch((error: unknown) => {
     console.error('[presmium] a plugin module failed to load', error)
     return {}
   })))
   modules.flatMap(module => pluginsOf(module)).forEach(registerPresmiumPlugin)
-  await startHost({ mode: 'document', config: {}, navigation: { position: computed(() => ({ slide: 1, step: 0 })), go: () => {} }, transports: shared.transports })
+  await startHost({ mode: 'document', config: {}, navigation: { position: createStore({ slide: 1, step: 0 }), go: () => {} }, transports: shared.transports })
 }
 
 async function bootDocument(): Promise<void> {
@@ -109,20 +108,20 @@ async function bootDocument(): Promise<void> {
 
   const preview = webPreview({ origins: config.origins, document: config.document, renderer: config.form ?? 'web' })
   document.documentElement.classList.toggle(IN_WORKBENCH, preview.embedded)
-  const dark = ref(config.rendered ? false : isDark())
-  watch(dark, on => document.documentElement.classList.toggle('dark', on))
+  const dark = createStore(config.rendered ? false : isDark())
+  observe(dark, on => document.documentElement.classList.toggle('dark', on))
   // A slides page asked to print its slides: an export.
   const print = config.form === 'slides' ? parsePrintQuery(location.search) : undefined
   const { app, viewer, router, shared, active } = createPageApp({ config, doc, components, embedded: preview.embedded, ssr: config.rendered === true, dark, print })
-  active.value = preview.active
-  const original = shallowRef(doc)
+  active.set(preview.active)
+  const original = createStore(doc)
   const refresh = async (force = false) => {
     try {
       const next = await fetchIr(config.ir!, etag)
       if (!next || (next.revision !== undefined && next.revision === revision)) return
       revision = next.revision
       etag = next.etag
-      original.value = next.doc
+      original.set(next.doc)
       viewer!.replace(next.doc)
     } catch (error) {
       console.warn('[presmium] could not get the current document', error)
@@ -133,11 +132,10 @@ async function bootDocument(): Promise<void> {
   const lifecycle = createRuntimeLifecycle({ modules: { plugins, viewers, restartable }, doc, viewer: viewer!, shared, original, active, ...config.events ? { server: { document: config.document } } : {}, refresh, onViewers: (ready) => {
     viewersReady = ready
   } })
-  watch(() => presmiumService(OPERATIONS), (operations, _, onCleanup) => {
-    if (operations) onCleanup(syncViewerWithOperations(viewer!, operations))
-  }, { immediate: true })
-  app.mount('#app')
-  dark.value = isDark()
+  let stopOperations: (() => void) | undefined
+  observe(runtimeRevision, () => { stopOperations?.(); const operations = presmiumService(OPERATIONS); stopOperations = operations ? syncViewerWithOperations(viewer!, operations) : undefined }, true)
+  await app.mount('#app')
+  dark.set(isDark())
   preview.connect({ viewer: viewer!, dark, setActive: lifecycle.setActive })
   router!.listen()
 
@@ -152,7 +150,7 @@ async function bootDocument(): Promise<void> {
         revision = change.revision
         etag = `"${change.revision}"`
         viewer!.update(change.update)
-        original.value = viewer!.doc.value
+        original.set(viewer!.doc.getSnapshot())
       } else void refresh()
     })
     events.addEventListener('reload', () => location.reload())
@@ -169,10 +167,10 @@ async function bootDocument(): Promise<void> {
     await viewersReady
     if (findView(asked.view)) viewer!.setView(asked.view)
   }
-  watch([viewer!.view, viewer!.position], ([view, position]) => {
-    const search = withPositionQuery(location.search, findView(view)?.kind === 'overlay' ? { view, ...position } : undefined)
-    if (search !== location.search) history.replaceState(history.state, '', location.pathname + search + location.hash)
-  }, { immediate: true })
+  const syncAddress = () => { const view = viewer!.view.getSnapshot(); const position = viewer!.position.getSnapshot(); const search = withPositionQuery(location.search, findView(view)?.kind === 'overlay' ? { view, ...position } : undefined); if (search !== location.search) history.replaceState(history.state, '', location.pathname + search + location.hash) }
+  viewer!.view.subscribe(syncAddress)
+  viewer!.position.subscribe(syncAddress)
+  syncAddress()
 }
 
 void (config.kind === 'document' ? bootDocument() : bootPage()).catch((error: unknown) => {

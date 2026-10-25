@@ -1,327 +1,43 @@
-import type { InjectionKey, PropType, VNode } from 'vue'
-import { defineComponent, cloneVNode, h, inject, provide, ref, useId } from 'vue'
-import { DialogClose, DialogContent, DialogPortal, DialogRoot, DialogTitle, DialogTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger, PopoverAnchor, PopoverContent, PopoverPortal, PopoverRoot, TabsContent, TabsList, TabsRoot, TabsTrigger, ToggleGroupItem, ToggleGroupRoot } from 'reka-ui'
-import type { ToolbarPlacement } from '../contracts.ts'
+import { createContext, createElement as h, forwardRef, useContext } from 'react'
+import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react'
+import * as Dialog from '@radix-ui/react-dialog'
+import * as Popover from '@radix-ui/react-popover'
+import * as Dropdown from '@radix-ui/react-dropdown-menu'
+import * as Tabs from '@radix-ui/react-tabs'
+import * as Tooltip from '@radix-ui/react-tooltip'
 import { ICONS } from '@lincyaw/design'
 import type { IconName } from '@lincyaw/design'
-
-const PLACEMENT: InjectionKey<ToolbarPlacement> = Symbol('presmium.toolbarPlacement')
-const OVERLAY_Z: InjectionKey<string> = Symbol('presmium.overlayZ')
-
-function overlayStyle(kind: 'popover' | 'dialog') {
-  const parent = inject(OVERLAY_Z, undefined)
-  const zIndex = parent ? `calc(${parent} + 1)` : `var(--pm-z-${kind})`
-  provide(OVERLAY_Z, zIndex)
-  return { zIndex }
-}
-
-
-/** @experimental */
-export function useToolbarPlacement(): ToolbarPlacement {
-  return inject(PLACEMENT, 'bar')
-}
-
-/** @experimental */
-export function provideToolbarPlacement(placement: ToolbarPlacement): void {
-  provide(PLACEMENT, placement)
-}
-
-export const PmIcon = defineComponent({
-  name: 'PmIcon',
-  props: {
-    name: { type: String as PropType<IconName>, required: true },
-    size: { type: [Number, String], default: 20 },
-    strokeWidth: { type: Number, default: 1.7 },
-  },
-  setup(props) {
-    return () => h('svg', {
-      'class': 'pm-ui-icon',
-      'width': props.size,
-      'height': props.size,
-      'viewBox': '0 0 24 24',
-      'fill': 'none',
-      'stroke': 'currentColor',
-      'stroke-width': props.strokeWidth,
-      'stroke-linecap': 'round',
-      'stroke-linejoin': 'round',
-      'aria-hidden': 'true',
-      'focusable': 'false',
-    }, (ICONS[props.name] ?? []).map(([tag, attrs]) => h(tag, attrs)))
-  },
-})
-
+import type { ToolbarPlacement } from '../contracts.ts'
 export type ButtonVariant = 'default' | 'primary' | 'accent' | 'ghost' | 'danger'
-
-export const PmButton = defineComponent({
-  name: 'PmButton',
-  props: {
-    variant: { type: String as PropType<ButtonVariant>, default: 'default' },
-    small: Boolean,
-    icon: String as PropType<IconName>,
-    type: { type: String as PropType<'button' | 'submit' | 'reset'>, default: 'button' },
-  },
-  setup(props, { slots }) {
-    return () => h('button', {
-      type: props.type,
-      class: ['pm-ui-button', props.variant !== 'default' && `pm-ui-button--${props.variant}`, props.small && 'pm-ui-button--small'],
-    }, [props.icon ? h(PmIcon, { name: props.icon, size: props.small ? 14 : 16, strokeWidth: 2 }) : null, slots.default?.()])
-  },
-})
-
-export const PmIconButton = defineComponent({
-  name: 'PmIconButton',
-  props: {
-    icon: { type: String as PropType<IconName>, required: true },
-    label: { type: String, required: true },
-    small: Boolean,
-  },
-  setup(props) {
-    return () => h('button', {
-      'type': 'button',
-      'class': ['pm-ui-icon-button', props.small && 'pm-ui-icon-button--small'],
-      'aria-label': props.label,
-      'title': props.label,
-    }, [h(PmIcon, { name: props.icon, size: props.small ? 16 : 20 })])
-  },
-})
-
 export type Tone = 'neutral' | 'accent' | 'ok' | 'warn' | 'danger' | 'outline'
-
-export const PmBadge = defineComponent({
-  name: 'PmBadge',
-  props: {
-    tone: { type: String as PropType<Tone>, default: 'neutral' },
-    pill: Boolean,
-  },
-  setup(props, { slots }) {
-    return () => h('span', { class: ['pm-ui-badge', props.tone !== 'neutral' && `pm-ui-badge--${props.tone}`, props.pill && 'pm-ui-badge--pill'] }, slots.default?.())
-  },
-})
-
-export const PmCard = defineComponent({
-  name: 'PmCard',
-  props: {
-    variant: { type: String as PropType<'default' | 'interactive' | 'dashed'>, default: 'default' },
-    tag: { type: String, default: 'div' },
-  },
-  setup(props, { slots }) {
-    return () => h(props.tag, { class: ['pm-ui-card', props.variant !== 'default' && `pm-ui-card--${props.variant}`] }, slots.default?.())
-  },
-})
-
-export const PmField = defineComponent({
-  name: 'PmField',
-  props: {
-    label: { type: String, required: true },
-    inline: Boolean,
-  },
-  setup(props, { slots }) {
-    return () => h('label', { class: ['pm-ui-field', props.inline && 'pm-ui-field--inline'] }, props.inline
-      ? [slots.default?.(), h('span', { class: 'pm-ui-field__label' }, props.label)]
-      : [h('span', { class: 'pm-ui-field__label' }, props.label), slots.default?.()])
-  },
-})
-
-export interface Choice {
-  value: string
-  label: string
+export type PopoverPlacement = 'below-end' | 'below-start' | 'above-end' | 'above-start' | 'above' | 'below'
+export interface Choice { value: string, label: string, icon?: IconName }
+export interface MenuItem { id: string, label: string, icon?: IconName, danger?: boolean, disabled?: boolean }
+const cls = (...values: (string | false | undefined)[]) => values.filter(Boolean).join(' ')
+export function PmIcon({ name, size: _size, strokeWidth = 1.7, ...attrs }: { name: IconName, size?: number | string, strokeWidth?: number } & HTMLAttributes<SVGElement>) {
+  return h('svg', { ...attrs, className: cls('pm-ui-icon', attrs.className), viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, focusable: false }, ICONS[name]?.map(([tag, attributes], key) => h(tag, { ...attributes, key })))
 }
-
-export const PmSegmented = defineComponent({
-  name: 'PmSegmented',
-  props: {
-    modelValue: { type: String, required: true },
-    options: { type: Array as PropType<Choice[]>, required: true },
-    label: { type: String, required: true },
-  },
-  emits: ['update:modelValue'],
-  setup(props, { emit }) {
-    return () => h(ToggleGroupRoot, {
-      'type': 'single', 'class': 'pm-ui-segmented', 'aria-label': props.label, 'modelValue': props.modelValue,
-      'onUpdate:modelValue': value => { if (typeof value === 'string' && value) emit('update:modelValue', value) },
-    }, () => props.options.map(option => h(ToggleGroupItem, {
-      key: option.value, value: option.value, class: 'pm-ui-segmented__option',
-    }, () => option.label)))
-  },
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant, small?: boolean, icon?: IconName }
+export const PmButton = forwardRef<HTMLButtonElement, ButtonProps>(function PmButton({ variant = 'default', small, icon, className, children, ...rest }, ref) { return h('button', { ...rest, ref, type: rest.type ?? 'button', className: cls('pm-ui-button', variant !== 'default' && `pm-ui-button--${variant}`, small && 'pm-ui-button--small', className) }, icon ? h(PmIcon, { name: icon }) : null, children) })
+export const PmIconButton = forwardRef<HTMLButtonElement, ButtonProps & { icon: IconName, label: string, hint?: string }>(function PmIconButton({ icon, label, hint, small, className, ...rest }, ref) {
+  const button = h('button', { ...rest, ref, type: 'button', className: cls('pm-ui-icon-button', small && 'pm-ui-icon-button--small', className), 'aria-label': label, title: hint ? undefined : label }, h(PmIcon, { name: icon }))
+  return hint ? h(Tooltip.Provider, { children: h(Tooltip.Root, {}, h(Tooltip.Trigger, { asChild: true }, button), h(Tooltip.Portal, {}, h(Tooltip.Content, { className: 'pm-ui-tooltip', side: 'top' }, hint))) }) : button
 })
-
-export const PmTabs = defineComponent({
-  name: 'PmTabs',
-  props: {
-    modelValue: { type: String, required: true },
-    tabs: { type: Array as PropType<Choice[]>, required: true },
-    label: { type: String, required: true },
-  },
-  emits: ['update:modelValue'],
-  setup(props, { emit, slots }) {
-    return () => h(TabsRoot, {
-      'class': 'pm-ui-tabset', 'modelValue': props.modelValue,
-      'onUpdate:modelValue': value => emit('update:modelValue', String(value)),
-    }, () => [
-      h(TabsList, { class: 'pm-ui-tabs', 'aria-label': props.label }, () => props.tabs.map(tab =>
-        h(TabsTrigger, { key: tab.value, value: tab.value, class: 'pm-ui-tab' }, () => tab.label))),
-      slots.default ? h(TabsContent, { key: props.modelValue, value: props.modelValue, class: 'pm-ui-tabpanel', tabindex: 0 }, () => slots.default?.({ value: props.modelValue })) : null,
-    ])
-  },
-})
-
-export type PopoverPlacement = 'below-end' | 'below-start' | 'above-end' | 'above-start'
-
-function placement(value: PopoverPlacement) {
-  return { side: value.startsWith('above') ? 'top' as const : 'bottom' as const, align: value.endsWith('start') ? 'start' as const : 'end' as const, sideOffset: 6, collisionPadding: 16 }
-}
-
-export const PmPopover = defineComponent({
-  name: 'PmPopover',
-  props: {
-    open: Boolean,
-    label: { type: String, required: true },
-    placement: { type: String as PropType<PopoverPlacement>, default: 'below-end' },
-    name: String,
-  },
-  emits: ['update:open'],
-  setup(props, { emit, slots }) {
-    const style = overlayStyle('popover')
-    const anchor = ref<HTMLElement>()
-    const id = useId()
-    let outside = false
-    return () => h(PopoverRoot, { 'open': props.open, 'onUpdate:open': value => emit('update:open', value) }, () => [
-      h(PopoverAnchor, { asChild: true }, () => h('span', { ref: anchor, class: ['pm-ui-anchor', props.name] }, slots.trigger?.().map(node => cloneVNode(node, {
-        'aria-haspopup': 'dialog', 'aria-expanded': props.open, 'aria-controls': props.open ? id : undefined,
-      })))),
-      h(PopoverPortal, {}, () => h(PopoverContent, {
-        ...placement(props.placement), 'id': id, style,
-        onOpenAutoFocus: () => { outside = false },
-        onInteractOutside: () => { outside = true },
-        onCloseAutoFocus: (event: Event) => { event.preventDefault(); if (!outside) anchor.value?.querySelector<HTMLElement>('button, [href]')?.focus() },
-        'class': ['pm-ui-popover', 'pm-ui-floating', 'pm-ui', props.name && `${props.name}__panel`], 'aria-label': props.label,
-      }, slots.default)),
-    ])
-  },
-})
-
-const dialogProps = {
-  open: Boolean,
-  label: { type: String, required: true },
-  closeLabel: { type: String, required: true },
-  name: String,
-} as const
-
-function dialogComponent(drawer: boolean) {
-  return defineComponent({
-    name: drawer ? 'PmDrawer' : 'PmDialog',
-    props: dialogProps,
-    emits: ['update:open'],
-    setup(props, { emit, slots }) {
-      const style = overlayStyle(drawer ? 'popover' : 'dialog')
-      const kind = drawer ? 'pm-ui-drawer' : 'pm-ui-dialog'
-      let opener: HTMLElement | undefined
-      return () => h(DialogRoot, { 'open': props.open, 'onUpdate:open': value => emit('update:open', value) }, () => [
-        slots.trigger ? h(DialogTrigger, { asChild: true }, slots.trigger) : null,
-        h(DialogPortal, {}, () => h(DialogContent, {
-          'class': [kind, 'pm-ui', props.name && `${props.name}__panel`], 'style': style, 'aria-describedby': undefined,
-          onOpenAutoFocus: () => { opener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined },
-          onCloseAutoFocus: (event: Event) => {
-            if (slots.trigger || !opener?.isConnected) return
-            event.preventDefault()
-            opener.focus()
-          },
-        }, () => [
-          h('div', { class: `${kind}__header` }, [
-            h(DialogTitle, { as: 'h2', class: `${kind}__title` }, () => props.label),
-            slots.actions?.(),
-            h(DialogClose, { asChild: true }, () => h(PmIconButton, { icon: 'close', label: props.closeLabel, small: true })),
-          ]),
-          h('div', { class: `${kind}__body` }, slots.default?.()),
-        ])),
-      ])
-    },
-  })
-}
-
-export const PmDrawer = dialogComponent(true)
-export const PmDialog = dialogComponent(false)
-
-export interface MenuItem {
-  id: string
-  label: string
-  icon?: IconName
-  danger?: boolean
-  disabled?: boolean
-}
-
-export const PmMenu = defineComponent({
-  name: 'PmMenu',
-  props: {
-    label: { type: String, required: true },
-    items: { type: Array as PropType<MenuItem[]>, required: true },
-    icon: { type: String as PropType<IconName>, default: 'more' },
-    placement: { type: String as PropType<PopoverPlacement>, default: 'below-end' },
-  },
-  emits: ['select'],
-  setup(props, { emit }) {
-    const style = overlayStyle('popover')
-    return () => h(DropdownMenuRoot, {}, () => [
-      h(DropdownMenuTrigger, { asChild: true }, () => h(PmIconButton, { icon: props.icon, label: props.label, small: true })),
-      h(DropdownMenuPortal, {}, () => h(DropdownMenuContent, { ...placement(props.placement), style, class: ['pm-ui-menu', 'pm-ui-floating', 'pm-ui'], 'aria-label': props.label }, () => props.items.map(item =>
-        h(DropdownMenuItem, {
-          key: item.id, disabled: item.disabled, textValue: item.label,
-          class: ['pm-ui-menu__item', item.danger && 'pm-ui-menu__item--danger'],
-          onSelect: () => emit('select', item.id),
-        }, () => [item.icon ? h(PmIcon, { name: item.icon, size: 16 }) : null, item.label])))),
-    ])
-  },
-})
-
-export const PmEmpty = defineComponent({
-  name: 'PmEmpty',
-  props: {
-    title: String,
-    icon: String as PropType<IconName>,
-  },
-  setup(props, { slots }) {
-    return () => h('div', { class: 'pm-ui-empty' }, [
-      props.icon ? h(PmIcon, { name: props.icon, size: 28 }) : null,
-      props.title ? h('p', { class: 'pm-ui-empty__title' }, props.title) : null,
-      slots.default ? h('p', { style: { margin: 0 } }, slots.default()) : null,
-      slots.action?.(),
-    ])
-  },
-})
-
-export const PmNotice = defineComponent({
-  name: 'PmNotice',
-  props: {
-    tone: { type: String as PropType<'neutral' | 'accent' | 'ok' | 'warn' | 'danger'>, default: 'neutral' },
-  },
-  setup(props, { slots }) {
-    return (): VNode => h('p', { class: ['pm-ui-notice', props.tone !== 'neutral' && `pm-ui-notice--${props.tone}`], role: props.tone === 'danger' ? 'alert' : 'status' }, slots.default?.())
-  },
-})
-
-export const PmToolbarEntry = defineComponent({
-  name: 'PmToolbarEntry',
-  props: {
-    name: { type: String, required: true },
-    label: { type: String, required: true },
-    closeLabel: { type: String, required: true },
-    icon: String as PropType<IconName>,
-    open: Boolean,
-  },
-  emits: ['update:open'],
-  setup(props, { emit, slots }) {
-    const placement = useToolbarPlacement()
-    const update = (open: boolean) => emit('update:open', open)
-    const toggleAttrs = () => ({
-      'class': `${props.name}__toggle`,
-      'aria-expanded': props.open ? 'true' : 'false',
-      'onClick': () => update(!props.open),
-    })
-    return () => {
-      return h(PmPopover, { 'open': props.open, 'label': props.label, 'name': props.name, 'placement': placement === 'status' ? 'above-start' : 'below-end', 'onUpdate:open': update }, {
-        trigger: () => h(PmButton, { variant: 'ghost', small: true, icon: props.icon, ...toggleAttrs() }, () => props.label),
-        default: () => slots.default?.(),
-      })
-    }
-  },
-})
+export function PmBadge({ tone = 'neutral', pill, children, className, ...rest }: HTMLAttributes<HTMLSpanElement> & { tone?: Tone, pill?: boolean }) { return h('span', { ...rest, className: cls('pm-ui-badge', tone !== 'neutral' && `pm-ui-badge--${tone}`, pill && 'pm-ui-badge--pill', className) }, children) }
+export function PmCard({ variant = 'default', className, children, ...rest }: HTMLAttributes<HTMLDivElement> & { variant?: string }) { return h('div', { ...rest, className: cls('pm-ui-card', variant !== 'default' && `pm-ui-card--${variant}`, className) }, children) }
+export function PmField({ label, inline, group, children }: { label: string, inline?: boolean, group?: boolean, children?: ReactNode }) { return h(group ? 'div' : 'label', { className: cls('pm-ui-field', inline && 'pm-ui-field--inline'), ...(group ? { role: 'group', 'aria-label': label } : {}) }, h('span', { className: 'pm-ui-field__label' }, label), children) }
+interface OverlayProps { open: boolean, label: string, closeLabel?: string, name?: string, children?: ReactNode, trigger?: ReactNode, actions?: ReactNode, onOpenChange?(open: boolean): void, onClose?(): void }
+function DialogSurface({ open, label, closeLabel = 'Close', name, children, actions, trigger, onOpenChange, onClose, drawer = false }: OverlayProps & { drawer?: boolean }) { const kind = drawer ? 'pm-ui-drawer' : 'pm-ui-dialog'; return h(Dialog.Root, { open, onOpenChange: next => { onOpenChange?.(next); if (!next) onClose?.() } }, trigger ? h(Dialog.Trigger, { asChild: true }, trigger) : null, h(Dialog.Portal, {}, h(Dialog.Content, { className: cls(kind, 'pm-ui', name && `${name}__panel`), 'aria-describedby': undefined }, h('div', { className: `${kind}__header` }, h(Dialog.Title, { className: `${kind}__title` }, label), actions, h(Dialog.Close, { asChild: true }, h(PmIconButton, { icon: 'close', label: closeLabel, small: true }))), h('div', { className: `${kind}__body` }, children)))) }
+export function PmDialog(props: OverlayProps) { return h(DialogSurface, props) }
+export function PmDrawer(props: OverlayProps) { return h(DialogSurface, { ...props, drawer: true }) }
+const placement = (value: PopoverPlacement) => ({ side: value.startsWith('above') ? 'top' as const : 'bottom' as const, align: value.endsWith('start') ? 'start' as const : 'end' as const })
+export function PmPopover({ open, label, name, children, trigger, placement: place = 'below-end', onOpenChange }: OverlayProps & { placement?: PopoverPlacement }) { return h(Popover.Root, { open, onOpenChange }, trigger ? h(Popover.Trigger, { asChild: true }, trigger) : null, h(Popover.Portal, {}, h(Popover.Content, { ...placement(place), className: cls('pm-ui-popover pm-ui-floating pm-ui', name), 'aria-label': label }, children))) }
+export function PmMenu({ label, items, icon = 'more', placement: place = 'below-end', onSelect }: { label: string, items: MenuItem[], icon?: IconName, placement?: PopoverPlacement, onSelect?(id: string): void }) { return h(Dropdown.Root, {}, h(Dropdown.Trigger, { asChild: true }, h(PmIconButton, { icon, label, small: true })), h(Dropdown.Portal, {}, h(Dropdown.Content, { ...placement(place), className: 'pm-ui-menu pm-ui-floating pm-ui', 'aria-label': label }, items.map(item => h(Dropdown.Item, { key: item.id, disabled: item.disabled, textValue: item.label, className: cls('pm-ui-menu__item', item.danger && 'pm-ui-menu__item--danger'), onSelect: () => onSelect?.(item.id) }, item.icon ? h(PmIcon, { name: item.icon }) : null, item.label))))) }
+export function PmTabs({ value, modelValue, tabs, label, children, onValueChange }: { value?: string, modelValue?: string, tabs: Choice[], label: string, children?: ReactNode, onValueChange?(value: string): void }) { return h(Tabs.Root, { value: value ?? modelValue, onValueChange, className: 'pm-ui-tabs-root' }, h(Tabs.List, { className: 'pm-ui-tabs', 'aria-label': label }, tabs.map(tab => h(Tabs.Trigger, { key: tab.value, value: tab.value, className: 'pm-ui-tab' }, tab.label))), children) }
+export function PmSegmented(props: { value?: string, modelValue?: string, choices?: Choice[], items?: Choice[], label: string, onValueChange?(value: string): void }) { return h('div', { className: 'pm-ui-segmented', role: 'group', 'aria-label': props.label }, (props.choices ?? props.items ?? []).map(item => h(PmButton, { key: item.value, small: true, className: 'pm-ui-segmented__option', 'aria-pressed': (props.value ?? props.modelValue) === item.value, onClick: () => props.onValueChange?.(item.value) }, item.label))) }
+export function PmNotice({ tone = 'neutral', children, className, ...rest }: HTMLAttributes<HTMLDivElement> & { tone?: Tone }) { return h('div', { ...rest, className: cls('pm-ui-notice', tone !== 'neutral' && `pm-ui-notice--${tone}`, className), role: tone === 'danger' ? 'alert' : 'status' }, children) }
+export function PmEmpty({ title, icon, action, children }: { title?: string, icon?: IconName, action?: ReactNode, children?: ReactNode }) { return h('div', { className: 'pm-ui-empty' }, icon ? h(PmIcon, { name: icon }) : null, title ? h('p', { className: 'pm-ui-empty__title' }, title) : null, children, action) }
+export const ToolbarPlacementContext = createContext<ToolbarPlacement>('bar')
+export const provideToolbarPlacement = ToolbarPlacementContext.Provider
+export function useToolbarPlacement() { return useContext(ToolbarPlacementContext) }
+export function PmToolbarEntry({ title, label = title ?? '', name, icon = 'more', open = false, onOpenChange, children }: { title?: string, name?: string, label?: string, closeLabel?: string, icon?: IconName, open?: boolean, onOpenChange?(open: boolean): void, children?: ReactNode }) { const where = useToolbarPlacement(); return h(PmPopover, { open, onOpenChange, name, label, placement: where === 'status' ? 'above-start' : 'below-end', trigger: h(PmIconButton, { icon, label, small: true, className: name && `${name}__toggle`, 'aria-expanded': open }) }, children) }

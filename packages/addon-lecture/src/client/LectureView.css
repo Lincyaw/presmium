@@ -1,0 +1,21 @@
+.pm-lecture-view {
+  position: fixed;
+  inset: 0;
+  z-index: var(--pm-z-overlay-view);
+  overflow: auto;
+  padding: 2rem;
+  background: var(--pm-color-bg);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+}
+.pm-lecture-view h1 {
+  font-family: var(--pm-font-serif);
+  font-size: var(--pm-text-display);
+  font-weight: 600;
+}
+.pm-lecture-view__list {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0;
+  list-style: none;
+}

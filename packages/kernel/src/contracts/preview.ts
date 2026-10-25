@@ -46,7 +46,18 @@ export interface PreviewPosition {
   view?: string
 }
 
+/** Source-oriented edits from the block editor. Opaque blocks retain their source verbatim. */
+export interface PreviewEditedBlock {
+  id: string
+  source?: string
+  at?: number
+  markdown?: string
+  scene?: string
+  durations?: number[]
+}
+
 export type PreviewCommand =
+  | { type: 'blocks-result', section: string, request: number, revision?: string, error?: string }
   | { type: 'go', section: string, step?: number, trail?: string[], view?: string }
   | { type: 'highlight', target: PreviewAnchor | null }
   | { type: 'pick', on: boolean }
@@ -65,6 +76,8 @@ export type PreviewCommandType = PreviewCommand['type']
 export type PreviewShortcut = 'undo' | 'redo' | 'dismiss'
 
 export type PreviewReport =
+  | { type: 'blocks-edited', section: string, request: number, revision: string, blocks: PreviewEditedBlock[] }
+  | { type: 'narrate', section: string, step: number }
   | { type: 'ready', renderer: 'web' | 'slides', document: string, revision?: string, capabilities: PreviewCommandType[] }
   | ({ type: 'position' } & PreviewPosition)
   | { type: 'picked', section: string, block?: string, step?: number, trail?: string[], rect?: PreviewRect, point?: PreviewPoint, clicks?: number }
@@ -108,6 +121,7 @@ export function toPreviewCommand(data: unknown, nonce: string): PreviewCommand |
   if (!isPreviewEnvelope(data, nonce) || data.version !== PREVIEW_PROTOCOL) return undefined
   const m = data as Record<string, unknown>
   switch (m.type) {
+    case 'blocks-result': return text(m.section) && request(m.request) && optional(m.revision, text) && optional(m.error, text) ? { type: 'blocks-result', section: m.section, request: m.request, ...m.revision === undefined ? {} : { revision: m.revision as string }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
     case 'go': return text(m.section) && optional(m.step, step) && optional(m.trail, strings) && optional(m.view, text) ? { type: 'go', section: m.section, ...m.step === undefined ? {} : { step: m.step as number }, ...m.trail ? { trail: m.trail as string[] } : {}, ...m.view ? { view: m.view as string } : {} } : undefined
     case 'highlight': return m.target === null || anchor(m.target) ? { type: 'highlight', target: m.target === null ? null : { section: m.target.section, ...m.target.block ? { block: m.target.block } : {} } } : undefined
     case 'pick':
@@ -127,6 +141,8 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
   if (!isPreviewEnvelope(data, nonce) || data.version !== PREVIEW_PROTOCOL) return undefined
   const m = data as Record<string, unknown>
   switch (m.type) {
+    case 'blocks-edited': return text(m.section) && request(m.request) && text(m.revision) && Array.isArray(m.blocks) && m.blocks.length <= 2000 && m.blocks.every(b => isRecord(b) && text(b.id) && b.id.length <= 200 && optional(b.source, text) && optional(b.at, step) && optional(b.markdown, (v): v is string => text(v) && v.length <= MAX_EDITED) && optional(b.scene, text) && optional(b.durations, (v): v is number[] => Array.isArray(v) && v.length <= 1000 && v.every(n => typeof n === 'number' && Number.isFinite(n) && n >= 0))) ? { type: 'blocks-edited', section: m.section, request: m.request, revision: m.revision, blocks: m.blocks as unknown as PreviewEditedBlock[] } : undefined
+    case 'narrate': return text(m.section) && step(m.step) ? { type: 'narrate', section: m.section, step: m.step } : undefined
     case 'ready': return (m.renderer === 'web' || m.renderer === 'slides') && text(m.document) && optional(m.revision, text) && strings(m.capabilities) ? { type: 'ready', renderer: m.renderer, document: m.document, ...m.revision ? { revision: m.revision as string } : {}, capabilities: m.capabilities as PreviewCommandType[] } : undefined
     case 'position': return text(m.section) && step(m.step) && strings(m.trail) && optional(m.view, text) ? { type: 'position', section: m.section, step: m.step, trail: m.trail, ...m.view ? { view: m.view as string } : {} } : undefined
     case 'picked': return text(m.section) && optional(m.block, text) && optional(m.step, step) && optional(m.trail, strings) && optional(m.rect, rect) && optional(m.point, point) && optional(m.clicks, clicks)

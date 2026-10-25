@@ -1,32 +1,16 @@
-import type { Ref } from 'vue'
-import { getCurrentInstance, inject, readonly, shallowRef } from 'vue'
-import { createGlobalState, useMutationObserver } from '@vueuse/core'
-import { HOST, installed } from '../host-key.ts'
-
-export interface Appearance {
-  readonly dark: Readonly<Ref<boolean>>
-  setDark(dark: boolean): void
-  toggle(): void
-}
-
-const observeDarkClass = createGlobalState(() => {
-  const root = () => typeof document === 'undefined' ? undefined : document.documentElement
-  const dark = shallowRef(root()?.classList.contains('dark') ?? false)
-  useMutationObserver(root, () => dark.value = root()?.classList.contains('dark') ?? false, { attributes: true, attributeFilter: ['class'] })
-  return dark
-})
-
+import { useEffect } from 'react'
+import { createStore, useStore } from '../store.ts'
+import { useHost } from '../host.ts'
+export interface Appearance { readonly dark: boolean, setDark(dark: boolean): void, toggle(): void }
+const darkClass = createStore(false)
+let observer: MutationObserver | undefined
+function observe() { if (typeof document === 'undefined' || observer) return; const root = document.documentElement; const read = () => darkClass.set(root.classList.contains('dark')); read(); observer = new MutationObserver(read); observer.observe(root, { attributes: true, attributeFilter: ['class'] }) }
 export function useAppearance(): Appearance {
-  const host = getCurrentInstance() ? inject(HOST, undefined) : installed.adapter
-  const own = getCurrentInstance() ? host?.useDarkMode?.() : undefined
-  const dark = own ?? observeDarkClass()
-  const setDark = (value: boolean) => {
-    if (own) own.value = value
-    else if (typeof document !== 'undefined') document.documentElement.classList.toggle('dark', value)
-  }
-  return {
-    dark: readonly(dark),
-    setDark,
-    toggle: () => setDark(!dark.value),
-  }
+  const host = useHost()
+  const observed = useStore(darkClass)
+  const own = host.useDarkMode?.()
+  useEffect(observe, [])
+  const dark = own?.[0] ?? observed
+  const setDark = (on: boolean) => { if (own) own[1](on); else document.documentElement.classList.toggle('dark', on) }
+  return { dark, setDark, toggle: () => setDark(!dark) }
 }

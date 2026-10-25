@@ -12,6 +12,7 @@ the document, edit it directly or hand it to the AI, undo at any time. Professio
 Code extension's job.
 
 - No source editor, file tree, raw problem panel text or git vocabulary in the UI.
+- UI copy uses conventional product terminology: concise noun labels such as “讲解文本” and precise options such as “与动画同步” and “动画结束后”. Avoid conversational questions such as “这一刻要讲什么” in fields or controls.
 - Command names follow Word: Undo, Redo, New Comment, Version History, Accept and Reject, Editing and
   Viewing. Both the zh-CN and the en text are complete.
 

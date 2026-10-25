@@ -1,0 +1,46 @@
+/* Recording is for presenting, not for the preview of a workbench. */
+html.pm-in-workbench .pm-lecture-recorder {
+  display: none;
+}
+
+.pm-lecture-recorder {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 5;
+  box-sizing: border-box;
+  max-width: calc(100% - 1rem);
+  padding: var(--pm-space-2) var(--pm-space-3);
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
+  border-radius: var(--pm-radius-card);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  box-shadow: var(--pm-shadow-float);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-sm);
+}
+.pm-lecture-recorder__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.pm-lecture-recorder__field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.pm-lecture-recorder__status {
+  margin: 0.25rem 0 0;
+}
+.pm-lecture-recorder__dot {
+  margin-inline-end: 0.35em;
+  color: var(--pm-color-danger);
+}
+.pm-lecture-surface {
+  position: fixed;
+  inset: 0 0 var(--pm-overlay-bar, 3rem);
+  z-index: -1;
+  cursor: crosshair;
+  touch-action: none;
+}

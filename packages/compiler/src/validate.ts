@@ -66,6 +66,7 @@ function nodeProblem({ node }: IRBlock): string | undefined {
   if (!isRecord(node)) return 'node is missing'
   switch (node.type) {
     case 'markdown':
+      if (node.narration !== undefined && (!isRecord(node.narration) || !['during', 'after'].includes(String(node.narration.mode)))) return 'narration mode must be during or after'
       return isRecord(node.mdast) ? mdastProblem(node.mdast, 'mdast') : 'markdown node needs an mdast tree'
     case 'code':
       if (typeof node.lang !== 'string' || typeof node.value !== 'string') return 'code node needs lang and value'

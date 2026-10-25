@@ -1,81 +1,47 @@
+import { createElement, useContext, useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import { stepStateAt } from '@lincyaw/kernel'
-import type { PresentationMode, ServiceToken, StartReport, StepRange, StepState } from '@lincyaw/kernel/contracts'
-import type { App, ComputedRef, Ref } from 'vue'
-import { computed, getCurrentInstance, getCurrentScope, inject, onScopeDispose, readonly, ref } from 'vue'
-import { PmBoundary } from './error-boundary.ts'
+import type { ServiceToken, StepRange, StepState } from '@lincyaw/kernel/contracts'
 import { HOST, installed } from './host-key.ts'
-import { useStepScope } from './step-scope.ts'
 import type { HostAdapter, SharedStateScope } from './contracts.ts'
+import { useStepScope } from './step-scope.ts'
+import { runtimeRevision } from './runtime.ts'
+import { createStore, useStore } from './store.ts'
+import type { Store } from './store.ts'
+import { PmBoundary } from './error-boundary.ts'
 
-export function installHost(app: App, adapter: HostAdapter): void {
-  installed.adapter = adapter
-  app.provide(HOST, adapter)
-  app.component('PmBoundary', PmBoundary)
+export function installHost(adapter: HostAdapter): void { installed.adapter = adapter }
+export function HostProvider({ adapter, children }: { adapter: HostAdapter, children?: ReactNode }) {
+  return createElement(HOST.Provider, { value: adapter }, children)
 }
-
 export function useHost(): HostAdapter {
-  const host = inject(HOST, undefined)
-  if (!host) throw new Error('[presmium] no host installed: the host adapter must call installHost(app, adapter)')
+  const host = useContext(HOST) ?? installed.adapter
+  if (!host) throw new Error('[presmium] no host installed')
   return host
 }
-
-export function useStepState(range: StepRange): Readonly<Ref<StepState>> {
-  const step = useHost().useStep()
-  const { at } = useStepScope()
-  return computed(() => stepStateAt(range, step.value - at.value))
+export function useDoc() { const host = useHost(); if (!host.useDoc) throw new Error("[presmium] this host has no document"); return host.useDoc() }
+export function useStep(): number { return useHost().useStep() }
+export function useStepState(range: StepRange): StepState { const step = useStep(); const { at } = useStepScope(); return stepStateAt(range, step - at) }
+export function useCursor() { return useHost().useCursor() }
+export function useViewRole() { return useHost().useViewRole() }
+export function usePresentationMode() { const host = useHost(); host.useViewRole(); return host.mode }
+export function useService<T>(token: ServiceToken<T>): T | undefined { useStore(runtimeRevision); return useHost().getService(token) }
+export function useStartReport() { useStore(runtimeRevision); return useHost().startReport() }
+export function useStaticRender() { return useHost().useStaticRender() }
+export function useSectionConfig(pluginId: string) { return useHost().useSectionConfig(pluginId) }
+export interface SharedStateOptions { scope?: SharedStateScope }
+export function useSharedState<T>(key: string, initial: T, options: SharedStateOptions = {}) { return useHost().useSharedState(key, initial, options.scope ?? 'local') }
+export function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(() => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches)
+  useEffect(() => { const query = matchMedia('(prefers-reduced-motion: reduce)'); const update = () => setReduced(query.matches); update(); query.addEventListener('change', update); return () => query.removeEventListener('change', update) }, [])
+  return reduced
 }
 
-export function useCursor() {
-  return useHost().useCursor()
-}
-
-export function useViewRole() {
-  return useHost().useViewRole()
-}
-
-export function usePresentationMode(): PresentationMode {
-  return useHost().mode
-}
-
-export function useService<T>(token: ServiceToken<T>): ComputedRef<T | undefined> {
-  const host = useHost()
-  return computed(() => host.getService(token))
-}
-
-export function useStartReport(): ComputedRef<StartReport | undefined> {
-  const host = useHost()
-  return computed(() => host.startReport())
-}
-
-export function useStaticRender(): Readonly<Ref<boolean>> {
-  return useHost().useStaticRender()
-}
-
-export function useSectionConfig(pluginId: string): Readonly<Ref<Record<string, unknown>>> {
-  return useHost().useSectionConfig(pluginId)
-}
-
-export interface SharedStateOptions {
-  scope?: SharedStateScope
-}
-
-export function useSharedState<T>(key: string, initial: T, options: SharedStateOptions = {}): Ref<T> {
-  const host = (getCurrentInstance() ? inject(HOST, undefined) : undefined) ?? installed.adapter
-  if (!host) throw new Error('[presmium] no host installed: the host adapter must call installHost(app, adapter)')
-  return host.useSharedState(key, initial, options.scope ?? 'local')
-}
-
-const REDUCED_MOTION = '(prefers-reduced-motion: reduce)'
-
-export function usePrefersReducedMotion(): Readonly<Ref<boolean>> {
-  const query = typeof window === 'undefined' ? undefined : window.matchMedia?.(REDUCED_MOTION)
-  const reduced = ref(query?.matches ?? false)
-  if (query) {
-    const update = (event: MediaQueryListEvent) => {
-      reduced.value = event.matches
-    }
-    query.addEventListener('change', update)
-    if (getCurrentScope()) onScopeDispose(() => query.removeEventListener('change', update))
-  }
-  return readonly(reduced)
+const detachedShared = new Map<string, Store<unknown>>()
+export function getSharedStateStore<T>(key: string, initial: T, options: SharedStateOptions = {}): Store<T> {
+  const scope = options.scope ?? 'local'
+  if (installed.adapter?.sharedStateStore) return installed.adapter.sharedStateStore(key, initial, scope)
+  const id = `${scope}:${key}`
+  let store = detachedShared.get(id); if (!store) { store = createStore<unknown>(initial); detachedShared.set(id, store) }
+  return store as Store<T>
 }

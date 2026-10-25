@@ -12,7 +12,6 @@
     "lecture:build": "presmium build --to web,lecture"
   },
   "dependencies": {
-    "vue": "^3.5.42",
     "@lincyaw/cli": "workspace:*",
     "@lincyaw/web": "workspace:*",
     "@lincyaw/addon-stage": "workspace:*",
@@ -31,7 +30,9 @@
     "@lincyaw/addon-classroom": "workspace:*",
     "@lincyaw/render-slides": "workspace:*",
     "@lincyaw/render-notebook": "workspace:*",
-    "@lincyaw/viewer": "workspace:*"
+    "@lincyaw/viewer": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "playwright-chromium": "1.64.1"

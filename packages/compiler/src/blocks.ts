@@ -52,6 +52,7 @@ export interface PluginRole {
 }
 
 export interface BlockContext {
+  contentModel?: 'blocks'
   entry: string
   deckDir: string
   workspaceRoot: string
@@ -70,7 +71,7 @@ export type Hints = Record<RendererId, Record<string, unknown>>
 
 export type SectionConfig = Record<string, Record<string, unknown>>
 
-export const BUILTIN_DIRECTIVES = new Map([['slide', true], ['only', true], ['hints', false], ['config', false], ['component', false], ['audience', false]])
+export const BUILTIN_DIRECTIVES = new Map([['slide', true], ['only', true], ['narration', true], ['hints', false], ['config', false], ['component', false], ['audience', false]])
 
 const COMMON_OPTIONS = ['reveal', 'label', 'audience']
 const MYST_ERRORS = new Set(['mystDirectiveError', 'mystRoleError'])
@@ -180,7 +181,7 @@ async function convert(nodes: MdastNode[], scope: Scope, ctx: BlockContext, out:
       push({ kind: 'code', role: 'visual', span: 0, source, node: codeNode(node, {}, source, ctx) })
       continue
     }
-    const role: BlockRole = scope.visual || !NARRATION.has(node.type) || onlyImages(node) ? 'visual' : 'narration'
+    const role: BlockRole = scope.visual || ctx.contentModel === 'blocks' || !NARRATION.has(node.type) || onlyImages(node) ? 'visual' : 'narration'
     const block = markdown([node], ctx)
     push({ kind: node.type, role, span: 0, source, node: role === 'narration' ? { ...block, mdast: { ...block.mdast, children: literalTags(block.mdast.children ?? []) } } : block })
   }
@@ -218,6 +219,14 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
     fail,
   }
   switch (name) {
+    case 'narration': {
+      const at = Number(options.at)
+      if (options.at === undefined || options.at === true || options.at === '' || !Number.isInteger(at) || at < 0) return fail(':at: must be a non-negative integer')
+      const mode = options.mode ?? 'during'
+      if (mode !== 'during' && mode !== 'after') return fail(':mode: must be during or after')
+      push({ kind: 'narration', role: 'narration', at, span: 0, source, label: call.label, audience: call.audience, node: { ...markdown(bodyNodes(node), ctx), narration: { mode } } })
+      return
+    }
     case 'audience': return sectionAudience(call, out)
     case 'slide':
     case 'only': return scopeDirective(call, scope, target, ctx, out)

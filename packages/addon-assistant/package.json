@@ -30,16 +30,19 @@
     "src"
   ],
   "dependencies": {
-    "eventsource-parser": "4.1.2",
-    "vue": "^3.5.42"
+    "eventsource-parser": "4.1.2"
   },
   "peerDependencies": {
     "@lincyaw/host": "workspace:^",
-    "@lincyaw/kernel": "workspace:^"
+    "@lincyaw/kernel": "workspace:^",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@lincyaw/host": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
-    "@lincyaw/viewer": "workspace:*"
+    "@lincyaw/viewer": "workspace:*",
+    "@types/react": "18.3.28",
+    "@types/react-dom": "^18.3.7"
   }
 }

@@ -3,15 +3,19 @@ import type { Locale } from '@lincyaw/kernel/contracts'
 const zhStep = (step: number, steps: number) => `第 ${step + 1} 步，共 ${steps + 1} 步`
 
 const zh = {
+  contentRoles: { visual: '上屏内容', narration: '讲解 · 字幕', reading: '仅供阅读' },
   views: { document: '文档', scrolly: '滚动叙事', present: '放映', presenter: '演讲者' },
   present: {
     region: '放映',
+    jumpStep: '跳转步骤',
+    step: (step: number) => `第 ${step} 步`,
     counter: (index: number, total: number, step: number, steps: number) => `${index} / ${total}${steps > 0 ? ` · ${zhStep(step, steps)}` : ''}`,
     prev: '上一步',
     next: '下一步',
     overview: '总览',
     presenter: '演讲者窗口',
     fullscreen: '全屏',
+    exitFullscreen: '退出全屏',
     exit: '退出放映',
   },
   presenter: {
@@ -62,15 +66,19 @@ const zh = {
 export type Messages = typeof zh
 
 const en: Messages = {
+  contentRoles: { visual: 'On screen', narration: 'Narration · Captions', reading: 'Reading only' },
   views: { document: 'Document', scrolly: 'Scrollytelling', present: 'Present', presenter: 'Presenter' },
   present: {
     region: 'Presentation',
+    jumpStep: 'Jump to step',
+    step: step => `Step ${step}`,
     counter: (index, total, step, steps) => `${index} / ${total}${steps > 0 ? ` · step ${step + 1} of ${steps + 1}` : ''}`,
     prev: 'Previous',
     next: 'Next',
     overview: 'Overview',
     presenter: 'Presenter window',
     fullscreen: 'Full screen',
+    exitFullscreen: 'Exit full screen',
     exit: 'Exit presentation',
   },
   presenter: {

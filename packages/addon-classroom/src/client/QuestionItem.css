@@ -1,0 +1,17 @@
+.pm-classroom-question p {
+  margin: 0;
+}
+.pm-classroom-question > .pm-ui-button {
+  margin-left: 0.35rem;
+}
+.pm-classroom-question[data-answered] {
+  color: var(--pm-color-muted);
+}
+.pm-classroom-panel__draft {
+  margin: 0.35rem 0;
+  padding: 0.35rem 0.75rem;
+  border-left: var(--pm-size-rule) solid var(--pm-color-line-strong);
+}
+.pm-classroom-panel__answer {
+  white-space: pre-wrap;
+}

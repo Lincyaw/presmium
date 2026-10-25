@@ -1,0 +1,4 @@
+.hello-greeting {
+  color: var(--pm-color-accent);
+  font-family: var(--pm-font-sans);
+}

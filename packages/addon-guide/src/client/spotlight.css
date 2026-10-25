@@ -10,7 +10,7 @@ body .driver-popover.pm-spotlight-popover {
 }
 
 body .driver-popover:is(.pm-spotlight-popover, .pm-hint-popover) {
-  border: 1px solid var(--pm-color-line);
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
   border-radius: var(--pm-radius-card);
   background: var(--pm-color-surface);
   color: var(--pm-color-ink);

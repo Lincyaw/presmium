@@ -1,10 +1,10 @@
 import type { ViewerPlugin } from '@lincyaw/viewer'
 import { currentLocale } from '@lincyaw/host'
 import { LECTURE_MESSAGES } from '../domain/index.ts'
-import LectureView from './LectureView.vue'
-import PlayerPanel from './PlayerPanel.vue'
-import PlayLectureButton from './PlayLectureButton.vue'
-import RecorderPanel from './RecorderPanel.vue'
+import LectureView from './LectureView.tsx'
+import PlayerPanel from './PlayerPanel.tsx'
+import PlayLectureButton from './PlayLectureButton.tsx'
+import RecorderPanel from './RecorderPanel.tsx'
 import { exporting, setViewerContext, watchLectureList } from './state.ts'
 
 const plugin: ViewerPlugin = (ctx) => {

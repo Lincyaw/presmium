@@ -11,6 +11,9 @@ import { changedPlaces, findPlaceAtLine, findPlaceSource } from './places.ts'
 import { OperationLog } from './telemetry.ts'
 import type { OperationValue } from './telemetry.ts'
 import { applyRenderedEdit } from './text-edit.ts'
+import { writeStepNarration } from './narration.ts'
+import type { StepNarrationDraft } from './narration.ts'
+import { writeBodyBlocks } from './block-edit.ts'
 import { workspaceClient, WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 
@@ -82,6 +85,8 @@ export interface WorkbenchState {
   previewIrRevision?: string
   /** Where the preview is: the section the author reads, or the slide and its step. */
   position?: PreviewPosition
+  narration?: { section: string, step: number }
+  narrationDirty?: boolean
   diagnostics?: DiagnosticSnapshot
   isDiagnosticsUnavailable: boolean
   canRepairDiagnostics: boolean
@@ -166,6 +171,8 @@ function commentPins(comments: readonly DocumentComment[]): PreviewPin[] {
 
 /** What opening or closing a document clears. */
 const DOCUMENT_RESET = {
+  narration: undefined,
+  narrationDirty: false,
   ir: undefined, preview: undefined, previewFailure: undefined, previewIrRevision: undefined, position: undefined,
   diagnostics: undefined, isDiagnosticsUnavailable: false, isRepairingDiagnostics: false, diagnosticsRepairFailure: undefined,
   pointer: undefined, editing: undefined, save: { kind: 'idle' }, editFallback: undefined,
@@ -511,9 +518,10 @@ export class Workbench {
   }
 
   #showWebView(sinks: Iterable<PreviewSink> = this.#previewSinks): void {
-    const section = this.#state.position?.section ?? this.#state.ir?.doc.sections[0]?.id
+    const selected = this.#state.narration ?? this.#state.position
+    const section = selected?.section ?? this.#state.ir?.doc.sections[0]?.id
     if (section === undefined) return
-    for (const sink of sinks) sink.send({ type: 'go', section, view: this.#state.webView })
+    for (const sink of sinks) sink.send({ type: 'go', section, step: selected?.step ?? 0, view: this.#state.webView })
   }
 
   reloadPreview(): void {
@@ -530,6 +538,74 @@ export class Workbench {
   retryPreview(): void {
     this.#record('preview.retry')
     if (this.#state.document !== undefined) void this.#readPreview(this.#state.document)
+  }
+
+  /** Opens the narration editor at a document or animation step. */
+  selectNarration(section: string, step: number): void {
+    const target = this.#state.ir?.doc.sections.find(s => s.id === section)
+    if (!target || !Number.isInteger(step) || step < 0 || step > target.steps) return
+    this.point(undefined)
+    this.#set({ narration: { section, step } })
+    this.#broadcast({ type: 'go', section, step, ...(this.#state.webView === 'present' ? { view: 'present' } : {}) })
+    this.#record('narration.select', { 'presmium.section': section, 'presmium.step': step })
+  }
+
+  closeNarration(): void {
+    if (this.#state.narrationDirty) return
+    this.#set({ narration: undefined })
+  }
+
+  markNarrationDirty(dirty: boolean): void {
+    if (this.#state.narrationDirty !== dirty) this.#set({ narrationDirty: dirty })
+  }
+
+  async saveNarration(draft: StepNarrationDraft, text: string, mode: StepNarrationDraft['mode']): Promise<void> {
+    if (isAgentChanging(this.#state)) throw new Error(this.#messages.saveLocked)
+    if (draft.document !== this.#state.ir?.doc) throw new Error(this.#messages.narrationChanged)
+    const dir = this.#state.document
+    this.#set({ save: { kind: 'saving' } })
+    try {
+      await this.client.saveSource(WORKSPACE_SCOPE, draft.source.path, writeStepNarration(draft, text, mode), draft.source.version, this.#messages.editedNarration(draft.step + 1))
+      if (dir !== undefined && dir === this.#state.document) await this.#readIr(dir)
+      if (dir === this.#state.document) {
+        if (dir !== undefined) await this.#history.read(dir)
+        this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
+      }
+      this.#record('narration.save', { 'presmium.section': draft.section, 'presmium.step': draft.step, 'presmium.mode': mode })
+    } catch (error) {
+      const message = errorMessage(error) === 'formatted-narration' ? this.#messages.narrationFormatted : errorMessage(error)
+      if (dir === this.#state.document) this.#set({ save: { kind: 'failed', message } })
+      throw new Error(message)
+    }
+  }
+
+  async #saveBlocks(report: Extract<PreviewReport, { type: 'blocks-edited' }>): Promise<void> {
+    const dir = this.#state.document
+    const answer = this.#state.ir
+    const section = answer?.doc.sections.find(s => s.id === report.section)
+    const result = (error?: string) => this.#broadcast({ type: 'blocks-result', section: report.section, request: report.request, ...error ? { error } : { revision: this.#state.ir?.revision } })
+    if (dir === undefined || !answer || !section) return result(this.#messages.blockUnknown)
+    if (this.#state.mode !== 'editing' || isAgentChanging(this.#state)) return result(this.#messages.saveLocked)
+    if (report.revision !== answer.revision) return result(this.#messages.blockConflict)
+    this.#set({ save: { kind: 'saving' } })
+    try {
+      const source = await this.client.readSource(WORKSPACE_SCOPE, section.source.file)
+      const content = writeBodyBlocks(answer.doc, section, source.content, report.blocks)
+      // Refuse stale maps even if another save finished while the file was read.
+      if (this.#state.ir?.revision !== answer.revision) throw new Error(this.#messages.blockConflict)
+      if (content !== source.content) await this.client.saveSource(WORKSPACE_SCOPE, source.path, content, source.version, this.#messages.editedBody(section.title))
+      if (this.#state.document !== dir) return
+      await this.#readIr(dir)
+      await this.#history.read(dir)
+      this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
+      this.#record('blocks.save', { 'presmium.section': section.id, 'presmium.blocks': report.blocks.length })
+      result()
+    } catch (error) {
+      const reason = errorMessage(error)
+      const message = reason === 'block-multiple-files' ? this.#messages.blockFiles : reason === 'block-mixed-container' ? this.#messages.blockContainer : reason
+      if (this.#state.document === dir) this.#set({ save: { kind: 'failed', message } })
+      result(message)
+    }
   }
 
   /** Whether the target's text is plain enough to edit in place. */
@@ -828,6 +904,12 @@ export class Workbench {
   handlePreviewReport(document: string, renderer: PreviewRenderer, report: PreviewReport): void {
     if (document !== this.#state.document || renderer !== this.#state.previewRenderer) return
     switch (report.type) {
+      case 'blocks-edited':
+        this.#edits = this.#edits.then(() => this.#saveBlocks(report))
+        break
+      case 'narrate':
+        if (this.#state.mode === 'editing') this.selectNarration(report.section, report.step)
+        break
       case 'ready':
       case 'updated':
         this.#set({ previewIrRevision: report.revision })
@@ -871,6 +953,7 @@ export class Workbench {
         if (at === this.#lastPosition) break
         this.#lastPosition = at
         this.#set({ position: { section: report.section, step: report.step, trail: report.trail, ...report.view ? { view: report.view } : {} } })
+        if (this.#state.narration && report.view === 'present') this.#set({ narration: { section: report.section, step: report.step } })
         if (renderer === 'web' && report.view && (report.view === 'present') !== (this.#state.webView === 'present')) this.#set({ webView: report.view === 'present' ? 'present' : 'document' })
         this.#record('preview.position', { 'presmium.section': report.section, 'presmium.step': report.step, 'presmium.preview.view': report.view })
         break

@@ -14,6 +14,19 @@ A directive can be written as a backtick code fence (```` ```{name} ````) or a c
 
 ## Built-in directives (compiler, no plugin needed)
 
+### `{narration}`
+
+Bind the MyST body to one section step explicitly. `:at: N` is required (zero-based); `:mode: during` (default) speaks while that step’s animation plays, `:mode: after` waits for its longest declared animation to finish before speaking. Explicit narration does not shift subsequent visual blocks or implicit narration. It compiles without a lecture plugin; lecture playback, WebVTT and video export consume the timing. The workbench’s step narration pane edits this directive directly, including steps without narration. The UI counts steps from 1.
+
+```md
+:::{narration}
+:at: 1
+:mode: after
+
+The swap has finished. The larger number moved one place to the right.
+:::
+```
+
 ### `{slide}`
 
 The body is MyST; every block in it is projected content. Options: `:reveal:`, `:reveal: items`, `:at:` (non-negative integer, from 0), `:until:` (hidden from that step on; must be greater than the start step). `at` cannot be combined with `reveal`. The reading form shows the content expanded; the presentation shows it within its range and restores it when going back. To replace one result with another, write `:at: 0`, `:until: 1` on the first and `:at: 1` on the second; no component or player is needed.
@@ -113,7 +126,7 @@ steps: [Parse, Start, Render]
 :::
 ```
 
-Here `StepList` is the component in `components/StepList.vue` in the lecture directory (plugin ID `deck`); components get steps and services through `@lincyaw/host`. A component with actions names them with `useActions`, and ``{cue to=<block>}`click <action>` `` in the narration runs the action when it is spoken (see "Lecture roles" below). A plugin's components can be placed in the body the same way, for example `PmContrastToggle` (the high-contrast switch, `@lincyaw/addon-publish`); both forms render them. When no listed plugin registers the component, the warning is `no plugin in plugins registers the component`.
+Here `StepList` is the component in `components/StepList.tsx` in the lecture directory (plugin ID `deck`); components get steps and services through `@lincyaw/host`. A component with actions names them with `useActions`, and ``{cue to=<block>}`click <action>` `` in the narration runs the action when it is spoken (see "Lecture roles" below). A plugin's components can be placed in the body the same way, for example `PmContrastToggle` (the high-contrast switch, `@lincyaw/addon-publish`); both forms render them. When no listed plugin registers the component, the warning is `no plugin in plugins registers the component`.
 
 ### `{include}`
 
@@ -512,7 +525,7 @@ A scene file default-exports one scene (from `@lincyaw/addon-motion/scene`); the
 | `animeScene(({ root, anime, at }) => …)` | An Anime.js timeline, such as `anime.createTimeline({ autoplay: false })` | milliseconds |
 | `motionScene(({ root, motion, at }) => …)` | `motion.animate(sequence)`; put the same property of the same element in one sequence (separate animations overwrite each other when seeking) | seconds |
 | `threeScene(({ THREE, renderer, addons, at, width, height }) => …)` | `{ render(ms), resize?(w, h), dispose?() }` or just `render`; the plugin creates the renderer and keeps it at the frame's size; `addons` has CSS2DRenderer, CSS2DObject, Line2, LineGeometry, LineMaterial, ParametricGeometry, RoundedBoxGeometry, ConvexGeometry | milliseconds |
-| `remotionScene(({ React, remotion, at }) => …)` | `{ component, fps, width, height }`: a Remotion component written with `React.createElement` (scene files cannot use JSX: the slides form compiles JSX as Vue), drawing the frame for each moment | frames |
+| `remotionScene(({ React, remotion, at }) => …)` | `{ component, fps, width, height }`: a Remotion component written with `React.createElement` (scene files use plain TypeScript; React components in scenes are created through the adapter), drawing the frame for each moment | frames |
 | `d3Scene(({ root, d3, at }) => …)` | A function that draws a moment, `(ms) => void` (or `{ seek, resize?, dispose? }`): build the graphics with D3 and draw by time with its interpolators and easings; do not use `transition` | milliseconds |
 | `defineScene((ctx) => …)` | Your own drawing: a `(ms) => void`, or `{ seek, resize?, dispose? }` | milliseconds |
 

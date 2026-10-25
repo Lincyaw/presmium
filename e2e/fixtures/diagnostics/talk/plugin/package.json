@@ -5,6 +5,7 @@
   "description": "A browser component whose source can be repaired while its preview stays open.",
   "peerDependencies": {
     "@lincyaw/host": "*",
-    "vue": "*"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }

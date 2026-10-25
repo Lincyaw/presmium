@@ -90,7 +90,7 @@ the slides are both pages of Presmium's own prebuilt viewer (`docs/architecture.
   subscriptions are released when their lifetime ends. Behavior that only recovers after a reload is not
   done.
 - **One copy of shared packages.** Host and contract packages are peer dependencies, so there is one set of
-  injection keys and one runtime. Sources ship as `.ts` and `.vue`; relative imports end in `.ts`.
+  React contexts, service tokens and one runtime. Sources ship as `.ts` and `.tsx`; relative imports end in `.ts`.
 - **Single user.** The workspace service is a tool for one user. Student content is removed by building
   with `--audience student`, not by hiding it in the page or assuming roles in the author's service.
 
@@ -104,11 +104,11 @@ that a dependency already handles.
   split panes use react-resizable-panels; the first-run welcome uses Harness's own `Modal`
   (`@deepseek-ai/dsh-client-ui-primitives`, see `packages/dsh/src/client/brand.tsx`). Use the existing
   design tokens.
-- **Outputs (Vue):** dialogs, drawers, menus, popovers, tabs, segmented controls and the presentation's focus
-  scope wrap Reka UI; no hand-written global Escape, focus loops or popover positioning. The `sync` linking
-  of content tabs and step state remain Presmium's business. Theme observation goes through the host and
-  VueUse; icons are the semantic names of `@lincyaw/design` mapped to Lucide; the question-answer stream
-  parses SSE with eventsource-parser.
+- **Outputs (React):** dialogs, drawers, menus, popovers, tabs, segmented controls and presentation focus
+  scopes wrap Radix Primitives through `@lincyaw/host`. Components read services and steps through the host,
+  and subscribe to observable services with `useStore`; plugin setup uses the corresponding pure APIs.
+  Theme observation goes through the host; icons use `@lincyaw/design` semantic names mapped to Lucide.
+  The question-answer stream parses SSE with eventsource-parser.
 - The full dependency table with licenses and what was rejected is `docs/architecture.md` section 12.
 
 ## Run the studio from the repository
@@ -133,11 +133,10 @@ From source, `pnpm add -g ./packages/presmium` makes the global CLI this checkou
 ## Verify the behavior you changed
 
 Verify by running the real thing: build the document, start the service, open it in a browser, and measure
-when speed is at stake. The owner's current rule (since 2026-10-24): write no new tests and run no test
-suites as routine verification; when a change breaks an existing test, delete that test instead of adapting
-it. Existing tests stay runnable for when the owner asks for them; see
-[testing in the repository](references/testing.md) for where tests live, the e2e fixtures and helpers, ports,
-external conditions and the test-cost rules. Plugin components cover both forms and the needed static
+when speed is at stake. Run only the targeted integration tests and lightweight structure checks directly affected by the change,
+with one worker. Existing effective behavior tests remain in place; fixtures and expected behavior move with
+public APIs. Do not run full test, demo or e2e suites without an explicit request. See
+[testing in the repository](references/testing.md) for test locations, fixtures and environment conditions. Plugin components cover both forms and the needed static
 fallback; live preview covers saving and keeping the position; shared loading or packaging covers the
 consumer install; dsh changes run the matching upgrade gate (`docs/design-dsh.md` section 12).
 

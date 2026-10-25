@@ -1,13 +1,13 @@
 /**
  * The plugin's domain: pure TypeScript, which the Node side, the component and the tests share.
- * It imports nothing of Vue, Node, @lincyaw/host or the frameworks (AGENTS.md, layering).
+ * It imports nothing of React, Node, @lincyaw/host or the frameworks (AGENTS.md, layering).
  */
 import type { Locale } from '@lincyaw/kernel/contracts'
 
 /** The plugin's id: its routes are under `/__presmium/<id>/`, its configuration is `presmium.<id>`. */
 export const PLUGIN_ID = '{{id}}'
 
-/** The component the directive becomes: `components/GreetingCard.vue`, by its file name. */
+/** The component the directive becomes: `components/GreetingCard.tsx`, by its file name. */
 export const COMPONENT = 'GreetingCard'
 
 /** What the route `waves` answers: how often the document was waved at, since the server started. */

@@ -1,0 +1,14 @@
+.pm-present .pm-present__bar,
+.pm-presenter .pm-presenter__bar {
+  gap: var(--pm-space-1);
+  padding: var(--pm-space-1) var(--pm-space-2);
+  font-size: var(--pm-text-xs);
+}
+
+.pm-present__bar .pm-present__counter {
+  font-family: var(--pm-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.pm-content-marks, .pm-present__narrate { display: none; }
+html[data-preview-picking] .pm-present__narrate { display: inline-flex; }

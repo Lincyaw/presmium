@@ -7,7 +7,7 @@ import { packageOf } from '@lincyaw/kernel/node'
 const CLIENT_PLUGIN = 'src/client/plugin.ts'
 const VIEWER_PLUGIN = 'src/client/viewer.ts'
 const VITE_CONFIG = 'vite.config.ts'
-const COMPONENT = /^[^.]+\.(vue|[jt]sx?)$/
+const COMPONENT = /^[^.]+\.([jt]sx?)$/
 
 export interface ClientModules {
   restartable: boolean

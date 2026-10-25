@@ -36,14 +36,15 @@
     "@noble/hashes": "2.4.0",
     "jiti": "^2.7.0",
     "mdast-util-from-markdown": "2.1.0",
-    "mediabunny": "1.61.3",
-    "vue": "^3.5.42"
+    "mediabunny": "1.61.3"
   },
   "peerDependencies": {
     "@lincyaw/compiler": "workspace:^",
     "@lincyaw/host": "workspace:^",
     "@lincyaw/kernel": "workspace:^",
-    "playwright-chromium": "^1.40.0"
+    "playwright-chromium": "^1.40.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "peerDependenciesMeta": {
     "playwright-chromium": {
@@ -57,7 +58,11 @@
     "@lincyaw/host": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/viewer": "workspace:*",
-    "playwright-chromium": "1.64.1"
+    "playwright-chromium": "1.64.1",
+    "react": "18.3.1",
+    "@types/react": "18.3.28",
+    "react-dom": "18.3.1",
+    "@types/react-dom": "18.3.7"
   },
   "presmium": {
     "preview": {

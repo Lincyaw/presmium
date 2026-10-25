@@ -7,7 +7,7 @@ translations: { en: lecture.en.md }
 (plugins)=
 # 插件开发指南
 
-Presmium 的组件、指令、执行器、服务与渲染端都以插件提供，官方插件与第三方插件用的是同一套契约。一个插件是一个 npm 包：Node 端的入口把源码中的指令变成 IR、在编译时运行步骤与检查、提供服务与服务端路由；浏览器端的组件在网页与幻灯片两种形态中是同一个 Vue 组件，只经 `@lincyaw/host` 取得步骤状态与服务。
+Presmium 的组件、指令、执行器、服务与渲染端都以插件提供，官方插件与第三方插件用的是同一套契约。一个插件是一个 npm 包：Node 端的入口把源码中的指令变成 IR、在编译时运行步骤与检查、提供服务与服务端路由；浏览器端的组件在网页与幻灯片两种形态中是同一个 React 组件，只经 `@lincyaw/host` 取得步骤状态与服务。
 
 这份指南以一个假想的投票插件 `presmium.poll` 为例，从包的结构讲到测试。接口的完整签名见接口参考（导航栏的“API”），版本规则见[接口与版本](../reference/lecture.md#versions)。
 
@@ -24,8 +24,8 @@ presmium-plugin-poll/
 │   ├── domain/          纯 TS：插件 ID、解析、步骤计算、中英文文本
 │   ├── node/presmium.ts Node 端入口：默认导出 PresmiumNodePlugin
 │   └── client/          浏览器端：plugin.ts（内核插件）、viewer.ts（可选，IR 运行时的扩展）
-├── components/PmPoll.vue 组件，文件名就是组件名
-├── vite.config.ts       可选：查看器的构建用到的 Vite 插件与 Vue 的选项
+├── components/PmPoll.tsx 组件，文件名就是组件名
+├── vite.config.ts       可选：查看器的构建用到的 Vite 插件与 JSX 配置
 └── test/                集成测试
 ```
 
@@ -60,7 +60,7 @@ presmium-plugin-poll/
 
 - 查看器按约定的位置找到插件的浏览器端代码：`components/` 中的组件、`src/client/plugin.ts`（内核插件）、`src/client/viewer.ts`（视图插件）与包根目录的 `vite.config.ts`。网页与幻灯片是同一个查看器，为文稿用到的一组插件预先构建一次。
 - 对 `@lincyaw/kernel`、`@lincyaw/host`、`@lincyaw/viewer`、`@lincyaw/compiler` 中用到的包写成对等依赖：插件与应用共用一份 Presmium。已安装的 Presmium 不满足对等依赖时，加载器给出诊断 `presmium.plugins` 而不加载插件，构建不会崩溃。
-- 源码以 `.ts` 与 `.vue` 直接发布，不预编译；相对导入写 `.ts` 扩展名。
+- 源码以 `.ts` 与 `.tsx` 直接发布，不预编译；相对导入写 `.ts` 扩展名。
 
 (plugin-package-version)=
 ## version 与 kernel
@@ -72,9 +72,9 @@ Node 端入口与浏览器端的插件清单都写 `version` 与 `kernel`：`ver
 
 | 位置 | 可以引用 | 不得引用 |
 |---|---|---|
-| `src/domain/` | `@lincyaw/kernel`、纯计算的库 | vue、`@lincyaw/host`、Node 的内置模块 |
-| `components/`、`src/client/` | `src/domain/`、`@lincyaw/kernel`、`@lincyaw/host`、vue；视图插件另以类型引用 `@lincyaw/viewer` | `@lincyaw/web`、`@lincyaw/server` 等宿主的包 |
-| `src/node/` | `src/domain/`、`@lincyaw/kernel`、Node 的库 | vue |
+| `src/domain/` | `@lincyaw/kernel`、纯计算的库 | React、`@lincyaw/host`、Node 的内置模块 |
+| `components/`、`src/client/` | `src/domain/`、`@lincyaw/kernel`、`@lincyaw/host`、React；视图插件另以类型引用 `@lincyaw/viewer` | `@lincyaw/web`、`@lincyaw/server` 等宿主的包 |
+| `src/node/` | `src/domain/`、`@lincyaw/kernel`、Node 的库 | React |
 
 两种形态都是查看器，插件不用 `@slidev/*` 与 vitepress。不要引用框架的内部路径，也不要引用别的插件包：两个插件要共用的契约放进内核（业务服务）或宿主（宿主层的令牌）。
 
@@ -86,32 +86,25 @@ Node 端入口与浏览器端的插件清单都写 `version` 与 `kernel`：`ver
 
 组件放在 `components/` 下，网页与幻灯片都用它。它只从 `@lincyaw/host` 取得步骤状态与服务，所以两种形态都能渲染：
 
-```vue
-<script setup lang="ts">
+```tsx
 import { useMessages, useStepState } from '@lincyaw/host'
 import { MESSAGES } from '../src/domain/messages.ts'
 
-defineProps<{ question: string, choices: string[] }>()
-// 块的第二个状态（块内的第 1 步）：结果
-const results = useStepState({ from: 1 })
-const t = useMessages(MESSAGES)
-</script>
-
-<template>
-  <section class="pm-poll">
-    <h3>{{ question }}</h3>
-    <ol>
-      <li v-for="choice in choices" :key="choice">{{ choice }}</li>
-    </ol>
-    <p v-if="results.reached">{{ t.results }}</p>
+export default function PmPoll({ question, choices }: { question: string, choices: string[] }) {
+  const results = useStepState({ from: 1 })
+  const t = useMessages(MESSAGES)
+  return <section className="pm-poll">
+    <h3>{question}</h3>
+    <ol>{choices.map(choice => <li key={choice}>{choice}</li>)}</ol>
+    {results.reached && <p>{t.results}</p>}
   </section>
-</template>
+}
 ```
 
 (plugin-components-rules)=
 ## 规则
 
-- **视觉状态是步骤的纯函数**：同一步骤总是同一画面，往回翻页也一样。`useStepState({ from, to })` 给出块内一段步骤的状态（`active`、`reached`、`done`），步骤从块出现的那一步算起；`useStepScope` 向宿主登记块内的第 k 步。
+- **视觉状态是步骤的纯函数**：同一步骤总是同一画面，往回翻页也一样。`useStepState({ from, to })` 给出块内一段步骤的状态（`active`、`reached`、`done`），步骤从块出现的那一步算起；`useStepScope().step(k)` 把块内第 k 步换算为绝对步骤。
 - **跟随块的显示范围**：`useStepState(useBlockStepRange())` 包含块与父块的 `at`、`until` 限制，`until` 为隐藏的第一步；需要停止媒体等后台资源时使用它。原有 `useStepState({ from, to })` 仍描述组件自己的块内步骤。
 - **减少动态效果**：动画读 `usePrefersReducedMotion()`，开启时直接显示终态。
 - **按时间演的动画**：`useStepTime({ until })` 给出所在步骤开始以来的毫秒数，停定时（后退、文档视图、减少动态效果、`until` 之后）为 `Infinity`；讲授回放与导出视频时它由讲授的时刻驱动。画面是（步骤，步内时间）的纯函数：动画库的时间轴暂停，只在时间变化时定位。
@@ -126,7 +119,7 @@ const t = useMessages(MESSAGES)
 
 `src/client/plugin.ts` 默认导出内核插件（`PluginDefinition`）：清单写 `id`、`version`、`kernel`、提供与需要的服务，`setup(ctx)` 中 `ctx.provide(令牌, 实现)`，`dispose` 中释放 Worker 与定时器。查看器在两种形态中都自动导入它。
 
-插件的浏览器端代码运行时要加载的文件（如语言运行时）由 Node 端入口的 `assets(ctx)` 声明（`RuntimeAssets`）：它们在文稿的站点路径下的 `prefix` 中提供，构建时复制进站点；浏览器端用 `@lincyaw/host` 的 `siteBase()` 得到文稿的站点路径，不用 `import.meta.env.BASE_URL`。内容随文稿变化的虚拟模块（如文稿的场景文件列表）由 `documentModules(ctx)` 给出源码，编进文稿自己的代码包。插件需要的 Vite 插件，或要让 Vue 把某些标签当作自定义元素，写在包根目录的 `vite.config.ts` 中，默认导出 `{ plugins, vue: { template: { compilerOptions: { isCustomElement } } } }`，查看器构建时用它。
+插件的浏览器端代码运行时要加载的文件（如语言运行时）由 Node 端入口的 `assets(ctx)` 声明（`RuntimeAssets`）：它们在文稿的站点路径下的 `prefix` 中提供，构建时复制进站点；浏览器端用 `@lincyaw/host` 的 `siteBase()` 得到文稿的站点路径，不用 `import.meta.env.BASE_URL`。内容随文稿变化的虚拟模块（如文稿的场景文件列表）由 `documentModules(ctx)` 给出源码，编进文稿自己的代码包。插件需要的 Vite 插件写在包根目录的 `vite.config.ts` 中，默认导出 `{ plugins }`，查看器构建时使用它。TSX 使用 React 的自动 JSX runtime。
 
 只有确认浏览器模块可在卸载后安全重建时，才在插件包或文稿目录的 `package.json` 中声明 `presmium: { preview: { restartable: true } }`；此承诺涵盖组件、viewer、client 模块及 Vite 注入的代码。内核插件还须在 `PluginDefinition` 上声明 `restartable: true`，承诺 `dispose` 停止全部后台工作，且同一份定义可以再次 `setup`。工作台据此决定网页预览能否保留已加载的模块：切走时卸载文稿组件并停止内核，切回时重新启动。任一来源未声明或加载失败时，工作台会销毁该预览再加载；不能为提速跳过执行、流式问答、录制与媒体资源的清理。
 
@@ -270,7 +263,7 @@ export default plugin
 (plugin-renderers-extensions)=
 ## 给已有的渲染端扩展
 
-插件的组件在网页与幻灯片中是同一个 Vue 组件。它在 notebook 中怎样出现，由 `rendererExtensions` 的 `notebook` 决定：扩展返回单元格（字符串是 Markdown 单元格，对象可以是代码单元格）。没有扩展时，notebook 显示 `fallback`。
+插件的组件在网页与幻灯片中是同一个 React 组件。它在 notebook 中怎样出现，由 `rendererExtensions` 的 `notebook` 决定：扩展返回单元格（字符串是 Markdown 单元格，对象可以是代码单元格）。没有扩展时，notebook 显示 `fallback`。
 
 ```ts
 rendererExtensions: {

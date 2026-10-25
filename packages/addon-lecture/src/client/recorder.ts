@@ -1,6 +1,6 @@
 import type { Operations, ServerClient } from '@lincyaw/host'
 import type { IRDocument, Operation, TrackEvent } from '@lincyaw/kernel'
-import { shallowRef } from 'vue'
+import { createStore } from '@lincyaw/host'
 import { irHash, LECTURE_ID, referencedBlocks, sectionHashes } from '../domain/index.ts'
 import type { MediaSegment, Recording, VideoSegment } from '../domain/index.ts'
 import type { Capture, Chunk } from './media.ts'
@@ -36,9 +36,9 @@ interface Segment {
 }
 
 export class LectureRecorder {
-  readonly state = shallowRef<RecorderState>('starting')
-  readonly error = shallowRef<string>()
-  readonly elapsed = shallowRef(0)
+  readonly state = createStore<RecorderState>('starting')
+  readonly error = createStore<string | undefined>(undefined)
+  readonly elapsed = createStore(0)
   id?: string
   readonly rerecordSection?: string
   private current?: string
@@ -77,8 +77,8 @@ export class LectureRecorder {
       this.events.push([0, 'go', { section: position.section, step: position.step, view: 'present' }])
       await this.open(position.section)
       this.unsubscribe = this.options.operations.subscribe(operation => this.record(operation))
-      this.timers.push(setInterval(() => void this.upload(), UPLOAD_MS), setInterval(() => this.elapsed.value = this.now(), 250))
-      this.state.value = 'recording'
+      this.timers.push(setInterval(() => void this.upload(), UPLOAD_MS), setInterval(() => this.elapsed.set(this.now()), 250))
+      this.state.set('recording')
     } catch (error) {
       this.fail(error)
       this.release()
@@ -99,7 +99,7 @@ export class LectureRecorder {
   }
 
   private record({ type, data }: Operation): void {
-    if (this.state.value !== 'recording') return
+    if (this.state.getSnapshot() !== 'recording') return
     const began = this.paths.get(data)
     const path = type === 'point' && Array.isArray(data.path) ? data.path as [number, number, number][] : undefined
     const t = Math.max(0, Math.round(began !== undefined ? began - this.t0 : this.now() - (path?.at(-1)?.[0] ?? 0)))
@@ -186,11 +186,11 @@ export class LectureRecorder {
   }
 
   private async finish(): Promise<void> {
-    if (this.state.value !== 'recording') {
+    if (this.state.getSnapshot() !== 'recording') {
       this.release()
       return
     }
-    this.state.value = 'saving'
+    this.state.set('saving')
     this.unsubscribe?.()
     const duration = this.now()
     try {
@@ -216,7 +216,7 @@ export class LectureRecorder {
         blocks: referencedBlocks(doc, this.events),
       }
       await readAnswer(this.post(`recordings/${this.id}/finish`, { head, recording, ...this.rerecordSection ? { section: this.rerecordSection } : {} }))
-      this.state.value = 'saved'
+      this.state.set('saved')
     } catch (error) {
       this.fail(error)
     } finally {
@@ -225,14 +225,14 @@ export class LectureRecorder {
   }
 
   private failed(): boolean {
-    return this.state.value === 'failed'
+    return this.state.getSnapshot() === 'failed'
   }
 
   private fail(error: unknown): void {
-    if (this.state.value === 'failed') return
+    if (this.state.getSnapshot() === 'failed') return
     console.error('[presmium] lecture recording failed', error)
-    this.error.value = error instanceof Error ? error.message : String(error)
-    this.state.value = 'failed'
+    this.error.set(error instanceof Error ? error.message : String(error))
+    this.state.set('failed')
   }
 
   private release(): void {

@@ -1,6 +1,9 @@
 :root {
   color-scheme: light;
 
+  /* QR codes retain contrast in both appearance modes. */
+  --pm-color-qr-paper: #fff;
+  --pm-color-qr-ink: #000;
   --pm-color-bg: #f7f5f0;
   --pm-color-surface: #ffffff;
   --pm-color-sunk: #efebe3;
@@ -102,6 +105,9 @@
   --pm-navigation-width: 15rem;
   --pm-aside-width: 20rem;
   --pm-sheet-width: 52rem;
+  --pm-scene-max-width: 44rem;
+  --pm-narration-editor-height: 12rem;
+  --pm-tooltip-width: 18rem;
 
   /* A document's site: its header, the chapters beside the page, the page's sections, the measure of its text. */
   --pm-site-header-height: 3.5rem;
@@ -120,6 +126,7 @@
   --pm-z-popover: 1000;
   --pm-z-dialog: 1100;
   --pm-z-screen: 1200;
+  --pm-z-tooltip: 1400;
 }
 
 :root.dark {
@@ -163,4 +170,27 @@
     --pm-duration-fast: 0ms;
     --pm-duration: 0ms;
   }
+}
+
+/* Presentation cues, terminal surfaces and accessibility contrast palettes. */
+:root {
+  --pm-color-terminal-bg: #000000;
+  --pm-color-pointer-fill: #ffffff;
+  --pm-color-pointer-stroke: #111111;
+  --pm-contrast-bg: #ffffff;
+  --pm-contrast-fg: #000000;
+  --pm-contrast-link: #0030b0;
+  --pm-contrast-border: #000000;
+  --pm-size-pointer-ring: 1.75rem;
+  --pm-size-pointer-arrow: 1.25rem;
+  --pm-size-pointer-beacon: 2rem;
+  --pm-guide-ring-spread: 0.625rem;
+  --pm-duration-guide-ring: 1800ms;
+  --pm-shadow-pointer: 0 1px 2px rgb(0 0 0 / 35%);
+}
+:root.dark {
+  --pm-contrast-bg: #000000;
+  --pm-contrast-fg: #ffffff;
+  --pm-contrast-link: #ffe14d;
+  --pm-contrast-border: #ffffff;
 }

@@ -1,6 +1,6 @@
 import type { IRDocument } from '@lincyaw/kernel'
-import { ref } from 'vue'
-import { renderToString } from 'vue/server-renderer'
+import { createStore } from '@lincyaw/host'
+import { renderToString } from 'react-dom/server'
 import type { AppConfig } from '../domain/index.ts'
 import { createPageApp } from './page-app.ts'
 
@@ -26,7 +26,7 @@ export async function render({ config, doc, components }: RenderInput): Promise<
     components: Object.fromEntries(components.map(name => [name, never])),
     embedded: false,
     ssr: true,
-    dark: ref(false),
+    dark: createStore(false),
   })
-  return await renderToString(app)
+  return await renderToString(app.element)
 }

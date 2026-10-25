@@ -3,8 +3,8 @@ import { ASK, PRESENTER_PANELS } from '@lincyaw/kernel'
 import type { PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
 import { version } from '../../package.json'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
-import AskPanel from './AskPanel.vue'
-import AssistantToolbar from './AssistantToolbar.vue'
+import AskPanel from './AskPanel.tsx'
+import AssistantToolbar from './AssistantToolbar.tsx'
 import { createAskClient } from './chat-client.ts'
 import { askClient, keptWebViewerAccess, slideNavigation, trackSelection } from './state.ts'
 
@@ -19,14 +19,14 @@ export const assistantPlugin: PluginDefinition = {
     requires: [{ token: TOOLBAR, optional: true }, { token: PRESENTER_PANELS, optional: true }, { token: NAVIGATION, optional: true }],
   },
   setup(ctx) {
-    slideNavigation.value = ctx.tryGet(NAVIGATION)
+    slideNavigation.set(ctx.tryGet(NAVIGATION))
     const ask = createAskClient({
       webViewer: keptWebViewerAccess,
-      slideNavigation: () => slideNavigation.value,
+      slideNavigation: () => slideNavigation.getSnapshot(),
       missing: () => ASSISTANT_MESSAGES[currentLocale()].ask.missing,
     })
     ctx.provide(ASK, ask)
-    askClient.value = ask
+    askClient.set(ask)
     const t = ASSISTANT_MESSAGES[currentLocale()]
     cleanup = [
       ctx.tryGet(TOOLBAR)?.register({ id: ASSISTANT_ID, title: t.toolbar.title, component: AssistantToolbar, order: 15 }),
@@ -37,8 +37,8 @@ export const assistantPlugin: PluginDefinition = {
   dispose() {
     cleanup.forEach(stop => stop())
     cleanup = []
-    askClient.value = undefined
-    slideNavigation.value = undefined
+    askClient.set(undefined)
+    slideNavigation.set(undefined)
   },
 }
 

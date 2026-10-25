@@ -1,0 +1,50 @@
+.pm-note-spot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.pm-note-spot__toggle {
+  color: var(--pm-color-muted);
+}
+.pm-note-spot__toggle[aria-expanded='true'],
+.pm-note-spot:not([data-notes='0']) .pm-note-spot__toggle {
+  color: var(--pm-color-ink);
+}
+.pm-note-spot__count {
+  margin-left: 0.25rem;
+}
+.pm-note-spot__panel {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-warn-soft);
+}
+.pm-note-spot__list {
+  margin: 0 0 0.3rem;
+  padding-left: 1.2em;
+}
+.pm-note-spot__list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.pm-note-spot__text {
+  white-space: pre-wrap;
+}
+.pm-note-spot__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.25rem 0 0;
+}
+.pm-note-spot__where {
+  color: var(--pm-color-muted);
+}

@@ -1,6 +1,8 @@
-import type { Ref } from 'vue'
+import type { Dispatch, SetStateAction } from 'react'
+import type { Store } from './store.ts'
 import { defineService } from '@lincyaw/kernel/contracts'
 import type { Cursor, Member, Operation, PresentationMode, ServiceToken, StartReport, Unsubscribe } from '@lincyaw/kernel/contracts'
+import type { IRDocument } from '@lincyaw/kernel'
 import type { IconName } from '@lincyaw/design'
 
 export type ViewRole = 'audience' | 'presenter' | 'reader'
@@ -10,15 +12,17 @@ export type SharedStateScope = 'view' | 'local' | 'remote'
 export interface HostAdapter {
   readonly mode: PresentationMode
   readonly lang?: string
-  useCursor(): Readonly<Ref<Cursor>>
-  useStep(): Readonly<Ref<number>>
-  useViewRole(): Readonly<Ref<ViewRole>>
-  useStaticRender(): Readonly<Ref<boolean>>
-  useSectionConfig(pluginId: string): Readonly<Ref<Record<string, unknown>>>
-  useSharedState<T>(key: string, initial: T, scope: SharedStateScope): Ref<T>
+  useDoc?(): IRDocument
+  useCursor(): Cursor
+  useStep(): number
+  useViewRole(): ViewRole
+  useStaticRender(): boolean
+  useSectionConfig(pluginId: string): Record<string, unknown>
+  useSharedState<T>(key: string, initial: T, scope: SharedStateScope): [T, Dispatch<SetStateAction<T>>]
+  sharedStateStore?<T>(key: string, initial: T, scope: SharedStateScope): Store<T>
   getService<T>(token: ServiceToken<T>): T | undefined
   startReport(): StartReport | undefined
-  useDarkMode?(): Ref<boolean>
+  useDarkMode?(): [boolean, Dispatch<SetStateAction<boolean>>]
 }
 
 export type SyncPublish = (state: Readonly<Record<string, unknown>>, fromRemote: boolean) => void
@@ -44,7 +48,7 @@ export interface NavigationPosition extends Cursor {
 }
 
 export interface Navigation {
-  readonly position: Readonly<Ref<NavigationPosition>>
+  readonly position: Store<NavigationPosition>
   go(position: NavigationPosition): void
 }
 
@@ -73,7 +77,7 @@ export const TOOLBAR = defineService<Toolbar>('presmium.toolbar')
 
 export interface ServerClient {
   readonly available: boolean
-  readonly member: Readonly<Ref<Member | undefined>>
+  readonly member: Store<Member | undefined>
   fetch(plugin: string, path: string, init?: RequestInit): Promise<Response>
   events(plugin: string, path: string): EventSource
 }
@@ -101,13 +105,13 @@ export interface Operations {
   onReplay(type: string, handler: ReplayHandler): Unsubscribe
   replay(operation: Operation, seeking?: boolean): boolean
   clear(): void
-  readonly replaying: Ref<boolean>
+  readonly replaying: Store<boolean>
 }
 
 export const OPERATIONS = defineService<Operations>('presmium.operations')
 
 export interface StepClockDriver {
-  readonly elapsed: Readonly<Ref<number | undefined>>
+  readonly elapsed: Store<number | undefined>
   readonly recording?: boolean
 }
 

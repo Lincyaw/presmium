@@ -1,0 +1,12 @@
+.pm-save-offline {
+  border-radius: var(--pm-radius-pill);
+}
+.pm-save-offline:disabled {
+  cursor: default;
+  opacity: 1;
+}
+.pm-save-offline[data-state='saved'] {
+  border-color: var(--pm-color-ok);
+  background: var(--pm-color-ok-soft);
+  color: var(--pm-color-ok);
+}

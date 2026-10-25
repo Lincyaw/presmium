@@ -1,7 +1,7 @@
 import { SESSION } from '@lincyaw/kernel/contracts'
 import type { ApprovalRequest, ServiceToken, Unsubscribe } from '@lincyaw/kernel/contracts'
-import type { Ref } from 'vue'
-import { shallowRef, watch } from 'vue'
+import { createStore } from './store.ts'
+import type { Store } from './store.ts'
 import type { Navigation, NavigationPosition, ServerClient, StatusRegistry, ViewRole } from './contracts.ts'
 import { clientDocument, documentHeader, SERVER_PATH } from './server.ts'
 
@@ -11,11 +11,11 @@ export interface PendingApproval {
 }
 
 export interface ApprovalState {
-  pending: Ref<PendingApproval[]>
+  pending: Store<PendingApproval[]>
   answer(id: string, allow: boolean): Promise<void>
 }
 
-const pending = shallowRef<PendingApproval[]>([])
+const pending = createStore<PendingApproval[]>([])
 let answering: (id: string, allow: boolean) => Promise<void> = async () => {}
 
 export const approvals: ApprovalState = {
@@ -46,7 +46,7 @@ export function connectControl(client: ServerClient, host: {
   answering = async (approval, allow) => {
     const response = await post({ type: 'answer', id: approval, allow })
     if (!response.ok) throw new Error(`the server did not take the answer (${response.status})`)
-    pending.value = pending.value.filter(p => p.id !== approval)
+    pending.set(pending.getSnapshot().filter(p => p.id !== approval))
   }
   const source = new EventSource(`${SERVER_PATH}/control?window=${id}&document=${documentHeader(document)}`)
   const on = <T>(event: string, handle: (data: T) => void) => source.addEventListener(event, (message) => {
@@ -57,10 +57,10 @@ export function connectControl(client: ServerClient, host: {
     }
   })
   on<PendingApproval>('approval', (approval) => {
-    if (!pending.value.some(p => p.id === approval.id)) pending.value = [...pending.value, approval]
+    if (!pending.getSnapshot().some(p => p.id === approval.id)) pending.set([...pending.getSnapshot(), approval])
   })
   on<{ id: string }>('settled', (settled) => {
-    pending.value = pending.value.filter(p => p.id !== settled.id)
+    pending.set(pending.getSnapshot().filter(p => p.id !== settled.id))
   })
   on<NavigationPosition>('go', position => navigation.go(position))
   on<{ action: 'start' | 'end', name?: string }>('session', ({ action, name }) => {
@@ -73,7 +73,7 @@ export function connectControl(client: ServerClient, host: {
 
   let reported = ''
   const report = () => {
-    const position = navigation.position.value
+    const position = navigation.position.getSnapshot()
     const summaries = Object.fromEntries(status.list().map((provider) => {
       try {
         return [provider.id, provider.read()]
@@ -91,18 +91,18 @@ export function connectControl(client: ServerClient, host: {
     report()
   })
   let soon: ReturnType<typeof setTimeout> | undefined
-  const stopWatch = watch(() => navigation.position.value, () => {
+  const stopWatch = navigation.position.subscribe(() => {
     soon ??= setTimeout(() => {
       soon = undefined
       report()
     }, 200)
-  }, { deep: true })
+  })
   const timer = setInterval(report, 1000)
   return () => {
     stopWatch()
     clearTimeout(soon)
     clearInterval(timer)
     source.close()
-    pending.value = []
+    pending.set([])
   }
 }

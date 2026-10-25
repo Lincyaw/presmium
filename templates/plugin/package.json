@@ -29,7 +29,8 @@
     "@lincyaw/host": "^{{version}}",
     "@lincyaw/kernel": "^{{version}}",
     "@lincyaw/viewer": "^{{version}}",
-    "vue": "^3.5.0"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@lincyaw/cli": "^{{version}}",
@@ -40,6 +41,7 @@
     "@lincyaw/web": "^{{version}}",
     "@types/node": "^22.19.0",
     "vitest": "^5.0.0",
-    "vue": "^3.5.0"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }

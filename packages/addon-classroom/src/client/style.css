@@ -6,7 +6,7 @@
   box-sizing: border-box;
   margin: 0.75em 0;
   padding: 0.75em 1em;
-  border: 1px solid var(--pm-color-line);
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
   border-radius: var(--pm-radius-card);
   background: var(--pm-color-surface);
   color: var(--pm-color-ink);
@@ -37,7 +37,7 @@
 .pm-classroom-reply {
   margin: 0.35em 0;
   padding: 0.35em 0.75em;
-  border-left: 3px solid var(--pm-color-accent);
+  border-left: var(--pm-size-rule) solid var(--pm-color-accent);
   border-radius: 0 var(--pm-radius-small) var(--pm-radius-small) 0;
   background: var(--pm-color-accent-soft);
   white-space: pre-wrap;

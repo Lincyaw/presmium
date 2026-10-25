@@ -88,6 +88,7 @@ const LAYOUT_DIRECTIVES: DirectiveInfo[] = [
 ]
 
 export const BUILTIN_DIRECTIVE_INFO: readonly DirectiveInfo[] = [
+  { name: 'narration', doc: { 'zh-CN': '指定步骤的讲解与字幕；正文为 MyST。', en: 'Narration and captions for one step; the body is MyST.' }, options: { at: STEP_RANGE.at!, mode: { type: 'string', values: ['during', 'after'], doc: { 'zh-CN': 'during：边放边讲；after：动画播完再讲。', en: 'during: speak with the animation; after: speak after it finishes.' } } } },
   { name: 'slide', doc: { 'zh-CN': '上屏内容；正文为 MyST。', 'en': 'Content shown on screen; the body is MyST.' }, options: STEP_RANGE },
   { name: 'only', doc: { 'zh-CN': '只在这些渲染端出现的内容，如 `{only} web, notebook`。', 'en': 'Content limited to renderers, e.g. `{only} web, notebook`.' }, options: STEP_RANGE },
   { name: 'hints', doc: { 'zh-CN': '各渲染端的排版提示；正文为 YAML。', 'en': 'Layout hints per renderer; the body is YAML.' }, options: {} },

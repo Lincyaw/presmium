@@ -1,3 +1,5 @@
+@import './views/controls.css';
+
 :root {
   --pm-c-bg: var(--pm-color-bg);
   --pm-c-bg-soft: var(--pm-color-sunk);

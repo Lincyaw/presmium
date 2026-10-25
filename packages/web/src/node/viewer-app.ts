@@ -11,7 +11,7 @@ import { collectBrowserModules, emptyClientModules } from './client-modules.ts'
 
 /**
  * The viewer app, prebuilt once for a set of plugin packages (as a PDF viewer is for every PDF): the web form's runtime
- * with every browser module of those plugins, lazily loaded, and the modules a document's own bundle may import (Vue,
+ * with every browser module of those plugins, lazily loaded, and the modules a document's own bundle may import (React,
  * Presmium's packages, the plugins' public subpaths) as entries of their own, which an import map names. It shows every
  * page of the web form: in the workbench, in a dev server and in a built site, whose pages it also renders on the
  * server first (`buildViewerServer`). A build is kept under the cache by a key of what it was built from, and found
@@ -41,7 +41,7 @@ const OWN_SHARED: Record<string, string[]> = {
 // A plugin package's exports that are not for a document's code (`architecture.md` section 3: the Node entry).
 const NOT_SHARED = new Set(['./presmium', './package.json'])
 // The files a bundler loads as modules, by their extension.
-const MODULE_FILE = new Set(['.js', '.mjs', '.cjs', '.jsx', '.ts', '.mts', '.cts', '.tsx', '.vue'])
+const MODULE_FILE = new Set(['.js', '.mjs', '.cjs', '.jsx', '.ts', '.mts', '.cts', '.tsx'])
 const SHARED = 'virtual:presmium-app/shared:'
 // Builds kept unused this long are removed, the newest few always kept.
 const KEEP_MS = 7 * 24 * 3600_000
@@ -53,17 +53,7 @@ interface BuildContext {
   load(options: { id: string, resolveDependencies?: boolean }): Promise<{ importedIds: string[], exports: string[] }>
 }
 
-/** A plugin package's `vite.config.ts`, as the app's builds read it: Vite plugins, and options of Vue's compiler. */
-interface PluginViteConfig {
-  plugins?: unknown[]
-  vue?: { template?: { compilerOptions?: { isCustomElement?: (tag: string) => boolean } } }
-}
-
-/** The options of Vue's plugin for the plugins' configurations: a tag is a custom element when one of them says so. */
-function vueOptions(configs: readonly (PluginViteConfig | undefined)[]) {
-  const tests = configs.flatMap(config => config?.vue?.template?.compilerOptions?.isCustomElement ?? [])
-  return tests.length > 0 ? { template: { compilerOptions: { isCustomElement: (tag: string) => tests.some(test => test(tag)) } } } : {}
-}
+interface PluginViteConfig { plugins?: unknown[] }
 
 /** A plugin package as the viewer app holds it: its browser modules, its public subpaths, its document modules. */
 export interface AppPlugin {
@@ -185,7 +175,7 @@ function ownPackages(): Map<string, string> {
 /** The sources of the app itself and of Presmium's packages it runs, with the versions of the tools that build it. */
 export function coreFingerprint(): string {
   const require = createRequire(join(WEB_DIR, 'package.json'))
-  const versions = ['vite', '@vitejs/plugin-vue', 'vue'].map(name => `${name}@${String((require(`${name}/package.json`) as { version: string }).version)}`)
+  const versions = ['vite', 'react', 'react-dom'].map(name => `${name}@${String((require(`${name}/package.json`) as { version: string }).version)}`)
   const dirs = [WEB_DIR, ...ownPackages().values()]
   return createHash('sha256').update([...versions, ...dirs.map(fingerprint)].join('\n')).digest('hex').slice(0, 16)
 }
@@ -316,11 +306,11 @@ export function quietDirectives(_level: string, log: { code?: string, message?: 
 const sharedName = (specifier: string) => `shared/${specifier.replace(/^@/, '').replace(/[^\w.-]+/g, '_')}`
 
 /**
- * The modules the app's import map names, by specifier, with their sources: Vue by its name, resolved as every other import
+ * The modules the app's import map names, by specifier, with their sources: React by its name, resolved as every other import
  * of it; Presmium's packages and the plugins' public subpaths by their files. A document's bundle imports these by name.
  */
 export function sharedSpecifiers(plugins: readonly AppPlugin[]): Record<string, string> {
-  const specifiers: Record<string, string> = { vue: 'vue' }
+  const specifiers: Record<string, string> = { react: 'react', 'react/jsx-runtime': 'react/jsx-runtime', 'react/jsx-dev-runtime': 'react/jsx-dev-runtime', 'react-dom': 'react-dom', 'react-dom/client': 'react-dom/client' }
   for (const [name, dir] of ownPackages()) {
     const { exports } = readPackageManifest(dir)
     Object.assign(specifiers, sharedExports(name, dir, isRecord(exports) ? exports : {}, OWN_SHARED[name]))
@@ -339,11 +329,13 @@ export async function buildViewerApp(cacheDir: string, plugins: readonly AppPlug
   const work = join(cacheDir, `.build-${key}-${process.pid}`)
   rmSync(work, { recursive: true, force: true })
   mkdirSync(work, { recursive: true })
-  // The generated files resolve `vue` as the web renderer does: from the node_modules that holds its Vue (its own in a
-  // checkout, its siblings' in an installed project).
-  const vueDir = findInstalledPackage('vue', WEB_DIR)
-  if (!vueDir) throw new Error('vue is not installed beside @lincyaw/web')
-  symlinkSync(dirname(vueDir), join(work, 'node_modules'), 'junction')
+  // Generated shared entries resolve the same React packages as the web renderer.
+  mkdirSync(join(work, 'node_modules'), { recursive: true })
+  for (const name of ['react', 'react-dom']) {
+    const dir = findInstalledPackage(name, WEB_DIR)
+    if (!dir) throw new Error(`${name} is not installed beside @lincyaw/web`)
+    symlinkSync(dir, join(work, 'node_modules', name), 'junction')
+  }
   writeFileSync(join(work, 'main.ts'), `import ${JSON.stringify(APP_MAIN)}\n`)
   const specifiers = sharedSpecifiers(plugins)
   const input: Record<string, string> = { main: join(work, 'main.ts') }
@@ -364,19 +356,23 @@ export async function buildViewerApp(cacheDir: string, plugins: readonly AppPlug
     const resolved = await ctx.resolve(specifiers[specifier]!, importer)
     if (!resolved || resolved.external) throw new Error(`${specifier} cannot be resolved for the viewer app`)
     const source = JSON.stringify(resolved.id)
+    if (specifier === 'react' || specifier.startsWith('react/') || specifier === 'react-dom' || specifier.startsWith('react-dom/')) {
+      const require = createRequire(join(WEB_DIR, 'package.json'))
+      const names = Object.keys(require(specifier) as Record<string, unknown>).filter(name => /^[A-Za-z_$][\w$]*$/.test(name) && name !== 'default')
+      return `import runtime from ${source}\nexport const { ${names.join(', ')} } = runtime\nexport default runtime\n`
+    }
     const { exports } = await ctx.load({ id: resolved.id })
     return `export * from ${source}\n${exports.includes('default') ? `export { default } from ${source}\n` : ''}`
   }
   const { build } = await import('vite')
-  const { default: vue } = await import('@vitejs/plugin-vue')
   await build({
     configFile: false,
     root: work,
     base: './',
     logLevel: 'warn',
     mode: 'production',
+    esbuild: { jsx: 'automatic' },
     plugins: [
-      vue(vueOptions(viteConfigs)),
       {
         name: 'presmium:viewer-app',
         enforce: 'pre' as const,
@@ -396,7 +392,7 @@ export async function buildViewerApp(cacheDir: string, plugins: readonly AppPlug
       },
       ...viteConfigs.flatMap(config => config?.plugins ?? []) as never[],
     ],
-    resolve: { dedupe: ['vue'] },
+    resolve: { dedupe: ['react', 'react-dom'] },
     build: {
       outDir: join(work, 'out'),
       emptyOutDir: true,
@@ -444,14 +440,13 @@ export async function buildViewerServer(app: ViewerApp, plugins: readonly AppPlu
   const documentModules = [...new Set(plugins.flatMap(p => p.documentModules))]
   const viteConfigs = await Promise.all(plugins.flatMap(p => p.vite).map(async config => (await import(pathToFileURL(config).href) as { default?: PluginViteConfig }).default))
   const { build } = await import('vite')
-  const { default: vue } = await import('@vitejs/plugin-vue')
   await build({
     configFile: false,
     root: WEB_DIR,
     logLevel: 'warn',
     mode: 'production',
+    esbuild: { jsx: 'automatic' },
     plugins: [
-      vue(vueOptions(viteConfigs)),
       {
         name: 'presmium:viewer-server',
         enforce: 'pre' as const,
@@ -469,7 +464,7 @@ export async function buildViewerServer(app: ViewerApp, plugins: readonly AppPlu
       },
       ...viteConfigs.flatMap(config => config?.plugins ?? []) as never[],
     ],
-    resolve: { dedupe: ['vue'] },
+    resolve: { dedupe: ['react', 'react-dom'] },
     ssr: { noExternal: true, target: 'node' },
     build: {
       ssr: APP_SERVER,

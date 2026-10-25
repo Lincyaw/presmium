@@ -1,12 +1,11 @@
-import { readonly, ref } from 'vue'
-import type { Ref } from 'vue'
+import { createStore, useStore } from '@lincyaw/host'
 import { markDimmed, raiseDimmedLines } from './code-lines.ts'
 import { adoptShadows, styleDiagrams } from './diagrams.ts'
 
 export const CONTRAST_ATTRIBUTE = 'data-pm-contrast'
 const STORAGE_KEY = 'presmium.publish.contrast'
 
-const enabled = ref(false)
+const enabled = createStore(false)
 let initialized = false
 let observer: MutationObserver | undefined
 
@@ -39,7 +38,7 @@ function observeChanges(on: boolean): void {
 }
 
 function apply(on: boolean): void {
-  enabled.value = on
+  enabled.set(on)
   if (on) document.documentElement.setAttribute(CONTRAST_ATTRIBUTE, 'high')
   else document.documentElement.removeAttribute(CONTRAST_ATTRIBUTE)
   styleDiagrams(on)
@@ -54,7 +53,7 @@ export function initHighContrast(): void {
 }
 
 export interface HighContrast {
-  enabled: Readonly<Ref<boolean>>
+  enabled: boolean
   set(on: boolean): void
   toggle(): void
 }
@@ -68,5 +67,5 @@ export function useHighContrast(): HighContrast {
     } catch {
     }
   }
-  return { enabled: readonly(enabled), set, toggle: () => set(!enabled.value) }
+  return { enabled: useStore(enabled), set, toggle: () => set(!enabled.getSnapshot()) }
 }

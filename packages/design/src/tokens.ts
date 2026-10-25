@@ -1,5 +1,7 @@
 export const COLORS = [
   'bg',
+  'qr-paper',
+  'qr-ink',
   'surface',
   'sunk',
   'chrome',
@@ -28,6 +30,9 @@ export const COLORS = [
   'syntax-key',
   'syntax-string',
   'syntax-keyword',
+  'terminal-bg',
+  'pointer-fill',
+  'pointer-stroke',
 ] as const
 
 export type ColorName = typeof COLORS[number]

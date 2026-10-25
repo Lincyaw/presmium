@@ -1,4 +1,4 @@
-import { useServer } from '@lincyaw/host'
+import { serverClient } from '@lincyaw/host'
 import type { SpeechService, Synthesis } from '@lincyaw/kernel'
 import type { EnginesResponseBody, SynthesisResponseBody, TranscriptionResponseBody, VoicesResponseBody } from '../domain/index.ts'
 import { deckSpeechConfig, PROTOCOL_PATH, SPEECH_ID, synthesisRequestBody, transcriptOf } from '../domain/index.ts'
@@ -12,7 +12,7 @@ function bytesOf(base64: string): Uint8Array<ArrayBuffer> {
 
 export function browserSpeech(config: Record<string, unknown>): SpeechService {
   const defaults = deckSpeechConfig(config).config
-  const server = useServer()
+  const server = serverClient()
   const call = async <T>(path: string, init?: RequestInit): Promise<T> => {
     if (!server.available) throw new Error('speech needs presmium dev or presmium serve: a static page has no speech service')
     const response = await server.fetch(SPEECH_ID, `${PROTOCOL_PATH}/${path}`, init)

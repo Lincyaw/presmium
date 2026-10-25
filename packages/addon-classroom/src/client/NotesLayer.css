@@ -1,0 +1,9 @@
+.pm-note-slot--section {
+  margin: -0.5rem 0 0.5rem;
+}
+.pm-note-slot--block {
+  margin: 0.15rem 0 0.4rem;
+}
+.pm-block:not(:hover, :focus-within, :has(> .pm-note-slot :is([aria-expanded='true'], [data-notes]:not([data-notes='0'])))) > .pm-note-slot--block {
+  opacity: 0;
+}

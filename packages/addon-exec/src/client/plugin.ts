@@ -19,7 +19,7 @@ export const execPlugin: PluginDefinition = {
   manifest: { id: EXEC_ID, version, kernel: '^1.0.0', provides: [EXECUTOR, TRACER], requires: [{ token: STATUS, optional: true }], capabilities: ['exec'] },
   setup(ctx) {
     const config = execConfig(ctx.config)
-    declaredEnvironments.value = ctx.environments ?? {}
+    declaredEnvironments.set(ctx.environments ?? {})
     pyodide?.dispose()
     script?.dispose()
     pyodide = createPyodideExecutor({

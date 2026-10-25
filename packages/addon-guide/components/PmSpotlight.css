@@ -1,0 +1,5 @@
+[data-pm-spotlight='inline'] {
+  outline: var(--pm-size-rule) solid var(--pm-color-warn);
+  outline-offset: var(--pm-space-1);
+  border-radius: var(--pm-radius-chip);
+}

@@ -16,11 +16,11 @@
 - 查框架接口先读本地文档 `vendor/docs/`（DeepSeek Harness 与 MCP TypeScript SDK 的文档，缺失时运行 `pnpm docs:fetch`），不读框架的编译产物。
 - 分层（`docs/architecture.md` 第 3 节，`scripts/check-layering.mjs` 检查）：`src/domain` 为纯 TS；组件与 `src/client` 只通过 `@lincyaw/host` 获取步骤状态与服务；任何包都不用 `vitepress` 与 `@slidev/*`（网页与幻灯片两种形态都是查看器）；插件包之间不互相引用。
 - 界面文本有中文与英文（`docs/architecture.md` 5.7 节）：每个包维护自己的 zh-CN 与 en 文本，按 `<html lang>`（由文稿头部的 `lang` 决定，默认 `zh-CN`）选择，没有对应文本时看 `navigator.language`；组件可以用 `@lincyaw/host` 的 `useLocale`、`useMessages(catalog)`。编译时写入产物的文本按文稿的 `lang`。
-- 前端样式（与 aegis-ui 相同的纪律）：设计令牌是视觉的唯一来源，在 `packages/design/src/tokens.css`（颜色令牌的名字另在 `tokens.ts` 的 `COLORS`，表在 `docs/architecture.md` 的设计系统一节）。组件与界面的 CSS 不写原始颜色（十六进制、`rgb()` 等）、px 与 ms/s，px 只出现在 `@media` 断点中；颜色混合、控件与图标尺寸、栏高与窗格宽、圆角、阴影、时长都引用令牌，没有合适的先在 `tokens.css` 加一个，暗色只覆盖颜色与阴影。React 与 Vue 组件中图标与标志的大小由 CSS 的尺寸令牌决定，不在组件里写数字。`scripts/check-tokens.mjs` 检查工作台与 studio 外框的样式，其他包的旧样式改动时迁入它的范围。
+- 前端样式（与 aegis-ui 相同的纪律）：设计令牌是视觉的唯一来源，在 `packages/design/src/tokens.css`（颜色令牌的名字另在 `tokens.ts` 的 `COLORS`，表在 `docs/architecture.md` 的设计系统一节）。组件与界面的 CSS 不写原始颜色（十六进制、`rgb()` 等）、px 与 ms/s，px 只出现在 `@media` 断点中；颜色混合、控件与图标尺寸、栏高与窗格宽、圆角、阴影、时长都引用令牌，没有合适的先在 `tokens.css` 加一个，暗色只覆盖颜色与阴影。React 组件中图标与标志的大小由 CSS 的尺寸令牌决定，不在组件里写数字。`scripts/check-tokens.mjs` 检查工作台与 studio 外框的样式，其他包的旧样式改动时迁入它的范围。
 - 先修组件再修页面：界面问题先看 `@lincyaw/design` 的 `pm-ui-*`、工作台的通用组件（`packages/workbench/src/components.tsx`）是否缺能力，补在那里，不在单个页面或面板中另写一套。界面改动在亮色与暗色、桌面与 768 px 以下的四种组合中看过才算完成。
 - 步骤可逆：组件的视觉状态是步骤的纯函数。
 - 技能：面向讲义作者、讲者与开发者的技能在 `.agents/skills`（Codex 读取），`.claude/skills` 是指向它的软链接，`AGENTS.md` 是指向本文件的软链接；改动指令、命令或开发流程时同步更新技能，`scripts/check-skills.mjs` 检查二者一致。
-- 源码以 `.ts`、`.vue` 直接发布，不预编译；相对导入写 `.ts` 扩展名。
+- 源码以 `.ts`、`.tsx` 直接发布，不预编译；相对导入写 `.ts` 扩展名。
 - 测试：只写集成测试（真实运行 CLI、构建产物、服务、浏览器），不写单元测试，不 mock 宿主框架；每个行为一到两个用例。需要专用文稿的端到端用例把测试文稿放在 `e2e/fixtures/<组>/`，在 `beforeAll` 中构建。
 - 测试成本：日常开发只运行改动直接涉及的定向集成测试，以及相关的轻量结构检查；默认单个 worker，只构建用例需要的文稿与媒介。定向验证通过后停止，不自动扩大测试范围。除非用户明确要求全量验证，不运行 `pnpm test`、`pnpm verify`、完整 `pnpm e2e` 或全部 17 讲的 demo 构建与检查，也不以收尾或合并前检查为由自动运行它们。报告实际通过、跳过和未运行的范围。
 

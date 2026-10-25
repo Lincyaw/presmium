@@ -1,9 +1,3 @@
-:root[data-pm-contrast='high'] {
-  --pm-contrast-bg: #ffffff;
-  --pm-contrast-fg: #000000;
-  --pm-contrast-link: #0030b0;
-  --pm-contrast-border: #000000;
-}
 
 :is(:root, :root.dark)[data-pm-contrast='high'] {
   --pm-color-bg: var(--pm-contrast-bg);
@@ -20,12 +14,6 @@
   --pm-color-on-accent: var(--pm-contrast-bg);
 }
 
-:root.dark[data-pm-contrast='high'] {
-  --pm-contrast-bg: #000000;
-  --pm-contrast-fg: #ffffff;
-  --pm-contrast-link: #ffe14d;
-  --pm-contrast-border: #ffffff;
-}
 
 :root[data-pm-contrast='high'] :is(.pm-document, .pm-slide) {
   background: var(--pm-contrast-bg) !important;
@@ -65,14 +53,14 @@
 }
 
 :root[data-pm-contrast='high'] :is(.pm-document, .pm-slide) :is(button, input, select, textarea, [role='button'], [role='tab']) {
-  border: 1px solid var(--pm-contrast-border) !important;
+  border: var(--pm-size-hairline) solid var(--pm-contrast-border) !important;
 }
 
 :root[data-pm-contrast='high'] :is(.pm-document, .pm-slide) pre {
-  outline: 1px solid var(--pm-contrast-border);
+  outline: var(--pm-size-hairline) solid var(--pm-contrast-border);
 }
 
 :root[data-pm-contrast='high'] :focus-visible {
-  outline: 3px solid var(--pm-contrast-link) !important;
-  outline-offset: 2px;
+  outline: var(--pm-size-rule) solid var(--pm-contrast-link) !important;
+  outline-offset: var(--pm-size-stroke);
 }

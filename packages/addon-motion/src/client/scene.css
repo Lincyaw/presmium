@@ -1,0 +1,46 @@
+.pm-scene {
+  margin: 0 auto;
+  width: 100%;
+  max-width: var(--pm-scene-max-width);
+}
+.pm-scene[data-height] {
+  max-width: none;
+}
+.pm-scene__frame {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--pm-radius-control);
+}
+.pm-scene__stage {
+  position: absolute;
+  inset: 0;
+  /* A scene can size its layout to the picture with cqw and cqh. */
+  container-type: size;
+}
+.pm-scene__notice {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: var(--pm-space-3);
+  color: var(--pm-color-muted);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-sm);
+  text-align: center;
+}
+.pm-scene__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-2);
+  margin-top: var(--pm-space-2);
+}
+.pm-scene__scrub {
+  flex: 1;
+  accent-color: var(--pm-color-accent);
+}
+.pm-scene__steps { display: flex; gap: var(--pm-space-1); overflow-x: auto; padding-block: var(--pm-space-1); }
+.pm-scene__step { flex: none; min-width: var(--pm-size-tool); min-height: var(--pm-size-tool); padding: 0 var(--pm-space-1); border: 0; border-radius: var(--pm-radius-chip); background: transparent; color: var(--pm-color-muted); font-family: var(--pm-font-mono); font-size: var(--pm-text-xs); cursor: pointer; }
+.pm-scene__step[aria-pressed='true'], .pm-scene__step:hover, .pm-scene__step:focus-visible { background: var(--pm-color-accent-soft); color: var(--pm-color-accent); }
+html.pm-lecture-exporting .pm-scene__steps { display: none; }

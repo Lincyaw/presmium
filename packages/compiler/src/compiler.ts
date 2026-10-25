@@ -360,6 +360,7 @@ export class Compiler {
     const raw = splitSections(lifted, { entry: this.entry, title: titleOf(headmatter, this.entry), sectionDepth }, report)
     const renderers = headmatter.renderers
     const ctx: BlockContext = {
+      ...headmatter.contentModel === 'blocks' ? { contentModel: 'blocks' as const } : {},
       entry: this.entry,
       deckDir: this.deckDir,
       workspaceRoot: run.workspace.root,

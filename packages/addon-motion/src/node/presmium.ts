@@ -4,7 +4,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path'
 import { parseDuration } from '@lincyaw/kernel'
 import type { ComponentNode, DirectiveSpec, MdastNode, PresmiumNodePlugin } from '@lincyaw/kernel'
 import { MOTION_ID, SCENE_EXTENSIONS, SCENE_NAME, SCENES_DIR } from '../domain/index.ts'
-import { sceneFile, SCENES_MODULE, scenesModule } from './scenes.ts'
+import { deckScenes, sceneFile, SCENES_MODULE, scenesModule } from './scenes.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
@@ -64,6 +64,16 @@ const plugin: PresmiumNodePlugin = {
   version,
   kernel: '^1.0.0',
   directives: [scene],
+  passes: [{
+    name: 'presmium.motion.catalog',
+    after: 'execute',
+    run(doc, ctx) {
+      const scenes = deckScenes(ctx.deckDir)
+      ctx.watch(join(ctx.deckDir, SCENES_DIR), ...scenes.values())
+      const own = doc.config.presmium[MOTION_ID]
+      doc.config.presmium[MOTION_ID] = { ...(typeof own === 'object' && own !== null ? own : {}), scenes: [...scenes.keys()] }
+    },
+  }],
   documentModules: ({ deckDir }) => ({ [SCENES_MODULE]: scenesModule(deckDir) }),
 }
 

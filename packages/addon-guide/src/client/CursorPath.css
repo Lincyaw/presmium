@@ -1,0 +1,58 @@
+.pm-cursor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--pm-duration);
+}
+.pm-cursor:not([data-waypoint='-1']) {
+  opacity: 1;
+}
+.pm-cursor__arrow {
+  position: absolute;
+  left: calc(-1 * var(--pm-size-stroke));
+  top: calc(-1 * var(--pm-size-stroke));
+  /* The page's base styles cap an svg at the width of its box, which is 0 here. */
+  max-width: none;
+  width: var(--pm-size-pointer-arrow);
+  height: var(--pm-size-pointer-ring);
+  fill: var(--pm-color-pointer-fill);
+  stroke: var(--pm-color-pointer-stroke);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  filter: drop-shadow(var(--pm-shadow-pointer));
+}
+.pm-cursor__ring {
+  position: absolute;
+  left: calc(-0.5 * var(--pm-size-pointer-ring));
+  top: calc(-0.5 * var(--pm-size-pointer-ring));
+  width: var(--pm-size-pointer-ring);
+  height: var(--pm-size-pointer-ring);
+  border-radius: 50%;
+  border: var(--pm-size-rule) solid var(--pm-color-accent);
+  opacity: 0;
+}
+.pm-cursor[data-action='hover'] .pm-cursor__ring {
+  opacity: 0.35;
+}
+.pm-cursor[data-action='click'] .pm-cursor__ring {
+  opacity: calc(0.7 * var(--pm-cursor-press, 1));
+  transform: scale(calc(2.2 - 1.2 * var(--pm-cursor-press, 1)));
+}
+.pm-cursor[data-motion='reduced'] {
+  transition: none;
+}
+
+
+[data-pm-cursor='hover'] {
+  outline: var(--pm-size-stroke) dashed var(--pm-color-accent);
+  outline-offset: var(--pm-size-rule);
+}
+[data-pm-cursor='click'] {
+  outline: var(--pm-size-stroke) solid var(--pm-color-accent);
+  outline-offset: var(--pm-size-rule);
+}

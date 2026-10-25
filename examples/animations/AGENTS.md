@@ -9,5 +9,5 @@ In each lecture's directory:
 
 - `lecture.md` is the document. Its plain paragraphs after an animation are the narration: the lecture says them, one step each, and their `{cue}` marks click, point or pause at that moment.
 - `scenes/<name>.ts` is the animation of `{scene} <name>`, a timeline written with one library. Its `:durations:` cut it into the steps of the section: when the number of narration steps changes, the durations and the scene's parts change with it.
-- `components/*.vue` are the lecture's own components, such as the counter whose named action the narration clicks.
+- `components/*.tsx` are the lecture's own components, such as the counter whose named action the narration clicks.
 - `.presmium/speech/` and `.presmium/speech.lock.json` are the synthesis cache of the narration (voice `edge`, Microsoft Edge's read-aloud voice through a local bridge). A sentence that is not in the cache needs a speech engine to be said: without one, the check reports it, and the rest of the lecture still plays. Keep the cache with the lecture.

@@ -55,7 +55,7 @@ MyST 源码 + 真实代码文件
 
 网页与幻灯片的页面都由**预先打包的查看器**显示（`packages/web/src/node/viewer-app.ts`、`document-bundle.ts`，页面 `packages/web/src/app/`），像 PDF 查看器对待每一份 PDF：网页形态的运行时（IR 运行时、站点外壳、宿主、插件的浏览器模块）为用到的一组插件打包一次，文稿只是数据。工作台、`presmium dev` 与 `presmium serve` 的页面和构建的站点用的都是它。
 
-- **查看器**：Vite 构建，插件的组件、浏览器插件与 viewer 插件都是按需加载的分块；Vue、Presmium 的包给浏览器的子路径与插件 `exports` 中除 Node 端入口外的子路径（第 3 节）各是一个入口，由页面的导入映射（import map）按名字给出；入口的导出（含默认导出）按打包器解析的结果。插件包的 `vite.config.ts`（第 3 节）给构建加上 Vite 插件与 Vue 的 `isCustomElement`。构建的站点另用查看器的服务端渲染构建（`buildViewerServer`）把每页先渲染成 HTML。按 Presmium 的源码、构建工具的版本与各插件的指纹（源码目录为文件的路径、大小与时间，`node_modules` 中的包为名字与版本）保存在用户的缓存目录（`$XDG_CACHE_HOME/presmium/viewer-app/`），所有工作区与会话共用，一周没用过的删除，最新的三份保留。一组插件只多不变时，旧查看器的页面照常运行；Presmium 或插件的代码改了，它们重载到新的查看器。
+- **查看器**：Vite 构建，插件的组件、浏览器插件与 viewer 插件都是按需加载的分块；React、React DOM、Presmium 的包给浏览器的子路径与插件 `exports` 中除 Node 端入口外的子路径（第 3 节）各是一个入口，由页面的导入映射（import map）按名字给出；入口的导出（含默认导出）按打包器解析的结果。插件包的 `vite.config.ts`（第 3 节）给构建加上 Vite 插件；TSX 使用 React 的自动 JSX runtime。构建的站点另用查看器的服务端渲染构建（`buildViewerServer`）把每页先渲染成 HTML。按 Presmium 的源码、构建工具的版本与各插件的指纹（源码目录为文件的路径、大小与时间，`node_modules` 中的包为名字与版本）保存在用户的缓存目录（`$XDG_CACHE_HOME/presmium/viewer-app/`），所有工作区与会话共用，一周没用过的删除，最新的三份保留。一组插件只多不变时，旧查看器的页面照常运行；Presmium 或插件的代码改了，它们重载到新的查看器。
 - **文稿的代码包**：文稿自己的组件、浏览器插件与 viewer 插件，加上插件为它生成的文稿模块（`PresmiumNodePlugin.documentModules`，如动画插件的场景列表），打成一个小包，查看器导入映射中的名字不打进去；查看器中插件对文稿模块的导入是一个代理，读当前文稿的包给出的默认导出。包按代码与内容命名，记下构建它的文件的大小与时间；文稿目录的文件变化时重新核对，代码变了才重新构建，页面随后重载，只改文字时不重载。
 - **构建**：站点服务（见下）在一个常驻的子进程中构建查看器与代码包（`viewer-build.ts`，交互档资源；30 秒没有任务就退出），两者同时构建（包按名字导入的模块在查看器构建之前就能算出）；站点的构建在构建它的进程中做同样的事。示例的两讲：查看器约 1.3～2.7 秒（只在第一次），一讲的代码包 0.05～0.6 秒。
 - **构建的站点**：查看器复制一次，在站点路径下的 `_app/<键>/`（键按内容，任何检出中相同）；每份文稿在自己的站点路径下有 `ir.json`、搜索索引 `search.json`（MiniSearch，内核的分词 `tokenize`）、代码包 `_code/<键>/document.js`、发布的文件、插件的运行时文件（4.2 节的 `assets`）、`public/` 与字体的许可证。每页在构建时先渲染成 HTML，浏览器中查看器再接管它（hydrate）。
@@ -80,7 +80,7 @@ MyST 源码 + 真实代码文件
 presmium/
 ├── packages/
 │   ├── kernel/              @lincyaw/kernel                    纯 TS 共享内核：契约、服务注册、锚点、检查
-│   ├── host/                @lincyaw/host                      形态无关的宿主接口与组合式函数（Vue）
+│   ├── host/                @lincyaw/host                      形态无关的宿主接口与React hooks
 │   ├── compiler/            @lincyaw/compiler                  MyST 解析、编译步骤、执行缓存、IR
 │   ├── cli/                 @lincyaw/cli                       presmium new | build | dev | ir | check | serve | studio；./testing 供各包的集成测试运行 CLI
 │   ├── presmium/            @lincyaw/presmium                  pnpm add -g @lincyaw/presmium：CLI 连同渲染端与官方插件；转交给项目里装的 presmium
@@ -138,27 +138,27 @@ presmium/
 packages/addon-<ctx>/
 ├── package.json          keywords 含 presmium；exports 见下
 ├── src/
-│   ├── domain/           领域层：纯 TS，不得引用 vue、@lincyaw/host、node:*
+│   ├── domain/           领域层：纯 TS，不得引用 React、React DOM、@lincyaw/host、node:*
 │   ├── shared/           两端共用层（可选）：Node 与浏览器都运行的代码，如运行器、协议的客户端
 │   ├── node/             Node 适配器：指令、编译步骤、执行器、渲染端扩展、检查项、运行时文件、服务端贡献
-│   └── client/           浏览器适配器：plugin.ts（内核插件）、viewer.ts（IR 运行时扩展）、服务实现、组合式函数
+│   └── client/           浏览器适配器：plugin.ts（内核插件）、viewer.ts（IR 运行时扩展）、服务实现、React hooks
 ├── components/           组件：查看器按文件名注册到 IR 运行时，两种形态共用
-└── vite.config.ts        可选：查看器构建用的 Vite 插件与 Vue 编译选项（见下）
+└── vite.config.ts        可选：查看器构建用的 Vite 插件与 JSX 配置（见下）
 ```
 
 依赖规则：
 
 | 位置 | 可以依赖 | 不得依赖 |
 |---|---|---|
-| `src/domain/` | `@lincyaw/kernel`、纯计算库 | vue 与 `@vue/*`、`@lincyaw/host`、Node 内置模块（`node:fs` 与 `fs` 都算）、`src/domain/` 之外的相对路径 |
-| `src/shared/` | `src/domain/`、`@lincyaw/kernel`、两端都能运行的库 | vue 与 `@vue/*`、`@lincyaw/host`、`@lincyaw/kernel/node`、Node 内置模块、`src/shared/` 与 `src/domain/` 之外的相对路径 |
-| `components/`、`src/client/` | `src/domain/`、`src/shared/`、`@lincyaw/kernel`、`@lincyaw/host`、vue、浏览器中运行的库 | 其他插件包（见下） |
-| `src/node/` | `src/domain/`、`src/shared/`、`@lincyaw/kernel`、Node 库 | vue 与 `@vue/*` |
-| `packages/server/`、`packages/mcp/`（整个包都是 Node 端） | `@lincyaw/kernel`、`@lincyaw/compiler`、Node 库；`server` 另可依赖 `@lincyaw/mcp` | vue 与 `@vue/*`、浏览器端的包（`@lincyaw/viewer`、`@lincyaw/web`、`@lincyaw/host`）；`mcp` 不依赖 `@lincyaw/server` |
+| `src/domain/` | `@lincyaw/kernel`、纯计算库 | React 与 React DOM、`@lincyaw/host`、Node 内置模块（`node:fs` 与 `fs` 都算）、`src/domain/` 之外的相对路径 |
+| `src/shared/` | `src/domain/`、`@lincyaw/kernel`、两端都能运行的库 | React 与 React DOM、`@lincyaw/host`、`@lincyaw/kernel/node`、Node 内置模块、`src/shared/` 与 `src/domain/` 之外的相对路径 |
+| `components/`、`src/client/` | `src/domain/`、`src/shared/`、`@lincyaw/kernel`、`@lincyaw/host`、React、浏览器中运行的库 | 其他插件包（见下） |
+| `src/node/` | `src/domain/`、`src/shared/`、`@lincyaw/kernel`、Node 库 | React 与 React DOM |
+| `packages/server/`、`packages/mcp/`（整个包都是 Node 端） | `@lincyaw/kernel`、`@lincyaw/compiler`、Node 库；`server` 另可依赖 `@lincyaw/mcp` | React 与 React DOM、浏览器端的包（`@lincyaw/viewer`、`@lincyaw/web`、`@lincyaw/host`）；`mcp` 不依赖 `@lincyaw/server` |
 
 读取编译结果的纯函数在 `@lincyaw/kernel`（`src/reading.ts`：`chapters`、`isChapterTitle`、`blockVisible`、`blockState`、`narrationAt`、`sectionNarration`、`mdastText`、`blockText` 与搜索的分词 `tokenize`），IR 运行时、网页渲染端与 MCP 都从内核引用，`mcp` 因此不依赖 IR 运行时。
 
-此外：任何包都不引用 vitepress 与 `@slidev/*`（两种形态都是查看器的页面）；任何包（测试除外）都不引用插件包 `@lincyaw/addon-*`，渲染端与 IR 运行时也不例外，相对路径不离开本包，共用的契约放在 `@lincyaw/kernel` 或 `@lincyaw/host`。内核除 `src/node/` 之外不引用 vue、Node 内置模块与自己的 `src/node/`，`src/node/` 不引用 vue。`scripts/check-layering.mjs` 检查以上全部规则（规则名 `domain is pure TS`、`shared code runs in Node and in the browser`、`kernel is framework-free`、`kernel/node is framework-free`、`node adapters do not use vue`、`no package uses Slidev or VitePress (both forms are the viewer app)`、`no package uses an addon`、`relative imports stay in their package`），扫描 `.ts`、`.tsx`、`.vue`、`.js`、`.jsx`、`.mjs`、`.cjs`、`.mts` 文件，静态 `import`、`export ... from`、动态 `import()` 与 `require()` 都算引用。
+此外：任何包都不引用 vitepress 与 `@slidev/*`（两种形态都是查看器的页面）；任何包（测试除外）都不引用插件包 `@lincyaw/addon-*`，渲染端与 IR 运行时也不例外，相对路径不离开本包，共用的契约放在 `@lincyaw/kernel` 或 `@lincyaw/host`。内核除 `src/node/` 之外不引用 UI 框架、Node 内置模块与自己的 `src/node/`，`src/node/` 不引用 UI 框架。`scripts/check-layering.mjs` 检查以上全部规则（规则名 `domain is pure TS`、`shared code runs in Node and in the browser`、`kernel is framework-free`、`kernel/node is framework-free`、`node adapters are framework-free`、`no package uses Slidev or VitePress (both forms are the viewer app)`、`no package uses an addon`、`relative imports stay in their package`），扫描 `.ts`、`.tsx`、`.vue`、`.js`、`.jsx`、`.mjs`、`.cjs`、`.mts` 文件，静态 `import`、`export ... from`、动态 `import()` 与 `require()` 都算引用。
 
 服务端、MCP 与外部协议的规则：
 
@@ -167,13 +167,13 @@ packages/addon-<ctx>/
 - 插件包（`addon-*`）不引用 `@lincyaw/server`、`@lincyaw/mcp`、`@lincyaw/workspace` 与 `@lincyaw/web`；`workspace` 与 `mcp` 也不引用插件包（已有的“没有包引用插件”规则）。
 - 外部协议与厂商的客户端各只在一个适配器中：`@modelcontextprotocol/*` 只在 `mcp`（各包的 `test/` 另算）；`@jupyterlab/services` 与 `@xterm/*` 只在 `addon-exec-jupyter`；`mediabunny` 只在 `addon-lecture`；动画库 `gsap`、`animejs`、`motion`、`three`、`remotion` 与 `@remotion/*` 只在 `addon-motion` 的 `src/client/`；`simple-git` 只在各包的 `src/node/`。语音服务提供方没有 SDK，它们的接口只出现在 `addon-speech/src/node/engines/`，由代码评审守护。
 
-`scripts/check-layering.mjs` 中对应的规则：`node packages are framework-free`（`server`、`mcp` 的 `src/` 不引用 vue 与浏览器端的包）；`only cli and workspace use the server`；`plugins use contracts, not the hosts`（`addon-*` 不引用上述四个包）；`protocol clients stay in their adapter`（上一条列表中的包名只出现在给定的目录中）。`@lincyaw/mcp` 的引用规则见下文工作台的规则。
+`scripts/check-layering.mjs` 中对应的规则：`node packages are framework-free`（`server`、`mcp` 的 `src/` 不引用 UI 框架与浏览器端的包）；`only cli and workspace use the server`；`plugins use contracts, not the hosts`（`addon-*` 不引用上述四个包）；`protocol clients stay in their adapter`（上一条列表中的包名只出现在给定的目录中）。`@lincyaw/mcp` 的引用规则见下文工作台的规则。
 
 工作台的规则（`design-dsh.md` 3.2 节）：
 
 - **产物不认识工作台**：产物的包（`web`、`viewer`、`render-*` 与各插件包）不引用 `@lincyaw/workbench`。
 - **dsh 只在一处**：`@deepseek-ai/*` 只出现在 `packages/dsh` 与 `packages/studio` 中。
-- **面板不认识宿主**：`@lincyaw/workbench` 不引用 vue、`@lincyaw/host` 与 `@deepseek-ai/*`；`@lincyaw/design` 只允许引用无框架的 Lucide 图标节点，不引用 UI 框架或业务包。
+- **面板不认识宿主**：`@lincyaw/workbench` 不引用 UI 框架、`@lincyaw/host` 与 `@deepseek-ai/*`；`@lincyaw/design` 只允许引用无框架的 Lucide 图标节点，不引用 UI 框架或业务包。
 - **mcp 的使用者**：“只有 server 使用 mcp”放宽为“server 与 dsh 使用 mcp”；`@modelcontextprotocol/*` 仍只在 `mcp` 中，bundle 经 `@lincyaw/mcp` 导出的客户端一侧使用 MCP。
 
 `check-layering.mjs` 的规则 `only the server and the dsh bundle use mcp`、`DeepSeek Harness only in dsh and studio`、`the workbench's panels know no host`、`the design system only uses framework-free icons`、`outputs do not use the workbench` 检查模块引用；另一项检查不看引用：各包 `package.json` 的依赖（含开发与对等依赖）中 `@deepseek-ai/*` 只出现在 `dsh` 与 `studio` 中。`check-packages.mjs` 让 `@lincyaw/workbench`、`@lincyaw/dsh`、`@lincyaw/studio` 有自己的 0.x 版本（不计入统一版本），`package.json` 的 `presmium.generated` 列出打包时才生成、不入库却在 `files` 中的路径（`@lincyaw/dsh` 的 `skills` 与预编译的客户端）。
@@ -186,9 +186,9 @@ packages/addon-<ctx>/
 | `./client` | `src/client/index.ts` | 浏览器端 API |
 | `./presmium` | `src/node/presmium.ts` | Node 端插件入口，默认导出 `PresmiumNodePlugin` |
 
-插件包可以在根目录带 `vite.config.ts`（随包发布，不在 `exports` 中），默认导出 `{ plugins, vue: { template: { compilerOptions: { isCustomElement } } } }`：查看器的构建（含服务端渲染的构建）加上这些 Vite 插件，Vue 的编译把 `isCustomElement` 认出的标签当作自定义元素。例如远端环境插件以它把 `@jupyterlab/services` 导入的 `ws` 换成该包自己的垫片（`packages/addon-exec-jupyter/vite.config.ts`，4.6 节），内容插件以它声明组件用到的自定义元素（`packages/addon-content/vite.config.ts`）。
+插件包可以在根目录带 `vite.config.ts`（随包发布，不在 `exports` 中），默认导出 `{ plugins }`：查看器与文稿代码包的构建加上这些 Vite 插件。例如远端环境插件通过它把 `@jupyterlab/services` 导入的 `ws` 换成该包自己的垫片（`packages/addon-exec-jupyter/vite.config.ts`，4.6 节）。React TSX 由 Vite 的自动 JSX runtime 编译，不需要额外的 React Vite 插件。
 
-源码直接以 `.ts`、`.vue` 发布，不预编译；例外是 `presmium-vscode` 与 `@lincyaw/dsh` 的客户端部分（dsh 的客户端运行时只加载它的工厂格式，`design-dsh.md` 7.8 节）。Vite（查看器与文稿代码包的构建）与 Vitest 直接处理 TS；CLI 通过 jiti 加载 TS（装在 `node_modules` 中的 `.ts` 不被 Node 剥离类型）。
+源码直接以 `.ts`、`.tsx` 发布，不预编译；例外是 `presmium-vscode` 与 `@lincyaw/dsh` 的客户端部分（dsh 的客户端运行时只加载它的工厂格式，`design-dsh.md` 7.8 节）。Vite（查看器与文稿代码包的构建）与 Vitest 直接处理 TS；CLI 通过 jiti 加载 TS（装在 `node_modules` 中的 `.ts` 不被 Node 剥离类型）。
 
 VS Code 扩展的安装包包含语言服务、编译器与网页渲染运行时，编辑与布局交给 VS Code；不依赖工作台。`pnpm --filter presmium-vscode package:vsix` 按工作区锁文件部署生产依赖，以普通目录写入平台专用 VSIX；有 Node.js 22.19 以上即可启动，文稿的额外插件仍由文稿项目提供。`.github/workflows/vscode.yml` 在 macOS、Windows、Linux 的 x64 与 ARM64 上构建，解压到仓库外验证真实预览服务，再把产物上传为 Actions artifact；GitHub Release 发布时附加六个安装包。完整安装与构建说明见 `packages/vscode/README.md`。
 
@@ -261,25 +261,28 @@ interface HostAdapter {
   readonly mode: PresentationMode
   /** 文稿的语言标签（如 `en-US`），供没有页面的渲染使用；浏览器中由 `<html lang>` 携带 */
   readonly lang?: string
-  useCursor(): Readonly<Ref<Cursor>>       // { slide, step }
+  useDoc?(): IRDocument
+  useCursor(): Cursor       // { slide, step }
   /** 渲染该组件的页或章节的当前步骤（绝对步骤，不是块内步骤）；全部展开的文档视图为 Infinity */
-  useStep(): Readonly<Ref<number>>
-  useViewRole(): Readonly<Ref<ViewRole>>
+  useStep(): number
+  useViewRole(): ViewRole
   /** 形态正在渲染静态副本（幻灯片打印 PDF、PNG）时为 true，组件显示 IR 的 fallback */
-  useStaticRender(): Readonly<Ref<boolean>>
+  useStaticRender(): boolean
   /** 插件 pluginId 在调用组件所在页或章节的配置：全局配置之上合并该章节的 `{config}` */
-  useSectionConfig(pluginId: string): Readonly<Ref<Record<string, unknown>>>
-  /** 按 key 共享的状态（key 以插件 ID 开头，值为 JSON 数据），可在组件外调用 */
-  useSharedState<T>(key: string, initial: T, scope: SharedStateScope): Ref<T>
+  useSectionConfig(pluginId: string): Record<string, unknown>
+  /** 按 key 共享的状态（key 以插件 ID 开头，值为 JSON 数据），由 React 组件调用 */
+  useSharedState<T>(key: string, initial: T, scope: SharedStateScope): [T, Dispatch<SetStateAction<T>>]
   getService<T>(token: ServiceToken<T>): T | undefined
   /** 内核启动报告；内核启动之前为 undefined */
   startReport(): StartReport | undefined
 }
 ```
 
-宿主适配器（网页与幻灯片共用一个，`packages/web/src/client/host.ts`）在应用初始化时通过 `installHost(app, adapter)` 注入实现。组件不直接读 `useStep()`：`useStepState(range)` 用宿主的绝对步骤减去所在步骤作用域的 `at`（`useStepScope()`，IR 运行时的块视图按块的 `at` 与 `until` 用 `provideStepScope` 提供），得到块内第 k 个状态是否已到达。组件自己再减一次 `at` 会算错。
+宿主适配器（网页与幻灯片共用一个，`packages/web/src/client/host.ts`）由 `HostProvider` 在 React 树中提供；`installHost(adapter)` 为普通浏览器适配入口。以上 `use*` 接口只在 React 组件或自定义 hook 中调用，直接返回当前值。组件外使用纯函数 `presmiumService`、`presmiumReport`、`serverClient` 或 `getSharedStateStore`。
 
-`provideStepScope(at, until?)` 的可选 `until` 使用 IR 的绝对步骤，范围为 `[at, until)`；嵌套范围取交集，不改变原有的块内偏移。`useBlockStepRange()` 返回相对于当前作用域的有效范围，保留响应式 getter；需要跟随整个块的显示范围停止后台资源时，用 `useStepState(useBlockStepRange())`，而不是只判断 `from: 0`。阅读形态展开内容的语义仍由组件按 `useViewRole()` 决定。
+`useStepState(range)` 用宿主的绝对步骤减去所在步骤作用域的 `at`（`useStepScope()`），得到块内第 k 个状态是否已到达。IR 运行时以 `<StepScope at={block.at} until={block.until}>` 提供范围；嵌套范围取交集，不改变块内偏移。`useBlockStepRange()` 返回相对于作用域的有效范围，需要跟随整个块的显示范围停止资源时，用 `useStepState(useBlockStepRange())`。
+
+非组件的可观察状态使用 `Store<T>`：`getSnapshot()` 读取，`subscribe(listener)` 订阅并返回释放函数，`set(valueOrUpdater)` 更新。React 组件通过 `useStore(store)` 订阅快照。导航的 `position`、操作的 `replaying`、服务端成员 `member` 与步骤时钟的 `elapsed` 都是 Store；共享状态 hook 返回 `[value, setValue]`。
 
 **步内时间。** 动画的视觉状态是（步骤，步内时间）的纯函数（5.3 节）。`useStepTime({ until? })` 给出组件所在步骤开始以来的毫秒数，`Infinity` 表示这一步已经停定（动画的终态）：
 
@@ -290,7 +293,7 @@ interface HostAdapter {
 ```ts
 interface StepClockDriver {
   /** 自讲授到达当前步骤以来的毫秒数；undefined 时按页面时间 */
-  readonly elapsed: Readonly<Ref<number | undefined>>
+  readonly elapsed: Store<number | undefined>
   /** 画面按帧录成视频：减少动态效果时动画仍按 elapsed 进行 */
   readonly recording?: boolean
 }
@@ -312,11 +315,11 @@ const STEP_CLOCK = defineService<StepClock>('presmium.stepClock')
 
 **具名动作。** `useActions(element, actions, { clear })` 登记组件的具名动作，`element` 是组件在块中的一个元素，宿主由它找到块。返回的 `run(name)` 执行动作并报告 `click` 操作（数据 `{ block: '<章节>/<块>', action }`），录制的讲授记下它；讲解中的 ``{cue to=<块>}`click <动作>` `` 编为同一个操作（`ir.md` 2.9 节）。宿主在 `startHost` 中登记 `click` 的重放：调用这个块的组件的同名动作（`seeking` 为跳转中的快进）；跳转前的 `clear` 调用各组件的 `clear`。宿主记下每个块自上次 `clear` 以来的动作，组件挂载时补上它们：跳转到另一节时，回放者在同一个任务中重放到目标时刻，那一节的组件这时还没有挂载。动作改变的画面要是此前动作的函数（4.9 节）。
 
-`@lincyaw/host` 导出的组合式函数与组件：
+`@lincyaw/host` 导出的React hooks 与组件：
 
 | 名称 | 作用 |
 |---|---|
-| `useStepState`、`useStepScope`、`useBlockStepRange`、`provideStepScope` | 块内步骤的状态、步骤作用域与包含父范围限制的有效显示范围（见上） |
+| `useStepState`、`useStepScope`、`useBlockStepRange`、`StepScope` | 块内步骤的状态、步骤作用域与包含父范围限制的有效显示范围（见上） |
 | `useStepTime` | 步内时间（见上“步内时间”） |
 | `useActions` | 组件的具名动作，讲授的 `click` 经它重放（见上“具名动作”） |
 | `useCursor`、`useViewRole`、`usePresentationMode` | 当前位置（在页或章节中调用时为组件所在的页或章节及其步骤）、视图角色、形态 |
@@ -334,7 +337,7 @@ const STEP_CLOCK = defineService<StepClock>('presmium.stepClock')
 | `useSessionSnapshot()`、`claimFirst(group)` | 会话快照（`session` 服务的订阅），与“同一组中第一个实例拥有”的判断，会话与课堂插件共用 |
 | `currentLocale()` | 组件之外的界面语言，按 `CATALOG[currentLocale()]` 取文本 |
 | `siteBase()`、`setSiteBase(base)` | 文稿的站点路径（以 `/` 结尾）：发布的文件 `media/` 与插件的运行时文件（如 `pyodide/`）在它下面。查看器预先打包、没有自己的站点路径，页面的外壳经 `setSiteBase` 给出；浏览器代码由 `siteBase()` 得到它 |
-| `useServer()` | 服务端的访问（4.7 节）：`available`、当前成员、`fetch(plugin, path)`、`events(plugin, path)`；静态产物中 `available` 为 false，组件据此隐藏或降级。可在组件外调用 |
+| `useServer()` | 服务端的访问（4.7 节）：`available`、当前成员、`fetch(plugin, path)`、`events(plugin, path)`；静态产物中 `available` 为 false，组件据此隐藏或降级。由 React 组件调用 |
 | `OPERATIONS`、`STATUS`、`STEP_CLOCK` | 宿主层的服务令牌：操作的报告与重放（4.9 节）、插件的状态摘要（4.7 节）、步内时间的时钟（见上） |
 
 **共享状态。** `createSharedStates(deck)` 返回适配器的 `useSharedState` 实现与同步传输的接入点（`transports.add`，`syncTransports` 服务把每个传输交给它），`deck` 是文稿标题。宿主适配用它，跨窗口、跨设备的状态只有这一套实现：
@@ -828,15 +831,17 @@ export interface ServerClient {
   /** 页面由 `presmium dev` 或 `presmium serve` 提供时为 true；静态产物与服务端渲染中为 false */
   readonly available: boolean
   /** 当前成员；握手之后才有值 */
-  readonly member: Readonly<Ref<Member | undefined>>
+  readonly member: Store<Member | undefined>
   /** 调用插件的路由 `/__presmium/<plugin>/<path>`；自动带上文档目录（`Presmium-Document`）与界面语言（`Accept-Language`） */
   fetch(plugin: string, path: string, init?: RequestInit): Promise<Response>
   /** 订阅插件的 SSE 路由 */
   events(plugin: string, path: string): EventSource
 }
 
-/** 服务端的访问；可在组件外调用。宿主适配在 `startHost({ server })` 中给出，省略时不可用 */
+/** 服务端的访问；由 React 组件调用。宿主适配在 `startHost({ server })` 中给出，省略时不可用 */
 export function useServer(): ServerClient
+/** 组件外读取服务端客户端，不调用 React hooks */
+export function serverClient(): ServerClient
 
 export interface StatusProvider {
   /** 插件 ID */
@@ -1197,7 +1202,7 @@ export interface Operations {
   /** 调用每个重放的 `clear` */
   clear(): void
   /** 回放者应用操作期间置为 true，画面稳定后置回 false */
-  readonly replaying: Ref<boolean>
+  readonly replaying: Store<boolean>
 }
 
 /** 宿主服务（两种形态） */
@@ -1210,7 +1215,7 @@ export const OPERATIONS = defineService<Operations>('presmium.operations')
 
 引导插件包含内核插件 `src/client/plugin.ts`（两种形态都登记 `spot`、`hint` 的重放）与视图插件 `src/client/viewer.ts`（放映视图与演讲者窗口中 `s`、`h` 给指针下的块加上或取消聚光、提示并报告）；这种聚光持续到位置离开它的章节或步骤（`span`），由 `NAVIGATION.position` 的同步观察者结束，所以现场、依次重放与跳转后的折叠一致。讲授插件 `@lincyaw/addon-lecture`：`src/domain/`（讲授轨的读写与每项一行的格式、`at` 的时刻、章节、漂移分级、块指纹与 IR 哈希、VTT、路径简化、重录一节的拼接）、`src/node/`（服务端路由、检查项 `presmium.lecture`、站点渲染端 `lecture`）、`src/client/`（内核插件登记 `point`、`ink` 的重放；视图 `lecture`；放映视图上的录制与播放两个图层；`SilentClock`、`MediaClock`；Mediabunny 只在 `src/client/media.ts` 中）。视图插件只以类型引用 `@lincyaw/viewer`，拿不到章节上下文（`SECTION_CONTEXT`），自己画不出按步骤显示的幻灯片，所以回放的“真实页面”是放映视图：`lecture` 视图切到放映视图并保留 URL 的 `track` 参数，播放器是放映视图上的图层，重放 `go` 时去掉 `view`。嵌在工作台中时（`isPreviewEmbedded()`），`lecture` 视图直接打开视频用的那一讲（`defaultTrack`：有合成的 `script` 用它，否则是唯一的那一条录音；导出视频的默认同此），这是工作台“视频”视图的页面（`design-dsh.md` 7.3 节）。独立的讲授视图需要放映组件或章节上下文，当前视图插件接口未提供它们。`run` 的重放没有 `clear`（`packages/viewer/src/client/code/code-block.ts`），跳回运行之前的时刻时已显示的录制输出不消失。
 
-讲授插件的 `src/domain/` 包含讲解的读法（`narration.ts`：显示与说的两份文字、`{cue}` 的位置、命令与时长）、讲授计划（`plan.ts`：每节每步的段落、在 `pause` 处切开的语音段、提示标记的目标与操作数据，单独的脚本代替所在章节的讲解）、合成的时间线（`script-track.ts`：`scriptTrack`）、逐字的处理（`words.ts`：分词、把说的文字的逐字时间换回显示的文字、改文字后的重新对齐、换音色后的字锚换算）与讲授轨的编辑（`editing.ts`：转写得到语音段并绑定事件、改一句、换音色重新合成）；`Utterance.clip` 与合成音色的 `provider`。`src/node/` 提供行内角色 `{cue}`、`{say}`（`roles.ts`）、读单独的脚本（`script-file.ts`）、讲授计划（`plan.ts`）、最近一次编译的 IR（`latest-ir.ts`：编译步骤 `presmium.lecture.keep` 在编译时执行之后记下每个文稿目录的 IR，服务端的路由与 agent 工具由此得到 IR，因为 `ServerContext` 与 `AgentToolContext` 没有编译结果）、经 `SPEECH` 的合成与转写（`synthesize.ts`、`transcribe.ts`；引擎的选择在 `engines.ts`，按键取合成缓存中的片段在 `clips.ts`；没有逐字时间时的对齐与锁定文件的清理经 `SpeechService.alignWords`、`pruneLock` 由语音服务完成，讲授插件不读写合成缓存的文件）、站点渲染端的 `script` 与 `clips/`、检查项的计划部分、编辑的路由（`routes/`：讲授与片段 `tracks.ts`、编辑 `editing.ts`、录制 `recordings.ts`）、agent 工具（`tools.ts`）与 `presmium-lecture export`（`export.ts`、`cli.ts`）。`src/client/` 用 `MediaClock` 播放每个语音段的片段、播放器的 `advanceTo`（按时间应用事件，播放与导出共用）、导出模式（地址加 `&export`：没有控件，`window.presmiumLecture.advance(t)`）、编辑面板 `TrackEditor.vue` 与逐字稿中每句的修改（`TranscriptList.vue`）。交互与构建的边界：转写与合成的确认是页面上写明服务提供方的确认框，不经 `APPROVALS`（编辑者点按钮就是确认；agent 的计费工具仍经 MCP 的确认）；`presmium serve` 在进程内编译文稿，所以 `script` 在那里同样按需合成（`ir.md` 6.3 节）；合成不了的句子（不在合成缓存中，引擎没有定义或没有回答）不让讲授失败：服务端回答的 `script` 是预览，这些句子没有片段，带 `Utterance.unsaid`（原因），按 `spokenDuration` 估计的时长（`Intl.Segmenter` 分出的词，每词约 0.36 秒）静音，播放器写明有几句没有语音并显示它们的字幕，时间线照常播放；构建、导出视频与 agent 工具仍要求每句都已合成（`SynthesizedLecture.track` 只在全部合成时存在，预览是 `preview`），导出失败的第一行写出第一条原因；合成音色的讲授中改一句要先确认，确认框写明服务提供方；路由、agent 工具与检查都按讲授渲染端的视图（`viewFor(doc,'lecture')`，讲授插件已依赖编译器）计划，与构建一致；`presmium check` 只查找，不向语音引擎发请求；合成讲授的 `go` 由讲授视图的步号经它的 `stepMap` 换回 IR 的步号，所以只在网页形态不压缩步骤时（没有只在幻灯片或 notebook 中显示的上屏块）就是网页的步号；当前渲染上下文没有网页视图的步号映射。
+讲授插件的 `src/domain/` 包含讲解的读法（`narration.ts`：显示与说的两份文字、`{cue}` 的位置、命令与时长）、讲授计划（`plan.ts`：每节每步的段落、在 `pause` 处切开的语音段、提示标记的目标与操作数据，单独的脚本代替所在章节的讲解）、合成的时间线（`script-track.ts`：`scriptTrack`）、逐字的处理（`words.ts`：分词、把说的文字的逐字时间换回显示的文字、改文字后的重新对齐、换音色后的字锚换算）与讲授轨的编辑（`editing.ts`：转写得到语音段并绑定事件、改一句、换音色重新合成）；`Utterance.clip` 与合成音色的 `provider`。`src/node/` 提供行内角色 `{cue}`、`{say}`（`roles.ts`）、读单独的脚本（`script-file.ts`）、讲授计划（`plan.ts`）、最近一次编译的 IR（`latest-ir.ts`：编译步骤 `presmium.lecture.keep` 在编译时执行之后记下每个文稿目录的 IR，服务端的路由与 agent 工具由此得到 IR，因为 `ServerContext` 与 `AgentToolContext` 没有编译结果）、经 `SPEECH` 的合成与转写（`synthesize.ts`、`transcribe.ts`；引擎的选择在 `engines.ts`，按键取合成缓存中的片段在 `clips.ts`；没有逐字时间时的对齐与锁定文件的清理经 `SpeechService.alignWords`、`pruneLock` 由语音服务完成，讲授插件不读写合成缓存的文件）、站点渲染端的 `script` 与 `clips/`、检查项的计划部分、编辑的路由（`routes/`：讲授与片段 `tracks.ts`、编辑 `editing.ts`、录制 `recordings.ts`）、agent 工具（`tools.ts`）与 `presmium-lecture export`（`export.ts`、`cli.ts`）。`src/client/` 用 `MediaClock` 播放每个语音段的片段、播放器的 `advanceTo`（按时间应用事件，播放与导出共用）、导出模式（地址加 `&export`：没有控件，`window.presmiumLecture.advance(t)`）、编辑面板 `TrackEditor.tsx` 与逐字稿中每句的修改（`TranscriptList.tsx`）。交互与构建的边界：转写与合成的确认是页面上写明服务提供方的确认框，不经 `APPROVALS`（编辑者点按钮就是确认；agent 的计费工具仍经 MCP 的确认）；`presmium serve` 在进程内编译文稿，所以 `script` 在那里同样按需合成（`ir.md` 6.3 节）；合成不了的句子（不在合成缓存中，引擎没有定义或没有回答）不让讲授失败：服务端回答的 `script` 是预览，这些句子没有片段，带 `Utterance.unsaid`（原因），按 `spokenDuration` 估计的时长（`Intl.Segmenter` 分出的词，每词约 0.36 秒）静音，播放器写明有几句没有语音并显示它们的字幕，时间线照常播放；构建、导出视频与 agent 工具仍要求每句都已合成（`SynthesizedLecture.track` 只在全部合成时存在，预览是 `preview`），导出失败的第一行写出第一条原因；合成音色的讲授中改一句要先确认，确认框写明服务提供方；路由、agent 工具与检查都按讲授渲染端的视图（`viewFor(doc,'lecture')`，讲授插件已依赖编译器）计划，与构建一致；`presmium check` 只查找，不向语音引擎发请求；合成讲授的 `go` 由讲授视图的步号经它的 `stepMap` 换回 IR 的步号，所以只在网页形态不压缩步骤时（没有只在幻灯片或 notebook 中显示的上屏块）就是网页的步号；当前渲染上下文没有网页视图的步号映射。
 
 转写回写的读法在讲授插件的 `src/domain/writeback.ts`：由事件写回提示标记（`cueFor`）、逐字稿拼成的讲解草稿（`narrationDraft`）、一步讲解在源码中的位置（`narrationPlace`，取自讲授计划，所以单独的讲授脚本中的段落同样找得到）、要翻译的语音段与摘要（`translationItems`）；agent 经 `track_narration`、`track_translations`（`src/node/tools.ts`）取得它们，写入在会话的审阅之中。
 
@@ -1378,14 +1383,14 @@ export interface Renderer {
 | 入口 | 内容 | 查看器怎样使用 |
 |---|---|---|
 | `src/client/plugin.ts` | 默认导出内核插件定义 `PluginDefinition`：提供的服务与启动时的初始化 | 为页面的 `plugins` 中每个包导入这个文件，调用 `registerPresmiumPlugin`（`@lincyaw/host`） |
-| `components/*.vue` | 组件，文件名即组件名，对应 `component` 节点的 `name` | 按文件名注册到 IR 运行时，第一次显示时载入 |
+| `components/*.tsx` | 组件，文件名即组件名，对应 `component` 节点的 `name` | 按文件名注册到 IR 运行时，第一次显示时载入 |
 | `src/client/viewer.ts` | 默认导出视图插件 `ViewerPlugin`（类型来自 `@lincyaw/viewer`） | 在 IR 运行时启动前调用一次，两种形态都运行 |
-| `vite.config.ts` | 查看器构建用的 Vite 插件与 Vue 的编译选项（第 3 节） | 查看器与它的服务端渲染的构建加上它们 |
+| `vite.config.ts` | 查看器构建用的 Vite 插件与 JSX 配置（第 3 节） | 查看器与它的服务端渲染的构建加上它们 |
 | `./presmium` 的 `assets`、`documentModules` | 运行时文件与随文稿而变的模块（4.2 节） | 站点服务提供、站点的构建复制运行时文件；文稿模块打进文稿的代码包（1.1 节） |
 
 插件之间组件重名时，编译器报告 `presmium.plugins` 警告并采用插件列表中第一个声明；网页、幻灯片与静态扩展选择同一提供方。文稿自己的 `components/` 可以覆盖插件的同名组件。
 
-文稿自己的组件：文稿目录下的 `components/*.vue` 由编译器以插件 ID `deck` 登记，`{component}` 可引用它们，编译检查与编辑器识别这些组件并提供补全；它们打进文稿自己的代码包（1.1 节），在网页与幻灯片中照常渲染并保留内部步骤。这些组件同插件组件一样只能引用 `@lincyaw/host`、`@lincyaw/kernel` 与 vue；代码包按名字从查看器的导入映射取得这几个包，不把它们打进去。
+文稿自己的组件：文稿目录下的 `components/*.tsx` 由编译器以插件 ID `deck` 登记，`{component}` 可引用它们，编译检查与编辑器识别这些组件并提供补全；它们打进文稿自己的代码包（1.1 节），在网页与幻灯片中照常渲染并保留内部步骤。这些组件同插件组件一样只能引用 `@lincyaw/host`、`@lincyaw/kernel` 与 React；代码包按名字从查看器的导入映射取得这几个包，不把它们打进去。
 
 宿主适配在应用初始化时启动内核：按依赖顺序初始化全部已注册的插件，启动报告在演讲者视图中显示。两种形态注册的是同一批插件，启动报告一致。没有浏览器端服务的插件可以不提供 `plugin.ts`。
 
@@ -1395,13 +1400,13 @@ export interface Renderer {
 |---|---|
 | `registerView({ id, label, kind, component, hidden? })` | 注册运行时视图（`ir.md` 8.2 节）。`kind: 'page'` 的视图在页面正文中渲染本页的章节，组件得到属性 `sections`；`'overlay'` 的视图覆盖全屏、贯穿全文；`hidden` 的视图不出现在视图菜单中。同一 ID 后注册的替换先注册的 |
 | `registerNodeRenderer(key, component)` | 为一类块注册渲染器。`key` 为节点类型（`markdown`、`code`、`component`）、`code:<语言>` 或组件名；渲染器得到属性 `block`、`section`、`step` |
-| `registerComponent(name, component)` | 注册渲染 `component` 节点的 Vue 组件，用于 `components/` 约定之外的组件 |
+| `registerComponent(name, component)` | 注册渲染 `component` 节点的 React 组件，用于 `components/` 约定之外的组件 |
 | `registerAction({ id, keys, run, views? })` | 注册按键动作：`keys` 为 `KeyboardEvent.key` 的值（不含 Ctrl、Alt、Meta），`run(viewer)` 返回 `false` 时按键交给其他处理；`views` 默认是放映视图与演讲者窗口。例如舞台插件的 `b`、`f`、`d` |
 | `registerLayer({ id, component, views?, scope? })` | 注册覆盖视图的图层，组件得到属性 `view`；`views` 默认同上。`scope: 'viewport'`（默认）与视图根并列，供播放器、课堂状态与黑屏使用，可与全局聚光、弹层按同一层级排序；`'view'` 放在视图根内，供冻结画面、讲台徽标与录制面板按视图定位；`'slide'` 在每张幻灯片上（`.pm-slide__layers`，画布的坐标），组件另得到这张幻灯片的 `section` 与 `step`，例如舞台插件的圈画（`views` 可以含打印页 `print`）；`'bar'` 是视图控制条中的控件，例如舞台插件的画笔。这些图层都在视图的模态焦点范围内；全屏覆盖整个文档，保留插件与库经公开接口创建的浮层 |
 | `useViewer()` | 在组件的 `setup` 中取得运行时状态：文档、当前视图与位置 |
 | `SectionView`、`BlockView` | 组成视图的构件：一个章节（含版式），一个块在某一步的状态 |
 
-视图插件抛错时只记录错误并跳过它，其余插件照常安装。视图与渲染器同插件组件一样，只依赖 `@lincyaw/host`、`@lincyaw/kernel` 与 vue；`@lincyaw/viewer` 只引用类型。
+视图插件抛错时只记录错误并跳过它，其余插件照常安装。视图与渲染器同插件组件一样，只依赖 `@lincyaw/host`、`@lincyaw/kernel` 与 React；`@lincyaw/viewer` 只引用类型。
 
 ### 5.2 配置
 
@@ -1428,13 +1433,13 @@ presmium.exec: { timeoutMs: 30000 }
 
 ### 5.3 步骤可逆
 
-插件组件的视觉状态必须是步骤的纯函数；有动画的组件是（步骤，步内时间）的纯函数，时间取自 `useStepTime()`（4.4 节），不取自页面的时钟或动画库自己的播放，所以现场放映、讲授回放、跳转与按帧导出得到同一画面。组件用 `useStepState` 读取状态；为 Slidev 写的组件在模板中的 `v-click`、`v-after`、`v-click-hide`、`<v-clicks>` 与全局量 `$clicks`、`$page`、`$nav`、`$slidev` 由 IR 运行时的兼容层处理（`packages/viewer/src/client/slidev-compat/`）：放映与幻灯片中按块的步骤显示，文档式直接显示，滚动叙事式随滚动显示。
+插件组件的视觉状态必须是步骤的纯函数；有动画的组件是（步骤，步内时间）的纯函数，时间取自 `useStepTime()`（4.4 节），不取自页面时钟或动画库自己的播放。现场放映、讲授回放、跳转与按帧导出因此得到同一画面。React 组件通过 `useStepState` 读取块内状态，通过 `useStepScope().step(k)` 将块内步骤换算为绝对步骤；显示状态直接由 JSX 与这些值派生。`VClick`、`VAfter`、`VClicks` 仍是 React 的渐进显示辅助组件，不再提供 Vue 模板指令或 `$frontmatter` 等模板全局量。
 
 本地步骤：宿主以全部展开的最终状态渲染组件时（文档视图，`useHost().useStep()` 为无穷大），有内部步骤的组件可以给读者一个自己的步进控件，例如分步执行的上一步、下一步与滑块。读者选的本地步骤与执行结果一样是读者的输入，不写回宿主的步骤；组件的视觉状态是（章节步骤，本地步骤）的纯函数，仍然可逆。滚动叙事中没有讲解的步骤（组件的内部步骤）每步只占四分之一屏，读者不必滚过大片空白。
 
 ### 5.4 错误隔离
 
-渲染端隔离组件：IR 运行时在两种形态中都在每个插件组件外面包一层 `PmBoundary`，组件自己的 `setup` 或模板抛错也只影响它自己：显示占位与错误信息，演讲者视图的错误计数同时提示，页面其余内容照常渲染。组件不在自己的模板中再包 `PmBoundary`（Vue 的 `errorCaptured` 只接住后代的错误，自包装接不住组件自身的错误）。IR 运行时按组件的属性与子块给边界一个 `resetKey`，作者修好组件后不刷新页面即恢复。
+渲染端隔离组件：IR 运行时在每个插件组件外面包一层 React `PmBoundary`。组件渲染或 React 生命周期抛错时，边界显示占位与错误信息，并在浏览器控制台及组件错误汇总中记录；其他组件照常渲染。边界放在被保护组件的外部，组件不再自行包装同样的边界。IR 运行时按组件属性与子块给边界一个 `resetKey`，修复后的新版本可以重置错误状态。异步事件或后台任务的错误仍由各自的操作入口记录。
 
 ### 5.5 减少动态效果
 
@@ -1471,9 +1476,9 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 
 ### 5.10 设计系统
 
-> **工作台**：令牌、`pm-ui-*` 的类、字体与图标在 `@lincyaw/design`（`packages/design/src/`；`@lincyaw/host` 引用它，Vue 组件与 `useAppearance` 留在 `host`），工作台的 React 面板（`@lincyaw/workbench` 的 `components.tsx`）用同一层，dsh 自己的面板经它的 `--dsw-*` 令牌映射（`design-dsh.md` 7.5 节，第 13 节）。
+> **工作台**：令牌、`pm-ui-*` 的类、字体与图标在 `@lincyaw/design`（`packages/design/src/`；`@lincyaw/host` 引用它，React 组件与 `useAppearance` 留在 `host`），工作台的 React 面板（`@lincyaw/workbench` 的 `components.tsx`）用同一层，dsh 自己的面板经它的 `--dsw-*` 令牌映射（`design-dsh.md` 7.5 节，第 13 节）。
 
-产物的 Vue 通用交互同样由依赖实现：`@lincyaw/host` 的弹窗、抽屉、菜单、浮层、标签页和分段切换封装 Reka UI；查看器的内容标签页与放映焦点围栏也使用 Reka UI。文稿标签的 `sync` 联动、放映时背景页面的禁用与步骤导航由 Presmium 维护，播放面板与放映画面处在同一个焦点范围，各自保留独立的视觉层级。主题观察通过 VueUse 统一到宿主，图标由 Lucide 提供，`@lincyaw/design` 保留语义名称与框架无关的节点和 HTML 接口。读者问答的 SSE 事件边界由 eventsource-parser 解析，文稿上下文和回答内容仍由问答插件维护。
+产物的 React 通用交互由依赖实现：`@lincyaw/host` 的弹窗、抽屉、菜单、浮层和标签页封装 Radix Primitives；查看器的内容标签页与放映焦点范围也使用 Radix。文稿标签的 `sync` 联动、背景页面禁用与步骤导航由 Presmium 维护。主题由宿主的 React hook 与浏览器观察器同步；图标由 Lucide 提供，`@lincyaw/design` 保留语义名称与框架无关的节点和 HTML 接口。读者问答的 SSE 事件边界由 eventsource-parser 解析。
 
 工作台的通用交互由依赖实现：Radix Primitives 提供弹窗与菜单，react-resizable-panels 提供分栏与鼠标、键盘调整。`Pm*` 只封装样式与业务回调；首次欢迎在 dsh 适配层直接复用 Harness 的 `Modal`。文档操作、就地编辑落回源码、版本历史、编译、审阅与预览协议由 Presmium 维护。
 
@@ -1483,7 +1488,7 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 
 | 组 | 令牌 | 说明 |
 |---|---|---|
-| 颜色 | `--pm-color-bg`、`surface`、`sunk`、`chrome`、`canvas`、`hover`、`backdrop`、`code`、`ink`、`muted`、`line`、`line-strong`、`accent`、`accent-soft`、`accent-line`、`on-accent`、`selected`、`ok`、`ok-soft`、`warn`、`warn-soft`、`danger`、`danger-soft`、`add`、`del`、`gutter`、`syntax-key`、`syntax-string`、`syntax-keyword` | 取值见 `packages/design/src/tokens.css`。`ok` 在 `ok-soft` 上达到 AA；`line-strong` 在 `bg`、`surface`、`sunk` 上达到 3:1（WCAG 1.4.11）。源码编辑器的行号用 `muted`（5.11 节）；`danger` 与 `del` 同色。`chrome` 是编辑台围在文稿四周的界面（各种栏与窗格），`canvas` 是纸张或幻灯片下面的画布；`hover` 是鼠标下的扁平控件，`accent-line` 是按下的控件的边，`backdrop` 是模态遮罩 |
+| 颜色 | `--pm-color-bg`、`surface`、`sunk`、`chrome`、`canvas`、`hover`、`backdrop`、`code`、`ink`、`muted`、`line`、`line-strong`、`accent`、`accent-soft`、`accent-line`、`on-accent`、`selected`、`ok`、`ok-soft`、`warn`、`warn-soft`、`danger`、`danger-soft`、`add`、`del`、`gutter`、`syntax-key`、`syntax-string`、`syntax-keyword`、`qr-paper`、`qr-ink` | 二维码的 paper/ink 在暗色中保留固定对比。其余取值见 `packages/design/src/tokens.css`。`ok` 在 `ok-soft` 上达到 AA；`line-strong` 在 `bg`、`surface`、`sunk` 上达到 3:1（WCAG 1.4.11）。源码编辑器的行号用 `muted`（5.11 节）；`danger` 与 `del` 同色。`chrome` 是编辑台围在文稿四周的界面（各种栏与窗格），`canvas` 是纸张或幻灯片下面的画布；`hover` 是鼠标下的扁平控件，`accent-line` 是按下的控件的边，`backdrop` 是模态遮罩 |
 | 字体 | `--pm-font-sans`、`--pm-font-serif`、`--pm-font-mono` | IBM Plex Sans、Source Serif 4、IBM Plex Mono，后接中文的系统字体 |
 | 字号 | `--pm-text-xs`、`sm`、`md`、`lg`、`reading`、`title`、`display` | 12、13、14（界面）、16、17（阅读）、20、32 px，以 rem 表示，跟随读者的字号 |
 | 行高 | `--pm-leading-tight`、`ui`、`reading` | 1.25、1.6、1.85 |
@@ -1534,6 +1539,16 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 
 ### 5.11 浏览器中的源码编辑
 
+#### 正文块与步骤讲解
+
+新文稿在入口头部声明 `contentModel: blocks`：普通 Markdown 作为正文块，讲解与字幕只来自显式 `{narration}`，由 `:at:` 与章节步骤绑定。旧文稿继续支持隐式讲解，不因 UI 框架迁移改变原来的讲授。
+
+查看器的作者画布用 React BlockNote，按需加载；阅读与放映只运行 IR 渲染器。正文、列表、标题、代码和动画共享块的选择、排序与转换入口，无法无损转换的插件内容保留为自定义块。正文编辑与右侧步骤讲解面板分别负责各自内容，通过同一个 IR 块 ID、页码与步骤定位。动画的步进和放映的步骤跳转同步更新讲解目标。
+
+BlockNote 文档是编辑中的状态。工作台接收有序块列表，将变化写回 MyST，沿用源码版本冲突、保存与撤销，再由编译器生成 IR。保留块标签与媒介、受众和步骤范围；跨文件或讲解混合在容器中的范围拒绝猜测性重写。迁移期间移动正文时，把原有隐式讲解固定成显式的步骤绑定，避免讲解随正文顺序漂移。具体协议与界面见 `design-dsh.md` 7.3 节。
+
+#### 可运行代码的就地编辑
+
 浏览器中的编辑在工作台（`presmium studio`）中：作者在文稿页面上就地改文字，工作台按块的源码行把改动落回源码（第 13 节，`design-dsh.md` 7.3 节），保存经工作区服务的 `source` 路由（加锁，按版本，每次保存一个提交）。产物的页面自己不编辑源码。
 
 ### 5.12 插件界面与幻灯片的书卷版式
@@ -1551,7 +1566,7 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 - 图标是宿主的线性图标（`PmIcon`）：分步执行的上一步、下一步，讲授的过时字幕与改写，高对比度开关，练习每条检查的对错，录制中的标记，源码面板中问题的严重程度（`error`、`warning`、`info`）。插件与工作区的界面中没有 ◀ ▶ ⚠ ✎ ◐ ✓ ✗ ● ▲ ○ 这类字形。
 - 状态靠颜色而不靠不透明度区分，以保持 AA：核心插件的演示步进组件中已完成的步骤用 `muted`。
 
-**运行面板**（`addon-exec` 的 `PmRunPanel.vue`）：一张卡片（`surface`、`line` 边框、面板圆角），顶栏写语言与在哪里运行（“Python · 浏览器中运行”），参数与墨色的运行按钮也在顶栏，窄处换行时参数与按钮一起到第二行；其下是代码，代码块自己的边框、圆角与外边距去掉。在哪里运行由执行器自己说明（`Executor.runsIn`：`'browser'` 或 `'machine'`，可选；`src/client/runs-in.ts`）：Pyodide、脚本 worker、WASI 与 WebGPU 的执行器在浏览器中，本地环境插件的执行器在本机（服务所在的机器）；`:env:` 的具名环境的执行器没有说明（或还没有登记）时按头部为它声明的 `kind`（`jupyter` 为远端环境，`devcontainer` 为本机，`wasi`、`webgpu` 为浏览器，其他写环境名）；没有说明的执行器只写语言。运行之前写路由器会选的执行器，运行之后写实际运行的（`RunResult.executorId`）。运行后输出在 `sunk` 的面板中，标题是“输出 · <秒数> 秒”（`RunResult.durationMs`；录制的输出只写“输出”），幻灯片与放映视图中宽度够时在代码旁边，窄处（网页的正文栏、手机）在代码之下；运行之前代码占满宽度。网页、放映视图与幻灯片是同一个组件。
+**运行面板**（`addon-exec` 的 `PmRunPanel.tsx`）：一张卡片（`surface`、`line` 边框、面板圆角），顶栏写语言与在哪里运行（“Python · 浏览器中运行”），参数与墨色的运行按钮也在顶栏，窄处换行时参数与按钮一起到第二行；其下是代码，代码块自己的边框、圆角与外边距去掉。在哪里运行由执行器自己说明（`Executor.runsIn`：`'browser'` 或 `'machine'`，可选；`src/client/runs-in.ts`）：Pyodide、脚本 worker、WASI 与 WebGPU 的执行器在浏览器中，本地环境插件的执行器在本机（服务所在的机器）；`:env:` 的具名环境的执行器没有说明（或还没有登记）时按头部为它声明的 `kind`（`jupyter` 为远端环境，`devcontainer` 为本机，`wasi`、`webgpu` 为浏览器，其他写环境名）；没有说明的执行器只写语言。运行之前写路由器会选的执行器，运行之后写实际运行的（`RunResult.executorId`）。运行后输出在 `sunk` 的面板中，标题是“输出 · <秒数> 秒”（`RunResult.durationMs`；录制的输出只写“输出”），幻灯片与放映视图中宽度够时在代码旁边，窄处（网页的正文栏、手机）在代码之下；运行之前代码占满宽度。网页、放映视图与幻灯片是同一个组件。
 
 **图表**：网页、放映视图与幻灯片中的 Mermaid（IR 运行时的 `PmMermaid`）用 Mermaid 的 `base` 主题，主题变量取宿主的令牌（纸、墨、强调色，明暗随页面），连线标签在 `surface` 上用 `ink`；页面没有令牌时用 Mermaid 自己的 `default`、`dark`。
 
@@ -1851,7 +1866,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 |---|---|---|---|
 | `@modelcontextprotocol/server`；测试用 `@modelcontextprotocol/client` | Apache-2.0（既有代码 MIT） | MCP 服务（`createMcpHandler`、`serveStdio`、`fromJsonSchema`）与测试中的客户端；服务端自己校验 Host 与 Origin | mcp |
 | `minisearch` | MIT | 网页的站内搜索与 MCP 的 `search` 工具的索引（同样的字段与分词） | web、mcp |
-| Vite、`@vitejs/plugin-vue` | MIT | 查看器（含服务端渲染）与文稿代码包的构建 | web |
+| Vite | MIT | 查看器（含服务端渲染）与文稿代码包的构建 | web |
 | send | MIT | 站点服务与打印时的静态文件（类型、Range、校验与条件请求按 HTTP 规范）；任务产物的静态服务器 | web、compiler |
 | sitemap | MIT | 构建的站点的 `sitemap.xml` | web |
 | launch-editor | MIT | `presmium dev` 中在作者的编辑器里打开块的源码行 | web |
@@ -1874,7 +1889,9 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 | Remotion（`remotion`、`@remotion/player`），React（`react`、`react-dom`） | Remotion License；MIT | 动画场景：Remotion 的合成，以播放器的 `Thumbnail` 按帧画出 | addon-motion |
 | D3（`d3`） | ISC | 动画场景：比例尺、坐标轴、布局与形状生成器建出的图形，按时刻插值画出（不用 D3 的过渡） | addon-motion |
 | simple-git | MIT | 代码引用读取 git 中的文件、本地环境的仓库；工作区审阅直接运行 git，以控制 git 目录、对象库与钩子设置（10.7 节） | addon-code、addon-exec-local |
-| React | MIT | 工作台的面板（对等依赖），由 dsh 的外壳提供，Presmium 不自带 | workbench、dsh |
+| React、React DOM | MIT | 工作台、预打包查看器、插件组件与 SSR；工作台由 dsh 外壳提供同一份 React，查看器通过 import map 共享 | host、viewer、web、workbench、dsh、各浏览器插件 |
+| BlockNote（`@blocknote/core`、`@blocknote/react`、`@blocknote/mantine`） | MPL-2.0 | 正文块编辑、类型转换与拖动；只在作者编辑画布时加载 | viewer |
+| Radix Primitives（`@radix-ui/react-*`） | MIT | 弹窗、菜单、浮层、标签页、焦点范围 | host、viewer、workbench |
 | esbuild | MIT | 把 `@lincyaw/dsh` 的客户端部分构建为 dsh 的工厂格式 | dsh |
 | `@hono/node-server` | MIT | Node 请求与 Fetch API 之间的转换 | server |
 | http-proxy-3 | MIT | HTTP 与 WebSocket 反向代理（远端环境、工作区站点；`presmium dev` 的站点服务把 `/__presmium/` 代理到服务端） | server、web |
@@ -1900,7 +1917,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 | 层 | 包 | 框架 | 依赖 dsh | 版本 |
 |---|---|---|---|---|
 | 核心 | `kernel`、`compiler`、`cli`、`presmium`、`server`、`mcp`、`language-server`、`workspace` 的 Node 部分（工作区服务）、`classroom-server`、`create-presmium`、`presmium-vscode` | TS、Node | 否 | 1.x |
-| 产物 | `web`、`viewer`、`render-slides`、`render-notebook`、各插件的组件与 `src/client`、`host` | Vue | 否 | 1.x |
+| 产物 | `web`、`viewer`、`render-slides`、`render-notebook`、各插件的组件与 `src/client`、`host` | React | 否 | 1.x |
 | 工作台 | `design`（与产物共用）、`workbench`、`dsh`、`studio` | React 18（由 dsh 的外壳提供） | 只有 `dsh` 与 `studio` | 0.x（`design` 随 `host` 为 1.x） |
 
 ```
@@ -1908,7 +1925,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 ┌ 工作台：dsh 的客户端运行时 ─────────────────────────────────────────────────────────┐
 │ Presmium 的根布局插件（替换 dsh 的 ui-layout）与面板（@lincyaw/workbench，React）      │
 │ dsh 的插件：对话、确认卡片、会话、模型设置、终端、jobs                                    │
-│ 预览 iframe ══ 预览协议（postMessage）══ 产物页面（Vue：查看器的网页与幻灯片页）          │
+│ 预览 iframe ══ 预览协议（postMessage）══ 产物页面（React：查看器的网页与幻灯片页）          │
 └──────┬────────────────────────────────────────────────────────┬────────────────────────┘
        │ /api/presmium/*（dsh 的 cookie 与 Host、Origin 栅栏）        │ 另一个源，直接访问
        ▼                                                         ▼

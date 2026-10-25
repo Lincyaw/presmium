@@ -105,7 +105,7 @@ async function greeting(page: Page, url: string, text = '你好，读者！'): P
   await page.goto(url)
   await expect(page.locator('.greeting-card__text').first()).toHaveText(text)
   page.off('pageerror', listen)
-  expect(errors.filter(error => !/FloatingVue|Wake Lock/.test(error))).toEqual([])
+  expect(errors.filter(error => !/Wake Lock/.test(error))).toEqual([])
 }
 
 test('the built web page and slides show the plugin\'s component, which a site without a server leaves without its button', async ({ page }) => {

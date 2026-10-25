@@ -5,8 +5,9 @@ import { AnsiUp } from 'ansi_up'
 import { fromMarkdown } from 'mdast-util-from-markdown'
 import { gfmFromMarkdown } from 'mdast-util-gfm'
 import { gfm } from 'micromark-extension-gfm'
-import type { VNode, VNodeChild } from 'vue'
-import { defineComponent, h, onMounted, ref, watch } from 'vue'
+import type { ReactElement, ReactNode } from 'react'
+import { useEffect, useState } from 'react'
+import { h } from '../element.ts'
 import { outputNotes } from '../../domain/index.ts'
 import { markdownToHast } from '../markdown/handlers.ts'
 import { PmMath } from '../markdown/math.ts'
@@ -23,31 +24,20 @@ function ansi(value: string): string {
   return new AnsiUp().ansi_to_html(value)
 }
 
-function markdownOutput(markdown: string, prefix: string): VNodeChild[] {
+function markdownOutput(markdown: string, prefix: string): ReactNode[] {
   const mdast = htmlAsText(fromMarkdown(markdown, { extensions: [gfm()], mdastExtensions: [gfmFromMarkdown()] }) as unknown as MdastNode)
   return hastToVNodes(markdownToHast(mdast, prefix).children, {})
 }
 
 let purify: Promise<(html: string) => string> | undefined
 
-const HtmlOutput = defineComponent({
-  name: 'PmHtmlOutput',
-  props: { html: { type: String, required: true }, plain: { type: String, default: '' } },
-  setup(props) {
-    const clean = ref<string>()
-    const render = async () => {
-      purify ??= import('dompurify').then(m => (html: string) => m.default.sanitize(html))
-      clean.value = (await purify)(props.html)
-    }
-    onMounted(render)
-    watch(() => props.html, render)
-    return () => clean.value === undefined
-      ? h('pre', { class: 'pm-output__text' }, props.plain)
-      : h('div', { class: 'pm-output__html', innerHTML: clean.value })
-  },
-})
+function HtmlOutput({ html, plain = '' }: { html: string, plain?: string }) {
+  const [clean, setClean] = useState<string>()
+  useEffect(() => { let active = true; purify ??= import('dompurify').then(m => (html: string) => m.default.sanitize(html)); void purify.then(sanitize => { if (active) setClean(sanitize(html)) }); return () => { active = false } }, [html])
+  return clean === undefined ? h('pre', { className: 'pm-output__text' }, plain) : h('div', { className: 'pm-output__html', innerHTML: clean })
+}
 
-function display(data: Record<string, unknown>, metadata: Record<string, unknown>, prefix: string, key: number): VNodeChild {
+function display(data: Record<string, unknown>, metadata: Record<string, unknown>, prefix: string, key: number): ReactNode {
   for (const type of Object.keys(data)) {
     const renderer = findNodeRenderer(`mime:${type}`)
     if (renderer) return h(renderer, { key, type, data: data[type], metadata })
@@ -65,7 +55,7 @@ function display(data: Record<string, unknown>, metadata: Record<string, unknown
   return h('pre', { ...attrs, innerHTML: ansi(text(value)) })
 }
 
-function richOutput(output: RunOutput, prefix: string, key: number): VNodeChild {
+function richOutput(output: RunOutput, prefix: string, key: number): ReactNode {
   switch (output.output_type) {
     case 'stream': return h('pre', { key, class: `pm-output__${output.name}`, innerHTML: ansi(text(output.text)) })
     case 'error': return h('pre', { key, class: 'pm-output__error', innerHTML: ansi(text(output.traceback.join('\n')) || `${output.ename}: ${output.evalue}`) })
@@ -78,7 +68,7 @@ export function isProseOutput(run: RunResult): boolean {
   return isProseRun(run, type => Boolean(findNodeRenderer(`mime:${type}`)))
 }
 
-export function runOutput(run: RunResult & { cacheKey?: string }, key: string | number, prefix: string, options: { prose?: boolean, note?: string } = {}): VNode {
+export function runOutput(run: RunResult & { cacheKey?: string }, key: string | number, prefix: string, options: { prose?: boolean, note?: string } = {}): ReactElement {
   const notes = [...outputNotes(run, currentLocale()), ...options.note ? [options.note] : []]
   const content = run.outputs
     ? run.outputs.map((output, i) => richOutput(output, prefix, i))

@@ -1,6 +1,5 @@
 import { blockElement, codeLinesBox } from '@lincyaw/host'
 import type { Navigation } from '@lincyaw/host'
-import { watch } from 'vue'
 import type { CueRequest, ShowCue } from './cue.ts'
 import { requestHint } from './hints.ts'
 import { requestSpotlight } from './spotlight.ts'
@@ -56,10 +55,11 @@ export class OperationCues {
   bind(navigation: Navigation | undefined): void {
     this.unwatch?.()
     this.navigation = navigation
-    this.unwatch = navigation && watch(navigation.position, ({ slide, step }) => {
+    this.unwatch = navigation && navigation.position.subscribe(() => {
+      const { slide, step } = navigation.position.getSnapshot()
       const now = this.current
       if (now && (slide !== now.slide || step < now.step || step > now.step + (now.cue.span ?? 0))) this.hide()
-    }, { flush: 'sync' })
+    })
   }
 
   unbind(): void {
@@ -76,7 +76,7 @@ export class OperationCues {
   apply(data: Record<string, unknown>, animate = true): void {
     const cue = toOperationCue(data)
     if (!cue) return this.hide()
-    const position = this.navigation?.position.value ?? { slide: 0, step: 0 }
+    const position = this.navigation?.position.getSnapshot() ?? { slide: 0, step: 0 }
     this.current = { cue, slide: position.slide, step: position.step }
     this.draw(animate)
     clearInterval(this.timer)

@@ -2,8 +2,10 @@ import { currentLocale } from '@lincyaw/host'
 import type { IRBlock, MarkdownNode } from '@lincyaw/kernel'
 import type { ElementContent, Properties, RootContent } from 'hast'
 import { find, html as schema } from 'property-information'
-import type { Component, PropType, VNodeChild } from 'vue'
-import { computed, defineComponent, h, inject } from 'vue'
+import type { ComponentType, ReactNode } from 'react'
+import { useContext } from 'react'
+import { useStore } from '@lincyaw/host'
+import { h } from '../element.ts'
 import { itemVisible } from '../../domain/index.ts'
 import { CodeView } from '../code/code-view.ts'
 import { VIEWER } from '../viewer-state.ts'
@@ -25,7 +27,7 @@ function attributes(properties: Properties): Record<string, unknown> {
   return attrs
 }
 
-function viewerComponent(node: ViewerNode): [Component, Record<string, unknown>] {
+function viewerComponent(node: ViewerNode): [ComponentType<any>, Record<string, unknown>] {
   switch (node.type) {
     case 'pmMath': return [PmMath, { tex: node.tex, display: node.display, html: node.html }]
     case 'pmMermaid': return [PmMermaid, { code: node.code }]
@@ -40,8 +42,8 @@ export interface HastRenderContext {
 
 const RAW_TEXT = new Set(['script', 'style'])
 
-export function hastToVNodes(nodes: readonly (RootContent | ElementContent)[], ctx: HastRenderContext): VNodeChild[] {
-  return nodes.map((node): VNodeChild => {
+export function hastToVNodes(nodes: readonly (RootContent | ElementContent)[], ctx: HastRenderContext): ReactNode[] {
+  return nodes.map((node): ReactNode => {
     const own = asViewerNode(node)
     if (own) {
       const [component, props] = viewerComponent(own)
@@ -60,27 +62,12 @@ export function hastToVNodes(nodes: readonly (RootContent | ElementContent)[], c
   })
 }
 
-export const MarkdownView = defineComponent({
-  name: 'PmMarkdown',
-  props: {
-    block: { type: Object as PropType<IRBlock>, required: true },
-    step: { type: Number, required: true },
-    expanded: Boolean,
-    prefix: { type: String, default: '' },
-  },
-  setup(props) {
-    const viewer = inject(VIEWER, undefined)
-    const links = viewerLinks(viewer)
-    const tree = computed(() => {
-      const node = (props.block.node as MarkdownNode).mdast
-      return viewer
-        ? cachedTree(viewer, viewer.doc.value, node, props.prefix, links, currentLocale())
-        : markdownToHast(node, props.prefix, links)
-    })
-    return () => {
-      const node = props.block.node as MarkdownNode
-      const hidden = node.reveal === 'items' && !props.expanded ? (k: number) => !itemVisible(props.block, k, props.step) : undefined
-      return hastToVNodes(tree.value.children, { hidden })
-    }
-  },
-})
+export function MarkdownView(props: { block: IRBlock, step: number, expanded?: boolean, prefix?: string }) {
+  const viewer = useContext(VIEWER)
+  const doc = useStore(viewer?.doc)
+  const links = viewerLinks(viewer)
+  const node = props.block.node as MarkdownNode
+  const tree = viewer && doc ? cachedTree(viewer, doc, node.mdast, props.prefix ?? '', links, currentLocale()) : markdownToHast(node.mdast, props.prefix ?? '', links)
+  const hidden = node.reveal === 'items' && !props.expanded ? (k: number) => !itemVisible(props.block, k, props.step) : undefined
+  return h('div', { className: 'pm-markdown' }, hastToVNodes(tree.children, { hidden }))
+}

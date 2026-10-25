@@ -1,0 +1,7 @@
+.compare-count {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--pm-font-sans);
+}

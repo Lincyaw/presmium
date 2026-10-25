@@ -1,0 +1,94 @@
+.pm-assistant {
+  display: grid;
+  gap: var(--pm-space-3);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-md);
+  line-height: var(--pm-leading-ui);
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.pm-assistant p {
+  margin: 0;
+}
+.pm-assistant__provider,
+.pm-assistant__where,
+.pm-assistant__status {
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-sm);
+}
+.pm-assistant__provider {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pm-space-2);
+}
+.pm-assistant__form {
+  display: grid;
+  gap: var(--pm-space-2);
+}
+.pm-assistant__selection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pm-space-2);
+  padding: var(--pm-space-2) var(--pm-space-3);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-selected);
+}
+.pm-assistant__selection code {
+  max-width: 100%;
+  white-space: pre-wrap;
+}
+.pm-assistant textarea {
+  width: 100%;
+}
+.pm-assistant__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.pm-assistant__answers {
+  display: grid;
+  gap: var(--pm-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pm-assistant__answers > li {
+  display: grid;
+  gap: var(--pm-space-2);
+}
+.pm-assistant__question {
+  justify-self: end;
+  max-width: 85%;
+  padding: var(--pm-space-2) var(--pm-space-3);
+  border-radius: var(--pm-radius-card);
+  background: var(--pm-color-accent-soft);
+  font-weight: 500;
+}
+.pm-assistant__answer {
+  font-family: var(--pm-font-serif);
+  font-size: var(--pm-text-lg);
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+.pm-assistant__cite {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pm-color-accent);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: var(--pm-size-stroke);
+  cursor: pointer;
+}
+.pm-assistant__cite:focus-visible {
+  outline: var(--pm-size-stroke) solid var(--pm-color-accent);
+  outline-offset: var(--pm-size-stroke);
+}
+.pm-assistant__error {
+  color: var(--pm-color-danger);
+}

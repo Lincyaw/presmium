@@ -14,8 +14,8 @@ presmium-plugin-poll/
 │   ├── domain/index.ts    pure TS: plugin id, component names, parsing, step arithmetic, zh-CN and en text
 │   ├── node/presmium.ts   the Node entry: default export PresmiumNodePlugin
 │   └── client/            optional: plugin.ts (browser plugin), viewer.ts (viewer extension), composables
-├── components/PmPoll.vue  a component; its file name is its name
-├── vite.config.ts         optional: Vite plugins and Vue options for the viewer's build
+├── components/PmPoll.tsx  a component; its file name is its name
+├── vite.config.ts         optional: Vite plugins and JSX configuration for the viewer's build
 ├── example/lecture.md     a document that lists the plugin by its directory
 └── test/plugin.test.ts    integration tests
 ```
@@ -39,7 +39,8 @@ presmium-plugin-poll/
     "@lincyaw/host": "^<version>",
     "@lincyaw/kernel": "^<version>",
     "@lincyaw/viewer": "^<version>",
-    "vue": "^3.5.0"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@lincyaw/cli": "^<version>",
@@ -49,7 +50,8 @@ presmium-plugin-poll/
     "@lincyaw/render-slides": "^<version>",
     "@lincyaw/web": "^<version>",
     "vitest": "^5.0.0",
-    "vue": "^3.5.0"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }
 ```
@@ -60,7 +62,7 @@ presmium-plugin-poll/
 - The dev dependencies install Presmium for the tests and `pnpm dev`: the CLI and the renderers the
   example uses.
 - `./presmium` is the only export Presmium needs. The viewer finds the browser files by path, not by
-  `exports`: `components/*.vue` (also `.ts`, `.tsx`, `.js`, `.jsx`), `src/client/plugin.ts`,
+  `exports`: `components/*.tsx` (also `.ts`, `.js`, `.jsx`), `src/client/plugin.ts`,
   `src/client/viewer.ts`, `vite.config.ts`. Further exports (`./domain`, `./client`) are for code that
   imports your package.
 - A package with browser files that releases everything in `dispose` (section 7) may declare
@@ -72,10 +74,10 @@ presmium-plugin-poll/
 
 | Directory | May import | Must not import |
 |---|---|---|
-| `src/domain/` | `@lincyaw/kernel`, pure computation libraries, files in `src/domain/` | Vue and `@vue/*`, `@lincyaw/host`, Node built-ins (`node:fs` and `fs` alike) |
-| `src/shared/` (optional: code that runs in Node and the browser) | `src/domain/`, `@lincyaw/kernel`, libraries that run in both | Vue, `@lincyaw/host`, `@lincyaw/kernel/node`, Node built-ins |
-| `components/`, `src/client/` | `src/domain/`, `src/shared/`, `@lincyaw/kernel`, `@lincyaw/host`, Vue, browser libraries; `@lincyaw/viewer` as types only | Other plugins, `@lincyaw/server`, `@lincyaw/mcp`, `@lincyaw/workspace`, `@lincyaw/web` |
-| `src/node/` | `src/domain/`, `src/shared/`, `@lincyaw/kernel`, `@lincyaw/kernel/node`, Node libraries | Vue and `@vue/*` |
+| `src/domain/` | `@lincyaw/kernel`, pure computation libraries, files in `src/domain/` | React and `react-dom`, `@lincyaw/host`, Node built-ins (`node:fs` and `fs` alike) |
+| `src/shared/` (optional: code that runs in Node and the browser) | `src/domain/`, `@lincyaw/kernel`, libraries that run in both | React, `@lincyaw/host`, `@lincyaw/kernel/node`, Node built-ins |
+| `components/`, `src/client/` | `src/domain/`, `src/shared/`, `@lincyaw/kernel`, `@lincyaw/host`, React, browser libraries; `@lincyaw/viewer` as types only | Other plugins, `@lincyaw/server`, `@lincyaw/mcp`, `@lincyaw/workspace`, `@lincyaw/web` |
+| `src/node/` | `src/domain/`, `src/shared/`, `@lincyaw/kernel`, `@lincyaw/kernel/node`, Node libraries | React and `react-dom` |
 
 No file imports `vitepress`, `@slidev/*`, another plugin package, or a dependency's internal paths, and
 relative imports stay inside the package. A contract two plugins share is a service token (section 7).
@@ -232,7 +234,7 @@ interface MdastNode { type: string, children?: MdastNode[], value?: string, [key
   read it back from the rendered DOM. A container that only arranges content sets `ownsCode: false`.
 - A component that uses local files (images, media) puts the URL in a prop and lists it in `assets` (prop
   name to URL); renderers publish the file and rewrite the prop.
-- The document's own `components/*.vue` are registered under the plugin id `deck` and placed with the
+- The document's own `components/*.tsx` are registered under the plugin id `deck` and placed with the
   built-in `{component}` directive; a component of the document overrides a plugin component of the same
   name. Two plugins with the same component name: the first in `plugins` wins, with a warning.
 
@@ -338,19 +340,26 @@ exports from the workbench; the AI from its tools.
 
 ### Components
 
-`components/PmPoll.vue` runs in the web page and the slides alike. It imports only Vue, `@lincyaw/host`,
+`components/PmPoll.tsx` runs in the web page and the slides alike. It imports only React, `@lincyaw/host`,
 `@lincyaw/kernel` and `src/domain/`.
 
-```vue
-<script setup lang="ts">
+```tsx
 import { PmButton, useMessages, useStepState, useSharedState } from '@lincyaw/host'
 import { MESSAGES, POLL_ID } from '../src/domain/index.ts'
 
-const props = defineProps<{ question: string, choices: string[], anonymous: boolean }>()
-const t = useMessages(MESSAGES)                   // ComputedRef: t.value.x in script, t.x in the template
-const results = useStepState({ from: 1 })         // the block's second state (needs span >= 1)
-const picked = useSharedState(`${POLL_ID}:picked`, '', { scope: 'local' })
-</script>
+export default function PmPoll({ question, choices }: {
+  question: string, choices: string[], anonymous: boolean
+}) {
+  const t = useMessages(MESSAGES)
+  const results = useStepState({ from: 1 }) // the block's second state (span >= 1)
+  const [picked, setPicked] = useSharedState(`${POLL_ID}:picked`, '', { scope: 'local' })
+  return <section>
+    <h3>{question}</h3>
+    {choices.map(choice => <PmButton key={choice} aria-pressed={picked === choice}
+      onClick={() => setPicked(choice)}>{choice}</PmButton>)}
+    {results.reached && <p>{t.vote}: {picked}</p>}
+  </section>
+}
 ```
 
 | `@lincyaw/host` | Use |
@@ -358,27 +367,31 @@ const picked = useSharedState(`${POLL_ID}:picked`, '', { scope: 'local' })
 | `useStepState({ from, to? })` | `{ active, reached, done }` of internal steps `[from, to)`, relative to the block's `at`; do not subtract `at` yourself |
 | `useStepScope()`, `useBlockStepRange()` | `scope.step(k)` is the absolute step of internal step k; `useStepState(useBlockStepRange())` is active while the block (within its parents) is shown: stop media and background work outside it |
 | `useStepTime({ until? })` | Milliseconds since the component's step began; `Infinity` when settled (stepped back, document view, reduced motion, after `until`, a slide that is not the current one). The lecture replay and video export drive it. Pause your animation library's timeline and seek to this time; never play by the page clock |
-| `useService(STEP_CLOCK).value?.wait(promise)` | Register async preparation of a picture (loading a module, WebGL); the video export waits for it before each frame |
+| `useService(STEP_CLOCK)?.wait(promise)` | Register async preparation of a picture (loading a module, WebGL); the video export waits for it before each frame |
 | `usePrefersReducedMotion()` | When true, show the final state directly |
 | `useActions(elementRef, { name: (seeking) => ... }, { clear })` | Named actions: call the returned `run(name)` from buttons. A recorded lecture replays them, and the narration's ``{cue to=<block>}`click <name>` `` runs them; on a jump the host calls `clear` and replays in order. The look must be a function of the actions so far |
 | `useCursor()`, `useViewRole()`, `usePresentationMode()` | `{ slide, step }`; `'audience' | 'presenter' | 'reader'`; `'slides' | 'document'`. `useHost().useStep()` is `Infinity` in the fully expanded document view: a component with internal steps may then give readers its own stepper; the look is a function of (section step, local step) |
 | `useSectionConfig(POLL_ID)` | The global configuration merged with the section's `{config}` |
-| `useSharedState(key, initial, { scope })` | JSON state shared by key (start the key with the plugin id): `'view'` this view only, `'local'` (default) all windows of this machine, `'remote'` also other devices through sync transports (a classroom) |
+| `useSharedState(key, initial, { scope })` | Returns `[value, setValue]`: JSON state shared by key (start the key with the plugin id): `'view'` this view only, `'local'` (default) all windows of this machine, `'remote'` also other devices through sync transports (a classroom) |
 | `useMessages(catalog)`, `useLocale()`, `currentLocale()` | Text by the page's language (`'zh-CN'` or `'en'`); `currentLocale()` outside components |
 | `useStaticRender()` | True on the printed slides (PDF, PNG, PowerPoint exports); the host already swaps components with a `fallback` there |
-| `useServer()` | Server access (section 6); callable outside components |
-| `useService(TOKEN)`, `presmiumService(TOKEN)` | A service implementation (a `ComputedRef`, undefined until the kernel started); the second outside components |
+| `useServer()` | Server access (section 6); outside components call `serverClient()` |
+| `useService(TOKEN)`, `presmiumService(TOKEN)` | A service implementation (undefined until the kernel started); the second outside components |
 | `siteBase()` | The document's site path, ending in `/`, for runtime files and `media/` |
 | `useAppearance()` | Whether the page is dark, and a toggle |
 
 - The viewer wraps every plugin component in `PmBoundary`; do not add one yourself.
-- Templates written for Slidev work through a compatibility layer: `v-click`, `v-after`, `v-click-hide`,
-  `<v-clicks>`, `$clicks`, `$page`, `$nav`, `$slidev`. In new components prefer `useStepState`; to put an
-  element on internal step k write `v-click="scope.step(k)"` with `const scope = useStepScope()`.
+- Components are React function components. Derive step-dependent visibility from `useStepState` or
+  `useStep`; do not keep a separate animation counter. Render block content through `children`.
+- `useDoc()` returns the current `IRDocument`. Document frontmatter is in `doc.meta`, renderer options in
+  `doc.config.renderers`; use `useCursor()` for the current position.
+- Services with observable state expose `Store<T>` values. In a component call `useStore(store)`; in plugin
+  setup or event handlers use `store.getSnapshot()` and `store.subscribe(listener)`, releasing subscriptions
+  in `dispose`. `createStore(initial)` creates observable state; `store.set(valueOrUpdater)` updates it.
 - In the workbench's preview, `<html>` has the class `pm-in-workbench`: hide there with CSS the controls
   that only make sense while presenting or recording.
 - The overlay views (present, presenter) set `--pm-overlay-bar` on `<html>` (the height of their control
-  bar): fixed elements keep clear of it with `bottom: calc(var(--pm-overlay-bar, 0px) + 1rem)`.
+  bar): fixed elements keep clear of it with `bottom: calc(var(--pm-overlay-bar, 0rem) + var(--pm-space-4))`.
 
 ### Design system
 
@@ -398,8 +411,8 @@ Dark mode is the class `dark` on `<html>`; the color tokens switch with it. Comp
 (`variant` `default | primary | accent | ghost | danger`, `small`, `icon`; `aria-pressed="true"` shows on),
 `PmIconButton` (`icon`, `label`), `PmField` (`label`, `inline`; inputs use `pm-ui-input`, `pm-ui-select`,
 `pm-ui-textarea`), `PmBadge` (`tone`, `pill`), `PmCard` (`variant` `interactive | dashed`), `PmSegmented` and
-`PmTabs` (`v-model`, `options`/`tabs` of `{ value, label }`, `label`), `PmPopover`, `PmDrawer`, `PmDialog`
-(`v-model:open`, `label`, `closeLabel`), `PmMenu` (`items`, `@select`), `PmEmpty`, `PmNotice` (`tone`),
+`PmTabs` (`value`, `onValueChange`, `choices`/`tabs` of `{ value, label }`, `label`), `PmPopover`, `PmDrawer`, `PmDialog`
+(`open`, `onOpenChange`, `label`, `closeLabel`; popovers also take `trigger`), `PmMenu` (`items`, `onSelect`), `PmEmpty`, `PmNotice` (`tone`),
 `PmIcon` (`name` from `ICONS`, semantic names such as `play`, `pause`, `check`, `close`, `plus`, `edit`,
 `trash`, `copy`, `download`, `info`, `warning`, `error`, `chevron-left`, `chevron-right`, `more`; `iconMarkup(name)`
 where only HTML text fits). Text reaches WCAG AA on its
@@ -414,7 +427,7 @@ import { currentLocale, TOOLBAR } from '@lincyaw/host'
 import type { PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
 import { version } from '../../package.json'
 import { MESSAGES, POLL_ID, POLL_STORE } from '../domain/index.ts'
-import PollPanel from './PollPanel.vue'
+import PollPanel from './PollPanel.tsx'
 
 let off: Unsubscribe[] = []
 
@@ -439,7 +452,7 @@ export default plugin
   plugins on `pagehide` and restarts them when the page returns from the back/forward cache.
 - Toolbar items: `slot` is `tools` (default), `settings` or `status`; a component learns where it is drawn
   with `useToolbarPlacement()` (`bar` or `status`); an entry that opens a panel uses `PmToolbarEntry`
-  (`name`, `label`, `closeLabel`, `icon`, `v-model:open`).
+  (`name`, `label`, `closeLabel`, `icon`, `open`, `onOpenChange`).
 - Host service tokens: `TOOLBAR`, `NAVIGATION` (`position`, `go(position)`), `OPERATIONS`, `STATUS`
   (register a summary `{ id, read() }`), `STEP_CLOCK`, `SYNC_TRANSPORTS` from `@lincyaw/host`; `EXECUTOR`,
   `SESSION`, `ASK` and the other business contracts from `@lincyaw/kernel`.
@@ -465,11 +478,11 @@ before the viewer starts, in both forms; if it throws, it is skipped with an err
 
 ### `vite.config.ts`
 
-Default export `{ plugins, vue: { template: { compilerOptions: { isCustomElement } } } }`. The viewer's builds
-(including server-side rendering) add these Vite plugins, and Vue treats tags `isCustomElement` accepts as
-custom elements. A Vite plugin that serves virtual modules adds those files to `optimizeDeps.entries` in its
-`config()` hook, or the dev page reloads once while Vite discovers them. The prebuilt viewer is cached in
-`$XDG_CACHE_HOME/presmium/viewer-app/` (by default `~/.cache/presmium/viewer-app/`).
+Default export `{ plugins }`. The viewer's document builds add these Vite plugins for both browser and
+server-side rendering. React JSX uses the automatic runtime; a React Vite plugin is not required. A Vite
+plugin that serves virtual modules adds those files to `optimizeDeps.entries` in its `config()` hook. The
+prebuilt viewer is cached in `$XDG_CACHE_HOME/presmium/viewer-app/` (by default
+`~/.cache/presmium/viewer-app/`).
 
 ## 8. Text in two languages
 

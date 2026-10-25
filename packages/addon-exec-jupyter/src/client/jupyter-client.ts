@@ -1,6 +1,6 @@
 import { environmentExecutor, isRecord } from '@lincyaw/kernel'
 import type { EnvironmentSpec, Executor, RunResult } from '@lincyaw/kernel'
-import { currentLocale, useServer } from '@lincyaw/host'
+import { currentLocale, serverClient } from '@lincyaw/host'
 import type { ServerConnection } from '@jupyterlab/services'
 import { authOf, baseUrl, cleanupPath, EXEC_JUPYTER_ID, jupyterKernelName, languagesOf, originOf, proxyPath } from '../domain/index.ts'
 import type { JupyterTerminals, TerminalSession } from '../domain/index.ts'
@@ -21,7 +21,7 @@ export interface JupyterClient {
 
 let documentName: Promise<string> | undefined
 function servedDocument(): Promise<string> {
-  documentName ??= useServer().fetch('presmium.server', 'hello')
+  documentName ??= serverClient().fetch('presmium.server', 'hello')
     .then(response => (response.ok ? response.json() : {}))
     .then((hello: unknown) => (isRecord(hello) && typeof hello.document === 'string' ? hello.document : ''))
     .catch(() => '')
@@ -71,7 +71,7 @@ export function createJupyterClient(environments: Record<string, EnvironmentSpec
     const auth = authOf(spec)
     if (auth === 'env') return t.envOnly(name)
     if (auth === 'hub') return t.hubReserved(name)
-    if (auth === 'proxy') return useServer().available ? undefined : t.proxyStatic(name)
+    if (auth === 'proxy') return serverClient().available ? undefined : t.proxyStatic(name)
     return originOf(typeof spec.url === 'string' ? spec.url.replace('{user}', 'x') : undefined) ? undefined : t.noUrl(name)
   }
 

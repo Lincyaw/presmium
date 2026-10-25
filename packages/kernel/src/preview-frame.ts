@@ -35,6 +35,10 @@ export interface PreviewFrame {
   stop(): void
 }
 
+let editorReport: ((message: PreviewReport) => void) | undefined
+/** Sends a typed editor operation through the authenticated connection of this preview. */
+export function reportPreview(message: PreviewReport): void { editorReport?.(message) }
+
 // A function, not a constant: bundlers keep a module-level template over an imported binding, and static builds must hold no preview code.
 const framePrefix = () => `${PREVIEW_NAME}:`
 const PAUSED = ':paused'
@@ -52,8 +56,8 @@ const CONTROLS = 'a, button, input, select, textarea, label, summary, [contented
 const HEADINGS = 'h1, h2, h3, h4, h5, h6'
 // Inside an edited element: the frame's pins and a heading's anchor link, which the caret does not enter. A function for
 // the same reason as `framePrefix`: a module-level template keeps this module in static builds.
-const notText = () => `.${PIN_CLASS}, .header-anchor`
-const COMMANDS: PreviewCommandType[] = ['go', 'highlight', 'pick', 'pins', 'marks', 'appearance', 'edit', 'flash']
+const notText = () => `.${PIN_CLASS}, .header-anchor, .pm-content-marks`
+const COMMANDS: PreviewCommandType[] = ['go', 'highlight', 'pick', 'pins', 'marks', 'appearance', 'edit', 'flash', 'blocks-result']
 
 // A function for the same reason as `notText`.
 const frameStyle = () => `
@@ -386,6 +390,17 @@ function createPicking(page: PreviewPage, state: FrameState, locate: Locator, re
   }
   const click = (event: MouseEvent) => {
     if (!isLive(state)) return
+    const jump = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-scene-jump]') : null
+    const scene = jump && locate.anchorOf(jump)
+    if (jump && scene && event.button === 0) post({ type: 'narrate', section: scene.section, step: Number(jump.dataset.sceneJump) })
+    const mark = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-narration-step]') : null
+    if (mark && event.button === 0) {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => {})
+      post({ type: 'narrate', section: mark.dataset.narrationSection!, step: Number(mark.dataset.narrationStep) })
+      return
+    }
     const target = pickable(event.target)
     if (!target || event.button !== 0) return
     if (document.getSelection()?.isCollapsed === false) return
@@ -406,6 +421,7 @@ function createPicking(page: PreviewPage, state: FrameState, locate: Locator, re
     set(on: boolean) {
       if (on === picking) return
       picking = on
+      document.documentElement.toggleAttribute('data-preview-picking', on)
       if (on) {
         document.addEventListener('mouseover', hover, true)
         document.addEventListener('mousedown', press, true)
@@ -440,7 +456,7 @@ interface Edited {
 function textOf(element: HTMLElement): string {
   let value = ''
   const walker = document.createTreeWalker(element, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
-    acceptNode: node => (node instanceof Element && node.classList.contains(PIN_CLASS) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+    acceptNode: node => (node instanceof Element && node.matches(notText()) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
   })
   for (let node = walker.nextNode(); node; node = walker.nextNode()) if (node instanceof Text) value += node.data
   return value.replaceAll(' ', ' ')
@@ -731,6 +747,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
     if (state.stopped || (!state.active && message.type !== 'ready' && message.type !== 'activity')) return
     for (const origin of page.origins) window.parent.postMessage(previewEnvelope(nonce, message), origin)
   }
+  editorReport = post
 
   // Undo, redo and Escape belong to the workbench, except where the page's own fields take typing.
   const shortcut = (event: KeyboardEvent) => {
@@ -825,6 +842,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
     if (!command) return
     try {
       switch (command.type) {
+        case 'blocks-result': return void window.dispatchEvent(new CustomEvent('presmium:blocks-result', { detail: command }))
         case 'go': return page.go(command)
         case 'highlight': return highlight.show(command.target)
         case 'pick': return picking.set(command.on)
@@ -856,6 +874,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
     },
     stop() {
       editing.cancel()
+      if (editorReport === post) editorReport = undefined
       state.stopped = true
       window.removeEventListener('message', receive)
       window.removeEventListener('keydown', shortcut)

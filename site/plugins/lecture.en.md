@@ -8,7 +8,7 @@ translationOf: { entry: lecture.md, digest: 3d59afde880818ca6bc3c90a06fc601a15e7
 (plugins)=
 # Plugin guide
 
-Presmium's components, directives, executors, services and renderers all come from plugins, and official and third-party plugins use the same contracts. A plugin is an npm package: its Node entry turns directives of the source into IR, runs passes and checks at compile time, and provides services and server routes; in the browser its components are the same Vue components in the web form and in the slides, and they get the step state and services through `@lincyaw/host` only.
+Presmium's components, directives, executors, services and renderers all come from plugins, and official and third-party plugins use the same contracts. A plugin is an npm package: its Node entry turns directives of the source into IR, runs passes and checks at compile time, and provides services and server routes; in the browser its components are the same React components in the web form and in the slides, and they get the step state and services through `@lincyaw/host` only.
 
 This guide follows an imagined poll plugin, `presmium.poll`, from the package's layout to its tests. The full signatures are in the API reference (API in the navigation bar), and the version rules in [Interfaces and versions](../reference/lecture.md#versions).
 
@@ -25,8 +25,8 @@ presmium-plugin-poll/
 │   ├── domain/          plain TS: the plugin id, parsing, step arithmetic, Chinese and English text
 │   ├── node/presmium.ts the Node entry: exports a PresmiumNodePlugin by default
 │   └── client/          the browser side: plugin.ts (kernel plugin), viewer.ts (optional, extends the IR runtime)
-├── components/PmPoll.vue a component, named after its file
-├── vite.config.ts       optional: Vite plugins and Vue options for the viewer's build
+├── components/PmPoll.tsx a component, named after its file
+├── vite.config.ts       optional: Vite plugins and JSX configuration for the viewer's build
 └── test/                integration tests
 ```
 
@@ -61,7 +61,7 @@ presmium-plugin-poll/
 
 - The viewer finds a plugin's browser code at fixed places: the components in `components/`, `src/client/plugin.ts` (the kernel plugin), `src/client/viewer.ts` (the viewer plugin) and `vite.config.ts` at the package's root. The web form and the slides are the same viewer, built once ahead of time for the set of plugins a document uses.
 - `@lincyaw/kernel`, `@lincyaw/host`, `@lincyaw/viewer` and `@lincyaw/compiler`, those the plugin uses, are peer dependencies: the plugin shares the application's one copy of Presmium. When the installed Presmium does not satisfy them, the loader reports `presmium.plugins` and leaves the plugin out; the build does not crash.
-- The source is published as `.ts` and `.vue`, not compiled first; relative imports name the `.ts` extension.
+- The source is published as `.ts` and `.tsx`, not compiled first; relative imports name the `.ts` extension.
 
 (plugin-package-version)=
 ## version and kernel
@@ -73,9 +73,9 @@ The Node entry and the browser plugin's manifest both declare `version` and `ker
 
 | Where | May import | Must not import |
 |---|---|---|
-| `src/domain/` | `@lincyaw/kernel`, libraries of plain computation | vue, `@lincyaw/host`, Node's built-in modules |
-| `components/`, `src/client/` | `src/domain/`, `@lincyaw/kernel`, `@lincyaw/host`, vue; a viewer plugin also imports the types of `@lincyaw/viewer` | the hosts' packages, such as `@lincyaw/web` and `@lincyaw/server` |
-| `src/node/` | `src/domain/`, `@lincyaw/kernel`, Node libraries | vue |
+| `src/domain/` | `@lincyaw/kernel`, libraries of plain computation | React, `@lincyaw/host`, Node's built-in modules |
+| `components/`, `src/client/` | `src/domain/`, `@lincyaw/kernel`, `@lincyaw/host`, React; a viewer plugin also imports the types of `@lincyaw/viewer` | the hosts' packages, such as `@lincyaw/web` and `@lincyaw/server` |
+| `src/node/` | `src/domain/`, `@lincyaw/kernel`, Node libraries | React |
 
 Both forms are the viewer, so plugins use neither `@slidev/*` nor vitepress. Never import a framework's internal paths, nor another plugin package: contracts two plugins share belong in the kernel (business services) or the host (host tokens).
 
@@ -87,32 +87,25 @@ Both forms are the viewer, so plugins use neither `@slidev/*` nor vitepress. Nev
 
 Components live in `components/`, and the web form and the slides both use them. A component gets the step state and services from `@lincyaw/host` only, so either form can render it:
 
-```vue
-<script setup lang="ts">
+```tsx
 import { useMessages, useStepState } from '@lincyaw/host'
 import { MESSAGES } from '../src/domain/messages.ts'
 
-defineProps<{ question: string, choices: string[] }>()
-// The block's second state (step 1 inside it): the results
-const results = useStepState({ from: 1 })
-const t = useMessages(MESSAGES)
-</script>
-
-<template>
-  <section class="pm-poll">
-    <h3>{{ question }}</h3>
-    <ol>
-      <li v-for="choice in choices" :key="choice">{{ choice }}</li>
-    </ol>
-    <p v-if="results.reached">{{ t.results }}</p>
+export default function PmPoll({ question, choices }: { question: string, choices: string[] }) {
+  const results = useStepState({ from: 1 })
+  const t = useMessages(MESSAGES)
+  return <section className="pm-poll">
+    <h3>{question}</h3>
+    <ol>{choices.map(choice => <li key={choice}>{choice}</li>)}</ol>
+    {results.reached && <p>{t.results}</p>}
   </section>
-</template>
+}
 ```
 
 (plugin-components-rules)=
 ## Rules
 
-- **The look is a pure function of the step**: the same step always looks the same, going back included. `useStepState({ from, to })` gives the state of a range of steps inside the block (`active`, `reached`, `done`), counted from the step at which the block appears; `useStepScope` registers the block's k-th step with the host.
+- **The look is a pure function of the step**: the same step always looks the same, going back included. `useStepState({ from, to })` gives the state of a range of steps inside the block (`active`, `reached`, `done`), counted from the step at which the block appears; `useStepScope().step(k)` converts internal step k to an absolute step.
 - **Follow the block's visible range**: `useStepState(useBlockStepRange())` includes the block's and its parents' `at` and `until` limits; `until` is the first hidden step. Use it to stop background resources such as media. `useStepState({ from, to })` continues to describe the component's own steps within its block.
 - **Reduced motion**: animations read `usePrefersReducedMotion()` and show the final state when it is on.
 - **Animations in time**: `useStepTime({ until })` gives the milliseconds since the component's step began, `Infinity` once the step is settled (after going back, in the document view, under reduced motion, from `until` on); a lecture's playback and video export drive it with the lecture's time. The look is a pure function of (step, time in the step): pause the animation library's timeline and seek it when the time changes.
@@ -127,7 +120,7 @@ const t = useMessages(MESSAGES)
 
 `src/client/plugin.ts` exports the kernel plugin (`PluginDefinition`) by default: its manifest names `id`, `version`, `kernel` and the services it provides and requires; `setup(ctx)` calls `ctx.provide(token, implementation)`, and `dispose` releases workers and timers. The viewer imports it by itself, in both forms.
 
-Files that a plugin's browser code loads while it runs (such as a language runtime) are declared by the Node entry's `assets(ctx)` (`RuntimeAssets`): they are served below the document's site path at `prefix`, and a build copies them into the site. Browser code gets the document's site path from `siteBase()` of `@lincyaw/host`, not from `import.meta.env.BASE_URL`. Virtual modules whose content depends on the document (such as the list of its scene files) get their source from `documentModules(ctx)` and are built into the document's own code bundle. Vite plugins the plugin needs, or tags Vue should take as custom elements, go in `vite.config.ts` at the package's root, whose default export is `{ plugins, vue: { template: { compilerOptions: { isCustomElement } } } }`; the viewer's build uses it.
+Files that a plugin's browser code loads while it runs (such as a language runtime) are declared by the Node entry's `assets(ctx)` (`RuntimeAssets`): they are served below the document's site path at `prefix`, and a build copies them into the site. Browser code gets the document's site path from `siteBase()` of `@lincyaw/host`, not from `import.meta.env.BASE_URL`. Virtual modules whose content depends on the document (such as the list of its scene files) get their source from `documentModules(ctx)` and are built into the document's own code bundle. Vite plugins go in `vite.config.ts` at the package's root, whose default export is `{ plugins }`; the viewer's build uses them. TSX uses React's automatic JSX runtime.
 
 Set `presmium: { preview: { restartable: true } }` in the plugin package or document directory's `package.json` only when its browser modules can safely be rebuilt after unmounting. This promise covers components, viewer and client modules, and code injected through Vite. Kernel plugins must also set `restartable: true` on `PluginDefinition`, promising that `dispose` stops all background work and the same definition can run `setup` again. The workbench uses these declarations to retain loaded web preview modules: leaving a lecture unmounts its components and stops the kernel; returning starts it again. A missing declaration or failed module load causes the preview to be destroyed and reloaded. Execution, streaming answers, recording, and media must still be cleaned up.
 
@@ -271,7 +264,7 @@ A renderer is the `renderer` field of a Node entry: `id`, `support(node)` (`full
 (plugin-renderers-extensions)=
 ## Extending the existing renderers
 
-A plugin's components are the same Vue components in the web form and in the slides. How they appear in the notebook is up to the `notebook` entry of `rendererExtensions`: the extension returns cells (a string is a Markdown cell, an object may be a code cell). Without an extension, the notebook shows the component's `fallback`.
+A plugin's components are the same React components in the web form and in the slides. How they appear in the notebook is up to the `notebook` entry of `rendererExtensions`: the extension returns cells (a string is a Markdown cell, an object may be a code cell). Without an extension, the notebook shows the component's `fallback`.
 
 ```ts
 rendererExtensions: {

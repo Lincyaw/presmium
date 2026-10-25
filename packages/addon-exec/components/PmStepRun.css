@@ -1,0 +1,61 @@
+.pm-step-run {
+  --pm-text-sm: 0.875em;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: 0.75em;
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: 0.8em;
+}
+.pm-step-run__source {
+  min-width: 0;
+}
+.pm-step-run__source pre {
+  margin: 0;
+}
+.pm-step-run__source .line {
+  display: inline-block;
+  min-width: 100%;
+}
+.pm-step-run__source .pm-step-run__line {
+  background: var(--pm-color-selected);
+  box-shadow: inset var(--pm-size-rule) 0 var(--pm-color-accent);
+}
+.pm-step-run__side {
+  min-width: 0;
+}
+.pm-step-run__status {
+  margin-bottom: 0.4em;
+  color: var(--pm-color-muted);
+}
+.pm-step-run__warning {
+  color: var(--pm-color-warn);
+}
+.pm-step-run__stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-bottom: 0.4em;
+}
+.pm-step-run__stepper .pm-ui-button {
+  min-width: 2.25em;
+}
+.pm-step-run__stepper input {
+  flex: 1;
+  min-width: 0;
+}
+.pm-step-run__output {
+  margin: 0;
+  min-height: 3em;
+  max-height: 18em;
+  overflow: auto;
+  padding: 0.6em 0.9em;
+  border-radius: var(--pm-radius-panel);
+  background: var(--pm-color-sunk);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-mono);
+  font-size: 0.95em;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}

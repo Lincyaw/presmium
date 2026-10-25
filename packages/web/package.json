@@ -31,7 +31,6 @@
     "src"
   ],
   "dependencies": {
-    "@vitejs/plugin-vue": "6.0.10",
     "escape-html": "1.0.3",
     "http-proxy-3": "2.0.1",
     "katex": "0.18.10",
@@ -40,7 +39,8 @@
     "send": "1.2.1",
     "sitemap": "9.0.1",
     "vite": "8.3.4",
-    "vue": "^3.5.42"
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   },
   "peerDependencies": {
     "@lincyaw/host": "workspace:^",
@@ -53,6 +53,8 @@
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/viewer": "workspace:*",
     "@types/escape-html": "1.0.4",
-    "@types/send": "^1.2.1"
+    "@types/send": "^1.2.1",
+    "@types/react": "18.3.28",
+    "@types/react-dom": "18.3.7"
   }
 }

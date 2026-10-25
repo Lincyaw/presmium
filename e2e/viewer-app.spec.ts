@@ -94,7 +94,7 @@ test('a lecture opens in the prebuilt viewer with its own scenes and components,
   await expect(page.locator('.pm-section').first()).toContainText('改过的文字 capybara')
   expect(loads).toBe(1)
 
-  const component = join(dir, 'bubble-sort/components/CompareCount.vue')
+  const component = join(dir, 'bubble-sort/components/CompareCount.tsx')
   writeFileSync(component, readFileSync(component, 'utf8').replace('比较次数：', '比较的次数：'))
   await expect(page.locator('.compare-count')).toContainText('比较的次数', { timeout: 60_000 })
   expect(loads).toBe(2)

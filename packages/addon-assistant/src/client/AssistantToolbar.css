@@ -1,0 +1,20 @@
+.pm-assistant-toolbar {
+  display: inline-flex;
+  align-items: center;
+}
+.pm-assistant-popover__close {
+  margin-top: var(--pm-space-3);
+}
+.pm-assistant-popover {
+  box-sizing: border-box;
+  width: min(28rem, calc(100vw - 2rem));
+  max-height: 80vh;
+  margin: 0;
+  overflow: auto;
+  padding: var(--pm-space-4);
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
+  border-radius: var(--pm-radius-card);
+  background: var(--pm-color-surface);
+  box-shadow: var(--pm-shadow-float);
+  white-space: normal;
+}

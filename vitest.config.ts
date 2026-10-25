@@ -1,4 +1,3 @@
-import vue from '@vitejs/plugin-vue'
 import { realpathSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { configDefaults, defineConfig } from 'vitest/config'
@@ -12,7 +11,6 @@ const EXPORTS = [
 ]
 
 export default defineConfig({
-  plugins: [vue()],
   test: {
     environment: 'node',
     testTimeout: 30_000,

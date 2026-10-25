@@ -1,6 +1,4 @@
-import type { InjectionKey } from 'vue'
+import { createContext } from 'react'
 import type { HostAdapter } from './contracts.ts'
-
-export const HOST: InjectionKey<HostAdapter> = Symbol('presmium.host')
-
+export const HOST = createContext<HostAdapter | undefined>(undefined)
 export const installed: { adapter?: HostAdapter } = {}

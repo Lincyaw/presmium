@@ -2,7 +2,7 @@
 
 Presmium compiles MyST documents to an intermediate representation (IR) and renders it as a web page
 and slides (both shown by Presmium's own viewer), a notebook and more. A plugin adds directives that
-become IR nodes, Vue components that show those nodes in the web page and the slides alike, services
+become IR nodes, React components that show those nodes in the web page and the slides alike, services
 and server routes.
 This project is one plugin, `{{id}}`: `README.md` lists its files.
 
@@ -17,9 +17,9 @@ This project is one plugin, `{{id}}`: `README.md` lists its files.
 
 ## Conventions
 
-- Layering: `src/domain` is pure TypeScript (no Vue, Node, `@lincyaw/host` or framework); the
+- Layering: `src/domain` is pure TypeScript (no React, Node, `@lincyaw/host` or framework); the
   component and any `src/client` code get step state, text and services from `@lincyaw/host` only,
-  so they run in both forms; `src/node` uses no Vue. Never import a framework's internal paths.
+  so they run in both forms; `src/node` uses no React. Never import a framework's internal paths.
 - Text has Chinese and English (`GREETING_MESSAGES`): the component picks by the page's language with
   `useMessages`; text written into the output at compile time follows the document's `lang`
   (`deckLocale(ctx.lang)`).
@@ -28,7 +28,7 @@ This project is one plugin, `{{id}}`: `README.md` lists its files.
   (`PmButton`, ...).
 - The plugin declares `kernel: '^1.0.0'` (the plugin contract) and its `version` from `package.json`;
   `@lincyaw/kernel`, `host`, `viewer` and `compiler` are peer dependencies.
-- Sources ship as `.ts` and `.vue`, not compiled; relative imports end in `.ts`.
+- Sources ship as `.ts` and `.tsx`, not compiled; relative imports end in `.ts`.
 - Tests are integration tests only: they run the real `presmium` CLI (`@lincyaw/cli/testing`),
   builds and servers on documents, never mocks of Presmium or its frameworks; one or two cases for
   each thing the plugin promises.

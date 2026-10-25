@@ -1,6 +1,6 @@
 ---
 name: presmium-develop
-description: "Develop, evaluate and debug a Presmium plugin: directives that compile MyST to IR nodes, Vue components shown in the web page and the slides through @lincyaw/host, static fallbacks and notebook output, browser services, server routes, compile passes, executors and exporters, with peer dependencies, bilingual text, reversible steps and the design system. Use when creating or changing a Presmium plugin project (one made by `presmium new --type plugin`), reading why a plugin does not load, render or step correctly, or proving a plugin works with integration tests that run the real presmium CLI, builds, dev servers and browsers. 开发、调试、测试 Presmium 插件时使用。"
+description: "Develop, evaluate and debug a Presmium plugin: directives that compile MyST to IR nodes, React components shown in the web page and the slides through @lincyaw/host, static fallbacks and notebook output, browser services, server routes, compile passes, executors and exporters, with peer dependencies, bilingual text, reversible steps and the design system. Use when creating or changing a Presmium plugin project (one made by `presmium new --type plugin`), reading why a plugin does not load, render or step correctly, or proving a plugin works with integration tests that run the real presmium CLI, builds, dev servers and browsers. 开发、调试、测试 Presmium 插件时使用。"
 ---
 
 # Developing a Presmium plugin
@@ -12,7 +12,7 @@ PNG, PowerPoint) are static. A plugin is an npm package that a document lists un
 frontmatter. It can add:
 
 - directives (`:::{name}`) that become IR nodes, usually a `component` node;
-- Vue components that show those nodes, one component for the web page and the slides alike;
+- React components that show those nodes, one component for the web page and the slides alike;
 - a static fallback (mdast) and notebook cells for the outputs that cannot run a component;
 - browser services, toolbar entries, recorded operations and viewer extensions;
 - server routes under `presmium dev` and `presmium serve`, compile passes, executors, checks, exporters.
@@ -29,10 +29,10 @@ A project made by `presmium new --type plugin` contains:
 | `package.json` | `exports["./presmium"]` is the Node entry; `files` lists `components` and `src`; Presmium's packages are peer dependencies |
 | `src/domain/index.ts` | Pure TypeScript shared by both sides: the plugin id, component names, data shapes, the zh-CN and en text |
 | `src/node/presmium.ts` | The Node entry: default export `PresmiumNodePlugin` (directives, server routes, ...) |
-| `components/*.vue` | Components; the file name is the component name a `component` node refers to |
+| `components/*.tsx` | Components; the file name is the component name a `component` node refers to |
 | `src/client/plugin.ts` | Optional: the browser plugin (`PluginDefinition`) that provides services |
 | `src/client/viewer.ts` | Optional: a viewer extension (views, key actions, layers, node renderers) |
-| `vite.config.ts` | Optional: Vite plugins and Vue compiler options for the viewer's build |
+| `vite.config.ts` | Optional: Vite plugins and JSX configuration for the viewer's build |
 | `example/lecture.md` | A document that lists the plugin by its directory (`plugins: [..]`) |
 | `test/*.test.ts` | Integration tests (Vitest) that run the real CLI on the example |
 | `AGENTS.md` | The project's own conventions; read it first |
@@ -63,15 +63,15 @@ Writing documents is the `presmium-author` skill (for `example/lecture.md`); ani
 
 ## Rules that affect users
 
-- **Layering.** `src/domain/` is pure TypeScript: no Vue, no `@lincyaw/host`, no Node built-ins (`node:fs`
+- **Layering.** `src/domain/` is pure TypeScript: no React, no `@lincyaw/host`, no Node built-ins (`node:fs`
   and `fs` alike). `components/` and `src/client/` use `src/domain/`, `@lincyaw/kernel`, `@lincyaw/host`,
-  Vue and browser libraries, and get step state, configuration, text and services from `@lincyaw/host`
-  only, so they run in both forms. `src/node/` uses no Vue. `@lincyaw/viewer` is imported as types only.
+  React and browser libraries, and get step state, configuration, text and services from `@lincyaw/host`
+  only, so they run in both forms. `src/node/` uses no React. `@lincyaw/viewer` is imported as types only.
   Never import another plugin package, `@lincyaw/server`, `@lincyaw/web`, `@lincyaw/workspace`, `vitepress`,
   `@slidev/*`, or any package's internal paths; use public exports. Two plugins cooperate through a service
   token, not imports.
-- **Peer dependencies.** `@lincyaw/kernel`, `host`, `viewer`, `compiler` (and `vue`) are peer dependencies,
-  so the plugin shares one copy (injection keys, service tokens) with the Presmium that loads it. Presmium
+- **Peer dependencies.** `@lincyaw/kernel`, `host`, `viewer`, `compiler` (and `react`, `react-dom`) are peer dependencies,
+  so the plugin shares one copy (React context, service tokens) with the Presmium that loads it. Presmium
   checks the ranges before importing the plugin and reports `plugin "<name>" (...) is not loaded: it needs
   <package> <range> (peerDependencies), and <version> is installed`; the build goes on without the plugin.
   The Node entry declares `kernel: '^1.0.0'` (the plugin contract) and its `version` read from
@@ -96,7 +96,7 @@ Writing documents is the `presmium-author` skill (for `example/lecture.md`); ani
   Behavior that only recovers after a reload is a bug.
 - **Errors stay local.** The viewer wraps each plugin component in an error boundary; a failing component
   shows its error in place and in the presenter view's count. Do not wrap it again yourself.
-- **Sources ship as `.ts` and `.vue`**, not compiled; relative imports end in `.ts`; use only erasable
+- **Sources ship as `.ts` and `.tsx`**, not compiled; relative imports end in `.ts`; use only erasable
   TypeScript syntax.
 
 ## Evaluate and debug with real runs
@@ -120,7 +120,7 @@ Common failures and where they come from:
 | `plugin "..." is not loaded: ...` | Peer dependency ranges or the `kernel` range do not match the installed Presmium; or the Node entry threw on import |
 | `{name} is only supported at the top level of a section or in {slide} and {only}` | The directive is nested in another directive or a list |
 | The block shows the fallback or a "web version" line in the web page | No component with the node's `name` in `components/` (the name is the file name), or the node's `plugin` is not the plugin's `id` |
-| The component shows an error box | Its `setup` or template threw; the message is in the box and in the browser console (`[presmium] ...`) |
+| The component shows an error box | Its render function or an effect threw; the message is in the box and in the browser console (`[presmium] ...`) |
 | The component's look does not undo on step back | State kept in the component instead of derived from `useStepState`/`useStepTime` |
 | The route answers 404 or the button is missing | No Presmium server (a built site); the route name or plugin id differ; the route's `role` is above the caller's |
 | A file the plugin reads does not trigger recompilation | It was read without `ctx.src`/`ctx.resolvers` and not declared with `ctx.watch` |

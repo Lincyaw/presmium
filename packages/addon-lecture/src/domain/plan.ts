@@ -22,6 +22,7 @@ export interface PlannedPiece {
 
 export interface PlannedParagraph {
   step: number
+  mode?: 'during' | 'after'
   pieces: PlannedPiece[]
   source?: SourcePos
 }
@@ -245,7 +246,7 @@ export function lecturePlan(doc: IRDocument, scriptFile?: ScriptFileSections): L
         if (block.node.type !== 'markdown') continue
         const spoken = spokenText(block.node.mdast)
         const cues = planCues(spoken, { doc, section, target, source: block.source, problems })
-        paragraphs.push({ step: Math.min(block.at, section.steps), pieces: pieces(spoken, cues), source: block.source })
+        paragraphs.push({ step: Math.min(block.at, section.steps), mode: block.node.narration?.mode, pieces: pieces(spoken, cues), source: block.source })
       }
     }
     paragraphs.sort((a, b) => a.step - b.step)

@@ -19,7 +19,7 @@
   min-height: 2rem;
   margin: 0;
   padding: 0.3125rem 0.75rem;
-  border: 1px solid var(--pm-color-line);
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
   border-radius: var(--pm-radius-control);
   background: var(--pm-color-surface);
   color: var(--pm-color-ink);
@@ -100,8 +100,8 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: var(--pm-size-touch);
+  height: var(--pm-size-touch);
   margin: 0;
   padding: 0;
   border: 0;
@@ -113,9 +113,29 @@
 }
 
 .pm-ui-icon-button--small {
-  width: 1.75rem;
-  height: 1.75rem;
+  width: var(--pm-size-tool);
+  height: var(--pm-size-tool);
   border-radius: var(--pm-radius-small);
+}
+
+.pm-ui-icon-button > .pm-ui-icon {
+  width: var(--pm-size-icon);
+  height: var(--pm-size-icon);
+}
+
+.pm-ui-tooltip {
+  z-index: var(--pm-z-tooltip);
+  max-width: min(var(--pm-tooltip-width), var(--radix-tooltip-content-available-width));
+  padding: var(--pm-space-1) var(--pm-space-2);
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
+  border-radius: var(--pm-radius-small);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  box-shadow: var(--pm-shadow-float);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-xs);
+  line-height: var(--pm-leading-ui);
+  pointer-events: none;
 }
 
 .pm-ui-icon-button:hover {
@@ -132,14 +152,14 @@
 
 :is(.pm-ui-button, .pm-ui-icon-button, .pm-ui-segmented__option, .pm-ui-tab, .pm-ui-menu__item, .pm-ui-link):focus-visible,
 :is(.pm-ui-input, .pm-ui-select, .pm-ui-textarea):focus-visible {
-  outline: 2px solid var(--pm-color-accent);
-  outline-offset: 2px;
+  outline: var(--pm-space-px) solid var(--pm-color-accent);
+  outline-offset: var(--pm-space-px);
 }
 
 .pm-ui-link {
   color: var(--pm-color-accent);
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: var(--pm-space-px);
 }
 
 .pm-ui-field {
@@ -173,7 +193,7 @@
   min-height: 2rem;
   margin: 0;
   padding: 0.3125rem 0.625rem;
-  border: 1px solid var(--pm-color-line-strong);
+  border: var(--pm-size-hairline) solid var(--pm-color-line-strong);
   border-radius: var(--pm-radius-control);
   background: var(--pm-color-surface);
   color: var(--pm-color-ink);
@@ -215,7 +235,7 @@
   gap: var(--pm-space-2);
   min-width: 0;
   padding: 0.4375rem 0.75rem;
-  border: 1px solid var(--pm-color-line-strong);
+  border: var(--pm-size-hairline) solid var(--pm-color-line-strong);
   border-radius: var(--pm-radius-control);
   background: var(--pm-color-surface);
   color: var(--pm-color-muted);
@@ -223,8 +243,8 @@
 
 .pm-ui-search:focus-within {
   border-color: var(--pm-color-accent);
-  outline: 2px solid var(--pm-color-accent);
-  outline-offset: 2px;
+  outline: var(--pm-space-px) solid var(--pm-color-accent);
+  outline-offset: var(--pm-space-px);
 }
 
 .pm-ui-search > input {
@@ -246,7 +266,7 @@
 
 .pm-ui-kbd {
   padding: 0 0.3125rem;
-  border: 1px solid var(--pm-color-line);
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
   border-radius: var(--pm-radius-chip);
   color: var(--pm-color-muted);
   font-family: var(--pm-font-mono);
@@ -262,7 +282,7 @@
   gap: var(--pm-space-3);
   min-width: 0;
   padding: 1.125rem;
-  border: 1px solid var(--pm-color-line);
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
   border-radius: var(--pm-radius-card);
   background: var(--pm-color-surface);
   color: var(--pm-color-ink);
@@ -289,8 +309,8 @@
 
 .pm-ui-card--interactive:focus-within,
 .pm-ui-card--dashed:focus-visible {
-  outline: 2px solid var(--pm-color-accent);
-  outline-offset: 2px;
+  outline: var(--pm-space-px) solid var(--pm-color-accent);
+  outline-offset: var(--pm-space-px);
 }
 
 .pm-ui-card__title {
@@ -360,7 +380,7 @@
 }
 
 .pm-ui-badge--outline {
-  border: 1px solid var(--pm-color-line);
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
   background: transparent;
   color: var(--pm-color-ink);
 }
@@ -368,8 +388,8 @@
 .pm-ui-dot {
   display: inline-block;
   flex: none;
-  width: 7px;
-  height: 7px;
+  width: var(--pm-size-dot);
+  height: var(--pm-size-dot);
   border-radius: 50%;
   background: var(--pm-color-ok);
 }
@@ -385,16 +405,16 @@
 .pm-ui-segmented {
   display: inline-flex;
   flex: none;
-  gap: 2px;
-  padding: 3px;
+  gap: var(--pm-space-px);
+  padding: var(--pm-size-rule);
   border-radius: var(--pm-radius-control);
   background: var(--pm-color-sunk);
 }
 
 .pm-ui-segmented__option {
   margin: 0;
-  padding: calc(0.25rem - 1px) calc(0.625rem - 1px);
-  border: 1px solid transparent;
+  padding: calc(0.25rem - var(--pm-size-hairline)) calc(0.625rem - var(--pm-size-hairline));
+  border: var(--pm-size-hairline) solid transparent;
   border-radius: var(--pm-radius-small);
   background: transparent;
   color: var(--pm-color-muted);
@@ -415,14 +435,14 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--pm-space-4);
-  border-bottom: 1px solid var(--pm-color-line);
+  border-bottom: var(--pm-size-hairline) solid var(--pm-color-line);
 }
 
 .pm-ui-tab {
-  margin: 0 0 -1px;
+  margin: 0 0 calc(-1 * var(--pm-size-hairline));
   padding: var(--pm-space-1) 0;
   border: 0;
-  border-bottom: 2px solid transparent;
+  border-bottom: var(--pm-space-px) solid transparent;
   background: transparent;
   color: var(--pm-color-muted);
   font-family: var(--pm-font-sans);
@@ -441,8 +461,8 @@
 }
 
 .pm-ui-tabpanel:focus-visible {
-  outline: 2px solid var(--pm-color-accent);
-  outline-offset: 2px;
+  outline: var(--pm-space-px) solid var(--pm-color-accent);
+  outline-offset: var(--pm-space-px);
 }
 
 .pm-ui-anchor {
@@ -456,7 +476,7 @@
 .pm-ui-dialog,
 .pm-ui-menu {
   box-sizing: border-box;
-  border: 1px solid var(--pm-color-line);
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
   background: var(--pm-color-surface);
   color: var(--pm-color-ink);
   box-shadow: var(--pm-shadow-float);
@@ -489,9 +509,9 @@
   left: var(--pm-drawer-left, 0);
   display: flex;
   flex-direction: column;
-  width: min(25rem, calc(100vw - var(--pm-drawer-left, 0px)));
+  width: min(25rem, calc(100vw - var(--pm-drawer-left, 0rem)));
   overflow: hidden;
-  border-width: 0 1px 0 0;
+  border-width: 0 var(--pm-size-hairline) 0 0;
 }
 
 .pm-ui-drawer__body {
@@ -522,7 +542,7 @@
   align-items: center;
   gap: var(--pm-space-2);
   padding: var(--pm-space-3) var(--pm-space-4);
-  border-bottom: 1px solid var(--pm-color-line);
+  border-bottom: var(--pm-size-hairline) solid var(--pm-color-line);
 }
 
 .pm-ui-dialog__title,
@@ -563,7 +583,7 @@
 .pm-ui-floating {
   position: relative;
   inset: auto;
-  max-height: min(70vh, var(--reka-popper-available-height, 70vh));
+  max-height: min(70vh, var(--radix-popper-available-height, 70vh));
 }
 
 .pm-ui-menu__item {
@@ -601,7 +621,7 @@
 .pm-ui-list > li {
   margin: 0;
   padding: var(--pm-space-3) 0;
-  border-top: 1px solid var(--pm-color-line);
+  border-top: var(--pm-size-hairline) solid var(--pm-color-line);
 }
 
 .pm-ui-list > li:first-child {
@@ -659,8 +679,8 @@
 
 .pm-ui-sr-only {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  width: var(--pm-size-hairline);
+  height: var(--pm-size-hairline);
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;

@@ -1,0 +1,39 @@
+.pm-session-badge {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(var(--pm-overlay-bar, 0) + 1rem);
+  z-index: var(--pm-z-popover);
+  box-sizing: border-box;
+  max-width: calc(100vw - 2rem);
+  padding: 0.5rem 0.75rem;
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
+  border-radius: var(--pm-radius-card);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  box-shadow: var(--pm-shadow-float);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-md);
+  line-height: var(--pm-leading-ui);
+}
+html.pm-presenting .pm-session-badge--page {
+  display: none;
+}
+.pm-session-badge__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.pm-session-badge__presenter {
+  color: var(--pm-color-muted);
+  font-family: var(--pm-font-mono);
+  font-size: var(--pm-text-sm);
+}
+.pm-session-badge__note {
+  max-width: 24rem;
+  margin: 0.35rem 0 0;
+  color: var(--pm-color-muted);
+}
+.pm-session-badge[data-status='ended'] {
+  border-color: var(--pm-color-danger);
+}

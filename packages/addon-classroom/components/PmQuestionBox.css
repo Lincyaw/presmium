@@ -1,0 +1,16 @@
+.pm-question-box__list {
+  margin: 0.4em 0;
+  padding-left: 1.2em;
+}
+.pm-question-box__list li {
+  margin: 0.35em 0;
+}
+.pm-question-box__list li[data-answered] {
+  color: var(--pm-color-muted);
+}
+.pm-question-box__name {
+  font-weight: 600;
+}
+.pm-question-box__answered {
+  margin-left: 0.5em;
+}

@@ -1,0 +1,24 @@
+.pm-media {
+  margin: 0;
+}
+.pm-media :is(video, audio, img) {
+  display: block;
+  max-width: 100%;
+}
+.pm-media figcaption {
+  margin-top: 0.4em;
+  color: var(--pm-color-muted);
+  font-family: var(--pm-font-sans);
+  font-size: 0.85em;
+}
+.pm-media .pm-media-still {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pm-media .pm-media-motion {
+    display: none;
+  }
+  .pm-media .pm-media-still {
+    display: block;
+  }
+}

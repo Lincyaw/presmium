@@ -1,11 +1,10 @@
-import { componentErrors, presmiumReport } from '@lincyaw/host'
+import { componentErrors, componentErrorRevision, presmiumReport, createStore, observe, runtimeRevision } from '@lincyaw/host'
 import type { NavigationPosition } from '@lincyaw/host'
 import { connectPreviewFrame, irBlocks, isPreviewActive, isPreviewEmbedded, PREVIEW_REVISION, stepKeys, stepTrail } from '@lincyaw/kernel'
 import type { FollowAnchor, PreviewFrame } from '@lincyaw/kernel'
 import type { Viewer } from '@lincyaw/viewer'
-import { findView } from '@lincyaw/viewer'
-import type { Ref } from 'vue'
-import { nextTick, shallowRef, watch, watchEffect } from 'vue'
+import { findView, registryRevision } from '@lincyaw/viewer'
+import type { Store } from '@lincyaw/host'
 import { createViewerNavigation } from './host.ts'
 
 export interface WebPreviewOptions {
@@ -17,7 +16,7 @@ export interface WebPreviewOptions {
 
 export interface WebPreviewPage {
   viewer: Viewer
-  dark: Ref<boolean>
+  dark: Store<boolean>
   setActive(active: boolean): Promise<void>
 }
 
@@ -37,19 +36,21 @@ export function webPreview(options: WebPreviewOptions): WebPreview {
 function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions): void {
   const { viewer, dark } = page
   const navigation = createViewerNavigation(viewer)
-  const pendingGo = shallowRef<Parameters<typeof navigation.go>[0]>()
+  const pendingGo = createStore<Parameters<typeof navigation.go>[0] | undefined>(undefined)
   // Preview ready can precede async viewer-plugin registration and the lecture list. Keep the latest requested view
   // until it is available instead of losing a first switch to video while this window is still starting.
-  watchEffect(() => {
-    const destination = pendingGo.value
+  const applyPending = () => {
+    const destination = pendingGo.getSnapshot()
     if (!destination) return
     const view = destination.view && findView(destination.view)
     if (destination.view && (!view || view.hidden)) return
-    pendingGo.value = undefined
+    pendingGo.set(undefined)
     navigation.go(destination)
-  })
+  }
+  registryRevision.subscribe(applyPending)
+  pendingGo.subscribe(applyPending)
   const revision = () => {
-    const value = viewer.doc.value.meta[PREVIEW_REVISION]
+    const value = viewer.doc.getSnapshot().meta[PREVIEW_REVISION]
     return typeof value === 'string' ? value : undefined
   }
   const blockStep = (section: string, block: string) => {
@@ -62,13 +63,13 @@ function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions
     origins: options.origins,
     revision,
     position() {
-      const { section, step, trail, view } = navigation.position.value as NavigationPosition & FollowAnchor
+      const { section, step, trail, view } = navigation.position.getSnapshot() as NavigationPosition & FollowAnchor
       return section === undefined ? undefined : { section, step, trail: trail ?? [], ...view ? { view } : {} }
     },
-    go: ({ section, step, trail, view }) => { pendingGo.value = { slide: 0, step: step ?? 0, section, ...trail ? { trail } : {}, ...view ? { view } : {} } },
+    go: ({ section, step, trail, view }) => { pendingGo.set({ slide: 0, step: step ?? 0, section, ...trail ? { trail } : {}, ...view ? { view } : {} }) },
     reveal: ({ section, block }) => viewer.show({ section, step: (block && blockStep(section, block)) || 0 }),
     setDark(value) {
-      dark.value = value
+      dark.set(value)
     },
     setActive: page.setActive,
     stepOf({ section, block }) {
@@ -78,14 +79,15 @@ function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions
     },
   })
   if (!frame) return
-  watch(() => navigation.position.value, () => frame.moved())
-  watch(revision, () => void nextTick(() => requestAnimationFrame(() => frame.updated())))
+  navigation.position.subscribe(() => frame.moved())
+  viewer.doc.subscribe(() => requestAnimationFrame(() => frame.updated()))
   watchProblems(frame)
 }
 
 function watchProblems(frame: PreviewFrame): void {
   let told = new Map<string, { level: 'error' | 'warning', plugin: string, message: string }>()
-  watch(() => [presmiumReport()?.plugins ?? [], componentErrors()] as const, ([plugins, errors]) => {
+  const report = () => {
+    const plugins = presmiumReport()?.plugins ?? [], errors = componentErrors()
     const problems = [
       ...plugins.filter(p => p.status === 'failed' || p.status === 'disabled').map(p => ({ level: p.status === 'failed' ? 'error' as const : 'warning' as const, plugin: p.id, message: p.reason ?? p.status })),
       ...errors.map(e => ({ level: 'error' as const, plugin: e.component, message: e.message })),
@@ -94,5 +96,8 @@ function watchProblems(frame: PreviewFrame): void {
     for (const [key, problem] of told) if (!current.has(key)) frame.report({ ...problem, resolved: true })
     for (const [key, problem] of current) if (!told.has(key)) frame.report(problem)
     told = current
-  }, { immediate: true })
+  }
+  runtimeRevision.subscribe(report)
+  componentErrorRevision.subscribe(report)
+  report()
 }

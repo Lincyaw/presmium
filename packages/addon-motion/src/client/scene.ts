@@ -244,7 +244,7 @@ export interface RemotionComposition {
 /**
  * A Remotion composition, drawn frame by frame with the player's `Thumbnail`: the scene's place on
  * its timeline picks the frame. `build` gets React and Remotion to write the component with
- * `React.createElement` (scene files are not JSX: the slides form would compile JSX for Vue).
+ * `React.createElement`.
  */
 export function remotionScene(build: (ctx: SceneContext & { React: typeof ReactModule, remotion: typeof RemotionModule }) => RemotionComposition | Promise<RemotionComposition>): SceneDefinition {
   return {

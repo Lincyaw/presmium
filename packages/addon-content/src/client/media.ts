@@ -1,12 +1,4 @@
-import { useBlockStepRange, useStepState, useViewRole } from '@lincyaw/host'
-import type { InjectionKey, Ref } from 'vue'
-import { computed, inject } from 'vue'
-
-export const MEDIA_ACTIVE: InjectionKey<() => Readonly<Ref<boolean>>> = Symbol('presmium.content.mediaActive')
-
-export function useMediaActive(): Readonly<Ref<boolean>> {
-  const active = inject(MEDIA_ACTIVE, undefined)?.()
-  const state = useStepState(useBlockStepRange())
-  const role = useViewRole()
-  return computed(() => active?.value !== false && (role.value === 'reader' || state.value.active))
-}
+import { useStepState, useViewRole } from '@lincyaw/host'
+import { createContext, useContext } from 'react'
+export const MEDIA_ACTIVE = createContext(true)
+export function useMediaActive(): boolean { const active = useContext(MEDIA_ACTIVE), role = useViewRole(), state = useStepState({ from: 0 }); return active && (role === 'reader' || state.active) }

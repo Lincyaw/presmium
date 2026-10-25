@@ -12,6 +12,7 @@
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/viewer": "workspace:*",
     "@lincyaw/web": "workspace:*",
-    "vue": "^3.5.42"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }

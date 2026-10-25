@@ -1,5 +1,5 @@
-import type { Ref } from 'vue'
-import { onBeforeUnmount, onMounted } from 'vue'
+import { useLayoutEffect, useRef } from 'react'
+import type { RefObject } from 'react'
 
 const px = (value: string) => Number.parseFloat(value) || 0
 
@@ -35,24 +35,27 @@ function spaceBelow(el: HTMLElement): number | undefined {
 }
 
 /** Calls `fit` with the height left below the element on its slide, again whenever the layout around it changes. */
-export function useSlideSpaceBelow(el: Readonly<Ref<HTMLElement | undefined>>, active: boolean, fit: (space: number) => void): void {
-  if (!active) return
-  const measure = () => {
-    const space = el.value && spaceBelow(el.value)
-    if (space !== undefined) fit(space)
-  }
-  let observer: ResizeObserver | undefined
-  onMounted(() => {
-    const target = el.value
-    if (!target) return
-    observer = new ResizeObserver(measure)
+export function useSlideSpaceBelow(el: RefObject<HTMLElement | null | undefined>, active: boolean, fit: (space: number) => void): void {
+  const callback = useRef(fit)
+  callback.current = fit
+  useLayoutEffect(() => {
+    const target = el.current
+    if (!active || !target) return
+    let disposed = false
+    const measure = () => {
+      if (disposed) return
+      const space = spaceBelow(target)
+      if (space !== undefined) callback.current(space)
+    }
+    const observer = new ResizeObserver(measure)
     observer.observe(target)
     for (let box = target; box.parentElement; box = box.parentElement) {
       for (let before = box.previousElementSibling; before; before = before.previousElementSibling) observer.observe(before)
       observer.observe(box.parentElement)
       if (getComputedStyle(box.parentElement).overflowY === 'hidden') break
     }
+    measure()
     void document.fonts?.ready.then(measure)
-  })
-  onBeforeUnmount(() => observer?.disconnect())
+    return () => { disposed = true; observer.disconnect() }
+  }, [el, active])
 }

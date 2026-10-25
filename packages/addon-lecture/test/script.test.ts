@@ -110,6 +110,63 @@ describe('presmium build --to lecture', () => {
     if (dir) rmSync(dir, { recursive: true, force: true })
   })
 
+  it('binds explicit narration to animation steps regardless of source order and honors during/after in exported captions', async () => {
+    const motion = fileURLToPath(new URL('../../addon-motion', import.meta.url))
+    const own = deck(tmpdir(), VOICE + '\n    gap: 0ms', `
+:::{narration}
+:at: 2
+:mode: after
+
+第三步结束后说。
+:::
+
+:::{scene} steps
+:durations: 800ms, 1200ms, 1000ms
+动画。
+:::
+
+:::{narration}
+:at: 0
+:mode: during
+
+第一步同时说。
+:::
+
+:::{narration}
+:at: 1
+:mode: after
+
+第二步结束后说。
+:::
+`)
+    try {
+      const entry = join(own, 'lecture.md')
+      writeFileSync(entry, readFileSync(entry, 'utf8').replace('plugins:', `plugins:\n  - ${motion}`))
+      mkdirSync(join(own, 'scenes'))
+      // Building lecture only reads the scene's declared timings; its runtime is tested in the browser fixture.
+      writeFileSync(join(own, 'scenes/steps.ts'), 'export default {}')
+      const built = await presmium(own, ['build', '--to', 'lecture'], engine())
+      expect(built.code, built.stdout + built.stderr).toBe(0)
+      const track = JSON.parse(readFileSync(join(own, 'dist/lecture/script/track.json'), 'utf8')) as Track
+      const goes = new Map(track.events.filter(e => e[1] === 'go' && e[2].section === 'merge').map(e => [e[2].step as number, e[0]]))
+      const spoken = track.utterances.filter(u => u.section === 'merge')
+      expect(spoken.map(u => u.step)).toEqual([0, 1, 2])
+      expect(spoken[0]!.t).toBe(goes.get(0))
+      expect(spoken[1]!.t - goes.get(1)!).toBe(1200)
+      expect(spoken[2]!.t - goes.get(2)!).toBe(1000)
+      const captions = readFileSync(join(own, 'dist/lecture/script/captions.zh-CN.vtt'), 'utf8')
+      expect(captions).toContain('第二步结束后说。')
+      const during = readFileSync(entry, 'utf8').replaceAll(':mode: after', ':mode: during')
+      writeFileSync(entry, during)
+      const rebuilt = await presmium(own, ['build', '--to', 'lecture'], engine())
+      expect(rebuilt.code, rebuilt.stdout + rebuilt.stderr).toBe(0)
+      const changed = JSON.parse(readFileSync(join(own, 'dist/lecture/script/track.json'), 'utf8')) as Track
+      for (const u of changed.utterances.filter(u => u.section === 'merge')) {
+        expect(u.t).toBe(changed.events.find(e => e[1] === 'go' && e[2].section === 'merge' && e[2].step === u.step)![0])
+      }
+    } finally { rmSync(own, { recursive: true, force: true }) }
+  })
+
   it('synthesizes each paragraph once into the cache, timed by the engine\'s words; a second build synthesizes nothing; without cache and engine, build and check name the paragraphs', async () => {
     const asked = await syntheses()
     const built = await presmium(dir, ['build', '--to', 'lecture'], engine())

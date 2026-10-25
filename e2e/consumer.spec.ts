@@ -94,7 +94,7 @@ async function greeting(page: Page, url: string, timeout = 10_000): Promise<void
   page.on('pageerror', error => errors.push(String(error)))
   await page.goto(url)
   await expect(page.locator('.hello-greeting').first()).toHaveText('Hello, reader!', { timeout })
-  expect(errors.filter(error => !/FloatingVue|Wake Lock/.test(error))).toEqual([])
+  expect(errors.filter(error => !/Wake Lock/.test(error))).toEqual([])
 }
 
 test('the built web form and slides show the third-party plugin\'s component', async ({ page }) => {

@@ -1,0 +1,7 @@
+.demo-stepper li[data-status='active'] {
+  font-weight: 700;
+  color: var(--pm-color-accent);
+}
+.demo-stepper li[data-status='done'] {
+  color: var(--pm-color-muted);
+}

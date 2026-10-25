@@ -10,6 +10,7 @@ import { CommentsPanel } from './CommentsPanel.tsx'
 import { ExportPanel } from './ExportPanel.tsx'
 import { HistoryPanel } from './HistoryPanel.tsx'
 import { PreviewPanel } from './PreviewPanel.tsx'
+import { NarrationPanel } from './NarrationPanel.tsx'
 
 export type DocumentAside = 'comments' | 'history' | 'export'
 
@@ -26,6 +27,7 @@ const ROOMY = '(min-width: 1280px)'
 export function DocumentView({ active = true, framed = false }: { active?: boolean, framed?: boolean }) {
   const workbench = useWorkbench()
   const [aside, setAside] = useState<DocumentAside | null>(null)
+  const narration = useWorkbenchState(state => state.narration)
   const [navigation, setNavigation] = useState(() => typeof matchMedia === 'function' && matchMedia(ROOMY).matches)
   useEffect(() => {
     if (!active) return
@@ -50,7 +52,7 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
       <div className="pmw-document__body">
         {navigation && <NavigationPane onClose={() => setNavigation(false)} />}
         <PreviewPanel active={active} />
-        {aside && (
+        {narration ? <aside className="pmw-document__aside"><NarrationPanel /></aside> : aside && (
           <aside className="pmw-document__aside" aria-label={aside}>
             {aside === 'comments' ? <CommentsPanel onClose={() => setAside(null)} /> : aside === 'export' ? <ExportPanel onClose={() => setAside(null)} /> : <HistoryPanel onClose={() => setAside(null)} />}
           </aside>
@@ -115,6 +117,7 @@ function StatusBar() {
       {at >= 0 && <span className="pmw-statusbar__item">{slides ? t.slideOf(at + 1, total) : t.sectionOf(at + 1, total)}</span>}
       {doc && <span className="pmw-statusbar__item">{t.words(words)}</span>}
       <span className="pmw-spacer" />
+
       <span className="pmw-statusbar__item pmw-statusbar__mode" data-mode={mode}><PmIcon name={mode === 'editing' ? 'edit' : 'eye'} />{mode === 'editing' ? t.editingStatus : t.viewingStatus}</span>
     </footer>
   )
@@ -123,6 +126,8 @@ function StatusBar() {
 function DocumentToolbar({ framed, aside, navigation, onNavigation, onAside }: { framed: boolean, aside: DocumentAside | null, navigation: boolean, onNavigation(): void, onAside(aside: DocumentAside): void }) {
   const t = useMessages()
   const workbench = useWorkbench()
+  const narration = useWorkbenchState(state => state.narration)
+  const narrationDirty = useWorkbenchState(state => state.narrationDirty)
   const title = useWorkbenchState(state => state.documents?.documents.find(doc => doc.dir === state.document)?.title ?? state.ir?.doc.meta.title ?? '')
   const history = useWorkbenchState(state => state.history)
   const busy = useWorkbenchState(state => state.isHistoryBusy || Boolean(state.editing) || isAgentChanging(state))
@@ -172,6 +177,10 @@ function DocumentToolbar({ framed, aside, navigation, onNavigation, onAside }: {
         {modes.map(item => <button key={item.id} type="button" className="pmw-tool" aria-label={item.label} aria-pressed={mode === item.id} title={item.hint} onClick={() => workbench.setMode(item.id)}><PmIcon name={item.icon} /><span className="pmw-toolbar__label">{item.label}</span></button>)}
       </span>
       <span className="pmw-spacer" />
+      <PmIconButton small icon="captions" label={t.narration} disabled={Boolean(narration && narrationDirty)} aria-pressed={Boolean(narration)} onClick={() => {
+        if (workbench.state.narration) workbench.closeNarration()
+        else { const at = workbench.state.position; const section = at?.section ?? workbench.state.ir?.doc.sections[0]?.id; if (section) workbench.selectNarration(section, at?.step ?? 0) }
+      }} />
       {openComments > 0 && (
         <PmButton small variant="accent" icon="sparkle" aria-label={t.sendComments(openComments)} title={t.sendComments(openComments)} disabled={asking} onClick={() => void workbench.askAgentAboutComments()}>
           <span className="pmw-toolbar__label">{t.sendComments(openComments)}</span>

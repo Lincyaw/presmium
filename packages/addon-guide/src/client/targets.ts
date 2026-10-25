@@ -1,5 +1,5 @@
-import type { MaybeRefOrGetter } from 'vue'
-import { onBeforeUnmount, toValue, watch } from 'vue'
+import { useLayoutEffect } from 'react'
+import type { RefObject } from 'react'
 
 export function resolveTarget(from: Element | undefined, selector: string | undefined): HTMLElement | undefined {
   if (!from || !selector) return undefined
@@ -14,26 +14,12 @@ export function resolveTarget(from: Element | undefined, selector: string | unde
   return undefined
 }
 
-export function useTargetMark(
-  anchor: MaybeRefOrGetter<Element | undefined>,
-  selector: MaybeRefOrGetter<string | undefined>,
-  attribute: string,
-  value: MaybeRefOrGetter<string | undefined>,
-): void {
-  let marked: HTMLElement | undefined
-  const clear = () => {
-    marked?.removeAttribute(attribute)
-    marked = undefined
-  }
-  watch(
-    () => [toValue(anchor), toValue(selector), toValue(value)] as const,
-    ([from, target, current]) => {
-      clear()
-      if (current === undefined) return
-      marked = resolveTarget(from, target)
-      marked?.setAttribute(attribute, current)
-    },
-    { immediate: true, flush: 'post' },
-  )
-  onBeforeUnmount(clear)
+export function useTargetMark(anchor: RefObject<Element | null | undefined>, selector: string | (() => string | undefined), attribute: string, value: string | undefined | (() => string | undefined)): void {
+  const targetSelector = typeof selector === 'function' ? selector() : selector
+  const current = typeof value === 'function' ? value() : value
+  useLayoutEffect(() => {
+    const marked = current === undefined ? undefined : resolveTarget(anchor.current ?? undefined, targetSelector)
+    if (marked && current !== undefined) marked.setAttribute(attribute, current)
+    return () => marked?.removeAttribute(attribute)
+  }, [anchor, targetSelector, attribute, current])
 }

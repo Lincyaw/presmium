@@ -1,0 +1,32 @@
+/* The design system's tokens only (colors, fonts, spacing; light and dark). The sizes are em, so the
+   card scales with the text around it, as the slides and the present view scale it. */
+.greeting-card {
+  --pm-text-sm: 0.875em;
+  --pm-text-md: 0.9375em;
+
+  margin: 0.75em 0;
+  padding: 0.75em 1em;
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+}
+
+.greeting-card__text {
+  margin: 0;
+  color: var(--pm-color-accent);
+  font-size: 1.25em;
+}
+
+.greeting-card__waves {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  margin: 0.5em 0 0;
+}
+
+.greeting-card__count {
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-sm);
+}

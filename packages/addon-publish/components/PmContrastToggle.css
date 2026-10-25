@@ -1,0 +1,14 @@
+.pm-contrast-toggle {
+  border-radius: var(--pm-radius-pill);
+}
+.pm-contrast-toggle--compact {
+  padding-inline: 0.45em;
+}
+.pm-contrast-toggle[aria-checked='true'] {
+  border-color: var(--pm-color-accent);
+  background: var(--pm-color-accent);
+  color: var(--pm-color-on-accent);
+}
+.pm-contrast-toggle[aria-checked='true'] .pm-contrast-toggle__icon {
+  transform: rotate(180deg);
+}

@@ -1,7 +1,8 @@
 import { languageId } from '@lincyaw/kernel'
 import type { Extension } from '@codemirror/state'
 import type { EditorView } from '@codemirror/view'
-import { defineComponent, h, onBeforeUnmount, onMounted, shallowRef } from 'vue'
+import { useEffect, useRef } from 'react'
+import { h } from '../element.ts'
 
 /**
  * A runnable code block's code, edited in place (CodeMirror 6) before it is run: loaded the first time a block is
@@ -41,47 +42,17 @@ async function editorModules(lang: string) {
   return { view, state, commands, language, style, extension, python: (ALIASES[id] ?? id) === 'python' }
 }
 
-export const CodeEditor = defineComponent({
-  name: 'PmCodeEditor',
-  props: {
-    lang: { type: String, default: '' },
-    value: { type: String, required: true },
-  },
-  emits: { change: (_value: string) => true, run: () => true },
-  setup(props, { emit }) {
-    const host = shallowRef<HTMLElement>()
-    let editor: EditorView | undefined
-    let disposed = false
-    onMounted(async () => {
-      const { view, state, commands, language, style, extension, python } = await editorModules(props.lang)
-      if (disposed || !host.value) return
-      editor = new view.EditorView({
-        parent: host.value,
-        state: state.EditorState.create({
-          doc: props.value,
-          extensions: [
-            commands.history(),
-            view.keymap.of([
-              { key: 'Mod-Enter', run: () => (emit('run'), true) },
-              ...commands.defaultKeymap,
-              ...commands.historyKeymap,
-              commands.indentWithTab,
-            ]),
-            language.indentUnit.of(python ? '    ' : '  '),
-            language.syntaxHighlighting(style),
-            extension,
-            view.EditorView.updateListener.of((update) => {
-              if (update.docChanged) emit('change', update.state.doc.toString())
-            }),
-          ],
-        }),
-      })
+export function CodeEditor({ lang = '', value, onChange, onRun }: { lang?: string, value: string, onChange?(value: string): void, onRun?(): void }) {
+  const host = useRef<HTMLDivElement>(null)
+  const callbacks = useRef({ onChange, onRun }); callbacks.current = { onChange, onRun }
+  useEffect(() => {
+    let editor: EditorView | undefined; let disposed = false
+    void editorModules(lang).then(({ view, state, commands, language, style, extension, python }) => {
+      if (disposed || !host.current) return
+      editor = new view.EditorView({ parent: host.current, state: state.EditorState.create({ doc: value, extensions: [commands.history(), view.keymap.of([{ key: 'Mod-Enter', run: () => { callbacks.current.onRun?.(); return true } }, ...commands.defaultKeymap, ...commands.historyKeymap, commands.indentWithTab]), language.indentUnit.of(python ? '    ' : '  '), language.syntaxHighlighting(style), extension, view.EditorView.updateListener.of(update => { if (update.docChanged) callbacks.current.onChange?.(update.state.doc.toString()) })] }) })
       editor.focus()
     })
-    onBeforeUnmount(() => {
-      disposed = true
-      editor?.destroy()
-    })
-    return () => h('div', { ref: host, class: 'pm-code-editor' })
-  },
-})
+    return () => { disposed = true; editor?.destroy() }
+  }, [lang])
+  return h('div', { ref: host, className: 'pm-code-editor' })
+}

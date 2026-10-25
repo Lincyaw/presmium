@@ -193,6 +193,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
 
   const create = (target: PreviewTarget & { address: string }): Entry => {
     const frame = document.createElement('iframe')
+    frame.allowFullscreen = true
     frame.title = target.title
     frame.dataset.document = target.document
     frame.dataset.renderer = target.renderer

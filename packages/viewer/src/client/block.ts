@@ -1,125 +1,57 @@
-import { PmBoundary, provideStepScope, useStaticRender } from '@lincyaw/host'
+import { createContext, memo, useContext, useEffect, useRef } from 'react'
+import type { ReactNode } from 'react'
+import { PmBoundary, StepScope, useStaticRender, useStore } from '@lincyaw/host'
 import { blockVisible, componentProps, fnv1a64 } from '@lincyaw/kernel'
 import type { ComponentNode, IRBlock, IRSection } from '@lincyaw/kernel'
-import type { InjectionKey, PropType, VNode } from 'vue'
-import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, provide, shallowRef } from 'vue'
 import { FINAL_STEP } from '../domain/index.ts'
 import { CODE_OWNED, CodeBlockView } from './code/code-block.ts'
+import { contentMarks } from './content-marks.ts'
 import { markdownToHast } from './markdown/handlers.ts'
 import { PmMermaid } from './markdown/mermaid.ts'
 import { hastToVNodes, MarkdownView } from './markdown/render.ts'
-import { findComponent, findNodeRenderer } from './registry.ts'
+import { findComponent, findNodeRenderer, registryRevision } from './registry.ts'
 import { BLOCK_CLASS, trackClicks } from './slidev-compat/click-directives.ts'
 import { viewerMessages } from './viewer-messages.ts'
 import { VIEWER } from './viewer-state.ts'
-
-const blockProps = {
-  block: { type: Object as PropType<IRBlock>, required: true },
-  section: { type: Object as PropType<IRSection>, required: true },
-  step: { type: Number, required: true },
-  expanded: Boolean,
-} as const
-
-const COMPONENT_NODE: InjectionKey<{ node: ComponentNode, section: string }> = Symbol('presmium.viewer.componentNode')
-
-function fallbackOf(node: ComponentNode, section: string): VNode[] {
-  return node.fallback ? hastToVNodes(markdownToHast(node.fallback, section).children, {}) as VNode[] : []
+import { h } from './element.ts'
+export interface BlockProps { block: IRBlock, section: IRSection, step: number, expanded?: boolean }
+const COMPONENT_NODE = createContext<{ node: ComponentNode, section: string } | undefined>(undefined)
+function fallbackOf(node: ComponentNode, section: string) { return node.fallback ? hastToVNodes(markdownToHast(node.fallback, section).children, {}) : [] }
+export function PmComponentFallback() { const current = useContext(COMPONENT_NODE); return current ? h('div', { className: 'pm-component-fallback' }, fallbackOf(current.node, current.section)) : null }
+function ComponentView(props: BlockProps) {
+  const node = props.block.node as ComponentNode
+  const printed = useStaticRender()
+  useStore(registryRevision)
+  const component = findComponent(node.name)
+  if (printed && node.fallback) return h('div', { className: 'pm-static-fallback', 'data-component': node.name }, fallbackOf(node, props.section.id))
+  if (!component) { const fallback = fallbackOf(node, props.section.id); return h('div', { className: 'pm-component-missing', 'data-component': node.name }, fallback.length ? fallback : viewerMessages().missingComponent(node.name)) }
+  const children = node.children?.map(child => h(BlockView, { key: child.id, block: child, section: props.section, step: props.step, expanded: props.expanded }))
+  const key = fnv1a64(JSON.stringify([node.props, node.children ?? []]))
+  return h(CODE_OWNED.Provider, { value: node.ownsCode !== false }, h(COMPONENT_NODE.Provider, { value: { node, section: props.section.id } }, h(PmBoundary, { name: node.name, resetKey: props.expanded ? key : `${key}@${props.step}` }, h(component, componentProps(node), children))))
 }
-
-export const PmComponentFallback = defineComponent({
-  name: 'PmComponentFallback',
-  setup() {
-    const current = inject(COMPONENT_NODE, undefined)
-    return () => (current ? fallbackOf(current.node, current.section) : null)
-  },
-})
-
-const ComponentView = defineComponent({
-  name: 'PmComponentNode',
-  props: blockProps,
-  setup(props) {
-    provide(CODE_OWNED, computed(() => (props.block.node as ComponentNode).ownsCode !== false))
-    provide(COMPONENT_NODE, {
-      get node() {
-        return props.block.node as ComponentNode
-      },
-      get section() {
-        return props.section.id
-      },
-    })
-    const content = computed(() => {
-      const { props: values, children } = props.block.node as ComponentNode
-      return fnv1a64(JSON.stringify([values, children ?? []]))
-    })
-    // A printed page (an export) shows what the component's author gave for paper, where there is something.
-    const printed = useStaticRender()
-    return () => {
-      const node = props.block.node as ComponentNode
-      if (printed.value && node.fallback) return h('div', { 'class': 'pm-static-fallback', 'data-component': node.name }, fallbackOf(node, props.section.id))
-      const component = findComponent(node.name)
-      if (!component) {
-        const fallback = fallbackOf(node, props.section.id)
-        return h('div', { 'class': 'pm-component-missing', 'data-component': node.name }, fallback.length ? fallback : viewerMessages().missingComponent(node.name))
-      }
-      const children = node.children?.length
-        ? { default: () => node.children!.map(child => h(BlockView, { key: child.id, block: child, section: props.section, step: props.step, expanded: props.expanded })) }
-        : undefined
-      const resetKey = props.expanded ? content.value : `${content.value}@${props.step}`
-      return h(PmBoundary, { name: node.name, resetKey }, () => h(component, componentProps(node), children))
-    }
-  },
-})
-
-function content(props: { block: IRBlock, section: IRSection, step: number, expanded: boolean }): VNode {
-  const { node } = props.block
-  const custom = (node.type === 'component' && findNodeRenderer(node.name))
-    || (node.type === 'code' && findNodeRenderer(`code:${node.lang}`))
-    || findNodeRenderer(node.type)
+function content(props: BlockProps): ReactNode {
+  const node = props.block.node
+  const custom = (node.type === 'component' && findNodeRenderer(node.name)) || (node.type === 'code' && findNodeRenderer(`code:${node.lang}`)) || findNodeRenderer(node.type)
   if (custom) return h(custom, props)
   switch (node.type) {
-    case 'markdown': return h(MarkdownView, { block: props.block, step: props.step, expanded: props.expanded, prefix: props.section.id })
-    case 'code': return node.lang === 'mermaid'
-      ? h(PmMermaid, { code: node.value })
-      : h(CodeBlockView, { block: props.block, step: props.step, expanded: props.expanded })
+    case 'markdown': return h(MarkdownView, { ...props, prefix: props.section.id })
+    case 'code': return node.lang === 'mermaid' ? h(PmMermaid, { code: node.value }) : h(CodeBlockView, props)
     case 'component': return h(ComponentView, props)
   }
 }
-
-function isOverlay(block: IRBlock): boolean {
-  return block.node.type === 'component' && block.node.layer === 'overlay'
+function BlockViewContent(props: BlockProps) {
+  const viewer = useContext(VIEWER); const doc = useStore(viewer?.doc); const el = useRef<HTMLDivElement>(null)
+  useStore(registryRevision)
+  useEffect(() => el.current ? trackClicks(el.current, props.expanded ? FINAL_STEP : props.step) : undefined, [props.step, props.expanded, props.block])
+  const { block } = props
+  const visible = props.expanded || blockVisible(block, props.step)
+  const script = doc?.config.renderers.lecture?.script
+  const role = block.role === 'narration' && ((block.only && !block.only.includes('lecture')) || (typeof script === 'string' && script.trim())) ? 'reading' : block.role
+  return h(StepScope, { at: block.at, until: block.until }, h('div', {
+    ref: el, className: [BLOCK_CLASS, `pm-block--${block.role}`, `pm-block--${block.node.type}`, block.until !== undefined ? 'pm-step-range' : '', block.node.type === 'component' && block.node.layer === 'overlay' ? 'pm-block--overlay' : '', !visible ? 'pm-hidden' : ''].filter(Boolean).join(' '),
+    'data-block': block.id, 'data-content-role': role, 'data-content-label': viewerMessages().contentRoles[role], 'data-at': block.at, 'data-component': block.node.type === 'component' ? block.node.name : undefined, 'aria-hidden': visible ? undefined : true,
+    onClick: viewer?.options.openSource ? (event: MouseEvent) => { if (event.altKey) { event.preventDefault(); event.stopPropagation(); viewer.options.openSource!(block.source) } } : undefined,
+  }, [contentMarks(props.section, role, block.at, block.span ?? 0), content(props)]))
 }
 
-export const BlockView = defineComponent({
-  name: 'PmBlock',
-  props: blockProps,
-  setup(props) {
-    const viewer = inject(VIEWER, undefined)
-    const el = shallowRef<HTMLElement>()
-    provideStepScope(() => props.block.at, () => props.block.until)
-    const clicks = computed(() => (props.expanded ? FINAL_STEP : props.step))
-    let stop: (() => void) | undefined
-    onMounted(() => {
-      if (el.value) stop = trackClicks(el.value, clicks)
-    })
-    onBeforeUnmount(() => stop?.())
-    const openSource = (event: MouseEvent) => {
-      if (!event.altKey || !viewer?.options.openSource) return
-      event.preventDefault()
-      event.stopPropagation()
-      viewer.options.openSource(props.block.source)
-    }
-    return () => {
-      const { block } = props
-      const visible = props.expanded || blockVisible(block, props.step)
-      return h('div', {
-        'ref': el,
-        'class': [BLOCK_CLASS, `pm-block--${block.role}`, `pm-block--${block.node.type}`, { 'pm-step-range': block.until !== undefined, 'pm-block--overlay': isOverlay(block), 'pm-hidden': !visible }],
-        'data-block': block.id,
-        'data-at': block.at,
-        'data-component': block.node.type === 'component' ? block.node.name : undefined,
-        'aria-hidden': visible ? undefined : 'true',
-        'onClick': viewer?.options.openSource ? openSource : undefined,
-      }, [content({ block, section: props.section, step: props.step, expanded: props.expanded })])
-    }
-  },
-})
+export const BlockView = memo(BlockViewContent)

@@ -873,6 +873,36 @@ html.pm-in-workbench .pm-section {
   font-size: var(--pm-text-display);
 }
 
+/* Author marks remain small and symbolic; labels are available on hover and to screen readers. */
+.pm-content-marks { display: none; }
+html[data-preview-picking] .pm-view--document .pm-content-marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pm-space-1);
+  margin-block-end: var(--pm-space-1);
+  user-select: none;
+}
+.pm-content-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pm-space-1);
+  min-height: var(--pm-size-tool);
+  padding: 0 var(--pm-space-1);
+  border: 0;
+  border-radius: var(--pm-radius-chip);
+  background: transparent;
+  color: var(--pm-color-muted);
+  font-family: var(--pm-font-mono);
+  font-size: var(--pm-text-xs);
+  line-height: var(--pm-leading-tight);
+  cursor: pointer;
+}
+.pm-content-mark:hover, .pm-content-mark:focus-visible {
+  color: var(--pm-color-accent);
+  background: var(--pm-color-accent-soft);
+}
+.pm-content-mark .pm-ui-icon { width: var(--pm-size-icon); height: var(--pm-size-icon); }
+
 /* The presentation in a workbench: the slide on the canvas, with navigation and lecture playback in the viewer. */
 html.pm-in-workbench .pm-present {
   background: var(--pm-color-canvas);

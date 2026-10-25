@@ -1,15 +1,15 @@
 import type { Operation, Unsubscribe } from '@lincyaw/kernel/contracts'
-import { ref } from 'vue'
+import { createStore } from './store.ts'
 import type { Operations, ReplayHandler } from './contracts.ts'
 
 export function createOperations(): Operations {
   const listeners = new Set<(operation: Operation) => void>()
   const handlers = new Map<string, ReplayHandler>()
-  const replaying = ref(false)
+  const replaying = createStore(false)
   let unsettled = 0
   return {
     report(operation) {
-      if (replaying.value) return
+      if (replaying.getSnapshot()) return
       for (const listener of [...listeners]) {
         try {
           listener(operation)
@@ -34,14 +34,14 @@ export function createOperations(): Operations {
       const handler = handlers.get(operation.type)
       if (!handler) return false
       unsettled++
-      replaying.value = true
+      replaying.set(true)
       try {
         handler.apply(operation.data, seeking)
       } catch (error) {
         console.error(`[presmium] the replay of ${operation.type} failed`, error)
       } finally {
         setTimeout(() => {
-          if (--unsettled === 0) replaying.value = false
+          if (--unsettled === 0) replaying.set(false)
         }, 0)
       }
       return true

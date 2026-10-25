@@ -1,5 +1,5 @@
 .pm-hint-beacon {
-  --driver-hint-size: 32px;
+  --driver-hint-size: var(--pm-size-pointer-beacon);
 }
 body .driver-hint.pm-hint-beacon,
 body .driver-popover.pm-hint-popover {

@@ -1,0 +1,34 @@
+.merge-counter {
+  max-width: 34rem;
+  margin: 1rem auto;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--pm-color-line-strong);
+  border-radius: var(--pm-radius-control);
+  font-family: var(--pm-font-sans);
+}
+.merge-counter__vocab {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-height: 2.2rem;
+}
+.merge-counter__token {
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.35rem;
+  background: var(--pm-color-surface);
+  border: 1px solid var(--pm-color-line-strong);
+  font-family: var(--pm-font-mono);
+}
+.merge-counter__token--new {
+  background: var(--pm-color-accent);
+  border-color: var(--pm-color-accent);
+  color: var(--pm-color-bg);
+}
+.merge-counter__size {
+  margin: 0.75rem 0;
+  color: var(--pm-color-muted);
+}
+.merge-counter__actions {
+  display: flex;
+  gap: 0.5rem;
+}

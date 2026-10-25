@@ -1,7 +1,7 @@
 import type { PresenterPanel, PresenterPanels, Unsubscribe } from '@lincyaw/kernel'
 import { currentLocale } from './locale.ts'
 import { HOST_MESSAGES } from './messages.ts'
-import StartReportPanel from './StartReportPanel.vue'
+import StartReportPanel from './start-report-panel.ts'
 import type { StatusProvider, StatusRegistry, Toolbar, ToolbarItem } from './contracts.ts'
 
 interface Item {

@@ -1,4 +1,4 @@
-import { useServer } from '@lincyaw/host'
+import { serverClient } from '@lincyaw/host'
 import { errorMessage, languageId } from '@lincyaw/kernel'
 import type { Executor, RunRequest, RunResult } from '@lincyaw/kernel'
 import { CONTAINER_EXECUTOR_ID, disconnected, EXEC_LOCAL_ID, failedContainerRun } from '../domain/index.ts'
@@ -11,7 +11,7 @@ export interface LocalEnvClient extends LocalEnvService {
 }
 
 async function post(path: string, body: unknown, signal?: AbortSignal): Promise<Response> {
-  const res = await useServer().fetch(EXEC_LOCAL_ID, path, {
+  const res = await serverClient().fetch(EXEC_LOCAL_ID, path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -25,9 +25,9 @@ async function post(path: string, body: unknown, signal?: AbortSignal): Promise<
 }
 
 async function probe(): Promise<LocalEnvStatus> {
-  if (!useServer().available) return disconnected('devServerOnly')
+  if (!serverClient().available) return disconnected('devServerOnly')
   try {
-    const res = await useServer().fetch(EXEC_LOCAL_ID, 'status')
+    const res = await serverClient().fetch(EXEC_LOCAL_ID, 'status')
     if (res.status === 403) return disconnected('notAllowed')
     if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) return disconnected('noEndpoints')
     return await res.json() as LocalEnvStatus

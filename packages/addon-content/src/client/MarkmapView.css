@@ -1,0 +1,10 @@
+.pm-markmap {
+  display: block;
+  width: 100%;
+  height: var(--pm-markmap-height, 18rem);
+  --markmap-text-color: currentColor;
+}
+.pm-markmap g.markmap-node > circle:focus-visible {
+  outline: var(--pm-size-stroke) solid currentColor;
+  outline-offset: var(--pm-size-stroke);
+}

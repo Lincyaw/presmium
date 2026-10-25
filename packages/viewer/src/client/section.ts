@@ -1,86 +1,30 @@
+import { memo, useEffect, useRef, useState } from 'react'
+import { useStore } from '@lincyaw/host'
 import { isChapterTitle, narrationAt } from '@lincyaw/kernel'
-import type { Finding, IRBlock, IRSection } from '@lincyaw/kernel'
-import type { PropType, VNodeChild } from 'vue'
-import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, provide, ref, shallowRef, toRef } from 'vue'
+import type { IRSection } from '@lincyaw/kernel'
 import { FINAL_STEP, sectionDiagnostics } from '../domain/index.ts'
 import { BlockView } from './block.ts'
+import { contentMarks } from './content-marks.ts'
 import { SECTION_CONTEXT } from './section-context.ts'
 import { viewerMessages } from './viewer-messages.ts'
 import { useViewer } from './viewer-state.ts'
-import { PAGE_TRACKER } from './views/page-tracker.ts'
-
+import { SectionBlockEditor } from './editing/section-block-editor.tsx'
+import { h } from './element.ts'
 export type SectionLayout = 'document' | 'scrolly'
-
-function blockViews(blocks: IRBlock[], section: IRSection, step: number, expanded: boolean): VNodeChild[] {
-  return blocks.map(block => h(BlockView, { key: block.id, block, section, step, expanded }))
+function SectionViewContent({ section, layout = 'document' }: { section: IRSection, layout?: SectionLayout }) {
+  const viewer = useViewer(); const doc = useStore(viewer.doc); const view = useStore(viewer.pageView); const [scrolled, setScrolled] = useState(0); const root = useRef<HTMLElement>(null)
+  useEffect(() => {
+    const observer = new IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting) && viewer.view.getSnapshot() === viewer.pageView.getSnapshot() && !viewer.restoring.getSnapshot()) { const current = viewer.position.getSnapshot(); if (current.section !== section.id) viewer.go({ section: section.id, step: 0 }) } }, { rootMargin: '-10% 0px -70% 0px' })
+    if (root.current) observer.observe(root.current)
+    return () => observer.disconnect()
+  }, [section.id, viewer])
+  useEffect(() => { if (layout !== 'scrolly') return; const update = () => { const markers = [...root.current?.querySelectorAll<HTMLElement>('.pm-step') ?? []]; const step = Math.max(0, markers.filter(el => el.getBoundingClientRect().top < window.innerHeight * .6).length - 1); setScrolled(step); if (viewer.view.getSnapshot() === view) viewer.go({ section: section.id, step }) }; window.addEventListener('scroll', update, true); return () => window.removeEventListener('scroll', update, true) }, [layout, section.id, view])
+  const step = layout === 'scrolly' ? scrolled : FINAL_STEP
+  const title = isChapterTitle(doc, section) ? 'h1' : 'h2'; const t = viewerMessages().section
+  const blocks = section.blocks.filter(block => block.role === 'visual' || (block.only && !block.only.includes('lecture')) || Boolean(doc.config.renderers.lecture?.script))
+  const findings = viewer.options.diagnostics ? sectionDiagnostics(section, doc.diagnostics) : []
+  const body = layout === 'scrolly' ? [h('div', { className: 'pm-stage pm-board' }, blocks.filter(b => b.role === 'visual').map(block => h(BlockView, { key: block.id, block, section, step }))), h('div', { className: 'pm-track' }, Array.from({ length: section.steps + 1 }, (_, k) => h('div', { key: k, className: `pm-step${k === step ? ' pm-step--current' : ''}`, 'data-step': k }, narrationAt(section, k).map(block => h(BlockView, { key: block.id, block, section, step }))))) ] : h(SectionBlockEditor, { section }, h('div', { className: 'pm-section__body' }, blocks.map(block => h(BlockView, { key: block.id, block, section, step, expanded: true }))))
+  return h(SECTION_CONTEXT.Provider, { value: { section, step, view } }, h('section', { ref: root, className: `pm-section pm-section--${layout}`, 'data-section': section.id, 'data-index': section.index, 'data-step': layout === 'scrolly' ? step : undefined }, [h(title, { id: section.id, className: 'pm-section__title', tabIndex: -1, 'data-content-role': 'visual', 'data-content-label': viewerMessages().contentRoles.visual }, [contentMarks(section, 'visual', 0), section.title, viewer.options.sectionHeading?.(section, step), h('a', { className: 'header-anchor', href: `#${section.id}`, 'aria-label': t.anchor(section.title) }, '​')]), findings.length ? h('ul', { className: 'pm-diagnostics', role: 'alert' }, findings.map((finding, key) => h('li', { key, 'data-severity': finding.severity }, finding.message))) : null, body]))
 }
 
-export const SectionView = defineComponent({
-  name: 'PmSectionView',
-  props: {
-    section: { type: Object as PropType<IRSection>, required: true },
-    layout: { type: String as PropType<SectionLayout>, default: 'document' },
-  },
-  setup(props) {
-    const viewer = useViewer()
-    const tracker = inject(PAGE_TRACKER, undefined)
-    const el = shallowRef<HTMLElement>()
-    const scrolled = ref(0)
-    const step = computed(() => (props.layout === 'scrolly' ? scrolled.value : FINAL_STEP))
-    provide(SECTION_CONTEXT, { section: toRef(props, 'section'), step, view: viewer.pageView })
-
-    let untrack: (() => void) | undefined
-    onMounted(() => {
-      if (!el.value || !tracker) return
-      untrack = tracker.add({ el: el.value, id: () => props.section.id, layout: () => props.layout, step: scrolled })
-    })
-    onBeforeUnmount(() => untrack?.())
-
-    // Read from the whole document, they change the section only when their own value does: an edit elsewhere renders it not again.
-    const heading = computed(() => (isChapterTitle(viewer.doc.value, props.section) ? 'h1' : 'h2'))
-    const findings = computed<Finding[]>((before) => {
-      const now = viewer.options.diagnostics ? sectionDiagnostics(props.section, viewer.doc.value.diagnostics) : []
-      return before && JSON.stringify(before) === JSON.stringify(now) ? before : now
-    })
-
-    return () => {
-      const { section, layout } = props
-      const t = viewerMessages().section
-      const current = step.value
-      const problems = findings.value
-      const body = layout === 'scrolly' && section.blocks.some(b => b.role === 'visual')
-        ? [
-            h('div', { class: 'pm-stage pm-board' }, blockViews(section.blocks.filter(b => b.role === 'visual'), section, current, false)),
-            h('div', { class: 'pm-track' }, Array.from({ length: section.steps + 1 }, (_, k) => {
-              const narration = narrationAt(section, k)
-              return h('div', { 'key': k, 'class': ['pm-step', { 'pm-step--current': k === current, 'pm-step--bare': narration.length === 0 }], 'data-step': k }, blockViews(narration, section, current, false))
-            })),
-          ]
-        : [h('div', { class: 'pm-section__body' }, blockViews(section.blocks, section, current, true))]
-      return h('section', {
-        'ref': el,
-        'class': ['pm-section', `pm-section--${layout}`, { 'pm-section--error': problems.some(p => p.severity === 'error') }],
-        'data-section': section.id,
-        'data-index': section.index,
-        'data-step': layout === 'scrolly' ? current : undefined,
-      }, [
-        h(heading.value, { id: section.id, class: 'pm-section__title', tabindex: -1 }, [
-          section.title,
-          viewer.options.sectionHeading?.(section, current) ?? null,
-          h('a', { 'class': 'header-anchor', 'href': `#${section.id}`, 'aria-label': t.anchor(section.title) }, '​'),
-        ]),
-        viewer.options.openSource
-          ? h('p', { class: 'pm-section__source' }, h('button', {
-              type: 'button',
-              title: t.sourceTitle(`${section.source.file}:${section.source.line}`),
-              onClick: () => viewer.options.openSource!(section.source),
-            }, t.openSource))
-          : null,
-        problems.length
-          ? h('ul', { class: 'pm-diagnostics', role: 'alert' }, problems.map((p, i) => h('li', { 'key': i, 'data-severity': p.severity }, `${p.severity}: ${p.message}`)))
-          : null,
-        ...body,
-      ])
-    }
-  },
-})
+export const SectionView = memo(SectionViewContent)

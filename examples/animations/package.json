@@ -21,8 +21,9 @@
     "@lincyaw/addon-speech": "workspace:*",
     "@lincyaw/viewer": "workspace:*",
     "@lincyaw/web": "workspace:*",
-    "vue": "^3.5.42",
-    "yaml": "2.9.0"
+    "yaml": "2.9.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "presmium": {
     "preview": {

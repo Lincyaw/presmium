@@ -816,7 +816,7 @@ test.describe('presmium dev', () => {
   test('a component the author adds to the deck while the server runs is registered at the next save', async ({ page }) => {
     await openDev(page, `${dev.url}live.html`, '.pm-section[data-section="components"]')
     mkdirSync(join(dev.deck, 'components'), { recursive: true })
-    writeFileSync(join(dev.deck, 'components/FixtureAdded.vue'), '<template><p class="fx-added">新加的组件</p></template>\n')
+    writeFileSync(join(dev.deck, 'components/FixtureAdded.tsx'), 'export default function FixtureAdded() { return <p className="fx-added">新加的组件</p> }\n')
     edit(/$/, '\n(added-component)=\n## 新加的组件\n\n:::{component} FixtureAdded\n:::\n\n服务运行时加入的组件。\n', 'live')
     await expect(page.locator('.pm-section[data-section="added-component"] .fx-added')).toHaveText('新加的组件', { timeout: 30_000 })
   })
@@ -851,7 +851,7 @@ test.describe('a plugin that extends the IR runtime', () => {
     await expect(page.getByRole('link', { name: '在幻灯片中打开' })).toHaveCount(0)
   })
 
-  test('a component written for Slidev sees its section\'s $frontmatter, $page and $clicks, and v-click rules', async ({ page }) => {
+  test('a React component reads its section, page and step, with reversible reveals', async ({ page }) => {
     await openDev(page, `${dev.url}?view=present&section=probe`, '.pm-present .pm-probe')
     const probe = page.locator('.pm-present .pm-probe')
     await expect(probe).toHaveAttribute('data-title', '探针')

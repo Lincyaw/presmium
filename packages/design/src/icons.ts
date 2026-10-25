@@ -1,7 +1,7 @@
-import { ArrowLeft, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleCheck, CircleHelp, CircleX, Columns2, Contrast, Copy, Download, ExternalLink, Eye, FileDiff, FileOutput, FileText, Film, Folder, Globe, GitBranch, GitFork, History, Info, Languages, Menu, MessageSquare, MessageSquarePlus, MessagesSquare, Moon, MoreHorizontal, PanelLeft, PanelLeftClose, Pause, Pencil, PenLine, Play, Plug, Plus, Presentation, Redo2, Save, Search, SlidersHorizontal, Sparkles, Sun, Trash2, TriangleAlert, Undo2, Users, X } from 'lucide'
+import { Captions, Clock3, Layers, ArrowLeft, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleCheck, CircleHelp, CircleX, Columns2, Contrast, Copy, Download, ExternalLink, Eye, FileDiff, FileOutput, FileText, Film, Folder, Globe, GitBranch, GitFork, History, Info, Languages, LayoutGrid, Maximize2, Menu, MessageSquare, MessageSquarePlus, MessagesSquare, Minimize2, Moon, MoreHorizontal, PanelLeft, PanelLeftClose, Pause, Pencil, PenLine, Play, Plug, Plus, Presentation, Redo2, Save, Search, SlidersHorizontal, Sparkles, Sun, Trash2, TriangleAlert, Undo2, Users, X } from 'lucide'
 import type { IconNode } from 'lucide'
 
-// Presmium's semantic names stay stable across the Vue and React components and the generated HTML.
+// Presmium's semantic names stay stable across React components and the generated HTML.
 export const ICONS = {
   document: FileText, diff: FileDiff, search: Search, history: GitFork, people: Users, help: CircleHelp,
   sliders: SlidersHorizontal, plus: Plus, sparkle: Sparkles, edit: Pencil, close: X,
@@ -16,6 +16,8 @@ export const ICONS = {
   eye: Eye, 'edit-text': PenLine, resolved: CircleCheck, navigation: PanelLeft,
   export: FileOutput, download: Download, video: Film, website: Globe, notebook: BookOpen,
   menu: Menu, language: Languages,
+  captions: Captions, timing: Clock3, steps: Layers,
+  overview: LayoutGrid, fullscreen: Maximize2, 'exit-fullscreen': Minimize2,
 } satisfies Record<string, IconNode>
 
 export type IconName = keyof typeof ICONS

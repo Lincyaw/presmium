@@ -1,14 +1,16 @@
-import { FocusScope } from 'reka-ui'
-import { PmApprovals } from '@lincyaw/host'
-import { defineComponent, h, nextTick, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
+import { FocusScope } from '@radix-ui/react-focus-scope'
+import { PmApprovals, PmIcon, PmMenu } from '@lincyaw/host'
+import { useEffect, useRef, useState } from 'react'
+import { useStore } from '@lincyaw/host'
+import { h } from '../element.ts'
 import { viewerMessages } from '../viewer-messages.ts'
 import { useViewer } from '../viewer-state.ts'
 import type { Viewer } from '../viewer-state.ts'
 import { overviewOpen, useActions } from './actions.ts'
-import { button, focusScope, layers, useCurrentSection, useModal, useOverlayBar } from './overlay.ts'
+import { button, layers, useCurrentSection, useModal, useOverlayBar } from './overlay.ts'
 import { SlideFace, SlideFit, useSlides } from './slide.ts'
 
-function moveInOverview(root: HTMLElement | undefined, key: string): boolean {
+function moveInOverview(root: HTMLElement | null | undefined, key: string): boolean {
   const items = [...root?.querySelectorAll<HTMLElement>('.pm-overview__item') ?? []]
   if (!items.length) return false
   const at = Math.max(items.indexOf(document.activeElement as HTMLElement), 0)
@@ -21,76 +23,75 @@ function moveInOverview(root: HTMLElement | undefined, key: string): boolean {
 
 /** The slides form's way out: a link to the same place on the document's page, when there is one. */
 function pageLink(viewer: Viewer) {
-  const link = viewer.options.pageLink?.(viewer.position.value)
-  return link ? h('a', { class: 'pm-present__button', href: link.href }, link.label) : null
+  const link = viewer.options.pageLink?.(viewer.position.getSnapshot())
+  return link ? h('a', { 'class': 'pm-ui-icon-button pm-ui-icon-button--small', 'href': link.href, 'aria-label': link.label, 'title': link.label }, [h(PmIcon, { name: 'document' })]) : null
 }
 
-export const PresentView = defineComponent({
-  name: 'PmPresentView',
-  setup() {
+export function PresentView() {
     const viewer = useViewer()
     const { section, step } = useCurrentSection(viewer, 'present')
-    const root = shallowRef<HTMLElement>()
-    const bar = shallowRef<HTMLElement>()
+    const root = useRef<HTMLDivElement>(null)
+    const bar = useRef<HTMLDivElement>(null)
     const { shape } = useSlides()
     useOverlayBar(bar)
-    let ownsFullscreen = false
+    const ownsFullscreen = useRef(false)
+    const [fullscreen, setFullscreen] = useState(false)
+    const overview = useStore(overviewOpen)
+    const doc = useStore(viewer.doc)
+    const position = useStore(viewer.position)
+    const pageView = useStore(viewer.pageView)
+    const syncFullscreen = () => { setFullscreen(Boolean(document.fullscreenElement)) }
     const enterFullscreen = () => {
-      if (document.fullscreenElement) return
+      if (document.fullscreenElement) return void document.exitFullscreen().catch(() => {})
       void document.documentElement.requestFullscreen().then(() => {
-        if (!root.value) return document.exitFullscreen()
-        ownsFullscreen = true
+        if (!root.current) return document.exitFullscreen()
+        ownsFullscreen.current = true
       }).catch(() => {})
     }
-    overviewOpen.value = false
     const closeOverview = () => {
-      overviewOpen.value = false
-      root.value?.focus()
+      overviewOpen.set(false)
+      root.current?.focus()
     }
-    useActions(viewer, 'present')
+    useActions(viewer, 'present', [{ id: 'fullscreen', keys: ['F'], run: enterFullscreen }])
     const onOverviewKey = (event: KeyboardEvent) => {
-      if (!overviewOpen.value || event.key === 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return
+      if (!overview || event.key === 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return
       event.stopImmediatePropagation()
       if (event.key === 'Escape' || event.key === 'o') closeOverview()
-      else if (!moveInOverview(root.value, event.key)) return
+      else if (!moveInOverview(root.current, event.key)) return
       event.preventDefault()
     }
     useModal(root)
-    onMounted(() => {
+    useEffect(() => {
       window.addEventListener('keydown', onOverviewKey, { capture: true })
-    })
-    onBeforeUnmount(() => {
+      document.addEventListener('fullscreenchange', syncFullscreen)
+      return () => {
       window.removeEventListener('keydown', onOverviewKey, { capture: true })
-      overviewOpen.value = false
-      if (ownsFullscreen && document.fullscreenElement === document.documentElement) void document.exitFullscreen().catch(() => {})
-    })
-    watch(overviewOpen, async (open) => {
-      if (!open) return
-      await nextTick()
-      root.value?.querySelector<HTMLElement>('.pm-overview__item[aria-current="true"]')?.focus()
-    })
+      document.removeEventListener('fullscreenchange', syncFullscreen)
+      }
+    }, [overview])
+    useEffect(() => () => { overviewOpen.set(false); if (ownsFullscreen.current && document.fullscreenElement === document.documentElement) void document.exitFullscreen().catch(() => {}) }, [])
+    useEffect(() => { if (overview) root.current?.querySelector<HTMLElement>('.pm-overview__item[aria-current="true"]')?.focus() }, [overview])
     const jump = (id: string) => {
       viewer.go({ section: id, step: 0 })
       closeOverview()
     }
 
-    return () => {
-      const current = section.value
+      const current = section
       if (!current) return null
       const t = viewerMessages()
-      const { sections } = viewer.doc.value
-      return h(FocusScope, focusScope(root), () => [h('div', {
+      const { sections } = doc
+      return h(FocusScope, { trapped: true, loop: true, asChild: true }, h('div', null, [h('div', {
         'ref': root,
         'class': 'pm-present',
         'role': 'region',
         'aria-label': t.present.region,
         'tabindex': -1,
         'data-section': current.id,
-        'data-step': step.value,
+        'data-step': step,
       }, [
         h('div', { class: 'pm-present__slide' }, [
-          h(SlideFit, { shape: shape.value }, () => h(SlideFace, { key: current.id, section: current, step: step.value })),
-          overviewOpen.value
+          h(SlideFit, { shape: shape }, h(SlideFace, { key: current.id, section: current, step: step })),
+          overview
             ? h('div', { 'class': 'pm-overview', 'role': 'dialog', 'aria-label': t.present.overview }, h('ol', { class: 'pm-overview__grid' }, sections.map(s => h('li', { key: s.id }, h('button', {
                 'type': 'button',
                 'class': 'pm-overview__item',
@@ -101,18 +102,18 @@ export const PresentView = defineComponent({
             : null,
         ]),
         h('div', { ref: bar, class: 'pm-present__bar' }, [
-          h('span', { class: 'pm-present__counter' }, t.present.counter(current.index, sections.length, step.value, current.steps)),
-          button(t.present.prev, () => viewer.prev()),
-          button(t.present.next, () => viewer.next()),
-          button(t.present.overview, () => overviewOpen.value = !overviewOpen.value),
-          viewer.options.openPresenter ? button(t.present.presenter, () => viewer.options.openPresenter!(viewer.position.value)) : null,
-          button(t.present.fullscreen, enterFullscreen),
-          viewer.options.slidesOnly ? pageLink(viewer) : button(t.present.exit, () => viewer.setView(viewer.pageView.value)),
+          h('span', { 'class': 'pm-present__counter', 'title': t.present.counter(current.index, sections.length, step, current.steps) }, `${current.index} / ${sections.length}${current.steps > 0 ? ` · ${step + 1} / ${current.steps + 1}` : ''}`),
+          button(t.present.prev, () => viewer.prev(), 'chevron-left', 'ArrowLeft'),
+          button(t.present.next, () => viewer.next(), 'chevron-right', 'ArrowRight'),
+          current.steps > 0 ? h(PmMenu, { label: t.present.jumpStep, icon: 'steps', placement: 'above-start', items: Array.from({ length: current.steps + 1 }, (_, k) => ({ id: String(k), label: t.present.step(k + 1), icon: k === step ? 'check' as const : undefined })), onSelect: (id: string) => viewer.go({ section: current.id, step: Number(id) }) }) : null,
+          h('button', { 'type': 'button', 'class': 'pm-ui-icon-button pm-ui-icon-button--small pm-present__narrate', 'data-narration-section': current.id, 'data-narration-step': step, 'aria-label': t.contentRoles.narration, 'title': t.contentRoles.narration }, [h(PmIcon, { name: 'captions' })]),
+          button(t.present.overview, () => overviewOpen.set(!overview), 'overview', 'o', { 'aria-pressed': overview }),
+          viewer.options.openPresenter ? button(t.present.presenter, () => viewer.options.openPresenter!(position), 'slides', 'p') : null,
+          button(fullscreen ? t.present.exitFullscreen : t.present.fullscreen, enterFullscreen, fullscreen ? 'exit-fullscreen' : 'fullscreen', 'Shift+F', { 'aria-pressed': fullscreen }),
+          viewer.options.slidesOnly ? pageLink(viewer) : button(t.present.exit, () => viewer.setView(pageView), 'close', 'Escape'),
           ...layers('present', 'bar'),
           h(PmApprovals, { placement: 'above' }),
         ]),
         ...layers('present', 'view'),
-      ]), ...layers('present', 'viewport')])
-    }
-  },
-})
+      ]), ...layers('present', 'viewport')]))
+}

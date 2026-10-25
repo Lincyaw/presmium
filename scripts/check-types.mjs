@@ -3,7 +3,7 @@ import { join, sep } from 'node:path'
 import ts from 'typescript'
 
 const root = new URL('..', import.meta.url).pathname
-// tsconfig.json takes the `.ts` sources, tests and specs; the workbench's React panels have their own settings.
+// tsconfig.json takes the `.ts`/`.tsx` sources, tests and specs; the workbench's React panels have their own settings.
 const PROJECTS = ['tsconfig.json', 'packages/workbench/tsconfig.json']
 // Dependencies that publish their `.ts` sources type-check only with their own settings; skipLibCheck covers `.d.ts`
 // files alone. The repository's code is checked against those sources' types, and the errors inside them are not reported.

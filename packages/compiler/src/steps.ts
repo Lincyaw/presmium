@@ -41,16 +41,18 @@ export function scheduleSteps(drafts: BlockDraft[], report: (finding: Finding) =
       : draft.span > 0 ? last
       : group !== undefined ? groups.get(group)!
       : 0)
+    const explicitNarration = draft.role === 'narration' && draft.node.type === 'markdown' && draft.node.narration !== undefined
     if (draft.until !== undefined && draft.until <= at) report({ checkId: 'presmium.steps', severity: 'error', message: ':until: must be greater than the block’s starting step', source: draft.source })
     if (draft.role === 'visual') {
       current = at
       currentSpan = draft.span
       narrated = 0
     }
-    else if (draft.role === 'narration') {
+    else if (draft.role === 'narration' && (!explicitNarration || at === current + Math.min(narrated, currentSpan))) {
       narrated++
     }
-    last = Math.max(last, at + draft.span, draft.until ?? 0)
+    // Pinning speech must not move the next animation. Replacing an implicit paragraph still occupies its slot.
+    if (!explicitNarration) last = Math.max(last, at + draft.span, draft.until ?? 0)
     return {
       id: ids[i]!,
       role: draft.role,
@@ -62,7 +64,7 @@ export function scheduleSteps(drafts: BlockDraft[], report: (finding: Finding) =
       node: draft.node,
     }
   })
-  return { blocks, steps: last }
+  return { blocks, steps: Math.max(last, ...blocks.map(b => b.at)) }
 }
 
 export { compactSteps } from '@lincyaw/kernel'

@@ -1,0 +1,20 @@
+[data-pm-hint='inline'] {
+  outline: var(--pm-size-stroke) solid var(--pm-color-accent);
+  outline-offset: var(--pm-size-rule);
+  animation: pm-hint-ring var(--pm-duration-guide-ring) ease-out infinite;
+}
+@keyframes pm-hint-ring {
+  from {
+    outline-offset: var(--pm-size-stroke);
+    outline-color: var(--pm-color-accent);
+  }
+  to {
+    outline-offset: var(--pm-guide-ring-spread);
+    outline-color: transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-pm-hint='inline'] {
+    animation: none;
+  }
+}

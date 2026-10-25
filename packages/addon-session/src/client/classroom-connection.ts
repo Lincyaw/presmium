@@ -2,7 +2,6 @@ import { currentLocale } from '@lincyaw/host'
 import type { Navigation, SyncTransport } from '@lincyaw/host'
 import { errorMessage } from '@lincyaw/kernel'
 import type { ClassroomStore, ParticipantRole, Unsubscribe } from '@lincyaw/kernel'
-import { watch } from 'vue'
 import { WebsocketProvider } from 'y-websocket'
 import * as Y from 'yjs'
 import { archiveUrl, followTarget, joinRequest, joinUrl, MESSAGES, participantsOf, readableString, samePosition, sessionStatus } from '../domain/index.ts'
@@ -123,7 +122,7 @@ export function createClassroomConnection(options: ClassroomConnectionOptions): 
   }
 
   function publishPosition(): void {
-    if (navigation && presenting() && active()) publishCursor(doc, navigation.position.value)
+    if (navigation && presenting() && active()) publishCursor(doc, navigation.position.getSnapshot())
   }
 
   function bind(next: Y.Doc): void {
@@ -347,7 +346,7 @@ export function createClassroomConnection(options: ClassroomConnectionOptions): 
     }
   }
 
-  const stopPublishing: Unsubscribe = navigation ? watch(navigation.position, publishPosition) : () => {}
+  const stopPublishing: Unsubscribe = navigation ? navigation.position.subscribe(publishPosition) : () => {}
 
   const tabs = connectTabs(prefix, {
     asked() {

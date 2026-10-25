@@ -49,9 +49,11 @@ renderers:
 
 it('makes a scene a component with a step a duration; the notebook shows its description', async () => {
   const dir = deck(SCENES)
+  writeFileSync(join(dir, 'scenes/unused.js'), 'export default {}\n')
   const ir = await presmium(dir, ['ir'])
   expect(ir.code, ir.stdout + ir.stderr).toBe(0)
   const doc = JSON.parse(ir.stdout) as IRDocument
+  expect(doc.config.presmium['presmium.motion']).toMatchObject({ scenes: ['bpe/merge', 'unused'] })
   const block = doc.sections.find(s => s.id === 'film')!.blocks.find(b => b.id === 'merge')!
   const node = block.node as ComponentNode
   expect([block.at, block.span]).toEqual([0, 2])

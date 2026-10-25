@@ -1,0 +1,58 @@
+.pm-exercise__code {
+  min-height: 4em;
+  padding: 0.4em 0.75em;
+  background: var(--pm-color-code);
+  font-family: var(--pm-font-mono);
+  font-size: 0.85em;
+  line-height: 1.4;
+}
+.pm-exercise__checks {
+  margin: 0.4em 0;
+  color: var(--pm-color-muted);
+}
+.pm-exercise__checks summary {
+  cursor: pointer;
+}
+.pm-exercise__checks pre,
+.pm-exercise__output {
+  margin: 0.35em 0;
+  padding: 0.5em 0.75em;
+  max-height: 8em;
+  overflow: auto;
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-sunk);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-mono);
+  font-size: 0.85em;
+  white-space: pre-wrap;
+}
+.pm-exercise__verdict {
+  font-weight: 600;
+}
+.pm-exercise__verdict[data-status='passed'] {
+  color: var(--pm-color-ok);
+}
+.pm-exercise__verdict[data-status='failed'],
+.pm-exercise__verdict[data-status='error'] {
+  color: var(--pm-color-danger);
+}
+.pm-exercise__cases {
+  margin: 0.35em 0;
+  padding-left: 1.2em;
+}
+.pm-exercise__mark {
+  margin-inline-end: 0.3em;
+  vertical-align: -0.12em;
+}
+.pm-exercise__cases li[data-ok='true'] > .pm-exercise__mark {
+  color: var(--pm-color-ok);
+}
+.pm-exercise__cases li[data-ok='false'] > .pm-exercise__mark {
+  color: var(--pm-color-danger);
+}
+.pm-exercise__error {
+  font-size: 0.9em;
+}
+.pm-exercise__summary {
+  font-weight: 600;
+}

@@ -161,7 +161,7 @@ export async function loadOperatorPlugins(sources: PluginSources): Promise<{ plu
 
 export const DECK_PLUGIN = 'deck'
 
-const COMPONENT = /^[^.]+\.(?:vue|[jt]sx?)$/
+const COMPONENT = /^[^.]+\.(?:[jt]sx?)$/
 
 export async function directoryComponents(dir: string): Promise<string[]> {
   const files = await readdir(join(dir, 'components')).catch(() => [])

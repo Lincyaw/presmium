@@ -20,7 +20,7 @@
 ```
 
 - 所有媒介都从 IR 生成，没有任何媒介直接读取源码。
-- 编辑只在源码中进行；渲染产物不回写源码。
+- MyST 源码是唯一持久化内容。作者的块编辑通过预览协议交给工作台回写 MyST，再编译 IR；独立部署的渲染产物不自行保存源码。
 - 网页渲染端是参考实现，必须支持全部 IR 节点；其他渲染端可以只支持子集，不支持的节点按第 6 节的降级规则处理。
 
 ## 2. 源语法
@@ -49,6 +49,10 @@ execute: { rerun: environment } # 可选：另一运行环境的执行录制重�
 ```
 
 官方插件以前叫 `@lincyaw/slidev-addon-*`，`plugins`（与运营者的插件列表）写旧名时仍然加载：编译器把它换成现在的 `@lincyaw/addon-*`，IR 的 `config.plugins` 中是新名，每个旧名给一条 `info`（`presmium.plugins`）。`@lincyaw/addon-core`（幻灯片以前的宿主适配）不再需要：头部还列着它时照常编译，它不加载，`presmium check` 给一条 `info`，提示从 `plugins` 中去掉。
+
+`contentModel: blocks` 启用正文块模型，新建文稿默认使用它：普通段落、列表等是可编辑的正文与演示内容（IR 的 `role: visual`）；需要朗读或显示为字幕的文字必须放在显式 `{narration}` 中，并用 `:at:` 绑定章节步骤，`:mode: during` 或 `after` 决定与动画同步或在动画完成后开始。未声明该字段的旧文稿保留原有隐式讲解规则，避免改变已有讲授。
+
+作者画布以 BlockNote 编辑正文块，支持块的添加、排序与类型转换；动画场景与不能无损转换的插件内容保留为自定义块，仍对应原 IR 块和源码标记。讲解在当前页、当前步骤的面板中单独编辑。正文块与讲解都保存为 MyST，BlockNote JSON 只作为编辑中的传输数据，不成为第二份文稿。复杂容器与跨源文件范围不能安全回写时，编辑操作报告原因并保留原稿。
 
 多文件文稿用 MyST 的 `{include}` 指令引入。入口文件可以以 UTF-8 BOM 开头（Windows 记事本等编辑器会写入），编译器读取头部前去掉它。
 
@@ -114,6 +118,8 @@ notebook 中显示不了的组件（没有 notebook 扩展，也没有 `fallback
 | `:::{slide}` 包裹的内容 | 上屏内容 |
 | 代码块、`{code-ref}`、图片、表格、公式、图表、插件指令 | 上屏内容 |
 
+工作台的文档编辑模式用投影、字幕、阅读图标区分这些角色，旁边是“页 · 步”或步骤范围（界面从 1 开始，源码与 IR 从 0 开始）。悬停和可访问名称说明用途；点标记打开该步骤的讲解编辑器。讲解被 `{only}` 限于非 `lecture` 媒介，或讲授另有独立脚本时，用阅读图标。查看与放映隐藏文档标记，标记不写进源码。
+
 各媒介的呈现：
 
 | 媒介 | 上屏内容 | 讲解 |
@@ -137,6 +143,19 @@ notebook 中显示不了的组件（没有 notebook 扩展，也没有 `fallback
 - 讲解绑定到它前面最近的上屏块：第 1 段属于该块出现的那一步（`at`），第 2 段属于 `at + 1`，依此类推；超出 `span` 的段落都属于最后一步 `at + span`。不占多步的块（`span` 为 0），其后的讲解都属于 `at`。作者因此可以每步写一段讲解。
 - 第一个上屏块之前的讲解属于第 0 步。
 - `{slide}` 或 `{only}` 上的 `:reveal:` 作用于其中的全部内容：整个块作为一个整体在下一步出现。
+
+讲解需要明确对齐某一步时，用内置 `{narration}`。`:at:` 是章节内从 0 开始的步骤；`:mode: during`（默认）边播放该步骤的动画边讲，`:mode: after` 等该步骤中最长动画的 `durations` 播完后开始讲。两种模式都在动画与讲解完成后才进入下一步；已有 `{cue}` 仍按词语触发。显式讲解不推进后续动画；它处在当前自动讲解位置时继续占用这个位置，所以将中间段落转为显式讲解不会把后续段落前移。正文仍按源码顺序阅读。
+
+```md
+:::{narration}
+:at: 1
+:mode: after
+
+交换完成后，最大的数向右移动了一格。
+:::
+```
+
+该指令编译为 `role: narration`、明确的 `at`，Markdown 节点另有 `narration: { mode: 'during' | 'after' }`。不需要讲授插件即可编译与阅读，讲授插件消费它来安排音频与 WebVTT 字幕，视频导出沿用同一时序。工作台在文档与放映中共用步骤讲解窗格：选步骤、编辑文字、切换时机并保存回指令，修改进入版本历史。动画下方的步号可直达；放映底栏的步骤菜单可跳到任何一步。界面步号比 `at` 大 1。
 
 ### 2.5 媒介限定与提示
 
@@ -448,7 +467,7 @@ translationOf: { entry: lecture.md, digest: 3f9a…c2 }
 
 - `{predict}` 的参数是问题；`:choices:` 给出选项（至少两个），省略时学习者写一段文字。
 - 揭示内容：`{predict}` 之后的下一步出现的全部内容，即 `:reveal:` 让它在下一步出现的上屏内容，以及绑定到这一步的讲解。“下一步”是源码中直到 `{predict}` 为止用到的最后一步的下一步，所以 `{predict}` 本身在第 0 步出现、前面已有揭示时，揭示内容仍是它之后第一个 `:reveal:` 的一步。课堂插件的编译步骤 `presmium.classroom.predict-reveals`（在 `presmium.classroom.places` 之前）把它们移入 `PmPredict` 组件的子块，排在补充说明（子块 `prompt`）之后（块 ID 与步骤不变）；属性 `reveal`、`notes` 分别列出移入的上屏块与讲解的 ID，`PmPredict` 块的 `span` 到达揭示的一步（通常为 1）。之后一步什么也不出现时给出警告（`presmium.classroom`），组件没有揭示内容。
-- 读者保存预测之前，揭示内容不显示（文档视图与滚动叙事视图，即视图角色为 `reader` 时）；保存后显示，并保存在本机（`localStorage`，按讲义的地址与 `<章节>/<块>` 保存，刷新后仍在；保存后不能修改）。投在全班面前的放映画面与演讲者视图（角色 `audience`、`presenter`）以及幻灯片按步骤显示；放映画面中移入的讲解不上屏，网页的演讲者视图在备注与“下一步”的预告中照常列出它（`@lincyaw/kernel` 的 `sectionNarration` 读出组件子块中的讲解）。幻灯片中补充说明在表单之前：幻灯片渲染端给组件子块的步骤包装元素写上子块的 ID 作为 Vue 的 `key`（网页的 IR 运行时同样按块 ID 给子块 `key`），`PmPredict` 由此分出揭示内容与补充说明。课堂中学习者的预测另写入 `predictions` 集合（键为 `<位置>:<参与者>`，值带位置、问题与选项），主讲在演讲者面板（“互动”）中看到各选项的人数，文字预测列出内容而不带姓名。
+- 读者保存预测之前，揭示内容不显示（文档视图与滚动叙事视图，即视图角色为 `reader` 时）；保存后显示，并保存在本机（`localStorage`，按讲义的地址与 `<章节>/<块>` 保存，刷新后仍在；保存后不能修改）。投在全班面前的放映画面与演讲者视图（角色 `audience`、`presenter`）以及幻灯片按步骤显示；放映画面中移入的讲解不上屏，网页的演讲者视图在备注与“下一步”的预告中照常列出它（`@lincyaw/kernel` 的 `sectionNarration` 读出组件子块中的讲解）。幻灯片中补充说明在表单之前：幻灯片渲染端给组件子块的步骤包装元素写上子块的 ID 作为 React 的 `key`（网页的 IR 运行时同样按块 ID 给子块 `key`），`PmPredict` 由此分出揭示内容与补充说明。课堂中学习者的预测另写入 `predictions` 集合（键为 `<位置>:<参与者>`，值带位置、问题与选项），主讲在演讲者面板（“互动”）中看到各选项的人数，文字预测列出内容而不带姓名。
 - notebook 中为问题、选项与折叠的揭示内容（`<details data-static="open">`，含移入的讲解；揭示的代码带编译时录制的输出，揭示的执行面板为它的降级内容）；它也是组件的 `fallback`。降级内容由 `presmium.classroom.places` 写出，编译时执行之后再由 `presmium.classroom.predict-fallbacks`（`after: 'execute'`，在执行插件的 `presmium.exec.fallbacks` 之后）重写一次，所以含揭示内容中的运行输出。幻灯片的 PDF、PNG 导出中不能展开折叠，`data-static="open"` 的 `<details>` 在导出中展开（第 6 节），测验答案这类没有这个标记的折叠仍收起。
 
 ### 2.14 视频的封面与字幕轨
@@ -580,8 +599,8 @@ IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的�
 
 - 指令与编译步骤通过 `ctx.src`、`ctx.resolvers` 读取文件，编译器记录读过的文件与读取时的 git 版本；其他方式读取的文件用 `ctx.watch(...files)` 声明。`presmium dev` 在这些文件或命名该版本的 git 引用（`HEAD`、所在分支、`packed-refs`）变化时重新编译。编译器只知道传给 `ctx.src`、`ctx.resolvers` 的版本名：插件若先把分支或标签名（如 `{code-ref}` 的 `:pin:`、`:variants:`）解析为提交再读取，要自己用 `ctx.watch` 声明这些名字对应的 git 引用文件，否则这些分支前进时不会重新编译。`presmium dev` 在一次编译所依赖的文件都被监听之后才报告这次编译；编译开始后改动、监听前未能察觉的文件，按修改时间补一次编译。
 - 渲染端扩展的组件转换函数为 `(node, block, ctx)`，`ctx` 是正在运行的渲染端的 `RenderContext`（输出目录、工作目录、渲染端配置），例如据此写出相对于渲染产物的路径。编译器把 `ctx` 绑定后交给渲染端，渲染端以 `(node, block)` 调用。
-- 浏览器端（网页、幻灯片）按 `component` 节点的组件名，查找插件注册的 Vue 组件。组件仍只依赖 `@lincyaw/host`。浏览器端的注册约定见 `architecture.md` 第 5 节。
-- 文稿自己的组件：文稿目录下 `components/` 中的 `.vue` 文件由编译器以插件 ID `deck` 登记，可以用 `{component}` 放进正文，两种形态都渲染（由 IR 运行时注册，组件编进文稿自己的代码包），编辑器的补全也列出它们。这些组件只能引用 `@lincyaw/host`、`@lincyaw/kernel` 与 vue，文稿的 `package.json` 要依赖 `@lincyaw/host`（`architecture.md` 5.1 节）。
+- 浏览器端（网页、幻灯片）按 `component` 节点的组件名，查找插件注册的 React 组件。组件仍只依赖 `@lincyaw/host`。浏览器端的注册约定见 `architecture.md` 第 5 节。
+- 文稿自己的组件：文稿目录下 `components/` 中的 `.tsx`、`.ts`、`.jsx`、`.js` 文件由编译器以插件 ID `deck` 登记，可以用 `{component}` 放进正文，两种形态都渲染（由 IR 运行时注册，组件编进文稿自己的代码包），编辑器的补全也列出它们。这些组件只能引用 `@lincyaw/host`、`@lincyaw/kernel` 与 React，文稿的 `package.json` 要依赖 `@lincyaw/host`（`architecture.md` 5.1 节）。
 
 ### 5.1 指令一览
 
@@ -617,7 +636,7 @@ IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的�
 | WebAssembly `presmium.execWasi` | 无指令；语言为 `c`、`cpp`、`ruby`、`sql` 的代码（带 `:run:` 的代码块，或执行面板）由它运行（2.7 节） | — | 全局配置 `loadTimeoutMs`；环境 `kind: wasi` | 执行器 `presmium.wasi`；编译步骤 `presmium.execWasi.runtimes` 写出两种形态要发布的运行时 |
 | 引导 `presmium.guide` | `{cursor}` | 正文每行一个路径点：`[move\|hover\|click] <CSS 选择器>`，动作默认为 `move` | — | `PmCursor`；第 k 个路径点在块的第 k 步，步数为路径点数减一 |
 | | `{spotlight}`、`{hint}` | 参数为目标的 CSS 选择器；正文为弹出说明 | `:title:`（说明标题）、`:span:`（持续的步数，默认 0） | `PmSpotlight`、`PmHint` |
-| 动画 `presmium.motion` | `{scene}` | 参数为场景名：文稿目录 `scenes/` 下的文件去掉扩展名（`.ts`、`.js`、`.mjs`；不收 JSX，幻灯片形态按 Vue 编译 JSX），可带子目录，如 `bpe/merge`；正文为说明文字 | `:durations:`（每一步的时长，写法同 `{cue}` 的 `pause`：`1.2`、`1.2s` 或 `800ms`；默认一步、时长 0）、`:aspect:`（宽高比，默认 `16/9`）、`:height:`（CSS 高度，给出时不按宽高比）、`:still:`（静止图片，随产物发布，降级内容中显示） | `PmScene`；步数为时长的个数减一，组件节点的 `durations` 即这些时长。场景文件默认导出 `gsapScene`、`animeScene`、`motionScene`、`threeScene`、`remotionScene` 或 `defineScene` 的结果（`@lincyaw/addon-motion/scene`）：一条时间轴，第 k 步演它的第 k 段；画面只由时间轴上的位置决定（`architecture.md` 4.4 节“步内时间”）。全部展开的文档视图显示终态，读者可以播放与拖动；notebook 与静态导出显示说明文字与静止图片。场景不存在、时长写错是错误 |
+| 动画 `presmium.motion` | `{scene}` | 参数为场景名：文稿目录 `scenes/` 下的文件去掉扩展名（`.ts`、`.js`、`.mjs`；场景模块不使用 JSX；需要 React 的 Remotion 场景通过 `remotionScene` 创建），可带子目录，如 `bpe/merge`；正文为说明文字 | `:durations:`（每一步的时长，写法同 `{cue}` 的 `pause`：`1.2`、`1.2s` 或 `800ms`；默认一步、时长 0）、`:aspect:`（宽高比，默认 `16/9`）、`:height:`（CSS 高度，给出时不按宽高比）、`:still:`（静止图片，随产物发布，降级内容中显示） | `PmScene`；步数为时长的个数减一，组件节点的 `durations` 即这些时长。场景文件默认导出 `gsapScene`、`animeScene`、`motionScene`、`threeScene`、`remotionScene` 或 `defineScene` 的结果（`@lincyaw/addon-motion/scene`）：一条时间轴，第 k 步演它的第 k 段；画面只由时间轴上的位置决定（`architecture.md` 4.4 节“步内时间”）。全部展开的文档视图显示终态，读者可以播放与拖动；notebook 与静态导出显示说明文字与静止图片。场景不存在、时长写错是错误 |
 | 富内容 `presmium.content` | `{markmap}` | 正文为标题与列表；开头的 YAML 块可写 `markmap` 选项 | — | `PmMarkmap`，降级为嵌套列表 |
 | | `{video}`、`{audio}`、`{animation}` | 参数为媒体文件路径（相对于本文件，或包路径）；正文为说明文字 | `:controls:`、`:autoplay:`、`:loop:`、`:muted:`、`:width:`、`:height:`、`:alt:`；`{animation}` 另有 `:still:`（减少动态效果时的静止图片）；`{video}` 另有 `:poster:`、`:captions:`、`:captions-default:`（2.14 节） | `PmMedia`，降级为文件链接；媒体、封面与字幕文件由渲染端随产物发布（组件的 `assets`） |
 | | `{youtube}` | 参数为 YouTube 视频 ID 或链接；正文为说明文字 | `:start:`（开始的秒数）、`:width:`、`:height:` | `PmYoutube`，降级为视频链接 |
@@ -746,11 +765,11 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 
 ### 8.1 IR 运行时
 
-`@lincyaw/viewer` 是浏览器中的 IR 运行时：它读取 IR，用 Vue 动态渲染章节与块，不经过任何 Markdown 生成或静态编译。
+`@lincyaw/viewer` 是浏览器中的 IR 运行时：它读取 IR，用 React 动态渲染章节与块，不经过任何 Markdown 生成或静态编译。
 
-- `markdown` 节点：mdast 转为 hast 后渲染为 Vue 虚拟节点；代码高亮用 Shiki，公式用 KaTeX，图表在客户端渲染。
+- `markdown` 节点：mdast 转为 hast 后渲染为 React 元素；代码高亮用 Shiki，公式用 KaTeX，图表在客户端渲染。
 - `code` 节点：按 `highlight` 与当前步骤高亮行，显示录制输出；`run.when` 含 `live` 时接入执行面板。照原样运行的代码（没有分步高亮与多版本）可以在运行之前就地编辑：“编辑代码”打开 CodeMirror 6 编辑器（第一次编辑时才加载），Mod-Enter 运行，“完成编辑”收起编辑器，“还原代码”回到源码中的代码；打印的页面不能编辑。网页与幻灯片相同。
-- `component` 节点：按组件名从插件注册表中取 Vue 组件渲染；组件只依赖 `@lincyaw/host`。
+- `component` 节点：按组件名从插件注册表中取 React 组件渲染；组件只依赖 `@lincyaw/host`。
 
 ### 8.2 运行时视图
 

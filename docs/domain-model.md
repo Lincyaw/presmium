@@ -46,7 +46,7 @@
 ```
 
 - **内核是共享内核**：所有上下文只依赖内核的契约，彼此之间不直接依赖。多个插件共用的业务服务契约（`executor`、`session`、`classroomStore`、`speech`、`agent`、`agentRuntime`、`revisions`、`approvals`、`mcpEndpoint` 与操作词汇 `TrackEvent`）也放在内核包中，因为提供方与使用方是不同的插件（`architecture.md` 4.5 节）。
-- **宿主适配是防腐层**：插件的组件与浏览器端代码（`components/`、`src/client/`）只通过 `@lincyaw/host` 获取步骤状态、服务与形态信息，因此同一个组件可以在两种形态中运行；查看器插件（`src/client/viewer.ts`）另经 `ViewerPluginContext` 登记视图、动作与图层。领域层（`src/domain/`）不引用 Vue。完整规则见 `architecture.md` 第 3 节。服务端（`@lincyaw/server`）是宿主适配在 Node 端的对应物：插件只经 `ServerContext`、`RequestContext` 与 `approvals` 使用它，浏览器端只经 `useServer()`。
+- **宿主适配是防腐层**：插件的组件与浏览器端代码（`components/`、`src/client/`）只通过 `@lincyaw/host` 获取步骤状态、服务与形态信息，因此同一个组件可以在两种形态中运行；查看器插件（`src/client/viewer.ts`）另经 `ViewerPluginContext` 登记视图、动作与图层。领域层（`src/domain/`）不引用 React 或其他 UI 框架。完整规则见 `architecture.md` 第 3 节。服务端（`@lincyaw/server`）是宿主适配在 Node 端的对应物：插件只经 `ServerContext`、`RequestContext` 与 `approvals` 使用它，浏览器端只经 `useServer()`。
 - **上下文之间通过服务协作**：例如课堂的练习校验使用代码执行提供的 `executor` 服务；测验、笔记等功能使用会话插件提供的 `session` 服务，会话插件可以整体替换。
 - **外部系统只经防腐层接入**：每个外部系统只在一个适配器中出现，适配器说一种标准协议（`architecture.md` 第 3 节的检查规则）。
 
@@ -181,17 +181,17 @@
 | 光标 | `Cursor { slide, step }` | 组件所在的章节与步骤；不在章节中时是当前位置：文档视图全部展开，滚动叙事视图由滚动推导，放映视图由键盘推进 |
 | 步骤状态 | `useStep()`（绝对步骤），组件用 `useStepState(range)`（相对于块的步骤作用域） | 组件所在章节的步骤；文档视图恒为已到达（`Infinity`） |
 | 视图角色 | `ViewRole` | 演讲者视图为演讲者，其他浮层视图为听众，文档与滚动叙事视图为读者 |
-| 共享状态 | 组件用 `useSharedState(key, initial, { scope })`，作用域 `SharedStateScope` | `createSharedStates`：`view` 只在本视图，`local` 与 `remote` 经 BroadcastChannel 在本机的窗口之间传递（通道按名字与站点路径区分），`remote` 另是同步通道 |
+| 共享状态 | 组件用 `useSharedState(key, initial, { scope })` 返回的 `[value, setValue]`，作用域 `SharedStateScope` | `createSharedStates`：`view` 只在本视图，`local` 与 `remote` 经 BroadcastChannel 在本机的窗口之间传递（通道按名字与站点路径区分），`remote` 另是同步通道 |
 | 同步传输 | `SyncTransport` | `syncTransports` 服务把每个传输接入全部 `remote` 共享状态（幻灯片上的绘图也在其中）；跟随主讲通过导航服务实现 |
 | 导航 | `Navigation` | IR 运行时的章节、步骤与视图，`go()` 跳转 |
-| 错误边界 | `PmBoundary` | Vue `onErrorCaptured` |
+| 错误边界 | `PmBoundary` | React class error boundary（`getDerivedStateFromError`、`componentDidCatch`） |
 | 演讲者面板 | `PresenterPanel` | 放映视图的演讲者窗口中显示 |
 | 工具栏 | `ToolbarItem` | 顶部导航栏与手机导航菜单中的控件 |
 | 操作 | `Operations`（`OPERATIONS`）、`Operation` | IR 运行时报告 `go`，执行插件报告 `run`，引导插件报告 `spot`、`hint`；讲授插件录制与重放 |
 | 服务端访问 | `useServer()`、`ServerClient` | `presmium dev` 中可用（开发服务器代理 `/__presmium/`）；`presmium serve` 中同样（成员是本机作者）；静态产物中 `available` 为 false |
 | 状态摘要 | `StatusRegistry`（`STATUS`） | 插件登记的 JSON 摘要（如课堂的作答统计），经控制通道送到服务端，供 agent 读取 |
 
-**步骤可逆约定**：插件组件的视觉状态必须是步骤的纯函数。组件通过 `v-click` 标记向宿主登记步骤（由查看器的兼容层处理，两种形态相同），用 `useStepState` 读取状态，不在点击事件回调中修改不可回放的状态。
+**步骤可逆约定**：插件组件的视觉状态必须是步骤的纯函数。组件通过 `useStepState` 读取步骤状态，按 `useStepScope` 的块内偏移派生 JSX 画面，不在点击事件回调中修改不可回放的状态。
 
 **操作可重放约定**：插件把用户的操作（不是重放引起的变化）以章节、块与锚点为坐标报告给 `OPERATIONS`，并为自己的操作类型登记重放；重放某一时刻的状态等于从空状态依次应用此前的全部操作。宿主在重放时把 `replaying` 置为 true，插件此时不报告。
 

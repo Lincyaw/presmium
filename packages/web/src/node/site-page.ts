@@ -41,7 +41,7 @@ export function pageHtml(input: PageHtmlInput): string {
   const attributes = (tag: MetaTag) => Object.entries(tag).map(([name, value]) => `${name}="${escapeHtml(value)}"`).join(' ')
   const head = [
     '<meta charset="utf-8">',
-    '<meta name="viewport" content="width=device-width, initial-scale=1">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">',
     `<title>${escapeHtml(input.title)}</title>`,
     ...(input.meta ?? []).map(tag => `<meta ${attributes(tag)}>`),
     `<script>${APPEARANCE}</script>`,

@@ -160,11 +160,15 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
   const rightbarBox = useRightbarBox(frame, rightbarTrack, [info.isRightbarOpen, info.hasRightbarTrack, info.isRightbarFullscreen, info.isConversationOpen, sideShown, narrow])
   useViewportWidth(frame, actions)
 
-  const opened = useRef(document_)
+  const opened = useRef({ document: document_, narrow })
   useEffect(() => {
-    if (document_ !== undefined && document_ !== opened.current && narrow) actions.showNarrowPane('preview')
+    // Entering the single-pane layout keeps the document the author was viewing on desktop.
+    // Once narrow, explicit navigation to history, chat or the document list remains the user's choice.
+    const documentChanged = document_ !== opened.current.document
+    const enteredNarrow = narrow && !opened.current.narrow
+    if (document_ !== undefined && narrow && (documentChanged || enteredNarrow)) actions.showNarrowPane('preview')
     if (document_ === undefined && narrow && info.narrowPane === 'preview') actions.showNarrowPane('documents')
-    opened.current = document_
+    opened.current = { document: document_, narrow }
   }, [document_, narrow, actions, info.narrowPane])
 
   useOpenStartupWorkspace(workbench, dshWorkspaces, openDshWorkspace, session)

@@ -46,7 +46,8 @@ export function PmCard({ variant = 'default', className, children, ...rest }: { 
   return <div className={cls('pm-ui-card', variant !== 'default' && `pm-ui-card--${variant}`, className)} {...rest}>{children}</div>
 }
 
-export function PmField({ label, inline, children }: { label: string, inline?: boolean, children?: ReactNode }) {
+export function PmField({ label, inline, group, children }: { label: string, inline?: boolean, group?: boolean, children?: ReactNode }) {
+  if (group) return <div className="pm-ui-field" role="group" aria-label={label}><span className="pm-ui-field__label">{label}</span>{children}</div>
   return (
     <label className={cls('pm-ui-field', inline && 'pm-ui-field--inline')}>
       {inline ? <>{children}<span className="pm-ui-field__label">{label}</span></> : <><span className="pm-ui-field__label">{label}</span>{children}</>}

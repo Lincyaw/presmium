@@ -45,5 +45,10 @@
   },
   "devDependencies": {
     "@lincyaw/cli": "workspace:*"
+  },
+  "presmium": {
+    "generated": [
+      "templates"
+    ]
   }
 }

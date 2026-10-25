@@ -51,6 +51,14 @@ This paragraph is spoken when the summary is revealed.
 
 ## Narration and projected content
 
+New lectures declare `contentModel: blocks` in the entry frontmatter. Plain paragraphs, lists and quotes
+are body blocks (`role: visual`), editable on the BlockNote canvas. Only explicit `{narration}` becomes
+speech or captions; bind it to `:at: N` and choose `:mode: during` or `after`. The step panel edits that
+narration while the document canvas edits the body. Save both through MyST, never a separate BlockNote file.
+
+The following table describes the implicit narration model retained for existing lectures without
+`contentModel: blocks`. Keep an existing lecture's model unless the user requests a conversion.
+
 Every block in a section is either **narration** or **projected content** (role `narration` or `visual` in the IR):
 
 | Block | Role |
@@ -83,7 +91,7 @@ Steps count from 0. The rules:
    - A `{scene}` has one state per entry of `:durations:`; `span` is the count minus one.
    - A component declares its internal steps with `:span:`.
 6. A multi-step block without `:reveal:` starts at the last step used so far, so its internal steps come after the blocks already shown.
-7. Narration binds to the nearest projected block before it: the 1st paragraph belongs to the step at which that block appears (`at`), the 2nd to `at + 1`, and so on. Paragraphs beyond `span` all belong to the last step, `at + span`. For a block with `span` 0, all following narration belongs to `at`. So you can write one paragraph of narration per step.
+7. In the legacy implicit model, narration binds to the nearest projected block before it: the 1st paragraph belongs to the step at which that block appears (`at`), the 2nd to `at + 1`, and so on. Paragraphs beyond `span` all belong to the last step, `at + span`. For a block with `span` 0, all following narration belongs to `at`. So you can write one paragraph of narration per step.
 8. Narration before the first projected block belongs to step 0.
 
 Example: a list with `:reveal: items` of three items followed by three paragraphs gives one paragraph per item; a fourth paragraph stays on the last item.
@@ -107,3 +115,5 @@ Restrict content to media with `{only}`, e.g. `{only} web, notebook`. Each rende
 Teacher-only content is audience filtering, not a media restriction; see [Publishing and reproduction](publishing.md).
 
 For quizzes, exercises, predict-then-reveal or media, first check the [directive reference](directives.md) for an existing directive. Build a component only when new interaction logic is needed.
+
+For precise speech alignment use `{narration}` with an explicit `:at:` and `:mode: during|after` (see the directive reference). In the workbench, click a document’s page/step icon or the captions icon in presentation to edit the selected step. Animation step buttons and the presentation step menu jump directly to the editing target; there is no need to advance through every earlier step.

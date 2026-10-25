@@ -1,15 +1,15 @@
 import type { Operations } from '@lincyaw/host'
 import type { IRDocument } from '@lincyaw/kernel'
-import { shallowRef } from 'vue'
+import { createStore } from '@lincyaw/host'
 import { eventDrift, lastIndexAt, timedEvents, trackDuration } from '../domain/index.ts'
 import type { LectureTrack, TimedEvent } from '../domain/index.ts'
 import type { TrackClock } from './clock.ts'
 
 export class LecturePlayer {
-  readonly time = shallowRef(0)
+  readonly time = createStore(0)
   /** The time since the lecture reached its current step (ms); undefined while the viewer tries the page out. */
-  readonly stepTime = shallowRef<number | undefined>(0)
-  readonly trying = shallowRef(false)
+  readonly stepTime = createStore<number | undefined>(0)
+  readonly trying = createStore(false)
   readonly duration: number
   readonly events: TimedEvent[]
   readonly dropped: number
@@ -49,22 +49,22 @@ export class LecturePlayer {
   }
 
   get playing(): boolean {
-    return this.clock.playing.value
+    return this.clock.playing.getSnapshot()
   }
 
   play(): void {
-    if (this.trying.value) this.back()
+    if (this.trying.getSnapshot()) this.back()
     this.clock.play()
     this.loop()
   }
 
   pause(): void {
     this.clock.pause()
-    this.time.value = this.clock.now()
+    this.time.set(this.clock.now())
   }
 
   seek(t: number): void {
-    this.trying.value = false
+    this.trying.set(false)
     this.clock.seek(t)
     this.fold(this.clock.now())
   }
@@ -74,10 +74,10 @@ export class LecturePlayer {
   }
 
   tryIt(): void {
-    if (this.trying.value) return
+    if (this.trying.getSnapshot()) return
     this.pause()
-    this.trying.value = true
-    this.stepTime.value = undefined
+    this.trying.set(true)
+    this.stepTime.set(undefined)
   }
 
   back(): void {
@@ -100,8 +100,8 @@ export class LecturePlayer {
   }
 
   private setTime(t: number): void {
-    this.time.value = t
-    this.stepTime.value = t - (this.reached[this.applied] ?? 0)
+    this.time.set(t)
+    this.stepTime.set(t - (this.reached[this.applied] ?? 0))
   }
 
   private apply(event: TimedEvent, seeking: boolean): void {
@@ -118,7 +118,7 @@ export class LecturePlayer {
     const step = () => {
       this.clock.tick()
       this.advanceTo(this.clock.now())
-      this.frame = this.clock.playing.value ? requestAnimationFrame(step) : 0
+      this.frame = this.clock.playing.getSnapshot() ? requestAnimationFrame(step) : 0
     }
     this.frame = requestAnimationFrame(step)
   }

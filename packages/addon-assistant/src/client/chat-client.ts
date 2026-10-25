@@ -19,7 +19,7 @@ function placeOf(context: AgentContext, webViewer: WebViewerAccess | undefined, 
       ...selection,
     }
   }
-  const position = slideNavigation?.position.value
+  const position = slideNavigation?.position.getSnapshot()
   const page = position && typeof document !== 'undefined' ? document.querySelector<HTMLElement>(`.pm-slide[data-slide="${position.slide}"]`) : undefined
   const text = page?.innerText.trim() ?? ''
   const id = position?.section ?? context.section
@@ -56,9 +56,9 @@ export interface ChatClientOptions {
 
 export function createAskClient(options: ChatClientOptions): AskClient {
   return {
-    provider: () => (askSettings.value ? askProvider(askSettings.value.url) : undefined),
+    provider: () => (askSettings.getSnapshot() ? askProvider(askSettings.getSnapshot()!.url) : undefined),
     async* ask(question, context, signal) {
-      const settings = askSettings.value
+      const settings = askSettings.getSnapshot()
       if (!settings) throw new Error(options.missing())
       const response = await fetch(completionsUrl(settings.url), {
         method: 'POST',

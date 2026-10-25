@@ -21,7 +21,7 @@ Without arguments it asks for the kind of project, the directory and the title (
 
 - A lecture: `lecture.md`; `presmium dev`, `presmium check`, `presmium build`.
 - A workspace: `presmium.workspace.yaml` and a first document in `intro/`; `presmium serve`.
-- A plugin: a directive, a Vue component shown in the web page and the slides, a server route, text in Chinese and English, an example document and integration tests; `pnpm install`, `pnpm test`, `pnpm dev`.
+- A plugin: a directive, a React component shown in the web page and the slides, a server route, text in Chinese and English, an example document and integration tests; `pnpm install`, `pnpm test`, `pnpm dev`.
 
 Lectures and workspaces list `presmium` at create-presmium's own version as a dev dependency, so `pnpm install` pins it; without it the global `presmium` builds them. Each project gets an `AGENTS.md` (`CLAUDE.md` links to it) and copies of the Presmium skills for coding agents in `.agents/skills`. The text of the questions and of the new files follows the system's language (Chinese or English).
 

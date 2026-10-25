@@ -1,0 +1,32 @@
+.pm-classroom-panel {
+  display: grid;
+  gap: 0.5rem;
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-align: left;
+}
+.pm-classroom-panel section {
+  display: grid;
+  gap: 0.35rem;
+  padding-top: 0.5rem;
+  border-top: var(--pm-size-hairline) solid var(--pm-color-line);
+}
+.pm-classroom-panel section:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.pm-classroom-panel p {
+  margin: 0;
+}
+.pm-classroom-panel ul {
+  margin: 0.15rem 0 0.35rem;
+  padding-left: 1.2em;
+}
+.pm-classroom-panel li {
+  margin: 0.25rem 0;
+}
+.pm-classroom-panel__where {
+  font-weight: 600;
+}

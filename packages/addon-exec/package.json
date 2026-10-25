@@ -36,16 +36,18 @@
     "dompurify": "3.4.17",
     "pyodide": "^314.0.7",
     "sucrase": "^3.35.1",
-    "vue": "^3.5.42",
     "yaml": "^2.9.1"
   },
   "peerDependencies": {
     "@lincyaw/host": "workspace:^",
-    "@lincyaw/kernel": "workspace:^"
+    "@lincyaw/kernel": "workspace:^",
+    "react": "^18.3.1"
   },
   "devDependencies": {
     "@lincyaw/cli": "workspace:*",
     "@lincyaw/host": "workspace:*",
-    "@lincyaw/kernel": "workspace:*"
+    "@lincyaw/kernel": "workspace:*",
+    "react": "18.3.1",
+    "@types/react": "18.3.28"
   }
 }

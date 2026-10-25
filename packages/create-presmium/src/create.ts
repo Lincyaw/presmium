@@ -85,7 +85,7 @@ export function createProject(options: ProjectOptions): void {
 
 const unchanged = (_path: string, text: string): string => text
 
-const TEXT = /(?:\.(?:md|ts|mts|js|mjs|vue|json|ya?ml|css|html|txt)|(?:^|[\\/])\.gitignore)$/
+const TEXT = /(?:\.(?:md|tsx?|mts|jsx?|mjs|json|ya?ml|css|html|txt)|(?:^|[\\/])\.gitignore)$/
 
 function copyTemplate(template: string, to: string, edit: (path: string, text: string) => string, only: (path: string) => boolean = () => true): void {
   const from = templateDir(template)

@@ -1,13 +1,15 @@
-import { FocusScope } from 'reka-ui'
+import { FocusScope } from '@radix-ui/react-focus-scope'
 import { PmApprovals } from '@lincyaw/host'
 import { blockText, sectionNarration } from '@lincyaw/kernel'
-import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
+import { useEffect, useRef, useState } from 'react'
+import { useStore } from '@lincyaw/host'
+import { h } from '../element.ts'
 import { nextPosition } from '../../domain/index.ts'
 import { BlockView } from '../block.ts'
 import { viewerMessages } from '../viewer-messages.ts'
 import { useViewer } from '../viewer-state.ts'
 import { useActions } from './actions.ts'
-import { button, focusScope, layers, useCurrentSection, useModal, useOverlayBar } from './overlay.ts'
+import { button, layers, useCurrentSection, useModal, useOverlayBar } from './overlay.ts'
 import { SlideFace, SlideFit, useSlides } from './slide.ts'
 
 function clock(ms: number): string {
@@ -15,72 +17,57 @@ function clock(ms: number): string {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 }
 
-export const PresenterView = defineComponent({
-  name: 'PmPresenterView',
-  setup() {
+export function PresenterView() {
     const viewer = useViewer()
     const { section, step } = useCurrentSection(viewer, 'presenter')
-    const root = shallowRef<HTMLElement>()
-    const bar = shallowRef<HTMLElement>()
+    const root = useRef<HTMLDivElement>(null)
+    const bar = useRef<HTMLDivElement>(null)
     useActions(viewer, 'presenter')
     useOverlayBar(bar)
     useModal(root)
-    const started = ref(Date.now())
-    const now = ref(Date.now())
-    let timer: ReturnType<typeof setInterval> | undefined
-    onMounted(() => {
-      timer = setInterval(() => now.value = Date.now(), 1000)
-    })
-    onBeforeUnmount(() => clearInterval(timer))
-
+    const [started, setStarted] = useState(Date.now)
+    const [now, setNow] = useState(Date.now)
+    useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer) }, [])
     const { shape } = useSlides()
-    const following = computed(() => nextPosition(viewer.doc.value, viewer.position.value))
-    const upcoming = computed(() => {
-      const t = viewerMessages()
-      const next = following.value
-      if (!next) return t.presenter.end
-      const target = viewer.section(next.section)!
-      if (next.section !== section.value?.id) return t.presenter.nextSection(target.title)
-      return sectionNarration(target).filter(block => block.at === next.step).map(blockText).join('\n') || t.presenter.nextStep(next.step)
-    })
-
-    return () => {
-      const current = section.value
+    const doc = useStore(viewer.doc)
+    const position = useStore(viewer.position)
+    const following = nextPosition(doc, position)
+    const t = viewerMessages()
+    const target = following ? viewer.section(following.section) : undefined
+    const upcoming = !following ? t.presenter.end : following.section !== section?.id ? t.presenter.nextSection(target!.title) : sectionNarration(target!).filter(block => block.at === following.step).map(blockText).join('\n') || t.presenter.nextStep(following.step)
+      const current = section
       if (!current) return null
-      const t = viewerMessages()
       const notes = sectionNarration(current)
-      return h(FocusScope, focusScope(root), () => [h('div', { 'ref': root, 'tabindex': -1, 'class': 'pm-presenter', 'data-section': current.id, 'data-step': step.value }, [
+      return h(FocusScope, { trapped: true, loop: true, asChild: true }, h('div', null, [h('div', { 'ref': root, 'tabindex': -1, 'class': 'pm-presenter', 'data-section': current.id, 'data-step': step }, [
         h('div', { ref: bar, class: 'pm-presenter__bar' }, [
           h('strong', { class: 'pm-presenter__title' }, `${current.index}. ${current.title}`),
-          current.steps > 0 ? h('span', { class: 'pm-presenter__counter' }, t.presenter.step(step.value, current.steps)) : null,
-          h('span', { 'class': 'pm-presenter__timer', 'aria-label': t.presenter.timer }, clock(now.value - started.value)),
-          button(t.presenter.restart, () => started.value = now.value = Date.now()),
-          button(t.present.prev, () => viewer.prev()),
-          button(t.present.next, () => viewer.next()),
+          current.steps > 0 ? h('span', { class: 'pm-presenter__counter' }, t.presenter.step(step, current.steps)) : null,
+          h('span', { 'class': 'pm-presenter__timer', 'aria-label': t.presenter.timer }, clock(now - started)),
+          button(t.presenter.restart, () => { const time = Date.now(); setStarted(time); setNow(time) }, 'redo'),
+          button(t.present.prev, () => viewer.prev(), 'chevron-left', 'ArrowLeft'),
+          button(t.present.next, () => viewer.next(), 'chevron-right', 'ArrowRight'),
           ...layers('presenter', 'bar'),
           h(PmApprovals),
         ]),
         h('div', { class: 'pm-presenter__main' }, [
-          h('div', { class: 'pm-presenter__slide' }, h(SlideFit, { shape: shape.value }, () => h(SlideFace, { key: current.id, section: current, step: step.value, view: 'presenter' }))),
+          h('div', { class: 'pm-presenter__slide' }, h(SlideFit, { shape: shape }, h(SlideFace, { key: current.id, section: current, step: step, view: 'presenter' }))),
           h('div', { class: 'pm-presenter__side' }, [
             h('p', { class: 'pm-presenter__label' }, t.presenter.notes),
             h('div', { class: 'pm-presenter__notes' }, notes.length
               ? notes.map(block => h('div', {
                   'key': block.id,
-                  'class': ['pm-presenter__note', { 'pm-current': block.at === step.value }],
+                  'class': ['pm-presenter__note', { 'pm-current': block.at === step }],
                   'data-step': block.at,
-                  'aria-current': block.at === step.value ? 'step' : undefined,
-                }, [h(BlockView, { block, section: current, step: step.value, expanded: true })]))
+                  'aria-current': block.at === step ? 'step' : undefined,
+                }, [h(BlockView, { block, section: current, step: step, expanded: true })]))
               : [h('p', { class: 'pm-presenter__empty' }, t.presenter.noNotes)]),
             h('p', { class: 'pm-presenter__label' }, t.presenter.upcoming),
-            following.value
-              ? h('div', { class: 'pm-presenter__upcoming', inert: '' }, h(SlideFit, { shape: shape.value }, () => h(SlideFace, { key: `${following.value!.section}@${following.value!.step}`, section: viewer.section(following.value!.section)!, step: following.value!.step, view: 'presenter-next' })))
+            following
+              ? h('div', { class: 'pm-presenter__upcoming', inert: '' }, h(SlideFit, { shape: shape }, h(SlideFace, { key: `${following!.section}@${following!.step}`, section: viewer.section(following!.section)!, step: following!.step, view: 'presenter-next' })))
               : null,
-            h('p', { class: 'pm-presenter__next' }, upcoming.value),
+            h('p', { class: 'pm-presenter__next' }, upcoming),
           ]),
         ]),
         ...layers('presenter', 'view'),
-      ]), ...layers('presenter', 'viewport')])
-    }
-  },
-})
+      ]), ...layers('presenter', 'viewport')]))
+}

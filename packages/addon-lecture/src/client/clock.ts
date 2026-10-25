@@ -1,11 +1,11 @@
-import type { Ref } from 'vue'
-import { shallowRef } from 'vue'
+import type { Store } from '@lincyaw/host'
+import { createStore } from '@lincyaw/host'
 
 export interface TrackClock {
   now(): number
-  readonly playing: Readonly<Ref<boolean>>
-  readonly rate: Readonly<Ref<number>>
-  readonly error: Readonly<Ref<Error | undefined>>
+  readonly playing: Readonly<Store<boolean>>
+  readonly rate: Readonly<Store<number>>
+  readonly error: Readonly<Store<Error | undefined>>
   play(): void
   pause(): void
   seek(t: number): void
@@ -15,9 +15,9 @@ export interface TrackClock {
 }
 
 export class SilentClock implements TrackClock {
-  readonly playing = shallowRef(false)
-  readonly rate = shallowRef(1)
-  readonly error = shallowRef<Error>()
+  readonly playing = createStore(false)
+  readonly rate = createStore(1)
+  readonly error = createStore<Error | undefined>(undefined)
   protected at = 0
   protected since = performance.now()
   protected readonly duration: number
@@ -27,20 +27,20 @@ export class SilentClock implements TrackClock {
   }
 
   now(): number {
-    const t = this.playing.value ? this.at + (performance.now() - this.since) * this.rate.value : this.at
+    const t = this.playing.getSnapshot() ? this.at + (performance.now() - this.since) * this.rate.getSnapshot() : this.at
     return Math.min(t, this.duration)
   }
 
   play(): void {
-    if (this.playing.value) return
+    if (this.playing.getSnapshot()) return
     if (this.at >= this.duration) this.at = 0
     this.since = performance.now()
-    this.playing.value = true
+    this.playing.set(true)
   }
 
   pause(): void {
     this.at = this.now()
-    this.playing.value = false
+    this.playing.set(false)
   }
 
   seek(t: number): void {
@@ -51,11 +51,11 @@ export class SilentClock implements TrackClock {
   setRate(rate: number): void {
     this.at = this.now()
     this.since = performance.now()
-    this.rate.value = rate
+    this.rate.set(rate)
   }
 
   tick(): void {
-    if (this.playing.value && this.now() >= this.duration) this.pause()
+    if (this.playing.getSnapshot() && this.now() >= this.duration) this.pause()
   }
 
   dispose(): void {
@@ -87,7 +87,7 @@ export class MediaClock extends SilentClock {
 
   private fail(error: Error): void {
     this.pause()
-    this.error.value = error
+    this.error.set(error)
   }
 
   private mediaAt(t: number) {
@@ -95,7 +95,7 @@ export class MediaClock extends SilentClock {
   }
 
   override now(): number {
-    const current = this.playing.value ? this.mediaAt(super.now()) : undefined
+    const current = this.playing.getSnapshot() ? this.mediaAt(super.now()) : undefined
     if (current && !current.el.paused && current.el.readyState >= 2) {
       const t = current.start + current.el.currentTime * 1000
       this.at = Math.min(t, this.duration)
@@ -132,7 +132,7 @@ export class MediaClock extends SilentClock {
   override tick(): void {
     super.tick()
     const t = this.now()
-    const current = this.playing.value ? this.mediaAt(t) : undefined
+    const current = this.playing.getSnapshot() ? this.mediaAt(t) : undefined
     for (const m of this.media) {
       if (m !== current) {
         if (!m.el.paused) m.el.pause()
@@ -140,7 +140,7 @@ export class MediaClock extends SilentClock {
       }
       const offset = (t - m.start) / 1000
       if (Math.abs(m.el.currentTime - offset) * 1000 > DRIFT_MS) m.el.currentTime = offset
-      m.el.playbackRate = this.rate.value
+      m.el.playbackRate = this.rate.getSnapshot()
       if (m.el.paused) void m.el.play().catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return
         this.fail(error instanceof Error ? error : new Error(String(error)))

@@ -1,14 +1,14 @@
 import { currentLocale, TOOLBAR } from '@lincyaw/host'
 import type { PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
-import { defineComponent, h } from 'vue'
+import { createElement } from 'react'
 import { version } from '../../package.json'
-import PmContrastToggle from '../../components/PmContrastToggle.vue'
-import PmSaveOffline from '../../components/PmSaveOffline.vue'
+import PmContrastToggle from '../../components/PmContrastToggle.tsx'
+import PmSaveOffline from '../../components/PmSaveOffline.tsx'
 import { MESSAGES, PUBLISH_ID } from '../domain/index.ts'
 import { initHighContrast } from './contrast.ts'
 import './contrast.css'
 
-const ToolbarToggle = defineComponent(() => () => h(PmContrastToggle, { compact: true }))
+const ToolbarToggle = () => createElement(PmContrastToggle, { compact: true })
 
 let unregister: Unsubscribe[] = []
 

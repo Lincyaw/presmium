@@ -4,8 +4,8 @@ import type { ClassroomStore, PluginDefinition, Unsubscribe } from '@lincyaw/ker
 import { version } from '../../package.json'
 import { CLASSROOM_ID, classroomSummary, COLLECTIONS, MESSAGES, toAnswer, toPrediction, toPulseVote, toQuestion, toQuizState, toSectionNumbers, toSubmission } from '../domain/index.ts'
 import type { ClassroomSummary } from '../domain/index.ts'
-import ClassroomPanel from './ClassroomPanel.vue'
-import ClassroomToolbar from './ClassroomToolbar.vue'
+import ClassroomPanel from './ClassroomPanel.tsx'
+import ClassroomToolbar from './ClassroomToolbar.tsx'
 
 let cleanup: Unsubscribe[] = []
 

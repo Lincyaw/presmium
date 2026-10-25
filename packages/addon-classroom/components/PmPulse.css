@@ -1,0 +1,24 @@
+.pm-pulse__question {
+  font-weight: 600;
+}
+.pm-pulse__distribution {
+  margin: 0.4em 0;
+  padding: 0;
+  list-style: none;
+}
+.pm-pulse__distribution li {
+  display: grid;
+  grid-template-columns: 6em 1fr 3.5em;
+  align-items: center;
+  gap: 0.4rem;
+}
+.pm-pulse__bar {
+  height: 0.6em;
+  min-width: var(--pm-size-hairline);
+  border-radius: var(--pm-radius-pill);
+  background: var(--pm-color-accent);
+}
+.pm-pulse__count {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

@@ -1,9 +1,11 @@
-import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
+import * as Tabs from '@radix-ui/react-tabs'
+import { createStore, useStore } from '@lincyaw/host'
 import type { MdastNode } from '@lincyaw/kernel'
 import type { Element, ElementContent } from 'hast'
 import type { Handler } from 'mdast-util-to-hast'
-import type { PropType, VNodeChild } from 'vue'
-import { defineComponent, h, reactive, ref, watch } from 'vue'
+import type { ReactNode } from 'react'
+import { useEffect, useState } from 'react'
+import { h } from '../element.ts'
 import { classes, element } from './hast.ts'
 
 const tabSet: Handler = (state, node: MdastNode) => {
@@ -28,10 +30,10 @@ export interface TabEntry {
   title: string
   sync?: string
   selected: boolean
-  content: () => VNodeChild[]
+  content: () => ReactNode[]
 }
 
-export function tabEntries(set: Element, render: (nodes: ElementContent[]) => VNodeChild[]): TabEntry[] {
+export function tabEntries(set: Element, render: (nodes: ElementContent[]) => ReactNode[]): TabEntry[] {
   return set.children.flatMap((panel): TabEntry[] => panel.type !== 'element' ? [] : [{
     title: String(panel.properties.dataTitle ?? ''),
     sync: typeof panel.properties.dataSync === 'string' ? panel.properties.dataSync : undefined,
@@ -40,34 +42,11 @@ export function tabEntries(set: Element, render: (nodes: ElementContent[]) => VN
   }])
 }
 
-const synced = reactive({ key: undefined as string | undefined, choices: 0 })
-
-export const TabSetView = defineComponent({
-  name: 'PmTabSet',
-  props: {
-    tabs: { type: Array as PropType<TabEntry[]>, required: true },
-  },
-  setup(props) {
-    const withKey = (key?: string) => (key ? props.tabs.findIndex(tab => tab.sync === key) : -1)
-    const active = ref([withKey(synced.key), props.tabs.findIndex(tab => tab.selected), 0].find(k => k >= 0)!)
-    watch(() => synced.choices, () => {
-      const k = withKey(synced.key)
-      if (k >= 0) active.value = k
-    })
-    const choose = (k: number) => {
-      active.value = k
-      const key = props.tabs[k]?.sync
-      if (key) {
-        synced.key = key
-        synced.choices++
-      }
-    }
-    return () => h(TabsRoot, { modelValue: String(active.value), 'onUpdate:modelValue': value => choose(Number(value)) }, () => [
-      h(TabsList, { class: 'pm-tabs__list' }, () => props.tabs.map((tab, k) =>
-        h(TabsTrigger, { key: k, value: String(k), class: 'pm-tabs__tab' }, () => tab.title))),
-      ...props.tabs.map((tab, k) => h(TabsContent, {
-        key: k, value: String(k), class: 'pm-tabs__panel', forceMount: true, hidden: k !== active.value, tabindex: 0,
-      }, tab.content)),
-    ])
-  },
-})
+const synced = createStore<string | undefined>(undefined)
+export function TabSetView({ tabs, className }: { tabs: TabEntry[], className?: string }) {
+  const key = useStore(synced)
+  const [active, setActive] = useState(() => Math.max(0, tabs.findIndex(tab => tab.selected)))
+  useEffect(() => { const index = tabs.findIndex(tab => tab.sync && tab.sync === key); if (index >= 0) setActive(index) }, [key, tabs])
+  const choose = (value: string) => { const index = Number(value); setActive(index); const key = tabs[index]?.sync; if (key) synced.set(key) }
+  return h(Tabs.Root, { value: String(active), onValueChange: choose, className }, [h(Tabs.List, { className: 'pm-tabs__list' }, tabs.map((tab, k) => h(Tabs.Trigger, { key: k, value: String(k), className: 'pm-tabs__tab' }, tab.title))), ...tabs.map((tab, k) => h(Tabs.Content, { key: k, value: String(k), className: 'pm-tabs__panel', forceMount: true, hidden: k !== active, tabIndex: 0 }, tab.content()))])
+}

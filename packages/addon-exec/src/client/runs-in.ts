@@ -1,6 +1,6 @@
 import { environmentExecutor } from '@lincyaw/kernel'
 import type { EnvironmentSpec, Executor } from '@lincyaw/kernel'
-import { shallowRef } from 'vue'
+import { createStore } from '@lincyaw/host'
 
 export type RunsIn =
   | { kind: 'browser' }
@@ -9,7 +9,7 @@ export type RunsIn =
   | { kind: 'environment', name: string }
 
 /** The environments of the deck's headmatter, which the plugin's setup records. */
-export const declaredEnvironments = shallowRef<Readonly<Record<string, EnvironmentSpec>>>({})
+export const declaredEnvironments = createStore<Readonly<Record<string, EnvironmentSpec>>>({})
 
 /** The environment kinds of the other execution plugins, whose named executors do not say where they run. */
 const KINDS: Record<string, RunsIn['kind']> = { wasi: 'browser', webgpu: 'browser', devcontainer: 'machine', jupyter: 'remote' }
@@ -20,7 +20,7 @@ export function runsInOf(executorId: string | undefined, executor?: Executor): R
   const prefix = environmentExecutor('')
   if (executorId.startsWith(prefix)) {
     const name = executorId.slice(prefix.length)
-    const kind = executor?.runsIn ?? KINDS[declaredEnvironments.value[name]?.kind ?? ''] ?? 'environment'
+    const kind = executor?.runsIn ?? KINDS[declaredEnvironments.getSnapshot()[name]?.kind ?? ''] ?? 'environment'
     return kind === 'browser' || kind === 'machine' ? { kind } : { kind, name }
   }
   return executor?.runsIn ? { kind: executor.runsIn } : undefined

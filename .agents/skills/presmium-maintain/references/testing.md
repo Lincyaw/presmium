@@ -5,11 +5,10 @@ and external conditions in general is in `presmium-develop/references/testing.md
 repository's tests live, its e2e fixtures and helpers, and its cost rules. The strategy is
 `docs/architecture.md` section 7; for the workbench and dsh `docs/design-dsh.md` section 15.
 
-**The owner's current rule (since 2026-10-24):** write no new tests and run no suites as routine
-verification; a test that a change breaks is deleted, not adapted; changes are verified by real runs (build,
-serve, open in a browser) and by performance measurements. The rest of this file describes the existing tests,
-for when the owner asks to run them: they are integration tests only (real CLI, builds, services, browsers and
-the pinned dsh; no unit tests, no mocks of the host frameworks).
+Only run the targeted integration tests and lightweight structure checks directly affected by a change,
+with one worker. Preserve existing effective behavior tests and adapt fixtures when the public API changes.
+Do not run full test, demo or e2e suites without an explicit user request. Tests use the real CLI, builds,
+services, browsers and pinned dsh; no unit tests or host-framework mocks.
 
 ## Pick the test by where it can fail
 

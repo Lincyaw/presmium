@@ -1,6 +1,6 @@
 import { Kernel, PRESENTER_PANELS } from '@lincyaw/kernel'
 import type { EnvironmentSpec, Logger, PluginDefinition, PluginReport, PresentationMode, ServiceToken, StartReport } from '@lincyaw/kernel'
-import { shallowRef } from 'vue'
+import { createStore } from './store.ts'
 import { connectActions } from './actions.ts'
 import { PmApprovals } from './approvals.ts'
 import { NAVIGATION, OPERATIONS, STATUS, STEP_CLOCK, SYNC_TRANSPORTS, TOOLBAR } from './contracts.ts'
@@ -14,12 +14,14 @@ import { createPresenterPanels, createStatusRegistry, createToolbar } from './re
 import { provideServer } from './server.ts'
 import { createStepClock } from './step-clock.ts'
 
+export const runtimeRevision = createStore(0)
+
 const registered: PluginDefinition[] = []
-const running = shallowRef<Kernel>()
+const running = createStore<Kernel | undefined>(undefined)
 let starting: Promise<StartReport> | undefined
 let disconnect: (() => void) | undefined
 let stopClock: (() => void) | undefined
-const failures = shallowRef<PluginReport[]>([])
+const failures = createStore<PluginReport[]>([])
 let resumeHost: (() => Promise<StartReport>) | undefined
 let hostActive = true
 let resumePage: (() => void) | undefined
@@ -56,7 +58,7 @@ function startKernel(options: StartOptions): Promise<StartReport> {
     options.beforeStart?.(kernel)
     for (const plugin of registered) kernel.register(plugin)
     const report = await kernel.start()
-    running.value = kernel
+    running.set(kernel); runtimeRevision.set(n => n + 1)
     return report
   })()
   return starting
@@ -72,8 +74,8 @@ export async function stopHost(): Promise<void> {
   stopClock?.()
   stopClock = undefined
   await current.catch(() => undefined)
-  const kernel = running.value
-  running.value = undefined
+  const kernel = running.getSnapshot()
+  running.set(undefined); runtimeRevision.set(n => n + 1)
   await kernel?.dispose()
 }
 
@@ -94,16 +96,16 @@ export async function setHostActive(active: boolean): Promise<void> {
 }
 
 export function presmiumService<T>(token: ServiceToken<T>): T | undefined {
-  return running.value?.getService(token)
+  return running.getSnapshot()?.getService(token)
 }
 
 export function reportPluginFailure(id: string, reason: string): void {
-  failures.value = [...failures.value.filter(report => report.id !== id), { id, status: 'failed', reason }]
+  failures.set([...failures.getSnapshot().filter(report => report.id !== id), { id, status: 'failed', reason }]); runtimeRevision.set(n => n + 1)
 }
 
 export function presmiumReport(): StartReport | undefined {
-  const report = running.value?.report()
-  return report && failures.value.length ? { ...report, plugins: [...report.plugins, ...failures.value] } : report
+  const report = running.getSnapshot()?.report()
+  return report && failures.getSnapshot().length ? { ...report, plugins: [...report.plugins, ...failures.getSnapshot()] } : report
 }
 
 export interface HostStart {

@@ -8,7 +8,8 @@ const REFERENCE = /(?:\bfrom\s+|\bimport\s*\(\s*|\bimport\s+|\brequire\s*\(\s*)[
 const BUILTINS = new Set(builtinModules)
 
 const nodeBuiltin = spec => spec.startsWith('node:') || BUILTINS.has(spec) || BUILTINS.has(spec.split('/')[0])
-const vue = spec => /^(vue(\/|$)|@vue\/)/.test(spec)
+const vue = spec => /^(vue(\/|$)|@vue\/|@vueuse\/|reka-ui(?:\/|$))/.test(spec)
+const framework = spec => vue(spec) || /^(react|react-dom)(\/|$)/.test(spec)
 const target = (spec, file, pkgDir) => spec.startsWith('.') ? relative(pkgDir, resolve(dirname(file), spec)) : undefined
 const outside = (path, dir) => path === '..' || path.startsWith(`..${sep}`) || (dir !== '.' && path !== dir && !path.startsWith(dir + sep))
 const pkgName = pkgDir => pkgDir.split(sep).filter(Boolean).at(-1)
@@ -24,16 +25,17 @@ const ADAPTERS = [
 ]
 
 const rules = [
+  { name: 'all UI uses React', dirs: ['.'], forbid: spec => vue(spec) },
   {
     name: 'domain is pure TS',
     dirs: ['src/domain'],
-    forbid: (spec, file, pkgDir) => vue(spec) || /^@lincyaw\/host/.test(spec) || nodeBuiltin(spec)
+    forbid: (spec, file, pkgDir) => framework(spec) || /^@lincyaw\/host/.test(spec) || nodeBuiltin(spec)
       || (target(spec, file, pkgDir) !== undefined && outside(target(spec, file, pkgDir), join('src', 'domain'))),
   },
   {
     name: 'shared code runs in Node and in the browser',
     dirs: ['src/shared'],
-    forbid: (spec, file, pkgDir) => vue(spec) || /^@lincyaw\/(host|kernel\/node)(\/|$)/.test(spec) || nodeBuiltin(spec)
+    forbid: (spec, file, pkgDir) => framework(spec) || /^@lincyaw\/(host|kernel\/node)(\/|$)/.test(spec) || nodeBuiltin(spec)
       || (target(spec, file, pkgDir) !== undefined && outside(target(spec, file, pkgDir), join('src', 'shared')) && outside(target(spec, file, pkgDir), join('src', 'domain'))),
   },
   {
@@ -41,15 +43,15 @@ const rules = [
     pkgs: ['kernel'],
     dirs: ['src'],
     skip: ['node'],
-    forbid: (spec, file, pkgDir) => vue(spec) || nodeBuiltin(spec)
+    forbid: (spec, file, pkgDir) => framework(spec) || nodeBuiltin(spec)
       || (target(spec, file, pkgDir) !== undefined && !outside(target(spec, file, pkgDir), join('src', 'node'))),
   },
-  { name: 'kernel/node is framework-free', pkgs: ['kernel'], dirs: ['src/node'], forbid: spec => vue(spec) },
-  { name: 'node adapters do not use vue', dirs: ['src/node'], forbid: spec => vue(spec) },
+  { name: 'kernel/node is framework-free', pkgs: ['kernel'], dirs: ['src/node'], forbid: spec => framework(spec) },
+  { name: 'node adapters are framework-free', dirs: ['src/node'], forbid: spec => framework(spec) },
   { name: 'no package uses Slidev or VitePress (both forms are the viewer app)', dirs: ['.'], forbid: spec => /^(vitepress|@slidev\/)/.test(spec) },
   { name: 'no package uses an addon', dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/addon-/.test(spec) },
   { name: 'relative imports stay in their package', dirs: ['.'], forbid: (spec, file, pkgDir) => target(spec, file, pkgDir) !== undefined && outside(target(spec, file, pkgDir), '.') },
-  { name: 'node packages are framework-free', pkgs: ['server', 'mcp'], dirs: ['src'], forbid: spec => vue(spec) || /^@lincyaw\/(viewer|web|host)(\/|$)/.test(spec) },
+  { name: 'node packages are framework-free', pkgs: ['server', 'mcp'], dirs: ['src'], forbid: spec => framework(spec) || /^@lincyaw\/(viewer|web|host)(\/|$)/.test(spec) },
   { name: 'only cli and workspace use the server', pkgs: pkg => !['cli', 'workspace', 'server'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/server(\/|$)/.test(spec) },
   { name: 'only the server and the dsh bundle use mcp', pkgs: pkg => !['server', 'mcp', 'dsh'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/mcp(\/|$)/.test(spec) },
   { name: 'plugins use contracts, not the hosts', pkgs: pkg => pkg.startsWith('addon-'), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/(server|mcp|workspace|web)(\/|$)/.test(spec) },

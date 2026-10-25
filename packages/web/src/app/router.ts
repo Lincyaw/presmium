@@ -1,8 +1,9 @@
 import { safeDecodeURIComponent } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import type { Position } from '@lincyaw/viewer/domain'
-import type { ComputedRef, Ref } from 'vue'
-import { computed, nextTick, ref } from 'vue'
+import { createStore } from '@lincyaw/host'
+import type { Store } from '@lincyaw/host'
+const nextTick = (work?: () => void) => new Promise<void>(resolve => requestAnimationFrame(() => { work?.(); resolve() }))
 import { pageLink, sectionLinks, webPages } from '../domain/index.ts'
 import type { AppConfig, WebPage } from '../domain/index.ts'
 
@@ -13,9 +14,9 @@ import type { AppConfig, WebPage } from '../domain/index.ts'
  */
 export interface PageRouter {
   /** The path of the page shown (`index` or a chapter's). */
-  page: Ref<string>
-  pages: ComputedRef<WebPage[]>
-  shown: ComputedRef<WebPage | undefined>
+  page: Store<string>
+  pages: Store<WebPage[]>
+  shown: Store<WebPage | undefined>
   /** The site path of the page's language, ending with `/`: the document's, or a translation's. */
   root: string
   href(page: WebPage): string
@@ -23,6 +24,7 @@ export interface PageRouter {
   /** Shows the page of `position`'s section. */
   turnTo(position: Position, restoring: boolean): void
   /** Follows the links to the document's own pages and the browser's back and forward; returns the function that stops. */
+  refresh(): void
   listen(): () => void
 }
 
@@ -30,10 +32,12 @@ export interface PageRouter {
 export function createPageRouter(config: AppConfig, doc: () => IRDocument, history: boolean): PageRouter {
   const root = config.site.locales.find(locale => locale.lang === config.lang)?.base ?? config.base
   const prefix = root.replace(/\/$/, '')
-  const pages = computed(() => config.pages ?? webPages(doc()))
-  const page = ref(config.page ?? 'index')
-  const shown = computed(() => pages.value.find(p => p.path === page.value) ?? pages.value[0])
-  const links = computed(() => sectionLinks(pages.value, prefix))
+  const pages = createStore(config.pages ?? webPages(doc()))
+  const page = createStore(config.page ?? 'index')
+  const shown = createStore(pages.getSnapshot().find(p => p.path === page.getSnapshot()) ?? pages.getSnapshot()[0])
+  const refresh = () => { pages.set(config.pages ?? webPages(doc())); shown.set(pages.getSnapshot().find(p => p.path === page.getSnapshot()) ?? pages.getSnapshot()[0]) }
+  page.subscribe(() => shown.set(pages.getSnapshot().find(p => p.path === page.getSnapshot()) ?? pages.getSnapshot()[0]))
+  const links = () => sectionLinks(pages.getSnapshot(), prefix)
   const href = (target: WebPage) => pageLink(target, prefix)
 
   /** The page at a path of the site, if it is one of this document's in this language. */
@@ -41,11 +45,11 @@ export function createPageRouter(config: AppConfig, doc: () => IRDocument, histo
     if (!pathname.startsWith(root) && `${pathname}/` !== root) return undefined
     const rest = safeDecodeURIComponent(pathname.slice(root.length))
     const name = rest === '' || rest === 'index.html' ? 'index' : rest.endsWith('.html') ? rest.slice(0, -'.html'.length) : undefined
-    return name === undefined ? undefined : pages.value.find(p => p.path === name)
+    return name === undefined ? undefined : pages.getSnapshot().find(p => p.path === name)
   }
 
   const show = async (target: WebPage, hash: string) => {
-    page.value = target.path
+    page.set(target.path)
     await nextTick()
     const anchor = hash ? document.getElementById(safeDecodeURIComponent(hash.slice(1))) : null
     if (anchor) anchor.scrollIntoView()
@@ -58,14 +62,15 @@ export function createPageRouter(config: AppConfig, doc: () => IRDocument, histo
     shown,
     root,
     href,
-    sectionHref: id => (history ? links.value[id] ?? `${href(pages.value[0]!)}#${encodeURIComponent(id)}` : `#${encodeURIComponent(id)}`),
+    sectionHref: id => (history ? links()[id] ?? `${href(pages.getSnapshot()[0]!)}#${encodeURIComponent(id)}` : `#${encodeURIComponent(id)}`),
     turnTo(position, restoring) {
-      const target = pages.value.find(p => p.sections.includes(position.section))
-      if (!target || target.path === page.value) return
-      page.value = target.path
+      const target = pages.getSnapshot().find(p => p.sections.includes(position.section))
+      if (!target || target.path === page.getSnapshot()) return
+      page.set(target.path)
       if (history) window.history.pushState(null, '', href(target))
       if (!restoring) void nextTick(() => window.scrollTo(0, 0))
     },
+    refresh,
     listen() {
       if (!history) return () => undefined
       const onClick = (event: MouseEvent) => {
@@ -76,14 +81,14 @@ export function createPageRouter(config: AppConfig, doc: () => IRDocument, histo
         if (url.origin !== location.origin) return
         const target = pageAt(url.pathname)
         // The same page with an anchor: the browser goes to it, and the page view follows the address's fragment.
-        if (!target || target.path === page.value) return
+        if (!target || target.path === page.getSnapshot()) return
         event.preventDefault()
         window.history.pushState(null, '', url.href)
         void show(target, url.hash)
       }
       const onPop = () => {
         const target = pageAt(location.pathname)
-        if (target && target.path !== page.value) void show(target, location.hash)
+        if (target && target.path !== page.getSnapshot()) void show(target, location.hash)
       }
       document.addEventListener('click', onClick)
       window.addEventListener('popstate', onPop)

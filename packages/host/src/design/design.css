@@ -1,1 +1,9 @@
 @import '@lincyaw/design/design.css';
+
+.pm-toolbar { display: inline-flex; align-items: center; gap: var(--pm-space-2); }
+.pm-toolbar[data-placement='status'] { gap: var(--pm-space-4); }
+.pm-presenter-panels { position: fixed; right: var(--pm-space-2); bottom: var(--pm-overlay-bar, var(--pm-space-12)); z-index: var(--pm-z-overlay-view); max-width: var(--pm-aside-width); max-height: 50vh; overflow: auto; padding: var(--pm-space-1) var(--pm-space-3); border: var(--pm-size-hairline) solid var(--pm-color-line); border-radius: var(--pm-radius-small); background: var(--pm-color-surface); color: var(--pm-color-ink); font-size: var(--pm-text-sm); box-shadow: var(--pm-shadow-float); }
+.pm-presenter-panels--docked { position: static; max-width: none; max-height: none; margin-top: var(--pm-space-4); box-shadow: none; }
+.pm-presenter-panels summary { cursor: pointer; font-weight: 600; }
+.pm-presenter-panels__badge { display: inline-block; padding: 0 var(--pm-space-1); border-radius: var(--pm-radius-pill); background: var(--pm-color-danger); color: var(--pm-color-surface); text-align: center; }
+.pm-presenter-panels h3 { margin: var(--pm-space-2) 0 var(--pm-space-1); font-size: var(--pm-text-md); }

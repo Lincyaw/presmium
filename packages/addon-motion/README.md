@@ -22,6 +22,7 @@ It is a Presmium plugin: its component works on the web page and in the slides. 
 ## What it provides
 
 - `{scene}`: a scene of the document's `scenes/`, cut into steps by `:durations:`. Each step plays its part of the timeline; going back shows the step settled; a lecture plays it on the narration's time, and a video export draws it frame by frame.
+- The reading view has compact step buttons to jump directly to a scene’s step, alongside playback and scrubbing. In the workbench, choosing a step also opens its narration. The presentation’s step menu offers the same direct navigation without shrinking controls with the slide canvas.
 - `@lincyaw/addon-motion/scene`: `gsapScene`, `animeScene`, `motionScene`, `threeScene`, `remotionScene`, `d3Scene` and `defineScene`, to write a scene with each library.
 
 ## Documentation

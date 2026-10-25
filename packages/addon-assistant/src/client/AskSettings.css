@@ -1,0 +1,25 @@
+.pm-assistant-settings {
+  display: grid;
+  gap: var(--pm-space-3);
+}
+.pm-assistant-settings p {
+  margin: 0;
+}
+.pm-assistant-settings__title {
+  margin: 0;
+  font-family: var(--pm-font-serif);
+  font-size: var(--pm-text-title);
+  font-weight: 600;
+  line-height: var(--pm-leading-tight);
+}
+.pm-assistant-settings__intro {
+  color: var(--pm-color-muted);
+}
+.pm-assistant-settings__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pm-space-2);
+}
+.pm-assistant-settings__problem {
+  color: var(--pm-color-danger);
+}
