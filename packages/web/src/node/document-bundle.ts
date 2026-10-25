@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { PresmiumNodePlugin } from '@lincyaw/kernel'
@@ -127,6 +127,8 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
   const work = join(input.outDir, `.build-${code.key}-${process.pid}`)
   rmSync(work, { recursive: true, force: true })
   mkdirSync(work, { recursive: true })
+  // Vite resolves symlinks, including macOS's /var -> /private/var temporary paths.
+  const realWork = realpathSync(work)
   writeFileSync(join(work, 'entry.ts'), code.entry)
   const { generated } = code
   const externals = new Set(input.externals)
@@ -159,7 +161,9 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
           for (const chunk of Object.values(bundle)) {
             for (const id of chunk.moduleIds ?? []) {
               const file = id.replace(/[?#].*$/s, '')
-              if (!file.startsWith('\0') && !file.startsWith(work + sep) && !file.split(sep).includes('node_modules') && existsSync(file)) inputs[file] = stamp(file)
+              if (file.startsWith('\0') || !existsSync(file)) continue
+              const realFile = realpathSync(file)
+              if (!realFile.startsWith(realWork + sep) && !realFile.split(sep).includes('node_modules')) inputs[realFile] = stamp(realFile)
             }
           }
         },

@@ -329,7 +329,13 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     }
     const { externals } = state
     const found = await findDocumentBundle(bundleInput(dir, deckDir, externals)).catch(() => undefined)
-    if (found === undefined) return void buildBundle(dir, deckDir, state, externals).then(() => reload(dir))
+    if (closed || state.externals !== externals) return
+    if (found === undefined) {
+      const before = state.bundle?.key ?? null
+      await buildBundle(dir, deckDir, state, externals)
+      if (!closed && state.externals === externals && (state.bundle?.key ?? null) !== before) reload(dir)
+      return
+    }
     if ((found?.key ?? null) === (state.bundle?.key ?? null)) return
     state.bundle = found
     reload(dir)
