@@ -21,7 +21,7 @@ import {
   useCreateBlockNote,
   useExtensionState,
 } from '@blocknote/react'
-import { PmIcon, PmMenu, useAppearance, useMessages, useStore } from '@lincyaw/host'
+import { PmIcon, useAppearance, useMessages, useStore } from '@lincyaw/host'
 import { PREVIEW_REVISION, reportPreview } from '@lincyaw/kernel'
 import type {
   IRBlock,
@@ -36,25 +36,22 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react'
 import type { SideMenuProps } from '@blocknote/react'
 import { BlockView } from '../block.ts'
 import { useViewer } from '../viewer-state.ts'
 import { bodySaveQueue } from './save-queue.ts'
 import { EDITOR_MESSAGES } from './messages.ts'
+import { SourceBlock } from './source/source-block.tsx'
+import { sourceSession } from './source/session.ts'
+import { SOURCE_MESSAGES } from './source/messages.ts'
 import '@blocknote/mantine/style.css'
 import './style.css'
 
-interface SceneChoice {
-  name: string
-  label: string
-  durations: number[]
-  original?: IRBlock
-}
 interface EditingContext {
   section: IRSection
   blocks: Map<string, IRBlock>
-  scenes: SceneChoice[]
   stepFor(id: string): number
 }
 const EDITING = createContext<EditingContext | undefined>(undefined)
@@ -79,10 +76,9 @@ const sceneSpec = createReactBlockSpec(
         (original?.node.type === 'component'
           ? String(original.node.props.scene ?? '')
           : '')
-      const selected = context.scenes.find((s) => s.name === name)
       const durations = block.props.durations
         ? (JSON.parse(block.props.durations) as number[])
-        : (selected?.durations ?? [1000])
+        : (original?.node.type === 'component' ? original.node.durations ?? [1000] : [1000])
       const previous = editor.document.slice(
         0,
         editor.document.findIndex((entry) => entry.id === block.id),
@@ -111,6 +107,7 @@ const sceneSpec = createReactBlockSpec(
         }),
         id: original?.id ?? block.id,
         node: {
+          ...(original?.node.type === 'component' ? original.node : {}),
           type: 'component',
           plugin: 'presmium.motion',
           name: 'PmScene',
@@ -127,29 +124,7 @@ const sceneSpec = createReactBlockSpec(
           data-block={rendered.id}
           contentEditable={false}
         >
-          <div className="pm-block-editor__scene-tools">
-            <span className="pm-block-editor__scene-name" title={name}>
-              <PmIcon name="video" />
-              <span>{selected?.label ?? name}</span>
-            </span>
-            <PmMenu
-              label={t.replaceAnimation}
-              items={context.scenes.map((scene) => ({
-                id: scene.name,
-                label: scene.label,
-                icon: scene.name === name ? 'check' : 'video',
-              }))}
-              onSelect={(name) => {
-                const choice = context.scenes.find((s) => s.name === name)
-                if (!choice || choice.name === block.props.scene) return
-                editor.updateBlock(block, {
-                  props: {
-                    scene: choice.name,
-                    durations: JSON.stringify(choice.durations),
-                  },
-                })
-              }}
-            />
+          <SourceBlock section={context.section} block={rendered} actions={
             <button
               type="button"
               className="pm-ui-icon-button pm-ui-icon-button--small"
@@ -165,13 +140,14 @@ const sceneSpec = createReactBlockSpec(
             >
               <PmIcon name="captions" />
             </button>
-          </div>
-          <BlockView
-            block={rendered}
-            section={context.section}
-            step={Infinity}
-            expanded
-          />
+          }>
+            <BlockView
+              block={rendered}
+              section={context.section}
+              step={Infinity}
+              expanded
+            />
+          </SourceBlock>
         </div>
       )
     },
@@ -187,21 +163,21 @@ const opaqueSpec = createReactBlockSpec(
   {
     render: ({ block }) => {
       const context = useContext(EDITING)!
-      const t = useMessages(EDITOR_MESSAGES)
       const original = context.blocks.get(block.props.source)
       return (
         <div
           className="pm-block-editor__opaque"
           contentEditable={false}
-          title={t.retained}
         >
           {original ? (
-            <BlockView
-              block={original}
-              section={context.section}
-              step={Infinity}
-              expanded
-            />
+            <SourceBlock section={context.section} block={original}>
+              <BlockView
+                block={original}
+                section={context.section}
+                step={Infinity}
+                expanded
+              />
+            </SourceBlock>
           ) : null}
         </div>
       )
@@ -345,6 +321,7 @@ export default function MountedEditor({ section }: { section: IRSection }) {
   const doc = useStore(viewer.doc)
   const t = useMessages(EDITOR_MESSAGES)
   const appearance = useAppearance()
+  const sourceMessages = useMessages(SOURCE_MESSAGES)
   const dictionary = doc.meta.lang?.startsWith('zh') ? zh : en
   const editor = useCreateBlockNote(
     {
@@ -375,28 +352,10 @@ export default function MountedEditor({ section }: { section: IRSection }) {
     () => new Map(section.blocks.map((b) => [b.id, b])),
     [section],
   )
-  const scenes = useMemo(() => {
-    const found = new Map<string, SceneChoice>()
-    for (const page of doc.sections)
-      for (const block of page.blocks)
-        if (block.node.type === 'component' && block.node.name === 'PmScene')
-          found.set(String(block.node.props.scene), {
-            name: String(block.node.props.scene),
-            label: page.title,
-            durations: block.node.durations ?? [1000],
-            original: block,
-          })
-    const configured = doc.config.presmium['presmium.motion'] as
-      { scenes?: string[] } | undefined
-    for (const name of configured?.scenes ?? [])
-      if (!found.has(name)) found.set(name, { name, label: name, durations: [1000] })
-    return [...found.values()]
-  }, [doc])
   const context = useMemo(
     () => ({
       section,
       blocks: known,
-      scenes,
       stepFor(id: string) {
         const source = prepared.current?.sources.get(id)?.source
         const original = source ? known.get(source) : known.get(id)
@@ -408,7 +367,7 @@ export default function MountedEditor({ section }: { section: IRSection }) {
         }
       },
     }),
-    [section, known, scenes],
+    [section, known],
   )
   const outgoing = (): PreviewEditedBlock[] => {
     let nextAt = 0
@@ -532,22 +491,20 @@ export default function MountedEditor({ section }: { section: IRSection }) {
     },
     [queue, section.id],
   )
-  const insertScene = (name: string) => {
-    const choice = scenes.find((scene) => scene.name === name)
-    if (!choice) return
-    editor.insertBlocks(
-      [
-        {
-          type: 'presmiumScene',
-          props: {
-            scene: choice.name,
-            durations: JSON.stringify(choice.durations),
-          },
-        },
-      ],
-      editor.getTextCursorPosition().block,
-      'after',
-    )
+  const [creating, setCreating] = useState(false)
+  const [creationError, setCreationError] = useState('')
+  const insertScene = async () => {
+    if (creating) return
+    setCreating(true)
+    setCreationError('')
+    const selected = editor.getTextCursorPosition().block
+    const after = prepared.current?.sources.get(selected.id)?.source
+    try { await sourceSession(viewer).create(section.id, after) }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      setCreationError(message === 'source-timeout' ? sourceMessages.timeout : message === 'source-storage' ? sourceMessages.storage : message === 'source-unavailable' ? sourceMessages.unavailable : message)
+    }
+    finally { setCreating(false) }
   }
   return (
     <EDITING.Provider value={context}>
@@ -562,21 +519,6 @@ export default function MountedEditor({ section }: { section: IRSection }) {
         }}
       >
         <div className="pm-block-editor__tools">
-          <PmMenu
-            label={t.insertAnimation}
-            icon="plus"
-            placement="below-end"
-            items={
-              scenes.length
-                ? scenes.map((scene) => ({
-                    id: scene.name,
-                    label: scene.label,
-                    icon: 'video',
-                  }))
-                : [{ id: '', label: t.noScene, disabled: true }]
-            }
-            onSelect={insertScene}
-          />
           <span className="pm-block-editor__status" role="status">
             {state === 'saving'
               ? t.saving
@@ -611,6 +553,7 @@ export default function MountedEditor({ section }: { section: IRSection }) {
             {failure}
           </div>
         )}
+        {creationError && <div className="pm-ui-notice pm-ui-notice--danger" role="alert">{creationError}</div>}
         <BlockNoteView
           editor={editor}
           theme={appearance.dark ? 'dark' : 'light'}
@@ -628,10 +571,13 @@ export default function MountedEditor({ section }: { section: IRSection }) {
             const current = editor.getTextCursorPosition().block
             if (current.id === lastSelected.current) return
             lastSelected.current = current.id
+            // Generated blocks have explicit step controls. Editing their source keeps that selected step.
+            if (current.type === 'presmiumScene' || current.type === 'presmiumContent') return
             reportPreview({
               type: 'narrate',
               section: section.id,
               step: context.stepFor(current.id),
+              navigate: false,
             })
           }}
         >
@@ -647,13 +593,13 @@ export default function MountedEditor({ section }: { section: IRSection }) {
               filterSuggestionItems(
                 [
                   ...getDefaultReactSlashMenuItems(editor),
-                  ...scenes.map((scene) => ({
-                    title: scene.label,
-                    onItemClick: () => insertScene(scene.name),
-                    aliases: ['animation', 'scene', '动画', scene.name],
+                  ...(doc.config.presmium['presmium.motion'] !== undefined ? [{
+                    title: t.animation,
+                    onItemClick: insertScene,
+                    aliases: ['animation', 'scene', '动画'],
                     group: t.animation,
                     icon: <PmIcon name="video" />,
-                  })),
+                  }] : []),
                 ],
                 query,
               )

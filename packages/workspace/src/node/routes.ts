@@ -1,19 +1,19 @@
 import { createRequire } from 'node:module'
 import { hasRole, isRecord, jsonResponse, problemResponse, pushStream, sseResponse } from '@lincyaw/kernel'
-import type { ChangesAnswer, CommitAnswer, CompileJob, DocumentOperation, DocumentsAnswer, JobsAnswer, Member, PresmiumNodePlugin, RequestContext, RevertResult, RevisionsAnswer, Route, SavedAnswer, ServerContribution } from '@lincyaw/kernel'
+import type { ChangesAnswer, CommitAnswer, CompileJob, DocumentOperation, DocumentsAnswer, JobsAnswer, Member, PresmiumNodePlugin, RequestContext, RevertResult, RevisionsAnswer, Route, SavedAnswer, ServerContribution, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
 import { hasBearerToken } from '@lincyaw/server'
 import { REVERT_TRAILER, saveSummary, trailers } from '../domain/commit-message.ts'
 import { documentSummaries, listDocuments } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
 import { documentsDiff } from './document-operations.ts'
 import type { DocumentOperations, DocumentsChange } from './document-operations.ts'
-import { catchRequestErrors } from './errors.ts'
+import { catchRequestErrors, RequestError } from './errors.ts'
 import { lockedError } from './locks.ts'
 import type { DocumentLocks } from './locks.ts'
 import type { Revisions, UndoTargets } from './revisions.ts'
 import { reviewRoutes } from './review/routes.ts'
 import type { AgentSessionReviews } from './review/agent-session-reviews.ts'
-import { MAX_SOURCE } from './source-editor.ts'
+import { MAX_SOURCE, MAX_SOURCE_CHANGES } from './source-editor.ts'
 import type { SourceEditor } from './source-editor.ts'
 import { listTemplates } from './templates.ts'
 import type { Jobs } from './jobs.ts'
@@ -189,6 +189,26 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
         const body: unknown = await request.json().catch(() => undefined)
         if (!isRecord(body) || typeof body.path !== 'string') return problemResponse(400, '{ path: <new text file> }')
         return jsonResponse(await editor.create(scopeOf(ctx), body.path, ctx.member), 201)
+      }),
+    },
+    'source/transaction': {
+      role: 'editor',
+      maxBody: MAX_SOURCE * 3 + 8192,
+      handle: (request, ctx) => catchRequestErrors(async () => {
+        if (request.method !== 'POST') return problemResponse(405, 'POST')
+        const body: unknown = await request.json().catch(() => undefined)
+        if (!isRecord(body) || !Array.isArray(body.changes) || body.changes.length === 0 || body.changes.length > MAX_SOURCE_CHANGES || !body.changes.every(change => isRecord(change) && typeof change.path === 'string' && typeof change.content === 'string' && (change.base === null || (typeof change.base === 'string' && change.base.length > 0 && change.base.length <= 200)))) return problemResponse(400, '{ changes: [{ path, content, base: <the version opened, or null for a new file> }], message? }')
+        const changes = body.changes as SourceTransactionChange[]
+        const message = toSaveMessage(body.message)
+        const history = revisions ? {
+          run: <T>(work: () => Promise<T>) => revisions.transaction(work),
+          commit: async (paths: string[], lang: string | undefined) => {
+            const ignored = (await Promise.all(paths.map(async path => await revisions.ignores(path) ? path : undefined))).filter((path): path is string => path !== undefined)
+            if (ignored.length) throw new RequestError(409, `a source transaction cannot record ignored files: ${ignored.join(', ')}`, { ignored })
+            return revisions.commitWhileLocked({ paths, summary: message || saveSummary(paths[0]!, lang), body: '', origin: { kind: 'editor', member: ctx.member } })
+          },
+        } : undefined
+        return jsonResponse(await editor.transaction(scopeOf(ctx), changes, ctx.member, history) satisfies SourceTransactionAnswer)
       }),
     },
     'changes': {

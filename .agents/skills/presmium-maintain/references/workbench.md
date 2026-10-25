@@ -11,7 +11,7 @@ The workbench serves teachers who are not technical (7.3). Keep the simple loop 
 the document, edit it directly or hand it to the AI, undo at any time. Professional code editing is the VS
 Code extension's job.
 
-- No source editor, file tree, raw problem panel text or git vocabulary in the UI.
+- Keep authoring on the document: ordinary text is edited as blocks; generated content offers source and preview within the same block. Read the actual definition declared in the IR, or the block's MyST fragment when it has none. Do not turn the workbench into a project-wide IDE, file tree or raw problem panel, and keep git vocabulary out of the authoring flow.
 - UI copy uses conventional product terminology: concise noun labels such as “讲解文本” and precise options such as “与动画同步” and “动画结束后”. Avoid conversational questions such as “这一刻要讲什么” in fields or controls.
 - Command names follow Word: Undo, Redo, New Comment, Version History, Accept and Reject, Editing and
   Viewing. Both the zh-CN and the en text are complete.
@@ -25,6 +25,8 @@ including documents that are not selected, and that after a failed commit the re
 rejected (6.5).
 
 ## Editing on the document
+
+Source/preview is a view of one block, not a picker that replaces it with another animation. Preserve its block ID and step bindings. The workbench resolves the source from the current IR anchor, checks the opened version and edit lock, and saves through the existing source/history path. Show when multiple blocks share a definition file. Keep source drafts through view switches and preview reloads; on conflicts or failed saves retain the draft instead of overwriting a newer file. Verify the source/preview loop separately from page and step navigation.
 
 Editing happens on the document page. The preview protocol's `pick` reports the position of a click or a
 selection, and the workbench draws a toolbar beside the pointer; `edit` makes one block editable; `edited`

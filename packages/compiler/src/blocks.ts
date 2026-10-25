@@ -1,4 +1,6 @@
 import { environmentExecutor, errorMessage, isRecord } from '@lincyaw/kernel'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import type {
   BlockRole,
   CodeNode,
@@ -308,7 +310,17 @@ function componentDirective(call: DirectiveCall, ctx: BlockContext, push: Push):
   if (plugin === undefined) fail(`no plugin in \`plugins\` registers the component ${arg}`, 'warning')
   const span = options.span === undefined ? 0 : Number(options.span)
   if (!Number.isInteger(span) || span < 0) return fail(`:span: must be a non-negative integer`)
-  push({ kind: kebab(arg), label: call.label, reveal: call.reveal !== undefined, role: 'visual', span, source: call.source, audience: call.audience, node: { type: 'component', plugin: plugin ?? '', name: arg, props } })
+  const node: ComponentNode = { type: 'component', plugin: plugin ?? '', name: arg, props }
+  if (ctx.components.get(arg) === 'deck') {
+    // Match the renderer's local component priority without exposing installed plugin sources for editing.
+    const language = ['tsx', 'ts', 'jsx', 'js'].find(ext => existsSync(join(ctx.deckDir, 'components', `${arg}.${ext}`)))
+    if (language) {
+      const file = join(ctx.deckDir, 'components', `${arg}.${language}`)
+      ctx.watch(file)
+      node.definition = { file, language }
+    }
+  }
+  push({ kind: kebab(arg), label: call.label, reveal: call.reveal !== undefined, role: 'visual', span, source: call.source, audience: call.audience, node })
 }
 
 /** A directive a plugin registers: its options typed, its `toIR` called, `:env:` and `:session:` applied to the code it runs. */

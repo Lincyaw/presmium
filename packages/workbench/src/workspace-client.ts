@@ -1,4 +1,4 @@
-import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
+import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, SourceTransactionAnswer, SourceTransactionChange, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
 import type { OperationBatch } from './telemetry.ts'
 
 /** A route of the workspace server answered with an error. */
@@ -19,6 +19,8 @@ export interface WorkspaceClient {
   readSource(document: string, path: string): Promise<SourceAnswer>
   /** Saves the file; in a git workspace the save is committed at once, `message` its summary. */
   saveSource(document: string, path: string, content: string, base: string, message?: string): Promise<SavedAnswer>
+  /** Saves a small set of files in one document with one version and rollback boundary. */
+  saveSourceTransaction(document: string, changes: SourceTransactionChange[], message?: string): Promise<SourceTransactionAnswer>
   readIr(document: string): Promise<IrAnswer>
   subscribeIr(document: string, revision: (event: IrEvent) => void, failed?: () => void): () => void
   readDiagnostics(document: string): Promise<DiagnosticSnapshot>
@@ -142,6 +144,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     operateDocument: operation => post(url('documents'), operation),
     readSource: (document, path) => call(url('source', document, { path })),
     saveSource: (document, path, content, base, message) => post(url('source', document), { path, content, base, ...message ? { message } : {} }),
+    saveSourceTransaction: (document, changes, message) => post(url('source/transaction', document), { changes, ...message ? { message } : {} }),
     readIr,
     subscribeIr: (document, revision, failed) => subscribe(url('ir/events', document), 'revision', revision, failed),
     readDiagnostics: document => call(url('diagnostics', document)),

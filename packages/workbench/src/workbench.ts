@@ -13,7 +13,9 @@ import type { OperationValue } from './telemetry.ts'
 import { applyRenderedEdit } from './text-edit.ts'
 import { writeStepNarration } from './narration.ts'
 import type { StepNarrationDraft } from './narration.ts'
-import { writeBodyBlocks } from './block-edit.ts'
+import { bodyBlocks, writeBodyBlocks } from './block-edit.ts'
+import { blockSourceTarget, previewBlockSource, readBlockSource, savedBlockSource, writeBlockSource } from './block-source.ts'
+import type { BlockSourceDraft } from './block-source.ts'
 import { workspaceClient, WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 
@@ -87,6 +89,7 @@ export interface WorkbenchState {
   position?: PreviewPosition
   narration?: { section: string, step: number }
   narrationDirty?: boolean
+  sourceDirty?: boolean
   diagnostics?: DiagnosticSnapshot
   isDiagnosticsUnavailable: boolean
   canRepairDiagnostics: boolean
@@ -173,6 +176,7 @@ function commentPins(comments: readonly DocumentComment[]): PreviewPin[] {
 const DOCUMENT_RESET = {
   narration: undefined,
   narrationDirty: false,
+  sourceDirty: false,
   ir: undefined, preview: undefined, previewFailure: undefined, previewIrRevision: undefined, position: undefined,
   diagnostics: undefined, isDiagnosticsUnavailable: false, isRepairingDiagnostics: false, diagnosticsRepairFailure: undefined,
   pointer: undefined, editing: undefined, save: { kind: 'idle' }, editFallback: undefined,
@@ -226,6 +230,7 @@ export class Workbench {
   #focusVersion = 0
   #focusWriting: Promise<void> = Promise.resolve()
   #edits: Promise<void> = Promise.resolve()
+  readonly #blockSources = new Map<string, BlockSourceDraft>()
   /** A place to show that no preview could take yet (none was attached, e.g. the chat covered the document). */
   #pendingReveal?: PreviewAnchor
   /** The AI's changes to show on the document once the preview has them. */
@@ -388,6 +393,7 @@ export class Workbench {
 
   async openDocument(dir: string): Promise<void> {
     if (this.#state.document === dir) return
+    this.#blockSources.clear()
     this.#stopSubscriptions()
     this.#history.subscribeReview(dir)
     this.#set({ ...DOCUMENT_RESET, document: dir, previewRenderer: 'web', webView: 'document' })
@@ -410,6 +416,7 @@ export class Workbench {
   closeDocument(): void {
     if (this.#state.document !== undefined) this.#record('document.close')
     this.#stopSubscriptions()
+    this.#blockSources.clear()
     this.#set({ ...DOCUMENT_RESET, document: undefined })
     void this.loadDocuments()
   }
@@ -541,12 +548,12 @@ export class Workbench {
   }
 
   /** Opens the narration editor at a document or animation step. */
-  selectNarration(section: string, step: number): void {
+  selectNarration(section: string, step: number, navigate = true): void {
     const target = this.#state.ir?.doc.sections.find(s => s.id === section)
     if (!target || !Number.isInteger(step) || step < 0 || step > target.steps) return
     this.point(undefined)
     this.#set({ narration: { section, step } })
-    this.#broadcast({ type: 'go', section, step, ...(this.#state.webView === 'present' ? { view: 'present' } : {}) })
+    if (navigate) this.#broadcast({ type: 'go', section, step, ...(this.#state.webView === 'present' ? { view: 'present' } : {}) })
     this.#record('narration.select', { 'presmium.section': section, 'presmium.step': step })
   }
 
@@ -609,6 +616,149 @@ export class Workbench {
       if (this.#state.document === dir) this.#set({ save: { kind: 'failed', message } })
       result(message)
     }
+  }
+
+  #sourceError(error: unknown): string {
+    const reason = errorMessage(error)
+    if (reason === 'source-unknown') return this.#messages.sourceUnknown
+    if (error instanceof WorkspaceServerError && error.answer.ignored?.length) return this.#messages.sourceIgnored
+    if (reason === 'source-changed' || error instanceof WorkspaceServerError && error.status === 409) return this.#messages.sourceChanged
+    if (reason === 'source-large') return this.#messages.sourceLarge
+    if (reason === 'source-refresh') return this.#messages.sourceRefresh
+    return reason
+  }
+
+  #rememberBlockSource(key: string, draft: BlockSourceDraft): void {
+    this.#blockSources.delete(key)
+    this.#blockSources.set(key, draft)
+    const bytes = () => [...this.#blockSources.values()].reduce((size, value) => size + (value.source.content.length + value.content.length) * 2, 0)
+    while (this.#blockSources.size > 1 && (this.#blockSources.size > 32 || bytes() > 16 << 20))
+      this.#blockSources.delete(this.#blockSources.keys().next().value!)
+  }
+
+  async #readBlockSource(report: Extract<PreviewReport, { type: 'source-read' }>): Promise<void> {
+    const dir = this.#state.document
+    const answer = this.#state.ir
+    const reply = (source?: ReturnType<typeof previewBlockSource>, error?: string) => {
+      if (this.#state.document === dir) this.#broadcast({ type: 'source-result', section: report.section, block: report.block, request: report.request, ...source ? { source } : {}, ...error ? { error } : {} })
+    }
+    if (dir === undefined || !answer) return reply(undefined, this.#messages.sourceUnknown)
+    if (this.#state.mode !== 'editing') return reply(undefined, this.#messages.saveLocked)
+    try {
+      const target = blockSourceTarget(answer.doc, report.section, report.block, report.part)
+      const source = await this.client.readSource(WORKSPACE_SCOPE, target.path)
+      if (this.#state.document !== dir) return
+      if (this.#state.ir?.revision !== answer.revision) throw new Error('source-changed')
+      const key = `${report.section}\0${report.block}\0${target.part}`
+      const draft = readBlockSource(answer.doc, report.section, report.block, source, target.part, this.#blockSources.get(key))
+      this.#rememberBlockSource(key, draft)
+      this.#record('source.read', { 'presmium.section': report.section, 'presmium.block': report.block, 'presmium.part': target.part })
+      reply(previewBlockSource(draft))
+    } catch (error) {
+      reply(undefined, this.#sourceError(error))
+    }
+  }
+
+  async #saveBlockSource(report: Extract<PreviewReport, { type: 'source-save' }>): Promise<void> {
+    const dir = this.#state.document
+    const reply = (version?: string, error?: string) => {
+      if (this.#state.document === dir) this.#broadcast({ type: 'source-saved', section: report.section, block: report.block, request: report.request, ...version ? { sourceVersion: version } : {}, ...error ? { error } : {} })
+    }
+    if (dir === undefined || !this.#state.ir) return reply(undefined, this.#messages.sourceUnknown)
+    if (this.#state.mode !== 'editing' || isAgentChanging(this.#state)) return reply(undefined, this.#messages.saveLocked)
+    try {
+      const target = blockSourceTarget(this.#state.ir.doc, report.section, report.block, report.part)
+      const key = `${report.section}\0${report.block}\0${target.part}`
+      const draft = this.#blockSources.get(key)
+      if (!draft) throw new Error('source-changed')
+      const content = writeBlockSource(this.#state.ir.doc, draft, report.path, report.base, report.content)
+      this.#set({ save: { kind: 'saving' } })
+      const title = this.#state.ir.doc.sections.find(section => section.id === report.section)!.title
+      const saved = await this.client.saveSource(WORKSPACE_SCOPE, draft.source.path, content, draft.source.version, this.#messages.editedSource(title))
+      if (this.#state.document !== dir) return
+      // The read snapshot stays usable even when the edited source does not compile yet.
+      this.#rememberBlockSource(key, savedBlockSource(draft, content, report.content, saved.version))
+      await this.#readIr(dir)
+      await this.#history.read(dir)
+      if (this.#state.document !== dir) return
+      this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
+      this.#record('source.save', { 'presmium.section': report.section, 'presmium.block': report.block, 'presmium.part': target.part })
+      reply(saved.version)
+    } catch (error) {
+      const message = this.#sourceError(error)
+      if (this.#state.document === dir) this.#set({ save: { kind: 'failed', message } })
+      reply(undefined, message)
+    }
+  }
+
+  async #createSourceBlock(report: Extract<PreviewReport, { type: 'source-create' }>): Promise<void> {
+    const dir = this.#state.document
+    const answer = this.#state.ir
+    const section = answer?.doc.sections.find(section => section.id === report.section)
+    const reply = (block?: string, error?: string) => {
+      if (this.#state.document === dir) this.#broadcast({ type: 'source-created', section: report.section, request: report.request, ...block ? { block } : {}, ...error ? { error } : {} })
+    }
+    if (dir === undefined || !answer || !section) return reply(undefined, this.#messages.sourceUnknown)
+    if (this.#state.mode !== 'editing' || isAgentChanging(this.#state)) return reply(undefined, this.#messages.saveLocked)
+    if (report.revision !== answer.revision) return reply(undefined, this.#messages.blockConflict)
+    const motion = answer.doc.config.presmium['presmium.motion'] as { starter?: { code?: unknown } } | undefined
+    const starter = motion?.starter?.code
+    if (typeof starter !== 'string') return reply(undefined, this.#messages.sourceAnimationUnavailable)
+    try {
+      const originals = bodyBlocks(section)
+      const after = report.after === undefined ? originals.at(-1) : originals.find(block => block.id === report.after)
+      if (report.after !== undefined && !after) throw new Error('source-changed')
+      const id = report.id
+      if (answer.doc.sections.some(section => [...irBlocks(section.blocks)].some(block => block.id === id))) throw new Error('source-changed')
+      const entryDir = answer.doc.meta.entry.includes('/') ? answer.doc.meta.entry.slice(0, answer.doc.meta.entry.lastIndexOf('/') + 1) : ''
+      const path = `${entryDir}scenes/${id}.ts`
+      const at = after ? after.at + (after.span ?? 0) + (after.node.type === 'component' && after.node.durations ? 1 : 0) : 0
+      const blocks = originals.map(block => ({ id: block.id, source: block.id }))
+      const insertAt = after ? originals.indexOf(after) + 1 : 0
+      const source = await this.client.readSource(WORKSPACE_SCOPE, section.source.file)
+      const content = writeBodyBlocks(answer.doc, section, source.content, [...blocks.slice(0, insertAt), { id, scene: id, durations: [1000], at }, ...blocks.slice(insertAt)])
+      if (this.#state.document !== dir) return
+      if (this.#state.ir?.revision !== answer.revision) throw new Error('source-changed')
+      const code = starter
+      this.#set({ save: { kind: 'saving' } })
+      await this.client.saveSourceTransaction(dir, [{ path, content: code, base: null }, { path: source.path, content, base: source.version }], this.#messages.createdAnimation)
+      if (this.#state.document !== dir) return
+      await this.#waitForSourceBlock(dir, report.section, id)
+      await this.#history.read(dir)
+      if (this.#state.document !== dir) return
+      this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
+      this.#record('source.create', { 'presmium.section': report.section, 'presmium.block': id })
+      reply(id)
+    } catch (error) {
+      const message = this.#sourceError(error)
+      if (this.#state.document === dir) this.#set({ save: { kind: 'failed', message } })
+      reply(undefined, message)
+    }
+  }
+
+  /** Filesystem compilation is asynchronous; a completed IR request can still describe the pre-insert document. */
+  #waitForSourceBlock(dir: string, section: string, block: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      let finished = false
+      let unsubscribe = () => {}
+      const finish = (error?: Error) => {
+        if (finished) return
+        finished = true
+        clearTimeout(timer)
+        unsubscribe()
+        if (error) reject(error)
+        else resolve()
+      }
+      const check = () => {
+        if (this.#state.document !== dir) return finish(new Error('source-changed'))
+        const page = this.#state.ir?.doc.sections.find(page => page.id === section)
+        if (page && [...irBlocks(page.blocks)].some(candidate => candidate.id === block)) finish()
+      }
+      const timer = setTimeout(() => finish(new Error('source-refresh')), 20_000)
+      unsubscribe = this.subscribe(check)
+      check()
+      if (!finished) void this.#readIr(dir).then(check)
+    })
   }
 
   /** Whether the target's text is plain enough to edit in place. */
@@ -910,8 +1060,20 @@ export class Workbench {
       case 'blocks-edited':
         this.#edits = this.#edits.then(() => this.#saveBlocks(report))
         break
+      case 'source-read':
+        this.#edits = this.#edits.then(() => this.#readBlockSource(report))
+        break
+      case 'source-save':
+        this.#edits = this.#edits.then(() => this.#saveBlockSource(report))
+        break
+      case 'source-create':
+        this.#edits = this.#edits.then(() => this.#createSourceBlock(report))
+        break
+      case 'source-draft':
+        if (this.#state.sourceDirty !== report.dirty) this.#set({ sourceDirty: report.dirty })
+        break
       case 'narrate':
-        if (this.#state.mode === 'editing') this.selectNarration(report.section, report.step)
+        if (this.#state.mode === 'editing') this.selectNarration(report.section, report.step, report.navigate !== false)
         break
       case 'ready':
       case 'updated':

@@ -56,8 +56,21 @@ export interface PreviewEditedBlock {
   durations?: number[]
 }
 
+/** The source of one anchored block, read by the workbench from its current IR binding. */
+export interface PreviewSource {
+  part: 'definition' | 'block'
+  path: string
+  language: string
+  content: string
+  version: string
+  shared: number
+}
+
 export type PreviewCommand =
   | { type: 'blocks-result', section: string, request: number, revision?: string, error?: string }
+  | { type: 'source-result', section: string, block: string, request: number, source?: PreviewSource, error?: string }
+  | { type: 'source-saved', section: string, block: string, request: number, sourceVersion?: string, error?: string }
+  | { type: 'source-created', section: string, request: number, block?: string, error?: string }
   | { type: 'go', section: string, step?: number, trail?: string[], view?: string }
   | { type: 'highlight', target: PreviewAnchor | null }
   | { type: 'pick', on: boolean }
@@ -77,7 +90,11 @@ export type PreviewShortcut = 'undo' | 'redo' | 'dismiss'
 
 export type PreviewReport =
   | { type: 'blocks-edited', section: string, request: number, revision: string, blocks: PreviewEditedBlock[] }
-  | { type: 'narrate', section: string, step: number }
+  | { type: 'source-read', section: string, block: string, request: number, part?: 'definition' | 'block' }
+  | { type: 'source-save', section: string, block: string, request: number, path: string, base: string, content: string, part?: 'definition' | 'block' }
+  | { type: 'source-create', section: string, id: string, after?: string, request: number, revision: string }
+  | { type: 'source-draft', dirty: boolean }
+  | { type: 'narrate', section: string, step: number, navigate?: boolean }
   | { type: 'ready', renderer: 'web' | 'slides', document: string, revision?: string, capabilities: PreviewCommandType[] }
   | ({ type: 'position' } & PreviewPosition)
   | { type: 'picked', section: string, block?: string, step?: number, trail?: string[], rect?: PreviewRect, point?: PreviewPoint, clicks?: number }
@@ -95,7 +112,7 @@ export type PreviewReport =
 export type PreviewEnvelope<M> = M & { protocol: typeof PREVIEW_NAME, version: number, nonce: string }
 
 export function previewEnvelope<M extends PreviewCommand | PreviewReport>(nonce: string, message: M): PreviewEnvelope<M> {
-  return { protocol: PREVIEW_NAME, version: PREVIEW_PROTOCOL, nonce, ...message }
+  return { ...message, protocol: PREVIEW_NAME, version: PREVIEW_PROTOCOL, nonce }
 }
 
 const text = (value: unknown): value is string => typeof value === 'string'
@@ -112,6 +129,10 @@ const toAnchor = (value: PreviewAnchor): PreviewAnchor => ({ section: value.sect
 const toRect = (value: PreviewRect): PreviewRect => ({ x: value.x, y: value.y, width: value.width, height: value.height })
 const toPoint = (value: PreviewPoint): PreviewPoint => ({ x: value.x, y: value.y })
 const MAX_EDITED = 200_000
+const bounded = (value: unknown, max: number): value is string => text(value) && value.length > 0 && value.length <= max
+const sourceTarget = (m: Record<string, unknown>) => bounded(m.section, 200) && bounded(m.block, 200) && request(m.request)
+const sourcePart = (value: unknown): value is 'definition' | 'block' => value === 'definition' || value === 'block'
+const sourceValue = (value: unknown): value is PreviewSource => isRecord(value) && sourcePart(value.part) && bounded(value.path, 4096) && bounded(value.language, 100) && text(value.content) && value.content.length <= MAX_EDITED && bounded(value.version, 200) && request(value.shared) && value.shared > 0
 
 export function isPreviewEnvelope(data: unknown, nonce: string): data is PreviewEnvelope<{ type: string }> {
   return isRecord(data) && data.protocol === PREVIEW_NAME && data.nonce === nonce && typeof data.version === 'number' && text(data.type)
@@ -122,6 +143,9 @@ export function toPreviewCommand(data: unknown, nonce: string): PreviewCommand |
   const m = data as Record<string, unknown>
   switch (m.type) {
     case 'blocks-result': return text(m.section) && request(m.request) && optional(m.revision, text) && optional(m.error, text) ? { type: 'blocks-result', section: m.section, request: m.request, ...m.revision === undefined ? {} : { revision: m.revision as string }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
+    case 'source-result': return sourceTarget(m) && optional(m.source, sourceValue) && optional(m.error, text) ? { type: 'source-result', section: m.section as string, block: m.block as string, request: m.request as number, ...m.source === undefined ? {} : { source: m.source as PreviewSource }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
+    case 'source-saved': return sourceTarget(m) && optional(m.sourceVersion, (value): value is string => bounded(value, 200)) && optional(m.error, text) ? { type: 'source-saved', section: m.section as string, block: m.block as string, request: m.request as number, ...m.sourceVersion === undefined ? {} : { sourceVersion: m.sourceVersion as string }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
+    case 'source-created': return bounded(m.section, 200) && request(m.request) && optional(m.block, (value): value is string => bounded(value, 200)) && optional(m.error, text) ? { type: 'source-created', section: m.section, request: m.request, ...m.block === undefined ? {} : { block: m.block as string }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
     case 'go': return text(m.section) && optional(m.step, step) && optional(m.trail, strings) && optional(m.view, text) ? { type: 'go', section: m.section, ...m.step === undefined ? {} : { step: m.step as number }, ...m.trail ? { trail: m.trail as string[] } : {}, ...m.view ? { view: m.view as string } : {} } : undefined
     case 'highlight': return m.target === null || anchor(m.target) ? { type: 'highlight', target: m.target === null ? null : { section: m.target.section, ...m.target.block ? { block: m.target.block } : {} } } : undefined
     case 'pick':
@@ -142,7 +166,11 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
   const m = data as Record<string, unknown>
   switch (m.type) {
     case 'blocks-edited': return text(m.section) && request(m.request) && text(m.revision) && Array.isArray(m.blocks) && m.blocks.length <= 2000 && m.blocks.every(b => isRecord(b) && text(b.id) && b.id.length <= 200 && optional(b.source, text) && optional(b.at, step) && optional(b.markdown, (v): v is string => text(v) && v.length <= MAX_EDITED) && optional(b.scene, text) && optional(b.durations, (v): v is number[] => Array.isArray(v) && v.length <= 1000 && v.every(n => typeof n === 'number' && Number.isFinite(n) && n >= 0))) ? { type: 'blocks-edited', section: m.section, request: m.request, revision: m.revision, blocks: m.blocks as unknown as PreviewEditedBlock[] } : undefined
-    case 'narrate': return text(m.section) && step(m.step) ? { type: 'narrate', section: m.section, step: m.step } : undefined
+    case 'source-read': return sourceTarget(m) && optional(m.part, sourcePart) ? { type: 'source-read', section: m.section as string, block: m.block as string, request: m.request as number, ...m.part === undefined ? {} : { part: m.part as 'definition' | 'block' } } : undefined
+    case 'source-save': return sourceTarget(m) && optional(m.part, sourcePart) && bounded(m.path, 4096) && bounded(m.base, 200) && text(m.content) && m.content.length <= MAX_EDITED ? { type: 'source-save', section: m.section as string, block: m.block as string, request: m.request as number, path: m.path as string, base: m.base as string, content: m.content, ...m.part === undefined ? {} : { part: m.part as 'definition' | 'block' } } : undefined
+    case 'source-create': return bounded(m.section, 200) && text(m.id) && /^scene-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(m.id) && request(m.request) && bounded(m.revision, 200) && optional(m.after, (value): value is string => bounded(value, 200)) ? { type: 'source-create', section: m.section, id: m.id, request: m.request, revision: m.revision, ...m.after === undefined ? {} : { after: m.after as string } } : undefined
+    case 'source-draft': return typeof m.dirty === 'boolean' ? { type: 'source-draft', dirty: m.dirty } : undefined
+    case 'narrate': return text(m.section) && step(m.step) && optional(m.navigate, (value): value is boolean => typeof value === 'boolean') ? { type: 'narrate', section: m.section, step: m.step, ...m.navigate === undefined ? {} : { navigate: m.navigate as boolean } } : undefined
     case 'ready': return (m.renderer === 'web' || m.renderer === 'slides') && text(m.document) && optional(m.revision, text) && strings(m.capabilities) ? { type: 'ready', renderer: m.renderer, document: m.document, ...m.revision ? { revision: m.revision as string } : {}, capabilities: m.capabilities as PreviewCommandType[] } : undefined
     case 'position': return text(m.section) && step(m.step) && strings(m.trail) && optional(m.view, text) ? { type: 'position', section: m.section, step: m.step, trail: m.trail, ...m.view ? { view: m.view as string } : {} } : undefined
     case 'picked': return text(m.section) && optional(m.block, text) && optional(m.step, step) && optional(m.trail, strings) && optional(m.rect, rect) && optional(m.point, point) && optional(m.clicks, clicks)

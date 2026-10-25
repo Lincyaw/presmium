@@ -52,12 +52,12 @@ const FLASH = 'data-preview-flash'
 // Three blinks of 0.8 s, the length of the animation below.
 const FLASH_MS = 2400
 const PIN_CLASS = 'pm-preview-pin'
-const CONTROLS = 'a, button, input, select, textarea, label, summary, [contenteditable], [role="dialog"]'
+const CONTROLS = 'a, button, input, select, textarea, label, summary, [contenteditable], [role="dialog"], [role="menu"], [role="menuitem"], [role="listbox"], [role="option"]'
 const HEADINGS = 'h1, h2, h3, h4, h5, h6'
 // Inside an edited element: the frame's pins and a heading's anchor link, which the caret does not enter. A function for
 // the same reason as `framePrefix`: a module-level template keeps this module in static builds.
 const notText = () => `.${PIN_CLASS}, .header-anchor, .pm-content-marks`
-const COMMANDS: PreviewCommandType[] = ['go', 'highlight', 'pick', 'pins', 'marks', 'appearance', 'edit', 'flash', 'blocks-result']
+const COMMANDS: PreviewCommandType[] = ['go', 'highlight', 'pick', 'pins', 'marks', 'appearance', 'edit', 'flash', 'blocks-result', 'source-result', 'source-saved', 'source-created']
 
 // A function for the same reason as `notText`.
 const frameStyle = () => `
@@ -640,7 +640,8 @@ function watchSelection(state: FrameState, locate: Locator, rects: RectReport, i
       const range = document.getSelection()
       const value = range && !range.isCollapsed ? range.toString().trim() : ''
       const node = range?.rangeCount ? range.getRangeAt(0).commonAncestorContainer : undefined
-      const anchor = value && node ? locate.anchorOf(node instanceof Element ? node : node.parentElement ?? document.body) : undefined
+      const element = node instanceof Element ? node : node?.parentElement
+      const anchor = value && element && !element.closest('[contenteditable="true"], input, textarea') ? locate.anchorOf(element) : undefined
       if (anchor) {
         selected = true
         const own = range!.getRangeAt(0).cloneRange()
@@ -843,6 +844,9 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
     try {
       switch (command.type) {
         case 'blocks-result': return void window.dispatchEvent(new CustomEvent('presmium:blocks-result', { detail: command }))
+        case 'source-result': return void window.dispatchEvent(new CustomEvent('presmium:source-result', { detail: command }))
+        case 'source-saved': return void window.dispatchEvent(new CustomEvent('presmium:source-saved', { detail: command }))
+        case 'source-created': return void window.dispatchEvent(new CustomEvent('presmium:source-created', { detail: command }))
         case 'go': return page.go(command)
         case 'highlight': return highlight.show(command.target)
         case 'pick': return picking.set(command.on)

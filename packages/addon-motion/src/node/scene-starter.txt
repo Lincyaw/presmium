@@ -1,0 +1,6 @@
+import { gsapScene } from '@lincyaw/addon-motion/scene'
+
+export default gsapScene(({ root, gsap }) => {
+  root.innerHTML = '<div style="width:var(--pm-space-12);height:var(--pm-space-12);background:var(--pm-color-accent)"></div>'
+  return gsap.timeline().fromTo(root.firstElementChild!, { xPercent: 0 }, { xPercent: 200, duration: 1 })
+})

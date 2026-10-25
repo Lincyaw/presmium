@@ -29,7 +29,11 @@ export function relativeIR(doc: IRDocument, deckDir: string, workspaceRoot: stri
   for (const section of copy.sections) {
     source(section.source)
     if (section.config) section.config = portable(section.config, deckDir, workspaceRoot) as typeof section.config
-    for (const block of irBlocks(section.blocks)) source(block.source)
+    for (const block of irBlocks(section.blocks)) {
+      source(block.source)
+      if (block.node.type === 'component' && block.node.definition && isAbsolute(block.node.definition.file))
+        block.node.definition.file = relativePath(deckDir, block.node.definition.file)
+    }
   }
   for (const finding of copy.diagnostics) {
     if (finding.source) source(finding.source as SourcePos)

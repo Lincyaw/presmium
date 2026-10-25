@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
 import { WORKSPACE_CONFIG } from '@lincyaw/compiler'
-import type { ConflictAnswer, DocumentFileChange, FilesAnswer, Member, Revision, SavedAnswer, SourceAnswer, SourceFile } from '@lincyaw/kernel'
+import type { ConflictAnswer, DocumentFileChange, FilesAnswer, Member, Revision, SavedAnswer, SourceAnswer, SourceFile, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
 import { isWithin } from '../domain/paths.ts'
 import { listDocuments } from './config.ts'
 import type { FoundDocument, WorkspaceConfig } from './config.ts'
@@ -13,6 +13,7 @@ import { documentDirOf, FilesError, writeChanges } from './writer.ts'
 import type { DocumentWriter } from './writer.ts'
 
 export const MAX_SOURCE = 2 << 20
+export const MAX_SOURCE_CHANGES = 16
 const MAX_FILES = 2000
 const HIDDEN_FROM_EDITOR = new Set(['node_modules', 'dist', '.git', '.presmium'])
 const BINARY = /\.(?:png|jpe?g|gif|webp|avif|ico|bmp|pdf|wasm|zip|gz|tgz|bz2|xz|7z|woff2?|ttf|otf|eot|mp3|mp4|m4a|wav|ogg|oga|webm|mov|avi|mkv|bin|so|dylib|dll|exe|pyc|xlsx?|docx?|pptx?|parquet|npy|npz|pkl|db|sqlite)$/i
@@ -30,6 +31,11 @@ export interface SourceEditorOptions {
 interface Scope {
   document: string
   home: boolean
+}
+
+export interface SourceTransactionHistory {
+  run<T>(work: () => Promise<T>): Promise<T>
+  commit(paths: string[], lang: string | undefined): Promise<Revision | undefined>
 }
 
 /** The source files the browser's editor lists, opens, creates and saves, as far as the member and the page's document may. */
@@ -142,6 +148,82 @@ export class SourceEditor {
       if ((error as NodeJS.ErrnoException).code === 'EEXIST') throw new RequestError(409, `${path} already exists`, { exists: true })
       if (error instanceof FilesError) throw new RequestError(403, error.message)
       throw error
+    } finally {
+      release()
+    }
+  }
+
+  /** Saves related sources as one authoring change; any failed write or commit restores all preimages. */
+  async transaction(scope: Scope, changes: SourceTransactionChange[], member: Member, history?: SourceTransactionHistory): Promise<SourceTransactionAnswer> {
+    if (changes.length === 0 || changes.length > MAX_SOURCE_CHANGES) throw new RequestError(400, `a source transaction takes 1 to ${MAX_SOURCE_CHANGES} files`)
+    const paths = new Set<string>()
+    let bytes = 0
+    const documents = changes.map(change => {
+      this.#assertEditable(scope, change.path, member)
+      if (paths.has(change.path)) throw new RequestError(400, `a source path occurs twice: ${change.path}`)
+      paths.add(change.path)
+      if (BINARY.test(change.path) || change.content.includes('\0')) throw new RequestError(415, `${change.path} is not a text file`)
+      bytes += Buffer.byteLength(change.content, 'utf8')
+      return this.#documentHolding(change.path)
+    })
+    if (bytes > MAX_SOURCE) throw new RequestError(413, `the transaction is larger than the editor saves (${MAX_SOURCE} bytes)`)
+    for (const path of paths) if ([...paths].some(other => path !== other && path.startsWith(`${other}/`))) throw new RequestError(400, `a source file cannot also be a parent directory: ${path}`)
+    const document = documents[0]
+    if (!document || documents.some(found => found?.dir !== document.dir)) throw new RequestError(400, 'a source transaction must stay in one document')
+    const scopeDir = document.dir
+    const release = this.#locks ? this.#locks.claim(scopeDir, 'editor:transaction') : () => {}
+    if (!release) throw lockedError(scopeDir, this.#locks!.holder(scopeDir)!)
+    const work = async (): Promise<SourceTransactionAnswer> => {
+      // Read every preimage before creating directories or writing any file.
+      const snapshots = changes.map(change => {
+        const written = Buffer.from(change.content, 'utf8')
+        if (change.base !== null) {
+          const before = this.#readBytes(scope, change.path, member)
+          const version = versionOf(before)
+          if (version !== change.base) throw new RequestError(409, `${change.path} changed since it was opened`, { conflict: { path: change.path, version, content: before.toString('utf8') } })
+          if (BINARY.test(change.path) || before.includes(0)) throw new RequestError(415, `${change.path} is not a text file`)
+          try { new TextDecoder('utf-8', { fatal: true }).decode(before) } catch { throw new RequestError(415, `${change.path} is not UTF-8 text`) }
+          const executable = (lstatSync(join(this.#config.root, change.path)).mode & 0o111) !== 0
+          return { path: change.path, before, written, executable }
+        }
+        const file = join(this.#config.root, change.path)
+        let parent = this.#config.root
+        for (const part of change.path.split('/').slice(0, -1)) {
+          parent = join(parent, part)
+          const found = lstatSync(parent, { throwIfNoEntry: false })
+          if (found && (!found.isDirectory() || realpathSync(parent) !== parent)) throw new RequestError(403, `${change.path} has no regular workspace parent`)
+          if (!found) break
+        }
+        if (lstatSync(file, { throwIfNoEntry: false })) throw new RequestError(409, `${change.path} already exists`, { exists: true })
+        return { path: change.path, before: undefined, written, executable: false }
+      })
+      const created: string[] = []
+      const write = (next: DocumentFileChange[]) => this.#writer.write(next)
+      try {
+        // Exclusive creation prevents replacing a file created outside serve after validation.
+        for (const snapshot of snapshots) if (!snapshot.before) {
+          await this.#writer.create(snapshot.path, snapshot.written)
+          created.push(snapshot.path)
+        }
+        const edited = snapshots.filter(snapshot => snapshot.before && !snapshot.written.equals(snapshot.before))
+        if (edited.length) await write(edited.map(snapshot => ({ path: snapshot.path, content: snapshot.written, ...snapshot.executable ? { executable: true } : {} })))
+        const touched = snapshots.filter(snapshot => !snapshot.before || !snapshot.written.equals(snapshot.before)).map(snapshot => snapshot.path)
+        const revision = history && touched.length ? await history.commit(touched, document?.lang) : undefined
+        return { versions: snapshots.map(snapshot => ({ path: snapshot.path, version: versionOf(snapshot.written) })), ...revision ? { revision } : {} }
+      } catch (error) {
+        try {
+          await write([
+            ...snapshots.flatMap(snapshot => snapshot.before ? [{ path: snapshot.path, content: snapshot.before, ...snapshot.executable ? { executable: true } : {} }] : []),
+            ...created.map(path => ({ path, remove: true as const })),
+          ])
+        } catch (rollback) {
+          throw new Error(`source transaction failed (${error instanceof Error ? error.message : String(error)}); restoring sources also failed (${rollback instanceof Error ? rollback.message : String(rollback)})`)
+        }
+        throw error
+      }
+    }
+    try {
+      return await (history ? history.run(work) : work())
     } finally {
       release()
     }

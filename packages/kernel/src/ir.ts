@@ -144,6 +144,8 @@ export interface ComponentNode {
   assets?: Record<string, string>
   layer?: 'overlay'
   durations?: number[]
+  /** The authored code that defines this component instance, when supplied by its plugin. */
+  definition?: { file: string, language: string }
 }
 
 export type DirectiveOptionType = 'string' | 'number' | 'boolean' | 'list'

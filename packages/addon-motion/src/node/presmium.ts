@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { parseDuration } from '@lincyaw/kernel'
@@ -11,6 +11,7 @@ const { version } = createRequire(import.meta.url)('../../package.json') as { ve
 const posix = (path: string) => path.split(sep).join('/')
 
 const ASPECT = /^\d+(?:\.\d+)?\s*[/:]\s*\d+(?:\.\d+)?$/
+const STARTER = readFileSync(new URL('./scene-starter.txt', import.meta.url), 'utf8')
 
 const scene: DirectiveSpec = {
   name: 'scene',
@@ -45,6 +46,8 @@ const scene: DirectiveSpec = {
     if (height) props.height = height
     if (caption) props.alt = caption.replace(/\s+/g, ' ')
     const node: ComponentNode = { type: 'component', plugin: MOTION_ID, name: 'PmScene', props, durations: steps, fallback }
+    const definition = SCENE_NAME.test(name) ? sceneFile(ctx.deckDir, name) : undefined
+    if (definition) node.definition = { file: definition, language: definition.endsWith('.ts') ? 'typescript' : 'javascript' }
     const still = typeof input.options.still === 'string' ? input.options.still.trim() : undefined
     if (still) {
       const file = resolve(dirname(ctx.file), still)
@@ -71,7 +74,7 @@ const plugin: PresmiumNodePlugin = {
       const scenes = deckScenes(ctx.deckDir)
       ctx.watch(join(ctx.deckDir, SCENES_DIR), ...scenes.values())
       const own = doc.config.presmium[MOTION_ID]
-      doc.config.presmium[MOTION_ID] = { ...(typeof own === 'object' && own !== null ? own : {}), scenes: [...scenes.keys()] }
+      doc.config.presmium[MOTION_ID] = { ...(typeof own === 'object' && own !== null ? own : {}), scenes: [...scenes.keys()], starter: { language: 'typescript', code: STARTER } }
     },
   }],
   documentModules: ({ deckDir }) => ({ [SCENES_MODULE]: scenesModule(deckDir) }),

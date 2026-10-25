@@ -1263,6 +1263,8 @@ export interface CodeNode {
 export interface ComponentNode {
   /** 键可以是属性路径，如 `captions.en`：按 `.` 逐层进入对象属性 */
   assets?: Record<string, string>
+  /** 生成当前内容的真实代码定义；工作台按块锚点读取与保存，渲染端不读取源码 */
+  definition?: { file: string, language: string }
 }
 
 /** 行内角色的输入：{name key=value}`value` */
@@ -1543,13 +1545,19 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 
 新文稿在入口头部声明 `contentModel: blocks`：普通 Markdown 作为正文块，讲解与字幕只来自显式 `{narration}`，由 `:at:` 与章节步骤绑定。旧文稿继续支持隐式讲解，不因 UI 框架迁移改变原来的讲授。
 
-查看器的作者画布用 React BlockNote，按需加载；阅读与放映只运行 IR 渲染器。正文、列表、标题、代码和动画共享块的选择、排序与转换入口，无法无损转换的插件内容保留为自定义块。正文编辑与右侧步骤讲解面板分别负责各自内容，通过同一个 IR 块 ID、页码与步骤定位。动画的步进和放映的步骤跳转同步更新讲解目标。
+查看器的作者画布用 React BlockNote，按需加载；阅读与放映只运行 IR 渲染器。正文、列表、标题、代码和动画共享块的选择、排序与转换入口，无法无损转换的插件内容保留为自定义块。普通正文直接编辑，动画、图表等代码生成的内容在同一个块内切换源码与预览；切换保持块 ID、步骤与位置，不通过场景目录替换当前内容。块内源码编辑复用按需加载的 CodeMirror，工作台不提供项目级 IDE 或全局文件树。
+
+组件可在 `ComponentNode.definition` 声明生成内容的代码文件与语言。作者编辑画布据块锚点请求源码，工作台按当前 IR 解析定义文件；没有该元数据时读取该块的 MyST 片段。多个块引用同一定义时显示共享引用数，保存会更新这些块。浏览器只传当前块、已打开的文件与版本，工作台核对绑定和编辑锁后走现有源码保存与历史，不允许预览页面任意读写工作区文件。源码草稿在应用前独立保留，不按输入字符反复构建，版本冲突与保存失败不丢稿。具体协议和草稿生命周期见 `design-dsh.md` 7.3 节。
+
+正文编辑、块内源码与右侧步骤讲解面板分别负责正文、生成代码和讲解，通过同一个 IR 块 ID、页码与步骤定位。动画的步进和放映的步骤跳转同步更新讲解目标；页码与步号只改变当前状态，不改写内容。
 
 BlockNote 文档是编辑中的状态。工作台接收有序块列表，将变化写回 MyST，沿用源码版本冲突、保存与撤销，再由编译器生成 IR。保留块标签与媒介、受众和步骤范围；跨文件或讲解混合在容器中的范围拒绝猜测性重写。迁移期间移动正文时，把原有隐式讲解固定成显式的步骤绑定，避免讲解随正文顺序漂移。具体协议与界面见 `design-dsh.md` 7.3 节。
 
-#### 可运行代码的就地编辑
+#### 保存与产物中的临时执行编辑
 
-浏览器中的编辑在工作台（`presmium studio`）中：作者在文稿页面上就地改文字，工作台按块的源码行把改动落回源码（第 13 节，`design-dsh.md` 7.3 节），保存经工作区服务的 `source` 路由（加锁，按版本，每次保存一个提交）。产物的页面自己不编辑源码。
+浏览器中的持久化编辑在工作台（`presmium studio`）中：作者直接改正文，或在内容块内改生成代码，工作台按当前 IR 的来源把改动落回 MyST 或定义文件（第 13 节，`design-dsh.md` 7.3 节），保存经工作区服务的 `source` 路由（加锁，按版本，每次保存一个提交）。独立产物中可运行代码的编辑只影响本次执行，不保存文稿源码。
+
+需要同时新增代码定义和正文引用时使用 `source/transaction`：全部文件在写入前通过权限、路径、同文档范围与版本检查，创建要求目标不存在；一个文档锁和 git 队列包住批量写入与单次版本提交。事务涉及被 Git 忽略的文件时整体拒绝，避免只记录部分改动。任一步失败时恢复源文件和索引，删除本次新建文件。该边界由工作区的 `SourceEditor.transaction` 实现；不能由前端串行发送多个单文件保存来模拟。事务不是跨进程崩溃恢复协议，执行中的编译仍由已有的合并与取消机制只发布最后一版。
 
 ### 5.12 插件界面与幻灯片的书卷版式
 
@@ -1870,7 +1878,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 | send | MIT | 站点服务与打印时的静态文件（类型、Range、校验与条件请求按 HTTP 规范）；任务产物的静态服务器 | web、compiler |
 | sitemap | MIT | 构建的站点的 `sitemap.xml` | web |
 | launch-editor | MIT | `presmium dev` 中在作者的编辑器里打开块的源码行 | web |
-| CodeMirror 6（`@codemirror/*`、`@lezer/highlight`） | MIT | 可运行代码的就地编辑，第一次编辑时才加载 | viewer |
+| CodeMirror 6（`@codemirror/*`、`@lezer/highlight`） | MIT | 块内源码与可运行代码的就地编辑，第一次编辑时才加载 | viewer |
 | drauu（`@drauu/core`） | MIT | 幻灯片上的圈画 | addon-stage |
 | pptxgenjs | MIT | 幻灯片导出为 PowerPoint（每张一张图片，讲解作为演讲者备注） | render-slides |
 | DeepSeek Harness（`@deepseek-ai/dsh` 与 bundle 用到的 `@deepseek-ai/dsh-*`） | MIT（`libreoffice-kit`、`libreoffice-kit-wasm` 为 MPL-2.0，`node-addon-system` 为 BSD-3-Clause） | 工作台的 agent、会话、确认、模型设置与客户端运行时；`@lincyaw/dsh` 以对等依赖接入，`@lincyaw/studio` 提供宿主；升级先过升级闸门（13.5 节） | dsh、studio |

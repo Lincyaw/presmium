@@ -42,17 +42,32 @@ async function editorModules(lang: string) {
   return { view, state, commands, language, style, extension, python: (ALIASES[id] ?? id) === 'python' }
 }
 
-export function CodeEditor({ lang = '', value, onChange, onRun }: { lang?: string, value: string, onChange?(value: string): void, onRun?(): void }) {
+export function CodeEditor({ lang = '', label, value, onChange, onRun, onSave, onError, shouldFocus }: { lang?: string, label?: string, value: string, onChange?(value: string): void, onRun?(): void, onSave?(): void, onError?(error: unknown): void, shouldFocus?(): boolean }) {
   const host = useRef<HTMLDivElement>(null)
-  const callbacks = useRef({ onChange, onRun }); callbacks.current = { onChange, onRun }
+  const active = useRef<EditorView>()
+  const replacing = useRef(false)
+  const currentValue = useRef(value); currentValue.current = value
+  const callbacks = useRef({ onChange, onRun, onSave, onError, shouldFocus }); callbacks.current = { onChange, onRun, onSave, onError, shouldFocus }
   useEffect(() => {
     let editor: EditorView | undefined; let disposed = false
     void editorModules(lang).then(({ view, state, commands, language, style, extension, python }) => {
       if (disposed || !host.current) return
-      editor = new view.EditorView({ parent: host.current, state: state.EditorState.create({ doc: value, extensions: [commands.history(), view.keymap.of([{ key: 'Mod-Enter', run: () => { callbacks.current.onRun?.(); return true } }, ...commands.defaultKeymap, ...commands.historyKeymap, commands.indentWithTab]), language.indentUnit.of(python ? '    ' : '  '), language.syntaxHighlighting(style), extension, view.EditorView.updateListener.of(update => { if (update.docChanged) callbacks.current.onChange?.(update.state.doc.toString()) })] }) })
-      editor.focus()
+      editor = new view.EditorView({ parent: host.current, state: state.EditorState.create({ doc: currentValue.current, extensions: [commands.history(), view.EditorView.contentAttributes.of(label ? { 'aria-label': label, 'aria-multiline': 'true', role: 'textbox' } : {}), view.keymap.of([{ key: 'Mod-Enter', run: () => { if (!callbacks.current.onRun) return false; callbacks.current.onRun(); return true } }, { key: 'Mod-s', run: () => { if (!callbacks.current.onSave) return false; callbacks.current.onSave(); return true } }, ...commands.defaultKeymap, ...commands.historyKeymap, commands.indentWithTab]), language.indentUnit.of(python ? '    ' : '  '), language.syntaxHighlighting(style), extension, view.EditorView.updateListener.of(update => { if (update.docChanged && !replacing.current) callbacks.current.onChange?.(update.state.doc.toString()) })] }) })
+      active.current = editor
+      if (callbacks.current.shouldFocus?.() !== false) editor.focus()
+    }).catch(error => {
+      if (disposed) return
+      console.error('[presmium] the code editor failed to initialize', error)
+      callbacks.current.onError?.(error)
     })
-    return () => { disposed = true; editor?.destroy() }
-  }, [lang])
+    return () => { disposed = true; if (active.current === editor) active.current = undefined; editor?.destroy() }
+  }, [lang, label])
+  useEffect(() => {
+    const editor = active.current
+    if (!editor || editor.state.doc.toString() === value) return
+    replacing.current = true
+    try { editor.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: value } }) }
+    finally { replacing.current = false }
+  }, [value])
   return h('div', { ref: host, className: 'pm-code-editor' })
 }

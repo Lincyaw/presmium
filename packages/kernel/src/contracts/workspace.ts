@@ -175,6 +175,19 @@ export interface SavedAnswer {
   revision?: Revision
 }
 
+/** @experimental One version-checked file in an authoring transaction; null creates a new file exclusively. */
+export interface SourceTransactionChange {
+  path: string
+  content: string
+  base: string | null
+}
+
+/** @experimental Files saved together as one revision, or left unchanged together on failure. */
+export interface SourceTransactionAnswer {
+  versions: { path: string, version: string }[]
+  revision?: Revision
+}
+
 /** @experimental */
 export interface ConflictAnswer {
   error: string
@@ -189,6 +202,7 @@ export interface ErrorAnswer {
   conflict?: { version: string, content: string }
   locked?: { document: string, holder: string }
   exists?: true
+  ignored?: string[]
 }
 
 /** @experimental */

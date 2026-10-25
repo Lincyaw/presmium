@@ -1,6 +1,6 @@
-import { lstatSync, mkdtempSync, readdirSync, readFileSync, rmdirSync, rmSync } from 'node:fs'
+import { existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, rmdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, relative, sep } from 'node:path'
+import { join, relative, resolve, sep } from 'node:path'
 import type { DocumentFileChange, HistoryRevision, Member, RevertResult, Revision, RevisionsAnswer, RevisionService, UncommittedFile } from '@lincyaw/kernel'
 import { leavesRoot } from '../domain/paths.ts'
 import { commitMessage, memberAddress, originOf } from '../domain/commit-message.ts'
@@ -164,6 +164,21 @@ export class Revisions implements RevisionService {
   constructor(git: Git, files: RevisionFiles) {
     this.#git = git
     this.#files = files
+  }
+
+  /** One authoring transaction holds the git queue and restores its index if file saving or committing fails. */
+  transaction<T>(work: () => Promise<T>): Promise<T> {
+    return this.#git.exclusive(async () => {
+      const index = resolve(this.#git.root, (await this.#git.output(['rev-parse', '--git-path', 'index'])).trim())
+      const before = existsSync(index) ? readFileSync(index) : undefined
+      try {
+        return await work()
+      } catch (error) {
+        if (before) writeFileSync(index, before)
+        else rmSync(index, { force: true })
+        throw error
+      }
+    })
   }
 
   commit(change: { files: string[], message: string, origin: CommitOrigin, trailers?: [string, string][] }): Promise<Revision | undefined> {

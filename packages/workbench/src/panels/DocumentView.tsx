@@ -204,17 +204,18 @@ function DocumentToolbar({ framed, aside, navigation, onNavigation, onAside }: {
 function SaveStatus() {
   const t = useMessages()
   const save = useWorkbenchState(state => state.save)
+  const dirty = useWorkbenchState(state => Boolean(state.sourceDirty || state.narrationDirty))
   const locale = useWorkbenchState(state => state.locale)
   const [, tick] = useState(0)
   useEffect(() => {
-    if (save.kind !== 'saved') return
+    if (save.kind !== 'saved' || dirty) return
     const timer = setInterval(() => tick(n => n + 1), 30_000)
     return () => clearInterval(timer)
-  }, [save])
-  const text = save.kind === 'saving'
+  }, [save, dirty])
+  const text = dirty ? t.unsaved : save.kind === 'saving'
     ? t.saving
     : save.kind === 'saved' ? t.savedAt(timeAgo(save.at, locale)) : save.kind === 'idle' ? t.saved : ''
-  return <span className="pmw-toolbar__status" role="status" aria-live="polite" data-save={save.kind}>{text}</span>
+  return <span className="pmw-toolbar__status" role="status" aria-live="polite" data-save={dirty ? 'dirty' : save.kind}>{text}</span>
 }
 
 /** What needs the author's attention: the AI's change, an edit to hand over, a failed save, content that did not display. */

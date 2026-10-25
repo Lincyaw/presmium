@@ -98,6 +98,30 @@ export class BodySaveQueue {
   draft(section: string): PreviewEditedBlock[] | undefined {
     return this.state.getSnapshot()[section]?.blocks
   }
+  /** The latest source version acknowledged by the workbench, even before its IR event arrives. */
+  get revision(): string { return this.#revision }
+  /** Code changes can reload the iframe, so finish body edits before applying them. */
+  settled(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      let unsubscribe = () => {}
+      const done = (error?: string) => {
+        unsubscribe()
+        clearTimeout(timeout)
+        if (error) reject(new Error(error))
+        else resolve()
+      }
+      const check = () => {
+        const states = Object.values(this.state.getSnapshot())
+        const failed = states.find(state => state.status === 'failed')
+        if (failed) return done(failed.error ?? 'save-failed')
+        if (!this.#flight && !states.some(state => state.blocks)) return done()
+        this.flush()
+      }
+      const timeout = setTimeout(() => done('save-timeout'), 30_000)
+      unsubscribe = this.state.subscribe(check)
+      check()
+    })
+  }
   record(section: string, blocks: PreviewEditedBlock[]): void {
     const before = this.state.getSnapshot()[section]
     if (!before?.blocks)
