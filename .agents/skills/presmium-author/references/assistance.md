@@ -1,31 +1,31 @@
-# 编辑与问答
+# Editing and questions with AI
 
-先区分请求者是谁：作者让 agent 修改源码，和读者对讲义提问，使用不同的入口与模型配置。
+First tell who is asking: an author having an agent change the source, and a reader asking about the lecture, use different entry points and model settings.
 
-## 作者在工作台中修改
+## The author edits in the workbench
 
-用作者技能中的工作台启动方式打开文稿。不配置模型也能手工编辑与预览；要对话时在工作台的模型设置里选择已有服务，按用户选择填写地址、密钥与模型。
+Open the lecture in the workbench as described in the author skill. Manual editing and preview work without a model; to chat, pick an existing service in the workbench's model settings and fill in the address, key and model the user chooses.
 
-先定位相关章节或在预览中点选块，再说明希望改变的内容。agent 修改后检查源码差异与预览，接受成为 git 提交，拒绝恢复对应文件。不要把“对话完成”当作作者已经接受修改。
+Locate the relevant section first, or pick the block in the preview, then say what should change. After the agent edits, review the source diff and the preview; accepting makes a git commit, rejecting restores the affected files. Do not treat "the chat finished" as the author having accepted the change.
 
-工作台适合由教师描述教学意图、让 agent 修改并查看结果；需要完整代码编辑能力时使用 VS Code 扩展。`get_diagnostics` 用来查源码问题，`get_outputs` 是备课时的录制，`get_runtime` 才是作者浏览器实际运行后的反馈，包括代码位置、失败、文本结果与会话重置。dsh 自动取得最近摘要，需要细节再调用工具。没有窗口、旧的运行结果或仅构建成功，都不能证明刚改的代码已在浏览器验证；修改独立 Python 文件后用解释器或相关测试检查。
+The workbench suits a teacher who describes the teaching intent, lets the agent edit and looks at the result; for full code editing use the VS Code extension. `get_diagnostics` reports source problems, `get_outputs` returns the recordings made while preparing, and only `get_runtime` is feedback from code the author's browser actually ran: code location, failures, text results and session resets. The harness fetches the latest summary automatically; call the tools when you need detail. No open window, an old run result, or a successful build does not prove that the code just changed was verified in the browser; after changing a standalone Python file, check it with the interpreter or the related tests.
 
-文件树中的讲义外 Python 代码也可以选中交给 agent；关注内容包含工作区相对文件路径、行号、磁盘摘录和未保存的选区文字。点“清除关注内容”或换讲后不继续携带旧选区。选择前后编辑器位置保持不变，方便教师用鼠标直接指出问题。
+Python code outside the lecture in the file tree can also be selected and handed to the agent; the focus carries the workspace-relative file path, line numbers, an excerpt from disk and the unsaved selected text. After the focus is cleared or the lecture changes, the old selection is no longer carried. The editor position stays the same before and after selecting, so the teacher can point at a problem with the mouse.
 
-## 继续使用用户自己的编辑器或 agent
+## Keeping the user's own editor or agent
 
-直接编辑 MyST 源码即可，开发服务器会更新预览。需要 agent 查询讲义结构、诊断与当前位置时，再连接 Presmium 的 MCP。
+Edit the MyST source directly; the dev server updates the preview. Connect Presmium's MCP server only when an agent needs to query the lecture's structure, diagnostics and the current position.
 
-运行 `presmium dev` 或 `presmium serve` 后，终端打印 MCP 地址和令牌所在的状态文件。按用户所用客户端的配置方式连接 HTTP 端点，请求头为 `Authorization: Bearer <令牌>`。从状态文件读取本次进程的令牌，不把它写进文稿或分享地址。
+After `presmium dev` or `presmium serve` starts, the terminal prints the MCP address and the state file that holds the token. Connect to the HTTP endpoint the way the user's client is configured, with the request header `Authorization: Bearer <token>`. Read the token for this process from the state file; never write it into the lecture or a shared address.
 
-不需要预览服务时，安装 `pnpm add -g @lincyaw/mcp`，用 `presmium-mcp <文稿目录>` 作为 stdio 服务。默认提供读取能力；需要其他操作时查看命令帮助并按任务配置。
+When no preview server is needed, install `pnpm add -g @lincyaw/mcp` and run `presmium-mcp <lecture directory>` as a stdio server. It provides read access by default; for other operations read its command help and configure it for the task.
 
-连接后发现服务实际提供的工具，再查询章节、步骤、代码和诊断。MCP 本身不提供通用文件写入，agent 仍用自己的文件工具修改源码。操作可能需要在页面中确认，按实际提示处理。
+After connecting, discover the tools the server actually provides, then query sections, steps, code and diagnostics. MCP itself offers no general file writing; the agent still edits the source with its own file tools. Some operations may need confirmation in the page; follow the prompt that appears.
 
-## 给读者加提问入口
+## Adding a question box for readers
 
-文稿列出 `@lincyaw/addon-assistant`，构建的静态站点也能提问。每位读者在“提问”中填写自己的 OpenAI 兼容服务地址、密钥与模型，问题和相关讲义内容从其浏览器直接发送，费用由该读者的服务承担。
+When the lecture lists `@lincyaw/addon-assistant`, the built static site can answer questions too. Each reader fills in their own OpenAI-compatible service address, key and model under **Ask**; the question and the related lecture content are sent directly from their browser, and their service pays for it.
 
-模型配置保存在该站点的浏览器存储，同源脚本可以读取。不要把作者的密钥预填进发布产物，也不要把工作台的模型配置误当成读者共享的模型。学生版产物只包含学生内容，问答也从这份内容取上下文。
+The model settings are kept in the site's browser storage, which scripts of the same origin can read. Never prefill the author's key in published output, and do not mistake the workbench's model settings for a model shared with readers. A student build contains only student content, and questions take their context from that content.
 
-验证时选择相关文字发问，检查引用能否回到对应章节。课堂中主讲为问题生成的 AI 回答先留在主讲窗口，点“发给课堂”后才分享，课堂流程见 `presmium-present`。
+To verify, select some related text and ask; check that the citation leads back to the right section. In a classroom, an AI answer the presenter generates for a question stays in the presenter window until they click **Send to the classroom**; the classroom flow is in `presmium-present`.

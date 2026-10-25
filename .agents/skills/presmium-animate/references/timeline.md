@@ -54,7 +54,7 @@ lecture.md:90  warning  lecture script: {cue}`next` moves on 2400 ms before the 
     hint: say the cue later, or shorten the animation (:durations:)
 ```
 
-Other cues act on the scene block without moving the step: ``{cue to=merge}`spot` `` (spotlight), `point`, `ink`, ``{cue}`pause 800ms` `` (silence in the middle of a sentence; the sentence is split there), ``{cue}`mark 名` `` (a chapter point). Without `to`, a cue acts on the nearest block above the paragraph. The full list is in `presmium-author/references/directives.md`, "讲授的角色".
+Other cues act on the scene block without moving the step: ``{cue to=merge}`spot` `` (spotlight), `point`, `ink`, ``{cue}`pause 800ms` `` (silence in the middle of a sentence; the sentence is split there), ``{cue}`mark <name>` `` (a chapter point). Without `to`, a cue acts on the nearest block above the paragraph. The full list is in `presmium-author/references/directives.md`, "Lecture roles `presmium.lecture`".
 
 ## Several blocks in one section
 
@@ -65,7 +65,7 @@ Steps are counted per section. A block that spans several steps and has no `:rev
 | scene `g1` (2 durations), 2 paragraphs, scene `g2` (2 durations), 2 paragraphs | `g1` at 0–1, `g2` at 1–2: the paragraph "g2 step 0" is said on step 1 together with g1's last step |
 | same, with `:reveal:` on `g2` | `g1` at 0–1, `g2` at 2–3: one paragraph per step |
 
-Write `:reveal:` on a second scene (or any later multi-step block) that should start after the first one finished. Other multi-step blocks (`{code-ref}` with `:steps:`, `:reveal: items` lists, components with `:span:`) follow the same rule from `docs/ir.md` 2.4.
+Write `:reveal:` on a second scene (or any later multi-step block) that should start after the first one finished. Other multi-step blocks (`{code-ref}` with `:steps:`, `:reveal: items` lists, components with `:span:`) follow the same rule: without `:reveal:` a block that spans several steps starts at the last step used so far in the section; with `:reveal:` it starts at the next step.
 
 To make the scene and other blocks react to the same sentence, keep them single-step and aim cues at them from the scene's narration. The last section of `gallery/timeline/lecture.md` puts a code block and a bubble-sort scene in one section; the scene's paragraphs spotlight the comparing and the swapping line with ``{cue to=sort-code lines=3}`spot` `` and ``{cue to=sort-code lines=4}`spot` ``. A component in the section can be clicked the same way, ``{cue to=<block>}`click <action>` ``, for the actions it names with `useActions`.
 

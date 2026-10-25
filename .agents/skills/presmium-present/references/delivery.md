@@ -1,33 +1,33 @@
-# 发布、导出与离线
+# Publishing, export and offline
 
-从最终交付物选择构建方式。以下命令在文稿目录运行；先查看已有 `renderers` 与 `base`，不要覆盖现有部署约定。
+Choose the build from the final deliverable. Run the commands below in the deck directory. Look at the existing `renderers` and `base` first, and do not override the deployment conventions already in place.
 
-## 给读者一个网页地址
+## Give readers a web address
 
-`presmium build --to web` 得到静态网页，单独构建网页且没有显式 `base` 时位于根路径。需要本机静态服务器且项目没有现成工具时，安装 `pnpm add -D sirv-cli`，然后：
+`presmium build --to web` produces a static web site; built alone and without an explicit `base`, it sits at the root path. When a local static server is needed and the project has none, install `pnpm add -D sirv-cli`, then:
 
 ```sh
 pnpm exec sirv dist/web --port 8080
 ```
 
-打开终端打印的地址。网页不加全站 SPA 回落，章节有自己的 HTML。重建后重启 sirv，避免它找不到新生成的哈希文件。
+Open the address the terminal prints. The site needs no SPA fallback: each section has its own HTML. Restart sirv after a rebuild, or it will not find the newly hashed files.
 
-学生版构建到单独目录，例如 `presmium build --to web --audience student --out dist-student`，再把服务器目录换成 `dist-student/web`。受众标记与发布检查见 `presmium-author` 的发布参考。静态站点可部署到用户选择的托管服务，构建不等于已部署。
+Build the student version into its own directory, for example `presmium build --to web --audience student --out dist-student`, and serve `dist-student/web` instead. With `--audience`, every file written is scanned for sentences of the content left out. Audience markers and publishing checks are in `presmium-author/references/publishing.md`. The static site can be deployed to any host the user chooses; building is not deploying.
 
-## 同时交付网页与幻灯片
+## Deliver the web site and the slides together
 
-同时构建、两边都没写 `base` 时，网页在 `/web/`，幻灯片在 `/slides/`。保留整个站点结构：
+Built together, with `base` set on neither, the web site is at `/web/` and the slides at `/slides/`. Keep the whole site structure:
 
 ```sh
 presmium build --to web,slides
 pnpm exec sirv dist --port 8080
 ```
 
-网页从 `/web/` 打开，幻灯片从 `/slides/` 打开。幻灯片是一个页面（`index.html`），页与步骤写在地址的查询中（`?slide=<页号>&step=<步>`），托管时不需要 SPA 回落。
+Open the web site at `/web/` and the slides at `/slides/`. The slides are one page (`index.html`); the slide and step are in the address's query (`?slide=<number>&step=<step>`), so hosting needs no SPA fallback.
 
-只构建幻灯片、未设 `base` 时，可用 `pnpm exec sirv dist/slides --port 8080`。已有子路径时按该路径服务产物，不要把 `/slides/` 的产物误当根站点。
+When only the slides are built and `base` is not set, use `pnpm exec sirv dist/slides --port 8080`. When a sub-path already exists, serve the output at that path; do not treat the `/slides/` output as a root site.
 
-网页章节标题旁可跳到幻灯片的同一页。分开部署时用 `slidesUrl` 配置幻灯片的实际地址，检查跳转到的页与步骤是否正确：
+A section heading in the web site links to the same place in the slides. When the two are deployed separately, set the slides' actual address with `slidesUrl`, and check that the link lands on the right slide and step:
 
 ```yaml
 presmium:
@@ -35,28 +35,28 @@ presmium:
     slidesUrl: https://example.com/slides/
 ```
 
-## 导出 PDF 或图片
+## Export a PDF or images
 
-文稿需列出 `@lincyaw/addon-publish`。导出在 Chromium 中打印幻灯片，项目中要装 `playwright-chromium`（`pnpm add -D playwright-chromium`，再 `pnpm exec playwright install chromium`）。项目中使用：
+The deck lists `@lincyaw/addon-publish`. Export prints the slides in Chromium, so the project needs `playwright-chromium` (`pnpm add -D playwright-chromium`, then `pnpm exec playwright install chromium`). In the project:
 
 ```sh
 pnpm exec presmium-export --format pdf --output lecture.pdf
 ```
 
-用 `--with-clicks` 把每一步展开为一页，`--range 1,3-5` 选择页，`--dark` 导出暗色，`--format png` 改为图片，`--format pptx` 改为 PowerPoint（每张幻灯片是一张图，讲解是演讲者备注）。在工作台中，命令栏的“导出”同样能生成幻灯片 PDF、图片、PowerPoint 与讲授视频，不需要文稿列出发布插件，生成的文件可以打开、播放与下载。`presmium-export` 以根路径另构建一份幻灯片再打印，静态站点的子路径不影响导出。
+`--with-clicks` expands each step into its own page, `--range 1,3-5` selects slides, `--dark` exports the dark theme, `--format png` writes images (one per slide, or per step with `--with-clicks`) into the `--output` directory, and `--format pptx` writes PowerPoint (each slide a picture, the narration as speaker notes, no links). `--json` prints the result as JSON. A PDF export checks that every link the slides show is still a link in the PDF and exits 1 when one was lost. In the workbench, Export in the command bar also produces slide PDFs, images, PowerPoint and lecture videos without the deck listing the publish plugin; the files can be opened, played and downloaded there. `presmium-export` builds its own copy of the slides at the root path before printing, so the static site's sub-path does not affect it.
 
-导出后检查页数、缺页、长代码溢出，以及关键链接。运行面板在纸面上显示静态降级与录制输出。缺页或超时时先读错误，再重试或调整 `--timeout`，不能把不完整文件当成完成。
+After exporting, check the page count, missing pages, overflowing long code and the key links. Run panels show their static fallback and recorded output on paper. When a page is missing or the export times out (exit 2), read the error first, then retry or raise `--timeout` (milliseconds, default 120000). An incomplete file is not a finished export.
 
-## 给学生可运行的 notebook
+## Give students a runnable notebook
 
-`presmium build --to notebook` 生成 `dist/notebook/<入口名>.ipynb`。图片等文件在旁边的 `media/`，交付整个目录。内核默认 `python3`，由 `renderers.notebook.kernel` 选择。
+`presmium build --to notebook` writes `dist/notebook/<entry name>.ipynb`. Images and other files go into `media/` beside it; deliver the whole directory. The kernel is `python3` by default and is chosen with `renderers.notebook.kernel`.
 
-无法转换的交互组件会降级，查看构建报告。需要链接到在线交互版时设 `renderers.notebook.webUrl`，并在 Jupyter 中确认图片与代码单元格可用。
+Interactive components that cannot be converted fall back to a static form; read the build report. To link them to the online interactive version, set `renderers.notebook.webUrl`, and confirm in Jupyter that images and code cells work.
 
-## 准备离线课
+## Prepare an offline class
 
-联网时打开实际授课地址，等页面与离线缓存准备好。网页页面和搜索会缓存，较大的执行运行时在第一次使用时取得；提前运行要用的代码，或选“保存以离线使用”。幻灯片离线需发布插件，会预缓存运行时。
+While online, open the actual teaching address and wait until the page and the offline cache are ready. Web pages and search are cached; the larger execution runtimes are fetched the first time they are used, so run the code you will use in advance, or choose "Save for offline use". Offline slides need the publish plugin, which pre-caches the runtimes.
 
-在同一浏览器、同一地址下断网试讲：翻页、搜索、媒体、运行代码。远端 Jupyter、课堂同步与外部模型仍需网络。需要完全离线时提前准备录制输出或本地可用的运行方式。
+Disconnect and rehearse in the same browser at the same address: moving through slides, search, media, running code. Remote Jupyter, classroom sync and external models still need the network. When the class must be fully offline, prepare recorded outputs or a runtime that works locally in advance.
 
-头部的 `presmium: { presmium.publish: { offline: false } }` 会关闭离线缓存，先检查现有配置。变更站点地址或重新构建后重新演练；“以前打开过”不能证明这次课的资源已齐。
+`presmium: { presmium.publish: { offline: false } }` in the frontmatter turns the offline cache off; check the existing setting first. Rehearse again after the site address changes or after a rebuild; "it was opened before" does not prove this class's resources are all there.

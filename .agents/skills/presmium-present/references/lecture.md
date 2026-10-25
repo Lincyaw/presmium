@@ -1,32 +1,32 @@
-# 录制与回放
+# Recording and replay
 
-用于录课、发布讲授回放、修改逐字稿、从讲解合成语音和导出视频。先决定是保留现场声音，还是根据讲义讲解合成讲授。
+For recording a class, publishing a lecture replay, revising the transcript, synthesizing speech from the narration and exporting a video. First decide whether to keep the live voice or to synthesize the lecture from the lecture's narration.
 
-## 录制一遍
+## Record once
 
-文稿列出 `@lincyaw/addon-lecture`；指针、聚光等重放还需引导插件。在文稿目录运行 `presmium dev --to web`，进入放映视图，用右上角录制栏开始。
+The deck lists `@lincyaw/addon-lecture`; replaying pointers and spotlights also needs the guide plugin. Run `presmium dev --to web` in the deck directory, enter the Present view and start from the recording bar at the top right.
 
-按需要选择麦克风、摄像头和屏幕，允许浏览器相应权限。翻页、推进、聚光和标注随声音记录。停止后保存；离开放映视图也会结束录制。先录一小节并回放，确认声音和操作同步，再录完整讲授。
+Choose the microphone, camera and screen as needed and grant the browser those permissions. Slide changes, steps, spotlights and annotations are recorded with the sound. Save after stopping; leaving the Present view also ends the recording. Record a short section first and play it back to confirm sound and actions are in sync, then record the whole lecture.
 
-重录某节时选已有讲授，定位后选“重录本节”，离开该节即停止并替换它。给长期回放引用的章节与块写显式标签，避免改稿后无法定位。
+To re-record a section, choose the existing lecture, go to the section and choose Re-record section; leaving that section stops the recording and replaces the section. Give the sections and blocks that a long-lived replay refers to explicit labels, so they can still be located after the lecture is edited.
 
-文件在 `lectures/<id>/track.json` 与旁边的音视频目录。提交轨迹文件并单独保存媒体；音视频默认被忽略，只有轨迹不能恢复声音。
+The files are `lectures/<id>/track.json` with an audio and video directory beside it. Commit the track file and keep the media separately: audio and video are ignored by git by default, and the track alone cannot restore the sound.
 
-## 发布和检查回放
+## Publish and check the replay
 
-在头部 `renderers` 加 `lecture: {}`，然后：
+Add `lecture: {}` to `renderers` in the frontmatter, then:
 
 ```sh
 presmium build --to web,lecture
 ```
 
-保留 `dist/web/` 与 `dist/lecture/` 的相对位置，按 [发布、导出与离线](delivery.md) 服务整个站点。网页地址加 `?view=lecture&track=<ID>`，也可从“视图”选择讲授。分开部署时在头部写 `presmium: { presmium.lecture: { url: <回放资源地址> } }`。
+Keep `dist/web/` and `dist/lecture/` in the same relative positions and serve the whole site as in [Publishing, export and offline](delivery.md). Add `?view=lecture&track=<id>` to the web address, or choose Lecture from the View menu. When they are deployed separately, write `presmium: { presmium.lecture: { url: <address of the replay files> } }` in the frontmatter.
 
-验证声音、字幕、逐字稿跳转、章节定位和“我来试试”后返回讲授。改稿后运行 `presmium check`，处理 `presmium.lecture` 报告的失效引用；不能只因音频还能播放就认为回放有效。
+Verify sound, captions, jumping from the transcript, section positioning, and returning to the lecture after Try it. After editing the lecture, run `presmium check` and fix the broken references that `presmium.lecture` reports; audio that still plays does not mean the replay is valid.
 
-## 用讲解合成讲授
+## Synthesize a lecture from the narration
 
-文稿另列出 `@lincyaw/addon-speech`，在 `renderers.lecture.voice` 选择引擎与音色。语音引擎由运营者环境配置，凭据不写进文稿。例如：
+The deck also lists `@lincyaw/addon-speech`, and `renderers.lecture.voice` chooses the engine and voice. The speech engine is configured in the operator's environment; credentials are never written into the deck. For example:
 
 ```yaml
 renderers:
@@ -35,24 +35,24 @@ renderers:
     voice: { engine: volcengine, voice: zh_female_xiaohe_uranus_bigtts }
 ```
 
-使用已有语音服务时沿用其引擎和音色。自定义引擎通过环境变量 `PRESMIUM_SPEECH_<ID>_URL`、`_PROVIDER` 与可选的 `_KEY` 定义；火山引擎可用 `PRESMIUM_SPEECH_VOLCENGINE_KEY`。只合成或只转写的引擎把另一项的模型写成 `none`（`_TRANSCRIBE_MODEL=none` 或 `_MODEL=none`），转写与合成就各自交给能做的引擎，文稿不必点名。确认目标服务与费用安排后再发起需要上传或计费的操作。
+With an existing speech service, keep its engine and voice. A custom engine is defined with the environment variables `PRESMIUM_SPEECH_<ID>_URL`, `_PROVIDER` and an optional `_KEY`; Volcengine can use `PRESMIUM_SPEECH_VOLCENGINE_KEY`. For an engine that only synthesizes or only transcribes, set the other model to `none` (`_TRANSCRIBE_MODEL=none` or `_MODEL=none`); transcription and synthesis then each go to an engine that can do them, and the deck need not name it. Confirm the target service and who pays before starting an operation that uploads or is billed.
 
-`presmium build --to web,lecture` 合成后用 `?view=lecture&track=script` 播放。合成片段保存在 `.presmium/speech/`，随 `speech.lock.json` 保存后，别人构建可沿用缓存。
+After `presmium build --to web,lecture` synthesizes the lecture, play it with `?view=lecture&track=script`. The synthesized clips are kept in `.presmium/speech/` together with `.presmium/speech.lock.json`; committed with the deck, they let others build from the cache without a speech engine.
 
-讲解中 `{cue}` 安排聚光、推进与停顿，`{say}` 改读法；语法见作者技能的指令参考。写了音色却缺引擎或片段时，检查会指出缺少的句子；只想发布现场录制时不要额外配置合成音色。
+In the narration, `{cue}` schedules spotlights, steps and pauses, and `{say}` changes how a phrase is read; the syntax is in the inline roles part of `presmium-author/references/directives.md`. When a voice is set but the engine or some clips are missing, the check names the missing sentences. To publish only a live recording, do not configure a synthesis voice.
 
-## 改逐字稿、换声音或整理为讲义
+## Revise the transcript, change the voice, or turn it into lecture text
 
-在开发服务中回放录制，打开逐字稿。转写前核对录音将发给哪个服务；逐句修订后检查时间与操作绑定。选择音色重新合成会把文字交给语音服务，完成后回放确认。
+Play the recording back in the dev server and open the transcript. Before transcribing, confirm which service the recording will be sent to; after revising sentence by sentence, check the timing and the bound actions. Choosing a voice and synthesizing again sends the text to the speech service; play it back afterwards to confirm.
 
-把逐字稿整理为讲解或译文时，在工作台中让 agent 修改源码并审阅结果。录音是素材，最终讲义仍需由作者确认内容和结构。
+To turn a transcript into narration or a translation, have the agent edit the source in the workbench and review the result. The recording is raw material; the author still confirms the final lecture's content and structure.
 
-## 导出视频
+## Export a video
 
-项目中需有 `playwright-chromium` 及浏览器；缺失时按错误提示安装。导出命令：
+The project needs `playwright-chromium` and its browser; when missing, install them as the error says. The command:
 
 ```sh
-pnpm exec presmium-lecture export --track <ID> --out lecture.webm
+pnpm exec presmium-lecture export --track <id> --out lecture.webm
 ```
 
-默认 1280×720、30 fps，可用 `--size`、`--fps` 调整，输出 WebM。每种字幕语言成为视频中的一条字幕轨，也写在视频旁边（`lecture.zh-CN.vtt`）；`--burn zh-CN` 另把这种语言的字幕画进画面，给不能切换字幕的播放器。动画场景（`{scene}`）与光标按讲授的时刻逐帧画出，所以导出比讲授本身慢，几分钟的讲授要导出几分钟。导出后打开文件核对起止、声音、字幕与画面同步。合成声音在文件元数据中保留 AI 生成标识。
+Without `--track`, it exports the synthesized lecture, else the only recorded one; without `--out`, it writes `dist/<track>.webm`. The default is 1280x720 at 30 fps; adjust with `--size <width>x<height>` and `--fps`. The output is WebM (MP4 is not written). Each caption language becomes a subtitle track in the video and is also written beside it (`lecture.zh-CN.vtt`); `--burn zh-CN` also draws that language's captions onto the picture, for players that cannot switch subtitles. Animated scenes (`{scene}`) and the cursor are drawn frame by frame at the lecture's time, so export is slower than the lecture itself: a lecture of a few minutes takes several minutes to export. Afterwards, open the file and check the start and end, sound, captions and that picture and sound are in sync. Synthesized voice keeps an AI-generated marker in the file's metadata.

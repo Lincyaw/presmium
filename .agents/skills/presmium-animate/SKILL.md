@@ -49,4 +49,4 @@ Start from what the learner should see change, not from a library. Many moments 
 - **Size to the picture.** The scene's root is a size container: lay out in `%`, `cqw`/`cqh` or an SVG `viewBox`; Remotion and Three.js scale themselves.
 - **No JSX** in scene files (`React.createElement` for Remotion).
 
-The `{scene}` directive's options and errors: `presmium-author/references/directives.md`, "动画 `presmium.motion`". Read the gallery's `lecture.md` next to a scene to see its `:durations:` and narration.
+The `{scene}` directive's options and errors: `presmium-author/references/directives.md`, "Animation `presmium.motion`". Read the gallery's `lecture.md` next to a scene to see its `:durations:` and narration.

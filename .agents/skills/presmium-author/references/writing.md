@@ -1,70 +1,109 @@
-# 组织内容与演示步骤
+# Organizing content and presentation steps
 
-用于新写讲义、调整结构，或解决“网页能读但投影不好讲”的问题。具体指令选项查 [指令参考](directives.md)。
+Use this when writing a new lecture, restructuring one, or fixing a lecture that reads well on the web but is hard to present. Directive options are in the [directive reference](directives.md).
 
-## 让读者跟得上
+## Let the reader keep up
 
-先用一句话说清这节要回答的问题，再给例子、证据和解释。讲解需要能独立阅读；投影内容需要在当前一步看清。不要为了填满幻灯片把整段讲解搬上屏。
+State in one sentence the question a section answers, then give the example, the evidence and the explanation. Narration must read on its own; projected content must be legible at the current step. Do not move whole paragraphs of narration onto the screen to fill a slide.
 
-沿用现有头部。新文稿最小示例：
+Keep the existing frontmatter. A minimal new lecture:
 
 ````md
 ---
-title: 分词入门
-lang: zh-CN
+title: Introduction to tokenization
+lang: en
 renderers:
   web: {}
   slides: {}
 ---
 
-# 分词入门
+# Introduction to tokenization
 
-这份讲义解释怎样从文本得到模型使用的 token。
+This lecture explains how text becomes the tokens a model uses.
 
 (merge)=
-## 为什么要合并
+## Why merge
 
-先观察重复出现的片段。
+First look at the fragments that repeat.
 
 :::{slide}
-- 统计相邻片段
-- 合并最常见的一对
+- Count adjacent fragments
+- Merge the most frequent pair
 :::
 
-先统计，再合并。每次合并都会改变下一次统计的对象。
+Count first, then merge. Each merge changes what the next count sees.
 
 :::{slide}
 :reveal:
-合并以后，重新统计。
+After a merge, count again.
 :::
 
-这一段在揭示小结时讲。
+This paragraph is spoken when the summary is revealed.
 ````
 
-`lang` 决定产物界面和编译时文本，默认 `zh-CN`。官方插件和三个基础渲染端随 `presmium` 安装；要使用插件的指令，仍需在头部 `plugins` 中列出提供它的包。
+`lang` sets the language of the product's interface and of text written at compile time; the default is `zh-CN`. The official plugins and the three basic renderers (`web`, `slides`, `notebook`) are installed with `presmium`; to use a plugin's directives, still list the package that provides it under `plugins` in the frontmatter.
 
-## 决定什么上屏、什么时候出现
+## Sections
 
-`##` 默认开始一节，即一张幻灯片；`#` 分章。第一个 `##` 之前是封面。已有文稿可用 `sectionDepth` 改章节标题级别。
+- `#` is the lecture title or a chapter heading; `##` starts a section. `sectionDepth` in the frontmatter changes the section heading level of an existing lecture.
+- Content before the first `##` is the cover section.
+- A section is one slide, one section of the web page, and a group of notebook cells starting with its heading.
 
-普通段落、列表、引用默认是讲解，进入幻灯片备注；代码、图片、表格、公式和插件组件默认上屏。用 `{slide}` 把需要投影的文字包起来。
+## Narration and projected content
 
-步骤从 0 开始。`:reveal:` 在下一步显示；`:reveal: items` 逐项显示列表。占多步的块有 `span + 1` 个状态。它后面的讲解段落依次绑定到这些步骤，超出的段落留在最后一步；首个上屏块前的讲解属于第 0 步。
+Every block in a section is either **narration** or **projected content** (role `narration` or `visual` in the IR):
 
-改完实际前进和后退一遍。如果讲解跳错步骤，用 `presmium ir` 找到对应章节，核对每个块的 `role`、`at`、`span`，再改源文稿。
+| Block | Role |
+|---|---|
+| Plain paragraphs, lists, block quotes | Narration |
+| Content wrapped in `:::{slide}` | Projected |
+| Code blocks, `{code-ref}`, images, tables, math, diagrams, plugin directives | Projected |
 
-## 保留稳定的位置
+How each medium shows them:
 
-章节前用 `(merge)=` 写稳定标签；块也可加标签或 `:label:`。章节标签在文稿内唯一，块标签在章节内唯一。已发布的链接、笔记和讲授轨依赖这些标签，改标题时保留标签。
+| Medium | Projected content | Narration |
+|---|---|---|
+| Web | In source order | In source order, as body text |
+| Slides | On the slide | In the presenter window, split by step; speaker notes in an exported PowerPoint |
+| Notebook | Markdown or code cells | Markdown cells |
 
-多文件用 `{include}`，路径相对于写指令的文件。引入文件的头部不覆盖入口配置。代码引用的路径规则不同，见 [代码引用与执行](code.md)。
+Wrap text that must be projected in `{slide}`. Both kinds appear on the web page.
 
-交叉引用用 MyST 的 `{ref}`、`{numref}`、`{eq}` 角色，检查不存在的目标。需要长期引用的位置先命名，再写引用。
+## Steps: what appears when, and which narration belongs to which step
 
-## 某种形态放不下或不适用
+Steps count from 0. The rules:
 
-先精简一页要表达的内容，再决定是否拆节。`{hints}` 可给幻灯片设置缩放（`zoom`）、布局（`layout`：`default`、`cover`、`center`、`full`）与类名（`class`），或给网页设置滚动叙事。幻灯片的内容超出画布时整体缩小，仍要先精简。
+1. Projected content is visible from step 0 by default.
+2. `:reveal:` on a block makes it appear at the next step. On `{slide}` or `{only}`, `:reveal:` acts on everything inside: the whole block appears as one unit at the next step.
+3. `:reveal: items` on `{slide}` or `{only}` reveals the list inside one item per step.
+4. `:at: N` on `{slide}` or `{only}` shows the content from step N; `:until: M` hides it at step M. Both are non-negative integers, `until` must be greater than the start step, and `at` cannot be combined with `reveal`. Forward and backward navigation use the same visible range. The reading form (the web document view) shows all content; the presentation shows only the current range. To replace one result with the next, write `:at: 0` and `:until: 1` on the first and `:at: 1` on the second; no component or player is needed.
+5. A block that spans several steps has `span + 1` internal states; state k (from 0) shows at step `at + k`:
+   - `{code-ref}` with `:steps: a, b, c` highlights the three units at `at`, `at + 1`, `at + 2`; `span` is 2.
+   - A list with `:reveal: items` shows the first item at `at` and one more item at each later step; `span` is the number of items minus one.
+   - A `{scene}` has one state per entry of `:durations:`; `span` is the count minus one.
+   - A component declares its internal steps with `:span:`.
+6. A multi-step block without `:reveal:` starts at the last step used so far, so its internal steps come after the blocks already shown.
+7. Narration binds to the nearest projected block before it: the 1st paragraph belongs to the step at which that block appears (`at`), the 2nd to `at + 1`, and so on. Paragraphs beyond `span` all belong to the last step, `at + span`. For a block with `span` 0, all following narration belongs to `at`. So you can write one paragraph of narration per step.
+8. Narration before the first projected block belongs to step 0.
 
-用 `{only} web, notebook` 等限制媒介。被限制的内容不会占用其他媒介的步骤，需在两边检查前后顺序。教师专用内容属于受众筛选，见 [发布与复现](publishing.md)，不能用媒介限定代替。
+Example: a list with `:reveal: items` of three items followed by three paragraphs gives one paragraph per item; a fourth paragraph stays on the last item.
 
-需要测验、练习、预测后揭示或媒体时，先查 [指令参考](directives.md) 是否已有合适能力。只有需要新交互逻辑时才开发组件。
+After editing, step forward and backward through the section. If narration lands on the wrong step, run `presmium ir`, find the section, and check each block's `role`, `at` and `span` (and the section's `steps`); then fix the source, not the IR.
+
+## Stable positions
+
+Write a stable label before a section with `(merge)=`; blocks can also take a label or `:label:`. Section labels are unique in the lecture, block labels unique in their section. Without a label the section ID is generated from the heading and changes when the heading does; generated block IDs change when content is inserted. Published links, notes and lecture tracks depend on these IDs, so keep the label when you change a heading.
+
+Use `{include}` for multi-file lectures; the path is relative to the file that contains the directive. An included file's frontmatter does not override the entry's. Code anchors use a different path rule; see [Code references and execution](code.md).
+
+Cross-reference with the MyST roles `{ref}`, `{numref}`, `{eq}`; `presmium check` reports missing targets. Name a position before you reference it.
+
+## When a form has no room or does not apply
+
+First cut what a slide says, then decide whether to split the section. `{hints}` sets a slide's zoom (`zoom`), layout (`layout`: `default`, `cover`, `center`, `full`) and class (`class`), or a scrolling layout on the web. A slide whose content overflows the canvas is scaled down as a whole; still cut first.
+
+Restrict content to media with `{only}`, e.g. `{only} web, notebook`. Each renderer receives only its own blocks, and steps are compressed per renderer: steps taken by blocks shown only elsewhere do not exist in this renderer, and later steps move up. Check the order on both sides. `{only} lecture` holds text that is only spoken in the synthesized lecture; narration in `{only} web, slides` is shown but not spoken.
+
+Teacher-only content is audience filtering, not a media restriction; see [Publishing and reproduction](publishing.md).
+
+For quizzes, exercises, predict-then-reveal or media, first check the [directive reference](directives.md) for an existing directive. Build a component only when new interaction logic is needed.

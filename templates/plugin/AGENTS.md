@@ -8,11 +8,11 @@ This project is one plugin, `{{id}}`: `README.md` lists its files.
 
 ## Skills
 
-- `.agents/skills/presmium-develop`: how Presmium plugins are made: the contracts, the host's interface,
-  the design system, directives, components, server routes, renderer extensions and tests. Its
-  `references/plugin.md` walks through a plugin. It is written for the Presmium repository
-  (https://github.com/Lincyaw/presmium): its paths `packages/...` and `docs/...` are there, and
-  what it says of `workspace:` ranges, changesets and the repository's checks does not apply here.
+- `.agents/skills/presmium-develop`: how to develop, debug and test this plugin: the Node entry and its
+  directives, the IR nodes they produce, components and the `@lincyaw/host` API, browser services,
+  server routes, renderer extensions, the design system, and integration tests with real runs. Its
+  `references/plugin.md` is the plugin contract with examples, `references/testing.md` how to prove
+  behavior. It is self-contained: it needs only this project and the installed packages.
 - `.agents/skills/presmium-author`: how documents are written, for `example/lecture.md`.
 
 ## Conventions

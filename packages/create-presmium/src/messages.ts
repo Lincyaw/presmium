@@ -88,12 +88,11 @@ ${kind === 'lecture'
   ? '这是一份 Presmium 讲义：`lecture.md` 是源码（MyST Markdown），`presmium` 把它编译为网页、幻灯片与 notebook。'
   : '这是一个 Presmium 工作区：每个子目录中的 `lecture.md` 是一份文档，`presmium.workspace.yaml` 是工作区的配置（运营者设置在 `settings` 中，文档改不了它）。'}只改源码，不改 \`dist/\` 中的产物。
 
-技能（\`.agents/skills\`）：
+技能（\`.agents/skills\`，英文，自包含）：
 
 - \`presmium-author\`：编写与修改讲义：文稿头部、章节、讲解与上屏内容、指令、检查与构建。
+- \`presmium-animate\`：动画：按教学场景选做法、用代码写的动画场景（自带每个动画库的效果合集）、让动画对上讲解。
 - \`presmium-present\`：放映、演讲者视图、课堂与讲授。
-
-技能为 Presmium 的仓库而写：其中的 \`docs/\`、\`examples/\` 等路径在 ${REPOSITORY}。
 
 改完后运行 \`${kind === 'lecture' ? 'presmium check' : 'presmium check <文档目录>'}\` 并修复它报告的问题；\`presmium build\` 构建${kind === 'lecture' ? '网页、幻灯片与 notebook' : '工作区的站点'}。
 `,
@@ -168,12 +167,11 @@ ${kind === 'lecture'
   ? 'This is a Presmium lecture: `lecture.md` is the source (MyST Markdown), which `presmium` compiles to a web page, slides and a notebook.'
   : 'This is a Presmium workspace: the `lecture.md` of each subdirectory is a document, and `presmium.workspace.yaml` is the workspace\'s configuration (the operator\'s settings are in its `settings`, which no document changes).'} Change the sources, never the output in \`dist/\`.
 
-Skills (\`.agents/skills\`, in Chinese):
+Skills (\`.agents/skills\`, self-contained):
 
 - \`presmium-author\`: writing and changing documents: the frontmatter, sections, narration and what shows on screen, directives, checks and builds.
+- \`presmium-animate\`: animation: the way to show each teaching moment, scenes written in code (with a gallery of effects for each animation library), and putting them on the narration.
 - \`presmium-present\`: presenting, the presenter view, the classroom and lectures.
-
-The skills are written for the Presmium repository: their paths \`docs/\`, \`examples/\` and so on are in ${REPOSITORY}.
 
 After a change, run \`${kind === 'lecture' ? 'presmium check' : 'presmium check <document directory>'}\` and fix what it reports; \`presmium build\` builds ${kind === 'lecture' ? 'the web page, the slides and the notebook' : 'the workspace\'s site'}.
 `,

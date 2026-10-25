@@ -1,70 +1,70 @@
 ---
 name: presmium-present
-description: "帮助讲者用 Presmium 完成放映、学生访问与课堂互动，准备离线授课，导出 PDF、notebook 或讲授视频，并录制、回放和修订讲授。Use when presenting or teaching with a Presmium lecture, distributing its outputs, running a classroom, or recording and replaying a talk."
+description: "Help a presenter present and teach with a Presmium lecture: project it with a presenter window, give students a link to follow, answer quizzes and ask questions in a classroom, prepare an offline class, export PDF, images, PowerPoint, a notebook or a lecture video, and record, replay and revise a lecture. Use when presenting or teaching with a Presmium lecture, distributing its outputs, running a classroom, or recording and replaying a talk. 放映、上课、课堂互动、离线授课、导出 PDF 或视频、录课与回放时使用。"
 ---
 
-# 放映、授课与交付
+# Presenting, teaching and delivery
 
-以讲者和学生实际使用的场景为起点，准备能打开、能操作的内容。先区分讲者自己的预览、投影画面与学生拿到的版本，再选择启动和发布方式。
+Start from what the presenter and the students will actually do, and prepare content that opens and works. First tell apart the presenter's own preview, the projected screen and the version the students get; then choose how to start and publish.
 
-## 按这次要完成的事行动
+## Act on what this session must achieve
 
-| 用户的目标 | 默认做法 | 详细步骤 |
+| The user's goal | Default approach | Details |
 |---|---|---|
-| 马上投影讲一遍 | 网页放映视图加演讲者窗口；已有幻灯片则沿用 | 下文“开始放映” |
-| 把讲义发给学生、自学或部署网站 | 构建约定版本，交付静态站点或 notebook | [发布、导出与离线](references/delivery.md) |
-| 断网也能上课 | 提前加载页面和要用的执行运行时，再断网试讲 | [发布、导出与离线](references/delivery.md) |
-| 让学生扫码跟随、答题、提问 | 准备学生站点与独立课堂服务，走一遍学生流程 | [课堂互动](references/classroom.md) |
-| 导出 PDF 或每步一页的讲义 | 用 `presmium-export`，检查实际页与链接 | [发布、导出与离线](references/delivery.md) |
-| 录课、发布回放、合成语音或导出视频 | 在网页放映视图录制，或合成讲授，再构建回放 | [录制与回放](references/lecture.md) |
+| Project and present right now | The web Present view plus the presenter window; reuse slides if the deck already has them | "Start presenting" below |
+| Give the lecture to students, for self-study, or deploy a site | Build the agreed version and deliver a static site or a notebook | [Publishing, export and offline](references/delivery.md) |
+| Teach without a network | Load the pages and the execution runtimes in advance, then rehearse offline | [Publishing, export and offline](references/delivery.md) |
+| Students scan a code to follow, answer and ask | Prepare the student site and a separate classroom server, then walk the student path | [Classroom](references/classroom.md) |
+| Export a PDF, or one page per step | Use `presmium-export`; check the actual pages and links | [Publishing, export and offline](references/delivery.md) |
+| Record, publish a replay, synthesize speech or export a video | Record in the web Present view, or synthesize the lecture, then build the replay | [Recording and replay](references/lecture.md) |
 
-优先查看现有文稿的头部、构建脚本与产物，沿用用户已有的形态和部署方式。只读取选中任务的参考。
+Look first at the existing deck's frontmatter, build scripts and outputs, and keep the forms and the deployment the user already has. Read only the reference for the chosen task.
 
-## 开始放映
+## Start presenting
 
-本机边改边讲，在文稿目录运行 `presmium dev --to web`，打开命令打印的网页地址。已经构建并准备分发的版本按 [发布、导出与离线](references/delivery.md) 启动静态服务器。
+To edit and present on this machine, run `presmium dev --to web` in the deck directory and open the web address the command prints. To start a version already built for distribution, serve it with a static server as in [Publishing, export and offline](references/delivery.md).
 
-网页导航栏的“视图”可选文档、滚动叙事与放映：文档适合阅读，滚动叙事随讲解滚动推进，放映逐节逐步展示上屏内容。直接进入放映可在网页地址加 `?view=present`。
+The View menu in the web navigation bar offers Document, Scrollytelling and Present: Document is for reading, Scrollytelling advances as the reader scrolls through the narration, and Present shows the projected content section by section and step by step. To open straight in Present, add `?view=present` to the web address.
 
-| 网页放映按键 | 用途 |
+| Key in Present | Purpose |
 |---|---|
-| `→`、`↓`、`PageDown`、空格 | 下一步，章节结束后进入下一节 |
-| `←`、`↑`、`PageUp`、`Backspace` | 上一步 |
-| `o` | 总览，选择后按 `Enter` 跳转 |
-| `p` | 打开演讲者窗口 |
-| `Esc` | 退出放映 |
-| `b`、`f` | 黑屏、冻结听众画面，再按恢复；需要讲台插件 |
-| `d` | 画笔：在幻灯片上画线，再按收起；需要讲台插件 |
-| `s`、`h` | 给指针下的块加聚光、提示；需要引导插件 |
+| `→`, `↓`, `PageDown`, Space | Next step; after the last step of a section, the next section |
+| `←`, `↑`, `PageUp`, `Backspace` | Previous step |
+| `o` | Overview; pick a slide and press `Enter` to go there |
+| `p` | Open the presenter window |
+| `Esc` | Leave Present |
+| `b`, `f` | Black out or freeze the audience screen; press again to restore. Needs the stage plugin |
+| `d` | Pen: draw on the slide; press again to put it away. Needs the stage plugin |
+| `s`, `h` | Spotlight or hint the block under the pointer. Needs the guide plugin |
 
-全屏使用底栏的“全屏”按钮。把放映窗口放到投影屏，演讲者窗口留在自己的屏幕；窗口中有当前步骤讲解、下一步预告、计时器和课堂面板。两个窗口在同一浏览器、同一源下同步，弹窗被拦截时允许它。
+Use the Full screen button in the bottom bar. Put the Present window on the projector and keep the presenter window on your own screen; it shows the current step's narration, a preview of the next step, a timer and the classroom panel. The two windows stay in sync when they are in the same browser and the same origin; allow the popup if the browser blocks it.
 
-黑屏、冻结与画笔需要头部列出 `@lincyaw/addon-stage`；聚光与提示需要 `@lincyaw/addon-guide`。缺少功能时先核对插件，再重新构建。
+Black out, freeze and the pen need `@lincyaw/addon-stage` listed in the frontmatter; spotlight and hint need `@lincyaw/addon-guide`. When a feature is missing, check the plugins first, then rebuild.
 
-定位与恢复：网页地址支持 `?view=present&section=<章节ID>&step=<步>`，演讲者窗口用 `view=presenter`。放映时地址随位置更新，刷新可以回到原处。
+Position and recovery: the web address accepts `?view=present&section=<section id>&step=<step>`; the presenter window uses `view=presenter`. The address follows the position while presenting, so a reload returns to the same place.
 
-用户用幻灯片形态时，打开报告或开发命令给出的地址：幻灯片页就是放映视图，按键同上表（`Esc` 不退出），`Home`、`End` 到第一页与最后一页，演讲者窗口的地址加 `?view=presenter`。讲台插件的画笔（`d` 或控制条中的画笔）有四种墨水、橡皮、撤销与清除。画的内容在演讲者窗口、听众窗口与课堂之间同步，由服务器提供页面时（`presmium dev`、`presmium serve`）保存在文稿的 `.presmium/drawings/`，静态站点中不保存。
+When the user presents the slides form, open the address that the build or dev command reports. The slide page is the Present view and the keys are the ones above (`Esc` does not leave); `Home` and `End` go to the first and last slide, and the presenter window is the address with `?view=presenter`. The stage plugin's pen (`d`, or the pen in the control bar) has four inks, an eraser, undo and clear. Drawings are synced between the presenter window, the audience window and the classroom. When a server provides the pages (`presmium dev`, `presmium serve`), they are saved in the deck's `.presmium/drawings/`; a static site does not save them.
 
-## 上课前走一遍实际路径
+## Walk the real path before class
 
-验证这堂课会用的内容：听众窗口前进与后退、演讲备注同步、长代码能否看清、运行按钮和录制输出、声音与视频。需要课堂时用另一个浏览器或学生设备加入，验证跟随、一次作答与结果揭示。
+Verify what this class will use: moving forward and back in the audience window, the speaker notes following along, whether long code is readable, the run buttons and recorded outputs, sound and video. When the class uses a classroom, join from another browser or a student device and verify following, one answer, and revealing the result.
 
-离线课要实际断网试用；学生版要打开学生产物核对内容；PDF 要打开文件看页数、缺页和溢出。只验证本次会用的能力，并说明未验证的外部条件。
+For an offline class, actually disconnect and try it; for a student version, open the student output and check its content; for a PDF, open the file and check the page count, missing pages and overflow. Verify only the capabilities this class uses, and state which external conditions you did not verify.
 
-## 给学生的是哪个地址
+## Which address the students get
 
-`presmium dev`、`presmium serve` 与工作台是作者自己的开发环境，提供完整文稿。`presmium serve --host 0.0.0.0` 没有登录，能连接的人可作为作者使用工作区；它不提供按读者隔离的学生视图。
+`presmium dev`, `presmium serve` and the workbench (`presmium studio`) are the author's own working environment and serve the full lecture. `presmium serve --host 0.0.0.0` has no login: anyone who reaches the port works in the workspace as the author. It offers no per-reader student view.
 
-给学生分享时用 `presmium build --audience student` 生成静态版本，课堂互动另接独立的 `presmium-classroom-server`。公开完整讲义则按用户选择构建完整版本。具体命令见对应参考，避免把作者服务的地址或启动令牌当成学生链接。
+To share with students, build a static version with `presmium build --audience student`, and connect classroom interaction to a separate `presmium-classroom-server`. To publish the full lecture, build the full version as the user chooses. The commands are in the matching reference. Never hand out the address or start token of an author service as a student link.
 
-## 现场出了问题
+## When something goes wrong in class
 
-| 现象 | 先检查 |
+| Symptom | Check first |
 |---|---|
-| 学生打不开链接 | 学生设备能否到达站点与课堂服务；地址是否误写成 `localhost` |
-| 演讲者窗口不跟随 | 是否同一浏览器、同一源，弹窗是否打开 |
-| 静态站点重建后白屏或 404 | 重启静态服务器，再查 `base` 与幻灯片路由回落 |
-| 没有课堂、录制或讲授入口 | 是否装了所需插件，当前是静态站点还是开发服务 |
-| 断网后能看不能运行 | 是否提前取得执行运行时；远端环境与课堂仍需网络 |
+| Students cannot open the link | Whether student devices reach the site and the classroom server; whether the address was written as `localhost` |
+| The presenter window does not follow | Same browser and same origin; whether the popup opened |
+| White page or 404 after rebuilding a static site | Restart the static server, then check `base` and how the slides route falls back |
+| No classroom, recording or lecture entry | Whether the needed plugins are installed; whether this is a static site or a dev server |
+| Pages show offline but code does not run | Whether the execution runtime was fetched in advance; remote environments and the classroom still need the network |
 
-内容或步骤写错时转到 `presmium-author`。交付时告诉用户可打开的地址或文件、讲者和学生各走哪条路径，以及下一次课前需要重新准备什么。
+When content or steps are wrong, switch to `presmium-author`. When delivering, tell the user the address or file they can open, which path the presenter and the students each take, and what must be prepared again before the next class.

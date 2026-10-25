@@ -1,22 +1,22 @@
-# 代码引用与执行
+# Code references and execution
 
-先问清读者需要看什么：真实仓库中的某段代码、构建时的固定结果，还是可以修改后运行的示例。沿用文稿已有的环境配置，不为简单例子引入额外后端。
+First find out what the reader needs: a passage of real code from a repository, a fixed result computed at build time, or an example they can change and run. Reuse the lecture's existing environment setup; do not add a backend for a simple example.
 
-## 引用真实代码
+## Referencing real code
 
-列出 `@lincyaw/addon-code`，用 `{code-ref}`。锚点路径从文稿所在 git 仓库的根目录写起；不在 git 中时才从文稿目录写起。
+List `@lincyaw/addon-code` and use `{code-ref}`. Anchor paths start at the root of the git repository that contains the lecture; only when the lecture is not in git do they start at the lecture directory.
 
-- 有人工标记的区域用 `region:src/bpe.py#merge`。
-- 引用声明用 `symbol:src/bpe.py#Tokenizer.encode`。
-- 需要固定讲解版本时用 `:pin: <提交>`，否则读取工作区代码。
+- A region marked by hand: `region:src/bpe.py#merge`.
+- A declaration: `symbol:src/bpe.py#Tokenizer.encode`.
+- To fix the version being explained, add `:pin: <commit>`; otherwise the working tree is read.
 
-完整写法、分步高亮与多版本比较见 [指令参考](directives.md) 的 `{code-ref}`。引用的提交也必须在这个仓库中。
+The full syntax, step-by-step highlighting and version comparison are under `{code-ref}` in the [directive reference](directives.md). A pinned commit must exist in that same repository.
 
-锚点“丢失”时先查文件与区域；“模糊”时检查候选是否正确。确认后用 `presmium check --update-lock` 更新锁文件。锁定版本与工作区发生漂移时，先读差异，再决定更新 `:pin:` 还是保留旧版。
+When an anchor is "missing", check the file and the region first; when it is "ambiguous", check that the candidate is the right one. Once confirmed, update the lock file with `presmium check --update-lock`. When the working tree has drifted from the pinned version, read the diff, then decide whether to update `:pin:` or keep the old version.
 
-## 选择执行时机
+## Choosing when code runs
 
-列出 `@lincyaw/addon-exec`。代码块加 `:run: compile` 在编译时运行，`:run: live` 由读者点击运行，`:run: both` 两者都要；单独写 `:run:` 是编译时运行。
+List `@lincyaw/addon-exec`. On a code block, `:run: compile` runs it at build time, `:run: live` lets the reader run it with a click, `:run: both` does both; a bare `:run:` means build time.
 
 ````md
 ```{code} python
@@ -25,28 +25,28 @@ print(sum([1, 2, 3]))
 ```
 ````
 
-网页与幻灯片给现场代码显示运行按钮；没有分步高亮与多版本的现场代码还可以在运行前就地修改（“编辑代码”，Mod-Enter 运行，“还原代码”回到原样）。执行面板适合带参数的例子，分步执行适合解释运行过程，写法查 [指令参考](directives.md)。
+Web pages and slides show a run button for live code. Live code with no step highlighting and no versions can also be edited in place before running (**Edit the code**, Mod-Enter runs, **Restore the code** goes back to the original). A run panel suits examples with parameters; stepped execution suits explaining how a program runs. Their syntax is in the [directive reference](directives.md).
 
-浏览器 Python 使用 Pyodide，现有内置运行环境只有标准库；依赖 numpy、matplotlib 等的例子优先用编译时输出，或选择合适的远端环境。C、C++、Ruby、SQL 可用 `@lincyaw/addon-exec-wasi`，其运行时会增加发布体积。GPU 和远端内核只在任务需要时配置。
+Python in the browser runs on Pyodide, and the built-in runtime has only the standard library; for examples that need numpy, matplotlib and the like, prefer build-time output or pick a suitable remote environment. C, C++, Ruby and SQL can use `@lincyaw/addon-exec-wasi`, whose runtime adds to the size of the published site. Configure GPUs and remote kernels only when the task needs them.
 
-## 让前后代码共享变量
+## Sharing variables between blocks
 
-需要“先训练、再编码”时，为相关块写相同的 `:session:`。这些块必须使用同一执行环境；前面的块改动会使后续会话录制重新生成。浏览器中需按顺序运行，“重置会话”清空解释器状态。
+For "train first, then encode", give the related blocks the same `:session:`. These blocks must use the same environment; changing an earlier block re-records the rest of the session. In the browser they must be run in order, and **Reset session** clears the interpreter.
 
-不共享状态的例子不加会话。一次运行写的文件不应被当作下一次独立运行的前提。
+Do not put independent examples in a session. A file written by one run must not be a precondition of another independent run.
 
-## 使用具名环境
+## Named environments
 
-头部 `execute.environments` 声明环境，代码用 `:env: <名字>` 选择；`execute.env` 可指定默认环境。选择了环境却不可用时不自动换执行器，有录制就显示录制。
+Declare environments under `execute.environments` in the frontmatter and select one on a code block with `:env: <name>`; `execute.env` sets the default. When the selected environment is unavailable, Presmium does not switch to another executor: it shows the recording if there is one.
 
-环境的配置、提供插件与示例见 [指令参考](directives.md) 的 `{local-env}`、`{terminal}` 与代码指令。凭据放环境变量，例如 `PRESMIUM_ENV_<名>_TOKEN`，不写进文稿。用 `presmium check --env` 验证实际连接。
+Environment configuration, the plugins that provide them and examples are under `{local-env}`, `{terminal}`, "Remote environments" and the code directives in the [directive reference](directives.md). Put credentials in environment variables, such as `PRESMIUM_ENV_<NAME>_TOKEN`, never in the lecture. Verify the real connection with `presmium check --env`.
 
-## 输出不对时检查什么
+## When the output is wrong
 
-编译会发生在 `check`、`ir`、`build`、`dev` 中，可能执行代码并更新 `.presmium/freeze/`。代码没变时沿用录制；没有运行环境时也能用已有录制。默认沿用其他环境的录制并警告，确实需要重跑时才设 `execute: { rerun: environment }`。
+Compilation happens in `check`, `ir`, `build` and `dev`, and may run code and update `.presmium/freeze/`. When the code has not changed, the recording is reused; with no runtime available, the existing recording is still used. By default a recording from another environment is reused with a warning; set `execute: { rerun: environment }` only when a rerun is really needed.
 
-先区分“旧录制”“执行失败”“环境不可用”。检查代码、参数、会话顺序和诊断；不要先删除缓存。超时优先改例子，必要时用 `:timeout:` 调整。
+First tell apart "stale recording", "execution failed" and "environment unavailable". Check the code, the parameters, the session order and the diagnostics; do not start by deleting the cache. For timeouts, change the example first, and adjust `:timeout:` if needed.
 
-富输出可显示图、表等内容；`:echo: false` 只显示输出。组件拥有的代码由组件运行，不再附加一套运行控件。执行面板失败时可显示 `:recorded:` 的预录输出。
+Rich output can show figures, tables and more; `:echo: false` shows only the output. Code owned by a component is run by that component and gets no separate run controls. When a run panel fails, it can show the prerecorded output from `:recorded:`.
 
-交付前检查目标媒介里的结果，确认未把本机路径、环境变量或教师内容写进输出。复现所需的录制文件见 [发布与复现](publishing.md)。
+Before delivering, check the results in the target medium and make sure no local paths, environment variables or teacher content ended up in the output. The recordings needed for reproduction are listed in [Publishing and reproduction](publishing.md).

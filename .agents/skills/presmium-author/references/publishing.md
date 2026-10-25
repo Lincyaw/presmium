@@ -1,60 +1,60 @@
-# 发布与复现
+# Publishing and reproduction
 
-用于给学生交付、发布课程站点、增加译本，或让别人检出源码后复现结果。先确认交付范围，再构建对应产物。
+Use this to deliver to students, publish a course site, add a translation, or let someone check out the source and reproduce the results. Settle what is delivered first, then build the matching output.
 
-## 给学生的内容
+## Content for students
 
-教师专用块在指令上加 `:audience: teacher`；讲解段落可用 `{only}` 包起来再加受众。整节用顶层 `{audience} teacher`，整份引入文件可在 `{include}` 上加受众。具体写法查 [指令参考](directives.md) 的 `{audience}`。
+Mark teacher-only blocks with `:audience: teacher` on the directive; wrap narration in `{only}` to give it an audience. For a whole section use `{audience} teacher` at the top of the section; for a whole included file put the audience on `{include}`. The syntax is under `{audience}` in the [directive reference](directives.md).
 
-在文稿目录构建到独立目录，避免混进以前的完整版：
+Build from the lecture directory into a separate directory, so nothing from an earlier full build gets mixed in:
 
 ```sh
 presmium check --audience student
 presmium build --audience student --out dist-student
 ```
 
-构建会扫描被排除的内容是否经输出或其他文件重新进入学生版。出现 `presmium.audience` 时追溯来源，修正标记或输出；不能只隐藏页面元素。打开学生产物检查教师讲解、答案与媒体。
+The build scans whether removed content came back into the student version through output or other files. When `presmium.audience` appears, trace the source and fix the marking or the output; hiding page elements is not a fix. Open the student output and check for teacher narration, answers and media.
 
-`presmium serve`、`presmium dev` 提供完整文稿；它们不按读者身份筛成学生版。分享学生产物的静态地址，课堂互动另配独立课堂服务，见 `presmium-present`。
+`presmium serve` and `presmium dev` serve the full lecture; they do not filter by reader. Share the static address of the student output; classroom interaction needs a separate classroom service, see `presmium-present`.
 
-带受众的 `{include}` 如果引入了新章节，之后的内容可能仍属于该章节。在后面用标题明确另开一节，查看相关检查提示。
+When an `{include}` with an audience brings in a new section, the content after it may still belong to that section. Start a new section with a heading after it, and read the related check messages.
 
-## 链接与文件随产物发布
+## Links and files published with the output
 
-普通链接和图片相对于写它的源文件；`/...` 指文稿的 `public/`。被链接的文件随产物发布，代码锚点则相对于 git 根目录。不要因混淆两种规则而改成绝对本机路径。
+Plain links and images are relative to the source file that contains them; `/...` means the lecture's `public/` directory. Linked files are published with the output. Code anchors, by contrast, are relative to the git root. Do not switch to absolute local paths because the two rules got mixed up.
 
-链接到目录时只发布普通文件，隐藏目录和 `node_modules` 不发布；直接链接到单个文件时仍可能发布隐藏文件，不要链接凭据文件。文稿仓库之外的文件不会发布。
+A link to a directory publishes only its regular files; hidden directories and `node_modules` are not published. A direct link to a single file can still publish a hidden file, so never link to credential files. Files outside the lecture's repository are not published.
 
-工作区里的跨文档链接写对方的入口，如 `../week2/lecture.md#merge`。构建整个工作区时转成对应页面；只构建一份文稿时不自动发布另一份，查看 `presmium.links` 的提示。
+Cross-document links in a workspace point at the other document's entry, e.g. `../week2/lecture.md#merge`. A workspace build turns them into the matching pages; a build of a single lecture does not publish the other one, and `presmium.links` says so.
 
-`presmium check` 检查本地链接与片段。需要检查外链时用 `presmium check --external-links`，本机需有 lychee。`checks.forbid` 可限制不应发布的内部词或编号，但不能代替受众标记。
+`presmium check` checks local links and fragments. To check external links use `presmium check --external-links`, which needs lychee installed on the machine. `checks.forbid` (a list of JavaScript regular expressions in the frontmatter) reports internal words or IDs that must not be published, in every medium; it does not replace audience marking.
 
-## 增加译本
+## Adding a translation
 
-在原文头部写 `translations: { en: lecture.en.md }`。译本头部写标题、语言与来源：
+In the original's frontmatter write `translations: { en: lecture.en.md }`. In the translation's frontmatter write the title, language and source:
 
 ```yaml
 title: Tokenization
 lang: en
 translationOf:
   entry: lecture.md
-  digest: '<presmium check 给出的摘要>'
+  digest: '<the digest that presmium check reports>'
 ```
 
-译本复用原文的插件和渲染配置，章节写与原文相同的显式标签，使语言切换停在对应位置。译完运行 `presmium check`，核对内容后填入提示中的 64 位摘要。原文变更后先校对译文，再更新摘要。
+A translation reuses the original's plugins and renderer configuration. Give its sections the same explicit labels as the original so switching language stays at the same place. After translating, run `presmium check`, review the content, and fill in the 64-character digest from the message. When the original changes, review the translation first, then update the digest.
 
-网页构建发布译本；幻灯片和 notebook 只有原文。`presmium serve` 的工作区预览目前只显示原文，验证译本需要构建。学生版构建也会筛选并扫描译本。
+The web build publishes translations; slides and notebooks have the original only. The workspace preview of `presmium serve` currently shows only the original, so build to verify a translation. A student build filters and scans translations too.
 
-## 把多份讲义组成课程
+## Combining lectures into a course
 
-在含 `presmium.workspace.yaml` 的工作区根目录运行 `presmium build`，得到 `dist/web/` 的整个站点；在文档目录运行则只构建该文档。工作区应有自己的 git 仓库。
+Run `presmium build` at the root of a workspace (the directory containing `presmium.workspace.yaml`) to get the whole site in `dist/web/`; running it in a document directory builds that document only. A workspace should have its own git repository.
 
-保持文档间链接指向源入口。按部署地址设置 `site.base`，例如项目站点的子路径；导航、页脚与首页按需要设置，不逐项添加用户未要求的配置。发布后验证首页、跨文档链接和语言切换。
+Keep links between documents pointing at the source entries. Set `site.base` to match the deployment address, for example the sub-path of a project site; set navigation, footer and home page as needed, and do not add settings the user did not ask for. After publishing, verify the home page, the cross-document links and the language switch.
 
-## 别人复现需要带走什么
+## What others need to reproduce the results
 
-随源码保留 `.presmium/freeze/`（执行录制）、`.presmium/anchors.lock.json`（锚点）、`.presmium/assets/`（本地化资源）、`.presmium/drawings/`（标注）。有合成讲授时另保留 `.presmium/speech/` 与 `.presmium/speech.lock.json`，避免别人构建重新调用语音服务。
+Keep with the source `.presmium/freeze/` (execution recordings), `.presmium/anchors.lock.json` (anchors), `.presmium/assets/` (localized assets) and `.presmium/drawings/` (pen annotations). With a synthesized lecture also keep `.presmium/speech/` and `.presmium/speech.lock.json`, so other people's builds do not call the speech service again.
 
-录制讲授的 `lectures/<id>/track.json` 记录操作与时间；音视频默认被忽略，仅提交它不能带走声音与录像，需要另行保存媒体或按项目约定使用 LFS。
+A recorded lecture's `lectures/<id>/track.json` records the actions and their timing; audio and video are ignored by default, so committing only the track does not carry the voice and the recording. Store the media separately or use LFS as the project prefers.
 
-`dist/` 与 `.presmium/web`、`slides`、`dev` 等工作目录不作为复现源码提交。核对当前项目的忽略规则，不直接提交整个 `.presmium/`。站点启动、PDF 与离线交付见 `presmium-present`。
+`dist/` and the working directories `.presmium/web`, `slides`, `dev` and the like are not source for reproduction. Check the project's ignore rules; do not commit all of `.presmium/`. Starting a site, PDF and offline delivery are in `presmium-present`.

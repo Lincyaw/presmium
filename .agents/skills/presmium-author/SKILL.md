@@ -1,119 +1,121 @@
 ---
 name: presmium-author
-description: "帮助用户把内容写成可阅读、可演示的 Presmium 讲义，或修改现有 MyST 文稿、修复检查与构建问题、发布学生版和译本。Use when creating or editing a Presmium lecture, arranging narration and reveal steps, referencing or running code, or preparing document builds."
+description: "Help a user turn material into a Presmium lecture that reads well and presents as intended, edit an existing MyST lecture, fix check and build problems, and publish a student version or a translation. Use when creating or editing a Presmium lecture, arranging narration and reveal steps, referencing or running code, or preparing document builds. 写讲义、改文稿、安排讲解与分步、引用或运行代码、修复检查与构建问题、发布学生版或译本时使用。"
 ---
 
-# 编写与修改讲义
+# Writing and editing lectures
 
-从用户要讲清楚的内容出发，交付能阅读、能按预期演示的讲义。先弄清读者会看到什么、讲者需要怎样推进，再选择语法与插件。
+Start from what the user wants to make clear, and deliver a lecture that reads well and presents as intended. First work out what the reader will see and how the presenter needs to move through it, then choose the syntax and plugins.
 
-动画与分步讲解（做动画、按教学场景选做法、让动画对上讲解）用 presmium-animate 技能：它自带效果合集，每个动画库一讲，场景文件可以直接照着改。
+For animation and step-by-step explanation (making an animation, choosing how to show a teaching moment, syncing an animation with the narration) use the presmium-animate skill: it carries its own gallery, one lecture per animation library, with scene files you can adapt directly.
 
-## 找到这次任务的入口
+## Find the entry point for this task
 
-| 用户想做什么 | 先确认什么 | 按需阅读 |
+| The user wants to | Settle first | Read as needed |
 |---|---|---|
-| 从材料写一份讲义 | 面向谁、读完能理解或完成什么、需要哪些交付形式 | [组织内容与演示步骤](references/writing.md) |
-| 修改现有讲义 | 相关章节、已有写法、这次要改变的阅读或演示效果 | [组织内容与演示步骤](references/writing.md) |
-| 引用代码、让读者动手运行 | 代码来自哪里、何时运行、是否共享变量 | [代码引用与执行](references/code.md) |
-| 给学生发布、增加译本、组成课程站点 | 公开哪些内容、发布哪些语言、最终访问地址 | [发布与复现](references/publishing.md) |
-| 检查报错、构建失败、显示与预期不同 | 首条相关诊断及其位置、出问题的形态 | 下文“修复问题”；语法查 [指令参考](references/directives.md) |
-| 在浏览器中编辑、请 agent 改文稿 | 文稿或工作区目录、要改的范围 | 下文“选择编辑方式” |
-| 让外部 agent 读取文稿、给读者加 AI 问答 | 是作者编辑，还是读者阅读时提问 | [编辑与问答](references/assistance.md) |
+| Write a lecture from material | Who it is for, what they can understand or do afterwards, which deliverables | [Organizing content and steps](references/writing.md) |
+| Change an existing lecture | The sections involved, the existing conventions, the reading or presenting effect to change | [Organizing content and steps](references/writing.md) |
+| Reference code, let readers run code | Where the code comes from, when it runs, whether blocks share variables | [Code references and execution](references/code.md) |
+| Publish to students, add a translation, build a course site | What is public, which languages, the final address | [Publishing and reproduction](references/publishing.md) |
+| Investigate an error, a failed build, output that looks wrong | The first relevant diagnostic and its location, the form that is wrong | "Fixing problems" below; syntax in the [directive reference](references/directives.md) |
+| Edit in the browser, have an agent change the lecture | The lecture or workspace directory, the scope of the change | "Choosing how to edit" below |
+| Let an external agent read the lecture, add AI questions for readers | Whether it is the author editing or a reader asking while reading | [Editing and questions with AI](references/assistance.md) |
 
-只读取当前任务需要的参考。指令参考回答“怎么写”，本技能负责“该选什么、做到什么程度”。
+Read only the references the current task needs. The directive reference answers "how to write it"; this skill decides "what to choose and how far to go".
 
-## 先接上现有文稿
+## Pick up the existing lecture first
 
-修改前读入口 `lecture.md` 的头部、相关章节与它引入的文件；沿用已有的语言、插件、标签和排版方式。文稿也可以使用其他入口文件名，命令接受目录或入口文件。
+Before changing anything, read the frontmatter of the entry `lecture.md`, the relevant sections and the files they include; keep the existing language, plugins, labels and layout. A lecture can use another entry file name; commands accept a directory or an entry file.
 
-从材料和现有内容推断受众、目标与交付形式。确实会改变内容取舍却无法推断的信息再询问；不要把配置选项变成问卷。
+Infer the audience, goal and deliverables from the material and the existing content. Ask only for information that would change what goes in and cannot be inferred; do not turn configuration options into a questionnaire.
 
-新项目需要 Node.js 22.19 以上与 pnpm。安装 `pnpm add -g @lincyaw/presmium` 后：
+A new project needs Node.js 22.19 or later and pnpm. After `pnpm add -g @lincyaw/presmium`:
 
 ```sh
-presmium new my-lecture --type lecture --title 分词入门
+presmium new my-lecture --type lecture --title "Introduction to tokenization"
 cd my-lecture
 presmium dev --to web
 ```
 
-多份文档组成课程时用 `presmium new my-course --type workspace`。项目中安装依赖用 `pnpm install`；全局 `presmium` 会转交给项目安装的版本。面向使用者的命令用 pnpm 与 `presmium`。
+For a course of several documents use `presmium new my-course --type workspace`. Install a project's dependencies with `pnpm install`; the global `presmium` hands over to the version installed in the project. In instructions for users, write commands with pnpm and `presmium` only.
 
-## 面向受众写作：发布会原则
+## Writing for an audience: the launch-event principle
 
-创作或改写面向受众的内容（讲义、幻灯片、文档、文章及其他展示材料）时，遵守发布会原则：以核心观点和受众价值为中心组织内容，并根据呈现载体调整表达方式。作者只要求改一处时，按这些原则写好这一处，不借机改动其他内容。
+When creating or rewriting content for an audience (lectures, slides, documents, articles and other presentation material), follow the launch-event principle: organize the content around the core point and its value to the audience, and adapt the expression to the medium. When the author asks for one change only, write that one change by these principles and do not use it as an occasion to change anything else.
 
-**最高优先级：信息量原则**
+**Top priority: the information principle**
 
-每一句话都必须有明确的存在意义，对受众理解内容、形成判断或采取行动发挥具体作用。每页、每屏或每个独立内容区块都必须承载有效信息，并承担明确的说明或论证任务。句子、注释、例子、数据和重复说明，都应具有明确作用；删除后不影响受众理解或判断的内容应直接删除。叙事安排、版式变化与语言润色均须服从这一原则，不得为满足形式要求而添加无效内容。
+Every sentence must have a clear reason to exist and do concrete work for the audience's understanding, judgment or action. Every page, screen or independent content block must carry real information and have a clear explanatory or argumentative job. Sentences, notes, examples, data and repetitions all need a clear purpose; delete anything whose removal does not affect the audience's understanding or judgment. Narrative arrangement, layout variation and language polish all serve this principle; never add content without substance to satisfy a form.
 
-1. 围绕最有价值、最有说服力的观点或优势组织叙事，使全部内容共同支撑核心主张。
-2. 按照受众理解问题的逻辑安排内容，避免按个人思考、工作开展或方案尝试的过程罗列经历。
-3. 避免“只是一些浅见”“可能没什么价值”等自我削弱表达，不主动贬低内容的价值。
-4. 根据内容目的与受众需求选择讨论角度、评价维度和比较口径，集中呈现能够充分证明核心价值的内容。
-5. 涉及不同观点、方法或结果时，结合各自目标、适用条件与合理取舍解释差异，避免简单作出优劣判断。
-6. 明确说明核心观点为什么重要、依据是什么，以及能够帮助受众理解或解决什么问题，不依赖受众自行从文字、表格或图形中推导内容价值。
-7. 对于采用分页、分屏或区块布局的材料，相同的排版结构不得连续出现；任意连续五页、五屏或五个主要展示区块内不得重复使用相同的排版结构。
-8. 出现排版结构重复时，应根据内容关系重新组织信息，选择适合的流程、对照、时间线、图表或图文组合等呈现方式，避免通过更换颜色、图标或文字维持相同布局。
-9. 对于幻灯片，单页文字过多时，应优先采用图形化表达，根据内容关系改用流程图、关系图、时间线、数据图表或图文组合，减少连续文字并保留必要信息。图形应承担信息表达和关系说明的作用，避免将整段文字直接放入形状中。
-10. 开头应尽早呈现受众关心的问题、值得讨论的关键、核心观点及最有说服力的依据。
-11. 结尾应强化核心观点与最值得记住的信息，避免突然改变立场或加入自我否定的评价。
+1. Build the narrative around the most valuable and most convincing point or advantage, so that all content supports the core claim.
+2. Order the content by how the audience comes to understand the problem; do not list your own thinking, work process or attempts in the order they happened.
+3. Avoid self-undermining phrases such as "just a few humble thoughts" or "this may not be worth much"; never belittle the content.
+4. Choose the angle, criteria and basis of comparison by the content's purpose and the audience's needs, and concentrate on what fully demonstrates the core value.
+5. When different views, methods or results come up, explain the differences through their goals, conditions of use and reasonable trade-offs rather than ranking them simply.
+6. State explicitly why the core point matters, what supports it, and what it helps the audience understand or solve; do not leave the audience to infer the value from text, tables or figures.
+7. In material laid out as pages, screens or blocks, the same layout must not appear consecutively, and no layout may repeat within any five consecutive pages, screens or major blocks.
+8. When a layout repeats, reorganize the information by the relationships in the content, choosing a fitting process, comparison, timeline, chart or text-and-image presentation; do not keep the same layout by changing colors, icons or wording.
+9. On slides with too much text, prefer a graphic form: depending on the relationships, use a flowchart, relationship diagram, timeline, data chart or text-and-image combination, cutting continuous text while keeping the necessary information. Graphics must carry information and show relationships; do not paste whole paragraphs into shapes.
+10. Open early with the question the audience cares about, the key issue worth discussing, the core point and the strongest evidence.
+11. Close by reinforcing the core point and what is most worth remembering; do not suddenly change position or add self-negating judgments.
 
-## 写作与验证一起进行
+## Write and verify together
 
-围绕读者的问题组织章节。讲解补足推理、前提和例子；投影内容保留当前一步需要看的证据。普通段落默认成为幻灯片的演讲备注，想投到屏幕上的文字放进 `{slide}`。两者都在网页中出现。
+Organize sections around the reader's questions. Narration supplies the reasoning, assumptions and examples; projected content keeps the evidence needed at the current step. Plain paragraphs become the slides' speaker notes by default; wrap text that should be projected in `{slide}`. Both appear on the web page.
 
-需要分步揭示时，按讲者的推进顺序安排上屏内容与后续讲解。给会被链接、课堂笔记或讲授回放引用的章节与块写显式标签；自动生成的块 ID 会随插入内容变化。
+When content is revealed step by step, arrange the projected content and the following narration in the presenter's order. Give explicit labels to sections and blocks that links, class notes or lecture recordings will refer to; generated block IDs change when content is inserted.
 
-文档按主题连续阅读，不把每次输出或投影片分页变成重复标题。同一份内容另需一套独立编排的 PPT 时，可以在讲义目录中另写一个入口（如 `slides.md`），用 `presmium build slides.md --to slides` 构建；两个入口的同一段话要一起改。
+A document reads continuously by topic; do not turn each output or slide break into a repeated heading. When the same content also needs a separately arranged PPT, write a second entry in the lecture directory (such as `slides.md`) and build it with `presmium build slides.md --to slides`; the same paragraph in both entries must be changed together.
 
-在文稿目录运行 `presmium check`，修复与本次内容有关的诊断。用 `presmium dev --to web` 看阅读效果；需要幻灯片时也预览幻灯片，检查文字是否上屏、字号与溢出、前进和后退时的步骤。步数或备注归属不明确时才用 `presmium ir` 核对块的 `at`、`span` 与章节的 `steps`。
+Run `presmium check` in the lecture directory and fix the diagnostics related to this change. Look at the reading view with `presmium dev --to web`; when slides are needed, preview them too and check that text is on screen, font size and overflow, and the steps going forward and backward. Only when the step count or the step a note belongs to is unclear, use `presmium ir` to check the blocks' `at` and `span` and the section's `steps`.
 
-按约定的交付形式构建，例如 `presmium build --to web,slides`。查看报告中未渲染或降级的内容；构建成功后仍要确认用户需要的内容出现在产物中。图片、链接、运行结果和交互组件都是正文的一部分。
+Build the agreed deliverables, for example `presmium build --to web,slides`. Read the report for content that was not rendered or was degraded; after a successful build, still confirm that what the user needs appears in the output. Images, links, run results and interactive components are all part of the content.
 
-在工作台中由 AI 修改时，保存后作者打开的预览自动更新，文稿上下文中的诊断就是最近一次保存的检查结果；改文字用诊断与 `presmium__get_section` 确认，作者没有要产物时不构建。
+When the AI edits in the workbench, the preview the author has open updates after saving, and the diagnostics in the lecture context are the check results of the latest save; confirm text changes with the diagnostics and `presmium__get_section`, and do not build unless the author asked for output.
 
-## 修复问题
+## Fixing problems
 
-先复现用户使用的命令和形态，再沿诊断中的文件与行定位源码。优先修复造成后续错误的第一处原因。
+First reproduce the command and form the user used, then follow the file and line in the diagnostic to the source. Fix the first cause that leads to later errors.
 
-| 现象 | 下一步 |
+| Symptom | Next step |
 |---|---|
-| `unknown directive`、`unknown option` | 查 [指令参考](references/directives.md) 的写法与提供插件，确认头部 `plugins` 已列出它 |
-| 幻灯片少了文字、备注与步骤对不上 | 查 [组织内容与演示步骤](references/writing.md)，核对讲解与上屏内容的角色 |
-| 代码锚点丢失、路径不对、输出没更新 | 查 [代码引用与执行](references/code.md)，核对仓库根路径、锁定版本与缓存 |
-| 链接、学生版或译本检查失败 | 查 [发布与复现](references/publishing.md)，核对交付目录与对应版本 |
+| `unknown directive`, `unknown option` | Check the syntax and the providing plugin in the [directive reference](references/directives.md); confirm the frontmatter's `plugins` lists it |
+| Text missing from slides, notes not matching steps | Read [Organizing content and steps](references/writing.md) and check the roles of narration and projected content |
+| Code anchor lost, wrong path, output not updated | Read [Code references and execution](references/code.md); check the repository root path, the pinned version and the cache |
+| Link, student version or translation check fails | Read [Publishing and reproduction](references/publishing.md); check the delivery directory and the matching version |
 
-不要用隐藏内容、关闭检查或删除缓存来代替定位问题。确认代码引用的新位置后才更新锚点锁；确认译文跟上原文后才更新译本摘要。
+Do not hide content, disable checks or delete caches instead of locating the problem. Update the anchor lock only after confirming the new location of the referenced code; update a translation's digest only after confirming the translation has caught up with the original.
 
-## 选择编辑方式
+## Choosing how to edit
 
-在 VS Code 中编辑时，从 GitHub Release 下载对应系统与处理器的 `.vsix`，用“Extensions: Install from VSIX…”安装。打开讲义后执行“Presmium: Open Preview to the Side”，保存后更新、按光标所在章节定位；需要 Node.js 22.19 以上与文稿自己的插件依赖，不需要工作台或模型。发布页列出各系统与处理器的安装包：https://github.com/Lincyaw/presmium/releases 。
+To edit in VS Code, download the `.vsix` for the system and processor from the GitHub releases page and install it with "Extensions: Install from VSIX…". Open the lecture and run "Presmium: Open Preview to the Side"; it updates on save and follows the section under the cursor. It needs Node.js 22.19 or later and the lecture's own plugin dependencies, not the workbench or a model. The releases page lists the packages for each system and processor: https://github.com/Lincyaw/presmium/releases.
 
-用户已有编辑器时直接修改源码。想在浏览器中编辑时，另装 `pnpm add -g @lincyaw/studio`，用 `presmium-studio <目录>` 打开工作台；项目内安装则用 `pnpm add -D @lincyaw/studio` 和 `pnpm exec presmium studio <目录>`。打开终端打印的完整网址，`Ctrl+C` 停止。不配置模型也能编辑、保存与预览。
+When the user already has an editor, edit the source directly. To edit in the browser, install `pnpm add -g @lincyaw/studio` and open the workbench with `presmium-studio <directory>`; for a project-local install use `pnpm add -D @lincyaw/studio` and `pnpm exec presmium studio <directory>`. Open the full address printed in the terminal; `Ctrl+C` stops it. Editing, saving and previewing work without a model.
 
-工作台里打开文稿，看到的就是读者看到的网页或幻灯片。编辑模式中单击一段内容或选中文字，旁边出现工具条：编辑文字、新建批注、AI 改写；双击文字直接修改，Enter 保存，Esc 取消。带格式的文字（链接、公式等）不能直接改时，工作台提示交给 AI 改写。查看模式中文稿和读者看到的一样。
+A lecture opened in the workbench looks exactly like the web page or slides the reader sees. In edit mode, click a block or select text and a toolbar appears: **Edit text**, **New Comment**, **Rewrite with AI**. Double-click text to change it directly; Enter saves, Esc cancels. When formatted text (links, math and the like) cannot be edited directly, the workbench offers to hand it to the AI to rewrite. In view mode the lecture looks as the reader sees it.
 
-每次修改自动保存为一个版本（git 仓库中是一个提交），AI 的每一轮修改也是一个版本（工作区设置 `review: required` 时先由作者接受或拒绝），改过的段落在文稿上闪烁几下，对话中不列文件。顶栏的撤消（Ctrl+Z）与恢复（Ctrl+Y）逐步回退或重做，“版本历史”列出每次修改，可以单独撤消。批注是作者写给 AI 的话，可以是问题，也可以是修改要求：一条条写在相关的地方，写完后点顶栏的“发送 N 条批注给 AI”一起发出。AI 照批注说的做，问题就回答，要求修改就修改，修改成为一个版本；“批注”栏列出全部批注，也可以单条发送。内容没能正确显示时，顶部提示几处并可“让 AI 修复”。
+Every change is saved automatically as a version (a commit in a git repository), and each round of AI changes is also a version (when the workspace sets `review: required`, the author accepts or rejects it first). Changed paragraphs flash briefly in the lecture; the chat does not list files. Undo (Ctrl+Z) and Redo (Ctrl+Y) in the top bar step back and forward, and **Version History** lists every change, each of which can be undone on its own. Comments are notes from the author to the AI, either questions or change requests: write them one by one where they apply, then click **Send N comments to AI** in the top bar to send them together. The AI does what the comments say: it answers questions and makes requested changes, and the changes become one version. The **Comments** pane lists all comments, which can also be sent one at a time. When content does not display correctly, the top of the page says how many places are affected and offers **Fix with AI**.
 
-要直接改源码，用自己的编辑器或 VS Code 扩展；工作台中不显示源码与文件。对话中指向文稿源码的链接会在文稿中标出那一处。
+To change the source directly, use your own editor or the VS Code extension; the workbench shows no source or files. A link to the lecture source in the chat marks that place in the lecture.
 
-在对话栏顶部点“新建对话”开始新的讨论，旁边的“历史对话”打开已有会话。新建对话不需要先切到左侧，也不会关闭当前文稿。
+Click **New chat** at the top of the chat pane to start a new discussion; **Chat history** next to it opens earlier sessions. Starting a new chat does not require switching to the left side and does not close the current lecture.
 
-顶部应用栏右侧的“AI 助手”打开或收起对话；对话顶部的“对话记录”列出已有会话，选择一个会直接显示聊天。聊天可从顶部收起，未发送的内容保留。
+**AI assistant** on the right of the app bar opens or hides the chat; choosing a session in **Chat history** shows its conversation directly. The chat can be hidden from its top; unsent text is kept.
 
-插件和自动化任务从应用栏右侧的“更多”打开，与设置相邻；点应用栏路径中的文稿标题回到文稿，编辑草稿会保留。
+Plugins and automated tasks open from **More** on the right of the app bar, next to Settings. Click the lecture title in the app bar's path to return to the lecture; edit drafts are kept.
 
-文稿的命令栏有导航窗格（章节或幻灯片列表）、撤消与恢复、视图、模式、批注与“版本历史”；版本历史列出每次修改，可以单独撤消或恢复，AI 的修改等你接受或拒绝。底部状态栏显示所在的节或幻灯片与字数。
+The lecture's command bar has the **Navigation Pane** (list of sections or slides), Undo and Redo, view, mode, comments and **Version History**; the version history lists each change, which can be undone or redone on its own, and AI changes wait for you to accept or reject them. The status bar at the bottom shows the current section or slide and the word count.
 
-窗口较窄时，打开历史或文件会收起对话，避免遮住文稿；从活动栏切回对话即可，草稿会保留。辅助面板也可以全屏查看，退出后回到分栏。
+In a narrow window, opening history or files hides the chat so it does not cover the lecture; switch back to the chat from the activity bar, and drafts are kept. Side panels can also be shown full screen and return to the split view when closed.
 
-`presmium dev` 预览一份文稿；`presmium serve` 预览工作区；两者提供完整文稿。给学生分享时显式构建学生版，见 [发布与复现](references/publishing.md)。
+The workbench labels follow the interface language; in Chinese they are 编辑文字, 新建批注, AI 改写, 版本历史, 发送 N 条批注给 AI, 批注, 让 AI 修复, 新建对话, 对话记录, AI 助手, 更多, 导航窗格.
 
-## 交付给用户
+`presmium dev` previews one lecture; `presmium serve` previews a workspace; both serve the full lecture. To share with students, build the student version explicitly, see [Publishing and reproduction](references/publishing.md).
 
-说明内容改在何处、怎样预览或打开产物、哪些检查实际完成，以及仍影响使用的限制。需要用户接手时给出可执行的下一步。
+## Handing over to the user
 
-在工作台中，作者是可能不懂代码的教师：按作者看到的内容说明（哪一节、哪段、哪句，读者现在看到什么），不提文件名、路径、行号、语法、指令、命令、构建、沙箱与 git；做不到的事用平实的话说明作者暂时得不到什么、可以怎么办。
+Say where the content was changed, how to preview it or open the output, which checks actually ran, and the limitations that still affect use. When the user has to take over, give an executable next step.
 
-现场放映、课堂、离线准备、PDF 与讲授回放使用 `presmium-present`；只有现有语法确实不能满足任务、需要开发组件或插件时才使用 `presmium-develop`。
+In the workbench the author is a teacher who may not know code: describe things as the author sees them (which section, which paragraph, which sentence, what the reader sees now), and do not mention file names, paths, line numbers, syntax, directives, commands, builds, sandboxes or git. When something cannot be done, say in plain words what the author cannot get for now and what they can do instead.
+
+Live presentation, the classroom, offline preparation, PDF and lecture playback use `presmium-present`; use `presmium-develop` only when the existing syntax really cannot do the task and a component or plugin must be developed.

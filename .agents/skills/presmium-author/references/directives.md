@@ -1,48 +1,48 @@
-# 指令参考
+# Directive reference
 
-每条指令给出：提供它的插件包（写进文稿头部 `plugins`）、插件 ID（`presmium:` 下的配置键）、参数、正文、选项、生成的 IR 与步数（`span`，步骤与讲解的对应规则见 `writing.md` 的步骤一段），以及一个最小示例。
+For each directive: the plugin package that provides it (list it under `plugins` in the frontmatter), the plugin ID (its configuration key under `presmium:`), the argument, the body, the options, the IR it produces and its step count (`span`; how steps and narration correspond is in [the steps section of writing.md](writing.md)), and a minimal example.
 
-所有指令都接受三个通用选项：
+Every directive accepts three common options:
 
-- `:reveal:`：块在下一步出现。`{slide}`、`{only}` 上写 `:reveal: items` 时其中的列表逐项出现。
-- `:label:`：块 ID，等同于在块前写 `(名字)=`。
-- `:audience:`：块只给这些受众（逗号分隔，如 `teacher`）；写在 `{slide}`、`{only}` 上时其中全部的块都是，嵌套时取交集。讲解段落要标受众时用 `{only}` 包起来。嵌在另一个指令正文中或列表项中的 MyST 指令（`{tab-item}`、`{card}`、`{note}` 中的 `{tip}`、列表项中的 `{code}`）也可以写，只去掉它自己，所在的块留下；写在 `{include}` 上时包含进来的全部内容都是，其中的标题照样开出章节，这些章节整节只给这些受众。`presmium build --audience student` 不输出受众不含 `student` 的块，见下文 `{audience}`。
+- `:reveal:`: the block appears at the next step. On `{slide}` and `{only}`, `:reveal: items` reveals the list inside item by item.
+- `:label:`: the block ID, the same as writing `(name)=` before the block.
+- `:audience:`: the block is only for these audiences (comma-separated, e.g. `teacher`). On `{slide}` and `{only}` it applies to every block inside; nested audiences intersect. To give narration an audience, wrap it in `{only}`. It can also be written on a MyST directive nested in another directive's body or in a list item (`{tab-item}`, `{card}`, a `{tip}` inside `{note}`, a `{code}` in a list item): only that directive is removed, and the block containing it stays. On `{include}` it applies to all included content; headings in it still open sections, and those sections are entirely for those audiences. `presmium build --audience student` omits blocks whose audience does not include `student`; see `{audience}` below.
 
-选项值按指令声明的类型读取（`string`、`number`、`boolean`、`list`）；指令声明了选项时，写错的选项名得到警告 `unknown option`。
+Option values are read by the type the directive declares (`string`, `number`, `boolean`, `list`); when a directive declares options, a misspelled option name gets the warning `unknown option`.
 
-指令可以写成反引号代码围栏（```` ```{名字} ````）或冒号围栏（`:::{名字}`）。正文是 MyST 的指令（`{slide}`、`{only}`）习惯用冒号围栏；正文里还有代码围栏时，外层围栏要比内层多一个字符（例如外层四个反引号）。
+A directive can be written as a backtick code fence (```` ```{name} ````) or a colon fence (`:::{name}`). Directives whose body is MyST (`{slide}`, `{only}`) are usually written with colon fences. When the body contains a code fence, the outer fence must be one character longer than the inner one (for example four backticks outside).
 
-## 内置指令（编译器，不需要插件）
+## Built-in directives (compiler, no plugin needed)
 
 ### `{slide}`
 
-正文为 MyST，其中的块都是上屏内容。选项：`:reveal:`、`:reveal: items`、`:at:`（非负整数，从 0 开始）、`:until:`（到该步骤隐藏，必须大于起始步骤）。`at` 不能与 `reveal` 合用；阅读形态展开内容，放映中按范围显示，回退时恢复。两个结果分别写 `:at: 0`、`:until: 1` 与 `:at: 1` 即可替换，不需要组件或播放器。
+The body is MyST; every block in it is projected content. Options: `:reveal:`, `:reveal: items`, `:at:` (non-negative integer, from 0), `:until:` (hidden from that step on; must be greater than the start step). `at` cannot be combined with `reveal`. The reading form shows the content expanded; the presentation shows it within its range and restores it when going back. To replace one result with another, write `:at: 0`, `:until: 1` on the first and `:at: 1` on the second; no component or player is needed.
 
 ```md
 :::{slide}
 :reveal: items
-- 统计相邻对
-- 合并出现最多的一对
+- Count adjacent pairs
+- Merge the most frequent pair
 :::
 ```
 
-列表逐项出现，`span` 为项数减一。
+The list appears item by item; `span` is the number of items minus one.
 
 ### `{only}`
 
-参数为渲染端 ID 列表（`web`、`slides`、`notebook`，逗号或空格分隔）；正文为 MyST，其中的块只交给这些渲染端。嵌套时取交集。选项：`:reveal:`、`:reveal: items`、`:at:`、`:until:`（步骤范围语义同 `{slide}`）。
+The argument is a list of renderer IDs (`web`, `slides`, `notebook`, `lecture` from the lecture plugin, or another key of the frontmatter's `renderers`; comma- or space-separated); the body is MyST, and its blocks go only to these renderers. Nested restrictions intersect. Options: `:reveal:`, `:reveal: items`, `:at:`, `:until:` (step ranges as in `{slide}`). Each renderer's steps are compressed: steps taken only by blocks of other renderers do not exist in it, and later steps move up.
 
 ```md
 :::{only} web, notebook
-只在网页和 notebook 中出现的补充推导。
+A supplementary derivation shown only on the web and in the notebook.
 :::
 ```
 
-缺少参数时报错 `needs the renderer ids it is limited to`；不认识的 ID（如拼错的 `slide`）得到警告 `unknown renderer id`。
+A missing argument is the error `needs the renderer ids it is limited to`; an unknown ID (such as a misspelled `slide`) gets the warning `unknown renderer id`, since its content would otherwise vanish from every form.
 
 ### `{hints}`
 
-正文为 YAML 映射，键为渲染端 ID，值也须是映射。不生成块，不占步骤。
+The body is a YAML mapping whose keys are renderer IDs and whose values must also be mappings. Produces no block and takes no step.
 
 ```md
 :::{hints}
@@ -51,13 +51,13 @@ slides: { layout: center, class: my-page }
 :::
 ```
 
-- `web.layout: scrolly`：网页中这一节用滚动叙事版式（上屏内容固定一侧，讲解滚动）。
-- `slides.layout` 设这一页幻灯片的版式：`default`（章节名、标题与内容）、`cover`（封面，讲义有多页时第一页默认用它）、`center`（内容居中）、`full`（没有页脚，内容占满画布）；`slides.class` 给这一页加 CSS 类，`slides.zoom` 缩放这一页的内容（如 `0.8`）。内容多于画布时整体缩小到放得下。
-- 渲染端不认识的提示直接忽略。
+- `web.layout: scrolly`: on the web this section uses a scrolling narrative layout (projected content fixed on one side, narration scrolling).
+- `slides.layout` sets this slide's layout: `default` (the chapter name above the title, then the content; the footer has the lecture title, the step and the page number), `cover` (cover page; the first slide uses it by default when the lecture has more than one), `center` (content centered), `full` (no footer or margins, content fills the canvas). `slides.class` adds a CSS class to this slide; `slides.zoom` scales this slide's content (e.g. `0.8`). Content larger than the canvas is scaled down as a whole to fit.
+- Hints a renderer does not recognize are ignored.
 
 ### `{config}`
 
-正文为 YAML 映射，键为插件 ID，值须是映射；只在本章节生效，合并在头部 `presmium:` 的全局配置之上。放在章节顶层或章节内的 `{slide}`、`{only}` 中；不生成块，不占步骤。
+The body is a YAML mapping whose keys are plugin IDs and whose values must be mappings (otherwise an error). It applies only to this section and is merged over the global configuration under `presmium:` in the frontmatter. Place it at the top level of a section or inside a `{slide}` or `{only}` in the section; before the first `##` it belongs to the cover section. Produces no block and takes no step. Several `{config}` blocks in one section merge in source order, later options of the same plugin overriding earlier ones; the whole section's configuration is read before its blocks are converted, so a directive anywhere in the section sees all of it.
 
 ```md
 :::{config}
@@ -65,59 +65,59 @@ presmium.exec: { timeoutMs: 30000 }
 :::
 ```
 
-章节配置交给插件的指令（`DirectiveContext.config`）、编译步骤（`PassContext.configFor`）与浏览器端的 `useSectionConfig`。读取章节配置的选项：
+Section configuration reaches the plugin's directives (`DirectiveContext.config`), compile passes (`PassContext.configFor`) and, in the browser, `useSectionConfig`. Options read from section configuration:
 
-- `presmium.exec: { timeoutMs }`：这一节的代码（`:run:` 的代码块、`{code-ref}`、`{run-panel}`、`{step-run}`）在编译时与浏览器中运行的超时；某一段代码自己的 `:timeout:` 优先。上例让一个慢的例子可以运行 30 秒。
-- `presmium.code: { repo }`：这一节 `{code-ref}` 永久链接的仓库网址；`:repo:` 优先。
+- `presmium.exec: { timeoutMs }`: the timeout for this section's code (code blocks with `:run:`, `{code-ref}`, `{run-panel}`, `{step-run}`) at compile time and in the browser; a block's own `:timeout:` takes precedence. The example lets a slow example run for 30 seconds.
+- `presmium.code: { repo }`: the repository URL for this section's `{code-ref}` permalinks; `:repo:` takes precedence.
 
 ### `{audience}`
 
-参数为受众名列表（逗号或空格分隔）；没有正文。放在章节顶层，把整个章节标为只给这些受众（例如教师指南的一节）；不生成块，不占步骤。只标一部分内容时用通用选项 `:audience:`。
+The argument is a list of audience names (comma- or space-separated); no body. Place it at the top level of a section to mark the whole section as only for these audiences (for example a section of teacher's guide). Produces no block and takes no step. To mark only part of the content, use the common option `:audience:`.
 
 ```md
-## 现场演示要点
+## Live demo notes
 
 :::{audience} teacher
 :::
 
-演示合并之前先断开网络。
+Disconnect the network before demonstrating the merge.
 
-## 合并规则
+## Merge rules
 
 :::{only} web, slides
 :audience: teacher
-这一段只给教师：先在白板上画出两个分支。
+This paragraph is for the teacher only: first draw the two branches on the whiteboard.
 :::
 ```
 
-- 不带受众的内容对所有受众可见；不带 `--audience` 的构建包含全部内容。
-- `presmium build --audience student` 编译时去掉受众不含 `student` 的章节与块（其余章节重新编号，步骤随之压缩），被去掉的代码不执行；构建后扫描写出的全部文件，被去掉的内容中 12 个字符以上的句子（学生内容自己也有的句子除外）出现在其中就是错误 `presmium.audience`，位置是被去掉的块，消息给出句子和文件（例如它经代码块的输出漏了进来）。
-- `presmium check --audience student` 按学生版编译后检查。
-- 学习者得到学生版的构建（`presmium build --audience student`，发布为静态站点）；`presmium serve` 只供你自己使用，看到全部内容。学生版发布录制的讲授时，只保留录制之后内容没有变化的章节（教师段落所在的章节、录制后有内容移入教师章节的章节，其讲话与音视频不发布）。
-- 写了正文时警告 `takes no body`（正文被忽略，不会只给教师）；`{audience}` 或 `:audience:` 缺少受众名时报错，这时标的内容（`{audience}` 时整节）不给任何受众，只在不带受众的完整版中。
-- 带 `--audience` 的构建不报告被去掉的内容中的诊断（它们会说出那些内容），只给一条计数 `<n> findings are in the content left out for student`；不带 `--audience` 的 `presmium check` 列出它们。
-- 文稿的译本按同一受众编译，学生版的两种语言都没有教师内容。
-- 指向只给教师的章节的 `{ref}` 在学生版中没有目标（构建时警告 `target not found`），学生内容中不要引用教师章节。
-- 学生版的块 ID 与完整版相同，但章节序号与步骤重新编号：课堂跟随讲者时，讲者与学习者要用同一个版本。
+- Content without an audience is visible to every audience; a build without `--audience` includes everything.
+- `presmium build --audience student` removes at compile time the sections and blocks whose audience does not include `student` (the remaining sections are renumbered and steps compressed accordingly); removed code is not executed. After the build, every written file is scanned: a sentence of 12 or more characters from the removed content (except sentences the student content also has) appearing in a file is the error `presmium.audience`, located at the removed block, with a message naming the sentence and the file (for example when it leaked in through a code block's output).
+- `presmium check --audience student` compiles as the student version and checks it.
+- Learners get the student build (`presmium build --audience student`, published as a static site); `presmium serve` is for your own use and shows all content. When the student version publishes a recorded lecture, only the sections whose content has not changed since recording are kept (for sections containing teacher paragraphs, or into which content moved from a teacher section after recording, the speech and audio/video are not published).
+- A body gets the warning `takes no body` (the body is ignored and is not teacher-only). `{audience}` or `:audience:` without an audience name is an error; the marked content (the whole section for `{audience}`) then goes to no audience and appears only in the full build without an audience.
+- A build with `--audience` does not report diagnostics inside the removed content (they would reveal it), only a count `<n> findings are in the content left out for student`; `presmium check` without `--audience` lists them.
+- Translations are compiled for the same audience; neither language of the student version contains teacher content.
+- A `{ref}` to a teacher-only section has no target in the student version (warning `target not found` at build time); do not reference teacher sections from student content.
+- Block IDs in the student version match the full version, but section numbers and steps are renumbered: when learners follow the presenter in class, both must use the same version.
 
-插件的其他选项只读全局配置。
+Other plugin options are read only from the global configuration.
 
 ### `{component}`
 
-参数为组件名（插件 `components/` 下的文件名）；正文为 YAML 属性。选项：`:span:`（内部步数）、`:plugin:`（插件 ID，默认为注册该组件的插件）；其余选项作为属性，值按 YAML 读取。
+The argument is the component name (a file name under a plugin's `components/`); the body is YAML props. Options: `:span:` (internal steps), `:plugin:` (plugin ID, defaults to the plugin that registers the component); other options become props, with values read as YAML.
 
 ```md
 :::{component} StepList
 :span: 3
-steps: [解析, 启动, 渲染]
+steps: [Parse, Start, Render]
 :::
 ```
 
-这里的 `StepList` 是文稿目录下 `components/StepList.vue` 中的组件（插件 ID `deck`），组件经 `@lincyaw/host` 取得步骤与服务；有动作的组件用 `useActions` 给动作起名，讲解中的 ``{cue to=<块>}`click <动作>` `` 在说到时执行它（下文“讲授的角色”）；插件的组件也可以这样放进正文，例如 `PmContrastToggle`（高对比度开关，`@lincyaw/addon-publish`），两种形态都渲染。没有插件注册该组件时警告 `no plugin in plugins registers the component`。
+Here `StepList` is the component in `components/StepList.vue` in the lecture directory (plugin ID `deck`); components get steps and services through `@lincyaw/host`. A component with actions names them with `useActions`, and ``{cue to=<block>}`click <action>` `` in the narration runs the action when it is spoken (see "Lecture roles" below). A plugin's components can be placed in the body the same way, for example `PmContrastToggle` (the high-contrast switch, `@lincyaw/addon-publish`); both forms render them. When no listed plugin registers the component, the warning is `no plugin in plugins registers the component`.
 
 ### `{include}`
 
-参数为文件路径（相对于当前文件）。被引入文件的 frontmatter 被忽略（警告）。
+The argument is a file path (relative to the current file). The included file's frontmatter is ignored (with a warning).
 
 ````md
 ```{include} pages/intro.md
@@ -126,7 +126,7 @@ steps: [解析, 启动, 渲染]
 
 ### `{literalinclude}`
 
-以代码块显示一个文件（相对于当前文件），或其中几行；文件改动后重新编译。选项：`:language:`（默认按扩展名）、`:lines:`（如 `2, 4-6`）、`:start-line:`、`:end-line:`、`:start-after:`、`:end-before:`、`:start-at:`、`:end-at:`（按行号或按含某段文字的行截取，同 MyST）、`:caption:` 或 `:filename:`（标题）、`:emphasize-lines:`。文件不存在时报错。
+Shows a file (relative to the current file), or some of its lines, as a code block; recompiles when the file changes. Options: `:language:` (default by extension), `:lines:` (e.g. `2, 4-6`), `:start-line:`, `:end-line:`, `:start-after:`, `:end-before:`, `:start-at:`, `:end-at:` (cut by line number or by a line containing some text, as in MyST), `:caption:` or `:filename:` (title), `:emphasize-lines:`. A missing file is an error.
 
 ````md
 ```{literalinclude} src/bpe.py
@@ -135,9 +135,9 @@ steps: [解析, 启动, 渲染]
 ```
 ````
 
-### `{code}`、`{code-block}`、`{code-cell}`、`{sourcecode}`
+### `{code}`, `{code-block}`, `{code-cell}`, `{sourcecode}`
 
-参数为语言；正文为代码。选项：`:caption:` 或 `:filename:`（标题）、`:emphasize-lines:`（各步都强调的行，如 `2, 4-5`）、`:run:`、`:executor:`、`:timeout:`（毫秒，默认取本章节的 `presmium.exec.timeoutMs`）、`:env:`、`:session:`、`:echo:`。`{code-cell}`（MyST notebook 的写法）同样生成代码块，`:run:` 照常执行。
+The argument is the language; the body is code. Options: `:caption:` or `:filename:` (title), `:emphasize-lines:` (lines emphasized at every step, e.g. `2, 4-5`), `:run:`, `:executor:`, `:timeout:` (milliseconds, default this section's `presmium.exec.timeoutMs`), `:env:`, `:session:`, `:echo:`. `{code-cell}` (the MyST notebook form) also produces a code block, and `:run:` executes as usual.
 
 ````md
 ```{code} python
@@ -146,84 +146,84 @@ print(sum(range(10)))
 ```
 ````
 
-- `:run:` 取 `compile`（默认：构建时执行并录制输出）、`live`（只在浏览器中执行）、`both`。只写 `:run:` 等于 `compile`。
-- `:executor:` 指定执行器 ID：`presmium.python`、`presmium.node`（执行插件）、`presmium.container`（本地环境插件）、`presmium.wasi`（WebAssembly 插件）。指定的执行器不可用时不改用别的执行器：浏览器中运行失败，显示录制输出与原因。
-- `:env:` 选运行环境：头部 `execute.environments` 中的名字（编译为执行器 `presmium.env.<名>`），或保留名 `browser`（按语言选执行器）；不写时取头部的 `execute.env`。与 `:executor:` 同时写是错误；未声明的环境是错误，诊断在代码块的行上。
-- `:session:` 会话名：同一会话的代码块共享解释器（前一块定义的变量后一块能用）。编译时按文稿中的顺序在同一个解释器中运行，改了其中一块整个会话重新执行；浏览器中每个页面、每个学习者各有一份，代码块旁的“重置会话”丢弃它。同一会话的块须在同一环境。
-- `:echo: false`（须有 `:run:`）：只显示输出，不显示代码与运行控件；只输出 Markdown（`text/markdown`）时按正文显示，用于从数据生成表格与列表。与 `:run: live` 同用时警告并按 `compile` 执行。
-- 富输出：Python 中 `display(obj)`（不必导入）与 `from IPython.display import Markdown, HTML, Image, SVG, Latex, JSON` 显示对象（按它的 `_repr_html_`、`_repr_markdown_`、`_repr_png_` 等）；matplotlib 的图在 `plt.show()` 与运行结束时显示为图片（matplotlib 要装在运行代码的环境中：浏览器中的 Python 只有标准库，导入其他模块的 `live`、`both` 代码块得到 `presmium check` 的警告，改用 `:run: compile` 或只用标准库）。最后一条语句是表达式时，它的值（不为 `None`）像在 Jupyter 中一样显示为输出。网页与幻灯片按类型显示（HTML 经清洗），notebook 把输出原样写进单元格。
-- 普通代码围栏（```` ```python ````）不能带选项；要执行就写成 `{code}`。
-- C、C++、Ruby、SQL（语言名 `c`、`cpp` 或 `c++`、`ruby` 或 `rb`、`sql`）：`plugins` 中列出 `@lincyaw/addon-exec-wasi` 后，这些代码块在编译时与浏览器中都由 WebAssembly 中的同一份运行时执行（C、C++ 先由 clang 8 编译，`-Werror`），构建机不需要编译器或解释器，网页离线也能运行；每次运行是独立的程序（不支持 `:session:`），SQL 在空的内存数据库中执行。C 中没有初值、也不是 `static` 的全局变量（如 `int stats[256][256];`）使程序以退出码 134 结束：写成 `static int stats[256][256];` 或给初值。发布的运行时旁边附有它们的许可证说明（`wasi/LICENSES`）。
-- 带 `live` 或 `both` 的代码块在网页与幻灯片中都有运行按钮（C 等语言要列出 `@lincyaw/addon-exec-wasi`），录制的输出显示在它下方。没有分步高亮、也没有多个版本的这类代码块有“编辑代码”：在原处改代码（CodeMirror），Mod-Enter 或运行按钮运行改过的代码，“还原代码”恢复原样；改动只在这个页面里，不写回讲义。
-- 写在插件组件里的代码块（执行面板等的正文）由组件运行，没有自己的运行按钮与录制输出。
+- `:run:` takes `compile` (default: executed at build time, output recorded), `live` (executed only in the browser) or `both`. A bare `:run:` equals `compile`.
+- `:executor:` names an executor ID: `presmium.python`, `presmium.node` (exec plugin), `presmium.container` (local environment plugin), `presmium.wasi` (WebAssembly plugin). When the named executor is unavailable, no other executor is used: running in the browser fails and shows the recorded output and the reason.
+- `:env:` selects the environment: a name from `execute.environments` in the frontmatter (compiled to the executor `presmium.env.<name>`), or the reserved name `browser` (executor chosen by language). Without it, `execute.env` from the frontmatter applies. Writing it together with `:executor:` is an error; an undeclared environment is an error, reported on the code block's line.
+- `:session:` is a session name: code blocks of one session share an interpreter (variables defined in one block are usable in the next). At compile time they run in document order in one interpreter, and changing any of them re-executes the whole session; in the browser each page and each learner has its own, and **Reset session** next to the code block discards it. Blocks of one session must use the same environment.
+- `:echo: false` (requires `:run:`): shows only the output, without code or run controls. When the output is only Markdown (`text/markdown`), it is shown as body text, for generating tables and lists from data. Together with `:run: live` it warns and executes as `compile`.
+- Rich output: in Python, `display(obj)` (no import needed) and `from IPython.display import Markdown, HTML, Image, SVG, Latex, JSON` show objects (by their `_repr_html_`, `_repr_markdown_`, `_repr_png_` and so on). matplotlib figures are shown as images at `plt.show()` and at the end of the run (matplotlib must be installed where the code runs: Python in the browser has only the standard library, and `live` or `both` blocks that import other modules get a `presmium check` warning; use `:run: compile` or only the standard library). When the last statement is an expression, its value (if not `None`) is shown as output, as in Jupyter. Web and slides show outputs by type (HTML sanitized); the notebook writes the outputs into the cell as they are.
+- A plain code fence (```` ```python ````) cannot take options; to execute it, write it as `{code}`.
+- C, C++, Ruby, SQL (language names `c`, `cpp` or `c++`, `ruby` or `rb`, `sql`): with `@lincyaw/addon-exec-wasi` under `plugins`, these blocks run at compile time and in the browser in the same runtime inside WebAssembly (C and C++ are first compiled by clang 8 with `-Werror`). The build machine needs no compiler or interpreter, and the web page runs them offline. Each run is an independent program (`:session:` is not supported); SQL runs in an empty in-memory database. In C, a global variable that is neither initialized nor `static` (such as `int stats[256][256];`) makes the program exit with code 134: write `static int stats[256][256];` or give it an initial value. The published runtime comes with its license notices (`wasi/LICENSES`).
+- Code blocks with `live` or `both` have a run button on the web and on slides (for C and the other languages, list `@lincyaw/addon-exec-wasi`), with the recorded output below. Those without step highlighting and without multiple versions also have **Edit the code**: edit in place (CodeMirror), run the edited code with Mod-Enter or the run button, and **Restore the code** returns to the original. Edits stay in that page and are not written back to the lecture.
+- Code blocks written inside a plugin component (the body of a run panel, for example) are run by the component and have no run button or recorded output of their own.
 
-### `{grid}`、`{grid-item}`、`{card}`、`{tab-set}`、`{tab-item}` 与 `{button}`
+### `{grid}`, `{grid-item}`, `{card}`, `{tab-set}`, `{tab-item}` and `{button}`
 
-MyST 标准的卡片、栅格、选项卡与按钮（mystmd 的 `myst-ext-card`、`myst-ext-grid`、`myst-ext-tabs`、`myst-ext-button`），编译器内置，用于课程首页与导读页。它们是上屏内容。
+The standard MyST cards, grids, tabs and buttons (mystmd's `myst-ext-card`, `myst-ext-grid`, `myst-ext-tabs`, `myst-ext-button`), built into the compiler, for course home pages and guide pages. They are projected content.
 
 `````md
 ::::{grid} 1 1 2 3
-:::{card} 第 1 周：智能体环路
+:::{card} Week 1: the agent loop
 :link: week-01/
-读、想、做的循环。
+The read, think, act cycle.
 +++
-{button}`进入讲义 <week-01/>`
+{button}`Open the lecture <week-01/>`
 :::
-:::{card} 第 2 周：上下文
-页眉
+:::{card} Week 2: context
+Header
 ^^^
-上下文窗口里放什么。
+What goes into the context window.
 :::
 ::::
 
 ::::{tab-set}
 :::{tab-item} Python
 :sync: py
-用 `print` 输出。
+Print with `print`.
 :::
 :::{tab-item} JavaScript
 :sync: js
-用 `console.log` 输出。
+Print with `console.log`.
 :::
 ::::
 `````
 
-| 写法 | 参数与选项 |
+| Form | Argument and options |
 |---|---|
-| `{grid}` | 参数为四档屏宽（手机、576px 起、768px 起、992px 起）的列数，1 到 4 个数，少写时最后一个数用于更宽的屏幕，默认 `1 2 2 3`；`:class:` |
-| `{grid-item}` | 栅格中的一格；`:columns:` 占一行 12 份中的几份；`:class:` |
-| `{card}` | 参数为标题；`:link:`（整张卡片链接到的地址，可以是本地文件，随讲义发布）、`:header:`、`:footer:`；正文中 `^^^` 之前为页眉，`+++` 之后为页脚 |
-| `{tab-set}`、`{tab-item}` | `{tab-item}` 的参数为标题；`:sync:` 同步键（选中它时页面上同一键的选项卡一起切换）、`:selected:` 开始时选中 |
-| ``{button}`文字 <地址>` `` | 按钮样式的链接；没有 `<地址>` 时只是按钮样式的文字（不能点） |
+| `{grid}` | The argument is the number of columns at four screen widths (phone, from 576px, from 768px, from 992px), 1 to 4 numbers; with fewer, the last number applies to wider screens; default `1 2 2 3`; `:class:` |
+| `{grid-item}` | One cell of a grid; `:columns:` how many of the 12 parts of a row it takes; `:class:` |
+| `{card}` | The argument is the title; `:link:` (the address the whole card links to; can be a local file, published with the lecture), `:header:`, `:footer:`; in the body, text before `^^^` is the header and text after `+++` the footer |
+| `{tab-set}`, `{tab-item}` | `{tab-item}`'s argument is the title; `:sync:` a sync key (selecting it switches tabs with the same key on the page together), `:selected:` selected at the start |
+| ``{button}`text <address>` `` | A link styled as a button; without `<address>` it is just button-styled text (not clickable) |
 
-各媒介：网页完整显示（栅格按屏宽分列，选项卡可切换）；幻灯片中卡片与栅格照常显示（列数取最宽一档），选项卡依次展开为带标题的几段；notebook 中卡片标题与选项卡标题成为小标题（`####`），其余为段落，按钮为链接，构建报告列出这些降级（`degraded in the notebook, which has no Jupyter form for grid, card`）。
+By medium: the web shows everything (grids split into columns by screen width, tabs switchable). Slides show cards and grids as usual (columns of the widest setting) and expand tabs one after another as titled parts. In the notebook, card titles and tab titles become small headings (`####`), the rest paragraphs, buttons links, and the build report lists these degradations (`degraded in the notebook, which has no Jupyter form for grid, card`).
 
-### 其他 MyST 指令
+### Other MyST directives
 
-MyST 自带的指令（`{note}` 等提示框、`{figure}`、`{math}`、`{list-table}`、`{dropdown}` 等）作为上屏内容保留标准 mdast。```` ```mermaid ```` 代码块由渲染端绘制。未注册、也不是 MyST 指令的名字报错 `unknown directive; is the plugin that provides it listed in plugins?`。
+MyST's own directives (admonitions such as `{note}`, `{figure}`, `{math}`, `{list-table}`, `{dropdown}` and others) are kept as standard mdast and are projected content. ```` ```mermaid ```` code blocks are drawn by the renderers. A name that is neither registered nor a MyST directive is the error `unknown directive; is the plugin that provides it listed in plugins?`.
 
-## 代码引用 `presmium.code`（`@lincyaw/addon-code`）
+## Code references `presmium.code` (`@lincyaw/addon-code`)
 
 ### `{code-ref}`
 
-参数为锚点；没有正文。
+The argument is an anchor; no body.
 
-| 选项 | 类型 | 作用 |
+| Option | Type | Effect |
 |---|---|---|
-| `:pin:` | string | 读取的提交（哈希、分支或标签）；省略时读工作区 |
-| `:steps:` | list | 逐步高亮的逻辑单元名（锚点内嵌套的 `#region`），每步一个；`all`、`none` 表示这一步不突出任何单元 |
-| `:variants:` | list | 至少两个提交，逐步切换版本；不能与 `:pin:`、`:steps:` 同用 |
-| `:lang:` | string | 高亮语言，默认取文件扩展名 |
-| `:repo:` | string | 永久链接用的仓库网址，默认本章节的 `presmium.code.repo`（`{config}` 可按章节设置），再默认 `origin` 远端 |
-| `:run:`、`:executor:`、`:timeout:`、`:env:`、`:session:` | | 同 `{code}` |
+| `:pin:` | string | The commit to read (hash, branch or tag); without it the working tree is read |
+| `:steps:` | list | Names of the logical units (`#region`s nested inside the anchor) to highlight step by step, one per step; `all` and `none` mean no unit stands out at that step |
+| `:variants:` | list | At least two commits, switching version step by step; cannot be combined with `:pin:` or `:steps:` |
+| `:lang:` | string | Highlighting language; default from the file extension |
+| `:repo:` | string | Repository URL for permalinks; default this section's `presmium.code.repo` (settable per section with `{config}`), then the `origin` remote |
+| `:run:`, `:executor:`, `:timeout:`, `:env:`, `:session:` | | As for `{code}` |
 
-步数：`:steps:` 或 `:variants:` 的项数减一。
+Steps: the number of `:steps:` or `:variants:` entries minus one. With `:variants:`, lines glide to their new places between versions; the source bar's file link and line numbers are those of the version shown.
 
-锚点（文件路径相对于文稿所在 git 仓库的根目录，不在 git 中时相对于文稿目录；按文稿目录写错时诊断给出正确的写法）：
+Anchors (file paths are relative to the root of the git repository containing the lecture, or to the lecture directory when it is not in git; when a path is written relative to the lecture directory by mistake, the diagnostic gives the correct form):
 
-- `region:<文件>#<区间名>`：`#region 名字` 与 `#endregion 名字` 两行注释之间的代码（`# #region`、`#region`、`// #region`、`<!-- #region -->` 等 VS Code 折叠区间的写法都认）。标记行不显示，公共缩进去掉。
-- `symbol:<文件>#<名字>`：按语法树找声明，如 `Parser.parse`；支持 TypeScript、JavaScript、Python，被引用的代码不需要标记。
-- `pattern:<文件>#<ast-grep 模式>`：匹配 ast-grep 模式的代码，如 `pattern:src/cart.ts#if (prices.length === 0) $$$`。
+- `region:<file>#<region name>`: the code between the comments `#region name` and `#endregion name` (all the VS Code folding-region forms are recognized: `# #region`, `#region`, `// #region`, `<!-- #region -->` and so on). The marker lines are not shown, and common indentation is removed.
+- `symbol:<file>#<name>`: finds a declaration by syntax tree, such as `Parser.parse`; supports TypeScript, JavaScript and Python, and the referenced code needs no markers.
+- `pattern:<file>#<ast-grep pattern>`: code matching an ast-grep pattern, such as `pattern:src/cart.ts#if (prices.length === 0) $$$`.
 
 ````md
 ```{code-ref} region:src/bpe.py#merge
@@ -232,7 +232,7 @@ MyST 自带的指令（`{note}` 等提示框、`{figure}`、`{math}`、`{list-ta
 ```
 ````
 
-被引用文件中的嵌套区间：
+Nested regions in the referenced file:
 
 ```python
 # #region merge
@@ -246,23 +246,23 @@ def merge(ids, pair, new_id):
 # #endregion merge
 ```
 
-诊断：`presmium.code.anchors`（锚点丢失为错误，模糊匹配为警告，移动为提示）、`presmium.code.drift`（锁定提交之后工作区的代码变了，警告并附差异）、`presmium.code.syntax`（参数不是锚点、`:variants:` 少于两个等）。本地代码没有远端仓库时正常显示，只是不提供永久链接，不产生诊断。
+Diagnostics: `presmium.code.anchors` (a lost anchor is an error, an ambiguous match a warning, a moved one a hint), `presmium.code.drift` (the working tree's code changed after the pinned commit; a warning with the diff), `presmium.code.syntax` (the argument is not an anchor, `:variants:` has fewer than two entries, and so on). Local code without a remote repository is shown normally, just without permalinks, and produces no diagnostic. Resolved anchors are locked in `.presmium/anchors.lock.json`; `presmium check --update-lock` re-resolves them.
 
-## 浏览器执行 `presmium.exec`（`@lincyaw/addon-exec`）
+## Browser execution `presmium.exec` (`@lincyaw/addon-exec`)
 
-浏览器中 Python 由 Pyodide 执行，JavaScript、TypeScript 由脚本 Worker 执行；编译时执行用本机的 `python3` 与 `node`。语言名 `py`、`python3`、`ipython` 都是 Python，`js`、`mjs` 是 JavaScript，`ts` 是 TypeScript。全局配置 `presmium.exec`：`timeoutMs`（默认 10000，也可以在某一节的 `{config}` 中设置）、`loadTimeoutMs`（默认 30000）、`maxTraceEvents`（默认 500）、`pyodideURL`。
+In the browser, Python runs on Pyodide and JavaScript and TypeScript in a script Worker; compile-time execution uses the machine's `python3` and `node`. The language names `py`, `python3` and `ipython` are Python, `js` and `mjs` JavaScript, `ts` TypeScript. Global configuration `presmium.exec`: `timeoutMs` (default 10000; also settable for one section with `{config}`), `loadTimeoutMs` (default 30000), `maxTraceEvents` (default 500), `pyodideURL`.
 
 ### `{run-panel}`
 
-参数为语言：`python`（默认）、`javascript`、`typescript`，或其他有执行器的语言（如 WebGPU 插件的 `wgsl`，见下文“浏览器 GPU”）；正文为代码。
+The argument is the language: `python` (default), `javascript`, `typescript`, or another language that has an executor (such as `wgsl` from the WebGPU plugin, see "Browser GPU" below); the body is code.
 
-| 选项 | 类型 | 作用 |
+| Option | Type | Effect |
 |---|---|---|
-| `:params:` | string | YAML 映射，注入程序的变量（JavaScript 中为常量），观众可改后重跑；其他语言由执行器读取（如 `wgsl` 的缓冲区与派发），值可以是列表与映射，表单中显示为 JSON |
-| `:timeout:` | number | 毫秒；默认本章节的 `presmium.exec.timeoutMs` |
-| `:recorded:` | string | 执行失败或超时时显示的预录输出 |
-| `:run:` | string | `both`（默认，构建时也录制输出）或 `live`（只在浏览器中执行） |
-| `:env:`、`:session:` | string | 同 `{code}`：运行环境与执行会话 |
+| `:params:` | string | A YAML mapping of variables injected into the program (constants in JavaScript); viewers can change them and rerun. For other languages the executor reads them (such as `wgsl` buffers and dispatch); values can be lists and mappings, shown as JSON in the form |
+| `:timeout:` | number | Milliseconds; default this section's `presmium.exec.timeoutMs` |
+| `:recorded:` | string | Prerecorded output shown when execution fails or times out |
+| `:run:` | string | `both` (default; the output is also recorded at build time) or `live` (executed only in the browser) |
+| `:env:`, `:session:` | string | As for `{code}`: environment and execution session |
 
 ````md
 ```{run-panel} python
@@ -272,17 +272,17 @@ print(*[i * i for i in range(n)])
 ```
 ````
 
-生成 `PmRunPanel`，步数 0。面板的顶栏写明语言与在哪里运行（如“Python · 浏览器中运行”；`:env:` 的环境按它的 `kind` 写明），参数与运行按钮也在顶栏；运行后输出标明耗时（“输出 · 0.02 秒”），幻灯片上宽度够时在代码旁边。现场运行没能进行（没有运行时、没有 GPU 适配器、超时）而面板没有 `:recorded:` 时，显示构建时录制的输出并写明原因。PDF、PNG 导出显示先给参数赋值的代码，加上构建时的输出（构建时没有执行、执行失败或超时的用 `:recorded:`）；notebook 中与内核同语言（默认 Python）的为代码单元格（参数赋值在前），其他语言为代码加输出的 Markdown 单元格。
+Produces `PmRunPanel`, 0 steps. The panel's top bar states the language and where it runs (such as "Python · runs in the browser"; for an `:env:` environment, according to its `kind`); the parameters and the run button are in the top bar too. After a run, the output shows the time taken ("Output · 0.02 s"); on slides it sits beside the code when there is room. When a live run cannot happen (no runtime, no GPU adapter, timeout) and the panel has no `:recorded:`, the output recorded at build time is shown with the reason. PDF and PNG exports show the code with the parameter assignments first, plus the build-time output (`:recorded:` when it was not executed at build time, failed or timed out). In the notebook, panels in the kernel's language (Python by default) become code cells (parameter assignments first); other languages become Markdown cells with the code and the output.
 
 ### `{step-run}`
 
-参数为语言（默认 `python`；逐行追踪由 Pyodide 实现，只支持 Python）；正文为代码。
+The argument is the language (default `python`; line tracing is implemented with Pyodide and supports only Python); the body is code.
 
-| 选项 | 类型 | 作用 |
+| Option | Type | Effect |
 |---|---|---|
-| `:steps:` | number | 执行的行数，每行一步；缺少时警告，没有步骤 |
-| `:params:` | string | 同 `{run-panel}` |
-| `:timeout:` | number | 毫秒 |
+| `:steps:` | number | Number of executed lines, one step per line; when missing, a warning and no steps |
+| `:params:` | string | As for `{run-panel}` |
+| `:timeout:` | number | Milliseconds |
 
 ````md
 ```{step-run} python
@@ -294,18 +294,18 @@ print(total)
 ```
 ````
 
-生成 `PmStepRun`，步数为 `:steps:`。网页的文档视图中组件有自己的上一步、下一步与滑块，读者可以逐行查看；网页中组件接近屏幕时才加载 Python 运行时。
+Produces `PmStepRun`; its step count is `:steps:`. In the web document view the component has its own previous, next and slider, so readers can step through line by line; on the web the Python runtime loads only when the component comes near the screen.
 
-## 本地环境 `presmium.execLocal`（`@lincyaw/addon-exec-local`）
+## Local environment `presmium.execLocal` (`@lincyaw/addon-exec-local`)
 
 ### `{local-env}`
 
-参数为语言（默认 `python`）；正文为代码。在仓库的 devcontainer 中运行（需要 Docker 与 `presmium dev`），并可导出代码与运行环境。
+The argument is the language (default `python`); the body is code. Runs in the repository's devcontainer (requires Docker and `presmium dev`), and can export the code and the environment.
 
-| 选项 | 类型 | 作用 |
+| Option | Type | Effect |
 |---|---|---|
-| `:file:` | string | 必填：代码在工作区中的路径 |
-| `:workspace:` | string | devcontainer 所在目录，相对于本文件；默认 `presmium.execLocal.workspace`，再默认文稿的 git 根目录 |
+| `:file:` | string | Required: the code's path in the workspace |
+| `:workspace:` | string | The directory holding the devcontainer, relative to this file; default `presmium.execLocal.workspace`, then the lecture's git root |
 
 ````md
 ```{local-env} python
@@ -314,11 +314,11 @@ print("hello")
 ```
 ````
 
-生成 `PmLocalEnv`；它还提供执行器 `presmium.container`，供代码块的 `:executor:` 使用。在容器中运行需要 Docker 与 Presmium 的服务端（`presmium dev` 或 `presmium serve`，网页与幻灯片都可以；运行与环境复刻是插件 `presmium.execLocal` 的服务端路由，编辑者可用，运行先经 `operate` 确认）；面板上没有把代码提交回仓库的按钮；每次运行是新的容器，工作目录是这次运行自己的目录，工作区只读挂载在 `/workspaces/<目录名>`，其中的模块可以导入。一份文稿只有一个工作区：各 `{local-env}` 指定不同的 `:workspace:` 时报错。全局配置 `presmium.execLocal`：`workspace`、`priority`（默认 10，高于浏览器执行器）、`buildTimeoutMs`（构建 devcontainer 镜像的时限，默认 600000）。
+Produces `PmLocalEnv`; it also provides the executor `presmium.container` for a code block's `:executor:`. Running in a container needs Docker and the Presmium server (`presmium dev` or `presmium serve`, on the web or on slides). Running and reproducing the environment are server routes of the plugin `presmium.execLocal`, available to editors, and each run is first confirmed as an `operate` approval. The panel has no button that commits code back to the repository. Each run is a new container whose working directory is that run's own directory; the workspace is mounted read-only at `/workspaces/<directory name>`, and its modules can be imported. A lecture has only one workspace: `{local-env}` blocks with different `:workspace:` values are an error. Global configuration `presmium.execLocal`: `workspace`, `priority` (default 10, higher than the browser executors), `buildTimeoutMs` (time limit for building the devcontainer image, default 600000).
 
-## 浏览器 GPU `presmium.execWebgpu`（`@lincyaw/addon-exec-webgpu`）
+## Browser GPU `presmium.execWebgpu` (`@lincyaw/addon-exec-webgpu`)
 
-没有自己的指令：它为 `{run-panel} wgsl` 提供 WebGPU 计算着色器的执行器（浏览器中运行，构建时在 Playwright 的 Chromium 中录制），并让 JavaScript、TypeScript 代码能导入 jax-js。要和执行插件一起列在 `plugins` 中。
+It has no directive of its own: it provides the executor for WebGPU compute shaders in `{run-panel} wgsl` (runs in the browser, recorded at build time in Playwright's Chromium), and lets JavaScript and TypeScript code import jax-js. List it in `plugins` together with the exec plugin.
 
 ````md
 ```{run-panel} wgsl
@@ -342,48 +342,51 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 ```
 ````
 
-- `:params:` 的键：`buffers`（必填：着色器中每个 `var<storage>`、`var<uniform>` 按变量名给出数据列表，或 `{ data, size, fill, type, read }`；组、绑定、读写与类型 `f32`、`i32`、`u32` 取自着色器）、`dispatch`（每个维度的工作组数，1 到 3 个数，默认 1）、`entry`（入口函数，默认唯一的计算入口）、`repeat`（运行次数，默认 1，至多 1000，计时取中位数）、`features`（需要的适配器特性，如 `[shader-f16]`）。全部缓冲区至多 128 MiB。
-- 输出：可写的存储缓冲区（`read_write`）读回后每个一行，如 `out: f32[4] = [11, 22, 33, 44]`（长的显示首尾与最小、最大、平均），再加每次派发的时间与适配器；在 CPU 模拟的回退适配器（SwiftShader）上计时注明“CPU 模拟”。构建时录制的输出按文稿的 `lang`（默认中文）。
-- 浏览器没有 WebGPU、没有 GPU 适配器、缺少特性或限制、设备丢失或超时时，面板显示构建时录制的输出与原因（如“预录输出 · 没有可用的 GPU 适配器”）；着色器的错误照常显示为错误。
-- 构建时：有显卡时 Chromium 经 Vulkan 用显卡，否则用 SwiftShader；`execute.environments` 中声明 `cpu: { kind: webgpu, adapter: swiftshader }` 并写 `:env: cpu`，任何机器上录制都相同（`adapter` 还可以是 `auto`、`gpu`）。没有安装 Playwright 的 Chromium 时不录制，沿用已有的录制。
-- Python（Pyodide）中运行同样的着色器：`import presmium_gpu as gpu`，`result = await gpu.run(SHADER, buffers={'a': [1, 2], 'b': [3, 4], 'out': {'size': 2}}, dispatch=1)`（代码块顶层可以 `await`），`result['out']` 是读回的列表，`print(result)` 显示与面板相同的摘要（英文）；Chromium、Firefox 等有 JSPI 的浏览器另有同步写法 `gpu.run_sync(...)`。规模限制与面板相同（缓冲区共 128 MiB，`repeat` 至多 1000），超出时抛出 `ValueError`；不能运行时抛出 `presmium_gpu.GPUUnavailable`。这样的代码块写 `:run: live`（构建时的 Python 没有 WebGPU）。
-- JavaScript、TypeScript 中 `import { init, defaultDevice, numpy as np } from '@jax-js/jax'` 使用 jax-js（张量与自动微分；`await init()` 之后 `defaultDevice('webgpu')` 在 GPU 上计算，没有 WebGPU 时默认用 WebAssembly）。jax-js 随产物发布，第一次导入时加载；这样的代码块写 `:run: live`。
-## 远端环境 `presmium.execJupyter`（`@lincyaw/addon-exec-jupyter`）
+- Keys of `:params:`: `buffers` (required: for each `var<storage>` and `var<uniform>` in the shader, by variable name, a data list or `{ data, size, fill, type, read }`; group, binding, access and the types `f32`, `i32`, `u32` come from the shader), `dispatch` (workgroups per dimension, 1 to 3 numbers, default 1), `entry` (entry function, default the only compute entry), `repeat` (number of runs, default 1, at most 1000; timing uses the median), `features` (required adapter features, such as `[shader-f16]`). All buffers together at most 128 MiB.
+- Output: each writable storage buffer (`read_write`) is read back and shown on one line, such as `out: f32[4] = [11, 22, 33, 44]` (long ones show the head and tail plus minimum, maximum and mean), followed by the time per dispatch and the adapter; on the CPU-emulated fallback adapter (SwiftShader) the timing is marked "CPU emulation". Output recorded at build time follows the lecture's `lang` (default Chinese).
+- When the browser has no WebGPU, no GPU adapter, lacks a feature or limit, loses the device or times out, the panel shows the output recorded at build time with the reason (such as "Recorded output · No GPU adapter is available"); shader errors are shown as errors as usual.
+- At build time: with a graphics card, Chromium uses it through Vulkan, otherwise SwiftShader. Declaring `cpu: { kind: webgpu, adapter: swiftshader }` under `execute.environments` and writing `:env: cpu` makes the recording identical on any machine (`adapter` can also be `auto` or `gpu`). Without Playwright's Chromium installed, nothing is recorded and the existing recording is kept.
+- Running the same shader from Python (Pyodide): `import presmium_gpu as gpu`, `result = await gpu.run(SHADER, buffers={'a': [1, 2], 'b': [3, 4], 'out': {'size': 2}}, dispatch=1)` (top-level `await` works in a code block); `result['out']` is the list read back, and `print(result)` shows the same summary as the panel (in English). Browsers with JSPI, such as Chromium and Firefox, also have the synchronous `gpu.run_sync(...)`. The limits are those of the panel (buffers 128 MiB in total, `repeat` at most 1000); exceeding them raises `ValueError`, and being unable to run raises `presmium_gpu.GPUUnavailable`. Write such blocks with `:run: live` (Python at build time has no WebGPU).
+- In JavaScript and TypeScript, `import { init, defaultDevice, numpy as np } from '@jax-js/jax'` uses jax-js (tensors and automatic differentiation; after `await init()`, `defaultDevice('webgpu')` computes on the GPU, and without WebGPU it uses WebAssembly by default). jax-js is published with the output and loads on first import; write such blocks with `:run: live`.
 
-提供 `kind: jupyter` 的具名环境：任何 Jupyter Server（`templates/env/compose/` 的 docker compose 模板、JupyterHub、agent-sandbox 等）。头部声明环境，代码块用 `:env:` 选择，构建时与浏览器中都在它的内核中运行：
+## Remote environments `presmium.execJupyter` (`@lincyaw/addon-exec-jupyter`)
+
+Provides named environments of `kind: jupyter`: any Jupyter Server (a docker compose setup, JupyterHub, agent-sandbox and the like). Declare the environment in the frontmatter and select it on code blocks with `:env:`; the code then runs in its kernel both at build time and in the browser:
 
 ```yaml
 execute:
   environments:
     lab: { kind: jupyter, auth: proxy, kernel: python3, image: 'quay.io/jupyter/base-notebook:2026-10-12@sha256:…' }
+```
 
-- `auth`（默认 `env`）：`env` 只在构建时可用；`proxy` 在浏览器中经 Presmium 服务端（`presmium dev` 与工作区服务）的代理连接（静态产物中显示录制输出）；`prompt` 连接文稿的 `url`，学习者在页面上粘贴自己的令牌（只存在本页的 `sessionStorage` 中，用于已发布的静态站点）；`none` 连接 `url`，不带令牌；`hub` 预留。JupyterHub 的用户服务器写 `url: https://hub.example.edu/user/{user}/`。
-- 凭据不写在文稿中：构建与代理用运营者的一对环境变量 `PRESMIUM_ENV_<名>_URL`、`PRESMIUM_ENV_<名>_TOKEN`（名字大写，其他字符变为 `_`）。文稿写的 `url` 与运营者的地址不同源时不连接，是错误；没有地址时不发送令牌。
-- 会话（`:session:`）是一个内核：每个页面、每个学习者各自一个；`image` 进入环境指纹。`:run: both` 的输出在构建时录制，浏览器中运行的结果与它相同。
-- `presmium check --env` 连接每个环境，连不上是错误。
+- `auth` (default `env`): `env` is available only at build time; `proxy` connects from the browser through the Presmium server's proxy (`presmium dev` and the workspace service; static output shows the recorded output); `prompt` connects to the lecture's `url`, and learners paste their own token on the page (kept only in that page's `sessionStorage`; for published static sites); `none` connects to `url` without a token; `hub` is reserved. A JupyterHub user server is written `url: https://hub.example.edu/user/{user}/`.
+- Credentials are never written in the lecture: builds and the proxy use the operator's pair of environment variables `PRESMIUM_ENV_<NAME>_URL` and `PRESMIUM_ENV_<NAME>_TOKEN` (name upper-cased, other characters turned into `_`). A `url` in the lecture with a different origin from the operator's address is not connected and is an error; without an address no token is sent.
+- A session (`:session:`) is one kernel, one per page and per learner; `image` is part of the environment's fingerprint. The output of `:run: both` is recorded at build time, and running in the browser gives the same result.
+- `presmium check --env` connects to every environment; failing to connect is an error.
 
 ### `{terminal}`
 
-参数为 `kind: jupyter` 的环境名；没有正文。打开该 Jupyter Server 的一个终端（xterm.js），凭据方式同环境；读者点“打开终端”后连接。
+The argument is the name of a `kind: jupyter` environment; no body. Opens a terminal of that Jupyter Server (xterm.js), with credentials handled as for the environment; it connects when the reader clicks **Open terminal**.
 
-| 选项 | 类型 | 作用 |
+| Option | Type | Effect |
 |---|---|---|
-| `:height:` | number | 行数，默认 16 |
+| `:height:` | number | Rows, default 16 |
 
 ```md
 :::{terminal} lab
 :height: 12
 :::
+```
 
-生成 `PmTerminal`。环境不存在或不是 `kind: jupyter` 时报错（`presmium.execJupyter`）。静态产物中 `proxy` 方式的终端显示说明而不连接，`prompt` 方式照常可用；notebook 中不生成单元格，PDF 等静态导出显示一行说明。
+Produces `PmTerminal`. A missing environment or one that is not `kind: jupyter` is an error (`presmium.execJupyter`). In static output a terminal with `proxy` shows an explanation instead of connecting, while `prompt` works as usual; the notebook gets no cell, and PDF and other static exports show a one-line explanation.
 
-## 引导 `presmium.guide`（`@lincyaw/addon-guide`）
+## Guidance `presmium.guide` (`@lincyaw/addon-guide`)
 
-目标用 CSS 选择器指定，通常是同一章节中你自己写的 HTML 元素的 `id`。
+Targets are given as CSS selectors, usually the `id` of an HTML element you wrote yourself in the same section.
 
 ### `{cursor}`
 
-没有参数；正文每行一个路径点：`[move|hover|click] <CSS 选择器>`，动作默认 `move`。第 k 个路径点在块的第 k 步。
+No argument; the body has one waypoint per line: `[move|hover|click] <CSS selector>`, the action defaulting to `move`. Waypoint k is at the block's step k.
 
 ```md
 :::{cursor}
@@ -394,29 +397,29 @@ click #run
 :::
 ```
 
-生成 `PmCursor`，步数为路径点数减一。正文为空时报错。
+Produces `PmCursor`; its step count is the number of waypoints minus one. An empty body is an error.
 
-### `{spotlight}`、`{hint}`
+### `{spotlight}`, `{hint}`
 
-参数为目标的 CSS 选择器；正文为弹出说明。选项：`:title:`（string，说明标题）、`:span:`（number，持续的步数，默认 0）。`{spotlight}` 聚光，`{hint}` 是脉动提示。
+The argument is the target's CSS selector; the body is the popup text. Options: `:title:` (string, popup title), `:span:` (number, steps it lasts, default 0). `{spotlight}` puts a spotlight on the target; `{hint}` is a pulsing hint.
 
 ```md
 :::{spotlight} #output
 :reveal:
-:title: 结果
-每个色块是一个词元。
+:title: Result
+Each colored block is a token.
 :::
 ```
 
-生成 `PmSpotlight`、`PmHint`，步数为 `:span:`。缺少参数时报错。
+Produces `PmSpotlight` and `PmHint`; the step count is `:span:`. A missing argument is an error.
 
-## 富内容 `presmium.content`（`@lincyaw/addon-content`）
+## Rich content `presmium.content` (`@lincyaw/addon-content`)
 
-公式（`$…$`、`$$…$$`）与 ```` ```mermaid ```` 由渲染端绘制，不需要指令。全局配置 `presmium.content.plantUmlServer`：PlantUML 服务地址。```` ```plantuml ````（或 `puml`）代码块由编译步骤变成图片。
+Math (`$…$`, `$$…$$`) and ```` ```mermaid ```` are drawn by the renderers and need no directive. Global configuration `presmium.content.plantUmlServer`: the PlantUML server address. ```` ```plantuml ```` (or `puml`) code blocks are turned into images by a compile pass.
 
 ### `{markmap}`
 
-正文为 Markdown 标题与列表，绘制为思维导图；开头的 YAML 块可写 `markmap:` 选项。没有指令选项。
+The body is Markdown headings and lists, drawn as a mind map; a leading YAML block can set `markmap:` options. No directive options.
 
 `````md
 ````{markmap}
@@ -424,43 +427,43 @@ click #run
 markmap:
   colorFreezeLevel: 2
 ---
-# 主题
-## 分支
-- 叶子
+# Topic
+## Branch
+- Leaf
 ````
 `````
 
-生成 `PmMarkmap`，不能绘图的渲染端显示为嵌套列表。
+Produces `PmMarkmap`; renderers that cannot draw it show a nested list.
 
-### `{video}`、`{audio}`、`{animation}`
+### `{video}`, `{audio}`, `{animation}`
 
-参数为媒体文件路径（相对于本文件，或包路径如 `@lincyaw/addon-content/media/clip.webm`，或 `http(s)://` 网址）；正文为说明文字。
+The argument is the media file path (relative to this file, a package path such as `@lincyaw/addon-content/media/clip.webm`, or an `http(s)://` URL); the body is a caption.
 
-| 选项 | 类型 |
+| Option | Type |
 |---|---|
-| `:controls:`、`:autoplay:`、`:loop:`、`:muted:` | boolean |
-| `:width:`、`:height:` | number |
+| `:controls:`, `:autoplay:`, `:loop:`, `:muted:` | boolean |
+| `:width:`, `:height:` | number |
 | `:alt:` | string |
-| `:still:`（只有 `{animation}`） | string：减少动态效果时显示的静止图片 |
-| `:poster:`（只有 `{video}`） | string：封面图片，播放前显示 |
-| `:captions:`（只有 `{video}`） | string：逗号分隔的 `语言=VTT 文件`，如 `en=films/loop.en.vtt, zh-CN=films/loop.zh.vtt`；字幕的标签是语言的名称（按界面语言） |
-| `:captions-default:`（只有 `{video}`） | string：开始时显示的字幕语言；省略时不默认显示字幕 |
+| `:still:` (`{animation}` only) | string: still image shown when reduced motion is preferred |
+| `:poster:` (`{video}` only) | string: poster image shown before playback |
+| `:captions:` (`{video}` only) | string: comma-separated `language=VTT file`, such as `en=films/loop.en.vtt, zh-CN=films/loop.zh.vtt`; each track's label is the language's name (in the interface language) |
+| `:captions-default:` (`{video}` only) | string: the caption language shown at the start; without it no captions are shown by default |
 
 ````md
 ```{video} media/demo.webm
 :controls:
 :poster: media/demo.jpg
 :captions: en=media/demo.en.vtt, zh-CN=media/demo.zh.vtt
-:captions-default: zh-CN
-演示录像。
+:captions-default: en
+A recording of the demo.
 ```
 ````
 
-生成 `PmMedia`，降级为文件链接。封面与字幕文件和媒体文件一样相对于本文件，随每种媒介发布。媒体、静止图片、封面或字幕文件不存在时报错 `file not found`，诊断在指令的行上。notebook 中有封面或字幕的视频写成带 `poster` 与 `<track>` 的 `<video>`（文件复制到 `media/`），其他媒体写成文件链接。
+Produces `PmMedia`, degraded to a file link. Poster and caption files are relative to this file like the media file and are published with every medium. A missing media file, still image, poster or caption file is the error `file not found`, reported on the directive's line. In the notebook a video with a poster or captions becomes a `<video>` with `poster` and `<track>` (files copied to `media/`); other media become file links.
 
 ### `{youtube}`
 
-参数为 YouTube 视频 ID 或链接；正文为说明文字。选项：`:start:`（秒）、`:width:`、`:height:`（number）。
+The argument is a YouTube video ID or link; the body is a caption. Options: `:start:` (seconds), `:width:`, `:height:` (number).
 
 ````md
 ```{youtube} https://www.youtube.com/watch?v=dQw4w9WgXcQ
@@ -468,50 +471,50 @@ markmap:
 ```
 ````
 
-生成 `PmYoutube`，降级为视频链接。
+Produces `PmYoutube`, degraded to a video link.
 
-## 动画 `presmium.motion`（`@lincyaw/addon-motion`）
+## Animation `presmium.motion` (`@lincyaw/addon-motion`)
 
-用代码写的动画：GSAP、Anime.js、Motion、Three.js、Remotion 或 D3 的一条时间轴，按步骤与讲授的时间播放。现场放映时前进一步就演这一步的那一段，后退显示停定的画面；讲授回放与导出视频时动画跟着讲解的时刻走，同一时刻的画面总是相同。
+Animations written in code: one timeline of GSAP, Anime.js, Motion, Three.js, Remotion or D3, played by step and by lecture time. In a live presentation, each step forward plays that step's segment, and going back shows the settled frame; in lecture playback and exported video, the animation follows the narration's time, and the same moment always shows the same frame.
 
 ### `{scene}`
 
-参数为场景名：文稿目录 `scenes/` 下的文件去掉扩展名（`.ts`、`.js`、`.mjs`），可以带子目录，如 `bpe/merge`；正文为说明文字（无障碍描述，也是 notebook 与静态导出中显示的内容）。
+The argument is the scene name: a file under the lecture directory's `scenes/` without its extension (`.ts`, `.js`, `.mjs`), possibly with subdirectories, such as `bpe/merge`. The body is a caption (the accessible description, also what the notebook and static exports show).
 
-| 选项 | 类型 |
+| Option | Type |
 |---|---|
-| `:durations:` | list：每一步的时长，写法同 `{cue}` 的 `pause`（`1.2`、`1.2s` 是秒，`800ms` 是毫秒）；第 k 个是块的第 k 步。省略时只有一步、时长 0 |
-| `:aspect:` | string：宽高比，默认 `16/9`（也可写 `4:3`） |
-| `:height:` | string：CSS 高度（如 `360px`），给出时不按宽高比 |
-| `:still:` | string：静止图片（相对于本文件），notebook 与静态导出中显示 |
+| `:durations:` | list: the duration of each step, written as for the `pause` of `{cue}` (`1.2` and `1.2s` are seconds, `800ms` milliseconds); entry k is the block's step k. Without it, one step of duration 0 |
+| `:aspect:` | string: aspect ratio, default `16/9` (`4:3` also works) |
+| `:height:` | string: a CSS height (such as `360px`); when given, the aspect ratio is not used |
+| `:still:` | string: a still image (relative to this file) shown in the notebook and static exports |
 
 ```md
 (bpe)=
 :::{scene} bpe-merge
 :durations: 1.2, 1.2, 1.4
-三个词的字节对合并：先合并 l 与 o，再合并 lo 与 w。
+Byte-pair merges of three words: first merge l and o, then lo and w.
 :::
 
-字节对编码从单个字符开始。
+Byte-pair encoding starts from single characters.
 
-统计相邻的字节对，出现最多的是 l 和 o。
+Count the adjacent pairs; the most frequent is l and o.
 
-把它们合并成新符号 lo。
+Merge them into a new symbol, lo.
 ```
 
-块占的步数是时长的个数减一，讲解逐段对应这些步（`writing.md` 的步骤一段；与讲授时间的对齐见 `presmium-animate/references/timeline.md`）。合成讲授时，一步至少停留到它的动画演完；讲解中的 ``{cue}`next` `` 照常在它的字处推进，早于动画演完时构建给出警告 `moves on … before the animation`，把提示标记往后挪或缩短 `:durations:`。
+The block takes as many steps as there are durations, minus one, and the narration paragraphs correspond to those steps one by one (the step rules are in [writing.md](writing.md); aligning with lecture time is in `presmium-animate/references/timeline.md`). In a synthesized lecture, a step lasts at least until its animation finishes; a ``{cue}`next` `` in the narration still advances at its word, and when that is before the animation finishes the build warns `moves on … before the animation`: move the cue later or shorten `:durations:`.
 
-场景文件默认导出一个场景（`@lincyaw/addon-motion/scene`）；各个库由插件提供，文稿不必另外安装。每个场景得到 `root`（画面的元素）、`at(k)`（第 k 步在时间轴上开始的毫秒数）、`durations`、`total`、`width`、`height` 与 `color(名)`（设计系统的颜色，如 `color('accent')`，返回 `rgb()` 或 `rgba()`）：
+A scene file default-exports one scene (from `@lincyaw/addon-motion/scene`); the libraries are provided by the plugin, so the lecture does not install them. Each scene receives `root` (the frame's element), `at(k)` (the millisecond at which step k starts on the timeline), `durations`, `total`, `width`, `height` and `color(name)` (a design-system color, such as `color('accent')`, returning `rgb()` or `rgba()`):
 
-| 写法 | 返回 | 时间单位 |
+| Form | Returns | Time unit |
 |---|---|---|
-| `gsapScene(({ root, gsap, plugins, at }) => …)` | GSAP 的时间轴（在以 `root` 为范围的 `gsap.context` 中建立，选择器只找场景中的元素）；`plugins` 中的 SplitText、DrawSVG、MorphSVG、MotionPath、Text、CustomEase、CustomBounce、CustomWiggle、Physics2D、PhysicsProps、Flip 已注册 | 秒：`at(k) / 1000` |
-| `animeScene(({ root, anime, at }) => …)` | Anime.js 的时间轴，如 `anime.createTimeline({ autoplay: false })` | 毫秒 |
-| `motionScene(({ root, motion, at }) => …)` | `motion.animate(序列)`；同一元素的同一属性放在一个序列中（分开的动画在跳转时互相覆盖） | 秒 |
-| `threeScene(({ THREE, renderer, addons, at, width, height }) => …)` | `{ render(ms), resize?(w, h), dispose?() }` 或只是 `render`；渲染器由插件建立并跟随画面大小；`addons` 有 CSS2DRenderer、CSS2DObject、Line2、LineGeometry、LineMaterial、ParametricGeometry、RoundedBoxGeometry、ConvexGeometry | 毫秒 |
-| `remotionScene(({ React, remotion, at }) => …)` | `{ component, fps, width, height }`：Remotion 的组件，用 `React.createElement` 写（场景文件不能写 JSX：幻灯片形态按 Vue 编译 JSX），按时刻画出对应的帧 | 帧 |
-| `d3Scene(({ root, d3, at }) => …)` | 按时刻画的函数 `(ms) => void`（或 `{ seek, resize?, dispose? }`）：D3 建好图形，用它的插值与缓动按时刻画；不用 `transition` | 毫秒 |
-| `defineScene((ctx) => …)` | 自己的画法：一个 `(ms) => void`，或 `{ seek, resize?, dispose? }` | 毫秒 |
+| `gsapScene(({ root, gsap, plugins, at }) => …)` | A GSAP timeline (created in a `gsap.context` scoped to `root`, so selectors find only the scene's elements); the `plugins` SplitText, DrawSVG, MorphSVG, MotionPath, Text, CustomEase, CustomBounce, CustomWiggle, Physics2D, PhysicsProps and Flip are registered | seconds: `at(k) / 1000` |
+| `animeScene(({ root, anime, at }) => …)` | An Anime.js timeline, such as `anime.createTimeline({ autoplay: false })` | milliseconds |
+| `motionScene(({ root, motion, at }) => …)` | `motion.animate(sequence)`; put the same property of the same element in one sequence (separate animations overwrite each other when seeking) | seconds |
+| `threeScene(({ THREE, renderer, addons, at, width, height }) => …)` | `{ render(ms), resize?(w, h), dispose?() }` or just `render`; the plugin creates the renderer and keeps it at the frame's size; `addons` has CSS2DRenderer, CSS2DObject, Line2, LineGeometry, LineMaterial, ParametricGeometry, RoundedBoxGeometry, ConvexGeometry | milliseconds |
+| `remotionScene(({ React, remotion, at }) => …)` | `{ component, fps, width, height }`: a Remotion component written with `React.createElement` (scene files cannot use JSX: the slides form compiles JSX as Vue), drawing the frame for each moment | frames |
+| `d3Scene(({ root, d3, at }) => …)` | A function that draws a moment, `(ms) => void` (or `{ seek, resize?, dispose? }`): build the graphics with D3 and draw by time with its interpolators and easings; do not use `transition` | milliseconds |
+| `defineScene((ctx) => …)` | Your own drawing: a `(ms) => void`, or `{ seek, resize?, dispose? }` | milliseconds |
 
 ```ts
 // scenes/bpe-merge.ts
@@ -526,34 +529,34 @@ export default gsapScene(({ root, gsap, at }) => {
 })
 ```
 
-画面只能由时间轴上的位置决定：不要在场景中读页面时间、启动自己的循环或按真实时间播放。场景文件只能从 `@lincyaw/addon-motion/scene` 导入，不能直接导入 `gsap/…`、`three/addons/…` 等库的路径（文稿不依赖这些库），插件与扩展从上表的参数取得。选库、各库的写法与示例、让动画与讲解对齐，见 presmium-animate 技能。全部展开的文档视图显示终态，读者可以在场景下方播放与拖动。场景不存在报 `the deck has no scenes/<名>.ts`，时长写错报 `:durations: takes durations`，诊断在指令的行上。
+The frame must depend only on the position on the timeline: do not read the page's clock, start your own loops or play in real time in a scene. Scene files may import only from `@lincyaw/addon-motion/scene`, not library paths such as `gsap/…` or `three/addons/…` (the lecture does not depend on those libraries); plugins and add-ons come from the parameters in the table above. Choosing a library, how to write each one, examples and aligning animation with narration are in the presmium-animate skill. The fully expanded document view shows the final state, and readers can play and scrub below the scene. A missing scene is reported as `the deck has no scenes/<name>.ts`, malformed durations as `:durations: takes durations`, both on the directive's line.
 
-## 课堂 `presmium.classroom`（`@lincyaw/addon-classroom`）
+## Classroom `presmium.classroom` (`@lincyaw/addon-classroom`)
 
-课堂组件需要会话插件 `@lincyaw/addon-session`（`presmium dev` 与 `presmium serve` 自带课堂同步；发布到静态托管时文稿头部写 `presmium.session.server`，见 presmium-present 技能）；`{exercise}` 的校验另需执行插件 `@lincyaw/addon-exec`。
+Classroom components need the session plugin `@lincyaw/addon-session` (`presmium dev` and `presmium serve` include classroom sync; for static hosting, set `presmium.session.server` in the frontmatter, see the presmium-present skill). `{exercise}` checking also needs the exec plugin `@lincyaw/addon-exec`.
 
 ### `{quiz}`
 
-没有参数与选项；正文为题干（MyST），之后是任务列表形式的选项，`[x]` 标出正确项（可多个）。
+No argument or options; the body is the question (MyST) followed by options as a task list, with `[x]` marking the correct ones (more than one allowed).
 
 ````md
 ```{quiz}
-BPE 每一轮合并哪一对？
+Which pair does BPE merge in each round?
 
-- [ ] 最先出现的一对
-- [x] 出现次数最多的一对
+- [ ] The pair that appears first
+- [x] The most frequent pair
 ```
 ````
 
-生成 `PmQuiz`；少于两个选项或没有正确项时报错。notebook 与导出的静态形式中为题干与按字母标注的选项（`A. …`，与现场测验相同），答案折叠，以字母给出。
+Produces `PmQuiz`; fewer than two options or no correct option is an error. In the notebook and static exports it is the question with lettered options (`A. …`, as in the live quiz), with the answer folded and given as letters.
 
 ### `{exercise}`
 
-参数为语言（默认 `python`，只有 Python 能校验）；正文为题面，之后两个代码块：起始代码、校验代码（每条顶层语句一项校验）。选项：`:timeout:`（number，毫秒）。
+The argument is the language (default `python`; only Python can be checked); the body is the task, followed by two code blocks: the starting code and the checking code (each top-level statement is one check). Options: `:timeout:` (number, milliseconds).
 
 `````md
 ````{exercise} python
-写函数 `mean(xs)`，返回平均值。
+Write a function `mean(xs)` that returns the average.
 
 ```python
 def mean(xs):
@@ -561,89 +564,89 @@ def mean(xs):
 ```
 
 ```python
-assert mean([1, 2]) == 1.5, "[1, 2] 的平均值是 1.5"
+assert mean([1, 2]) == 1.5, "the mean of [1, 2] is 1.5"
 ```
 ````
 `````
 
-生成 `PmExercise`；缺少校验代码块时报错。
+Produces `PmExercise`; a missing checking code block is an error.
 
 ### `{question-box}`
 
-没有参数；正文为提示语。选项：`:target:`（string，本章节中一个带标签的块，问题挂在它上面）。
+No argument; the body is the prompt. Options: `:target:` (string, a labeled block in this section that questions attach to).
 
 ````md
 (key-idea)=
 :::{slide}
-> 训练看次数，编码看先后。
+> Training counts frequency; encoding follows order.
 :::
 
 ```{question-box}
 :target: key-idea
-哪里还不清楚？
+What is still unclear?
 ```
 ````
 
-生成 `PmQuestionBox`；notebook 中不生成单元格。`:target:` 不是本章节的块时，编译步骤 `presmium.classroom.places` 报错。
+Produces `PmQuestionBox`; the notebook gets no cell. When `:target:` is not a block of this section, the compile pass `presmium.classroom.places` reports an error.
 
 ### `{pulse}`
 
-参数为问题（默认“这一节理解了吗？”，英文文稿为英文）；正文为说明。选项：`:levels:`（string，至少两个选项，逗号分隔；默认“懂了、有点模糊、没懂”）。
+The argument is the question (default "Did you follow this section?" in English lectures, "这一节理解了吗？" in Chinese ones); the body is an explanation. Options: `:levels:` (string, at least two choices, comma-separated; default "Got it, A bit unclear, Lost", in Chinese "懂了, 有点模糊, 没懂").
 
 ````md
-```{pulse} 这一节讲清楚了吗？
-:levels: 懂了, 有点模糊, 没懂
+```{pulse} Was this section clear?
+:levels: Got it, A bit unclear, Lost
 ```
 ````
 
-生成 `PmPulse`；notebook 中不生成单元格。
+Produces `PmPulse`; the notebook gets no cell.
 
 ### `{predict}`
 
-先预测再揭示。参数为问题（必填）；正文为补充说明。选项：`:choices:`（string，至少两个，逗号分隔；省略时学习者写一段文字）。揭示内容是 `{predict}` 之后的下一步出现的全部内容：用 `:reveal:` 让它在下一步出现（通常是带 `:reveal:` 的 `{slide}`），这一步的讲解也算在内。
+Predict first, then reveal. The argument is the question (required); the body is additional explanation. Options: `:choices:` (string, at least two, comma-separated; without it learners write a short text). The revealed content is everything that appears at the step after `{predict}`: use `:reveal:` to make it appear at the next step (usually a `{slide}` with `:reveal:`); the narration of that step counts too.
 
 ````md
-:::{predict} 合并三轮之后，词表中有几个新符号？
+:::{predict} After three rounds of merging, how many new symbols are in the vocabulary?
 :choices: 1, 2, 3
 :::
 
 :::{slide}
 :reveal:
-三个：每一轮新增一个符号。
+Three: each round adds one symbol.
 :::
 
-讲解：每一轮只合并出现最多的那一对。
+Narration: each round merges only the most frequent pair.
 ````
 
-生成 `PmPredict`；编译步骤 `presmium.classroom.predict-reveals` 把揭示内容移入它的子块（块 ID 与步骤不变），之后一步什么也不出现时警告。网页的文档视图中，读者保存预测之前不显示揭示内容；放映、演讲者视图与幻灯片按步骤显示（正文的补充说明在表单之前）。预测保存在本机浏览器；课堂中学习者的预测另交给主讲，“互动”面板按选项显示人数。notebook 中为问题、选项与折叠的揭示内容（`<details>`，其中的代码带编译时录制的输出）；幻灯片导出的 PDF、PNG 中揭示内容展开显示。
+Produces `PmPredict`. The compile pass `presmium.classroom.predict-reveals` moves the revealed content into its child blocks (block IDs and steps unchanged); when nothing appears at the next step, it warns. In the web document view the revealed content stays hidden until the reader saves a prediction; the presentation, the presenter view and slides show it by step (the body's explanation comes before the form). Predictions are kept in the local browser; in a classroom, learners' predictions also go to the presenter, and the **Interaction** panel shows counts per choice. In the notebook it is the question, the choices and the folded revealed content (`<details>`, its code with compile-time recorded output); in PDF and PNG exports of slides the revealed content is shown expanded.
 
-## 没有指令的插件
+## Plugins without directives
 
-| 插件包 | 插件 ID | 作用 |
+| Plugin package | Plugin ID | Purpose |
 |---|---|---|
-| `@lincyaw/addon-stage` | `presmium.stage` | 讲台：黑屏（`b`）、冻结（`f`）、画笔（`d` 或放映栏的“画笔”：四种墨水、橡皮、撤销、清除；演讲者与听众的窗口和课堂同步，由服务打开的页面把笔迹存进 `.presmium/drawings/`）；编译步骤 `presmium.stage.footnotes` 把脚注定义放到引用它的块旁 |
-| `@lincyaw/addon-publish` | `presmium.publish` | 编译步骤 `presmium.publish.remote-assets` 把远程图片下载到 `.presmium/assets/`；高对比度开关；全局配置 `offline: false` 关闭离线缓存 |
-| `@lincyaw/addon-session` | `presmium.session` | 课堂会话；全局配置 `server`（`ws://` 或 `http://`） |
-| `@lincyaw/addon-exec-wasi` | `presmium.execWasi` | 在 WebAssembly 中运行 `c`、`cpp`、`ruby`、`sql` 的代码（执行器 `presmium.wasi`，见 `{code}`）；具名环境 `kind: wasi`（可写 `languages: [c]`）；全局配置 `loadTimeoutMs`（浏览器中下载运行时的时限，默认 120000）。只有浏览器中运行的代码（`:run: live` 或 `both`）让构建发布运行时（C、C++ 约 52 MB） |
+| `@lincyaw/addon-stage` | `presmium.stage` | Stage tools: black screen (`b`), freeze (`f`), pen (`d` or **Pen** in the presentation bar: four inks, eraser, undo, clear; the presenter's and audience's windows and the classroom stay in sync, and pages opened from the server store the strokes in `.presmium/drawings/`); the compile pass `presmium.stage.footnotes` places footnote definitions next to the block that references them |
+| `@lincyaw/addon-publish` | `presmium.publish` | The compile pass `presmium.publish.remote-assets` downloads remote images into `.presmium/assets/`; high-contrast switch; global configuration `offline: false` turns off the offline cache |
+| `@lincyaw/addon-session` | `presmium.session` | Classroom sessions; global configuration `server` (`ws://` or `http://`) |
+| `@lincyaw/addon-exec-wasi` | `presmium.execWasi` | Runs `c`, `cpp`, `ruby` and `sql` code in WebAssembly (executor `presmium.wasi`, see `{code}`); named environments `kind: wasi` (may set `languages: [c]`); global configuration `loadTimeoutMs` (time limit for downloading the runtime in the browser, default 120000). Only code that runs in the browser (`:run: live` or `both`) makes the build publish the runtime (about 52 MB for C and C++) |
 
-## 行内角色
+## Inline roles
 
-插件可以登记行内角色，写作 ``{名}`内容` ``，选项写成 `key=value`：``{cue to=code-1 lines=3-5}`spot` ``（只写键而不写值是语法错误）。登记过的角色在 IR 中保留为 `presmiumRole` 节点，网页、幻灯片与 notebook 显示它的子内容；没有子内容的角色（如提示标记）只在网页的演讲者窗口与幻灯片的演讲者备注中显示一个标记 `〔名 内容〕`。没有插件登记的角色压平为文字并给出警告 `unknown role`。MyST 自带的 `{sub}`、`{sup}`、`{kbd}`、`{abbr}` 等不受影响，插件不能登记同名的角色。
+Plugins can register inline roles, written ``{name}`content` ``, with options as `key=value`: ``{cue to=code-1 lines=3-5}`spot` `` (a key without a value is a syntax error). A registered role is kept in the IR as a `presmiumRole` node, and web, slides and notebook show its children; a role without children (such as a cue) is shown only as a marker `〔name content〕` in the web presenter window and in the slides' speaker notes. A role no plugin registers is flattened to text with the warning `unknown role`. MyST's own `{sub}`, `{sup}`, `{kbd}`, `{abbr}` and the like are unaffected, and plugins cannot register roles with those names.
 
-## 讲授的角色 `presmium.lecture`（`@lincyaw/addon-lecture`）
+## Lecture roles `presmium.lecture` (`@lincyaw/addon-lecture`)
 
-讲授插件登记两个行内角色，写在讲解中。讲解就是讲授的脚本：文稿头部写了 `renderers.lecture.voice` 时，`presmium build --to web,lecture` 把每一步的讲解经语音服务（`@lincyaw/addon-speech`，也要列在 `plugins` 中）合成为讲授 `script`，网页以 `?view=lecture&track=script` 播放。
+The lecture plugin registers two inline roles, written in the narration. The narration is the lecture's script: when the frontmatter sets `renderers.lecture.voice`, `presmium build --to web,lecture` synthesizes each step's narration through the speech service (`@lincyaw/addon-speech`, which must also be listed in `plugins`) into the lecture `script`, and the web page plays it at `?view=lecture&track=script`.
 
 ```markdown
-我们先看 {cue to=code-1 lines=3-5}`spot` 这三行，{cue}`next` 再把它合并成新符号。
-运行一下 {cue to=code-1}`run` 看看结果。{say alias="B P E"}`BPE` 的词表就这样长出来。{cue}`pause 800ms`
+First look at {cue to=code-1 lines=3-5}`spot` these three lines, {cue}`next` then merge them into a new symbol.
+Run it {cue to=code-1}`run` and look at the result. That is how the {say alias="B P E"}`BPE` vocabulary grows. {cue}`pause 800ms`
 ```
 
-| 角色 | 内容 | 选项 | 作用 |
+| Role | Content | Options | Effect |
 |---|---|---|---|
-| `{cue}` | 命令：`next`、`spot`、`hint`、`point`、`click <动作>`、`run`、`ink`、`pause <时长>`（`800ms`、`1.5s`）、`mark <名称>` | `to`（块的标签）、`lines`（代码行，如 `2-3`）、`sel`（块内的 CSS 选择器） | 说到它之后的第一个字时执行：`next` 推进一步，`spot`、`hint` 聚光与提示，`point` 指向块，`ink` 用荧光笔圈出，`run` 显示录制的输出，`click` 触发组件的具名动作，`pause` 停顿，`mark` 记一个章节点。没有 `to` 时作用于这段讲解前面最近的上屏块。页面上不显示（演讲者窗口与备注中显示 `〔cue spot〕`） |
-| `{say}` | 显示的文字 | `alias`：读出的文字 | 显示一种写法，讲授读另一种（字幕与逐字稿仍是显示的文字） |
+| `{cue}` | A command: `next`, `spot`, `hint`, `point`, `click <action>`, `run`, `ink`, `pause <duration>` (`800ms`, `1.5s`), `mark <name>` | `to` (a block's label), `lines` (code lines, such as `2-3`), `sel` (a CSS selector inside the block) | Runs when the first word after it is spoken: `next` advances one step, `spot` and `hint` spotlight and hint, `point` points at the block, `ink` circles it with a highlighter, `run` shows the recorded output, `click` triggers a component's named action, `pause` pauses (the sentence is split there), `mark` records a chapter point. Without `to`, it acts on the nearest projected block before this narration paragraph. Not shown on the page (the presenter window and notes show `〔cue spot〕`) |
+| `{say}` | The text shown | `alias`: the text spoken | Shows one spelling and speaks another (captions and the transcript still use the shown text) |
 
-头部的配置（`renderers.lecture`）：`voice: { engine, voice, rate, style }`（写了 `voice` 才合成；`engine` 只写运营者定义的引擎 ID，省略时用 `presmium.speech.engine`）、`script`（单独的讲授脚本文件，其中以与讲义相同的标签 `(merge)=` 开始的一节代替讲义这一节的讲解，第 k 段属于第 k 步；讲义的显示不变）、`gap`（一步说完到推进的停顿，默认 500 毫秒）。`presmium.lecture: { lexicon: { BPE: B P E } }` 是整份文稿的读音词典。`{only} lecture` 中的讲解只说不显示，`{only} web, slides` 中的只显示不说；头部的 `renderers` 要写出 `lecture`，否则 `{only} lecture` 得到“不认识的渲染端”的警告。
+Frontmatter configuration (`renderers.lecture`): `voice: { engine, voice, rate, style }` (synthesis happens only when `voice` is set, since it costs money; `engine` names only an engine ID defined by the operator, and without it `presmium.speech.engine` is used), `script` (a separate lecture script file: a section in it starting with the same label as in the lecture, such as `(merge)=`, replaces that section's narration, paragraph k belonging to step k; what the lecture shows does not change), `gap` (the pause after a step is spoken before advancing, default 500 milliseconds; a number of milliseconds or `800ms`, `1.5s`). `presmium.lecture: { lexicon: { BPE: B P E } }` is the pronunciation dictionary for the whole lecture. Narration in `{only} lecture` is spoken but not shown; narration in `{only} web, slides` is shown but not spoken. The frontmatter's `renderers` must include `lecture`, otherwise `{only} lecture` gets the unknown-renderer warning (`unknown renderer id`).
 
-合成的片段在合成缓存 `.presmium/speech/` 中（提交它，别人构建时不再调用引擎）。缓存缺少某一句而又没有引擎时，构建失败，`presmium check` 的 `presmium.lecture` 逐句指出；提示标记的目标不存在、`lines` 超出代码的行数也由它报告。
+Synthesized clips are kept in the synthesis cache `.presmium/speech/` (commit it, so other people's builds do not call the engine again). When the cache lacks a sentence and no engine is available, the build fails, and `presmium check` reports each sentence under `presmium.lecture`; it also reports cues whose target does not exist and `lines` beyond the code's line count.
