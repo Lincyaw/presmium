@@ -73,4 +73,4 @@ To make the scene and other blocks react to the same sentence, keep them single-
 
 1. `presmium check` reports scene and duration errors at the directive's line (`the deck has no scenes/<name>.ts`, `:durations: takes durations`).
 2. `presmium dev <deck> --to web`: open the present view (`?view=present&section=<id>&step=<k>`), step forward and back; in the document view drag the scrubber through every step.
-3. With a lecture renderer, `presmium build <deck> --to web,lecture` and read the warnings; open `?view=lecture&track=script` and listen through the section. `dist/lecture/script/track.json` lists every `go` (step change), `pause` (`hold: true` is waiting for an animation) and utterance with its time, which is the quickest way to see where the dead air is.
+3. With a lecture renderer, `presmium build <deck> --to web,lecture` and read the warnings; open `?view=present&track=script` and listen through the section. `dist/lecture/script/track.json` lists every `go` (step change), `pause` (`hold: true` is waiting for an animation) and utterance with its time, which is the quickest way to see where the dead air is.

@@ -56,7 +56,7 @@ export function playwrightBrowsers(): string {
   return join(process.env.XDG_CACHE_HOME ?? join(homedir(), '.cache'), 'ms-playwright')
 }
 
-export async function startStudio(options: { port: number, model?: FakeModel, patches?: string[], prefix?: string, fixture?: string, isolateClient?: boolean, env?: Record<string, string>, serviceEnv?: Record<string, string> }): Promise<Studio> {
+export async function startStudio(options: { port: number, model?: FakeModel, patches?: string[], prefix?: string, fixture?: string, isolateClient?: boolean, env?: Record<string, string>, serviceEnv?: Record<string, string>, onServiceOutput?(text: string): void }): Promise<Studio> {
   const home = testHome(options.prefix ?? 'workbench')
   try {
     if (options.isolateClient) {
@@ -83,6 +83,8 @@ export async function startStudio(options: { port: number, model?: FakeModel, pa
       env: home.env({ ...options.serviceEnv, PRESMIUM_SERVICE_TOKEN: token }),
       stdio: ['ignore', 'pipe', 'pipe'],
     }))
+    process_.child.stdout?.on('data', (chunk: Buffer) => options.onServiceOutput?.(chunk.toString()))
+    process_.child.stderr?.on('data', (chunk: Buffer) => options.onServiceOutput?.(chunk.toString()))
     let web: Web | undefined
     try {
       const url = (await process_.wait(/^serve {2}(http\S+)$/m, 180_000))[1]!

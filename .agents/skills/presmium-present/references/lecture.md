@@ -4,7 +4,7 @@ For recording a class, publishing a lecture replay, revising the transcript, syn
 
 ## Record once
 
-The deck lists `@lincyaw/addon-lecture`; replaying pointers and spotlights also needs the guide plugin. Run `presmium dev --to web` in the deck directory, enter the Present view and start from the recording bar at the top right.
+The deck lists `@lincyaw/addon-lecture`; replaying pointers and spotlights also needs the guide plugin. Run `presmium dev --to web` in the deck directory, enter the Present view and start from the recording bar at the top right; when a default lecture is already there, close its player first, then record.
 
 Choose the microphone, camera and screen as needed and grant the browser those permissions. Slide changes, steps, spotlights and annotations are recorded with the sound. Save after stopping; leaving the Present view also ends the recording. Record a short section first and play it back to confirm sound and actions are in sync, then record the whole lecture.
 
@@ -20,7 +20,7 @@ Add `lecture: {}` to `renderers` in the frontmatter, then:
 presmium build --to web,lecture
 ```
 
-Keep `dist/web/` and `dist/lecture/` in the same relative positions and serve the whole site as in [Publishing, export and offline](delivery.md). Add `?view=lecture&track=<id>` to the web address, or choose Lecture from the View menu. When they are deployed separately, write `presmium: { presmium.lecture: { url: <address of the replay files> } }` in the frontmatter.
+Keep `dist/web/` and `dist/lecture/` in the same relative positions and serve the whole site as in [Publishing, export and offline](delivery.md). Add `?view=present&track=<id>` to the web address: entering Present prepares the narration script or the only recorded track, and playback starts when you click play. With several recorded tracks, choose one from the play button in the presentation bar. Old `view=lecture` links still work. When they are deployed separately, write `presmium: { presmium.lecture: { url: <address of the replay files> } }` in the frontmatter.
 
 Verify sound, captions, jumping from the transcript, section positioning, and returning to the lecture after Try it. After editing the lecture, run `presmium check` and fix the broken references that `presmium.lecture` reports; audio that still plays does not mean the replay is valid.
 
@@ -37,7 +37,7 @@ renderers:
 
 With an existing speech service, keep its engine and voice. A custom engine is defined with the environment variables `PRESMIUM_SPEECH_<ID>_URL`, `_PROVIDER` and an optional `_KEY`; Volcengine can use `PRESMIUM_SPEECH_VOLCENGINE_KEY`. For an engine that only synthesizes or only transcribes, set the other model to `none` (`_TRANSCRIBE_MODEL=none` or `_MODEL=none`); transcription and synthesis then each go to an engine that can do them, and the deck need not name it. Confirm the target service and who pays before starting an operation that uploads or is billed.
 
-After `presmium build --to web,lecture` synthesizes the lecture, play it with `?view=lecture&track=script`. The synthesized clips are kept in `.presmium/speech/` together with `.presmium/speech.lock.json`; committed with the deck, they let others build from the cache without a speech engine.
+After `presmium build --to web,lecture` synthesizes the lecture, play it with `?view=present&track=script`. The synthesized clips are kept in `.presmium/speech/` together with `.presmium/speech.lock.json`; committed with the deck, they let others build from the cache without a speech engine.
 
 In the narration, `{cue}` schedules spotlights, steps and pauses, and `{say}` changes how a phrase is read; the syntax is in the inline roles part of `presmium-author/references/directives.md`. When a voice is set but the engine or some clips are missing, the check names the missing sentences. To publish only a live recording, do not configure a synthesis voice.
 

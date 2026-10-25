@@ -24,7 +24,7 @@ Look first at the existing deck's frontmatter, build scripts and outputs, and ke
 
 To edit and present on this machine, run `presmium dev --to web` in the deck directory and open the web address the command prints. To start a version already built for distribution, serve it with a static server as in [Publishing, export and offline](references/delivery.md).
 
-The View menu in the web navigation bar offers Document, Scrollytelling and Present: Document is for reading, Scrollytelling advances as the reader scrolls through the narration, and Present shows the projected content section by section and step by step. To open straight in Present, add `?view=present` to the web address.
+The View menu in the web navigation bar offers Document, Scrollytelling and Present: Document is for reading, Scrollytelling advances as the reader scrolls through the narration, and Present shows the projected content section by section and step by step. To open straight in Present, add `?view=present` to the web address. The workbench keeps only Document and Present: the slides are shown in Present, a lecture's playback controls appear there when the lecture is configured, and video files are made from Export.
 
 | Key in Present | Purpose |
 |---|---|

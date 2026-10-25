@@ -9,7 +9,7 @@ import { MediaClock, SilentClock } from './clock.ts'
 import { LecturePlayer } from './player.ts'
 import type { LectureSource } from './source.ts'
 import { lectureSource } from './source.ts'
-import { exporting, playing, useViewer } from './state.ts'
+import { exporting, play, playing, useViewer } from './state.ts'
 
 async function createClock(track: LectureTrack, source: LectureSource): Promise<TrackClock> {
   const length = trackDuration(track)
@@ -112,6 +112,8 @@ export function useLecturePlayback() {
     loading++
     undrive()
     player.value?.dispose()
+    // Reading and presenting share the window; leaving the presentation releases its track selection too.
+    play(undefined)
   })
 
   function reloadTrack(track: LectureTrack): void {

@@ -19,6 +19,8 @@ Sessions use the workspace root as their working directory and can read and writ
 
 The model is chosen in the workbench's model settings, or given by the environment: `DEEPSEEK_API_KEY`, or `PRESMIUM_MODEL_URL`, `PRESMIUM_MODEL_KEY` and `PRESMIUM_MODEL_PROVIDER` for a Messages-compatible service. DeepSeek Harness's home for the workbench (its sessions, model settings and credentials, and the log `presmium-studio.log`) is `$XDG_STATE_HOME/presmium/studio`, never your own `~/.dsh`.
 
+Startup prints the log path to stderr and streams workspace-service logs there while running. The file keeps timestamped output from both processes. Preview logs identify the document, renderer, request, cache/fallback choice and elapsed time; export logs identify the job and phase. A backend preview marked ready means its address is prepared; browser loading and the preview handshake may still be pending. The host's output, including its login URL, stays in the log file.
+
 ## Documentation
 
 - [Design of the workbench on DeepSeek Harness](https://github.com/Lincyaw/presmium/blob/main/docs/design-dsh.md)

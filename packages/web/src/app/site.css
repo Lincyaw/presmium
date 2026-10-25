@@ -873,17 +873,13 @@ html.pm-in-workbench .pm-section {
   font-size: var(--pm-text-display);
 }
 
-/* The presentation in a workbench: the slide on the canvas, without the controls of presenting (the workbench has its own). */
+/* The presentation in a workbench: the slide on the canvas, with navigation and lecture playback in the viewer. */
 html.pm-in-workbench .pm-present {
   background: var(--pm-color-canvas);
 }
 
 html.pm-in-workbench .pm-present__slide {
   padding: var(--pm-space-4);
-}
-
-html.pm-in-workbench .pm-present__bar {
-  display: none;
 }
 
 /* The slides in the workbench: its stage has their shape and frame, so the slide fills it. */

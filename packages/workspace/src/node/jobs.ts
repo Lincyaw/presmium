@@ -151,11 +151,13 @@ export function createJobs(options: JobsOptions): Jobs {
   const run = async (entry: Running, compilation: Compilation) => {
     const { job, dir, controller } = entry
     const log = (line: string) => {
+      options.log.info(`[job ${job.id}] document=${JSON.stringify(job.document || '.')} target=${job.target} ${line}`)
       job.log.push(line)
       if (job.log.length > LOG_LINES) job.log.splice(0, job.log.length - LOG_LINES)
       changed(entry)
     }
     const progress = (phase: string, done?: number, total?: number) => {
+      if (job.progress?.phase !== phase) options.log.info(`[job ${job.id}] document=${JSON.stringify(job.document || '.')} target=${job.target} phase=${JSON.stringify(phase)}`)
       job.progress = { phase, ...done === undefined ? {} : { done }, ...total === undefined ? {} : { total } }
       changed(entry)
     }
@@ -188,6 +190,8 @@ export function createJobs(options: JobsOptions): Jobs {
       if (job.state !== 'queued') return
       job.state = 'running'
       job.startedAt = now()
+      const started = Date.now()
+      options.log.info(`[job ${job.id}] document=${JSON.stringify(job.document || '.')} target=${job.target} state=running queuedMs=${started - Date.parse(job.createdAt)}`)
       changed(entry, true)
       try {
         mkdirSync(entry.dir, { recursive: true })
@@ -199,6 +203,7 @@ export function createJobs(options: JobsOptions): Jobs {
         options.log.warn(`the ${job.target} of ${job.document || '.'} ${job.state === 'cancelled' ? 'was cancelled' : `failed: ${job.error}`}`)
       }
       job.finishedAt = now()
+      options.log.info(`[job ${job.id}] document=${JSON.stringify(job.document || '.')} target=${job.target} state=${job.state} elapsedMs=${Date.now() - started}`)
       delete job.progress
       if (job.state === 'done') writeFileSync(join(entry.dir, JOB_FILE), `${JSON.stringify(job, null, 2)}\n`)
       else rmSync(entry.dir, { recursive: true, force: true })
@@ -227,10 +232,14 @@ export function createJobs(options: JobsOptions): Jobs {
       if (!known) throw new Error(`${document || '.'} cannot be made into ${target}: ${targets.map(own => own.id).join(', ') || 'nothing'}`)
       // The same target of the same revision, made or being made: not again.
       const same = [...jobs.values()].reverse().find(job => job.document === document && job.target === target && job.revision === revision && ['queued', 'running', 'done'].includes(job.state))
-      if (same) return present(same)
+      if (same) {
+        options.log.info(`[job ${same.id}] document=${JSON.stringify(document || '.')} target=${target} reuse=${same.state}`)
+        return present(same)
+      }
       const id = newId()
       const job: CompileJob = { id, sequence: 0, document, target, kind: known.kind, state: 'queued', revision, createdAt: now(), url: '', files: [], warnings: [], log: [] }
       jobs.set(id, job)
+      options.log.info(`[job ${id}] document=${JSON.stringify(document || '.')} target=${target} state=queued revision=${revision}`)
       let resolve!: (job: CompileJob) => void
       const entry: Running = {
         job,

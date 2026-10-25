@@ -777,51 +777,7 @@
 
 /* Above the video: its file. */
 
-.pmw-videobar {
-  display: flex;
-  flex: none;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--pm-space-2);
-  padding: var(--pm-space-1) var(--pm-space-3);
-  border-bottom: var(--pm-size-hairline) solid var(--pm-color-line);
-  background: var(--pm-color-chrome);
-  color: var(--pm-color-ink);
-  font-size: var(--pm-text-sm);
-}
 
-.pmw-videobar > .pm-ui-icon {
-  width: var(--pm-size-icon);
-  height: var(--pm-size-icon);
-  color: var(--pm-color-muted);
-}
-
-.pmw-videobar__label {
-  font-weight: 600;
-}
-
-.pmw-videobar__status {
-  color: var(--pm-color-muted);
-}
-
-.pmw-videobar__progress {
-  width: calc(var(--pm-size-row) * 3);
-  height: var(--pm-space-1);
-  accent-color: var(--pm-color-accent);
-}
-
-.pmw-videobar__error {
-  flex: 1 1 0;
-  min-width: 0;
-  overflow: hidden;
-  color: var(--pm-color-danger);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pmw-videobar[data-state='failed'] {
-  background: var(--pm-color-danger-soft);
-}
 
 /* The Export pane: what the document can be made into, and what was made. */
 

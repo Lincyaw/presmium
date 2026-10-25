@@ -74,6 +74,7 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
     return known
   }
   const listeners = new Map<string, Set<(event: IrEvent) => void>>()
+  let previewRequest = 0
 
   const eventOf = (dir: string, compilation: Compilation, changed: string[]): IrEvent => {
     const count = (severity: Finding['severity']) => compilation.doc.diagnostics.filter(finding => finding.severity === severity).length
@@ -98,20 +99,36 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
         return () => own.delete(listener)
       }, { signal })
     },
-    async preview(document, _renderer, prefetch = false) {
-      const base = options.url()
-      // The viewer app's page once it has what the document needs (an opened document waits for it a while), else the
-      // document's page on the site.
-      const page = await options.viewerPage?.(document, !prefetch).catch((error: unknown) => {
-        log.warn(`the viewer app cannot show ${document || '.'}: ${errorMessage(error)}`)
-        return undefined
-      })
-      const web = page ? `${base}${page}` : `${base}/${document ? `${urlPath(document)}/` : ''}`
-      if (prefetch && !page) void options.warmSite?.(document).catch(() => undefined)
-      const compilation = await options.compileSessionOf(document).ready()
-      const configured = Object.keys(compilation.doc.config.renderers)
-      const slides = configured.length === 0 || configured.includes('slides')
-      return { document, web, ...slides ? { slides: `${web}${web.includes('?') ? '&' : '?'}form=slides` } : {} }
+    async preview(document, renderer, prefetch = false) {
+      const request = ++previewRequest
+      const started = Date.now()
+      const label = `[preview ${request}] document=${JSON.stringify(document || '.')} renderer=${renderer ?? 'all'} prefetch=${prefetch}`
+      let phase = 'viewer'
+      let outcome = 'failed'
+      log.info(`${label} state=started`)
+      try {
+        const base = options.url()
+        // The viewer app's page once it has what the document needs (an opened document waits for it a while), else the
+        // document's page on the site.
+        const page = await options.viewerPage?.(document, !prefetch).catch((error: unknown) => {
+          log.warn(`the viewer app cannot show ${document || '.'}: ${errorMessage(error)}`)
+          return undefined
+        })
+        const web = page ? `${base}${page}` : `${base}/${document ? `${urlPath(document)}/` : ''}`
+        log.info(`${label} phase=viewer source=${page ? 'app' : 'site'} elapsedMs=${Date.now() - started}`)
+        phase = 'compilation'
+        if (prefetch && !page) void options.warmSite?.(document).catch(() => undefined)
+        const compilation = await options.compileSessionOf(document).ready()
+        const configured = Object.keys(compilation.doc.config.renderers)
+        const slides = configured.length === 0 || configured.includes('slides')
+        outcome = 'ready'
+        return { document, web, ...slides ? { slides: `${web}${web.includes('?') ? '&' : '?'}form=slides` } : {} }
+      } catch (error) {
+        log.warn(`${label} phase=${phase} error=${errorMessage(error)}`)
+        throw error
+      } finally {
+        log.info(`${label} state=${outcome} phase=${phase} elapsedMs=${Date.now() - started}`)
+      }
     },
     async build(document, to) {
       return await options.serverHost.build(document, to ? { to } : {})

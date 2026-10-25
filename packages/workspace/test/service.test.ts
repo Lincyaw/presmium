@@ -113,7 +113,12 @@ describe('presmium serve: the workspace service for a workbench', () => {
 
     const preview = await route('preview?document=talk')
     expect(preview.status, preview.text).toBe(200)
-    expect(preview.json()).toEqual({ document: 'talk', web: `${url}/__app/view?document=talk`, slides: `${url}/__presmium/presmium.workspace/slides/talk/` })
+    expect(preview.json()).toEqual({ document: 'talk', web: `${url}/__app/view?document=talk`, slides: `${url}/__app/view?document=talk&form=slides` })
+
+    expect(serve.output()).toMatch(/\[preview \d+\] document="talk" renderer=all prefetch=false state=started/)
+    expect(serve.output()).toMatch(/\[preview \d+\].*phase=viewer source=app elapsedMs=\d+/)
+    expect(serve.output()).toMatch(/\[preview \d+\].*state=ready phase=compilation elapsedMs=\d+/)
+    expect(serve.output()).toMatch(/\[viewer\] document="talk" cache=(?:hit|miss) wait=true state=ready elapsedMs=\d+/)
 
     const build = await route('build?document=talk', { method: 'POST', json: { to: ['web'] } })
     expect(build.status, build.text).toBe(200)

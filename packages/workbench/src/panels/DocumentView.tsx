@@ -4,10 +4,10 @@ import { PmBadge, PmButton, PmIcon, PmIconButton, PmNotice } from '../components
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
 import { countWords, documentOutline } from '../outline.ts'
-import { hasSlides as hasSlidesForm, hasVideo, isAgentChanging, isVideo, VIDEO_TARGET } from '../workbench.ts'
+import { isAgentChanging } from '../workbench.ts'
 import type { WorkbenchMode } from '../workbench.ts'
 import { CommentsPanel } from './CommentsPanel.tsx'
-import { ExportPanel, VideoDialog } from './ExportPanel.tsx'
+import { ExportPanel } from './ExportPanel.tsx'
 import { HistoryPanel } from './HistoryPanel.tsx'
 import { PreviewPanel } from './PreviewPanel.tsx'
 
@@ -27,7 +27,6 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   const workbench = useWorkbench()
   const [aside, setAside] = useState<DocumentAside | null>(null)
   const [navigation, setNavigation] = useState(() => typeof matchMedia === 'function' && matchMedia(ROOMY).matches)
-  const video = useWorkbenchState(isVideo)
   useEffect(() => {
     if (!active) return
     const keys = (event: KeyboardEvent) => {
@@ -47,7 +46,6 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   return (
     <div className="pmw-document" data-aside={aside ?? undefined} data-navigation={navigation || undefined}>
       <DocumentToolbar framed={framed} aside={aside} navigation={navigation} onNavigation={() => setNavigation(shown => !shown)} onAside={next => setAside(current => (current === next ? null : next))} />
-      {video && <VideoFileBar onLog={() => setAside('export')} />}
       <DocumentNotices />
       <div className="pmw-document__body">
         {navigation && <NavigationPane onClose={() => setNavigation(false)} />}
@@ -129,7 +127,6 @@ function DocumentToolbar({ framed, aside, navigation, onNavigation, onAside }: {
   const history = useWorkbenchState(state => state.history)
   const busy = useWorkbenchState(state => state.isHistoryBusy || Boolean(state.editing) || isAgentChanging(state))
   const renderer = useWorkbenchState(state => state.previewRenderer)
-  const hasSlides = useWorkbenchState(state => hasSlidesForm(state.ir))
   const mode = useWorkbenchState(state => state.mode)
   const openComments = useWorkbenchState(state => state.comments.filter(comment => comment.status === 'open').length)
   // Builds and exports being made, the author's or the AI's.
@@ -143,14 +140,10 @@ function DocumentToolbar({ framed, aside, navigation, onNavigation, onAside }: {
   const redoTarget = history?.redo && history.revisions.find(r => r.id === history.redo)?.reverts
   const redoLabel = history?.redo ? t.redoWhat(summaryOf(redoTarget ?? history.redo)) : t.nothingToRedo
   const webView = useWorkbenchState(state => state.webView)
-  const video = useWorkbenchState(hasVideo)
-  // The document, its presentation (the same page, switched at once), with a slides form the slides, and with a lecture
-  // the video it makes.
+  // Reading and presenting share the same viewer; narration is a playback control, and video is an export.
   const views: { id: string, icon: IconName, label: string, hint: string, pressed: boolean, show(): void }[] = [
     { id: 'document', icon: 'document', label: t.renderers.web, hint: t.renderers.web, pressed: renderer === 'web' && webView === 'document', show: () => workbench.setWebView('document') },
     { id: 'present', icon: 'play', label: t.present, hint: t.presentHint, pressed: renderer === 'web' && webView === 'present', show: () => workbench.setWebView('present') },
-    ...hasSlides ? [{ id: 'slides', icon: 'slides' as const, label: t.renderers.slides, hint: t.slidesHint, pressed: renderer === 'slides', show: () => workbench.setPreviewRenderer('slides') }] : [],
-    ...video ? [{ id: 'video', icon: 'video' as const, label: t.video, hint: t.videoHint, pressed: renderer === 'web' && webView === 'video', show: () => workbench.setWebView('video') }] : [],
   ]
   const modes: { id: WorkbenchMode, icon: 'edit' | 'eye', label: string, hint: string }[] = [
     { id: 'editing', icon: 'edit', label: t.editingMode, hint: t.editingHint },
@@ -216,53 +209,6 @@ function SaveStatus() {
 }
 
 /** What needs the author's attention: the AI's change, an edit to hand over, a failed save, content that did not display. */
-/**
- * Above the video: its file, made from the content as it is now or before, being made, or not yet; to make, play or
- * download (the same job as in the Export pane).
- */
-function VideoFileBar({ onLog }: { onLog(): void }) {
-  const t = useMessages()
-  const workbench = useWorkbench()
-  const job = useWorkbenchState(state => state.jobs?.jobs.find(own => own.target === VIDEO_TARGET && own.state !== 'cancelled'))
-  const failure = useWorkbenchState(state => state.jobsFailure)
-  const label = useWorkbenchState(state => {
-    const target = state.jobs?.targets.find(own => own.id === VIDEO_TARGET)
-    return target?.label[state.locale] ?? t.video
-  })
-  const revision = useWorkbenchState(state => state.ir?.revision)
-  const [playing, setPlaying] = useState(false)
-  const making = job?.state === 'queued' || job?.state === 'running'
-  const progress = job?.state === 'running' ? job.progress : undefined
-  const done = job?.state === 'done' ? job : undefined
-  const failed = job?.state === 'failed' ? job : undefined
-  const main = done?.main && `${done.url}${done.main}`
-  const phase = progress && (t.jobPhases[progress.phase] ?? progress.phase)
-  return (
-    <div className="pmw-videobar" role="group" aria-label={t.videoFile} data-state={job?.state}>
-      <PmIcon name="video" />
-      <span className="pmw-videobar__label">{t.videoFile}</span>
-      {!job && !failure && <span className="pmw-videobar__status">{t.noVideoFile}</span>}
-      {making && (
-        <span className="pmw-videobar__status" role="status">
-          {phase ? t.jobProgress(phase, progress?.done, progress?.total) : t.jobStates[job.state]}
-        </span>
-      )}
-      {/* Until the frames are counted, the bar only says the file is being made. */}
-      {making && <progress className="pmw-videobar__progress" max={progress?.total ?? 1} value={progress?.total ? progress.done ?? 0 : undefined} aria-label={label} />}
-      {(failed || failure) && <span className="pmw-videobar__error" role="alert" title={failed?.error ?? failure}>{t.outputFailed(failed?.error?.split('\n')[0] ?? failure ?? '')}</span>}
-      {done && <span className="pmw-videobar__status">{done.revision === revision ? t.currentContent : t.olderContent}</span>}
-      <span className="pmw-spacer" />
-      {(making || failed) && <PmButton small onClick={onLog}>{t.outputLog}</PmButton>}
-      {main && <PmButton small icon="play" onClick={() => setPlaying(true)}>{t.playVideoFile}</PmButton>}
-      {main && <a className="pm-ui-button pm-ui-button--small" href={`${main}?download`}><PmIcon name="download" />{t.downloadOutput}</a>}
-      {making
-        ? <PmButton small onClick={() => void workbench.cancelJob(job.id)}>{t.cancelOutput}</PmButton>
-        : (!done || done.revision !== revision) && <PmButton small variant="accent" icon="export" onClick={() => void workbench.startJob(VIDEO_TARGET)}>{done || failed ? t.remakeVideoFile : t.makeVideoFile}</PmButton>}
-      <VideoDialog job={playing ? done : undefined} label={label} onClose={() => setPlaying(false)} />
-    </div>
-  )
-}
-
 function DocumentNotices() {
   const t = useMessages()
   const workbench = useWorkbench()

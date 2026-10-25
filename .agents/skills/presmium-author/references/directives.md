@@ -635,7 +635,7 @@ Plugins can register inline roles, written ``{name}`content` ``, with options as
 
 ## Lecture roles `presmium.lecture` (`@lincyaw/addon-lecture`)
 
-The lecture plugin registers two inline roles, written in the narration. The narration is the lecture's script: when the frontmatter sets `renderers.lecture.voice`, `presmium build --to web,lecture` synthesizes each step's narration through the speech service (`@lincyaw/addon-speech`, which must also be listed in `plugins`) into the lecture `script`, and the web page plays it at `?view=lecture&track=script`.
+The lecture plugin registers two inline roles, written in the narration. The narration is the lecture's script: when the frontmatter sets `renderers.lecture.voice`, `presmium build --to web,lecture` synthesizes each step's narration through the speech service (`@lincyaw/addon-speech`, which must also be listed in `plugins`) into the lecture `script`, and the web page plays it at `?view=present&track=script`.
 
 ```markdown
 First look at {cue to=code-1 lines=3-5}`spot` these three lines, {cue}`next` then merge them into a new symbol.
