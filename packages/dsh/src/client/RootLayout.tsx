@@ -9,6 +9,7 @@ import { clamp, CONVERSATION_MAX, CONVERSATION_MIN, NARROW, RIGHTBAR_MAX_RATIO, 
 import type { LayoutActions, LayoutState, NarrowPane } from './layout.ts'
 import { useClientMessages } from './messages.ts'
 import { isSamePath } from './paths.ts'
+import { RuntimeDiagnosticsNotice, WorkbenchRuntimeBoundary } from './runtime-diagnostics.tsx'
 
 interface RootSlotProps {
   useStore: DshSelectorHook<LayoutState>
@@ -35,7 +36,7 @@ export function rootLayoutFor(options: RootLayoutOptions) {
   return function PresmiumRootLayout(props: RootSlotProps) {
     return (
       <WorkbenchProvider workbench={options.workbench}>
-        <RootLayout {...props} {...options} />
+        <WorkbenchRuntimeBoundary workbench={options.workbench}><RootLayout {...props} {...options} /></WorkbenchRuntimeBoundary>
       </WorkbenchProvider>
     )
   }
@@ -203,6 +204,7 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
       <a className="pmw-frame__skip" href="#pmw-centre">{t.skip}</a>
       <AppBar workbench={workbench} info={info} actions={actions} activePanel={activePanel} globalPanels={globalPanels} pane={pane} narrow={narrow} openSettings={openSettings} openHelp={() => setHelpOpen(true)} />
 
+      <RuntimeDiagnosticsNotice workbench={workbench} />
       <Group className="pmw-frame__panels" disabled={narrow} onLayoutChanged={(layout, meta) => {
         if (!meta.isUserInteraction) return
         const width = info.viewportWidth

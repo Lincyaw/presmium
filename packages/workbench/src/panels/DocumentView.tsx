@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { PmBadge, PmButton, PmIcon, PmIconButton, PmNotice, PmTabs, PmToolbar, PmToolbarButton } from '../components.tsx'
+import { PmButton, PmIcon, PmIconButton, PmMenu, PmNotice, PmTabs, PmToolbar, PmToolbarButton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
 import { countWords, documentOutline } from '../outline.ts'
@@ -9,6 +9,7 @@ import { ExportPanel } from './ExportPanel.tsx'
 import { HistoryPanel } from './HistoryPanel.tsx'
 import { PreviewPanel } from './PreviewPanel.tsx'
 import { NarrationPanel } from './NarrationPanel.tsx'
+import { PageRenameDialog } from './PageRenameDialog.tsx'
 
 export type DocumentAside = 'comments' | 'history' | 'export'
 
@@ -122,6 +123,12 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
   const current = useWorkbenchState(state => state.position?.section)
   const editing = useWorkbenchState(state => state.mode === 'editing')
   const creating = useWorkbenchState(state => Boolean(state.isCreatingPage))
+  const pageBusy = useWorkbenchState(state => Boolean(state.isEditingPage))
+  const failure = useWorkbenchState(state => state.pageEditFailure)
+  const document = useWorkbenchState(state => state.document)
+  const [renaming, setRenaming] = useState<{ id: string, title: string, trigger?: HTMLButtonElement }>()
+  const menuTriggers = useRef(new Map<string, HTMLButtonElement>())
+  useEffect(() => { setRenaming(undefined) }, [document])
   const canCreate = useWorkbenchState(state => state.previewRenderer === 'web' && state.webView === 'document' && Boolean(state.previewIrRevision) && !state.editing && !isAgentChanging(state))
   const pages = editing || slides
   const items = useMemo(() => documentOutline(doc), [doc])
@@ -130,15 +137,18 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
     <nav className="pmw-navigation" aria-label={t.navigation}>
       <header className="pmw-pane__header">
         <h2 className="pmw-pane__title">{editing ? t.pages : slides ? t.renderers.slides : t.navigation}</h2>
-        {editing && <PmIconButton icon="plus" label={t.newPage} small disabled={!canCreate || creating || !items.length} onClick={() => workbench.createPage()} />}
+        {editing && <PmIconButton icon="plus" label={t.newPage} small loading={creating} disabled={!canCreate || pageBusy || !items.length} onClick={() => workbench.createPage()} />}
         <PmIconButton icon="close" label={t.closeNavigation} small onClick={onClose} />
       </header>
+      {failure && !renaming && <PmNotice tone="danger">{failure}</PmNotice>}
       {items.length === 0
         ? <p className="pmw-muted pmw-navigation__empty">{t.noSections}</p>
         : (
             <ol className="pmw-navigation__list" data-kind={pages ? 'slides' : 'headings'}>
-              {items.map(item => (
-                <li key={item.id}>
+              {items.map((item, index) => {
+                const capability = workbench.pageEditCapability(item.id)
+                return (
+                <li key={item.id} className="pmw-navigation__row">
                   <button
                     type="button"
                     className="pmw-navigation__item"
@@ -149,10 +159,22 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
                     {pages && <span className="pmw-navigation__number">{item.number}</span>}
                     <span className="pmw-navigation__title">{item.title}</span>
                   </button>
+                  {editing && <PmMenu label={t.pageMore(item.title)} triggerRef={node => { if (node) menuTriggers.current.set(item.id, node); else menuTriggers.current.delete(item.id) }} items={[
+                    ...(!capability.rename && capability.reason ? [{ id: 'unavailable', label: capability.reason, disabled: true }] : []),
+                    { id: 'rename', label: t.rename, icon: 'edit', disabled: !capability.rename || !canCreate || pageBusy || creating },
+                    { id: 'up', label: t.movePageUp, disabled: !capability.move || !canCreate || pageBusy || creating || index === 0 || items[index - 1]?.depth !== item.depth },
+                    { id: 'down', label: t.movePageDown, disabled: !capability.move || !canCreate || pageBusy || creating || index === items.length - 1 || items[index + 1]?.depth !== item.depth },
+                  ]} onSelect={id => {
+                    workbench.clearPageEditFailure()
+                    if (id === 'rename') setRenaming({ id: item.id, title: item.title, trigger: menuTriggers.current.get(item.id) })
+                    else if (id === 'up' && index > 0) void workbench.movePage(item.id, items[index - 1]!.id)
+                    else if (id === 'down') void workbench.movePage(item.id, items[index + 2]?.id ?? null)
+                  }} />}
                 </li>
-              ))}
+              )})}
             </ol>
           )}
+      {renaming && <PageRenameDialog section={renaming.id} title={renaming.title} trigger={renaming.trigger} onClose={() => { setRenaming(undefined); workbench.clearPageEditFailure() }} />}
     </nav>
   )
 }
@@ -184,7 +206,7 @@ function DocumentToolbar({ framed, aside, navigation, workspace, onWorkspace, on
   const narration = useWorkbenchState(state => state.narration)
   const title = useWorkbenchState(state => state.documents?.documents.find(doc => doc.dir === state.document)?.title ?? state.ir?.doc.meta.title ?? '')
   const history = useWorkbenchState(state => state.history)
-  const busy = useWorkbenchState(state => state.isHistoryBusy || Boolean(state.editing) || Boolean(state.isCreatingPage) || isAgentChanging(state))
+  const busy = useWorkbenchState(state => state.isHistoryBusy || Boolean(state.editing) || Boolean(state.isCreatingPage) || Boolean(state.isEditingPage) || isAgentChanging(state))
   const blocked = useWorkbenchState(state => Boolean(state.bodyDirty || state.narrationDirty || state.sourceDirty || state.save.kind === 'saving' || state.save.kind === 'failed' || !state.previewIrRevision || state.previewIrRevision !== state.ir?.revision))
   const openComments = useWorkbenchState(state => state.comments.filter(comment => comment.status === 'open').length)
   return (
@@ -284,7 +306,7 @@ function ProblemsNotice() {
   const canRepair = useWorkbenchState(state => state.canRepairDiagnostics)
   const repairing = useWorkbenchState(state => state.isRepairingDiagnostics)
   const repairFailure = useWorkbenchState(state => state.diagnosticsRepairFailure)
-  const problems = (snapshot?.diagnostics ?? []).filter(diagnostic => diagnostic.severity === 'error')
+  const problems = (snapshot?.diagnostics ?? []).filter(diagnostic => diagnostic.severity === 'error' && !diagnostic.checkId.startsWith('presmium.workbench.'))
   if (unavailable) return <PmNotice tone="warn"><span>{t.diagnosticsUnavailable}</span><PmButton small onClick={() => workbench.retryDiagnostics()}>{t.retry}</PmButton></PmNotice>
   if (problems.length === 0) return repairFailure ? <PmNotice tone="danger">{t.fixFailed(repairFailure)}</PmNotice> : null
   return (

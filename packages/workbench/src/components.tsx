@@ -7,7 +7,7 @@ import * as Tooltip from '@radix-ui/react-tooltip'
 import * as Toolbar from '@radix-ui/react-toolbar'
 import * as RadioGroup from '@radix-ui/react-radio-group'
 import { createElement, forwardRef, useEffect, useId, useRef } from 'react'
-import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
+import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
 
 const cls = (...names: (string | false | undefined | null)[]) => names.filter(Boolean).join(' ')
 
@@ -171,10 +171,10 @@ export interface MenuItem {
   separator?: boolean
 }
 
-export function PmMenu({ label, items, icon = 'more', placement = 'below-end', onSelect }: { label: string, items: MenuItem[], icon?: IconName, placement?: PopoverPlacement, onSelect(id: string): void }) {
+export function PmMenu({ label, items, icon = 'more', placement = 'below-end', triggerRef, onSelect }: { label: string, items: MenuItem[], icon?: IconName, placement?: PopoverPlacement, triggerRef?: Ref<HTMLButtonElement>, onSelect(id: string): void }) {
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild><PmIconButton icon={icon} label={label} small /></DropdownMenu.Trigger>
+      <DropdownMenu.Trigger asChild><PmIconButton ref={triggerRef} icon={icon} label={label} small /></DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content className="pm-ui-menu pm-ui-floating pm-ui" data-density="compact" aria-label={label} {...placementOf(placement)} sideOffset={6} collisionPadding={16} onEscapeKeyDown={event => event.stopPropagation()}>
           {items.map(item => (

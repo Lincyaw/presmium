@@ -139,6 +139,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 - 允许的父页面来源是 `presmium serve --preview-origin <源>`（可重复）给出的；在 studio 中，启动器把 dsh 的源（`--host` 时是局域网的源）告诉服务。代理只向这些来源发消息，也只接受从它们发来、带同一个 nonce 的消息。
 - 代理启动后先发 `ready`。工作台收到 `ready` 之后才发别的消息。信封的版本不同时，工作台提示“预览的版本与工作台不符，请重新启动”。
 - 工作台把连接绑定到建立它的文档与形态；切换后不再接收旧连接的报告。预览内的跨文稿导航由 `ready.document` 驱动工作台切换文档，沿用未保存修改的确认流程；取消时恢复原文档的预览。点选与选区只提交给握手确认的文档。
+- 每次 `ready` 都开启该 iframe 的新一代连接；待确认请求还须匹配原连接实例与代次。`page-insert` 与 `flush` 只发送一次：首次握手前可以排队，发送后不因重载再次执行。
 - 未知类型的消息一律忽略。消息只是数据：代理不执行收到的代码，也不打开收到的链接。
 
 ### 4.3 消息
@@ -148,6 +149,8 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 产物 → 工作台 | `ready` | `renderer`（`web` 或 `slides`）、`document`、`revision`、`capabilities` | 代理就绪。`revision` 是页面所用 IR 的修订号；`capabilities` 列出页面支持的消息类型 |
 | 工作台 → 产物 | `activity` | `active`、`request` | 可选能力。暂停时卸载文稿组件并停止内核；恢复时刷新网页 IR、恢复内核和布局。`request` 为非负安全整数 |
 | 产物 → 工作台 | `activity` | `active`、`request`、`revision?`、`error?` | 完成上述切换后的确认，回传请求编号；失败时工作台销毁预览，沿用重新加载路径 |
+| 工作台 → 产物 | `flush` | `request` | 可选能力，由实现 `PreviewPage.flush` 的页面在 `ready.capabilities` 中声明。结束并保留原地文字编辑，等待正文与已提交的素材源码保存；输入法组字结束后才提交 |
+| 产物 → 工作台 | `flushed` | `request`、`error?` | 上述等待的结果。未提交的素材源码草稿（含浏览器恢复的草稿）阻止完成，失败保留输入。原地文字的 `edited` 先于此消息，工作台仍须等待自己的串行写入队列 |
 | 工作台 → 产物 | `go` | `section`、`step?`、`trail?`、`view?` | 跳到某节的某一步。`view` 是网页形态的运行时视图（`document`、`present` 等，与控制通道的位置相同）；幻灯片形态没有 |
 | 工作台 → 产物 | `highlight` | `target`：`{ section, block? }` 或 `null` | 框出一块或一节；不在视野中时滚动过去；`null` 清除 |
 | 工作台 → 产物 | `pick` | `on` | 点选模式。打开时点在块上报告 `picked`，不触发块自己的操作；链接、按钮与输入框照常工作（规则同 `placeOfClick`）。鼠标下的块加一道浅色细框，指针为手形；双击块不选中词 |
@@ -161,6 +164,9 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 产物 → 工作台 | `source-save` | `section`、`block`、`request`、`path`、`base`、`content`、`part?` | 保存当前块已经打开的源码；工作台重新核对块与文件的绑定、版本与编辑锁，沿用正文的串行保存队列 |
 | 工作台 → 产物 | `source-saved` | `section`、`block`、`request`、`sourceVersion?`、`error?` | 保存确认或错误；请求编号关联原草稿，失败不清除编辑内容 |
 | 产物 → 工作台 | `source-draft` | `dirty` | 汇总未保存的块源码草稿；顶栏与步骤讲解草稿共同显示“未保存”，不传源码内容 |
+| 产物 → 工作台 | `body-draft` | `dirty` | 汇总未确认保存的正文块草稿，包括恢复的草稿 |
+| 产物 → 工作台 | `blocks-edited` | `section`、`request`、`revision`、`blocks` | 提交一个页面的正文块；工作台核对 IR 修订与当前源码版本后串行写回 |
+| 工作台 → 产物 | `blocks-result` | `section`、`request`、`revision?`、`error?` | 正文写回结果；真实改写须等到更新的 IR 并再次确认源码版本，旧请求不能清除其后输入 |
 | 产物 → 工作台 | `source-create` | `section`、`id`、`after?`、`request`、`revision` | 在指定正文块后创建独立动画；预览先为新 UUID 保存源码视图状态，再请求创建。使用插件提供的初始代码，代码文件与文稿引用保存为同一个版本 |
 | 工作台 → 产物 | `source-created` | `section`、`request`、`block?`、`error?` | 返回新块的 ID，预览在该块打开源码；失败时保留当前编辑状态 |
 | 工作台 → 产物 | `page-insert` | `section`、`id`、`request` | 页目录请求在当前页之后插入独立页面，画布先完成待保存的正文块 |
@@ -177,6 +183,8 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 产物 → 工作台 | `updated` | `revision` | 页面换上了新的 IR。工作台据此重新加上高亮与焦点的标记，并判断预览是否已反映刚保存的源码 |
 | 产物 → 工作台 | `report` | `level`（`error` 或 `warning`）、`plugin?`、`message`、`resolved?` | 页面中的运行时问题；`resolved: true` 清除同一问题。工作台按预览实例报告到诊断接口 |
 | 产物 → 工作台 | `shortcut` | `command`（`undo`、`redo` 或 `dismiss`） | 预览获得键盘焦点后，Ctrl/Cmd+Z 仍撤消、Ctrl/Cmd+Y 与 Ctrl/Cmd+Shift+Z 仍恢复工作台中的版本，Esc 关掉工作台的工具条；页面自己的输入框与就地编辑中的按键不转发。只传这三种意图，经原有来源、nonce 与文稿身份检查 |
+
+页面重命名和移动先发送 `flush`，再保存该文稿各步骤的讲稿草稿，最后进入既有源码写入队列；不在队列内部等待预览保存，避免正文回调等待同一个队列。保存确认绑定文稿、目标、提交版本、预览实例与代次，失败或过期回调均不表示新输入已保存。工作台沿用现有 IR 订阅；等待写回后的新 IR 使用有界的条件读取，不为每次保存新增 SSE 连接。
 
 ### 4.4 坐标与步骤
 

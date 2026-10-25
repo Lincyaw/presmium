@@ -2,6 +2,7 @@ import { blockText, irBlocks, stepKeys } from '@lincyaw/kernel'
 import { applyRenderedEdit } from './text-edit.ts'
 import type { IrAnswer, IRDocument, IRSection, SourceAnswer, SourcePos } from '@lincyaw/kernel'
 import type { WorkspaceClient } from './workspace-client.ts'
+import { waitForSourceRevision } from './source-revision.ts'
 
 export interface StepNarrationDraft {
   document: IRDocument
@@ -54,28 +55,7 @@ export function narrationTargetSignature(draft: StepNarrationDraft): string {
 
 /** Source writes and filesystem compilation finish independently. An acknowledgement needs the newer IR. */
 export function narrationIrAfter(client: WorkspaceClient, document: string, revision: string): Promise<IrAnswer> {
-  return new Promise((resolve, reject) => {
-    let unsubscribe = () => {}
-    let finished = false
-    const finish = (answer?: IrAnswer, error?: unknown) => {
-      if (finished) return
-      finished = true
-      clearTimeout(timeout)
-      unsubscribe()
-      if (answer) resolve(answer)
-      else reject(error)
-    }
-    const timeout = setTimeout(() => finish(undefined, new Error('narration-refresh')), 20_000)
-    unsubscribe = client.subscribeIr(document, event => {
-      if (event.revision === revision || finished) return
-      void (async () => {
-        let answer = await client.readIr(document)
-        // An older in-flight HTTP request can resolve after the newer SSE event.
-        if (answer.revision !== event.revision) answer = await client.readIr(document)
-        if (answer.revision !== revision) finish(answer)
-      })().catch(error => finish(undefined, error))
-    })
-  })
+  return waitForSourceRevision(client, document, revision).catch(error => { throw error instanceof Error && error.message === 'source-refresh' ? new Error('narration-refresh') : error })
 }
 
 export function writeStepNarration(draft: StepNarrationDraft, text: string, mode: StepNarrationDraft['mode']): string {

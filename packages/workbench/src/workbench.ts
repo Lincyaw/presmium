@@ -15,7 +15,8 @@ import { narrationIrAfter, narrationTargetSignature, readStepNarration, writeSte
 import type { StepNarrationDraft } from './narration.ts'
 import { narrationDrafts } from './narration-drafts.ts'
 import { bodyBlocks, writeBodyBlocks } from './block-edit.ts'
-import { writePage } from './page-edit.ts'
+import { movePageSource, pageEditCapability, renamePageSource, writePage } from './page-edit.ts'
+import { waitForSourceRevision } from './source-revision.ts'
 import { blockSourceTarget, previewBlockSource, readBlockSource, savedBlockSource, writeBlockSource } from './block-source.ts'
 import type { BlockSourceDraft } from './block-source.ts'
 import { workspaceClient, WorkspaceServerError } from './workspace-client.ts'
@@ -94,6 +95,8 @@ export interface WorkbenchState {
   sourceDirty?: boolean
   bodyDirty?: boolean
   isCreatingPage?: boolean
+  isEditingPage?: boolean
+  pageEditFailure?: string
   diagnostics?: DiagnosticSnapshot
   isDiagnosticsUnavailable: boolean
   canRepairDiagnostics: boolean
@@ -124,6 +127,7 @@ export interface WorkbenchState {
 
 export interface PreviewSink {
   readonly generation?: number
+  readonly capabilities?: readonly PreviewCommand['type'][]
   send(command: PreviewCommand): void
 }
 
@@ -184,6 +188,8 @@ const DOCUMENT_RESET = {
   sourceDirty: false,
   bodyDirty: false,
   isCreatingPage: false,
+  isEditingPage: false,
+  pageEditFailure: undefined,
   ir: undefined, preview: undefined, previewFailure: undefined, previewIrRevision: undefined, position: undefined,
   diagnostics: undefined, isDiagnosticsUnavailable: false, isRepairingDiagnostics: false, diagnosticsRepairFailure: undefined,
   pointer: undefined, editing: undefined, save: { kind: 'idle' }, editFallback: undefined,
@@ -246,6 +252,7 @@ export class Workbench {
   readonly #blockSources = new Map<string, BlockSourceDraft>()
   #pageRequest?: { document: string, section: string, id: string, request: number, timer: ReturnType<typeof setTimeout> }
   #pageSequence = Date.now()
+  readonly #flushRequests = new Map<number, { document: string, scope: number, sink: PreviewSink, generation?: number, finish(error?: string): void }>()
   /** A place to show that no preview could take yet (none was attached, e.g. the chat covered the document). */
   #pendingReveal?: PreviewAnchor
   /** The AI's changes to show on the document once the preview has them. */
@@ -646,10 +653,13 @@ export class Workbench {
       // Refuse stale maps even if another save finished while the file was read.
       if (!current()) return
       if (this.#state.ir?.revision !== answer.revision) throw new Error(this.#messages.blockConflict)
-      const saved = content !== source.content ? await this.client.saveSource(WORKSPACE_SCOPE, source.path, content, source.version, this.#messages.editedBody(section.title)) : { version: source.version }
+      const changed = content !== source.content
+      const saved = changed ? await this.client.saveSource(WORKSPACE_SCOPE, source.path, content, source.version, this.#messages.editedBody(section.title)) : { version: source.version }
+      if (!current()) return
+      const compiled = changed ? await waitForSourceRevision(this.client, dir, answer.revision) : answer
       if (!current()) return
       await this.#readIr(dir)
-      const revision = this.#state.ir?.revision
+      const revision = compiled.revision
       const confirmed = await this.client.readSource(WORKSPACE_SCOPE, source.path)
       if (!current()) return
       if (confirmed.version !== saved.version) throw new Error(this.#messages.blockConflict)
@@ -660,7 +670,7 @@ export class Workbench {
       result(undefined, revision)
     } catch (error) {
       const reason = errorMessage(error)
-      const message = reason === 'block-step-order' ? this.#messages.blockStepOrder : reason === 'block-multiple-files' ? this.#messages.blockFiles : reason === 'block-mixed-container' ? this.#messages.blockContainer : reason
+      const message = reason === 'block-step-order' ? this.#messages.blockStepOrder : reason === 'block-multiple-files' ? this.#messages.blockFiles : reason === 'block-mixed-container' ? this.#messages.blockContainer : this.#sourceError(error)
       if (current()) this.#set({ save: { kind: 'failed', message } })
       result(message)
     }
@@ -676,9 +686,176 @@ export class Workbench {
     return reason
   }
 
+  #pageEditMessage(reason: string): string {
+    const t = this.#messages
+    switch (reason) {
+      case 'page-multiple-files': return t.pageEditFiles
+      case 'page-boundary': return t.pageEditBoundary
+      case 'page-hierarchy': return t.pageEditHierarchy
+      case 'page-implicit-title': return t.pageEditImplicitTitle
+      case 'page-formatted-title': return t.pageEditFormattedTitle
+      case 'page-title': return t.pageEditInvalidTitle
+      case 'page-compiler': return t.pageEditCompiler
+      case 'page-busy': return t.pageEditBusy
+      case 'preview-flush-unavailable': return t.pageEditPreview
+      case 'page-context-changed': return t.pageEditChanged
+      case 'save-timeout': return t.pageEditFlushTimeout
+      case 'source-draft': return t.pageEditSourceDraft
+      case 'source-refresh': return t.pageEditRefresh
+      case 'page-draft':
+      case 'source-conflict':
+      case 'narration-conflict':
+      case 'revision-conflict': return t.pageEditDraft
+      case 'save-locked': return t.saveLocked
+      default: return t.pageEditRequestFailed
+    }
+  }
+
+  pageEditCapability(section: string): { rename: boolean, move: boolean, reason?: string } {
+    const capability = pageEditCapability(this.#state.ir?.doc, section)
+    if (isAgentChanging(this.#state)) return { rename: false, move: false, reason: this.#messages.saveLocked }
+    if (this.#state.isCreatingPage || this.#state.isEditingPage || this.#state.isHistoryBusy) return { rename: false, move: false, reason: this.#messages.pageEditBusy }
+    return { ...capability, ...capability.reason ? { reason: this.#pageEditMessage(capability.reason) } : {} }
+  }
+
+  clearPageEditFailure(): void { this.#set({ pageEditFailure: undefined }) }
+
+  /** Flush before entering the source-write queue: the viewer's body save itself needs that queue. */
+  async flushPendingEdits(): Promise<void> {
+    const document = this.#state.document
+    const scope = this.#narrationScope
+    const sink = [...this.#previewSinks].find(sink => sink.capabilities?.includes('flush'))
+    if (document === undefined || !sink) throw new Error('preview-flush-unavailable')
+    const generation = sink.generation
+    const current = () => scope === this.#narrationScope && document === this.#state.document && this.#previewSinks.has(sink) && generation === sink.generation
+    if (isAgentChanging(this.#state)) throw new Error('save-locked')
+    const request = ++this.#pageSequence
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => finish('save-timeout'), 35_000)
+      const finish = (error?: string) => {
+        if (!this.#flushRequests.delete(request)) return
+        clearTimeout(timer)
+        if (error) reject(new Error(error))
+        else resolve()
+      }
+      this.#flushRequests.set(request, { document, scope, sink, generation, finish })
+      try { sink.send({ type: 'flush', request }) } catch { finish('preview-flush-unavailable') }
+    })
+    // `edited` is posted before `flushed`; its in-place title save is already in this queue.
+    await this.#edits
+    if (!current()) throw new Error('page-context-changed')
+    if (this.#state.sourceDirty) throw new Error('source-draft')
+    const drafts = narrationDrafts(this.client)
+    for (;;) {
+      if (!current()) throw new Error('page-context-changed')
+      const next = Object.entries(drafts.snapshot()).find(([, entry]) => entry.document === document && (entry.dirty || entry.saving || entry.composing))
+      if (!next) break
+      const [key, entry] = next
+      if (entry.saving || entry.composing) {
+        await new Promise<void>((resolve, reject) => {
+          let unsubscribe = () => {}, stop = () => {}
+          const timer = setTimeout(() => finish('save-timeout'), 30_000)
+          const finish = (error?: string) => { clearTimeout(timer); unsubscribe(); stop(); error ? reject(new Error(error)) : resolve() }
+          const check = () => {
+            if (!current()) return finish('page-context-changed')
+            const active = drafts.snapshot()[key]
+            if (!active?.saving && !active?.composing) finish()
+          }
+          unsubscribe = drafts.subscribe(check)
+          stop = this.subscribe(check)
+          check()
+        })
+      } else {
+        if (entry.failure || !entry.draft) throw new Error('page-draft')
+        await drafts.save(key, (draft, text, mode) => this.saveNarration(draft, text, mode))
+        if (drafts.snapshot()[key]?.failure) throw new Error('page-draft')
+      }
+    }
+    await this.#edits
+    if (!current()) throw new Error('page-context-changed')
+    if (isAgentChanging(this.#state)) throw new Error('save-locked')
+    if (this.#state.bodyDirty || this.#state.editFallback || this.#state.save.kind === 'failed' || this.#state.save.kind === 'locked') throw new Error('page-draft')
+    await this.#readIr(document)
+    if (!current()) throw new Error('page-context-changed')
+  }
+
+  renamePage(section: string, title: string): Promise<boolean> {
+    return this.#editPage(section, { kind: 'rename', title })
+  }
+
+  movePage(section: string, before: string | null): Promise<boolean> {
+    return this.#editPage(section, { kind: 'move', before })
+  }
+
+  async #editPage(section: string, operation: { kind: 'rename', title: string } | { kind: 'move', before: string | null }): Promise<boolean> {
+    if (this.#state.isCreatingPage || this.#state.isEditingPage || this.#state.isHistoryBusy) return false
+    const document = this.#state.document
+    const scope = this.#narrationScope
+    const current = () => document !== undefined && document === this.#state.document && scope === this.#narrationScope
+    if (document === undefined) return false
+    let sourceSaved = false
+    this.#set({ isEditingPage: true, pageEditFailure: undefined })
+    try {
+      await this.flushPendingEdits()
+      if (!current()) throw new Error('page-context-changed')
+      const work = this.#edits.then(async () => {
+        if (!current()) throw new Error('page-context-changed')
+        if (isAgentChanging(this.#state)) throw new Error('save-locked')
+        const answer = this.#state.ir
+        const target = answer?.doc.sections.find(page => page.id === section)
+        if (!answer || !target) throw new Error('page-boundary')
+        const source = await this.client.readSource(WORKSPACE_SCOPE, answer.doc.meta.entry)
+        if (!current() || this.#state.ir?.revision !== answer.revision) throw new Error('page-context-changed')
+        const content = operation.kind === 'rename'
+          ? renamePageSource(answer.doc, section, source.content, operation.title, answer.sourceCapabilities)
+          : movePageSource(answer.doc, section, operation.before, source.content, answer.sourceCapabilities)
+        if (content === source.content) return true
+        const position = this.#state.position
+        const ids = answer.doc.sections.map(page => page.id)
+        if (operation.kind === 'move') {
+          ids.splice(ids.indexOf(section), 1)
+          const index = operation.before === null ? ids.length : ids.indexOf(operation.before)
+          if (index < 0) throw new Error('page-boundary')
+          ids.splice(index, 0, section)
+        }
+        this.#set({ save: { kind: 'saving' } })
+        const saved = await this.client.saveSource(WORKSPACE_SCOPE, source.path, content, source.version, operation.kind === 'rename' ? this.#messages.pageRenamed(operation.title.trim()) : this.#messages.pageMoved(target.title))
+        sourceSaved = true
+        const updated = await waitForSourceRevision(this.client, document, answer.revision)
+        const confirmed = await this.client.readSource(WORKSPACE_SCOPE, source.path)
+        if (!current()) throw new Error('page-context-changed')
+        if (confirmed.version !== saved.version) throw new Error('revision-conflict')
+        if (JSON.stringify(updated.doc.sections.map(page => page.id)) !== JSON.stringify(ids)
+          || answer.doc.sections.some(page => {
+            const changed = updated.doc.sections.find(next => next.id === page.id)
+            return !changed || page.steps !== changed.steps || JSON.stringify(stepKeys(page)) !== JSON.stringify(stepKeys(changed))
+          }) || operation.kind === 'rename' && updated.doc.sections.find(page => page.id === section)?.title !== operation.title.trim()) throw new Error('source-refresh')
+        await this.#readIr(document)
+        await this.#history.read(document)
+        if (!current()) throw new Error('page-context-changed')
+        this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
+        if (position && this.#state.ir?.doc.sections.some(page => page.id === position.section)) this.goToStep(position.section, position.step)
+        this.#record(`page.${operation.kind}`, { 'presmium.section': section, ...operation.kind === 'move' ? { 'presmium.before': operation.before ?? '' } : {} })
+        return true
+      })
+      this.#edits = work.then(() => {}, () => {})
+      return await work
+    } catch (error) {
+      const reason = error instanceof WorkspaceServerError && error.status === 409 ? 'revision-conflict' : errorMessage(error)
+      if (current()) {
+        const message = sourceSaved ? this.#messages.pageEditRefresh : this.#pageEditMessage(reason)
+        this.#set({ pageEditFailure: message, ...this.#state.save.kind === 'saving' ? { save: { kind: 'failed', message } as SaveState } : {} })
+      }
+      this.#record(`page.${operation.kind}.failed`, { 'presmium.section': section, 'presmium.error': reason })
+      return false
+    } finally {
+      if (current()) this.#set({ isEditingPage: false })
+    }
+  }
+
   /** The canvas finishes pending body edits before asking to insert a page into their source. */
   createPage(after = this.#state.position?.section): void {
-    if (this.#state.isCreatingPage || this.#state.mode !== 'editing' || this.#state.webView !== 'document' || this.#state.previewRenderer !== 'web' || isAgentChanging(this.#state)) return
+    if (this.#state.isCreatingPage || this.#state.isEditingPage || this.#state.mode !== 'editing' || this.#state.webView !== 'document' || this.#state.previewRenderer !== 'web' || isAgentChanging(this.#state)) return
     const dir = this.#state.document
     const doc = this.#state.ir?.doc
     const section = doc?.sections.find(section => section.id === after) ?? doc?.sections[0]
@@ -931,25 +1108,38 @@ export class Workbench {
     const document = this.#state.document
     const doc = this.#state.ir?.doc
     if (document === undefined || !doc) return
-    const source = this.#sourceOf(target, doc)
+    const scope = this.#narrationScope
+    const currentDocument = () => document === this.#state.document && scope === this.#narrationScope
     const title = doc.sections.find(s => s.id === target.section)?.title ?? ''
     const started = Date.now()
     const saved = (outcome: string, error?: string) => this.#record('edit.save', { 'presmium.section': target.section, 'presmium.block': target.block, 'presmium.before': before, 'presmium.after': after, 'presmium.outcome': outcome, 'presmium.error': error, 'presmium.ms': Date.now() - started })
     this.#set({ save: { kind: 'saving' }, editFallback: undefined })
     this.#edits = this.#edits.then(async () => {
+      if (!currentDocument()) return
+      const opened = this.#state.ir
+      const source = opened && this.#sourceOf(target, opened.doc)
       const fallBack = () => {
+        if (!currentDocument()) return
         saved('fallback')
         this.#set({ save: { kind: 'idle' }, editFallback: { target, before, after } })
         this.#reloadPreview()
       }
-      if (!source) return fallBack()
+      if (!source || !opened) return fallBack()
       try {
         for (let attempt = 0; ; attempt++) {
           const current = await this.client.readSource(WORKSPACE_SCOPE, source.file)
+          if (!currentDocument()) return
+          if (this.#state.ir?.revision !== opened.revision) throw new Error(this.#messages.blockConflict)
           const edited = applyRenderedEdit(current.content, source, before, after)
           if (!edited.ok) return fallBack()
           try {
-            await this.client.saveSource(WORKSPACE_SCOPE, source.file, edited.content, current.version, this.#messages.editedSection(title))
+            if (edited.content !== current.content) {
+              const saved = await this.client.saveSource(WORKSPACE_SCOPE, source.file, edited.content, current.version, this.#messages.editedSection(title))
+              await waitForSourceRevision(this.client, document, opened.revision)
+              const confirmed = await this.client.readSource(WORKSPACE_SCOPE, source.file)
+              if (confirmed.version !== saved.version) throw new Error(this.#messages.blockConflict)
+              if (currentDocument()) await this.#readIr(document)
+            }
             break
           } catch (error) {
             // Changed on disk between the read and the save: read it again once.
@@ -957,15 +1147,15 @@ export class Workbench {
           }
         }
         saved('saved')
-        if (this.#state.document === document) {
+        if (currentDocument()) {
           this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
           void this.#history.read(document)
         }
       } catch (error) {
         const locked = error instanceof WorkspaceServerError && error.answer.locked
         saved(locked ? 'locked' : 'failed', errorMessage(error))
-        if (this.#state.document !== document) return
-        this.#set({ save: locked ? { kind: 'locked' } : { kind: 'failed', message: errorMessage(error) } })
+        if (!currentDocument()) return
+        this.#set({ save: locked ? { kind: 'locked' } : { kind: 'failed', message: this.#sourceError(error) } })
         this.#reloadPreview()
       }
     })
@@ -1133,17 +1323,17 @@ export class Workbench {
   }
 
   undo(): Promise<boolean> {
-    if (this.#state.isCreatingPage) return Promise.resolve(false)
+    if (this.#state.isCreatingPage || this.#state.isEditingPage) return Promise.resolve(false)
     return this.#timed('history.undo', {}, () => this.#history.undo(), done => (done ? 'done' : 'refused'))
   }
 
   redo(): Promise<boolean> {
-    if (this.#state.isCreatingPage) return Promise.resolve(false)
+    if (this.#state.isCreatingPage || this.#state.isEditingPage) return Promise.resolve(false)
     return this.#timed('history.redo', {}, () => this.#history.redo(), done => (done ? 'done' : 'refused'))
   }
 
   revertRevision(id: string): Promise<boolean> {
-    if (this.#state.isCreatingPage) return Promise.resolve(false)
+    if (this.#state.isCreatingPage || this.#state.isEditingPage) return Promise.resolve(false)
     return this.#timed('history.revert', { 'presmium.revision': id }, () => this.#history.revert(id), done => (done ? 'done' : 'refused'))
   }
 
@@ -1182,7 +1372,10 @@ export class Workbench {
     if (reveal) sink.send({ type: 'go', section: reveal.section })
     sink.send({ type: 'highlight', target: reveal ?? this.#state.pointer?.target ?? null })
     sink.send({ type: 'pins', targets: commentPins(this.#state.comments) })
-    return () => this.#previewSinks.delete(sink)
+    return () => {
+      this.#previewSinks.delete(sink)
+      for (const pending of this.#flushRequests.values()) if (pending.sink === sink) pending.finish('page-context-changed')
+    }
   }
 
   /** A report of the shown preview. */
@@ -1192,6 +1385,12 @@ export class Workbench {
     const generation = origin?.generation
     const current = () => scope === this.#narrationScope && document === this.#state.document && renderer === this.#state.previewRenderer && (!origin || this.#previewSinks.has(origin) && generation === origin.generation)
     switch (report.type) {
+      case 'flushed': {
+        const pending = this.#flushRequests.get(report.request)
+        if (!pending || !origin || pending.sink !== origin || pending.document !== document || pending.scope !== scope) break
+        pending.finish(pending.generation === origin.generation ? report.error : 'page-context-changed')
+        break
+      }
       case 'blocks-edited':
         this.#edits = this.#edits.then(() => current() ? this.#saveBlocks(report, current) : undefined)
         break
@@ -1228,6 +1427,7 @@ export class Workbench {
         break
       case 'ready':
       case 'updated':
+        if (origin) for (const pending of this.#flushRequests.values()) if (pending.sink === origin && pending.generation !== origin.generation) pending.finish('page-context-changed')
         this.#set({ previewIrRevision: report.revision })
         this.#flashChanges()
         if (report.type === 'ready' && renderer === 'web' && this.#state.webView !== 'document') this.#showWebView()
@@ -1324,6 +1524,7 @@ export class Workbench {
   }
 
   #stopSubscriptions(): void {
+    for (const pending of this.#flushRequests.values()) pending.finish('page-context-changed')
     if (this.#pageRequest) {
       clearTimeout(this.#pageRequest.timer)
       this.#pageRequest = undefined

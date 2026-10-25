@@ -1993,6 +1993,8 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 | 设计系统 `@lincyaw/design`（令牌、类、字体、图标、`COLORS`）；工作台的面板与状态 `@lincyaw/workbench`（`Workbench`、`workspaceClient`、`connectPreview`、各面板与文档编辑器 `DocumentEditor`、React 版的 `Pm*`）；bundle 的客户端部分 `@lincyaw/dsh/client` 与 `presmium-workbench` 行（`/api/presmium/workbench`） | `packages/design/`、`packages/workbench/`、`packages/dsh/src/client/`、`packages/dsh/src/node/workbench.ts`、`packages/dsh/build/` |
 | `presmium studio [目录] [--port] [--host]` | `@lincyaw/studio`；`@lincyaw/cli` 转交 |
 
+`IrAnswer.sourceCapabilities` 可选地报告生成该 IR 的编译器实际支持的源码语法，由 `Parser` 经 `Compilation` 传递，不写入作者的 `doc.meta`。当前 `unicodePageTargets: true` 表示支持 `ir.md` 2.2 节的 Unicode 章节标签；字段缺失时，工作台拒绝新增这类标签并提示重启工作区服务，已有标签和 ASCII 标签不受此门禁影响。
+
 ### 13.3 预览协议
 
 工作台经 `postMessage` 驱动嵌在 iframe 中的产物页面：工作台发 `go`、`highlight`、`pick`、`pins`、`marks`、`appearance`，产物发 `ready`、`position`、`picked`、`selection`、`updated`、`report`；只传章节、块与步骤的 ID（步号按完整文稿编号，幻灯片形态用 `trail` 换算），源码位置由工作台从 IR 得出。预览代理只在工作区服务的站点页面中启动（页面配置的 `origins` 取自 `RenderContext.preview`），地址带 `presmium-preview=<nonce>`、在 iframe 中、来源在允许的列表中才启动；双方核对 `origin`、`source` 与 nonce；预览页面带 `frame-ancestors`。构建的站点的页面没有允许的来源，代理不启动。嵌在工作台中时（`isPreviewEmbedded()`，页面的 `<html>` 带 `pm-in-workbench` 类），网页形态只显示一张放在画布上的纸，不带站点的导航栏、搜索、侧栏、本页目录与标题的永久链接，放映视图画成画布上的一张幻灯片、没有放映时的控制条；插件只用于放映、录制的界面也凭这个类隐藏（如讲授的录制工具条）；幻灯片形态是同一个放映视图，没有控制条与外边距，比例由工作台的画布保持（`design-dsh.md` 7.3 节）。产物在 DOM 上写锚点 `data-section`、`.pm-block[data-block]`、`data-step`；幻灯片是 `.pm-slide[data-section][data-slide][data-step]`，其中的块是同样的 `.pm-block[data-block]`。消息的字段与握手见 `design-dsh.md` 第 4 节。

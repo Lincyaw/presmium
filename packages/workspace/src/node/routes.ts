@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { hasRole, isRecord, jsonResponse, problemResponse, pushStream, sseResponse } from '@lincyaw/kernel'
 import type { ChangesAnswer, CommitAnswer, CompileJob, DocumentOperation, DocumentsAnswer, JobsAnswer, Member, PresmiumNodePlugin, RequestContext, RevertResult, RevisionsAnswer, Route, SavedAnswer, ServerContribution, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
@@ -256,7 +257,8 @@ function workbenchRoutes(workbench: WorkbenchApi): Record<string, Route> {
       handle: (request, ctx) => catchRequestErrors(async () => {
         if (request.method !== 'GET') return problemResponse(405, 'GET')
         const ir = await workbench.ir(ctx.document)
-        const etag = `"${ir.revision}"`
+        const capabilities = createHash('sha256').update(JSON.stringify(ir.sourceCapabilities ?? {})).digest('hex').slice(0, 8)
+        const etag = `"${ir.revision}-${capabilities}"`
         if (request.headers.get('if-none-match') === etag) return new Response(null, { status: 304, headers: { ETag: etag, 'Cache-Control': 'no-store' } })
         const response = jsonResponse(ir)
         response.headers.set('ETag', etag)

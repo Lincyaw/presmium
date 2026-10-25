@@ -22,6 +22,7 @@ interface StoredDraft {
 }
 const queues = new WeakMap<Viewer, BodySaveQueue>()
 let nextRequest = 0
+const draftStorage = (viewer: Viewer) => `presmium.body-drafts:${location.pathname}:${viewer.doc.getSnapshot().meta.entry}`
 // Source and mdast positions may move when an earlier section is saved.
 function contentSignature(section: IRSection | undefined): string {
   return JSON.stringify(
@@ -45,6 +46,17 @@ export function bodySaveQueue(viewer: Viewer): BodySaveQueue {
   return queue
 }
 
+/** Recover stored author drafts even when the lazy editor has not mounted yet. */
+export async function settleBodyEdits(viewer: Viewer): Promise<void> {
+  let queue = queues.get(viewer)
+  if (!queue && document.documentElement.hasAttribute('data-preview-picking')) {
+    try {
+      if (sessionStorage.getItem(draftStorage(viewer))) queue = bodySaveQueue(viewer)
+    } catch { throw new Error('draft-storage') }
+  }
+  await queue?.settled()
+}
+
 /** One document writes serially. Its acknowledgements and frozen drafts outlive any editor view. */
 export class BodySaveQueue {
   readonly state = createStore<Record<string, BodySaveState>>({})
@@ -54,13 +66,14 @@ export class BodySaveQueue {
   #ownRevisions = new Map<string, string>()
   #flight?: { section: string; request: number; version: number }
   #held = new Set<string>()
+  #settlers = new Set<() => void>()
   #timeout?: ReturnType<typeof setTimeout>
   #viewer: Viewer
   #storage: string
   #unsubscribe: () => void
   constructor(viewer: Viewer) {
     this.#viewer = viewer
-    this.#storage = `presmium.body-drafts:${location.pathname}:${viewer.doc.getSnapshot().meta.entry}`
+    this.#storage = draftStorage(viewer)
     this.#revision = String(
       viewer.doc.getSnapshot().meta[PREVIEW_REVISION] ?? '',
     )
@@ -110,14 +123,22 @@ export class BodySaveQueue {
   /** IME composition must not be submitted by another page's save callback. */
   hold(section: string, held: boolean): void {
     if (held) this.#held.add(section)
-    else this.#held.delete(section)
+    else if (this.#held.delete(section)) {
+      // compositionend records its final transaction in the same event. Check
+      // afterwards so releasing a hold cannot acknowledge that text too early.
+      queueMicrotask(() => { for (const check of [...this.#settlers]) check() })
+    }
   }
   /** Code changes can reload the iframe, so finish body edits before applying them. */
   settled(): Promise<void> {
     return new Promise((resolve, reject) => {
       let unsubscribe = () => {}
+      let finished = false
       const done = (error?: string) => {
+        if (finished) return
+        finished = true
         unsubscribe()
+        this.#settlers.delete(check)
         clearTimeout(timeout)
         if (error) reject(new Error(error))
         else resolve()
@@ -126,11 +147,12 @@ export class BodySaveQueue {
         const states = Object.values(this.state.getSnapshot())
         const failed = states.find(state => state.status === 'failed')
         if (failed) return done(failed.error ?? 'save-failed')
-        if (!this.#flight && !states.some(state => state.blocks)) return done()
+        if (!this.#flight && !this.#held.size && !states.some(state => state.blocks)) return done()
         this.flush()
       }
       const timeout = setTimeout(() => done('save-timeout'), 30_000)
       unsubscribe = this.state.subscribe(check)
+      this.#settlers.add(check)
       check()
     })
   }

@@ -53,6 +53,24 @@ committed to the workspace's git repository) or rejects.
 
 Pages contain blocks and correspond to IR sections (one slide in Present). The page list's plus and the block menu's New page insert a distinct page after the current one; adding an ordinary block stays within its page. Flush body drafts before a page insertion, preserve existing source and narration, and focus the new page only once it is present in the IR. Verify insertion order, independent editing and presentation, and undo/redo; refuse ambiguous cross-file boundaries instead of guessing.
 
+Page renaming and moving use `page-edit.ts` to slice the current entry source rather than re-render the
+document. Pin original section IDs before renaming or reordering peers, including duplicate titles; keep
+cover and chapter boundaries fixed. The bounded implementation refuses includes, MyST `+++` cells,
+formatted titles and unclear ranges; page copy and deletion remain separate capabilities to implement. Verify Chinese IDs,
+duplicate titles, BOM and CRLF, literal Markdown in titles, and that blocks, narration and steps retain their
+bindings. `IrAnswer.sourceCapabilities` comes from the actual compiler, not authored metadata; adding a
+Unicode label requires `unicodePageTargets: true`. An older service without it must reject the change
+before writing and ask the author to restart the service. See `docs/ir.md` section 2.2 for accepted syntax.
+
+Before these source operations, await the preview's optional one-shot `flush` barrier outside the workbench
+write queue, then save step-script drafts and join the serial queue. The preview commits in-place titles
+first, waits for body acknowledgements and composition, and waits only for source writes the author
+already submitted; hidden dirty or restored source drafts block the operation instead of being adopted.
+Bind replies to the document, preview instance, generation and request. Confirm the saved source version
+and newer IR before acknowledging a changed body or page; use conditional IR reads for that bounded wait,
+without opening another SSE stream per save. Verify an immediate rename after typing, delayed saves,
+offline failure, retry with the title draft retained, and stale replies after a document switch.
+
 Generated content in the target Web UI is changed through public parameters, chat or comments, with
 shared-material scope and review visible. The existing source/preview paths are compatibility interfaces,
 not the target ordinary author UI and not a scene-replacement picker. Their save boundary remains:
@@ -98,6 +116,9 @@ browser recovery record and a source baseline. Saving is serialized with body ed
 revision, and confirms only its submitted edit version. Follow RFC section 6 for debounce and composition
 behavior. Verify switching steps during a pending save, typing before its acknowledgement, closing the
 panel before completion and recovering a draft after reload; a changed step structure must be rejected.
+An interrupted composition remains a draft requiring review, including after reload; it must not leave a
+stuck composition flag or be autosaved as if the input method had finished. Explicit Save, further editing
+or Discard resolves that interruption.
 
 Verify actual time advancing after Play, pause and seeking, direct first/last and reverse step jumps, and
 the return position after Present, and that the iframe keeps the same `window` object. There must be only one active media clock. Opening, switching steps or

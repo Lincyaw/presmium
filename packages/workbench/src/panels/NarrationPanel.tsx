@@ -12,12 +12,16 @@ export function NarrationPanel() {
   const doc = useWorkbenchState(state => state.ir?.doc)
   const dir = useWorkbenchState(state => state.document)
   const target = useWorkbenchState(state => state.narration)
-  const busy = useWorkbenchState(isAgentChanging)
+  const busy = useWorkbenchState(state => isAgentChanging(state) || Boolean(state.isEditingPage))
   const session = narrationDrafts(workbench.client)
   const edits = useSyncExternalStore(session.subscribe, session.snapshot)
   const [composing, setComposing] = useState(false)
   const key = dir !== undefined && target ? narrationDraftKey(dir, target.section, target.step) : undefined
   const edit = key ? edits[key] : undefined
+  useEffect(() => {
+    setComposing(false)
+    return () => { if (key) session.interruptComposition(key) }
+  }, [key, session])
   useEffect(() => {
     if (!doc || dir === undefined || !target) return
     const section = doc.sections.find(section => section.id === target.section)
@@ -25,7 +29,7 @@ export function NarrationPanel() {
   }, [doc, dir, target?.section, target?.step, session, edit === undefined])
   useEffect(() => {
     if (busy || composing || dir === undefined) return
-    const timers = Object.entries(edits).filter(([, entry]) => entry.document === dir && entry.dirty && !entry.saving && !entry.failure).map(([id]) => setTimeout(() => {
+    const timers = Object.entries(edits).filter(([, entry]) => entry.document === dir && entry.dirty && !entry.saving && !entry.composing && !entry.failure).map(([id]) => setTimeout(() => {
       void session.save(id, (draft, text, mode) => workbench.saveNarration(draft, text, mode))
     }, 600))
     return () => { timers.forEach(clearTimeout) }
@@ -38,7 +42,7 @@ export function NarrationPanel() {
   const mode = edit?.mode ?? 'during'
   const save = () => { if (!busy && !composing) void session.save(key, (draft, text, mode) => workbench.saveNarration(draft, text, mode)) }
   const failure = edit?.failure
-  const message = failure === 'script-file' ? t.narrationScript : failure === 'multiple-files' ? t.narrationFiles : failure === 'formatted-narration' ? t.narrationFormatted : failure === 'narration-conflict' ? t.narrationChanged : failure
+  const message = failure === 'script-file' ? t.narrationScript : failure === 'multiple-files' ? t.narrationFiles : failure === 'formatted-narration' ? t.narrationFormatted : failure === 'narration-conflict' ? t.narrationChanged : failure === 'narration-composition' ? t.narrationCompositionInterrupted : failure
   return (
     <section className="pmw-narration pm-ui" aria-label={t.narration}>
       <header className="pmw-pane__header">
@@ -63,10 +67,10 @@ export function NarrationPanel() {
             <span className="pmw-narration__animation"><PmIcon name="play" />{t.narrationAnimation}{duration > 0 ? ` · ${duration / 1000}s` : ''}</span>
             <span className="pmw-narration__speech"><PmIcon name="captions" />{t.narrationSpeech}</span>
           </div>
-          <PmTextarea label={t.narrationText} value={edit.text} placeholder={t.narrationPlaceholder} disabled={busy} hint={t.narrationAutosave} error={edit.dirty ? message : undefined} autoGrow
+          <PmTextarea key={key} label={t.narrationText} value={edit.text} placeholder={t.narrationPlaceholder} disabled={busy} hint={t.narrationAutosave} error={edit.dirty ? message : undefined} autoGrow
             onChange={event => session.change(key, { text: event.target.value })}
             onFocus={() => workbench.selectNarration(section.id, target.step)} onBlur={save}
-            onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)}
+            onCompositionStart={() => { setComposing(true); session.composition(key, true) }} onCompositionEnd={() => { setComposing(false); session.composition(key, false) }}
             onKeyDown={event => { if (!event.nativeEvent.isComposing && event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); save() } }} />
           <div className="pmw-narration__actions">
             <PmButton small disabled={edit.saving || !edit.dirty} onClick={() => session.discard(key)}>{t.narrationDiscard}</PmButton>

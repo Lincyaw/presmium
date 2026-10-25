@@ -16,6 +16,13 @@ and duration by the preview request number (`[preview N]`) or the job ID (`[job]
 - dsh's output is only in the log file. It contains the login token in the launch address; never copy it
   into a report.
 
+The studio also collects root-window exceptions and its workspace client's failed requests. Look for
+`presmium.workbench.error` and `presmium.workbench.request` in the existing diagnostic snapshot; their
+`workbench:` instance is separate from preview frames. The notice remains local when the report cannot
+reach the service, and Dismiss clears only that instance. Request context contains method, logical path,
+document and status, without query parameters, payloads or credentials; an intentional Abort is not a
+request failure. Do not install a global fetch wrapper to collect unrelated Harness traffic.
+
 ## Collect evidence with `pnpm debug:studio`
 
 For a stalling or broken front end, in this order:

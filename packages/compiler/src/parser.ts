@@ -55,7 +55,24 @@ export function withoutBom(text: string): string {
   return text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text
 }
 
+/** MyST's ASCII target tokenizer leaves Unicode page labels as prose; recognize the same explicit top-level intent. */
+function unicodePageTargets(tree: MdastNode, source: string): MdastNode {
+  const lines = source.split(/\r\n|\n|\r/)
+  const children = tree.children ?? []
+  return { ...tree, children: children.map((node, index) => {
+    const next = children[index + 1]
+    const range = nodeLines(node), heading = next && nodeLines(next)
+    if (node.type !== 'paragraph' || next?.type !== 'heading' || !range || !heading || range.line !== range.endLine) return node
+    if (node.children?.length !== 1 || node.children[0]?.type !== 'text') return node
+    const match = /^ {0,3}\(([\p{L}\p{N}_.-]+)\)=[ \t]*$/u.exec(lines[range.line - 1] ?? '')
+    if (!match || !/[^\x00-\x7f]/.test(match[1]!) || lines.slice(range.endLine, heading.line - 1).some(line => line.trim())) return node
+    // Keep the parser's positions and cached fragment nodes untouched; escapes, quotes and literal blocks never match.
+    return { type: 'mystTarget', label: match[1]!, position: node.position }
+  }) }
+}
+
 export class Parser {
+  readonly sourceCapabilities = { unicodePageTargets: true } as const
   signal?: AbortSignal
   readonly #specs: object[]
   readonly #roles: object[]
@@ -129,7 +146,7 @@ export class Parser {
         findings.push({ checkId: 'presmium.parse', severity: 'error', message: `invalid frontmatter: ${errorMessage(error)}`, source: { file, line: 1 } })
       }
     }
-    const tree = await this.#fragments.parse(body, text => this.parse(text), file, this.signal)
+    const tree = unicodePageTargets(await this.#fragments.parse(body, text => this.parse(text), file, this.signal), body)
     tagFile(tree, file)
     const children = placeFootnotes((tree.children ?? []).flatMap(c => c.type === 'block' ? c.children ?? [] : [c]))
     return { file, text, frontmatter, findings, children }

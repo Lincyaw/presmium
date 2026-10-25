@@ -3,7 +3,7 @@ import type { NavigationPosition } from '@lincyaw/host'
 import { connectPreviewFrame, irBlocks, isPreviewActive, isPreviewEmbedded, PREVIEW_REVISION, stepKeys, stepTrail } from '@lincyaw/kernel'
 import type { FollowAnchor, PreviewFrame } from '@lincyaw/kernel'
 import type { Viewer } from '@lincyaw/viewer'
-import { findView, registryRevision } from '@lincyaw/viewer'
+import { findView, flushViewerEdits, registryRevision } from '@lincyaw/viewer'
 import type { Store } from '@lincyaw/host'
 import { createViewerNavigation } from './host.ts'
 
@@ -72,6 +72,7 @@ function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions
       dark.set(value)
     },
     setActive: page.setActive,
+    flush: () => flushViewerEdits(viewer),
     stepOf({ section, block }) {
       const step = blockStep(section, block)
       const found = viewer.section(section)

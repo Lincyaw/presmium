@@ -1,6 +1,10 @@
 import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, SourceTransactionAnswer, SourceTransactionChange, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
 import type { OperationBatch } from './telemetry.ts'
 
+const observedFailures = new WeakSet<object>()
+/** Whether the owned request observer already received this transport failure. */
+export const isObservedWorkspaceFailure = (error: unknown): boolean => typeof error === 'object' && error !== null && observedFailures.has(error)
+
 /** A route of the workspace server answered with an error. */
 export class WorkspaceServerError extends Error {
   readonly status: number
@@ -12,8 +16,19 @@ export class WorkspaceServerError extends Error {
   }
 }
 
+/** Only transport metadata is observed; request content, headers and query values remain private. */
+export interface WorkspaceRequestEvent {
+  kind: 'start' | 'failure' | 'recovery' | 'cancel'
+  requestId: number
+  path: string
+  method: string
+  document?: string
+  status?: number
+}
+
 /** The workbench's client of the workspace server's routes; each `subscribe*` returns its unsubscribe. */
 export interface WorkspaceClient {
+  subscribeRequests?(listener: (event: WorkspaceRequestEvent) => void): () => void
   readDocuments(document?: string): Promise<DocumentsAnswer>
   operateDocument(operation: DocumentOperation): Promise<OperationAnswer>
   readSource(document: string, path: string): Promise<SourceAnswer>
@@ -60,6 +75,45 @@ export interface WorkspaceClient {
 }
 
 export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
+  const requestListeners = new Set<(event: WorkspaceRequestEvent) => void>()
+  let requestSequence = 0
+  const observedFetch = async (address: string, init?: RequestInit): Promise<Response> => {
+    const target = new URL(address)
+    const prefix = new URL(base, globalThis.document.baseURI).pathname
+    const path = target.pathname.slice(prefix.length)
+    const method = (init?.method ?? 'GET').toUpperCase()
+    if (path === 'telemetry' || path === 'diagnostics' && method === 'POST') return fetch(address, { credentials: 'same-origin', ...init })
+    const document = target.searchParams.get('document') ?? undefined
+    const requestId = ++requestSequence
+    const emit = (kind: WorkspaceRequestEvent['kind'], status?: number) => {
+      const event: WorkspaceRequestEvent = { kind, requestId, path, method, ...document !== undefined ? { document } : {}, ...status !== undefined ? { status } : {} }
+      for (const listener of requestListeners) {
+        const notify = () => {
+          if (!requestListeners.has(listener)) return
+          // Observers must not alter the request's return value or cancellation.
+          try { listener(event) } catch (error) { queueMicrotask(() => { throw error }) }
+        }
+        // Workspace-scoped source requests need the active document at invocation.
+        if (kind === 'start') notify()
+        else queueMicrotask(notify)
+      }
+    }
+    emit('start')
+    try {
+      const response = await fetch(address, { credentials: 'same-origin', ...init })
+      if (response.status >= 500) emit('failure', response.status)
+      else emit('recovery', response.status)
+      return response
+    } catch (error) {
+      const timedOut = error instanceof Error && error.name === 'TimeoutError' || init?.signal?.reason instanceof Error && init.signal.reason.name === 'TimeoutError'
+      const cancelled = !timedOut && (init?.signal?.aborted || error instanceof Error && error.name === 'AbortError')
+      if (!cancelled) {
+        if (typeof error === 'object' && error !== null) observedFailures.add(error)
+        emit('failure')
+      } else emit('cancel')
+      throw error
+    }
+  }
   const irCacheLimit = 16 << 20
   type CachedIR = { etag: string, answer: IrAnswer, bytes: number }
   const irCache = new Map<string, CachedIR>()
@@ -73,9 +127,13 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     return address.href
   }
   const call = async <T>(address: string, init?: RequestInit): Promise<T> => {
-    const response = await fetch(address, { credentials: 'same-origin', ...init })
+    const response = await observedFetch(address, init)
     const data = await response.json().catch(() => ({})) as T & ErrorAnswer
-    if (!response.ok) throw new WorkspaceServerError(response.status, data)
+    if (!response.ok) {
+      const error = new WorkspaceServerError(response.status, data)
+      if (response.status >= 500) observedFailures.add(error)
+      throw error
+    }
     return data
   }
   const post = <T>(address: string, body: unknown) => call<T>(address, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -95,7 +153,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
   }
   const fetchIR = async (document: string): Promise<IrAnswer> => {
     const known = irCache.get(document)
-    const response = await fetch(url('ir', document), {
+    const response = await observedFetch(url('ir', document), {
       credentials: 'same-origin',
       cache: 'no-store',
       ...known ? { headers: { 'If-None-Match': known.etag } } : {},
@@ -111,7 +169,11 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     } catch {
       data = {} as IrAnswer & ErrorAnswer
     }
-    if (!response.ok) throw new WorkspaceServerError(response.status, data)
+    if (!response.ok) {
+      const error = new WorkspaceServerError(response.status, data)
+      if (response.status >= 500) observedFailures.add(error)
+      throw error
+    }
     const etag = response.headers.get('ETag')
     // Account for UTF-16 response text; the parsed object's heap size is a soft limit.
     const bytes = text.length * 2
@@ -140,6 +202,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     return () => source.close()
   }
   return {
+    subscribeRequests: listener => { requestListeners.add(listener); return () => { requestListeners.delete(listener) } },
     readDocuments: document => call(url('documents', document)),
     operateDocument: operation => post(url('documents'), operation),
     readSource: (document, path) => call(url('source', document, { path })),

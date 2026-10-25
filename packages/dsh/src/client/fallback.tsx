@@ -1,19 +1,22 @@
-import { DocumentView, HistoryPanel, HomePanel, PreviewPanel, useWorkbenchState, WorkbenchProvider } from '@lincyaw/workbench'
+import { DocumentView, HistoryPanel, HomePanel, PreviewPanel, useWorkbench, useWorkbenchState, WorkbenchProvider } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
 import { useRef } from 'react'
 import type { ComponentType } from 'react'
 import { Logo } from './brand.tsx'
 import { CLIENT_ID } from './contract.ts'
 import { CLIENT_MESSAGES } from './messages.ts'
+import { RuntimeDiagnosticsNotice, WorkbenchRuntimeBoundary } from './runtime-diagnostics.tsx'
 
 export const FALLBACK_PANEL = 'presmium'
 
 function Centre() {
+  const workbench = useWorkbench()
   const document_ = useWorkbenchState(state => state.document)
   const retainedDocument = useRef(false)
   if (document_ !== undefined) retainedDocument.current = true
   return (
     <div className="pmw-fallback pm-ui" data-pmw-fallback="">
+      <RuntimeDiagnosticsNotice workbench={workbench} />
       {document_ === undefined && <HomePanel />}
       {retainedDocument.current && <div className="pmw-fallback__doc" hidden={document_ === undefined}>
         <DocumentView active={document_ !== undefined} />
@@ -28,7 +31,7 @@ export function registerFallbackLayout(ctx: DshClientContext, workbench: Workben
   const provided = (Component: ComponentType, className?: string) => function PresmiumPanel() {
     return (
       <WorkbenchProvider workbench={workbench}>
-        {className ? <div className={className}><Component /></div> : <Component />}
+        <WorkbenchRuntimeBoundary workbench={workbench}>{className ? <div className={className}><Component /></div> : <Component />}</WorkbenchRuntimeBoundary>
       </WorkbenchProvider>
     )
   }

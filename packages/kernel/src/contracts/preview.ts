@@ -67,6 +67,7 @@ export interface PreviewSource {
 }
 
 export type PreviewCommand =
+  | { type: 'flush', request: number }
   | { type: 'blocks-result', section: string, request: number, revision?: string, error?: string }
   | { type: 'source-result', section: string, block: string, request: number, source?: PreviewSource, error?: string }
   | { type: 'source-saved', section: string, block: string, request: number, sourceVersion?: string, error?: string }
@@ -91,6 +92,7 @@ export type PreviewCommandType = PreviewCommand['type']
 export type PreviewShortcut = 'undo' | 'redo' | 'dismiss'
 
 export type PreviewReport =
+  | { type: 'flushed', request: number, error?: string }
   | { type: 'blocks-edited', section: string, request: number, revision: string, blocks: PreviewEditedBlock[] }
   | { type: 'source-read', section: string, block: string, request: number, part?: 'definition' | 'block' }
   | { type: 'source-save', section: string, block: string, request: number, path: string, base: string, content: string, part?: 'definition' | 'block' }
@@ -149,6 +151,7 @@ export function toPreviewCommand(data: unknown, nonce: string): PreviewCommand |
   if (!isPreviewEnvelope(data, nonce) || data.version !== PREVIEW_PROTOCOL) return undefined
   const m = data as Record<string, unknown>
   switch (m.type) {
+    case 'flush': return request(m.request) ? { type: 'flush', request: m.request } : undefined
     case 'blocks-result': return text(m.section) && request(m.request) && optional(m.revision, text) && optional(m.error, text) ? { type: 'blocks-result', section: m.section, request: m.request, ...m.revision === undefined ? {} : { revision: m.revision as string }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
     case 'source-result': return sourceTarget(m) && optional(m.source, sourceValue) && optional(m.error, text) ? { type: 'source-result', section: m.section as string, block: m.block as string, request: m.request as number, ...m.source === undefined ? {} : { source: m.source as PreviewSource }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
     case 'source-saved': return sourceTarget(m) && optional(m.sourceVersion, (value): value is string => bounded(value, 200)) && optional(m.error, text) ? { type: 'source-saved', section: m.section as string, block: m.block as string, request: m.request as number, ...m.sourceVersion === undefined ? {} : { sourceVersion: m.sourceVersion as string }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
@@ -174,6 +177,7 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
   if (!isPreviewEnvelope(data, nonce) || data.version !== PREVIEW_PROTOCOL) return undefined
   const m = data as Record<string, unknown>
   switch (m.type) {
+    case 'flushed': return request(m.request) && optional(m.error, text) ? { type: 'flushed', request: m.request, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
     case 'blocks-edited': return text(m.section) && request(m.request) && text(m.revision) && Array.isArray(m.blocks) && m.blocks.length <= 2000 && m.blocks.every(b => isRecord(b) && text(b.id) && b.id.length <= 200 && optional(b.source, text) && optional(b.at, step) && optional(b.markdown, (v): v is string => text(v) && v.length <= MAX_EDITED) && optional(b.scene, text) && optional(b.durations, (v): v is number[] => Array.isArray(v) && v.length <= 1000 && v.every(n => typeof n === 'number' && Number.isFinite(n) && n >= 0))) ? { type: 'blocks-edited', section: m.section, request: m.request, revision: m.revision, blocks: m.blocks as unknown as PreviewEditedBlock[] } : undefined
     case 'source-read': return sourceTarget(m) && optional(m.part, sourcePart) ? { type: 'source-read', section: m.section as string, block: m.block as string, request: m.request as number, ...m.part === undefined ? {} : { part: m.part as 'definition' | 'block' } } : undefined
     case 'source-save': return sourceTarget(m) && optional(m.part, sourcePart) && bounded(m.path, 4096) && bounded(m.base, 200) && text(m.content) && m.content.length <= MAX_EDITED ? { type: 'source-save', section: m.section as string, block: m.block as string, request: m.request as number, path: m.path as string, base: m.base as string, content: m.content, ...m.part === undefined ? {} : { part: m.part as 'definition' | 'block' } } : undefined

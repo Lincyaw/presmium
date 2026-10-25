@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises'
 import { setImmediate } from 'node:timers/promises'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, isRecord } from '@lincyaw/kernel'
-import type { AnchorResolverRegistry, CodeNode, DirectiveOptionType, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceReader } from '@lincyaw/kernel'
+import type { AnchorResolverRegistry, CodeNode, DirectiveOptionType, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceCapabilities, SourceReader } from '@lincyaw/kernel'
 import { defaultOptions } from 'myst-parser'
 import { audienceDocument, audienceMarks, AudienceParser, emptyReferences, filterForAudience, liftScopes, markBlocks, scanOutputs, withheld } from './audience.ts'
 import type { AudienceMark, Withheld } from './audience.ts'
@@ -74,6 +74,7 @@ export interface DeclaredEnvironment {
 
 export interface Compilation {
   doc: IRDocument
+  sourceCapabilities?: SourceCapabilities
   options: CompilerOptions
   /** The MyST files of the document: the entry and the files it includes. */
   sourceFiles: string[]
@@ -485,6 +486,7 @@ export class Compiler {
     const publish = { doc, entry: this.entry, deckDir: this.deckDir, workspaceRoot: workspace.root, renderers: publishedRenderers(doc, plugins) }
     const compilation: Compilation = {
       doc,
+      sourceCapabilities: this.#parser?.parser.sourceCapabilities,
       options: this.options,
       sourceFiles: results.sourceFiles,
       inputs: { files: inputs.files, gitReads: inputs.gitReads },

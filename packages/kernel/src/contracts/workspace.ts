@@ -227,12 +227,18 @@ export interface CommitAnswer {
   paths: string[]
 }
 
+/** Source syntax supported by the compiler that produced an answer, independent of authored metadata. */
+export interface SourceCapabilities {
+  unicodePageTargets?: true
+}
+
 /** @experimental The compiled document with its IR revision. */
 export interface IrAnswer {
   document: string
   revision: string
   doc: IRDocument
   diagnostics: Finding[]
+  sourceCapabilities?: SourceCapabilities
 }
 
 /** @experimental Sent on `ir/events` after each compilation. */

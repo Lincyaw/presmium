@@ -13,12 +13,13 @@ export interface NarrationEdit {
   dirty: boolean
   saving?: boolean
   loading?: boolean
+  composing?: boolean
   failure?: string
   recoveryFailed?: boolean
   baseline?: string
 }
 
-interface Recovery { signature: string, text: string, mode: StepNarrationDraft['mode'] }
+interface Recovery { signature: string, text: string, mode: StepNarrationDraft['mode'], interrupted?: true }
 const sessions = new WeakMap<WorkspaceClient, NarrationDrafts>()
 const PREFIX = 'presmium.narration-draft.v1:'
 export const narrationDraftKey = (document: string, section: string, step: number) => JSON.stringify([document, section, step])
@@ -40,7 +41,7 @@ export class NarrationDrafts {
   async open(document: string, doc: IRDocument, section: IRSection, step: number): Promise<void> {
     const key = narrationDraftKey(document, section.id, step)
     const known = this.#state[key]
-    if (known?.dirty || known?.saving || known?.loading) return
+    if (known?.dirty || known?.saving || known?.loading || known?.composing) return
     const pending: NarrationEdit = { document, text: '', mode: 'during', version: known?.version ?? 0, dirty: false, loading: true }
     this.#set(key, pending)
     try {
@@ -62,7 +63,7 @@ export class NarrationDrafts {
       this.#set(key, {
         document, draft, text: recovery?.text ?? draft.text, mode: recovery?.mode ?? draft.mode,
         version: pending.version + (dirty ? 1 : 0), dirty, recoveryFailed, baseline: recovery?.signature,
-        ...(dirty && recovery?.signature !== narrationTargetSignature(draft) ? { failure: 'narration-conflict' } : {}),
+        ...(dirty && recovery?.signature !== narrationTargetSignature(draft) ? { failure: 'narration-conflict' } : dirty && recovery?.interrupted ? { failure: 'narration-composition' } : {}),
       })
     } catch (error) {
       if (this.#state[key] === pending) this.#set(key, { ...pending, loading: false, failure: errorMessage(error) })
@@ -77,11 +78,19 @@ export class NarrationDrafts {
     if (next.failure !== 'narration-conflict') next.failure = undefined
     this.#write(key, next)
   }
+  composition(key: string, composing: boolean): void {
+    const entry = this.#state[key]
+    if (entry && entry.composing !== composing) this.#write(key, { ...entry, composing })
+  }
+  interruptComposition(key: string): void {
+    const entry = this.#state[key]
+    if (entry?.composing) this.#write(key, { ...entry, composing: false, ...entry.dirty && entry.failure !== 'narration-conflict' ? { failure: 'narration-composition' } : {} })
+  }
   #write(key: string, entry: NarrationEdit): void {
     try {
       const storage = this.#storage.get(key)
       if (!storage) throw new Error('recovery-unavailable')
-      if (entry.dirty && entry.draft) globalThis.localStorage?.setItem(storage, JSON.stringify({ signature: entry.baseline ?? narrationTargetSignature(entry.draft), text: entry.text, mode: entry.mode } satisfies Recovery))
+      if (entry.dirty && entry.draft) globalThis.localStorage?.setItem(storage, JSON.stringify({ signature: entry.baseline ?? narrationTargetSignature(entry.draft), text: entry.text, mode: entry.mode, ...entry.composing || entry.failure === 'narration-composition' ? { interrupted: true as const } : {} } satisfies Recovery))
       else globalThis.localStorage?.removeItem(storage)
       entry = { ...entry, recoveryFailed: false }
     } catch { entry = { ...entry, recoveryFailed: true } }
@@ -89,7 +98,7 @@ export class NarrationDrafts {
   }
   async save(key: string, write: (draft: StepNarrationDraft, text: string, mode: StepNarrationDraft['mode']) => Promise<StepNarrationDraft>): Promise<void> {
     const submitted = this.#state[key]
-    if (!submitted?.draft || !submitted.dirty || submitted.saving || submitted.failure === 'narration-conflict') return
+    if (!submitted?.draft || !submitted.dirty || submitted.saving || submitted.composing || submitted.failure === 'narration-conflict') return
     this.#set(key, { ...submitted, saving: true, failure: undefined })
     try {
       const confirmed = await write(submitted.draft, submitted.text, submitted.mode)

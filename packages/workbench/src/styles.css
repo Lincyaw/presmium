@@ -325,6 +325,10 @@
   list-style: none;
 }
 
+.pmw-navigation__row { display: flex; align-items: center; gap: var(--pm-space-1); }
+.pmw-navigation__row > .pmw-navigation__item { flex: 1; min-width: 0; }
+.pmw-navigation > .pm-ui-notice { margin: var(--pm-space-2); }
+
 .pmw-navigation__item {
   box-sizing: border-box;
   display: flex;

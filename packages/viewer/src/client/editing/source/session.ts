@@ -48,6 +48,7 @@ interface StoredSession {
 }
 const sessions = new WeakMap<Viewer, SourceSession>()
 let nextRequest = 0
+const sessionStorageKey = (viewer: Viewer) => `presmium.block-source:${viewer.doc.getSnapshot().meta.entry}`
 const keyOf = (section: string, block: string) => JSON.stringify([section, block])
 const entryKey = (section: string, block: string, part: SourcePart) => JSON.stringify([section, block, part])
 const errorOf = (error: unknown) => error instanceof Error ? error.message : String(error)
@@ -63,6 +64,18 @@ export function sourceSession(viewer: Viewer): SourceSession {
   return session
 }
 
+export async function settleSourceEdits(viewer: Viewer): Promise<void> {
+  let session = sessions.get(viewer)
+  if (!session && document.documentElement.hasAttribute('data-preview-picking')) {
+    try {
+      const stored = JSON.parse(sessionStorage.getItem(sessionStorageKey(viewer)) ?? 'null') as StoredSession | null
+      if (stored?.entries && Object.keys(stored.entries).length) session = sourceSession(viewer)
+    } catch { throw new Error('source-storage') }
+  }
+  session?.announce()
+  await session?.settled()
+}
+
 /** A document has one bridge listener; source drafts survive both block unmounts and code-triggered page reloads. */
 export class SourceSession {
   #viewer: Viewer
@@ -72,6 +85,7 @@ export class SourceSession {
   #requests = new Map<number, Request>()
   #reads = new Map<string, Promise<PreviewSource>>()
   #saves = new Map<string, Promise<void>>()
+  #creations = new Set<Promise<string>>()
   #serial: Promise<unknown> = Promise.resolve()
   #disposed = false
   #refresh = 0
@@ -84,7 +98,7 @@ export class SourceSession {
 
   constructor(viewer: Viewer) {
     this.#viewer = viewer
-    this.#storage = `presmium.block-source:${viewer.doc.getSnapshot().meta.entry}`
+    this.#storage = sessionStorageKey(viewer)
     this.#restore()
     this.#unfollow = viewer.position.subscribe(() => {
       const requested = viewer.position.getSnapshot()
@@ -399,7 +413,24 @@ export class SourceSession {
     return work
   }
 
-  async create(section: string, after?: string): Promise<string> {
+  /** Wait for explicit source writes without adopting a hidden unsubmitted draft. */
+  async settled(): Promise<void> {
+    await Promise.all([...this.#saves.values(), ...this.#creations])
+    if (this.#disposed) throw new Error('source-unavailable')
+    for (const entry of this.#entries.values()) {
+      const state = entry.state.getSnapshot()
+      if (sourceDirty(state) || state.pending) throw new Error(state.error ?? 'source-draft')
+    }
+  }
+
+  create(section: string, after?: string): Promise<string> {
+    const work = this.#create(section, after)
+    this.#creations.add(work)
+    void work.finally(() => this.#creations.delete(work)).catch(() => {})
+    return work
+  }
+
+  async #create(section: string, after?: string): Promise<string> {
     const body = bodySaveQueue(this.#viewer)
     await body.settled()
     if (!this.#persist() && [...this.#entries.values()].some(entry => sourceDirty(entry.state.getSnapshot()))) throw new Error('source-storage')

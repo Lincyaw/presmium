@@ -29,6 +29,7 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
   if (options.dark !== undefined) url.searchParams.set(PREVIEW_APPEARANCE_PARAM, options.dark ? 'dark' : 'light')
   const origin = url.origin
   const latest = new Map<string, PreviewCommand>()
+  const oneShot = (command: PreviewCommand) => command.type === 'page-insert' || command.type === 'flush'
   let ready = false
   let generation = 0
   let capabilities: readonly PreviewCommandType[] = []
@@ -48,7 +49,7 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
       capabilities = Object.freeze([...report.capabilities])
       for (const command of latest.values()) {
         post(command)
-        if (command.type === 'page-insert') latest.delete(command.type)
+        if (oneShot(command)) latest.delete(command.type)
       }
     }
     handlers.report(report)
@@ -66,7 +67,7 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
     get generation() { return generation },
     send(command) {
       // Queue a mutation until the first ready report, but never replay it after a reload.
-      if (command.type !== 'page-insert' || !ready) latest.set(command.type, command)
+      if (!oneShot(command) || !ready) latest.set(command.type, command)
       if (ready) post(command)
     },
     dispose() {

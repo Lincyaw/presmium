@@ -13,6 +13,8 @@ export interface PreviewPage {
   reveal(target: PreviewAnchor): void
   setDark(dark: boolean): void
   setActive?(active: boolean): void | Promise<void>
+  /** Finishes only the page's own authored edits; the host confirms its source writes separately. */
+  flush?(): void | Promise<void>
   sectionOf?(element: Element): string | undefined
   sectionElement?(section: string): HTMLElement | undefined
   seen?(element: Element): boolean
@@ -447,6 +449,8 @@ interface Edited {
   closed: HTMLElement[]
   changes: MutationObserver
   records: MutationRecord[]
+  composing: boolean
+  finishAfterComposition?: boolean
 }
 
 /**
@@ -506,6 +510,8 @@ function undoChanges(records: MutationRecord[]): void {
  */
 function createEditing(state: FrameState, locate: Locator, picking: Picking, post: (message: PreviewReport) => void) {
   let current: Edited | undefined
+  const waiting = new Set<() => void>()
+  const changed = () => { for (const check of [...waiting]) check() }
   const editable = (target: PreviewAnchor): HTMLElement | undefined => {
     if (target.block) return locate.blockElement(target.section, target.block)
     const section = locate.sectionElement(target.section)
@@ -543,6 +549,15 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
   const leave = (event: FocusEvent) => {
     if (!inside(event.relatedTarget)) finish(true)
   }
+  const composition = (event: CompositionEvent) => {
+    if (!current || !inside(event.target)) return
+    const edited = current
+    edited.composing = event.type === 'compositionstart'
+    if (!edited.composing) queueMicrotask(() => {
+      if (current === edited && edited.finishAfterComposition) finish(true)
+      else changed()
+    })
+  }
   const listen = (element: HTMLElement, on: boolean) => {
     const method = on ? 'addEventListener' : 'removeEventListener'
     for (const type of ['keydown', 'keyup', 'keypress'] as const) window[method](type, keys as EventListener, true)
@@ -550,6 +565,8 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
     element[method]('paste', paste as EventListener)
     element[method]('drop', drop as EventListener)
     element[method]('focusout', leave as EventListener)
+    element[method]('compositionstart', composition as EventListener)
+    element[method]('compositionend', composition as EventListener)
   }
   const place = (element: HTMLElement, at: PreviewPoint | undefined) => {
     element.focus({ preventScroll: true })
@@ -561,6 +578,10 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
   const finish = (keep: boolean) => {
     const edited = current
     if (!edited) return
+    if (keep && edited.composing) {
+      edited.finishAfterComposition = true
+      return
+    }
     current = undefined
     const { element, target, before } = edited
     listen(element, false)
@@ -580,6 +601,7 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
     }
     if (document.activeElement === element) element.blur()
     post({ type: 'editing', target, active: false })
+    changed()
   }
   const start = (target: PreviewAnchor, at: PreviewPoint | undefined) => {
     if (current && current.target.section === target.section && current.target.block === target.block) {
@@ -587,6 +609,7 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
       return post({ type: 'editing', target, active: true })
     }
     finish(true)
+    if (current) return post({ type: 'editing', target, active: false })
     const element = editable(target)
     if (!element) return post({ type: 'editing', target, active: false })
     picking.clearHover()
@@ -604,6 +627,7 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
       closed,
       changes,
       records,
+      composing: false,
     }
     element.setAttribute('contenteditable', 'true')
     element.setAttribute('spellcheck', 'false')
@@ -615,6 +639,28 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
   }
   return {
     isEditing: () => current !== undefined,
+    flush(): Promise<void> {
+      return new Promise((resolve, reject) => {
+        let done = false
+        const finishWait = (error?: string) => {
+          if (done) return
+          done = true
+          clearTimeout(timeout)
+          waiting.delete(check)
+          if (error) reject(new Error(error))
+          else resolve()
+        }
+        const check = () => {
+          if (!isLive(state)) return finishWait('preview-flush-unavailable')
+          if (current?.composing) return
+          finish(true)
+          finishWait()
+        }
+        const timeout = setTimeout(() => finishWait('save-timeout'), 30_000)
+        waiting.add(check)
+        check()
+      })
+    },
     edit(command: Extract<PreviewCommand, { type: 'edit' }>) {
       if (!isLive(state)) return
       if (command.target) start(command.target, command.at)
@@ -735,7 +781,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
   const nonce = previewNonce()
   if (!nonce) return undefined
   const state: FrameState = { active: isPreviewActive(), stopped: false }
-  const capabilities: PreviewCommandType[] = [...COMMANDS, ...page.setActive ? ['activity' as const] : []]
+  const capabilities: PreviewCommandType[] = [...COMMANDS, ...page.setActive ? ['activity' as const] : [], ...page.flush ? ['flush' as const] : []]
   const nameWindow = (active: boolean) => {
     window.name = `${framePrefix()}${nonce}${active ? '' : PAUSED}`
   }
@@ -837,6 +883,20 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
     })
   }
 
+  let flushing = Promise.resolve()
+  const flush = (command: Extract<PreviewCommand, { type: 'flush' }>) => {
+    flushing = flushing.then(async () => {
+      if (!isLive(state) || !page.flush) throw new Error('preview-flush-unavailable')
+      await editing.flush()
+      if (!isLive(state)) throw new Error('preview-flush-unavailable')
+      await page.flush()
+      if (!isLive(state)) throw new Error('preview-flush-unavailable')
+      post({ type: 'flushed', request: command.request })
+    }).catch(error => {
+      post({ type: 'flushed', request: command.request, error: errorMessage(error) })
+    })
+  }
+
   const receive = (event: MessageEvent) => {
     if (event.source !== window.parent || !page.origins.includes(event.origin)) return
     const command = toPreviewCommand(event.data, nonce)
@@ -856,6 +916,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
         case 'marks': return void root.classList.toggle(AUTHOR_MARKS_CLASS, command.on)
         case 'appearance': return page.setDark(command.dark)
         case 'activity': return changeActivity(command)
+        case 'flush': return flush(command)
         case 'edit': return editing.edit(command)
         case 'flash': return flash.flash(command.targets)
       }

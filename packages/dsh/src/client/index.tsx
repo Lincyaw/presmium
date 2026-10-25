@@ -12,6 +12,7 @@ import { isSamePath } from './paths.ts'
 import { registerAgentRequests } from './agent-requests.ts'
 import { rootLayoutFor } from './RootLayout.tsx'
 import { registerSourceLinks } from './source-links.tsx'
+import { runtimeDiagnostics } from './runtime-diagnostics.tsx'
 import { DSH_THEME_TOKENS, syncDarkClass, ThemePresenter } from './theme.ts'
 
 declare const __PRESMIUM_CSS__: string
@@ -42,6 +43,7 @@ export function apply(ctx: DshClientContext): void {
     return inner.workspaces.list.subscribe(update)
   }, 'presmium: workspace list'))
   const workbench = new Workbench({ locale: workbenchLocale(ctx.locale.getLocale().active) })
+  ctx.effect(() => runtimeDiagnostics(workbench).start(), 'presmium: runtime diagnostics')
   const nativeLayout = isBootEntryLoaded(UI_LAYOUT)
   let showEditor = (layout: DshClientContext['layout']) => layout.selectPanel(FALLBACK_PANEL)
   registerSourceLinks(ctx, workbench, layout => showEditor(layout))
