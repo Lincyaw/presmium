@@ -6,6 +6,7 @@ export const TEMPLATE_SOURCES: Record<string, string> = {
   'document': 'packages/workspace/templates/document',
   'workspace': 'templates/workspace',
   'plugin': 'templates/plugin',
+  'skills/presmium-animate': '.agents/skills/presmium-animate',
   'skills/presmium-author': '.agents/skills/presmium-author',
   'skills/presmium-develop': '.agents/skills/presmium-develop',
   'skills/presmium-present': '.agents/skills/presmium-present',

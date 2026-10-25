@@ -1,0 +1,76 @@
+# Putting a scene on the lecture's timeline
+
+A scene is one timeline. `:durations:` cuts it into steps, the narration after the block is bound to those steps paragraph by paragraph, and `{cue}` marks move or act at a word. This file is about making the picture and the words land together. Every timing below was measured on a synthesized lecture. `examples/animations/gallery/timeline/` holds one section per rule with a scene whose dots light up one per step; give it a `lecture` renderer with a voice to hear each rule and read its `track.json`.
+
+## The model
+
+```md
+(merge)=
+:::{scene} bpe-merge
+:durations: 1.2, 1.2, 1.4
+Three words, merged pair by pair.
+:::
+
+Step 0's narration.
+
+Step 1's narration.
+
+Step 2's narration.
+```
+
+- **Steps.** `:durations:` with n entries gives the block n steps (`span` = n − 1). Step k is the part of the timeline from `at(k)` to `at(k + 1)`; `at(0)` is 0 and `at(n)` is `total`. In the scene file, put step k's tweens at `at(k)` and let them end before `at(k + 1)`: the player clamps the position to the step, so anything later is cut off when the step is shown settled.
+- **Narration.** The k-th paragraph after the block belongs to step k. Paragraphs past the last step all belong to the last step; paragraphs before the first block of the section belong to step 0.
+- **Live presenting.** Going forward to step k plays `at(k)` → `at(k + 1)` in real time; going back shows step k − 1 settled at its end. The document view shows the end and gives the reader a play button and a scrubber.
+- **Synthesized lecture.** Each step starts with its first word, and the scene plays the step's part from there. A step lasts as long as its narration plus the gap between paragraphs (500 ms), and **at least as long as its duration**: when the words end first, the lecture holds silently until the animation has played.
+- **Video export.** Frames are taken on the lecture's time, so the scene must look the same at the same time however it got there (see the rules in `SKILL.md`).
+
+## Choosing durations
+
+Measured on the synthesized lecture (fake voice, gap 500 ms):
+
+| Situation | What happens | Do |
+|---|---|---|
+| One paragraph per step, animation shorter than the words | Each step lasts words + gap; the animation plays at the first word and stays settled | The usual case |
+| Animation longer than the words (`4s` for a two-character sentence) | A silent hold of about 3 s after the sentence | Shorten the duration, or say more in that step |
+| Fewer paragraphs than steps | The step without words lasts the gap, then holds until its animation ends | Fine for a short visual beat; otherwise add a sentence |
+| More paragraphs than steps | The extra paragraphs are said on the last step, with the picture settled | Add a step, or merge the paragraphs |
+
+A duration is how long the motion of that step takes, not how long the step is on screen. Keep it close to the time the motion needs (0.4–1.5 s for most atomic moves) and let the narration set the pace.
+
+## Moving at a word: `{cue}`
+
+The first word of a paragraph starts its step. To move on in the middle of a sentence, put ``{cue}`next` `` before the word:
+
+```md
+First the 5 and the 2, {cue}`next` they swap, {cue}`next` and the 5 moves on.
+```
+
+One paragraph, three steps: the scene's step 1 starts at "they", step 2 at "and". A `next` only moves earlier; it does not renumber the paragraphs. The k-th paragraph still belongs to step k, and when a cue has already reached that step, the paragraph is said on it without another move. Measured: a paragraph with one `next`, then two more paragraphs, gave step 1 at the cue's word, the second paragraph on step 1, and the third paragraph moving to step 2. So either give a scene all its steps inside one paragraph with `next`, or keep one paragraph per step and use `next` only to move a little before the next paragraph starts.
+
+When a `next` comes before the current step's animation has played, the lecture moves on anyway, and the build warns at that paragraph:
+
+```
+lecture.md:90  warning  lecture script: {cue}`next` moves on 2400 ms before the animation of step 0 of section f has played
+    hint: say the cue later, or shorten the animation (:durations:)
+```
+
+Other cues act on the scene block without moving the step: ``{cue to=merge}`spot` `` (spotlight), `point`, `ink`, ``{cue}`pause 800ms` `` (silence in the middle of a sentence; the sentence is split there), ``{cue}`mark 名` `` (a chapter point). Without `to`, a cue acts on the nearest block above the paragraph. The full list is in `presmium-author/references/directives.md`, "讲授的角色".
+
+## Several blocks in one section
+
+Steps are counted per section. A block that spans several steps and has no `:reveal:` starts at the last step used so far, so a second scene **shares** its first step with the last step of the scene above it:
+
+| Source | Block steps |
+|---|---|
+| scene `g1` (2 durations), 2 paragraphs, scene `g2` (2 durations), 2 paragraphs | `g1` at 0–1, `g2` at 1–2: the paragraph "g2 step 0" is said on step 1 together with g1's last step |
+| same, with `:reveal:` on `g2` | `g1` at 0–1, `g2` at 2–3: one paragraph per step |
+
+Write `:reveal:` on a second scene (or any later multi-step block) that should start after the first one finished. Other multi-step blocks (`{code-ref}` with `:steps:`, `:reveal: items` lists, components with `:span:`) follow the same rule from `docs/ir.md` 2.4.
+
+To make the scene and other blocks react to the same sentence, keep them single-step and aim cues at them from the scene's narration. `examples/animations/bubble-sort/lecture.md` puts a code block, a counter component and the scene in one section; the scene's paragraphs spotlight lines of the code with ``{cue to=sort-code lines=3-4}`spot` `` and click the counter with ``{cue to=stats}`click compare` ``.
+
+## Checking it
+
+1. `presmium check` reports scene and duration errors at the directive's line (`the deck has no scenes/<name>.ts`, `:durations: takes durations`).
+2. `presmium dev <deck> --to web`: open the present view (`?view=present&section=<id>&step=<k>`), step forward and back; in the document view drag the scrubber through every step.
+3. With a lecture renderer, `presmium build <deck> --to web,lecture` and read the warnings; open `?view=lecture&track=script` and listen through the section. `dist/lecture/script/track.json` lists every `go` (step change), `pause` (`hold: true` is waiting for an animation) and utterance with its time, which is the quickest way to see where the dead air is.

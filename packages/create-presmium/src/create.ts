@@ -11,8 +11,8 @@ export const KINDS: readonly ProjectKind[] = ['lecture', 'workspace', 'plugin']
 export const VERSION = (JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }).version
 
 const SKILLS: Record<ProjectKind, string[]> = {
-  lecture: ['presmium-author', 'presmium-present'],
-  workspace: ['presmium-author', 'presmium-present'],
+  lecture: ['presmium-author', 'presmium-animate', 'presmium-present'],
+  workspace: ['presmium-author', 'presmium-animate', 'presmium-present'],
   plugin: ['presmium-develop', 'presmium-author'],
 }
 
