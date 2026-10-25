@@ -47,6 +47,7 @@
     "@lincyaw/addon-exec-webgpu": "workspace:*",
     "@lincyaw/addon-guide": "workspace:*",
     "@lincyaw/addon-lecture": "workspace:*",
+    "@lincyaw/addon-motion": "workspace:*",
     "@lincyaw/addon-publish": "workspace:*",
     "@lincyaw/addon-session": "workspace:*",
     "@lincyaw/addon-speech": "workspace:*",

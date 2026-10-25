@@ -9,11 +9,11 @@ frameworks. One or two cases per thing the plugin promises.
 
 | Change | Test | How |
 |---|---|---|
-| Directive, options, diagnostics, steps | Compile the example, read the IR or the diagnostics | `presmium(dir, ['check'])`, `presmium(dir, ['build', '--to', 'notebook', '--out', out])` then `ir.json` |
+| Directive, options, diagnostics, steps | Compile the example, read the IR or the diagnostics | The `presmium()` helper (section 1): `presmium(dir, ['check'])`, `presmium(dir, ['build', '--to', 'notebook', '--out', out])` then `ir.json` |
 | Fallback and notebook extension | Build the notebook, read the cells | `<out>/notebook/lecture.ipynb` |
-| Server route | Start `presmium dev`, call the route with `fetch` | The template's third test |
+| Server route | Start `presmium dev`, call the route with `fetch` | Section 2; the case "counts the waves on its server route under presmium dev" in `test/plugin.test.ts` |
 | Component, steps, keyboard, toolbar | Build or start a dev server, drive a browser, compare what the user sees | Playwright, section 4 |
-| Printed slides (PDF, PNG) | The printed page `?print` shows the fallback | Playwright on the slides |
+| Printed slides (PDF, PNG) | The slides page opened with `?print` shows the fallback | Playwright on the slides, section 4 |
 | Peer dependencies, packing | Install the packed plugin into a fresh document project | Section 5 |
 
 Assert what the user cares about ("stepping back restores the first picture", "the notebook has the
@@ -66,7 +66,8 @@ it('writes the poll\'s question into the notebook', async () => {
 Spawn `presmium dev` with `PRESMIUM_BIN`, wait for its `server  <url>` line on stdout, call
 `<url>/__presmium/<plugin id>/<route>`, and kill it in `finally`, awaiting its exit. `--to notebook` starts
 the Presmium server without the web page's dev server, which is enough for routes. Drop `NODE_ENV` from the
-environment you pass, as `presmium()` does. The template's `test/plugin.test.ts` has the full pattern.
+environment you pass, as `presmium()` does. The case "counts the waves on its server route under presmium
+dev" in `test/plugin.test.ts` has the full pattern.
 
 ## 3. Running
 
@@ -85,7 +86,8 @@ script. Two ways to get pages:
   `slides  <url>` lines, open them. Under the dev server the plugin's routes also work. The first page load
   may wait while Vite prepares dependencies; wait for the component to appear rather than for a fixed time.
 - **Built site**: `presmium build example --out <tmp>`, then serve `<tmp>` with a static file server
-  that answers unknown paths under `/slides/` with `/slides/index.html` (the slides route on the client),
+  that answers unknown paths under `/slides/` with `/slides/index.html` (the slides page reads its
+  position from the path),
   and open `/web/` and `/slides/`. A built site has no Presmium server (`useServer().available` is false).
 
 What to check:
@@ -96,6 +98,8 @@ What to check:
   got there. For animations with `useStepTime`, the settled state after stepping back is the final one.
 - **Static**: the printed slides `?print` (all slides at their last step; `&steps` one page per step) show the
   fallback; the page sets `data-presmium-printed` on `<html>` when it is ready to print.
+- **Start**: in the slides, press `p` to open the presenter view; its start report lists each browser
+  plugin as started, degraded, disabled or failed.
 - **Look**: light and dark (`dark` class on `<html>`, or the page's toggle), a window narrower than 768 px,
   readable contrast; no errors in the console; no error box in place of the component.
 - **Language**: a document with `lang: en` and one with `lang: zh-CN` show the component's text in that
@@ -108,8 +112,8 @@ position.
 ## 5. Install as a user would
 
 The example loads the plugin from its directory. Before publishing, check the packed package once: `pnpm
-pack`, then in a new directory create a document project (`presmium new --type lecture`), `pnpm add
-<path to the .tgz>`, list the package name under `plugins`, and run `presmium check` and `presmium build`.
+pack`, then in a new directory create a document project (`presmium new --type lecture`, which has
+Presmium as a dev dependency; run `pnpm install`), `pnpm add -D <path to the .tgz>`, list the package name under `plugins`, and run `presmium check` and `presmium build`.
 This catches files missing from `files`, imports of dev-only packages, and peer ranges the installed
 Presmium does not satisfy (`plugin "..." is not loaded: it needs ...`).
 

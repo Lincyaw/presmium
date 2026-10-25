@@ -20,18 +20,25 @@ and duration by the preview request number (`[preview N]`) or the job ID (`[job]
 
 For a stalling or broken front end, in this order:
 
-1. Read the current service log, the current diagnostics resource
-   (`presmium://diagnostics?document=<document directory>`) and `get_runtime`. `get_diagnostics` runs the
-   checks; it does not replace observing the browser.
-2. Reproduce in an isolated copy: `pnpm debug:studio <workspace> --document <document directory>`. It copies
+1. Read the current service log. Then, through an agent connected to the workspace (the studio's AI, or
+   any MCP client of the workspace service), read the MCP resource
+   `presmium://diagnostics?document=<document directory>` (the current diagnostics), call `get_runtime` (what
+   the preview windows actually reported) and `get_outputs` (the build results); in dsh the tools are named
+   `presmium__get_runtime` and so on. No window feedback only means no browser has been observed, not that
+   the page is healthy. `get_diagnostics` runs the checks; it does not replace observing the browser.
+2. Reproduce in an isolated copy, from the repository root: `pnpm debug:studio [<workspace>] --document
+   <document directory>` (without a workspace it uses a fresh copy of `examples/animations`). It copies
    the workspace and runs its own state directory, service ports and Chromium; the original files and running
    services are left alone. Before navigation it captures page and iframe exceptions, console warnings and
    errors, HTTP and network failures, slow requests, long tasks and the preview handshake, and puts the
    backend log on the same timeline. On a timeout it saves pending requests, frame state and screenshots.
-3. Read `summary.json` in the output directory (default `.presmium/debug/<time>/`) first, then
+3. Read `summary.json` in the output directory (default `.presmium/debug/<time>/`; `--output <new
+   directory>` chooses another, an existing directory is not overwritten) first, then
    `events.jsonl` for the failing step. Do not stop at the exit code or at the backend address being ready.
-4. Narrow with `--views` (for example `document,present,document`) and `--timeout <ms>`; `--headed` shows
-   the window. Do not widen to full test suites.
+4. Narrow with `--views` (the order of switches, default `document,present,document`; the old names
+   `slides` and `video` mean `present`) and `--timeout <ms>` (each switch's wait, default 45000, 1000 to
+   300000); `--headed` shows the window; `pnpm debug:studio --help` lists the options. Do not widen to full
+   test suites.
 
 Rules for judging:
 
@@ -59,7 +66,8 @@ own prebuilt viewer.
 ## Performance changes
 
 Follow `docs/architecture.md` 1.1, which also holds the resource budget environment variables, cache limits
-and soft limits.
+and soft limits. The project's latency goal is 100 ms from an edit or a switch to the visible result; the
+benchmarks in `docs/benchmarks/` measure against it and record where it is not yet met.
 
 - Record cold start, edit-to-compile and save-to-preview latency; separate CPU time, real waiting time and the
   test budget. Compare before and after alternately under the same load, and check that IR, equation
@@ -78,7 +86,7 @@ and soft limits.
 
 `node scripts/bench-workbench-preview.mjs <output>.json --rounds 3` starts one isolated workbench and
 Chromium, records two first opens and three returns, and times until the preview is ready and the first
-section is visible. `--example` measures the example's two lectures (with animations). It does not build the
+section is visible. `--example` measures the example's two documents (with animations). It does not build the
 full example or run test suites.
 
 - Separate the time of the preview address request from the iframe load; record the system load; do not
@@ -87,8 +95,11 @@ full example or run test suites.
 - For cache work also check: the same iframe and window are reused, a return loads zero new scripts, the
   document's components and control flow stop when paused, a hidden edit comes back as the latest content,
   the two-frame limit holds, and the destroy fallback works when a package or kernel plugin does not pass
-  both `restartable` declarations (including viewer-only packages without a kernel plugin). The targeted
-  test is `e2e/preview-cache.spec.ts`.
+  both `restartable` declarations (including viewer-only packages without a kernel plugin). The two-frame
+  limit is the at most two loaded iframes each preview panel keeps; the two declarations are
+  `presmium.preview.restartable: true` in the package's `package.json` and `PluginDefinition.restartable:
+  true` on a kernel plugin (`docs/architecture.md` 1.1). When the owner asks for tests, the targeted one is
+  `e2e/preview-cache.spec.ts`.
 - Tests and scripts snapshot the isolated workbench client so parallel rebuilds do not trigger Harness hot
   replacement; parallel sessions running targeted Playwright pass `--output <own directory>` to avoid
   colliding artifacts.
@@ -97,5 +108,5 @@ full example or run test suites.
   latency). Report the real system load; a small document or the best round does not show that every case
   reaches 100 ms.
 
-The performance e2e cases run after the other Chromium cases; alone, run
+When the owner asks for tests: the performance e2e cases run after the other Chromium cases; alone, run
 `pnpm exec playwright test e2e/perf.spec.ts --no-deps`.

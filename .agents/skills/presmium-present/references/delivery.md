@@ -1,33 +1,46 @@
 # Publishing, export and offline
 
-Choose the build from the final deliverable. Run the commands below in the deck directory. Look at the existing `renderers` and `base` first, and do not override the deployment conventions already in place.
+Pick the build from what the teacher hands out. Run every command in the document folder. Before building, read the frontmatter's `renderers`: it lists the forms (`web`, `slides`, `notebook`, `lecture`) with their options, among them `base`, the URL path a form's site is served at (such as `/course/week1/`). When `base` is already set, the site is meant for that path: keep it and the hosting the teacher already uses.
+
+`presmium build` writes into `dist/` (or the folder given with `--out`): one subfolder per form, such as `dist/web/`. Building is not deploying: copy the output to whatever host the teacher chooses.
 
 ## Give readers a web address
 
-`presmium build --to web` produces a static web site; built alone and without an explicit `base`, it sits at the root path. When a local static server is needed and the project has none, install `pnpm add -D sirv-cli`, then:
+```sh
+presmium build --to web
+```
+
+When only the web form is built and `base` is not set, `dist/web/` is a site for the root path `/`. To serve it on this computer when the project has no static server yet:
 
 ```sh
+pnpm add -D sirv-cli
 pnpm exec sirv dist/web --port 8080
 ```
 
-Open the address the terminal prints. The site needs no SPA fallback: each section has its own HTML. Restart sirv after a rebuild, or it will not find the newly hashed files.
+Open the address the terminal prints; the document's first page appears. Each section has its own HTML file, so a host needs no single-page-app fallback rule. Restart sirv after every rebuild: the file names change and a running sirv does not see the new ones.
 
-Build the student version into its own directory, for example `presmium build --to web --audience student --out dist-student`, and serve `dist-student/web` instead. With `--audience`, every file written is scanned for sentences of the content left out. Audience markers and publishing checks are in `presmium-author/references/publishing.md`. The static site can be deployed to any host the user chooses; building is not deploying.
+**Student version.** Build it into its own folder so nothing from a full build is mixed in, and serve `dist-student/web` instead:
 
-## Deliver the web site and the slides together
+```sh
+presmium build --to web --audience student --out dist-student
+```
 
-Built together, with `base` set on neither, the web site is at `/web/` and the slides at `/slides/`. Keep the whole site structure:
+`--audience student` leaves out content marked for teachers only (markers such as `:audience: teacher` are explained in `presmium-author/references/publishing.md`, "Content for students"). Every file written is then scanned for sentences of the left-out content; a hit is reported as `presmium.audience` and means teacher content leaked into the student version through some output; trace and fix it in the source. Then open the student site and look for teacher narration, answers and media.
+
+## Hand out the web page and the slides together
+
+Built together, with `base` set on neither, the web page is at `/web/` and the slides at `/slides/` of one site. Serve the whole `dist/` folder:
 
 ```sh
 presmium build --to web,slides
 pnpm exec sirv dist --port 8080
 ```
 
-Open the web site at `/web/` and the slides at `/slides/`. The slides are one page (`index.html`); the slide and step are in the address's query (`?slide=<number>&step=<step>`), so hosting needs no SPA fallback.
+Open `<address>/web/` and `<address>/slides/`. The slides are one page (`index.html`); the slide and step are in the address's query (`?slide=<number>&step=<step>`), so a host needs no fallback rule here either.
 
-When only the slides are built and `base` is not set, use `pnpm exec sirv dist/slides --port 8080`. When a sub-path already exists, serve the output at that path; do not treat the `/slides/` output as a root site.
+When only the slides are built and `base` is not set, serve `dist/slides` instead (`pnpm exec sirv dist/slides --port 8080`). When the site already lives under a sub-path, serve the output at that path.
 
-A section heading in the web site links to the same place in the slides. When the two are deployed separately, set the slides' actual address with `slidesUrl`, and check that the link lands on the right slide and step:
+Each section heading on the web page links to the same place in the slides. When the two are deployed at different addresses, write the slides' real address in the frontmatter, then check that a heading link lands on the right slide and step:
 
 ```yaml
 presmium:
@@ -35,28 +48,62 @@ presmium:
     slidesUrl: https://example.com/slides/
 ```
 
-## Export a PDF or images
+## Export a PDF, images or PowerPoint
 
-The deck lists `@lincyaw/addon-publish`. Export prints the slides in Chromium, so the project needs `playwright-chromium` (`pnpm add -D playwright-chromium`, then `pnpm exec playwright install chromium`). In the project:
+Export prints the slides in Chromium. Set it up once in the project:
+
+```sh
+pnpm add -D @lincyaw/addon-publish playwright-chromium
+pnpm exec playwright install chromium
+```
+
+and list `'@lincyaw/addon-publish'` in the frontmatter's `plugins`. Then, in the document folder:
 
 ```sh
 pnpm exec presmium-export --format pdf --output lecture.pdf
 ```
 
-`--with-clicks` expands each step into its own page, `--range 1,3-5` selects slides, `--dark` exports the dark theme, `--format png` writes images (one per slide, or per step with `--with-clicks`) into the `--output` directory, and `--format pptx` writes PowerPoint (each slide a picture, the narration as speaker notes, no links). `--json` prints the result as JSON. A PDF export checks that every link the slides show is still a link in the PDF and exits 1 when one was lost. In the workbench, Export in the command bar also produces slide PDFs, images, PowerPoint and lecture videos without the deck listing the publish plugin; the files can be opened, played and downloaded there. `presmium-export` builds its own copy of the slides at the root path before printing, so the static site's sub-path does not affect it.
+| Option | Does |
+|---|---|
+| `--format pdf` (default), `png`, `pptx` | PDF; PNG images, one per slide, into the `--output` folder; PowerPoint, each slide a picture, the narration as speaker notes, no links |
+| `--output <file or folder>` | Where to write |
+| `--with-clicks` | One page (or image) per step instead of per slide |
+| `--range 1,3-5` | Only these slides |
+| `--dark` | The dark theme |
+| `--timeout <ms>` | How long a page may take to be ready (default 120000) |
+| `--json` | Print the result as JSON |
 
-After exporting, check the page count, missing pages, overflowing long code and the key links. Run panels show their static fallback and recorded output on paper. When a page is missing or the export times out (exit 2), read the error first, then retry or raise `--timeout` (milliseconds, default 120000). An incomplete file is not a finished export.
+`presmium-export` builds its own copy of the slides before printing, so the site's `base` does not affect it. A PDF export checks that every link the slides show is still a link in the PDF, and exits with code 1 when one was lost. Exit code 2 means a page was missing or the export timed out: read the error, then retry or raise `--timeout`. A file from a failed run is not a finished export.
+
+In the studio, **Export** in the command bar makes the same PDFs, images and PowerPoint (and lecture videos) without the publish plugin listed; the files can be opened, played and downloaded there.
+
+Afterwards, open the file and check the page count, missing pages, long code running off the page and the key links. Code that readers can run in the browser is printed with its recorded output.
 
 ## Give students a runnable notebook
 
-`presmium build --to notebook` writes `dist/notebook/<entry name>.ipynb`. Images and other files go into `media/` beside it; deliver the whole directory. The kernel is `python3` by default and is chosen with `renderers.notebook.kernel`.
+```sh
+presmium build --to notebook
+```
 
-Interactive components that cannot be converted fall back to a static form; read the build report. To link them to the online interactive version, set `renderers.notebook.webUrl`, and confirm in Jupyter that images and code cells work.
+This writes `dist/notebook/<name>.ipynb`, named after the entry file (`lecture.ipynb` for `lecture.md`), with images and other files in `media/` beside it; hand out the whole `dist/notebook/` folder. The kernel is `python3` unless the frontmatter says otherwise. Interactive components that a notebook cannot hold become a static form; the build report lists them. To link them to the online version, set the web address:
+
+```yaml
+renderers:
+  notebook:
+    kernel: python3
+    webUrl: https://example.com/course/
+```
+
+Open the notebook in Jupyter and check that images show and code cells run.
 
 ## Prepare an offline class
 
-While online, open the actual teaching address and wait until the page and the offline cache are ready. Web pages and search are cached; the larger execution runtimes are fetched the first time they are used, so run the code you will use in advance, or choose "Save for offline use". Offline slides need the publish plugin, which pre-caches the runtimes.
+A built site (web page and slides) keeps its pages and search in the browser's offline cache once opened. The code runtimes (what runs code in the browser) are larger and fetched only the first time code runs. So, while still online:
 
-Disconnect and rehearse in the same browser at the same address: moving through slides, search, media, running code. Remote Jupyter, classroom sync and external models still need the network. When the class must be fully offline, prepare recorded outputs or a runtime that works locally in advance.
+1. Open the exact address you will teach from, in the browser you will teach with, and wait until the page has loaded.
+2. Run each piece of code the class uses once, or, with the publish plugin listed, click **Save for offline use** in the toolbar, which fetches the runtimes in advance. The publish plugin also copies remote images into the document at build time, so they show offline.
+3. Disconnect the network and rehearse in the same browser at the same address: moving through slides, search, media, running code.
 
-`presmium: { presmium.publish: { offline: false } }` in the frontmatter turns the offline cache off; check the existing setting first. Rehearse again after the site address changes or after a rebuild; "it was opened before" does not prove this class's resources are all there.
+Remote Jupyter, the classroom server and AI models still need the network. When the class must be fully offline, prepare recorded outputs or a runtime that works locally.
+
+`presmium: { presmium.publish: { offline: false } }` in the frontmatter turns the offline cache off; check whether it is set. Rehearse again after the site's address changes or after a rebuild: "it was opened before" does not prove this build's files are all cached.

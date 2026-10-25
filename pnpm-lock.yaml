@@ -1032,6 +1032,9 @@ importers:
       '@lincyaw/addon-lecture':
         specifier: workspace:*
         version: link:../addon-lecture
+      '@lincyaw/addon-motion':
+        specifier: workspace:*
+        version: link:../addon-motion
       '@lincyaw/addon-publish':
         specifier: workspace:*
         version: link:../addon-publish

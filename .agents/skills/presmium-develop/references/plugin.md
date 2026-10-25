@@ -1,9 +1,15 @@
 # The plugin contract
 
-This reference walks from the source syntax to the outputs, with a hypothetical plugin `poll` (package
-`presmium-plugin-poll`). Types come from `@lincyaw/kernel` (Node and shared contracts; also
-`@lincyaw/kernel/contracts` for types only) and `@lincyaw/host` (the browser side). Your editor's
-go-to-definition on these imports shows the full declarations in `node_modules`.
+This reference walks from the source syntax to the forms, with a hypothetical plugin `poll` (package
+`presmium-plugin-poll`, plugin id `poll`): a `{poll}` directive whose component lets the audience vote. The
+project `presmium new --type plugin` made is the minimal case of the same shape (the `{greeting}`
+directive, `components/GreetingCard.tsx`, the route `waves`); `poll` shows the fields that project does not
+use. The words document, section, block, step, form, IR, node, mdast, renderer, viewer and fallback are
+defined at the top of the skill's SKILL.md.
+
+Types come from `@lincyaw/kernel` (Node and shared contracts; also `@lincyaw/kernel/contracts` for types
+only) and `@lincyaw/host` (the browser side). Your editor's go-to-definition on these imports shows the full
+declarations in `node_modules`.
 
 ## 1. The package
 
@@ -13,7 +19,7 @@ presmium-plugin-poll/
 ├── src/
 │   ├── domain/index.ts    pure TS: plugin id, component names, parsing, step arithmetic, zh-CN and en text
 │   ├── node/presmium.ts   the Node entry: default export PresmiumNodePlugin
-│   └── client/            optional: plugin.ts (browser plugin), viewer.ts (viewer extension), composables
+│   └── client/            optional: plugin.ts (browser plugin), viewer.ts (viewer extension), React hooks
 ├── components/PmPoll.tsx  a component; its file name is its name
 ├── vite.config.ts         optional: Vite plugins and JSX configuration for the viewer's build
 ├── example/lecture.md     a document that lists the plugin by its directory
@@ -57,17 +63,20 @@ presmium-plugin-poll/
 ```
 
 - `<version>` is the Presmium version you build against (a new project gets the version of the `presmium`
-  that made it); a prerelease such as `1.0.0-rc.0` needs a range that names it (`^1.0.0-rc.0`). Presmium refuses to load a plugin whose peer ranges the installed packages
-  do not satisfy, and says so in `presmium check` and the build.
-- The dev dependencies install Presmium for the tests and `pnpm dev`: the CLI and the renderers the
-  example uses.
-- `./presmium` is the only export Presmium needs. The viewer finds the browser files by path, not by
+  that made it); a prerelease such as `1.0.0-rc.0` needs a range that names it (`^1.0.0-rc.0`). Presmium
+  refuses to load a plugin whose peer ranges the installed packages do not satisfy, and says so in
+  `presmium check` and the build.
+- The dev dependencies install Presmium for the tests and `pnpm dev`: the CLI and the renderers (the
+  packages that produce each form) the example uses.
+- `./presmium` is the only export Presmium needs. The viewer (Presmium's browser app, which shows the web
+  page and the slides) finds the browser files by path, not by
   `exports`: `components/*.tsx` (also `.ts`, `.js`, `.jsx`), `src/client/plugin.ts`,
   `src/client/viewer.ts`, `vite.config.ts`. Further exports (`./domain`, `./client`) are for code that
   imports your package.
 - A package with browser files that releases everything in `dispose` (section 7) may declare
-  `"presmium": { "preview": { "restartable": true } }`. The workbench then keeps a paused preview cached and
-  restarts it; without it (or if any plugin of the document lacks it) the paused preview is destroyed.
+  `"presmium": { "preview": { "restartable": true } }`. The studio (the browser workbench `presmium studio`
+  starts) then keeps a paused preview cached and restarts it; without it (or if any plugin of the document
+  lacks it) the paused preview is destroyed.
 - Runtime libraries of the browser or Node side are ordinary `dependencies`.
 
 ### Layers
@@ -79,8 +88,9 @@ presmium-plugin-poll/
 | `components/`, `src/client/` | `src/domain/`, `src/shared/`, `@lincyaw/kernel`, `@lincyaw/host`, React, browser libraries; `@lincyaw/viewer` as types only | Other plugins, `@lincyaw/server`, `@lincyaw/mcp`, `@lincyaw/workspace`, `@lincyaw/web` |
 | `src/node/` | `src/domain/`, `src/shared/`, `@lincyaw/kernel`, `@lincyaw/kernel/node`, Node libraries | React and `react-dom` |
 
-No file imports `vitepress`, `@slidev/*`, another plugin package, or a dependency's internal paths, and
-relative imports stay inside the package. A contract two plugins share is a service token (section 7).
+No file imports `vitepress`, `@slidev/*`, another plugin package or a dependency's internal paths (only what its `exports`
+publishes), and relative imports stay inside the package. A contract two plugins share is a service token
+(section 7).
 
 ## 2. The Node entry
 
@@ -125,7 +135,7 @@ const poll: DirectiveSpec = {
 const plugin: PresmiumNodePlugin = {
   id: POLL_ID,
   version,
-  kernel: '^1.0.0',                   // the plugin contract (KERNEL_VERSION 1.0.0), not the packages' version
+  kernel: '^1.0.0',                   // the plugin contract's version (KERNEL_VERSION of @lincyaw/kernel, now 1.0.0), not the packages' version
   directives: [poll],
 }
 
@@ -133,7 +143,8 @@ export default plugin
 ```
 
 The plugin id names the plugin everywhere: the `plugin` of its component nodes, its configuration
-`presmium.<id>` in the frontmatter, its routes under `/__presmium/<id>/`, its shared-state keys.
+(the key `<id>` under `presmium:` in the frontmatter, written `presmium.<id>` below), its routes under
+`/__presmium/<id>/`, its shared-state keys (`useSharedState`, section 7).
 
 ### `PresmiumNodePlugin` fields
 
@@ -143,24 +154,25 @@ The plugin id names the plugin everywhere: the `plugin` of its component nodes, 
 | `version`, `kernel` | string | Declare both: `version` equal to `package.json`, `kernel` the contract range (`^1.0.0`). A plugin whose range excludes the installed contract is not loaded |
 | `directives` | `DirectiveSpec[]` | MyST directives to IR nodes (section 3) |
 | `roles` | `RoleSpec[]` | Inline roles `` {name key=value}`content` ``: `{ name, options?, children?(input, ctx) }`; in the IR a `presmiumRole` mdast node (`plugin`, `name`, `options`, `children`). Renderers show `children`; one without children shows a marker `〔name value〕` in the presenter view |
-| `passes` | `IRPass { name, order?, after?, run(doc, ctx) }` | Compile passes over the whole IR, after the built-in passes and before compile-time execution, ordered by `order`; with `after: 'execute'` they run after execution, when code nodes have `outputs`. `ctx`: `deckDir`, `workspaceRoot`, `lang`, `src`, `resolvers`, `lock`, `executors`, `cache`, `config`, `configFor(section)`, `report`, `watch`, `service` |
+| `passes` | `IRPass { name, order?, after?, run(doc, ctx) }` | Compile passes: functions that read and change the whole IR. They run after Presmium's own passes and before code blocks are executed at compile time, ordered by `order`; with `after: 'execute'` they run after execution, when code nodes have `outputs`. `ctx`: `deckDir` (the document folder), `workspaceRoot`, `lang`, `src` and `resolvers` (read files so that `presmium dev` watches them; see section 3), `lock` (the recorded anchors), `executors`, `cache`, `config` (`presmium.<id>`), `configFor(section)` (merged with the section's `{config}`), `report`, `watch`, `service` |
 | `executors` | `Executor` | Compile-time execution (section 4) |
-| `checks` | `Check { id, run(ctx) }` | Run by `presmium check`; return `Finding[]` with `source: { file, line }`. `ctx` has the compiled `ir`, `headmatter`, `src`, `resolvers`, `lock`, `service` |
-| `resolvers`, `anchors` | `AnchorResolver { scheme, resolve(anchor, src, recorded?, ref?) }`; `(ctx) => AnchorString[]` | A new anchor scheme `scheme:target`; the anchors `presmium check --update-lock` records in `.presmium/anchors.lock.json`. A resolution is `exact`, `moved`, `fuzzy` or `lost`; only the first two may render, the others must report a diagnostic |
+| `checks` | `Check { id, run(ctx) }` | Run by `presmium check`; return `Finding[]`, each `{ checkId, severity: 'error' \| 'warning' \| 'info', message, source?: { file, line } }`. `ctx` has the compiled `ir`, `headmatter` (the frontmatter), `src`, `resolvers`, `lock`, `service` |
+| `resolvers`, `anchors` | `AnchorResolver { scheme, resolve(anchor, src, recorded?, ref?) }`; `(ctx) => AnchorString[]` | An anchor is a reference `scheme:target` to a piece of a source file that survives edits, such as `region:src/sort.py#loop` in `{code-ref}` (presmium-author/references/directives.md). `resolvers` adds a new scheme; `anchors` lists the anchors `presmium check --update-lock` records in `.presmium/anchors.lock.json`. A resolution is `exact`, `moved`, `fuzzy` or `lost`; only the first two may render, the others must report a diagnostic |
 | `rendererExtensions` | `{ [rendererId]: { components: { [ComponentName]: (node, block, ctx) => unknown } } }` | How a static renderer writes a component (section 5) |
 | `assets` | `(ctx: { deckDir, workspaceRoot, config }) => RuntimeAssets[]` | Files the browser code loads while it runs (a language runtime): `{ name, prefix, types, emitted?, source(file) }`, served at `<site base><prefix><file>` and copied into a built site (`emitted`, default all). Browser code builds the URL from `siteBase()` of `@lincyaw/host`, not `import.meta.env.BASE_URL` |
 | `documentModules` | `(ctx: { deckDir, workspaceRoot, config }) => Record<string, string>` | Virtual modules the browser code imports whose content depends on the document (e.g. `'virtual:presmium-poll/data'`), by id, with their source; only the default export is read. The viewer is prebuilt once per set of plugins and gets these from the document's own bundle |
-| `services` | `(ctx: NodeServiceContext) => [token, implementation][]` | Node services for passes, renderers, checks and server routes (`ctx.service?.(token)`). `ctx.config` is `presmium.<id>` of the document, `ctx.settings` the operator's `settings.<id>` in `presmium.workspace.yaml` (a document cannot change it), plus `lang`, `secret(name)`, `operatorDir`, `service`, `log`. Created per compilation; one implementation per token, duplicates are ignored with a warning |
+| `services` | `(ctx: NodeServiceContext) => [token, implementation][]` | Node services (objects registered under a token made with `defineService`, section 7) for passes, renderers, checks and server routes, which get them with `ctx.service?.(token)`. `ctx.config` is `presmium.<id>` of the document, `ctx.settings` the operator's `settings.<id>` in `presmium.workspace.yaml` (the operator is whoever runs `presmium serve` for a workspace; a document cannot change these settings), plus `lang`, `secret(name)`, `operatorDir`, `service`, `log`. Created per compilation; one implementation per token, duplicates are ignored with a warning |
 | `server` | `(ctx: ServerContext) => { routes?, proxies?, close? }` | Routes under `/__presmium/<id>/` (section 6) |
 | `exporters` | `Exporter[]` | Heavy outputs made on request as jobs (section 6) |
-| `environments` | `{ [kind]: EnvironmentProvider { create(name, spec, ctx), probe? } }` | Named execution environments of `execute.environments` in the frontmatter; the executor's id is `environmentExecutor(name)`; `probe` serves `presmium check --env` |
-| `tools` | `AgentTool { name, description, input, kind, run(input, ctx) }` | Tools the MCP service lists for AI agents: `name` lower case with underscores, `input` a JSON Schema of an object; `kind` `read` (every token), `operate` or `spend` (author tokens, approved first); `ctx` has `document`, `member`, `service`, `signal`; return JSON data or text |
-| `operator` | boolean | Loaded for every document when the operator lists it in `settings.presmium.workspace.plugins` and installs it at the workspace root; on the `presmium serve` home page its server part gets an empty directory as `deckDir`, so routes there must not read or write files |
+| `environments` | `{ [kind]: EnvironmentProvider { create(name, spec, ctx), probe? } }` | Named execution environments (a container, a remote machine) that a document declares under `execute.environments` in its frontmatter, each with a `kind`; the executor's id is `environmentExecutor(name)`; `probe` serves `presmium check --env` |
+| `tools` | `AgentTool { name, description, input, kind, run(input, ctx) }` | Tools that the MCP server (the `mcp <url>` line of `presmium dev` and `presmium serve`) lists for AI agents: `name` lower case with underscores, `input` a JSON Schema of an object; `kind` `read` (any token may call it), `operate` or `spend` (only the author's token, and the author approves each call first); `ctx` has `document`, `member`, `service`, `signal`; return JSON data or text |
+| `operator` | boolean | An operator plugin is loaded for every document of a workspace when the operator lists it in `presmium.workspace.yaml` under `settings: { presmium.workspace: { plugins: [...] } }` and installs it at the workspace root; on the `presmium serve` home page its server part gets an empty directory as `deckDir`, so routes there must not read or write files |
 
 Shared helpers of `@lincyaw/kernel`: `docBlocks(doc)` and `irBlocks` (walk blocks, components' children
-included), `nodeMdast`, `mdastText`, `errorMessage(error)`, `isRecord`, `languageId(lang)` (`py`, `python3`
-are `python`; `js` is `javascript`; `ts` is `typescript`), `deckLocale(lang)`, `jsonResponse`,
-`problemResponse`, `sseResponse`, `defineService`, `stepStateAt`.
+included), `nodeMdast` (a node as mdast), `mdastText` (the plain text of mdast), `errorMessage(error)`,
+`isRecord`, `languageId(lang)` (`py`, `python3` are `python`; `js` is `javascript`; `ts` is `typescript`),
+`deckLocale(lang)` (the document's `lang` to `'zh-CN'` or `'en'`), `jsonResponse`, `problemResponse`,
+`sseResponse` (section 6), `defineService` (section 7), `stepStateAt` (`useStepState` outside a component).
 
 ## 3. Directives and the IR
 
@@ -178,24 +190,29 @@ interface DirectiveInput { name: string, arg?: string, options: Record<string, u
 interface DirectiveResult { node: IRNode, role?: 'visual' | 'narration', span?: number }   // role default 'visual'
 ```
 
-- The compiler handles `:reveal:`, `:label:` and `:audience:` itself; they never reach `toIR`. With
-  `options` declared, undeclared options get a warning.
+- The compiler handles the options every directive has, `:reveal:` (the block appears at the next step), `:label:` and
+  `:audience:` (see presmium-author/references/directives.md); they never reach `toIR`. With `options`
+  declared, undeclared options get a warning.
 - A name equal to a built-in directive (`slide`, `only`, `hints`, `config`, `component`, `audience`) or to
   another plugin's directive is an error.
 - Plugin directives are allowed at the top level of a section and inside `{slide}` and `{only}`; elsewhere
   they are dropped with a warning.
-- `ctx` (`DirectiveContext`): `file`, `deckDir`, `workspaceRoot` (the git root, or the document directory),
+- `ctx` (`DirectiveContext`): `file`, `deckDir` (the document folder), `workspaceRoot` (the root of the git
+  repository containing the document, or the document folder when it is not in git),
   `lang` (pick output text with `deckLocale(ctx.lang)`), `config` (the plugin's global configuration merged
   with the section's `{config}`), `source` (`{ file, line, endLine? }`), `parse(markdown)` (MyST to mdast,
   e.g. for a body with formatting), `report(finding)`, `watch(...files)`.
-- Read workspace files in a pass through `ctx.src` or `ctx.resolvers`, which the compiler records so
-  `presmium dev` recompiles on change; declare any file read another way with `ctx.watch`. A plugin that
-  resolves a branch or tag to a commit itself must also watch that git ref.
+- Files a plugin reads: a compile pass or check reads them through `ctx.src` or `ctx.resolvers`, which the
+  compiler records so `presmium dev` recompiles when they change. A directive (which has no `ctx.src`), or
+  any code that reads a file another way, declares it with `ctx.watch(file)`. A plugin that resolves a
+  branch or tag to a commit itself must also watch that git ref.
 
 ### IR shapes
 
 ```ts
+// meta.entry: the source file; config: the frontmatter's plugins, presmium (plugin configuration), renderers, execute
 interface IRDocument { ir: 1, meta: { title, entry, lang?, ... }, config: { plugins, presmium, renderers, execute? }, sections: IRSection[], diagnostics: Finding[] }
+// steps: last zero-based step (steps + 1 states); hints: the {hints} directive's content; config: its {config}
 interface IRSection { id, index, title, depth, source, steps, hints, config?, blocks: IRBlock[], audience? }
 interface IRBlock {
   id: string                         // stable within the section
@@ -208,30 +225,38 @@ interface IRBlock {
   source: { file: string, line: number, endLine?: number }
   node: MarkdownNode | CodeNode | ComponentNode
 }
-interface MarkdownNode { type: 'markdown', mdast: MdastNode, reveal?: 'items' }
+interface MarkdownNode { type: 'markdown', mdast: MdastNode, reveal?: 'items', narration?: { mode: 'during' | 'after' } }
 interface CodeNode { type: 'code', lang, value, title?, origin?, highlight?: number[][], run?, outputs?, variants?, echo?: false }
 interface ComponentNode {
   type: 'component'
   plugin: string                     // the plugin id
   name: string                       // the component's file name in components/
   props: Record<string, unknown>     // JSON data
-  children?: IRBlock[]               // child blocks, rendered into the component's default slot
+  children?: IRBlock[]               // child blocks, passed through the React children prop
   ownsCode?: boolean                 // false: child code keeps its run controls and recorded output
   fallback?: MdastNode               // what static outputs show
   assets?: Record<string, string>    // prop name to a local file URL the renderers publish and rewrite
   layer?: 'overlay'                  // drawn above the content, takes no space (e.g. a cursor)
-  durations?: number[]
+  durations?: number[]               // ms per internal step's animation (the author's :durations:); passed as the prop durations
+  definition?: { file: string, language: string } // authored code behind this node, relative to the document
 }
 interface MdastNode { type: string, children?: MdastNode[], value?: string, [key: string]: unknown }
 ```
 
 - Steps: a block appears at step `at`. A block with `span: n` has `n + 1` internal states; state k shows at
-  step `at + k`. Narration after a block binds to its steps one paragraph per step. A component's
+  step `at + k`. In `contentModel: blocks`, explicit `{narration}` uses `:at:` for the section's zero-based
+  step and `:mode: during` or `after` for its timing; ordinary text remains on-screen content. Legacy
+  documents keep implicit narration after a block, one paragraph per step. A component's
   `useStepState({ from: k })` is relative to the block's `at`.
 - Child blocks: a directive builds them itself, e.g. `children: [{ id: 'source', role: 'visual', at: 0,
   source: ctx.source, node: codeNode }]`. A component owns the code of its children by default: the viewer
   gives that code no run controls and shows no recorded output. Put code the component runs in a prop; never
   read it back from the rendered DOM. A container that only arranges content sets `ownsCode: false`.
+- A node generated from authored code can declare `definition: { file, language }`, pointing to the
+  document-relative code that produces this content. The workbench then edits that source within the same
+  block instead of replacing the component with another scene. Keep the block ID and step bindings stable;
+  nodes sharing one definition file share source changes. The definition is an editing locator, not a
+  second persisted component state. Declare files read by the directive with `ctx.watch` as above.
 - A component that uses local files (images, media) puts the URL in a prop and lists it in `assets` (prop
   name to URL); renderers publish the file and rewrite the prop.
 - The document's own `components/*.tsx` are registered under the plugin id `deck` and placed with the
@@ -243,15 +268,19 @@ interface MdastNode { type: string, children?: MdastNode[], value?: string, [key
 | Scope | Written | Read |
 |---|---|---|
 | Global | Frontmatter `presmium: { <id>: {...} }` | `ctx.config` in directives and passes; `PluginContext.config` in the browser plugin |
-| Section | `{config}` with a YAML body keyed by plugin id, e.g. ``presmium.poll: { anonymous: true }`` | Merged over the global one for directives and passes in that section; components read the merge with `useSectionConfig(POLL_ID)` |
+| Section | The `{config}` directive, whose YAML body is keyed by plugin id, e.g. `poll: { anonymous: true }` | Merged over the global one for directives and passes in that section; components read the merge with `useSectionConfig(POLL_ID)` |
 | One node | Directive options, component props | Props |
 
 ## 4. Executors
 
+An executor runs the code of a code block (one with `:run:`) in some language and returns its output. At
+compile time the Node entry's `executors` run code and the results are written into the IR; in the browser,
+the run controls of a code block send code to the executor registered for its language.
+
 ```ts
 interface Executor {
   readonly id: string
-  readonly runsIn?: 'browser' | 'machine'   // shown in the run panel's header
+  readonly runsIn?: 'browser' | 'machine'   // shown in the header of the panel that shows a run
   supports(lang: string): boolean
   run(request: RunRequest, signal?: AbortSignal, ctx?: RunContext): Promise<RunResult>
   fingerprint?(lang: string): string | Promise<string>   // identity of the runtime: part of the cache key
@@ -271,8 +300,9 @@ interface Executor {
   temporary `HOME`). With `ctx.sandbox`, start child processes through it, passing input and results as
   files. Messages an executor writes into outputs are English and contain no paths of the build machine.
 - Results are recorded in `.presmium/freeze/` of the document and reused; a different `revision` re-runs.
-- In the browser, register an executor with the router: in `setup`,
-  `ctx.tryGet(EXECUTOR)?.register(executor, priority?)` (and unregister in `dispose`).
+- In the browser, register an executor with the service that picks an executor per language: in the
+  browser plugin's `setup` (section 7), `ctx.tryGet(EXECUTOR)?.register(executor, priority?)` (and
+  unregister in `dispose`).
 
 ## 5. Static renderers: extensions and `fallback`
 
@@ -285,8 +315,9 @@ interface Executor {
 A notebook extension returns one cell or an array: a string is a Markdown cell; an object is
 `{ cell_type: 'markdown' | 'code' | 'raw', source, metadata?, outputs?, execution_count? }`, or
 `{ cell_type: 'markdown', mdast }`, which the renderer lowers to Markdown Jupyter shows, copying local files.
-Before writing a code cell, compare the code's language with the notebook kernel's (`ctx.config.kernel`,
-default Python) with `languageId`; do not assume Python.
+Before writing a code cell, compare the code's language with the notebook's Jupyter kernel
+(`ctx.config.kernel`, which the document sets as `renderers.notebook.kernel`; default Python) with
+`languageId`; do not assume Python.
 
 ```ts
 rendererExtensions: {
@@ -306,7 +337,7 @@ server(ctx) {                          // once per document: presmium dev serves
   return {
     routes: {
       votes: {
-        role: 'reader',                // who may call it: 'reader' | 'editor' (default) | 'owner'
+        role: 'reader',                // who may call it: 'reader' | 'editor' (default) | 'owner'; others get 403
         async handle(request, { member, document, rest }) {
           if (request.method === 'POST') { const { choice } = await request.json() as { choice: string }; votes[choice] = (votes[choice] ?? 0) + 1 }
           return jsonResponse(votes)   // no-store; problemResponse(status, message) for errors
@@ -319,12 +350,16 @@ server(ctx) {                          // once per document: presmium dev serves
 },
 ```
 
+- The person who runs `presmium dev` or `presmium serve` on their own machine is the owner; a lower
+  `role` opens the route to members with fewer rights (`reader` can only view, `editor` can edit).
 - A request body above 1 MiB gets 413; set `maxBody` on the route for more.
 - `ServerContext`: `deckDir`, `workspaceRoot`, `config`, `settings`, `lang`, `service(token)`, `secret(name)`,
   `operatorDir`, `home`, `log`. Ask the user before acting with `ctx.service(APPROVALS)?.request({ kind:
-  'operate' | 'spend' | 'write' | 'agent', scope?, title, detail?, from, member? })`. Write document files
-  through `ctx.service(DOCUMENT_FILES)` when the host provides it (paths relative to `workspaceRoot`), so
-  the write is reviewed and versioned; write directly only when it is absent.
+  'operate' | 'spend' | 'write' | 'agent', scope?, title, detail?, from, member? })` (`presmium dev
+  --allow <kinds>` grants kinds without asking). Write document files through
+  `ctx.service(DOCUMENT_FILES)` when the program running the server (`presmium serve`, the studio)
+  provides it (paths relative to `workspaceRoot`), so the write is reviewed and versioned; write directly
+  only when it is absent. Both tokens come from `@lincyaw/kernel`.
 - Browser: `useServer()` returns `{ available, member, fetch(pluginId, path, init?), events(pluginId, path) }`
   (`events` is an `EventSource`; answer it with `sseResponse`). `fetch` sends `Accept-Language` with the page's
   language; answer in it. In a built site `available` is false: hide the control or degrade.
@@ -334,7 +369,7 @@ An `Exporter` is `{ id, label: { 'zh-CN': ..., en: ... }, available?(doc, config
 `progress(phase, done?, total?)`, `log(line)`, `options` (the requester's choices, as the exporter documents
 them) and `build(renderer, config?)`, which builds the document with a renderer at `/` and returns its output
 directory. `run` returns `{ files, captions?, warnings? }`, the file to open first first. The author starts
-exports from the workbench; the AI from its tools.
+exports from the studio; an AI agent from its MCP tools.
 
 ## 7. The browser side
 
@@ -370,7 +405,7 @@ export default function PmPoll({ question, choices }: {
 | `useService(STEP_CLOCK)?.wait(promise)` | Register async preparation of a picture (loading a module, WebGL); the video export waits for it before each frame |
 | `usePrefersReducedMotion()` | When true, show the final state directly |
 | `useActions(elementRef, { name: (seeking) => ... }, { clear })` | Named actions: call the returned `run(name)` from buttons. A recorded lecture replays them, and the narration's ``{cue to=<block>}`click <name>` `` runs them; on a jump the host calls `clear` and replays in order. The look must be a function of the actions so far |
-| `useCursor()`, `useViewRole()`, `usePresentationMode()` | `{ slide, step }`; `'audience' | 'presenter' | 'reader'`; `'slides' | 'document'`. `useHost().useStep()` is `Infinity` in the fully expanded document view: a component with internal steps may then give readers its own stepper; the look is a function of (section step, local step) |
+| `useCursor()`, `useViewRole()`, `usePresentationMode()` | `{ slide, step }`; `'audience' \| 'presenter' \| 'reader'`; `'slides' \| 'document'`. The current step (`useHost().useStep()`, `useHost()` being the object behind these functions) is `Infinity` in the fully expanded document view: a component with internal steps may then give readers its own stepper; the look is a function of (section step, local step) |
 | `useSectionConfig(POLL_ID)` | The global configuration merged with the section's `{config}` |
 | `useSharedState(key, initial, { scope })` | Returns `[value, setValue]`: JSON state shared by key (start the key with the plugin id): `'view'` this view only, `'local'` (default) all windows of this machine, `'remote'` also other devices through sync transports (a classroom) |
 | `useMessages(catalog)`, `useLocale()`, `currentLocale()` | Text by the page's language (`'zh-CN'` or `'en'`); `currentLocale()` outside components |
@@ -395,7 +430,8 @@ export default function PmPoll({ question, choices }: {
 
 ### Design system
 
-`@lincyaw/host` loads the fonts, tokens and component classes. Use tokens, never raw colors:
+`@lincyaw/host` loads the fonts, tokens (the `--pm-*` CSS variables) and component classes. Use tokens,
+never raw colors:
 
 | Group | Tokens |
 |---|---|
@@ -407,7 +443,8 @@ export default function PmPoll({ question, choices }: {
 | Size | `--pm-size-hairline` (1 px line), `stroke`, `dot`, `icon-sm`, `icon`, `badge`, `touch`, `row` |
 | Shadow, motion | `--pm-shadow`, `--pm-shadow-float`; `--pm-duration-fast`, `--pm-duration`, `--pm-ease` (0 under reduced motion) |
 
-Dark mode is the class `dark` on `<html>`; the color tokens switch with it. Components: `PmButton`
+Dark mode is the class `dark` on `<html>`; the color tokens switch with it, as they do in the high-contrast
+mode of the publishing plugin (`data-pm-contrast="high"` on `<html>`). Components: `PmButton`
 (`variant` `default | primary | accent | ghost | danger`, `small`, `icon`; `aria-pressed="true"` shows on),
 `PmIconButton` (`icon`, `label`), `PmField` (`label`, `inline`; inputs use `pm-ui-input`, `pm-ui-select`,
 `pm-ui-textarea`), `PmBadge` (`tone`, `pill`), `PmCard` (`variant` `interactive | dashed`), `PmSegmented` and
@@ -423,7 +460,7 @@ toolbar popovers and panels keep the host's size.
 ### The browser plugin: `src/client/plugin.ts`
 
 ```ts
-import { currentLocale, TOOLBAR } from '@lincyaw/host'
+import { createStore, currentLocale, TOOLBAR } from '@lincyaw/host'
 import type { PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
 import { version } from '../../package.json'
 import { MESSAGES, POLL_ID, POLL_STORE } from '../domain/index.ts'
@@ -446,8 +483,11 @@ export default plugin
 
 - The viewer imports this file for every package in `plugins` and starts all of them in dependency order,
   in both forms. A plugin without browser services needs no `plugin.ts`.
-- `PluginContext`: `config` (`presmium.<id>`), `mode`, `provide(token, impl)`, `get`, `tryGet`, `events`,
-  `log`, `environments`. Define a token in `src/domain/` with `defineService<T>('presmium-poll.store')`.
+- `PluginContext`: `config` (`presmium.<id>`), `mode`, `provide(token, impl)`, `get(token)` (a service listed in
+  `requires`), `tryGet(token)` (undefined when missing), `events`, `log`, `environments`; your editor shows the
+  rest of the type. A service is an object one plugin provides under a token and others look up; define a
+  token in `src/domain/` with `defineService<T>('presmium-poll.store')`, and list it in `manifest.provides`
+  (or `requires`) so the viewer starts plugins in dependency order.
 - `dispose` releases Workers, timers, queued work, streams, media tracks and listeners: the host stops the
   plugins on `pagehide` and restarts them when the page returns from the back/forward cache.
 - Toolbar items: `slot` is `tools` (default), `settings` or `status`; a component learns where it is drawn
@@ -455,8 +495,10 @@ export default plugin
   (`name`, `label`, `closeLabel`, `icon`, `open`, `onOpenChange`).
 - Host service tokens: `TOOLBAR`, `NAVIGATION` (`position`, `go(position)`), `OPERATIONS`, `STATUS`
   (register a summary `{ id, read() }`), `STEP_CLOCK`, `SYNC_TRANSPORTS` from `@lincyaw/host`; `EXECUTOR`,
-  `SESSION`, `ASK` and the other business contracts from `@lincyaw/kernel`.
-- Recorded operations: when the user does something worth replaying, `presmiumService(OPERATIONS)?.report({
+  `SESSION`, `ASK` and the tokens of Presmium's other services from `@lincyaw/kernel` (go-to-definition
+  shows each one's interface).
+- Recorded operations: while a lecture is recorded, user actions reported as operations are kept and
+  replayed with the recording. When the user does something worth replaying, `presmiumService(OPERATIONS)?.report({
   type, data })`, with data positioned by `'<section>/<block>'` and relative coordinates, not pixels. In
   `setup`, `ctx.tryGet(OPERATIONS)?.onReplay(type, { apply(data, seeking), clear() })`, unsubscribed in
   `dispose`. Replaying in order and folding after a jump (`clear()`, then replay with `seeking` true) must
@@ -465,7 +507,9 @@ export default plugin
 ### The viewer extension: `src/client/viewer.ts`
 
 Default export `(ctx) => void`, typed with `import type { ViewerPlugin } from '@lincyaw/viewer'`. It runs once
-before the viewer starts, in both forms; if it throws, it is skipped with an error.
+before the viewer starts, in both forms; if it throws, it is skipped with an error. The built-in views are
+`document` and `scrolly` (page views: the web page's reading layouts), `present` (the slides, an overlay
+view) and `presenter` (the presenter view, opened with `p` in `present`); `views` options take these ids.
 
 | `ctx` | Use |
 |---|---|

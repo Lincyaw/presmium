@@ -1,70 +1,113 @@
 ---
 name: presmium-present
-description: "Help a presenter present and teach with a Presmium lecture: project it with a presenter window, give students a link to follow, answer quizzes and ask questions in a classroom, prepare an offline class, export PDF, images, PowerPoint, a notebook or a lecture video, and record, replay and revise a lecture. Use when presenting or teaching with a Presmium lecture, distributing its outputs, running a classroom, or recording and replaying a talk. 放映、上课、课堂互动、离线授课、导出 PDF 或视频、录课与回放时使用。"
+description: "Help a teacher present and teach with a Presmium document: present it with a presenter window, give students a link to follow, run quizzes and questions in a classroom, prepare an offline class, export PDF, images, PowerPoint or a notebook, and record, synthesize, replay and export a narrated lecture video. Use when presenting or teaching with a Presmium document, handing out its outputs, running a classroom, or recording and replaying a lecture. 放映、上课、课堂互动、离线授课、导出 PDF 或视频、录课与回放时使用。"
 ---
 
-# Presenting, teaching and delivery
+# Presenting, teaching and handing out
 
-Start from what the presenter and the students will actually do, and prepare content that opens and works. First tell apart the presenter's own preview, the projected screen and the version the students get; then choose how to start and publish.
+This skill takes a teacher from a finished Presmium document to a class: presenting it, letting students follow and answer, handing out files, and making a narrated lecture video. Writing or fixing the content itself is the `presmium-author` skill.
 
-## Act on what this session must achieve
+## Words used here
 
-| The user's goal | Default approach | Details |
+- **Document**: what the teacher wrote, a folder with `lecture.md` (plus its `scenes/`, `components/` and media). Run every `presmium` command in this folder; where the command help says `[deck]`, it means this document folder (default: the current folder).
+- **Frontmatter**: the YAML block between `---` lines at the top of `lecture.md`. Settings in this skill go there.
+- **Section**: the part of the document under one `##` heading; it is one slide when presented. **Step**: a position inside a section; pressing next moves one step.
+- **On-screen content**: what the slide shows. **Narration**: the plain paragraphs of the document, which are the speaker notes and what a lecture says.
+- **Form**: what the document is built into: the web page (`web`), the slides (`slides`), the notebook (`notebook`) and the lecture (`lecture`). The frontmatter key `renderers` lists the forms a build makes, each with its options; `--to web,slides` picks forms for one command.
+- **Lecture**: the narrated playback: the narration recorded by the teacher or synthesized by a speech engine, played over the presentation, and the video exported from it. One recorded or synthesized lecture is a **track** with an id.
+- **Studio**: the browser workbench started by `presmium studio`.
+- **Plugin**: an npm package that adds features. Several features below need one. To add it, install it in the project and list it in the frontmatter, then restart `presmium dev` or rebuild:
+
+  ```sh
+  pnpm add -D @lincyaw/addon-stage
+  ```
+
+  ```yaml
+  plugins:
+    - '@lincyaw/addon-stage'
+  ```
+
+| Plugin | Gives |
+|---|---|
+| `@lincyaw/addon-stage` | Black out, freeze and the pen while presenting |
+| `@lincyaw/addon-guide` | Spotlight and hint while presenting, and pointers in a lecture |
+| `@lincyaw/addon-session` | The classroom: students join and follow |
+| `@lincyaw/addon-classroom` | Quizzes, polls and questions in the classroom |
+| `@lincyaw/addon-exec` | Running and checking code exercises |
+| `@lincyaw/addon-assistant` | AI answers to students' questions |
+| `@lincyaw/addon-publish` | `presmium-export` (PDF, images, PowerPoint) and the "Save for offline use" button |
+| `@lincyaw/addon-lecture` | Recording, replaying and exporting a lecture |
+| `@lincyaw/addon-speech` | Synthesizing a lecture from the narration |
+
+Before changing anything, read the document's frontmatter (`plugins`, `renderers`), its `package.json` scripts and any existing `dist/` output, and keep the forms and the hosting the teacher already uses.
+
+## What does the teacher want to do?
+
+| The teacher wants to | Do | Read |
 |---|---|---|
-| Project and present right now | The web Present view plus the presenter window; reuse slides if the deck already has them | "Start presenting" below |
-| Give the lecture to students, for self-study, or deploy a site | Build the agreed version and deliver a static site or a notebook | [Publishing, export and offline](references/delivery.md) |
-| Teach without a network | Load the pages and the execution runtimes in advance, then rehearse offline | [Publishing, export and offline](references/delivery.md) |
-| Students scan a code to follow, answer and ask | Prepare the student site and a separate classroom server, then walk the student path | [Classroom](references/classroom.md) |
-| Export a PDF, or one page per step | Use `presmium-export`; check the actual pages and links | [Publishing, export and offline](references/delivery.md) |
-| Record, publish a replay, synthesize speech or export a video | Record in the web Present view, or synthesize the lecture, then build the replay | [Recording and replay](references/lecture.md) |
+| Present now, on this computer | `presmium dev --to web`, then the Present view and the presenter window | "Start presenting" below |
+| Give students a web address or files to study from | Build a static site (all of it, or the student version) and serve or upload it; or build a notebook | [references/delivery.md](references/delivery.md) |
+| Have students scan a code to follow, answer quizzes and ask questions | Build the student site, run a separate classroom server, create a classroom while presenting | [references/classroom.md](references/classroom.md) |
+| Export a PDF, one page per step, images or PowerPoint | `pnpm exec presmium-export` (publish plugin), then open the file and check it | [references/delivery.md](references/delivery.md), "Export a PDF, images or PowerPoint" |
+| Teach without a network | Open the built site while online, fetch what runs code, then rehearse disconnected | [references/delivery.md](references/delivery.md), "Prepare an offline class" |
+| Record a class, synthesize a lecture from the narration, publish a replay or a video | Record in the Present view, or set a voice and build the lecture form; export with `pnpm exec presmium-lecture export` | [references/lecture.md](references/lecture.md) |
 
-Look first at the existing deck's frontmatter, build scripts and outputs, and keep the forms and the deployment the user already has. Read only the reference for the chosen task.
+Read only the reference for the chosen task.
 
 ## Start presenting
 
-To edit and present on this machine, run `presmium dev --to web` in the deck directory and open the web address the command prints. To start a version already built for distribution, serve it with a static server as in [Publishing, export and offline](references/delivery.md).
+1. In the document folder run `presmium dev --to web`. It prints the web address of the page; open it. The document appears as a page you can scroll.
+2. Open the **View** menu in the navigation bar and choose **Present**. The page now shows one section at a time, as a slide, with its on-screen content and without the narration. (Adding `?view=present` to the address opens it in Present directly.)
+3. Click **Full screen** in the bottom bar, and move this window to the projector.
+4. Press `p` (or the **Presenter window** button) to open the presenter window; allow the popup if the browser blocks it. Keep it on your own screen: it shows the current step's narration, the next step, a timer and, with a classroom, the classroom panel.
+5. Press `→` in either window. Both windows should move together. They stay in sync only when they are in the same browser at the same address origin.
 
-The View menu in the web navigation bar offers Document, Scrollytelling and Present: Document is for reading, Scrollytelling advances as the reader scrolls through the narration, and Present shows the projected content section by section and step by step. To open straight in Present, add `?view=present` to the web address. The workbench keeps only Document and Present: the slides are shown in Present, a lecture's playback controls appear there when the lecture is configured, and video files are made from Export.
+The View menu has three views: **Document** for reading, **Scrollytelling**, which advances the on-screen content as the reader scrolls through the narration, and **Present**. In the studio, open the document and use its presentation control; video files are made from **Export**.
 
-| Key in Present | Purpose |
+| Key in Present | Does |
 |---|---|
 | `→`, `↓`, `PageDown`, Space | Next step; after the last step of a section, the next section |
 | `←`, `↑`, `PageUp`, `Backspace` | Previous step |
-| `o` | Overview; pick a slide and press `Enter` to go there |
+| `Home`, `End` | First section, last section |
+| `o` | Overview of all sections; move to one and press `Enter` to go there; `o` or `Esc` closes it |
 | `p` | Open the presenter window |
-| `Esc` | Leave Present |
-| `b`, `f` | Black out or freeze the audience screen; press again to restore. Needs the stage plugin |
-| `d` | Pen: draw on the slide; press again to put it away. Needs the stage plugin |
-| `s`, `h` | Spotlight or hint the block under the pointer. Needs the guide plugin |
+| `Esc` | Leave Present (not in the slides form, which is always Present) |
+| `b`, `f` | Black out or freeze the audience screen; press again to restore (stage plugin) |
+| `d` | Pen: draw on the slide; press again to put it away (stage plugin) |
+| `s`, `h` | Spotlight or hint the block under the pointer (guide plugin) |
 
-Use the Full screen button in the bottom bar. Put the Present window on the projector and keep the presenter window on your own screen; it shows the current step's narration, a preview of the next step, a timer and the classroom panel. The two windows stay in sync when they are in the same browser and the same origin; allow the popup if the browser blocks it.
+When `b`, `f`, `d`, `s` or `h` does nothing, the plugin is missing: add it as above and restart.
 
-Black out, freeze and the pen need `@lincyaw/addon-stage` listed in the frontmatter; spotlight and hint need `@lincyaw/addon-guide`. When a feature is missing, check the plugins first, then rebuild.
+**Returning to a place.** While presenting, the address bar keeps the position, `?view=present&section=<section id>&step=<step>`, so reloading the page returns to the same place, and you can bookmark it. `?view=present&slide=<number>` (counting from 1) also works. The presenter window is the same address with `view=presenter`.
 
-Position and recovery: the web address accepts `?view=present&section=<section id>&step=<step>`; the presenter window uses `view=presenter`. The address follows the position while presenting, so a reload returns to the same place.
+**The slides form.** A document can also be built as a separate slides page (`presmium dev --to slides`, or `presmium build --to web,slides`; see [references/delivery.md](references/delivery.md)). Open the address the command prints: that page is always the Present view, with the keys above, and its presenter window is the same address with `?view=presenter`.
 
-When the user presents the slides form, open the address that the build or dev command reports. The slide page is the Present view and the keys are the ones above (`Esc` does not leave); `Home` and `End` go to the first and last slide, and the presenter window is the address with `?view=presenter`. The stage plugin's pen (`d`, or the pen in the control bar) has four inks, an eraser, undo and clear. Drawings are synced between the presenter window, the audience window and the classroom. When a server provides the pages (`presmium dev`, `presmium serve`), they are saved in the deck's `.presmium/drawings/`; a static site does not save them.
+**Pen and drawings.** With the stage plugin, the pen (`d`, or the pen in the control bar) has four inks, an eraser, undo and clear. Drawings appear in the presenter window, the audience window and, during a class, on students' screens. When the page comes from `presmium dev` or `presmium serve`, drawings are saved in the document's `.presmium/drawings/` and come back next time; a static site does not save them.
 
-## Walk the real path before class
+## Rehearse what this class will use
 
-Verify what this class will use: moving forward and back in the audience window, the speaker notes following along, whether long code is readable, the run buttons and recorded outputs, sound and video. When the class uses a classroom, join from another browser or a student device and verify following, one answer, and revealing the result.
+Check only what this class uses, in the real setting, and tell the teacher which outside conditions (projector, room network, student devices) you could not check:
 
-For an offline class, actually disconnect and try it; for a student version, open the student output and check its content; for a PDF, open the file and check the page count, missing pages and overflow. Verify only the capabilities this class uses, and state which external conditions you did not verify.
+- **Presenting**: forward and back in the audience window; the presenter window follows and shows the right narration; long code is readable at projector size; the **Run** buttons on code, recorded outputs, sound and video work.
+- **Classroom**: join from another browser or a student phone; the student follows the presenter; answer one quiz; reveal its result ([references/classroom.md](references/classroom.md)).
+- **Offline**: disconnect the network and go through the class in the same browser and address ([references/delivery.md](references/delivery.md)).
+- **Student version**: open the student build and look for teacher narration, answers and media that should not be there.
+- **PDF**: open the file; check the page count, missing pages, code running off the page and the key links.
 
-## Which address the students get
+## Which address students get
 
-`presmium dev`, `presmium serve` and the workbench (`presmium studio`) are the author's own working environment and serve the full lecture. `presmium serve --host 0.0.0.0` has no login: anyone who reaches the port works in the workspace as the author. It offers no per-reader student view.
+`presmium dev`, `presmium serve` and `presmium studio` are the teacher's own working services. They serve the whole document, including teacher-only content, and have no student view. `presmium serve --host 0.0.0.0` (or `presmium studio --host <address>`) opens the service to the local network with no login: anyone who reaches the port can edit the document as the teacher. Never hand out these addresses, or any token they print, as a student link.
 
-To share with students, build a static version with `presmium build --audience student`, and connect classroom interaction to a separate `presmium-classroom-server`. To publish the full lecture, build the full version as the user chooses. The commands are in the matching reference. Never hand out the address or start token of an author service as a student link.
+For students, build a static site with `presmium build --to web --audience student --out dist-student` and serve `dist-student/web` ([references/delivery.md](references/delivery.md)); for a class with live interaction, connect it to a separate `presmium-classroom-server` ([references/classroom.md](references/classroom.md)). To publish the whole document instead, build without `--audience`.
 
 ## When something goes wrong in class
 
 | Symptom | Check first |
 |---|---|
-| Students cannot open the link | Whether student devices reach the site and the classroom server; whether the address was written as `localhost` |
-| The presenter window does not follow | Same browser and same origin; whether the popup opened |
-| White page or 404 after rebuilding a static site | Restart the static server, then check `base` and how the slides route falls back |
-| No classroom, recording or lecture entry | Whether the needed plugins are installed; whether this is a static site or a dev server |
-| Pages show offline but code does not run | Whether the execution runtime was fetched in advance; remote environments and the classroom still need the network |
+| Students cannot open the link | Student devices can reach both the site and the classroom server; the link and the frontmatter's classroom `server` use the computer's network address, not `localhost` or `127.0.0.1` |
+| The presenter window does not follow | Both windows in the same browser, at the same origin; the popup was allowed |
+| White page or 404 after rebuilding a static site | Restart the static server (it keeps the old file list); then check that the form's `base` in `renderers` matches the path the site is served at |
+| No **Classroom** in the navigation bar, no **Record** or play button in Present | The plugin is installed and listed in `plugins`; recording needs `presmium dev` or `presmium serve`, not a static site |
+| Pages open offline but code does not run | The code runtimes were fetched while online ("Save for offline use", or running the code once); remote Jupyter, the classroom and AI models always need the network |
 
-When content or steps are wrong, switch to `presmium-author`. When delivering, tell the user the address or file they can open, which path the presenter and the students each take, and what must be prepared again before the next class.
+When content or steps are wrong, switch to `presmium-author`. When you hand over, tell the teacher: the address or file to open, which address the teacher uses and which the students use, and what must be rebuilt or prepared again before the next class.

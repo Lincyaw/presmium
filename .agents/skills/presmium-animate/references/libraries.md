@@ -1,6 +1,22 @@
 # Choosing a library and writing the moves
 
-Every library here is driven the same way: the scene builds a timeline (or a drawing function), Presmium pauses it and seeks it to the time it needs. What differs is what each library draws well. Every pitfall below was hit while building this skill's gallery lectures (`gallery/<library>/`) and checked by seeking each scene forward and back in a browser, in light and dark.
+Every library here is driven the same way: the scene file builds a timeline (or a drawing function) once, and Presmium pauses it and seeks it to the time it needs. What differs is what each library draws well. The pitfalls below are the ones met while building this skill's gallery (`gallery/<library>/`, see "The gallery" in `SKILL.md`), each checked by seeking the scene forward and back in a browser, in light and dark.
+
+## What a scene receives
+
+A scene file default-exports one call to a function from `@lincyaw/addon-motion/scene` (`gsapScene`, `animeScene`, `motionScene`, `d3Scene`, `threeScene`, `remotionScene`, `defineScene`). That function is given a builder, which receives one object:
+
+| Field | What it is |
+|---|---|
+| `root` | The scene's element; put your HTML or SVG in it. It is a CSS size container |
+| `at(k)` | The millisecond at which step k starts on the scene's timeline: `at(0)` is 0, `at(k)` is the sum of the first k `:durations:` |
+| `durations` | The `:durations:` in milliseconds, one per step |
+| `total` | Their sum, the length of the timeline in milliseconds |
+| `width`, `height` | The size of `root` in CSS pixels when the scene is built |
+| `color(name)` | A design-system color as `rgb()`/`rgba()`, such as `color('accent')` (names in `SKILL.md`, "Rules every scene follows") |
+| the library | `gsap` and `plugins`; `anime`; `motion`; `d3`; `THREE`, `renderer` and `addons`; `React` and `remotion` |
+
+Each library counts time in its own unit: GSAP and Motion in seconds (`at(k) / 1000`), Anime.js, D3, Three.js and `defineScene` in milliseconds, Remotion in frames.
 
 ## Pick by the picture
 
@@ -14,11 +30,11 @@ Every library here is driven the same way: the scene builds a timeline (or a dra
 | A typeset panel like a video: title cards, captions, typewriter, kinetic type, transitions between panels | **Remotion** | React components as a function of the frame; `Sequence`/`Series` lay steps out declaratively |
 | A canvas drawn by hand, or anything else with a pure `(ms) => void` | `defineScene` | No library |
 
-One scene uses one library. A page that needs a diagram and a 3D view gets two scenes; give the second one `:reveal:` (see `timeline.md`).
+One scene uses one library. A section that needs a diagram and a 3D view gets two scenes; give the second one `:reveal:` so it starts after the first (`timeline.md`, "Several blocks in one section").
 
 ## Find an effect
 
-Open the scene file named here, in this skill's `gallery/<library>/scenes/`.
+Each entry ``<library> `<name>` `` is the file `gallery/<library>/scenes/<name>.ts` in this skill's folder; its section in `gallery/<library>/lecture.md` (search for `{scene} <name>`) shows its `:durations:` and narration. The D3 scenes import helpers from `gallery/d3/scenes/kit/`: copy that folder along with them.
 
 | Effect | Where |
 |---|---|
@@ -52,6 +68,14 @@ Open the scene file named here, in this skill's `gallery/<library>/scenes/`.
 | Vectors, projections, a matrix acting on the plane | three `projection`, `matrix`, motion `matrix` |
 | Tens of thousands of particles | three `galaxy` |
 | Lighting, materials, shadows, cross-sections | three `materials`, `shadows`, `lathe`, `hull` |
+| A camera following a path through a tube | three `route` |
+| Keyframe data played with `AnimationClip` and `AnimationMixer` (Towers of Hanoi) | three `hanoi` |
+| A progress ring drawn with `pathLength` | motion `ring` |
+| Labels and relative times inside one sequence | motion `labels` |
+| One CSS variable driving a whole layout | motion `cssvar`, gsap `css-vars` |
+| Data mapped to sizes and colors with `gsap.utils` (`mapRange`, `interpolate`, `distribute`, `wrap`) | gsap `utils` |
+| One Remotion `Sequence` per step (the basic pattern) | remotion `sequence-steps` |
+| Stop-motion (frames held with `posterize`) | remotion `posterize` |
 
 ## GSAP
 
@@ -68,7 +92,7 @@ export default gsapScene(({ root, gsap, plugins, at, color }) => {
 })
 ```
 
-Presmium sets `force3D: false` (a box on a 3D layer while tweened is drawn slightly differently, so a frame would depend on how it was reached), and registers the plugins. `plugins` holds `SplitText`, `TextPlugin`, `DrawSVGPlugin`, `MorphSVGPlugin`, `MotionPathPlugin`, `CustomEase`, `CustomBounce`, `CustomWiggle`, `Physics2DPlugin`, `PhysicsPropsPlugin` and `Flip`, all registered: tweens can use `drawSVG`, `morphSVG`, `motionPath`, `text`, `physics2D`, and the scene calls `plugins.SplitText.create(...)`, `plugins.CustomWiggle.create(...)`.
+Presmium sets `force3D: false` (so a frame looks the same however it was reached) and registers the plugins. `plugins` holds `SplitText`, `TextPlugin`, `DrawSVGPlugin`, `MorphSVGPlugin`, `MotionPathPlugin`, `CustomEase`, `CustomBounce`, `CustomWiggle`, `Physics2DPlugin`, `PhysicsPropsPlugin` and `Flip`, all registered: tweens can use `drawSVG`, `morphSVG`, `motionPath`, `text`, `physics2D`, and the scene calls `plugins.SplitText.create(...)`, `plugins.CustomWiggle.create(...)`.
 
 - **Later steps:** `from()` and `fromTo()` apply their start values when the timeline is built. For something that appears in step k > 0, set its hidden state with `gsap.set` (e.g. `drawSVG: 0`, `opacity: 0`, `motionPath: { …, end: 0 }`) and tween it with `to()` or `fromTo(…, { immediateRender: false })` at `s(k)`. Without the `set`, a path drawn in step 2 shows fully drawn during steps 0 and 1.
 - **Callbacks never fire** (`onUpdate`, `onComplete`, `tl.call`). Numbers: `textContent` with `snap: { textContent: 1 }` or `modifiers: { textContent: v => (+v).toFixed(2) }`. Text swaps: `tl.set(el, { textContent: 'lo' }, time)`, which seeking back undoes.
@@ -94,7 +118,7 @@ export default animeScene(({ root, anime, at, color }) => {
 
 `anime` is the whole module: `createTimeline`, `stagger`, `svg.createDrawable`, `svg.morphTo`, `svg.createMotionPath`, `text.splitText`, `createSeededRandom`, `cubicBezier`, `steps`, `spring`, `round`, …
 
-- **Only the first tween of a target's property states a from-value** (`[from, to]`); later tweens give only `to`. Order the tweens of one property by time. The adapter seeks from 0 every time, which keeps explicit from-values correct too, but the rule keeps scenes readable.
+- **Only the first tween of a target's property states a from-value** (`[from, to]`); later tweens give only `to`. Order the tweens of one property by time. Presmium seeks from 0 every time, which keeps explicit from-values correct too, but the rule keeps scenes readable.
 - **`morphTo` returns `[from, to]`:** use it for the first morph only; later morphs tween `d` to the next path's string (same commands). Keep the target paths inside `<defs>`, or they render as black shapes.
 - **`tl.set` with a non-numeric string** (`innerHTML: 'p'`) is not undone when seeking back; swap the opacity of two elements instead. Numbers and colors are undone.
 - **Callbacks are muted.** For text and canvas, tween a getter/setter object: `const s = { get v() { return v }, set v(x) { v = x; el.textContent = … } }; tl.add(s, { v: [0, 1234], modifier: anime.round(0) }, at(k))`.
@@ -160,7 +184,7 @@ D3 does not animate here: `transition()` and `d3.timer` run on their own clock a
 - **`d3.interpolateZoom`** gives the fly-to path; use the step's duration, not the one it suggests.
 - **Measure nothing at build:** draw lines with `pathLength="1"` and a dash offset.
 - **Layout details:** `paddingOuter` before `paddingTop` on a treemap; categorical schemes like `schemeSet3` keep dark labels readable in both themes; a blended projection has no `invert`, so hide the far side of a globe with `d3.geoDistance`.
-- **Not for scenes:** `transition()`, `d3.timer`, brush, zoom and drag behaviours. No map data is bundled: a globe uses `d3.geoGraticule` and generated shapes unless the lecture ships its own data.
+- **Not for scenes:** `transition()`, `d3.timer`, brush, zoom and drag behaviours. No map data is bundled: a globe uses `d3.geoGraticule` and generated shapes unless the document ships its own data.
 
 ## Three.js
 
@@ -188,7 +212,7 @@ export default threeScene(({ THREE, renderer, addons, at, width, height, color, 
 - **Shaders:** set `uniforms.uTime.value = ms / 1000` in `render`; multiply `gl_PointSize` by the pixel ratio; set the bounding sphere by hand when positions come from the shader. Normal blending: additive blending washes out on the light page.
 - **Theme:** the background stays transparent (don't set `scene.background`); fog color = the page background; lit solids use a mid-tone like `line-strong` (`surface` is near-black in dark mode); a metal with a dark color becomes a black mirror; shadows stay black (`ink` is light in dark mode).
 - **Details that bit:** a dashed line built from zero-length points is culled (`frustumCulled = false`); `PCFSoftShadowMap` is gone in r186 (`PCFShadowMap` with `shadow.radius`); TubeGeometry draw ranges must be whole rings (radial segments × 6 indices); `LatheGeometry`'s `phiStart` of 0 is on +z.
-- **Budget:** about 14 WebGL scenes per page; split a longer lecture.
+- **Budget:** about 14 Three.js scenes per web page. Each holds a WebGL context, and browsers keep only a limited number per page (older ones lose their canvas); split a longer document.
 
 ## Remotion
 

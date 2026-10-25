@@ -6,6 +6,14 @@ The workbench (`packages/workbench`, React) runs as a client plugin of DeepSeek 
 the older interface design and describes targets to implement, not capabilities already verified in the
 running service. This file keeps the implementation boundaries and checks. Section numbers below are of
 `docs/design-dsh.md` unless another file is named.
+"Verify" here means a real run in the studio (`pnpm studio`, or an isolated copy with
+`pnpm debug:studio`, see [debugging](debugging.md)); tests named below are examples of how to set
+something up, run only when the owner asks.
+
+dsh is configured as a tree of **rows**: each row is one dsh plugin with its configuration and whether it is
+enabled, identified by an ID such as `ui-layout` (terms table at the top of `docs/design-dsh.md`). Presmium's
+changes to the tree are `packages/dsh/cordis.patch.yml` (host side) and `packages/dsh/web.patch.yml` (web
+client).
 
 ## Who it is for
 
@@ -28,7 +36,8 @@ The mapping of workspace, session and current document is defined in 6.2: one ds
 workspace root), sessions fixed to it, the current document passed by `POST /api/presmium/context`. When you
 change how the agent writes, verify that code and other documents in the workspace go into the same review,
 including documents that are not selected, and that after a failed commit the review can still be retried or
-rejected (6.5).
+rejected (6.5). A **review** is the set of changes an AI turn made, which the author accepts (then they are
+committed to the workspace's git repository) or rejects.
 
 ## Editing on the document
 
@@ -48,15 +57,18 @@ and that Markdown characters are escaped.
 
 ## Undo, redo and versions
 
-Every save is a commit. Undo and redo go through `history/undo` and `history/redo` with `expect`; version
-history marks undone changes from the `reverts` and `revertedBy` of `revisions`. Verify undo, redo, a new
+Every save is a commit. Undo and redo go through the workspace service's routes `history/undo` and
+`history/redo` (`packages/workspace/src/node/routes.ts`); the body's `expect` names the commit the client
+believes comes next, and a mismatch answers 409 so the client reads the history again. Version history marks
+undone changes from the `reverts` and `revertedBy` fields of each revision in the history (`packages/workspace/src/node/revisions.ts`). Verify undo, redo, a new
 change clearing redo, and that an AI turn becomes one version when it ends.
 
 ## Preview binding
 
-A preview connection is bound to the document and form it was opened with; navigating to another lecture
-inside the preview follows the current document through `ready.document`. Verify that after switching the
-selection enters the new document's chat context, and that Escape dismisses the toolbar and clears the focus.
+A preview connection is bound to the document and form it was opened with; navigating to another
+document inside the preview makes it current through the `document` field of the preview protocol's
+`ready` message. Verify that the selection enters the new document's chat context, and that Escape
+dismisses the toolbar and clears the focus.
 
 The RFC defines Content and Sequence as authoring workspaces, with Present and Export as actions. Keep
 them on the same web viewer and iframe (`docs/architecture.md` 1.1); runtime view IDs do not define extra
@@ -66,7 +78,7 @@ their original target and version. The IR has no stable Step ID; convert full-do
 steps through the existing trail/map instead of treating array indexes as identity.
 
 Verify actual time advancing after Play, pause and seeking, direct first/last and reverse step jumps, and
-the return position after Present. There must be only one active media clock. Opening, switching steps or
+the return position after Present, and that the iframe keeps the same `window` object. There must be only one active media clock. Opening, switching steps or
 compiling must not silently synthesize voiceover in the target workflow; the existing script route still
 needs migration, so check the request path rather than assuming the RFC has implemented it. Editing the
 current step invalidates its old audio and pauses at that step, while unrelated updates preserve valid
@@ -88,10 +100,11 @@ source.
 - The workbench only says "some content could not be shown correctly"; the raw text is under "Details".
   "Let AI fix it" and comments go to the current session through
   `packages/dsh/src/client/agent-requests.ts` and keep the input draft. Chat requests retain the selected focus.
-- When judging the agent's environment feedback, tell apart `get_diagnostics` (source and checks),
+- When judging the agent's environment feedback, tell apart the tools `get_diagnostics` (source and checks),
   `get_outputs` (compiled recordings) and `get_runtime` (plugin and component failures, live execution and
-  session resets that the author's browser actually reported). They are reported through the existing
-  `STATUS`, bounded, with position and time. No window feedback does not mean success; after a change, run
+  session resets that the author's browser actually reported); in dsh they carry the prefix `presmium__`
+  (`presmium__get_runtime`). The browser reports through the existing `STATUS` service of `@lincyaw/host`
+  (`presmium.status`, `packages/host/src/contracts.ts`), bounded, with position and time. No window feedback does not mean success; after a change, run
   it again or confirm the page.
 
 ## What dsh tells the agent
@@ -107,15 +120,16 @@ steps, where it explored facts the context should have given, which instruction 
 ## Telemetry
 
 Operator telemetry (6.7) is collected only when `PRESMIUM_TELEMETRY_URL` is set. The bundle row
-`presmium-telemetry` exports every event of each session; the workbench's `OperationLog` records the
+`presmium-telemetry` (in `cordis.patch.yml`) exports every event of each session; the workbench's `OperationLog` records the
 author's operations and hands them to the host through `/api/presmium/telemetry`.
 
 - A new operation the author can perform is recorded in the matching `Workbench` method with `#record`
   (`#timed` for slow ones) in `packages/workbench/src/workbench.ts`.
 - A request handed to the AI brings back the session and request IDs (`AgentAnswer`); correlation relies
   on them.
-- Verify with the fake collector `packages/dsh/src/node/fake-collector.ts`, as in
-  `packages/dsh/test/telemetry.test.ts` and the "the operator's collector" group of `e2e/workbench.spec.ts`.
+- Verify against the fake collector `packages/dsh/src/node/fake-collector.ts` (point
+  `PRESMIUM_TELEMETRY_URL` at it); `packages/dsh/test/telemetry.test.ts` and the "the operator's collector"
+  group of `e2e/workbench.spec.ts` show how to wire it.
 
 ## Layout
 
@@ -135,8 +149,9 @@ author's operations and hands them to the host through `/api/presmium/telemetry`
   start binding does not steal the view, that a link does not expand the chat, and that the chat history
   restores the chat and the draft.
 - One shell only when reusing content components: Harness's `ui-layout` and `ui-sidebar` rows are off by
-  default and Presmium composes the session browser, settings and chat header through public slots; the
-  fallback mode turns both back on (7.2). Check for duplicated branding, action bars and entries, and after
+  default and Presmium composes the session browser, settings and chat header through public slots. The
+  fallback (7.2, `packages/dsh/src/client/fallback.tsx`) turns both rows back on: dsh's own layout with
+  Presmium's panels as right-dock tabs and global panels, for when the root layout plugin fails. Check for duplicated branding, action bars and entries, and after
   dragging, narrowing and full screen verify the panels' real bounds and click areas, not only that elements
   exist.
 - Plugins and automation are global tools, collected through `sidebar.panellist` in the app bar's More menu.
@@ -149,5 +164,6 @@ author's operations and hands them to the host through `/api/presmium/telemetry`
 ## Upgrading dsh
 
 dsh is pinned to one exact version; an upgrade is its own change and must pass the five upgrade-gate groups
-(section 12; Vitest cases named `[gate]`, Playwright cases tagged `@gate`). The client-side contracts that
+(section 12; Vitest cases named `[gate]`, Playwright cases tagged `@gate`). The gate is a set of test cases; under the owner's rule (SKILL.md, Verify)
+confirm with the owner before running it. The client-side contracts that
 only a README describes are guarded by gate group 3 (`docs/architecture.md` 9.1).

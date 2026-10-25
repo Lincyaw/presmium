@@ -1,20 +1,21 @@
 # Testing in the repository
 
-How to write a CLI test with `@lincyaw/cli/testing`, what to check in a browser and how to treat processes
+Existing CLI helpers in `@lincyaw/cli/testing`, what to check in a browser and how to treat processes
 and external conditions in general is in `presmium-develop/references/testing.md`. This file adds where the
 repository's tests live, its e2e fixtures and helpers, and its cost rules. The strategy is
 `docs/architecture.md` section 7; for the workbench and dsh `docs/design-dsh.md` section 15.
 
-Only run the targeted integration tests and lightweight structure checks directly affected by a change,
-with one worker. Preserve existing effective behavior tests and adapt fixtures when the public API changes.
-Do not run full test, demo or e2e suites without an explicit user request. Tests use the real CLI, builds,
-services, browsers and pinned dsh; no unit tests or host-framework mocks.
+Follow the root `AGENTS.md` verification rule: no new tests and no routine test suites. Use real runs and
+the lightweight structure checks directly affected by the change. The tests and helpers below document
+existing setups, run only when the owner explicitly asks; then target the affected integration cases with
+one worker. Do not run full test, demo or e2e suites without an explicit request. Existing tests use the
+real CLI, builds, services, browsers and pinned dsh; no unit tests or host-framework mocks.
 
 ## Pick the test by where it can fail
 
 | Change | Test | Start from |
 |---|---|---|
-| Directive, steps, diagnostics, recording cache | Run the real CLI on a document, check IR, diagnostics or output | `packages/cli/test/ir.test.ts`, `packages/addon-exec/test/compile.test.ts` |
+| Directive, steps, diagnostics, the cache of recorded code-execution output | Run the real CLI on a document, check IR, diagnostics or output | `packages/cli/test/ir.test.ts`, `packages/addon-exec/test/compile.test.ts` |
 | Component display, keyboard, stepping back | Build, act in a browser, compare what the user sees | `e2e/guide.spec.ts` |
 | Preview updates after a save | Start a dev server, edit a file, check content and position | `e2e/viewer.spec.ts`, `e2e/workbench.spec.ts` |
 | Student build, translation, published files | Build that version, read back the files written | `packages/cli/test/audience.test.ts`, `e2e/site.spec.ts` |
@@ -25,8 +26,8 @@ services, browsers and pinned dsh; no unit tests or host-framework mocks.
 
 Package tests are `packages/<pkg>/test/*.test.ts` (Vitest). Before adding `@lincyaw/cli` as a dev dependency
 of a package, check the dependency direction: the `mcp` and `server` tests start the CLI executable directly
-to avoid a `cli → server → mcp` link cycle. Renderers can be pointed at a package directory with
-`renderers.<id>.package`.
+to avoid a `cli → server → mcp` link cycle. A test that needs a renderer from a package directory (instead
+of the installed one) points the document's `renderers.<id>.package` at that directory.
 
 ## End-to-end fixtures
 
@@ -34,15 +35,18 @@ A dedicated document goes into `e2e/fixtures/<group>/`, the spec into `e2e/<grou
 `useFixture` from `./fixtures/deck.ts`: it builds and serves the document in `beforeAll` and cleans up in
 `afterAll`. Specs use `test.describe.configure({ mode: 'default' })` so a group's document is built once.
 
-`useFixture(name, options?)` returns a getter: `deck().web` and `deck().slides` are addresses,
-`deck().slide(id)` finds the slide number by a stable section label. For manual lifecycle use
-`buildFixture` from the same file and call `close()`. Options:
+`useFixture(name, options?)` returns a getter (call it `deck`): `deck().web` and `deck().slides` are the
+addresses of the two forms, `deck().url` the site's origin, `deck().dir` the built copy, `deck().doc` its IR
+(`dist/ir.json`), and `deck().slide(id)` finds the slide number by a stable section label. For manual
+lifecycle use `buildFixture` from the same file and call `close()`. Options:
 
-- `to`: build only the media needed.
+- `to`: the forms to build, as `--to` takes them (default `web,slides`); build only those needed.
 - `audience`: build for an audience, e.g. students.
 - `edit(dir)`: change the copied document, never the shared sample.
 - `with`: bring extra fixture files.
 - `link`: link plugins the example project's dependencies lack; read the helper's types for the shape.
+- `bases`: serve `dist/` as one site, the web form under `/web/` and the slides under `/slides/` (a build
+  whose forms both have a base other than `/` is served so anyway).
 
 A component shared by the web page and the slides is driven through its key actions in both. Step features
 verify at least that going forward and back and jumping straight give the same state. Static fallbacks are
@@ -111,17 +115,18 @@ not verify Docker images, GPUs, gVisor or Kubernetes deployments.
 - WGSL computation and fallback only: `e2e/exec-webgpu-smoke.spec.ts`, without building the Python/jax-js
   bridge; SwiftShader passing does not verify a physical GPU.
 - Offline publishing and high contrast: `e2e/publish-smoke.spec.ts` (core and publish only).
-- Other components: filter the needed behavior by test name; once a batch passes, do not rerun passed cases
+- Other components: filter the needed behavior by test name (`--grep` for Playwright, `-t` for Vitest); once a batch passes, do not rerun passed cases
   for a summary. The scope and limits of the last component validation are in
   `docs/reports/components-validation-2026-10-21.md`.
-- `e2e/example.spec.ts` runs `pnpm demo:build` (two lectures, about a minute) when the example is not built.
+- `e2e/example.spec.ts` runs `pnpm demo:build` (two documents, about a minute) when the example is not
+  built, so running it counts as the full example build under the cost rules below.
 
 ## Test cost
 
 When the owner asks to run tests, follow the cost rules of `AGENTS.md`:
 
 - Run only the targeted integration tests the change directly touches, plus related light structure checks;
-  one worker by default; build only the documents and media those cases need; stop when the targeted cases
+  one worker by default; build only the documents and forms those cases need; stop when the targeted cases
   pass and do not widen the scope.
 - Unless the user explicitly asks for full verification, do not run `pnpm test`, `pnpm verify`, the full
   `pnpm e2e`, or the complete example build and check (`pnpm demo:build`, `pnpm demo:check`), also not as a
