@@ -752,10 +752,6 @@ html.pm-presenting {
   padding-bottom: 5.3em;
 }
 
-.pm-slide--cover .pm-slide__body {
-  flex: none;
-}
-
 .pm-slide--cover .pm-slide__title {
   max-width: 85%;
   font-size: 2.67em;

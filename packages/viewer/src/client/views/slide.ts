@@ -7,6 +7,7 @@ import { SECTION_CONTEXT } from '../section-context.ts'
 import { useViewer } from '../viewer-state.ts'
 import { h } from '../element.ts'
 import { layers, visuals } from './overlay.ts'
+import './slide.css'
 const MESSAGES = { 'zh-CN': { steps: (at: number, of: number) => `第 ${at} 步，共 ${of} 步` }, en: { steps: (at: number, of: number) => `Step ${at} of ${of}` } }
 const LAYOUTS = new Set(['default', 'cover', 'center', 'full'])
 function slideOptions(section: IRSection, cover: boolean) { const hints = section.hints.slides ?? {}; const zoom = Number(hints.zoom); return { layout: typeof hints.layout === 'string' && LAYOUTS.has(hints.layout) ? hints.layout : cover ? 'cover' : 'default', className: typeof hints.class === 'string' ? hints.class : undefined, zoom: Number.isFinite(zoom) && zoom > 0 ? zoom : undefined } }

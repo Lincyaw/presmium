@@ -287,3 +287,63 @@ test('creates independent pages from navigation and the block menu after saving 
   }
   expect(errors).toEqual([])
 })
+
+test('fits every edited body paragraph on cover and regular presentation pages', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await studio.open(page)
+  await page.locator('.pmw-home__card').filter({ hasText: '块编辑' }).locator('.pmw-home__open').click()
+  await expect(page.locator('.pmw-preview[data-ready="true"]')).toBeVisible({ timeout: 90_000 })
+  const frame = page.frameLocator('.pmw-preview__frame[data-renderer="web"]')
+  const lines = Array.from({ length: 10 }, (_, i) => `正文第 ${i + 1} 段：这段内容应完整显示在当前幻灯片中，段落之间保持顺序，不能只留下最后一行。`)
+  const file = join(studio.workspace.dir, 'zh/lecture.md')
+  await page.locator('.pmw-navigation__item').filter({ hasText: '正文页面' }).click()
+  await page.getByRole('button', { name: '关闭导航窗格', exact: true }).click()
+  await page.getByRole('group', { name: '视图', exact: true }).getByRole('button', { name: '放映', exact: true }).click()
+  await expect(frame.locator('.pm-present .pm-slide')).toHaveAttribute('data-section', 'intro')
+  await expect.poll(() => frame.locator('.pm-present .pm-slide').evaluate(element => {
+    const body = element.querySelector('.pm-slide__body')!, content = element.querySelector('.pm-slide__content')!
+    const canvas = element.getBoundingClientRect(), box = body.getBoundingClientRect()
+    const scale = canvas.height / (element as HTMLElement).offsetHeight
+    const expected = canvas.bottom - Number.parseFloat(getComputedStyle(element).paddingBottom) * scale
+    return Math.abs(box.bottom - expected) < 1 && getComputedStyle(content).transform === 'none'
+  })).toBe(true)
+  await page.getByRole('group', { name: '视图', exact: true }).getByRole('button', { name: '文档', exact: true }).click()
+  for (const section of ['intro', 'empty']) {
+    await frame.locator(`.pm-section[data-section="${section}"]`).scrollIntoViewIfNeeded()
+    const editor = frame.locator(`[data-section="${section}"] .tiptap`)
+    await editor.click()
+    await editor.press('Meta+A')
+    for (let i = 0; i < lines.length; i++) {
+      if (i) await page.keyboard.press('Enter')
+      await page.keyboard.insertText(lines[i]!)
+    }
+    await editor.press('Meta+s')
+    await expect(frame.locator(`[data-section="${section}"] .pm-block-editor__status`)).toHaveText('已保存')
+    expect(readFileSync(file, 'utf8')).toContain(lines.at(-1))
+    const narration = page.getByRole('region', { name: '步骤讲解', exact: true })
+    if (await narration.isVisible()) await narration.getByRole('button', { name: '关闭', exact: true }).click()
+    await page.getByRole('group', { name: '视图', exact: true }).getByRole('button', { name: '放映', exact: true }).click()
+    const slide = frame.locator('.pm-present .pm-slide')
+    await expect(slide).toHaveAttribute('data-section', section)
+    for (const width of [1440, 390]) for (const scheme of ['light', 'dark'] as const) {
+      await page.setViewportSize({ width, height: 1000 })
+      await page.emulateMedia({ colorScheme: scheme })
+      await expect(slide.locator('.pm-block--markdown')).toHaveCount(lines.length)
+      await expect.poll(() => slide.evaluate(element => {
+        const body = element.querySelector('.pm-slide__body')!.getBoundingClientRect()
+        const canvas = element.getBoundingClientRect()
+        const nodes = [...element.querySelectorAll('.pm-slide__title, .pm-block--markdown p')]
+        const rects = nodes.map(node => node.getBoundingClientRect())
+        const inside = rects.every(rect => rect.height > 0 && rect.top >= Math.max(body.top, canvas.top) - 1 && rect.bottom <= Math.min(body.bottom, canvas.bottom) + 1 && rect.left >= Math.max(body.left, canvas.left) - 1 && rect.right <= Math.min(body.right, canvas.right) + 1)
+        const ordered = rects.every((rect, i) => !i || rect.top >= rects[i - 1]!.bottom - 1)
+        return inside && ordered
+      }), { message: `${section}: all body paragraphs stay inside the slide at ${width}/${scheme}` }).toBe(true)
+      await page.screenshot({ path: test.info().outputPath(`body-${section}-${width}-${scheme}.png`) })
+    }
+    await page.getByRole('group', { name: '视图', exact: true }).getByRole('button', { name: '文档', exact: true }).click()
+    await page.setViewportSize({ width: 1440, height: 1000 })
+  }
+  expect(errors).toEqual([])
+})
