@@ -40,6 +40,8 @@ export default function SceneView(props: SceneProps) {
   const stepTime = useStepTime({ until: Math.max(...durations) })
   const { dark } = useAppearance()
   const expanded = !Number.isFinite(hostStep)
+  const [seen, setSeen] = useState(!expanded || printed)
+  const enabled = seen || printed || !expanded
   const [local, setLocal] = useState<number>()
   const [playing, setPlaying] = useState(false)
   const [status, setStatus] = useState<
@@ -123,8 +125,29 @@ export default function SceneView(props: SceneProps) {
     }
   }, [shown, clock])
   useEffect(() => {
+    if (seen) return
+    if (printed || !expanded || typeof IntersectionObserver === 'undefined') {
+      setSeen(true)
+      return
+    }
     const root = stage.current
     if (!root) return
+    // Observe the scene's stage against the viewport; after first visibility,
+    // retain the instance when reading past it so steps remain reversible.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return
+        setSeen(true)
+        observer.disconnect()
+      },
+      { rootMargin: '200px' },
+    )
+    observer.observe(root)
+    return () => observer.disconnect()
+  }, [seen, printed, expanded])
+  useEffect(() => {
+    const root = stage.current
+    if (!enabled || !root) return
     let disposed = false
     let observer: ResizeObserver | undefined
     let resizeTimer: ReturnType<typeof setTimeout> | undefined
@@ -172,7 +195,9 @@ export default function SceneView(props: SceneProps) {
     }
     const rebuild = () => {
       const work = build()
-      work.catch(error => { if (!disposed) fail(error) })
+      work.catch((error) => {
+        if (!disposed) fail(error)
+      })
       clock?.wait(work)
     }
     preloadScenes()
@@ -200,7 +225,7 @@ export default function SceneView(props: SceneProps) {
       instance.current?.dispose?.()
       instance.current = undefined
     }
-  }, [props.scene, JSON.stringify(durations), dark, clock])
+  }, [enabled, props.scene, JSON.stringify(durations), dark, clock])
   const box: CSSProperties = props.height
     ? { height: props.height }
     : { aspectRatio: (props.aspect ?? '16/9').replace('/', ' / ') }
