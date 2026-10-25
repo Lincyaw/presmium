@@ -1,5 +1,5 @@
 import { aigcLabel, remapWords, speechEngineId } from '@lincyaw/kernel'
-import type { Logger, SpeechWord, SynthesisRequest, TranscriptionRequest, VoiceInfo } from '@lincyaw/kernel'
+import type { Logger, SpeechWord, SynthesisRequest, TranscriptionRequest, VoiceCatalog, VoiceInfo } from '@lincyaw/kernel'
 import type { EngineDefinition, EngineUse, LexiconText } from '../domain/index.ts'
 import { applyLexiconWithSpans, whyEngineCannot, engineDoes, engineInfo, howToDefine, operatorEngines, providerName } from '../domain/index.ts'
 import { audioMime, labelAudio } from './audio/label.ts'
@@ -37,15 +37,16 @@ export function speechCore(options: CoreOptions): SpeechCore {
     if (!found) adapters.set(engine.id, found = engineAdapter(engine))
     return found
   }
-  const lists = new Map<string, Promise<VoiceInfo[]>>()
+  const lists = new Map<string, Promise<VoiceCatalog>>()
   const known = new Map<string, VoiceInfo[]>()
   const unlisted = new Set<string>()
-  const allVoices = (engine: EngineDefinition) => {
+  const allCatalog = (engine: EngineDefinition) => {
     let list = lists.get(engine.id)
     if (!list) {
-      list = adapter(engine).voices(undefined, AbortSignal.timeout(30_000)).then((voices) => {
-        known.set(engine.id, voices)
-        return voices
+      const own = adapter(engine)
+      list = own.voiceCatalog(undefined, AbortSignal.timeout(30_000)).then((catalog) => {
+        known.set(engine.id, catalog.voices)
+        return catalog
       }, (error: unknown) => {
         lists.delete(engine.id)
         throw new SpeechError(502, `the voices of speech engine "${engine.id}" are not known, so a cloned voice cannot be told: ${error instanceof Error ? error.message : String(error)}`)
@@ -54,6 +55,7 @@ export function speechCore(options: CoreOptions): SpeechCore {
     }
     return list
   }
+  const allVoices = async (engine: EngineDefinition) => (await allCatalog(engine)).voices
 
   // Without a name, the first engine that does the use: an engine only for saying text is not asked to transcribe.
   const pick = (id: string | undefined, use: EngineUse): EngineDefinition => {
@@ -83,6 +85,15 @@ export function speechCore(options: CoreOptions): SpeechCore {
 
     async voices(id, lang) {
       return (await allVoices(pick(id, 'synthesize'))).filter(voice => speaks(voice, lang))
+    },
+
+    async voiceCatalog(id, lang, signal) {
+      signal?.throwIfAborted()
+      const engine = id ? pick(id, 'synthesize') : engines().engines.find(engine => engine.synthesizes)
+      if (!engine) return { status: 'unavailable', reason: 'not-configured', voices: [] }
+      const catalog = await allCatalog(engine)
+      signal?.throwIfAborted()
+      return { ...catalog, voices: catalog.voices.filter(voice => speaks(voice, lang)) }
     },
 
     async synthesize(request: SynthesisRequest, signal): Promise<SynthesisResult> {

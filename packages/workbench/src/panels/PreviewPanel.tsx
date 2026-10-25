@@ -21,7 +21,7 @@ export function PreviewPanel({ active = true }: { active?: boolean }) {
   const container = useRef<HTMLDivElement>(null)
   const pool = useRef<ReturnType<typeof createPreviewPool>>()
   const [loads, setLoads] = useState(0)
-  const [{ ready, mismatch, identityFailure }, setStatus] = useState<PreviewFrameStatus>({ ready: false })
+  const [{ ready, mismatch, identityFailure, handshakeFailure }, setStatus] = useState<PreviewFrameStatus>({ ready: false })
   const address = renderer === 'slides' ? preview?.slides : preview?.web
   const title = documents?.documents.find(doc => doc.dir === document)?.title ?? document ?? ''
 
@@ -44,8 +44,9 @@ export function PreviewPanel({ active = true }: { active?: boolean }) {
     <section className="pmw-preview" aria-label={t.preview} data-ready={(active && document !== undefined && ready) || undefined}>
       {mismatch && <PmNotice tone="warn">{t.versionMismatch}</PmNotice>}
       {identityFailure && <PmNotice tone="danger"><span>{t.previewIdentityMismatch}</span><PmButton small onClick={() => workbench.reloadPreview()}>{t.reloadPreview}</PmButton></PmNotice>}
+      {handshakeFailure && <PmNotice tone="danger"><span>{t.previewStalled}</span><PmButton small onClick={() => workbench.reloadPreview()}>{t.reloadPreview}</PmButton></PmNotice>}
       {failure && <PmNotice tone="danger"><span>{t.previewFailed(failure)}</span><PmButton small onClick={() => workbench.retryPreview()}>{t.retry}</PmButton></PmNotice>}
-      {!ready && !failure && !(renderer === 'slides' && preview && !preview.slides) && <p className="pmw-muted pmw-preview__loading">{t.previewLoading}</p>}
+      {!ready && !failure && !handshakeFailure && !(renderer === 'slides' && preview && !preview.slides) && <p className="pmw-muted pmw-preview__loading">{address ? t.previewLoading : t.previewPreparing}</p>}
       {renderer === 'slides' && preview && !preview.slides && <p className="pmw-muted pmw-preview__loading">{t.noSlides}</p>}
       <div className="pmw-preview__stage">
         <div ref={container} className="pmw-preview__frames" data-renderer={renderer} style={aspect === undefined ? undefined : { '--pmw-slide-aspect': aspect } as CSSProperties} />

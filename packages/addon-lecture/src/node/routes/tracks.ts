@@ -31,10 +31,10 @@ export function trackRoutes(served: ServedDeck): Record<string, Route> {
     const document = JSON.stringify(relative(served.ctx.workspaceRoot, deckDir) || '.')
     served.ctx.log.info(`[lecture] document=${document} track=${SCRIPT_TRACK} state=preparing`)
     // A sentence that could not be said plays silent, its caption shown: the lecture still plays on its timeline.
-    const made = synthesizeLecture(doc, deckDir, served.speech()).then(({ deck, preview: track, failures, clips }) => {
-      for (const failure of failures) served.ctx.log.warn(`[lecture] section=${JSON.stringify(failure.section)} source=${JSON.stringify(failure.source)} ${synthesisFailureMessage(failure)}`)
+    const made = synthesizeLecture(doc, deckDir, served.speech(), undefined, { cacheOnly: true }).then(({ deck, preview: track, failures, clips }) => {
+      for (const failure of failures) served.ctx.log.warn(`[lecture] section=${JSON.stringify(failure.section)} source=${JSON.stringify(failure.source)} ${synthesisFailureMessage(failure, true)}`)
       if (!deck.voice) throw new RouteRefusal(404, `no lecture ${SCRIPT_TRACK}: renderers.lecture.voice names no voice`)
-      if (!track) throw new RouteRefusal(502, failures.map(synthesisFailureMessage).join('\n'))
+      if (!track) throw new RouteRefusal(502, failures.map(failure => synthesisFailureMessage(failure, true)).join('\n'))
       served.ctx.log.info(`[lecture] document=${document} track=${SCRIPT_TRACK} state=${failures.length ? 'silent-fallback' : 'ready'} elapsedMs=${Date.now() - started} clips=${clips.size} unsaid=${failures.length}`)
       const names = [...new Set([...clips.values()].map(clip => clip.file))].sort()
       const key = names.join('\n')

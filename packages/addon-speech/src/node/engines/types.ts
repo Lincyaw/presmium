@@ -1,4 +1,4 @@
-import type { SpeechWord, Transcript, VoiceInfo } from '@lincyaw/kernel'
+import type { SpeechWord, Transcript, VoiceCatalog, VoiceInfo } from '@lincyaw/kernel'
 
 export interface EngineSynthesisRequest {
   voice: string
@@ -24,6 +24,7 @@ export interface EngineTranscriptionRequest {
 
 export interface EngineAdapter {
   voices(lang?: string, signal?: AbortSignal): Promise<VoiceInfo[]>
+  voiceCatalog(lang?: string, signal?: AbortSignal): Promise<VoiceCatalog>
   cloned?(voice: string): boolean
   synthesize(request: EngineSynthesisRequest, signal?: AbortSignal): Promise<EngineSynthesisResult>
   transcribe(input: EngineTranscriptionRequest, signal?: AbortSignal): Promise<Transcript>

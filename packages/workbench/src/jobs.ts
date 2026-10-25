@@ -62,21 +62,28 @@ export class DocumentJobs {
   async start(target: string): Promise<void> {
     const dir = this.#store.state.document
     if (dir === undefined) return
+    const scope = this.#scope
+    const current = () => scope === this.#scope && this.#store.state.document === dir
     try {
-      this.#merge(await this.#client.startJob(dir, target))
+      const job = await this.#client.startJob(dir, target)
+      if (!current()) return
+      this.#merge(job)
       this.#store.set({ jobsFailure: undefined })
     } catch (error) {
-      this.#store.set({ jobsFailure: errorMessage(error) })
+      if (current()) this.#store.set({ jobsFailure: errorMessage(error) })
     }
   }
 
   async cancel(id: string): Promise<void> {
     const dir = this.#store.state.document
     if (dir === undefined) return
+    const scope = this.#scope
+    const current = () => scope === this.#scope && this.#store.state.document === dir
     try {
-      this.#merge(await this.#client.cancelJob(dir, id))
+      const job = await this.#client.cancelJob(dir, id)
+      if (current()) this.#merge(job)
     } catch (error) {
-      this.#store.set({ jobsFailure: errorMessage(error) })
+      if (current()) this.#store.set({ jobsFailure: errorMessage(error) })
     }
   }
 

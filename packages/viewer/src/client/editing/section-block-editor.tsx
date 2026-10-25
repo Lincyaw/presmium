@@ -6,6 +6,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react'
+import { useStore } from '@lincyaw/host'
 import type { ReactNode } from 'react'
 import type { IRSection } from '@lincyaw/kernel'
 import { useViewer } from '../viewer-state.ts'
@@ -25,6 +26,9 @@ function subscribe(changed: () => void) {
   })
   return () => observer.disconnect()
 }
+export function useAuthorEditing(): boolean {
+  return useSyncExternalStore(subscribe, editing, () => false)
+}
 /** The full BlockNote editor loads only in the author’s editing canvas. */
 export function SectionBlockEditor({
   section,
@@ -34,7 +38,8 @@ export function SectionBlockEditor({
   children?: ReactNode
 }) {
   const viewer = useViewer()
-  const active = useSyncExternalStore(subscribe, editing, () => false)
+  const active = useAuthorEditing()
+  const position = useStore(viewer.position)
   const sentinel = useRef<HTMLDivElement>(null)
   const [seen, setSeen] = useState(false)
   useEffect(() => {
@@ -42,20 +47,17 @@ export function SectionBlockEditor({
   }, [active, viewer])
   useEffect(() => {
     if (!active || seen) return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return
-        setSeen(true)
-        observer.disconnect()
-      },
-      { rootMargin: '200px 0px' },
-    )
+    const observer = new IntersectionObserver(entries => {
+      if (!entries.some(entry => entry.isIntersecting)) return
+      setSeen(true)
+      observer.disconnect()
+    }, { rootMargin: '200px 0px' })
     if (sentinel.current) observer.observe(sentinel.current)
     return () => observer.disconnect()
   }, [active, seen])
   return (
     <div ref={sentinel}>
-      {active && seen ? (
+      {active && (seen || position.section === section.id) ? (
         <Suspense fallback={children}>
           <MountedEditor key={section.id} section={section} />
         </Suspense>

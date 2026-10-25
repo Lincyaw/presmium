@@ -77,7 +77,7 @@ export const lectureSynthesize: AgentTool = {
     const { deckDir, doc } = deckOf(ctx)
     const { deck, track, failures } = await synthesizeLecture(doc, deckDir, speechOf(ctx), ctx.signal)
     if (!deck.voice) throw new Error('renderers.lecture.voice names no voice: the deck has no synthesized lecture')
-    if (!track) throw new Error(failures.map(synthesisFailureMessage).join('\n'))
+    if (!track) throw new Error(failures.map(failure => synthesisFailureMessage(failure)).join('\n'))
     return {
       track: SCRIPT_TRACK,
       voice: track.voice,

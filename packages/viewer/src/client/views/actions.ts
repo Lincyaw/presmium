@@ -29,7 +29,7 @@ function typing(target: EventTarget | null): boolean {
 /** Runs the registered actions of a view on their keys while the view is mounted. */
 export function useActions(viewer: Viewer, view: string, extra: readonly ViewerAction[] = []): void {
   const onKey = (event: KeyboardEvent) => {
-    if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || typing(event.target)) return
+    if (event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || typing(event.target)) return
     if (event.key === ' ' && (event.target as Element | null)?.closest?.('button, a[href]')) return
     for (const action of [...extra, ...listActions(view)]) {
       if (!action.keys.includes(event.key) || action.run(viewer) === false) continue

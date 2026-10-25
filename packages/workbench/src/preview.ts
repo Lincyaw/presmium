@@ -11,6 +11,8 @@ export interface PreviewConnection {
   readonly nonce: string
   readonly ready: boolean
   readonly capabilities: readonly PreviewCommandType[]
+  /** Changes when the same iframe reloads and completes a new handshake. */
+  readonly generation?: number
   send(command: PreviewCommand): void
   dispose(): void
 }
@@ -28,6 +30,7 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
   const origin = url.origin
   const latest = new Map<string, PreviewCommand>()
   let ready = false
+  let generation = 0
   let capabilities: readonly PreviewCommandType[] = []
   const post = (command: PreviewCommand) => frame()?.contentWindow?.postMessage(previewEnvelope(own, command), origin)
   const listener = (event: MessageEvent) => {
@@ -40,6 +43,7 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
     const report = toPreviewReport(event.data, own)
     if (!report) return
     if (report.type === 'ready') {
+      generation++
       ready = true
       capabilities = Object.freeze([...report.capabilities])
       for (const command of latest.values()) {
@@ -59,6 +63,7 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
     get capabilities() {
       return capabilities
     },
+    get generation() { return generation },
     send(command) {
       // Queue a mutation until the first ready report, but never replay it after a reload.
       if (command.type !== 'page-insert' || !ready) latest.set(command.type, command)

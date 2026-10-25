@@ -1,4 +1,4 @@
-import type { SpeechWord, Transcript, VoiceInfo } from '@lincyaw/kernel'
+import type { SpeechWord, Transcript, VoiceCatalog, VoiceInfo } from '@lincyaw/kernel'
 import { isRecord } from '@lincyaw/kernel'
 import type { EngineDefinition } from '../../domain/index.ts'
 import { oneSegment, wordsIntoSegments } from '../../domain/index.ts'
@@ -38,16 +38,19 @@ export function openaiEngine(engine: EngineDefinition): EngineAdapter {
   })
   const what = `speech engine "${engine.id}" (${engine.provider})`
 
+  const voiceCatalog = async (lang?: string, signal?: AbortSignal): Promise<VoiceCatalog> => {
+    const response = await call('audio/voices', { method: 'GET' }, signal)
+    if (response.status === 404 || response.status === 405) return { status: 'unavailable', reason: 'unsupported', voices: [] }
+    if (!response.ok) throw await upstreamError(response, what)
+    const body: unknown = await response.json().catch(() => undefined)
+    const list = isRecord(body) ? body.voices ?? body.data : body
+    if (!Array.isArray(list)) throw new SpeechError(502, `${what} answered audio/voices without a list of voices`)
+    return { status: 'available', source: 'provider', voices: list.flatMap(item => voiceOf(item) ?? []).filter(voice => speaks(voice, lang)) }
+  }
+
   return {
-    async voices(lang, signal) {
-      const response = await call('audio/voices', { method: 'GET' }, signal)
-      if (response.status === 404 || response.status === 405) return []
-      if (!response.ok) throw await upstreamError(response, what)
-      const body: unknown = await response.json().catch(() => undefined)
-      const list = isRecord(body) ? body.voices ?? body.data : body
-      if (!Array.isArray(list)) throw new SpeechError(502, `${what} answered audio/voices without a list of voices`)
-      return list.flatMap(item => voiceOf(item) ?? []).filter(voice => speaks(voice, lang))
-    },
+    voiceCatalog,
+    async voices(lang, signal) { return (await voiceCatalog(lang, signal)).voices },
 
     async synthesize(request: EngineSynthesisRequest, signal): Promise<EngineSynthesisResult> {
       const body = JSON.stringify({

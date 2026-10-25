@@ -585,6 +585,13 @@
       "image": "40:532",
       "sparkle": "40:537",
       "loading": "65:543"
+    },
+    "implementationReference": "docs/rfc-workbench-uiux.md#101-当前实施状态",
+    "sourceFiles": {
+      "tokens": "packages/design/src/tokens.css",
+      "controls": "packages/design/src/components.css",
+      "workbench": "packages/workbench/src/components.tsx",
+      "host": "packages/host/src/design/components.ts"
     }
   },
   "nodes": {

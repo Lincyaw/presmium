@@ -1,4 +1,4 @@
-import { errorMessage, irBlocks, slideShape, stepKeys, trailStep } from '@lincyaw/kernel'
+import { errorMessage, irBlocks, slideShape, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
 import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, JobsAnswer, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPin, PreviewPoint, PreviewPosition, PreviewRect, PreviewRenderer, PreviewReport, ReviewChange, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
 import { CommentStore, newComment } from './comments.ts'
 import type { DocumentComment } from './comments.ts'
@@ -11,8 +11,9 @@ import { changedPlaces, findPlaceAtLine, findPlaceSource } from './places.ts'
 import { OperationLog } from './telemetry.ts'
 import type { OperationValue } from './telemetry.ts'
 import { applyRenderedEdit } from './text-edit.ts'
-import { writeStepNarration } from './narration.ts'
+import { narrationIrAfter, narrationTargetSignature, readStepNarration, writeStepNarration } from './narration.ts'
 import type { StepNarrationDraft } from './narration.ts'
+import { narrationDrafts } from './narration-drafts.ts'
 import { bodyBlocks, writeBodyBlocks } from './block-edit.ts'
 import { writePage } from './page-edit.ts'
 import { blockSourceTarget, previewBlockSource, readBlockSource, savedBlockSource, writeBlockSource } from './block-source.ts'
@@ -91,6 +92,7 @@ export interface WorkbenchState {
   narration?: { section: string, step: number }
   narrationDirty?: boolean
   sourceDirty?: boolean
+  bodyDirty?: boolean
   isCreatingPage?: boolean
   diagnostics?: DiagnosticSnapshot
   isDiagnosticsUnavailable: boolean
@@ -121,6 +123,7 @@ export interface WorkbenchState {
 }
 
 export interface PreviewSink {
+  readonly generation?: number
   send(command: PreviewCommand): void
 }
 
@@ -179,6 +182,7 @@ const DOCUMENT_RESET = {
   narration: undefined,
   narrationDirty: false,
   sourceDirty: false,
+  bodyDirty: false,
   isCreatingPage: false,
   ir: undefined, preview: undefined, previewFailure: undefined, previewIrRevision: undefined, position: undefined,
   diagnostics: undefined, isDiagnosticsUnavailable: false, isRepairingDiagnostics: false, diagnosticsRepairFailure: undefined,
@@ -223,6 +227,8 @@ export class Workbench {
   readonly client: WorkspaceClient
   #state: WorkbenchState
   readonly #listeners = new Set<Listener>()
+  readonly #selectedSteps = new Map<string, number>()
+  #pendingGo?: { document: string | undefined, command: Extract<PreviewCommand, { type: 'go' }> }
   readonly #diagnostics: DocumentDiagnostics
   readonly #history: DocumentHistory
   readonly #jobs: DocumentJobs
@@ -235,6 +241,8 @@ export class Workbench {
   #focusVersion = 0
   #focusWriting: Promise<void> = Promise.resolve()
   #edits: Promise<void> = Promise.resolve()
+  #narrationScope = 0
+  #unsubscribeNarrationDrafts?: () => void
   readonly #blockSources = new Map<string, BlockSourceDraft>()
   #pageRequest?: { document: string, section: string, id: string, request: number, timer: ReturnType<typeof setTimeout> }
   #pageSequence = Date.now()
@@ -283,6 +291,10 @@ export class Workbench {
       this.#flashChanges()
     })
     this.telemetry = new OperationLog(() => this.client.readTelemetry(), (batch, beacon) => this.client.sendTelemetry(batch, beacon), this.#state.locale)
+    const drafts = narrationDrafts(this.client)
+    this.#unsubscribeNarrationDrafts = drafts.subscribe(() => {
+      this.markNarrationDirty(this.#state.document !== undefined && drafts.dirty(this.#state.document))
+    })
     void this.telemetry.start()
   }
 
@@ -400,10 +412,12 @@ export class Workbench {
 
   async openDocument(dir: string): Promise<void> {
     if (this.#state.document === dir) return
+    this.#narrationScope++
     this.#blockSources.clear()
     this.#stopSubscriptions()
     this.#history.subscribeReview(dir)
     this.#set({ ...DOCUMENT_RESET, document: dir, previewRenderer: 'web', webView: 'document' })
+    this.markNarrationDirty(narrationDrafts(this.client).dirty(dir))
     this.#record('document.open')
     try {
       localStorage.setItem(RECENT_KEY, dir)
@@ -421,6 +435,7 @@ export class Workbench {
   }
 
   closeDocument(): void {
+    this.#narrationScope++
     if (this.#state.document !== undefined) this.#record('document.close')
     this.#stopSubscriptions()
     this.#blockSources.clear()
@@ -478,10 +493,10 @@ export class Workbench {
     const renderer = this.#state.previewRenderer
     const current = () => this.#state.document === dir && this.#state.previewRenderer === renderer && read === this.#previewReads
     try {
-      const preview = await this.client.readPreview(dir, renderer)
+      const preview = await this.client.readPreview(dir, renderer, AbortSignal.timeout(45_000))
       if (current()) this.#set({ preview, previewFailure: undefined })
     } catch (error) {
-      if (current()) this.#set({ previewFailure: errorMessage(error) })
+      if (current()) this.#set({ previewFailure: error instanceof Error && error.name === 'TimeoutError' ? this.#messages.previewPrepareTimeout : errorMessage(error) })
     }
   }
 
@@ -565,7 +580,6 @@ export class Workbench {
   }
 
   closeNarration(): void {
-    if (this.#state.narrationDirty) return
     this.#set({ narration: undefined })
   }
 
@@ -573,54 +587,81 @@ export class Workbench {
     if (this.#state.narrationDirty !== dirty) this.#set({ narrationDirty: dirty })
   }
 
-  async saveNarration(draft: StepNarrationDraft, text: string, mode: StepNarrationDraft['mode']): Promise<void> {
-    if (isAgentChanging(this.#state)) throw new Error(this.#messages.saveLocked)
-    if (draft.document !== this.#state.ir?.doc) throw new Error(this.#messages.narrationChanged)
+  saveNarration(draft: StepNarrationDraft, text: string, mode: StepNarrationDraft['mode']): Promise<StepNarrationDraft> {
     const dir = this.#state.document
-    this.#set({ save: { kind: 'saving' } })
-    try {
-      await this.client.saveSource(WORKSPACE_SCOPE, draft.source.path, writeStepNarration(draft, text, mode), draft.source.version, this.#messages.editedNarration(draft.step + 1))
-      if (dir !== undefined && dir === this.#state.document) await this.#readIr(dir)
-      if (dir === this.#state.document) {
-        if (dir !== undefined) await this.#history.read(dir)
-        this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
+    const scope = this.#narrationScope
+    const current = () => scope === this.#narrationScope && dir === this.#state.document
+    const operation = this.#edits.then(async () => {
+      if (isAgentChanging(this.#state)) throw new Error(this.#messages.saveLocked)
+      const opened = this.#state.ir
+      const document = opened?.doc
+      const section = document?.sections.find(section => section.id === draft.section)
+      if (!current() || dir === undefined || !document || document.meta.entry !== draft.document.meta.entry || !section) throw new Error('narration-conflict')
+      this.#set({ save: { kind: 'saving' } })
+      try {
+        // Other steps may have saved meanwhile and moved source lines. Rebase only an unchanged target.
+        const latest = await readStepNarration(this.client, document, section, draft.step)
+        if (!current() || narrationTargetSignature(latest) !== narrationTargetSignature(draft)) throw new Error('narration-conflict')
+        const content = writeStepNarration(latest, text, mode)
+        if (content === latest.source.content) {
+          this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
+          return latest
+        }
+        const saved = await this.client.saveSource(WORKSPACE_SCOPE, latest.source.path, content, latest.source.version, this.#messages.editedNarration(draft.step + 1))
+        const answer = await narrationIrAfter(this.client, dir, opened!.revision)
+        const updated = answer.doc.sections.find(section => section.id === draft.section)
+        if (!updated) throw new Error('narration-conflict')
+        const confirmed = await readStepNarration(this.client, answer.doc, updated, draft.step)
+        if (confirmed.source.version !== saved.version) throw new Error('narration-conflict')
+        if (current()) {
+          await this.#readIr(dir)
+          await this.#history.read(dir)
+          if (current()) this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
+        }
+        this.#record('narration.save', { 'presmium.section': draft.section, 'presmium.step': draft.step, 'presmium.mode': mode })
+        return confirmed
+      } catch (error) {
+        const reason = error instanceof WorkspaceServerError && error.status === 409 ? 'narration-conflict' : errorMessage(error)
+        const message = reason === 'narration-conflict' ? this.#messages.narrationChanged : reason === 'formatted-narration' ? this.#messages.narrationFormatted : reason === 'narration-refresh' ? this.#messages.narrationRefresh : reason
+        if (current()) this.#set({ save: { kind: 'failed', message } })
+        throw new Error(reason === 'narration-conflict' ? reason : message)
       }
-      this.#record('narration.save', { 'presmium.section': draft.section, 'presmium.step': draft.step, 'presmium.mode': mode })
-    } catch (error) {
-      const message = errorMessage(error) === 'formatted-narration' ? this.#messages.narrationFormatted : errorMessage(error)
-      if (dir === this.#state.document) this.#set({ save: { kind: 'failed', message } })
-      throw new Error(message)
-    }
+    })
+    this.#edits = operation.then(() => {}, () => {})
+    return operation
   }
 
-  async #saveBlocks(report: Extract<PreviewReport, { type: 'blocks-edited' }>): Promise<void> {
+  async #saveBlocks(report: Extract<PreviewReport, { type: 'blocks-edited' }>, current: () => boolean): Promise<void> {
     const dir = this.#state.document
     const answer = this.#state.ir
     const section = answer?.doc.sections.find(s => s.id === report.section)
-    const result = (error?: string, revision = this.#state.ir?.revision) => this.#broadcast({ type: 'blocks-result', section: report.section, request: report.request, ...error ? { error } : { revision } })
+    const result = (error?: string, revision = this.#state.ir?.revision) => { if (current()) this.#broadcast({ type: 'blocks-result', section: report.section, request: report.request, ...error ? { error } : { revision } }) }
     if (dir === undefined || !answer || !section) return result(this.#messages.blockUnknown)
-    if (this.#state.mode !== 'editing' || isAgentChanging(this.#state)) return result(this.#messages.saveLocked)
+    if (isAgentChanging(this.#state)) return result(this.#messages.saveLocked)
     if (report.revision !== answer.revision) return result(this.#messages.blockConflict)
     this.#set({ save: { kind: 'saving' } })
     try {
       const source = await this.client.readSource(WORKSPACE_SCOPE, section.source.file)
       const content = writeBodyBlocks(answer.doc, section, source.content, report.blocks)
       // Refuse stale maps even if another save finished while the file was read.
+      if (!current()) return
       if (this.#state.ir?.revision !== answer.revision) throw new Error(this.#messages.blockConflict)
       const saved = content !== source.content ? await this.client.saveSource(WORKSPACE_SCOPE, source.path, content, source.version, this.#messages.editedBody(section.title)) : { version: source.version }
-      if (this.#state.document !== dir) return
+      if (!current()) return
       await this.#readIr(dir)
       const revision = this.#state.ir?.revision
       const confirmed = await this.client.readSource(WORKSPACE_SCOPE, source.path)
+      if (!current()) return
       if (confirmed.version !== saved.version) throw new Error(this.#messages.blockConflict)
       await this.#history.read(dir)
+      if (!current()) return
       this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
       this.#record('blocks.save', { 'presmium.section': section.id, 'presmium.blocks': report.blocks.length })
       result(undefined, revision)
     } catch (error) {
       const reason = errorMessage(error)
       const message = reason === 'block-step-order' ? this.#messages.blockStepOrder : reason === 'block-multiple-files' ? this.#messages.blockFiles : reason === 'block-mixed-container' ? this.#messages.blockContainer : reason
-      if (this.#state.document === dir) this.#set({ save: { kind: 'failed', message } })
+      if (current()) this.#set({ save: { kind: 'failed', message } })
       result(message)
     }
   }
@@ -665,11 +706,11 @@ export class Workbench {
     this.#set({ isCreatingPage: false })
   }
 
-  async #createPage(report: Extract<PreviewReport, { type: 'page-create' }>): Promise<void> {
+  async #createPage(report: Extract<PreviewReport, { type: 'page-create' }>, current: () => boolean): Promise<void> {
     const dir = this.#state.document
     const pending = this.#pageRequest
     const reply = (page?: string, error?: string) => {
-      if (this.#state.document === dir) this.#broadcast({ type: 'page-created', section: report.section, request: report.request, ...page ? { page } : {}, ...error ? { error } : {} })
+      if (current()) this.#broadcast({ type: 'page-created', section: report.section, request: report.request, ...page ? { page } : {}, ...error ? { error } : {} })
     }
     if (pending && (pending.request !== report.request || pending.id !== report.id || pending.section !== report.section)) return reply(undefined, this.#messages.saveLocked)
     if (dir === undefined || this.#state.mode !== 'editing' || isAgentChanging(this.#state)) {
@@ -684,13 +725,13 @@ export class Workbench {
       if (report.revision !== answer.revision) throw new Error(this.#messages.blockConflict)
       const source = await this.client.readSource(WORKSPACE_SCOPE, section.source.file)
       const content = writePage(answer.doc, section, source.content, report.id, this.#messages.untitledPage)
-      if (this.#state.document !== dir || this.#state.ir?.revision !== answer.revision) throw new Error(this.#messages.blockConflict)
+      if (!current() || this.#state.ir?.revision !== answer.revision) throw new Error(this.#messages.blockConflict)
       this.#set({ save: { kind: 'saving' } })
       await this.client.saveSource(WORKSPACE_SCOPE, source.path, content, source.version, this.#messages.createdPage)
-      if (this.#state.document !== dir) return
+      if (!current()) return
       await this.#waitForSourceBlock(dir, report.id)
       await this.#history.read(dir)
-      if (this.#state.document !== dir) return
+      if (!current()) return
       this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
       this.goToSection(report.id)
       this.#record('page.create', { 'presmium.section': report.id, 'presmium.after': section.id })
@@ -698,7 +739,7 @@ export class Workbench {
     } catch (error) {
       const reason = errorMessage(error)
       const message = ['page-boundary', 'page-multiple-files'].includes(reason) ? this.#messages.pageBoundary : this.#sourceError(error)
-      if (this.#state.document === dir) this.#set({ save: { kind: 'failed', message } })
+      if (current()) this.#set({ save: { kind: 'failed', message } })
       reply(undefined, message)
     } finally {
       this.#endPageRequest(report.request)
@@ -713,18 +754,18 @@ export class Workbench {
       this.#blockSources.delete(this.#blockSources.keys().next().value!)
   }
 
-  async #readBlockSource(report: Extract<PreviewReport, { type: 'source-read' }>): Promise<void> {
+  async #readBlockSource(report: Extract<PreviewReport, { type: 'source-read' }>, current: () => boolean): Promise<void> {
     const dir = this.#state.document
     const answer = this.#state.ir
     const reply = (source?: ReturnType<typeof previewBlockSource>, error?: string) => {
-      if (this.#state.document === dir) this.#broadcast({ type: 'source-result', section: report.section, block: report.block, request: report.request, ...source ? { source } : {}, ...error ? { error } : {} })
+      if (current()) this.#broadcast({ type: 'source-result', section: report.section, block: report.block, request: report.request, ...source ? { source } : {}, ...error ? { error } : {} })
     }
     if (dir === undefined || !answer) return reply(undefined, this.#messages.sourceUnknown)
     if (this.#state.mode !== 'editing') return reply(undefined, this.#messages.saveLocked)
     try {
       const target = blockSourceTarget(answer.doc, report.section, report.block, report.part)
       const source = await this.client.readSource(WORKSPACE_SCOPE, target.path)
-      if (this.#state.document !== dir) return
+      if (!current()) return
       if (this.#state.ir?.revision !== answer.revision) throw new Error('source-changed')
       const key = `${report.section}\0${report.block}\0${target.part}`
       const draft = readBlockSource(answer.doc, report.section, report.block, source, target.part, this.#blockSources.get(key))
@@ -736,10 +777,10 @@ export class Workbench {
     }
   }
 
-  async #saveBlockSource(report: Extract<PreviewReport, { type: 'source-save' }>): Promise<void> {
+  async #saveBlockSource(report: Extract<PreviewReport, { type: 'source-save' }>, current: () => boolean): Promise<void> {
     const dir = this.#state.document
     const reply = (version?: string, error?: string) => {
-      if (this.#state.document === dir) this.#broadcast({ type: 'source-saved', section: report.section, block: report.block, request: report.request, ...version ? { sourceVersion: version } : {}, ...error ? { error } : {} })
+      if (current()) this.#broadcast({ type: 'source-saved', section: report.section, block: report.block, request: report.request, ...version ? { sourceVersion: version } : {}, ...error ? { error } : {} })
     }
     if (dir === undefined || !this.#state.ir) return reply(undefined, this.#messages.sourceUnknown)
     if (this.#state.mode !== 'editing' || isAgentChanging(this.#state)) return reply(undefined, this.#messages.saveLocked)
@@ -752,28 +793,28 @@ export class Workbench {
       this.#set({ save: { kind: 'saving' } })
       const title = this.#state.ir.doc.sections.find(section => section.id === report.section)!.title
       const saved = await this.client.saveSource(WORKSPACE_SCOPE, draft.source.path, content, draft.source.version, this.#messages.editedSource(title))
-      if (this.#state.document !== dir) return
+      if (!current()) return
       // The read snapshot stays usable even when the edited source does not compile yet.
       this.#rememberBlockSource(key, savedBlockSource(draft, content, report.content, saved.version))
       await this.#readIr(dir)
       await this.#history.read(dir)
-      if (this.#state.document !== dir) return
+      if (!current()) return
       this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
       this.#record('source.save', { 'presmium.section': report.section, 'presmium.block': report.block, 'presmium.part': target.part })
       reply(saved.version)
     } catch (error) {
       const message = this.#sourceError(error)
-      if (this.#state.document === dir) this.#set({ save: { kind: 'failed', message } })
+      if (current()) this.#set({ save: { kind: 'failed', message } })
       reply(undefined, message)
     }
   }
 
-  async #createSourceBlock(report: Extract<PreviewReport, { type: 'source-create' }>): Promise<void> {
+  async #createSourceBlock(report: Extract<PreviewReport, { type: 'source-create' }>, current: () => boolean): Promise<void> {
     const dir = this.#state.document
     const answer = this.#state.ir
     const section = answer?.doc.sections.find(section => section.id === report.section)
     const reply = (block?: string, error?: string) => {
-      if (this.#state.document === dir) this.#broadcast({ type: 'source-created', section: report.section, request: report.request, ...block ? { block } : {}, ...error ? { error } : {} })
+      if (current()) this.#broadcast({ type: 'source-created', section: report.section, request: report.request, ...block ? { block } : {}, ...error ? { error } : {} })
     }
     if (dir === undefined || !answer || !section) return reply(undefined, this.#messages.sourceUnknown)
     if (this.#state.mode !== 'editing' || isAgentChanging(this.#state)) return reply(undefined, this.#messages.saveLocked)
@@ -794,21 +835,21 @@ export class Workbench {
       const insertAt = after ? originals.indexOf(after) + 1 : 0
       const source = await this.client.readSource(WORKSPACE_SCOPE, section.source.file)
       const content = writeBodyBlocks(answer.doc, section, source.content, [...blocks.slice(0, insertAt), { id, scene: id, durations: [1000], at }, ...blocks.slice(insertAt)])
-      if (this.#state.document !== dir) return
+      if (!current()) return
       if (this.#state.ir?.revision !== answer.revision) throw new Error('source-changed')
       const code = starter
       this.#set({ save: { kind: 'saving' } })
       await this.client.saveSourceTransaction(dir, [{ path, content: code, base: null }, { path: source.path, content, base: source.version }], this.#messages.createdAnimation)
-      if (this.#state.document !== dir) return
+      if (!current()) return
       await this.#waitForSourceBlock(dir, report.section, id)
       await this.#history.read(dir)
-      if (this.#state.document !== dir) return
+      if (!current()) return
       this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
       this.#record('source.create', { 'presmium.section': report.section, 'presmium.block': id })
       reply(id)
     } catch (error) {
       const message = this.#sourceError(error)
-      if (this.#state.document === dir) this.#set({ save: { kind: 'failed', message } })
+      if (current()) this.#set({ save: { kind: 'failed', message } })
       reply(undefined, message)
     }
   }
@@ -1058,15 +1099,23 @@ export class Workbench {
 
   /** Shows a section in the preview: from the navigation pane, the section to read or the slide to show. */
   goToSection(section: string): void {
-    this.#record('navigate', { 'presmium.section': section })
-    // Where the author is from now on (the navigation pane, the status bar, a switch of view), until the page reports it.
-    this.#set({ position: { section, step: 0, trail: [], ...this.#state.position?.view ? { view: this.#state.position.view } : {} }, ...this.#state.narration ? { narration: { section, step: 0 } } : {} })
+    this.goToStep(section, this.#selectedSteps.get(`${this.#state.document}\0${section}`) ?? 0)
+  }
+
+  /** Complete-IR position; trail maps the same step into a filtered preview without reusing its ordinal. */
+  goToStep(section: string, step: number): void {
+    const target = this.#state.ir?.doc.sections.find(item => item.id === section)
+    if (!target || !Number.isInteger(step) || step < 0 || step > target.steps) return
+    const trail = stepTrail(stepKeys(target), step)
+    this.#record('navigate', { 'presmium.section': section, 'presmium.step': step })
+    this.#selectedSteps.set(`${this.#state.document}\0${section}`, step)
     this.#lastPosition = undefined
+    const command = { type: 'go', section, step, trail, view: this.#state.webView } as const
     if (this.#previewSinks.size === 0) {
-      this.#pendingReveal = { section }
+      this.#pendingGo = { document: this.#state.document, command }
       return
     }
-    this.#broadcast({ type: 'go', section })
+    this.#broadcast(command)
   }
 
   /** Shows the place of a line of a source file: in the document holding the file, opened when it is another. */
@@ -1123,6 +1172,9 @@ export class Workbench {
   attachPreview(sink: PreviewSink): () => void {
     this.#previewSinks.add(sink)
     if (this.#state.previewRenderer === 'web') this.#showWebView([sink])
+    const pending = this.#pendingGo
+    if (pending && pending.document === this.#state.document) sink.send(pending.command)
+    this.#pendingGo = undefined
     sink.send({ type: 'appearance', dark: this.#state.isDark })
     sink.send({ type: 'pick', on: this.#state.mode === 'editing' })
     const reveal = this.#pendingReveal
@@ -1134,26 +1186,32 @@ export class Workbench {
   }
 
   /** A report of the shown preview. */
-  handlePreviewReport(document: string, renderer: PreviewRenderer, report: PreviewReport): void {
+  handlePreviewReport(document: string, renderer: PreviewRenderer, report: PreviewReport, origin?: PreviewSink): void {
     if (document !== this.#state.document || renderer !== this.#state.previewRenderer) return
+    const scope = this.#narrationScope
+    const generation = origin?.generation
+    const current = () => scope === this.#narrationScope && document === this.#state.document && renderer === this.#state.previewRenderer && (!origin || this.#previewSinks.has(origin) && generation === origin.generation)
     switch (report.type) {
       case 'blocks-edited':
-        this.#edits = this.#edits.then(() => this.#saveBlocks(report))
+        this.#edits = this.#edits.then(() => current() ? this.#saveBlocks(report, current) : undefined)
         break
       case 'source-read':
-        this.#edits = this.#edits.then(() => this.#readBlockSource(report))
+        this.#edits = this.#edits.then(() => current() ? this.#readBlockSource(report, current) : undefined)
         break
       case 'source-save':
-        this.#edits = this.#edits.then(() => this.#saveBlockSource(report))
+        this.#edits = this.#edits.then(() => current() ? this.#saveBlockSource(report, current) : undefined)
         break
       case 'source-create':
-        this.#edits = this.#edits.then(() => this.#createSourceBlock(report))
+        this.#edits = this.#edits.then(() => current() ? this.#createSourceBlock(report, current) : undefined)
         break
       case 'source-draft':
         if (this.#state.sourceDirty !== report.dirty) this.#set({ sourceDirty: report.dirty })
         break
+      case 'body-draft':
+        if (this.#state.bodyDirty !== report.dirty) this.#set({ bodyDirty: report.dirty })
+        break
       case 'page-create':
-        this.#edits = this.#edits.then(() => this.#createPage(report))
+        this.#edits = this.#edits.then(() => current() ? this.#createPage(report, current) : undefined)
         break
       case 'page-create-error':
         if (this.#pageRequest?.request === report.request) {
@@ -1163,7 +1221,10 @@ export class Workbench {
         }
         break
       case 'narrate':
-        if (this.#state.mode === 'editing') this.selectNarration(report.section, report.step, report.navigate !== false)
+        if (report.navigate === false) {
+          const section = this.#state.ir?.doc.sections.find(section => section.id === report.section)
+          if (section && report.step <= section.steps) this.#set({ position: { section: report.section, step: report.step, trail: stepTrail(stepKeys(section), report.step), view: this.#state.webView } })
+        } else this.selectNarration(report.section, report.step)
         break
       case 'ready':
       case 'updated':
@@ -1207,8 +1268,11 @@ export class Workbench {
         const at = `${report.section}\0${report.step}\0${report.view ?? ''}`
         if (at === this.#lastPosition) break
         this.#lastPosition = at
-        this.#set({ position: { section: report.section, step: report.step, trail: report.trail, ...report.view ? { view: report.view } : {} } })
-        if (this.#state.narration && report.view === 'present') this.#set({ narration: { section: report.section, step: report.step } })
+        const section = this.#state.ir?.doc.sections.find(section => section.id === report.section)
+        const completeStep = section && report.trail.length ? trailStep(stepKeys(section), report.trail) : report.step
+        this.#selectedSteps.set(`${this.#state.document}\0${report.section}`, completeStep)
+        this.#set({ position: { section: report.section, step: completeStep, trail: report.trail, ...report.view ? { view: report.view } : {} } })
+        if (this.#state.narration && report.view === 'present') this.#set({ narration: { section: report.section, step: completeStep } })
         if (renderer === 'web' && report.view && (report.view === 'present') !== (this.#state.webView === 'present')) this.#set({ webView: report.view === 'present' ? 'present' : 'document' })
         this.#record('preview.position', { 'presmium.section': report.section, 'presmium.step': report.step, 'presmium.preview.view': report.view })
         break
@@ -1275,6 +1339,7 @@ export class Workbench {
   }
 
   dispose(): void {
+    this.#unsubscribeNarrationDrafts?.()
     this.telemetry.stop()
     this.#stopSubscriptions()
     this.#diagnostics.dispose()

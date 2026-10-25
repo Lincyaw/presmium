@@ -93,10 +93,18 @@ bound to its old source while the inspector immediately follows the new selectio
 their original target and version. The IR has no stable Step ID; convert full-document and media-filtered
 steps through the existing trail/map instead of treating array indexes as identity.
 
+Step-script drafts are keyed by document, section and step in `narration-drafts.ts`, with a workspace-scoped
+browser recovery record and a source baseline. Saving is serialized with body edits, waits for a newer IR
+revision, and confirms only its submitted edit version. Follow RFC section 6 for debounce and composition
+behavior. Verify switching steps during a pending save, typing before its acknowledgement, closing the
+panel before completion and recovering a draft after reload; a changed step structure must be rejected.
+
 Verify actual time advancing after Play, pause and seeking, direct first/last and reverse step jumps, and
 the return position after Present, and that the iframe keeps the same `window` object. There must be only one active media clock. Opening, switching steps or
-compiling must not silently synthesize voiceover in the target workflow; the existing script route still
-needs migration, so check the request path rather than assuming the RFC has implemented it. Editing the
+compiling must not silently synthesize voiceover. The script GET route now uses the optional public
+`SpeechService.lookup` contract to read only exact request matches from cache; alignment reads use
+`transcribe: false`. Verify a changed sentence has current captions and a silent placeholder, while unchanged
+sentences keep valid cached clips; an absent lookup capability must never fall back to synthesis. Editing the
 current step invalidates its old audio and pauses at that step, while unrelated updates preserve valid
 position. Audience views contain no author editor; video comes from Export using the same lecture plan.
 

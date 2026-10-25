@@ -45,7 +45,22 @@ export class LecturePlayer {
       return since
     })
     this.duration = Math.max(trackDuration(track), this.events.at(-1)?.t ?? 0)
-    this.unsubscribe = operations.subscribe(() => this.tryIt())
+    this.unsubscribe = operations.subscribe(operation => {
+      if (operation.type === 'go' && typeof operation.data.section === 'string') {
+        const step = Number(operation.data.step ?? 0)
+        const target = this.events.findIndex(event => event.type === 'go' && event.data.section === operation.data.section && Number(event.data.step ?? 0) === step)
+        if (target >= 0) {
+          // Navigation chooses a new playback origin. It must not resume the previous step on Play.
+          this.pause()
+          this.trying.set(false)
+          const event = this.events[target]!
+          this.clock.seek(event.t)
+          this.fold(event.t, target)
+          return
+        }
+      }
+      this.tryIt()
+    })
   }
 
   get playing(): boolean {
@@ -59,11 +74,14 @@ export class LecturePlayer {
   }
 
   pause(): void {
+    cancelAnimationFrame(this.frame)
+    this.frame = 0
     this.clock.pause()
     this.time.set(this.clock.now())
   }
 
   seek(t: number): void {
+    this.pause()
     this.trying.set(false)
     this.clock.seek(t)
     this.fold(this.clock.now())
@@ -91,9 +109,9 @@ export class LecturePlayer {
     this.operations.clear()
   }
 
-  private fold(t: number): void {
+  private fold(t: number, boundary?: number): void {
     this.operations.clear()
-    const last = Math.max(lastIndexAt(this.events, t), this.events.findIndex(e => e.type === 'go'))
+    const last = boundary ?? Math.max(lastIndexAt(this.events, t), this.events.findIndex(e => e.type === 'go'))
     for (let i = 0; i <= last; i++) this.apply(this.events[i]!, i < last)
     this.applied = last
     this.setTime(t)
@@ -116,6 +134,7 @@ export class LecturePlayer {
   private loop(): void {
     cancelAnimationFrame(this.frame)
     const step = () => {
+      if (!this.clock.playing.getSnapshot()) { this.frame = 0; return }
       this.clock.tick()
       this.advanceTo(this.clock.now())
       this.frame = this.clock.playing.getSnapshot() ? requestAnimationFrame(step) : 0

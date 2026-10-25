@@ -7,7 +7,7 @@ import type { Workbench } from './workbench.ts'
 const LIMIT = 2
 const IDLE_MS = 120_000
 const ACTIVITY_MS = 1500
-const READY_MS = 45_000
+const READY_MS = 15_000
 // A page loaded out of sight is removed this long after its load, its lazy modules and styles fetched; or at the latest.
 
 export interface PreviewTarget {
@@ -23,6 +23,7 @@ export interface PreviewFrameStatus {
   ready: boolean
   mismatch?: boolean
   identityFailure?: boolean
+  handshakeFailure?: boolean
 }
 
 interface Entry {
@@ -102,7 +103,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     entry.detach ??= workbench.attachPreview(entry.connection)
     if (irRevision !== undefined) entry.irRevision = irRevision
     onStatus({ ready: true })
-    workbench.handlePreviewReport(entry.target.document, entry.target.renderer, { type: 'updated', revision: entry.irRevision })
+    workbench.handlePreviewReport(entry.target.document, entry.target.renderer, { type: 'updated', revision: entry.irRevision }, entry.connection)
     publishRuntimeFindings(entry)
   }
   /** Asks the page to run (`active`) or to pause its runtime; settles with its `activity` report. */
@@ -168,7 +169,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     if (!selected(entry)) enqueue(() => pause(entry))
     else if (!entry.pending && entry.active) {
       show(entry, report.revision)
-      workbench.handlePreviewReport(target.document, target.renderer, report)
+      workbench.handlePreviewReport(target.document, target.renderer, report, entry.connection)
     } else if (!entry.pending) {
       enqueue(async () => {
         if (!selected(entry)) return
@@ -188,7 +189,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
       else entry.problems.set(key, { checkId: report.plugin ?? 'presmium.runtime', severity: report.level, message: report.message })
     }
     if (entry.active && (report.type === 'updated' || report.type === 'report')) publishRuntimeFindings(entry)
-    if (entry.active && selected(entry)) workbench.handlePreviewReport(entry.target.document, entry.target.renderer, report)
+    if (entry.active && selected(entry)) workbench.handlePreviewReport(entry.target.document, entry.target.renderer, report, entry.connection)
   }
 
   const create = (target: PreviewTarget & { address: string }): Entry => {
@@ -213,10 +214,13 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     frame.className = 'pmw-preview__frame'
     frame.src = connection.src
     container.append(frame)
-    let retries = 0
     entry.loading = setInterval(() => {
-      if (!selected(entry) || entry.ready || retries++ >= 3) return
-      frame.src = connection.src
+      if (!selected(entry) || entry.ready) return
+      clearInterval(entry.loading)
+      entry.irRevision ??= workbench.state.ir?.revision
+      entry.problems.set('handshake', { checkId: 'presmium.preview.handshake', severity: 'error', message: `Preview did not acknowledge readiness within ${READY_MS}ms (${new URL(target.address).origin}).` })
+      publishRuntimeFindings(entry)
+      onStatus({ ready: false, handshakeFailure: true })
     }, READY_MS)
     return entry
   }

@@ -26,7 +26,7 @@ export interface WorkspaceClient {
   readDiagnostics(document: string): Promise<DiagnosticSnapshot>
   subscribeDiagnostics(document: string, snapshot: (event: DiagnosticSnapshot) => void, failed: () => void): () => void
   reportDiagnostics(report: PreviewDiagnostics): Promise<unknown>
-  readPreview(document: string, renderer?: PreviewRenderer): Promise<PreviewAnswer>
+  readPreview(document: string, renderer?: PreviewRenderer, signal?: AbortSignal): Promise<PreviewAnswer>
   /** Asks the service to prepare a form of the document ahead of the author, when the machine has room. */
   prefetchPreview(document: string, renderer: PreviewRenderer): Promise<PreviewAnswer>
   /** The MCP address and the workspace root, read once. */
@@ -150,7 +150,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     readDiagnostics: document => call(url('diagnostics', document)),
     subscribeDiagnostics: (document, snapshot, failed) => subscribe(url('diagnostics/events', document), 'diagnostics', snapshot, failed),
     reportDiagnostics: report => post(url('diagnostics'), report),
-    readPreview: (document, renderer) => call(url('preview', document, renderer ? { view: renderer } : {})),
+    readPreview: (document, renderer, signal) => call(url('preview', document, renderer ? { view: renderer } : {}), { signal }),
     prefetchPreview: (document, renderer) => call(url('preview', document, { view: renderer, prefetch: '1' })),
     readWorkbenchInfo: () => {
       workbenchInfo ??= call<WorkbenchAnswer>(url('workbench')).catch((error: unknown) => {

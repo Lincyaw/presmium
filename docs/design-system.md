@@ -1,6 +1,6 @@
 # Presmium 控件与视觉实现规范
 
-状态：正式实现约束，公共层补齐项待实现。更新日期：2026-10-25。
+状态：正式实现约束；核心公共控件已迁移，领域控件和剩余页面待实现。更新日期：2026-10-25。
 
 本文供设计与开发实现 Web 工作台、未来 Tauri 外壳及共用控件时使用。功能、信息架构和产品边界见 [UI/UX RFC](rfc-workbench-uiux.md)，Figma 文件及功能原型索引见 [原型覆盖说明](prototypes/workbench/README.md)。本文规定样式和素材放在哪里、控件如何复用，以及实现前必须补齐的公共能力。
 
@@ -25,6 +25,9 @@
 
 `@lincyaw/design` 维持框架无关。React 封装留在 workbench 与 host，不为复用控件而让 workbench 引用 host，也不让插件引用 workbench。跨边界共用的是令牌、语义图标、`pm-ui-*` 及一致的交互规范。
 
+BlockNote 的公共适配类为 `pm-ui-block-editor`，由 `MountedEditor` 挂载，选中态样式集中在 `packages/design/src/components.css`。
+适配使用 BlockNote 的公开 `.ProseMirror-selectednode`、`.bn-block-content` 选择器，仅在编辑器内有焦点时以 `accent-soft` 表面与 `accent` 描边表示当前块；伪元素保持透明，不遮住正文或动画。
+
 ## 2. Tokens、公共控件与业务布局
 
 实现按三层进行：令牌定义视觉取值，公共控件定义形态和交互，业务区域只负责组合。新增需求先检查已有控件的公开属性；能力不足时先扩展公共层，再让页面使用。
@@ -37,7 +40,7 @@
 
 ## 3. 已有令牌与正式取用规则
 
-本节区分已有令牌、本轮新增令牌和待迁移控件。桌面工作台采用剪辑工具的紧凑操作密度：属性栏与工具栏默认使用 compact，单行控件最小高度 30 CSS px，标签和值为 13 CSS px；普通创建、导出等对话框可使用 regular 的 36 CSS px。触屏有效热区至少为 44 CSS px，输入文字使用 16 CSS px，不将触屏输入强塞进桌面紧凑高度。内容换行或字号放大时允许控件增高，不裁切文字。新增几何与图标令牌已经登记到 `tokens.css`，但当前控件 CSS 仍存在硬编码 rem、透明度和行为差异，不能据此宣称现状已全部符合。
+本节区分已有令牌、本轮新增令牌和待迁移控件。桌面工作台采用剪辑工具的紧凑操作密度：属性栏与工具栏默认使用 compact，单行控件最小高度 30 CSS px，标签和值为 13 CSS px；普通创建、导出等对话框可使用 regular 的 36 CSS px。触屏有效热区至少为 44 CSS px，输入文字使用 16 CSS px，不将触屏输入强塞进桌面紧凑高度。内容换行或字号放大时允许控件增高，不裁切文字。公共控件已通过 `density` 和共用 CSS 取用这些令牌；未迁移的业务控件仍需逐项检查。
 
 | 密度 | 默认使用范围 | 几何、文字与留白 |
 |---|---|---|
@@ -70,28 +73,28 @@ compact 复用 `--pm-size-tool` 的 1.875rem 和 `--pm-text-sm` 的 0.8125rem，
 
 compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`，即 80px 最小高度，桌面文字仍为 `--pm-text-sm`；按内容和可用窗格扩展，不常驻过大的空白输入区。regular 通用 Textarea 最小高度仍为 `--pm-size-row * 2`，即 96px。既有 `--pm-narration-editor-height: 12rem`（192px）保持不变，避免仅新增密度规范就改变正在运行的编辑页面；触屏输入文字仍取 16px，不受 compact 桌面值限制。
 
-当前 `components.css` 的常规按钮和单行输入仍以 2rem 作为最小高度，`--pm-size-touch` 为 2.5rem；这分别是 32px 和 40px，不能标为已经符合正式 compact 30px／regular 36px／触屏 44px 目标。现有小按钮的私有几何也不自动等于正式 compact。新增令牌本身不意味着旧控件已经迁移，公共层必须再按控件完成替换与实际检查。本文件不把尚未落地的样式当作已完成行为。
+`components.css` 已统一 compact、regular 与 touch 密度；兼容的 `small` 类映射到 compact。粗指针设备由公共媒体查询补足触屏热区和输入字号。旧的 `--pm-size-touch` 保留给兼容样式，不能用于新控件的有效热区。页面迁移与四种显示组合的实看仍须按第 8 节记录。
 
-控件密度、禁用透明度与主操作状态已登记目标令牌，其余字重和忙碌占位仍需在公共层补齐。禁用透明度取 `--pm-opacity-disabled`；primary 与 accent 的悬停／按下分别使用 `--pm-color-primary-hover`、`--pm-color-primary-pressed`、`--pm-color-accent-hover`、`--pm-color-accent-pressed`。它们以现有语义颜色混合，明暗模式自动解析，不能在页面另写比例。禁止在页面中各选一组数字，不为每个面板新增尺寸名称。
+控件密度、字重、禁用透明度和忙碌占位由公共层取用令牌。禁用透明度取 `--pm-opacity-disabled`；primary 与 accent 的悬停／按下分别使用 `--pm-color-primary-hover`、`--pm-color-primary-pressed`、`--pm-color-accent-hover`、`--pm-color-accent-pressed`。它们以现有语义颜色混合，明暗模式自动解析，不能在页面另写比例。禁止在页面中各选一组数字，不为每个面板新增尺寸名称。
 
 亮色用 `:root`，暗色仅在 `:root.dark` 覆盖颜色与阴影；几何、字体层级和热区保持一致。业务组件不各自提供暗色取值。CSS 不写原始颜色、px 或时长值；px 仅允许用于媒体查询断点，取值进入 `tokens.css` 后再供控件使用。
 
 ## 4. 公共控件目录
 
-下表同时区分已有入口与待补齐能力。带“待新增”的名字是目标公共接口，不是当前可直接导入的组件。
+下表区分已提供的公共入口与后续领域控件要求。workbench 与 host 共用 CSS；React 包装按各自依赖边界维护。
 
 | 控件 | 已有入口 | 正式实现要求与补齐项 |
 |---|---|---|
-| Button | workbench、host 的 `PmButton`，`pm-ui-button` | 保留 `default`、`primary`、`accent`、`ghost`、`danger`；统一常规／紧凑密度，补公共 loading 行为与占位 |
-| IconButton | workbench、host 的 `PmIconButton`，`pm-ui-icon-button` | 用于图标优先的工具栏；名称、提示、快捷键、选中与展开状态一致；工作台目前只有原生 `title`，需要补正式 Tooltip |
-| Input | `PmField`＋原生输入及 `pm-ui-input`；`PmInput` 待新增 | 公共包装统一 label、说明、错误、只读、禁用、前后图标和尺寸，业务不自写装饰边框 |
-| Textarea | `PmField`＋`pm-ui-textarea`；`PmTextarea` 待新增 | 使用统一多行尺寸、字符状态、错误关系和自动增高规则；不能将 placeholder 当作唯一标签 |
-| Select | `PmField`＋`pm-ui-select`；`PmSelect` 待新增 | 简单选项可用已着色的原生 select；音色等复杂选择使用公共可搜索弹层，不能每页手写下拉交互 |
-| Dialog | workbench、host 的 `PmDialog`，Radix Dialog | 正式统一模态语义、标题、说明、关闭与操作区、焦点归还和忙碌状态；不能靠是否绘制遮罩判断模态 |
-| Menu | workbench、host 的 `PmMenu`，Radix Dropdown Menu | 统一图标、危险项、禁用项、快捷键、分组与选中态；补齐的项先进入公开 API |
-| Tabs | host 的 `PmTabs` 与 `pm-ui-tab`；workbench 的对应公共封装待补齐 | 统一标签页与图标标签页，不在业务中手写方向键；现有 host 渲染尚未使用 `Choice.icon`，图标优先模式需公共层补齐 |
-| Tooltip | host `PmIconButton.hint` 已封装 Radix Tooltip；`pm-ui-tooltip` 已有 | workbench 补对应公共能力；单独 `PmTooltip` 尚未导出，不能假设存在；提示包含名称及快捷键 |
-| Segmented | host `PmSegmented`、`pm-ui-segmented` | 仅表示同一参数的互斥选项，不代替工作区导航；图标选项、名称和选中语义需一致 |
+| Button | workbench、host 的 `PmButton`，`pm-ui-button` | 已提供 `density`、`loading`、`aria-busy` 与重复提交拦截；保留五种强调等级和兼容的 `small` |
+| IconButton | workbench、host 的 `PmIconButton`，`pm-ui-icon-button` | 已提供 `label`、`hint`、`shortcut`、`density` 与 `loading`，通过公共 Tooltip 显示名称和快捷键 |
+| Input | workbench `PmInput`；host 使用 `PmField`＋`pm-ui-input` | workbench 包装关联 `label`、`hint`、`error`，支持原生只读／禁用属性、前图标、后缀和 `width="number"`／`"time"` |
+| Textarea | workbench `PmTextarea`；host 使用 `PmField`＋`pm-ui-textarea` | workbench 包装支持标签、说明、错误、`density` 与 `autoGrow`；讲稿保持独立多行区域 |
+| Select | workbench `PmSelect`；host 使用 `PmField`＋`pm-ui-select` | 简单选项已统一字段关系与密度；可搜索音色选择尚未实现，不以原生列表冒充 |
+| Dialog | workbench、host 的 `PmDialog`，Radix Dialog | 已统一模态、标题／说明、操作区、忙碌拦截、外部按下不关闭与焦点归还 |
+| Menu | workbench、host 的 `PmMenu`，Radix Dropdown Menu | 已提供图标、危险项、禁用项、快捷键、分隔与勾选态；键盘移动和焦点归还由 Radix 管理 |
+| Tabs | workbench、host 的 `PmTabs`、`PmTabPanel` 与 `pm-ui-tab` | 已提供图标标签与手动激活；方向键移焦，确认后激活，面板由公共封装关联 |
+| Tooltip | workbench、host 的 `PmTooltip` 与 `PmIconButton` | 已封装 Radix Tooltip；悬停延迟 300ms，键盘聚焦立即显示，可附快捷键 |
+| Segmented | workbench、host 的 `PmSegmented`、`pm-ui-segmented` | 已用 Radix Radio Group 管理横排互斥参数、图标、禁用和选中；不代替工作区导航 |
 | Popover／Drawer | host 的 `PmPopover`、`PmDrawer` 与共用 CSS | 依据任务使用浮层或侧抽屉；workbench 需要时走公开公共封装，不引用 host 或复制私有实现 |
 | Field／Notice／Empty | `PmField`、`PmNotice`、`PmEmpty` | 同一位置展示字段说明、错误和恢复入口，不把所有状态写成页面私有提示卡 |
 | Checkbox／Radio／Switch／Range | 现有 `pm-ui-checkbox` 仅提供部分基础着色，其余公共能力待补齐 | 在使用前规定选择、焦点、禁用、数值和错误状态；时间、语速和音量不能各自实现一套滑杆 |
@@ -115,9 +118,9 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 | 错误 | 字段设置 `aria-invalid`，错误文字通过 `aria-describedby` 关联；使用 `--pm-color-danger` 与文字或错误图标，不只靠红边 |
 | 处理中 | `aria-busy`，保持宽度和动作名称稳定，防止重复提交；可取消的任务提供独立取消操作，不禁用整份文稿 |
 
-当前 CSS 对 Button 已有禁用规则，但 IconButton、输入、菜单禁用项、错误字段和 loading 尚未覆盖一致的公开状态。公共图标已登记 `loading`（Lucide LoaderCircle），统一 loading API、动效和提交拦截仍需补齐。处理中使用独立的状态图标位，不受调用方 Icon 或 Show icon 属性替换，动作名称和尺寸保持稳定；业务页面不得用转圈字符、私有 SVG 或自定义透明度填补。
+公共 CSS 已覆盖按钮、图标按钮、输入、菜单、错误字段和 loading 的适用状态。公共 loading 使用 `loading`（Lucide LoaderCircle），按钮包装负责 `aria-busy` 与重复提交拦截。处理中使用独立的状态图标位，不受调用方 Icon 或 Show icon 属性替换，动作名称和尺寸保持稳定；业务页面不得用转圈字符、私有 SVG 或自定义透明度填补。
 
-Danger 动作默认使用危险色文字和浅色表面；悬停增加 1px 危险色内边界，按下使用现有 2px 描边令牌，不靠不断加深背景降低文字对比度。固定控件外尺寸与排版，焦点仍单独叠加。其余普通控件的 hover／pressed 使用既有 chrome／sunk 语义表面。以上为公共层迁移目标，不能把当前 CSS 的遗留取值视为新状态规范。
+Danger 动作默认使用危险色文字和浅色表面；悬停增加 1px 危险色内边界，按下使用现有 2px 描边令牌，不靠不断加深背景降低文字对比度。固定控件外尺寸与排版，焦点仍单独叠加。其余普通控件的 hover／pressed 使用既有 chrome／sunk 语义表面。上述状态由公共 CSS 定义，页面只选择公开属性。
 
 ### 5.2 按钮、输入与表单
 
@@ -131,7 +134,7 @@ Danger 动作默认使用危险色文字和浅色表面；悬停增加 1px 危�
 
 输入框默认采用 chrome 表面与 1px 的 line-strong 中性边框，无阴影、不常驻强调色。line 对 chrome 的对比度不足 3:1，只用于分隔等非交互边界，不能作为输入框唯一的可辨识边界；line-strong 对 chrome 在现有亮／暗令牌下分别约为 3.45:1／3.34:1。悬停不加粗或叠加常驻轮廓。普通聚焦使用 accent 实线边框和 `--pm-color-accent-line` 的辅助柔和光圈；该令牌为 30% accent 混合色，不能单独承担焦点指示。错误＋焦点保留 danger 边框，外侧叠加 accent 实线指示及辅助光圈，错误文字和 `aria-invalid` 同时保留。边框取 `--pm-size-hairline`，焦点指示与光圈宽度取 `--pm-space-px`。所有取值经第 3 节令牌进入公共控件，不在业务页面复写。
 
-当前公共 CSS 的输入边框已经使用 line-strong，但表面、密度和焦点仍不等于以上完整目标；此处固定正式设计，不宣称现有代码已经迁移。
+公共输入已按上述规则迁移；原生选择器展开后的系统列表仍受操作系统控制。
 
 中文输入法组词期间不提交。焦点不因错误、自动保存或后台更新而跳走。禁用与只读不能互换，长文案和中英文切换不能压缩图标热区或裁掉输入内容。
 
@@ -199,20 +202,17 @@ Web 面向非技术作者，组件名称、令牌名和映射说明只属于设�
 
 遗留样式按触及范围迁移：先把缺少的语义值与状态收进公共层，再替换本次改动涉及页面的重复控件样式。不能在旧 CSS 上继续叠加新覆盖，也不能一次性重置无关页面。对尚未迁移部分登记来源、影响范围与替换条件，明确不属于正式验收完成项。
 
-## 9. 当前需要公共层补齐的能力
+## 9. 实施边界与待迁移项
 
-| 缺口 | 实施前要求 |
+核心控件的当前入口见第 4 节。页面迁移记录与真实运行结果见 [UI/UX RFC 的实施状态](rfc-workbench-uiux.md#101-当前实施状态)；组件存在不表示所有功能页面已经完成迁移。
+
+| 待完成范围 | 后续实施要求 |
 |---|---|
-| 控件密度与几何仍有硬编码 rem | 桌面属性栏与工具栏迁为 compact 30px／13px；普通对话框采用 regular 36px；复用既有令牌，不能沿用私有 small 几何冒充 compact |
-| 触屏热区现值不足以保证 44 CSS px | 迁入 `--pm-control-hit-area` 的正式 44px 热区，输入文字取 `--pm-text-lg`，保留紧凑图形 |
-| 输入表面、焦点与错误叠加未统一 | 公共层落实 chrome＋1px line-strong 默认边界，以及普通 focus 和错误＋focus 的独立状态；业务不覆写 |
-| 输入、错误与说明缺少统一 React 包装 | 补 Input／Textarea／Select 的公开属性和 Field 关联 |
-| workbench 缺 Tooltip、Tabs 等对应公共能力 | 在正确分层补 Radix 封装，不从业务页或 host 私有实现复制 |
-| workbench IconButton 仍依赖原生 title | 统一 hover／focus 提示、快捷键和触屏可发现入口 |
-| loading、禁用与错误状态不完整 | 定义 API、语义和视觉状态，覆盖所有适用控件 |
-| 部分 workbench 图标仍传尺寸数字 | 迁移到 CSS 令牌与公共密度，页面不再控制数字尺寸 |
-| Dialog 实现与历史说明不一致 | 统一模态、外部关闭和焦点协议，并更新相关说明 |
-| 本轮素材清单只登记现有图标和字体 | 后续 UI 素材按第 6 节补齐来源、许可、文件和消费位置，不临时下载后直接引用 |
-| Figma 已有核心控件变体与组合示例，尚未迁移所有功能屏幕 | 新页面先复用已定义控件；Popover、Drawer、搜索选择弹层及领域控件等在使用前补齐专门状态和映射，不能把核心控件覆盖等同全部视觉设计完成 |
+| 仍使用私有工具按钮或旧输入的业务区域 | 迁入第 4 节公共包装，删除对应控件外观覆盖，只保留布局 |
+| host 的输入包装与领域控件 | 按实际使用补公开属性与字段关系，不让插件依赖 workbench |
+| 音色搜索、试听、媒体时间与波形 | 先验证服务能力，再补公共选择弹层和领域控件；原型状态不能代替底层能力 |
+| Checkbox／Switch／Range | 在实际使用前补齐适用状态与可访问关系，不在业务页手写控件 |
+| 新插画、品牌或其他公共素材 | 按第 6 节登记来源、许可、文件和消费位置 |
+| Figma 其余功能屏幕与领域组件 | 使用核心组件组合，补齐独立交互状态与映射后再实施 |
 
-本文件固定实施约束，不修改任何产品 CSS 或组件。后续实现必须同时提交公共层变更、Figma 映射和对应页面的迁移说明，不能以页面看起来相似替代共用控件已经成立。
+每次迁移仍须提交公共层变更、Figma 映射和实际验证范围。结构检查只确认受管规则，视觉验收按第 8 节执行。

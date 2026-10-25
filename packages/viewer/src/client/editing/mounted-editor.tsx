@@ -21,10 +21,11 @@ import {
   useCreateBlockNote,
   useExtensionState,
 } from '@blocknote/react'
-import { PmIcon, useAppearance, useMessages, useStore } from '@lincyaw/host'
+import { PmBadge, PmButton, PmDialog, PmIcon, PmIconButton, useMessages, useStore } from '@lincyaw/host'
 import { PREVIEW_REVISION, reportPreview } from '@lincyaw/kernel'
 import type {
   IRBlock,
+  IRDocument,
   IRSection,
   MdastNode,
   PreviewEditedBlock,
@@ -39,16 +40,32 @@ import {
   useState,
 } from 'react'
 import type { SideMenuProps } from '@blocknote/react'
+import { isLegacyNarration } from '../../domain/document-content.ts'
 import { BlockView } from '../block.ts'
 import { useViewer } from '../viewer-state.ts'
 import { bodySaveQueue } from './save-queue.ts'
 import { pageCreation } from './pages.ts'
 import { EDITOR_MESSAGES } from './messages.ts'
-import { SourceBlock } from './source/source-block.tsx'
+import { GeneratedPreview } from './generated-preview.tsx'
 import { sourceSession } from './source/session.ts'
 import { SOURCE_MESSAGES } from './source/messages.ts'
 import '@blocknote/mantine/style.css'
 import './style.css'
+
+const EDITOR_THEME = {
+  colors: {
+    editor: { background: 'var(--pm-color-surface)', text: 'var(--pm-color-ink)' },
+    menu: { background: 'var(--pm-color-surface)', text: 'var(--pm-color-ink)' },
+    tooltip: { background: 'var(--pm-color-surface)', text: 'var(--pm-color-ink)' },
+    hovered: { background: 'var(--pm-color-sunk)', text: 'var(--pm-color-ink)' },
+    selected: { background: 'var(--pm-color-accent-soft)', text: 'var(--pm-color-accent)' },
+    disabled: { background: 'var(--pm-color-sunk)', text: 'var(--pm-color-muted)' },
+    border: 'var(--pm-color-line)',
+    shadow: 'var(--pm-color-backdrop)',
+    sideMenu: 'var(--pm-color-muted)',
+  },
+  fontFamily: 'var(--pm-font-sans)',
+}
 
 interface EditingContext {
   section: IRSection
@@ -70,7 +87,6 @@ const sceneSpec = createReactBlockSpec(
   {
     render: ({ block, editor }) => {
       const context = useContext(EDITING)!
-      const t = useMessages(EDITOR_MESSAGES)
       const original = context.blocks.get(block.props.source)
       const name =
         block.props.scene ||
@@ -93,8 +109,8 @@ const sceneSpec = createReactBlockSpec(
           (known?.at ?? at) +
             (entry.type === 'presmiumScene'
               ? Math.max(
-                  1,
-                  JSON.parse(entry.props.durations || '[1000]').length,
+                  0,
+                  JSON.parse(entry.props.durations || '[1000]').length - 1,
                 )
               : (known?.span ?? 0)),
         )
@@ -107,6 +123,7 @@ const sceneSpec = createReactBlockSpec(
           source: context.section.source,
         }),
         id: original?.id ?? block.id,
+        span: Math.max(0, durations.length - 1),
         node: {
           ...(original?.node.type === 'component' ? original.node : {}),
           type: 'component',
@@ -125,30 +142,7 @@ const sceneSpec = createReactBlockSpec(
           data-block={rendered.id}
           contentEditable={false}
         >
-          <SourceBlock section={context.section} block={rendered} actions={
-            <button
-              type="button"
-              className="pm-ui-icon-button pm-ui-icon-button--small"
-              aria-label={t.editNarration}
-              title={t.editNarration}
-              onClick={() =>
-                reportPreview({
-                  type: 'narrate',
-                  section: context.section.id,
-                  step: rendered.at,
-                })
-              }
-            >
-              <PmIcon name="captions" />
-            </button>
-          }>
-            <BlockView
-              block={rendered}
-              section={context.section}
-              step={Infinity}
-              expanded
-            />
-          </SourceBlock>
+          <GeneratedPreview section={context.section} block={rendered} />
         </div>
       )
     },
@@ -171,17 +165,34 @@ const opaqueSpec = createReactBlockSpec(
           contentEditable={false}
         >
           {original ? (
-            <SourceBlock section={context.section} block={original}>
-              <BlockView
-                block={original}
-                section={context.section}
-                step={Infinity}
-                expanded
-              />
-            </SourceBlock>
+            <GeneratedPreview section={context.section} block={original} />
           ) : null}
         </div>
       )
+    },
+  },
+)()
+
+const legacyNarrationSpec = createReactBlockSpec(
+  {
+    type: 'presmiumLegacyNarration',
+    propSchema: { source: { default: '' } },
+    content: 'none',
+    meta: { selectable: false, draggable: false, isolating: true },
+  },
+  {
+    render: ({ block }) => {
+      const context = useContext(EDITING)!
+      const t = useMessages(EDITOR_MESSAGES)
+      const original = context.blocks.get(block.props.source)
+      if (!original) return null
+      return <div className="pm-legacy-narration" contentEditable={false}>
+        <div className="pm-legacy-narration__header" data-preview-ui="">
+          <PmBadge tone="outline">{t.legacyNarration}</PmBadge>
+          <PmIconButton small icon="edit-text" label={t.editNarration} hint={t.legacyNarrationHint} onClick={() => reportPreview({ type: 'narrate', section: context.section.id, step: original.at })} />
+        </div>
+        <BlockView block={original} section={context.section} step={Infinity} expanded />
+      </div>
     },
   },
 )()
@@ -209,7 +220,7 @@ function BlockStepMenu(props: SideMenuProps) {
         <span>{place}</span>
       </button>
       <AddBlockButton />
-      <DragHandleButton {...props} />
+      {hovered?.block?.type !== 'presmiumLegacyNarration' && <DragHandleButton {...props} />}
     </SideMenu>
   )
 }
@@ -219,6 +230,7 @@ const schema = BlockNoteSchema.create({
     ...defaultBlockSpecs,
     presmiumScene: sceneSpec,
     presmiumContent: opaqueSpec,
+    presmiumLegacyNarration: legacyNarrationSpec,
   },
 })
 type Editor = typeof schema.BlockNoteEditor
@@ -247,25 +259,27 @@ const SUPPORTED = new Set([
 function simple(node: MdastNode): boolean {
   return SUPPORTED.has(node.type) && (node.children ?? []).every(simple)
 }
-function body(section: IRSection) {
+function body(section: IRSection, document: IRDocument) {
   return section.blocks.filter(
-    (b) => b.role === 'visual' || (b.only && !b.only.includes('lecture')),
+    (b) => b.role === 'visual' || (b.only && !b.only.includes('lecture')) || isLegacyNarration(document, b),
   )
 }
-const bodySignature = (section: IRSection) =>
+const bodySignature = (section: IRSection, document: IRDocument) =>
   JSON.stringify(
-    body(section),
+    body(section, document),
     (key, value) => key === 'source' || key === 'position' ? undefined : value,
   )
 const signature = (block: EditorBlock) =>
   JSON.stringify([block.type, block.props, block.content, block.children])
 
-function prepare(editor: Editor, section: IRSection) {
+function prepare(editor: Editor, section: IRSection, document: IRDocument) {
   const sources = new Map<string, { source: string; signature: string }>()
   const blocks: EditorBlock[] = []
-  for (const block of body(section)) {
+  for (const block of body(section, document)) {
     let added: EditorBlock[]
-    if (block.node.type === 'component' && block.node.name === 'PmScene')
+    if (isLegacyNarration(document, block))
+      added = [{ id: block.id, type: 'presmiumLegacyNarration', props: { source: block.id }, content: undefined, children: [] }]
+    else if (block.node.type === 'component' && block.node.name === 'PmScene')
       added = [
         {
           id: block.id,
@@ -321,7 +335,6 @@ export default function MountedEditor({ section }: { section: IRSection }) {
   const viewer = useViewer()
   const doc = useStore(viewer.doc)
   const t = useMessages(EDITOR_MESSAGES)
-  const appearance = useAppearance()
   const sourceMessages = useMessages(SOURCE_MESSAGES)
   const dictionary = doc.meta.lang?.startsWith('zh') ? zh : en
   const editor = useCreateBlockNote(
@@ -337,6 +350,7 @@ export default function MountedEditor({ section }: { section: IRSection }) {
   const prepared = useRef<ReturnType<typeof prepare>>()
   const ready = useRef(false)
   const queue = useMemo(() => bodySaveQueue(viewer), [viewer])
+  useEffect(() => queue.announce(), [queue])
   const pages = useMemo(() => pageCreation(viewer), [viewer])
   const pageBusy = useStore(pages.busy)
   useEffect(() => pages.register(section.id, () => {
@@ -351,10 +365,16 @@ export default function MountedEditor({ section }: { section: IRSection }) {
       ? t.conflict
       : saved?.error === 'save-timeout'
         ? t.timeout
-        : (saved?.error ?? '')
+        : saved?.error === 'draft-storage'
+          ? t.draftStorage
+          : saved?.error === 'Failed to fetch'
+            ? t.disconnected
+            : (saved?.error ?? '')
   const revision = useRef(String(doc.meta[PREVIEW_REVISION] ?? ''))
   const loadedBody = useRef('')
   const timer = useRef<ReturnType<typeof setTimeout>>()
+  const composing = useRef(false)
+  const blurred = useRef(false)
   const lastSelected = useRef('')
   const known = useMemo(
     () => new Map(section.blocks.map((b) => [b.id, b])),
@@ -385,7 +405,7 @@ export default function MountedEditor({ section }: { section: IRSection }) {
       const at = source ? (known.get(source)?.at ?? nextAt) : nextAt
       const span =
         block.type === 'presmiumScene'
-          ? Math.max(1, JSON.parse(block.props.durations || '[1000]').length)
+          ? Math.max(0, JSON.parse(block.props.durations || '[1000]').length - 1)
           : source
             ? (known.get(source)?.span ?? 0)
             : 0
@@ -398,7 +418,7 @@ export default function MountedEditor({ section }: { section: IRSection }) {
           scene: block.props.scene,
           durations: JSON.parse(block.props.durations || '[1000]') as number[],
         }
-      if (block.type === 'presmiumContent')
+      if (block.type === 'presmiumContent' || block.type === 'presmiumLegacyNarration')
         return { id: block.id, source: block.props.source }
       // A source list can expand to several editor blocks. Serialize those pieces individually, preserving the first id.
       const repeated =
@@ -428,12 +448,13 @@ export default function MountedEditor({ section }: { section: IRSection }) {
   }
   const save = () => {
     clearTimeout(timer.current)
+    if (composing.current) return
     queue.flush()
   }
   const load = (discard = false) => {
     ready.current = false
     if (discard) queue.discard(section.id)
-    prepared.current = prepare(editor, section)
+    prepared.current = prepare(editor, section, doc)
     const draft = queue.draft(section.id)
     let blocks = prepared.current.blocks
     if (draft) {
@@ -475,7 +496,7 @@ export default function MountedEditor({ section }: { section: IRSection }) {
       blocks.length ? blocks : [{ type: 'paragraph' }],
     )
     revision.current = String(doc.meta[PREVIEW_REVISION] ?? '')
-    loadedBody.current = bodySignature(section)
+    loadedBody.current = bodySignature(section, doc)
     ready.current = true
   }
   useLayoutEffect(() => {
@@ -486,7 +507,7 @@ export default function MountedEditor({ section }: { section: IRSection }) {
     if (updated === revision.current || queue.draft(section.id)) return
     // Saving another page changes the document revision without changing this editor's content.
     // Retain its selection and NodeViews rather than replacing every block under the user's caret.
-    if (loadedBody.current === bodySignature(section)) {
+    if (loadedBody.current === bodySignature(section, doc)) {
       revision.current = updated
       return
     }
@@ -495,12 +516,30 @@ export default function MountedEditor({ section }: { section: IRSection }) {
   useEffect(
     () => () => {
       clearTimeout(timer.current)
-      queue.flush()
+      queue.hold(section.id, false)
+      if (!composing.current) queue.flush()
     },
     [queue, section.id],
   )
   const [creating, setCreating] = useState(false)
   const [creationError, setCreationError] = useState('')
+  const [discarding, setDiscarding] = useState(false)
+  const [copyFailure, setCopyFailure] = useState('')
+  const [readonlyFailure, setReadonlyFailure] = useState('')
+  useEffect(() => editor.onBeforeChange(({ getChanges }) => {
+    if (!ready.current) return
+    if (getChanges().some(change => change.block.type === 'presmiumLegacyNarration' || change.prevBlock?.type === 'presmiumLegacyNarration')) {
+      setReadonlyFailure(t.legacyProtected)
+      return false
+    }
+  }), [editor, t.legacyProtected])
+  const copyDraft = async () => {
+    setCopyFailure('')
+    try {
+      const editable = editor.document.filter(block => block.type !== 'presmiumScene' && block.type !== 'presmiumContent' && block.type !== 'presmiumLegacyNarration')
+      await navigator.clipboard.writeText(editor.blocksToMarkdownLossy(editable))
+    } catch { setCopyFailure(t.copyFailed) }
+  }
   const insertScene = async () => {
     if (creating || pages.busy.getSnapshot()) return
     setCreating(true)
@@ -528,14 +567,34 @@ export default function MountedEditor({ section }: { section: IRSection }) {
   return (
     <EDITING.Provider value={context}>
       <div
-        className="pm-block-editor pm-ui"
+        className="pm-block-editor pm-ui-block-editor pm-ui"
         aria-label={t.editor}
+        onCompositionStart={() => {
+          composing.current = true
+          queue.hold(section.id, true)
+          clearTimeout(timer.current)
+        }}
+        onCompositionEnd={() => {
+          composing.current = false
+          queue.hold(section.id, false)
+          record()
+          clearTimeout(timer.current)
+          if (blurred.current) save()
+          else timer.current = setTimeout(() => queue.flush(), 600)
+        }}
+        onBlurCapture={event => {
+          if (event.currentTarget.contains(event.relatedTarget as Node | null)) return
+          blurred.current = true
+          save()
+        }}
         onFocusCapture={(event) => {
+          blurred.current = false
           if (!ready.current || !(event.target instanceof HTMLElement) || !event.target.isContentEditable || event.target.closest('.pm-source-block')) return
           const current = editor.getTextCursorPosition().block
           reportPreview({ type: 'narrate', section: section.id, step: context.stepFor(current.id), navigate: false })
         }}
         onKeyDown={(event) => {
+          if (composing.current || event.nativeEvent.isComposing) return
           if (event.key === 's' && (event.metaKey || event.ctrlKey)) {
             event.preventDefault()
             save()
@@ -552,36 +611,42 @@ export default function MountedEditor({ section }: { section: IRSection }) {
                   ? t.error
                   : t.saved}
           </span>
-          <button
-            type="button"
-            className="pm-ui-icon-button pm-ui-icon-button--small"
-            title={t.save}
-            aria-label={t.save}
+          <PmIconButton
+            small
+            icon="save"
+            label={t.save}
+            hint={t.save}
             disabled={state !== 'dirty'}
             onClick={save}
-          >
-            <PmIcon name="save" />
-          </button>
+          />
           {failure && (
-            <button
-              type="button"
-              className="pm-ui-button pm-ui-button--small"
-              onClick={() => load(true)}
-            >
-              {t.reload}
-            </button>
+            <>
+              <PmButton small onClick={() => void copyDraft()}>{t.copyDraft}</PmButton>
+              {saved?.error !== 'revision-conflict' && <PmButton small onClick={() => queue.retry(section.id)}>{t.retry}</PmButton>}
+              <PmButton small onClick={() => setDiscarding(true)}>{t.reload}</PmButton>
+            </>
           )}
         </div>
+        {saved?.restored && <div className="pm-ui-notice pm-ui-notice--accent" role="status">{t.restored}</div>}
         {failure && (
           <div className="pm-ui-notice pm-ui-notice--danger" role="alert">
             {failure}
           </div>
         )}
         {creationError && <div className="pm-ui-notice pm-ui-notice--danger" role="alert">{creationError}</div>}
+        {copyFailure && <div className="pm-ui-notice pm-ui-notice--danger" role="alert">{copyFailure}</div>}
+        {readonlyFailure && <div className="pm-ui-notice pm-ui-notice--warn" role="status">{readonlyFailure}</div>}
+        <PmDialog open={discarding} label={t.reload} closeLabel={t.cancel} onClose={() => setDiscarding(false)}>
+          <p>{t.discardDraft}</p>
+          <div className="pm-block-editor__recovery">
+            <PmButton onClick={() => setDiscarding(false)}>{t.cancel}</PmButton>
+            <PmButton variant="danger" onClick={() => { load(true); setDiscarding(false) }}>{t.discardAndReload}</PmButton>
+          </div>
+        </PmDialog>
         <BlockNoteView
           editor={editor}
           editable={!pageBusy}
-          theme={appearance.dark ? 'dark' : 'light'}
+          theme={EDITOR_THEME}
           slashMenu={false}
           sideMenu={false}
           formattingToolbar={false}
@@ -589,7 +654,7 @@ export default function MountedEditor({ section }: { section: IRSection }) {
             if (!ready.current) return
             record()
             clearTimeout(timer.current)
-            timer.current = setTimeout(() => queue.flush(), 700)
+            if (!composing.current) timer.current = setTimeout(() => queue.flush(), 600)
           }}
           onSelectionChange={() => {
             if (!ready.current || !editor.isFocused()) return

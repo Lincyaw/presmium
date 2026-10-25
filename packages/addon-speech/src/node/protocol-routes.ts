@@ -35,6 +35,10 @@ export function protocolHandler(backend: SpeechBackend): (request: Request, path
         await backend.consent(query.get('engine') ?? '', query.get('voice') ?? '', query.get('recorded') !== '0', request.signal)
         return jsonResponse({ ok: true })
       }
+      if (path === 'audio/voice-catalog' && method === 'GET') {
+        const query = new URL(request.url).searchParams
+        return jsonResponse(await backend.voiceCatalog?.(query.get('engine') || undefined, query.get('lang') || undefined, request.signal) ?? { status: 'unavailable', reason: 'unknown', voices: [] })
+      }
       if (path === 'audio/voices' && method === 'GET') {
         const query = new URL(request.url).searchParams
         return jsonResponse({ voices: await backend.voices(query.get('engine') || undefined, query.get('lang') || undefined) })

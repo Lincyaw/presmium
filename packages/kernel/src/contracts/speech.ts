@@ -50,6 +50,11 @@ export interface VoiceInfo {
   cloned?: boolean
 }
 
+/** A provider list may be empty. An unsupported catalogue must not be presented as an empty list. */
+export type VoiceCatalog =
+  | { status: 'available', source: 'provider' | 'bundled', voices: VoiceInfo[] }
+  | { status: 'unavailable', reason: 'not-configured' | 'unsupported' | 'unknown', voices: VoiceInfo[] }
+
 export interface SynthesisRequest {
   engine?: string
   voice: string
@@ -70,7 +75,11 @@ export interface TranscriptionRequest {
 export interface SpeechService {
   engines(): Promise<SpeechEngineInfo[]>
   voices(engine: string, lang?: string): Promise<VoiceInfo[]>
+  /** Lists registered voices without synthesis. Absence means catalogue availability is unknown. */
+  voiceCatalog?(engine?: string, lang?: string, signal?: AbortSignal): Promise<VoiceCatalog>
   synthesize(request: SynthesisRequest, signal?: AbortSignal): Promise<Synthesis>
+  /** Exact request lookup only. A miss never calls synthesis or transcription providers. */
+  lookup?(request: SynthesisRequest, signal?: AbortSignal): Promise<Synthesis | undefined>
   cached?(key: string, signal?: AbortSignal): Promise<Synthesis | undefined>
   alignWords?(key: string, options: { lang: string, transcribe?: boolean }, signal?: AbortSignal): Promise<SpeechWord[] | undefined>
   pruneLock?(keep: ReadonlySet<string>): Promise<number>

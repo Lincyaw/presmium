@@ -6,12 +6,19 @@ import type {
   PreviewEditedBlock,
 } from '@lincyaw/kernel'
 import type { Viewer } from '../viewer-state.ts'
+import { isLegacyNarration } from '../../domain/document-content.ts'
 
 export interface BodySaveState {
   status: 'saved' | 'dirty' | 'saving' | 'failed'
   error?: string
   blocks?: PreviewEditedBlock[]
   version: number
+  restored?: boolean
+}
+interface StoredDraft {
+  baseline: string
+  blocks: PreviewEditedBlock[]
+  error?: string
 }
 const queues = new WeakMap<Viewer, BodySaveQueue>()
 let nextRequest = 0
@@ -46,14 +53,18 @@ export class BodySaveQueue {
   #baselines = new Map<string, string>()
   #ownRevisions = new Map<string, string>()
   #flight?: { section: string; request: number; version: number }
+  #held = new Set<string>()
   #timeout?: ReturnType<typeof setTimeout>
   #viewer: Viewer
+  #storage: string
   #unsubscribe: () => void
   constructor(viewer: Viewer) {
     this.#viewer = viewer
+    this.#storage = `presmium.body-drafts:${location.pathname}:${viewer.doc.getSnapshot().meta.entry}`
     this.#revision = String(
       viewer.doc.getSnapshot().meta[PREVIEW_REVISION] ?? '',
     )
+    this.#restore()
     this.#unsubscribe = viewer.doc.subscribe(() => {
       const revision = String(
         viewer.doc.getSnapshot().meta[PREVIEW_REVISION] ?? '',
@@ -70,22 +81,15 @@ export class BodySaveQueue {
       this.#ownRevisions.delete(revision)
       if (this.#flight || revision === this.#revision) return
       this.#revision = revision
-      const states = this.state.getSnapshot()
-      this.state.set(
-        Object.fromEntries(
-          Object.entries(states).map(([id, state]) => [
-            id,
-            state.blocks
-              ? { ...state, status: 'failed', error: 'revision-conflict' }
-              : state,
-          ]),
-        ),
-      )
+      // Changes to another page can move source positions without invalidating
+      // this page's draft. Only the baseline comparison above marks conflicts.
+      this.#persist()
     })
     window.addEventListener('presmium:blocks-result', this.#result)
     window.addEventListener('pagehide', this.#pagehide)
   }
   #pagehide = (event: PageTransitionEvent): void => {
+    this.#persist()
     if (!event.persisted) this.dispose()
   }
   dispose(): void {
@@ -100,6 +104,14 @@ export class BodySaveQueue {
   }
   /** The latest source version acknowledged by the workbench, even before its IR event arrives. */
   get revision(): string { return this.#revision }
+  announce(): void {
+    reportPreview({ type: 'body-draft', dirty: Object.values(this.state.getSnapshot()).some(state => Boolean(state.blocks)) })
+  }
+  /** IME composition must not be submitted by another page's save callback. */
+  hold(section: string, held: boolean): void {
+    if (held) this.#held.add(section)
+    else this.#held.delete(section)
+  }
   /** Code changes can reload the iframe, so finish body edits before applying them. */
   settled(): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -157,10 +169,20 @@ export class BodySaveQueue {
     this.#baselines.delete(section)
     this.#set(section, { version: ++this.#version, status: 'saved' })
   }
+  retry(section: string): void {
+    const state = this.state.getSnapshot()[section]
+    if (!state?.blocks || this.#flight?.section === section) return
+    if (this.#baselines.get(section) !== contentSignature(this.#viewer.section(section))) {
+      this.fail(section, 'revision-conflict')
+      return
+    }
+    this.#set(section, { ...state, status: 'dirty', error: undefined })
+    this.flush()
+  }
   flush(): void {
     if (this.#flight) return
     const next = Object.entries(this.state.getSnapshot()).find(
-      ([, state]) => state.status === 'dirty' && state.blocks,
+      ([section, state]) => !this.#held.has(section) && state.status === 'dirty' && state.blocks,
     )
     if (!next) return
     const [section, state] = next
@@ -177,11 +199,66 @@ export class BodySaveQueue {
       section,
       request,
       revision: this.#revision,
-      blocks: state.blocks!,
+      blocks: state.blocks!.filter(block => {
+        const original = this.#viewer.section(section)?.blocks.find(candidate => candidate.id === (block.source ?? block.id))
+        return !original || !isLegacyNarration(this.#viewer.doc.getSnapshot(), original)
+      }),
     })
   }
   #set(section: string, state: BodySaveState): void {
     this.state.set((before) => ({ ...before, [section]: state }))
+    this.#persist()
+    this.announce()
+  }
+  #restore(): void {
+    try {
+      const stored: unknown = JSON.parse(sessionStorage.getItem(this.#storage) ?? 'null')
+      if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return
+      for (const [section, entry] of Object.entries(stored)) {
+        if (!entry || typeof entry !== 'object' || typeof entry.baseline !== 'string' || !Array.isArray(entry.blocks)) continue
+        if (!entry.blocks.every((block: unknown) => {
+          if (!block || typeof block !== 'object') return false
+          const value = block as PreviewEditedBlock
+          return typeof value.id === 'string' &&
+            (value.source === undefined || typeof value.source === 'string') &&
+            (value.at === undefined || Number.isInteger(value.at) && value.at >= 0) &&
+            (value.markdown === undefined || typeof value.markdown === 'string') &&
+            (value.scene === undefined || typeof value.scene === 'string') &&
+            (value.durations === undefined || Array.isArray(value.durations) && value.durations.every(duration => typeof duration === 'number' && Number.isFinite(duration) && duration >= 0))
+        })) continue
+        const baseline = entry.baseline
+        const error = baseline === contentSignature(this.#viewer.section(section))
+          ? typeof entry.error === 'string' ? entry.error : undefined
+          : 'revision-conflict'
+        this.#baselines.set(section, baseline)
+        this.state.set(before => ({ ...before, [section]: {
+          version: ++this.#version,
+          status: error ? 'failed' : 'dirty',
+          blocks: entry.blocks as PreviewEditedBlock[],
+          error,
+          restored: true,
+        } }))
+      }
+    } catch { /* An unavailable browser store must not prevent opening the document. */ }
+  }
+  #persist(): void {
+    try {
+      const stored: Record<string, StoredDraft> = {}
+      for (const [section, state] of Object.entries(this.state.getSnapshot())) {
+        if (!state.blocks) continue
+        stored[section] = { baseline: this.#baselines.get(section) ?? contentSignature(this.#viewer.section(section)), blocks: state.blocks, ...(state.error ? { error: state.error } : {}) }
+      }
+      if (Object.keys(stored).length) sessionStorage.setItem(this.#storage, JSON.stringify(stored))
+      else sessionStorage.removeItem(this.#storage)
+    } catch {
+      // Keep the in-memory draft and surface the persistence failure to both
+      // the author and the workbench diagnostics instead of claiming recovery.
+      const states = this.state.getSnapshot()
+      if (Object.values(states).some(state => state.blocks && state.error !== 'draft-storage')) {
+        this.state.set(Object.fromEntries(Object.entries(states).map(([section, state]) => [section, state.blocks ? { ...state, status: 'failed' as const, error: 'draft-storage' } : state])))
+        reportPreview({ type: 'report', level: 'error', message: 'Body drafts could not be stored in this browser.', plugin: 'presmium.viewer' })
+      }
+    }
   }
   #result = (event: Event): void => {
     const answer = (

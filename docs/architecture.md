@@ -953,6 +953,11 @@ export interface VoiceInfo {
   cloned?: boolean
 }
 
+/** 可用但为空的目录，与没有目录接口分开报告。bundled 表示适配器登记的目录，不代表已向提供方逐个试听。 */
+export type VoiceCatalog =
+  | { status: 'available', source: 'provider' | 'bundled', voices: VoiceInfo[] }
+  | { status: 'unavailable', reason: 'not-configured' | 'unsupported', voices: VoiceInfo[] }
+
 export interface SynthesisRequest {
   engine?: string
   voice: string
@@ -977,11 +982,15 @@ export interface SpeechService {
   /** 运营者定义了、因而可用的引擎：地址与凭据成对出现在本进程的环境变量中 */
   engines(): Promise<SpeechEngineInfo[]>
   voices(engine: string, lang?: string): Promise<VoiceInfo[]>
+  /** 只读取音色目录；不合成。浏览器由语音插件的 GET v1/audio/voice-catalog 接入。 */
+  voiceCatalog?(engine?: string, lang?: string, signal?: AbortSignal): Promise<VoiceCatalog>
   /**
    * 先查合成缓存，命中时不发请求；缺失时调用引擎，在音频的元数据中加入 AI 生成的标识后写入缓存。
    * 引擎不可用时、克隆音色没有开启或没有有效的同意记录时拒绝（抛出带原因的错误）
    */
   synthesize(request: SynthesisRequest, signal?: AbortSignal): Promise<Synthesis>
+  /** 按完整请求及文稿默认引擎查缓存；缺失为 undefined，不调用合成或转写服务。Node 服务提供此可选能力。 */
+  lookup?(request: SynthesisRequest, signal?: AbortSignal): Promise<Synthesis | undefined>
   /**
    * 按键取合成缓存中的一个片段，与 `synthesize` 命中缓存时一样检查音色：克隆音色要有开启的设置与有效的同意记录。
    * 不请引擎合成：缓存没有这个键时为 undefined，音色不能用时拒绝。Node 端的服务有它（讲授的片段按键给出与发布）
@@ -1215,7 +1224,7 @@ export const OPERATIONS = defineService<Operations>('presmium.operations')
 
 引导插件包含内核插件 `src/client/plugin.ts`（两种形态都登记 `spot`、`hint` 的重放）与视图插件 `src/client/viewer.ts`（放映视图与演讲者窗口中 `s`、`h` 给指针下的块加上或取消聚光、提示并报告）；这种聚光持续到位置离开它的章节或步骤（`span`），由 `NAVIGATION.position` 的同步观察者结束，所以现场、依次重放与跳转后的折叠一致。讲授插件 `@lincyaw/addon-lecture`：`src/domain/`（讲授轨的读写与每项一行的格式、`at` 的时刻、章节、漂移分级、块指纹与 IR 哈希、VTT、路径简化、重录一节的拼接）、`src/node/`（服务端路由、检查项 `presmium.lecture`、站点渲染端 `lecture`）、`src/client/`（内核插件登记 `point`、`ink` 的重放；视图 `lecture`；放映视图上的录制与播放两个图层；`SilentClock`、`MediaClock`；Mediabunny 只在 `src/client/media.ts` 中）。视图插件只以类型引用 `@lincyaw/viewer`，拿不到章节上下文（`SECTION_CONTEXT`），自己画不出按步骤显示的幻灯片，所以回放的“真实页面”是放映视图：`lecture` 视图切到放映视图并保留 URL 的 `track` 参数，播放器是放映视图上的图层，重放 `go` 时去掉 `view`。嵌在工作台中时（`isPreviewEmbedded()`），`lecture` 视图直接打开视频用的那一讲（`defaultTrack`：有合成的 `script` 用它，否则是唯一的那一条录音；导出视频的默认同此），这是现有讲授视图的默认轨选择机制；工作台不设置独立视频工作区，目标播放入口见 [UI/UX RFC](rfc-workbench-uiux.md) 第 7 节。独立的讲授视图需要放映组件或章节上下文，当前视图插件接口未提供它们。`run` 的重放没有 `clear`（`packages/viewer/src/client/code/code-block.ts`），跳回运行之前的时刻时已显示的录制输出不消失。
 
-讲授插件的 `src/domain/` 包含讲解的读法（`narration.ts`：显示与说的两份文字、`{cue}` 的位置、命令与时长）、讲授计划（`plan.ts`：每节每步的段落、在 `pause` 处切开的语音段、提示标记的目标与操作数据，单独的脚本代替所在章节的讲解）、合成的时间线（`script-track.ts`：`scriptTrack`）、逐字的处理（`words.ts`：分词、把说的文字的逐字时间换回显示的文字、改文字后的重新对齐、换音色后的字锚换算）与讲授轨的编辑（`editing.ts`：转写得到语音段并绑定事件、改一句、换音色重新合成）；`Utterance.clip` 与合成音色的 `provider`。`src/node/` 提供行内角色 `{cue}`、`{say}`（`roles.ts`）、读单独的脚本（`script-file.ts`）、讲授计划（`plan.ts`）、最近一次编译的 IR（`latest-ir.ts`：编译步骤 `presmium.lecture.keep` 在编译时执行之后记下每个文稿目录的 IR，服务端的路由与 agent 工具由此得到 IR，因为 `ServerContext` 与 `AgentToolContext` 没有编译结果）、经 `SPEECH` 的合成与转写（`synthesize.ts`、`transcribe.ts`；引擎的选择在 `engines.ts`，按键取合成缓存中的片段在 `clips.ts`；没有逐字时间时的对齐与锁定文件的清理经 `SpeechService.alignWords`、`pruneLock` 由语音服务完成，讲授插件不读写合成缓存的文件）、站点渲染端的 `script` 与 `clips/`、检查项的计划部分、编辑的路由（`routes/`：讲授与片段 `tracks.ts`、编辑 `editing.ts`、录制 `recordings.ts`）、agent 工具（`tools.ts`）与 `presmium-lecture export`（`export.ts`、`cli.ts`）。`src/client/` 用 `MediaClock` 播放每个语音段的片段、播放器的 `advanceTo`（按时间应用事件，播放与导出共用）、导出模式（地址加 `&export`：没有控件，`window.presmiumLecture.advance(t)`）、编辑面板 `TrackEditor.tsx` 与逐字稿中每句的修改（`TranscriptList.tsx`）。交互与构建的边界：转写与合成的确认是页面上写明服务提供方的确认框，不经 `APPROVALS`（编辑者点按钮就是确认；agent 的计费工具仍经 MCP 的确认）；`presmium serve` 在进程内编译文稿，所以 `script` 在那里同样按需合成（`ir.md` 6.3 节）；合成不了的句子（不在合成缓存中，引擎没有定义或没有回答）不让讲授失败：服务端回答的 `script` 是预览，这些句子没有片段，带 `Utterance.unsaid`（原因），按 `spokenDuration` 估计的时长（`Intl.Segmenter` 分出的词，每词约 0.36 秒）静音，播放器写明有几句没有语音并显示它们的字幕，时间线照常播放；构建、导出视频与 agent 工具仍要求每句都已合成（`SynthesizedLecture.track` 只在全部合成时存在，预览是 `preview`），导出失败的第一行写出第一条原因；合成音色的讲授中改一句要先确认，确认框写明服务提供方；路由、agent 工具与检查都按讲授渲染端的视图（`viewFor(doc,'lecture')`，讲授插件已依赖编译器）计划，与构建一致；`presmium check` 只查找，不向语音引擎发请求；合成讲授的 `go` 由讲授视图的步号经它的 `stepMap` 换回 IR 的步号，所以只在网页形态不压缩步骤时（没有只在幻灯片或 notebook 中显示的上屏块）就是网页的步号；当前渲染上下文没有网页视图的步号映射。
+讲授插件的 `src/domain/` 包含讲解的读法（`narration.ts`：显示与说的两份文字、`{cue}` 的位置、命令与时长）、讲授计划（`plan.ts`：每节每步的段落、在 `pause` 处切开的语音段、提示标记的目标与操作数据，单独的脚本代替所在章节的讲解）、合成的时间线（`script-track.ts`：`scriptTrack`）、逐字的处理（`words.ts`：分词、把说的文字的逐字时间换回显示的文字、改文字后的重新对齐、换音色后的字锚换算）与讲授轨的编辑（`editing.ts`：转写得到语音段并绑定事件、改一句、换音色重新合成）；`Utterance.clip` 与合成音色的 `provider`。`src/node/` 提供行内角色 `{cue}`、`{say}`（`roles.ts`）、读单独的脚本（`script-file.ts`）、讲授计划（`plan.ts`）、最近一次编译的 IR（`latest-ir.ts`：编译步骤 `presmium.lecture.keep` 在编译时执行之后记下每个文稿目录的 IR，服务端的路由与 agent 工具由此得到 IR，因为 `ServerContext` 与 `AgentToolContext` 没有编译结果）、经 `SPEECH` 的合成与转写（`synthesize.ts`、`transcribe.ts`；引擎的选择在 `engines.ts`，按键取合成缓存中的片段在 `clips.ts`；没有逐字时间时的对齐与锁定文件的清理经 `SpeechService.alignWords`、`pruneLock` 由语音服务完成，讲授插件不读写合成缓存的文件）、站点渲染端的 `script` 与 `clips/`、检查项的计划部分、编辑的路由（`routes/`：讲授与片段 `tracks.ts`、编辑 `editing.ts`、录制 `recordings.ts`）、agent 工具（`tools.ts`）与 `presmium-lecture export`（`export.ts`、`cli.ts`）。`src/client/` 用 `MediaClock` 播放每个语音段的片段、播放器的 `advanceTo`（按时间应用事件，播放与导出共用）、导出模式（地址加 `&export`：没有控件，`window.presmiumLecture.advance(t)`）、编辑面板 `TrackEditor.tsx` 与逐字稿中每句的修改（`TranscriptList.tsx`）。交互与构建的边界：转写与合成的确认是页面上写明服务提供方的确认框，不经 `APPROVALS`（编辑者点按钮就是确认；agent 的计费工具仍经 MCP 的确认）；`presmium dev` 与 `presmium serve` 的 `GET tracks/script` 只按最新 IR 经 `SpeechService.lookup` 查询完整请求对应的缓存，逐字对齐也只读取缓存，不隐式合成或转写；缺少当前请求对应片段的句子不让预览失败：服务端回答的 `script` 是预览，这些句子没有片段，带 `Utterance.unsaid`（原因），按 `spokenDuration` 估计的时长（`Intl.Segmenter` 分出的词，每词约 0.36 秒）静音，播放器写明有几句没有语音并显示它们的字幕，时间线照常播放；构建、导出视频与 agent 工具仍要求每句都已合成（`SynthesizedLecture.track` 只在全部合成时存在，预览是 `preview`），导出失败的第一行写出第一条原因；合成音色的讲授中改一句要先确认，确认框写明服务提供方；路由、agent 工具与检查都按讲授渲染端的视图（`viewFor(doc,'lecture')`，讲授插件已依赖编译器）计划，与构建一致；`presmium check` 只查找，不向语音引擎发请求；合成讲授的 `go` 由讲授视图的步号经它的 `stepMap` 换回 IR 的步号，所以只在网页形态不压缩步骤时（没有只在幻灯片或 notebook 中显示的上屏块）就是网页的步号；当前渲染上下文没有网页视图的步号映射。
 
 迁移边界：以上是当前讲授实现，`script` 路由仍可能按需合成。目标工作台要求进入、跳步和编译只查询缓存，生成配音由作者显式触发，见 [UI/UX RFC 第 5.2 节](rfc-workbench-uiux.md#52-讲稿与配音属性)；此行为尚需实现，不应将 RFC 作为当前接口已完成解耦的证明。
 
@@ -1482,13 +1491,13 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 
 正式控件、样式文件职责、素材入库、Figma 第 02 页组件映射与遗留迁移以 [控件与视觉实现规范](design-system.md) 为准。业务 CSS 只组合布局，不临时重写公共控件外观；缺少能力先补公共层与 Figma 变体。本节记录现有实现边界，不能用低保真线框或结构检查代替正式视觉验收。
 
-本轮新增 regular 高度、触屏热区、短数值／时间宽度、compact 讲稿高度和较大图标的目标令牌；桌面编辑默认使用 compact，取值以视觉规范为准。现有 `components.css` 的常规按钮／输入仍使用 2rem 最小高度，`--pm-size-touch` 仍是 2.5rem。新令牌已登记不代表旧控件已迁移，实际尺寸与状态应按规范逐项统一。
+`components.css` 已按公共密度统一按钮、输入、标签页和互斥参数；兼容的 `small` 映射到 compact。粗指针设备补足触屏热区和输入字号。具体取值、公开属性与剩余迁移范围集中在视觉规范第 3、4、9 节，不在业务 CSS 重复定义。
 
 > **工作台**：令牌、`pm-ui-*` 的类、字体与图标在 `@lincyaw/design`（`packages/design/src/`；`@lincyaw/host` 引用它，React 组件与 `useAppearance` 留在 `host`），工作台的 React 面板（`@lincyaw/workbench` 的 `components.tsx`）用同一层，dsh 自己的面板经它的 `--dsw-*` 令牌映射（`design-dsh.md` 7.5 节，第 13 节）。
 
 产物的 React 通用交互由依赖实现：`@lincyaw/host` 的弹窗、抽屉、菜单、浮层和标签页封装 Radix Primitives；查看器的内容标签页与放映焦点范围也使用 Radix。文稿标签的 `sync` 联动、背景页面禁用与步骤导航由 Presmium 维护。主题由宿主的 React hook 与浏览器观察器同步；图标由 Lucide 提供，`@lincyaw/design` 保留语义名称与框架无关的节点和 HTML 接口。读者问答的 SSE 事件边界由 eventsource-parser 解析。
 
-工作台的通用交互由依赖实现：Radix Primitives 提供弹窗与菜单，react-resizable-panels 提供分栏与鼠标、键盘调整。`Pm*` 只封装样式与业务回调；首次欢迎在 dsh 适配层直接复用 Harness 的 `Modal`。文档操作、就地编辑落回源码、版本历史、编译、审阅与预览协议由 Presmium 维护。
+工作台的通用交互由依赖实现：Radix Primitives 提供弹窗、菜单、Tooltip、手动激活的 Tabs、Radio Group 与工具栏焦点移动，react-resizable-panels 提供分栏与鼠标、键盘调整。`Pm*` 只封装样式与业务回调；首次欢迎在 dsh 适配层直接复用 Harness 的 `Modal`。文档操作、就地编辑落回源码、版本历史、编译、审阅与预览协议由 Presmium 维护。
 
 `@lincyaw/host` 提供设计令牌与通用组件；网页形态的外壳（工作区首页、阅读页）、幻灯片与插件都用它们，不各自定义颜色与控件。插件界面与幻灯片的书卷版式见 5.12 节。
 
@@ -1517,22 +1526,23 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 | 组件 | 用途 |
 |---|---|
 | `PmIcon` | 线性图标（`ICONS`，24 px 网格，1.7 px 描边，不用 emoji 与 ◀ ▶ ✓ 这类字形）；只能写 HTML 文字的地方用 `iconMarkup` 得到同样的 SVG |
-| `PmButton` | 按钮：`primary`（墨色底、纸色字，主操作）、`accent`（打开的开关）、`ghost`、`danger`，可加 `small` 与 `icon`；`aria-pressed="true"` 的按钮显示为打开 |
-| `PmIconButton` | 只有图标的按钮，`label` 是它的可访问名称与提示 |
+| `PmButton` | 按钮：五种强调等级、`density`、`loading` 与兼容的 `small`；`aria-pressed="true"` 显示选中，忙碌时阻止重复操作 |
+| `PmIconButton` | 图标按钮，`label` 是可访问名称，`hint` 与 `shortcut` 由公共 Tooltip 显示 |
 | `PmField` | 带标签的输入、选择与文本框（类 `pm-ui-input`、`pm-ui-select`、`pm-ui-textarea`，边框为 `line-strong`）；`inline` 用于复选框 |
 | `PmBadge` | 徽标：`accent`、`ok`、`warn`、`danger`、`outline`，`pill` 为圆端的来源标签 |
 | `PmCard` | 卡片：`interactive`（通向别处）、`dashed`（新建一样东西） |
-| `PmSegmented` | 分段控件：选中项凸起，边框为 `line-strong` |
-| `PmTabs` | 标签页与所选标签的面板（默认插槽，得到所选的 `value`；面板以它的标签为名）；方向键切换并移动焦点，到头时回到另一端 |
+| `PmSegmented` | Radix Radio Group：横排互斥参数，方向键移动与选中；支持图标、密度和禁用 |
+| `PmTabs`、`PmTabPanel` | 标签页和关联面板；方向键移焦，Enter／Space 手动激活，支持图标标签 |
+| `PmTooltip` | 名称与快捷键提示；悬停延迟和焦点行为见视觉规范 |
 | `PmPopover` | 依附于触发器的弹层；会超出窗口时横向移入，离窗口两侧 1 rem（如手机宽度下站点菜单中的工具栏项） |
 | `PmDrawer` | 活动栏旁、与窗口等高的面板 |
-| `PmDialog` | Radix 对话框包装；workbench 与 host 的遮罩和关闭策略当前有差异，正式模态与焦点协议见视觉规范，不凭是否绘制遮罩判断语义 |
+| `PmDialog` | Radix 模态对话框：标题、说明、忙碌、操作区与焦点归还，外部按下不关闭 |
 | `PmMenu` | 菜单：打开时焦点在第一项，方向键移动，到头时回到另一端；选中一项或按 Escape 后焦点回到按钮；同样留在窗口内 |
 | `PmEmpty` | 空状态 |
 | `PmNotice` | 提示，`status`，失败时为 `alert` |
 | `PmToolbarEntry` | 打开面板的工具栏项：在活动栏中是图标按钮与抽屉，在其他位置是带文字的按钮与弹层（状态栏中向上弹出） |
 
-浮层的焦点、Escape 和外部关闭由 Radix 封装处理；历史对话框说明与当前包装存在差异，统一后的目标行为见 [视觉规范第 5 节](design-system.md#5-状态与行为合同)。文字对背景达到 WCAG AA（1.4.3）；标识控件与状态的图形达到 3:1（1.4.11）：输入框与搜索框由边框标识，分段控件的选中项由边框标识，都用 `line-strong`；按钮由文字标识，边框可以用 `line`；复选框由浏览器绘制，颜色取 `accent`。另有 `pm-ui-search`（搜索框）、`pm-ui-kbd`、`pm-ui-heading`（卡片与分区的小标题）、`pm-ui-list`、`pm-ui-dot`（状态点）、`pm-ui-code`、`pm-ui-link` 等类。
+浮层的焦点、Escape 和外部关闭由公共 Radix 封装处理，具体合同见 [视觉规范第 5 节](design-system.md#5-状态与行为合同)。文字对背景达到 WCAG AA（1.4.3）；标识控件与状态的图形达到 3:1（1.4.11）：输入框与搜索框由边框标识，分段控件的选中项由边框标识，都用 `line-strong`；按钮由文字标识，边框可以用 `line`；复选框由浏览器绘制，颜色取 `accent`。另有 `pm-ui-search`（搜索框）、`pm-ui-kbd`、`pm-ui-heading`（卡片与分区的小标题）、`pm-ui-list`、`pm-ui-dot`（状态点）、`pm-ui-code`、`pm-ui-link` 等类。
 
 `useAppearance()` 给出当前是否为暗色与切换的方法。宿主适配可以提供 `HostAdapter.useDarkMode`（查看器的页面给出页面的明暗），这样切换与页面的明暗一致，站点外壳的开关另把读者的选择记在本站点的 `localStorage`（`presmium-appearance`，页面头部在第一次绘制之前读它）；没有时 `useAppearance` 直接设 `<html>` 的 `dark` 类。
 
@@ -1549,13 +1559,15 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 
 本节记录现有与兼容编辑接口及其保存边界，不定义普通 Web 作者的入口。目标 Web 通过内容、公开参数、对话和批注修改文稿，代码与 IR 留在技术入口，见 [UI/UX RFC 第 1 节](rfc-workbench-uiux.md#1-决策与边界)；隐藏源码界面不取消下述版本、来源和事务校验。IR 原生项目仍是待实现能力，不能将生成的 `dist/ir.json` 当作可直接写回的源文件。
 
-#### 正文块与步骤讲解
+#### 正文块与步骤讲稿
 
 新文稿在入口头部声明 `contentModel: blocks`：普通 Markdown 作为正文块，讲解与字幕只来自显式 `{narration}`，由 `:at:` 与章节步骤绑定。旧文稿继续支持隐式讲解，不因 UI 框架迁移改变原来的讲授。
 
-查看器的作者画布用 React BlockNote，按需加载；阅读与放映只运行 IR 渲染器。正文、列表、标题、代码和动画共享块的选择、排序与转换入口，无法无损转换的插件内容保留为自定义块。普通正文直接编辑，动画、图表等代码生成的内容在同一个块内切换源码与预览；切换保持块 ID、步骤与位置，不通过场景目录替换当前内容。块内源码编辑复用按需加载的 CodeMirror，工作台不提供项目级 IDE 或全局文件树。
+查看器的作者画布用 React BlockNote，按需加载；阅读与放映只运行 IR 渲染器。正文、列表、标题、代码和动画共享块的选择、排序与转换入口，无法无损转换的插件内容保留为自定义块。普通正文直接编辑，动画、图表等生成内容在 Web 中保留预览和批注入口；普通作者界面不展示源码或场景目录。下述源码协议保留为兼容与技术编辑接口，不承担普通 Web 作者的创作流程。
 
 组件可在 `ComponentNode.definition` 声明生成内容的代码文件与语言。作者编辑画布据块锚点请求源码，工作台按当前 IR 解析定义文件；没有该元数据时读取该块的 MyST 片段。多个块引用同一定义时显示共享引用数，保存会更新这些块。浏览器只传当前块、已打开的文件与版本，工作台核对绑定和编辑锁后走现有源码保存与历史，不允许预览页面任意读写工作区文件。源码草稿在应用前独立保留，不按输入字符反复构建，版本冲突与保存失败不丢稿。现有协议见 `design-dsh.md` 7.3 节，目标草稿生命周期见 [UI/UX RFC 第 6 节](rfc-workbench-uiux.md#6-统一位置草稿与编译状态)。
+
+讲稿草稿由 `narration-drafts.ts` 按工作区、文稿、章节和步骤保留，浏览器恢复副本另记录来源基线。选择新步骤不改变旧草稿的保存目标。`saveNarration` 校验来源与步骤结构，串行写回，等待新版 IR 与来源版本确认；回调只确认本次提交的编辑版本，保留等待期间的新输入。自动保存及输入法规则以 [UI/UX RFC 第 6 节](rfc-workbench-uiux.md#6-统一位置草稿与编译状态) 为准。
 
 正文编辑、块内源码与讲稿编辑分别写回正文、生成代码和讲解来源，通过 IR 章节、块、步骤与 `trail` 定位。当前 IR 不含稳定 Step ID；完整与特定媒介的步号需显式换算。选择、播放与草稿的目标交互由 [UI/UX RFC 第 6 节](rfc-workbench-uiux.md#6-统一位置草稿与编译状态) 定义。
 

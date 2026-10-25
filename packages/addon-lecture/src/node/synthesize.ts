@@ -11,6 +11,7 @@ export interface SynthesisOptions {
   lang: string
   lexicon?: Record<string, string>
   alignByTranscription?: boolean
+  cacheOnly?: boolean
 }
 
 export interface SynthesizedClip extends Clip {
@@ -33,11 +34,12 @@ export async function synthesizeClip(speech: SpeechService, said: { text: string
     ...voice.style ? { style: voice.style } : {},
     ...options.lexicon ? { lexicon: options.lexicon } : {},
   }
-  const synthesis = await speech.synthesize(request, signal)
+  const synthesis = options.cacheOnly ? await speech.lookup?.(request, signal) : await speech.synthesize(request, signal)
+  if (!synthesis) throw new Error('voiceover is not generated for the current script and voice; generate it explicitly')
   if (typeof synthesis.audio !== 'string') throw new Error('the Node speech service gave no file of its cache')
   const engineWords = synthesis.words?.length
     ? synthesis.words
-    : await speech.alignWords?.(synthesis.key, { lang: options.lang, transcribe: options.alignByTranscription !== false }, signal)
+    : await speech.alignWords?.(synthesis.key, { lang: options.lang, transcribe: !options.cacheOnly && options.alignByTranscription !== false }, signal)
   const words: WrittenWord[] | undefined = engineWords && remapWords(engineWords, said.text, said.spoken, said.spans)
   return {
     file: basename(synthesis.audio),
@@ -104,11 +106,11 @@ export interface SynthesizedLecture {
   cuts: CutAnimation[]
 }
 
-export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech: SpeechService, signal?: AbortSignal): Promise<SynthesizedLecture> {
+export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech: SpeechService, signal?: AbortSignal, options: { cacheOnly?: boolean } = {}): Promise<SynthesizedLecture> {
   const deck = deckPlan(doc, deckDir)
   const clips = new Map<string, SynthesizedClip>()
   if (!deck.voice) return { deck, clips, failures: [], cuts: [] }
-  const synthesized = await synthesizePlan(speech, deck.plan, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {} }, signal)
+  const synthesized = await synthesizePlan(speech, deck.plan, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, cacheOnly: options.cacheOnly }, signal)
   const unsaid = new Map(synthesized.failures.map(failure => [failure.id, failure.reason]))
   const { track, cuts } = scriptTrack(deck.plan, synthesized.clips, {
     id: SCRIPT_TRACK,
@@ -122,7 +124,7 @@ export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech
   return { deck, track, preview: track, clips: synthesized.clips, failures: [], cuts }
 }
 
-export function synthesisFailureMessage(failure: SynthesisFailure): string {
+export function synthesisFailureMessage(failure: SynthesisFailure, cacheOnly = false): string {
   const text = failure.text.length > 40 ? `${failure.text.slice(0, 40)}…` : failure.text
-  return `lecture ${SCRIPT_TRACK}: 「${text}」 (section ${failure.section}) could not be said from the synthesis cache nor synthesized: ${failure.reason}`
+  return `lecture ${SCRIPT_TRACK}: 「${text}」 (section ${failure.section}) ${cacheOnly ? 'has no usable voiceover in the synthesis cache' : 'could not be said from the synthesis cache nor synthesized'}: ${failure.reason}`
 }

@@ -1,5 +1,5 @@
 import { DOCUMENT_FILES, speechEngineId } from '@lincyaw/kernel'
-import type { NodeServiceContext, SpeechWord, SynthesisRequest, TranscriptionRequest } from '@lincyaw/kernel'
+import type { NodeServiceContext, SpeechWord, SynthesisRequest, TranscriptionRequest, VoiceCatalog } from '@lincyaw/kernel'
 import type { DeckSpeechConfig } from '../domain/index.ts'
 import { applyLexicon, deckSpeechConfig } from '../domain/index.ts'
 import type { SpeechBackend, SynthesisResult } from './backend.ts'
@@ -26,6 +26,12 @@ export class CachedSpeech implements SpeechBackend {
     return this.#defaults.engine ?? this.#inner.defaultSynthesisEngine()
   }
 
+  /** Resolves the cache identity locally, including document defaults, without generating audio. */
+  async synthesisKey(request: SynthesisRequest): Promise<string | undefined> {
+    const engine = request.engine ?? await this.defaultSynthesisEngine()
+    return engine ? cacheKey({ ...request, engine: speechEngineId(engine) }, applyLexicon(request.text, request.lexicon)) : undefined
+  }
+
   /** The engine that transcribes without one named: the deck's transcription engine, else its default engine when that one transcribes. */
   async #transcriptionEngine(): Promise<string | undefined> {
     if (this.#defaults.transcribe) return this.#defaults.transcribe
@@ -37,6 +43,10 @@ export class CachedSpeech implements SpeechBackend {
 
   voices(engine: string | undefined, lang?: string, signal?: AbortSignal) {
     return this.#inner.voices(engine ?? this.#defaults.engine, lang, signal)
+  }
+
+  async voiceCatalog(engine: string | undefined, lang?: string, signal?: AbortSignal): Promise<VoiceCatalog> {
+    return this.#inner.voiceCatalog?.(engine ?? this.#defaults.engine, lang, signal) ?? { status: 'unavailable', reason: 'unknown', voices: [] }
   }
 
   async synthesizeThroughCache(request: SynthesisRequest, signal?: AbortSignal): Promise<{ result: SynthesisResult, file: string }> {

@@ -76,7 +76,7 @@ export function createLayoutStore() {
         isSideExpanded: false,
         sideWidth: SIDE_DEFAULT,
         conversationWidth: CONVERSATION_DEFAULT,
-        isConversationOpen: true,
+        isConversationOpen: false,
         rightbarWidth: null,
         isRightbarOpen: false,
         hasRightbarTrack: false,

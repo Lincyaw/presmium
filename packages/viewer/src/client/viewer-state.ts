@@ -23,7 +23,14 @@ export function createViewer(initial: IRDocument, options: ViewerOptions = {}): 
     doc, view, pageView, position, restoring, options: { ...options, renderer: options.renderer ?? 'web' }, section: id => doc.getSnapshot().sections.find(s => s.id === id),
     footnoteHref(identifier) { const anchor = `#${footnoteId(identifier)}`; const section = footnoteSections(doc.getSnapshot()).get(identifier); return section && options.sectionHref ? `${options.sectionHref(section).split('#')[0]}${anchor}` : anchor },
     go(target, remote = false) { const next = clampPosition(doc.getSnapshot(), target); const before = position.getSnapshot(); if (before.section === next.section && before.step === next.step) return; position.set(next); if (!remote && presenting()) windows?.send(next) },
-    show(target) { viewer.go(target); if (!presenting()) restoring.set(true) },
+    show(target) {
+      const before = position.getSnapshot()
+      viewer.go(target)
+      // Explicitly selecting the current step also pauses and repositions an
+      // active lecture through the existing navigation operation subscribers.
+      if (position.getSnapshot() === before) position.set({ ...before })
+      if (!presenting()) restoring.set(true)
+    },
     next() { const next = nextPosition(doc.getSnapshot(), position.getSnapshot()); if (next) viewer.go(next); return Boolean(next) },
     prev() { const next = prevPosition(doc.getSnapshot(), position.getSnapshot()); if (next) viewer.go(next); return Boolean(next) },
     setView(id) { const target = findView(id); if (!target || id === view.getSnapshot() || (options.slidesOnly && target.kind === 'page')) return; view.set(id); if (target.kind === 'page') pageView.set(id); restoring.set(true) },

@@ -96,6 +96,8 @@ export type PreviewReport =
   | { type: 'source-save', section: string, block: string, request: number, path: string, base: string, content: string, part?: 'definition' | 'block' }
   | { type: 'source-create', section: string, id: string, after?: string, request: number, revision: string }
   | { type: 'source-draft', dirty: boolean }
+  /** Aggregate unsaved body blocks, independent of generated-source and narration drafts. */
+  | { type: 'body-draft', dirty: boolean }
   | { type: 'page-create', section: string, id: string, request: number, revision: string }
   | { type: 'page-create-error', request: number, error: string }
   | { type: 'narrate', section: string, step: number, navigate?: boolean }
@@ -177,6 +179,7 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
     case 'source-save': return sourceTarget(m) && optional(m.part, sourcePart) && bounded(m.path, 4096) && bounded(m.base, 200) && text(m.content) && m.content.length <= MAX_EDITED ? { type: 'source-save', section: m.section as string, block: m.block as string, request: m.request as number, path: m.path as string, base: m.base as string, content: m.content, ...m.part === undefined ? {} : { part: m.part as 'definition' | 'block' } } : undefined
     case 'source-create': return bounded(m.section, 200) && text(m.id) && /^scene-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(m.id) && request(m.request) && bounded(m.revision, 200) && optional(m.after, (value): value is string => bounded(value, 200)) ? { type: 'source-create', section: m.section, id: m.id, request: m.request, revision: m.revision, ...m.after === undefined ? {} : { after: m.after as string } } : undefined
     case 'source-draft': return typeof m.dirty === 'boolean' ? { type: 'source-draft', dirty: m.dirty } : undefined
+    case 'body-draft': return typeof m.dirty === 'boolean' ? { type: 'body-draft', dirty: m.dirty } : undefined
     case 'page-create': return bounded(m.section, 200) && pageId(m.id) && request(m.request) && bounded(m.revision, 200) ? { type: 'page-create', section: m.section, id: m.id, request: m.request, revision: m.revision } : undefined
     case 'page-create-error': return request(m.request) && bounded(m.error, 4000) ? { type: 'page-create-error', request: m.request, error: m.error } : undefined
     case 'narrate': return text(m.section) && step(m.step) && optional(m.navigate, (value): value is boolean => typeof value === 'boolean') ? { type: 'narrate', section: m.section, step: m.step, ...m.navigate === undefined ? {} : { navigate: m.navigate as boolean } } : undefined

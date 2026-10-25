@@ -493,14 +493,14 @@
 .pm-ui-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem;
+  gap: calc(var(--pm-space-1) + var(--pm-space-px));
 }
 
 .pm-ui-badge {
   display: inline-flex;
   align-items: center;
   gap: var(--pm-space-1);
-  padding: 0.125rem 0.5rem;
+  padding: var(--pm-space-px) var(--pm-space-2);
   border-radius: var(--pm-radius-chip);
   background: var(--pm-color-sunk);
   color: var(--pm-color-muted);
@@ -531,7 +531,7 @@
 }
 
 .pm-ui-badge--pill {
-  padding: 0 0.5rem;
+  padding: 0 var(--pm-space-2);
   border-radius: var(--pm-radius-pill);
   font-family: var(--pm-font-sans);
   font-weight: var(--pm-weight-medium);

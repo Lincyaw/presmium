@@ -47,6 +47,9 @@ export function volcengineEngine(engine: EngineDefinition): EngineAdapter {
     async voices(lang) {
       return VOICES.filter(voice => speaks(voice, lang))
     },
+    async voiceCatalog(lang) {
+      return { status: 'available', source: 'bundled', voices: VOICES.filter(voice => speaks(voice, lang)) }
+    },
 
     cloned: volcengineCloned,
 

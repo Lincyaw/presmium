@@ -1,5 +1,5 @@
 import { serverClient } from '@lincyaw/host'
-import type { SpeechService, Synthesis } from '@lincyaw/kernel'
+import type { SpeechService, Synthesis, VoiceCatalog } from '@lincyaw/kernel'
 import type { EnginesResponseBody, SynthesisResponseBody, TranscriptionResponseBody, VoicesResponseBody } from '../domain/index.ts'
 import { deckSpeechConfig, PROTOCOL_PATH, SPEECH_ID, synthesisRequestBody, transcriptOf } from '../domain/index.ts'
 
@@ -28,6 +28,11 @@ export function browserSpeech(config: Record<string, unknown>): SpeechService {
     async voices(engine, lang) {
       const query = new URLSearchParams({ engine, ...lang ? { lang } : {} })
       return (await call<VoicesResponseBody>(`audio/voices?${query}`)).voices
+    },
+    async voiceCatalog(engine, lang, signal) {
+      const selected = engine ?? defaults.engine
+      const query = new URLSearchParams({ ...selected ? { engine: selected } : {}, ...lang ? { lang } : {} })
+      return call<VoiceCatalog>(`audio/voice-catalog?${query}`, { signal })
     },
     async synthesize(request, signal): Promise<Synthesis> {
       const body = synthesisRequestBody({ ...request, ...request.engine || defaults.engine ? { engine: request.engine ?? defaults.engine } : {} })

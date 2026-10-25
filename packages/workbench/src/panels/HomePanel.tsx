@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { errorMessage } from '@lincyaw/kernel'
 import type { DocumentSummary } from '@lincyaw/kernel'
-import { PmButton, PmDialog, PmEmpty, PmField, PmIcon, PmMenu, PmNotice } from '../components.tsx'
+import { PmButton, PmDialog, PmEmpty, PmInput, PmSelect, PmIcon, PmMenu, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 
 type Editing =
@@ -62,7 +62,7 @@ export function HomePanel() {
     <section className="pmw-home" aria-labelledby="pmw-home-title">
       <header className="pmw-home__bar">
         <h1 id="pmw-home-title" className="pmw-home__title">{answer?.title ?? t.documents}</h1>
-        {operable && <PmButton variant="accent" icon="plus" onClick={() => setEditing({ op: 'create' })}>{t.newDocument}</PmButton>}
+        {operable && <PmButton variant="primary" icon="plus" disabled={working} onClick={() => { setError(undefined); setEditing({ op: 'create' }) }}>{t.newDocument}</PmButton>}
       </header>
       {failure && <PmNotice tone="danger">{bundleDisabled ? t.bundleDisabled : failure}</PmNotice>}
       {done && <PmNotice tone="ok">{done}</PmNotice>}
@@ -71,10 +71,7 @@ export function HomePanel() {
       <div className="pmw-home__heading-row">
         <h2 className="pmw-home__heading">{t.allDocuments}</h2>
         {documents.length > 6 && (
-          <label className="pm-ui-search pmw-home__search">
-            <PmIcon name="search" size={16} />
-            <input type="search" value={query} placeholder={t.search} aria-label={t.search} onChange={event => setQuery(event.target.value)} />
-          </label>
+          <div className="pmw-home__search"><PmInput label={t.search} type="search" prefixIcon="search" value={query} placeholder={t.search} onChange={event => setQuery(event.target.value)} /></div>
         )}
       </div>
       {answer && documents.length === 0
@@ -92,7 +89,7 @@ export function HomePanel() {
                       {operable && (
                         <PmMenu
                           label={t.more(doc.title)}
-                          items={[{ id: 'rename', label: t.rename, icon: 'edit' }, { id: 'copy', label: t.makeCopy, icon: 'copy' }, { id: 'delete', label: t.remove, icon: 'trash', danger: true }]}
+                          items={[{ id: 'rename', label: t.rename, icon: 'edit', disabled: working }, { id: 'copy', label: t.makeCopy, icon: 'copy', disabled: working }, { id: 'delete', label: t.remove, icon: 'trash', danger: true, disabled: working }]}
                           onSelect={(id) => {
                             if (id === 'copy') {
                               const title = t.copyTitle(doc.title)
@@ -100,7 +97,7 @@ export function HomePanel() {
                                 await workbench.copyDocument(doc.dir, title)
                                 return t.copied(title)
                               })
-                            } else setEditing({ op: id as 'rename' | 'delete', doc })
+                            } else { setError(undefined); setEditing({ op: id as 'rename' | 'delete', doc }) }
                           }}
                         />
                       )}
@@ -152,11 +149,13 @@ function DocumentDialog({ editing, templates, error, working, onClose, onCreate,
   const [template, setTemplate] = useState(templates.includes('default') ? 'default' : templates[0] ?? '')
   const label = editing.op === 'create' ? t.newDocument : editing.op === 'rename' ? t.rename : t.remove
   return (
-    <PmDialog open label={label} closeLabel={t.close} name="pmw-operation" onClose={onClose}>
+    <PmDialog open label={label} closeLabel={t.close} name="pmw-operation" busy={working} onClose={onClose}>
       <form
         className="pmw-operation"
+        onKeyDown={event => { if (event.key === 'Enter' && (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229)) event.preventDefault() }}
         onSubmit={(event) => {
           event.preventDefault()
+          if (working) return
           if (editing.op === 'create') onCreate(title.trim(), template || undefined)
           else if (editing.op === 'rename') onRename(editing.doc, title.trim())
           else onDelete(editing.doc)
@@ -165,21 +164,17 @@ function DocumentDialog({ editing, templates, error, working, onClose, onCreate,
         {editing.op === 'delete'
           ? <><p>{t.confirmRemove(editing.doc.title)}</p><p className="pmw-muted">{t.removeHint}</p></>
           : (
-              <PmField label={t.title}>
-                <input className="pm-ui-input" value={title} required autoFocus placeholder={t.titlePlaceholder} onChange={event => setTitle(event.target.value)} />
-              </PmField>
+              <PmInput label={t.title} density="regular" value={title} required autoFocus readOnly={working} placeholder={t.titlePlaceholder} onChange={event => setTitle(event.target.value)} />
             )}
         {editing.op === 'create' && templates.length > 1 && (
-          <PmField label={t.template}>
-            <select className="pm-ui-select" value={template} onChange={event => setTemplate(event.target.value)}>
+            <PmSelect label={t.template} density="regular" value={template} disabled={working} onChange={event => setTemplate(event.target.value)}>
               {templates.map(name => <option key={name} value={name}>{name}</option>)}
-            </select>
-          </PmField>
+            </PmSelect>
         )}
         {error && <PmNotice tone="danger">{error}</PmNotice>}
         <div className="pmw-operation__actions">
-          <PmButton onClick={onClose}>{t.cancel}</PmButton>
-          <PmButton type="submit" variant={editing.op === 'delete' ? 'danger' : 'primary'} disabled={working || (editing.op !== 'delete' && !title.trim())}>
+          <PmButton disabled={working} onClick={onClose}>{t.cancel}</PmButton>
+          <PmButton type="submit" variant={editing.op === 'delete' ? 'danger' : 'primary'} loading={working} disabled={editing.op !== 'delete' && !title.trim()}>
             {editing.op === 'create' ? t.create : editing.op === 'rename' ? t.save : t.remove}
           </PmButton>
         </div>
