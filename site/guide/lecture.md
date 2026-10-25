@@ -7,7 +7,7 @@ translations: { en: lecture.en.md }
 (guide)=
 # 作者指南
 
-Presmium 把一份 MyST Markdown 讲义编译为中间表示（IR），再由渲染端生成网页、幻灯片（Slidev）、Jupyter notebook 与带语音的讲授。讲义是纯文本，可以和它讲解的代码放在同一个 git 仓库里；讲义中的代码可以引用仓库中真实的代码、在构建时运行、在读者的浏览器中运行。
+Presmium 把一份 MyST Markdown 讲义编译为中间表示（IR），再由渲染端生成网页、幻灯片、Jupyter notebook 与带语音的讲授。讲义是纯文本，可以和它讲解的代码放在同一个 git 仓库里；讲义中的代码可以引用仓库中真实的代码、在构建时运行、在读者的浏览器中运行。
 
 这份指南面向写讲义的人：从安装和第一份文稿开始，依次讲语法、各种媒介、代码的执行、讲授与语音、AI 助手与读者问答、工作区与发布。开发插件的人另看[插件开发指南](../plugins/lecture.md)。
 
@@ -35,8 +35,6 @@ presmium new        # 问你要哪种项目（讲义、工作区或插件），�
 ---
 title: 二分查找
 lang: zh-CN
-plugins:
-  - '@lincyaw/addon-core'
 ---
 
 # 二分查找
@@ -87,7 +85,6 @@ def search(xs, x):
 title: BPE 分词
 lang: zh-CN                 # 文稿语言：<html lang>、界面语言与写进产物的文字都按它，默认 zh-CN
 plugins:                    # 用到的插件包
-  - '@lincyaw/addon-core'
   - '@lincyaw/addon-code'
 presmium:                   # 各插件的配置，键为插件 ID
   presmium.code: { repo: https://github.com/org/repo }
@@ -124,7 +121,7 @@ sectionDepth: 2             # 开始章节的标题级别，默认 2
 ## 媒介限定与排版提示
 
 - `:::{only} web, notebook` 让内容只出现在列出的渲染端。
-- `:::{hints}` 按渲染端给排版提示，例如 `slides: { layout: center }` 写进这一页的 Slidev 头部，`web: { layout: scrolly }` 让这一节在网页中用滚动叙事版式。
+- `:::{hints}` 按渲染端给排版提示，例如 `slides: { layout: center }` 设这一页幻灯片的版式（`default`、`cover`、`center`、`full`，另有 `class` 与缩放 `zoom`），`web: { layout: scrolly }` 让这一节在网页中用滚动叙事版式。
 - `:::{config}` 给插件只在本章节生效的配置。
 - `{include}` 引入另一个文件（路径相对于当前文件），长讲义可以每章一个文件。
 
@@ -147,7 +144,7 @@ sectionDepth: 2             # 开始章节的标题级别，默认 2
 | 渲染端 | 包 | 产物 |
 |---|---|---|
 | `web` | `@lincyaw/web` | 静态网站：每章一页，可以搜索，带导航与页脚 |
-| `slides` | `@lincyaw/render-slides` | Slidev 幻灯片，默认主题“书卷”；可导出 PDF 与 PNG |
+| `slides` | `@lincyaw/render-slides` | 幻灯片：每节一页，画在固定画布上（默认宽 980、16:9），版式“书卷”；可导出 PDF、图片与 PowerPoint（需要安装 `playwright-chromium`） |
 | `notebook` | `@lincyaw/render-notebook` | Jupyter notebook：讲解是 Markdown 单元格，代码是代码单元格 |
 | `lecture` | `@lincyaw/addon-lecture` | 讲授：讲解合成为语音，配合页面上的操作回放 |
 
@@ -175,7 +172,7 @@ sectionDepth: 2             # 开始章节的标题级别，默认 2
 ## 构建时与浏览器中
 
 - `:run:`（或 `:run: compile`）让代码块在构建时运行，输出写进 IR，每种媒介都显示它。
-- `:run: live` 让读者在浏览器中运行：网页的代码块有运行按钮，浏览器中的 Python 由 Pyodide 执行，离线也可以。`:run: both` 两者都要。
+- `:run: live` 让读者在浏览器中运行：网页与幻灯片的代码块有运行按钮，“编辑代码”可以先改再运行（Mod-Enter 运行，“还原代码”恢复原样），浏览器中的 Python 由 Pyodide 执行，离线也可以。`:run: both` 两者都要。
 - 同一个 `:session:` 的代码块共享解释器，前一块定义的变量后一块可以用。
 - `:echo: false` 只显示输出；`display()` 的对象、图片与表格录制为富输出。
 

@@ -1,4 +1,4 @@
-/* The viewer app's page: the same resets as the web form's site (VitePress's), so that components look the same. */
+/* The viewer app's page: one set of resets for every form, so that components look the same everywhere. */
 
 *,
 ::before,

@@ -8,7 +8,7 @@ import type { Component, Ref, ShallowRef } from 'vue'
 import { defineAsyncComponent, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import { createViewerNavigation } from './host.ts'
 
-/** The document's runtime, apart from the shell that shows it (VitePress's site, or the workbench's viewer app). */
+/** The document's runtime, apart from the shell that shows it (the site, the slides page, or the workbench's preview). */
 
 export interface ViewerModule {
   name: string

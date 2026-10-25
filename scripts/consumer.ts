@@ -12,7 +12,7 @@ export const ROOT = fileURLToPath(new URL('..', import.meta.url))
 
 export const FIXTURES = join(ROOT, 'e2e/fixtures/consumer')
 
-export const ESSENTIALS = ['@lincyaw/presmium', '@lincyaw/kernel', '@lincyaw/addon-core']
+export const ESSENTIALS = ['@lincyaw/presmium', '@lincyaw/kernel']
 
 export const STUDIO = [...ESSENTIALS, '@lincyaw/studio']
 

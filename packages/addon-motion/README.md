@@ -17,7 +17,7 @@ plugins:
   - '@lincyaw/addon-motion'
 ```
 
-It is a Presmium plugin and a Slidev addon: its component works on the web page and in the slides. It needs `@lincyaw/cli` and the renderers in the same project, and declares the Presmium packages it shares with them as peer dependencies (Presmium 1.x). The animation libraries come with it.
+It is a Presmium plugin: its component works on the web page and in the slides. It needs `@lincyaw/cli` and the renderers in the same project, and declares the Presmium packages it shares with them as peer dependencies (Presmium 1.x). The animation libraries come with it.
 
 ## What it provides
 

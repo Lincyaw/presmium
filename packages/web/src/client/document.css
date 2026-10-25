@@ -1,7 +1,6 @@
 /*
- * The typography of a document as the web form shows it (`.pm-document`, the host of the page view): the same in
- * VitePress's site, where it is loaded after VitePress's own document styles, and in the workbench's viewer app, which
- * has no VitePress at all. Every property VitePress's document styles set on these elements is set here.
+ * The typography of a document as the viewer shows it (`.pm-document`, the host of the page view and of the slides):
+ * the same on a built site, in a dev server and in the workbench.
  */
 
 .pm-document :is(h1, h2, h3, h4, h5, h6) {

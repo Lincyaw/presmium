@@ -2,13 +2,13 @@
 title: Author guide
 lang: en
 description: Write lectures in MyST Markdown and publish them as web pages, slides, notebooks and narrated lectures
-translationOf: { entry: lecture.md, digest: 7a4ba99423cbd87f5d820a91503db80f7f920b92e0a6925b07c3e055b481e277 }
+translationOf: { entry: lecture.md, digest: 00805ad568099cb89fe8055bd8024fa00fbcd683e757f5efac294a7243b273c8 }
 ---
 
 (guide)=
 # Author guide
 
-Presmium compiles a lecture written in MyST Markdown into an intermediate representation (IR), from which renderers make web pages, slides (Slidev), Jupyter notebooks and narrated lectures. A lecture is plain text that can live in the same git repository as the code it explains; its code blocks can quote the repository's real code, run when it is built, and run in the reader's browser.
+Presmium compiles a lecture written in MyST Markdown into an intermediate representation (IR), from which renderers make web pages, slides, Jupyter notebooks and narrated lectures. A lecture is plain text that can live in the same git repository as the code it explains; its code blocks can quote the repository's real code, run when it is built, and run in the reader's browser.
 
 This guide is for people who write lectures. It starts with installing Presmium and a first document, then covers the syntax, the media, running code, lectures and speech, the AI assistant and reader questions, workspaces and publishing. People who write plugins should read the [plugin guide](../plugins/lecture.md).
 
@@ -36,8 +36,6 @@ A document is a directory whose entry file is `lecture.md`:
 ---
 title: Binary search
 lang: en
-plugins:
-  - '@lincyaw/addon-core'
 ---
 
 # Binary search
@@ -88,7 +86,6 @@ Each finding is printed as `<file>:<line>  <severity>  <message>  (<check id>)`.
 title: Byte pair encoding
 lang: en                    # the document's language: <html lang>, the interface and the text written into outputs; default zh-CN
 plugins:                    # the plugin packages it uses
-  - '@lincyaw/addon-core'
   - '@lincyaw/addon-code'
 presmium:                   # the plugins' configuration, keyed by plugin id
   presmium.code: { repo: https://github.com/org/repo }
@@ -125,7 +122,7 @@ On-screen content shows at step 0. `:reveal:` makes a block appear at the next s
 ## Media and layout hints
 
 - `:::{only} web, notebook` keeps content in the listed renderers only.
-- `:::{hints}` gives layout hints per renderer: `slides: { layout: center }` goes into the slide's Slidev headmatter, `web: { layout: scrolly }` gives the section a scrollytelling layout on the web page.
+- `:::{hints}` gives layout hints per renderer: `slides: { layout: center }` sets the slide's layout (`default`, `cover`, `center`, `full`, with `class` and `zoom` besides), `web: { layout: scrolly }` gives the section a scrollytelling layout on the web page.
 - `:::{config}` gives plugins configuration for this section only.
 - `{include}` includes another file (relative to the current one), so a long lecture can have a file per chapter.
 
@@ -148,7 +145,7 @@ On-screen content shows at step 0. `:reveal:` makes a block appear at the next s
 | Renderer | Package | Output |
 |---|---|---|
 | `web` | `@lincyaw/web` | A static site: a page per chapter, search, navigation and footer |
-| `slides` | `@lincyaw/render-slides` | Slidev slides with the default theme Book (书卷); export to PDF and PNG |
+| `slides` | `@lincyaw/render-slides` | Slides: a page per section on a fixed canvas (980 wide, 16:9 by default) in the Book (书卷) layout; export to PDF, pictures and PowerPoint (install `playwright-chromium`) |
 | `notebook` | `@lincyaw/render-notebook` | A Jupyter notebook: narration in Markdown cells, code in code cells |
 | `lecture` | `@lincyaw/addon-lecture` | A lecture: the narration synthesized as speech, replayed with the page's operations |
 
@@ -176,7 +173,7 @@ The original's headmatter declares `translations: { en: lecture.en.md }`; the tr
 ## At build time and in the browser
 
 - `:run:` (or `:run: compile`) runs a code block when the document is built; the output goes into the IR and every medium shows it.
-- `:run: live` lets readers run it in the browser: code blocks on the web page get a run button, and Python runs in Pyodide, offline too. `:run: both` does both.
+- `:run: live` lets readers run it in the browser: code blocks on the web page and in the slides get a run button, and Edit the code changes it before it runs (Mod-Enter runs it, Restore the code puts it back), and Python runs in Pyodide, offline too. `:run: both` does both.
 - Code blocks of the same `:session:` share an interpreter: a later block uses what an earlier one defined.
 - `:echo: false` shows the output only; objects passed to `display()`, images and tables are recorded as rich output.
 
