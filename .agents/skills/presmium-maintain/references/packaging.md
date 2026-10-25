@@ -23,7 +23,8 @@ Copy `packages/addon-guide/package.json` and adapt it. Official plugins are name
   `engines.node` equal to the root's. `files` lists only what is published (never `test/`) and includes
   every file that `exports` and `bin` point to.
 - **Version.** Public packages form one fixed version group (`.changeset/config.json` `fixed`) and share
-  one version, currently in the `rc` prerelease. `@lincyaw/dsh`, `@lincyaw/workbench` and `@lincyaw/studio`
+  one version, currently in the `rc` prerelease (`.changeset/pre.json`; the version in any public
+  `package.json`). `@lincyaw/dsh`, `@lincyaw/workbench` and `@lincyaw/studio`
   are outside the group: 0.x and experimental (`docs/design-dsh.md` section 12).
 - **Workspace ranges.** Dependencies on other monorepo packages are written `workspace:`. A plugin's
   dependencies on `@lincyaw/kernel`, `host`, `viewer` and `compiler` are peer dependencies written
@@ -37,12 +38,15 @@ Copy `packages/addon-guide/package.json` and adapt it. Official plugins are name
   official plugin declares both and is compatible.
 - **Install.** After adding a package or dependency run `pnpm install` at the root and commit
   `pnpm-lock.yaml`.
-- **The example.** The only public example is the two lectures of `examples/animations/`. A new plugin's
-  verification document goes into `e2e/fixtures/<group>/` with a spec `e2e/<group>.spec.ts`
-  ([testing](testing.md)); do not mix feature demos into the example. To use the plugin there, add it to
-  `examples/animations/package.json` and to the lecture's `plugins`.
-- **Tests.** `packages/<pkg>/test/*.test.ts` writes a document into a temporary directory with `plugins`
-  set to the package's absolute path and runs the real CLI (model: `packages/addon-exec/test/compile.test.ts`).
+- **The example.** The only public example is the two documents of `examples/animations/`. A new plugin's
+  verification document goes into `e2e/fixtures/<group>/` ([testing](testing.md)); do not mix feature demos
+  into the example. To use the plugin there, add it to `examples/animations/package.json` and to the
+  document's `plugins`.
+- **Tests.** Under the owner's current rule (SKILL.md, Verify) a new package gets no tests; verify it by a
+  real build of its fixture document. When the owner asks for tests, the existing shape is: a spec
+  `e2e/<group>.spec.ts` for the fixture, and `packages/<pkg>/test/*.test.ts` that writes a document into a
+  temporary directory with `plugins` set to the package's absolute path and runs the real CLI (model:
+  `packages/addon-exec/test/compile.test.ts`).
 
 ## A new directive
 
@@ -81,9 +85,10 @@ checks frontmatter, links between `references/` files, that every directive has 
 
 A change to a public package adds a changeset (`pnpm changeset`: pick packages and bump, one sentence for
 users); tests, docs and examples need none. `pnpm release:check` packs every public package as it would be
-published without uploading. Shared loading or packaging changes are verified by the consumer install:
-`packages/cli/test/consumer.test.ts`, `e2e/consumer.spec.ts`, or `pnpm consumer [<directory>]` (`--studio`
-also installs the studio, about 865 MB). Publishing itself is the maintainers' steps in
+published without uploading. Shared loading or packaging changes are verified by a consumer install: `pnpm consumer [<directory>]`
+packs the packages and installs `presmium` outside the monorepo (`--studio` also installs the studio, about
+865 MB); when the owner asks for tests, `packages/cli/test/consumer.test.ts` and `e2e/consumer.spec.ts` do
+the same. Publishing itself is the maintainers' steps in
 `.changeset/README.md`; do not publish unless asked.
 
 ## The VS Code extension
@@ -91,7 +96,7 @@ also installs the studio, about 865 MB). Publishing itself is the maintainers' s
 `pnpm --filter presmium-vscode package:vsix` builds the VSIX for the current OS and processor. The language
 server and the web rendering runtime are deployed into the VSIX from the lockfile; a symlink into the
 development tree is not a packaged dependency. Run `packages/vscode/test/build.test.ts` to verify that the
-unpacked service starts a preview outside the repository, and accept the package in an ordinary VS Code
-window. `.github/workflows/vscode.yml` builds and verifies it on six platforms and attaches the files to a
+unpacked service starts a preview outside the repository (a test: run it when the owner asks), and accept the
+package in an ordinary VS Code window (the real run). `.github/workflows/vscode.yml` builds and verifies it on six platforms and attaches the files to a
 GitHub Release when one is published. Install and build steps are maintained in one place,
 `packages/vscode/README.md`.

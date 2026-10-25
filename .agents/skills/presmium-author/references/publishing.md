@@ -1,37 +1,48 @@
 # Publishing and reproduction
 
-Use this to deliver to students, publish a course site, add a translation, or let someone check out the source and reproduce the results. Settle what is delivered first, then build the matching output.
+Read this to deliver a document to students, publish a course site, add a translation, or let someone check out the source and reproduce the results. Settle what is delivered first, then build the matching output.
 
 ## Content for students
 
-Mark teacher-only blocks with `:audience: teacher` on the directive; wrap narration in `{only}` to give it an audience. For a whole section use `{audience} teacher` at the top of the section; for a whole included file put the audience on `{include}`. The syntax is under `{audience}` in the [directive reference](directives.md).
+Content can be marked for an audience, such as `teacher`; a build for another audience leaves it out. Content without a mark is for everyone.
 
-Build from the lecture directory into a separate directory, so nothing from an earlier full build gets mixed in:
+- A block written as a directive: add the option `:audience: teacher`.
+- Narration (plain paragraphs take no options): wrap it in `{only}` with the forms it should appear in, and put the audience on that:
+
+  ```md
+  :::{only} web, slides, notebook
+  :audience: teacher
+  First draw the two branches on the whiteboard.
+  :::
+  ```
+
+- A whole section: put `:::{audience} teacher` (with an empty body, closed by `:::`) at the top of the section.
+- A whole included file: put `:audience: teacher` on its `{include}`. Headings in the included file still start sections, and those sections are only for that audience. Text written after the `{include}` without a new heading may still belong to the last included section; start a new section with a heading after it, and read the related check messages.
+
+The details are under `{audience}` and the common options in the [directive reference](directives.md).
+
+Build the student version from the document folder into a separate output folder, so nothing from an earlier full build gets mixed in:
 
 ```sh
 presmium check --audience student
 presmium build --audience student --out dist-student
 ```
 
-The build scans whether removed content came back into the student version through output or other files. When `presmium.audience` appears, trace the source and fix the marking or the output; hiding page elements is not a fix. Open the student output and check for teacher narration, answers and media.
+The build then scans every file it writes for sentences of the removed content, in case they came back through code output or other files. Such a leak is reported with the diagnostic id `presmium.audience`; trace it to the source and fix the marking or the output. Hiding page elements is not a fix. Open the student output yourself and check for teacher narration, answers and media.
 
-`presmium serve` and `presmium dev` serve the full lecture; they do not filter by reader. Share the static address of the student output; classroom interaction needs a separate classroom service, see `presmium-present`.
-
-When an `{include}` with an audience brings in a new section, the content after it may still belong to that section. Start a new section with a heading after it, and read the related check messages.
+`presmium serve` and `presmium dev` always serve the full content; they do not filter by audience. Share the address of the student output's static site; classroom interaction needs a separate classroom service, see the presmium-present skill.
 
 ## Links and files published with the output
 
-Plain links and images are relative to the source file that contains them; `/...` means the lecture's `public/` directory. Linked files are published with the output. Code anchors, by contrast, are relative to the git root. Do not switch to absolute local paths because the two rules got mixed up.
+Plain links and images are relative to the source file that contains them; a path starting with `/` points into the document's `public/` folder. Linked files are published with the output. Code anchors, by contrast, are relative to the git repository root (see [Code references and execution](code.md)). Do not switch to absolute local paths because the two rules got mixed up.
 
-A link to a directory publishes only its regular files; hidden directories and `node_modules` are not published. A direct link to a single file can still publish a hidden file, so never link to credential files. Files outside the lecture's repository are not published.
+A link to a folder publishes only its regular files; hidden folders and `node_modules` are not published. A direct link to a single file publishes it even when it is hidden, so never link to credential files. Files outside the document's repository are not published.
 
-Cross-document links in a workspace point at the other document's entry, e.g. `../week2/lecture.md#merge`. A workspace build turns them into the matching pages; a build of a single lecture does not publish the other one, and `presmium.links` says so.
-
-`presmium check` checks local links and fragments. To check external links use `presmium check --external-links`, which needs lychee installed on the machine. `checks.forbid` (a list of JavaScript regular expressions in the frontmatter) reports internal words or IDs that must not be published, in every medium; it does not replace audience marking.
+`presmium check` checks local links and their `#` fragments. To check external links too, run `presmium check --external-links`, which needs lychee installed on the machine. To make sure internal words or ids are never published, list them as JavaScript regular expressions under `checks.forbid` in the frontmatter; a match in any form is reported. This does not replace audience marks.
 
 ## Adding a translation
 
-In the original's frontmatter write `translations: { en: lecture.en.md }`. In the translation's frontmatter write the title, language and source:
+In the original's frontmatter write `translations: { en: lecture.en.md }` (language, then the translation's entry file). In the translation's frontmatter write its title, language and source:
 
 ```yaml
 title: Tokenization
@@ -41,20 +52,28 @@ translationOf:
   digest: '<the digest that presmium check reports>'
 ```
 
-A translation reuses the original's plugins and renderer configuration. Give its sections the same explicit labels as the original so switching language stays at the same place. After translating, run `presmium check`, review the content, and fill in the 64-character digest from the message. When the original changes, review the translation first, then update the digest.
+A translation uses the original's plugins and form settings. Give its sections the same labels (`(name)=`) as the original, so that switching language stays at the same place. After translating, run `presmium check`, review the content, and copy the 64-character digest from the check's message into `digest`. When the original changes, the check warns that the translation is out of date and gives the new digest: update the translation first, then the digest.
 
-The web build publishes translations; slides and notebooks have the original only. The workspace preview of `presmium serve` currently shows only the original, so build to verify a translation. A student build filters and scans translations too.
+Only the web page is published in several languages; the slides and the notebook are built from the original only. The workspace preview of `presmium serve` currently shows only the original, so build to verify a translation. A student build filters and scans the translations too.
 
-## Combining lectures into a course
+## Combining documents into a course
 
-Run `presmium build` at the root of a workspace (the directory containing `presmium.workspace.yaml`) to get the whole site in `dist/web/`; running it in a document directory builds that document only. A workspace should have its own git repository.
+A workspace is a folder with `presmium.workspace.yaml` that holds several documents. Run `presmium build` at its root to get the whole site in `dist/web/`; running it in a document folder builds that document only. A workspace should have its own git repository.
 
-Keep links between documents pointing at the source entries. Set `site.base` to match the deployment address, for example the sub-path of a project site; set navigation, footer and home page as needed, and do not add settings the user did not ask for. After publishing, verify the home page, the cross-document links and the language switch.
+Link between documents by pointing at the other document's entry file, for example `../week2/lecture.md#merge` (`#merge` is a section label). A workspace build turns these links into links to the matching pages. A build of a single document does not publish the other document, and the diagnostic `presmium.links` says so.
+
+In `presmium.workspace.yaml`, under `site:`, set `base` to match the deployment address (for example the sub-path of a project site), and set the navigation (`nav`), footer (`footer`) and home page as needed; do not add settings the user did not ask for. After publishing, open the home page, follow the links between documents and try the language switch.
 
 ## What others need to reproduce the results
 
-Keep with the source `.presmium/freeze/` (execution recordings), `.presmium/anchors.lock.json` (anchors), `.presmium/assets/` (localized assets) and `.presmium/drawings/` (pen annotations). With a synthesized lecture also keep `.presmium/speech/` and `.presmium/speech.lock.json`, so other people's builds do not call the speech service again.
+Commit these with the source, all under `.presmium/` in the document folder:
 
-A recorded lecture's `lectures/<id>/track.json` records the actions and their timing; audio and video are ignored by default, so committing only the track does not carry the voice and the recording. Store the media separately or use LFS as the project prefers.
+- `freeze/`: the recorded output of code runs.
+- `anchors.lock.json`: the resolved code anchors.
+- `assets/`: local copies of the remote images and media the document uses.
+- `drawings/`: the presenter's pen drawings on the slides.
+- With a synthesized lecture, also `speech/` and `speech.lock.json`, so other people's builds do not call the speech service again.
 
-`dist/` and the working directories `.presmium/web`, `slides`, `dev` and the like are not source for reproduction. Check the project's ignore rules; do not commit all of `.presmium/`. Starting a site, PDF and offline delivery are in `presmium-present`.
+A recorded lecture's `lectures/<id>/track.json` records the actions and their timing. Its audio and video are ignored by git by default, so committing only the track carries neither the voice nor the recording; store the media separately or with Git LFS, as the project prefers.
+
+`dist/` and the working folders `.presmium/web`, `.presmium/slides`, `.presmium/dev` and the like are not source; they are rebuilt. Check the project's ignore rules; do not commit all of `.presmium/`. Serving a site, PDF export and offline delivery are in the presmium-present skill.
