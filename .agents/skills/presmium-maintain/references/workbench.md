@@ -51,25 +51,59 @@ committed to the workspace's git repository) or rejects.
 
 ## Editing on the document
 
+The workbench has three separate entry points: document editing, compilation and presentation, and video
+production. Their shared authority is MyST source and the compiled IR revision, not UI state. Prioritise
+document editing first: React and BlockNote, page operations, formatting, save/reload and recovery. It
+contains no script, caption or voice controls. Editing and saving must not switch to another entry point
+or start presentation; retained video drafts must not force a document editor to open video controls.
+The current implementation boundary is recorded in `docs/rfc-workbench-uiux.md`.
+
 Pages contain blocks and correspond to IR sections (one slide in Present). The page list's plus and the block menu's New page insert a distinct page after the current one; adding an ordinary block stays within its page. Flush body drafts before a page insertion, preserve existing source and narration, and focus the new page only once it is present in the IR. Verify insertion order, independent editing and presentation, and undo/redo; refuse ambiguous cross-file boundaries instead of guessing.
 
 Page renaming and moving use `page-edit.ts` to slice the current entry source rather than re-render the
-document. Pin original section IDs before renaming or reordering peers, including duplicate titles; keep
-cover and chapter boundaries fixed. The bounded implementation refuses includes, MyST `+++` cells,
-formatted titles and unclear ranges; page copy and deletion remain separate capabilities to implement. Verify Chinese IDs,
+document. Pin original section IDs before renaming (including native title edits) or reordering peers, including duplicate titles; keep
+cover and chapter boundaries fixed. The bounded implementation refuses includes, MyST `+++` cells
+and unclear ranges; dialog renames also refuse formatted titles, while native edits retain their markup
+through the existing text lens. Page copy and deletion remain separate capabilities to implement. Verify Chinese IDs,
 duplicate titles, BOM and CRLF, literal Markdown in titles, and that blocks, narration and steps retain their
 bindings. `IrAnswer.sourceCapabilities` comes from the actual compiler, not authored metadata; adding a
 Unicode label requires `unicodePageTargets: true`. An older service without it must reject the change
 before writing and ask the author to restart the service. See `docs/ir.md` section 2.2 for accepted syntax.
 
 Before these source operations, await the preview's optional one-shot `flush` barrier outside the workbench
-write queue, then save step-script drafts and join the serial queue. The preview commits in-place titles
+write queue, then join already submitted serial writes. Document editing does not submit retained video
+script drafts; video operations may explicitly request that additional barrier. The preview commits in-place titles
 first, waits for body acknowledgements and composition, and waits only for source writes the author
 already submitted; hidden dirty or restored source drafts block the operation instead of being adopted.
 Bind replies to the document, preview instance, generation and request. Confirm the saved source version
 and newer IR before acknowledging a changed body or page; use conditional IR reads for that bounded wait,
 without opening another SSE stream per save. Verify an immediate rename after typing, delayed saves,
 offline failure, retry with the title draft retained, and stale replies after a document switch.
+
+Document undo and redo first use the focused body editor's native history through the optional
+`document-history` preview capability. Initial content and external IR projections are baselines, not
+undoable author changes. Falling back to saved source revisions, or reverting a revision, requires the
+document flush barrier first. Verify that clicking toolbar Undo immediately after typing reverses the
+text transaction rather than deleting a previously created page; delayed history replies must not clear
+another document's busy state.
+
+An empty paragraph placeholder has no Markdown IR block. Clearing a body must remove its former source
+instead of emitting an invisible labelled slide; inserting text again must keep one unique source label.
+Check empty-page undo and redo against both the saved source and the compiled block count.
+
+Restoring a deleted simple block uses `BodyBindings`: a short-lived IR binding snapshot keyed by file,
+section and block ID, valid only at the confirmed version of this editor's own source-write chain. It
+restores role, timing and scope; the requested Markdown still supplies the text. An external source
+version, document switch, missing snapshot or unsupported structure must refuse the stale source
+reference and retain the draft. Do not infer a visual role for an unknown former source or accept a
+browser-provided role as authority. The cache is bounded to 512 deleted bindings per section.
+
+Legacy plain prose may have the IR role `narration`; editing it with BlockNote must preserve that role,
+its source identity and step. Resolve the role from the current IR source binding, never from a browser
+role claim. Splits that carry the original source retain the same binding; newly inserted unbound body
+blocks remain visual. Cues, timed ranges and unsupported MyST stay opaque: refuse body transactions that
+flatten, delete, reorder or move content across those anchors. Modern `contentModel: blocks` documents
+keep explicit narration in video production rather than the document canvas.
 
 Generated content in the target Web UI is changed through public parameters, chat or comments, with
 shared-material scope and review visible. The existing source/preview paths are compatibility interfaces,

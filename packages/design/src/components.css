@@ -268,6 +268,118 @@
   color: var(--pm-color-danger);
 }
 
+.pm-ui-search-list {
+  display: grid;
+  gap: var(--pm-space-2);
+  min-width: 0;
+}
+
+.pm-ui-search-list__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pm-space-2);
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-sm);
+  font-weight: var(--pm-weight-medium);
+}
+
+.pm-ui-search-list__count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pm-space-1);
+  font-size: var(--pm-text-xs);
+  font-weight: var(--pm-weight-regular);
+}
+
+.pm-ui-search-list__results {
+  box-sizing: border-box;
+  display: grid;
+  gap: var(--pm-space-px);
+  max-height: var(--pm-search-list-max-height);
+  min-width: 0;
+  padding: var(--pm-space-px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
+  border-radius: var(--pm-ui-control-radius, var(--pm-radius-control));
+  background: var(--pm-color-surface);
+}
+
+.pm-ui-search-list__results[aria-invalid='true'] {
+  border-color: var(--pm-color-danger);
+}
+
+.pm-ui-search-list__option {
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-2);
+  min-width: 0;
+  min-height: var(--pm-ui-control-height, var(--pm-control-height));
+  margin: 0;
+  padding: var(--pm-ui-control-padding-block, var(--pm-space-1)) var(--pm-ui-control-padding-inline, var(--pm-space-3));
+  border: var(--pm-size-hairline) solid transparent;
+  border-radius: var(--pm-radius-small);
+  background: transparent;
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-ui-control-font, var(--pm-text-md));
+  line-height: var(--pm-leading-ui);
+  text-align: start;
+  cursor: pointer;
+}
+
+.pm-ui-search-list__option:hover:not(:disabled) {
+  background: var(--pm-color-hover);
+}
+
+.pm-ui-search-list__option:active:not(:disabled) {
+  background: var(--pm-color-sunk);
+}
+
+.pm-ui-search-list__option[data-state='checked'] {
+  border-color: var(--pm-color-accent-line);
+  background: var(--pm-color-accent-soft);
+}
+
+.pm-ui-search-list__option:focus-visible {
+  border-color: var(--pm-color-accent);
+  outline: 0;
+  box-shadow: var(--pm-shadow-control-focus);
+}
+
+.pm-ui-search-list__option:disabled {
+  opacity: var(--pm-opacity-disabled);
+  cursor: not-allowed;
+}
+
+.pm-ui-search-list__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pm-ui-search-list__description {
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-xs);
+}
+
+.pm-ui-search-list__check {
+  display: inline-flex;
+  flex: none;
+  width: var(--pm-size-icon);
+}
+
+.pm-ui-search-list__empty {
+  margin: 0;
+  padding: var(--pm-space-3);
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-sm);
+  overflow-wrap: anywhere;
+}
+
 .pm-ui-field--inline {
   display: flex;
   flex-wrap: wrap;
@@ -864,7 +976,90 @@
   white-space: nowrap;
 }
 
-/* BlockNote's public node-selection surface shares the authored canvas palette. */
+/* BlockNote's public UI stays separate from document typography. */
+.pm-ui-block-editor .bn-suggestion-menu p {
+  margin: 0;
+  line-height: var(--pm-leading-ui);
+}
+
+.pm-ui-block-editor .bn-toolbar.bn-formatting-toolbar {
+  box-sizing: border-box;
+  max-width: calc(100vw - var(--pm-space-4));
+  height: auto;
+  flex-wrap: wrap;
+}
+
+.pm-ui-block-editor .bn-formatting-toolbar button {
+  min-width: var(--pm-size-tool);
+  min-height: var(--pm-size-tool);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-sm);
+  line-height: var(--pm-leading-ui);
+}
+
+.pm-ui-block-editor .bn-side-menu {
+  gap: 0;
+  height: auto;
+  flex-wrap: nowrap;
+}
+
+.pm-ui-block-editor .bn-side-menu button {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--pm-size-tool);
+  min-width: var(--pm-size-tool);
+  height: var(--pm-size-tool);
+  min-height: var(--pm-size-tool);
+  padding: var(--pm-space-1);
+  border-radius: var(--pm-radius-control);
+}
+
+.pm-ui-block-editor :is(.bn-side-menu, .bn-formatting-toolbar) button svg {
+  width: var(--pm-size-icon);
+  height: var(--pm-size-icon);
+}
+
+.pm-ui-block-editor .bn-side-menu button:hover:not(:disabled) {
+  background: var(--pm-color-hover);
+  color: var(--pm-color-ink);
+}
+
+.pm-ui-block-editor .bn-side-menu button:active:not(:disabled) {
+  background: var(--pm-color-sunk);
+}
+
+.pm-ui-block-editor :is(.bn-side-menu, .bn-formatting-toolbar) button:focus-visible {
+  outline: var(--pm-size-stroke) solid var(--pm-color-accent);
+  outline-offset: calc(-1 * var(--pm-size-stroke));
+  box-shadow: var(--pm-shadow-control-focus);
+}
+
+.pm-ui-block-editor :is(.bn-side-menu, .bn-formatting-toolbar) button:disabled {
+  cursor: not-allowed;
+  opacity: var(--pm-opacity-disabled);
+}
+
+@media (max-width: 768px), (pointer: coarse) {
+  .pm-ui-block-editor .bn-side-menu { flex-direction: column; }
+}
+
+@media (pointer: coarse) {
+  .pm-ui-block-editor .bn-formatting-toolbar button {
+    min-width: var(--pm-control-hit-area);
+    min-height: var(--pm-control-hit-area);
+  }
+  .pm-ui-block-editor .bn-side-menu button {
+    width: var(--pm-control-hit-area);
+    min-width: var(--pm-control-hit-area);
+    height: var(--pm-control-hit-area);
+    min-height: var(--pm-control-hit-area);
+  }
+}
+
+/* The public node-selection surface shares the authored canvas palette. */
 .pm-ui-block-editor:focus-within .ProseMirror-selectednode > .bn-block-content {
   background: var(--pm-color-accent-soft);
   border-radius: var(--pm-radius-small);
@@ -932,7 +1127,7 @@
 }
 
 @media (pointer: coarse) {
-  :is(.pm-ui-button, .pm-ui-icon-button, .pm-ui-input, .pm-ui-select, .pm-ui-textarea, .pm-ui-control, .pm-ui-search, .pm-ui-tab, .pm-ui-segmented__option, .pm-ui-menu__item) {
+  :is(.pm-ui-button, .pm-ui-icon-button, .pm-ui-input, .pm-ui-select, .pm-ui-textarea, .pm-ui-control, .pm-ui-search, .pm-ui-tab, .pm-ui-segmented__option, .pm-ui-menu__item, .pm-ui-search-list__option) {
     min-height: var(--pm-control-hit-area);
   }
 

@@ -86,7 +86,7 @@ export class WorkspaceServerClient {
     return JSON.parse(text) as T
   }
 
-  /** The workspace's documents, read at most every 2 s. */
+  /** A short-lived workspace document list; author mutations invalidate it immediately. */
   readDocuments(): Promise<DocumentSummary[]> {
     if (!this.#documents || Date.now() - this.#documents.at > DOCUMENTS_MS) {
       const list = this.requestJson<{ documents: DocumentSummary[] }>(`${WORKSPACE_ROUTES}documents`).then(answer => answer.documents)
@@ -95,6 +95,9 @@ export class WorkspaceServerClient {
     }
     return this.#documents.list
   }
+
+  /** A successful author operation must be visible before its next context binding. */
+  invalidateDocuments(): void { this.#documents = undefined }
 
   /** Stops the server it launched, or revokes the session tokens a given server issued to it. */
   async close(): Promise<void> {

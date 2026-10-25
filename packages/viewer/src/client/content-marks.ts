@@ -9,7 +9,7 @@ export function contentMarks(section: IRSection, role: 'visual' | 'narration' | 
   const place = `${section.index} · ${at + 1}${span > 0 ? `–${at + span + 1}` : ''}`
   return h('span', { class: 'pm-content-marks', contenteditable: 'false', 'data-preview-ui': '' }, [h('button', {
     'type': 'button', 'class': 'pm-content-mark',
-    'data-narration-section': section.id, 'data-narration-step': at,
+    'data-content-section': section.id, 'data-content-step': at,
     'title': `${label} · ${place}`, 'aria-label': `${label} · ${place}`,
   }, [h(PmIcon, { name: role === 'visual' ? 'slides' : role === 'reading' ? 'notebook' : 'captions' }), h('span', place)])])
 }

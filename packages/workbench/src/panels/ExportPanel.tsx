@@ -23,7 +23,7 @@ function iconOf(target: string): IconName {
  * Making the document into files, as Word's Export: what it can be made into, each a button, and what was made, by the
  * author or the AI, newest first, with its progress, its log, and the file to open, play or download.
  */
-export function ExportPanel({ onClose }: { onClose(): void }) {
+export function ExportPanel({ documentOnly = false, onClose }: { documentOnly?: boolean, onClose(): void }) {
   const t = useMessages()
   const workbench = useWorkbench()
   const answer = useWorkbenchState(state => state.jobs)
@@ -32,14 +32,15 @@ export function ExportPanel({ onClose }: { onClose(): void }) {
   const locale = useWorkbenchState(state => state.locale)
   const [playing, setPlaying] = useState<CompileJob>()
   const labelOf = (target: Pick<OutputTarget, 'id' | 'label'>) => (target.label[locale] !== target.id ? target.label[locale] : undefined) ?? t.outputLabels[target.id] ?? target.id
-  const targets = answer?.targets ?? []
-  const jobs = answer?.jobs ?? []
+  const included = (id: string) => !documentOnly || id !== 'video' && id !== 'lecture'
+  const targets = (answer?.targets ?? []).filter(target => included(target.id))
+  const jobs = (answer?.jobs ?? []).filter(job => included(job.target))
   const label = (id: string) => labelOf(targets.find(target => target.id === id) ?? { id, label: {} })
   const busy = (id: string) => jobs.some(job => job.target === id && (job.state === 'queued' || job.state === 'running'))
   return (
     <section className="pmw-pane" aria-labelledby="pmw-export-title">
       <header className="pmw-pane__header">
-        <h2 id="pmw-export-title" className="pmw-pane__title">{t.exportPane}</h2>
+        <h2 id="pmw-export-title" className="pmw-pane__title">{documentOnly ? t.documentExport : t.exportPane}</h2>
         <PmIconButton small icon="close" label={t.close} onClick={onClose} />
       </header>
       <p className="pmw-export__hint">{t.exportHint}</p>

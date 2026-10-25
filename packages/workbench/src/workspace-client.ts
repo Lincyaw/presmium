@@ -1,5 +1,6 @@
 import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, SourceTransactionAnswer, SourceTransactionChange, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
 import type { OperationBatch } from './telemetry.ts'
+import type { VoiceCatalogAnswer, VoiceoverJob, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest, VoiceSettingsAnswer, VoiceSettingsChange, VoiceSettingsUpdate } from '@lincyaw/kernel'
 
 const observedFailures = new WeakSet<object>()
 /** Whether the owned request observer already received this transport failure. */
@@ -37,6 +38,14 @@ export interface WorkspaceClient {
   /** Saves a small set of files in one document with one version and rollback boundary. */
   saveSourceTransaction(document: string, changes: SourceTransactionChange[], message?: string): Promise<SourceTransactionAnswer>
   readIr(document: string): Promise<IrAnswer>
+  readVoiceSettings(document: string, section?: string, step?: number, signal?: AbortSignal): Promise<VoiceSettingsAnswer>
+  updateVoiceSettings(document: string, update: VoiceSettingsUpdate, signal?: AbortSignal): Promise<VoiceSettingsChange>
+  readVoiceCatalog(document: string, engine?: string, lang?: string, signal?: AbortSignal): Promise<VoiceCatalogAnswer>
+  readVoiceover(document: string, signal?: AbortSignal): Promise<VoiceoverSnapshot>
+  startVoiceover(document: string, request: VoiceoverRequest, signal?: AbortSignal): Promise<VoiceoverJob>
+  cancelVoiceover(document: string, id: string, signal?: AbortSignal): Promise<VoiceoverJob>
+  previewVoice(document: string, request: VoicePreviewRequest, signal?: AbortSignal): Promise<VoicePreviewAnswer>
+  readVoicePreview(document: string, query: VoicePreviewQuery, signal?: AbortSignal): Promise<VoicePreviewQuote>
   subscribeIr(document: string, revision: (event: IrEvent) => void, failed?: () => void): () => void
   readDiagnostics(document: string): Promise<DiagnosticSnapshot>
   subscribeDiagnostics(document: string, snapshot: (event: DiagnosticSnapshot) => void, failed: () => void): () => void
@@ -136,7 +145,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     }
     return data
   }
-  const post = <T>(address: string, body: unknown) => call<T>(address, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  const post = <T>(address: string, body: unknown, signal?: AbortSignal) => call<T>(address, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal })
   const rememberIR = (document: string, value?: CachedIR) => {
     const old = irCache.get(document)
     if (old) irBytes -= old.bytes
@@ -209,6 +218,14 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     saveSource: (document, path, content, base, message) => post(url('source', document), { path, content, base, ...message ? { message } : {} }),
     saveSourceTransaction: (document, changes, message) => post(url('source/transaction', document), { changes, ...message ? { message } : {} }),
     readIr,
+    readVoiceSettings: (document, section, step, signal) => call(url('voice-settings', document, { ...section ? { section } : {}, ...step !== undefined ? { step: String(step) } : {} }), { signal }),
+    updateVoiceSettings: (document, update, signal) => post(url('voice-settings', document), update, signal),
+    readVoiceCatalog: (document, engine, lang, signal) => call(url('voice-catalog', document, { ...engine ? { engine } : {}, ...lang ? { lang } : {} }), { signal }),
+    readVoiceover: (document, signal) => call(url('voiceover', document), { signal }),
+    startVoiceover: (document, request, signal) => post(url('voiceover', document), request, signal),
+    cancelVoiceover: (document, id, signal) => post(url('voiceover/cancel', document), { id }, signal),
+    previewVoice: (document, request, signal) => post(url('voice-preview', document), request, signal),
+    readVoicePreview: (document, query, signal) => call(url('voice-preview', document, { revision: query.revision, voice: JSON.stringify(query.voice), mode: query.mode, ...query.target ? { target: JSON.stringify(query.target) } : {} }), { signal }),
     subscribeIr: (document, revision, failed) => subscribe(url('ir/events', document), 'revision', revision, failed),
     readDiagnostics: document => call(url('diagnostics', document)),
     subscribeDiagnostics: (document, snapshot, failed) => subscribe(url('diagnostics/events', document), 'diagnostics', snapshot, failed),

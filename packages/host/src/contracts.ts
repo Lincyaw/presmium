@@ -110,6 +110,22 @@ export interface Operations {
 
 export const OPERATIONS = defineService<Operations>('presmium.operations')
 
+/** A registered player keeps its existing clock; this lease only coordinates whether it may start. */
+export interface PlaybackLease {
+  requestStart(): Promise<boolean>
+  cancel(): void
+  dispose(): void
+}
+
+export interface PlaybackControl {
+  register(pause: () => void): PlaybackLease
+  pause(): void
+  /** Embedded previews await their author's audio focus before starting. Ordinary pages need no gate. */
+  setGate(authorize: (signal: AbortSignal) => Promise<void>): Unsubscribe
+}
+
+export const PLAYBACK_CONTROL = defineService<PlaybackControl>('presmium.playbackControl')
+
 export interface StepClockDriver {
   readonly elapsed: Store<number | undefined>
   readonly recording?: boolean

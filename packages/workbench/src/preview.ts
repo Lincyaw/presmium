@@ -29,7 +29,8 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
   if (options.dark !== undefined) url.searchParams.set(PREVIEW_APPEARANCE_PARAM, options.dark ? 'dark' : 'light')
   const origin = url.origin
   const latest = new Map<string, PreviewCommand>()
-  const oneShot = (command: PreviewCommand) => command.type === 'page-insert' || command.type === 'flush'
+  const transient = new Set<PreviewCommand['type']>(['page-insert', 'flush', 'pause-playback', 'playback-granted', 'document-history', 'document-history-reset', 'blocks-result', 'source-result', 'source-saved', 'source-created', 'page-created'])
+  const oneShot = (command: PreviewCommand) => transient.has(command.type)
   let ready = false
   let generation = 0
   let capabilities: readonly PreviewCommandType[] = []

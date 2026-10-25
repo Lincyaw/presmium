@@ -145,6 +145,18 @@ function escapedTitle(title: string): string {
   return title.replace(/[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{}~]/g, char => `\\${char}`).replace(/\|/g, '&#124;')
 }
 
+/** A native text edit also retains the page's existing identity, including formatted headings. */
+export function pinPageSource(doc: IRDocument, id: string, source: string, capabilities: SourceCapabilities = {}): string {
+  const { spans, lines, newline } = pageSpans(doc, source)
+  const span = spans.find(span => span.section.id === id)
+  if (!span) throw new Error('page-boundary')
+  if (!span.depth) throw new Error('page-implicit-title')
+  const label = pageLabel(span, newline, capabilities)
+  if (!label) return source
+  const start = lines[span.heading]!.start
+  return `${source.slice(0, start)}${label}${source.slice(start)}`
+}
+
 /** Renaming pins the original page ID and changes only its visible title line. */
 export function renamePageSource(doc: IRDocument, id: string, source: string, title: string, capabilities: SourceCapabilities = {}): string {
   if (!title.trim() || /[\r\n\0]/.test(title)) throw new Error('page-title')

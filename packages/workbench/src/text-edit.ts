@@ -11,7 +11,7 @@ export type TextEditResult =
 
 // The rendered text and the source are aligned by their longest common subsequence; past this many cells it is too slow.
 const MAX_CELLS = 4_000_000
-const ESCAPED = /[\\`*_[\]<>{}$|~#]/g
+const ESCAPED = /[\\`*_[\]<>{}$|~#&]/g
 
 /**
  * Applies an edit made to a block's rendered text (its `textContent` before and after) to the block's source lines in

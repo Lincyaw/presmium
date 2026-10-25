@@ -1,9 +1,9 @@
-import { OPERATIONS, STEP_CLOCK, useServer, useService, useStore } from '@lincyaw/host'
+import { OPERATIONS, PLAYBACK_CONTROL, STEP_CLOCK, useMessages, useServer, useService, useStore } from '@lincyaw/host'
 import type { Operations, StepClock } from '@lincyaw/host'
 import { errorMessage } from '@lincyaw/kernel'
 import { flushSync } from 'react-dom'
 import { useEffect, useRef, useState } from 'react'
-import { audioSegments, LECTURE_ID, timedEvents, trackDuration } from '../domain/index.ts'
+import { audioSegments, LECTURE_ID, LECTURE_MESSAGES, timedEvents, trackDuration } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 import type { ClockMedia, TrackClock } from './clock.ts'
 import { MediaClock, SilentClock } from './clock.ts'
@@ -35,6 +35,8 @@ export function useLecturePlayback() {
   const server = useServer()
   const operations = useService(OPERATIONS)
   const stepClock = useService(STEP_CLOCK)
+  const playback = useService(PLAYBACK_CONTROL)
+  const t = useMessages(LECTURE_MESSAGES)
   const [player, setPlayer] = useState<LecturePlayer>()
   const [status, setStatus] = useState<'loading' | 'missing' | 'ready' | 'failed'>()
   const [failure, setFailure] = useState<string>()
@@ -46,7 +48,7 @@ export function useLecturePlayback() {
     const clock = await createClock(track, source)
     if (load !== generation.current) return clock.dispose()
     current.current?.dispose(); releaseClock.current()
-    const next = new LecturePlayer(track, doc, ops, clock)
+    const next = new LecturePlayer(track, doc, ops, clock, playback)
     current.current = next
     releaseClock.current = stepClock?.drive({ elapsed: next.stepTime, recording: exporting }) ?? (() => {})
     setPlayer(next); setLanguage(old => old ?? track.lang); setStatus('ready'); next.seek(at)
@@ -66,12 +68,15 @@ export function useLecturePlayback() {
       await start(track, source, operations, load, at)
     }).catch(error => { if (load === generation.current) { setFailure(errorMessage(error)); setStatus('failed') } })
     return () => { generation.current++; current.current?.dispose(); current.current = undefined; releaseClock.current() }
-  }, [id, operations, doc, stepClock, server.available])
+  }, [id, operations, doc, stepClock, playback, server.available])
+  // Cancel permission synchronously when IR changes, before a late parent grant can run.
+  useEffect(() => viewer.doc.subscribe(() => current.current?.pause()), [viewer])
   useEffect(() => () => { play(undefined) }, [])
   const clockError = useStore<Error | undefined>(player?.clock.error, undefined)
   function reloadTrack(track: LectureTrack): void {
     if (!operations || track.id !== playing.getSnapshot()) return
     void start(track, lectureSource(server, doc.config.presmium[LECTURE_ID]), operations, ++generation.current, current.current?.time.getSnapshot() ?? 0).catch(error => setFailure(errorMessage(error)))
   }
-  return { player, status, failure: failure ?? clockError?.message, language, setLanguage, reloadTrack }
+  const clockFailure = clockError?.message === 'playback-timeout' ? t.player.playbackTimeout : clockError?.message
+  return { player, status, failure: failure ?? clockFailure, language, setLanguage, reloadTrack }
 }

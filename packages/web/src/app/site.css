@@ -875,7 +875,7 @@ html.pm-in-workbench .pm-section {
 
 /* Author marks remain small and symbolic; labels are available on hover and to screen readers. */
 .pm-content-marks { display: none; }
-html[data-preview-picking] .pm-view--document .pm-content-marks {
+html.pm-author-marks[data-preview-picking] .pm-view--document .pm-content-marks {
   display: flex;
   flex-wrap: wrap;
   gap: var(--pm-space-1);

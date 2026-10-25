@@ -14,6 +14,7 @@ export class DocumentHistory {
   readonly #store: WorkbenchStore
   readonly #changed: (changes: ReviewChange[]) => void
   #reads = 0
+  #scope = 0
   #unsubscribeReview?: () => void
   #review?: ReviewSnapshot
   #told?: string
@@ -25,10 +26,12 @@ export class DocumentHistory {
   }
 
   subscribeReview(dir: string): void {
-    this.#unsubscribeReview = this.#client.subscribeReview(dir, event => this.#handleReviewUpdate(dir, event))
+    const scope = this.#scope
+    this.#unsubscribeReview = this.#client.subscribeReview(dir, event => { if (scope === this.#scope) this.#handleReviewUpdate(dir, event) })
   }
 
   stop(): void {
+    this.#scope++
     this.#unsubscribeReview?.()
     this.#unsubscribeReview = undefined
     this.#review = undefined
@@ -63,18 +66,23 @@ export class DocumentHistory {
   async #run(work: (dir: string) => Promise<RevertResult | unknown>): Promise<boolean> {
     const dir = this.#store.state.document
     if (dir === undefined || this.#store.state.isHistoryBusy) return false
+    const scope = this.#scope
+    const current = () => scope === this.#scope && dir === this.#store.state.document
     this.#store.set({ isHistoryBusy: true })
     try {
       const answer = await work(dir)
+      if (!current()) return false
       if (isFailedRevert(answer)) throw new Error(answer.conflicts.join(', '))
       this.#store.set({ historyFailure: undefined })
       return true
     } catch (error) {
-      this.#store.set({ historyFailure: errorMessage(error) })
+      if (current()) this.#store.set({ historyFailure: errorMessage(error) })
       return false
     } finally {
-      this.#store.set({ isHistoryBusy: false })
-      await this.read(dir)
+      if (current()) {
+        this.#store.set({ isHistoryBusy: false })
+        await this.read(dir)
+      }
     }
   }
 

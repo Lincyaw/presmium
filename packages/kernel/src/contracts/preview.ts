@@ -67,6 +67,10 @@ export interface PreviewSource {
 }
 
 export type PreviewCommand =
+  | { type: 'document-history', action: 'undo' | 'redo', request: number }
+  | { type: 'document-history-reset' }
+  | { type: 'pause-playback', request: number }
+  | { type: 'playback-granted', request: number }
   | { type: 'flush', request: number }
   | { type: 'blocks-result', section: string, request: number, revision?: string, error?: string }
   | { type: 'source-result', section: string, block: string, request: number, source?: PreviewSource, error?: string }
@@ -92,6 +96,10 @@ export type PreviewCommandType = PreviewCommand['type']
 export type PreviewShortcut = 'undo' | 'redo' | 'dismiss'
 
 export type PreviewReport =
+  | { type: 'document-history-state', section?: string, undo: boolean, redo: boolean }
+  | { type: 'document-history-result', request: number, handled: boolean, error?: string }
+  | { type: 'playback-paused', request: number, error?: string }
+  | { type: 'playback-request', request: number }
   | { type: 'flushed', request: number, error?: string }
   | { type: 'blocks-edited', section: string, request: number, revision: string, blocks: PreviewEditedBlock[] }
   | { type: 'source-read', section: string, block: string, request: number, part?: 'definition' | 'block' }
@@ -106,9 +114,9 @@ export type PreviewReport =
   | { type: 'ready', renderer: 'web' | 'slides', document: string, revision?: string, capabilities: PreviewCommandType[] }
   | ({ type: 'position' } & PreviewPosition)
   | { type: 'picked', section: string, block?: string, step?: number, trail?: string[], rect?: PreviewRect, point?: PreviewPoint, clicks?: number }
-  | { type: 'selection', selection: (PreviewAnchor & { text: string, rect?: PreviewRect }) | null }
+  | { type: 'selection', selection: (PreviewAnchor & { text: string, rect?: PreviewRect, obstacles?: PreviewRect[] }) | null }
   /** Where the picked block or the selection is after the page scrolled or resized; null when it is out of sight. */
-  | { type: 'rect', rect: PreviewRect | null }
+  | { type: 'rect', rect: PreviewRect | null, obstacles?: PreviewRect[] }
   | { type: 'editing', target: PreviewAnchor, active: boolean }
   /** The text of a block edited in place, before and after (its `textContent`); sent only when it changed. */
   | { type: 'edited', target: PreviewAnchor, before: string, after: string }
@@ -131,6 +139,7 @@ const strings = (value: unknown): value is string[] => Array.isArray(value) && v
 const anchor = (value: unknown): value is PreviewAnchor => isRecord(value) && text(value.section) && optional(value.block, text)
 const length = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
 const rect = (value: unknown): value is PreviewRect => isRecord(value) && length(value.x) && length(value.y) && length(value.width) && length(value.height) && value.width >= 0 && value.height >= 0
+const obstacles = (value: unknown): value is PreviewRect[] => Array.isArray(value) && value.length <= 16 && value.every(rect)
 const point = (value: unknown): value is PreviewPoint => isRecord(value) && length(value.x) && length(value.y)
 const clicks = (value: unknown): value is number => Number.isInteger(value) && (value as number) >= 1 && (value as number) <= 3
 const toAnchor = (value: PreviewAnchor): PreviewAnchor => ({ section: value.section, ...value.block ? { block: value.block } : {} })
@@ -151,6 +160,10 @@ export function toPreviewCommand(data: unknown, nonce: string): PreviewCommand |
   if (!isPreviewEnvelope(data, nonce) || data.version !== PREVIEW_PROTOCOL) return undefined
   const m = data as Record<string, unknown>
   switch (m.type) {
+    case 'document-history': return request(m.request) && (m.action === 'undo' || m.action === 'redo') ? { type: 'document-history', request: m.request, action: m.action } : undefined
+    case 'document-history-reset': return { type: 'document-history-reset' }
+    case 'pause-playback':
+    case 'playback-granted': return request(m.request) ? { type: m.type, request: m.request } : undefined
     case 'flush': return request(m.request) ? { type: 'flush', request: m.request } : undefined
     case 'blocks-result': return text(m.section) && request(m.request) && optional(m.revision, text) && optional(m.error, text) ? { type: 'blocks-result', section: m.section, request: m.request, ...m.revision === undefined ? {} : { revision: m.revision as string }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
     case 'source-result': return sourceTarget(m) && optional(m.source, sourceValue) && optional(m.error, text) ? { type: 'source-result', section: m.section as string, block: m.block as string, request: m.request as number, ...m.source === undefined ? {} : { source: m.source as PreviewSource }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
@@ -177,6 +190,10 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
   if (!isPreviewEnvelope(data, nonce) || data.version !== PREVIEW_PROTOCOL) return undefined
   const m = data as Record<string, unknown>
   switch (m.type) {
+    case 'document-history-state': return optional(m.section, text) && typeof m.undo === 'boolean' && typeof m.redo === 'boolean' ? { type: 'document-history-state', ...m.section === undefined ? {} : { section: m.section as string }, undo: m.undo, redo: m.redo } : undefined
+    case 'document-history-result': return request(m.request) && typeof m.handled === 'boolean' && optional(m.error, text) ? { type: 'document-history-result', request: m.request, handled: m.handled, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
+    case 'playback-request': return request(m.request) ? { type: 'playback-request', request: m.request } : undefined
+    case 'playback-paused': return request(m.request) && optional(m.error, text) ? { type: 'playback-paused', request: m.request, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
     case 'flushed': return request(m.request) && optional(m.error, text) ? { type: 'flushed', request: m.request, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
     case 'blocks-edited': return text(m.section) && request(m.request) && text(m.revision) && Array.isArray(m.blocks) && m.blocks.length <= 2000 && m.blocks.every(b => isRecord(b) && text(b.id) && b.id.length <= 200 && optional(b.source, text) && optional(b.at, step) && optional(b.markdown, (v): v is string => text(v) && v.length <= MAX_EDITED) && optional(b.scene, text) && optional(b.durations, (v): v is number[] => Array.isArray(v) && v.length <= 1000 && v.every(n => typeof n === 'number' && Number.isFinite(n) && n >= 0))) ? { type: 'blocks-edited', section: m.section, request: m.request, revision: m.revision, blocks: m.blocks as unknown as PreviewEditedBlock[] } : undefined
     case 'source-read': return sourceTarget(m) && optional(m.part, sourcePart) ? { type: 'source-read', section: m.section as string, block: m.block as string, request: m.request as number, ...m.part === undefined ? {} : { part: m.part as 'definition' | 'block' } } : undefined
@@ -195,11 +212,11 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
     case 'selection': {
       if (m.selection === null) return { type: 'selection', selection: null }
       const selected = m.selection
-      return isRecord(selected) && text(selected.text) && anchor(selected) && optional(selected.rect, rect)
-        ? { type: 'selection', selection: { ...toAnchor(selected), text: selected.text, ...selected.rect ? { rect: toRect(selected.rect as PreviewRect) } : {} } }
+      return isRecord(selected) && text(selected.text) && anchor(selected) && optional(selected.rect, rect) && optional(selected.obstacles, obstacles)
+        ? { type: 'selection', selection: { ...toAnchor(selected), text: selected.text, ...selected.rect ? { rect: toRect(selected.rect as PreviewRect) } : {}, ...selected.obstacles !== undefined ? { obstacles: (selected.obstacles as PreviewRect[]).map(toRect) } : {} } }
         : undefined
     }
-    case 'rect': return m.rect === null || rect(m.rect) ? { type: 'rect', rect: m.rect === null ? null : toRect(m.rect) } : undefined
+    case 'rect': return (m.rect === null || rect(m.rect)) && optional(m.obstacles, obstacles) ? { type: 'rect', rect: m.rect === null ? null : toRect(m.rect), ...m.obstacles !== undefined ? { obstacles: (m.obstacles as PreviewRect[]).map(toRect) } : {} } : undefined
     case 'editing': return anchor(m.target) && typeof m.active === 'boolean' ? { type: 'editing', target: toAnchor(m.target), active: m.active } : undefined
     case 'edited': return anchor(m.target) && text(m.before) && text(m.after) && m.before.length <= MAX_EDITED && m.after.length <= MAX_EDITED ? { type: 'edited', target: toAnchor(m.target), before: m.before, after: m.after } : undefined
     case 'updated': return optional(m.revision, text) ? { type: 'updated', ...m.revision ? { revision: m.revision as string } : {} } : undefined

@@ -1940,6 +1940,8 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 
 设计与取舍在 `design-dsh.md`，概念对照与 `Focus` 在 `domain-model.md` 第 16 节。本节列出实现依赖的结构与契约。
 
+工作台的文档编辑、编译放映、视频制作是三个独立入口，分别负责正文与页面编辑、编译诊断与放映、配音字幕与视频产出。它们共用唯一的 MyST 源码、IR 修订和工作区服务，界面状态与任务生命周期按入口管理。文档编辑使用 React 与 BlockNote，不嵌入讲稿、字幕或音色编辑；正文保存与页面操作不会自动进入放映。当前优先完成文档编辑验收，其余入口的目标与已实现范围见 [UI/UX RFC](rfc-workbench-uiux.md)。
+
 ### 13.1 三层与进程
 
 | 层 | 包 | 框架 | 依赖 dsh | 版本 |
@@ -2053,7 +2055,7 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 - **产物**：每个任务一个目录（服务状态目录的 `outputs/<任务>/`），每份文稿的每种输出保留最近 3 个；完成的任务记下 `job.json`，服务重启后仍在。同一份文稿、同一种输出、同一个 IR 修订号已经完成或正在进行时不再生成，直接答复那个任务。服务把 `/__outputs/` 转给只服务这个目录的静态服务器（编译器的 `serveDirectory`，文件经 Express 的 `send`：类型、Range、校验与条件请求按 HTTP 规范；`?download` 用 `content-disposition` 要求下载；工作台的来源经 `cors` 可读，视频的字幕要用），与预览一样在服务自己的地址上，不需要令牌。渲染端的构建以任务的地址为根路径（`BuildOptions.base`），站点在那里直接打开。每个文件带媒体类型（`mime-types`，按扩展名）。
 - **路由**（工作区插件）：`GET jobs` 回答可生成的输出（`targets`）与这份文稿的任务，`POST jobs { target }` 开始一个；`POST jobs/cancel { id }`；`GET jobs/events` 是 SSE（事件 `job`）。dsh 照样代理这三条。
 - **AI**：MCP 的 `build` 在有任务的宿主中开始任务（`to` 可以是渲染端与导出器），默认等它们结束，`wait: false` 立即返回；`get_builds` 列出可生成的输出与最近的任务（状态、进度、日志末尾、错误、文件与地址）。服务端宿主的 `build`（`POST build`）同样经任务，作者在工作台的“导出”中看到 AI 开始的任务。
-- **工作台**：导出入口读取同一任务来源，目标格式、状态和放映关系见 [UI/UX RFC 第 8 节](rfc-workbench-uiux.md#8-导出与输出一致性)，不另设视频工作区。
+- **工作台**：编译放映与视频制作通过公开任务契约读取适用的输出与任务。视频制作独立承载配音、字幕、剪辑、录制和视频导出；目标格式、版本确认与当前实施范围见 [UI/UX RFC 第 8 节](rfc-workbench-uiux.md#8-导出与输出一致性)。
 
 用例：`packages/workspace/test/service.test.ts`（路由、产物地址、同一修订不重复、MCP 的 `get_builds`）、`e2e/export.spec.ts`（导出面板生成 PDF 与 notebook，打开与下载；别处开始的任务在面板中出现并可取消）。
 

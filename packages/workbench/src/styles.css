@@ -920,6 +920,11 @@
 
 /* Business regions arrange shared controls; their surfaces and states stay in design. */
 .pmw-document__main { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
+.pmw-voice__filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--pm-space-3); }
+.pmw-voice__summary, .pmw-voice__status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pm-space-2); min-width: 0; overflow-wrap: anywhere; }
+.pmw-voice__status { justify-content: space-between; }
+.pmw-voice__steps { display: flex; flex-wrap: wrap; gap: var(--pm-space-1); }
+.pmw-voice__sample { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .pmw-document__main > .pmw-preview { flex: 1; height: auto; }
 .pmw-step-timeline { display: flex; flex: none; flex-direction: column; gap: var(--pm-space-2); padding: var(--pm-space-3); border-top: var(--pm-size-hairline) solid var(--pm-color-line); }
 .pmw-step-timeline__heading { display: flex; justify-content: space-between; gap: var(--pm-space-3); color: var(--pm-color-muted); font-size: var(--pm-text-xs); }

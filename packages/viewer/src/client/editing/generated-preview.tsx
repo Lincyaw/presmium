@@ -1,6 +1,5 @@
 import { PmIconButton, PmMenu, useMessages, useStore } from '@lincyaw/host'
 import type { IRBlock, IRSection } from '@lincyaw/kernel'
-import { reportPreview } from '@lincyaw/kernel'
 import { BlockView } from '../block.ts'
 import { SECTION_CONTEXT } from '../section-context.ts'
 import { useViewer } from '../viewer-state.ts'
@@ -30,7 +29,6 @@ export function GeneratedPreview({ section, block }: { section: IRSection; block
           <span className="pm-generated-preview__position" aria-live="polite">{step + 1} / {section.steps + 1}</span>
           <PmIconButton small icon="chevron-right" label={t.nextStep} hint={t.nextStep} disabled={step === last} onClick={() => navigate(step + 1)} />
         </>}
-        <PmIconButton small icon="edit-text" label={t.editNarration} hint={t.editNarration} onClick={() => reportPreview({ type: 'narrate', section: section.id, step })} />
       </div>
       <SECTION_CONTEXT.Provider value={{ section, step, view: 'document' }}>
         <BlockView block={block} section={section} step={step} />

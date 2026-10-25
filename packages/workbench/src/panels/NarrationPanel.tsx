@@ -4,6 +4,7 @@ import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { animationDuration } from '../narration.ts'
 import { narrationDraftKey, narrationDrafts } from '../narration-drafts.ts'
 import { isAgentChanging } from '../workbench.ts'
+import { NarrationVoice } from './NarrationVoice.tsx'
 
 /** Selection follows the shared position; each draft and acknowledgement stays bound to its original step. */
 export function NarrationPanel() {
@@ -12,7 +13,7 @@ export function NarrationPanel() {
   const doc = useWorkbenchState(state => state.ir?.doc)
   const dir = useWorkbenchState(state => state.document)
   const target = useWorkbenchState(state => state.narration)
-  const busy = useWorkbenchState(state => isAgentChanging(state) || Boolean(state.isEditingPage))
+  const busy = useWorkbenchState(state => isAgentChanging(state) || Boolean(state.isEditingPage || state.isEditingVoice))
   const session = narrationDrafts(workbench.client)
   const edits = useSyncExternalStore(session.subscribe, session.snapshot)
   const [composing, setComposing] = useState(false)
@@ -76,6 +77,7 @@ export function NarrationPanel() {
             <PmButton small disabled={edit.saving || !edit.dirty} onClick={() => session.discard(key)}>{t.narrationDiscard}</PmButton>
             <PmButton small variant="primary" icon="save" loading={edit.saving} disabled={busy || !edit.dirty || failure === 'narration-conflict'} onClick={save}>{t.save}</PmButton>
           </div>
+          <NarrationVoice section={section.id} step={target.step} />
         </> : !failure && <p className="pmw-muted">{t.narrationLoading}</p>}
       </div>
     </section>

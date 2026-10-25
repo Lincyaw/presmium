@@ -182,6 +182,9 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     if (entries.get(entry.key) !== entry) return
     if (report.type === 'activity') return handleActivity(entry, report)
     if (report.type === 'ready') return handleReady(entry, report)
+    // A write posted just before deactivation still needs a request-scoped
+    // answer; the workbench decides whether it may run or must be deferred.
+    if (report.type === 'blocks-edited') return workbench.handlePreviewReport(entry.target.document, entry.target.renderer, report, entry.connection)
     if (report.type === 'updated') entry.irRevision = report.revision
     if (report.type === 'report') {
       const key = JSON.stringify([report.level, report.plugin, report.message])
@@ -195,6 +198,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
   const create = (target: PreviewTarget & { address: string }): Entry => {
     const frame = document.createElement('iframe')
     frame.allowFullscreen = true
+    frame.allow = "clipboard-write 'src'"
     frame.title = target.title
     frame.dataset.document = target.document
     frame.dataset.renderer = target.renderer

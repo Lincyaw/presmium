@@ -27,6 +27,9 @@
 
 BlockNote 的公共适配类为 `pm-ui-block-editor`，由 `MountedEditor` 挂载，选中态样式集中在 `packages/design/src/components.css`。
 适配使用 BlockNote 的公开 `.ProseMirror-selectednode`、`.bn-block-content` 选择器，仅在编辑器内有焦点时以 `accent-soft` 表面与 `accent` 描边表示当前块；伪元素保持透明，不遮住正文或动画。
+斜杠菜单使用公开 `.bn-suggestion-menu` 选择器隔离阅读正文的段落留白与行高，菜单文字恢复公共 `leading-ui`，避免正文排版把每条插入项撑高；菜单的布局、滚动与键盘行为仍由 BlockNote 提供。
+正文侧边的添加与拖拽按钮使用公开 `.bn-side-menu` 适配，沿用 compact 的 30px 与触屏的 44px 热区、公共图标和焦点令牌；窄屏或粗指针设备纵排，放在页边留白内，避免工具被视口裁掉。
+格式工具条使用公开 `.bn-formatting-toolbar` 适配，限制为视口内宽度并换行，按钮沿用同一 30px／44px 最小热区。预览通过可选的工具区矩形报告，让宿主批注浮层避开现有格式工具条；批注表单获得焦点后沿用原有布局。
 
 ## 2. Tokens、公共控件与业务布局
 
@@ -89,7 +92,8 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 | IconButton | workbench、host 的 `PmIconButton`，`pm-ui-icon-button` | 已提供 `label`、`hint`、`shortcut`、`density` 与 `loading`，通过公共 Tooltip 显示名称和快捷键 |
 | Input | workbench `PmInput`；host 使用 `PmField`＋`pm-ui-input` | workbench 包装关联 `label`、`hint`、`error`，支持原生只读／禁用属性、前图标、后缀和 `width="number"`／`"time"` |
 | Textarea | workbench `PmTextarea`；host 使用 `PmField`＋`pm-ui-textarea` | workbench 包装支持标签、说明、错误、`density` 与 `autoGrow`；讲稿保持独立多行区域 |
-| Select | workbench `PmSelect`；host 使用 `PmField`＋`pm-ui-select` | 简单选项已统一字段关系与密度；可搜索音色选择尚未实现，不以原生列表冒充 |
+| Select | workbench `PmSelect`；host 使用 `PmField`＋`pm-ui-select` | 简单选项统一字段关系与密度；复杂单选使用 `PmSearchList`，不以原生列表冒充 |
+| SearchList | workbench `PmSearchList`、`pm-ui-search-list`，复用 `PmInput` 与 Radix Radio Group | 提供搜索、结果计数、单选、描述、空／加载／错误／禁用态及三种密度；过滤不改写所选值，加载与错误保留已有结果但禁选，列表按公共高度令牌滚动 |
 | Dialog | workbench、host 的 `PmDialog`，Radix Dialog | 已统一模态、标题／说明、操作区、忙碌拦截、外部按下不关闭与焦点归还 |
 | Menu | workbench、host 的 `PmMenu`，Radix Dropdown Menu | 已提供图标、危险项、禁用项、快捷键、分隔与勾选态；键盘移动和焦点归还由 Radix 管理 |
 | Tabs | workbench、host 的 `PmTabs`、`PmTabPanel` 与 `pm-ui-tab` | 已提供图标标签与手动激活；方向键移焦，确认后激活，面板由公共封装关联 |
@@ -100,6 +104,8 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 | Checkbox／Radio／Switch／Range | 现有 `pm-ui-checkbox` 仅提供部分基础着色，其余公共能力待补齐 | 在使用前规定选择、焦点、禁用、数值和错误状态；时间、语速和音量不能各自实现一套滑杆 |
 
 原生选择器的展开列表可能由操作系统绘制，不能把这种差异当作已完成统一视觉。音色选择使用公共可搜索弹层，组合搜索、语言筛选、共享列表项、试听与选中态；桌面可使用 Popover，空间不足时使用公共 Dialog 或 Drawer。素材等复杂选择复用同一类公共能力，在 Figma 单独规定相关状态，不能退回每页自绘的下拉列表。
+
+`PmSearchList` 放在公共 Dialog、Drawer 或页面内，不另套下拉层。搜索框的向下键进入当前或首个可用结果，方向键、Home、End 与 Space 由 Radix Radio Group 管理；没有可用结果时焦点留在搜索框。`label`、`keywords` 用于检索，`description` 只展示非交互说明，试听等操作放在列表外。错误只渲染一个关联提示，额外说明通过 `aria-describedby` 关联；关闭时由外层公共容器归还焦点。Figma 的 [SearchList 组件集](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=77-554) 与[状态矩阵](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=77-1704) 对应 `packages/workbench/src/components.tsx` 的 `PmSearchList`、公共 CSS 与 `--pm-search-list-max-height`；24 个变体覆盖三种密度及默认、悬停、按下、焦点、禁用、加载、错误和空状态。
 
 ## 5. 状态与行为合同
 
@@ -176,7 +182,7 @@ Menu 打开后聚焦可用项，方向键、首尾导航、选择后关闭、外
 |---|---|
 | 亮／暗变量、字体、间距、圆角、尺寸、动效 | `tokens.css` 与颜色 `tokens.ts`，使用同一语义名 |
 | Button、IconButton、Field、Input、Textarea、Select | `components.css`＋相应 workbench／host 公开封装 |
-| Dialog、Menu、Tabs、Tooltip、Popover、Drawer | 公共 Radix 封装与 `pm-ui-*`，标明行为与待补能力 |
+| Dialog、Menu、Tabs、Tooltip、Popover、Drawer、SearchList | 公共 Radix 封装与 `pm-ui-*`，标明行为与待补能力 |
 | 图标实例 | `icons.ts` 中的语义名和 Lucide 来源 |
 | 公共插画与品牌素材 | 公共素材清单、原始文件及发布导出 |
 | 内容／编排／素材／任务屏幕 | 业务组合与布局，不另定义控件样式 |

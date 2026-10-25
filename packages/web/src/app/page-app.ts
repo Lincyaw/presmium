@@ -53,7 +53,7 @@ function pageHostAdapter(lang: string, shared: SharedStates, dark: Store<boolean
   return { mode: 'document', lang, useCursor: () => ({ slide: 1, step: 0 }), useStep: () => FINAL_STEP, useViewRole: () => 'reader', useStaticRender: () => false, useSectionConfig: () => ({}), useSharedState(key, initial, scope) { const store = shared.sharedState(key, initial, scope); return [useStore(store), value => store.set(value)] }, sharedStateStore: shared.sharedState, getService: presmiumService, startReport: presmiumReport, useDarkMode: () => [useStore(dark), value => dark.set(value)] }
 }
 function pageRoot(element: ReactElement, hydrate: boolean) { return { element, mount(selector: string): Promise<void> { return new Promise(resolve => { function Mounted() { useEffect(() => { resolve() }, []); return element }; const root = document.querySelector(selector)!; if (hydrate) hydrateRoot(root, h(Mounted)); else createRoot(root).render(h(Mounted)) }) } } }
-function PreviewSheet({ router }: { router: PageRouter }) { const shown = useStore(router.shown); return h('div', { className: 'pm-sheet-canvas' }, h('article', { className: 'pm-sheet' }, h(PageViewOutlet, { key: shown?.path, sections: shown?.sections ?? [] })), h('div', { className: 'pm-document pm-overlay-views' }, h(OverlayViewOutlet))) }
+function PreviewSheet({ viewer }: { viewer: Viewer }) { const doc = useStore(viewer.doc); return h('div', { className: 'pm-sheet-canvas' }, h('article', { className: 'pm-sheet' }, h(PageViewOutlet, { sections: doc.sections.map(section => section.id) })), h('div', { className: 'pm-document pm-overlay-views' }, h(OverlayViewOutlet))) }
 
 function slideIcon() {
   return h('svg', { 'className': 'pm-ui-icon', 'viewBox': '0 0 24 24', 'aria-hidden': 'true', 'fill': 'none', 'stroke': 'currentColor', 'strokeWidth': 2, 'strokeLinecap': 'round', 'strokeLinejoin': 'round' }, [
@@ -99,6 +99,8 @@ export function createPageApp(input: PageAppInput): PageApp {
   const t = WEB_MESSAGES[deckLocale(config.lang)]
   const viewer = current = createViewer(initial, {
     renderer: 'web',
+    documentIdentity: JSON.stringify([config.base, config.document]),
+    editingActive: createStore(true),
     sectionHref: router.sectionHref,
     slidesOnly: slides,
     ...webUrl
@@ -119,7 +121,7 @@ export function createPageApp(input: PageAppInput): PageApp {
         }, [slideIcon()])
       : undefined,
     diagnostics: config.events !== undefined,
-    navigate: position => router.turnTo(position, viewer.restoring.getSnapshot()),
+    navigate: embedded ? undefined : position => router.turnTo(position, viewer.restoring.getSnapshot()),
     ...config.source
       ? { openSource: source => void fetch(`${config.source}?file=${encodeURIComponent(source.file)}&line=${source.line}`, { method: 'POST', headers: { 'Presmium-Request': 'source' } }) }
       : {},
@@ -144,7 +146,7 @@ export function createPageApp(input: PageAppInput): PageApp {
     if (!useStore(active)) return null
     if (print) return h(SlidesPrint, { steps: print.steps, slides: print.slides })
     if (slides) return h('div', { className: 'pm-slides-page pm-document' }, h(OverlayViewOutlet))
-    return embedded ? h(PreviewSheet, { router }) : h(DocumentSite, { config, router })
+    return embedded ? h(PreviewSheet, { viewer }) : h(DocumentSite, { config, router })
   }
   const app = pageRoot(h(HostProvider, { adapter }, h(ViewerProvider, { viewer }, h(Content))), input.ssr)
   for (const [name, load] of Object.entries(input.components)) registerComponent(name, clientOnly(name, load))

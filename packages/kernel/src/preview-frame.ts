@@ -13,8 +13,16 @@ export interface PreviewPage {
   reveal(target: PreviewAnchor): void
   setDark(dark: boolean): void
   setActive?(active: boolean): void | Promise<void>
+  activityChanged?(active: boolean): void
   /** Finishes only the page's own authored edits; the host confirms its source writes separately. */
   flush?(): void | Promise<void>
+  documentHistory?(action: 'undo' | 'redo'): boolean
+  resetDocumentHistory?(): void
+  /** Visible editor tools that the embedding workbench should leave unobscured. */
+  selectionTools?(): PreviewRect[]
+  pausePlayback?(): void | Promise<void>
+  /** Installs author permission for a formal playback start; never owns a media clock. */
+  setPlaybackGate?(authorize: (signal: AbortSignal) => Promise<void>): () => void
   sectionOf?(element: Element): string | undefined
   sectionElement?(section: string): HTMLElement | undefined
   seen?(element: Element): boolean
@@ -50,11 +58,12 @@ const HOVER = 'data-preview-hover'
 const EDITING = 'data-preview-editing'
 const POSITIONED = 'data-preview-positioned'
 const PINNED = 'data-preview-pinned'
+const PIN_LABELS = 'data-preview-pin-labels'
 const FLASH = 'data-preview-flash'
 // Three blinks of 0.8 s, the length of the animation below.
 const FLASH_MS = 2400
 const PIN_CLASS = 'pm-preview-pin'
-const CONTROLS = 'a, button, input, select, textarea, label, summary, [contenteditable], [role="dialog"], [role="menu"], [role="menuitem"], [role="listbox"], [role="option"]'
+const CONTROLS = 'a, button, input, select, textarea, label, summary, [role="dialog"], [role="menu"], [role="menuitem"], [role="listbox"], [role="option"]'
 const HEADINGS = 'h1, h2, h3, h4, h5, h6'
 // Inside an edited element: the frame's pins and a heading's anchor link, which the caret does not enter. A function for
 // the same reason as `framePrefix`: a module-level template keeps this module in static builds.
@@ -72,6 +81,8 @@ const frameStyle = () => `
 [${FLASH}] { animation: pm-preview-flash 0.8s ease-in-out 3; border-radius: 2px; }
 @media (prefers-reduced-motion: reduce) { [${FLASH}] { animation: none; box-shadow: inset 0 0 0 100vmax color-mix(in srgb, var(--pm-color-accent, #1d6b7a) 12%, transparent); } }
 .${PIN_CLASS} { position: absolute; top: 4px; right: 4px; z-index: 50; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 10px; background: var(--pm-color-accent, #1d6b7a); color: #fff; font: 600 12px/20px system-ui, sans-serif; text-align: center; pointer-events: none; }
+[data-presmium-editor-block][${PIN_LABELS}] { box-sizing: border-box; padding-inline-end: calc(var(--pm-size-row) + var(--pm-space-2)); }
+[data-presmium-editor-block][${PIN_LABELS}]::after { content: attr(${PIN_LABELS}); position: absolute; top: var(--pm-space-1); right: var(--pm-space-1); z-index: var(--pm-z-site-header); min-width: var(--pm-size-icon-lg); max-width: var(--pm-size-row); min-height: var(--pm-size-icon-lg); padding-inline: var(--pm-space-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-sizing: border-box; border-radius: var(--pm-radius-control); background: var(--pm-color-accent); color: var(--pm-color-on-accent); font-family: var(--pm-font-sans); font-size: var(--pm-text-xs); font-weight: var(--pm-weight-semibold); line-height: var(--pm-size-icon-lg); text-align: center; pointer-events: none; }
 `
 
 function previewNonce(): string | undefined {
@@ -115,10 +126,11 @@ const isLive = (state: FrameState) => state.active && !state.stopped
 
 /** Finds the sections and blocks the workbench names, among the elements a reader can see. */
 function createLocator(page: PreviewPage) {
+  const blocks = '.pm-block[data-block], [data-presmium-editor-block][data-block]'
   const seen = (element: Element): boolean =>
     !element.closest('[inert], .pm-hidden') && element.getClientRects().length > 0 && (page.seen?.(element) ?? true)
   const seenBlock = (element: Element): HTMLElement | undefined => {
-    for (let block = element.closest<HTMLElement>('.pm-block[data-block]'); block; block = block.parentElement?.closest<HTMLElement>('.pm-block[data-block]') ?? null) {
+    for (let block = element.closest<HTMLElement>(blocks); block; block = block.parentElement?.closest<HTMLElement>(blocks) ?? null) {
       if (seen(block)) return block
     }
     return undefined
@@ -126,7 +138,11 @@ function createLocator(page: PreviewPage) {
   const sectionOf = (element: Element): string | undefined =>
     element.closest<HTMLElement>('[data-section]')?.dataset.section ?? page.sectionOf?.(element)
   const blockElement = (section: string, block: string): HTMLElement | undefined => {
-    for (const element of document.querySelectorAll<HTMLElement>(`.pm-block[data-block="${CSS.escape(block)}"]`)) {
+    const candidates = [
+      ...document.querySelectorAll<HTMLElement>(`.pm-block[data-block="${CSS.escape(block)}"]`),
+      ...document.querySelectorAll<HTMLElement>(`[data-presmium-editor-block][data-block="${CSS.escape(block)}"]`),
+    ]
+    for (const element of candidates) {
       if (sectionOf(element) === section && seen(element)) return element
     }
     return undefined
@@ -172,7 +188,7 @@ type Followed = { element: HTMLElement, anchor: PreviewAnchor } | { range: Range
  * beside it. After each scroll or resize it looks again every frame until the box stays put for two, since a page may lay
  * itself out again a frame later (the slides scale to the new size).
  */
-function createRectReport(state: FrameState, locate: Locator, post: (message: PreviewReport) => void) {
+function createRectReport(page: PreviewPage, state: FrameState, locate: Locator, post: (message: PreviewReport) => void) {
   let followed: Followed | undefined
   let sent: string | undefined
   let frame = 0
@@ -191,12 +207,13 @@ function createRectReport(state: FrameState, locate: Locator, post: (message: Pr
     const found = box()
     const shown = found && !isEmpty(found) && found.bottom > 0 && found.right > 0 && found.top < window.innerHeight && found.left < window.innerWidth
     const rect = shown ? toRect(found) : null
-    const key = JSON.stringify(rect)
+    const obstacles = page.selectionTools?.().slice(0, 16) ?? []
+    const key = JSON.stringify({ rect, obstacles })
     if (key === sent) still++
     else {
       still = 0
       sent = key
-      post({ type: 'rect', rect })
+      post({ type: 'rect', rect, obstacles })
     }
     if (still < 2) frame = requestAnimationFrame(send)
   }
@@ -215,7 +232,8 @@ function createRectReport(state: FrameState, locate: Locator, post: (message: Pr
     /** Follows a target from now on; `rect` is the box its pick or selection already reported. */
     follow(next: Followed, rect: PreviewRect | undefined) {
       followed = next
-      sent = JSON.stringify(rect ?? null)
+      sent = JSON.stringify({ rect: rect ?? null, obstacles: page.selectionTools?.().slice(0, 16) ?? [] })
+      moved()
     },
     /** Stops following the selection when it is gone; a picked block stays followed. */
     unselected() {
@@ -336,11 +354,18 @@ function createPins(locate: Locator) {
       if (!wanted.has(host)) {
         host.removeAttribute(POSITIONED)
         host.removeAttribute(PINNED)
+        host.removeAttribute(PIN_LABELS)
       }
     }
     for (const [element, own] of wanted) {
       element.setAttribute(PINNED, '')
       if (getComputedStyle(element).position === 'static') element.setAttribute(POSITIONED, '')
+      if (element.hasAttribute('data-presmium-editor-block')) {
+        // Child DOM belongs to BlockNote. Appending a badge there is parsed as
+        // author input by ProseMirror; a CSS label cannot enter the document.
+        element.setAttribute(PIN_LABELS, own.map(pin => pin.label).join(' · '))
+        continue
+      }
       own.forEach((pin, i) => {
         if ([...element.children].some(child => child.classList.contains(PIN_CLASS) && (child as HTMLElement).dataset.pin === pin.id)) return
         const mark = document.createElement('span')
@@ -370,8 +395,13 @@ function createPins(locate: Locator) {
 function createPicking(page: PreviewPage, state: FrameState, locate: Locator, rects: RectReport, post: (message: PreviewReport) => void) {
   let picking = false
   let hovered: Element | undefined
-  const pickable = (target: EventTarget | null): Element | undefined =>
-    target instanceof Element && !target.closest(CONTROLS) ? target : undefined
+  const pickable = (target: EventTarget | null): Element | undefined => {
+    if (!(target instanceof Element) || target.closest(CONTROLS)) return undefined
+    // A BlockNote text surface owns its editing. An opaque NodeView explicitly
+    // closes that boundary and can still use the source-preserving text lens.
+    const editable = target.closest('[contenteditable]')
+    return editable && editable.getAttribute('contenteditable') !== 'false' ? undefined : target
+  }
   const clearHover = () => {
     hovered?.removeAttribute(HOVER)
     hovered = undefined
@@ -392,9 +422,14 @@ function createPicking(page: PreviewPage, state: FrameState, locate: Locator, re
   }
   const click = (event: MouseEvent) => {
     if (!isLive(state)) return
-    const jump = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-scene-jump]') : null
-    const scene = jump && locate.anchorOf(jump)
-    if (jump && scene && event.button === 0) post({ type: 'narrate', section: scene.section, step: Number(jump.dataset.sceneJump) })
+    const content = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-content-step]') : null
+    if (content && event.button === 0) {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      const section = content.dataset.contentSection, step = Number(content.dataset.contentStep)
+      if (section && Number.isSafeInteger(step) && step >= 0) page.go({ type: 'go', section, step })
+      return
+    }
     const mark = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-narration-step]') : null
     if (mark && event.button === 0) {
       event.preventDefault()
@@ -405,7 +440,7 @@ function createPicking(page: PreviewPage, state: FrameState, locate: Locator, re
     }
     const target = pickable(event.target)
     if (!target || event.button !== 0) return
-    if (document.getSelection()?.isCollapsed === false) return
+    if (event.detail < 2 && document.getSelection()?.isCollapsed === false) return
     const anchor = locate.anchorOf(target)
     if (!anchor) return
     event.preventDefault()
@@ -612,6 +647,15 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
     if (current) return post({ type: 'editing', target, active: false })
     const element = editable(target)
     if (!element) return post({ type: 'editing', target, active: false })
+    if (element.hasAttribute('data-presmium-editor-block') && element.isContentEditable) {
+      // This text already has a BlockNote editor. Focus its existing cursor
+      // instead of installing a second native editor and a second save path.
+      element.closest<HTMLElement>('[contenteditable="true"]')?.focus({ preventScroll: true })
+      const selection = document.getSelection()
+      selection?.removeAllRanges()
+      selection?.addRange(caretIn(element, at))
+      return post({ type: 'editing', target, active: false })
+    }
     picking.clearHover()
     const html = element.innerHTML
     const closed = [...element.querySelectorAll<HTMLElement>(notText())].filter(child => !child.hasAttribute('contenteditable'))
@@ -675,7 +719,7 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
 }
 
 /** Reports the text the reader selects, with the block or section it lies in and where it is; not the text being edited. */
-function watchSelection(state: FrameState, locate: Locator, rects: RectReport, isEditing: () => boolean, post: (message: PreviewReport) => void) {
+function watchSelection(page: PreviewPage, state: FrameState, locate: Locator, rects: RectReport, isEditing: () => boolean, post: (message: PreviewReport) => void) {
   let selected = false
   let settling: ReturnType<typeof setTimeout> | undefined
   const changed = () => {
@@ -687,13 +731,18 @@ function watchSelection(state: FrameState, locate: Locator, rects: RectReport, i
       const value = range && !range.isCollapsed ? range.toString().trim() : ''
       const node = range?.rangeCount ? range.getRangeAt(0).commonAncestorContainer : undefined
       const element = node instanceof Element ? node : node?.parentElement
-      const anchor = value && element && !element.closest('[contenteditable="true"], input, textarea') ? locate.anchorOf(element) : undefined
+      const selectionRange = range?.rangeCount ? range.getRangeAt(0) : undefined
+      const editor = element?.closest('[contenteditable="true"]')
+      const pending = Boolean(selectionRange && [...document.querySelectorAll('[data-comment-pending]')].some(node => selectionRange.intersectsNode(node)))
+      const source = value && element && !element.closest('input, textarea') && !pending
+        && (!editor || element.closest('[data-presmium-editor-block]')) ? element : undefined
+      const anchor = source ? locate.anchorOf(source) : undefined
       if (anchor) {
         selected = true
         const own = range!.getRangeAt(0).cloneRange()
         const box = rangeBox(own)
         const rect = box && toRect(box)
-        post({ type: 'selection', selection: { ...anchor, text: value.slice(0, 4000), ...rect ? { rect } : {} } })
+        post({ type: 'selection', selection: { ...anchor, text: value.slice(0, 4000), ...rect ? { rect } : {}, obstacles: page.selectionTools?.().slice(0, 16) ?? [] } })
         rects.follow({ range: own }, rect)
       } else if (selected) {
         selected = false
@@ -729,6 +778,7 @@ function createPositionReport(page: PreviewPage, state: FrameState, post: (messa
       ready = true
       revision = page.revision()
       post({ type: 'ready', renderer: page.renderer, document: page.document, ...revision ? { revision } : {}, capabilities })
+      page.activityChanged?.(state.active)
     }
     if (!state.active) return
     for (const problem of waiting.splice(0)) post(problem)
@@ -781,7 +831,8 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
   const nonce = previewNonce()
   if (!nonce) return undefined
   const state: FrameState = { active: isPreviewActive(), stopped: false }
-  const capabilities: PreviewCommandType[] = [...COMMANDS, ...page.setActive ? ['activity' as const] : [], ...page.flush ? ['flush' as const] : []]
+  const playbackSupported = Boolean(page.pausePlayback && page.setPlaybackGate)
+  const capabilities: PreviewCommandType[] = [...COMMANDS, ...page.setActive ? ['activity' as const] : [], ...page.flush ? ['flush' as const] : [], ...page.documentHistory ? ['document-history' as const] : [], ...playbackSupported ? ['pause-playback' as const, 'playback-granted' as const] : []]
   const nameWindow = (active: boolean) => {
     window.name = `${framePrefix()}${nonce}${active ? '' : PAUSED}`
   }
@@ -791,10 +842,43 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
   installStyle()
 
   const post = (message: PreviewReport) => {
-    if (state.stopped || (!state.active && message.type !== 'ready' && message.type !== 'activity')) return
+    if (state.stopped || (!state.active && message.type !== 'ready' && message.type !== 'activity' && message.type !== 'playback-paused')) return
     for (const origin of page.origins) window.parent.postMessage(previewEnvelope(nonce, message), origin)
   }
   editorReport = post
+  // Stored drafts must wait until the parent's first ready handshake, and an
+  // inactive retained frame must not begin another author write.
+  page.activityChanged?.(false)
+
+  // Requests are one-shot and cancelled on pause/unmount; a late grant cannot start a newer intent.
+  let playbackRequest = Date.now()
+  const pendingPlayback = new Map<number, (error?: Error) => void>()
+  const cancelPlayback = () => {
+    for (const finish of [...pendingPlayback.values()]) finish(new DOMException('Playback cancelled', 'AbortError'))
+  }
+  const authorizePlayback = (signal: AbortSignal): Promise<void> => {
+    if (!isLive(state) || signal.aborted) return Promise.reject(new DOMException('Playback cancelled', 'AbortError'))
+    const request = ++playbackRequest
+    return new Promise<void>((resolve, reject) => {
+      const abort = () => finish(new DOMException('Playback cancelled', 'AbortError'))
+      const finish = (error?: Error) => {
+        if (!pendingPlayback.delete(request)) return
+        clearTimeout(timeout)
+        signal.removeEventListener('abort', abort)
+        error ? reject(error) : resolve()
+      }
+      const timeout = setTimeout(() => finish(new Error('playback-timeout')), 15_000)
+      pendingPlayback.set(request, finish)
+      signal.addEventListener('abort', abort, { once: true })
+      post({ type: 'playback-request', request })
+    })
+  }
+  // An older parent does not understand playback requests. Opt in only when a
+  // parent first pauses formal playback before starting its own audition.
+  let stopPlaybackGate: (() => void) | undefined
+  const enablePlaybackGate = () => {
+    if (playbackSupported && !stopPlaybackGate) stopPlaybackGate = page.setPlaybackGate!(authorizePlayback)
+  }
 
   // Undo, redo and Escape belong to the workbench, except where the page's own fields take typing.
   const shortcut = (event: KeyboardEvent) => {
@@ -814,11 +898,11 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
   const highlight = createHighlight(page, state, locate)
   const pins = createPins(locate)
   const flash = createFlash(page, state, locate)
-  const rects = createRectReport(state, locate, post)
+  const rects = createRectReport(page, state, locate, post)
   const picking = createPicking(page, state, locate, rects, post)
   const editing = createEditing(state, locate, picking, post)
   const position = createPositionReport(page, state, post, capabilities)
-  const selection = watchSelection(state, locate, rects, editing.isEditing, post)
+  const selection = watchSelection(page, state, locate, rects, editing.isEditing, post)
 
   let frame = 0
   const redraw = () => {
@@ -842,8 +926,10 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
 
   let activity = Promise.resolve()
   const pause = () => {
+    cancelPlayback()
     editing.cancel()
     state.active = false
+    page.activityChanged?.(false)
     nameWindow(false)
     position.cancel()
     selection.cancel()
@@ -868,6 +954,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
         const current = page.revision()
         post({ type: 'activity', active: state.active, request: command.request, ...current === undefined ? {} : { revision: current } })
         if (state.active) {
+          page.activityChanged?.(true)
           observeBody()
           position.resend()
           position.moved()
@@ -916,7 +1003,22 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
         case 'marks': return void root.classList.toggle(AUTHOR_MARKS_CLASS, command.on)
         case 'appearance': return page.setDark(command.dark)
         case 'activity': return changeActivity(command)
+        case 'pause-playback':
+          if (!playbackSupported) return
+          enablePlaybackGate()
+          cancelPlayback()
+          return void Promise.resolve().then(() => page.pausePlayback!()).then(() => {
+            post({ type: 'playback-paused', request: command.request })
+          }, error => post({ type: 'playback-paused', request: command.request, error: errorMessage(error) }))
+        case 'playback-granted':
+          if (isLive(state)) pendingPlayback.get(command.request)?.()
+          return
         case 'flush': return flush(command)
+        case 'document-history':
+          try { post({ type: 'document-history-result', request: command.request, handled: Boolean(page.documentHistory?.(command.action)) }) }
+          catch { post({ type: 'document-history-result', request: command.request, handled: false, error: 'document-history-failed' }) }
+          return
+        case 'document-history-reset': return page.resetDocumentHistory?.()
         case 'edit': return editing.edit(command)
         case 'flash': return flash.flash(command.targets)
       }
@@ -940,9 +1042,12 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
       position.report(problem)
     },
     stop() {
+      cancelPlayback()
+      stopPlaybackGate?.()
       editing.cancel()
       if (editorReport === post) editorReport = undefined
       state.stopped = true
+      page.activityChanged?.(false)
       window.removeEventListener('message', receive)
       window.removeEventListener('keydown', shortcut)
       selection.stop()

@@ -106,6 +106,7 @@
   --pm-popover-min-width: 18rem;
   --pm-popover-max-width: 32rem;
   --pm-menu-min-width: 12rem;
+  --pm-search-list-max-height: 18rem;
   --pm-shadow-control-focus: 0 0 0 var(--pm-space-px) var(--pm-color-accent-line);
   --pm-shadow-control-error-focus: 0 0 0 calc(var(--pm-space-px) * 3) var(--pm-color-accent-line);
 

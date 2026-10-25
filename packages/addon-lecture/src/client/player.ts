@@ -1,4 +1,4 @@
-import type { Operations } from '@lincyaw/host'
+import type { Operations, PlaybackControl, PlaybackLease } from '@lincyaw/host'
 import type { IRDocument } from '@lincyaw/kernel'
 import { createStore } from '@lincyaw/host'
 import { eventDrift, lastIndexAt, timedEvents, trackDuration } from '../domain/index.ts'
@@ -23,11 +23,14 @@ export class LecturePlayer {
   private applied = -1
   private frame = 0
   private readonly unsubscribe: () => void
+  private readonly playback?: PlaybackLease
+  private disposed = false
 
-  constructor(track: LectureTrack, doc: IRDocument, operations: Operations, clock: TrackClock) {
+  constructor(track: LectureTrack, doc: IRDocument, operations: Operations, clock: TrackClock, playback?: PlaybackControl) {
     this.track = track
     this.clock = clock
     this.operations = operations
+    this.playback = playback?.register(() => this.pause())
     const drift = eventDrift(track, doc)
     const kept = timedEvents(track).filter(event => drift[event.index]?.grade !== 'lost')
     this.dropped = track.events.length - kept.length
@@ -68,12 +71,21 @@ export class LecturePlayer {
   }
 
   play(): void {
-    if (this.trying.getSnapshot()) this.back()
-    this.clock.play()
-    this.loop()
+    const start = () => {
+      if (this.disposed) return
+      if (this.trying.getSnapshot()) this.back()
+      this.clock.error.set(undefined)
+      this.clock.play()
+      this.loop()
+    }
+    if (!this.playback) return start()
+    void this.playback.requestStart().then(allowed => { if (allowed) start() }).catch(error => {
+      if (!this.disposed) this.clock.error.set(error instanceof Error ? error : new Error(String(error)))
+    })
   }
 
   pause(): void {
+    this.playback?.cancel()
     cancelAnimationFrame(this.frame)
     this.frame = 0
     this.clock.pause()
@@ -103,6 +115,8 @@ export class LecturePlayer {
   }
 
   dispose(): void {
+    this.disposed = true
+    this.playback?.dispose()
     cancelAnimationFrame(this.frame)
     this.unsubscribe()
     this.clock.dispose()

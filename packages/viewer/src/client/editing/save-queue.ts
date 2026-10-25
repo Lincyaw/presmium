@@ -6,7 +6,7 @@ import type {
   PreviewEditedBlock,
 } from '@lincyaw/kernel'
 import type { Viewer } from '../viewer-state.ts'
-import { isLegacyNarration } from '../../domain/document-content.ts'
+import { draftScope } from './draft-scope.ts'
 
 export interface BodySaveState {
   status: 'saved' | 'dirty' | 'saving' | 'failed'
@@ -22,7 +22,7 @@ interface StoredDraft {
 }
 const queues = new WeakMap<Viewer, BodySaveQueue>()
 let nextRequest = 0
-const draftStorage = (viewer: Viewer) => `presmium.body-drafts:${location.pathname}:${viewer.doc.getSnapshot().meta.entry}`
+const draftStorage = (viewer: Viewer) => `presmium.body-drafts.v2:${draftScope(viewer)}`
 // Source and mdast positions may move when an earlier section is saved.
 function contentSignature(section: IRSection | undefined): string {
   return JSON.stringify(
@@ -60,6 +60,7 @@ export async function settleBodyEdits(viewer: Viewer): Promise<void> {
 /** One document writes serially. Its acknowledgements and frozen drafts outlive any editor view. */
 export class BodySaveQueue {
   readonly state = createStore<Record<string, BodySaveState>>({})
+  readonly unscopedDraft = createStore<string | undefined>(undefined)
   #revision: string
   #version = 0
   #baselines = new Map<string, string>()
@@ -71,6 +72,7 @@ export class BodySaveQueue {
   #viewer: Viewer
   #storage: string
   #unsubscribe: () => void
+  #unactivity?: () => void
   constructor(viewer: Viewer) {
     this.#viewer = viewer
     this.#storage = draftStorage(viewer)
@@ -78,6 +80,19 @@ export class BodySaveQueue {
       viewer.doc.getSnapshot().meta[PREVIEW_REVISION] ?? '',
     )
     this.#restore()
+    this.#unactivity = viewer.options.editingActive?.subscribe(() => {
+      if (!viewer.options.editingActive!.getSnapshot()) return
+      this.announce()
+      this.flush()
+    })
+    try {
+      const entry = viewer.doc.getSnapshot().meta.entry
+      const body = JSON.parse(sessionStorage.getItem(`presmium.body-drafts:${location.pathname}:${entry}`) ?? 'null')
+      const source = JSON.parse(sessionStorage.getItem(`presmium.block-source:${entry}`) ?? 'null')
+      const hasBody = body && typeof body === 'object' && !Array.isArray(body) && Object.keys(body).length > 0
+      const hasSource = source?.entries && typeof source.entries === 'object' && Object.keys(source.entries).length > 0
+      if (hasBody || hasSource) this.unscopedDraft.set(JSON.stringify({ ...(hasBody ? { body } : {}), ...(hasSource ? { source } : {}) }, null, 2))
+    } catch { /* Old, unattributed copies are never applied to another document. */ }
     this.#unsubscribe = viewer.doc.subscribe(() => {
       const revision = String(
         viewer.doc.getSnapshot().meta[PREVIEW_REVISION] ?? '',
@@ -107,6 +122,7 @@ export class BodySaveQueue {
   }
   dispose(): void {
     this.#unsubscribe()
+    this.#unactivity?.()
     clearTimeout(this.#timeout)
     window.removeEventListener('presmium:blocks-result', this.#result)
     window.removeEventListener('pagehide', this.#pagehide)
@@ -117,6 +133,9 @@ export class BodySaveQueue {
   }
   /** The latest source version acknowledged by the workbench, even before its IR event arrives. */
   get revision(): string { return this.#revision }
+  awaitingIr(section: string): boolean {
+    return this.#ownRevisions.get(this.#revision) === section && String(this.#viewer.doc.getSnapshot().meta[PREVIEW_REVISION] ?? '') !== this.#revision
+  }
   announce(): void {
     reportPreview({ type: 'body-draft', dirty: Object.values(this.state.getSnapshot()).some(state => Boolean(state.blocks)) })
   }
@@ -202,7 +221,7 @@ export class BodySaveQueue {
     this.flush()
   }
   flush(): void {
-    if (this.#flight) return
+    if (this.#flight || this.#viewer.options.editingActive?.getSnapshot() === false) return
     const next = Object.entries(this.state.getSnapshot()).find(
       ([section, state]) => !this.#held.has(section) && state.status === 'dirty' && state.blocks,
     )
@@ -221,10 +240,7 @@ export class BodySaveQueue {
       section,
       request,
       revision: this.#revision,
-      blocks: state.blocks!.filter(block => {
-        const original = this.#viewer.section(section)?.blocks.find(candidate => candidate.id === (block.source ?? block.id))
-        return !original || !isLegacyNarration(this.#viewer.doc.getSnapshot(), original)
-      }),
+      blocks: state.blocks!,
     })
   }
   #set(section: string, state: BodySaveState): void {
@@ -296,6 +312,18 @@ export class BodySaveQueue {
     clearTimeout(this.#timeout)
     this.#flight = undefined
     const state = this.state.getSnapshot()[flight.section]!
+    if (answer.error === 'document-resumed') {
+      this.#set(flight.section, { ...state, status: 'dirty', error: undefined })
+      this.flush()
+      return
+    }
+    if (answer.error === 'document-inactive') {
+      // The host has not written this request. Keep its actual draft parked
+      // until a fresh activity handshake makes this document current again.
+      this.#viewer.options.editingActive?.set(false)
+      this.#set(flight.section, { ...state, status: 'dirty', error: undefined })
+      return
+    }
     if (answer.error) {
       this.fail(flight.section, answer.error)
       return

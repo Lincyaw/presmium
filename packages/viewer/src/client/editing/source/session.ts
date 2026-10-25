@@ -4,6 +4,7 @@ import { irBlocks, reportPreview } from '@lincyaw/kernel'
 import type { PreviewCommand, PreviewSource } from '@lincyaw/kernel'
 import type { Viewer } from '../../viewer-state.ts'
 import { bodySaveQueue } from '../save-queue.ts'
+import { draftScope } from '../draft-scope.ts'
 import { validateSource } from './syntax.ts'
 
 export type SourcePart = PreviewSource['part']
@@ -48,7 +49,7 @@ interface StoredSession {
 }
 const sessions = new WeakMap<Viewer, SourceSession>()
 let nextRequest = 0
-const sessionStorageKey = (viewer: Viewer) => `presmium.block-source:${viewer.doc.getSnapshot().meta.entry}`
+const sessionStorageKey = (viewer: Viewer) => `presmium.block-source.v2:${draftScope(viewer)}`
 const keyOf = (section: string, block: string) => JSON.stringify([section, block])
 const entryKey = (section: string, block: string, part: SourcePart) => JSON.stringify([section, block, part])
 const errorOf = (error: unknown) => error instanceof Error ? error.message : String(error)
@@ -453,7 +454,7 @@ export class SourceSession {
   }
 
   #request(type: SourceAnswer['type'], section: string, block: string | undefined, send: (request: number) => void): Promise<SourceAnswer> {
-    if (this.#disposed) return Promise.reject(new Error('source-unavailable'))
+    if (this.#disposed || this.#viewer.options.editingActive?.getSnapshot() === false) return Promise.reject(new Error('source-unavailable'))
     const request = ++nextRequest
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {

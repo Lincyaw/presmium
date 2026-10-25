@@ -10,10 +10,10 @@ const GAP = 10
 const MARGIN = 8
 
 /**
- * Where the popover goes in the stage: below the pointer (above it when there is no room), inside the stage. The
- * pointer is in the preview's viewport, which lies at `offset` in the stage (a slide sits on the canvas).
+ * Keeps the popover inside the stage and clear of the preview's editor tools.
+ * Preview coordinates are translated by the frame's offset in the stage.
  */
-function placement(pointer: Pointer, size: { width: number, height: number }, stage: { width: number, height: number }, offset: { x: number, y: number }) {
+function placement(pointer: Pointer, size: { width: number, height: number }, stage: { width: number, height: number }, offset: { x: number, y: number }, avoidTools: boolean) {
   const rect = { ...pointer.rect!, x: pointer.rect!.x + offset.x, y: pointer.rect!.y + offset.y }
   const point = pointer.point && { x: pointer.point.x + offset.x, y: pointer.point.y + offset.y }
   const x = pointer.quote ? rect.x : point?.x ?? rect.x
@@ -22,7 +22,24 @@ function placement(pointer: Pointer, size: { width: number, height: number }, st
   let top = below + GAP
   if (top + size.height > stage.height - MARGIN && above - GAP - size.height >= MARGIN) top = above - GAP - size.height
   const left = Math.max(MARGIN, Math.min(x - 16, stage.width - size.width - MARGIN))
-  return { left, top: Math.max(MARGIN, Math.min(top, stage.height - size.height - MARGIN)) }
+  const clamp = (candidate: { left: number, top: number }) => ({
+    left: Math.max(MARGIN, Math.min(candidate.left, stage.width - size.width - MARGIN)),
+    top: Math.max(MARGIN, Math.min(candidate.top, stage.height - size.height - MARGIN)),
+  })
+  const preferred = clamp({ left, top })
+  if (!avoidTools || !pointer.obstacles?.length) return preferred
+  const tools = pointer.obstacles.map(box => ({ ...box, x: box.x + offset.x, y: box.y + offset.y }))
+  const blocked = [rect, ...tools]
+  const candidates = [preferred, ...blocked.flatMap(box => [
+    { left, top: box.y - size.height - GAP },
+    { left, top: box.y + box.height + GAP },
+    { left: box.x - size.width - GAP, top: preferred.top },
+    { left: box.x + box.width + GAP, top: preferred.top },
+  ])].map(clamp)
+  const clear = (candidate: { left: number, top: number }, boxes: typeof blocked) => boxes.every(box =>
+    candidate.left + size.width <= box.x || candidate.left >= box.x + box.width || candidate.top + size.height <= box.y || candidate.top >= box.y + box.height,
+  )
+  return candidates.find(candidate => clear(candidate, blocked)) ?? candidates.find(candidate => clear(candidate, tools)) ?? preferred
 }
 
 /** A compact comment action beside the selected content, expanding into its comment form. */
@@ -47,7 +64,7 @@ export function PointerPopover() {
     const frame = stage.querySelector('.pmw-preview__frame')?.getBoundingClientRect()
     const origin = stage.getBoundingClientRect()
     const offset = frame ? { x: frame.left - origin.left, y: frame.top - origin.top } : { x: 0, y: 0 }
-    setPosition(placement(pointer, { width: element.offsetWidth, height: element.offsetHeight }, { width: stage.clientWidth, height: stage.clientHeight }, offset))
+    setPosition(placement(pointer, { width: element.offsetWidth, height: element.offsetHeight }, { width: stage.clientWidth, height: stage.clientHeight }, offset, step === 'tools'))
   }, [pointer, step])
   useEffect(() => {
     if (!pointer) return

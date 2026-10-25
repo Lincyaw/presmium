@@ -6,7 +6,7 @@ import * as Tabs from '@radix-ui/react-tabs'
 import * as Tooltip from '@radix-ui/react-tooltip'
 import * as Toolbar from '@radix-ui/react-toolbar'
 import * as RadioGroup from '@radix-ui/react-radio-group'
-import { createElement, forwardRef, useEffect, useId, useRef } from 'react'
+import { createElement, forwardRef, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
 
 const cls = (...names: (string | false | undefined | null)[]) => names.filter(Boolean).join(' ')
@@ -76,6 +76,73 @@ export function PmSegmented({ label, value, options, density = 'compact', disabl
   </RadioGroup.Root>
 }
 
+export interface SearchListItem {
+  value: string
+  label: string
+  /** Non-interactive supporting text; actions belong outside the choice. */
+  description?: ReactNode
+  keywords?: readonly string[]
+  icon?: IconName
+  disabled?: boolean
+}
+export interface SearchListProps {
+  label: string
+  searchLabel: string
+  searchPlaceholder?: string
+  items: readonly SearchListItem[]
+  value?: string
+  onValueChange(value: string): void
+  query?: string
+  onQueryChange?(query: string): void
+  resultsLabel(count: number): string
+  emptyLabel: string
+  loadingLabel: string
+  loading?: boolean
+  error?: ReactNode
+  disabled?: boolean
+  density?: ControlDensity
+  autoFocus?: boolean
+  'aria-describedby'?: string
+}
+
+/** Search and a single choice compose with Dialog; Radix owns radio navigation and selection. */
+export function PmSearchList({ label, searchLabel, searchPlaceholder, items, value, onValueChange, query, onQueryChange, resultsLabel, emptyLabel, loadingLabel, loading, error, disabled, density = 'compact', autoFocus, 'aria-describedby': describedBy }: SearchListProps) {
+  const id = useId()
+  const [localQuery, setLocalQuery] = useState('')
+  const list = useRef<HTMLDivElement>(null)
+  const search = query ?? localQuery
+  const matches = useMemo(() => {
+    const terms = search.normalize('NFKC').toLowerCase().trim().split(/\s+/).filter(Boolean)
+    return items.filter(item => {
+      const text = [item.label, ...item.keywords ?? []].join(' ').normalize('NFKC').toLowerCase()
+      return terms.every(term => text.includes(term))
+    })
+  }, [items, search])
+  const blocked = Boolean(disabled || loading || error)
+  const errorId = error ? `${id}-error` : undefined
+  return <div className="pm-ui-search-list" data-density={density}>
+    <PmInput label={searchLabel} value={search} placeholder={searchPlaceholder} prefixIcon="search" density={density} disabled={disabled} autoFocus={autoFocus} aria-controls={`${id}-results`} onChange={event => {
+      if (query === undefined) setLocalQuery(event.target.value)
+      onQueryChange?.(event.target.value)
+    }} onKeyDown={event => {
+      if (event.key !== 'ArrowDown' || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return
+      const selected = list.current?.querySelector<HTMLElement>('[role="radio"][data-state="checked"]:not(:disabled)')
+      const first = selected ?? list.current?.querySelector<HTMLElement>('[role="radio"]:not(:disabled)')
+      if (first) { event.preventDefault(); first.focus() }
+    }} />
+    <div className="pm-ui-search-list__heading"><span id={`${id}-label`}>{label}</span><span className="pm-ui-search-list__count" role="status" aria-live="polite" aria-atomic="true">{loading && <span className="pm-ui-loading" aria-hidden="true"><PmIcon name="loading" /></span>}{loading ? loadingLabel : resultsLabel(matches.length)}</span></div>
+    {error && <p id={errorId} className="pm-ui-field__error" role="alert">{error}</p>}
+    <RadioGroup.Root ref={list} id={`${id}-results`} className="pm-ui-search-list__results" aria-labelledby={`${id}-label`} aria-describedby={[describedBy, errorId].filter(Boolean).join(' ') || undefined} aria-invalid={error ? true : undefined} aria-busy={loading || undefined} value={value ?? ''} disabled={blocked} orientation="vertical" loop onValueChange={next => { if (!blocked) onValueChange(next) }}>
+      {matches.map((item, index) => <RadioGroup.Item key={item.value} value={item.value} disabled={item.disabled} className="pm-ui-search-list__option" aria-labelledby={`${id}-option-${index}`} aria-describedby={item.description ? `${id}-description-${index}` : undefined}>
+        {item.icon && <PmIcon name={item.icon} />}
+        <span className="pm-ui-search-list__text"><span id={`${id}-option-${index}`}>{item.label}</span>{item.description && <span id={`${id}-description-${index}`} className="pm-ui-search-list__description">{item.description}</span>}</span>
+        <span className="pm-ui-search-list__check" aria-hidden="true">{item.value === value && <PmIcon name="check" />}</span>
+      </RadioGroup.Item>)}
+      {!matches.length && !loading && !error && <p className="pm-ui-search-list__empty">{emptyLabel}</p>}
+    </RadioGroup.Root>
+  </div>
+}
+
 export type Tone = 'neutral' | 'accent' | 'ok' | 'warn' | 'danger' | 'outline'
 
 export function PmBadge({ tone = 'neutral', pill, children }: { tone?: Tone, pill?: boolean, children?: ReactNode }) {
@@ -134,16 +201,28 @@ export type PopoverPlacement = 'below-end' | 'below-start' | 'above-end' | 'abov
 const placementOf = (placement: PopoverPlacement) => ({ side: placement.startsWith('above') ? 'top' as const : 'bottom' as const, align: placement.endsWith('start') ? 'start' as const : 'end' as const })
 
 export function PmDialog({ open, label, closeLabel, name, actions, description, footer, busy, onClose, onCloseAutoFocus, children }: { open: boolean, label: string, closeLabel: string, name?: string, actions?: ReactNode, description?: string, footer?: ReactNode, busy?: boolean, onClose(): void, onCloseAutoFocus?(event: Event): void, children?: ReactNode }) {
-  const trigger = useRef<HTMLElement | null>(null)
+  const id = useId()
+  // A descendant's React autoFocus runs before Radix's open-focus event.
+  const trigger = useRef<HTMLElement | null>(typeof document === 'undefined' ? null : document.activeElement as HTMLElement)
+  useEffect(() => {
+    if (open) return
+    const remember = (event: FocusEvent) => {
+      const element = event.target
+      if (element instanceof HTMLElement && element !== document.body && element.closest('[data-pm-dialog]')?.getAttribute('data-pm-dialog') !== id) trigger.current = element
+    }
+    document.addEventListener('focusin', remember, true)
+    return () => document.removeEventListener('focusin', remember, true)
+  }, [id, open])
   return (
     <Dialog.Root open={open} modal onOpenChange={next => { if (!next && !busy) onClose() }}>
       <Dialog.Portal>
         <Dialog.Overlay className="pm-ui-dialog-overlay" />
-        <Dialog.Content className={cls('pm-ui-dialog', 'pm-ui', name && `${name}__panel`)} data-density="regular" aria-busy={busy || undefined} {...description ? {} : { 'aria-describedby': undefined }} onOpenAutoFocus={() => { trigger.current = document.activeElement as HTMLElement }} onInteractOutside={event => event.preventDefault()} onEscapeKeyDown={event => { event.stopPropagation(); if (busy) event.preventDefault() }} onCloseAutoFocus={event => {
+        <Dialog.Content className={cls('pm-ui-dialog', 'pm-ui', name && `${name}__panel`)} data-pm-dialog={id} data-density="regular" aria-busy={busy || undefined} {...description ? {} : { 'aria-describedby': undefined }} onInteractOutside={event => event.preventDefault()} onEscapeKeyDown={event => { event.stopPropagation(); if (busy) event.preventDefault() }} onCloseAutoFocus={event => {
           onCloseAutoFocus?.(event)
           if (event.defaultPrevented) return
           event.preventDefault()
-          const target = trigger.current?.isConnected ? trigger.current : document.querySelector<HTMLElement>('[role="toolbar"] button:not(:disabled), main button:not(:disabled)')
+          const available = (element: HTMLElement | null): element is HTMLElement => Boolean(element?.isConnected && element !== document.body && !element.closest(`[data-pm-dialog="${id}"], [inert], [hidden]`) && !element.matches(':disabled, [aria-disabled="true"]') && element.getClientRects().length && getComputedStyle(element).visibility === 'visible')
+          const target = available(trigger.current) ? trigger.current : [...document.querySelectorAll<HTMLElement>('[role="toolbar"] button, main button')].find(available)
           target?.focus()
         }}>
           <div className="pm-ui-dialog__header">

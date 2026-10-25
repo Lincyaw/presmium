@@ -1,9 +1,9 @@
-import { componentErrors, componentErrorRevision, presmiumReport, createStore, observe, runtimeRevision } from '@lincyaw/host'
-import type { NavigationPosition } from '@lincyaw/host'
+import { componentErrors, componentErrorRevision, presmiumReport, presmiumService, PLAYBACK_CONTROL, createStore, observe, runtimeRevision } from '@lincyaw/host'
+import type { NavigationPosition, PlaybackControl } from '@lincyaw/host'
 import { connectPreviewFrame, irBlocks, isPreviewActive, isPreviewEmbedded, PREVIEW_REVISION, stepKeys, stepTrail } from '@lincyaw/kernel'
 import type { FollowAnchor, PreviewFrame } from '@lincyaw/kernel'
 import type { Viewer } from '@lincyaw/viewer'
-import { findView, flushViewerEdits, registryRevision } from '@lincyaw/viewer'
+import { documentHistory, resetDocumentHistory, findView, flushViewerEdits, registryRevision } from '@lincyaw/viewer'
 import type { Store } from '@lincyaw/host'
 import { createViewerNavigation } from './host.ts'
 
@@ -66,13 +66,35 @@ function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions
       const { section, step, trail, view } = navigation.position.getSnapshot() as NavigationPosition & FollowAnchor
       return section === undefined ? undefined : { section, step, trail: trail ?? [], ...view ? { view } : {} }
     },
-    go: ({ section, step, trail, view }) => { pendingGo.set({ slide: 0, step: step ?? 0, section, ...trail ? { trail } : {}, ...view ? { view } : {} }) },
+    go: ({ section, step, trail, view }) => { presmiumService(PLAYBACK_CONTROL)?.pause(); pendingGo.set({ slide: 0, step: step ?? 0, section, ...trail ? { trail } : {}, ...view ? { view } : {} }) },
     reveal: ({ section, block }) => viewer.show({ section, step: (block && blockStep(section, block)) || 0 }),
     setDark(value) {
       dark.set(value)
     },
     setActive: page.setActive,
+    activityChanged: value => viewer.options.editingActive?.set(value),
     flush: () => flushViewerEdits(viewer),
+    documentHistory: action => documentHistory(viewer, action),
+    resetDocumentHistory: () => resetDocumentHistory(viewer),
+    selectionTools: () => [...document.querySelectorAll<HTMLElement>('[data-preview-selection-tools]')].filter(element => element.getClientRects().length > 0).map(element => {
+      const { x, y, width, height } = element.getBoundingClientRect()
+      return { x, y, width, height }
+    }),
+    pausePlayback: () => presmiumService(PLAYBACK_CONTROL)?.pause(),
+    setPlaybackGate(authorize) {
+      let current: PlaybackControl | undefined
+      let release = () => {}
+      const attach = () => {
+        const next = presmiumService(PLAYBACK_CONTROL)
+        if (next === current) return
+        release()
+        current = next
+        release = current?.setGate(authorize) ?? (() => {})
+      }
+      const stop = runtimeRevision.subscribe(attach)
+      attach()
+      return () => { stop(); release() }
+    },
     stepOf({ section, block }) {
       const step = blockStep(section, block)
       const found = viewer.section(section)
@@ -81,7 +103,7 @@ function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions
   })
   if (!frame) return
   navigation.position.subscribe(() => frame.moved())
-  viewer.doc.subscribe(() => requestAnimationFrame(() => frame.updated()))
+  viewer.doc.subscribe(() => { presmiumService(PLAYBACK_CONTROL)?.pause(); requestAnimationFrame(() => frame.updated()) })
   watchProblems(frame)
 }
 

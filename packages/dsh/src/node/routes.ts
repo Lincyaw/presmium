@@ -35,6 +35,7 @@ export function apply(ctx: DshContext): void {
           ...request.method === 'POST' ? { raw: await request.arrayBuffer() } : {},
           signal: request.signal,
         })
+        if (path === 'documents' && request.method === 'POST' && upstream.ok) ctx.presmium.server.invalidateDocuments()
         const answered = new Headers()
         for (const name of RETURNED) {
           const value = upstream.headers.get(name)

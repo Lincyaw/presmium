@@ -184,9 +184,17 @@ export class DocumentBindings {
   }
 
   async selectDocument(agentSessionId: string, document: string | null): Promise<void> {
-    if (document !== null && !(await this.#server.readDocuments()).some(doc => doc.dir === document)) throw new Error('Unknown Presmium document')
     const version = (this.#selectionVersions.get(agentSessionId) ?? 0) + 1
     this.#selectionVersions.set(agentSessionId, version)
+    if (document !== null) {
+      let documents = await this.#server.readDocuments()
+      if (!documents.some(doc => doc.dir === document)) {
+        this.#server.invalidateDocuments()
+        documents = await this.#server.readDocuments()
+      }
+      if (this.#selectionVersions.get(agentSessionId) !== version) return
+      if (!documents.some(doc => doc.dir === document)) throw new Error('Unknown Presmium document')
+    }
     const listener = this.#selectionListeners.get(agentSessionId)
     await listener?.before()
     if (this.#selectionVersions.get(agentSessionId) !== version) return
