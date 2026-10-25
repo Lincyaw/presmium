@@ -1,6 +1,6 @@
 # 指令参考
 
-每条指令给出：提供它的插件包（写进文稿头部 `plugins`）、插件 ID（`presmium:` 下的配置键）、参数、正文、选项、生成的 IR 与步数（`span`，见 `docs/ir.md` 2.4 节），以及一个最小示例。完整语义以 `docs/ir.md` 5.1 节和各插件的 `src/node/` 为准。
+每条指令给出：提供它的插件包（写进文稿头部 `plugins`）、插件 ID（`presmium:` 下的配置键）、参数、正文、选项、生成的 IR 与步数（`span`，步骤与讲解的对应规则见 `writing.md` 的步骤一段），以及一个最小示例。
 
 所有指令都接受三个通用选项：
 
@@ -499,7 +499,7 @@ markmap:
 把它们合并成新符号 lo。
 ```
 
-块占的步数是时长的个数减一，讲解按 `docs/ir.md` 2.4 节逐段绑到这些步上。合成讲授时，一步至少停留到它的动画演完；讲解中的 ``{cue}`next` `` 照常在它的字处推进，早于动画演完时构建给出警告 `moves on … before the animation`，把提示标记往后挪或缩短 `:durations:`。
+块占的步数是时长的个数减一，讲解逐段对应这些步（`writing.md` 的步骤一段；与讲授时间的对齐见 `presmium-animate/references/timeline.md`）。合成讲授时，一步至少停留到它的动画演完；讲解中的 ``{cue}`next` `` 照常在它的字处推进，早于动画演完时构建给出警告 `moves on … before the animation`，把提示标记往后挪或缩短 `:durations:`。
 
 场景文件默认导出一个场景（`@lincyaw/addon-motion/scene`）；各个库由插件提供，文稿不必另外安装。每个场景得到 `root`（画面的元素）、`at(k)`（第 k 步在时间轴上开始的毫秒数）、`durations`、`total`、`width`、`height` 与 `color(名)`（设计系统的颜色，如 `color('accent')`，返回 `rgb()` 或 `rgba()`）：
 
@@ -628,11 +628,11 @@ assert mean([1, 2]) == 1.5, "[1, 2] 的平均值是 1.5"
 
 ## 行内角色
 
-插件可以登记行内角色（`docs/ir.md` 2.8 节），写作 ``{名}`内容` ``，选项写成 `key=value`：``{cue to=code-1 lines=3-5}`spot` ``（只写键而不写值是语法错误）。登记过的角色在 IR 中保留为 `presmiumRole` 节点，网页、幻灯片与 notebook 显示它的子内容；没有子内容的角色（如提示标记）只在网页的演讲者窗口与幻灯片的演讲者备注中显示一个标记 `〔名 内容〕`。没有插件登记的角色压平为文字并给出警告 `unknown role`。MyST 自带的 `{sub}`、`{sup}`、`{kbd}`、`{abbr}` 等不受影响，插件不能登记同名的角色。
+插件可以登记行内角色，写作 ``{名}`内容` ``，选项写成 `key=value`：``{cue to=code-1 lines=3-5}`spot` ``（只写键而不写值是语法错误）。登记过的角色在 IR 中保留为 `presmiumRole` 节点，网页、幻灯片与 notebook 显示它的子内容；没有子内容的角色（如提示标记）只在网页的演讲者窗口与幻灯片的演讲者备注中显示一个标记 `〔名 内容〕`。没有插件登记的角色压平为文字并给出警告 `unknown role`。MyST 自带的 `{sub}`、`{sup}`、`{kbd}`、`{abbr}` 等不受影响，插件不能登记同名的角色。
 
 ## 讲授的角色 `presmium.lecture`（`@lincyaw/addon-lecture`）
 
-讲授插件登记两个行内角色，写在讲解中（`docs/ir.md` 2.9 节）。讲解就是讲授的脚本：文稿头部写了 `renderers.lecture.voice` 时，`presmium build --to web,lecture` 把每一步的讲解经语音服务（`@lincyaw/addon-speech`，也要列在 `plugins` 中）合成为讲授 `script`，网页以 `?view=lecture&track=script` 播放。
+讲授插件登记两个行内角色，写在讲解中。讲解就是讲授的脚本：文稿头部写了 `renderers.lecture.voice` 时，`presmium build --to web,lecture` 把每一步的讲解经语音服务（`@lincyaw/addon-speech`，也要列在 `plugins` 中）合成为讲授 `script`，网页以 `?view=lecture&track=script` 播放。
 
 ```markdown
 我们先看 {cue to=code-1 lines=3-5}`spot` 这三行，{cue}`next` 再把它合并成新符号。

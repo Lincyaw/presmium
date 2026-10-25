@@ -7,7 +7,7 @@ description: "帮助用户把内容写成可阅读、可演示的 Presmium 讲�
 
 从用户要讲清楚的内容出发，交付能阅读、能按预期演示的讲义。先弄清读者会看到什么、讲者需要怎样推进，再选择语法与插件。
 
-本仓库唯一公开示例是 `examples/animations/` 的两讲：冒泡排序（代码、GSAP 动画、讲解点击的计数组件、光标提示与讲授）和代码写成的动画（GSAP、Anime.js、Motion、Three.js、Remotion 各一节）。要写动画、分步讲解或讲授时先看它们的 `lecture.md` 与 `scenes/`；做动画（按教学场景选做法、各库的写法与技能自带的效果合集、让动画对上讲解）用 presmium-animate 技能。`pnpm demo:check` 检查两讲，`pnpm demo:build` 构建网页、幻灯片、notebook 与讲授。`pnpm studio` 默认准备并复用独立副本 `.presmium/example-workspace`。
+动画与分步讲解（做动画、按教学场景选做法、让动画对上讲解）用 presmium-animate 技能：它自带效果合集，每个动画库一讲，场景文件可以直接照着改。
 
 ## 找到这次任务的入口
 
@@ -88,7 +88,7 @@ presmium dev --to web
 
 ## 选择编辑方式
 
-在 VS Code 中编辑时，从 GitHub Release 下载对应系统与处理器的 `.vsix`，用“Extensions: Install from VSIX…”安装。打开讲义后执行“Presmium: Open Preview to the Side”，保存后更新、按光标所在章节定位；需要 Node.js 22.19 以上与文稿自己的插件依赖，不需要工作台或模型。安装与平台选择见 [扩展说明](../../../packages/vscode/README.md)。
+在 VS Code 中编辑时，从 GitHub Release 下载对应系统与处理器的 `.vsix`，用“Extensions: Install from VSIX…”安装。打开讲义后执行“Presmium: Open Preview to the Side”，保存后更新、按光标所在章节定位；需要 Node.js 22.19 以上与文稿自己的插件依赖，不需要工作台或模型。发布页列出各系统与处理器的安装包：https://github.com/Lincyaw/presmium/releases 。
 
 用户已有编辑器时直接修改源码。想在浏览器中编辑时，另装 `pnpm add -g @lincyaw/studio`，用 `presmium-studio <目录>` 打开工作台；项目内安装则用 `pnpm add -D @lincyaw/studio` 和 `pnpm exec presmium studio <目录>`。打开终端打印的完整网址，`Ctrl+C` 停止。不配置模型也能编辑、保存与预览。
 
