@@ -1,5 +1,5 @@
 import { errorMessage } from '@lincyaw/kernel'
-import type { CompileJob } from '@lincyaw/kernel'
+import type { CompileJob, JobSource } from '@lincyaw/kernel'
 import type { WorkbenchStore } from './workbench.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 
@@ -60,13 +60,11 @@ export class DocumentJobs {
     this.#store.set({ jobs: { ...known, jobs } })
   }
 
-  async start(target: string): Promise<void> {
-    const dir = this.#store.state.document
-    if (dir === undefined) return
+  async start(dir: string, target: string, source: JobSource): Promise<void> {
     const scope = this.#scope
     const current = () => scope === this.#scope && this.#store.state.document === dir
     try {
-      const job = await this.#client.startJob(dir, target)
+      const job = await this.#client.startJob(dir, target, source)
       if (!current()) return
       this.#merge(job)
       this.#store.set({ jobsFailure: undefined })

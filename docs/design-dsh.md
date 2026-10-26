@@ -252,12 +252,16 @@ Doc 中的单块只读预览使用独立消息，不建立 v1 编辑握手或 SS
 | `GET ir/events?document=` | SSE，由服务直接流出、不缓冲：连接后先发当前的修订号，之后是新的修订号、诊断数与改过的文件（相对于工作区根目录）。编辑器据此与磁盘比较 |
 | `GET preview?document=[&view=web\|slides][&prefetch=1]` | 文档的预览地址：`web` 是查看器显示这份文档的页面（作者打开文档时等查看器与文稿的代码准备一会儿，还没好时是文档在站点上的页面），文稿有幻灯片形态时 `slides` 是同一个页面加 `form=slides`；页面带预览代理。`view` 只能是 `web` 或 `slides`，回答相同。文稿的渲染端配置变化后刷新可选形态。`prefetch=1` 是工作台在作者打开之前的预先准备：立刻答复，查看器还没准备好时在后台准备（`architecture.md` 1.1 节） |
 | `POST build`、`POST check` | 构建（写到工作区之外的服务状态目录，`architecture.md` 10.6 节）与检查 |
+| `GET jobs`、`POST jobs` | 列出可用输出与生成记录；POST 使用 `StartJobRequest { target, source: { version, fingerprint } }`，确认当前规范文稿的保存版本与精确文本指纹后重新编译，并校验编译实际读取的源码。版本不符回答 409，不入队。`CompileJob.source` 记录此次已确认来源，`revision` 单独标识派生 IR；旧历史未记录来源时不能标作当前版本 |
+| `POST jobs/cancel`、`GET jobs/events` | 取消已入队任务与跟随真实任务状态。等待文稿保存阶段的取消只撤销前端导出意图，不撤销已经发出的正文保存 |
 | `GET review?document=`、`POST review/open`、`POST review/step`、`POST review/accept`、`POST review/reject`、`POST review/restore` | 审阅（git 实现，6.5 节）：打开（bundle，持有者 `agent:<会话>`）、记检查点、查看、接受（可以带作者写的说明）、拒绝（给出文件时只恢复它们、审阅继续，不给时全部回滚）、回到某个检查点。`GET review` 以 `text/event-stream` 请求时是页面跟随 |
 | `GET review/events` | SSE，供 bundle：审阅的变化，以及撤销一个会话的提交 |
 | `presmium.server/tokens`（`POST`、`DELETE`） | 为一个 dsh 会话签发或作废会话令牌（5.3 节） |
 | `presmium.server/focus`（`GET`、`POST`） | 工作台报告焦点与批注，服务把锚点换成源码范围与摘录并保存（8.6 节） |
 | `presmium.server/diagnostics`（`GET`、`POST`）、`GET presmium.server/diagnostics/events` | 读取当前诊断、替换一个预览实例的诊断，以及订阅完整快照（5.4 节） |
 | `/mcp` | MCP，供外部 agent 与 bundle 使用 |
+
+工作台开始导出前，先等待当前文稿的源事务确认；组字、恢复待确认、未采用的时机输入或保存冲突会保留草稿并拒绝导出。等待期间切文稿使原导出意图失效。服务捕获已确认的编译结果和实际工程依赖（包含译本文稿及其依赖），复用任务时同时比较源版本、IR 修订和依赖指纹；任务运行前后核对已记录的工程文件，变化则任务失败并移除此次产物。记录中的“文稿保存版本相同”只比较规范文稿，不宣称工程文件和任何后续编辑均已进入旧产物。
 
 ### 5.2 `presmium serve` 的页面
 

@@ -30,7 +30,8 @@ export function ExportPanel({ documentOnly = false, onClose }: { documentOnly?: 
   useEffect(() => workbench.observeJobs(), [workbench, document])
   const answer = useWorkbenchState(state => state.jobs)
   const failure = useWorkbenchState(state => state.jobsFailure)
-  const revision = useWorkbenchState(state => state.ir?.revision)
+  const source = useWorkbenchState(state => state.authoring)
+  const preparing = useWorkbenchState(state => state.jobPreparing)
   const locale = useWorkbenchState(state => state.locale)
   const [playing, setPlaying] = useState<CompileJob>()
   const labelOf = (target: Pick<OutputTarget, 'id' | 'label'>) => (target.label[locale] !== target.id ? target.label[locale] : undefined) ?? t.outputLabels[target.id] ?? target.id
@@ -46,12 +47,13 @@ export function ExportPanel({ documentOnly = false, onClose }: { documentOnly?: 
         <PmIconButton small icon="close" label={t.close} onClick={onClose} />
       </header>
       <p className="pmw-export__hint">{t.exportHint}</p>
-      {failure && <PmNotice tone="danger">{t.outputFailed(failure)}</PmNotice>}
+      {failure && <PmNotice tone="danger">{t.outputFailed(t.jobFailureReasons[failure] ?? failure)}</PmNotice>}
+      {preparing && <PmNotice>{preparing.canCancel ? t.outputConfirmingSave : t.outputStarting} {preparing.canCancel && <PmButton small onClick={() => workbench.cancelJobPreparation()}>{t.cancelOutput}</PmButton>}</PmNotice>}
       <h3 id="pmw-export-make" className="pmw-export__subtitle">{t.makeLabel}</h3>
       <ul className="pmw-export__targets" aria-labelledby="pmw-export-make">
         {targets.map(target => (
           <li key={target.id}>
-            <PmButton small icon={iconOf(target.id)} aria-label={t.makeOutput(labelOf(target))} disabled={busy(target.id)} onClick={() => void workbench.startJob(target.id)}>{labelOf(target)}</PmButton>
+            <PmButton small loading={preparing?.target === target.id} icon={iconOf(target.id)} aria-label={t.makeOutput(labelOf(target))} disabled={busy(target.id) || preparing !== undefined} onClick={() => void workbench.startJob(target.id)}>{labelOf(target)}</PmButton>
           </li>
         ))}
       </ul>
@@ -60,7 +62,7 @@ export function ExportPanel({ documentOnly = false, onClose }: { documentOnly?: 
         ? <PmEmpty icon="export">{t.noOutputs}</PmEmpty>
         : (
             <ol className="pmw-jobs">
-              {jobs.map(job => <JobItem key={job.id} job={job} label={label(job.target)} current={job.revision === revision} onPlay={() => setPlaying(job)} />)}
+              {jobs.map(job => <JobItem key={job.id} job={job} label={label(job.target)} current={Boolean(!source?.error && !source?.loading && !source?.dirty && !source?.saving && !source?.composing && !source?.restored && job.source && job.source.version === source?.version && job.source.fingerprint === source?.fingerprint)} onPlay={() => setPlaying(job)} />)}
             </ol>
           )}
       <VideoDialog job={playing} label={playing ? label(playing.target) : ''} onClose={() => setPlaying(undefined)} />
@@ -98,7 +100,7 @@ function JobItem({ job, label, current, onPlay }: { job: CompileJob, label: stri
         <p className="pmw-job__meta">
           <PmBadge tone={TONES[job.state]}>{t.jobStates[job.state]}</PmBadge>
           <time dateTime={job.createdAt} title={new Date(job.createdAt).toLocaleString(locale)}>{timeAgo(job.createdAt, locale)}</time>
-          {job.state === 'done' && <span>· {current ? t.currentContent : t.olderContent}</span>}
+          {job.state === 'done' && <span>· {!job.source ? t.outputVersionUnknown : current ? t.currentContent : t.olderContent}</span>}
           {job.state === 'done' && job.files.length > 1 && <span>· {t.outputFiles(job.files.length)}</span>}
         </p>
         {job.state === 'running' && progress && (
@@ -107,7 +109,7 @@ function JobItem({ job, label, current, onPlay }: { job: CompileJob, label: stri
             <span>{t.jobProgress(t.jobPhases[progress.phase] ?? t.outputLabels[progress.phase] ?? progress.phase, progress.done, progress.total)}</span>
           </div>
         )}
-        {job.error && <p className="pmw-job__error">{job.error.split('\n')[0]}</p>}
+        {job.error && <p className="pmw-job__error">{t.jobFailureReasons[job.error] ?? job.error.split('\n')[0]}</p>}
         {job.log.length > 0 && (
           <details className="pmw-job__log">
             <summary>{t.outputLog}</summary>

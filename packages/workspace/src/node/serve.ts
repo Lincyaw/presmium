@@ -90,7 +90,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   const jobs = createJobs({
     stateDir,
     url: () => server?.url ?? '',
-    compilation: dir => compileSessionOf(dir).ready(),
+    compilation: (dir, fresh) => fresh ? compileSessionOf(dir).recompile() : compileSessionOf(dir).ready(),
     revision: compilation => irRevision(compilation.doc),
     origins: preview.origins,
     log,

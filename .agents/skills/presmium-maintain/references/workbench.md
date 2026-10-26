@@ -107,6 +107,8 @@ arriving before the viewer plugin registers. DOM visibility or a module cache hi
 
 ## Diagnostics and agent feedback
 
+Build/export requests first flush the active canonical document actor and bind its acknowledged source version and fingerprint. Composition, recovered drafts, raw timing drafts and conflicts must remain visible and prevent submission. Switching documents or cancelling while awaiting the save cannot start an output later. The workspace job service confirms that source again and records it separately from the compiled IR revision; reuse also checks the actual tracked inputs, including translations. Verify the output file's text, not only the job's success state. A late job response cannot clear newer document input.
+
 Diagnostics are the workspace service's current snapshot (5.4); the workbench and MCP subscribe to the same
 source.
 

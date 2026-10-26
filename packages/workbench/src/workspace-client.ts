@@ -1,4 +1,4 @@
-import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, SourceTransactionAnswer, SourceTransactionChange, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
+import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobSource, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, SourceTransactionAnswer, SourceTransactionChange, StartJobRequest, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
 import type { OperationBatch } from './telemetry.ts'
 import type { VoiceCatalogAnswer, VoiceoverJob, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest, VoiceSettingsAnswer, VoiceSettingsChange, VoiceSettingsUpdate } from '@lincyaw/kernel'
 import type { PageDeleteAnswer, PageDeletePlan, PageDeleteRequest } from '@lincyaw/kernel'
@@ -82,7 +82,7 @@ export interface WorkspaceClient {
   /** What the document can be made into, and its builds and exports. */
   readJobs(document: string): Promise<JobsAnswer>
   /** Starts a build or an export of the document (or answers the one already made from this revision). */
-  startJob(document: string, target: string): Promise<CompileJob>
+  startJob(document: string, target: string, source: JobSource): Promise<CompileJob>
   cancelJob(document: string, id: string): Promise<CompileJob>
   /** Each change of the document's jobs, as it happens. */
   subscribeJobs(document: string, changed: (job: CompileJob) => void, failed?: () => void): () => void
@@ -264,7 +264,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     commitChanges: (document, message, paths) => post(url('changes/commit', document), { message, ...paths ? { paths } : {} }),
     discardChanges: (document, paths) => post(url('changes/discard', document), paths ? { paths } : {}),
     readJobs: document => call(url('jobs', document)),
-    startJob: (document, target) => post(url('jobs', document), { target }),
+    startJob: (document, target, source) => post(url('jobs', document), { target, source } satisfies StartJobRequest),
     cancelJob: (document, id) => post(url('jobs/cancel', document), { id }),
     subscribeJobs: (document, changed, failed) => subscribe(url('jobs/events', document), 'job', changed, failed),
     readRevisions: document => call(url('revisions', document, { limit: '50' })),

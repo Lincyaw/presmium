@@ -951,5 +951,19 @@
       "captionEmptyNodeId": "102:1778",
       "narrationFieldComponent": "NarrationEditor"
     }
+  },
+  "exportSourceConfirmation": {
+    "frames": {
+      "P27": "9:29",
+      "I02": "40:4647",
+      "I11": "40:4656"
+    },
+    "publicControls": [
+      "PmButton compact loading/disabled",
+      "PmNotice"
+    ],
+    "behavior": "Wait for acknowledged source before submitting an output; cancel pending intent without cancelling its source save; label recorded source versions separately from IR revisions.",
+    "implementation": "packages/workbench/src/panels/ExportPanel.tsx",
+    "verification": "docs/benchmarks/export-source-confirmation.md"
   }
 }

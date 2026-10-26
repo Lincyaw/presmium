@@ -327,6 +327,18 @@ export interface JobFile {
   type: string
 }
 
+/** The exact saved authoring entry a build is requested from; independent of its derived IR revision. */
+export interface JobSource {
+  version: string
+  fingerprint: string
+}
+
+/** An author's explicit request to render/export an acknowledged document version. */
+export interface StartJobRequest {
+  target: string
+  source: JobSource
+}
+
 /** @experimental A build or an export of a document, run by the workspace service one at a time. */
 export interface CompileJob {
   id: string
@@ -336,8 +348,12 @@ export interface CompileJob {
   target: string
   kind: OutputTarget['kind']
   state: JobState
-  /** The IR revision it was made from: a job of the same target and revision is not run again. */
+  /** The derived IR revision captured for this output; not the authoring document's save version. */
   revision: string
+  /** Absent only in historical jobs created before source confirmation was recorded. */
+  source?: JobSource
+  /** Fingerprint of the additional files captured for this output, used for reuse checks. */
+  inputFingerprint?: string
   /** Taken from an earlier job of the same target and revision. */
   cached?: boolean
   progress?: { phase: string, done?: number, total?: number }
@@ -363,8 +379,8 @@ export interface OutputJobs {
   targets(document: string): Promise<OutputTarget[]>
   /** The jobs of the document (all, without one), newest first. */
   list(document?: string): CompileJob[]
-  /** Starts a job of `target` for the document as it is now, or answers the one already made from this revision. */
-  start(document: string, target: string): Promise<CompileJob>
+  /** Confirms the optional saved source, then captures a fresh compilation. Reuse also requires identical source and inputs. */
+  start(document: string, target: string, source?: JobSource): Promise<CompileJob>
   /** Settles once the job has ended. */
   wait(id: string): Promise<CompileJob>
   cancel(id: string): CompileJob | undefined

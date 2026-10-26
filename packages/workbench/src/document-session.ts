@@ -216,12 +216,14 @@ export class DocumentSession {
       this.#persist(slot); this.#emit(slot)
     } catch (error) { slot.state = { ...slot.state, error: this.#error(error) }; this.#emit(slot) }
   }
-  async flush(): Promise<void> {
+  async flush(signal?: AbortSignal): Promise<void> {
+    signal?.throwIfAborted()
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
     if (!slot) return
     if (slot.state.composing || slot.state.restored || slot.state.error) throw new Error(slot.state.error ?? 'document-draft-unconfirmed')
     const started = Date.now()
     while (slot.state.dirty || slot.flight) {
+      signal?.throwIfAborted()
       if (slot.state.error || slot.state.composing || slot.state.restored) throw new Error(slot.state.error ?? 'document-draft-unconfirmed')
       if (Date.now() - started > 30000) throw new Error('document-save-timeout')
       await this.#save(slot)

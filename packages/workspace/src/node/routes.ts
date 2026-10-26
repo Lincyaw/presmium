@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
-import { DOCUMENT_ENTRY, hasRole, isRecord, jsonResponse, problemResponse, pushStream, sseResponse } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, problemResponse, pushStream, sseResponse } from '@lincyaw/kernel'
 import type { ChangesAnswer, CommitAnswer, CompileJob, DocumentOperation, DocumentsAnswer, JobsAnswer, Member, PresmiumNodePlugin, RequestContext, RevertResult, RevisionsAnswer, Route, SavedAnswer, ServerContribution, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
 import { hasBearerToken } from '@lincyaw/server'
 import { REVERT_TRAILER, saveSummary, trailers } from '../domain/commit-message.ts'
@@ -236,7 +236,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       })),
     },
     ...workbench ? workbenchRoutes(workbench) : {},
-    ...options.jobs ? jobRoutes(options.jobs) : {},
+    ...options.jobs ? jobRoutes(options.jobs, editor) : {},
     ...reviews ? reviewRoutes(reviews) : {},
     'changes/discard': {
       role: 'editor',
@@ -313,7 +313,7 @@ function workbenchRoutes(workbench: WorkbenchApi): Record<string, Route> {
  * The document's builds and exports (`jobs`): `GET` what it can be made into and its jobs, `POST { target }` starts one;
  * `jobs/cancel` (`POST { id }`); `jobs/events`, each change of the document's jobs as it happens (SSE, event `job`).
  */
-function jobRoutes(jobs: Jobs): Record<string, Route> {
+function jobRoutes(jobs: Jobs, editor: SourceEditor): Record<string, Route> {
   const own = (document: string, id: unknown) => {
     const job = typeof id === 'string' ? jobs.get(id) : undefined
     return job?.document === document ? job : undefined
@@ -326,7 +326,10 @@ function jobRoutes(jobs: Jobs): Record<string, Route> {
         if (request.method !== 'POST') return problemResponse(405, 'GET, POST')
         const body: unknown = await request.json().catch(() => undefined)
         if (!isRecord(body) || typeof body.target !== 'string') return problemResponse(400, '{ target: a renderer or an export of the document }')
-        return jsonResponse(await jobs.start(ctx.document, body.target))
+        if (!isRecord(body.source) || typeof body.source.version !== 'string' || !body.source.version || body.source.version.length > 128 || typeof body.source.fingerprint !== 'string' || !body.source.fingerprint || body.source.fingerprint.length > 128) return problemResponse(400, 'job-source-required')
+        const source = editor.read(editor.scope(ctx.document), ctx.document ? `${ctx.document}/${DOCUMENT_ENTRY}` : DOCUMENT_ENTRY, ctx.member)
+        if (source.version !== body.source.version || fnv1a64(source.content) !== body.source.fingerprint) throw new RequestError(409, 'job-source-changed')
+        return jsonResponse(await jobs.start(ctx.document, body.target, { version: body.source.version, fingerprint: body.source.fingerprint }))
       }),
     },
     'jobs/cancel': {
