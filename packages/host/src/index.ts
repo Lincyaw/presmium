@@ -72,7 +72,7 @@ export type { StepScope as StepScopeValue } from './step-scope.ts'
 export { createSharedStates } from './shared-state.ts'
 export type { SharedStates } from './shared-state.ts'
 export { PmToolbar } from './panels.ts'
-export { NAVIGATION, OPERATIONS, PLAYBACK_CONTROL, STATUS, STEP_CLOCK, SYNC_TRANSPORTS, TIMED_CAPTIONS, TOOLBAR } from './contracts.ts'
+export { NAVIGATION, OPERATIONS, PLAYBACK_CONTROL, PRODUCTION_PLAYBACK, STATUS, STEP_CLOCK, SYNC_TRANSPORTS, TIMED_CAPTIONS, TOOLBAR } from './contracts.ts'
 export type { TimedCaptions } from './contracts.ts'
 export { joinWindows } from './windows.ts'
 export { setSiteBase, siteBase } from './site.ts'
@@ -84,6 +84,7 @@ export type {
   Operations,
   PlaybackControl,
   PlaybackLease,
+  ProductionPlayback,
   ReplayHandler,
   ServerClient,
   SharedStateScope,

@@ -10,6 +10,7 @@ export class LecturePlayer {
   /** The time since the lecture reached its current step (ms); undefined while the viewer tries the page out. */
   readonly stepTime = createStore<number | undefined>(0)
   readonly trying = createStore(false)
+  readonly cursor = createStore<{ sectionId: string, step: number } | undefined>(undefined)
   readonly duration: number
   readonly events: TimedEvent[]
   readonly dropped: number
@@ -31,7 +32,6 @@ export class LecturePlayer {
     this.track = track
     this.clock = clock
     this.operations = operations
-    this.playback = playback?.register(() => this.pause())
     const drift = eventDrift(track, doc)
     const kept = timedEvents(track).filter(event => drift[event.index]?.grade !== 'lost')
     this.dropped = track.events.length - kept.length
@@ -65,17 +65,20 @@ export class LecturePlayer {
       }
       this.tryIt()
     })
+    this.playback = playback?.register(() => this.pause())
   }
 
   get playing(): boolean {
     return this.clock.playing.getSnapshot()
   }
 
-  play(): void {
-    if (this.disposed || this.playing) return
+  async play(): Promise<boolean> {
+    if (this.disposed) return false
+    if (this.playing) return true
     const generation = ++this.generation
-    const start = () => {
-      if (this.disposed || generation !== this.generation) return
+    try {
+      if (this.playback && !await this.playback.requestStart()) return false
+      if (this.disposed || generation !== this.generation) return false
       if (this.trying.getSnapshot()) {
         // Restore the timeline without cancelling the permission just granted
         // for this start. Explicit Back/Seek still pause through their own API.
@@ -84,15 +87,15 @@ export class LecturePlayer {
         this.clock.seek(at)
         this.fold(at)
       }
-      if (this.disposed || generation !== this.generation) return
+      if (this.disposed || generation !== this.generation) return false
       this.clock.error.set(undefined)
       this.clock.play()
       this.loop(generation)
+      return this.clock.playing.getSnapshot()
+    } catch (error) {
+      if (!this.disposed && generation === this.generation) { this.pause(); this.clock.error.set(error instanceof Error ? error : new Error(String(error))) }
+      return false
     }
-    if (!this.playback) return start()
-    void this.playback.requestStart().then(allowed => { if (allowed) start() }).catch(error => {
-      if (!this.disposed && generation === this.generation) this.clock.error.set(error instanceof Error ? error : new Error(String(error)))
-    })
   }
 
   pause(): void {
@@ -101,7 +104,7 @@ export class LecturePlayer {
     cancelAnimationFrame(this.frame)
     this.frame = 0
     this.clock.pause()
-    this.time.set(this.clock.now())
+    this.setTime(this.clock.now())
   }
 
   seek(t: number): void {
@@ -137,6 +140,7 @@ export class LecturePlayer {
 
   private fold(t: number, boundary?: number): void {
     this.operations.clear()
+    this.cursor.set(undefined)
     const last = boundary ?? Math.max(lastIndexAt(this.events, t), this.events.findIndex(e => e.type === 'go'))
     for (let i = 0; i <= last; i++) this.apply(this.events[i]!, i < last)
     this.applied = last
@@ -145,11 +149,12 @@ export class LecturePlayer {
 
   private setTime(t: number): void {
     this.time.set(t)
-    this.stepTime.set(t - (this.reached[this.applied] ?? 0))
+    this.stepTime.set(this.trying.getSnapshot() ? undefined : t - (this.reached[this.applied] ?? 0))
   }
 
   private apply(event: TimedEvent, seeking: boolean): void {
     this.operations.replay({ type: event.type, data: event.data }, seeking)
+    if (event.type === 'go' && typeof event.data.section === 'string') this.cursor.set({ sectionId: event.data.section, step: Number(event.data.step ?? 0) })
   }
 
   advanceTo(t: number): void {

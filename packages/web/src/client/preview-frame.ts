@@ -1,4 +1,4 @@
-import { componentErrors, componentErrorRevision, presmiumReport, presmiumService, PLAYBACK_CONTROL, createStore, observe, runtimeRevision } from '@lincyaw/host'
+import { componentErrors, componentErrorRevision, presmiumReport, presmiumService, PLAYBACK_CONTROL, PRODUCTION_PLAYBACK, createStore, observe, runtimeRevision } from '@lincyaw/host'
 import type { NavigationPosition, PlaybackControl } from '@lincyaw/host'
 import { connectPreviewFrame, irBlocks, isPreviewActive, isPreviewEmbedded, PREVIEW_REVISION, stepKeys, stepTrail } from '@lincyaw/kernel'
 import type { FollowAnchor, PreviewFrame } from '@lincyaw/kernel'
@@ -74,6 +74,34 @@ function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions
     setActive: page.setActive,
     activityChanged: value => viewer.options.editingActive?.set(value),
     pausePlayback: () => presmiumService(PLAYBACK_CONTROL)?.pause(),
+    async productionPlayback(command, signal) {
+      // The page's ready handshake can precede asynchronous browser-plugin setup.
+      if (!presmiumService(PRODUCTION_PLAYBACK) && !presmiumReport()) await new Promise<void>((resolve, reject) => {
+        const ready = () => {
+          if (!signal.aborted && !presmiumReport()) return
+          stop(); signal.removeEventListener('abort', ready)
+          signal.aborted ? reject(signal.reason ?? new DOMException('Playback cancelled', 'AbortError')) : resolve()
+        }
+        const stop = runtimeRevision.subscribe(ready)
+        signal.addEventListener('abort', ready, { once: true }); ready()
+      })
+      signal.throwIfAborted()
+      const service = presmiumService(PRODUCTION_PLAYBACK)
+      if (!service || service.version !== 1) throw new Error('production-playback-unavailable')
+      return service.control(command, signal)
+    },
+    subscribeProductionPlayback(listener) {
+      let current = presmiumService(PRODUCTION_PLAYBACK), release = () => {}
+      const attach = () => {
+        const next = presmiumService(PRODUCTION_PLAYBACK)
+        release(); current = next
+        release = current?.state.subscribe(() => listener(current?.state.getSnapshot())) ?? (() => {})
+        listener(current?.state.getSnapshot())
+      }
+      const stop = runtimeRevision.subscribe(attach)
+      attach()
+      return () => { stop(); release() }
+    },
     setPlaybackGate(authorize) {
       let current: PlaybackControl | undefined
       let release = () => {}

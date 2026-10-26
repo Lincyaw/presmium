@@ -1,4 +1,5 @@
 import { isRecord } from '../errors.ts'
+import type { ProductionBinding, ProductionPlaybackCommand, ProductionPlaybackState } from './production.ts'
 
 export const PREVIEW_PROTOCOL = 1
 
@@ -116,6 +117,7 @@ export interface PreviewSource {
 }
 
 export type PreviewCommand =
+  | { type: 'production-playback', request: number, control: ProductionPlaybackCommand }
   | { type: 'document-history', action: 'undo' | 'redo', request: number }
   | { type: 'document-history-reset' }
   | { type: 'pause-playback', request: number }
@@ -146,6 +148,8 @@ export type PreviewCommandType = PreviewCommand['type']
 export type PreviewShortcut = 'undo' | 'redo' | 'dismiss'
 
 export type PreviewReport =
+  | { type: 'production-playback-state', state: ProductionPlaybackState }
+  | { type: 'production-playback-result', request: number, binding: ProductionBinding, state?: ProductionPlaybackState, error?: string }
   | { type: 'document-history-state', section?: string, undo: boolean, redo: boolean }
   | { type: 'document-history-result', request: number, handled: boolean, error?: string }
   | { type: 'playback-paused', request: number, error?: string }
@@ -185,6 +189,25 @@ export function previewEnvelope<M extends PreviewCommand | PreviewReport>(nonce:
 
 const text = (value: unknown): value is string => typeof value === 'string'
 const optional = <T>(value: unknown, is: (v: unknown) => v is T) => value === undefined || is(value)
+const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
+const positive = (value: unknown): value is number => finite(value) && value > 0
+const nonnegative = (value: unknown): value is number => finite(value) && value >= 0
+const productionBinding = (value: unknown): value is ProductionBinding => isRecord(value) && isRecord(value.source)
+  && typeof value.source.documentId === 'string' && value.source.documentId.length > 0 && value.source.documentId.length <= 200
+  && typeof value.source.version === 'string' && /^[\da-f]{20}$/.test(value.source.version)
+  && typeof value.source.fingerprint === 'string' && /^[\da-f]{16}$/.test(value.source.fingerprint)
+  && typeof value.irRevision === 'string' && value.irRevision.length > 0 && value.irRevision.length <= 200
+  && typeof value.planId === 'string' && value.planId.length > 0 && value.planId.length <= 200
+const productionState = (value: unknown): value is ProductionPlaybackState => {
+  if (!isRecord(value) || !productionBinding(value.binding) || !['loading', 'ready', 'estimated', 'unavailable', 'failed'].includes(String(value.status)) || !optional(value.error, text)) return false
+  if (value.position === undefined) return true
+  const position = value.position
+  return isRecord(position) && nonnegative(position.timeMs) && nonnegative(position.durationMs) && position.timeMs <= position.durationMs
+    && optional(position.stepTimeMs, nonnegative) && optional(position.sectionId, text) && optional(position.stepId, text)
+    && typeof position.playing === 'boolean' && positive(position.rate) && typeof position.trying === 'boolean'
+}
+const productionCommand = (value: unknown): value is ProductionPlaybackCommand => isRecord(value) && productionBinding(value.binding)
+  && (value.action === 'load' || value.action === 'pause' || value.action === 'play' || value.action === 'seek' && nonnegative(value.timeMs) || value.action === 'rate' && positive(value.rate))
 const step = (value: unknown): value is number => Number.isInteger(value) && (value as number) >= 0
 const request = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0
 const strings = (value: unknown): value is string[] => Array.isArray(value) && value.length <= 10_000 && value.every(text)
@@ -248,6 +271,7 @@ export function toPreviewCommand(data: unknown, nonce: string): PreviewCommand |
   if (!isPreviewEnvelope(data, nonce) || data.version !== PREVIEW_PROTOCOL) return undefined
   const m = data as Record<string, unknown>
   switch (m.type) {
+    case 'production-playback': return request(m.request) && productionCommand(m.control) ? { type: 'production-playback', request: m.request, control: m.control } : undefined
     case 'document-history': return request(m.request) && (m.action === 'undo' || m.action === 'redo') ? { type: 'document-history', request: m.request, action: m.action } : undefined
     case 'document-history-reset': return { type: 'document-history-reset' }
     case 'pause-playback':
@@ -279,6 +303,9 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
   if (!isPreviewEnvelope(data, nonce) || data.version !== PREVIEW_PROTOCOL) return undefined
   const m = data as Record<string, unknown>
   switch (m.type) {
+    case 'production-playback-state': return productionState(m.state) ? { type: 'production-playback-state', state: m.state } : undefined
+    case 'production-playback-result': return request(m.request) && productionBinding(m.binding) && optional(m.state, productionState) && optional(m.error, text)
+      ? { type: 'production-playback-result', request: m.request, binding: m.binding, ...m.state ? { state: m.state as ProductionPlaybackState } : {}, ...m.error !== undefined ? { error: m.error as string } : {} } : undefined
     case 'document-history-state': return optional(m.section, text) && typeof m.undo === 'boolean' && typeof m.redo === 'boolean' ? { type: 'document-history-state', ...m.section === undefined ? {} : { section: m.section as string }, undo: m.undo, redo: m.redo } : undefined
     case 'document-history-result': return request(m.request) && typeof m.handled === 'boolean' && optional(m.error, text) ? { type: 'document-history-result', request: m.request, handled: m.handled, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
     case 'playback-request': return request(m.request) ? { type: 'playback-request', request: m.request } : undefined

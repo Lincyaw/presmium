@@ -1,4 +1,4 @@
-import { PmIcon, PmTabs, TIMED_CAPTIONS, useMessages, useServer, useService, useStore } from '@lincyaw/host'
+import { PmIcon, PmTabs, PRODUCTION_PLAYBACK, TIMED_CAPTIONS, useMessages, useServer, useService, useStore } from '@lincyaw/host'
 import { isPreviewEmbedded } from '@lincyaw/kernel'
 import { useEffect, useState } from 'react'
 import {
@@ -16,6 +16,7 @@ import type { Utterance } from '../domain/index.ts'
 import ChapterList from './ChapterList.tsx'
 import { useLecturePlayback } from './playback.ts'
 import { lectureSource } from './source.ts'
+import { PLAYBACK_RATES, ProductionPlaybackController } from './production-playback.ts'
 import {
   burnedCaptions,
   exporting,
@@ -27,7 +28,6 @@ import {
 import TranscriptList from './TranscriptList.tsx'
 import './PlayerPanel.css'
 const cls = 'pm-lecture-button pm-ui-button pm-ui-button--small'
-const RATES = [0.5, 0.75, 1, 1.25, 1.5, 2]
 export default function PlayerPanel(_props: { view?: string }) {
   const t = useMessages(LECTURE_MESSAGES),
     viewer = useViewer(),
@@ -38,6 +38,8 @@ export default function PlayerPanel(_props: { view?: string }) {
   const { player, status, failure, language, setLanguage } =
     useLecturePlayback()
   const timedCaptions = useService(TIMED_CAPTIONS)
+  const production = useService(PRODUCTION_PLAYBACK)
+  const controlled = useStore(production instanceof ProductionPlaybackController ? production.engaged : undefined, false)
   useEffect(() => player && status === 'ready' ? timedCaptions?.claim() : undefined, [player, status, timedCaptions])
   const time = useStore(player?.time, 0),
     trying = useStore(player?.trying, false),
@@ -56,7 +58,7 @@ export default function PlayerPanel(_props: { view?: string }) {
     void lectureSource(server, doc.config.presmium[LECTURE_ID])
       .list()
       .then((tracks) => {
-        if (active && !playing.getSnapshot() && tracks.some(track => track.id === SCRIPT_TRACK))
+        if (active && !playing.getSnapshot() && !(production instanceof ProductionPlaybackController && production.engaged.getSnapshot()) && tracks.some(track => track.id === SCRIPT_TRACK))
           play(SCRIPT_TRACK)
       })
       .catch((error) =>
@@ -68,7 +70,7 @@ export default function PlayerPanel(_props: { view?: string }) {
     return () => {
       active = false
     }
-  }, [server.available, available, doc])
+  }, [server.available, available, doc, production])
   const state = !player
     ? undefined
     : trying
@@ -105,6 +107,7 @@ export default function PlayerPanel(_props: { view?: string }) {
       ? player.track.utterances.filter((u) => isStale(u, lang)).map((u) => u.id)
       : [],
   )
+  if (controlled) return player && current ? <div className="pm-lecture-layer"><div className="pm-lecture-dock"><p className="pm-lecture-caption" lang={lang} aria-live="polite">{text(current)}</p></div></div> : null
   if (!id) return null
   return (
     <div className="pm-lecture-layer">
@@ -264,7 +267,7 @@ export default function PlayerPanel(_props: { view?: string }) {
                       player.setRate(Number(event.target.value))
                     }
                   >
-                    {RATES.map((value) => (
+                    {PLAYBACK_RATES.map((value) => (
                       <option key={value} value={value}>
                         {value}×
                       </option>
@@ -341,6 +344,7 @@ export default function PlayerPanel(_props: { view?: string }) {
                     {synthetic}
                   </span>
                 )}
+                {voice?.kind === 'silent' && <span className="pm-ui-badge">{t.player.silent}</span>}
                 <button
                   type="button"
                   className={cls}

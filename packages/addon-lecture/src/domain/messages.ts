@@ -46,6 +46,7 @@ export interface LectureMessages {
     trying: string
     close: string
     synthetic: string
+    silent: string
     syntheticBy: (provider: string) => string
     loading: string
     failed: (reason: string) => string
@@ -132,6 +133,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       trying: '你正在自行操作，讲授已暂停',
       close: '关闭讲授',
       synthetic: 'AI 合成语音',
+      silent: '静音计划',
       syntheticBy: provider => `AI 合成语音（${provider}）`,
       loading: '正在加载讲授…',
       failed: reason => `讲授加载失败：${reason}`,
@@ -216,6 +218,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       trying: 'You are trying it yourself; the lecture is paused',
       close: 'Close the lecture',
       synthetic: 'AI-generated voice',
+      silent: 'Silent plan',
       syntheticBy: provider => `AI-generated voice (${provider})`,
       loading: 'Loading the lecture…',
       failed: reason => `Lecture could not be loaded: ${reason}`,

@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction } from 'react'
 import type { Store } from './store.ts'
 import { defineService } from '@lincyaw/kernel/contracts'
 import type { Cursor, Member, Operation, PresentationMode, ServiceToken, StartReport, Unsubscribe } from '@lincyaw/kernel/contracts'
-import type { IRDocument } from '@lincyaw/kernel'
+import type { IRDocument, ProductionPlaybackCommand, ProductionPlaybackState } from '@lincyaw/kernel'
 import type { IconName } from '@lincyaw/design'
 
 export type ViewRole = 'audience' | 'presenter' | 'reader'
@@ -127,6 +127,14 @@ export interface PlaybackControl {
 }
 
 export const PLAYBACK_CONTROL = defineService<PlaybackControl>('presmium.playbackControl')
+
+/** Observes and controls the loaded lecture player's clock; author interfaces never synthesize time. */
+export interface ProductionPlayback {
+  readonly version: 1
+  readonly state: Pick<Store<ProductionPlaybackState | undefined>, 'getSnapshot' | 'subscribe'>
+  control(command: ProductionPlaybackCommand, signal?: AbortSignal): Promise<ProductionPlaybackState>
+}
+export const PRODUCTION_PLAYBACK = defineService<ProductionPlayback>('presmium.productionPlayback')
 
 /** A loaded timed-caption player owns presentation captions until its lease is released. */
 export interface TimedCaptions {
