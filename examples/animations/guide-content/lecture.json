@@ -139,7 +139,8 @@
       "children": [
         "video",
         "audio",
-        "text-72"
+        "text-72",
+        "media-playback-practice"
       ],
       "stepOrder": [
         "media-step"
@@ -1842,6 +1843,32 @@
           ]
         }
       ]
+    },
+    "media-playback-practice": {
+      "id": "media-playback-practice",
+      "type": "text",
+      "content": [
+        {
+          "id": "media-playback-practice-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "动手比较：先播放本页的本地视频，再播放音频，确认之前的媒体已暂停；反过来再试一次。它们与文档内动画、讲授及试听通过同一播放控制权交接。"
+            }
+          ]
+        },
+        {
+          "id": "media-playback-practice-p2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "用原生暂停和进度条检查实际媒体；循环能否使用取决于本讲设置与浏览器提供的控制。工作台首次定位会取消尚未获准的自动播放；需要时请明确点播放，手动暂停后切步不会自动重新开始。浏览器自动播放策略仍适用。"
+            }
+          ]
+        }
+      ]
     }
   },
   "steps": {
@@ -1976,6 +2003,10 @@
         },
         {
           "blockId": "text-72",
+          "visible": true
+        },
+        {
+          "blockId": "media-playback-practice",
           "visible": true
         }
       ],

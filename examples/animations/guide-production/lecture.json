@@ -63,7 +63,8 @@
       "title": "随动画讲，或动画结束后再讲",
       "level": 2,
       "children": [
-        "timing-scene"
+        "timing-scene",
+        "timing-instructions"
       ],
       "stepOrder": [
         "timing-during",
@@ -195,6 +196,26 @@
               "text": "在工作台打开组件的“本步字幕 / 讲稿”。SQL 的显示与实际读音分别保存，动作 cue 保留稳定身份和目标。此处未配置语音，因此不会自动合成。"
             }
           ]
+        },
+        {
+          "id": "script-sidebar-path",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "纯文字页和空页也能从文档顶部“本步字幕 / 讲稿”图标打开旁栏。动画卡片的就地字段与这个旁栏使用同一份本步讲稿，编辑不会切到放映或视频。"
+            }
+          ]
+        },
+        {
+          "id": "script-practice-path",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在当前讲稿末尾补一句说明，紧接着在正文也补一句，等待保存后刷新重开。已有 SQL 发音标记和动作提示应保留。更完整的可改材料见“动手编辑一份讲义”的午餐预算页。"
+            }
+          ]
         }
       ]
     },
@@ -237,6 +258,16 @@
             {
               "type": "text",
               "text": "试听与讲授播放互斥。默认配音为 none；要启用 TTS，请先由运营者配置真实 provider，再从返回的目录选择音色。示例不会写入凭据。"
+            }
+          ]
+        },
+        {
+          "id": "voice-doc-ui-boundary",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "当前工作台文档旁栏只提供本步讲稿与播放时机，尚未组合完整的音色选择、配音任务和独立视频制作入口。本节说明真实服务目录与制作配置的前提，不代表能在当前文档中找到对应按钮；配音任务的版本核对和重复提交保护也仍需完善，相关制作流程尚未完成整体验收。"
             }
           ]
         }
@@ -357,6 +388,42 @@
       "type": "code",
       "language": "shell",
       "value": "presmium check guide-production --json\npresmium build guide-production --to web\n# 只有配音与所需能力准备好之后才构建 lecture 或导出视频。"
+    },
+    "timing-instructions": {
+      "id": "timing-instructions",
+      "type": "text",
+      "content": [
+        {
+          "id": "timing-entry-path",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在场景卡片的字幕图标或顶部讲稿旁栏中，分别选两步查看设置：第一步“同步动画”，第二步“动画后”；两步的最短停留均为 1600 毫秒，结束停顿为 300 毫秒。"
+            }
+          ]
+        },
+        {
+          "id": "timing-edit-path",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "把第一步最短停留改为 2000，检查来源显示为本步。点“恢复本步继承”，该步时机回到文稿默认的 800 / 200 毫秒；这个动作不会删除讲稿、发音、cue、音色或第二步覆盖。"
+            }
+          ]
+        },
+        {
+          "id": "timing-audio-limit",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本讲默认不配音。字段保存的是制作意图，局部播放只运行真实场景，不能用它假装听到了配音。“动手编辑一份讲义”的时机练习还可尝试混合讲稿来源与非法数值草稿。"
+            }
+          ]
+        }
+      ]
     }
   },
   "steps": {
@@ -399,6 +466,10 @@
           "parameters": {
             "value": 25
           }
+        },
+        {
+          "blockId": "timing-instructions",
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -416,6 +487,10 @@
           "parameters": {
             "value": 75
           }
+        },
+        {
+          "blockId": "timing-instructions",
+          "visible": true
         }
       ],
       "narrationIds": [

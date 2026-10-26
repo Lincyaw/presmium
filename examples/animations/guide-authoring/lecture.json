@@ -1,0 +1,1234 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-guide-authoring",
+  "metadata": {
+    "title": "功能导览 09：动手编辑一份讲义",
+    "lang": "zh-CN",
+    "description": "用一份午餐预算小讲义练习页面复制、原生编辑、每步讲稿、播放时机、保存与输出。",
+    "plugins": [
+      "@lincyaw/addon-lecture"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {},
+      "lecture": {}
+    }
+  },
+  "sectionOrder": [
+    "start",
+    "budget",
+    "copy",
+    "scripts",
+    "timing",
+    "comments",
+    "delivery"
+  ],
+  "sections": {
+    "start": {
+      "id": "start",
+      "title": "先完成一个真实的小练习",
+      "level": 1,
+      "children": [
+        "start-goal",
+        "start-route"
+      ],
+      "stepOrder": [
+        "start-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "budget": {
+      "id": "budget",
+      "title": "午餐预算：先读价格，再算合计",
+      "level": 2,
+      "children": [
+        "budget-question",
+        "budget-details",
+        "budget-conclusion"
+      ],
+      "stepOrder": [
+        "budget-read",
+        "budget-total"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "copy": {
+      "id": "copy",
+      "title": "复制材料，做一个可比较的方案",
+      "level": 2,
+      "children": [
+        "copy-actions",
+        "copy-boundary"
+      ],
+      "stepOrder": [
+        "copy-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "scripts": {
+      "id": "scripts",
+      "title": "纯文字页也能编辑本步字幕与讲稿",
+      "level": 2,
+      "children": [
+        "scripts-actions",
+        "scripts-scope"
+      ],
+      "stepOrder": [
+        "scripts-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "timing": {
+      "id": "timing",
+      "title": "看清来源，再调整本步播放时机",
+      "level": 2,
+      "children": [
+        "timing-actions",
+        "timing-intent"
+      ],
+      "stepOrder": [
+        "timing-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "comments": {
+      "id": "comments",
+      "title": "用批注说明修改，用历史核对结果",
+      "level": 2,
+      "children": [
+        "comments-actions",
+        "comments-agent"
+      ],
+      "stepOrder": [
+        "comments-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "delivery": {
+      "id": "delivery",
+      "title": "保存你的方案，再进入放映或输出",
+      "level": 2,
+      "children": [
+        "delivery-purpose",
+        "delivery-actions",
+        "delivery-version",
+        "delivery-next"
+      ],
+      "stepOrder": [
+        "delivery-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "start-goal": {
+      "id": "start-goal",
+      "type": "text",
+      "content": [
+        {
+          "id": "start-goal-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "目标：为每人 30 元的午餐预算比较两种方案。先读价格，再算合计与余额；完成后，你会拥有一页自己的方案，而不是一份只读功能清单。"
+            }
+          ]
+        },
+        {
+          "id": "start-goal-p2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "请在工作台打开本讲。网页阅读页可查看内容和步骤，但页面复制、正文编辑、讲稿与历史操作在工作台的文档编辑入口使用。本文默认不配音，打开或改字不会请求语音合成。"
+            }
+          ]
+        }
+      ]
+    },
+    "start-route": {
+      "id": "start-route",
+      "type": "text",
+      "content": [
+        {
+          "id": "start-route-list",
+          "type": "list",
+          "ordered": true,
+          "children": [
+            {
+              "id": "start-route-item1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "start-route-line1",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "在页面栏找到“午餐预算：先读价格，再算合计”，把它作为练习材料。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "start-route-item2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "start-route-line2",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "先复制这一页并撤消、恢复，再改副本的价格与合计。原来的材料保留作对照。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "start-route-item3",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "start-route-line3",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "用工具栏的“本步字幕 / 讲稿”打开旁栏，编辑本步讲稿并核对播放时机。纯文字页也有这个入口。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "start-route-item4",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "start-route-line4",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "看见保存状态确认后刷新并重新打开，确认你的正文、讲稿和时机仍在。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "budget-question": {
+      "id": "budget-question",
+      "type": "text",
+      "content": [
+        {
+          "id": "budget-question-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每人预算 30 元。主食、配菜与饮品各选一份，如何检查是否超支？"
+            }
+          ]
+        }
+      ]
+    },
+    "budget-table": {
+      "id": "budget-table",
+      "type": "text",
+      "content": [
+        {
+          "id": "budget-price-table",
+          "type": "table",
+          "headerRows": 1,
+          "columnWidths": [
+            180,
+            100
+          ],
+          "children": [
+            {
+              "id": "budget-row-0",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "budget-cell-0-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "项目"
+                    }
+                  ]
+                },
+                {
+                  "id": "budget-cell-0-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "价格（¥）"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "budget-row-1",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "budget-cell-1-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "主食"
+                    }
+                  ]
+                },
+                {
+                  "id": "budget-cell-1-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "12"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "budget-row-2",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "budget-cell-2-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "配菜"
+                    }
+                  ]
+                },
+                {
+                  "id": "budget-cell-2-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "8"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "budget-row-3",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "budget-cell-3-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "饮品"
+                    }
+                  ]
+                },
+                {
+                  "id": "budget-cell-3-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "5"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "budget-method": {
+      "id": "budget-method",
+      "type": "text",
+      "content": [
+        {
+          "id": "budget-method-list",
+          "type": "list",
+          "ordered": true,
+          "children": [
+            {
+              "id": "budget-method-item1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "budget-method-line1",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "先估算：12 + 8 接近 20，再加 5，应该小于 30。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "budget-method-item2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "budget-method-line2",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "再精算：12 + 8 + 5 = 25。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "budget-method-item3",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "budget-method-line3",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "检查余额：30 − 25 = 5，预算内还剩 5 元。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "budget-conclusion": {
+      "id": "budget-conclusion",
+      "type": "text",
+      "content": [
+        {
+          "id": "budget-conclusion-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "结论：原方案合计 25 元，剩余 5 元。比较方案时，保留价格明细，才能解释差额来自哪里。"
+            }
+          ]
+        }
+      ]
+    },
+    "budget-details": {
+      "id": "budget-details",
+      "type": "container",
+      "layout": "stack",
+      "children": [
+        "budget-table",
+        "budget-method"
+      ],
+      "properties": {
+        "title": "价格与计算过程"
+      }
+    },
+    "copy-actions": {
+      "id": "copy-actions",
+      "type": "text",
+      "content": [
+        {
+          "id": "copy-actions-list",
+          "type": "list",
+          "ordered": true,
+          "children": [
+            {
+              "id": "copy-actions-item1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "copy-actions-line1",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "打开页面栏，在“午餐预算：先读价格，再算合计”右侧的更多菜单选择“复制页面”。副本紧接在原页后面。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "copy-actions-item2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "copy-actions-line2",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "暂时不要改正文。点工具栏“撤消”，检查整页副本被移除；再点“恢复”，检查副本及其步骤和讲稿一起回来。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "copy-actions-item3",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "copy-actions-line3",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "用副本的更多菜单重命名为“午餐方案 B”。在副本表格中把配菜的 8 改成 10。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "copy-actions-item4",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "copy-actions-line4",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "把副本计算过程和结论改为：12 + 10 + 5 = 27，30 − 27 = 3。回到原页，核对它仍是 25 元与 5 元。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "copy-boundary": {
+      "id": "copy-boundary",
+      "type": "text",
+      "content": [
+        {
+          "id": "copy-boundary-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "复制得到独立的正文、步骤和讲稿，图片与组件定义等素材继续共享。批注是原位置的讨论，留在原内容上，不会新增一份副本讨论。"
+            }
+          ]
+        },
+        {
+          "id": "copy-boundary-p2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "新增页用页面栏加号；重命名、复制、上下移动和删除在页级更多中。移动保留绑定，删除会说明关联内容并检查引用。最后一页删除后保留为空页；拖动页面重排尚未实现。"
+            }
+          ]
+        }
+      ]
+    },
+    "scripts-actions": {
+      "id": "scripts-actions",
+      "type": "text",
+      "content": [
+        {
+          "id": "scripts-actions-list",
+          "type": "list",
+          "ordered": true,
+          "children": [
+            {
+              "id": "scripts-actions-item1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "scripts-actions-line1",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "在页面栏选择“午餐方案 B”（或原练习页），点顶部“本步字幕 / 讲稿”图标，旁栏标题下应显示所选页与“第 1 / 2 步”。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "scripts-actions-item2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "scripts-actions-line2",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "第一步有两段讲稿。把第一段“配菜八元”改成“配菜十元”，保留已有发音标记与暂停提示；在“发音”操作中可分别检查显示文字与读音。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "scripts-actions-item3",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "scripts-actions-line3",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "点旁栏“下一步”，把第二步的总额与余额改成二十七元和三元。再回到上一步，检查两步仍是各自的内容。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "scripts-actions-item4",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "scripts-actions-line4",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "保持讲稿旁栏打开，回正文补一句“方案 B 多花 2 元”。等待保存，刷新重开：表格、正文和讲稿都应保留。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "scripts-scope": {
+      "id": "scripts-scope",
+      "type": "text",
+      "content": [
+        {
+          "id": "scripts-scope-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "没有动画、没有讲稿的普通页或空页也能使用顶部同一入口。空字段首次输入才建立本步讲稿，正文不会被自动复制进讲稿。"
+            }
+          ]
+        },
+        {
+          "id": "scripts-scope-p2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "带动画的示例还可在动画卡片的字幕图标就地展开同一份讲稿。可去“讲稿与制作”的“本步讲稿、发音与动作提示”一页比较两种入口；它们不维护第二份字幕。"
+            }
+          ]
+        }
+      ]
+    },
+    "timing-actions": {
+      "id": "timing-actions",
+      "type": "text",
+      "content": [
+        {
+          "id": "timing-actions-list",
+          "type": "list",
+          "ordered": true,
+          "children": [
+            {
+              "id": "timing-actions-item1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "timing-actions-line1",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "选择午餐练习页第一步，在讲稿旁栏找到“配音开始”“最短停留（毫秒）”“结束停顿（毫秒）”。本例应显示本页继承的 1200 与 250。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "timing-actions-item2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "timing-actions-line2",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "第一步两段讲稿原有不同开始时机。点“统一本步时机”，再选择“动画后”，把最短停留改为 1800，结束停顿改为 300。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "timing-actions-item3",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "timing-actions-line3",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "切到第二步，再回来，检查第一步的明确设置仍在。点“恢复本步继承”：本步字段回到页面的 1200 / 250，两段讲稿的不同开始时机重新显现。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "timing-actions-item4",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "timing-actions-line4",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "在最短停留里输入一个单独的负号，再移开焦点：错误明确写着“未采用”，负号不会成为文稿中的毫秒数。请把它改为有效数值，或点“恢复本步继承”后再放映。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "timing-intent": {
+      "id": "timing-intent",
+      "type": "text",
+      "content": [
+        {
+          "id": "timing-intent-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "“同步动画 / 动画后”与两项毫秒值是讲授制作意图，不等于已经有配音。本讲没有生成音频，纯文字步骤也没有可等待的动画。"
+            }
+          ]
+        },
+        {
+          "id": "timing-intent-p2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "要对照有时长的真实场景，请打开“讲稿与制作”的“随动画讲，或动画结束后再讲”。编辑会先暂停相关预览与试听；局部动画播放不伪装为有声讲授。"
+            }
+          ]
+        }
+      ]
+    },
+    "comments-actions": {
+      "id": "comments-actions",
+      "type": "text",
+      "content": [
+        {
+          "id": "comments-actions-list",
+          "type": "list",
+          "ordered": true,
+          "children": [
+            {
+              "id": "comments-actions-item1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "comments-actions-line1",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "在方案 B 的结论中选择“3 元”，使用原生批注入口写下“能否在不超预算的条件下再加一份配菜？”。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "comments-actions-item2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "comments-actions-line2",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "点顶部批注图标查看线程。选区来自同一个正文编辑器，可跨段；讨论内容和原位置一起保存。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "comments-actions-item3",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "comments-actions-line3",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "在正文输入一句临时说明，立即用撤消恢复，再用恢复重做。讲稿字段内的撤消作用于该字段；页面结构修改可从文档历史撤回。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "comments-actions-item4",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "comments-actions-line4",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "等待“已保存”后打开版本历史，查看真实记录。若出现保存冲突或恢复草稿提示，先核对当前文稿，再选择重试或明确放弃该草稿。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "comments-agent": {
+      "id": "comments-agent",
+      "type": "text",
+      "content": [
+        {
+          "id": "comments-agent-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "不需要模型也能编辑、批注、保存和预览。AI 助手需要你自己的真实模型配置；批注存在不表示已自动发送给助手，批量发送与统一审阅也不能当成已经完成的流程。"
+            }
+          ]
+        }
+      ]
+    },
+    "delivery-purpose": {
+      "id": "delivery-purpose",
+      "type": "text",
+      "content": [
+        {
+          "id": "delivery-purpose-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先回到方案 B，核对价格、合计、余额与本步讲稿是一致的。保存状态确认的是编辑文稿；放映和导出使用另行编译的版本。"
+            }
+          ]
+        }
+      ]
+    },
+    "delivery-actions": {
+      "id": "delivery-actions",
+      "type": "text",
+      "content": [
+        {
+          "id": "delivery-actions-list",
+          "type": "list",
+          "ordered": true,
+          "children": [
+            {
+              "id": "delivery-actions-item1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "delivery-actions-line1",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "点“放映预览”会明确准备当前已保存文稿；先处理输入法组字、保存错误或尚未采用的时机输入。准备期间正文仍可继续编辑，后来输入会使旧编译结果失效。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "delivery-actions-item2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "delivery-actions-line2",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "放映标题显示“当前保存版本”时，任意选择第一步、第二步，再回第一步，检查结论按步骤显示与隐藏。若文稿已更新，点“重新编译”图标准备新版；回到文档仍能继续编辑原内容。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "delivery-actions-item3",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "delivery-actions-line3",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "点顶部“导出”图标打开“文档导出”面板，选择网站或 Notebook。出现“正在确认文稿保存…”时可取消本次导出准备，正文保存仍会继续；只有源保存确认后才提交生成任务。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "delivery-next": {
+      "id": "delivery-next",
+      "type": "text",
+      "content": [
+        {
+          "id": "delivery-next-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "更多已实现能力按主题放在其它导览：正文排版、代码运行、课堂互动、动画、可选执行环境和联网资源分别展开。外部服务、设备和网络的前提写在各页，未准备的能力不会用假数据代替。"
+            }
+          ]
+        }
+      ]
+    },
+    "delivery-version": {
+      "id": "delivery-version",
+      "type": "text",
+      "content": [
+        {
+          "id": "delivery-version-meaning",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "生成记录会说明“文稿保存版本相同”或“与当前编辑版本不同”，旧记录没有版本时显示“未记录保存版本”。它们比较的是文稿保存版本，不表示外部素材、代码和附件已经形成不可变的历史包。"
+            }
+          ]
+        },
+        {
+          "id": "delivery-audio-boundary",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本练习的文字与 Notebook 不需要语音服务。当前文档没有完整的音色、配音任务或视频制作入口；真实服务、录制权限与媒体裁切等条件请看“讲稿与制作”的明确说明。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "start-step": {
+      "id": "start-step",
+      "sectionId": "start",
+      "visuals": [
+        {
+          "blockId": "start-goal",
+          "visible": true
+        },
+        {
+          "blockId": "start-route",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "start-narration"
+      ]
+    },
+    "budget-read": {
+      "id": "budget-read",
+      "sectionId": "budget",
+      "title": "先读三项价格",
+      "visuals": [
+        {
+          "blockId": "budget-question",
+          "visible": true
+        },
+        {
+          "blockId": "budget-details",
+          "visible": true
+        },
+        {
+          "blockId": "budget-table",
+          "visible": true
+        },
+        {
+          "blockId": "budget-method",
+          "visible": false
+        },
+        {
+          "blockId": "budget-conclusion",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "budget-prices",
+        "budget-condition"
+      ]
+    },
+    "budget-total": {
+      "id": "budget-total",
+      "sectionId": "budget",
+      "title": "核算合计和余额",
+      "inherits": "budget-read",
+      "visuals": [
+        {
+          "blockId": "budget-method",
+          "visible": true
+        },
+        {
+          "blockId": "budget-conclusion",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "budget-condition",
+        "budget-result"
+      ]
+    },
+    "copy-step": {
+      "id": "copy-step",
+      "sectionId": "copy",
+      "visuals": [
+        {
+          "blockId": "copy-actions",
+          "visible": true
+        },
+        {
+          "blockId": "copy-boundary",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "scripts-step": {
+      "id": "scripts-step",
+      "sectionId": "scripts",
+      "visuals": [
+        {
+          "blockId": "scripts-actions",
+          "visible": true
+        },
+        {
+          "blockId": "scripts-scope",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "timing-step": {
+      "id": "timing-step",
+      "sectionId": "timing",
+      "visuals": [
+        {
+          "blockId": "timing-actions",
+          "visible": true
+        },
+        {
+          "blockId": "timing-intent",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "comments-step": {
+      "id": "comments-step",
+      "sectionId": "comments",
+      "visuals": [
+        {
+          "blockId": "comments-actions",
+          "visible": true
+        },
+        {
+          "blockId": "comments-agent",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "delivery-step": {
+      "id": "delivery-step",
+      "sectionId": "delivery",
+      "visuals": [
+        {
+          "blockId": "delivery-purpose",
+          "visible": true
+        },
+        {
+          "blockId": "delivery-actions",
+          "visible": true
+        },
+        {
+          "blockId": "delivery-version",
+          "visible": true
+        },
+        {
+          "blockId": "delivery-next",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "start-narration": {
+      "id": "start-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "用每人三十元的预算，练习把一份讲义改成自己的讲课方案。"
+        }
+      ]
+    },
+    "budget-prices": {
+      "id": "budget-prices",
+      "content": [
+        {
+          "type": "text",
+          "text": "先看三项价格：主食十二元，配菜八元，饮品五元。价格表里的 "
+        },
+        {
+          "type": "pronunciation",
+          "display": "¥",
+          "spoken": "人民币"
+        },
+        {
+          "type": "text",
+          "text": " 是货币标记。"
+        },
+        {
+          "id": "budget-pause",
+          "type": "cue",
+          "action": "pause",
+          "target": {
+            "blockId": "budget-table"
+          }
+        },
+        {
+          "type": "text",
+          "text": "现在自己估算一下。"
+        }
+      ]
+    },
+    "budget-condition": {
+      "id": "budget-condition",
+      "content": [
+        {
+          "type": "text",
+          "text": "我们先按每人每样各买一份计算。"
+        }
+      ]
+    },
+    "budget-result": {
+      "id": "budget-result",
+      "content": [
+        {
+          "type": "text",
+          "text": "三项合计二十五元，在三十元预算内，还剩五元。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      },
+      "minimumHoldMs": 800,
+      "trailingPauseMs": 200
+    },
+    "sectionOverrides": {
+      "budget": {
+        "minimumHoldMs": 1200,
+        "trailingPauseMs": 250
+      }
+    },
+    "stepOverrides": {},
+    "narrationOverrides": {
+      "budget-prices": {
+        "narrationStart": "with-animation"
+      },
+      "budget-condition": {
+        "narrationStart": "after-animation"
+      }
+    },
+    "cueTimings": {
+      "budget-pause": {
+        "pauseMs": 180
+      }
+    },
+    "mediaClips": []
+  }
+}
