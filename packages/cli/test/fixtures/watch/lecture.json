@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "id": "document-fbc500e15f744a70",
+  "metadata": {
+    "title": "引用的代码",
+    "lang": "zh-CN",
+    "plugins": [
+      "../addons/sample"
+    ],
+    "presmium": {
+      "sample": {
+        "banner": "banner.txt"
+      }
+    }
+  },
+  "sectionOrder": [
+    "问候"
+  ],
+  "sections": {
+    "问候": {
+      "id": "问候",
+      "title": "问候",
+      "level": 2,
+      "children": [
+        "问候--sample-anchor-1",
+        "问候--paragraph-1",
+        "问候--sample-motto-1",
+        "问候--paragraph-2"
+      ],
+      "stepOrder": [
+        "问候--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "问候--sample-anchor-1": {
+      "id": "问候--sample-anchor-1",
+      "type": "component",
+      "definitionId": "问候--sample-anchor-1--definition",
+      "parameters": {
+        "anchor": "line:greet.py#def greet"
+      }
+    },
+    "问候--paragraph-1": {
+      "id": "问候--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "问候--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "上面引用的一行来自 greet.py；编辑或提交它，开发服务器随即重新编译。"
+            }
+          ]
+        }
+      ]
+    },
+    "问候--sample-motto-1": {
+      "id": "问候--sample-motto-1",
+      "type": "component",
+      "definitionId": "问候--sample-motto-1--definition",
+      "parameters": {
+        "text": "先读后写"
+      }
+    },
+    "问候--paragraph-2": {
+      "id": "问候--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "问候--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "格言与横幅由插件自己读取并声明，编辑它们同样触发重新编译。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "问候--step-0": {
+      "id": "问候--step-0",
+      "sectionId": "问候",
+      "visuals": [
+        {
+          "blockId": "问候--sample-anchor-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "问候--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "问候--sample-motto-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "问候--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "问候--paragraph-1--narration",
+        "问候--paragraph-2--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "问候--paragraph-1--narration": {
+      "id": "问候--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "上面引用的一行来自 greet.py；编辑或提交它，开发服务器随即重新编译。"
+        }
+      ]
+    },
+    "问候--paragraph-2--narration": {
+      "id": "问候--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "格言与横幅由插件自己读取并声明，编辑它们同样触发重新编译。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "问候--sample-anchor-1--definition": {
+      "id": "问候--sample-anchor-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "sample",
+        "name": "SampleAnchor"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "sample",
+        "name": "SampleAnchor"
+      }
+    },
+    "问候--sample-motto-1--definition": {
+      "id": "问候--sample-motto-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "sample",
+        "name": "SampleMotto"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "sample",
+        "name": "SampleMotto"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

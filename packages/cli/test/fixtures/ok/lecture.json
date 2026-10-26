@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "id": "document-b5c4d4c7e7864469",
+  "metadata": {
+    "title": "Clean deck",
+    "lang": "zh-CN",
+    "plugins": [
+      "../addons/sample",
+      "../addons/plain"
+    ]
+  },
+  "sectionOrder": [
+    "clean-deck",
+    "intro",
+    "second"
+  ],
+  "sections": {
+    "clean-deck": {
+      "id": "clean-deck",
+      "title": "Clean deck",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "clean-deck--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "intro": {
+      "id": "intro",
+      "title": "Intro",
+      "level": 2,
+      "children": [
+        "intro--sample-anchor-1"
+      ],
+      "stepOrder": [
+        "intro--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "second": {
+      "id": "second",
+      "title": "Second",
+      "level": 2,
+      "children": [
+        "second--sample-anchor-1"
+      ],
+      "stepOrder": [
+        "second--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "intro--sample-anchor-1": {
+      "id": "intro--sample-anchor-1",
+      "type": "component",
+      "definitionId": "intro--sample-anchor-1--definition",
+      "parameters": {
+        "anchor": "line:src/math.py#def add"
+      }
+    },
+    "second--sample-anchor-1": {
+      "id": "second--sample-anchor-1",
+      "type": "component",
+      "definitionId": "second--sample-anchor-1--definition",
+      "parameters": {
+        "anchor": "line:src/math.py#def mul"
+      }
+    }
+  },
+  "steps": {
+    "clean-deck--step-0": {
+      "id": "clean-deck--step-0",
+      "sectionId": "clean-deck",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "intro--step-0": {
+      "id": "intro--step-0",
+      "sectionId": "intro",
+      "visuals": [
+        {
+          "blockId": "intro--sample-anchor-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "second--step-0": {
+      "id": "second--step-0",
+      "sectionId": "second",
+      "visuals": [
+        {
+          "blockId": "second--sample-anchor-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "intro--sample-anchor-1--definition": {
+      "id": "intro--sample-anchor-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "sample",
+        "name": "SampleAnchor"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "sample",
+        "name": "SampleAnchor"
+      }
+    },
+    "second--sample-anchor-1--definition": {
+      "id": "second--sample-anchor-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "sample",
+        "name": "SampleAnchor"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "sample",
+        "name": "SampleAnchor"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

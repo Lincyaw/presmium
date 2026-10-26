@@ -1,0 +1,392 @@
+{
+  "schemaVersion": 1,
+  "id": "document-33a0fc750117f398",
+  "metadata": {
+    "title": "MCP 测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec",
+      "./plugin"
+    ],
+    "renderers": {
+      "notebook": {}
+    }
+  },
+  "sectionOrder": [
+    "mcp-测试文稿",
+    "merge",
+    "teacher",
+    "第三节"
+  ],
+  "sections": {
+    "mcp-测试文稿": {
+      "id": "mcp-测试文稿",
+      "title": "MCP 测试文稿",
+      "level": 1,
+      "children": [
+        "mcp-测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "mcp-测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "merge": {
+      "id": "merge",
+      "title": "合并",
+      "level": 2,
+      "children": [
+        "merge--paragraph-1",
+        "merge--code-1"
+      ],
+      "stepOrder": [
+        "merge--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "teacher": {
+      "id": "teacher",
+      "title": "教师讲评",
+      "level": 2,
+      "children": [
+        "teacher--paragraph-1"
+      ],
+      "stepOrder": [
+        "teacher--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      },
+      "audience": [
+        "teacher"
+      ]
+    },
+    "第三节": {
+      "id": "第三节",
+      "title": "第三节",
+      "level": 2,
+      "children": [
+        "第三节--paragraph-1",
+        "第三节--code-1",
+        "第三节--code-2",
+        "第三节--paragraph-2",
+        "第三节--paragraph-3"
+      ],
+      "stepOrder": [
+        "第三节--step-0",
+        "第三节--step-1",
+        "第三节--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "mcp-测试文稿--paragraph-1": {
+      "id": "mcp-测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "mcp-测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "封面。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--paragraph-1": {
+      "id": "merge--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲解：每一轮合并出现次数最多的相邻对。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--code-1": {
+      "id": "merge--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "print(6 * 7)",
+      "execution": {
+        "when": "compile"
+      }
+    },
+    "teacher--paragraph-1": {
+      "id": "teacher--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "teacher--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲评时先问学生合并的顺序 TEACHERNOTE27。"
+            }
+          ]
+        }
+      ]
+    },
+    "第三节--paragraph-1": {
+      "id": "第三节--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "第三节--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "最后一节的正文。"
+            }
+          ]
+        }
+      ]
+    },
+    "第三节--code-1": {
+      "id": "第三节--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "x = 6",
+      "execution": {
+        "when": "compile",
+        "session": "s"
+      }
+    },
+    "第三节--code-2": {
+      "id": "第三节--code-2",
+      "type": "code",
+      "language": "python",
+      "value": "print(x * 7)",
+      "execution": {
+        "when": "compile",
+        "session": "s"
+      }
+    },
+    "第三节--paragraph-2": {
+      "id": "第三节--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "第三节--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "只在 notebook 中出现的一步。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "notebook"
+      ]
+    },
+    "第三节--paragraph-3": {
+      "id": "第三节--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "第三节--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "两种形态都有的一步。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "mcp-测试文稿--step-0": {
+      "id": "mcp-测试文稿--step-0",
+      "sectionId": "mcp-测试文稿",
+      "visuals": [
+        {
+          "blockId": "mcp-测试文稿--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "mcp-测试文稿--paragraph-1--narration"
+      ]
+    },
+    "merge--step-0": {
+      "id": "merge--step-0",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "merge--code-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "merge--paragraph-1--narration"
+      ]
+    },
+    "teacher--step-0": {
+      "id": "teacher--step-0",
+      "sectionId": "teacher",
+      "visuals": [
+        {
+          "blockId": "teacher--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "teacher--paragraph-1--narration"
+      ]
+    },
+    "第三节--step-0": {
+      "id": "第三节--step-0",
+      "sectionId": "第三节",
+      "visuals": [
+        {
+          "blockId": "第三节--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "第三节--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "第三节--code-2",
+          "visible": true
+        },
+        {
+          "blockId": "第三节--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "第三节--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "第三节--paragraph-1--narration"
+      ]
+    },
+    "第三节--step-1": {
+      "id": "第三节--step-1",
+      "sectionId": "第三节",
+      "visuals": [
+        {
+          "blockId": "第三节--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "第三节--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "第三节--code-2",
+          "visible": true
+        },
+        {
+          "blockId": "第三节--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "第三节--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "第三节--step-2": {
+      "id": "第三节--step-2",
+      "sectionId": "第三节",
+      "visuals": [
+        {
+          "blockId": "第三节--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "第三节--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "第三节--code-2",
+          "visible": true
+        },
+        {
+          "blockId": "第三节--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "第三节--paragraph-3",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "mcp-测试文稿--paragraph-1--narration": {
+      "id": "mcp-测试文稿--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "封面。"
+        }
+      ]
+    },
+    "merge--paragraph-1--narration": {
+      "id": "merge--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "讲解：每一轮合并出现次数最多的相邻对。"
+        }
+      ]
+    },
+    "teacher--paragraph-1--narration": {
+      "id": "teacher--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "讲评时先问学生合并的顺序 TEACHERNOTE27。"
+        }
+      ]
+    },
+    "第三节--paragraph-1--narration": {
+      "id": "第三节--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "最后一节的正文。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

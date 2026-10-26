@@ -1,0 +1,734 @@
+{
+  "schemaVersion": 1,
+  "id": "document-5b8e589ef016fa53",
+  "metadata": {
+    "title": "BPE 分词",
+    "lang": "zh-CN",
+    "plugins": [
+      "../addons/echo",
+      "../addons/render"
+    ],
+    "presmium": {
+      "fixture.render": {
+        "stamp": "checked"
+      }
+    },
+    "renderers": {
+      "fixture": {
+        "flavor": "plain"
+      }
+    }
+  },
+  "sectionOrder": [
+    "bpe-分词",
+    "bpe-merge",
+    "逐步演示"
+  ],
+  "sections": {
+    "bpe-分词": {
+      "id": "bpe-分词",
+      "title": "BPE 分词",
+      "level": 1,
+      "children": [
+        "bpe-分词--paragraph-1",
+        "bpe-分词--paragraph-2"
+      ],
+      "stepOrder": [
+        "bpe-分词--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "bpe-merge": {
+      "id": "bpe-merge",
+      "title": "合并最频繁的字节对",
+      "level": 2,
+      "children": [
+        "bpe-merge--paragraph-1",
+        "bpe-merge--list-1",
+        "bpe-merge--paragraph-2",
+        "bpe-merge--code-1",
+        "bpe-merge--paragraph-3"
+      ],
+      "stepOrder": [
+        "bpe-merge--step-0",
+        "bpe-merge--step-1"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "two-cols"
+          }
+        }
+      }
+    },
+    "逐步演示": {
+      "id": "逐步演示",
+      "title": "逐步演示",
+      "level": 2,
+      "children": [
+        "逐步演示--fixture-stepper-1",
+        "逐步演示--paragraph-1",
+        "逐步演示--paragraph-2",
+        "逐步演示--paragraph-3",
+        "逐步演示--list-1",
+        "逐步演示--paragraph-4",
+        "逐步演示--code-1",
+        "逐步演示--paragraph-5"
+      ],
+      "stepOrder": [
+        "逐步演示--step-0",
+        "逐步演示--step-1",
+        "逐步演示--step-2",
+        "逐步演示--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "bpe-分词--paragraph-1": {
+      "id": "bpe-分词--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "bpe-分词--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "从字节到词表"
+            }
+          ]
+        }
+      ]
+    },
+    "bpe-分词--paragraph-2": {
+      "id": "bpe-分词--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "bpe-分词--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本讲介绍 BPE 分词。"
+            }
+          ]
+        }
+      ]
+    },
+    "bpe-merge--paragraph-1": {
+      "id": "bpe-merge--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "bpe-merge--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "BPE 每一轮找出出现次数最多的相邻字节对，把它合并成一个新符号。"
+            }
+          ]
+        }
+      ]
+    },
+    "bpe-merge--list-1": {
+      "id": "bpe-merge--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "bpe-merge--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "bpe-merge--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "bpe-merge--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "统计相邻字节对"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "bpe-merge--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "bpe-merge--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "合并出现最多的一对"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "reveal": {
+        "type": "items",
+        "order": [
+          "bpe-merge--list-1--text-0-item-0",
+          "bpe-merge--list-1--text-0-item-1"
+        ]
+      }
+    },
+    "bpe-merge--paragraph-2": {
+      "id": "bpe-merge--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "bpe-merge--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "列表出现时的讲解，讲到其中两项。"
+            }
+          ]
+        }
+      ]
+    },
+    "bpe-merge--code-1": {
+      "id": "bpe-merge--code-1",
+      "type": "code",
+      "language": "echo",
+      "value": "count pairs",
+      "execution": {
+        "when": "compile"
+      }
+    },
+    "bpe-merge--paragraph-3": {
+      "id": "bpe-merge--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "bpe-merge--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "只在网页和 notebook 中出现的补充推导。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "逐步演示--fixture-stepper-1": {
+      "id": "逐步演示--fixture-stepper-1",
+      "type": "component",
+      "definitionId": "逐步演示--fixture-stepper-1--definition",
+      "parameters": {
+        "labels": [
+          "统计",
+          "合并"
+        ]
+      }
+    },
+    "逐步演示--paragraph-1": {
+      "id": "逐步演示--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "逐步演示--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一步统计相邻字节对。"
+            }
+          ]
+        }
+      ]
+    },
+    "逐步演示--paragraph-2": {
+      "id": "逐步演示--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "逐步演示--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步合并出现最多的一对。"
+            }
+          ]
+        }
+      ]
+    },
+    "逐步演示--paragraph-3": {
+      "id": "逐步演示--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "逐步演示--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "合并之后的符号："
+            }
+          ]
+        }
+      ]
+    },
+    "逐步演示--list-1": {
+      "id": "逐步演示--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "逐步演示--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "逐步演示--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "逐步演示--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "lo"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "逐步演示--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "逐步演示--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "low"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "逐步演示--paragraph-4": {
+      "id": "逐步演示--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "逐步演示--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "符号出现时的讲解。"
+            }
+          ]
+        }
+      ]
+    },
+    "逐步演示--code-1": {
+      "id": "逐步演示--code-1",
+      "type": "code",
+      "language": "echo",
+      "value": "merge pair",
+      "execution": {
+        "when": "compile"
+      }
+    },
+    "逐步演示--paragraph-5": {
+      "id": "逐步演示--paragraph-5",
+      "type": "text",
+      "content": [
+        {
+          "id": "逐步演示--paragraph-5--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "代码出现时的讲解。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "bpe-分词--step-0": {
+      "id": "bpe-分词--step-0",
+      "sectionId": "bpe-分词",
+      "visuals": [
+        {
+          "blockId": "bpe-分词--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "bpe-分词--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "bpe-分词--paragraph-2--narration"
+      ]
+    },
+    "bpe-merge--step-0": {
+      "id": "bpe-merge--step-0",
+      "sectionId": "bpe-merge",
+      "visuals": [
+        {
+          "blockId": "bpe-merge--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "bpe-merge--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 1
+          }
+        },
+        {
+          "blockId": "bpe-merge--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "bpe-merge--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "bpe-merge--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "bpe-merge--paragraph-1--narration",
+        "bpe-merge--paragraph-2--narration"
+      ]
+    },
+    "bpe-merge--step-1": {
+      "id": "bpe-merge--step-1",
+      "sectionId": "bpe-merge",
+      "visuals": [
+        {
+          "blockId": "bpe-merge--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "bpe-merge--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        },
+        {
+          "blockId": "bpe-merge--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "bpe-merge--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "bpe-merge--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "逐步演示--step-0": {
+      "id": "逐步演示--step-0",
+      "sectionId": "逐步演示",
+      "visuals": [
+        {
+          "blockId": "逐步演示--fixture-stepper-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "逐步演示--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--list-1",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--code-1",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "逐步演示--paragraph-1--narration"
+      ]
+    },
+    "逐步演示--step-1": {
+      "id": "逐步演示--step-1",
+      "sectionId": "逐步演示",
+      "visuals": [
+        {
+          "blockId": "逐步演示--fixture-stepper-1",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "逐步演示--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--list-1",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--code-1",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "逐步演示--paragraph-2--narration"
+      ]
+    },
+    "逐步演示--step-2": {
+      "id": "逐步演示--step-2",
+      "sectionId": "逐步演示",
+      "visuals": [
+        {
+          "blockId": "逐步演示--fixture-stepper-1",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "逐步演示--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--paragraph-3",
+          "visible": true
+        },
+        {
+          "blockId": "逐步演示--list-1",
+          "visible": true
+        },
+        {
+          "blockId": "逐步演示--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--code-1",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "逐步演示--paragraph-4--narration"
+      ]
+    },
+    "逐步演示--step-3": {
+      "id": "逐步演示--step-3",
+      "sectionId": "逐步演示",
+      "visuals": [
+        {
+          "blockId": "逐步演示--fixture-stepper-1",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "逐步演示--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--paragraph-3",
+          "visible": true
+        },
+        {
+          "blockId": "逐步演示--list-1",
+          "visible": true
+        },
+        {
+          "blockId": "逐步演示--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "逐步演示--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "逐步演示--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "逐步演示--paragraph-5--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "bpe-分词--paragraph-2--narration": {
+      "id": "bpe-分词--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "本讲介绍 BPE 分词。"
+        }
+      ]
+    },
+    "bpe-merge--paragraph-1--narration": {
+      "id": "bpe-merge--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "BPE 每一轮找出出现次数最多的相邻字节对，把它合并成一个新符号。"
+        }
+      ]
+    },
+    "bpe-merge--paragraph-2--narration": {
+      "id": "bpe-merge--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "列表出现时的讲解，讲到其中两项。"
+        }
+      ]
+    },
+    "逐步演示--paragraph-1--narration": {
+      "id": "逐步演示--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第一步统计相邻字节对。"
+        }
+      ]
+    },
+    "逐步演示--paragraph-2--narration": {
+      "id": "逐步演示--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二步合并出现最多的一对。"
+        }
+      ]
+    },
+    "逐步演示--paragraph-4--narration": {
+      "id": "逐步演示--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "符号出现时的讲解。"
+        }
+      ]
+    },
+    "逐步演示--paragraph-5--narration": {
+      "id": "逐步演示--paragraph-5--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "代码出现时的讲解。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "逐步演示--fixture-stepper-1--definition": {
+      "id": "逐步演示--fixture-stepper-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.render",
+        "name": "FixtureStepper"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "fixture.render",
+        "name": "FixtureStepper"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
