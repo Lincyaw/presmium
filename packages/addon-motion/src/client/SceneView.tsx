@@ -83,6 +83,11 @@ export default function SceneView(props: SceneProps) {
         : activeLocalStep,
     ),
   )
+  // A reader's local controls do not navigate the full document. Resolve their
+  // own authored snapshot while retaining the same local animation clock.
+  const localState = expanded && !scope.localPreview && local !== undefined ? scope.stateAt(selectedStep) : undefined
+  const sceneState = localState ? localState.state : scope.state
+  const sceneParameters = localState ? localState.parameters ?? {} : scope.parameters ?? {}
   const stop = () => {
     playbackGeneration.current++
     activePlayback.current = undefined
@@ -207,8 +212,8 @@ export default function SceneView(props: SceneProps) {
       let swatch: CanvasRenderingContext2D | null | undefined
       const made = await definition.create({
         root,
-        parameters: scope.parameters ?? {},
-        state: scope.state,
+        parameters: sceneParameters,
+        state: sceneState,
         durations,
         at: (step) => starts[Math.max(0, Math.min(step, durations.length))]!,
         total,
@@ -267,7 +272,7 @@ export default function SceneView(props: SceneProps) {
       instance.current?.dispose?.()
       instance.current = undefined
     }
-  }, [enabled, props.scene, JSON.stringify(durations), JSON.stringify(scope.parameters), scope.state, dark, clock])
+  }, [enabled, props.scene, JSON.stringify(durations), JSON.stringify(sceneParameters), sceneState, dark, clock])
   const box: CSSProperties = props.height
     ? { height: props.height }
     : { aspectRatio: (props.aspect ?? '16/9').replace('/', ' / ') }
