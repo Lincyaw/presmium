@@ -1,0 +1,333 @@
+{
+  "schemaVersion": 1,
+  "id": "document-40b83cc5b1a4b69c",
+  "metadata": {
+    "title": "Publish fixture",
+    "lang": "zh-CN",
+    "plugins": [
+      "../../..",
+      "../../../../addon-code"
+    ],
+    "presmium": {
+      "presmium.code": {
+        "repo": "https://github.com/presmium/publish-fixture"
+      }
+    },
+    "renderers": {
+      "slides": {
+        "theme": "default",
+        "fonts": {
+          "provider": "none"
+        }
+      }
+    }
+  },
+  "sectionOrder": [
+    "code-with-a-permalink",
+    "steps",
+    "hidden-link"
+  ],
+  "sections": {
+    "code-with-a-permalink": {
+      "id": "code-with-a-permalink",
+      "title": "Code with a permalink",
+      "level": 2,
+      "children": [
+        "code-with-a-permalink--code-1"
+      ],
+      "stepOrder": [
+        "code-with-a-permalink--step-0",
+        "code-with-a-permalink--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "steps": {
+      "id": "steps",
+      "title": "Steps",
+      "level": 2,
+      "children": [
+        "steps--paragraph-1",
+        "steps--paragraph-2"
+      ],
+      "stepOrder": [
+        "steps--step-0",
+        "steps--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "hidden-link": {
+      "id": "hidden-link",
+      "title": "Hidden link",
+      "level": 2,
+      "children": [
+        "hidden-link--html-1",
+        "hidden-link--paragraph-1",
+        "hidden-link--paragraph-2",
+        "hidden-link--html-2"
+      ],
+      "stepOrder": [
+        "hidden-link--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "code-with-a-permalink--code-1": {
+      "id": "code-with-a-permalink--code-1",
+      "type": "code",
+      "language": "py",
+      "origin": {
+        "anchor": "region:packages/addon-publish/test/fixtures/deck/math.py#add",
+        "highlightRegions": {
+          "code-with-a-permalink--step-0": "check",
+          "code-with-a-permalink--step-1": "sum"
+        }
+      }
+    },
+    "steps--paragraph-1": {
+      "id": "steps--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Always visible."
+            }
+          ]
+        }
+      ]
+    },
+    "steps--paragraph-2": {
+      "id": "steps--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Shown after one click."
+            }
+          ]
+        }
+      ]
+    },
+    "hidden-link--html-1": {
+      "id": "hidden-link--html-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "hidden-link--html-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "html",
+              "value": "<div style=\"display: none\">"
+            }
+          },
+          "fallback": [
+            {
+              "id": "hidden-link--html-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "<div style=\"display: none\">"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "hidden-link--paragraph-1": {
+      "id": "hidden-link--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "hidden-link--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "link",
+              "href": "https://example.com/hidden",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "a link that never renders"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "hidden-link--paragraph-2": {
+      "id": "hidden-link--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "hidden-link--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "html",
+                  "value": "<span data-ref='{\"href\": \"https://example.com/json-prop\"}'>"
+                }
+              },
+              "fallback": "<span data-ref='{\"href\": \"https://example.com/json-prop\"}'>"
+            },
+            {
+              "type": "text",
+              "text": "nor does a link passed to a component as JSON"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "html",
+                  "value": "</span>"
+                }
+              },
+              "fallback": "</span>"
+            }
+          ]
+        }
+      ]
+    },
+    "hidden-link--html-2": {
+      "id": "hidden-link--html-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "hidden-link--html-2--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "html",
+              "value": "</div>"
+            }
+          },
+          "fallback": [
+            {
+              "id": "hidden-link--html-2--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "</div>"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "code-with-a-permalink--step-0": {
+      "id": "code-with-a-permalink--step-0",
+      "sectionId": "code-with-a-permalink",
+      "visuals": [
+        {
+          "blockId": "code-with-a-permalink--code-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "code-with-a-permalink--step-1": {
+      "id": "code-with-a-permalink--step-1",
+      "sectionId": "code-with-a-permalink",
+      "visuals": [
+        {
+          "blockId": "code-with-a-permalink--code-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "steps--step-0": {
+      "id": "steps--step-0",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "steps--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "steps--step-1": {
+      "id": "steps--step-1",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "steps--paragraph-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "hidden-link--step-0": {
+      "id": "hidden-link--step-0",
+      "sectionId": "hidden-link",
+      "visuals": [
+        {
+          "blockId": "hidden-link--html-1",
+          "visible": true
+        },
+        {
+          "blockId": "hidden-link--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "hidden-link--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "hidden-link--html-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

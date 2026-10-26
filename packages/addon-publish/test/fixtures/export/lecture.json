@@ -1,0 +1,356 @@
+{
+  "schemaVersion": 1,
+  "id": "document-652efa3c3fa7c3d3",
+  "metadata": {
+    "title": "Export fixture",
+    "lang": "zh-CN",
+    "plugins": [
+      "../../..",
+      "../../../../addon-classroom"
+    ],
+    "renderers": {
+      "slides": {
+        "base": "talks/export",
+        "theme": "default",
+        "fonts": {
+          "provider": "none"
+        }
+      }
+    }
+  },
+  "sectionOrder": [
+    "one",
+    "two",
+    "quiz",
+    "four"
+  ],
+  "sections": {
+    "one": {
+      "id": "one",
+      "title": "One",
+      "level": 2,
+      "children": [
+        "one--paragraph-1"
+      ],
+      "stepOrder": [
+        "one--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "two": {
+      "id": "two",
+      "title": "Two",
+      "level": 2,
+      "children": [
+        "two--paragraph-1",
+        "two--paragraph-2"
+      ],
+      "stepOrder": [
+        "two--step-0",
+        "two--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "quiz": {
+      "id": "quiz",
+      "title": "Quiz",
+      "level": 2,
+      "children": [
+        "quiz--pm-quiz-1"
+      ],
+      "stepOrder": [
+        "quiz--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "four": {
+      "id": "four",
+      "title": "Four",
+      "level": 2,
+      "children": [
+        "four--paragraph-1"
+      ],
+      "stepOrder": [
+        "four--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "one--paragraph-1": {
+      "id": "one--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "one--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The first slide, with "
+            },
+            {
+              "type": "link",
+              "href": "notes.txt",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "the notes"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "."
+            }
+          ]
+        }
+      ]
+    },
+    "two--paragraph-1": {
+      "id": "two--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "two--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Always visible."
+            }
+          ]
+        }
+      ]
+    },
+    "two--paragraph-2": {
+      "id": "two--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "two--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Shown after one click."
+            }
+          ]
+        }
+      ]
+    },
+    "quiz--pm-quiz-1": {
+      "id": "quiz--pm-quiz-1",
+      "type": "component",
+      "definitionId": "quiz--pm-quiz-1--definition",
+      "parameters": {
+        "options": [
+          "The pair that comes first",
+          "The most frequent pair"
+        ],
+        "correct": [
+          1
+        ],
+        "place": {
+          "section": "quiz",
+          "block": "pm-quiz-1",
+          "title": "Quiz",
+          "index": 3
+        }
+      },
+      "children": [
+        "quiz--pm-quiz-1--prompt"
+      ]
+    },
+    "quiz--pm-quiz-1--prompt": {
+      "id": "quiz--pm-quiz-1--prompt",
+      "type": "text",
+      "content": [
+        {
+          "id": "quiz--pm-quiz-1--prompt--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Which pair does BPE merge in each round?"
+            }
+          ]
+        }
+      ]
+    },
+    "four--paragraph-1": {
+      "id": "four--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "four--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The last slide."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "one--step-0": {
+      "id": "one--step-0",
+      "sectionId": "one",
+      "visuals": [
+        {
+          "blockId": "one--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "two--step-0": {
+      "id": "two--step-0",
+      "sectionId": "two",
+      "visuals": [
+        {
+          "blockId": "two--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "two--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "two--step-1": {
+      "id": "two--step-1",
+      "sectionId": "two",
+      "visuals": [
+        {
+          "blockId": "two--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "two--paragraph-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "quiz--step-0": {
+      "id": "quiz--step-0",
+      "sectionId": "quiz",
+      "visuals": [
+        {
+          "blockId": "quiz--pm-quiz-1--prompt",
+          "visible": true
+        },
+        {
+          "blockId": "quiz--pm-quiz-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "four--step-0": {
+      "id": "four--step-0",
+      "sectionId": "four",
+      "visuals": [
+        {
+          "blockId": "four--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "four--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "four--paragraph-1--narration": {
+      "id": "four--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "The last slide."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "quiz--pm-quiz-1--definition": {
+      "id": "quiz--pm-quiz-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmQuiz"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.classroom",
+        "name": "PmQuiz",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Which pair does BPE merge in each round?"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "A. The pair that comes first"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "B. The most frequent pair"
+                }
+              ]
+            },
+            {
+              "type": "html",
+              "value": "<details><summary>答案</summary>B</details>"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
