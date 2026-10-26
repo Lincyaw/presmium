@@ -1,13 +1,12 @@
 import { execFile, spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
-import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path'
-import { ABSOLUTE_URL, htmlAttributes, irBlocks, isRecord } from '@lincyaw/kernel'
+import { basename, dirname, join, relative, resolve, sep } from 'node:path'
+import { ABSOLUTE_URL, DOCUMENT_ENTRY, htmlAttributes, irBlocks, isRecord, validateDocument } from '@lincyaw/kernel'
 import type { Finding, IRBlock, IRDocument, MdastNode, SourcePos } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
 import { publishesDirectory, unpublishedDirectory } from './assets.ts'
-import { BUILTIN_DIRECTIVES } from './blocks.ts'
-import { parseFrontmatter, Parser } from './parser.ts'
-import { plainText, sectionSlug, splitSections } from './sections.ts'
+import { lowerDocument } from './document-lowering.ts'
+import { plainText, sectionSlug } from './sections.ts'
 import { lineFinder } from './source-lines.ts'
 import type { LineFinder } from './source-lines.ts'
 import { viewFor } from './views.ts'
@@ -97,14 +96,14 @@ async function linkProblem(url: string, source: SourcePos, input: PublishInput, 
   const hidden = publishesDirectory(file, input.deckDir) ? unpublishedDirectory(file, input.deckDir) : undefined
   if (hidden) return `${path}: ${hidden}`
   if (!fragment) return undefined
-  const entry = statSync(file).isDirectory() ? join(file, 'lecture.md') : file
-  if (extname(entry) !== '.md' || !existsSync(entry)) return undefined
+  const entry = statSync(file).isDirectory() ? join(file, DOCUMENT_ENTRY) : file
+  if (basename(entry) !== DOCUMENT_ENTRY || !existsSync(entry)) return undefined
   if (entry === input.entry) return anchors.has(fragment) ? undefined : `${path}#${fragment}: #${fragment} is no section, block, label or heading of the deck`
   if (!documents.has(entry)) documents.set(entry, sourceAnchors(entry))
   return (await documents.get(entry)!).has(fragment) ? undefined : `${path}#${fragment}: no section, block, label or heading of ${relative(input.workspaceRoot, entry).split(sep).join('/')} has the id ${fragment}`
 }
 
-function documentAnchors(doc: IRDocument): Set<string> {
+function documentAnchors(doc: Pick<IRDocument, 'sections'>): Set<string> {
   const anchors = new Set<string>()
   for (const section of doc.sections) {
     anchors.add(section.id)
@@ -130,19 +129,14 @@ function mdastAnchors(node: MdastNode, anchors: Set<string>): void {
 }
 
 async function sourceAnchors(entry: string): Promise<Set<string>> {
-  const anchors = new Set<string>()
   try {
-    const parser = new Parser(new Map([...BUILTIN_DIRECTIVES]))
-    const { children } = await parser.expand(entry)
-    const text = readFileSync(entry, 'utf8')
-    const headmatter = parseFrontmatter(text)
-    const depth = Number.isInteger(headmatter.sectionDepth) && (headmatter.sectionDepth as number) >= 1 ? headmatter.sectionDepth as number : 2
-    const title = typeof headmatter.title === 'string' ? headmatter.title : basename(dirname(entry))
-    for (const section of splitSections(children, { entry, title, sectionDepth: depth }, () => {})) anchors.add(section.id)
-    for (const node of children) mdastAnchors(node, anchors)
+    const checked = validateDocument(JSON.parse(readFileSync(entry, 'utf8').replace(/^\uFEFF/, '')))
+    if (!checked.document) return new Set()
+    const sections = lowerDocument(checked.document, entry, dirname(entry), () => {}, () => {})
+    return documentAnchors({ sections })
   } catch {
+    return new Set()
   }
-  return anchors
 }
 
 async function externalLinks(urls: Map<string, SourcePos>, entry: string, line: LineFinder): Promise<Finding[]> {
