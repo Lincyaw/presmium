@@ -107,8 +107,7 @@
       "level": 2,
       "children": [
         "three--embedding",
-        "three--paragraph-1",
-        "three--paragraph-3"
+        "three--paragraph-1"
       ],
       "stepOrder": [
         "three--step-0",
@@ -488,23 +487,7 @@
           "children": [
             {
               "type": "text",
-              "text": "词向量一开始散在空间里。 训练之后，意思相近的词聚成了三团。"
-            }
-          ]
-        }
-      ]
-    },
-    "three--paragraph-3": {
-      "id": "three--paragraph-3",
-      "type": "text",
-      "content": [
-        {
-          "id": "three--paragraph-3--text-0",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "镜头推近其中一团，"
+              "text": "词向量一开始散在空间里。 训练之后，意思相近的词聚成了三团。镜头推近其中一团，"
             },
             {
               "type": "extension",
@@ -1081,10 +1064,6 @@
         {
           "blockId": "three--paragraph-1",
           "visible": false
-        },
-        {
-          "blockId": "three--paragraph-3",
-          "visible": false
         }
       ],
       "narrationIds": [
@@ -1103,10 +1082,6 @@
         {
           "blockId": "three--paragraph-1",
           "visible": false
-        },
-        {
-          "blockId": "three--paragraph-3",
-          "visible": false
         }
       ],
       "narrationIds": [
@@ -1124,10 +1099,6 @@
         },
         {
           "blockId": "three--paragraph-1",
-          "visible": false
-        },
-        {
-          "blockId": "three--paragraph-3",
           "visible": false
         }
       ],
