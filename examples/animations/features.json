@@ -7,7 +7,8 @@
       "document": "guide-content",
       "section": "rich-text",
       "package": "@lincyaw/kernel",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "display-math",
@@ -15,7 +16,8 @@
       "document": "guide-content",
       "section": "rich-text",
       "package": "@lincyaw/viewer",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "nested-task-lists",
@@ -23,7 +25,8 @@
       "document": "guide-content",
       "section": "lists",
       "package": "@lincyaw/kernel",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "merged-table",
@@ -31,7 +34,8 @@
       "document": "guide-content",
       "section": "tables",
       "package": "@lincyaw/kernel",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "columns-stack-tabs",
@@ -39,7 +43,8 @@
       "document": "guide-content",
       "section": "layout",
       "package": "@lincyaw/host",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "mermaid",
@@ -47,7 +52,8 @@
       "document": "guide-content",
       "section": "diagrams",
       "package": "@lincyaw/viewer",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "markmap",
@@ -55,7 +61,8 @@
       "document": "guide-content",
       "section": "mindmap",
       "package": "@lincyaw/addon-content",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "local-video",
@@ -63,7 +70,8 @@
       "document": "guide-content",
       "section": "media",
       "package": "@lincyaw/addon-content",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "caption-tracks",
@@ -71,7 +79,8 @@
       "document": "guide-content",
       "section": "media",
       "package": "@lincyaw/addon-content",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "local-audio",
@@ -79,7 +88,8 @@
       "document": "guide-content",
       "section": "media",
       "package": "@lincyaw/addon-content",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "image-alt",
@@ -87,7 +97,8 @@
       "document": "guide-content",
       "section": "images",
       "package": "@lincyaw/kernel",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "animated-image",
@@ -95,7 +106,8 @@
       "document": "guide-content",
       "section": "images",
       "package": "@lincyaw/addon-content",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "quiz-single",
@@ -103,7 +115,8 @@
       "document": "guide-classroom",
       "section": "quiz",
       "package": "@lincyaw/addon-classroom",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "quiz-multiple",
@@ -111,7 +124,8 @@
       "document": "guide-classroom",
       "section": "quiz",
       "package": "@lincyaw/addon-classroom",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "predict",
@@ -119,7 +133,8 @@
       "document": "guide-classroom",
       "section": "prediction",
       "package": "@lincyaw/addon-classroom",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "exercise",
@@ -129,7 +144,8 @@
       "package": "@lincyaw/addon-classroom",
       "requires": [
         "可用 Python 执行器；浏览器首次运行需加载 Pyodide"
-      ]
+      ],
+      "mode": "conditional"
     },
     {
       "id": "questions",
@@ -139,7 +155,8 @@
       "package": "@lincyaw/addon-classroom",
       "requires": [
         "已加入真实课堂"
-      ]
+      ],
+      "mode": "conditional"
     },
     {
       "id": "pulse",
@@ -149,7 +166,8 @@
       "package": "@lincyaw/addon-classroom",
       "requires": [
         "已加入真实课堂"
-      ]
+      ],
+      "mode": "conditional"
     },
     {
       "id": "notes-comments",
@@ -159,7 +177,8 @@
       "package": "@lincyaw/addon-classroom",
       "requires": [
         "作者批注在工作台编辑视图使用"
-      ]
+      ],
+      "mode": "conditional"
     },
     {
       "id": "follow",
@@ -169,7 +188,8 @@
       "package": "@lincyaw/addon-session",
       "requires": [
         "真实课堂会话；发布需配置独立 classroom-server"
-      ]
+      ],
+      "mode": "conditional"
     },
     {
       "id": "audience",
@@ -179,7 +199,8 @@
       "package": "@lincyaw/kernel",
       "requires": [
         "使用 --audience student 构建学生产物"
-      ]
+      ],
+      "mode": "conditional"
     },
     {
       "id": "code-highlights",
@@ -187,7 +208,8 @@
       "document": "guide-code",
       "section": "highlight",
       "package": "@lincyaw/kernel",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "code-variants",
@@ -195,7 +217,8 @@
       "document": "guide-code",
       "section": "variants",
       "package": "@lincyaw/kernel",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "code-regions",
@@ -203,7 +226,8 @@
       "document": "guide-code",
       "section": "references",
       "package": "@lincyaw/addon-code",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "code-symbols",
@@ -211,7 +235,8 @@
       "document": "guide-code",
       "section": "references",
       "package": "@lincyaw/addon-code",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "javascript-live",
@@ -219,7 +244,8 @@
       "document": "guide-code",
       "section": "javascript",
       "package": "@lincyaw/addon-exec",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "run-comparison",
@@ -227,7 +253,8 @@
       "document": "guide-code",
       "section": "javascript",
       "package": "@lincyaw/addon-exec",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "python-live",
@@ -237,7 +264,8 @@
       "package": "@lincyaw/addon-exec",
       "requires": [
         "浏览器 Python 首次运行需加载 Pyodide"
-      ]
+      ],
+      "mode": "conditional"
     },
     {
       "id": "compile-execution",
@@ -247,7 +275,8 @@
       "package": "@lincyaw/addon-exec",
       "requires": [
         "浏览器 Python 首次运行需加载 Pyodide"
-      ]
+      ],
+      "mode": "conditional"
     },
     {
       "id": "execution-trace",
@@ -257,7 +286,8 @@
       "package": "@lincyaw/addon-exec",
       "requires": [
         "浏览器 Python 首次运行需加载 Pyodide"
-      ]
+      ],
+      "mode": "conditional"
     },
     {
       "id": "execution-session",
@@ -267,7 +297,8 @@
       "package": "@lincyaw/addon-exec",
       "requires": [
         "浏览器 Python 首次运行需加载 Pyodide"
-      ]
+      ],
+      "mode": "conditional"
     },
     {
       "id": "execution-failure",
@@ -275,7 +306,8 @@
       "document": "guide-code",
       "section": "failure",
       "package": "@lincyaw/addon-exec",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "reader-search",
@@ -283,7 +315,8 @@
       "document": "guide-publishing",
       "section": "reading",
       "package": "@lincyaw/web",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "footnotes",
@@ -291,7 +324,8 @@
       "document": "guide-publishing",
       "section": "reading",
       "package": "@lincyaw/kernel",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "reader-navigation",
@@ -299,7 +333,8 @@
       "document": "guide-publishing",
       "section": "start",
       "package": "@lincyaw/web",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "presentation-tools",
@@ -307,7 +342,8 @@
       "document": "guide-publishing",
       "section": "views",
       "package": "@lincyaw/addon-stage",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "native-comments-history",
@@ -317,7 +353,8 @@
       "package": "@lincyaw/workbench",
       "requires": [
         "工作台编辑视图"
-      ]
+      ],
+      "mode": "conditional"
     },
     {
       "id": "medium-scope",
@@ -325,7 +362,8 @@
       "document": "guide-publishing",
       "section": "scope",
       "package": "@lincyaw/kernel",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "audience-scope",
@@ -333,7 +371,8 @@
       "document": "guide-publishing",
       "section": "scope",
       "package": "@lincyaw/compiler",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "web-components",
@@ -341,7 +380,8 @@
       "document": "guide-publishing",
       "section": "extension",
       "package": "@lincyaw/host",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "high-contrast",
@@ -349,7 +389,8 @@
       "document": "guide-publishing",
       "section": "offline",
       "package": "@lincyaw/addon-publish",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "offline-read",
@@ -359,7 +400,8 @@
       "package": "@lincyaw/addon-publish",
       "requires": [
         "安全上下文、Service Worker 与可用存储；运行资源示例见 guide-environments"
-      ]
+      ],
+      "mode": "conditional"
     },
     {
       "id": "canonical-translation",
@@ -367,7 +409,8 @@
       "document": "guide-publishing",
       "section": "translation",
       "package": "@lincyaw/compiler",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "reader-assistant",
@@ -377,7 +420,8 @@
       "package": "@lincyaw/addon-assistant",
       "requires": [
         "用户自行配置真实模型服务"
-      ]
+      ],
+      "mode": "conditional"
     },
     {
       "id": "classroom-ai-review",
@@ -387,7 +431,8 @@
       "package": "@lincyaw/addon-assistant",
       "requires": [
         "模型服务和真实课堂会话"
-      ]
+      ],
+      "mode": "conditional"
     },
     {
       "id": "multiformat-export",
@@ -397,7 +442,8 @@
       "package": "@lincyaw/cli",
       "requires": [
         "相应导出工具及可启动 Chromium；视频另需编码器"
-      ]
+      ],
+      "mode": "conditional"
     },
     {
       "id": "notebook-output",
@@ -405,7 +451,8 @@
       "document": "guide-publishing",
       "section": "export",
       "package": "@lincyaw/render-notebook",
-      "requires": []
+      "requires": [],
+      "mode": "demonstration"
     },
     {
       "id": "step-narration",
@@ -673,6 +720,485 @@
         "仅处理作者显式授权、可合法分发的资源"
       ],
       "mode": "instructions"
+    },
+    {
+      "id": "explicit-steps",
+      "title": "稳定步骤与任意顺序定位",
+      "document": "guide-steps",
+      "section": "start",
+      "package": "@lincyaw/kernel",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "item-reveal",
+      "title": "逐项揭示和滚动叙事",
+      "document": "guide-steps",
+      "section": "reveal",
+      "package": "@lincyaw/viewer",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "step-inheritance",
+      "title": "继承状态与显式可见性",
+      "document": "guide-steps",
+      "section": "inherits",
+      "package": "@lincyaw/kernel",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "semantic-state",
+      "title": "命名状态与完整参数",
+      "document": "guide-steps",
+      "section": "semantic",
+      "package": "@lincyaw/addon-motion",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "d3-animation",
+      "title": "D3 数据加入的可逆状态",
+      "document": "guide-steps",
+      "section": "d3",
+      "package": "@lincyaw/addon-motion",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "custom-components",
+      "title": "真实组件动作与公共控件",
+      "document": "guide-steps",
+      "section": "component",
+      "package": "@lincyaw/host",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "simulated-cursor",
+      "title": "模拟光标移动、悬停与点击",
+      "document": "guide-steps",
+      "section": "guidance",
+      "package": "@lincyaw/addon-guide",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "spotlight",
+      "title": "真实目标聚光提示",
+      "document": "guide-steps",
+      "section": "guidance",
+      "package": "@lincyaw/addon-guide",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "hint",
+      "title": "锚定操作提示",
+      "document": "guide-steps",
+      "section": "guidance",
+      "package": "@lincyaw/addon-guide",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "adapter-gsap",
+      "title": "GSAP 教学动画",
+      "document": "libraries",
+      "section": "gsap",
+      "package": "@lincyaw/addon-motion",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "adapter-anime",
+      "title": "Anime.js 教学动画",
+      "document": "libraries",
+      "section": "anime",
+      "package": "@lincyaw/addon-motion",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "adapter-motion",
+      "title": "Motion 教学动画",
+      "document": "libraries",
+      "section": "motion",
+      "package": "@lincyaw/addon-motion",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "adapter-three",
+      "title": "Three.js 教学动画",
+      "document": "libraries",
+      "section": "three",
+      "package": "@lincyaw/addon-motion",
+      "requires": [
+        "实际可用 WebGL"
+      ],
+      "mode": "conditional"
+    },
+    {
+      "id": "adapter-remotion",
+      "title": "Remotion 教学动画",
+      "document": "libraries",
+      "section": "remotion",
+      "package": "@lincyaw/addon-motion",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "callouts",
+      "title": "说明、提示、警告与重要边界",
+      "document": "guide-content",
+      "section": "semantic",
+      "package": "@lincyaw/viewer",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "details",
+      "title": "原生可折叠内容",
+      "document": "guide-content",
+      "section": "semantic",
+      "package": "@lincyaw/viewer",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "definition-list",
+      "title": "术语与定义列表",
+      "document": "guide-content",
+      "section": "semantic",
+      "package": "@lincyaw/viewer",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "semantic-marks",
+      "title": "键盘标记、上下标与缩写",
+      "document": "guide-content",
+      "section": "semantic",
+      "package": "@lincyaw/viewer",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "cross-reference",
+      "title": "语义交叉引用与实际章节跳转",
+      "document": "guide-content",
+      "section": "semantic",
+      "package": "@lincyaw/viewer",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "responsive-cards",
+      "title": "响应栅格与卡片链接",
+      "document": "guide-content",
+      "section": "cards",
+      "package": "@lincyaw/viewer",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "synchronized-tabs",
+      "title": "多组选项卡的同步键",
+      "document": "guide-content",
+      "section": "cards",
+      "package": "@lincyaw/viewer",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "code-patterns",
+      "title": "实际 AST pattern 引用",
+      "document": "guide-code",
+      "section": "references",
+      "package": "@lincyaw/addon-code",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "tracked-highlight-regions",
+      "title": "按稳定步骤跟踪项目内嵌 region",
+      "document": "guide-code",
+      "section": "references",
+      "package": "@lincyaw/addon-code",
+      "requires": [],
+      "mode": "demonstration"
     }
-  ]
+  ],
+  "schemaVersion": 1,
+  "coverage": {
+    "officialPlugins": [
+      {
+        "package": "@lincyaw/addon-assistant",
+        "documents": [
+          "guide-publishing"
+        ]
+      },
+      {
+        "package": "@lincyaw/addon-classroom",
+        "documents": [
+          "guide-classroom"
+        ]
+      },
+      {
+        "package": "@lincyaw/addon-code",
+        "documents": [
+          "guide-code"
+        ]
+      },
+      {
+        "package": "@lincyaw/addon-content",
+        "documents": [
+          "guide-content",
+          "guide-network"
+        ]
+      },
+      {
+        "package": "@lincyaw/addon-exec",
+        "documents": [
+          "guide-classroom",
+          "guide-code",
+          "guide-environments"
+        ]
+      },
+      {
+        "package": "@lincyaw/addon-exec-jupyter",
+        "documents": [
+          "guide-environments"
+        ]
+      },
+      {
+        "package": "@lincyaw/addon-exec-local",
+        "documents": [
+          "guide-environments"
+        ]
+      },
+      {
+        "package": "@lincyaw/addon-exec-wasi",
+        "documents": [
+          "guide-environments"
+        ]
+      },
+      {
+        "package": "@lincyaw/addon-exec-webgpu",
+        "documents": [
+          "guide-environments"
+        ]
+      },
+      {
+        "package": "@lincyaw/addon-guide",
+        "documents": [
+          "guide-steps"
+        ]
+      },
+      {
+        "package": "@lincyaw/addon-lecture",
+        "documents": [
+          "guide-production"
+        ]
+      },
+      {
+        "package": "@lincyaw/addon-motion",
+        "documents": [
+          "guide-production",
+          "guide-steps"
+        ]
+      },
+      {
+        "package": "@lincyaw/addon-publish",
+        "documents": [
+          "guide-environments",
+          "guide-network",
+          "guide-publishing"
+        ]
+      },
+      {
+        "package": "@lincyaw/addon-session",
+        "documents": [
+          "guide-classroom"
+        ]
+      },
+      {
+        "package": "@lincyaw/addon-speech",
+        "documents": [
+          "guide-production"
+        ]
+      },
+      {
+        "package": "@lincyaw/addon-stage",
+        "documents": [
+          "guide-classroom",
+          "guide-production",
+          "guide-publishing"
+        ]
+      }
+    ],
+    "publicComponents": [
+      {
+        "package": "@lincyaw/addon-classroom",
+        "name": "PmExercise",
+        "document": "guide-classroom",
+        "section": "exercise",
+        "integration": "canonical component definition"
+      },
+      {
+        "package": "@lincyaw/addon-classroom",
+        "name": "PmPredict",
+        "document": "guide-classroom",
+        "section": "prediction",
+        "integration": "canonical component definition"
+      },
+      {
+        "package": "@lincyaw/addon-classroom",
+        "name": "PmPulse",
+        "document": "guide-classroom",
+        "section": "questions",
+        "integration": "canonical component definition"
+      },
+      {
+        "package": "@lincyaw/addon-classroom",
+        "name": "PmQuestionBox",
+        "document": "guide-classroom",
+        "section": "questions",
+        "integration": "canonical component definition"
+      },
+      {
+        "package": "@lincyaw/addon-classroom",
+        "name": "PmQuiz",
+        "document": "guide-classroom",
+        "section": "quiz",
+        "integration": "canonical component definition"
+      },
+      {
+        "package": "@lincyaw/addon-content",
+        "name": "PmMarkmap",
+        "document": "guide-content",
+        "section": "mindmap",
+        "integration": "canonical component definition"
+      },
+      {
+        "package": "@lincyaw/addon-content",
+        "name": "PmMedia",
+        "document": "guide-content",
+        "section": "media",
+        "integration": "canonical component definition"
+      },
+      {
+        "package": "@lincyaw/addon-content",
+        "name": "PmYoutube",
+        "document": "guide-network",
+        "section": "youtube",
+        "integration": "canonical component definition"
+      },
+      {
+        "package": "@lincyaw/addon-exec",
+        "name": "PmRunPanel",
+        "document": "guide-code",
+        "section": "javascript",
+        "integration": "canonical component definition"
+      },
+      {
+        "package": "@lincyaw/addon-exec",
+        "name": "PmStepRun",
+        "document": "guide-code",
+        "section": "trace",
+        "integration": "canonical component definition"
+      },
+      {
+        "package": "@lincyaw/addon-exec-jupyter",
+        "name": "PmTerminal",
+        "document": "guide-environments",
+        "section": "terminal",
+        "integration": "canonical component definition"
+      },
+      {
+        "package": "@lincyaw/addon-exec-local",
+        "name": "PmLocalEnv",
+        "document": "guide-environments",
+        "section": "container",
+        "integration": "canonical component definition"
+      },
+      {
+        "package": "@lincyaw/addon-guide",
+        "name": "PmCursor",
+        "document": "guide-steps",
+        "section": "guidance",
+        "integration": "canonical component definition"
+      },
+      {
+        "package": "@lincyaw/addon-guide",
+        "name": "PmHint",
+        "document": "guide-steps",
+        "section": "guidance",
+        "integration": "canonical component definition"
+      },
+      {
+        "package": "@lincyaw/addon-guide",
+        "name": "PmSpotlight",
+        "document": "guide-steps",
+        "section": "guidance",
+        "integration": "canonical component definition"
+      },
+      {
+        "package": "@lincyaw/addon-motion",
+        "name": "PmScene",
+        "document": "guide-steps",
+        "section": "semantic",
+        "integration": "scene file definition"
+      },
+      {
+        "package": "@lincyaw/addon-publish",
+        "name": "PmContrastToggle",
+        "document": "guide-publishing",
+        "section": "offline",
+        "integration": "canonical component definition"
+      },
+      {
+        "package": "@lincyaw/addon-publish",
+        "name": "PmSaveOffline",
+        "document": "guide-environments",
+        "section": "start",
+        "integration": "public plugin toolbar"
+      }
+    ],
+    "animationAdapters": [
+      "custom defineScene",
+      "GSAP",
+      "Anime.js",
+      "Motion",
+      "D3",
+      "Three.js",
+      "Remotion"
+    ],
+    "knownLimits": [
+      {
+        "feature": "module component definitions",
+        "status": "unavailable",
+        "document": "guide-publishing",
+        "section": "extension",
+        "reason": "当前编译器明确拒绝 module 实现；使用项目 file 或已注册 plugin。"
+      },
+      {
+        "feature": "JupyterHub authentication",
+        "status": "reserved",
+        "document": "guide-environments",
+        "section": "jupyter",
+        "reason": "hub 认证仍保留但未实现；示例不提供成功连接按钮。"
+      },
+      {
+        "feature": "media clip trimming and mixing",
+        "status": "unavailable",
+        "document": "guide-production",
+        "section": "media-editing",
+        "reason": "production 片段能保存；当前讲授运行时拒绝裁切和混音。"
+      }
+    ],
+    "scope": "官方插件 components/ 教学组件入口；核心布局、正文和工作台操作另由功能条目映射。"
+  }
 }

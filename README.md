@@ -2,7 +2,7 @@
 
 在工作台编辑教学文稿，以 lecture.json 保存唯一内容，编译为网页、幻灯片、Jupyter notebook 与讲授快照。
 
-示例：[用代码讲课](examples/animations/README.md)，两讲为 Presmium 写的中文讲义（冒泡排序、代码写成的动画），用 GSAP、Anime.js、Motion、Three.js 与 Remotion 写动画，讲解、字幕、点击与光标编进同一条时间线，合成为讲授与视频。`pnpm demo:check` 检查，`pnpm demo:build` 构建网页、幻灯片、notebook 与讲授。
+示例：[用代码讲课](examples/animations/README.md)，保留冒泡排序、代码动画两讲完整中文课程与匹配的讲授缓存，并新增 8 份[功能导览](examples/animations/FEATURES.md)：正文、步骤、代码、课堂、讲稿、发布及可选执行环境。`pnpm demo:check` 检查原有两讲；`pnpm demo:build` 构建整个工作区网页，并为原有两讲补充幻灯片、notebook 与讲授。
 
 ## 安装
 
