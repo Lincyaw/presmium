@@ -1,5 +1,6 @@
 import {
   NAVIGATION,
+  PLAYBACK_CONTROL,
   PmIconButton,
   STEP_CLOCK,
   useAppearance,
@@ -12,6 +13,7 @@ import {
   useStaticRender,
   useStore,
 } from '@lincyaw/host'
+import type { PlaybackLease } from '@lincyaw/host'
 import { errorMessage } from '@lincyaw/kernel'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
@@ -36,6 +38,7 @@ export default function SceneView(props: SceneProps) {
   const navigation = useService(NAVIGATION)
   const navigated = useStore(navigation?.position, undefined)
   const clock = useService(STEP_CLOCK)
+  const playbackControl = useService(PLAYBACK_CONTROL)
   const printed = useStaticRender()
   const stepTime = useStepTime({ until: Math.max(...durations) })
   const { dark } = useAppearance()
@@ -52,6 +55,7 @@ export default function SceneView(props: SceneProps) {
   const instance = useRef<Scene | undefined>(undefined)
   const frame = useRef(0)
   const localTime = useRef<number | undefined>(undefined)
+  const playbackLease = useRef<PlaybackLease>()
   const localNavigation = useRef<{ slide: number, step: number }>()
   const followedNavigation = useRef({ source: navigation, position: navigated })
   const shown =
@@ -60,26 +64,37 @@ export default function SceneView(props: SceneProps) {
       : timelinePosition(durations, scope.localStepAt(hostStep), stepTime)
   const shownNow = useRef(shown)
   shownNow.current = shown
+  const activeLocalStep = scope.localStepAt(hostStep)
+  const requestedStart = scope.localPreview && navigated?.boundary === 'start' && Number.isFinite(activeLocalStep) && local === starts[activeLocalStep] ? activeLocalStep : undefined
   const selectedStep = Math.max(
     0,
     Math.min(
       durations.length - 1,
       expanded && local !== undefined
-        ? Math.max(
+        ? requestedStart ?? Math.max(
             0,
             starts.findIndex(
               (start, i) =>
                 i < durations.length && local <= start + durations[i]!,
             ),
           )
-        : scope.localStepAt(hostStep),
+        : activeLocalStep,
     ),
   )
   const stop = () => {
+    playbackLease.current?.cancel()
     localNavigation.current = undefined
     cancelAnimationFrame(frame.current)
     setPlaying(false)
   }
+  useEffect(() => {
+    const lease = playbackControl?.register(stop)
+    playbackLease.current = lease
+    return () => {
+      if (playbackLease.current === lease) playbackLease.current = undefined
+      lease?.dispose()
+    }
+  }, [playbackControl])
   const seekLocal = (at: number) => {
     stop()
     localTime.current = at
@@ -105,7 +120,7 @@ export default function SceneView(props: SceneProps) {
     if (own?.slide === navigated.slide && own.step === navigated.step) return
     const step = scope.localStepAt(navigated.step)
     if (step >= 0 && step < durations.length)
-      seekLocal(starts[step]! + durations[step]!)
+      seekLocal(starts[step]! + (navigated.boundary === 'start' ? 0 : durations[step]!))
   }, [navigation, navigated, expanded, cursor.slide, scope.at, props.durations])
   useEffect(() => {
     if (!scope.localPreview || local === undefined || !navigation) return
@@ -316,7 +331,11 @@ export default function SceneView(props: SceneProps) {
             icon={playing ? 'pause' : 'play'}
             label={playing ? t.pause : t.play}
             aria-pressed={playing}
-            onClick={() => setPlaying((value) => !value)}
+            onClick={() => {
+              if (playing) stop()
+              else if (playbackLease.current) void playbackLease.current.requestStart().then(allowed => { if (allowed) setPlaying(true) }).catch(fail)
+              else setPlaying(true)
+            }}
           />
           <input
             type="range"
