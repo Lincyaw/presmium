@@ -62,7 +62,7 @@ export function PresentView() {
       else if (!moveInOverview(root.current, event.key)) return
       event.preventDefault()
     }
-    useModal(root)
+    useModal(root, viewer.options.embedded)
     useEffect(() => {
       window.addEventListener('keydown', onOverviewKey, { capture: true })
       document.addEventListener('fullscreenchange', syncFullscreen)
@@ -85,7 +85,10 @@ export function PresentView() {
       const stepId = current.stepIds?.[step]
       const narration = stepId ? current.stepNarrations?.[stepId] ?? [] : []
       const hasNarration = sections.some(section => Object.values(section.stepNarrations ?? {}).some(lines => lines.some(line => line.text.trim())))
-      return h(FocusScope, { trapped: true, loop: true, asChild: true }, h('div', null, [h('div', {
+      return h(FocusScope, { trapped: !viewer.options.embedded, loop: !viewer.options.embedded, asChild: true,
+        onMountAutoFocus: (event: Event) => { if (viewer.options.embedded) event.preventDefault() },
+        onUnmountAutoFocus: (event: Event) => { if (viewer.options.embedded) event.preventDefault() },
+      }, h('div', null, [h('div', {
         'ref': root,
         'class': 'pm-present',
         'role': 'region',

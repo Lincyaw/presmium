@@ -24,7 +24,7 @@ export function PresenterView() {
     const bar = useRef<HTMLDivElement>(null)
     useActions(viewer, 'presenter')
     useOverlayBar(bar)
-    useModal(root)
+    useModal(root, viewer.options.embedded)
     const [started, setStarted] = useState(Date.now)
     const [now, setNow] = useState(Date.now)
     useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer) }, [])
@@ -38,7 +38,10 @@ export function PresenterView() {
       const current = section
       if (!current) return null
       const notes = sectionNarration(current)
-      return h(FocusScope, { trapped: true, loop: true, asChild: true }, h('div', null, [h('div', { 'ref': root, 'tabindex': -1, 'class': 'pm-presenter', 'data-section': current.id, 'data-step': step }, [
+      return h(FocusScope, { trapped: !viewer.options.embedded, loop: !viewer.options.embedded, asChild: true,
+        onMountAutoFocus: (event: Event) => { if (viewer.options.embedded) event.preventDefault() },
+        onUnmountAutoFocus: (event: Event) => { if (viewer.options.embedded) event.preventDefault() },
+      }, h('div', null, [h('div', { 'ref': root, 'tabindex': -1, 'class': 'pm-presenter', 'data-section': current.id, 'data-step': step }, [
         h('div', { ref: bar, class: 'pm-presenter__bar' }, [
           h('strong', { class: 'pm-presenter__title' }, `${current.index}. ${current.title}`),
           current.steps > 0 ? h('span', { class: 'pm-presenter__counter' }, t.presenter.step(step, current.steps)) : null,
