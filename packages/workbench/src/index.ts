@@ -1,4 +1,7 @@
 export * from './components.tsx'
+export { StepProductionEditor } from './StepProductionEditor.tsx'
+export type { StepProductionEditorProps } from './StepProductionEditor.tsx'
+export type { StepDurationDraft, StepDurationKey, StepTimingKey, StepTimingPatch } from './step-production.ts'
 export { useMessages, useWorkbench, useWorkbenchState, WorkbenchProvider } from './context.tsx'
 export type { DocumentComment } from '@lincyaw/kernel'
 export { localeOf, MESSAGES, timeAgo } from './messages.ts'

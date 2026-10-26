@@ -143,6 +143,8 @@ interface MediaClip {
 
 讲授默认顺序从 `sectionOrder → section.stepOrder` 派生，不重复持久化。时序决定仅由 Production 保存，Step 不再保存另一份 timing。配音继承和实际来源必须有唯一规则，不在讲稿和编排中留下互相覆盖的两份配置。绝对起止时间、精确时长和播放片段属于派生的 PlaybackPlan。
 
+时机逐项按文稿 `defaults`、页面 `sectionOverrides`、步骤 `stepOverrides` 解析，后者优先。迁移保留的 `narrationOverrides` 只为讲稿提供开始时机，位于页面与步骤之间：同一步的多条讲稿可继承各自的开始时机；显式设置步骤开始时机只统一本步，不改共享讲稿。恢复本步继承只移除步骤层的时机字段，保留音色、讲稿覆盖、cue 延迟和媒体片段。
+
 未来支持复讲时，再引入有独立出现 ID 的编排序列；当前不为未来需求预先增加第二份默认顺序。
 
 ## 统一提交边界

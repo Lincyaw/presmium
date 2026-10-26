@@ -8,6 +8,9 @@ import { nativeTextPoint, nativeTextPosition } from './document-editor/selection
 import type { NativeTextPoint } from './document-editor/selection.ts'
 import type { DocumentFieldBookmark, DocumentFieldRegistration } from './document-editor/focus.ts'
 import { pageDeletion, removeDocumentPage } from './document-pages.ts'
+import { changeStepTiming } from './step-production.ts'
+import type { StepDurationDraft, StepDurationKey, StepTimingPatch } from './step-production.ts'
+import { DocumentTimingDrafts } from './document-timing-drafts.ts'
 import { errorMessage, slideShape, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
 import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, JobsAnswer, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPoint, PreviewPosition, PreviewRect, PreviewRenderer, PreviewReport, ReviewChange, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
 import { DocumentDiagnostics } from './diagnostics.ts'
@@ -68,6 +71,9 @@ export interface AgentAnswer {
 export interface WorkbenchState {
   locale: Locale
   authoring?: DocumentSessionState
+  /** Unaccepted numeric form input is retained separately from saved canonical timing. */
+  hasDocumentTimingDrafts?: boolean
+  documentTimingDraftStorageFailure?: boolean
   isDark: boolean
   documents?: DocumentsAnswer
   documentsFailure?: string
@@ -199,6 +205,7 @@ export function documentDirFor(title: string, taken: readonly string[]): string 
 export class Workbench {
   readonly client: WorkspaceClient
   readonly #documentSession: DocumentSession
+  readonly #documentTimingDrafts = new DocumentTimingDrafts()
   readonly #removedCueTimings = new Map<string, { pauseMs: number }>()
   #cueTimingScope?: string
   #documentEditor?: NativeDocumentEditor
@@ -271,6 +278,8 @@ export class Workbench {
       if (this.#cueTimingScope !== cueTimingScope) { this.#removedCueTimings.clear(); this.#cueTimingScope = cueTimingScope }
       const previous = this.#state.authoring
       this.#set({ authoring,
+        hasDocumentTimingDrafts: Boolean(authoring.identity && authoring.content && this.#documentTimingDrafts.has(authoring.identity, authoring.content)),
+        documentTimingDraftStorageFailure: this.#documentTimingDrafts.failed,
         save: authoring.error ? { kind: 'failed', message: authoring.error } : authoring.saving ? { kind: 'saving' } : !authoring.dirty && previous?.dirty ? { kind: 'saved', at: new Date().toISOString() } : this.#state.save.kind === 'failed' ? { kind: 'idle' } : this.#state.save })
       if (!authoring.dirty && previous?.dirty) { void this.#history.read(authoring.directory); void this.loadDocuments() }
     })
@@ -626,6 +635,26 @@ export class Workbench {
     const source = this.#state.authoring
     if (!source || source.loading || source.directory !== this.#state.document || identity !== undefined && identity !== source.identity) return undefined
     return source.content
+  }
+  /** Uses the current actor revision so timing edits cannot replace later body or narration input. */
+  setDocumentStepProduction(stepId: string, patch: StepTimingPatch, identity?: string): void {
+    const document = this.getDocument(identity)
+    if (!document || isAgentChanging(this.#state)) return
+    const next = changeStepTiming(document, stepId, patch)
+    if (next === document) return
+    this.stopAuditions()
+    this.#documentSession.record(next)
+  }
+  documentTimingDraft(stepId: string, key: StepDurationKey, identity: string, reset: number): StepDurationDraft | undefined {
+    const document = this.getDocument(identity)
+    return document && this.#state.authoring?.reset === reset ? this.#documentTimingDrafts.get(identity, document, stepId, key) : undefined
+  }
+  /** Retains unaccepted numeric input by stable target; it is not authoring content or a second timing source. */
+  setDocumentTimingDraft(stepId: string, key: StepDurationKey, draft: StepDurationDraft | undefined, identity: string, reset: number): void {
+    const source = this.#state.authoring, document = this.getDocument(identity)
+    if (!document?.steps[stepId] || source?.reset !== reset || isAgentChanging(this.#state)) return
+    if (!this.#documentTimingDrafts.set(identity, document, stepId, key, draft)) return
+    this.#set({ authoring: { ...source }, hasDocumentTimingDrafts: this.#documentTimingDrafts.has(identity, document), documentTimingDraftStorageFailure: this.#documentTimingDrafts.failed })
   }
   /** Changes one stable narration target without replacing the body editor or derived captions. */
   setDocumentNarration(stepId: string, narrationId: string | undefined, content: NarrationNode[], identity?: string): string | undefined {

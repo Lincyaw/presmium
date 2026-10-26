@@ -91,7 +91,7 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
       const step = doc.steps[stepId]!
       for (const narrationId of step.narrationIds) {
         const narration = doc.narrations[narrationId]!
-        const production = { ...doc.production.defaults, ...doc.production.sectionOverrides?.[sectionId], ...doc.production.stepOverrides[stepId], ...doc.production.narrationOverrides?.[narrationId] }
+        const production = { ...doc.production.defaults, ...doc.production.sectionOverrides?.[sectionId], ...doc.production.narrationOverrides?.[narrationId], ...doc.production.stepOverrides[stepId] }
         const mode = production.narrationStart === 'after-animation' ? 'after' : 'during'
         blocks.push({ id: `${stepId}:${narrationId}`, role: 'narration', at, only: ['lecture'], source: source(entry, `/narrations/${pointerKey(narrationId)}`), node: { type: 'markdown', narration: { mode }, mdast: root([{ type: 'paragraph', children: narration.content.map(node => narrationText(node, doc)) }]) } })
       }
