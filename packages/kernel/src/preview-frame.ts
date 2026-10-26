@@ -836,6 +836,7 @@ function createPositionReport(page: PreviewPage, state: FrameState, post: (messa
     post({ type: 'position', ...position })
   }
   return {
+    flush() { clearTimeout(timer); send() },
     moved() {
       if (state.stopped || timer || (!state.active && ready)) return
       timer = setTimeout(send, Math.max(0, 150 - (Date.now() - last)))
@@ -1026,6 +1027,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
       if (!isLive(state)) throw new Error('preview-flush-unavailable')
       await page.flush()
       if (!isLive(state)) throw new Error('preview-flush-unavailable')
+      position.flush()
       post({ type: 'flushed', request: command.request })
     }).catch(error => {
       post({ type: 'flushed', request: command.request, error: errorMessage(error) })
@@ -1057,6 +1059,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
           enablePlaybackGate()
           cancelPlayback()
           return void Promise.resolve().then(() => page.pausePlayback!()).then(() => {
+            position.flush()
             post({ type: 'playback-paused', request: command.request })
           }, error => post({ type: 'playback-paused', request: command.request, error: errorMessage(error) }))
         case 'playback-granted':
