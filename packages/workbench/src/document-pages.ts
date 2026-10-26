@@ -97,6 +97,9 @@ export function removeDocumentPage(source: TeachingDocument, section: string): T
   document.production.mediaClips = document.production.mediaClips.filter(clip => !steps.has(clip.attachment.stepId))
   for (const thread of Object.values(document.comments ?? {})) if (thread.anchor && (identities.has(thread.anchor.from.blockId) || identities.has(thread.anchor.to.blockId))) delete thread.anchor
   if (document.sectionOrder.length > 1) { document.sectionOrder = document.sectionOrder.filter(id => id !== section); delete document.sections[section] }
-  else { const id = crypto.randomUUID(); page.children = []; page.stepOrder = [id]; document.steps[id] = { id, sectionId: section, visuals: [], narrationIds: [] } }
+  else {
+    const id = crypto.randomUUID(); page.children = []; page.stepOrder = [id]; document.steps[id] = { id, sectionId: section, visuals: [], narrationIds: [] }
+    document.production.stepOverrides[id] = { minimumHoldMs: 4000, trailingPauseMs: 500 }
+  }
   return document
 }

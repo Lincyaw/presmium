@@ -1135,7 +1135,10 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
     moved: position.moved,
     updated() {
       if (!isLive(state)) return
-      if (position.updated()) { cancelProduction(); redraw() }
+      if (position.updated()) {
+        if (pendingProduction && pendingProduction.binding.irRevision !== page.revision()) cancelProduction()
+        redraw()
+      }
     },
     redraw,
     report(problem) {

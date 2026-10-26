@@ -92,7 +92,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
   }
   const show = (entry: Entry, irRevision?: string) => {
     if (!selected(entry)) return
-    if (!entry.frame.hidden && entry.frame.dataset.active === 'true' && (irRevision === undefined || irRevision === entry.irRevision)) return
+    if (entry.detach && !entry.frame.hidden && entry.frame.dataset.active === 'true' && (irRevision === undefined || irRevision === entry.irRevision)) return
     clearTimeout(entry.expiry)
     entry.used = ++uses
     entry.frame.hidden = false
@@ -160,6 +160,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
       return
     }
     const reloaded = entry.ready
+    if (reloaded) { entry.detach?.(); entry.detach = undefined }
     entry.ready = true
     if (!reloaded) entry.active = true
     entry.irRevision = report.revision

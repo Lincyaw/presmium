@@ -15,7 +15,8 @@ import type { CanonicalSource, VoiceSource } from '@lincyaw/kernel'
 import type { StepDurationDraft, StepDurationKey, StepTimingPatch } from './step-production.ts'
 import { DocumentTimingDrafts } from './document-timing-drafts.ts'
 import { compileDocumentPreview } from './document-preview.ts'
-import { errorMessage, slideShape, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
+import { readDocumentSnapshot } from './document-preview.ts'
+import { errorMessage, sameProductionBinding, slideShape, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
 import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, JobsAnswer, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPoint, PreviewPosition, PreviewRect, PreviewRenderer, PreviewReport, ReviewChange, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
 import { DocumentDiagnostics } from './diagnostics.ts'
 import { DocumentHistory } from './history.ts'
@@ -26,6 +27,8 @@ import { changedPlaces, findPlaceAtLine, findPlaceSource } from './places.ts'
 import { OperationLog } from './telemetry.ts'
 import type { OperationValue } from './telemetry.ts'
 import { PreviewPlayback } from './preview-playback.ts'
+import { ProductionPlayback } from './production-playback.ts'
+import type { ProductionBinding, ProductionPlan, ProductionPlaybackCommand, ProductionPlaybackState } from '@lincyaw/kernel'
 import { workspaceClient, WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 import type { PageDeletePlan } from '@lincyaw/kernel'
@@ -97,6 +100,11 @@ export interface WorkbenchState {
   isPreparingPresentation?: boolean
   presentationFailure?: string
   presentationSnapshot?: { version: string, fingerprint: string, revision: string, project: number }
+  productionPlan?: ProductionPlan
+  productionPlayback?: ProductionPlaybackState
+  productionFailure?: string
+  /** Changes when an acknowledged preview connection is attached or detached, including same-revision reloads. */
+  previewConnection: number
   /** Where the preview is: the section the author reads, or the slide and its step. */
   position?: PreviewPosition
   /** Changes on every position intent, including A → B → A, without changing the source. */
@@ -251,6 +259,8 @@ export class Workbench {
   #documentScope = 0
   #jobPreparation?: AbortController
   readonly #playback = new PreviewPlayback(() => ({ document: this.#state.document, scope: this.#documentScope, sinks: this.#previewSinks }))
+  readonly #production = new ProductionPlayback(() => ({ document: this.#state.document, scope: this.#documentScope, sinks: this.#previewSinks,
+    binding: this.#state.productionPlan?.binding, ready: this.#productionReady() }), state => this.#set({ productionPlayback: state }))
   /** A place to show that no preview could take yet (none was attached, e.g. the chat covered the document). */
   #pendingReveal?: PreviewAnchor
   /** The AI's changes to show on the document once the preview has them. */
@@ -270,6 +280,7 @@ export class Workbench {
       previewRenderer: 'web',
       webView: 'document',
       previewReload: 0,
+      previewConnection: 0,
       documentPositionToken: this.#nextDocumentPosition(),
       documentPositionIntent: 'seek',
       isDiagnosticsUnavailable: false,
@@ -307,6 +318,7 @@ export class Workbench {
         hasDocumentTimingDrafts: Boolean(authoring.identity && authoring.content && this.#documentTimingDrafts.has(authoring.identity, authoring.content)),
         documentTimingDraftStorageFailure: this.#documentTimingDrafts.failed,
         save: authoring.error ? { kind: 'failed', message: authoring.error } : authoring.saving ? { kind: 'saving' } : !authoring.dirty && previous?.dirty ? { kind: 'saved', at: new Date().toISOString() } : this.#state.save.kind === 'failed' ? { kind: 'idle' } : this.#state.save })
+      if (this.#production.changed()) void this.pausePlayback().catch(() => {})
       if (!authoring.dirty && previous?.dirty) { void this.#history.read(authoring.directory); void this.loadDocuments() }
     })
     this.#diagnostics = new DocumentDiagnostics(this.client, store)
@@ -635,6 +647,8 @@ export class Workbench {
     const selected = this.#state.position
     const section = selected?.section ?? this.#state.ir?.doc.sections[0]?.id ?? this.#state.authoring?.content?.sectionOrder[0]
     if (section === undefined) return
+    // A fresh or reloaded frame reports its initial document view before applying this command.
+    this.#awaitingView = this.#state.webView
     for (const sink of sinks) sink.send({ type: 'go', section, step: selected?.step ?? 0, view: this.#state.webView })
   }
 
@@ -652,6 +666,74 @@ export class Workbench {
       || snapshot.project !== (authoring.projectRevision ?? 0) || state.webView !== 'present' || state.previewRenderer !== 'web' || !state.preview?.web) return false
     this.#reloadPreview()
     return true
+  }
+
+  #productionSourceCurrent(binding: ProductionBinding): boolean {
+    const source = this.#state.authoring
+    return Boolean(source?.content?.id === binding.source.documentId && source.version === binding.source.version && source.fingerprint === binding.source.fingerprint
+      && !source.loading && !source.dirty && !source.saving && !source.composing && !source.restored && !source.error && !isAgentChanging(this.#state))
+  }
+
+  #productionReady(): boolean {
+    const state = this.#state, binding = state.productionPlan?.binding, snapshot = state.presentationSnapshot
+    return Boolean(binding && this.#productionSourceCurrent(binding) && snapshot?.revision === binding.irRevision
+      && snapshot.version === binding.source.version && snapshot.fingerprint === binding.source.fingerprint && snapshot.project === (state.authoring?.projectRevision ?? 0)
+      && state.previewIrRevision === binding.irRevision && state.webView === 'present' && state.previewRenderer === 'web'
+      && !state.hasDocumentTimingDrafts && !state.documentTimingDraftStorageFailure)
+  }
+
+  /** Reads the actual derived plan without building the visuals or synthesizing speech. */
+  async prepareProductionPlan(signal: AbortSignal): Promise<ProductionPlan> {
+    const initial = this.#state, source = initial.authoring, identity = source?.identity, directory = initial.document, scope = this.#documentScope
+    if (!identity || directory === undefined || !source?.version || !source.fingerprint || source.loading || source.dirty || source.saving || source.composing || source.restored || source.error) throw new Error('production-source-changed')
+    const snapshot = await readDocumentSnapshot(this.client, { directory, version: source.version, fingerprint: source.fingerprint }, signal)
+    signal.throwIfAborted()
+    if (!snapshot.doc.source || scope !== this.#documentScope || this.#state.authoring?.identity !== identity) throw new Error('production-source-changed')
+    const plan = await this.client.readProductionPlan(directory, { source: snapshot.doc.source, irRevision: snapshot.revision }, signal)
+    signal.throwIfAborted()
+    if (scope !== this.#documentScope || this.#state.authoring?.identity !== identity || !this.#productionSourceCurrent(plan.binding)) throw new Error('production-source-changed')
+    this.#set({ productionPlan: plan })
+    if (this.#production.changed()) void this.pausePlayback().catch(() => {})
+    return plan
+  }
+
+  /** The child confirms seeks and playback; the parent never estimates a playhead using a timer. */
+  async controlProduction(control: ProductionPlaybackCommand, signal?: AbortSignal): Promise<ProductionPlaybackState> {
+    const scope = this.#documentScope
+    this.#set({ productionFailure: undefined })
+    try {
+      if (control.action === 'play' || control.action === 'load') {
+        this.stopAuditions()
+        await this.pausePlayback()
+        signal?.throwIfAborted()
+      }
+      return await this.#production.control(control, signal)
+    } catch (error) {
+      const code = errorMessage(error), current = this.#state.productionPlan?.binding
+      if (scope === this.#documentScope && !signal?.aborted && current && sameProductionBinding(current, control.binding) && this.#productionReady()
+        && !['production-source-changed', 'production-request-superseded', 'production-request-cancelled'].includes(code)) this.#set({ productionFailure: code })
+      throw error
+    }
+  }
+
+  closeProduction(): void {
+    this.#production.reset()
+    this.#set({ productionPlan: undefined, productionFailure: undefined })
+  }
+
+  /** Explicitly enables the standard production capability in this document's one authoritative source. */
+  async enableDocumentProduction(): Promise<void> {
+    const scope = this.#documentScope, identity = this.#state.authoring?.identity
+    if (!identity) throw new Error('production-source-changed')
+    await this.pausePlayback()
+    await this.flushPendingEdits()
+    const source = this.#state.authoring, document = this.getDocument(identity)
+    if (scope !== this.#documentScope || !document || !source?.version || !source.fingerprint || source.dirty || source.saving || source.composing || source.restored || source.error || isAgentChanging(this.#state)) throw new Error('production-source-changed')
+    const plugins = [...new Set([...(document.metadata.plugins ?? []), '@lincyaw/addon-lecture', '@lincyaw/addon-speech'])]
+    const next = { ...document, metadata: { ...document.metadata, plugins, renderers: { ...document.metadata.renderers, lecture: document.metadata.renderers?.lecture ?? {} } } }
+    this.#documentSession.record(next)
+    await this.flushPendingEdits()
+    if (scope !== this.#documentScope || this.#state.authoring?.identity !== identity || this.#state.authoring.dirty || this.#state.authoring.saving || this.#state.authoring.error) throw new Error('production-source-changed')
   }
 
   #reloadPreview(): void {
@@ -975,6 +1057,7 @@ export class Workbench {
       document.sections[id] = { id, title: this.#messages.newPage, children: [blockId], stepOrder: [stepId], layout: { type: 'stack' } }
       document.blocks[blockId] = { id: blockId, type: 'text', content: [{ id: nodeId, type: 'paragraph', children: [] }] }
       document.steps[stepId] = { id: stepId, sectionId: id, visuals: [{ blockId, visible: true }], narrationIds: [] }
+      document.production.stepOverrides[stepId] = { minimumHoldMs: 4000, trailingPauseMs: 500 }
       const index = after ? document.sectionOrder.indexOf(after) : document.sectionOrder.length - 1
       document.sectionOrder.splice(index + 1, 0, id)
       if (generation === this.#documentSelectionGeneration) {
@@ -1107,6 +1190,14 @@ export class Workbench {
     const step = section?.stepOrder.indexOf(stepId) ?? -1
     if (!section || step < 0) return
     if (this.#state.webView === 'document') { this.pauseDocumentStep(sectionId, stepId); return }
+    const plan = this.#state.productionPlan, range = plan?.pages.find(page => page.sectionId === sectionId)?.steps.find(step => step.stepId === stepId)
+    if (plan?.canPreview && this.#productionReady() && this.#state.productionPlayback?.status === 'ready' && range?.timing === 'confirmed' && range.startMs !== undefined) {
+      this.stopAuditions()
+      this.#selectedSteps.set(`${this.#state.document}\0${sectionId}`, step)
+      this.#set({ position: { section: sectionId, step, trail: [], view: 'present' } })
+      void this.controlProduction({ binding: plan.binding, action: 'seek', timeMs: range.startMs }).catch(() => {})
+      return
+    }
     const snapshot = this.#state.presentationSnapshot
     const compiled = this.#state.ir?.doc.sections.find(page => page.id === sectionId)?.stepIds?.indexOf(stepId) ?? -1
     if (snapshot && snapshot.version === source?.version && snapshot.fingerprint === source.fingerprint && compiled >= 0) this.goToStep(sectionId, compiled)
@@ -1240,6 +1331,7 @@ export class Workbench {
   /** Attaches the shown preview and selects the requested view in its existing runtime. */
   attachPreview(sink: PreviewSink): () => void {
     this.#previewSinks.add(sink)
+    this.#set({ previewConnection: this.#state.previewConnection + 1 })
     if (this.#state.previewRenderer === 'web') this.#showWebView([sink])
     const pending = this.#pendingGo
     if (pending && pending.document === this.#state.document) sink.send(pending.command)
@@ -1252,6 +1344,8 @@ export class Workbench {
     sink.send({ type: 'highlight', target: reveal ?? this.#state.pointer?.target ?? null })
     return () => {
       this.#previewSinks.delete(sink)
+      this.#production.detach(sink)
+      this.#set({ previewConnection: this.#state.previewConnection + 1 })
       this.#playback.detach(sink)
     }
   }
@@ -1267,6 +1361,7 @@ export class Workbench {
     if (report.type === 'page-create') { origin?.send({ type: 'page-created', section: report.section, request: report.request, error: unsupported }); return }
     if (document !== this.#state.document || renderer !== this.#state.previewRenderer) return
     this.#playback.report(document, report, origin)
+    this.#production.report(document, report, origin)
     switch (report.type) {
       case 'ready':
       case 'updated':
@@ -1335,7 +1430,8 @@ export class Workbench {
 
   #stopSubscriptions(): void {
     this.#presentationPreparation++
-    this.#set({ isPreparingPresentation: false, presentationFailure: undefined, presentationSnapshot: undefined })
+    this.#production.reset()
+    this.#set({ isPreparingPresentation: false, presentationFailure: undefined, presentationSnapshot: undefined, productionPlan: undefined, productionFailure: undefined })
     this.#removedCueTimings.clear(); this.#cueTimingScope = undefined
     this.#documentSession.close()
     this.#unsubscribeDocumentHistory?.(); this.#unsubscribeDocumentHistory = undefined; this.#activeDocumentHistory = undefined; this.#documentEditor = undefined
