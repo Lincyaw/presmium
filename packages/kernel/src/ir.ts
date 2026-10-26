@@ -58,6 +58,8 @@ export interface IRDocument {
   sections: IRSection[]
   diagnostics: Finding[]
   production?: import('./contracts/document.ts').Production
+  /** Canonical media declarations available to production renderers without reopening authoring JSON. */
+  productionAssets?: Record<string, import('./contracts/document.ts').Asset>
 }
 
 export interface IRSection {

@@ -1,5 +1,5 @@
 import { deckLocale } from '@lincyaw/kernel'
-import type { IRDocument, ProductionAudio, ProductionDiagnostic, ProductionPage, ProductionPlan, ProductionRange, ProductionSegment, ProductionTiming } from '@lincyaw/kernel'
+import type { IRDocument, ProductionAssetInspection, ProductionAudio, ProductionDiagnostic, ProductionPage, ProductionPlan, ProductionRange, ProductionSegment, ProductionTiming } from '@lincyaw/kernel'
 import { plannedAnimations, plannedUtterances } from './plan.ts'
 import type { LecturePlan } from './plan.ts'
 import { trackDuration } from './track.ts'
@@ -9,7 +9,7 @@ const messages = {
   'zh-CN': {
     animation: '动画未声明有效时长，不能用于按时播放或导出。',
     recording: '录音来源已保留，但尚未接入当前讲稿播放计划。',
-    media: '当前运行时尚不支持 Production 媒体片段裁切或混音。',
+    media: '当前只支持同文稿本地音频；视频和录音采用尚未支持。',
     cue: '无配音讲稿中的文字位置提示没有确认时码；请移到步骤起点或提供音频。',
     next: '含跨步提示的同一段配音尚不能插入步骤结束停顿；请先拆为步骤绑定的讲稿。',
     cache: '当前讲稿与音色缺少精确配音缓存；显示的时长为估算，不能用于确认播放或导出。',
@@ -18,7 +18,7 @@ const messages = {
   en: {
     animation: 'The animation has no valid declared duration; timed playback and export are unavailable.',
     recording: 'The recording source is retained but is not supported by the current narration player.',
-    media: 'This runtime cannot yet trim or mix Production media clips.',
+    media: 'Only local audio from this document is supported; video and recording adoption are unavailable.',
     cue: 'Text-anchored cues without audio have no confirmed timing; move them to the step start or provide audio.',
     next: 'A narration clip with a next-step cue cannot yet insert trailing step pauses; split it into step-bound narrations.',
     cache: 'Exact voiceover cache is missing for the current script and voice; displayed duration is estimated and cannot confirm playback or export.',
@@ -32,7 +32,7 @@ export function productionDiagnostics(doc: IRDocument, plan: LecturePlan): Produ
   const result: ProductionDiagnostic[] = [], text = productionMessages(doc)
   for (const clip of doc.production?.mediaClips ?? []) {
     const section = doc.sections.find(section => section.stepIds?.includes(clip.attachment.stepId))
-    result.push({ code: 'production.media-unsupported', severity: 'error', message: text.media, ...section ? { sectionId: section.id } : {}, stepId: clip.attachment.stepId })
+    if (doc.productionAssets?.[clip.assetId]?.kind !== 'audio') result.push({ code: 'production.media-unsupported', severity: 'error', message: text.media, ...section ? { sectionId: section.id } : {}, stepId: clip.attachment.stepId })
   }
   for (const section of doc.sections) {
     for (const animation of plannedAnimations(section)) if (animation.durationMs === undefined) result.push({ code: 'production.animation-duration-unknown', severity: 'error', message: text.animation, sectionId: section.id, stepId: section.stepIds?.[animation.step], blockId: animation.blockId })
@@ -48,9 +48,9 @@ export function productionDiagnostics(doc: IRDocument, plan: LecturePlan): Produ
   return result
 }
 
-export function projectProductionPlan(doc: IRDocument, plan: LecturePlan, track: LectureTrack, audio: ReadonlyMap<string, ProductionAudio>, failures: readonly { id: string, section: string, text: string, reason: string }[]): Omit<ProductionPlan, 'binding'> {
+export function projectProductionPlan(doc: IRDocument, plan: LecturePlan, track: LectureTrack, audio: ReadonlyMap<string, ProductionAudio>, failures: readonly { id: string, section: string, text: string, reason: string }[], mediaDiagnostics: readonly ProductionDiagnostic[] = [], assets: ReadonlyMap<string, ProductionAssetInspection> = new Map()): Omit<ProductionPlan, 'binding'> {
   const duration = trackDuration(track), units = plannedUtterances(plan), byId = new Map(units.map(unit => [unit.id, unit]))
-  const diagnostics: ProductionDiagnostic[] = productionDiagnostics(doc, plan)
+  const diagnostics: ProductionDiagnostic[] = [...productionDiagnostics(doc, plan), ...mediaDiagnostics]
   const messages = productionMessages(doc)
   for (const failure of failures) {
     const unit = byId.get(failure.id), section = doc.sections.find(section => section.id === failure.section)
@@ -95,6 +95,12 @@ export function projectProductionPlan(doc: IRDocument, plan: LecturePlan, track:
     }
     voice.push({ ...segment, id: `voice:${utterance.id}`, ...file ? { audio: file } : {} })
     caption.push({ ...segment, id: `caption:${utterance.id}` })
+  }
+  for (const segment of track.audio ?? []) {
+    if (!segment.assetId || !segment.mediaClipId) continue
+    const clip = doc.production?.mediaClips.find(clip => clip.id === segment.mediaClipId), media = assets.get(segment.assetId)
+    if (!clip || !media) continue
+    voice.push({ id: `media:${clip.id}`, sectionId: segment.section, stepId: clip.attachment.stepId, stepIds: [clip.attachment.stepId], mediaClipId: clip.id, assetId: clip.assetId, label: clip.assetId, media, sourceRange: { ...clip.sourceRange }, volume: clip.volume, muted: clip.muted ?? false, alignment: 'none', ...range(segment.start * 1000, (segment.start + segment.duration) * 1000) })
   }
   const timing: ProductionTiming = unknown.length ? 'unknown' : Number.isFinite(estimatedAt) ? 'estimated' : 'confirmed'
   const ready = timing === 'confirmed' && failures.length === 0 && duration > 0

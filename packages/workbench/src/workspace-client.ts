@@ -3,7 +3,7 @@ import type { OperationBatch } from './telemetry.ts'
 import type { VoiceCatalogAnswer, VoiceoverCancellation, VoiceoverJob, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest } from '@lincyaw/kernel'
 import type { PageDeleteAnswer, PageDeletePlan, PageDeleteRequest } from '@lincyaw/kernel'
 import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, DocumentEvent } from '@lincyaw/kernel'
-import type { ProductionMediaQuery, ProductionPlan, ProductionPlanQuery } from '@lincyaw/kernel'
+import type { ProductionAssetAnswer, ProductionAssetQuery, ProductionMediaQuery, ProductionPlan, ProductionPlanQuery } from '@lincyaw/kernel'
 
 const observedFailures = new WeakSet<object>()
 /** Whether the owned request observer already received this transport failure. */
@@ -51,6 +51,7 @@ export interface WorkspaceClient {
   readVoiceCatalog(document: string, engine?: string, lang?: string, signal?: AbortSignal): Promise<VoiceCatalogAnswer>
   readVoiceover(document: string, signal?: AbortSignal): Promise<VoiceoverSnapshot>
   readProductionPlan(document: string, query: ProductionPlanQuery, signal?: AbortSignal): Promise<ProductionPlan>
+  readProductionAsset(document: string, query: ProductionAssetQuery, signal?: AbortSignal): Promise<ProductionAssetAnswer>
   readProductionMedia(document: string, query: ProductionMediaQuery, signal?: AbortSignal): Promise<Blob>
   /** Allocates an intent before sending; aborted or undelivered requests cancel by intent even without a job id. */
   startVoiceover(document: string, request: Omit<VoiceoverRequest, 'intent'> & { intent?: string }, signal?: AbortSignal): Promise<VoiceoverJob>
@@ -258,6 +259,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     readVoiceCatalog: (document, engine, lang, signal) => call(url('voice-catalog', document, { ...engine ? { engine } : {}, ...lang ? { lang } : {} }), { signal }),
     readVoiceover: (document, signal) => call(url('voiceover', document), { signal }),
     readProductionPlan: (document, query, signal) => call(url('production-plan', document, { source: JSON.stringify(query.source), irRevision: query.irRevision }), { signal }),
+    readProductionAsset: (document, query, signal) => call(url('production-asset', document, { source: JSON.stringify(query.source), irRevision: query.irRevision, assetId: query.assetId }), { signal }),
     async readProductionMedia(document, query, signal) {
       const response = await observedFetch(url('production-media', document, { source: JSON.stringify(query.source), irRevision: query.irRevision, planId: query.planId, clipId: query.clipId }), { signal })
       if (!response.ok) {

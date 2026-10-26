@@ -12,16 +12,26 @@ import { mediaFile, mediaPolicy, publishedMedia, readTrack, TRACK_FILE, trackIds
 import type { MediaPolicy } from './store.ts'
 import { productionMessages } from '../domain/production.ts'
 import { synthesizeLecture } from './synthesize.ts'
+import { readProductionAssetFile } from './production-assets.ts'
+import type { ProductionAssetFile } from './production-assets.ts'
 
 const clipsOf = (track: LectureTrack) => new Set(track.utterances.flatMap(u => u.clip ?? []))
 
-function publishTrack(track: LectureTrack, text: string, file: string, doc: IRDocument, ctx: RenderContext, clipFiles: ReadonlyMap<string, string>, policy: MediaPolicy = { kind: 'ignore' }): void {
+async function publishTrack(track: LectureTrack, text: string, file: string, doc: IRDocument, ctx: RenderContext, clipFiles: ReadonlyMap<string, string>, policy: MediaPolicy = { kind: 'ignore' }, assets: ReadonlyMap<string, ProductionAssetFile> = new Map()): Promise<void> {
   const out = join(ctx.outDir, track.id)
   mkdirSync(out, { recursive: true })
   const audio = publishedMedia(track.audio, track.id, policy)
   const video = publishedMedia(track.video, track.id, policy)
   writeFileSync(join(out, TRACK_FILE), formatTrack({ ...track, ...audio ? { audio } : {}, ...video ? { video } : {} }))
   for (const segment of policy.kind === 'url' ? [] : [...track.audio ?? [], ...track.video ?? []]) {
+    if (segment.assetId) {
+      const asset = assets.get(segment.assetId)
+      if (!asset || segment.sha256 !== asset.asset.sha256) throw new Error('production.asset-changed')
+      const bytes = await readProductionAssetFile(asset, ctx.deckDir)
+      mkdirSync(dirname(join(out, segment.src)), { recursive: true })
+      writeFileSync(join(out, segment.src), bytes)
+      continue
+    }
     const source = mediaFile(ctx.deckDir, track.id, segment.src)
     if (!source) continue
     if (!existsSync(source)) {
@@ -75,6 +85,8 @@ async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: un
     return false
   }
   const synthesized = await synthesizeLecture(doc, ctx.deckDir, speech, undefined, { cacheOnly: true })
+  for (const issue of synthesized.mediaDiagnostics ?? []) ctx.report({ checkId: LECTURE_ID, severity: issue.severity, message: issue.message, source })
+  if (synthesized.mediaDiagnostics?.length) throw new Error(synthesized.mediaDiagnostics[0]!.message)
   for (const failure of synthesized.failures) {
     ctx.report({ checkId: LECTURE_ID, severity: 'error', message: t.cacheMissing(failure.text.slice(0, 40), failure.section, failure.reason), source: failure.source ?? source, hint: t.generateHint })
   }
@@ -84,7 +96,7 @@ async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: un
   const { track } = synthesized
   if (!track) return false
   const clipFiles = new Map([...synthesized.clips.values()].map(clip => [clip.file, clip.path]))
-  publishTrack(track, formatTrack(track), doc.meta.entry, doc, ctx, clipFiles)
+  await publishTrack(track, formatTrack(track), doc.meta.entry, doc, ctx, clipFiles, { kind: 'ignore' }, synthesized.assets)
   index.push(summary(track))
   tracks.push(track)
   return true
@@ -156,7 +168,7 @@ export const lectureRenderer: Renderer = {
         ctx.report({ checkId: LECTURE_ID, severity: 'error', message: `lecture ${id} is not published: ${refused}`, source: { file: stored.file } })
         continue
       }
-      publishTrack(track, stored.text, stored.file, doc, ctx, clipFiles, policy)
+      await publishTrack(track, stored.text, stored.file, doc, ctx, clipFiles, policy)
       index.push(summary(track))
     }
     mkdirSync(ctx.outDir, { recursive: true })

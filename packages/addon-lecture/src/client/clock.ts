@@ -67,21 +67,26 @@ export interface ClockMedia {
   url: string
   start: number
   duration: number
+  sourceStartMs?: number
+  volume?: number
+  muted?: boolean
 }
 
 const DRIFT_MS = 250
 
 export class MediaClock extends SilentClock {
-  private readonly media: { el: HTMLAudioElement, start: number, duration: number }[]
+  private readonly media: { el: HTMLAudioElement, start: number, duration: number, sourceStartMs: number }[]
 
   constructor(duration: number, media: ClockMedia[]) {
     super(duration)
-    this.media = media.map(({ url, start, duration: length }) => {
+    this.media = media.map(({ url, start, duration: length, sourceStartMs = 0, volume = 1, muted = false }) => {
       const el = new Audio()
       el.preload = 'auto'
       el.onerror = () => this.fail(new Error([url, el.error?.message].filter(Boolean).join(': ')))
       el.src = url
-      return { el, start, duration: length }
+      el.volume = volume
+      el.muted = muted
+      return { el, start, duration: length, sourceStartMs }
     })
   }
 
@@ -97,7 +102,7 @@ export class MediaClock extends SilentClock {
   override now(): number {
     const current = this.playing.getSnapshot() ? this.mediaAt(super.now()) : undefined
     if (current && !current.el.paused && current.el.readyState >= 2) {
-      const t = current.start + current.el.currentTime * 1000
+      const t = Math.min(current.start + current.duration, current.start + current.el.currentTime * 1000 - current.sourceStartMs)
       this.at = Math.min(t, this.duration)
       this.since = performance.now()
       return this.at
@@ -118,7 +123,7 @@ export class MediaClock extends SilentClock {
   override seek(t: number): void {
     super.seek(t)
     for (const m of this.media) {
-      if (t >= m.start && t < m.start + m.duration) m.el.currentTime = (t - m.start) / 1000
+      if (t >= m.start && t < m.start + m.duration) m.el.currentTime = (m.sourceStartMs + t - m.start) / 1000
       else m.el.pause()
     }
     this.tick()
@@ -132,16 +137,18 @@ export class MediaClock extends SilentClock {
   override tick(): void {
     super.tick()
     const t = this.now()
-    const current = this.playing.getSnapshot() ? this.mediaAt(t) : undefined
     for (const m of this.media) {
-      if (m !== current) {
+      if (!this.playing.getSnapshot() || t < m.start || t >= m.start + m.duration) {
         if (!m.el.paused) m.el.pause()
         continue
       }
-      const offset = (t - m.start) / 1000
-      if (Math.abs(m.el.currentTime - offset) * 1000 > DRIFT_MS) m.el.currentTime = offset
+      const offset = (m.sourceStartMs + t - m.start) / 1000
+      if (m.el.paused || Math.abs(m.el.currentTime - offset) * 1000 > DRIFT_MS) m.el.currentTime = offset
       m.el.playbackRate = this.rate.getSnapshot()
-      if (m.el.paused) void m.el.play().catch((error: unknown) => {
+      if (m.el.paused) void m.el.play().then(() => {
+        const at = super.now()
+        if (!this.playing.getSnapshot() || at < m.start || at >= m.start + m.duration) m.el.pause()
+      }).catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return
         this.fail(error instanceof Error ? error : new Error(String(error)))
       })

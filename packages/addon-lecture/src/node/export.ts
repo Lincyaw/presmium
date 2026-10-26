@@ -48,21 +48,24 @@ async function decode(url) {
   const response = await fetch(url)
   if (!response.ok) throw new Error(url + ': HTTP ' + response.status)
   const buffer = await new OfflineAudioContext(1, 1, RATE).decodeAudioData(await response.arrayBuffer())
-  const mono = new Float32Array(buffer.length)
-  for (let c = 0; c < buffer.numberOfChannels; c++) buffer.getChannelData(c).forEach((v, i) => mono[i] += v / buffer.numberOfChannels)
-  return mono
+  if (buffer.numberOfChannels > 2) throw new Error('the media has more than two audio channels')
+  return Array.from({ length: buffer.numberOfChannels }, (_, channel) => buffer.getChannelData(channel))
 }
 /** The lecture's audio from ms a to ms b. */
 function mix(a, b) {
   const length = Math.max(1, Math.round((b - a) * RATE / 1000))
-  const buffer = new AudioBuffer({ length, numberOfChannels: 1, sampleRate: RATE })
-  const data = buffer.getChannelData(0)
+  const buffer = new AudioBuffer({ length, numberOfChannels: 2, sampleRate: RATE })
   for (const clip of clips) {
-    if (clip.start >= b || clip.end <= a) continue
-    const from = Math.round((a - clip.start) * RATE / 1000)
-    const last = Math.min(clip.samples.length, Math.round((clip.end - clip.start) * RATE / 1000))
-    for (let i = Math.max(0, -from); i < length && from + i < last; i++) data[i] += clip.samples[from + i]
+    if (clip.start >= b || clip.end <= a || clip.muted || clip.volume === 0) continue
+    const first = Math.round(clip.sourceStartMs * RATE / 1000)
+    const from = Math.round((a - clip.start + clip.sourceStartMs) * RATE / 1000)
+    const last = Math.min(clip.samples[0].length, first + Math.round((clip.end - clip.start) * RATE / 1000))
+    for (let channel = 0; channel < 2; channel++) {
+      const data = buffer.getChannelData(channel), samples = clip.samples[channel] ?? clip.samples[0]
+      for (let i = Math.max(0, first - from); i < length && from + i < last; i++) data[i] += samples[from + i] * clip.volume
+    }
   }
+  for (let channel = 0; channel < 2; channel++) { const data = buffer.getChannelData(channel); for (let i = 0; i < data.length; i++) data[i] = Math.max(-1, Math.min(1, data[i])) }
   return buffer
 }
 async function audioUntil(ms) {
@@ -88,7 +91,9 @@ window.presmiumEncoder = {
       if (!(await canEncodeAudio('opus'))) throw new Error('this browser encodes no Opus audio')
       audio = new AudioBufferSource({ codec: 'opus', bitrate: QUALITY_HIGH })
       output.addAudioTrack(audio)
-      clips = await Promise.all(options.audio.map(async a => ({ start: a.start, end: a.start + a.duration, samples: await decode(a.url) })))
+      const decoded = new Map()
+      for (const a of options.audio) if (!decoded.has(a.url)) decoded.set(a.url, await decode(a.url))
+      clips = options.audio.map(a => ({ start: a.start, end: a.start + a.duration, sourceStartMs: a.sourceStartMs ?? 0, volume: a.volume ?? 1, muted: a.muted ?? false, samples: decoded.get(a.url) }))
     }
     const subtitles = options.subtitles.map(({ language, name, vtt }) => {
       const source = new TextSubtitleSource('webvtt')
@@ -156,8 +161,8 @@ function captionFiles(dir: string, langs: string[]): CaptionFile[] {
   return langs.map(lang => ({ lang, vtt: readFileSync(join(dir, `captions.${lang}.vtt`), 'utf8') }))
 }
 
-function localAudio(track: LectureTrack, base: string): { url: string, start: number, duration: number }[] {
-  return audioSegments(track).filter(segment => !ABSOLUTE_URL.test(segment.src)).map(({ src, start, duration }) => ({ url: `${base}${src}`, start, duration }))
+function localAudio(track: LectureTrack, base: string): { url: string, start: number, duration: number, sourceStartMs?: number, volume?: number, muted?: boolean }[] {
+  return audioSegments(track).filter(segment => !ABSOLUTE_URL.test(segment.src)).map(({ src, ...segment }) => ({ url: `${base}${src}`, ...segment }))
 }
 
 export async function exportVideo(options: ExportOptions): Promise<ExportResult> {

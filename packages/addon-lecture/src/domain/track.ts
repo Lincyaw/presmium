@@ -68,6 +68,12 @@ export interface MediaSegment {
   src: string
   duration: number
   sha256?: string
+  clipId?: string
+  assetId?: string
+  mediaClipId?: string
+  sourceStartMs?: number
+  volume?: number
+  muted?: boolean
 }
 
 export interface VideoSegment extends MediaSegment {
@@ -141,7 +147,7 @@ function utterance(value: unknown, problems: string[], i: number): Utterance | u
 
 function segment(value: unknown): MediaSegment | undefined {
   if (!isRecord(value) || typeof value.section !== 'string' || !isNumber(value.start) || typeof value.src !== 'string' || !isNumber(value.duration)) return undefined
-  return { section: value.section, start: value.start, src: value.src, duration: value.duration, ...typeof value.sha256 === 'string' ? { sha256: value.sha256 } : {} }
+  return { section: value.section, start: value.start, src: value.src, duration: value.duration, ...typeof value.sha256 === 'string' ? { sha256: value.sha256 } : {}, ...typeof value.clipId === 'string' ? { clipId: value.clipId } : {}, ...typeof value.assetId === 'string' ? { assetId: value.assetId } : {}, ...typeof value.mediaClipId === 'string' ? { mediaClipId: value.mediaClipId } : {}, ...isNumber(value.sourceStartMs) && value.sourceStartMs >= 0 ? { sourceStartMs: value.sourceStartMs } : {}, ...isNumber(value.volume) && value.volume >= 0 && value.volume <= 1 ? { volume: value.volume } : {}, ...typeof value.muted === 'boolean' ? { muted: value.muted } : {} }
 }
 
 function irOf(value: unknown): LectureTrack['ir'] {
@@ -259,11 +265,12 @@ export interface AudioSegment {
   src: string
   start: number
   duration: number
+  sourceStartMs?: number
+  volume?: number
+  muted?: boolean
 }
 
 export function audioSegments(track: LectureTrack): AudioSegment[] {
-  if (track.voice.kind === 'synthetic') {
-    return track.utterances.filter(u => u.clip).map(u => ({ src: `${CLIPS_DIR}/${u.clip}`, start: u.t, duration: u.d, ...u.clipId ? { clipId: u.clipId } : {} }))
-  }
-  return (track.audio ?? []).map(a => ({ src: a.src, start: a.start * 1000, duration: a.duration * 1000 }))
+  const said = track.voice.kind === 'synthetic' ? track.utterances.filter(u => u.clip).map(u => ({ src: `${CLIPS_DIR}/${u.clip}`, start: u.t, duration: u.d, ...u.clipId ? { clipId: u.clipId } : {} })) : []
+  return [...said, ...(track.audio ?? []).map(a => ({ src: a.src, start: a.start * 1000, duration: a.duration * 1000, ...a.clipId ? { clipId: a.clipId } : {}, ...a.sourceStartMs !== undefined ? { sourceStartMs: a.sourceStartMs } : {}, ...a.volume !== undefined ? { volume: a.volume } : {}, ...a.muted !== undefined ? { muted: a.muted } : {} }))]
 }

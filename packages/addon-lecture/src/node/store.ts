@@ -40,7 +40,7 @@ export function deckFiles(workspaceRoot: string, documentFiles: () => DocumentFi
 
 export const TRACK_FILE = 'track.json'
 
-const MEDIA_PATH = /^(audio|video)\/[^/\\]+\.(ogg|opus|webm|mp4|m4a|wav)$/
+const MEDIA_PATH = /^(audio|video)\/[^/\\]+\.(ogg|opus|webm|mp4|m4a|wav|mp3)$/
 
 export function lecturesDir(deckDir: string): string {
   return join(deckDir, LECTURES_DIR)

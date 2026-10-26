@@ -21,7 +21,7 @@ async function createClock(track: LectureTrack, source: LectureSource, signal?: 
   const loaded = await Promise.allSettled(segments.map(async (segment): Promise<ClockMedia> => {
     if (track.binding && source.productionMedia && !segment.clipId) throw new Error('production-clip-unavailable')
     const url = track.binding && source.productionMedia && segment.clipId ? await source.productionMedia(track.binding, segment.clipId, signal) : await source.media(track.id, segment.src)
-    return { url, start: segment.start, duration: segment.duration }
+    return { url, start: segment.start, duration: segment.duration, sourceStartMs: segment.sourceStartMs, volume: segment.volume, muted: segment.muted }
   }))
   const media = loaded.flatMap(result => result.status === 'fulfilled' ? [result.value] : [])
   const failed = loaded.find(result => result.status === 'rejected')

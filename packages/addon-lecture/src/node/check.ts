@@ -5,7 +5,7 @@ import type { EventDrift } from '../domain/index.ts'
 import { lectureView } from './latest-ir.ts'
 import { deckPlan } from './plan.ts'
 import { readTrack, trackIds } from './store.ts'
-import { synthesizeClip } from './synthesize.ts'
+import { synthesizeClip, synthesizeLecture } from './synthesize.ts'
 
 const SEVERITY: Record<EventDrift['grade'], Severity> = { exact: 'info', moved: 'info', fuzzy: 'warning', lost: 'warning' }
 
@@ -57,6 +57,8 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
   const view = lectureView(ctx.ir)
   const deck = deckPlan(view)
   const findings = [...deck.findings]
+  const prepared = view.production?.mediaClips.length ? await synthesizeLecture(view, ctx.deckDir, ctx.service?.(SPEECH), undefined, { cacheOnly: true }) : undefined
+  findings.push(...(prepared?.mediaDiagnostics ?? []).map(issue => ({ checkId: LECTURE_ID, severity: issue.severity, message: issue.message, source: { file: ctx.ir.meta.entry, line: 1 } })))
   if (!deck.voice) return findings
   const speech = ctx.service?.(SPEECH)
   const source = { file: ctx.ir.meta.entry, line: 1 }, t = LECTURE_MESSAGES[deckLocale(ctx.ir.meta.lang)].production
@@ -65,9 +67,11 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
     return findings
   }
   for (const u of plannedUtterances(deck.plan)) {
+    if (u.sourceKind === 'none') continue
     try {
       if (u.voiceIssue) throw new Error(u.voiceIssue)
-      await synthesizeClip(speech, u, { voice: u.voice ?? deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, cacheOnly: true })
+      if (prepared) { const failure = prepared.failures.find(failure => failure.id === u.id); if (failure) throw new Error(failure.reason) }
+      else await synthesizeClip(speech, u, { voice: u.voice ?? deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, cacheOnly: true })
     } catch (error) {
       const text = u.text.length > 40 ? `${u.text.slice(0, 40)}…` : u.text
       findings.push({

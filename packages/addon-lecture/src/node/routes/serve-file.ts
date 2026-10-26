@@ -11,6 +11,7 @@ const TYPES: Record<string, string> = {
   '.mp4': 'video/mp4',
   '.m4a': 'audio/mp4',
   '.wav': 'audio/wav',
+  '.mp3': 'audio/mpeg',
 }
 
 export function serveFile(deckDir: string, file: string | undefined, request: Request): Response {

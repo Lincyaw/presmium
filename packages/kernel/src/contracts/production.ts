@@ -1,5 +1,7 @@
 import type { CanonicalSource } from '../ir.ts'
 import type { TrackEvent } from './operations.ts'
+import type { TimeRange } from './document.ts'
+import type { ProductionAssetInspection } from './production-assets.ts'
 
 /** One immutable derived plan; a cache change can change planId without changing the saved document. */
 export interface ProductionBinding { source: CanonicalSource, irRevision: string, planId: string }
@@ -29,6 +31,7 @@ export type ProductionPlaybackCommand =
   | { binding: ProductionBinding, action: 'step', sectionId: string, stepId: string }
   | { binding: ProductionBinding, action: 'rate', rate: number }
 export interface ProductionPlanQuery { source: CanonicalSource, irRevision: string }
+/** clipId is a plan resource ID: either an exact speech key or an inspected asset mediaId. */
 export interface ProductionMediaQuery extends ProductionBinding { clipId: string }
 export type ProductionTiming = 'confirmed' | 'estimated' | 'unknown'
 
@@ -55,6 +58,13 @@ export interface ProductionSegment extends ProductionRange {
   status?: 'cached' | 'silent' | 'missing' | 'blocked'
   alignment?: 'words' | 'proportional' | 'none'
   audio?: ProductionAudio
+  /** Imported media is distinct from a synthesized speech-cache entry. */
+  media?: ProductionAssetInspection
+  mediaClipId?: string
+  assetId?: string
+  sourceRange?: TimeRange
+  volume?: number
+  muted?: boolean
   waveform?: number[]
   waveformStatus?: 'available' | 'unavailable'
 }
@@ -69,6 +79,8 @@ export interface ProductionDiagnostic {
   stepId?: string
   blockId?: string
   narrationId?: string
+  assetId?: string
+  mediaClipId?: string
 }
 export interface ProductionPlan {
   binding: ProductionBinding
