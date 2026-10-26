@@ -1,0 +1,929 @@
+{
+  "schemaVersion": 1,
+  "id": "document-5c344990f97df976",
+  "metadata": {
+    "title": "代码引用测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-code"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {
+        "theme": "default"
+      }
+    }
+  },
+  "sectionOrder": [
+    "代码引用测试文稿",
+    "code-steps",
+    "code-variants",
+    "code-syntax"
+  ],
+  "sections": {
+    "代码引用测试文稿": {
+      "id": "代码引用测试文稿",
+      "title": "代码引用测试文稿",
+      "level": 1,
+      "children": [
+        "代码引用测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "代码引用测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "code-steps": {
+      "id": "code-steps",
+      "title": "代码引用：分步高亮",
+      "level": 2,
+      "children": [
+        "code-steps--paragraph-1",
+        "code-steps--code-1",
+        "code-steps--paragraph-2",
+        "code-steps--paragraph-3",
+        "code-steps--paragraph-4"
+      ],
+      "stepOrder": [
+        "code-steps--step-0",
+        "code-steps--step-1",
+        "code-steps--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "code-variants": {
+      "id": "code-variants",
+      "title": "代码引用：多版本切换",
+      "level": 2,
+      "children": [
+        "code-variants--paragraph-1",
+        "code-variants--code-1",
+        "code-variants--paragraph-2",
+        "code-variants--paragraph-3",
+        "code-variants--paragraph-4"
+      ],
+      "stepOrder": [
+        "code-variants--step-0",
+        "code-variants--step-1",
+        "code-variants--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "code-syntax": {
+      "id": "code-syntax",
+      "title": "代码引用：写法",
+      "level": 2,
+      "children": [
+        "code-syntax--code-1",
+        "code-syntax--paragraph-1",
+        "code-syntax--list-1",
+        "code-syntax--paragraph-2"
+      ],
+      "stepOrder": [
+        "code-syntax--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "代码引用测试文稿--paragraph-1": {
+      "id": "代码引用测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "代码引用测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/code.spec.ts 的测试文稿：引用 "
+            },
+            {
+              "type": "text",
+              "text": "cart.ts",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "，它的提交历史是文稿的一部分。"
+            }
+          ]
+        }
+      ]
+    },
+    "code-steps--paragraph-1": {
+      "id": "code-steps--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-steps--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "引用业务仓库中的代码，不把代码复制进文稿。代码来自 "
+            },
+            {
+              "type": "text",
+              "text": "e2e/fixtures/code/cart.ts",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 的 checkout 区间，锁定在提交 10a2a63；幻灯片标题栏和网页代码块上的链接指向远端仓库中这个提交的对应行，徽标显示工作区中的代码是否已经改变。"
+            }
+          ]
+        }
+      ]
+    },
+    "code-steps--code-1": {
+      "id": "code-steps--code-1",
+      "type": "code",
+      "language": "ts",
+      "origin": {
+        "anchor": "region:e2e/fixtures/code/cart.ts#checkout",
+        "pin": "10a2a63",
+        "repo": "https://github.com/Lincyaw/presmium",
+        "highlightRegions": {
+          "code-steps--step-0": "validate",
+          "code-steps--step-1": "price",
+          "code-steps--step-2": "receipt"
+        }
+      }
+    },
+    "code-steps--paragraph-2": {
+      "id": "code-steps--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-steps--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一步：购物车为空时直接报错。嵌套的 "
+            },
+            {
+              "type": "text",
+              "text": "#region",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 标出逻辑单元，编译时换算成每一步高亮的行。"
+            }
+          ]
+        }
+      ]
+    },
+    "code-steps--paragraph-3": {
+      "id": "code-steps--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-steps--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步：按数量计算小计，再算出优惠券折扣。"
+            }
+          ]
+        }
+      ]
+    },
+    "code-steps--paragraph-4": {
+      "id": "code-steps--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-steps--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第三步：生成收据文本。"
+            }
+          ]
+        }
+      ]
+    },
+    "code-variants--paragraph-1": {
+      "id": "code-variants--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-variants--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "同一个函数在三个提交中的写法，随步骤原地切换。锚点按语法树找到函数，被引用的代码不需要任何标记。"
+            }
+          ]
+        }
+      ]
+    },
+    "code-variants--code-1": {
+      "id": "code-variants--code-1",
+      "type": "code",
+      "language": "ts",
+      "origin": {
+        "anchor": "symbol:e2e/fixtures/code/cart.ts#total",
+        "repo": "https://github.com/Lincyaw/presmium"
+      },
+      "variants": [
+        {
+          "id": "code-variants--code-1--variant-0",
+          "title": "10a2a63",
+          "origin": {
+            "anchor": "symbol:e2e/fixtures/code/cart.ts#total",
+            "pin": "10a2a63",
+            "repo": "https://github.com/Lincyaw/presmium"
+          }
+        },
+        {
+          "id": "code-variants--code-1--variant-1",
+          "title": "89cd8ae",
+          "origin": {
+            "anchor": "symbol:e2e/fixtures/code/cart.ts#total",
+            "pin": "89cd8ae",
+            "repo": "https://github.com/Lincyaw/presmium"
+          }
+        },
+        {
+          "id": "code-variants--code-1--variant-2",
+          "title": "31f07c8",
+          "origin": {
+            "anchor": "symbol:e2e/fixtures/code/cart.ts#total",
+            "pin": "31f07c8",
+            "repo": "https://github.com/Lincyaw/presmium"
+          }
+        }
+      ]
+    },
+    "code-variants--paragraph-2": {
+      "id": "code-variants--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-variants--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "total 的第一个版本：下标循环。"
+            }
+          ]
+        }
+      ]
+    },
+    "code-variants--paragraph-3": {
+      "id": "code-variants--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-variants--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二个版本改为 for-of 循环。"
+            }
+          ]
+        }
+      ]
+    },
+    "code-variants--paragraph-4": {
+      "id": "code-variants--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-variants--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第三个版本改为 reduce 一行求和。"
+            }
+          ]
+        }
+      ]
+    },
+    "code-syntax--code-1": {
+      "id": "code-syntax--code-1",
+      "type": "code",
+      "language": "md",
+      "value": "```{code-ref} region:e2e/fixtures/code/cart.ts#checkout\n:pin: 10a2a63\n:steps: validate, price, receipt\n```"
+    },
+    "code-syntax--paragraph-1": {
+      "id": "code-syntax--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-syntax--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "指令的参数是锚点："
+            },
+            {
+              "type": "text",
+              "text": "region:<文件>#<区间名>",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "，或 "
+            },
+            {
+              "type": "text",
+              "text": "symbol:<文件>#<类名.方法名>",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "（TypeScript、JavaScript、Python），文件相对于仓库根目录。可选项："
+            }
+          ]
+        }
+      ]
+    },
+    "code-syntax--list-1": {
+      "id": "code-syntax--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-syntax--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "code-syntax--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "code-syntax--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": ":pin:",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " 锁定的提交；省略时读取工作区"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "code-syntax--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "code-syntax--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": ":steps:",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " 逐步高亮的逻辑单元，即锚点内嵌套的 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "#region",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "code-syntax--list-1--text-0-item-2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "code-syntax--list-1--text-0-2-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": ":variants:",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " 逐步切换的提交列表"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "code-syntax--list-1--text-0-item-3",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "code-syntax--list-1--text-0-3-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": ":lang:",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " 高亮语言，默认取文件扩展名"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "code-syntax--list-1--text-0-item-4",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "code-syntax--list-1--text-0-4-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": ":repo:",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " 永久链接使用的仓库网址，默认取 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "presmium.code.repo",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " 或 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "origin",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " 远端"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "code-syntax--list-1--text-0-item-5",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "code-syntax--list-1--text-0-5-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": ":run:",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " 编译时执行，输出随代码一起出现在各种媒介中"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "code-syntax--paragraph-2": {
+      "id": "code-syntax--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-syntax--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "presmium check",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 报告失效的锚点、待确认的模糊匹配，以及锁定提交之后代码的漂移和差异。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "代码引用测试文稿--step-0": {
+      "id": "代码引用测试文稿--step-0",
+      "sectionId": "代码引用测试文稿",
+      "visuals": [
+        {
+          "blockId": "代码引用测试文稿--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "code-steps--step-0": {
+      "id": "code-steps--step-0",
+      "sectionId": "code-steps",
+      "visuals": [
+        {
+          "blockId": "code-steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "code-steps--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "code-steps--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "code-steps--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "code-steps--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "code-steps--paragraph-1--narration",
+        "code-steps--paragraph-2--narration"
+      ]
+    },
+    "code-steps--step-1": {
+      "id": "code-steps--step-1",
+      "sectionId": "code-steps",
+      "visuals": [
+        {
+          "blockId": "code-steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "code-steps--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "code-steps--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "code-steps--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "code-steps--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "code-steps--paragraph-3--narration"
+      ]
+    },
+    "code-steps--step-2": {
+      "id": "code-steps--step-2",
+      "sectionId": "code-steps",
+      "visuals": [
+        {
+          "blockId": "code-steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "code-steps--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "code-steps--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "code-steps--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "code-steps--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "code-steps--paragraph-4--narration"
+      ]
+    },
+    "code-variants--step-0": {
+      "id": "code-variants--step-0",
+      "sectionId": "code-variants",
+      "visuals": [
+        {
+          "blockId": "code-variants--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "code-variants--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "code-variants--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "code-variants--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "code-variants--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "code-variants--paragraph-1--narration",
+        "code-variants--paragraph-2--narration"
+      ]
+    },
+    "code-variants--step-1": {
+      "id": "code-variants--step-1",
+      "sectionId": "code-variants",
+      "visuals": [
+        {
+          "blockId": "code-variants--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "code-variants--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "code-variants--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "code-variants--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "code-variants--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "code-variants--paragraph-3--narration"
+      ]
+    },
+    "code-variants--step-2": {
+      "id": "code-variants--step-2",
+      "sectionId": "code-variants",
+      "visuals": [
+        {
+          "blockId": "code-variants--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "code-variants--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "code-variants--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "code-variants--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "code-variants--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "code-variants--paragraph-4--narration"
+      ]
+    },
+    "code-syntax--step-0": {
+      "id": "code-syntax--step-0",
+      "sectionId": "code-syntax",
+      "visuals": [
+        {
+          "blockId": "code-syntax--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "code-syntax--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "code-syntax--list-1",
+          "visible": false
+        },
+        {
+          "blockId": "code-syntax--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "code-syntax--paragraph-1--narration",
+        "code-syntax--list-1--narration",
+        "code-syntax--paragraph-2--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "code-steps--paragraph-1--narration": {
+      "id": "code-steps--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "引用业务仓库中的代码，不把代码复制进文稿。代码来自 e2e/fixtures/code/cart.ts 的 checkout 区间，锁定在提交 10a2a63；幻灯片标题栏和网页代码块上的链接指向远端仓库中这个提交的对应行，徽标显示工作区中的代码是否已经改变。"
+        }
+      ]
+    },
+    "code-steps--paragraph-2--narration": {
+      "id": "code-steps--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第一步：购物车为空时直接报错。嵌套的 #region 标出逻辑单元，编译时换算成每一步高亮的行。"
+        }
+      ]
+    },
+    "code-steps--paragraph-3--narration": {
+      "id": "code-steps--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二步：按数量计算小计，再算出优惠券折扣。"
+        }
+      ]
+    },
+    "code-steps--paragraph-4--narration": {
+      "id": "code-steps--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第三步：生成收据文本。"
+        }
+      ]
+    },
+    "code-variants--paragraph-1--narration": {
+      "id": "code-variants--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "同一个函数在三个提交中的写法，随步骤原地切换。锚点按语法树找到函数，被引用的代码不需要任何标记。"
+        }
+      ]
+    },
+    "code-variants--paragraph-2--narration": {
+      "id": "code-variants--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "total 的第一个版本：下标循环。"
+        }
+      ]
+    },
+    "code-variants--paragraph-3--narration": {
+      "id": "code-variants--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二个版本改为 for-of 循环。"
+        }
+      ]
+    },
+    "code-variants--paragraph-4--narration": {
+      "id": "code-variants--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第三个版本改为 reduce 一行求和。"
+        }
+      ]
+    },
+    "code-syntax--paragraph-1--narration": {
+      "id": "code-syntax--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "指令的参数是锚点：region:<文件>#<区间名>，或 symbol:<文件>#<类名.方法名>（TypeScript、JavaScript、Python），文件相对于仓库根目录。可选项："
+        }
+      ]
+    },
+    "code-syntax--list-1--narration": {
+      "id": "code-syntax--list-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": ":pin: 锁定的提交；省略时读取工作区\n\n:steps: 逐步高亮的逻辑单元，即锚点内嵌套的 #region\n\n:variants: 逐步切换的提交列表\n\n:lang: 高亮语言，默认取文件扩展名\n\n:repo: 永久链接使用的仓库网址，默认取 presmium.code.repo 或 origin 远端\n\n:run: 编译时执行，输出随代码一起出现在各种媒介中"
+        }
+      ]
+    },
+    "code-syntax--paragraph-2--narration": {
+      "id": "code-syntax--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "presmium check 报告失效的锚点、待确认的模糊匹配，以及锁定提交之后代码的漂移和差异。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

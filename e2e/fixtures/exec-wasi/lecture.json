@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "id": "document-37743c4bd61f23ce",
+  "metadata": {
+    "title": "WebAssembly 测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec",
+      "@lincyaw/addon-exec-wasi"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {
+        "theme": "default"
+      }
+    }
+  },
+  "sectionOrder": [
+    "webassembly-测试文稿",
+    "c-program"
+  ],
+  "sections": {
+    "webassembly-测试文稿": {
+      "id": "webassembly-测试文稿",
+      "title": "WebAssembly 测试文稿",
+      "level": 1,
+      "children": [
+        "webassembly-测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "webassembly-测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "c-program": {
+      "id": "c-program",
+      "title": "C 程序",
+      "level": 2,
+      "children": [
+        "c-program--paragraph-1",
+        "c-program--sum"
+      ],
+      "stepOrder": [
+        "c-program--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "webassembly-测试文稿--paragraph-1": {
+      "id": "webassembly-测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "webassembly-测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/exec-wasi.spec.ts 的测试文稿：C 程序在浏览器中（网页与幻灯片）运行于 WebAssembly（WASI），编译时用同一份二进制录制输出。"
+            }
+          ]
+        }
+      ]
+    },
+    "c-program--paragraph-1": {
+      "id": "c-program--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "c-program--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "浏览器中的 clang 编译这段程序，再运行编译出的 WASI 程序；编译时在 Node 中用同一份二进制录制它的输出。"
+            }
+          ]
+        }
+      ]
+    },
+    "c-program--sum": {
+      "id": "c-program--sum",
+      "type": "code",
+      "language": "c",
+      "value": "#include <stdio.h>\n\nint main(void) {\n  int sum = 0;\n  for (int i = 1; i <= 100; i++) sum += i;\n  printf(\"1 + 2 + ... + 100 = %d\\n\", sum);\n  return 0;\n}",
+      "execution": {
+        "when": "both"
+      }
+    }
+  },
+  "steps": {
+    "webassembly-测试文稿--step-0": {
+      "id": "webassembly-测试文稿--step-0",
+      "sectionId": "webassembly-测试文稿",
+      "visuals": [
+        {
+          "blockId": "webassembly-测试文稿--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "c-program--step-0": {
+      "id": "c-program--step-0",
+      "sectionId": "c-program",
+      "visuals": [
+        {
+          "blockId": "c-program--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "c-program--sum",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "c-program--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "c-program--paragraph-1--narration": {
+      "id": "c-program--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "浏览器中的 clang 编译这段程序，再运行编译出的 WASI 程序；编译时在 Node 中用同一份二进制录制它的输出。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

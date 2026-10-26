@@ -1,0 +1,362 @@
+{
+  "schemaVersion": 1,
+  "id": "document-9bcb9d62af886567",
+  "metadata": {
+    "title": "本地环境测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec",
+      "@lincyaw/addon-exec-local"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {
+        "theme": "default",
+        "port": 5333
+      }
+    }
+  },
+  "sectionOrder": [
+    "本地环境测试文稿",
+    "exec-local"
+  ],
+  "sections": {
+    "本地环境测试文稿": {
+      "id": "本地环境测试文稿",
+      "title": "本地环境测试文稿",
+      "level": 1,
+      "children": [
+        "本地环境测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "本地环境测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "exec-local": {
+      "id": "exec-local",
+      "title": "本地环境",
+      "level": 2,
+      "children": [
+        "exec-local--paragraph-1",
+        "exec-local--pm-local-env-1",
+        "exec-local--paragraph-2",
+        "exec-local--paragraph-3"
+      ],
+      "stepOrder": [
+        "exec-local--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "本地环境测试文稿--paragraph-1": {
+      "id": "本地环境测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "本地环境测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/exec-local.spec.ts 的测试文稿：代码片段的工作区是 "
+            },
+            {
+              "type": "text",
+              "text": "workspace",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 目录。"
+            }
+          ]
+        }
+      ]
+    },
+    "exec-local--paragraph-1": {
+      "id": "exec-local--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "exec-local--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本页的代码片段属于旁边的 "
+            },
+            {
+              "type": "text",
+              "text": "workspace",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 目录，那里的 "
+            },
+            {
+              "type": "text",
+              "text": ".devcontainer/devcontainer.json",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 决定运行镜像。工作区由指令的 "
+            },
+            {
+              "type": "text",
+              "text": ":workspace:",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 指定，相对于本文件。"
+            }
+          ]
+        }
+      ]
+    },
+    "exec-local--pm-local-env-1": {
+      "id": "exec-local--pm-local-env-1",
+      "type": "component",
+      "definitionId": "exec-local--pm-local-env-1--definition",
+      "parameters": {
+        "file": "src/greet.py",
+        "lang": "python",
+        "code": "def greet(name):\n    return f\"你好，{name}\"\n\n\nprint(greet(\"Presmium\"))",
+        "devcontainer": ".devcontainer/devcontainer.json",
+        "archive": "UEsDBBQAAAAIAABAISgPKOQsAAEAALQBAAAfAAAALmRldmNvbnRhaW5lci9kZXZjb250YWluZXIuanNvbmVQvU7DMBDe8xQnL4BUJ6LdOjDxAOyIwTiX9CT7XPknKqC8O2c30KGL7fv8+fvxMMArLujC2SNnsIGzIcYIYYJ8QnDBGgfIC8XAjTLRJZeI8Ih7HLYhDXhBqxv5qYc3QTwV/5A60b+XiIUTnIUkA45iOiIQNz/yZkb4LOTEKQYvICUYcSKmTIH77qcDUGw8qiOoKlKdtITRtwxqV0lNq7G+8inw8dA/73Vy5K/XtqQcPH2bqpuEV5UF/9P8RwBqC8Nzqdn0iwT23vAo2YyUQYu0YGrxWxWTgHKSFymDiXOpnTchJdXld29uV8eWT7D37XhQO1Daqo+Ns7a9rmu3dr9QSwMEFAAAAAgAAEAhKFKFWUxFAAAASgAAAAwAAABzcmMvZ3JlZXQucHlLSU1TSC9KTS3RyEvMTdW04lIAgqLUktKiPIU0pSd7Fzxduvf9np5qkGytEhcXV0FRZl6JBkSLUkBRanFuZmmukqYmFwBQSwMEFAAAAAgAAEAhKL9KG+QbAQAAZQEAAAkAAABSRUFETUUubWRtkMtKw1AQhvfnKQZcpy58hLoRXIiC65TkaIM2CUla7S7eKKEhFlI3MeIdWrTJSmku4rvUc3Lqqq/gCUW0UJjVzMfM988KbBnYbCjNBtA4p52UBefTz9703mVeTB/OECrCV+p1WT6k7kVZvZci77OnlIxHnCXZI7s7YU6niN5ANA1pdd/A2KrobRHI2COZT1OfcyDjlqSpVk1RsQE0CkjifNmnCLH+ANZxC6q/QxOqmxtQOD7NbZq8z2VmeYCQKIpmHS0sauogCEeacWDqNQkLe9qhzLuVRQgfY2kpBnrbqmvqGvz3Ls8gRJJbehmT7JmGA9jd4Xoy5oFGcy/+E3Yd0Y+rWe5+207RHU7scBtrOlZBUf+yTOybMuQPUEsBAhQAFAAAAAgAAEAhKA8o5CwAAQAAtAEAAB8AAAAAAAAAAAAAAAAAAAAAAC5kZXZjb250YWluZXIvZGV2Y29udGFpbmVyLmpzb25QSwECFAAUAAAACAAAQCEoUoVZTEUAAABKAAAADAAAAAAAAAAAAAAAAAA9AQAAc3JjL2dyZWV0LnB5UEsBAhQAFAAAAAgAAEAhKL9KG+QbAQAAZQEAAAkAAAAAAAAAAAAAAAAArAEAAFJFQURNRS5tZFBLBQYAAAAAAwADAL4AAADuAgAAAAA="
+      },
+      "children": [
+        "exec-local--pm-local-env-1--source"
+      ]
+    },
+    "exec-local--pm-local-env-1--source": {
+      "id": "exec-local--pm-local-env-1--source",
+      "type": "code",
+      "language": "python",
+      "value": "def greet(name):\n    return f\"你好，{name}\"\n\n\nprint(greet(\"Presmium\"))"
+    },
+    "exec-local--paragraph-2": {
+      "id": "exec-local--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "exec-local--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "“导出环境”在任何构建中都可用：编译时把片段、devcontainer 定义与运行说明打包成压缩包，随页面发布。用 "
+            },
+            {
+              "type": "text",
+              "text": "presmium dev",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 或 "
+            },
+            {
+              "type": "text",
+              "text": "presmium serve",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 放映时，编辑者还可以在容器中运行修改后的代码；修改只留在页面中，不写回仓库。"
+            }
+          ]
+        }
+      ]
+    },
+    "exec-local--paragraph-3": {
+      "id": "exec-local--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "exec-local--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "代码块同时写上 "
+            },
+            {
+              "type": "text",
+              "text": ":run:",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 与 "
+            },
+            {
+              "type": "text",
+              "text": ":executor: presmium.container",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 时，编译时在同一个镜像中执行，输出写入中间表示，与本机执行的输出一样出现在各种媒介中。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "本地环境测试文稿--step-0": {
+      "id": "本地环境测试文稿--step-0",
+      "sectionId": "本地环境测试文稿",
+      "visuals": [
+        {
+          "blockId": "本地环境测试文稿--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "exec-local--step-0": {
+      "id": "exec-local--step-0",
+      "sectionId": "exec-local",
+      "visuals": [
+        {
+          "blockId": "exec-local--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "exec-local--pm-local-env-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "exec-local--pm-local-env-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "exec-local--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "exec-local--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "exec-local--paragraph-1--narration",
+        "exec-local--paragraph-2--narration",
+        "exec-local--paragraph-3--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "exec-local--paragraph-1--narration": {
+      "id": "exec-local--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "本页的代码片段属于旁边的 workspace 目录，那里的 .devcontainer/devcontainer.json 决定运行镜像。工作区由指令的 :workspace: 指定，相对于本文件。"
+        }
+      ]
+    },
+    "exec-local--paragraph-2--narration": {
+      "id": "exec-local--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "“导出环境”在任何构建中都可用：编译时把片段、devcontainer 定义与运行说明打包成压缩包，随页面发布。用 presmium dev 或 presmium serve 放映时，编辑者还可以在容器中运行修改后的代码；修改只留在页面中，不写回仓库。"
+        }
+      ]
+    },
+    "exec-local--paragraph-3--narration": {
+      "id": "exec-local--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "代码块同时写上 :run: 与 :executor: presmium.container 时，编译时在同一个镜像中执行，输出写入中间表示，与本机执行的输出一样出现在各种媒介中。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "exec-local--pm-local-env-1--definition": {
+      "id": "exec-local--pm-local-env-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.execLocal",
+        "name": "PmLocalEnv"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.execLocal",
+        "name": "PmLocalEnv",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "code",
+              "lang": "python",
+              "value": "def greet(name):\n    return f\"你好，{name}\"\n\n\nprint(greet(\"Presmium\"))"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

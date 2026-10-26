@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "id": "document-a7a21df7006763c0",
+  "metadata": {
+    "title": "基础交互",
+    "lang": "zh-CN",
+    "plugins": [
+      "./plugin"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {}
+    }
+  },
+  "sectionOrder": [
+    "基础交互"
+  ],
+  "sections": {
+    "基础交互": {
+      "id": "基础交互",
+      "title": "基础交互",
+      "level": 1,
+      "children": [
+        "基础交互--fixture-primitives-1"
+      ],
+      "stepOrder": [
+        "基础交互--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "基础交互--fixture-primitives-1": {
+      "id": "基础交互--fixture-primitives-1",
+      "type": "component",
+      "definitionId": "基础交互--fixture-primitives-1--definition",
+      "parameters": {}
+    }
+  },
+  "steps": {
+    "基础交互--step-0": {
+      "id": "基础交互--step-0",
+      "sectionId": "基础交互",
+      "visuals": [
+        {
+          "blockId": "基础交互--fixture-primitives-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "基础交互--fixture-primitives-1--definition": {
+      "id": "基础交互--fixture-primitives-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "./plugin",
+        "name": "FixturePrimitives"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "./plugin",
+        "name": "FixturePrimitives"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

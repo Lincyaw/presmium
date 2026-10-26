@@ -24,7 +24,11 @@ const { createJiti } = require('jiti')
 const jiti = createJiti(import.meta.url)
 const { Compiler } = await jiti.import(join(legacy, 'packages/compiler/src/compiler.ts'))
 const { Parser } = await jiti.import(join(legacy, 'packages/compiler/src/parser.ts'))
+const { findWorkspaceRoot } = await jiti.import(join(legacy, 'packages/compiler/src/workspace.ts'))
+const { codeRefs } = await jiti.import(join(legacy, 'packages/addon-code/src/node/directive.ts'))
+const { listedPlugins } = await jiti.import(join(legacy, 'packages/compiler/src/plugins.ts'))
 const { BUILTIN_DIRECTIVES } = await jiti.import(join(legacy, 'packages/compiler/src/blocks.ts'))
+const { mapHtmlUrls } = await jiti.import(fileURLToPath(new URL('../packages/kernel/src/html.ts', import.meta.url)))
 const { parseDuration } = await jiti.import(fileURLToPath(new URL('../packages/kernel/src/durations.ts', import.meta.url)))
 const { validateDocument, DOCUMENT_ENTRY } = await jiti.import(fileURLToPath(new URL('../packages/kernel/src/document.ts', import.meta.url)))
 const hash = text => createHash('sha256').update(text).digest('hex')
@@ -43,7 +47,7 @@ for (const name of positionals) {
   const parser = new Parser(BUILTIN_DIRECTIVES)
   const parsed = await parser.read(entry)
   const start = performance.now()
-  let workspaceRoot = sourceDir
+  let workspaceRoot = await findWorkspaceRoot(sourceDir)
   for (let candidate = sourceDir; !relative(sourceRoot, candidate).startsWith('..'); candidate = dirname(candidate)) {
     if (existsSync(join(candidate, 'presmium.workspace.yaml'))) { workspaceRoot = candidate; break }
     if (candidate === sourceRoot || candidate === dirname(candidate)) break
@@ -62,6 +66,10 @@ for (const name of positionals) {
   const dependencyFiles = new Set(compilation.sourceFiles)
   const collect = block => {
     if (block.node.definition?.file) dependencyFiles.add(block.node.definition.file)
+    if (block.node.origin?.file) {
+      const file = resolve(compilation.workspaceRoot, block.node.origin.file)
+      if (existsSync(file)) dependencyFiles.add(file)
+    }
     for (const child of block.node.children ?? []) collect(child)
   }
   for (const section of compilation.doc.sections) for (const block of section.blocks) collect(block)
@@ -114,6 +122,7 @@ await writeFile(join(resolve(values.output), 'migration-report.json'), json(reco
 function convert(runtime, frontmatter, sourceDir, name) {
   const metadata = { title: String(frontmatter.title ?? runtime.meta.title), lang: String(frontmatter.lang ?? runtime.meta.lang ?? 'zh-CN') }
   for (const key of ['plugins', 'presmium', 'renderers', 'execute', 'checks', 'translations', 'translationOf']) if (frontmatter[key] !== undefined) metadata[key] = clone(frontmatter[key])
+  if (metadata.plugins) metadata.plugins = listedPlugins(metadata.plugins)
   if (metadata.translations) for (const key of Object.keys(metadata.translations)) metadata.translations[key] = metadata.translations[key].replace(/lecture\.md(?=$|[?#])/, 'lecture.json')
   if (metadata.translationOf?.entry) metadata.translationOf.entry = metadata.translationOf.entry.replace(/lecture\.md(?=$|[?#])/, 'lecture.json')
   const supported = new Set(['title','lang','plugins','presmium','renderers','execute','checks','translations','translationOf','contentModel'])
@@ -145,25 +154,45 @@ function convert(runtime, frontmatter, sourceDir, name) {
     if (Object.values(config).some(value => Object.keys(value).length)) section.config = config
     out.sectionOrder.push(sid); out.sections[sid] = section
     for (const stepId of stepIds) out.steps[stepId] = { id: stepId, sectionId: sid, visuals: [], narrationIds: [] }
+    const narrationTargets = new WeakMap()
+    const targets = (blocks, nearest) => {
+      for (const block of blocks) {
+        if (block.role === 'visual') {
+          if (!block.only || block.only.includes('web')) nearest = block
+          if (block.node.children) targets(block.node.children, nearest)
+        } else if (nearest) narrationTargets.set(block, nearest)
+      }
+    }
+    targets(old.blocks)
     const processBlock = (oldBlock, path = oldBlock.id, parent = section.children) => {
       const bid = blockIds.get(`${old.id}/${path}`), node = relocate(oldBlock.node, oldBlock.source.file, sourceDir)
+      const authoredCode = oldBlock.node.type === 'code' ? codeRefs.get(oldBlock.node) : undefined
       const rich = richText(node.mdast, `${bid}--text`, id)
       let next
       if (node.type === 'markdown') next = { id: bid, type: 'text', content: rich }
       else if (node.type === 'code') {
-        next = { id: bid, type: 'code', language: node.lang ?? '', ...(node.origin?.anchor ? { origin: { anchor: node.origin.anchor, ...(node.origin.pin ? { pin: node.origin.pin } : {}) } } : { value: node.value }) }
+        next = { id: bid, type: 'code', language: node.lang ?? '', ...(node.origin?.anchor ? { origin: { anchor: authoredCode?.anchor ?? node.origin.anchor, ...((authoredCode ? authoredCode.pin : node.origin?.pin) ? { pin: authoredCode ? authoredCode.pin : node.origin.pin } : {}), ...(authoredCode?.repo ? { repo: authoredCode.repo } : {}) } } : { value: node.value }) }
         if (node.title) next.title = node.title
         if (node.run) { const { lang: _, ...execution } = node.run; next.execution = clone(execution) }
         if (node.echo === false) next.echo = false
-        if (node.highlight) next.highlight = Object.fromEntries(stepIds.map((step, index) => [step, clone(node.highlight[Math.min(Math.max(0, index - oldBlock.at), node.highlight.length - 1)] ?? [])]))
-        if (node.variants) next.variants = node.variants.map((variant, index) => ({ id: id(`${bid}--variant-${index}`), title: variant.label, value: variant.value }))
+        if (authoredCode?.steps) next.origin.highlightRegions = Object.fromEntries(stepIds.map((step, index) => [step, authoredCode.steps[Math.min(Math.max(0, index - oldBlock.at), authoredCode.steps.length - 1)]]))
+        else if (node.highlight) next.highlight = Object.fromEntries(stepIds.map((step, index) => [step, clone(node.highlight[Math.min(Math.max(0, index - oldBlock.at), node.highlight.length - 1)] ?? [])]))
+        if (node.variants) {
+          if (!authoredCode?.variants || authoredCode.variants.length !== node.variants.length) throw new Error(`${name}: original code-variant references unavailable for ${bid}`)
+          next.variants = node.variants.map((variant, index) => ({ id: id(`${bid}--variant-${index}`), title: variant.label, origin: { anchor: authoredCode.anchor, pin: authoredCode.variants[index], ...(authoredCode.repo ? { repo: authoredCode.repo } : {}) } }))
+        }
       } else if (node.type === 'component') {
         const did = id(`${bid}--definition`), states = Array.from({ length: (oldBlock.span ?? 0) + 1 }, (_, index) => ({ id: `legacy-${index}`, legacyIndex: index }))
         const file = node.definition?.file
         const data = clone(node); delete data.type; delete data.props; delete data.definition; delete data.children
         if (node.definition?.language) data.language = node.definition.language
         out.definitions[did] = { id: did, kind: node.plugin === 'presmium.motion' && node.name === 'PmScene' ? 'scene' : 'component', schemaVersion: 1, implementation: file ? { type: 'file', path: relative(sourceDir, file).split('\\').join('/') } : { type: 'plugin', plugin: node.plugin, name: node.name }, parameterSchema: { type: 'object' }, states, data }
-        next = { id: bid, type: 'component', definitionId: did, parameters: clone(node.props) }
+        const parameters = clone(node.props)
+        if (node.plugin === 'presmium.exec' && ['PmRunPanel', 'PmStepRun'].includes(node.name)) {
+          for (const key of ['code', 'lang', 'place', 'compiledOutput', 'executor', 'session']) delete parameters[key]
+          delete data.fallback
+        }
+        next = { id: bid, type: 'component', definitionId: did, parameters }
       } else throw new Error(`${name}: unsupported IR node ${node.type}`)
       for (const key of ['only','audience']) if (oldBlock[key]) next[key] = clone(oldBlock[key])
       out.blocks[bid] = next; parent.push(bid)
@@ -175,9 +204,9 @@ function convert(runtime, frontmatter, sourceDir, name) {
         const order = next.content.flatMap(item => item.type === 'list' ? item.children.map(child => child.id) : [item.id])
         next.reveal = { type: 'items', order }
       }
-      if (oldBlock.role === 'narration') {
+      if (oldBlock.role === 'narration' && (!oldBlock.only || oldBlock.only.includes('lecture'))) {
         if (node.type !== 'markdown') throw new Error(`${name}: unsupported non-text narration ${bid}`)
-        const nid = id(`${bid}--narration`), content = narration(node.mdast, old.id, blockId, id, out.production)
+        const nid = id(`${bid}--narration`), content = narration(node.mdast, old.id, blockId, id, out.production, narrationTargets.get(oldBlock))
         out.narrations[nid] = { id: nid, content }
         out.steps[stepIds[Math.min(oldBlock.at, count - 1)]].narrationIds.push(nid)
         if (node.narration) (out.production.narrationOverrides ??= {})[nid] = { narrationStart: node.narration.mode === 'after' ? 'after-animation' : 'with-animation' }
@@ -220,7 +249,7 @@ function inline(nodes, marks = []) {
     return [{ type: 'extension', kind: 'presmium.mdast', schemaVersion: 1, data: { node: clone(node) }, fallback: node.name === 'cue' ? '' : plain(node) }]
   })
 }
-function narration(root, section, blockId, id, production) {
+function narration(root, section, blockId, id, production, nearest) {
   const out = []
   const append = text => { if (!text) return; const last=out.at(-1); if (last?.type === 'text') last.text += text; else out.push({ type: 'text', text }) }
   const walk = node => {
@@ -229,7 +258,7 @@ function narration(root, section, blockId, id, production) {
       if (node.name === 'say') { out.push({ type: 'pronunciation', display: plain(node) || options.value || '', spoken: options.alias || plain(node) || options.value || '' }); return }
       if (node.name === 'cue') {
         const [action, ...args] = String(options.value ?? '').trim().split(/\s+/), cue = { id: id(`cue-${section}-${out.length}`), type: 'cue', action }
-        if (options.to) cue.target = { blockId: blockId(section, options.to), ...(options.sel ? { element: options.sel } : {}) }
+        if (options.to || nearest && ['spot','hint','point','click','run','ink'].includes(action)) cue.target = { blockId: blockId(section, options.to ?? nearest.id), ...(options.sel ? { element: options.sel } : {}) }
         const parameters = { ...(args.length ? { arg: args.join(' ') } : {}), ...(options.lines ? { lines: options.lines } : {}) }
         if (action === 'pause') {
           const pauseMs = parseDuration(args.join(' '))
@@ -270,6 +299,7 @@ function relocate(node, sourceFile, documentDir) {
   const walk = item => {
     if (!item || typeof item !== 'object') return
     if (typeof item.url === 'string') item.url = url(item.url)
+    if (item.type === 'html' && typeof item.value === 'string') item.value = mapHtmlUrls(item.value, value => url(value))
     if (item.assets && typeof item.assets === 'object') for (const key of Object.keys(item.assets)) item.assets[key] = url(item.assets[key])
     if (item.type === 'presmiumRole' && item.plugin === 'presmium.lecture' && item.name === 'cue') return
     for (const [key, child] of Object.entries(item)) if (key !== 'definition' && key !== 'children') walk(child)

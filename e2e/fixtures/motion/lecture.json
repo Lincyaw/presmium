@@ -1,0 +1,2017 @@
+{
+  "schemaVersion": 1,
+  "id": "document-65f2c9b916fb7b7f",
+  "metadata": {
+    "title": "代码写成的动画",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-guide",
+      "@lincyaw/addon-lecture",
+      "@lincyaw/addon-speech"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "lecture": {}
+    }
+  },
+  "sectionOrder": [
+    "intro",
+    "gsap",
+    "anime",
+    "motion",
+    "three",
+    "remotion",
+    "click",
+    "video"
+  ],
+  "sections": {
+    "intro": {
+      "id": "intro",
+      "title": "代码写成的动画",
+      "level": 1,
+      "children": [
+        "intro--paragraph-1"
+      ],
+      "stepOrder": [
+        "intro--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "gsap": {
+      "id": "gsap",
+      "title": "GSAP：字节对合并",
+      "level": 2,
+      "children": [
+        "gsap--bpe",
+        "gsap--paragraph-1",
+        "gsap--paragraph-2",
+        "gsap--paragraph-3",
+        "gsap--paragraph-4"
+      ],
+      "stepOrder": [
+        "gsap--step-0",
+        "gsap--step-1",
+        "gsap--step-2",
+        "gsap--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "anime": {
+      "id": "anime",
+      "title": "Anime.js：编译管线",
+      "level": 2,
+      "children": [
+        "anime--pipeline",
+        "anime--paragraph-1",
+        "anime--paragraph-2",
+        "anime--paragraph-3",
+        "anime--paragraph-4"
+      ],
+      "stepOrder": [
+        "anime--step-0",
+        "anime--step-1",
+        "anime--step-2",
+        "anime--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "motion": {
+      "id": "motion",
+      "title": "Motion：注意力权重",
+      "level": 2,
+      "children": [
+        "motion--attention",
+        "motion--paragraph-1",
+        "motion--paragraph-2",
+        "motion--paragraph-3"
+      ],
+      "stepOrder": [
+        "motion--step-0",
+        "motion--step-1",
+        "motion--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "three": {
+      "id": "three",
+      "title": "Three.js：词向量空间",
+      "level": 2,
+      "children": [
+        "three--embedding",
+        "three--paragraph-1",
+        "three--paragraph-2",
+        "three--paragraph-3"
+      ],
+      "stepOrder": [
+        "three--step-0",
+        "three--step-1",
+        "three--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "remotion": {
+      "id": "remotion",
+      "title": "Remotion：片头",
+      "level": 2,
+      "children": [
+        "remotion--title",
+        "remotion--paragraph-1",
+        "remotion--paragraph-2",
+        "remotion--paragraph-3"
+      ],
+      "stepOrder": [
+        "remotion--step-0",
+        "remotion--step-1",
+        "remotion--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "click": {
+      "id": "click",
+      "title": "讲到哪里点哪里",
+      "level": 2,
+      "children": [
+        "click--counter",
+        "click--paragraph-1",
+        "click--pm-cursor-1",
+        "click--paragraph-2",
+        "click--paragraph-3"
+      ],
+      "stepOrder": [
+        "click--step-0",
+        "click--step-1",
+        "click--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "video": {
+      "id": "video",
+      "title": "从讲义到视频",
+      "level": 2,
+      "children": [
+        "video--code-1",
+        "video--paragraph-1"
+      ],
+      "stepOrder": [
+        "video--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "intro--paragraph-1": {
+      "id": "intro--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这份文稿演示用代码写的动画：GSAP、Anime.js、Motion、Three.js 与 Remotion 都跟着讲授的步骤和时间走，讲解、字幕、光标和点击编进同一条时间线，再一帧一帧导出成视频。"
+            }
+          ]
+        }
+      ]
+    },
+    "gsap--bpe": {
+      "id": "gsap--bpe",
+      "type": "component",
+      "definitionId": "gsap--bpe--definition",
+      "parameters": {
+        "scene": "bpe-merge",
+        "alt": "low、lower、lowest 三个词的字节对合并：先合并 l 与 o，再合并 lo 与 w。"
+      }
+    },
+    "gsap--paragraph-1": {
+      "id": "gsap--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "gsap--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "字节对编码从单个字符开始：low、lower、lowest 三个词先拆成字母。"
+            }
+          ]
+        }
+      ]
+    },
+    "gsap--paragraph-2": {
+      "id": "gsap--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "gsap--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "统计相邻的字节对，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "value": "pause 300ms"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 出现最多的是 l 和 o，三个词里都有。"
+            }
+          ]
+        }
+      ]
+    },
+    "gsap--paragraph-3": {
+      "id": "gsap--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "gsap--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "把它们合并成一个新符号 lo，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "to": "bpe",
+                    "value": "spot"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 词表里多了一项。"
+            }
+          ]
+        }
+      ]
+    },
+    "gsap--paragraph-4": {
+      "id": "gsap--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "gsap--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "再数一遍，lo 和 w 最多，合并成 low。"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "say",
+                  "options": {
+                    "alias": "B P E",
+                    "value": "BPE"
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "BPE"
+                    }
+                  ]
+                }
+              },
+              "fallback": "BPE"
+            },
+            {
+              "type": "text",
+              "text": " 就这样一轮一轮地长出词表。"
+            }
+          ]
+        }
+      ]
+    },
+    "anime--pipeline": {
+      "id": "anime--pipeline",
+      "type": "component",
+      "definitionId": "anime--pipeline--definition",
+      "parameters": {
+        "scene": "pipeline",
+        "alt": "MyST 源码编译为 IR，再由渲染端生成网页、幻灯片、notebook 与视频。"
+      }
+    },
+    "anime--paragraph-1": {
+      "id": "anime--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "anime--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲义的源码是 MyST，一份文件。"
+            }
+          ]
+        }
+      ]
+    },
+    "anime--paragraph-2": {
+      "id": "anime--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "anime--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "编译器把它变成中间表示 IR，只记语义和算好的结果。"
+            }
+          ]
+        }
+      ]
+    },
+    "anime--paragraph-3": {
+      "id": "anime--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "anime--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "渲染端各取所需：网页、幻灯片、notebook，还有视频。"
+            }
+          ]
+        }
+      ]
+    },
+    "anime--paragraph-4": {
+      "id": "anime--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "anime--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "视频也从同一份讲义来，讲解就是它的脚本。"
+            }
+          ]
+        }
+      ]
+    },
+    "motion--attention": {
+      "id": "motion--attention",
+      "type": "component",
+      "definitionId": "motion--attention--definition",
+      "parameters": {
+        "scene": "attention",
+        "alt": "句子 The cat sat on the mat 中，查询词 cat 与 mat 对各个词的注意力权重。"
+      }
+    },
+    "motion--paragraph-1": {
+      "id": "motion--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "motion--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "查询词 cat 看向句子里的每个词，它自己的权重最大。"
+            }
+          ]
+        }
+      ]
+    },
+    "motion--paragraph-2": {
+      "id": "motion--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "motion--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "查询换成 mat，同一组柱子换上新的权重。"
+            }
+          ]
+        }
+      ]
+    },
+    "motion--paragraph-3": {
+      "id": "motion--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "motion--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "权重最大的是 mat 自己，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "value": "mark 注意力"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 它亮了起来。"
+            }
+          ]
+        }
+      ]
+    },
+    "three--embedding": {
+      "id": "three--embedding",
+      "type": "component",
+      "definitionId": "three--embedding--definition",
+      "parameters": {
+        "scene": "embedding",
+        "alt": "三维空间中的词向量：散开的点聚成三团，镜头推近其中一团。"
+      }
+    },
+    "three--paragraph-1": {
+      "id": "three--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "three--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "词向量一开始散在空间里。"
+            }
+          ]
+        }
+      ]
+    },
+    "three--paragraph-2": {
+      "id": "three--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "three--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "训练之后，意思相近的词聚成了三团。"
+            }
+          ]
+        }
+      ]
+    },
+    "three--paragraph-3": {
+      "id": "three--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "three--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "镜头推近其中一团，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "value": "pause 400ms"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 它们指向差不多的方向。"
+            }
+          ]
+        }
+      ]
+    },
+    "remotion--title": {
+      "id": "remotion--title",
+      "type": "component",
+      "definitionId": "remotion--title--definition",
+      "parameters": {
+        "scene": "title-card",
+        "alt": "Remotion 写的片头：标题弹入，副标题逐字出现，最后升起一枚徽章。"
+      }
+    },
+    "remotion--paragraph-1": {
+      "id": "remotion--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "remotion--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这一页是 Remotion 写的片头，标题弹了进来。"
+            }
+          ]
+        }
+      ]
+    },
+    "remotion--paragraph-2": {
+      "id": "remotion--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "remotion--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "副标题一个字一个字地打出来。"
+            }
+          ]
+        }
+      ]
+    },
+    "remotion--paragraph-3": {
+      "id": "remotion--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "remotion--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "画面由帧号决定，所以导出视频时每一帧都确定。"
+            }
+          ]
+        }
+      ]
+    },
+    "click--counter": {
+      "id": "click--counter",
+      "type": "component",
+      "definitionId": "click--counter--definition",
+      "parameters": {}
+    },
+    "click--paragraph-1": {
+      "id": "click--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "click--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这是文稿自己写的组件，“合并一次”是它的具名动作。"
+            }
+          ]
+        }
+      ]
+    },
+    "click--pm-cursor-1": {
+      "id": "click--pm-cursor-1",
+      "type": "component",
+      "definitionId": "click--pm-cursor-1--definition",
+      "parameters": {
+        "path": [
+          {
+            "to": "#merge-once",
+            "action": "move",
+            "at": 0
+          },
+          {
+            "to": "#merge-once",
+            "action": "click",
+            "at": 1
+          }
+        ]
+      }
+    },
+    "click--paragraph-2": {
+      "id": "click--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "click--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "光标移到按钮上。"
+            }
+          ]
+        }
+      ]
+    },
+    "click--paragraph-3": {
+      "id": "click--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "click--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲到这里 "
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "to": "counter",
+                    "value": "click merge"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 点一次，词表多了 lo；"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "value": "pause 500ms"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 再点 "
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "to": "counter",
+                    "value": "click merge"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 一次，又多了 low。"
+            }
+          ]
+        }
+      ]
+    },
+    "video--code-1": {
+      "id": "video--code-1",
+      "type": "code",
+      "language": "bash",
+      "value": "presmium build --to web,lecture\npresmium-lecture export . --burn zh-CN"
+    },
+    "video--paragraph-1": {
+      "id": "video--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "video--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲解经语音合成成为讲授轨，字幕、章节和每个提示都在时间线上。导出时一帧一帧推进时间，动画、光标与点击都按讲授的时刻画出来。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "intro--step-0": {
+      "id": "intro--step-0",
+      "sectionId": "intro",
+      "visuals": [
+        {
+          "blockId": "intro--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "intro--paragraph-1--narration"
+      ]
+    },
+    "gsap--step-0": {
+      "id": "gsap--step-0",
+      "sectionId": "gsap",
+      "visuals": [
+        {
+          "blockId": "gsap--bpe",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "gsap--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "gsap--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "gsap--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "gsap--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "gsap--paragraph-1--narration"
+      ]
+    },
+    "gsap--step-1": {
+      "id": "gsap--step-1",
+      "sectionId": "gsap",
+      "visuals": [
+        {
+          "blockId": "gsap--bpe",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "gsap--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "gsap--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "gsap--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "gsap--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "gsap--paragraph-2--narration"
+      ]
+    },
+    "gsap--step-2": {
+      "id": "gsap--step-2",
+      "sectionId": "gsap",
+      "visuals": [
+        {
+          "blockId": "gsap--bpe",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "gsap--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "gsap--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "gsap--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "gsap--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "gsap--paragraph-3--narration"
+      ]
+    },
+    "gsap--step-3": {
+      "id": "gsap--step-3",
+      "sectionId": "gsap",
+      "visuals": [
+        {
+          "blockId": "gsap--bpe",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "gsap--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "gsap--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "gsap--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "gsap--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "gsap--paragraph-4--narration"
+      ]
+    },
+    "anime--step-0": {
+      "id": "anime--step-0",
+      "sectionId": "anime",
+      "visuals": [
+        {
+          "blockId": "anime--pipeline",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "anime--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "anime--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "anime--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "anime--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "anime--paragraph-1--narration"
+      ]
+    },
+    "anime--step-1": {
+      "id": "anime--step-1",
+      "sectionId": "anime",
+      "visuals": [
+        {
+          "blockId": "anime--pipeline",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "anime--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "anime--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "anime--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "anime--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "anime--paragraph-2--narration"
+      ]
+    },
+    "anime--step-2": {
+      "id": "anime--step-2",
+      "sectionId": "anime",
+      "visuals": [
+        {
+          "blockId": "anime--pipeline",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "anime--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "anime--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "anime--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "anime--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "anime--paragraph-3--narration"
+      ]
+    },
+    "anime--step-3": {
+      "id": "anime--step-3",
+      "sectionId": "anime",
+      "visuals": [
+        {
+          "blockId": "anime--pipeline",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "anime--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "anime--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "anime--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "anime--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "anime--paragraph-4--narration"
+      ]
+    },
+    "motion--step-0": {
+      "id": "motion--step-0",
+      "sectionId": "motion",
+      "visuals": [
+        {
+          "blockId": "motion--attention",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "motion--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "motion--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "motion--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "motion--paragraph-1--narration"
+      ]
+    },
+    "motion--step-1": {
+      "id": "motion--step-1",
+      "sectionId": "motion",
+      "visuals": [
+        {
+          "blockId": "motion--attention",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "motion--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "motion--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "motion--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "motion--paragraph-2--narration"
+      ]
+    },
+    "motion--step-2": {
+      "id": "motion--step-2",
+      "sectionId": "motion",
+      "visuals": [
+        {
+          "blockId": "motion--attention",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "motion--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "motion--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "motion--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "motion--paragraph-3--narration"
+      ]
+    },
+    "three--step-0": {
+      "id": "three--step-0",
+      "sectionId": "three",
+      "visuals": [
+        {
+          "blockId": "three--embedding",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "three--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "three--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "three--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "three--paragraph-1--narration"
+      ]
+    },
+    "three--step-1": {
+      "id": "three--step-1",
+      "sectionId": "three",
+      "visuals": [
+        {
+          "blockId": "three--embedding",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "three--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "three--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "three--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "three--paragraph-2--narration"
+      ]
+    },
+    "three--step-2": {
+      "id": "three--step-2",
+      "sectionId": "three",
+      "visuals": [
+        {
+          "blockId": "three--embedding",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "three--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "three--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "three--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "three--paragraph-3--narration"
+      ]
+    },
+    "remotion--step-0": {
+      "id": "remotion--step-0",
+      "sectionId": "remotion",
+      "visuals": [
+        {
+          "blockId": "remotion--title",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "remotion--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "remotion--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "remotion--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "remotion--paragraph-1--narration"
+      ]
+    },
+    "remotion--step-1": {
+      "id": "remotion--step-1",
+      "sectionId": "remotion",
+      "visuals": [
+        {
+          "blockId": "remotion--title",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "remotion--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "remotion--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "remotion--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "remotion--paragraph-2--narration"
+      ]
+    },
+    "remotion--step-2": {
+      "id": "remotion--step-2",
+      "sectionId": "remotion",
+      "visuals": [
+        {
+          "blockId": "remotion--title",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "remotion--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "remotion--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "remotion--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "remotion--paragraph-3--narration"
+      ]
+    },
+    "click--step-0": {
+      "id": "click--step-0",
+      "sectionId": "click",
+      "visuals": [
+        {
+          "blockId": "click--counter",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "click--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "click--pm-cursor-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "click--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "click--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "click--paragraph-1--narration"
+      ]
+    },
+    "click--step-1": {
+      "id": "click--step-1",
+      "sectionId": "click",
+      "visuals": [
+        {
+          "blockId": "click--counter",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "click--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "click--pm-cursor-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "click--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "click--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "click--paragraph-2--narration"
+      ]
+    },
+    "click--step-2": {
+      "id": "click--step-2",
+      "sectionId": "click",
+      "visuals": [
+        {
+          "blockId": "click--counter",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "click--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "click--pm-cursor-1",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "click--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "click--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "click--paragraph-3--narration"
+      ]
+    },
+    "video--step-0": {
+      "id": "video--step-0",
+      "sectionId": "video",
+      "visuals": [
+        {
+          "blockId": "video--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "video--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "video--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "intro--paragraph-1--narration": {
+      "id": "intro--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这份文稿演示用代码写的动画：GSAP、Anime.js、Motion、Three.js 与 Remotion 都跟着讲授的步骤和时间走，讲解、字幕、光标和点击编进同一条时间线，再一帧一帧导出成视频。"
+        }
+      ]
+    },
+    "gsap--paragraph-1--narration": {
+      "id": "gsap--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "字节对编码从单个字符开始：low、lower、lowest 三个词先拆成字母。"
+        }
+      ]
+    },
+    "gsap--paragraph-2--narration": {
+      "id": "gsap--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "统计相邻的字节对，"
+        },
+        {
+          "id": "cue-gsap-1",
+          "type": "cue",
+          "action": "pause"
+        },
+        {
+          "type": "text",
+          "text": " 出现最多的是 l 和 o，三个词里都有。"
+        }
+      ]
+    },
+    "gsap--paragraph-3--narration": {
+      "id": "gsap--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "把它们合并成一个新符号 lo，"
+        },
+        {
+          "id": "cue-gsap-1-2",
+          "type": "cue",
+          "action": "spot",
+          "target": {
+            "blockId": "gsap--bpe"
+          }
+        },
+        {
+          "type": "text",
+          "text": " 词表里多了一项。"
+        }
+      ]
+    },
+    "gsap--paragraph-4--narration": {
+      "id": "gsap--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "再数一遍，lo 和 w 最多，合并成 low。"
+        },
+        {
+          "type": "pronunciation",
+          "display": "BPE",
+          "spoken": "B P E"
+        },
+        {
+          "type": "text",
+          "text": " 就这样一轮一轮地长出词表。"
+        }
+      ]
+    },
+    "anime--paragraph-1--narration": {
+      "id": "anime--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "讲义的源码是 MyST，一份文件。"
+        }
+      ]
+    },
+    "anime--paragraph-2--narration": {
+      "id": "anime--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "编译器把它变成中间表示 IR，只记语义和算好的结果。"
+        }
+      ]
+    },
+    "anime--paragraph-3--narration": {
+      "id": "anime--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "渲染端各取所需：网页、幻灯片、notebook，还有视频。"
+        }
+      ]
+    },
+    "anime--paragraph-4--narration": {
+      "id": "anime--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "视频也从同一份讲义来，讲解就是它的脚本。"
+        }
+      ]
+    },
+    "motion--paragraph-1--narration": {
+      "id": "motion--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "查询词 cat 看向句子里的每个词，它自己的权重最大。"
+        }
+      ]
+    },
+    "motion--paragraph-2--narration": {
+      "id": "motion--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "查询换成 mat，同一组柱子换上新的权重。"
+        }
+      ]
+    },
+    "motion--paragraph-3--narration": {
+      "id": "motion--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "权重最大的是 mat 自己，"
+        },
+        {
+          "id": "cue-motion-1",
+          "type": "cue",
+          "action": "mark",
+          "parameters": {
+            "arg": "注意力"
+          }
+        },
+        {
+          "type": "text",
+          "text": " 它亮了起来。"
+        }
+      ]
+    },
+    "three--paragraph-1--narration": {
+      "id": "three--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "词向量一开始散在空间里。"
+        }
+      ]
+    },
+    "three--paragraph-2--narration": {
+      "id": "three--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "训练之后，意思相近的词聚成了三团。"
+        }
+      ]
+    },
+    "three--paragraph-3--narration": {
+      "id": "three--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "镜头推近其中一团，"
+        },
+        {
+          "id": "cue-three-1",
+          "type": "cue",
+          "action": "pause"
+        },
+        {
+          "type": "text",
+          "text": " 它们指向差不多的方向。"
+        }
+      ]
+    },
+    "remotion--paragraph-1--narration": {
+      "id": "remotion--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这一页是 Remotion 写的片头，标题弹了进来。"
+        }
+      ]
+    },
+    "remotion--paragraph-2--narration": {
+      "id": "remotion--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "副标题一个字一个字地打出来。"
+        }
+      ]
+    },
+    "remotion--paragraph-3--narration": {
+      "id": "remotion--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "画面由帧号决定，所以导出视频时每一帧都确定。"
+        }
+      ]
+    },
+    "click--paragraph-1--narration": {
+      "id": "click--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这是文稿自己写的组件，“合并一次”是它的具名动作。"
+        }
+      ]
+    },
+    "click--paragraph-2--narration": {
+      "id": "click--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "光标移到按钮上。"
+        }
+      ]
+    },
+    "click--paragraph-3--narration": {
+      "id": "click--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "讲到这里 "
+        },
+        {
+          "id": "cue-click-1",
+          "type": "cue",
+          "action": "click",
+          "target": {
+            "blockId": "click--counter"
+          },
+          "parameters": {
+            "arg": "merge"
+          }
+        },
+        {
+          "type": "text",
+          "text": " 点一次，词表多了 lo；"
+        },
+        {
+          "id": "cue-click-3",
+          "type": "cue",
+          "action": "pause"
+        },
+        {
+          "type": "text",
+          "text": " 再点 "
+        },
+        {
+          "id": "cue-click-5",
+          "type": "cue",
+          "action": "click",
+          "target": {
+            "blockId": "click--counter"
+          },
+          "parameters": {
+            "arg": "merge"
+          }
+        },
+        {
+          "type": "text",
+          "text": " 一次，又多了 low。"
+        }
+      ]
+    },
+    "video--paragraph-1--narration": {
+      "id": "video--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "讲解经语音合成成为讲授轨，字幕、章节和每个提示都在时间线上。导出时一帧一帧推进时间，动画、光标与点击都按讲授的时刻画出来。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "gsap--bpe--definition": {
+      "id": "gsap--bpe--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/bpe-merge.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1200,
+          1200,
+          1400,
+          1600
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "low、lower、lowest 三个词的字节对合并：先合并 l 与 o，再合并 lo 与 w。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "anime--pipeline--definition": {
+      "id": "anime--pipeline--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/pipeline.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          800,
+          1200,
+          1600,
+          800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "MyST 源码编译为 IR，再由渲染端生成网页、幻灯片、notebook 与视频。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "motion--attention--definition": {
+      "id": "motion--attention--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/attention.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1000,
+          600
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "句子 The cat sat on the mat 中，查询词 cat 与 mat 对各个词的注意力权重。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "three--embedding--definition": {
+      "id": "three--embedding--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/embedding.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1500,
+          2200,
+          1600
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "三维空间中的词向量：散开的点聚成三团，镜头推近其中一团。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "remotion--title--definition": {
+      "id": "remotion--title--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/title-card.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1600,
+          1000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Remotion 写的片头：标题弹入，副标题逐字出现，最后升起一枚徽章。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "click--counter--definition": {
+      "id": "click--counter--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "components/MergeCounter.tsx"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "deck",
+        "name": "MergeCounter",
+        "language": "tsx"
+      }
+    },
+    "click--pm-cursor-1--definition": {
+      "id": "click--pm-cursor-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.guide",
+        "name": "PmCursor"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.guide",
+        "name": "PmCursor",
+        "fallback": {
+          "type": "root",
+          "children": []
+        },
+        "layer": "overlay"
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "tts",
+        "voice": {
+          "engine": "fake",
+          "voice": "alpha"
+        }
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": [],
+    "cueTimings": {
+      "cue-gsap-1": {
+        "pauseMs": 300
+      },
+      "cue-three-1": {
+        "pauseMs": 400
+      },
+      "cue-click-3": {
+        "pauseMs": 500
+      }
+    }
+  }
+}
