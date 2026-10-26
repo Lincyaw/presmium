@@ -12,7 +12,7 @@ import type { DocumentEditorBlock, DocumentEditorInput, DocumentNodeViews, Nativ
 import { documentSelection } from './selection.ts'
 import type { NativeDocumentSelection } from './selection.ts'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
-import { nativeComments } from './comments.ts'
+import { excludeCommentMarkHistory, nativeComments } from './comments.ts'
 import type { DocumentThreadStore } from './comments.ts'
 
 export const DOCUMENT_EDITOR_THEME = {
@@ -92,8 +92,9 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
     domAttributes: { block: { 'data-document-editor-block': '' } },
   }, [props.identity, props.reset ?? 0])
   useEffect(() => {
+    const stopCommentHistory = current.current.comments ? excludeCommentMarkHistory(editor) : undefined
     current.current.onReady?.(editor)
-    return () => current.current.onReady?.(undefined)
+    return () => { stopCommentHistory?.(); current.current.onReady?.(undefined) }
   }, [editor])
   return <DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}>
     <div className="pm-document-editor pm-ui-block-editor pm-ui" data-document-editor={props.identity}
