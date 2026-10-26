@@ -202,8 +202,7 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
   const top = Math.min(...items.map(item => Math.max(1, item.depth)))
   const pageActions = (item: typeof items[number], index: number) => {
     const capability = workbench.pageEditCapability(item.id), previousPeer = index > 0, nextPeer = index < items.length - 1
-    const moveDescription = capability.reason ?? (!previousPeer || !nextPeer ? t.pageEditHierarchy : undefined)
-    return <PmMenu label={t.pageMore(item.title)} description={[t.pageCopyHint, moveDescription].filter(Boolean).join(' ')} triggerRef={node => { if (node) menuTriggers.current.set(item.id, node); else menuTriggers.current.delete(item.id) }} items={[
+    return <PmMenu label={t.pageMore(item.title)} description={capability.reason} triggerRef={node => { if (node) menuTriggers.current.set(item.id, node); else menuTriggers.current.delete(item.id) }} items={[
       { id: 'rename', label: t.rename, icon: 'edit', disabled: !capability.rename || !canCreate || pageBusy || creating },
       { id: 'copy', label: t.pageCopy, icon: 'copy', disabled: !canCreate || pageBusy || creating },
       { id: 'up', label: t.movePageUp, disabled: !capability.move || !canCreate || pageBusy || creating || !previousPeer },

@@ -46,7 +46,6 @@ export function ExportPanel({ documentOnly = false, onClose }: { documentOnly?: 
         <h2 id="pmw-export-title" className="pmw-pane__title">{documentOnly ? t.documentExport : t.exportPane}</h2>
         <PmIconButton small icon="close" label={t.close} onClick={onClose} />
       </header>
-      <p className="pmw-export__hint">{t.exportHint}</p>
       {failure && <PmNotice tone="danger">{t.outputFailed(t.jobFailureReasons[failure] ?? failure)}</PmNotice>}
       {preparing && <PmNotice>{preparing.canCancel ? t.outputConfirmingSave : t.outputStarting} {preparing.canCancel && <PmButton small onClick={() => workbench.cancelJobPreparation()}>{t.cancelOutput}</PmButton>}</PmNotice>}
       <h3 id="pmw-export-make" className="pmw-export__subtitle">{t.makeLabel}</h3>
