@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { PmBadge, PmButton, PmIcon, PmIconButton, PmMenu, PmNotice, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
-import { countWords, documentOutline } from '../outline.ts'
+import { DocumentWordCounter, documentOutline } from '../outline.ts'
 import { isAgentChanging } from '../workbench.ts'
 import { ExportPanel } from './ExportPanel.tsx'
 import { HistoryPanel } from './HistoryPanel.tsx'
@@ -264,10 +264,12 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
 function StatusBar() {
   const t = useMessages()
   const doc = useWorkbenchState(state => state.authoring?.content)
+  const identity = useWorkbenchState(state => state.authoring?.identity)
   const slides = useWorkbenchState(state => state.previewRenderer === 'slides' || state.webView !== 'document')
   const section = useWorkbenchState(state => state.position?.section)
   const mode = useWorkbenchState(state => state.mode)
-  const words = useMemo(() => countWords(doc), [doc])
+  const counter = useMemo(() => new DocumentWordCounter(), [])
+  const words = useMemo(() => counter.count(doc, identity), [counter, doc, identity])
   const total = doc?.sectionOrder.length ?? 0
   const at = section === undefined ? -1 : doc?.sectionOrder.indexOf(section) ?? -1
   return (

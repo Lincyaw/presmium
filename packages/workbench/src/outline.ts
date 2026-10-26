@@ -26,17 +26,20 @@ function countNode(node: MdastNode): number {
   return own + (node.children ?? []).reduce((sum, child) => sum + countNode(child), 0)
 }
 
-/** The words of the document's text: its titles and Markdown (the narration too), not its code or components. */
+function richTextParts(value: unknown, parts: string[] = []): string[] {
+  if (!value || typeof value !== 'object') return parts
+  if (Array.isArray(value)) { for (const child of value) richTextParts(child, parts); return parts }
+  const node = value as { type?: string, text?: string, children?: unknown[], fallback?: unknown }
+  if (node.type === 'code') return parts
+  if (node.type === 'text' && node.text) parts.push(node.text)
+  richTextParts(node.children, parts); richTextParts(node.fallback, parts)
+  return parts
+}
+
+/** Counts authored titles and rich text; code, components and separate narration are excluded. */
 export function countWords(doc: IRDocument | TeachingDocument | undefined): number {
   if (doc && 'schemaVersion' in doc) {
-    const visit = (value: unknown): number => {
-      if (!value || typeof value !== 'object') return 0
-      if (Array.isArray(value)) return value.reduce((sum, child) => sum + visit(child), 0)
-      const node = value as { type?: string, text?: string, children?: unknown[], fallback?: unknown }
-      if (node.type === 'code') return 0
-      return (node.type === 'text' && node.text ? countText(node.text) : 0) + visit(node.children) + visit(node.fallback)
-    }
-    return doc.sectionOrder.reduce((sum, id) => sum + countText(doc.sections[id]!.title), 0) + Object.values(doc.blocks).reduce((sum, block) => sum + (block.type === 'text' ? visit(block.content) : 0), 0)
+    return doc.sectionOrder.reduce((sum, id) => sum + countText(doc.sections[id]!.title), 0) + Object.values(doc.blocks).reduce((sum, block) => sum + (block.type === 'text' ? richTextParts(block.content).reduce((sum, text) => sum + countText(text), 0) : 0), 0)
   }
   let words = 0
   for (const section of doc?.sections ?? []) {
@@ -44,4 +47,33 @@ export function countWords(doc: IRDocument | TeachingDocument | undefined): numb
     for (const block of section.blocks) if (block.node.type === 'markdown') words += countNode(block.node.mdast)
   }
   return words
+}
+
+/** Display-only counts, bounded to the current document's titles and text blocks. */
+export class DocumentWordCounter {
+  #identity?: string
+  readonly #counts = new Map<string, { signature: string, words: number }>()
+
+  count(doc: TeachingDocument | undefined, identity = doc?.id): number {
+    if (identity !== this.#identity || !doc) { this.#counts.clear(); this.#identity = identity }
+    if (!doc) return 0
+    const unused = new Set(this.#counts.keys())
+    const read = (key: string, signature: string, count: () => number): number => {
+      unused.delete(key)
+      let found = this.#counts.get(key)
+      if (found?.signature !== signature) { found = { signature, words: count() }; this.#counts.set(key, found) }
+      return found.words
+    }
+    let words = 0
+    for (const id of doc.sectionOrder) {
+      const title = doc.sections[id]!.title
+      words += read(`title:${id}`, title, () => countText(title))
+    }
+    for (const block of Object.values(doc.blocks)) if (block.type === 'text') {
+      const texts = richTextParts(block.content)
+      words += read(`body:${block.id}`, JSON.stringify(texts), () => texts.reduce((sum, text) => sum + countText(text), 0))
+    }
+    for (const key of unused) this.#counts.delete(key)
+    return words
+  }
 }

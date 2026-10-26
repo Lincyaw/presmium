@@ -2,7 +2,7 @@ import { DragDropProvider, useDragDropManager } from '@dnd-kit/react'
 import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/react'
 import { isSortable, useSortable } from '@dnd-kit/react/sortable'
 import { Accessibility, Feedback } from '@dnd-kit/dom'
-import { useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { MutableRefObject, ReactNode } from 'react'
 import { PmIconButton } from './base-controls.tsx'
 import type { ControlDensity } from './base-controls.tsx'
@@ -179,10 +179,15 @@ function SortableRow({ item, index, group, density, selected, disabled, loading,
   item: SortableListItem, index: number, group: string, density: ControlDensity, selected: boolean, disabled: boolean, loading: boolean, label: string, onSelect(id: string): void, onHandle(element: HTMLButtonElement | null): void, onSettled(): void,
 }) {
   const { ref, handleRef, isDragSource } = useSortable({ id: item.id, index, group, type: group, accept: group, disabled: disabled || item.disabled || item.reorderDisabled, transition: null })
+  const callbacks = useRef({ handleRef, onHandle })
+  callbacks.current = { handleRef, onHandle }
+  const attachHandle = useCallback((element: HTMLButtonElement | null) => {
+    callbacks.current.handleRef(element); callbacks.current.onHandle(element)
+  }, [])
   const wasDragging = useRef(false)
   useLayoutEffect(() => { if (wasDragging.current && !isDragSource) onSettled(); wasDragging.current = isDragSource }, [isDragSource, onSettled])
   return <li ref={ref} className="pm-ui-sortable-list__row" data-sortable-id={item.id} data-density={density} data-selected={selected || undefined} data-dragging={isDragSource || undefined}>
-    <PmIconButton ref={element => { handleRef(element); onHandle(element) }} icon="grip" label={label} density={density} className="pm-ui-sortable-list__handle" disabled={disabled || item.disabled || item.reorderDisabled} loading={loading} tooltip={false} />
+    <PmIconButton ref={attachHandle} icon="grip" label={label} density={density} className="pm-ui-sortable-list__handle" disabled={disabled || item.disabled || item.reorderDisabled} loading={loading} tooltip={false} />
     <button type="button" className="pm-ui-sortable-list__select" disabled={item.disabled} aria-current={selected ? 'location' : undefined} onClick={() => onSelect(item.id)}>
       {item.prefix !== undefined && <span className="pm-ui-sortable-list__prefix">{item.prefix}</span>}<span className="pm-ui-sortable-list__label">{item.label}</span>
     </button>
