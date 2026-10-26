@@ -11,6 +11,8 @@ export class LecturePlayer {
   readonly stepTime = createStore<number | undefined>(0)
   readonly trying = createStore(false)
   readonly cursor = createStore<{ sectionId: string, step: number } | undefined>(undefined)
+  /** Event-identity selection can expose an empty interval while paused; time seeking and playback cannot. */
+  readonly positionMode = createStore<'time' | 'step'>('time')
   readonly duration: number
   readonly events: TimedEvent[]
   readonly dropped: number
@@ -52,16 +54,7 @@ export class LecturePlayer {
     this.unsubscribe = operations.subscribe(operation => {
       if (operation.type === 'go' && typeof operation.data.section === 'string') {
         const step = Number(operation.data.step ?? 0)
-        const target = this.events.findIndex(event => event.type === 'go' && event.data.section === operation.data.section && Number(event.data.step ?? 0) === step)
-        if (target >= 0) {
-          // Navigation chooses a new playback origin. It must not resume the previous step on Play.
-          this.pause()
-          this.trying.set(false)
-          const event = this.events[target]!
-          this.clock.seek(event.t)
-          this.fold(event.t, target)
-          return
-        }
+        if (this.seekStep(operation.data.section, step)) return
       }
       this.tryIt()
     })
@@ -88,6 +81,7 @@ export class LecturePlayer {
         this.fold(at)
       }
       if (this.disposed || generation !== this.generation) return false
+      this.positionMode.set('time')
       this.clock.error.set(undefined)
       this.clock.play()
       this.loop(generation)
@@ -109,9 +103,24 @@ export class LecturePlayer {
 
   seek(t: number): void {
     this.pause()
+    this.positionMode.set('time')
     this.trying.set(false)
     this.clock.seek(t)
     this.fold(this.clock.now())
+  }
+
+  /** A step is an event boundary, not just a timestamp: zero-length neighbours stay individually selectable. */
+  seekStep(sectionId: string, step: number): boolean {
+    if (this.disposed) return false
+    const target = this.events.findIndex(event => event.type === 'go' && event.data.section === sectionId && Number(event.data.step ?? 0) === step)
+    if (target < 0) return false
+    this.pause()
+    this.trying.set(false)
+    const event = this.events[target]!
+    this.clock.seek(event.t)
+    this.fold(event.t, target)
+    this.positionMode.set('step')
+    return true
   }
 
   setRate(rate: number): void {
@@ -158,6 +167,7 @@ export class LecturePlayer {
   }
 
   advanceTo(t: number): void {
+    this.positionMode.set('time')
     while (this.applied + 1 < this.events.length && this.events[this.applied + 1]!.t <= t) this.apply(this.events[++this.applied]!, false)
     this.setTime(t)
   }

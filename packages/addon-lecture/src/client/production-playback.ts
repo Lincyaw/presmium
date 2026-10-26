@@ -141,6 +141,12 @@ export class ProductionPlaybackController implements ProductionPlayback {
           if (command.action === 'seek') {
             if (!Number.isFinite(command.timeMs) || command.timeMs < 0 || command.timeMs > driver.player.duration) throw new Error('production-playback-time')
             flushSync(() => driver!.player.seek(command.timeMs))
+          } else if (command.action === 'step') {
+            const step = driver.plan.pages.find(page => page.sectionId === command.sectionId)?.steps.find(step => step.stepId === command.stepId)
+            if (!step || step.timing !== 'confirmed') throw new Error('production-binding-stale')
+            let selected = false
+            flushSync(() => { selected = driver!.player.seekStep(command.sectionId, step.index) })
+            if (!selected) throw new Error('production-binding-stale')
           } else if (command.action === 'rate') {
             if (!PLAYBACK_RATES.some(rate => rate === command.rate)) throw new Error('production-playback-rate')
             driver.player.setRate(command.rate)

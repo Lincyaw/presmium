@@ -25,6 +25,8 @@ export interface ProductionPlaybackState {
 export type ProductionPlaybackCommand =
   | { binding: ProductionBinding, action: 'load' | 'pause' | 'play' }
   | { binding: ProductionBinding, action: 'seek', timeMs: number }
+  /** Selects an event boundary even when several stable steps share the same time. */
+  | { binding: ProductionBinding, action: 'step', sectionId: string, stepId: string }
   | { binding: ProductionBinding, action: 'rate', rate: number }
 export interface ProductionPlanQuery { source: CanonicalSource, irRevision: string }
 export interface ProductionMediaQuery extends ProductionBinding { clipId: string }

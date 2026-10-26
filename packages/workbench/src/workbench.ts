@@ -964,10 +964,12 @@ export class Workbench {
   async #changeDocumentPage(change: (document: TeachingDocument) => void): Promise<boolean> {
     const source = this.#state.authoring, directory = this.#state.document
     if (!source?.content || directory === undefined || isAgentChanging(this.#state)) return false
+    const scope = this.#documentScope, identity = source.identity, documentId = source.content.id
+    const current = () => scope === this.#documentScope && directory === this.#state.document && identity === this.#state.authoring?.identity && documentId === this.#state.authoring?.content?.id
     this.#set({ isEditingPage: true, pageEditFailure: undefined })
     try {
       await this.flushPendingEdits()
-      if (directory !== this.#state.document) return false
+      if (!current()) throw new Error('page-context-changed')
       const document = structuredClone(this.#state.authoring!.content!)
       change(document)
       const editor = this.#documentEditor
@@ -989,9 +991,9 @@ export class Workbench {
       }
       this.#documentSession.replace(document)
       await this.#documentSession.flush()
-      return true
-    } catch (error) { if (directory === this.#state.document) this.#set({ pageEditFailure: this.#pageEditMessage(errorMessage(error)) }); return false }
-    finally { if (directory === this.#state.document) this.#set({ isEditingPage: false }) }
+      return current()
+    } catch (error) { if (current()) this.#set({ pageEditFailure: this.#pageEditMessage(errorMessage(error)) }); return false }
+    finally { if (current()) this.#set({ isEditingPage: false }) }
   }
   renamePage(section: string, title: string): Promise<boolean> {
     return this.#changeDocumentPage(document => { if (!document.sections[section]) throw new Error('page-boundary'); document.sections[section]!.title = title.trim() })
@@ -1195,7 +1197,7 @@ export class Workbench {
       this.stopAuditions()
       this.#selectedSteps.set(`${this.#state.document}\0${sectionId}`, step)
       this.#set({ position: { section: sectionId, step, trail: [], view: 'present' } })
-      void this.controlProduction({ binding: plan.binding, action: 'seek', timeMs: range.startMs }).catch(() => {})
+      void this.controlProduction({ binding: plan.binding, action: 'step', sectionId, stepId }).catch(() => {})
       return
     }
     const snapshot = this.#state.presentationSnapshot

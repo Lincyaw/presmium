@@ -192,6 +192,7 @@ const optional = <T>(value: unknown, is: (v: unknown) => v is T) => value === un
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
 const positive = (value: unknown): value is number => finite(value) && value > 0
 const nonnegative = (value: unknown): value is number => finite(value) && value >= 0
+const productionId = (value: unknown): value is string => typeof value === 'string' && value.length > 0 && value.length <= 200
 const productionBinding = (value: unknown): value is ProductionBinding => isRecord(value) && isRecord(value.source)
   && typeof value.source.documentId === 'string' && value.source.documentId.length > 0 && value.source.documentId.length <= 200
   && typeof value.source.version === 'string' && /^[\da-f]{20}$/.test(value.source.version)
@@ -207,7 +208,8 @@ const productionState = (value: unknown): value is ProductionPlaybackState => {
     && typeof position.playing === 'boolean' && positive(position.rate) && typeof position.trying === 'boolean'
 }
 const productionCommand = (value: unknown): value is ProductionPlaybackCommand => isRecord(value) && productionBinding(value.binding)
-  && (value.action === 'load' || value.action === 'pause' || value.action === 'play' || value.action === 'seek' && nonnegative(value.timeMs) || value.action === 'rate' && positive(value.rate))
+  && (value.action === 'load' || value.action === 'pause' || value.action === 'play' || value.action === 'seek' && nonnegative(value.timeMs)
+    || value.action === 'step' && productionId(value.sectionId) && productionId(value.stepId) || value.action === 'rate' && positive(value.rate))
 const step = (value: unknown): value is number => Number.isInteger(value) && (value as number) >= 0
 const request = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0
 const strings = (value: unknown): value is string[] => Array.isArray(value) && value.length <= 10_000 && value.every(text)

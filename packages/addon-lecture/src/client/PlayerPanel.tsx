@@ -45,6 +45,7 @@ export default function PlayerPanel(_props: { view?: string }) {
     trying = useStore(player?.trying, false),
     clockPlaying = useStore(player?.clock.playing, false),
     rate = useStore(player?.clock.rate, 1)
+  const cursor = useStore(player?.cursor), positionMode = useStore(player?.positionMode, 'time')
   const [captions, setCaptions] = useState(false),
     [panel, setPanel] = useState<'transcript' | 'chapters'>()
   useEffect(() => {
@@ -86,7 +87,14 @@ export default function PlayerPanel(_props: { view?: string }) {
     : []
   const chapter = chapters.filter((item) => item.t <= time).at(-1)
   const languages = player ? captionLanguages(player.track) : []
-  const current = player ? utteranceAt(player.track, time) : undefined
+  const timed = player ? utteranceAt(player.track, time) : undefined
+  const boundary = player && cursor ? player.events.findIndex(event => event.type === 'go' && event.data.section === cursor.sectionId && Number(event.data.step ?? 0) === cursor.step) : -1
+  const start = player?.events[boundary]?.t, end = player?.events.slice(boundary + 1).find(event => event.type === 'go')?.t ?? player?.duration
+  // A positive utterance may continue through a cue into another step. Preserve that real timing.
+  const continuing = timed && cursor && timed.d > 0 && timed.section === cursor.sectionId && (timed.step ?? 0) <= cursor.step
+  const selectedZero = player && cursor && positionMode === 'step' && !clockPlaying && boundary >= 0 && start === end && time === start && !continuing
+  const selectedCaptions = selectedZero ? player.track.utterances.filter(utterance => utterance.section === cursor.sectionId && (utterance.step ?? 0) === cursor.step && utterance.d === 0 && utterance.t === time) : undefined
+  const current = selectedZero ? selectedCaptions?.[0] : timed
   const voice = player?.track.voice
   const unsaid = player?.track.utterances.filter((u) => u.unsaid) ?? []
   const synthetic =
@@ -98,6 +106,7 @@ export default function PlayerPanel(_props: { view?: string }) {
     lang && lang !== player?.track.lang
       ? (u.translations?.[lang]?.text ?? u.text)
       : u.text
+  const caption = selectedCaptions ? selectedCaptions.map(text).join(' ') : current ? text(current) : undefined
   const burned =
     burnedCaptions && current && player
       ? captionText(player.track, current, burnedCaptions)
@@ -107,7 +116,7 @@ export default function PlayerPanel(_props: { view?: string }) {
       ? player.track.utterances.filter((u) => isStale(u, lang)).map((u) => u.id)
       : [],
   )
-  if (controlled) return player && current ? <div className="pm-lecture-layer"><div className="pm-lecture-dock"><p className="pm-lecture-caption" lang={lang} aria-live="polite">{text(current)}</p></div></div> : null
+  if (controlled) return player && current ? <div className="pm-lecture-layer"><div className="pm-lecture-dock"><p className="pm-lecture-caption" lang={lang} aria-live="polite">{caption}</p></div></div> : null
   if (!id) return null
   return (
     <div className="pm-lecture-layer">
@@ -192,7 +201,7 @@ export default function PlayerPanel(_props: { view?: string }) {
                 aria-live="polite"
                 data-stale={stale.has(current.id) ? 'true' : undefined}
               >
-                {text(current)}
+                {caption}
                 {stale.has(current.id) && (
                   <span
                     className="pm-lecture-stale"
