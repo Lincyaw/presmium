@@ -1,7 +1,7 @@
 {
   "track": 1,
   "id": "demo",
-  "doc": "lecture.md",
+  "doc": "lecture.json",
   "lang": "zh-CN",
   "ir": {"hash":"3ecac7e5e9ef767d"},
   "voice": {"kind":"recorded","speaker":"张老师"},

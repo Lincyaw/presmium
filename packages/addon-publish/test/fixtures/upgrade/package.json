@@ -1,5 +1,0 @@
-{
-  "name": "presmium-publish-fixture-upgrade",
-  "private": true,
-  "description": "A repository whose deck uses an addon of the same workspace, at the version of each commit's lockfile"
-}
