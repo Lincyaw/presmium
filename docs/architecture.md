@@ -1228,6 +1228,10 @@ export const OPERATIONS = defineService<Operations>('presmium.operations')
 
 当前预览边界：`GET tracks/script` 只查询完整请求对应的缓存，不合成。所有句子均缺少音频片段时，正式放映使用当前 Narration 派生的按步骤字幕，不把估算时间线当成已准备的配音；有真实缓存片段的时序播放器通过 `TIMED_CAPTIONS` 取得字幕显示权。生成配音仍由作者显式触发。`renderers.lecture.script` 已移除，文稿 metadata、宿主 headmatter 与工作区 YAML 中的旧参数会给出明确诊断，不能覆盖 JSON 中步骤绑定的 Narration。
 
+试听与生成另有保存版本屏障。编译器在 `IRDocument.source` 写入 `CanonicalSource`（见 [IR 来源契约](ir.md#5-运行快照与渲染)）；`GET voice-preview` 的报价与 `GET voiceover` 的状态返回该来源，确认试听与生成 POST 必须原样携带 `source`。报价摘要同时绑定来源、运行 revision、实际文本、音色与提供方。Node 服务在读取报价、生成预检、每个片段调用前和结果采用前核对固定入口的实际内容与最新运行快照；已保存但尚未完成编译的文稿返回 `409 voice-source-changed`，缺少来源标记返回 `409 voice-source-unavailable`，不能继续使用旧 IR 的文本。历史任务携带自身 `source`，旧任务即使缓存仍有效，也不代表当前版本已生成。
+
+同一服务进程内，每个文稿目录共用一份生成占用，覆盖异步预检、逐片段生成和清理；重叠范围返回 `409 voice-job-busy`，不合并或替换原范围。同范围已在运行的任务可返回原任务。需要生成的新试听与 `lecture_synthesize` 也使用该占用；纯缓存试听不占用生成名额。取消保持 `cancelling`，直到正在进行的调用实际结束后释放占用，已完成的精确缓存不删除；来源变化使旧任务成为 `stale`，迟到结果不计入完成数。该占用不是多服务进程间的分布式锁。渲染、检查与导出继续只消费 IR 和精确缓存，不调用来源校验或隐式合成。
+
 转写回写的读法在讲授插件的 `src/domain/writeback.ts`：由事件写回提示标记（`cueFor`）、逐字稿拼成的讲解草稿（`narrationDraft`）、一步讲解在源码中的位置（`narrationPlace`，取自讲授计划，所以单独的讲授脚本中的段落同样找得到）、要翻译的语音段与摘要（`translationItems`）；agent 经 `track_narration`、`track_translations`（`src/node/tools.ts`）取得它们，写入在会话的审阅之中。
 
 ### 4.10 IR 与渲染端的扩展

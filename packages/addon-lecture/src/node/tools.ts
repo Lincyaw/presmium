@@ -8,6 +8,8 @@ import { deckPlan } from './plan.ts'
 import { deckFiles, readTrack, TRACK_FILE, trackDir } from './store.ts'
 import type { DeckFiles } from './store.ts'
 import { synthesisFailureMessage, synthesizeLecture } from './synthesize.ts'
+import { assertVoiceSource, VoiceSourceRefusal } from './voice-source.ts'
+import { claimVoiceGeneration } from './voice-generation.ts'
 import { transcribeLecture } from './transcribe.ts'
 
 export interface LectureDeck {
@@ -75,17 +77,30 @@ export const lectureSynthesize: AgentTool = {
   kind: 'spend',
   async run(_input, ctx) {
     const { deckDir, doc } = deckOf(ctx)
-    const { deck, track, failures } = await synthesizeLecture(doc, deckDir, speechOf(ctx), ctx.signal)
-    if (!deck.voice) throw new Error(LECTURE_MESSAGES[deckLocale(doc.meta.lang)].production.noVoice)
-    if (!track) throw new Error(failures.map(failure => synthesisFailureMessage(failure)).join('\n'))
-    return {
-      track: SCRIPT_TRACK,
-      voice: track.voice,
-      durationMs: trackDuration(track),
-      utterances: track.utterances.length,
-      events: track.events.length,
-      problems: deck.findings.map(f => f.message),
+    const source = await assertVoiceSource(doc, deckDir)
+    const assertCurrent = async () => {
+      if (latestView(deckDir) !== doc) throw new VoiceSourceRefusal('voice-source-changed')
+      await assertVoiceSource(doc, deckDir, source)
+      if (latestView(deckDir) !== doc) throw new VoiceSourceRefusal('voice-source-changed')
     }
+    const release = claimVoiceGeneration(deckDir)
+    try {
+      await assertCurrent()
+      const { deck, track, failures } = await synthesizeLecture(doc, deckDir, speechOf(ctx), ctx.signal, { assertCurrent })
+      await assertCurrent()
+      ctx.signal.throwIfAborted()
+      if (!deck.voice) throw new Error(LECTURE_MESSAGES[deckLocale(doc.meta.lang)].production.noVoice)
+      if (!track) throw new Error(failures.map(failure => synthesisFailureMessage(failure)).join('\n'))
+      return {
+        track: SCRIPT_TRACK,
+        voice: track.voice,
+        durationMs: trackDuration(track),
+        utterances: track.utterances.length,
+        events: track.events.length,
+        problems: deck.findings.map(f => f.message),
+        source,
+      }
+    } finally { release() }
   },
 }
 

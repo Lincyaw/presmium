@@ -3,15 +3,17 @@ import { readFile } from 'node:fs/promises'
 import { setImmediate } from 'node:timers/promises'
 import { errorMessage, isRecord, jsonResponse, resolvedVoice, speechEngineId, speechVoice, voiceTarget } from '@lincyaw/kernel'
 import { irRevision } from '@lincyaw/kernel/node'
-import type { IRDocument, Route, ServerContribution, SpeechService, SpeechVoice, Synthesis, SynthesisRequest, VoiceoverJob, VoiceoverSnapshot, VoicePreviewQuery, VoicePreviewQuote, VoiceScope, VoiceTarget } from '@lincyaw/kernel'
+import type { CanonicalSource, IRDocument, Route, ServerContribution, SpeechService, SpeechVoice, Synthesis, SynthesisRequest, VoiceoverJob, VoiceoverSnapshot, VoicePreviewQuery, VoicePreviewQuote, VoiceScope, VoiceTarget } from '@lincyaw/kernel'
 import { plannedUtterances } from '../../domain/index.ts'
 import { latestDoc, lectureView } from '../latest-ir.ts'
 import { deckPlan } from '../plan.ts'
+import { claimVoiceGeneration, VoiceGenerationBusy } from '../voice-generation.ts'
+import { assertVoiceSource, canonicalSource, VoiceSourceRefusal } from '../voice-source.ts'
 import type { ServedDeck } from './served-deck.ts'
 import { RouteRefusal } from './served-deck.ts'
 
 type Unit = ReturnType<typeof plannedUtterances>[number]
-interface Context { doc: IRDocument, revision: string, units: Unit[], lang: string, lexicon?: Record<string, string> }
+interface Context { source: CanonicalSource, doc: IRDocument, revision: string, units: Unit[], lang: string, lexicon?: Record<string, string> }
 interface ActiveJob { job: VoiceoverJob, controller: AbortController, finished: Promise<void> }
 
 const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
@@ -43,15 +45,23 @@ function requestOf(context: Context, unit: Unit): SynthesisRequest {
 export function voiceoverRoutes(served: ServedDeck): ServerContribution {
   const jobs = new Map<string, ActiveJob>()
   let closed = false
-  const context = (): Context => {
+  const context = async (expected?: CanonicalSource): Promise<Context> => {
     const doc = latestDoc(served.deckDir)
     if (!doc) throw new RouteRefusal(503, 'voice-document-unavailable')
+    const source = await assertVoiceSource(doc, served.deckDir, expected)
+    if (latestDoc(served.deckDir) !== doc) throw new RouteRefusal(409, 'voice-revision-changed')
     const deck = deckPlan(lectureView(doc))
-    return { doc, revision: irRevision(doc), units: plannedUtterances(deck.plan), lang: deck.lang, lexicon: deck.lexicon }
+    return { source, doc, revision: irRevision(doc), units: plannedUtterances(deck.plan), lang: deck.lang, lexicon: deck.lexicon }
   }
   const same = (now: Context) => latestDoc(served.deckDir) === now.doc
-  const assertRevision = (revision: unknown): Context => {
-    const now = context()
+  const assertCurrent = async (now: Context) => {
+    if (!same(now)) throw new RouteRefusal(409, 'voice-revision-changed')
+    await assertVoiceSource(now.doc, served.deckDir, now.source)
+    if (!same(now)) throw new RouteRefusal(409, 'voice-revision-changed')
+  }
+  const stale = (error: unknown) => error instanceof VoiceSourceRefusal || error instanceof RouteRefusal && error.message === 'voice-revision-changed'
+  const assertRevision = async (revision: unknown, expected?: CanonicalSource): Promise<Context> => {
+    const now = await context(expected)
     if (revision !== now.revision) throw new RouteRefusal(409, 'voice-revision-changed')
     return now
   }
@@ -68,7 +78,7 @@ export function voiceoverRoutes(served: ServedDeck): ServerContribution {
     return engine
   }
   const snapshot = async (signal: AbortSignal): Promise<VoiceoverSnapshot> => {
-    const now = context()
+    const now = await context()
     let speech: SpeechService | undefined
     try { speech = served.speech() } catch { /* Readability and editing remain available without speech. */ }
     const providers = speech ? await engines(speech) : []
@@ -85,7 +95,7 @@ export function voiceoverRoutes(served: ServedDeck): ServerContribution {
         usable.add(unit.id)
       } catch (error) { unavailable.set(unit.id, errorMessage(error)) }
     }))
-    if (!same(now)) throw new RouteRefusal(409, 'voice-revision-changed')
+    await assertCurrent(now)
     const steps = now.doc.sections.flatMap(section => Array.from({ length: section.steps + 1 }, (_, step) => {
       const selected = resolvedVoice(now.doc, section, step)
       const units = now.units.filter(unit => unit.voiceTarget?.section === section.id && unit.voiceTarget.step === step)
@@ -100,7 +110,7 @@ export function voiceoverRoutes(served: ServedDeck): ServerContribution {
       const reason = units.find(unit => unit.voiceIssue)?.voiceIssue ?? units.map(unit => unavailable.get(unit.id)).find(Boolean)
       return [{ section: section.id, state: reason ? 'blocked' as const : count === units.length ? 'ready' as const : 'missing' as const, utterances: units.length, cached: count, ...reason ? { reason } : {} }]
     })
-    return { revision: now.revision, capability: { available: Boolean(speech && usable.size), providers, ...defaultEngine ? { defaultEngine } : {}, ...!speech ? { reason: 'speech-unavailable' as const } : !usable.size && unavailable.size ? { reason: [...unavailable.values()].some(reason => reason === 'voice-not-configured') ? 'not-configured' as const : [...unavailable.values()].some(reason => reason === 'voice-catalog-unavailable') ? 'catalog-unavailable' as const : 'voice-unavailable' as const } : !usable.size ? { reason: 'voice-unset' as const } : {} }, steps, unboundByPage, jobs: [...jobs.values()].map(entry => ({ ...entry.job })) }
+    return { source: now.source, revision: now.revision, capability: { available: Boolean(speech && usable.size), providers, ...defaultEngine ? { defaultEngine } : {}, ...!speech ? { reason: 'speech-unavailable' as const } : !usable.size && unavailable.size ? { reason: [...unavailable.values()].some(reason => reason === 'voice-not-configured') ? 'not-configured' as const : [...unavailable.values()].some(reason => reason === 'voice-catalog-unavailable') ? 'catalog-unavailable' as const : 'voice-unavailable' as const } : !usable.size ? { reason: 'voice-unset' as const } : {} }, steps, unboundByPage, jobs: [...jobs.values()].map(entry => ({ ...entry.job })) }
   }
 
   const run = async (entry: ActiveJob, now: Context, units: Unit[], issues: Map<string, string>) => {
@@ -112,33 +122,38 @@ export function voiceoverRoutes(served: ServedDeck): ServerContribution {
       let yielded = performance.now()
       for (const unit of units) {
         controller.signal.throwIfAborted()
-        if (!same(now)) throw new RouteRefusal(409, 'voice-revision-changed')
+        await assertCurrent(now)
         try {
           if (issues.has(unit.id)) throw new Error(issues.get(unit.id))
           const request = requestOf(now, unit)
           if (!await speech.lookup?.(request, controller.signal)) {
             await providerFor(speech, unit.voice!, now, controller.signal)
+            await assertCurrent(now)
+            controller.signal.throwIfAborted()
             await speech.synthesize(request, controller.signal)
           }
           controller.signal.throwIfAborted()
-          if (!same(now)) throw new RouteRefusal(409, 'voice-revision-changed')
+          await assertCurrent(now)
+          controller.signal.throwIfAborted()
           job.completed++
         } catch (error) {
-          if (controller.signal.aborted || !same(now)) throw error
+          if (controller.signal.aborted || stale(error) || !same(now)) throw error
           job.failed++
           job.error = errorMessage(error)
         }
         if (performance.now() - yielded >= 8) { await setImmediate(); yielded = performance.now() }
       }
+      await assertCurrent(now)
+      controller.signal.throwIfAborted()
       job.state = job.failed ? 'failed' : 'done'
     } catch (error) {
-      job.state = !same(now) ? 'stale' : controller.signal.aborted ? 'cancelled' : 'failed'
+      job.state = stale(error) || !same(now) ? 'stale' : controller.signal.aborted ? 'cancelled' : 'failed'
       if (job.state !== 'cancelled') job.error = errorMessage(error)
     } finally { job.finishedAt = new Date().toISOString() }
   }
 
-  const quote = async (query: VoicePreviewQuery, signal: AbortSignal): Promise<{ quote: VoicePreviewQuote, request: SynthesisRequest, hit?: Synthesis, context: Context }> => {
-    const now = assertRevision(query.revision), voice = speechVoice(query.voice)
+  const quote = async (query: VoicePreviewQuery, signal: AbortSignal, expected?: CanonicalSource): Promise<{ quote: VoicePreviewQuote, request: SynthesisRequest, hit?: Synthesis, context: Context }> => {
+    const now = await assertRevision(query.revision, expected), voice = speechVoice(query.voice)
     if (!voice) throw new RouteRefusal(400, 'voice-preview-invalid')
     let text = now.lang.toLowerCase().startsWith('en') ? 'Hello. This is a short voice preview for your presentation.' : '你好，这是一段配音试听。你可以用它比较音色，再选择文稿的旁白声音。'
     if (query.mode === 'step') {
@@ -154,14 +169,14 @@ export function voiceoverRoutes(served: ServedDeck): ServerContribution {
     const hit = await speech.lookup?.(request, signal)
     if (!engine && !hit) throw new RouteRefusal(503, 'voice-not-configured')
     if (!hit) await providerFor(speech, voice, now, signal)
-    if (!same(now)) throw new RouteRefusal(409, 'voice-revision-changed')
+    await assertCurrent(now)
     const provider = hit?.provider ?? engine!.provider, local = Boolean(hit || engine?.local)
-    const token = digest({ revision: now.revision, request, provider, local, target: query.target, mode: query.mode })
-    return { quote: { ...query, voice, text, provider, local, cached: Boolean(hit), quote: token }, request, hit, context: now }
+    const token = digest({ source: now.source, revision: now.revision, request, provider, local, target: query.target, mode: query.mode })
+    return { quote: { ...query, source: now.source, voice, text, provider, local, cached: Boolean(hit), quote: token }, request, hit, context: now }
   }
 
   const route = (handle: (request: Request) => Promise<Response>): Route => ({ role: 'editor', maxBody: 64 << 10, async handle(request) {
-    try { return await handle(request) } catch (error) { return jsonResponse({ error: errorMessage(error) }, error instanceof RouteRefusal ? error.status : 502) }
+    try { return await handle(request) } catch (error) { return jsonResponse({ error: errorMessage(error) }, error instanceof RouteRefusal ? error.status : error instanceof VoiceSourceRefusal || error instanceof VoiceGenerationBusy ? 409 : 502) }
   } })
   return {
     routes: {
@@ -169,27 +184,35 @@ export function voiceoverRoutes(served: ServedDeck): ServerContribution {
         if (request.method === 'GET') return jsonResponse(await snapshot(request.signal))
         if (request.method !== 'POST') throw new RouteRefusal(405, 'GET or POST')
         const body: unknown = await request.json().catch(() => undefined)
-        if (!isRecord(body) || typeof body.revision !== 'string' || !validScope(body.scope)) throw new RouteRefusal(400, 'voice-generation-invalid')
+        if (!isRecord(body) || typeof body.revision !== 'string' || !canonicalSource(body.source) || !validScope(body.scope)) throw new RouteRefusal(400, 'voice-generation-invalid')
         if (body.confirmed !== true) throw new RouteRefusal(409, 'voice-confirmation-required')
         if (closed) throw new RouteRefusal(503, 'voice-service-closing')
-        const now = assertRevision(body.revision), units = scoped(now, body.scope)
+        const now = await assertRevision(body.revision, body.source), units = scoped(now, body.scope)
         if (!units.length) throw new RouteRefusal(409, 'voice-script-empty')
-        const speech = served.speech()
-        const issues = new Map<string, string>()
-        for (const unit of units) {
-          try { if (!await speech.lookup?.(requestOf(now, unit), request.signal)) await providerFor(speech, unit.voice!, now, request.signal) }
-          catch (error) { issues.set(unit.id, errorMessage(error)) }
-        }
-        if (issues.size === units.length) throw new RouteRefusal(409, issues.values().next().value ?? 'voice-unavailable')
-        if (!same(now)) throw new RouteRefusal(409, 'voice-revision-changed')
         const matching = [...jobs.values()].find(entry => entry.job.revision === now.revision && JSON.stringify(entry.job.scope) === JSON.stringify(body.scope) && ['queued', 'running', 'cancelling'].includes(entry.job.state))
         if (matching) return jsonResponse(matching.job)
-        const job: VoiceoverJob = { id: randomUUID(), revision: now.revision, scope: body.scope, state: 'queued', total: units.length, completed: 0, failed: 0, createdAt: new Date().toISOString() }
-        const entry: ActiveJob = { job, controller: new AbortController(), finished: Promise.resolve() }
-        jobs.set(job.id, entry)
-        entry.finished = Promise.resolve().then(() => run(entry, now, units, issues))
-        for (const [id, old] of jobs) if (jobs.size > 20 && !['queued', 'running', 'cancelling'].includes(old.job.state)) jobs.delete(id)
-        return jsonResponse({ ...job }, 202)
+        let release: (() => void) | undefined = claimVoiceGeneration(served.deckDir)
+        try {
+          const speech = served.speech()
+          const issues = new Map<string, string>()
+          for (const unit of units) {
+            request.signal.throwIfAborted()
+            await assertCurrent(now)
+            try { if (!await speech.lookup?.(requestOf(now, unit), request.signal)) await providerFor(speech, unit.voice!, now, request.signal) }
+            catch (error) { if (request.signal.aborted || stale(error)) throw error; issues.set(unit.id, errorMessage(error)) }
+            await assertCurrent(now)
+          }
+          if (issues.size === units.length) throw new RouteRefusal(409, issues.values().next().value ?? 'voice-unavailable')
+          if (closed) throw new RouteRefusal(503, 'voice-service-closing')
+          const job: VoiceoverJob = { id: randomUUID(), source: now.source, revision: now.revision, scope: body.scope, state: 'queued', total: units.length, completed: 0, failed: 0, createdAt: new Date().toISOString() }
+          const entry: ActiveJob = { job, controller: new AbortController(), finished: Promise.resolve() }
+          jobs.set(job.id, entry)
+          const finish = release
+          entry.finished = Promise.resolve().then(() => run(entry, now, units, issues)).finally(finish)
+          release = undefined
+          for (const [id, old] of jobs) if (jobs.size > 20 && !['queued', 'running', 'cancelling'].includes(old.job.state)) jobs.delete(id)
+          return jsonResponse({ ...job }, 202)
+        } finally { release?.() }
       }),
       'voiceover/cancel': route(async request => {
         if (request.method !== 'POST') throw new RouteRefusal(405, 'POST')
@@ -215,15 +238,25 @@ export function voiceoverRoutes(served: ServedDeck): ServerContribution {
         }
         if (request.method !== 'POST') throw new RouteRefusal(405, 'GET or POST')
         const body: unknown = await request.json().catch(() => undefined)
-        if (!isRecord(body) || typeof body.revision !== 'string' || !speechVoice(body.voice) || body.mode !== 'sample' && body.mode !== 'step' || body.target !== undefined && !validTarget(body.target)) throw new RouteRefusal(400, 'voice-preview-invalid')
+        if (!isRecord(body) || typeof body.revision !== 'string' || !canonicalSource(body.source) || !speechVoice(body.voice) || body.mode !== 'sample' && body.mode !== 'step' || body.target !== undefined && !validTarget(body.target)) throw new RouteRefusal(400, 'voice-preview-invalid')
         if (body.confirmed !== true) throw new RouteRefusal(409, 'voice-confirmation-required')
-        const queried = await quote({ revision: body.revision, voice: speechVoice(body.voice)!, mode: body.mode, ...body.target ? { target: body.target as VoiceTarget } : {} }, request.signal)
+        const queried = await quote({ revision: body.revision, voice: speechVoice(body.voice)!, mode: body.mode, ...body.target ? { target: body.target as VoiceTarget } : {} }, request.signal, body.source)
         if (body.quote !== queried.quote.quote) throw new RouteRefusal(409, 'voice-preview-changed')
-        const result = queried.hit ?? await served.speech().synthesize(queried.request, request.signal)
-        if (!same(queried.context)) throw new RouteRefusal(409, 'voice-revision-changed')
-        const bytes = typeof result.audio === 'string' ? await readFile(result.audio) : Buffer.from(await result.audio.arrayBuffer())
-        if (bytes.byteLength > 8 << 20) throw new RouteRefusal(413, 'voice-preview-too-large')
-        return jsonResponse({ revision: body.revision, voice: queried.quote.voice, text: queried.quote.text, cached: Boolean(queried.hit), key: result.key, audio: `data:${result.mime};base64,${bytes.toString('base64')}`, duration: result.duration, provider: result.provider })
+        const release = queried.hit ? undefined : claimVoiceGeneration(served.deckDir)
+        try {
+          request.signal.throwIfAborted()
+          if (closed) throw new RouteRefusal(503, 'voice-service-closing')
+          await assertCurrent(queried.context)
+          request.signal.throwIfAborted()
+          const result = queried.hit ?? await served.speech().synthesize(queried.request, request.signal)
+          await assertCurrent(queried.context)
+          const bytes = typeof result.audio === 'string' ? await readFile(result.audio) : Buffer.from(await result.audio.arrayBuffer())
+          if (bytes.byteLength > 8 << 20) throw new RouteRefusal(413, 'voice-preview-too-large')
+          request.signal.throwIfAborted()
+          await assertCurrent(queried.context)
+          request.signal.throwIfAborted()
+          return jsonResponse({ source: queried.context.source, revision: body.revision, voice: queried.quote.voice, text: queried.quote.text, cached: Boolean(queried.hit), key: result.key, audio: `data:${result.mime};base64,${bytes.toString('base64')}`, duration: result.duration, provider: result.provider })
+        } finally { release?.() }
       }),
     },
     async close() {

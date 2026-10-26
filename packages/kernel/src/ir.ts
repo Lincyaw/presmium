@@ -30,8 +30,17 @@ export interface SourcePos {
   pointer?: string
 }
 
+/** Compiler-owned identity of the exact canonical authoring entry behind a runtime snapshot. */
+export interface CanonicalSource {
+  documentId: string
+  version: string
+  fingerprint: string
+}
+
 export interface IRDocument {
   ir: typeof IR_VERSION
+  /** Read-only provenance, never authored metadata or editable document content. */
+  source?: CanonicalSource
   meta: {
     title: string
     entry: string
