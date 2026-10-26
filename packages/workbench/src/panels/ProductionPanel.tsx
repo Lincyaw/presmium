@@ -89,7 +89,11 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
       if (!current()) return
       const prepared = await workbench.preparePresentation()
       if (!current()) return
-      if (!prepared) { setFailure(workbench.getState().presentationFailure); return }
+      if (!prepared) {
+        const message = workbench.getState().presentationFailure
+        setFailure(message === t.timingDraftPending ? undefined : message)
+        return
+      }
       workbench.setWebView('present')
       if (refreshPlan) setPlanReload(value => value + 1)
     } catch { if (current()) setFailure(t.presentationCompileFailed) }
@@ -145,7 +149,7 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
         {!previewVisible && <PmEmpty icon="slides" title={p.unavailable} action={<PmButton small loading={preparing} disabled={blocked || closing} onClick={() => void compile()}>{p.prepare}</PmButton>}>{p.previewHint}</PmEmpty>}
       </div>
       <div className="pmw-production__properties pm-ui-block-editor" hidden={!wide && tab !== 'script' || tab === 'outputs'}>
-        <DocumentStepNarration sectionId={sectionId} stepId={stepId} expanded panelId="production-step-fields" onPause={() => select(sectionId, stepId)} />
+        <DocumentStepNarration sectionId={sectionId} stepId={stepId} expanded advanced panelId="production-step-fields" onPause={() => select(sectionId, stepId)} />
         <PmCard><h2 className="pm-ui-card__title">{p.voice}</h2><PmField label={p.choose} hint={p.inherited[voice.inheritedFrom]}><span>{voiceLabel}</span></PmField>
           {voice.value?.type === 'recording' && <PmNotice tone="warn">{p.recordingLimit}</PmNotice>}
           <div className="pmw-voice__actions"><PmButton small icon="audio" disabled={blocked || closing} onClick={() => { workbench.stopAuditions(); setVoiceStep(stepId) }}>{p.choose}</PmButton><PmButton small icon="refresh" disabled={blocked || closing} onClick={() => { workbench.stopAuditions(); setGenerateStep(stepId) }}>{p.generate}</PmButton></div>

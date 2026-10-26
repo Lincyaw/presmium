@@ -12,9 +12,10 @@ const MESSAGES = {
     restore: '恢复本步继承', restoreHint: '仅恢复本步的开始时机、最短停留与结束停顿；讲稿单独设置保留。',
     legacy: '继承讲稿设置', mixed: '本步讲稿的开始时机不同。',
     unify: '统一本步时机', unifyHint: '仅覆盖本步；恢复继承后继续使用讲稿原有时机。',
-    invalid: '未采用：请输入不小于 0 的毫秒数。', intent: '此处设置讲授时序；文档内预览只播放动画，不生成配音。',
+    invalid: '未采用：请输入不小于 0 的毫秒数。',
     review: '暂存输入尚未采用。请核对当前来源设置，再修改或恢复继承。', pending: '输入尚未采用。', storageFailure: '临时输入暂存失败，请保持页面打开并保留输入。',
     count: (index: number, value: string) => `讲稿 ${index}：${value}`,
+    advancedDraft: '有未完成的视频设置，请在视频制作中处理。',
   },
   en: {
     timing: 'Playback timing', start: 'Narration starts', during: 'With animation', after: 'After animation', minimum: 'Minimum hold', trailing: 'Trailing pause', automatic: 'Auto', unit: 'ms',
@@ -22,9 +23,10 @@ const MESSAGES = {
     restore: 'Restore step inheritance', restoreHint: 'Restores only this step’s start, hold and trailing pause. Narration overrides stay.',
     legacy: 'Inherited from narration', mixed: 'Narrations in this step start at different times.',
     unify: 'Unify this step’s timing', unifyHint: 'Applies only to this step. Restoring inheritance returns to the original narration settings.',
-    invalid: 'Not applied: enter a duration of 0 ms or more.', intent: 'These settings control the lecture. The document preview plays animation without generating speech.',
+    invalid: 'Not applied: enter a duration of 0 ms or more.',
     review: 'This draft has not been applied. Check the current source setting, then edit it or restore inheritance.', pending: 'Input has not been applied.', storageFailure: 'The pending input could not be stored. Keep this page open and retain the input.',
     count: (index: number, value: string) => `Narration ${index}: ${value}`,
+    advancedDraft: 'Review the pending settings in Video production.',
   },
 }
 
@@ -82,6 +84,7 @@ export interface StepProductionEditorProps {
   stepId: string
   locale: Locale
   readOnly?: boolean
+  advanced?: boolean
   onPause(): void
   onInteraction?(): void
   onChange(patch: StepTimingPatch): void
@@ -92,7 +95,7 @@ export interface StepProductionEditorProps {
 }
 
 /** A reusable view of the canonical step production, including inherited and migrated settings. */
-export function StepProductionEditor({ document, stepId, locale, readOnly, onPause, onInteraction, onChange, drafts, onDraft, draftStorageFailure, onComposition }: StepProductionEditorProps) {
+export function StepProductionEditor({ document, stepId, locale, readOnly, advanced = true, onPause, onInteraction, onChange, drafts, onDraft, draftStorageFailure, onComposition }: StepProductionEditorProps) {
   const t = MESSAGES[locale], [unifying, setUnifying] = useState(false)
   const start = stepTimingValue(document, stepId, 'narrationStart'), minimum = stepTimingValue(document, stepId, 'minimumHoldMs'), trailing = stepTimingValue(document, stepId, 'trailingPauseMs')
   const narrations = stepNarrationStarts(document, stepId), hasOverrides = narrations.some(value => value.overridden)
@@ -102,10 +105,12 @@ export function StepProductionEditor({ document, stepId, locale, readOnly, onPau
   const options = [{ value: 'with-animation', label: t.during, icon: 'timing-during' as const }, { value: 'after-animation', label: t.after, icon: 'timing-after' as const }]
   return <section className="pm-ui-step-production" contentEditable={false} data-step-production={stepId} aria-label={t.timing}
     onFocus={() => { onInteraction?.(); onPause() }} onKeyDown={event => event.stopPropagation()} onPointerDown={event => event.stopPropagation()}>
-    <div className="pm-ui-step-production__heading"><span className="pm-ui-field__label">{t.timing}</span>
+    {advanced && <div className="pm-ui-step-production__heading"><span className="pm-ui-field__label">{t.timing}</span>
       <PmButton small variant="ghost" disabled={readOnly || !hasStepTiming && !drafts?.minimumHoldMs && !drafts?.trailingPauseMs} title={t.restoreHint} onClick={() => { onDraft?.('minimumHoldMs', undefined); onDraft?.('trailingPauseMs', undefined); apply({ narrationStart: null, minimumHoldMs: null, trailingPauseMs: null }) }}>{t.restore}</PmButton>
-    </div>
-    <PmField group label={t.start} density="compact" hint={hasOverrides ? (mixed ? t.mixed : t.legacy) : t.source[start.source]}>
+    </div>}
+    {!advanced ? <PmField group label={t.start} density="compact" hint={mixed ? t.mixed : undefined}>
+      <div className="pm-ui-step-production__actions"><PmSegmented label={t.start} value={mixed ? '' : narrations[0]?.value ?? start.value ?? 'with-animation'} options={options} disabled={readOnly} onChange={value => apply({ narrationStart: value as 'with-animation' | 'after-animation' })} /></div>
+    </PmField> : <><PmField group label={t.start} density="compact" hint={hasOverrides ? (mixed ? t.mixed : t.legacy) : t.source[start.source]}>
       {!hasOverrides && <div className="pm-ui-step-production__actions"><PmSegmented label={t.start} value={start.value ?? ''} options={options} disabled={readOnly} onChange={value => apply({ narrationStart: value as 'with-animation' | 'after-animation' })} /></div>}
       {hasOverrides && <>
         <div className="pm-ui-step-production__narration-settings">{narrations.map((entry, index) => <span key={entry.id} className="pm-ui-field__hint">{t.count(index + 1, entry.value === 'after-animation' ? t.after : t.during)}{entry.overridden ? ` · ${t.legacy}` : ` · ${t.source[start.source]}`}</span>)}</div>
@@ -118,8 +123,8 @@ export function StepProductionEditor({ document, stepId, locale, readOnly, onPau
         onChange={value => apply({ minimumHoldMs: value })} onComposition={composing => onComposition?.('minimumHoldMs', composing)} />
       <DurationField label={t.trailing} value={trailing.value} source={trailing.source} locale={locale} readOnly={readOnly} draft={drafts?.trailingPauseMs} onDraft={draft => onDraft?.('trailingPauseMs', draft)}
         onChange={value => apply({ trailingPauseMs: value })} onComposition={composing => onComposition?.('trailingPauseMs', composing)} />
-    </div>
-    <span className="pm-ui-field__hint">{t.intent}</span>
-    {draftStorageFailure && <span className="pm-ui-field__error" role="alert">{t.storageFailure}</span>}
+    </div></>}
+    {!advanced && (drafts?.minimumHoldMs || drafts?.trailingPauseMs || draftStorageFailure) ? <span className="pm-ui-field__error" role="alert">{t.advancedDraft}</span>
+      : draftStorageFailure && <span className="pm-ui-field__error" role="alert">{t.storageFailure}</span>}
   </section>
 }

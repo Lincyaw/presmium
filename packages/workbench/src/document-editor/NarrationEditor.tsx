@@ -19,6 +19,7 @@ export interface NarrationEditorProps {
   locale: Locale
   reset?: number
   readOnly?: boolean
+  advanced?: boolean
   onChange(content: NarrationNode[]): void
   onComposition?(composing: boolean): void
   onFocus?(): void
@@ -71,9 +72,9 @@ function NarrationSurface(props: NarrationEditorProps) {
   const t = NARRATION_MESSAGES[props.locale]
   const editor = useCreateBlockNote({ schema: narrationSchema, initialContent: narrationToNative(props.narrationId, instance.content),
     trailingBlock: false,
-    dictionary: { ...(props.locale === 'zh-CN' ? zh : en), placeholders: { ...(props.locale === 'zh-CN' ? zh : en).placeholders, default: t.empty } },
-    extensions: narrationExtensions, domAttributes: { editor: { 'aria-label': t.field } },
-  }, [instance])
+    dictionary: { ...(props.locale === 'zh-CN' ? zh : en), placeholders: { ...(props.locale === 'zh-CN' ? zh : en).placeholders, default: props.advanced === false ? t.emptyCaptions : t.empty } },
+    extensions: narrationExtensions, domAttributes: { editor: { 'aria-label': props.advanced === false ? t.captions : t.field } },
+  }, [instance, props.advanced])
   const baseline = useMemo(() => JSON.stringify(editor.document), [editor])
   const [open, setOpen] = useState(false), [display, setDisplay] = useState(''), [spoken, setSpoken] = useState('')
   useEffect(() => {
@@ -96,7 +97,7 @@ function NarrationSurface(props: NarrationEditorProps) {
       onCompositionStart={() => current.current.onComposition?.(true)}
       onCompositionEnd={() => queueMicrotask(() => { if (active.current === instance) current.current.onComposition?.(false) })}>
       <BlockNoteView editor={editor} editable={!props.readOnly} theme={DOCUMENT_EDITOR_THEME} formattingToolbar={false} sideMenu={false} slashMenu={false} linkToolbar={false} comments={false} onChange={change} />
-      <div className="pm-ui-narration-editor__actions"><PmButton small variant="ghost" disabled={props.readOnly} onClick={() => { setDisplay(editor.getSelectedText()); setSpoken(''); setOpen(true) }}>{t.pronunciation}</PmButton></div>
+      {props.advanced !== false && <div className="pm-ui-narration-editor__actions"><PmButton small variant="ghost" disabled={props.readOnly} onClick={() => { setDisplay(editor.getSelectedText()); setSpoken(''); setOpen(true) }}>{t.pronunciation}</PmButton></div>}
       <PmDialog open={open} label={t.pronunciation} closeLabel={t.cancel} onClose={() => setOpen(false)} actions={<>
         <PmButton small onClick={() => setOpen(false)}>{t.cancel}</PmButton>
         <PmButton small variant="primary" disabled={!display} onClick={() => { editor.insertInlineContent([{ type: 'narrationAtom', props: { kind: 'pronunciation', display, spoken, cueId: '', payload: '' } }], { updateSelection: true }); setOpen(false); editor.focus() }}>{t.done}</PmButton>
