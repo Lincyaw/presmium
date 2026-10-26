@@ -1,14 +1,185 @@
 {
   "description": "功能导览索引。每项指向真实可编辑文稿；启用条件不等于已经配置了外部服务。",
   "features": [
-    { "id": "quiz-single", "title": "单选自测", "document": "guide-classroom", "section": "quiz", "package": "@lincyaw/addon-classroom", "requires": [] },
-    { "id": "quiz-multiple", "title": "多选与正确答案反馈", "document": "guide-classroom", "section": "quiz", "package": "@lincyaw/addon-classroom", "requires": [] },
-    { "id": "predict", "title": "先预测再揭晓及可逆步骤", "document": "guide-classroom", "section": "prediction", "package": "@lincyaw/addon-classroom", "requires": [] },
-    { "id": "exercise", "title": "代码练习与真实校验", "document": "guide-classroom", "section": "exercise", "package": "@lincyaw/addon-classroom", "requires": ["可用 Python 执行器；浏览器首次运行需加载 Pyodide"] },
-    { "id": "questions", "title": "锚定提问", "document": "guide-classroom", "section": "questions", "package": "@lincyaw/addon-classroom", "requires": ["已加入真实课堂"] },
-    { "id": "pulse", "title": "理解度投票", "document": "guide-classroom", "section": "questions", "package": "@lincyaw/addon-classroom", "requires": ["已加入真实课堂"] },
-    { "id": "notes-comments", "title": "读者笔记与作者原生批注", "document": "guide-classroom", "section": "notes", "package": "@lincyaw/addon-classroom", "requires": ["作者批注在工作台编辑视图使用"] },
-    { "id": "follow", "title": "跟随、独立浏览与课堂归档", "document": "guide-classroom", "section": "follow", "package": "@lincyaw/addon-session", "requires": ["真实课堂会话；发布需配置独立 classroom-server"] },
-    { "id": "audience", "title": "教师内容与学生版输出", "document": "guide-classroom", "section": "teacher", "package": "@lincyaw/kernel", "requires": ["使用 --audience student 构建学生产物"] }
+    {
+      "id": "quiz-single",
+      "title": "单选自测",
+      "document": "guide-classroom",
+      "section": "quiz",
+      "package": "@lincyaw/addon-classroom",
+      "requires": []
+    },
+    {
+      "id": "quiz-multiple",
+      "title": "多选与正确答案反馈",
+      "document": "guide-classroom",
+      "section": "quiz",
+      "package": "@lincyaw/addon-classroom",
+      "requires": []
+    },
+    {
+      "id": "predict",
+      "title": "先预测再揭晓及可逆步骤",
+      "document": "guide-classroom",
+      "section": "prediction",
+      "package": "@lincyaw/addon-classroom",
+      "requires": []
+    },
+    {
+      "id": "exercise",
+      "title": "代码练习与真实校验",
+      "document": "guide-classroom",
+      "section": "exercise",
+      "package": "@lincyaw/addon-classroom",
+      "requires": [
+        "可用 Python 执行器；浏览器首次运行需加载 Pyodide"
+      ]
+    },
+    {
+      "id": "questions",
+      "title": "锚定提问",
+      "document": "guide-classroom",
+      "section": "questions",
+      "package": "@lincyaw/addon-classroom",
+      "requires": [
+        "已加入真实课堂"
+      ]
+    },
+    {
+      "id": "pulse",
+      "title": "理解度投票",
+      "document": "guide-classroom",
+      "section": "questions",
+      "package": "@lincyaw/addon-classroom",
+      "requires": [
+        "已加入真实课堂"
+      ]
+    },
+    {
+      "id": "notes-comments",
+      "title": "读者笔记与作者原生批注",
+      "document": "guide-classroom",
+      "section": "notes",
+      "package": "@lincyaw/addon-classroom",
+      "requires": [
+        "作者批注在工作台编辑视图使用"
+      ]
+    },
+    {
+      "id": "follow",
+      "title": "跟随、独立浏览与课堂归档",
+      "document": "guide-classroom",
+      "section": "follow",
+      "package": "@lincyaw/addon-session",
+      "requires": [
+        "真实课堂会话；发布需配置独立 classroom-server"
+      ]
+    },
+    {
+      "id": "audience",
+      "title": "教师内容与学生版输出",
+      "document": "guide-classroom",
+      "section": "teacher",
+      "package": "@lincyaw/kernel",
+      "requires": [
+        "使用 --audience student 构建学生产物"
+      ]
+    },
+    {
+      "id": "code-highlights",
+      "title": "按步骤高亮代码",
+      "document": "guide-code",
+      "section": "highlight",
+      "package": "@lincyaw/kernel",
+      "requires": []
+    },
+    {
+      "id": "code-variants",
+      "title": "代码实现变体",
+      "document": "guide-code",
+      "section": "variants",
+      "package": "@lincyaw/kernel",
+      "requires": []
+    },
+    {
+      "id": "code-regions",
+      "title": "项目 region 引用",
+      "document": "guide-code",
+      "section": "references",
+      "package": "@lincyaw/addon-code",
+      "requires": []
+    },
+    {
+      "id": "code-symbols",
+      "title": "项目 symbol 引用",
+      "document": "guide-code",
+      "section": "references",
+      "package": "@lincyaw/addon-code",
+      "requires": []
+    },
+    {
+      "id": "javascript-live",
+      "title": "浏览器 JavaScript 与参数运行",
+      "document": "guide-code",
+      "section": "javascript",
+      "package": "@lincyaw/addon-exec",
+      "requires": []
+    },
+    {
+      "id": "run-comparison",
+      "title": "真实运行记录与差异比较",
+      "document": "guide-code",
+      "section": "javascript",
+      "package": "@lincyaw/addon-exec",
+      "requires": []
+    },
+    {
+      "id": "python-live",
+      "title": "Python 与布尔参数",
+      "document": "guide-code",
+      "section": "python",
+      "package": "@lincyaw/addon-exec",
+      "requires": [
+        "浏览器 Python 首次运行需加载 Pyodide"
+      ]
+    },
+    {
+      "id": "compile-execution",
+      "title": "构建时执行与实际缓存",
+      "document": "guide-code",
+      "section": "python",
+      "package": "@lincyaw/addon-exec",
+      "requires": [
+        "浏览器 Python 首次运行需加载 Pyodide"
+      ]
+    },
+    {
+      "id": "execution-trace",
+      "title": "逐行执行轨迹",
+      "document": "guide-code",
+      "section": "trace",
+      "package": "@lincyaw/addon-exec",
+      "requires": [
+        "浏览器 Python 首次运行需加载 Pyodide"
+      ]
+    },
+    {
+      "id": "execution-session",
+      "title": "命名会话与重置",
+      "document": "guide-code",
+      "section": "sessions",
+      "package": "@lincyaw/addon-exec",
+      "requires": [
+        "浏览器 Python 首次运行需加载 Pyodide"
+      ]
+    },
+    {
+      "id": "execution-failure",
+      "title": "错误与超时反馈",
+      "document": "guide-code",
+      "section": "failure",
+      "package": "@lincyaw/addon-exec",
+      "requires": []
+    }
   ]
 }
