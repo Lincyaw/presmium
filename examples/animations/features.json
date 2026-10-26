@@ -406,6 +406,273 @@
       "section": "export",
       "package": "@lincyaw/render-notebook",
       "requires": []
+    },
+    {
+      "id": "step-narration",
+      "title": "本步讲稿与单源字幕",
+      "document": "guide-production",
+      "section": "script",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "工作台本步字幕 / 讲稿字段"
+      ],
+      "mode": "demonstration"
+    },
+    {
+      "id": "pronunciation",
+      "title": "显示文字与实际读音标记",
+      "document": "guide-production",
+      "section": "script",
+      "package": "@lincyaw/addon-lecture",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "action-cues",
+      "title": "稳定动作目标与暂停 cue",
+      "document": "guide-production",
+      "section": "script",
+      "package": "@lincyaw/addon-lecture",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "narration-timing",
+      "title": "随动画讲、结束后讲及最短停留",
+      "document": "guide-production",
+      "section": "timing",
+      "package": "@lincyaw/addon-lecture",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "voice-inheritance",
+      "title": "真实音色目录、继承与覆盖范围",
+      "document": "guide-production",
+      "section": "voices",
+      "package": "@lincyaw/addon-speech",
+      "requires": [
+        "真实已配置的语音 provider"
+      ],
+      "mode": "conditional"
+    },
+    {
+      "id": "explicit-generation",
+      "title": "显式合成、任务取消与版本化音频缓存",
+      "document": "guide-production",
+      "section": "generate",
+      "package": "@lincyaw/addon-speech",
+      "requires": [
+        "真实语音 provider；修改讲稿后需重新明确生成"
+      ],
+      "mode": "conditional"
+    },
+    {
+      "id": "audition-playback",
+      "title": "试听、内联动画与正式播放互斥",
+      "document": "guide-production",
+      "section": "voices",
+      "package": "@lincyaw/host",
+      "requires": [
+        "工作台试听需真实可用音色"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "recording-permissions",
+      "title": "浏览器录音与录屏的实际权限边界",
+      "document": "guide-production",
+      "section": "recording",
+      "package": "@lincyaw/addon-lecture",
+      "requires": [
+        "安全上下文、支持的浏览器及用户授权"
+      ],
+      "mode": "conditional"
+    },
+    {
+      "id": "aligned-subtitles",
+      "title": "转写与词级字幕对齐",
+      "document": "guide-production",
+      "section": "recording",
+      "package": "@lincyaw/addon-lecture",
+      "requires": [
+        "provider 必须真实支持所需精度；估计时间不算词级对齐"
+      ],
+      "mode": "conditional"
+    },
+    {
+      "id": "media-editing-gate",
+      "title": "媒体裁切和混音当前门槛",
+      "document": "guide-production",
+      "section": "media-editing",
+      "package": "@lincyaw/kernel",
+      "requires": [
+        "片段结构已保留；当前讲授运行时尚不能裁切和混音"
+      ],
+      "mode": "gate"
+    },
+    {
+      "id": "lecture-export",
+      "title": "讲授、字幕与视频导出条件",
+      "document": "guide-production",
+      "section": "deliver",
+      "package": "@lincyaw/addon-lecture",
+      "requires": [
+        "匹配版本的音频、媒体能力及导出工具"
+      ],
+      "mode": "conditional"
+    },
+    {
+      "id": "local-container",
+      "title": "Docker 开发容器执行",
+      "document": "guide-environments",
+      "section": "container",
+      "package": "@lincyaw/addon-exec-local",
+      "requires": [
+        "开发服务器、Docker 服务、真实镜像"
+      ],
+      "mode": "conditional"
+    },
+    {
+      "id": "environment-archive",
+      "title": "下载含真实代码与 devcontainer 的环境包",
+      "document": "guide-environments",
+      "section": "container",
+      "package": "@lincyaw/addon-exec-local",
+      "requires": [],
+      "mode": "demonstration"
+    },
+    {
+      "id": "wasi-languages",
+      "title": "WASI 中运行 C、C++、Ruby 与 SQLite",
+      "document": "guide-environments",
+      "section": "wasi",
+      "package": "@lincyaw/addon-exec-wasi",
+      "requires": [
+        "对应的本地浏览器运行资源"
+      ],
+      "mode": "demonstration"
+    },
+    {
+      "id": "webgpu-wgsl",
+      "title": "WGSL 缓冲区、dispatch 与重复执行",
+      "document": "guide-environments",
+      "section": "webgpu",
+      "package": "@lincyaw/addon-exec-webgpu",
+      "requires": [
+        "安全上下文与实际可用 WebGPU 适配器"
+      ],
+      "mode": "conditional"
+    },
+    {
+      "id": "jax-tensors",
+      "title": "jax-js 张量与真实设备选择",
+      "document": "guide-environments",
+      "section": "tensor",
+      "package": "@lincyaw/addon-exec-webgpu",
+      "requires": [
+        "支持的设备和实际 jax-js 运行资源"
+      ],
+      "mode": "conditional"
+    },
+    {
+      "id": "python-webgpu",
+      "title": "Python 到 WebGPU 的异步桥接",
+      "document": "guide-environments",
+      "section": "bridge",
+      "package": "@lincyaw/addon-exec-webgpu",
+      "requires": [
+        "Pyodide 与实际 WebGPU；同步桥另需 JSPI"
+      ],
+      "mode": "conditional"
+    },
+    {
+      "id": "jupyter-proxy",
+      "title": "Jupyter 代理与命名内核会话",
+      "document": "guide-environments",
+      "section": "jupyter",
+      "package": "@lincyaw/addon-exec-jupyter",
+      "requires": [
+        "真实 Presmium 服务与运营者配置的 Jupyter 地址/凭据"
+      ],
+      "mode": "conditional"
+    },
+    {
+      "id": "jupyter-terminal",
+      "title": "远端终端与明确连接生命周期",
+      "document": "guide-environments",
+      "section": "terminal",
+      "package": "@lincyaw/addon-exec-jupyter",
+      "requires": [
+        "可用 Jupyter 终端能力，不能在纯静态站点连接代理"
+      ],
+      "mode": "conditional"
+    },
+    {
+      "id": "jupyter-auth",
+      "title": "env、proxy、prompt、none 认证边界",
+      "document": "guide-environments",
+      "section": "jupyter",
+      "package": "@lincyaw/addon-exec-jupyter",
+      "requires": [
+        "hub 当前保留但未实现"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "offline-runtimes",
+      "title": "显示实际大小、缓存运行资源后离线打开",
+      "document": "guide-environments",
+      "section": "start",
+      "package": "@lincyaw/addon-publish",
+      "requires": [
+        "安全上下文、Service Worker 与足够本地存储"
+      ],
+      "mode": "demonstration"
+    },
+    {
+      "id": "youtube",
+      "title": "真实外部 YouTube 嵌入",
+      "document": "guide-network",
+      "section": "youtube",
+      "package": "@lincyaw/addon-content",
+      "requires": [
+        "可访问 YouTube，第三方播放器与内容可用"
+      ],
+      "mode": "conditional"
+    },
+    {
+      "id": "plantuml",
+      "title": "实际 PlantUML 外部渲染",
+      "document": "guide-network",
+      "section": "plantuml",
+      "package": "@lincyaw/addon-content",
+      "requires": [
+        "可访问配置的 PlantUML 渲染服务"
+      ],
+      "mode": "conditional"
+    },
+    {
+      "id": "remote-media",
+      "title": "HTTPS 视频、音频与图片",
+      "document": "guide-network",
+      "section": "remote-media",
+      "package": "@lincyaw/addon-content",
+      "requires": [
+        "外部地址、网络、CORS 与浏览器策略允许"
+      ],
+      "mode": "conditional"
+    },
+    {
+      "id": "remote-assets",
+      "title": "外部资源本地化与离线边界",
+      "document": "guide-network",
+      "section": "remote-assets",
+      "package": "@lincyaw/addon-publish",
+      "requires": [
+        "仅处理作者显式授权、可合法分发的资源"
+      ],
+      "mode": "instructions"
     }
   ]
 }

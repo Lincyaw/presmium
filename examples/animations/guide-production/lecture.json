@@ -1,0 +1,674 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-guide-production",
+  "metadata": {
+    "title": "功能导览 05：讲稿、字幕与讲授制作",
+    "lang": "zh-CN",
+    "description": "可编辑、可运行的 Presmium 功能导览。",
+    "plugins": [
+      "@lincyaw/addon-lecture",
+      "@lincyaw/addon-speech",
+      "@lincyaw/addon-stage",
+      "@lincyaw/addon-motion"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {},
+      "lecture": {}
+    }
+  },
+  "sectionOrder": [
+    "start",
+    "script",
+    "timing",
+    "voices",
+    "generate",
+    "recording",
+    "media-editing",
+    "deliver"
+  ],
+  "sections": {
+    "start": {
+      "id": "start",
+      "title": "先编辑讲稿，再决定如何发声",
+      "level": 1,
+      "children": [
+        "text-1"
+      ],
+      "stepOrder": [
+        "start-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "script": {
+      "id": "script",
+      "title": "本步讲稿、发音与动作提示",
+      "level": 2,
+      "children": [
+        "production-counter",
+        "text-4"
+      ],
+      "stepOrder": [
+        "script-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "timing": {
+      "id": "timing",
+      "title": "随动画讲，或动画结束后再讲",
+      "level": 2,
+      "children": [
+        "timing-scene"
+      ],
+      "stepOrder": [
+        "timing-during",
+        "timing-after"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "voices": {
+      "id": "voices",
+      "title": "选择真实音色与继承范围",
+      "level": 2,
+      "children": [
+        "text-6"
+      ],
+      "stepOrder": [
+        "voices-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "generate": {
+      "id": "generate",
+      "title": "明确生成、取消与过期音频",
+      "level": 2,
+      "children": [
+        "text-10"
+      ],
+      "stepOrder": [
+        "generate-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "recording": {
+      "id": "recording",
+      "title": "录音、录屏与真实浏览器权限",
+      "level": 2,
+      "children": [
+        "text-13"
+      ],
+      "stepOrder": [
+        "recording-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "media-editing": {
+      "id": "media-editing",
+      "title": "媒体裁切与混音的当前门槛",
+      "level": 2,
+      "children": [
+        "text-16",
+        "clip-schema-example"
+      ],
+      "stepOrder": [
+        "media-editing-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "deliver": {
+      "id": "deliver",
+      "title": "讲授、字幕与视频导出",
+      "level": 2,
+      "children": [
+        "text-19",
+        "production-commands"
+      ],
+      "stepOrder": [
+        "deliver-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "text-1": {
+      "id": "text-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本讲默认不选择配音，以免打开示例就请求外部语音服务。字幕由同一份结构化讲稿显示，不维护第二份字幕文本。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "原有两讲已经附带与其讲稿匹配的真实合成缓存，可以直接体验有声讲授。本讲重点展示讲稿结构、动作与制作时机。"
+            }
+          ]
+        }
+      ]
+    },
+    "production-counter": {
+      "id": "production-counter",
+      "type": "component",
+      "definitionId": "action-definition",
+      "parameters": {
+        "label": "讲稿动作计数",
+        "targetId": "production-action"
+      }
+    },
+    "text-4": {
+      "id": "text-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-5",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在工作台打开组件的“本步字幕 / 讲稿”。SQL 的显示与实际读音分别保存，动作 cue 保留稳定身份和目标。此处未配置语音，因此不会自动合成。"
+            }
+          ]
+        }
+      ]
+    },
+    "timing-scene": {
+      "id": "timing-scene",
+      "type": "component",
+      "definitionId": "timing-definition",
+      "parameters": {
+        "value": 25
+      }
+    },
+    "text-6": {
+      "id": "text-6",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-7",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "音色以真实语音服务目录为准。选择器区分没有配置、服务失败、支持但为空，以及确实可用的音色；未知参数能力不能被当作支持。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-8",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "文稿默认、页面覆盖和步骤覆盖有明确继承关系。修改设置前，应确认影响的步骤与保留的覆盖数量；旧版本的结果不能清除新草稿。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-9",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "试听与讲授播放互斥。默认配音为 none；要启用 TTS，请先由运营者配置真实 provider，再从返回的目录选择音色。示例不会写入凭据。"
+            }
+          ]
+        }
+      ]
+    },
+    "text-10": {
+      "id": "text-10",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-11",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "改变讲稿不会自动调用付费服务。生成前应确认提供方、数量、目标和版本；取消只停止剩余任务，已完成且匹配当前请求的缓存仍可复用。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-12",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "音频缓存由完整文本、读音与音色请求匹配。改字之后，旧音频不能冒充当前版本。缺缓存时预览可以显示字幕和缺失原因；要求完整音频的导出会明确拒绝。"
+            }
+          ]
+        }
+      ]
+    },
+    "text-13": {
+      "id": "text-13",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-14",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲授录制使用浏览器的真实音频和显示捕获能力，需要安全上下文、浏览器支持及用户授权。取消授权或设备不可用时应看到具体反馈。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-15",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "录制事件、媒体和字幕可以成为讲授轨道；转写结果只有经过明确采纳才进入文稿。语音识别与词级时间对齐依赖真实 provider 能力，不能从估算冒充准确对齐。"
+            }
+          ]
+        }
+      ]
+    },
+    "text-16": {
+      "id": "text-16",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-17",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "canonical production 已能保留录音来源和媒体片段的源区间、步骤附着与音量。当前讲授运行时仍不能从这些片段完成裁切和混音，导出会给出明确拒绝。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-18",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "下面是结构说明，不会被自动应用到本讲；完整视频编辑界面也是独立于 Doc 的工作流。"
+            }
+          ]
+        }
+      ]
+    },
+    "clip-schema-example": {
+      "id": "clip-schema-example",
+      "type": "code",
+      "language": "json",
+      "value": "{\n  \"mediaClips\": [\n    {\n      \"id\": \"clip-example\",\n      \"assetId\": \"audio-example\",\n      \"sourceRange\": {\n        \"startMs\": 0,\n        \"endMs\": 1000\n      },\n      \"attachment\": {\n        \"stepId\": \"timing-during\",\n        \"offsetMs\": 0\n      },\n      \"volume\": 1\n    }\n  ]\n}"
+    },
+    "text-19": {
+      "id": "text-19",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-20",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "配置并生成真实音频后，定向构建 lecture，再按导出工具要求检查字幕、动画时机、任意步骤定位和录制媒体。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-21",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "导出 PDF、图片、PowerPoint、离线网站与 notebook 见“发布与协作”。本讲没有把这些能力做成假按钮。"
+            }
+          ]
+        }
+      ]
+    },
+    "production-commands": {
+      "id": "production-commands",
+      "type": "code",
+      "language": "shell",
+      "value": "presmium check guide-production --json\npresmium build guide-production --to web\n# 只有配音与所需能力准备好之后才构建 lecture 或导出视频。"
+    }
+  },
+  "steps": {
+    "start-step": {
+      "id": "start-step",
+      "sectionId": "start",
+      "visuals": [
+        {
+          "blockId": "text-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "script-step": {
+      "id": "script-step",
+      "sectionId": "script",
+      "visuals": [
+        {
+          "blockId": "production-counter",
+          "visible": true
+        },
+        {
+          "blockId": "text-4",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "script-intro"
+      ]
+    },
+    "timing-during": {
+      "id": "timing-during",
+      "sectionId": "timing",
+      "visuals": [
+        {
+          "blockId": "timing-scene",
+          "visible": true,
+          "state": "during",
+          "parameters": {
+            "value": 25
+          }
+        }
+      ],
+      "narrationIds": [
+        "timing-script-0"
+      ]
+    },
+    "timing-after": {
+      "id": "timing-after",
+      "sectionId": "timing",
+      "visuals": [
+        {
+          "blockId": "timing-scene",
+          "visible": true,
+          "state": "after",
+          "parameters": {
+            "value": 75
+          }
+        }
+      ],
+      "narrationIds": [
+        "timing-script-1"
+      ]
+    },
+    "voices-step": {
+      "id": "voices-step",
+      "sectionId": "voices",
+      "visuals": [
+        {
+          "blockId": "text-6",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "generate-step": {
+      "id": "generate-step",
+      "sectionId": "generate",
+      "visuals": [
+        {
+          "blockId": "text-10",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "recording-step": {
+      "id": "recording-step",
+      "sectionId": "recording",
+      "visuals": [
+        {
+          "blockId": "text-13",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "media-editing-step": {
+      "id": "media-editing-step",
+      "sectionId": "media-editing",
+      "visuals": [
+        {
+          "blockId": "text-16",
+          "visible": true
+        },
+        {
+          "blockId": "clip-schema-example",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "deliver-step": {
+      "id": "deliver-step",
+      "sectionId": "deliver",
+      "visuals": [
+        {
+          "blockId": "text-19",
+          "visible": true
+        },
+        {
+          "blockId": "production-commands",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "script-intro": {
+      "id": "script-intro",
+      "content": [
+        {
+          "type": "text",
+          "text": "这里展示 "
+        },
+        {
+          "type": "pronunciation",
+          "display": "SQL",
+          "spoken": "sequel"
+        },
+        {
+          "type": "text",
+          "text": " 的读音标记。"
+        },
+        {
+          "id": "add-cue",
+          "type": "cue",
+          "action": "call",
+          "target": {
+            "blockId": "production-counter"
+          },
+          "parameters": {
+            "arg": "add"
+          }
+        },
+        {
+          "type": "text",
+          "text": "组件动作只在真实讲授播放到提示时触发。"
+        },
+        {
+          "id": "pause-cue",
+          "type": "cue",
+          "action": "pause"
+        },
+        {
+          "type": "text",
+          "text": "现在继续。"
+        }
+      ]
+    },
+    "timing-script-0": {
+      "id": "timing-script-0",
+      "content": [
+        {
+          "type": "text",
+          "text": "这一段和动画同时开始。"
+        }
+      ]
+    },
+    "timing-script-1": {
+      "id": "timing-script-1",
+      "content": [
+        {
+          "type": "text",
+          "text": "这一段在动画结束后开始。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "action-definition": {
+      "id": "action-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "components/ActionCounter.tsx"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "targetId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "targetId"
+        ]
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "讲稿可以调用真实组件的 add 动作。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "timing-definition": {
+      "id": "timing-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/semantic.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      },
+      "states": [
+        {
+          "id": "during",
+          "title": "随动画讲",
+          "legacyIndex": 0
+        },
+        {
+          "id": "after",
+          "title": "结束后讲",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "durations": [
+          1200,
+          1200
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "第一步随动画讲，第二步等待动画结束再讲。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      },
+      "minimumHoldMs": 800,
+      "trailingPauseMs": 200
+    },
+    "stepOverrides": {
+      "timing-during": {
+        "narrationStart": "with-animation",
+        "minimumHoldMs": 1600,
+        "trailingPauseMs": 300
+      },
+      "timing-after": {
+        "narrationStart": "after-animation",
+        "minimumHoldMs": 1600,
+        "trailingPauseMs": 300
+      }
+    },
+    "mediaClips": [],
+    "cueTimings": {
+      "pause-cue": {
+        "pauseMs": 240
+      }
+    }
+  }
+}
