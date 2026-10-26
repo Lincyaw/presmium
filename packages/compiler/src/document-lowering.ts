@@ -27,7 +27,8 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
       const definition = block.type === 'component' ? doc.definitions[block.definitionId] : undefined
       const stepStates = states.map((state, stepIndex) => {
         const visual = state.get(id)
-        const local = definition?.states.find(state => state.id === visual?.state)?.legacyIndex ?? 0
+        const stateIndex = definition?.states.findIndex(state => state.id === visual?.state) ?? -1
+        const local = stateIndex < 0 ? 0 : definition!.states[stateIndex]!.legacyIndex ?? stateIndex
         const parameters = { ...block.type === 'component' ? block.parameters : {}, ...visual?.parameters }
         if (definition && isMotionScene(definition)) delete parameters.scene
         return { visible: visual?.visible ?? false, localStep: block.type === 'code' ? stepIndex : local, ...visual?.state !== undefined ? { state: visual.state } : {}, ...block.type === 'component' || visual?.parameters ? { parameters } : {} }
