@@ -214,34 +214,7 @@
         {
           "id": "pass--paragraph-4--text-0",
           "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "再比较 5 和 4，"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "to": "stats",
-                    "value": "click compare"
-                  },
-                  "children": []
-                }
-              },
-              "fallback": ""
-            },
-            {
-              "type": "text",
-              "text": " 又是前面大，再交换"
-            }
-          ]
+          "children": []
         }
       ]
     },
