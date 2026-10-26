@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "id": "document-3b3e1c8dc8f57b68",
+  "metadata": {
+    "title": "导论",
+    "lang": "zh-CN"
+  },
+  "sectionOrder": [
+    "导论"
+  ],
+  "sections": {
+    "导论": {
+      "id": "导论",
+      "title": "导论",
+      "level": 1,
+      "children": [
+        "导论--paragraph-1"
+      ],
+      "stepOrder": [
+        "导论--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "导论--paragraph-1": {
+      "id": "导论--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "导论--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "工作区服务中的一份文档。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "导论--step-0": {
+      "id": "导论--step-0",
+      "sectionId": "导论",
+      "visuals": [
+        {
+          "blockId": "导论--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "导论--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "导论--paragraph-1--narration": {
+      "id": "导论--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "工作区服务中的一份文档。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

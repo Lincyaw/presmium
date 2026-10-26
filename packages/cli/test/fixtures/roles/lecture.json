@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "id": "document-70091954c71c1915",
+  "metadata": {
+    "title": "行内角色",
+    "lang": "zh-CN",
+    "plugins": [
+      "./probe"
+    ],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "行内角色",
+    "第二节"
+  ],
+  "sections": {
+    "行内角色": {
+      "id": "行内角色",
+      "title": "行内角色",
+      "level": 1,
+      "children": [
+        "行内角色--paragraph-1"
+      ],
+      "stepOrder": [
+        "行内角色--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "第二节": {
+      "id": "第二节",
+      "title": "第二节",
+      "level": 2,
+      "children": [
+        "第二节--paragraph-1"
+      ],
+      "stepOrder": [
+        "第二节--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "行内角色--paragraph-1": {
+      "id": "行内角色--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "行内角色--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲解前 "
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "fixture.probe",
+                  "name": "probe",
+                  "options": {
+                    "value": "可见的内容"
+                  },
+                  "children": [
+                    {
+                      "type": "strong",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "可见的内容"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "fallback": "可见的内容"
+            },
+            {
+              "type": "text",
+              "text": " 中间 "
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "fixture.probe",
+                  "name": "probe",
+                  "options": {
+                    "mark": "提示",
+                    "count": 2,
+                    "value": "hidden"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 之后 "
+            },
+            {
+              "type": "text",
+              "text": "压平的文字"
+            },
+            {
+              "type": "text",
+              "text": "。"
+            }
+          ]
+        }
+      ]
+    },
+    "第二节--paragraph-1": {
+      "id": "第二节--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "第二节--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "正文。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "行内角色--step-0": {
+      "id": "行内角色--step-0",
+      "sectionId": "行内角色",
+      "visuals": [
+        {
+          "blockId": "行内角色--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "行内角色--paragraph-1--narration"
+      ]
+    },
+    "第二节--step-0": {
+      "id": "第二节--step-0",
+      "sectionId": "第二节",
+      "visuals": [
+        {
+          "blockId": "第二节--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "第二节--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "行内角色--paragraph-1--narration": {
+      "id": "行内角色--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "讲解前 可见的内容 中间  之后 压平的文字。"
+        }
+      ]
+    },
+    "第二节--paragraph-1--narration": {
+      "id": "第二节--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "正文。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

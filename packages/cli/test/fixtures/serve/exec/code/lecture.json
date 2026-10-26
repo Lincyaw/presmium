@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "id": "document-fd4746dca95c6bf7",
+  "metadata": {
+    "title": "编译时执行",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec"
+    ]
+  },
+  "sectionOrder": [
+    "执行"
+  ],
+  "sections": {
+    "执行": {
+      "id": "执行",
+      "title": "执行",
+      "level": 1,
+      "children": [
+        "执行--paragraph-1",
+        "执行--pm-run-panel-1"
+      ],
+      "stepOrder": [
+        "执行--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "执行--paragraph-1": {
+      "id": "执行--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "执行--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这段代码没有录制：它打印自己的全部环境变量与父进程的 PID。"
+            }
+          ]
+        }
+      ]
+    },
+    "执行--pm-run-panel-1": {
+      "id": "执行--pm-run-panel-1",
+      "type": "component",
+      "definitionId": "执行--pm-run-panel-1--definition",
+      "parameters": {
+        "recorded": "这是预先录制的输出"
+      },
+      "children": [
+        "执行--pm-run-panel-1--source"
+      ]
+    },
+    "执行--pm-run-panel-1--source": {
+      "id": "执行--pm-run-panel-1--source",
+      "type": "code",
+      "language": "python",
+      "value": "import json, os\nprint('ENV ' + json.dumps(dict(os.environ)))\nprint('PARENT ' + str(os.getppid()))",
+      "execution": {
+        "when": "both"
+      }
+    }
+  },
+  "steps": {
+    "执行--step-0": {
+      "id": "执行--step-0",
+      "sectionId": "执行",
+      "visuals": [
+        {
+          "blockId": "执行--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "执行--pm-run-panel-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "执行--pm-run-panel-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": [
+        "执行--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "执行--paragraph-1--narration": {
+      "id": "执行--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这段代码没有录制：它打印自己的全部环境变量与父进程的 PID。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "执行--pm-run-panel-1--definition": {
+      "id": "执行--pm-run-panel-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "id": "document-f5a9cf8bd971615d",
+  "metadata": {
+    "title": "Scoped configuration",
+    "lang": "zh-CN",
+    "plugins": [
+      "../addons/scoped"
+    ],
+    "presmium": {
+      "fixture.scoped": {
+        "label": "global",
+        "tone": "plain"
+      }
+    }
+  },
+  "sectionOrder": [
+    "scoped-configuration",
+    "global",
+    "overridden"
+  ],
+  "sections": {
+    "scoped-configuration": {
+      "id": "scoped-configuration",
+      "title": "Scoped configuration",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "scoped-configuration--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "global": {
+      "id": "global",
+      "title": "Global",
+      "level": 2,
+      "children": [
+        "global--fixture-badge-1"
+      ],
+      "stepOrder": [
+        "global--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "overridden": {
+      "id": "overridden",
+      "title": "Overridden",
+      "level": 2,
+      "children": [
+        "overridden--fixture-badge-1",
+        "overridden--fixture-badge-2"
+      ],
+      "stepOrder": [
+        "overridden--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      },
+      "config": {
+        "fixture.scoped": {
+          "label": "section"
+        }
+      }
+    }
+  },
+  "blocks": {
+    "global--fixture-badge-1": {
+      "id": "global--fixture-badge-1",
+      "type": "component",
+      "definitionId": "global--fixture-badge-1--definition",
+      "parameters": {
+        "label": "global",
+        "tone": "plain"
+      }
+    },
+    "overridden--fixture-badge-1": {
+      "id": "overridden--fixture-badge-1",
+      "type": "component",
+      "definitionId": "overridden--fixture-badge-1--definition",
+      "parameters": {
+        "label": "section",
+        "tone": "plain"
+      }
+    },
+    "overridden--fixture-badge-2": {
+      "id": "overridden--fixture-badge-2",
+      "type": "component",
+      "definitionId": "overridden--fixture-badge-2--definition",
+      "parameters": {
+        "label": "section",
+        "tone": "plain"
+      }
+    }
+  },
+  "steps": {
+    "scoped-configuration--step-0": {
+      "id": "scoped-configuration--step-0",
+      "sectionId": "scoped-configuration",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "global--step-0": {
+      "id": "global--step-0",
+      "sectionId": "global",
+      "visuals": [
+        {
+          "blockId": "global--fixture-badge-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "overridden--step-0": {
+      "id": "overridden--step-0",
+      "sectionId": "overridden",
+      "visuals": [
+        {
+          "blockId": "overridden--fixture-badge-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "overridden--fixture-badge-2",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "global--fixture-badge-1--definition": {
+      "id": "global--fixture-badge-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.scoped",
+        "name": "FixtureBadge"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.scoped",
+        "name": "FixtureBadge"
+      }
+    },
+    "overridden--fixture-badge-1--definition": {
+      "id": "overridden--fixture-badge-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.scoped",
+        "name": "FixtureBadge"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.scoped",
+        "name": "FixtureBadge"
+      }
+    },
+    "overridden--fixture-badge-2--definition": {
+      "id": "overridden--fixture-badge-2--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.scoped",
+        "name": "FixtureBadge"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.scoped",
+        "name": "FixtureBadge"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

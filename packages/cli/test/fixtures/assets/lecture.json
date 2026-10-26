@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "id": "document-67c06db22b6a7e56",
+  "metadata": {
+    "title": "组件的文件",
+    "lang": "zh-CN",
+    "plugins": [
+      "./attach"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {}
+    }
+  },
+  "sectionOrder": [
+    "组件的文件"
+  ],
+  "sections": {
+    "组件的文件": {
+      "id": "组件的文件",
+      "title": "组件的文件",
+      "level": 1,
+      "children": [
+        "组件的文件--fixture-attach-1"
+      ],
+      "stepOrder": [
+        "组件的文件--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "组件的文件--fixture-attach-1": {
+      "id": "组件的文件--fixture-attach-1",
+      "type": "component",
+      "definitionId": "组件的文件--fixture-attach-1--definition",
+      "parameters": {
+        "files": {
+          "a": "data/a.txt",
+          "b": "kept"
+        }
+      }
+    }
+  },
+  "steps": {
+    "组件的文件--step-0": {
+      "id": "组件的文件--step-0",
+      "sectionId": "组件的文件",
+      "visuals": [
+        {
+          "blockId": "组件的文件--fixture-attach-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "组件的文件--fixture-attach-1--definition": {
+      "id": "组件的文件--fixture-attach-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.attach",
+        "name": "FixtureAttach"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.attach",
+        "name": "FixtureAttach",
+        "assets": {
+          "files.a": "data/a.txt"
+        },
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "附件"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

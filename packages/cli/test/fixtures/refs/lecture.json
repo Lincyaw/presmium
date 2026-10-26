@@ -1,0 +1,459 @@
+{
+  "schemaVersion": 1,
+  "id": "document-bd4e19df2b17929e",
+  "metadata": {
+    "title": "References",
+    "lang": "zh-CN"
+  },
+  "sectionOrder": [
+    "references",
+    "energy",
+    "figures",
+    "reading"
+  ],
+  "sections": {
+    "references": {
+      "id": "references",
+      "title": "References",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "references--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "energy": {
+      "id": "energy",
+      "title": "Mass and energy",
+      "level": 2,
+      "children": [
+        "energy--math-1",
+        "energy--eq-pythagoras"
+      ],
+      "stepOrder": [
+        "energy--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "figures": {
+      "id": "figures",
+      "title": "Figures",
+      "level": 2,
+      "children": [
+        "figures--figure-1"
+      ],
+      "stepOrder": [
+        "figures--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "reading": {
+      "id": "reading",
+      "title": "Reading",
+      "level": 2,
+      "children": [
+        "reading--paragraph-1",
+        "reading--paragraph-2",
+        "reading--paragraph-3"
+      ],
+      "stepOrder": [
+        "reading--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "energy--math-1": {
+      "id": "energy--math-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "eq-energy",
+          "type": "math",
+          "value": "E = mc^2"
+        }
+      ]
+    },
+    "energy--eq-pythagoras": {
+      "id": "energy--eq-pythagoras",
+      "type": "text",
+      "content": [
+        {
+          "id": "eq-pythagoras",
+          "type": "math",
+          "value": "a^2 + b^2 = c^2"
+        }
+      ]
+    },
+    "figures--figure-1": {
+      "id": "figures--figure-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "figures--figure-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "container",
+              "kind": "figure",
+              "label": "fig-dot",
+              "identifier": "fig-dot",
+              "children": [
+                {
+                  "type": "image",
+                  "url": "dot.svg"
+                },
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "A dot."
+                    }
+                  ]
+                }
+              ],
+              "enumerator": "1",
+              "html_id": "fig-dot"
+            }
+          },
+          "fallback": [
+            {
+              "id": "figures--figure-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "A dot."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "reading--paragraph-1": {
+      "id": "reading--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "reading--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "See "
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "crossReference",
+                  "kind": "ref",
+                  "identifier": "energy",
+                  "label": "energy",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Mass and energy"
+                    }
+                  ]
+                }
+              },
+              "fallback": "Mass and energy"
+            },
+            {
+              "type": "text",
+              "text": ", "
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "crossReference",
+                  "kind": "eq",
+                  "identifier": "eq-energy",
+                  "label": "eq-energy",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "("
+                    },
+                    {
+                      "type": "text",
+                      "value": "1"
+                    },
+                    {
+                      "type": "text",
+                      "value": ")"
+                    }
+                  ]
+                }
+              },
+              "fallback": "(1)"
+            },
+            {
+              "type": "text",
+              "text": ", "
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "crossReference",
+                  "kind": "eq",
+                  "identifier": "eq-pythagoras",
+                  "label": "eq-pythagoras",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "("
+                    },
+                    {
+                      "type": "text",
+                      "value": "2"
+                    },
+                    {
+                      "type": "text",
+                      "value": ")"
+                    }
+                  ]
+                }
+              },
+              "fallback": "(2)"
+            },
+            {
+              "type": "text",
+              "text": " and "
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "crossReference",
+                  "kind": "numref",
+                  "identifier": "fig-dot",
+                  "label": "fig-dot",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Figure "
+                    },
+                    {
+                      "type": "text",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "fallback": "Figure 1"
+            },
+            {
+              "type": "text",
+              "text": ";\n"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "crossReference",
+                  "kind": "ref",
+                  "identifier": "energy",
+                  "label": "energy",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "the first section"
+                    }
+                  ]
+                }
+              },
+              "fallback": "the first section"
+            },
+            {
+              "type": "text",
+              "text": " keeps its text."
+            }
+          ]
+        }
+      ]
+    },
+    "reading--paragraph-2": {
+      "id": "reading--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "reading--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Also on the slide: "
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "crossReference",
+                  "kind": "ref",
+                  "identifier": "figures",
+                  "label": "figures",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Figures"
+                    }
+                  ]
+                }
+              },
+              "fallback": "Figures"
+            },
+            {
+              "type": "text",
+              "text": "."
+            }
+          ]
+        }
+      ]
+    },
+    "reading--paragraph-3": {
+      "id": "reading--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "reading--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A reference to "
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "crossReference",
+                  "kind": "ref",
+                  "identifier": "nowhere",
+                  "label": "nowhere"
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": "."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "references--step-0": {
+      "id": "references--step-0",
+      "sectionId": "references",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "energy--step-0": {
+      "id": "energy--step-0",
+      "sectionId": "energy",
+      "visuals": [
+        {
+          "blockId": "energy--math-1",
+          "visible": true
+        },
+        {
+          "blockId": "energy--eq-pythagoras",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "figures--step-0": {
+      "id": "figures--step-0",
+      "sectionId": "figures",
+      "visuals": [
+        {
+          "blockId": "figures--figure-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "reading--step-0": {
+      "id": "reading--step-0",
+      "sectionId": "reading",
+      "visuals": [
+        {
+          "blockId": "reading--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "reading--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "reading--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "reading--paragraph-1--narration",
+        "reading--paragraph-3--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "reading--paragraph-1--narration": {
+      "id": "reading--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "See Mass and energy, (1), (2) and Figure 1;\nthe first section keeps its text."
+        }
+      ]
+    },
+    "reading--paragraph-3--narration": {
+      "id": "reading--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "A reference to ."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
