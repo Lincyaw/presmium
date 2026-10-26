@@ -1,4 +1,4 @@
-import { createContext, memo, useContext, useEffect, useRef } from 'react'
+import { createContext, memo, useContext, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { PmBoundary, StepScope, useStaticRender, useStore } from '@lincyaw/host'
 import { blockStepState, blockVisible, componentProps, fnv1a64 } from '@lincyaw/kernel'
@@ -15,7 +15,7 @@ import { viewerMessages } from './viewer-messages.ts'
 import { VIEWER } from './viewer-state.ts'
 import { h } from './element.ts'
 import { SECTION_CONTEXT } from './section-context.ts'
-export interface BlockProps { block: IRBlock, section: IRSection, step: number, expanded?: boolean }
+export interface BlockProps { block: IRBlock, section: IRSection, step: number, expanded?: boolean, localPreview?: boolean }
 const COMPONENT_NODE = createContext<{ node: ComponentNode, section: string } | undefined>(undefined)
 function fallbackOf(node: ComponentNode, section: string) { return node.fallback ? hastToVNodes(markdownToHast(node.fallback, section).children, {}) : [] }
 export function PmComponentFallback() { const current = useContext(COMPONENT_NODE); return current ? h('div', { className: 'pm-component-fallback' }, fallbackOf(current.node, current.section)) : null }
@@ -49,7 +49,7 @@ function BlockViewContent(props: BlockProps) {
   const visible = props.expanded || blockVisible(block, props.step)
   const script = doc?.config.renderers.lecture?.script
   const role = block.role === 'narration' && ((block.only && !block.only.includes('lecture')) || (typeof script === 'string' && script.trim())) ? 'reading' : block.role
-  return h(StepScope, { at: block.at, until: block.until, states: block.stepStates, step: props.step }, h('div', {
+  return h(StepScope, { at: block.at, until: block.until, states: block.stepStates, step: props.step, localPreview: props.localPreview }, h('div', {
     ref: el, className: [BLOCK_CLASS, `pm-block--${block.role}`, `pm-block--${block.node.type}`, block.until !== undefined ? 'pm-step-range' : '', block.node.type === 'component' && block.node.layer === 'overlay' ? 'pm-block--overlay' : '', !visible ? 'pm-hidden' : ''].filter(Boolean).join(' '),
     'data-block': block.id, 'data-content-role': role, 'data-content-label': viewerMessages().contentRoles[role], 'data-at': block.at, 'data-component': block.node.type === 'component' ? block.node.name : undefined, 'aria-hidden': visible ? undefined : true,
     onClick: viewer?.options.openSource ? (event: MouseEvent) => { if (event.altKey) { event.preventDefault(); event.stopPropagation(); viewer.options.openSource!(block.source) } } : undefined,
@@ -60,5 +60,12 @@ export const BlockView = memo(BlockViewContent)
 
 /** A compiled block's standalone read-only surface, using the same host scope as the full viewer. */
 export function BlockPreview({ block, section }: { block: IRBlock, section: IRSection }) {
-  return h(SECTION_CONTEXT.Provider, { value: { section, step: FINAL_STEP, view: 'document' } }, h('div', { className: 'pm-document pm-block-preview', 'data-section': section.id }, h(BlockView, { block, section, step: FINAL_STEP, expanded: true })))
+  const viewer = useContext(VIEWER)
+  const [selected, setSelected] = useState<{ section: string, step: number }>()
+  useEffect(() => viewer?.position.subscribe(() => {
+    const position = viewer.position.getSnapshot()
+    if (position.section === section.id && section.stepIds?.[position.step]) setSelected(position)
+  }), [viewer, section.id])
+  const step = selected?.section === section.id ? selected.step : FINAL_STEP
+  return h(SECTION_CONTEXT.Provider, { value: { section, step, view: 'document' } }, h('div', { className: 'pm-document pm-block-preview', 'data-section': section.id }, h(BlockView, { block, section, step, expanded: true, localPreview: true })))
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
-import { PmButton, PmIcon } from '../components.tsx'
+import { PmIconButton, PmIcon } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import type { WorkspaceClient } from '../workspace-client.ts'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
@@ -48,14 +48,12 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   const dark = useWorkbenchState(state => state.isDark)
   const locale = useWorkbenchState(state => state.locale), t = DOCUMENT_EDITOR_MESSAGES[locale]
   const root = useRef<HTMLElement>(null), frame = useRef<HTMLIFrameElement>(null)
-  const [interactive, setInteractive] = useState(false)
   const [visible, setVisible] = useState(false), [attempt, setAttempt] = useState(0), [height, setHeight] = useState<number>()
   const [state, setState] = useState<PreviewState>({ status: 'idle' })
   const mismatches = useRef(0)
   const [loadedVersion, setLoadedVersion] = useState<string>()
   const [loadedProject, setLoadedProject] = useState(0), [loadedAttempt, setLoadedAttempt] = useState(0)
   const enabled = visible && documentView
-  useEffect(() => { if (!enabled) setInteractive(false) }, [enabled])
   useEffect(() => {
     const element = root.current
     if (!element) return
@@ -110,12 +108,11 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
     return () => { clearTimeout(timeout); window.removeEventListener('message', listener) }
   }, [src, origin, enabled, state.snapshot?.revision, blockId, directory, loadedVersion, loadedProject, workbench, t.previewFailure])
   const old = source?.dirty || source?.saving || source?.error || source?.restored || loadedVersion !== source?.version || loadedProject !== (source?.projectRevision ?? 0)
-  return <section ref={root} className="pm-ui-block-preview" data-block-preview={blockId} data-status={state.status} data-interactive={interactive || undefined} contentEditable={false}>
+  return <section ref={root} className="pm-ui-block-preview" data-block-preview={blockId} data-status={state.status} contentEditable={false}>
     <header className="pm-ui-block-preview__header"><span className="pm-ui-block-preview__label"><PmIcon name="slides" />{old && state.snapshot ? t.previewPrevious : state.status === 'loading' ? t.previewLoading : t.previewSnapshot}</span>
-      <span className="pm-ui-block-preview__actions"><PmButton small aria-pressed={interactive} disabled={!enabled || !src || state.status !== 'ready'} onClick={() => setInteractive(value => !value)}>{interactive ? t.previewLeave : t.previewInteract}</PmButton>
-      <PmButton small onClick={() => { if (!source?.fingerprint) void workbench.retryDocument(); setAttempt(value => value + 1) }} disabled={!enabled || state.status === 'loading'}>{state.status === 'failed' ? t.previewRetry : t.previewRefresh}</PmButton></span></header>
+      <span className="pm-ui-block-preview__actions"><PmIconButton small icon="refresh" label={state.status === 'failed' ? t.previewRetry : t.previewRefresh} hint={state.status === 'loading' ? t.previewLoading : state.status === 'failed' ? t.previewRetry : t.previewRefresh} loading={state.status === 'loading'} onClick={() => { if (!source?.fingerprint) void workbench.retryDocument(); setAttempt(value => value + 1) }} disabled={!enabled} /></span></header>
     {state.error && <p className="pm-ui-block-preview__failure" role="status">{state.error}</p>}
-    {enabled && src ? <iframe ref={frame} className="pm-ui-block-preview__frame" src={src} title={t.previewTitle} tabIndex={interactive ? 0 : -1} sandbox="allow-scripts allow-same-origin" style={height === undefined ? undefined : { '--pm-block-content-height': `${height}px` } as CSSProperties} /> : fallback}
+    {enabled && src ? <iframe ref={frame} className="pm-ui-block-preview__frame" src={src} title={t.previewTitle} sandbox="allow-scripts allow-same-origin" style={height === undefined ? undefined : { '--pm-block-content-height': `${height}px` } as CSSProperties} /> : fallback}
     {enabled && !src && state.status === 'loading' && <p className="pm-ui-block-preview__pending" role="status">{t.previewLoading}</p>}
   </section>
 }

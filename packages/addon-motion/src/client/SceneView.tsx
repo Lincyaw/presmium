@@ -39,7 +39,7 @@ export default function SceneView(props: SceneProps) {
   const printed = useStaticRender()
   const stepTime = useStepTime({ until: Math.max(...durations) })
   const { dark } = useAppearance()
-  const expanded = !Number.isFinite(hostStep)
+  const expanded = scope.localPreview === true || !Number.isFinite(hostStep)
   const [seen, setSeen] = useState(!expanded || printed)
   const enabled = seen || printed || !expanded
   const [local, setLocal] = useState<number>()
@@ -52,6 +52,8 @@ export default function SceneView(props: SceneProps) {
   const instance = useRef<Scene | undefined>(undefined)
   const frame = useRef(0)
   const localTime = useRef<number | undefined>(undefined)
+  const localNavigation = useRef<{ slide: number, step: number }>()
+  const followedNavigation = useRef({ source: navigation, position: navigated })
   const shown =
     expanded && local !== undefined
       ? local
@@ -74,6 +76,7 @@ export default function SceneView(props: SceneProps) {
     ),
   )
   const stop = () => {
+    localNavigation.current = undefined
     cancelAnimationFrame(frame.current)
     setPlaying(false)
   }
@@ -93,11 +96,26 @@ export default function SceneView(props: SceneProps) {
     console.error(`[presmium.motion] the scene ${props.scene} failed`, error)
   }
   useEffect(() => {
+    const before = followedNavigation.current
+    followedNavigation.current = { source: navigation, position: navigated }
+    if (before.source !== navigation || before.position === navigated) return
     if (!expanded || !navigated || navigated.slide !== cursor.slide) return
+    const own = localNavigation.current
+    localNavigation.current = undefined
+    if (own?.slide === navigated.slide && own.step === navigated.step) return
     const step = scope.localStepAt(navigated.step)
     if (step >= 0 && step < durations.length)
       seekLocal(starts[step]! + durations[step]!)
-  }, [navigated, expanded, cursor.slide, scope.at, props.durations])
+  }, [navigation, navigated, expanded, cursor.slide, scope.at, props.durations])
+  useEffect(() => {
+    if (!scope.localPreview || local === undefined || !navigation) return
+    const target = scope.step(selectedStep), current = navigation.position.getSnapshot()
+    if (target < 0 || (Number.isFinite(hostStep) && current.slide === cursor.slide && current.step === target)) return
+    // Use the existing local clock's discrete step boundary. Its own navigation
+    // updates semantic state without seeking or restarting that clock.
+    localNavigation.current = { slide: cursor.slide, step: target }
+    navigation.go(localNavigation.current)
+  }, [scope.localPreview, local !== undefined, selectedStep, navigation, cursor.slide, Number.isFinite(hostStep)])
   useEffect(() => {
     if (!playing) return
     const from =
@@ -223,7 +241,6 @@ export default function SceneView(props: SceneProps) {
     return () => {
       disposed = true
       clearTimeout(resizeTimer)
-      cancelAnimationFrame(frame.current)
       observer?.disconnect()
       instance.current?.dispose?.()
       instance.current = undefined
