@@ -10,6 +10,7 @@ import type { Viewer } from '../viewer-state.ts'
 import { classed, classes, element, text } from './hast.ts'
 import { layoutHandlers } from './layout-handlers.ts'
 import { tabHandlers } from './tabs.ts'
+import { tableHandler } from './tables.ts'
 
 export interface MarkdownLinks {
   footnoteHref?(identifier: string): string
@@ -77,6 +78,7 @@ function handlers(links: MarkdownLinks): Handlers {
     return el
   }
   const custom: Record<string, Handler> = {
+    table: tableHandler,
     math: (_, node) => math(node, true),
     inlineMath: (_, node) => math(node, false),
     mermaid: (_, node) => viewerNode({ type: 'pmMermaid', code: value(node) }),
