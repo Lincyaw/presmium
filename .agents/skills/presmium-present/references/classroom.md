@@ -1,3 +1,5 @@
+> Editable source is `lecture.json`; renderer settings are under `metadata.renderers`, steps and narrations are explicit entities, and production timing/voices live only in `production`.
+
 # Classroom
 
 A classroom lets students scan a QR code, follow the presenter's position on their own device, answer quizzes and polls, submit exercises and ask questions. It has three parts, each on its own address:
@@ -10,7 +12,7 @@ Do not run a class from `presmium dev` or `presmium serve`. Their built-in class
 
 ## Prepare the site and the server
 
-1. **Plugins.** List `@lincyaw/addon-session` (joining and following) and `@lincyaw/addon-classroom` (quizzes, polls, questions) in the frontmatter's `plugins`; add `@lincyaw/addon-exec` when students submit code exercises that are checked. Install each with `pnpm add -D <package>`.
+1. **Plugins.** List `@lincyaw/addon-session` (joining and following) and `@lincyaw/addon-classroom` (quizzes, polls, questions) in the `metadata.plugins`; add `@lincyaw/addon-exec` when students submit code exercises that are checked. Install each with `pnpm add -D <package>`.
 
 2. **Start the classroom server** on a computer in the class network:
 
@@ -21,15 +23,13 @@ Do not run a class from `presmium dev` or `presmium serve`. Their built-in class
 
    Run it in the document folder: `--deck` is the folder where archived classrooms are written (default: the current folder). `--port` defaults to 1234 (`0` picks a free one); `--host` limits the address it listens on (default: every interface). It prints the addresses it can be reached at; pick the local-network one (such as `192.168.1.10`), not `localhost`, because student devices reach it there.
 
-3. **Point the document at the server.** In the frontmatter of `lecture.md`, with the address printed in step 2:
+3. **Point the document at the server.** In `lecture.json` under `metadata.presmium`, with the address printed in step 2:
 
-   ```yaml
-   presmium:
-     presmium.session:
-       server: ws://192.168.1.10:1234
+   ```json
+   { "presmium.session": { "server": "ws://192.168.1.10:1234" } }
    ```
 
-   `presmium:` holds settings per plugin; `presmium.session` is the session plugin's. An `http://` address is turned into `ws://`. The address is written into the build, so rebuild after changing it.
+   `metadata.presmium` holds settings per plugin; `presmium.session` is the session plugin's. An `http://` address is turned into `ws://`. The address is written into the build, so rebuild after changing it.
 
 4. **Build both versions** with that setting, each into its own folder:
 
@@ -38,7 +38,7 @@ Do not run a class from `presmium dev` or `presmium serve`. Their built-in class
    presmium build --to web --out dist-full
    ```
 
-   `--audience student` leaves out content marked for teachers only (for example a block with `:audience: teacher`; the markers are explained in `presmium-author/references/publishing.md`, "Content for students"). The two versions keep students at the same section as the presenter by the sections' ids, so give sections fixed labels (`(name)=` before the heading) when you edit between builds.
+   `--audience student` leaves out content marked for teachers only (for example a block with `audience: ["teacher"]`; the markers are explained in `presmium-author/references/publishing.md`, "Content for students"). The two versions keep students at the same section as the presenter by the sections' ids, so keep stable section IDs when you edit between builds.
 
 5. **Serve them** as static sites on the class network (commands in [delivery.md](delivery.md), "Give readers a web address"): `dist-student/web` for students, `dist-full/web` for the teacher.
 
@@ -55,9 +55,9 @@ A classroom lives in the server's memory: restarting the server before archiving
 
 ## Predictions and AI answers
 
-The `{predict}` directive asks students to write a prediction before what follows is shown. In the web Document view the student must save a prediction first; in Present and in the slides, the teacher's next step reveals it as usual. When a document uses it, check it on a student device; the teacher's screen does not show the student side.
+The prediction component asks students to write a prediction before what follows is shown. In the web Document view the student must save a prediction first; in Present and in the slides, the teacher's next step reveals it as usual. When a document uses it, check it on a student device; the teacher's screen does not show the student side.
 
-With `@lincyaw/addon-assistant` in `plugins` and a model set up in the teacher's browser (students need no model key), the teacher can generate an AI answer to a student's question, read it in their own window, and click **Send to the classroom**. Until it is sent, nobody else sees it.
+With `@lincyaw/addon-assistant` in `metadata.plugins` and a model set up in the teacher's browser (students need no model key), the teacher can generate an AI answer to a student's question, read it in their own window, and click **Send to the classroom**. Until it is sent, nobody else sees it.
 
 ## When students cannot join
 

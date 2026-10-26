@@ -1,10 +1,10 @@
 # Presmium
 
-讲义与演示系统：MyST 源码由 `@lincyaw/compiler` 编译为中间表示（IR），由可插拔的渲染端生成网页（主媒介：预先打包的查看器，即网站外壳 + IR 运行时 `@lincyaw/viewer`，文稿是数据）、幻灯片（同一个查看器的幻灯片页）、notebook 等媒介，支持实时渲染。插件组件在网页与幻灯片两种形态中共用。
+讲义与演示系统：`lecture.json` 中的可编辑教学文稿 IR 是唯一内容入口，由 `@lincyaw/compiler` 派生运行快照，由可插拔的渲染端生成网页（主媒介：预先打包的查看器，即网站外壳 + IR 运行时 `@lincyaw/viewer`，文稿是数据）、幻灯片（同一个查看器的幻灯片页）、notebook 等媒介，支持实时渲染。插件组件在网页与幻灯片两种形态中共用。
 
 ## 必读
 
-- 源语法与 IR：`docs/ir.md`
+- 可编辑文稿 IR：`docs/rfc-document-ir.md`、`packages/kernel/src/contracts/document.ts`；运行快照：`docs/ir.md`
 - 领域模型（DDD）：`docs/domain-model.md`
 - 架构、契约、测试策略：`docs/architecture.md`
 - 工作台（基于 DeepSeek Harness）的设计：`docs/design-dsh.md`

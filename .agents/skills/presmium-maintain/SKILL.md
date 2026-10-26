@@ -13,12 +13,12 @@ shipped skill `presmium-develop`; read `presmium-develop/references/plugin.md` a
 repository. Writing documents is `presmium-author`, animations `presmium-animate`, presenting and the
 narrated lecture `presmium-present`.
 
-Words used throughout, as in the user-facing skills: a **document** is a folder with `lecture.md` (what the
+Words used throughout, as in the user-facing skills: a **document** is a folder with `lecture.json` (what the
 CLI's `[deck]` argument names); a **workspace** is a folder with `presmium.workspace.yaml` holding several
 documents; a **form** is what a document is built into (`web`, `slides`, `notebook`, `lecture`); the
 **lecture** is only the narrated playback and its video; the **studio** is the browser workbench that
 `presmium studio` (in the repository `pnpm studio`) starts. The **IR** (intermediate representation) is the
-JSON the compiler makes from a document's MyST source; its types are `packages/kernel/src/ir.ts`.
+derived runtime snapshot. The sole editable document IR is `lecture.json`, defined by `packages/kernel/src/contracts/document.ts` and validated by `validateDocument`; runtime types are in `packages/kernel/src/ir.ts`.
 
 Start from the behavior the user wants to change, then find the package responsible for it ([Put the
 behavior at the right boundary](#put-the-behavior-at-the-right-boundary)). Your report states who sees
@@ -31,7 +31,7 @@ what change after which action, and which real run showed it.
 | Analyse the architecture, weigh a design trade-off | `docs/domain-model.md`, `docs/architecture.md`, the contract files ([Read enough to decide](#read-enough-to-decide)), the actual imports | Benefit, cost, preconditions and priority argued from code evidence; verified problems kept apart from risks; no code change needed |
 | Fix a check, build or preview problem | The user's command on a minimal document, the first diagnostic, then `packages/compiler` or the renderer of the failing form (`packages/web`, `packages/render-slides`, `packages/render-notebook`) | The original command succeeds; the other forms and the static fallbacks still work |
 | Add a directive, component or interaction | `presmium-develop/references/plugin.md`, an existing plugin with similar behavior, [packaging](references/packaging.md) | It compiles, works in the web page and the slides, static outputs degrade sensibly, docs and skills list it |
-| Extend a renderer or the runtime view | The `Renderer` contract (`packages/kernel/src/ir.ts`) or the `ViewerPluginContext` contract (`packages/viewer/src/client/viewer-plugins.ts`) and a similar implementation | The renderer works from the IR only, never re-reads the MyST source; support levels and missing content are reported; positions and steps are right |
+| Extend a renderer or the runtime view | The `Renderer` contract (`packages/kernel/src/ir.ts`) or the `ViewerPluginContext` contract (`packages/viewer/src/client/viewer-plugins.ts`) and a similar implementation | The renderer works from the IR only, never re-reads authoring files; support levels and missing content are reported; positions and steps are right |
 | Change editing, preview sync or agent behavior | Workspace routes (`packages/workspace/src/node/routes.ts`), the preview protocol, the host adapter; [workbench and dsh](references/workbench.md) | After a save, an outside change, a reconnect or a review, source and preview still agree |
 | Change the workbench's look or a UI primitive | `docs/design-system.md`, `packages/design/src/tokens.css`, `pm-ui-*` of `@lincyaw/design`, `packages/workbench/src/components.tsx`; [Repository conventions](#repository-conventions) | Public components and Figma variants implement the spec before business layout; relevant checks pass; seen in light and dark, on desktop and below 768 px |
 | Upgrade dsh | [workbench and dsh](references/workbench.md#upgrading-dsh), `docs/design-dsh.md` sections 12 and 16 | The five upgrade-gate groups pass (see [Verify](#verify-the-behavior-you-changed)) |
@@ -69,7 +69,7 @@ Undocumented framework interfaces the code still relies on, and the tests that g
 
 ## Put the behavior at the right boundary
 
-The MyST source is the document's single source of truth; the compiler turns it into IR; the web page, the
+The normalized editable document IR in `lecture.json` is the single source of truth; the compiler derives a runtime snapshot; the web page, the
 slides, the notebook and the exports consume the IR. The web page is the primary form; for an interactive
 feature also decide what a user sees in static output, without an executor and offline.
 

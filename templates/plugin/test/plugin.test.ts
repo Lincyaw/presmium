@@ -1,5 +1,5 @@
 // The plugin as Presmium runs it: integration tests only, with the real `presmium` CLI on the
-// example document (example/lecture.md), never a mock of Presmium or its frameworks. One or two
+// example document (example/lecture.json), never a mock of Presmium or its frameworks. One or two
 // cases for each thing the plugin promises: the directive and its fallback, the server route.
 import { spawn } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'

@@ -1,3 +1,5 @@
+> Document authority: `lecture.json` uses normalized entities; scene implementations below are project code. Bind scenes through `definitions`, component blocks and declared step states.
+
 # Choosing a library and writing the moves
 
 Every library here is driven the same way: the scene file builds a timeline (or a drawing function) once, and Presmium pauses it and seeks it to the time it needs. What differs is what each library draws well. The pitfalls below are the ones met while building this skill's gallery (`gallery/<library>/`, see "The gallery" in `SKILL.md`), each checked by seeking the scene forward and back in a browser, in light and dark.
@@ -9,8 +11,8 @@ A scene file default-exports one call to a function from `@lincyaw/addon-motion/
 | Field | What it is |
 |---|---|
 | `root` | The scene's element; put your HTML or SVG in it. It is a CSS size container |
-| `at(k)` | The millisecond at which step k starts on the scene's timeline: `at(0)` is 0, `at(k)` is the sum of the first k `:durations:` |
-| `durations` | The `:durations:` in milliseconds, one per step |
+| `at(k)` | The millisecond at which step k starts on the scene's timeline: `at(0)` is 0, `at(k)` is the sum of the first k declared scene durations |
+| `durations` | Definition scene durations in milliseconds, one per step |
 | `total` | Their sum, the length of the timeline in milliseconds |
 | `width`, `height` | The size of `root` in CSS pixels when the scene is built |
 | `color(name)` | A design-system color as `rgb()`/`rgba()`, such as `color('accent')` (names in `SKILL.md`, "Rules every scene follows") |
@@ -30,11 +32,11 @@ Each library counts time in its own unit: GSAP and Motion in seconds (`at(k) / 1
 | A typeset panel like a video: title cards, captions, typewriter, kinetic type, transitions between panels | **Remotion** | React components as a function of the frame; `Sequence`/`Series` lay steps out declaratively |
 | A canvas drawn by hand, or anything else with a pure `(ms) => void` | `defineScene` | No library |
 
-One scene uses one library. A section that needs a diagram and a 3D view gets two scenes; give the second one `:reveal:` so it starts after the first (`timeline.md`, "Several blocks in one section").
+One scene uses one library. A section that needs a diagram and a 3D view gets two scenes; make the second visible on its own declared step so it starts after the first (`timeline.md`, "Several blocks in one section").
 
 ## Find an effect
 
-Each entry ``<library> `<name>` `` is the file `gallery/<library>/scenes/<name>.ts` in this skill's folder; its section in `gallery/<library>/lecture.md` (search for `{scene} <name>`) shows its `:durations:` and narration. The D3 scenes import helpers from `gallery/d3/scenes/kit/`: copy that folder along with them.
+Each entry ``<library> `<name>` `` is the file `gallery/<library>/scenes/<name>.ts` in this skill's folder; its section in `gallery/<library>/lecture.json` (search its definition parameters for the scene name) shows its declared durations and narration. The D3 scenes import helpers from `gallery/d3/scenes/kit/`: copy that folder along with them.
 
 | Effect | Where |
 |---|---|

@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "id": "greeting-document",
+  "metadata": {
+    "title": "Greeting",
+    "lang": "en",
+    "plugins": [
+      ".."
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {}
+    }
+  },
+  "sectionOrder": [
+    "greeting",
+    "hello"
+  ],
+  "sections": {
+    "greeting": {
+      "id": "greeting",
+      "title": "Greeting",
+      "level": 1,
+      "children": [
+        "greeting-intro"
+      ],
+      "stepOrder": [
+        "greeting-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "hello": {
+      "id": "hello",
+      "title": "Hello",
+      "level": 2,
+      "children": [
+        "hello-intro",
+        "greeting-card"
+      ],
+      "stepOrder": [
+        "hello-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "greeting-intro": {
+      "id": "greeting-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "greeting-paragraph",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A document that uses the plugin. Open its native document editor or build the web page, slides and notebook."
+            }
+          ]
+        }
+      ]
+    },
+    "hello-intro": {
+      "id": "hello-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "hello-paragraph",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This component can wave through the plugin server route while the development service is running."
+            }
+          ]
+        }
+      ]
+    },
+    "greeting-card": {
+      "id": "greeting-card",
+      "type": "component",
+      "definitionId": "greeting-definition",
+      "parameters": {
+        "name": "reader"
+      }
+    }
+  },
+  "steps": {
+    "greeting-step": {
+      "id": "greeting-step",
+      "sectionId": "greeting",
+      "visuals": [
+        {
+          "blockId": "greeting-intro",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "hello-step": {
+      "id": "hello-step",
+      "sectionId": "hello",
+      "visuals": [
+        {
+          "blockId": "hello-intro",
+          "visible": true
+        },
+        {
+          "blockId": "greeting-card",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "greeting-definition": {
+      "id": "greeting-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "{{id}}",
+        "name": "GreetingCard"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Hello, reader!"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

@@ -5,7 +5,7 @@ import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { createJiti } from 'jiti'
-import { APPROVAL_KINDS, errorMessage } from '@lincyaw/kernel'
+import { APPROVAL_KINDS, DOCUMENT_ENTRY, errorMessage } from '@lincyaw/kernel'
 import { bracketIPv6, irRevision, lanAddresses } from '@lincyaw/kernel/node'
 import type { ApprovalKind, Finding, Severity } from '@lincyaw/kernel'
 import { build, Compiler, dev, resolveEntry } from '@lincyaw/compiler'
@@ -30,7 +30,7 @@ export interface MainOptions {
 
 const USAGE = `Usage: presmium <command> [deck] [options]
 
-The deck is a directory holding lecture.md, or an entry file (default: .).
+The deck is a directory holding ${DOCUMENT_ENTRY}, or that JSON entry file (default: .).
 
 Commands:
   new     a new project in the directory (default: asks), from create-presmium

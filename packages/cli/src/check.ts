@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { ANCHOR_LOCK_PATH, errorMessage } from '@lincyaw/kernel'
 import type { AnchorString, Finding } from '@lincyaw/kernel'
-import { checkContext, Compiler, frontmatterLine, sortFindings } from '@lincyaw/compiler'
+import { checkContext, Compiler, sortFindings } from '@lincyaw/compiler'
 import type { Compilation, CompilerOptions } from '@lincyaw/compiler'
 
 export interface CheckOptions {
@@ -35,7 +35,7 @@ export async function runCheck(options: CheckOptions): Promise<CheckResult> {
 
   let lock: LockUpdate | undefined
   if (options.updateLock) {
-    lock = await updateLock(compilation, (name, error) => fail(`plugin "${name}" failed to list anchors: ${errorMessage(error)}`, frontmatterLine(entryText, name)))
+    lock = await updateLock(compilation, (name, error) => fail(`plugin "${name}" failed to list anchors: ${errorMessage(error)}`, jsonLine(entryText, name)))
     compilation = await compiler.compile()
   }
 
@@ -54,7 +54,7 @@ export async function probeEnvironments(compilation: Compilation, text: string):
     } catch (error) {
       reason = errorMessage(error)
     }
-    if (reason) findings.push({ checkId: 'presmium.execute', severity: 'error', message: `environment "${name}" (${spec.kind}) is not reachable: ${reason}`, source: { file: compilation.entry, line: frontmatterLine(text, `${name}:`) } })
+    if (reason) findings.push({ checkId: 'presmium.execute', severity: 'error', message: `environment "${name}" (${spec.kind}) is not reachable: ${reason}`, source: { file: compilation.entry, line: jsonLine(text, name) } })
   }
   return findings
 }
@@ -82,4 +82,10 @@ async function updateLock(compilation: Compilation, onError: (plugin: string, er
     await writeFile(file, text)
   }
   return { file, anchors: lock.size, changed: text !== before }
+}
+
+/** JSON property locations are diagnostic hints; entity paths are supplied by document validation. */
+function jsonLine(text: string, property: string): number {
+  const index = text.indexOf(JSON.stringify(property))
+  return index < 0 ? 1 : text.slice(0, index).split("\n").length
 }

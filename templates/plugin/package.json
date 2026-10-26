@@ -1,7 +1,7 @@
 {
   "name": "{{name}}",
   "version": "0.1.0",
-  "description": "A Presmium plugin: the {greeting} directive, its component in the web page and the slides, and a server route",
+  "description": "A Presmium plugin: a versioned component definition, shared web/slides component and server route",
   "type": "module",
   "keywords": [
     "presmium",

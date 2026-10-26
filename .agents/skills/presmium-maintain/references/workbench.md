@@ -24,9 +24,7 @@ in VS Code's native editor; the extension provides preview, diagnostic navigatio
 
 - Keep target Web authoring on content, public parameters, material previews, chat and comments. Do not
   expose implementation source, IR, a file tree or raw stacks as the ordinary author's workflow. Tauri
-  reuses this Web workflow; code and raw IR belong to the technical project entry. The current MyST source
-  pipeline remains in use; the RFC's IR-native project mode needs its own validated source adapter and
-  must not treat edits to generated `dist/ir.json` as an editable source format.
+  reuses this Web workflow; code and raw IR belong to the technical project entry. The normalized `lecture.json` is the sole editable authority; generated `dist/ir.json` is a runtime snapshot and must never be edited as content.
 - UI copy follows the RFC terminology table: authored script, voiceover, captions and transcription have
   distinct meanings and save targets. Do not restore conversational player labels or use captions as a
   second editable body. Keep complete zh-CN and en messages, including tooltips and accessible names.
@@ -51,94 +49,17 @@ committed to the workspace's git repository) or rejects.
 
 ## Editing on the document
 
-The workbench has three separate entry points: document editing, compilation and presentation, and video
-production. Their shared authority is MyST source and the compiled IR revision, not UI state. Prioritise
-document editing first: React and BlockNote, page operations, formatting, save/reload and recovery. It
-contains no script, caption or voice controls. Editing and saving must not switch to another entry point
-or start presentation; retained video drafts must not force a document editor to open video controls.
-The current implementation boundary is recorded in `docs/rfc-workbench-uiux.md`.
+The workbench has three separate entry points: native document editing, compiled presentation and video production. All share the normalized `lecture.json` authority. The document editor is one full-document BlockNote instance with native selection, formatting, history and CommentsExtension; do not retain per-page editing hosts or a second DOM selection/comment toolbar. Present/Video consume independent snapshots and cannot steal focus or mode while editing.
 
-Pages contain blocks and correspond to IR sections (one slide in Present). The page list's plus and the block menu's New page insert a distinct page after the current one; adding an ordinary block stays within its page. Flush body drafts before a page insertion, preserve existing source and narration, and focus the new page only once it is present in the IR. Verify insertion order, independent editing and presentation, and undo/redo; refuse ambiguous cross-file boundaries instead of guessing.
+Read `docs/rfc-document-ir.md` and the exact `TeachingDocument` contract before changing transactions. JSON Schema, IDs, references, tree ownership, component parameters/states and media ranges are validated through `validateDocument`. Agent and Web changes use the same document transaction boundary and `baseDocumentVersion`. Saving valid document content does not wait for compilation. Snapshot compilation failure retains the last successful snapshot and identifies its source version.
 
-Page renaming and moving use `page-edit.ts` to slice the current entry source rather than re-render the
-document. Pin original section IDs before renaming (including native title edits) or reordering peers, including duplicate titles; keep
-cover and chapter boundaries fixed. The bounded implementation refuses includes, MyST `+++` cells
-and unclear ranges; dialog renames also refuse formatted titles, while native edits retain their markup
-through the existing text lens. Page copy and deletion remain separate capabilities to implement. Verify Chinese IDs,
-duplicate titles, BOM and CRLF, literal Markdown in titles, and that blocks, narration and steps retain their
-bindings. `IrAnswer.sourceCapabilities` comes from the actual compiler, not authored metadata; adding a
-Unicode label requires `unicodePageTargets: true`. An older service without it must reject the change
-before writing and ask the author to restart the service. See `docs/ir.md` section 2.2 for accepted syntax.
+Page creation, renaming, moving and deletion operate on stable section IDs/order and explicit block ownership; no Markdown headings, source ranges, parsed fingerprints or syntax-preserving writer are authoring contracts. Preserve referenced steps/narrations and reject deletion that would leave dangling bindings. Code and assets remain project references.
 
-Before these source operations, await the preview's optional one-shot `flush` barrier outside the workbench
-write queue, then join already submitted serial writes. Document editing does not submit retained video
-script drafts; video operations may explicitly request that additional barrier. The preview commits in-place titles
-first, waits for body acknowledgements and composition, and waits only for source writes the author
-already submitted; hidden dirty or restored source drafts block the operation instead of being adopted.
-Bind replies to the document, preview instance, generation and request. Confirm the saved source version
-and newer IR before acknowledging a changed body or page; use conditional IR reads for that bounded wait,
-without opening another SSE stream per save. Verify an immediate rename after typing, delayed saves,
-offline failure, retry with the title draft retained, and stale replies after a document switch.
+Keep native history responsive, including toolbar Undo immediately after typing. External projections and saved acknowledgements are baselines, not new undoable edits. Draft recovery is bound to workspace/document identity and version. A late acknowledgement, generation result or response after switching documents cannot clear newer input or be adopted by another document.
 
-Document undo and redo first use the focused body editor's native history through the optional
-`document-history` preview capability. Initial content and external IR projections are baselines, not
-undoable author changes. Falling back to saved source revisions, or reverting a revision, requires the
-document flush barrier first. Verify that clicking toolbar Undo immediately after typing reverses the
-text transaction rather than deleting a previously created page; delayed history replies must not clear
-another document's busy state.
+Comments use native rich-text ranges with stable editing-unit IDs, offsets and document version. Cross-block selection must use the editor's public APIs; do not rebuild range ownership from independent DOM selectionchange handlers. Persist only Presmium document data through the source transaction boundary; an editor's internal Y.Doc is not a second storage format or a multiplayer system.
 
-An empty paragraph placeholder has no Markdown IR block. Clearing a body must remove its former source
-instead of emitting an invisible labelled slide; inserting text again must keep one unique source label.
-Check empty-page undo and redo against both the saved source and the compiled block count.
-
-Page removal uses the workspace `pages/delete` endpoint only when `IrAnswer.authoring.deletePage` is
-advertised. Prepare its versioned plan after flushing document edits, show the actual steps and script
-count, then confirm that plan. Check local and cross-document explicit links, shared includes and the
-actual parsed source fingerprints again at the write. Commit only after compiling and comparing the
-remaining pages; a failed compile check or Git commit restores the source. Keep shared assets and retain
-an empty page with the same ID when deleting the last page. Verify real source restoration on Undo,
-source-version rejection, and rollback while another source changes. Unsupported external scripts and
-ambiguous page boundaries stay unavailable.
-
-Native title and complex-text edits use `edit`/`edited`/`edit-result` with a frozen request, IR revision and
-opaque `previewEditBinding` from the parent. Confirm the original document's source and compilation even
-after navigation; reply only to the original preview generation. Newer input advances from that confirmed
-baseline without being cleared. Native drafts have their own `native-draft` flag and participate in the
-Doc flush barrier. Persist unconfirmed input across preview reloads; recovery requires an explicit save.
-`IrAnswer.sourceFingerprints` must match the exact source text before applying IR line ranges. Missing
-capabilities, external changes and unsupported formatting retain the draft, rather than reloading it away.
-
-Restoring a deleted simple block uses `BodyBindings`: a short-lived IR binding snapshot keyed by file,
-section and block ID, valid only at the confirmed version of this editor's own source-write chain. It
-restores role, timing and scope; the requested Markdown still supplies the text. An external source
-version, document switch, missing snapshot or unsupported structure must refuse the stale source
-reference and retain the draft. Do not infer a visual role for an unknown former source or accept a
-browser-provided role as authority. The cache is bounded to 512 deleted bindings per section.
-
-Legacy plain prose may have the IR role `narration`; editing it with BlockNote must preserve that role,
-its source identity and step. Resolve the role from the current IR source binding, never from a browser
-role claim. Splits that carry the original source retain the same binding; newly inserted unbound body
-blocks remain visual. Cues, timed ranges and unsupported MyST stay opaque: refuse body transactions that
-flatten, delete, reorder or move content across those anchors. Modern `contentModel: blocks` documents
-keep explicit narration in video production rather than the document canvas.
-
-Generated content in the target Web UI is changed through public parameters, chat or comments, with
-shared-material scope and review visible. The existing source/preview paths are compatibility interfaces,
-not the target ordinary author UI and not a scene-replacement picker. Their save boundary remains:
-resolve the actual definition or MyST fragment from the current IR anchor, check the opened version and
-edit lock, then use the existing source/history path. Preserve block IDs, step bindings and existing source
-drafts through switches and reloads; conflicts or failed saves must not overwrite a newer file. Hiding the
-source UI does not remove these real service contracts or permit a second source of truth.
-
-Editing happens on the document page. The preview protocol's `pick` reports the position of a click or a
-selection, and the workbench draws one compact New Comment icon beside the pointer. Keep its accessible
-name, comment form, Post, Cancel and Escape; do not add edit, AI rewrite or close buttons to that toolbar.
-AI requests use chat with the selected focus or comments. Double-click text uses `edit` to make one block
-editable; `edited` returns the text before and after; `packages/workbench/src/text-edit.ts` maps the difference back to the
-source by the block's source lines in the IR, and refuses to write back across formatting marks, handing the
-change to the AI instead (7.3 compatibility editing). When you change this chain verify that edits in plain text, inside
-emphasis and inside a link are written back correctly, that an edit across a link leaves the file unchanged,
-and that Markdown characters are escaped.
+Generated content is changed through explicit parameters, definition scope, chat or comments. Unknown versioned plugin data remains intact with readable capability diagnostics. Real authoring checks cover complete final-page content, ordinary Enter/list/formatting behavior, comments, arbitrary step jumps in preview, immediate Undo, save failure/recovery, document switching and actual light/dark desktop/narrow combinations.
 
 ## Undo, redo and versions
 

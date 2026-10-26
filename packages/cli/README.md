@@ -2,7 +2,7 @@
 
 The `presmium` command: `new`, `check`, `ir`, `build`, `dev` and `serve` for Presmium documents and workspaces.
 
-Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which turns structured teaching documents into web pages, slides, Jupyter notebooks and narrated lectures.
 
 ## Install
 
@@ -30,7 +30,7 @@ pnpm add -D @lincyaw/cli @lincyaw/web @lincyaw/render-slides @lincyaw/render-not
 | `presmium serve [dir]` | The workspace service, on this machine: the documents and their sites, compiled on demand (`--port`, `--host`, `--operator-dir`, `--preview-origin`) |
 | `presmium studio [dir]` | The workbench (experimental), from `@lincyaw/studio` installed in the project (`--port`, `--host`); installed globally, it is `presmium-studio` |
 
-`[deck]` is a directory with `lecture.md` or an entry file, by default the current directory. Exit codes: 0 no errors, 1 error findings, 2 usage or internal error. `presmium --help` lists every option.
+`[deck]` is a directory with `lecture.json` or an entry file, by default the current directory. Exit codes: 0 no errors, 1 error findings, 2 usage or internal error. `presmium --help` lists every option.
 
 ## Testing plugins
 

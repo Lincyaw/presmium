@@ -1,6 +1,8 @@
+> Editable source is `lecture.json`; renderer settings are under `metadata.renderers`, steps and narrations are explicit entities, and production timing/voices live only in `production`.
+
 # Publishing, export and offline
 
-Pick the build from what the teacher hands out. Run every command in the document folder. Before building, read the frontmatter's `renderers`: it lists the forms (`web`, `slides`, `notebook`, `lecture`) with their options, among them `base`, the URL path a form's site is served at (such as `/course/week1/`). When `base` is already set, the site is meant for that path: keep it and the hosting the teacher already uses.
+Pick the build from what the teacher hands out. Run every command in the document folder. Before building, read the `metadata.renderers`: it lists the forms (`web`, `slides`, `notebook`, `lecture`) with their options, among them `base`, the URL path a form's site is served at (such as `/course/week1/`). When `base` is already set, the site is meant for that path: keep it and the hosting the teacher already uses.
 
 `presmium build` writes into `dist/` (or the folder given with `--out`): one subfolder per form, such as `dist/web/`. Building is not deploying: copy the output to whatever host the teacher chooses.
 
@@ -40,12 +42,10 @@ Open `<address>/web/` and `<address>/slides/`. The slides are one page (`index.h
 
 When only the slides are built and `base` is not set, serve `dist/slides` instead (`pnpm exec sirv dist/slides --port 8080`). When the site already lives under a sub-path, serve the output at that path.
 
-Each section heading on the web page links to the same place in the slides. When the two are deployed at different addresses, write the slides' real address in the frontmatter, then check that a heading link lands on the right slide and step:
+Each section heading on the web page links to the same place in the slides. When the two are deployed at different addresses, write the slides' real address in the document metadata, then check that a heading link lands on the right slide and step:
 
-```yaml
-presmium:
-  presmium.web:
-    slidesUrl: https://example.com/slides/
+```json
+{ "presmium.web": { "slidesUrl": "https://example.com/slides/" } }
 ```
 
 ## Export a PDF, images or PowerPoint
@@ -57,7 +57,7 @@ pnpm add -D @lincyaw/addon-publish playwright-chromium
 pnpm exec playwright install chromium
 ```
 
-and list `'@lincyaw/addon-publish'` in the frontmatter's `plugins`. Then, in the document folder:
+and list `'@lincyaw/addon-publish'` in the document metadata's `plugins`. Then, in the document folder:
 
 ```sh
 pnpm exec presmium-export --format pdf --output lecture.pdf
@@ -85,13 +85,10 @@ Afterwards, open the file and check the page count, missing pages, long code run
 presmium build --to notebook
 ```
 
-This writes `dist/notebook/<name>.ipynb`, named after the entry file (`lecture.ipynb` for `lecture.md`), with images and other files in `media/` beside it; hand out the whole `dist/notebook/` folder. The kernel is `python3` unless the frontmatter says otherwise. Interactive components that a notebook cannot hold become a static form; the build report lists them. To link them to the online version, set the web address:
+This writes `dist/notebook/<name>.ipynb`, named after the entry file (`lecture.ipynb` for `lecture.json`), with images and other files in `media/` beside it; hand out the whole `dist/notebook/` folder. The kernel is `python3` unless the `metadata.renderers.notebook` says otherwise. Interactive components that a notebook cannot hold become a static form; the build report lists them. To link them to the online version, set the web address:
 
-```yaml
-renderers:
-  notebook:
-    kernel: python3
-    webUrl: https://example.com/course/
+```json
+{ "notebook": { "kernel": "python3", "webUrl": "https://example.com/course/" } }
 ```
 
 Open the notebook in Jupyter and check that images show and code cells run.
@@ -106,4 +103,4 @@ A built site (web page and slides) keeps its pages and search in the browser's o
 
 Remote Jupyter, the classroom server and AI models still need the network. When the class must be fully offline, prepare recorded outputs or a runtime that works locally.
 
-`presmium: { presmium.publish: { offline: false } }` in the frontmatter turns the offline cache off; check whether it is set. Rehearse again after the site's address changes or after a rebuild: "it was opened before" does not prove this build's files are all cached.
+`metadata.presmium["presmium.publish"].offline = false` in the document metadata turns the offline cache off; check whether it is set. Rehearse again after the site's address changes or after a rebuild: "it was opened before" does not prove this build's files are all cached.

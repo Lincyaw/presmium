@@ -1,5 +1,6 @@
 // One lecture's slides (for the site's base), notebook and narrated lecture, into <lecture>/dist/; its slides link to its
 // page on the workspace's site, the directory above them.
+import { DOCUMENT_ENTRY } from '@lincyaw/kernel'
 import { build, Compiler } from '@lincyaw/compiler'
 import { rmSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -7,7 +8,7 @@ import { resolve } from 'node:path'
 const [directory, base] = process.argv.slice(2)
 const outDir = resolve(directory, 'dist')
 rmSync(outDir, { recursive: true, force: true })
-const compilation = await new Compiler(resolve(directory, 'lecture.md')).compile()
+const compilation = await new Compiler(resolve(directory, DOCUMENT_ENTRY)).compile()
 const renderers = compilation.doc.config.renderers
 if (renderers.slides) renderers.slides = { ...renderers.slides, base }
 const web = compilation.doc.config.presmium['presmium.web'] ?? {}

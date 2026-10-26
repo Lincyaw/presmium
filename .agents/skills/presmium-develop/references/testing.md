@@ -55,7 +55,7 @@ it('writes the poll\'s question into the notebook', async () => {
   asserting a finding's `checkId`, `severity`, `message` and `source.line`.
 - `<out>/ir.json` is the compiled IR: find a section by its label (`(label)=` above the heading becomes the
   section `id`) and look at `blocks[].node`.
-- A case that needs another document (an error case, other options) writes a small `lecture.md` into a
+- A case that needs another document (an error case, other options) writes a small normalized `lecture.json` into a
   temporary directory with `plugins: ['<absolute path of the plugin>']` and the `renderers` it needs. Give
   the document `lang: en` or `lang: zh-CN` explicitly when asserting text.
 - Build only the renderers the case reads (`--to notebook` is the fastest; `--to web,slides` builds the

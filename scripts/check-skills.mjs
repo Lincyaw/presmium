@@ -18,7 +18,7 @@ const fail = message => problems.push(message)
 const compilerRequire = createRequire(join(root, 'packages/compiler/package.json'))
 const { createJiti } = compilerRequire('jiti')
 const YAML = compilerRequire('yaml')
-const jiti = createJiti(join(root, 'packages/compiler/src/plugins.ts'))
+const jiti = createJiti(join(root, 'packages/kernel/src/document.ts'))
 
 function checkLink(path, target) {
   const file = join(root, path)
@@ -43,7 +43,7 @@ const skills = existsSync(skillsDir) ? readdirSync(skillsDir, { withFileTypes: t
 if (skills.length === 0) fail('.agents/skills holds no skill')
 
 const skillFiles = name => readdirSync(join(skillsDir, name), { recursive: true, encoding: 'utf8' })
-  .filter(f => f.endsWith('.md'))
+  .filter(f => f.endsWith('.md') && !f.split(/[\\/]/).some(part => ['node_modules', '.presmium', 'dist'].includes(part)))
   .map(f => join(skillsDir, name, f))
 
 const texts = new Map()
@@ -81,40 +81,37 @@ for (const name of skills) {
   }
 }
 
-function exportTarget(value) {
-  if (typeof value === 'string') return value
-  if (!value || typeof value !== 'object') return undefined
-  return exportTarget(value.import) ?? exportTarget(value.node) ?? exportTarget(value.default)
+const { DOCUMENT_ENTRY, DOCUMENT_JSON_SCHEMA, validateDocument } = await jiti.import(join(root, 'packages/kernel/src/document.ts'))
+const reference = join(skillsDir, 'presmium-author/references/document.md')
+const guide = existsSync(reference) ? readFileSync(reference, 'utf8') : ''
+if (!guide) fail(`${relative(root, reference)} is missing`)
+else {
+  if (!guide.includes(DOCUMENT_ENTRY)) fail(`${relative(root, reference)} must identify the sole ${DOCUMENT_ENTRY} authority`)
+  for (const field of DOCUMENT_JSON_SCHEMA.required ?? []) {
+    if (!guide.includes(`\`${field}\``)) fail(`${relative(root, reference)} must describe the authored field ${field}`)
+  }
+  for (const contract of ['validateDocument', 'baseDocumentVersion', 'production', 'snapshot']) {
+    if (!guide.includes(contract)) fail(`${relative(root, reference)} must describe ${contract}`)
+  }
 }
-
-const declared = new Map()
-const { BUILTIN_DIRECTIVES } = await jiti.import(join(root, 'packages/compiler/src/blocks.ts'))
-for (const name of BUILTIN_DIRECTIVES.keys()) declared.set(name, 'the compiler')
-for (const dir of readdirSync(join(root, 'packages')).sort()) {
-  const pkgFile = join(root, 'packages', dir, 'package.json')
-  if (!existsSync(pkgFile)) continue
-  const pkg = JSON.parse(readFileSync(pkgFile, 'utf8'))
-  const target = exportTarget(pkg.exports?.['./presmium'])
-  if (!target) continue
-  let plugin
+for (const name of ['presmium-author', 'presmium-animate', 'presmium-present', 'presmium-develop']) {
+  const content = readFileSync(join(skillsDir, name, 'SKILL.md'), 'utf8')
+  if (!content.includes(DOCUMENT_ENTRY)) fail(`${name} must use the sole ${DOCUMENT_ENTRY} entry`)
+}
+const template = join(root, 'packages/workspace/templates/document/default', DOCUMENT_ENTRY)
+try {
+  const validation = validateDocument(JSON.parse(readFileSync(template, 'utf8')))
+  if (!validation.document) for (const issue of validation.issues) fail(`default document template: ${issue.path}: ${issue.message}`)
+} catch (error) { fail(`default document template: ${error.message}`) }
+const gallery = join(skillsDir, 'presmium-animate/gallery')
+for (const entry of readdirSync(gallery, { withFileTypes: true }).filter(entry => entry.isDirectory() && !['node_modules', '.presmium', 'dist'].includes(entry.name))) {
+  const dir = join(gallery, entry.name), file = join(dir, DOCUMENT_ENTRY)
+  if (!existsSync(join(dir, 'scenes'))) continue
+  if (!existsSync(file)) { fail(`animation gallery ${entry.name} has no ${DOCUMENT_ENTRY}`); continue }
   try {
-    plugin = await jiti.import(join(root, 'packages', dir, target), { default: true })
-  } catch (error) {
-    fail(`cannot load the ./presmium entry of ${pkg.name}: ${error.message}`)
-    continue
-  }
-  for (const spec of plugin?.directives ?? []) declared.set(spec.name, pkg.name)
-}
-if (declared.size === 0) fail('found no directives; did the plugin loading change?')
-
-const reference = join(skillsDir, 'presmium-author/references/directives.md')
-if (!existsSync(reference)) {
-  fail(`${relative(root, reference)} is missing`)
-} else {
-  const headings = readFileSync(reference, 'utf8').split('\n').filter(line => line.startsWith('### '))
-  for (const [name, source] of declared) {
-    if (!headings.some(line => line.includes(`\`{${name}}\``))) fail(`${relative(root, reference)} has no section for {${name}} (declared by ${source}): a heading such as ### \`{${name}}\``)
-  }
+    const validation = validateDocument(JSON.parse(readFileSync(file, 'utf8')))
+    if (!validation.document) for (const issue of validation.issues) fail(`animation gallery ${entry.name}: ${issue.path}: ${issue.message}`)
+  } catch (error) { fail(`animation gallery ${entry.name}: ${error.message}`) }
 }
 
 function cliCommands() {
@@ -165,4 +162,4 @@ if (problems.length) {
   console.error(`skill problems:\n${problems.join('\n')}`)
   process.exit(1)
 }
-console.log(`skills ok: ${skills.length} skills, ${declared.size} directives documented, commands ${[...commands.keys()].join(', ')}`)
+console.log(`skills ok: ${skills.length} skills, normalized document contract and gallery valid, commands ${[...commands.keys()].join(', ')}`)

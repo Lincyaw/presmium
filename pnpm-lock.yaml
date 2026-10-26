@@ -822,6 +822,9 @@ importers:
 
   packages/create-presmium:
     dependencies:
+      '@lincyaw/kernel':
+        specifier: workspace:*
+        version: link:../kernel
       jiti:
         specifier: ^2.7.0
         version: 2.7.0

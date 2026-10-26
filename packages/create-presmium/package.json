@@ -14,7 +14,7 @@
     "presmium",
     "create",
     "template",
-    "myst",
+    "document-ir",
     "slides"
   ],
   "type": "module",
@@ -41,7 +41,8 @@
     "templates": "node scripts/templates.ts"
   },
   "dependencies": {
-    "jiti": "^2.7.0"
+    "jiti": "^2.7.0",
+    "@lincyaw/kernel": "workspace:*"
   },
   "devDependencies": {
     "@lincyaw/cli": "workspace:*"

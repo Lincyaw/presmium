@@ -19,7 +19,7 @@ Without arguments it asks for the kind of project, the directory and the title (
 | `--no-git` | Do not run `git init` |
 | `-h`, `--help` | Show the help |
 
-- A lecture: `lecture.md`; `presmium dev`, `presmium check`, `presmium build`.
+- A lecture: `lecture.json`; `presmium dev`, `presmium check`, `presmium build`.
 - A workspace: `presmium.workspace.yaml` and a first document in `intro/`; `presmium serve`.
 - A plugin: a directive, a React component shown in the web page and the slides, a server route, text in Chinese and English, an example document and integration tests; `pnpm install`, `pnpm test`, `pnpm dev`.
 

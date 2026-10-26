@@ -1,19 +1,16 @@
 # {{name}}: a Presmium plugin
 
-Presmium compiles MyST documents to an intermediate representation (IR) and renders it as a web page
-and slides (both shown by Presmium's own viewer), a notebook and more. A plugin adds directives that
-become IR nodes, React components that show those nodes in the web page and the slides alike, services
-and server routes.
+Presmium uses normalized editable teaching document IR in `lecture.json` as its sole content authority. The compiler derives runtime snapshots for web pages, slides, notebooks and more. A plugin adds versioned component definitions, React components shared by web and slides, services and routes.
 This project is one plugin, `{{id}}`: `README.md` lists its files.
 
 ## Skills
 
 - `.agents/skills/presmium-develop`: how to develop, debug and test this plugin: the Node entry and its
-  directives, the IR nodes they produce, components and the `@lincyaw/host` API, browser services,
+  definitions, derived runtime nodes, components and the `@lincyaw/host` API, browser services,
   server routes, renderer extensions, the design system, and integration tests with real runs. Its
   `references/plugin.md` is the plugin contract with examples, `references/testing.md` how to prove
   behavior. It is self-contained: it needs only this project and the installed packages.
-- `.agents/skills/presmium-author`: how documents are written, for `example/lecture.md`.
+- `.agents/skills/presmium-author`: how documents are written, for `example/lecture.json`.
 
 ## Conventions
 

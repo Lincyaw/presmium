@@ -58,7 +58,7 @@ Other conventions:
 
 ## Agent skills
 
-The skills for lecture authors, presenters and developers are in `.agents/skills` (read by Codex); `.claude/skills` is a symbolic link to it and `AGENTS.md` one to `CLAUDE.md`. When you change directives, commands or the development workflow, update the skills too: `scripts/check-skills.mjs` (part of `pnpm test`) checks that every directive has a section in `presmium-author/references/directives.md` and that every `presmium <command>` the skills mention exists with its options.
+The skills for lecture authors, presenters and developers are in `.agents/skills` (read by Codex); `.claude/skills` is a symbolic link to it and `AGENTS.md` one to `CLAUDE.md`. When you change directives, commands or the development workflow, update the skills too: `scripts/check-skills.mjs` (part of `pnpm test`) checks that every directive has a section in `presmium-author/references/document.md` and that every `presmium <command>` the skills mention exists with its options.
 
 ## Changes and commits
 

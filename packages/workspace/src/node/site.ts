@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
-import { compileTranslations, DECK_ENTRY, directoryAsset, fileHash, frontmatterLine, lineContaining, loadPlugins, nodeVitePlugins, parseFrontmatter, portable, publishesDirectory, viewFor } from '@lincyaw/compiler'
+import { compileTranslations, directoryAsset, fileHash, lineContaining, loadPlugins, nodeVitePlugins, portable, publishesDirectory, viewFor } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
-import { NON_FILE_URL, WEB_RENDERER_PACKAGE } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, isRecord, NON_FILE_URL, WEB_RENDERER_PACKAGE } from '@lincyaw/kernel'
 import type { DocumentSummary, Finding, IRDocument, RenderContext, Renderer, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
 import type { WorkspaceConfig } from './config.ts'
@@ -80,7 +80,7 @@ export function siteContext(options: SiteContextOptions): RenderContext {
 
 function deckOf(file: string, root: string): string | undefined {
   for (let dir = dirname(file); isInside(dir, root); dir = dirname(dir)) {
-    if (existsSync(join(dir, DECK_ENTRY))) return dir
+    if (existsSync(join(dir, DOCUMENT_ENTRY))) return dir
     if (dir === root) return undefined
   }
   return undefined
@@ -111,18 +111,18 @@ function publishedAsset(options: SiteContextOptions, source: SourcePos, url: str
   if (stat.isFile()) return { file: target, name: `${fileHash(target).slice(0, 8)}-${basename(target)}` }
   const deck = deckOf(source.file, options.root)
   if (!deck || !publishesDirectory(target, deck)) return undefined
-  const lang = parseFrontmatter(readFileSync(join(deck, DECK_ENTRY), 'utf8')).lang
+  const document: unknown = JSON.parse(readFileSync(join(deck, DOCUMENT_ENTRY), 'utf8'))
+  const lang = isRecord(document) && isRecord(document.metadata) ? document.metadata.lang : undefined
   return directoryAsset(target, deck, join(options.workDir, 'files'), typeof lang === 'string' ? lang : undefined, message => warn(`${url} is not published: ${message}`))
 }
 
 export function untranslatedFindings(compilation: Compilation, root: string): Finding[] {
   const { translations } = compilation.doc.config
   if (!translations) return []
-  const text = readFileSync(compilation.entry, 'utf8')
   return Object.entries(translations).map(([lang, entry]) => ({
     checkId: 'presmium.translations',
     severity: 'warning' as const,
     message: `translation "${lang}" (${entry}) is not in the workspace site of presmium serve, which shows the originals; presmium build at the workspace root publishes it (or presmium build ${relative(root, compilation.deckDir).split(sep).join('/') || '.'} for this document alone)`,
-    source: { file: compilation.entry, line: frontmatterLine(text, entry) },
+    source: { file: compilation.entry, line: 1 },
   }))
 }

@@ -1,0 +1,4769 @@
+{
+  "schemaVersion": 1,
+  "id": "document-85806fb69da458ce",
+  "metadata": {
+    "title": "Motion：原子动画合集",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-motion"
+    ],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "intro",
+    "bars",
+    "counter",
+    "reorder",
+    "stagger",
+    "spring",
+    "draw",
+    "flow",
+    "emphasis",
+    "labels",
+    "heatmap",
+    "morph",
+    "ring",
+    "scan",
+    "packet",
+    "matrix",
+    "easings",
+    "spring-compare",
+    "blur",
+    "wipe",
+    "flip",
+    "cssvar",
+    "canvas",
+    "pulse"
+  ],
+  "sections": {
+    "intro": {
+      "id": "intro",
+      "title": "Motion：原子动画合集",
+      "level": 1,
+      "children": [
+        "intro--paragraph-1"
+      ],
+      "stepOrder": [
+        "intro--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "bars": {
+      "id": "bars",
+      "title": "柱状图换数据：同一属性的多段合成一条轨道",
+      "level": 2,
+      "children": [
+        "bars--bars-scene",
+        "bars--paragraph-1",
+        "bars--paragraph-2",
+        "bars--paragraph-3"
+      ],
+      "stepOrder": [
+        "bars--step-0",
+        "bars--step-1",
+        "bars--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "counter": {
+      "id": "counter",
+      "title": "数字滚动：motion value 与 steps 缓动",
+      "level": 2,
+      "children": [
+        "counter--counter-scene",
+        "counter--paragraph-1",
+        "counter--paragraph-2"
+      ],
+      "stepOrder": [
+        "counter--step-0",
+        "counter--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "reorder": {
+      "id": "reorder",
+      "title": "列表重排：冒泡排序的每一趟",
+      "level": 2,
+      "children": [
+        "reorder--reorder-scene",
+        "reorder--paragraph-1",
+        "reorder--paragraph-2",
+        "reorder--paragraph-3",
+        "reorder--paragraph-4"
+      ],
+      "stepOrder": [
+        "reorder--step-0",
+        "reorder--step-1",
+        "reorder--step-2",
+        "reorder--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "stagger": {
+      "id": "stagger",
+      "title": "错开出现：stagger 从中间、按距离、带缓动",
+      "level": 2,
+      "children": [
+        "stagger--stagger-scene",
+        "stagger--paragraph-1",
+        "stagger--paragraph-2",
+        "stagger--paragraph-3"
+      ],
+      "stepOrder": [
+        "stagger--step-0",
+        "stagger--step-1",
+        "stagger--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "spring": {
+      "id": "spring",
+      "title": "弹簧弹出：一棵二叉搜索树逐层长出",
+      "level": 2,
+      "children": [
+        "spring--spring-scene",
+        "spring--paragraph-1",
+        "spring--paragraph-2",
+        "spring--paragraph-3"
+      ],
+      "stepOrder": [
+        "spring--step-0",
+        "spring--step-1",
+        "spring--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "draw": {
+      "id": "draw",
+      "title": "画线：pathLength 画出损失曲线",
+      "level": 2,
+      "children": [
+        "draw--draw-scene",
+        "draw--paragraph-1",
+        "draw--paragraph-2",
+        "draw--paragraph-3"
+      ],
+      "stepOrder": [
+        "draw--step-0",
+        "draw--step-1",
+        "draw--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "flow": {
+      "id": "flow",
+      "title": "信号流动：pathOffset 让脉冲沿边走",
+      "level": 2,
+      "children": [
+        "flow--flow-scene",
+        "flow--paragraph-1",
+        "flow--paragraph-2"
+      ],
+      "stepOrder": [
+        "flow--step-0",
+        "flow--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "emphasis": {
+      "id": "emphasis",
+      "title": "强调：高亮条移动、变色、抖动",
+      "level": 2,
+      "children": [
+        "emphasis--emphasis-scene",
+        "emphasis--paragraph-1",
+        "emphasis--paragraph-2",
+        "emphasis--paragraph-3"
+      ],
+      "stepOrder": [
+        "emphasis--step-0",
+        "emphasis--step-1",
+        "emphasis--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "labels": {
+      "id": "labels",
+      "title": "编排：标签与相对时间",
+      "level": 2,
+      "children": [
+        "labels--labels-scene",
+        "labels--paragraph-1",
+        "labels--paragraph-2"
+      ],
+      "stepOrder": [
+        "labels--step-0",
+        "labels--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "heatmap": {
+      "id": "heatmap",
+      "title": "颜色插值：注意力热力图",
+      "level": 2,
+      "children": [
+        "heatmap--heatmap-scene",
+        "heatmap--paragraph-1",
+        "heatmap--paragraph-2",
+        "heatmap--paragraph-3"
+      ],
+      "stepOrder": [
+        "heatmap--step-0",
+        "heatmap--step-1",
+        "heatmap--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "morph": {
+      "id": "morph",
+      "title": "路径变形：从欠拟合到过拟合",
+      "level": 2,
+      "children": [
+        "morph--morph-scene",
+        "morph--paragraph-1",
+        "morph--paragraph-2",
+        "morph--paragraph-3"
+      ],
+      "stepOrder": [
+        "morph--step-0",
+        "morph--step-1",
+        "morph--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "ring": {
+      "id": "ring",
+      "title": "进度环：圆上的 pathLength",
+      "level": 2,
+      "children": [
+        "ring--ring-scene",
+        "ring--paragraph-1",
+        "ring--paragraph-2",
+        "ring--paragraph-3"
+      ],
+      "stepOrder": [
+        "ring--step-0",
+        "ring--step-1",
+        "ring--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "scan": {
+      "id": "scan",
+      "title": "离散跳动：steps 缓动的线性查找与二分查找",
+      "level": 2,
+      "children": [
+        "scan--scan-scene",
+        "scan--paragraph-1",
+        "scan--paragraph-2"
+      ],
+      "stepOrder": [
+        "scan--step-0",
+        "scan--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "packet": {
+      "id": "packet",
+      "title": "关键帧与 times：一次往返与三次握手",
+      "level": 2,
+      "children": [
+        "packet--packet-scene",
+        "packet--paragraph-1",
+        "packet--paragraph-2"
+      ],
+      "stepOrder": [
+        "packet--step-0",
+        "packet--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "matrix": {
+      "id": "matrix",
+      "title": "二维变换：缩放、旋转、切变",
+      "level": 2,
+      "children": [
+        "matrix--matrix-scene",
+        "matrix--paragraph-1",
+        "matrix--paragraph-2",
+        "matrix--paragraph-3"
+      ],
+      "stepOrder": [
+        "matrix--step-0",
+        "matrix--step-1",
+        "matrix--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "easings": {
+      "id": "easings",
+      "title": "缓动一览",
+      "level": 2,
+      "children": [
+        "easings--easings-scene",
+        "easings--paragraph-1",
+        "easings--paragraph-2"
+      ],
+      "stepOrder": [
+        "easings--step-0",
+        "easings--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "spring-compare": {
+      "id": "spring-compare",
+      "title": "弹簧对比：回弹越大，停得越晚",
+      "level": 2,
+      "children": [
+        "spring-compare--spring-compare-scene",
+        "spring-compare--paragraph-1",
+        "spring-compare--paragraph-2"
+      ],
+      "stepOrder": [
+        "spring-compare--step-0",
+        "spring-compare--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "blur": {
+      "id": "blur",
+      "title": "景深：用模糊把注意力引到一张卡片",
+      "level": 2,
+      "children": [
+        "blur--blur-scene",
+        "blur--paragraph-1",
+        "blur--paragraph-2",
+        "blur--paragraph-3"
+      ],
+      "stepOrder": [
+        "blur--step-0",
+        "blur--step-1",
+        "blur--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "wipe": {
+      "id": "wipe",
+      "title": "擦除对比：clip-path",
+      "level": 2,
+      "children": [
+        "wipe--wipe-scene",
+        "wipe--paragraph-1",
+        "wipe--paragraph-2",
+        "wipe--paragraph-3"
+      ],
+      "stepOrder": [
+        "wipe--step-0",
+        "wipe--step-1",
+        "wipe--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "flip": {
+      "id": "flip",
+      "title": "三维翻转：问答卡片",
+      "level": 2,
+      "children": [
+        "flip--flip-scene",
+        "flip--paragraph-1",
+        "flip--paragraph-2"
+      ],
+      "stepOrder": [
+        "flip--step-0",
+        "flip--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "cssvar": {
+      "id": "cssvar",
+      "title": "一个 CSS 变量驱动整个布局",
+      "level": 2,
+      "children": [
+        "cssvar--cssvar-scene",
+        "cssvar--paragraph-1",
+        "cssvar--paragraph-2"
+      ],
+      "stepOrder": [
+        "cssvar--step-0",
+        "cssvar--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "canvas": {
+      "id": "canvas",
+      "title": "画布：motion value 驱动 Canvas",
+      "level": 2,
+      "children": [
+        "canvas--canvas-scene",
+        "canvas--paragraph-1",
+        "canvas--paragraph-2"
+      ],
+      "stepOrder": [
+        "canvas--step-0",
+        "canvas--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "pulse": {
+      "id": "pulse",
+      "title": "重复：心跳与广播",
+      "level": 2,
+      "children": [
+        "pulse--pulse-scene",
+        "pulse--paragraph-1",
+        "pulse--paragraph-2"
+      ],
+      "stepOrder": [
+        "pulse--step-0",
+        "pulse--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "intro--paragraph-1": {
+      "id": "intro--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Motion 适合网页里的图表、列表与 SVG：把一段段动画按时间排进一条序列，弹簧、错开与缓动都是现成的。同一元素的同一属性在一条序列里合成一条轨道，所以拖到任何时刻画面都确定。"
+            }
+          ]
+        }
+      ]
+    },
+    "bars--bars-scene": {
+      "id": "bars--bars-scene",
+      "type": "component",
+      "definitionId": "bars--bars-scene--definition",
+      "parameters": {
+        "scene": "bars",
+        "alt": "八个月的销量柱状图：柱子依次长出，换成下一年的数据，最高的一根变成强调色。"
+      }
+    },
+    "bars--paragraph-1": {
+      "id": "bars--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "bars--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "柱子从左到右依次长出来，顶上的数字跟着从零数到各自的值。"
+            }
+          ]
+        }
+      ]
+    },
+    "bars--paragraph-2": {
+      "id": "bars--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "bars--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "换成下一年的数据：每根柱子从原来的高度变到新高度，数字也跟着变。"
+            }
+          ]
+        }
+      ]
+    },
+    "bars--paragraph-3": {
+      "id": "bars--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "bars--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "五月最高，它换成强调色，其他柱子淡下去。"
+            }
+          ]
+        }
+      ]
+    },
+    "counter--counter-scene": {
+      "id": "counter--counter-scene",
+      "type": "component",
+      "definitionId": "counter--counter-scene--definition",
+      "parameters": {
+        "scene": "counter",
+        "alt": "训练面板上的三个数字：轮数按整数跳，损失下降，准确率上升。"
+      }
+    },
+    "counter--paragraph-1": {
+      "id": "counter--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "counter--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "前十轮：轮数一格一格跳，损失很快从 2.31 降到 1.12，准确率升到六成。"
+            }
+          ]
+        }
+      ]
+    },
+    "counter--paragraph-2": {
+      "id": "counter--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "counter--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "再训练四十轮：损失降得越来越慢，最后停在 0.42，准确率 91.3%。"
+            }
+          ]
+        }
+      ]
+    },
+    "reorder--reorder-scene": {
+      "id": "reorder--reorder-scene",
+      "type": "component",
+      "definitionId": "reorder--reorder-scene--definition",
+      "parameters": {
+        "scene": "reorder",
+        "alt": "六个数的冒泡排序，每一步是一趟，较大的数从上方越过较小的数。"
+      }
+    },
+    "reorder--paragraph-1": {
+      "id": "reorder--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "reorder--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一趟：相邻两个比较，前面大就交换，9 被一路换到最右边。"
+            }
+          ]
+        }
+      ]
+    },
+    "reorder--paragraph-2": {
+      "id": "reorder--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "reorder--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二趟：8 归位到倒数第二格。"
+            }
+          ]
+        }
+      ]
+    },
+    "reorder--paragraph-3": {
+      "id": "reorder--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "reorder--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第三趟：2 和 1、5 和 3 交换后，整列有序。"
+            }
+          ]
+        }
+      ]
+    },
+    "reorder--paragraph-4": {
+      "id": "reorder--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "reorder--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "排好了：从左到右依次亮起。"
+            }
+          ]
+        }
+      ]
+    },
+    "stagger--stagger-scene": {
+      "id": "stagger--stagger-scene",
+      "type": "component",
+      "definitionId": "stagger--stagger-scene--definition",
+      "parameters": {
+        "scene": "ripple",
+        "alt": "一句话的词从中间向两边出现；网格从中心泛起一圈圈波纹，再从最后一格开始退回。"
+      }
+    },
+    "stagger--paragraph-1": {
+      "id": "stagger--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "stagger--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "句子的词从中间向两端依次出现。"
+            }
+          ]
+        }
+      ]
+    },
+    "stagger--paragraph-2": {
+      "id": "stagger--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "stagger--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "网格从中心泛起波纹：离中心越远，开始得越晚。"
+            }
+          ]
+        }
+      ]
+    },
+    "stagger--paragraph-3": {
+      "id": "stagger--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "stagger--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "从最后一格开始退回原色，越到后面越密。"
+            }
+          ]
+        }
+      ]
+    },
+    "spring--spring-scene": {
+      "id": "spring--spring-scene",
+      "type": "component",
+      "definitionId": "spring--spring-scene--definition",
+      "parameters": {
+        "scene": "spring-tree",
+        "alt": "二叉搜索树逐层出现：先画边，再让节点带着回弹弹出。"
+      }
+    },
+    "spring--paragraph-1": {
+      "id": "spring--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "spring--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "根节点 8 弹出来。"
+            }
+          ]
+        }
+      ]
+    },
+    "spring--paragraph-2": {
+      "id": "spring--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "spring--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二层：先画出两条边，4 和 12 依次弹出。"
+            }
+          ]
+        }
+      ]
+    },
+    "spring--paragraph-3": {
+      "id": "spring--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "spring--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第三层的四个叶子依次弹出。"
+            }
+          ]
+        }
+      ]
+    },
+    "draw--draw-scene": {
+      "id": "draw--draw-scene",
+      "type": "component",
+      "definitionId": "draw--draw-scene--definition",
+      "parameters": {
+        "scene": "draw",
+        "alt": "坐标轴先画出，然后训练损失与验证损失曲线从左到右画出，标出提前停止的位置。"
+      }
+    },
+    "draw--paragraph-1": {
+      "id": "draw--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "draw--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先画坐标轴：纵轴是损失，横轴是轮数。"
+            }
+          ]
+        }
+      ]
+    },
+    "draw--paragraph-2": {
+      "id": "draw--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "draw--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "训练损失一路下降。"
+            }
+          ]
+        }
+      ]
+    },
+    "draw--paragraph-3": {
+      "id": "draw--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "draw--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "验证损失先降后升，在它转头的地方停止训练。"
+            }
+          ]
+        }
+      ]
+    },
+    "flow--flow-scene": {
+      "id": "flow--flow-scene",
+      "type": "component",
+      "definitionId": "flow--flow-scene--definition",
+      "parameters": {
+        "scene": "flow",
+        "alt": "一个小神经网络：前向传播的脉冲从输入层流到输出层，梯度再从输出层流回输入层。"
+      }
+    },
+    "flow--paragraph-1": {
+      "id": "flow--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "flow--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "前向传播：信号一层一层从输入流到输出。"
+            }
+          ]
+        }
+      ]
+    },
+    "flow--paragraph-2": {
+      "id": "flow--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "flow--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "反向传播：梯度从输出流回输入，经过的节点都标成红色。"
+            }
+          ]
+        }
+      ]
+    },
+    "emphasis--emphasis-scene": {
+      "id": "emphasis--emphasis-scene",
+      "type": "component",
+      "definitionId": "emphasis--emphasis-scene--definition",
+      "parameters": {
+        "scene": "emphasis",
+        "alt": "一段求平均值的代码：高亮条先框住循环，再移到 return 一行变红并抖动，最后多余的“- 1”弹一下。"
+      }
+    },
+    "emphasis--paragraph-1": {
+      "id": "emphasis--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "emphasis--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "循环这两行把所有数加起来。"
+            }
+          ]
+        }
+      ]
+    },
+    "emphasis--paragraph-2": {
+      "id": "emphasis--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "emphasis--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "问题在 return 这一行：高亮条移过去，变红，抖一抖。"
+            }
+          ]
+        }
+      ]
+    },
+    "emphasis--paragraph-3": {
+      "id": "emphasis--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "emphasis--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "多减了一个 1。"
+            }
+          ]
+        }
+      ]
+    },
+    "labels--labels-scene": {
+      "id": "labels--labels-scene",
+      "type": "component",
+      "definitionId": "labels--labels-scene--definition",
+      "parameters": {
+        "scene": "labels",
+        "alt": "编译器的五个阶段依次出现，箭头连接；然后逐个强调，出现说明文字。"
+      }
+    },
+    "labels--paragraph-1": {
+      "id": "labels--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "labels--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "源码、词法分析、语法树、中间表示、机器码，一段接一段出现。"
+            }
+          ]
+        }
+      ]
+    },
+    "labels--paragraph-2": {
+      "id": "labels--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "labels--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每一段依次跳一下：它只看前一段的产物。"
+            }
+          ]
+        }
+      ]
+    },
+    "heatmap--heatmap-scene": {
+      "id": "heatmap--heatmap-scene",
+      "type": "component",
+      "definitionId": "heatmap--heatmap-scene--definition",
+      "parameters": {
+        "scene": "heatmap",
+        "alt": "八个词的注意力矩阵：从均匀分布变成局部注意力，再变成带因果遮罩的注意力。"
+      }
+    },
+    "heatmap--paragraph-1": {
+      "id": "heatmap--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "heatmap--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一开始每个词平均地看所有词。"
+            }
+          ]
+        }
+      ]
+    },
+    "heatmap--paragraph-2": {
+      "id": "heatmap--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "heatmap--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "局部注意力：每个词主要看自己和邻近的词，颜色集中到对角线。"
+            }
+          ]
+        }
+      ]
+    },
+    "heatmap--paragraph-3": {
+      "id": "heatmap--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "heatmap--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "因果遮罩：只能看前面的词，右上角全部变空。"
+            }
+          ]
+        }
+      ]
+    },
+    "morph--morph-scene": {
+      "id": "morph--morph-scene",
+      "type": "component",
+      "definitionId": "morph--morph-scene--definition",
+      "parameters": {
+        "scene": "morph",
+        "alt": "十八个数据点与一条拟合曲线：直线变成恰当的曲线，再变成穿过每个点的波浪线。"
+      }
+    },
+    "morph--paragraph-1": {
+      "id": "morph--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "morph--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "数据点出现，一条直线去拟合它们，明显不够。"
+            }
+          ]
+        }
+      ]
+    },
+    "morph--paragraph-2": {
+      "id": "morph--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "morph--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "直线弯成恰当的曲线，贴着数据的走势。"
+            }
+          ]
+        }
+      ]
+    },
+    "morph--paragraph-3": {
+      "id": "morph--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "morph--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "参数太多：曲线扭来扭去穿过每个点，这是过拟合。"
+            }
+          ]
+        }
+      ]
+    },
+    "ring--ring-scene": {
+      "id": "ring--ring-scene",
+      "type": "component",
+      "definitionId": "ring--ring-scene--definition",
+      "parameters": {
+        "scene": "ring",
+        "alt": "一个进度环与四个任务：25%、72%，到 100% 时变成绿色。"
+      }
+    },
+    "ring--paragraph-1": {
+      "id": "ring--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "ring--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "下载数据完成，进度 25%。"
+            }
+          ]
+        }
+      ]
+    },
+    "ring--paragraph-2": {
+      "id": "ring--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "ring--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "预处理和训练完成，进度 72%。"
+            }
+          ]
+        }
+      ]
+    },
+    "ring--paragraph-3": {
+      "id": "ring--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "ring--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "评估完成，进度环走满，变成绿色。"
+            }
+          ]
+        }
+      ]
+    },
+    "scan--scan-scene": {
+      "id": "scan--scan-scene",
+      "type": "component",
+      "definitionId": "scan--scan-scene--definition",
+      "parameters": {
+        "scene": "scan",
+        "alt": "在有序数组里找 61：线性查找一格一格走了八次，二分查找两次就找到。"
+      }
+    },
+    "scan--paragraph-1": {
+      "id": "scan--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "scan--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "线性查找：指针一格一格向右，比较到第八次才找到 61。"
+            }
+          ]
+        }
+      ]
+    },
+    "scan--paragraph-2": {
+      "id": "scan--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "scan--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "二分查找：先看中间的 34，比 61 小，丢掉左半边；再看 61，找到了，只比较了两次。"
+            }
+          ]
+        }
+      ]
+    },
+    "packet--packet-scene": {
+      "id": "packet--packet-scene",
+      "type": "component",
+      "definitionId": "packet--packet-scene--definition",
+      "parameters": {
+        "scene": "packet",
+        "alt": "客户端与服务器之间：一个请求去了又回来；然后是 TCP 的三次握手。"
+      }
+    },
+    "packet--paragraph-1": {
+      "id": "packet--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "packet--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "请求发到服务器，在那里停一下，变成响应回来，这一来一回就是 RTT。"
+            }
+          ]
+        }
+      ]
+    },
+    "packet--paragraph-2": {
+      "id": "packet--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "packet--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "建立连接要三次握手：SYN 过去，SYN-ACK 回来，ACK 再过去。"
+            }
+          ]
+        }
+      ]
+    },
+    "matrix--matrix-scene": {
+      "id": "matrix--matrix-scene",
+      "type": "component",
+      "definitionId": "matrix--matrix-scene--definition",
+      "parameters": {
+        "scene": "matrix",
+        "alt": "一张网格与两个基向量依次缩放、旋转、切变，右边显示对应的矩阵。"
+      }
+    },
+    "matrix--paragraph-1": {
+      "id": "matrix--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "matrix--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "横向拉长 1.4 倍，纵向压到 0.7 倍：矩阵的对角线就是两个缩放倍数。"
+            }
+          ]
+        }
+      ]
+    },
+    "matrix--paragraph-2": {
+      "id": "matrix--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "matrix--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "再逆时针转 30 度，矩阵里出现了正弦和余弦。"
+            }
+          ]
+        }
+      ]
+    },
+    "matrix--paragraph-3": {
+      "id": "matrix--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "matrix--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "最后沿横向切变，网格变成平行四边形。"
+            }
+          ]
+        }
+      ]
+    },
+    "easings--easings-scene": {
+      "id": "easings--easings-scene",
+      "type": "component",
+      "definitionId": "easings--easings-scene--definition",
+      "parameters": {
+        "scene": "easings",
+        "alt": "九种缓动并排：左边是缓动曲线，右边的点用同样的缓动跑过去再跑回来。"
+      }
+    },
+    "easings--paragraph-1": {
+      "id": "easings--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "easings--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "同时出发，同时到达，快慢不同：backOut 冲过头再回来，anticipate 先后退再冲，steps 一格一格跳。"
+            }
+          ]
+        }
+      ]
+    },
+    "easings--paragraph-2": {
+      "id": "easings--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "easings--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "再跑回来。"
+            }
+          ]
+        }
+      ]
+    },
+    "spring-compare--spring-compare-scene": {
+      "id": "spring-compare--spring-compare-scene",
+      "type": "component",
+      "definitionId": "spring-compare--spring-compare-scene--definition",
+      "parameters": {
+        "scene": "spring-compare",
+        "alt": "五个弹簧并排：回弹 0、0.25、0.5、0.75，以及用刚度与阻尼定义的弹簧。"
+      }
+    },
+    "spring-compare--paragraph-1": {
+      "id": "spring-compare--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "spring-compare--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "同样的视觉时长，回弹越大，越要来回晃几下才停。"
+            }
+          ]
+        }
+      ]
+    },
+    "spring-compare--paragraph-2": {
+      "id": "spring-compare--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "spring-compare--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "再弹回来。"
+            }
+          ]
+        }
+      ]
+    },
+    "blur--blur-scene": {
+      "id": "blur--blur-scene",
+      "type": "component",
+      "definitionId": "blur--blur-scene--definition",
+      "parameters": {
+        "scene": "blur",
+        "alt": "机器学习的四种范式卡片：先依次出现，再让正在讲的一张清晰放大，其他的模糊变淡。"
+      }
+    },
+    "blur--paragraph-1": {
+      "id": "blur--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "blur--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "四种学习范式。"
+            }
+          ]
+        }
+      ]
+    },
+    "blur--paragraph-2": {
+      "id": "blur--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "blur--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先讲强化学习：它放大，其余变模糊。"
+            }
+          ]
+        }
+      ]
+    },
+    "blur--paragraph-3": {
+      "id": "blur--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "blur--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "再讲自监督学习。"
+            }
+          ]
+        }
+      ]
+    },
+    "wipe--wipe-scene": {
+      "id": "wipe--wipe-scene",
+      "type": "component",
+      "definitionId": "wipe--wipe-scene--definition",
+      "parameters": {
+        "scene": "wipe",
+        "alt": "一张带噪声的图像被分割线从左向右擦成去噪后的图像，最后圆形展开说明文字。"
+      }
+    },
+    "wipe--paragraph-1": {
+      "id": "wipe--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "wipe--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "分割线从左边扫到中间：左边是去噪后的，右边是原来带噪声的。"
+            }
+          ]
+        }
+      ]
+    },
+    "wipe--paragraph-2": {
+      "id": "wipe--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "wipe--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "扫到最右边，整张都去噪了。"
+            }
+          ]
+        }
+      ]
+    },
+    "wipe--paragraph-3": {
+      "id": "wipe--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "wipe--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "说明文字从中心圆形展开。"
+            }
+          ]
+        }
+      ]
+    },
+    "flip--flip-scene": {
+      "id": "flip--flip-scene",
+      "type": "component",
+      "definitionId": "flip--flip-scene--definition",
+      "parameters": {
+        "scene": "flip",
+        "alt": "三张问答卡片发到桌上，再依次翻面显示答案。"
+      }
+    },
+    "flip--paragraph-1": {
+      "id": "flip--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "flip--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "三张卡片，正面是问题。"
+            }
+          ]
+        }
+      ]
+    },
+    "flip--paragraph-2": {
+      "id": "flip--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "flip--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "依次翻过来，背面是公式。"
+            }
+          ]
+        }
+      ]
+    },
+    "cssvar--cssvar-scene": {
+      "id": "cssvar--cssvar-scene",
+      "type": "component",
+      "definitionId": "cssvar--cssvar-scene--definition",
+      "parameters": {
+        "scene": "cssvar",
+        "alt": "数据集的训练与测试划分：分割点移动时，两部分的宽度、分割线和颜色深浅一起变化。"
+      }
+    },
+    "cssvar--paragraph-1": {
+      "id": "cssvar--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "cssvar--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "训练集从一半扩到 70%。"
+            }
+          ]
+        }
+      ]
+    },
+    "cssvar--paragraph-2": {
+      "id": "cssvar--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "cssvar--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "再扩到 90%，分割线冲过头一点再回来。"
+            }
+          ]
+        }
+      ]
+    },
+    "canvas--canvas-scene": {
+      "id": "canvas--canvas-scene",
+      "type": "component",
+      "definitionId": "canvas--canvas-scene--definition",
+      "parameters": {
+        "scene": "canvas",
+        "alt": "一个狭长山谷的等高线图：梯度下降来回折返地走向最小值，动量法顺着山谷滚下去。"
+      }
+    },
+    "canvas--paragraph-1": {
+      "id": "canvas--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "canvas--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "梯度下降：山谷两侧太陡，每一步都冲过头，来回折返地前进。"
+            }
+          ]
+        }
+      ]
+    },
+    "canvas--paragraph-2": {
+      "id": "canvas--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "canvas--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "动量法：把过去的方向累积起来，折返互相抵消，沿着谷底直奔最小值。"
+            }
+          ]
+        }
+      ]
+    },
+    "pulse--pulse-scene": {
+      "id": "pulse--pulse-scene",
+      "type": "component",
+      "definitionId": "pulse--pulse-scene--definition",
+      "parameters": {
+        "scene": "pulse",
+        "alt": "领导者节点跳动四下，然后向外发出一圈圈广播，周围的节点依次响应。"
+      }
+    },
+    "pulse--paragraph-1": {
+      "id": "pulse--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "pulse--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "领导者的心跳：放大缩小，重复四下。"
+            }
+          ]
+        }
+      ]
+    },
+    "pulse--paragraph-2": {
+      "id": "pulse--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "pulse--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "广播：波纹一圈圈向外扩散，节点依次亮起。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "intro--step-0": {
+      "id": "intro--step-0",
+      "sectionId": "intro",
+      "visuals": [
+        {
+          "blockId": "intro--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "intro--paragraph-1--narration"
+      ]
+    },
+    "bars--step-0": {
+      "id": "bars--step-0",
+      "sectionId": "bars",
+      "visuals": [
+        {
+          "blockId": "bars--bars-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "bars--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "bars--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "bars--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "bars--paragraph-1--narration"
+      ]
+    },
+    "bars--step-1": {
+      "id": "bars--step-1",
+      "sectionId": "bars",
+      "visuals": [
+        {
+          "blockId": "bars--bars-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "bars--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "bars--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "bars--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "bars--paragraph-2--narration"
+      ]
+    },
+    "bars--step-2": {
+      "id": "bars--step-2",
+      "sectionId": "bars",
+      "visuals": [
+        {
+          "blockId": "bars--bars-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "bars--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "bars--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "bars--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "bars--paragraph-3--narration"
+      ]
+    },
+    "counter--step-0": {
+      "id": "counter--step-0",
+      "sectionId": "counter",
+      "visuals": [
+        {
+          "blockId": "counter--counter-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "counter--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "counter--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "counter--paragraph-1--narration"
+      ]
+    },
+    "counter--step-1": {
+      "id": "counter--step-1",
+      "sectionId": "counter",
+      "visuals": [
+        {
+          "blockId": "counter--counter-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "counter--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "counter--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "counter--paragraph-2--narration"
+      ]
+    },
+    "reorder--step-0": {
+      "id": "reorder--step-0",
+      "sectionId": "reorder",
+      "visuals": [
+        {
+          "blockId": "reorder--reorder-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "reorder--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "reorder--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "reorder--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "reorder--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "reorder--paragraph-1--narration"
+      ]
+    },
+    "reorder--step-1": {
+      "id": "reorder--step-1",
+      "sectionId": "reorder",
+      "visuals": [
+        {
+          "blockId": "reorder--reorder-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "reorder--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "reorder--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "reorder--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "reorder--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "reorder--paragraph-2--narration"
+      ]
+    },
+    "reorder--step-2": {
+      "id": "reorder--step-2",
+      "sectionId": "reorder",
+      "visuals": [
+        {
+          "blockId": "reorder--reorder-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "reorder--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "reorder--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "reorder--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "reorder--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "reorder--paragraph-3--narration"
+      ]
+    },
+    "reorder--step-3": {
+      "id": "reorder--step-3",
+      "sectionId": "reorder",
+      "visuals": [
+        {
+          "blockId": "reorder--reorder-scene",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "reorder--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "reorder--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "reorder--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "reorder--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "reorder--paragraph-4--narration"
+      ]
+    },
+    "stagger--step-0": {
+      "id": "stagger--step-0",
+      "sectionId": "stagger",
+      "visuals": [
+        {
+          "blockId": "stagger--stagger-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "stagger--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "stagger--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "stagger--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "stagger--paragraph-1--narration"
+      ]
+    },
+    "stagger--step-1": {
+      "id": "stagger--step-1",
+      "sectionId": "stagger",
+      "visuals": [
+        {
+          "blockId": "stagger--stagger-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "stagger--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "stagger--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "stagger--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "stagger--paragraph-2--narration"
+      ]
+    },
+    "stagger--step-2": {
+      "id": "stagger--step-2",
+      "sectionId": "stagger",
+      "visuals": [
+        {
+          "blockId": "stagger--stagger-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "stagger--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "stagger--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "stagger--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "stagger--paragraph-3--narration"
+      ]
+    },
+    "spring--step-0": {
+      "id": "spring--step-0",
+      "sectionId": "spring",
+      "visuals": [
+        {
+          "blockId": "spring--spring-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "spring--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "spring--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "spring--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "spring--paragraph-1--narration"
+      ]
+    },
+    "spring--step-1": {
+      "id": "spring--step-1",
+      "sectionId": "spring",
+      "visuals": [
+        {
+          "blockId": "spring--spring-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "spring--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "spring--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "spring--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "spring--paragraph-2--narration"
+      ]
+    },
+    "spring--step-2": {
+      "id": "spring--step-2",
+      "sectionId": "spring",
+      "visuals": [
+        {
+          "blockId": "spring--spring-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "spring--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "spring--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "spring--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "spring--paragraph-3--narration"
+      ]
+    },
+    "draw--step-0": {
+      "id": "draw--step-0",
+      "sectionId": "draw",
+      "visuals": [
+        {
+          "blockId": "draw--draw-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "draw--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "draw--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "draw--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "draw--paragraph-1--narration"
+      ]
+    },
+    "draw--step-1": {
+      "id": "draw--step-1",
+      "sectionId": "draw",
+      "visuals": [
+        {
+          "blockId": "draw--draw-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "draw--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "draw--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "draw--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "draw--paragraph-2--narration"
+      ]
+    },
+    "draw--step-2": {
+      "id": "draw--step-2",
+      "sectionId": "draw",
+      "visuals": [
+        {
+          "blockId": "draw--draw-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "draw--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "draw--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "draw--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "draw--paragraph-3--narration"
+      ]
+    },
+    "flow--step-0": {
+      "id": "flow--step-0",
+      "sectionId": "flow",
+      "visuals": [
+        {
+          "blockId": "flow--flow-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "flow--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "flow--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "flow--paragraph-1--narration"
+      ]
+    },
+    "flow--step-1": {
+      "id": "flow--step-1",
+      "sectionId": "flow",
+      "visuals": [
+        {
+          "blockId": "flow--flow-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "flow--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "flow--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "flow--paragraph-2--narration"
+      ]
+    },
+    "emphasis--step-0": {
+      "id": "emphasis--step-0",
+      "sectionId": "emphasis",
+      "visuals": [
+        {
+          "blockId": "emphasis--emphasis-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "emphasis--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "emphasis--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "emphasis--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "emphasis--paragraph-1--narration"
+      ]
+    },
+    "emphasis--step-1": {
+      "id": "emphasis--step-1",
+      "sectionId": "emphasis",
+      "visuals": [
+        {
+          "blockId": "emphasis--emphasis-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "emphasis--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "emphasis--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "emphasis--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "emphasis--paragraph-2--narration"
+      ]
+    },
+    "emphasis--step-2": {
+      "id": "emphasis--step-2",
+      "sectionId": "emphasis",
+      "visuals": [
+        {
+          "blockId": "emphasis--emphasis-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "emphasis--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "emphasis--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "emphasis--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "emphasis--paragraph-3--narration"
+      ]
+    },
+    "labels--step-0": {
+      "id": "labels--step-0",
+      "sectionId": "labels",
+      "visuals": [
+        {
+          "blockId": "labels--labels-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "labels--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "labels--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "labels--paragraph-1--narration"
+      ]
+    },
+    "labels--step-1": {
+      "id": "labels--step-1",
+      "sectionId": "labels",
+      "visuals": [
+        {
+          "blockId": "labels--labels-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "labels--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "labels--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "labels--paragraph-2--narration"
+      ]
+    },
+    "heatmap--step-0": {
+      "id": "heatmap--step-0",
+      "sectionId": "heatmap",
+      "visuals": [
+        {
+          "blockId": "heatmap--heatmap-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "heatmap--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "heatmap--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "heatmap--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "heatmap--paragraph-1--narration"
+      ]
+    },
+    "heatmap--step-1": {
+      "id": "heatmap--step-1",
+      "sectionId": "heatmap",
+      "visuals": [
+        {
+          "blockId": "heatmap--heatmap-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "heatmap--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "heatmap--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "heatmap--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "heatmap--paragraph-2--narration"
+      ]
+    },
+    "heatmap--step-2": {
+      "id": "heatmap--step-2",
+      "sectionId": "heatmap",
+      "visuals": [
+        {
+          "blockId": "heatmap--heatmap-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "heatmap--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "heatmap--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "heatmap--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "heatmap--paragraph-3--narration"
+      ]
+    },
+    "morph--step-0": {
+      "id": "morph--step-0",
+      "sectionId": "morph",
+      "visuals": [
+        {
+          "blockId": "morph--morph-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "morph--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "morph--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "morph--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "morph--paragraph-1--narration"
+      ]
+    },
+    "morph--step-1": {
+      "id": "morph--step-1",
+      "sectionId": "morph",
+      "visuals": [
+        {
+          "blockId": "morph--morph-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "morph--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "morph--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "morph--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "morph--paragraph-2--narration"
+      ]
+    },
+    "morph--step-2": {
+      "id": "morph--step-2",
+      "sectionId": "morph",
+      "visuals": [
+        {
+          "blockId": "morph--morph-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "morph--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "morph--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "morph--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "morph--paragraph-3--narration"
+      ]
+    },
+    "ring--step-0": {
+      "id": "ring--step-0",
+      "sectionId": "ring",
+      "visuals": [
+        {
+          "blockId": "ring--ring-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "ring--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "ring--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "ring--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "ring--paragraph-1--narration"
+      ]
+    },
+    "ring--step-1": {
+      "id": "ring--step-1",
+      "sectionId": "ring",
+      "visuals": [
+        {
+          "blockId": "ring--ring-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "ring--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "ring--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "ring--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "ring--paragraph-2--narration"
+      ]
+    },
+    "ring--step-2": {
+      "id": "ring--step-2",
+      "sectionId": "ring",
+      "visuals": [
+        {
+          "blockId": "ring--ring-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "ring--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "ring--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "ring--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "ring--paragraph-3--narration"
+      ]
+    },
+    "scan--step-0": {
+      "id": "scan--step-0",
+      "sectionId": "scan",
+      "visuals": [
+        {
+          "blockId": "scan--scan-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "scan--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "scan--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "scan--paragraph-1--narration"
+      ]
+    },
+    "scan--step-1": {
+      "id": "scan--step-1",
+      "sectionId": "scan",
+      "visuals": [
+        {
+          "blockId": "scan--scan-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "scan--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "scan--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "scan--paragraph-2--narration"
+      ]
+    },
+    "packet--step-0": {
+      "id": "packet--step-0",
+      "sectionId": "packet",
+      "visuals": [
+        {
+          "blockId": "packet--packet-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "packet--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "packet--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "packet--paragraph-1--narration"
+      ]
+    },
+    "packet--step-1": {
+      "id": "packet--step-1",
+      "sectionId": "packet",
+      "visuals": [
+        {
+          "blockId": "packet--packet-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "packet--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "packet--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "packet--paragraph-2--narration"
+      ]
+    },
+    "matrix--step-0": {
+      "id": "matrix--step-0",
+      "sectionId": "matrix",
+      "visuals": [
+        {
+          "blockId": "matrix--matrix-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "matrix--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "matrix--paragraph-1--narration"
+      ]
+    },
+    "matrix--step-1": {
+      "id": "matrix--step-1",
+      "sectionId": "matrix",
+      "visuals": [
+        {
+          "blockId": "matrix--matrix-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "matrix--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "matrix--paragraph-2--narration"
+      ]
+    },
+    "matrix--step-2": {
+      "id": "matrix--step-2",
+      "sectionId": "matrix",
+      "visuals": [
+        {
+          "blockId": "matrix--matrix-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "matrix--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "matrix--paragraph-3--narration"
+      ]
+    },
+    "easings--step-0": {
+      "id": "easings--step-0",
+      "sectionId": "easings",
+      "visuals": [
+        {
+          "blockId": "easings--easings-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "easings--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "easings--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "easings--paragraph-1--narration"
+      ]
+    },
+    "easings--step-1": {
+      "id": "easings--step-1",
+      "sectionId": "easings",
+      "visuals": [
+        {
+          "blockId": "easings--easings-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "easings--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "easings--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "easings--paragraph-2--narration"
+      ]
+    },
+    "spring-compare--step-0": {
+      "id": "spring-compare--step-0",
+      "sectionId": "spring-compare",
+      "visuals": [
+        {
+          "blockId": "spring-compare--spring-compare-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "spring-compare--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "spring-compare--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "spring-compare--paragraph-1--narration"
+      ]
+    },
+    "spring-compare--step-1": {
+      "id": "spring-compare--step-1",
+      "sectionId": "spring-compare",
+      "visuals": [
+        {
+          "blockId": "spring-compare--spring-compare-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "spring-compare--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "spring-compare--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "spring-compare--paragraph-2--narration"
+      ]
+    },
+    "blur--step-0": {
+      "id": "blur--step-0",
+      "sectionId": "blur",
+      "visuals": [
+        {
+          "blockId": "blur--blur-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "blur--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "blur--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "blur--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "blur--paragraph-1--narration"
+      ]
+    },
+    "blur--step-1": {
+      "id": "blur--step-1",
+      "sectionId": "blur",
+      "visuals": [
+        {
+          "blockId": "blur--blur-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "blur--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "blur--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "blur--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "blur--paragraph-2--narration"
+      ]
+    },
+    "blur--step-2": {
+      "id": "blur--step-2",
+      "sectionId": "blur",
+      "visuals": [
+        {
+          "blockId": "blur--blur-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "blur--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "blur--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "blur--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "blur--paragraph-3--narration"
+      ]
+    },
+    "wipe--step-0": {
+      "id": "wipe--step-0",
+      "sectionId": "wipe",
+      "visuals": [
+        {
+          "blockId": "wipe--wipe-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "wipe--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "wipe--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "wipe--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "wipe--paragraph-1--narration"
+      ]
+    },
+    "wipe--step-1": {
+      "id": "wipe--step-1",
+      "sectionId": "wipe",
+      "visuals": [
+        {
+          "blockId": "wipe--wipe-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "wipe--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "wipe--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "wipe--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "wipe--paragraph-2--narration"
+      ]
+    },
+    "wipe--step-2": {
+      "id": "wipe--step-2",
+      "sectionId": "wipe",
+      "visuals": [
+        {
+          "blockId": "wipe--wipe-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "wipe--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "wipe--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "wipe--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "wipe--paragraph-3--narration"
+      ]
+    },
+    "flip--step-0": {
+      "id": "flip--step-0",
+      "sectionId": "flip",
+      "visuals": [
+        {
+          "blockId": "flip--flip-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "flip--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "flip--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "flip--paragraph-1--narration"
+      ]
+    },
+    "flip--step-1": {
+      "id": "flip--step-1",
+      "sectionId": "flip",
+      "visuals": [
+        {
+          "blockId": "flip--flip-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "flip--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "flip--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "flip--paragraph-2--narration"
+      ]
+    },
+    "cssvar--step-0": {
+      "id": "cssvar--step-0",
+      "sectionId": "cssvar",
+      "visuals": [
+        {
+          "blockId": "cssvar--cssvar-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "cssvar--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "cssvar--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "cssvar--paragraph-1--narration"
+      ]
+    },
+    "cssvar--step-1": {
+      "id": "cssvar--step-1",
+      "sectionId": "cssvar",
+      "visuals": [
+        {
+          "blockId": "cssvar--cssvar-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "cssvar--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "cssvar--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "cssvar--paragraph-2--narration"
+      ]
+    },
+    "canvas--step-0": {
+      "id": "canvas--step-0",
+      "sectionId": "canvas",
+      "visuals": [
+        {
+          "blockId": "canvas--canvas-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "canvas--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "canvas--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "canvas--paragraph-1--narration"
+      ]
+    },
+    "canvas--step-1": {
+      "id": "canvas--step-1",
+      "sectionId": "canvas",
+      "visuals": [
+        {
+          "blockId": "canvas--canvas-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "canvas--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "canvas--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "canvas--paragraph-2--narration"
+      ]
+    },
+    "pulse--step-0": {
+      "id": "pulse--step-0",
+      "sectionId": "pulse",
+      "visuals": [
+        {
+          "blockId": "pulse--pulse-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "pulse--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "pulse--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "pulse--paragraph-1--narration"
+      ]
+    },
+    "pulse--step-1": {
+      "id": "pulse--step-1",
+      "sectionId": "pulse",
+      "visuals": [
+        {
+          "blockId": "pulse--pulse-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "pulse--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "pulse--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "pulse--paragraph-2--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "intro--paragraph-1--narration": {
+      "id": "intro--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Motion 适合网页里的图表、列表与 SVG：把一段段动画按时间排进一条序列，弹簧、错开与缓动都是现成的。同一元素的同一属性在一条序列里合成一条轨道，所以拖到任何时刻画面都确定。"
+        }
+      ]
+    },
+    "bars--paragraph-1--narration": {
+      "id": "bars--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "柱子从左到右依次长出来，顶上的数字跟着从零数到各自的值。"
+        }
+      ]
+    },
+    "bars--paragraph-2--narration": {
+      "id": "bars--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "换成下一年的数据：每根柱子从原来的高度变到新高度，数字也跟着变。"
+        }
+      ]
+    },
+    "bars--paragraph-3--narration": {
+      "id": "bars--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "五月最高，它换成强调色，其他柱子淡下去。"
+        }
+      ]
+    },
+    "counter--paragraph-1--narration": {
+      "id": "counter--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "前十轮：轮数一格一格跳，损失很快从 2.31 降到 1.12，准确率升到六成。"
+        }
+      ]
+    },
+    "counter--paragraph-2--narration": {
+      "id": "counter--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "再训练四十轮：损失降得越来越慢，最后停在 0.42，准确率 91.3%。"
+        }
+      ]
+    },
+    "reorder--paragraph-1--narration": {
+      "id": "reorder--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第一趟：相邻两个比较，前面大就交换，9 被一路换到最右边。"
+        }
+      ]
+    },
+    "reorder--paragraph-2--narration": {
+      "id": "reorder--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二趟：8 归位到倒数第二格。"
+        }
+      ]
+    },
+    "reorder--paragraph-3--narration": {
+      "id": "reorder--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第三趟：2 和 1、5 和 3 交换后，整列有序。"
+        }
+      ]
+    },
+    "reorder--paragraph-4--narration": {
+      "id": "reorder--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "排好了：从左到右依次亮起。"
+        }
+      ]
+    },
+    "stagger--paragraph-1--narration": {
+      "id": "stagger--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "句子的词从中间向两端依次出现。"
+        }
+      ]
+    },
+    "stagger--paragraph-2--narration": {
+      "id": "stagger--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "网格从中心泛起波纹：离中心越远，开始得越晚。"
+        }
+      ]
+    },
+    "stagger--paragraph-3--narration": {
+      "id": "stagger--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "从最后一格开始退回原色，越到后面越密。"
+        }
+      ]
+    },
+    "spring--paragraph-1--narration": {
+      "id": "spring--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "根节点 8 弹出来。"
+        }
+      ]
+    },
+    "spring--paragraph-2--narration": {
+      "id": "spring--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二层：先画出两条边，4 和 12 依次弹出。"
+        }
+      ]
+    },
+    "spring--paragraph-3--narration": {
+      "id": "spring--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第三层的四个叶子依次弹出。"
+        }
+      ]
+    },
+    "draw--paragraph-1--narration": {
+      "id": "draw--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先画坐标轴：纵轴是损失，横轴是轮数。"
+        }
+      ]
+    },
+    "draw--paragraph-2--narration": {
+      "id": "draw--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "训练损失一路下降。"
+        }
+      ]
+    },
+    "draw--paragraph-3--narration": {
+      "id": "draw--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "验证损失先降后升，在它转头的地方停止训练。"
+        }
+      ]
+    },
+    "flow--paragraph-1--narration": {
+      "id": "flow--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "前向传播：信号一层一层从输入流到输出。"
+        }
+      ]
+    },
+    "flow--paragraph-2--narration": {
+      "id": "flow--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "反向传播：梯度从输出流回输入，经过的节点都标成红色。"
+        }
+      ]
+    },
+    "emphasis--paragraph-1--narration": {
+      "id": "emphasis--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "循环这两行把所有数加起来。"
+        }
+      ]
+    },
+    "emphasis--paragraph-2--narration": {
+      "id": "emphasis--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "问题在 return 这一行：高亮条移过去，变红，抖一抖。"
+        }
+      ]
+    },
+    "emphasis--paragraph-3--narration": {
+      "id": "emphasis--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "多减了一个 1。"
+        }
+      ]
+    },
+    "labels--paragraph-1--narration": {
+      "id": "labels--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "源码、词法分析、语法树、中间表示、机器码，一段接一段出现。"
+        }
+      ]
+    },
+    "labels--paragraph-2--narration": {
+      "id": "labels--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "每一段依次跳一下：它只看前一段的产物。"
+        }
+      ]
+    },
+    "heatmap--paragraph-1--narration": {
+      "id": "heatmap--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "一开始每个词平均地看所有词。"
+        }
+      ]
+    },
+    "heatmap--paragraph-2--narration": {
+      "id": "heatmap--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "局部注意力：每个词主要看自己和邻近的词，颜色集中到对角线。"
+        }
+      ]
+    },
+    "heatmap--paragraph-3--narration": {
+      "id": "heatmap--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "因果遮罩：只能看前面的词，右上角全部变空。"
+        }
+      ]
+    },
+    "morph--paragraph-1--narration": {
+      "id": "morph--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "数据点出现，一条直线去拟合它们，明显不够。"
+        }
+      ]
+    },
+    "morph--paragraph-2--narration": {
+      "id": "morph--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "直线弯成恰当的曲线，贴着数据的走势。"
+        }
+      ]
+    },
+    "morph--paragraph-3--narration": {
+      "id": "morph--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "参数太多：曲线扭来扭去穿过每个点，这是过拟合。"
+        }
+      ]
+    },
+    "ring--paragraph-1--narration": {
+      "id": "ring--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "下载数据完成，进度 25%。"
+        }
+      ]
+    },
+    "ring--paragraph-2--narration": {
+      "id": "ring--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "预处理和训练完成，进度 72%。"
+        }
+      ]
+    },
+    "ring--paragraph-3--narration": {
+      "id": "ring--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "评估完成，进度环走满，变成绿色。"
+        }
+      ]
+    },
+    "scan--paragraph-1--narration": {
+      "id": "scan--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "线性查找：指针一格一格向右，比较到第八次才找到 61。"
+        }
+      ]
+    },
+    "scan--paragraph-2--narration": {
+      "id": "scan--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "二分查找：先看中间的 34，比 61 小，丢掉左半边；再看 61，找到了，只比较了两次。"
+        }
+      ]
+    },
+    "packet--paragraph-1--narration": {
+      "id": "packet--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "请求发到服务器，在那里停一下，变成响应回来，这一来一回就是 RTT。"
+        }
+      ]
+    },
+    "packet--paragraph-2--narration": {
+      "id": "packet--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "建立连接要三次握手：SYN 过去，SYN-ACK 回来，ACK 再过去。"
+        }
+      ]
+    },
+    "matrix--paragraph-1--narration": {
+      "id": "matrix--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "横向拉长 1.4 倍，纵向压到 0.7 倍：矩阵的对角线就是两个缩放倍数。"
+        }
+      ]
+    },
+    "matrix--paragraph-2--narration": {
+      "id": "matrix--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "再逆时针转 30 度，矩阵里出现了正弦和余弦。"
+        }
+      ]
+    },
+    "matrix--paragraph-3--narration": {
+      "id": "matrix--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "最后沿横向切变，网格变成平行四边形。"
+        }
+      ]
+    },
+    "easings--paragraph-1--narration": {
+      "id": "easings--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "同时出发，同时到达，快慢不同：backOut 冲过头再回来，anticipate 先后退再冲，steps 一格一格跳。"
+        }
+      ]
+    },
+    "easings--paragraph-2--narration": {
+      "id": "easings--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "再跑回来。"
+        }
+      ]
+    },
+    "spring-compare--paragraph-1--narration": {
+      "id": "spring-compare--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "同样的视觉时长，回弹越大，越要来回晃几下才停。"
+        }
+      ]
+    },
+    "spring-compare--paragraph-2--narration": {
+      "id": "spring-compare--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "再弹回来。"
+        }
+      ]
+    },
+    "blur--paragraph-1--narration": {
+      "id": "blur--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "四种学习范式。"
+        }
+      ]
+    },
+    "blur--paragraph-2--narration": {
+      "id": "blur--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先讲强化学习：它放大，其余变模糊。"
+        }
+      ]
+    },
+    "blur--paragraph-3--narration": {
+      "id": "blur--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "再讲自监督学习。"
+        }
+      ]
+    },
+    "wipe--paragraph-1--narration": {
+      "id": "wipe--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "分割线从左边扫到中间：左边是去噪后的，右边是原来带噪声的。"
+        }
+      ]
+    },
+    "wipe--paragraph-2--narration": {
+      "id": "wipe--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "扫到最右边，整张都去噪了。"
+        }
+      ]
+    },
+    "wipe--paragraph-3--narration": {
+      "id": "wipe--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "说明文字从中心圆形展开。"
+        }
+      ]
+    },
+    "flip--paragraph-1--narration": {
+      "id": "flip--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "三张卡片，正面是问题。"
+        }
+      ]
+    },
+    "flip--paragraph-2--narration": {
+      "id": "flip--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "依次翻过来，背面是公式。"
+        }
+      ]
+    },
+    "cssvar--paragraph-1--narration": {
+      "id": "cssvar--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "训练集从一半扩到 70%。"
+        }
+      ]
+    },
+    "cssvar--paragraph-2--narration": {
+      "id": "cssvar--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "再扩到 90%，分割线冲过头一点再回来。"
+        }
+      ]
+    },
+    "canvas--paragraph-1--narration": {
+      "id": "canvas--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "梯度下降：山谷两侧太陡，每一步都冲过头，来回折返地前进。"
+        }
+      ]
+    },
+    "canvas--paragraph-2--narration": {
+      "id": "canvas--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "动量法：把过去的方向累积起来，折返互相抵消，沿着谷底直奔最小值。"
+        }
+      ]
+    },
+    "pulse--paragraph-1--narration": {
+      "id": "pulse--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "领导者的心跳：放大缩小，重复四下。"
+        }
+      ]
+    },
+    "pulse--paragraph-2--narration": {
+      "id": "pulse--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "广播：波纹一圈圈向外扩散，节点依次亮起。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "bars--bars-scene--definition": {
+      "id": "bars--bars-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/bars.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1400,
+          1200,
+          800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "八个月的销量柱状图：柱子依次长出，换成下一年的数据，最高的一根变成强调色。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "counter--counter-scene--definition": {
+      "id": "counter--counter-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/counter.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1400,
+          1800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "训练面板上的三个数字：轮数按整数跳，损失下降，准确率上升。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "reorder--reorder-scene--definition": {
+      "id": "reorder--reorder-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/reorder.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1500,
+          1100,
+          1100,
+          1000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "六个数的冒泡排序，每一步是一趟，较大的数从上方越过较小的数。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "stagger--stagger-scene--definition": {
+      "id": "stagger--stagger-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/ripple.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          900,
+          1300,
+          1300
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一句话的词从中间向两边出现；网格从中心泛起一圈圈波纹，再从最后一格开始退回。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "spring--spring-scene--definition": {
+      "id": "spring--spring-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/spring-tree.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1200,
+          1400
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "二叉搜索树逐层出现：先画边，再让节点带着回弹弹出。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "draw--draw-scene--definition": {
+      "id": "draw--draw-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/draw.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1600,
+          1600
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "坐标轴先画出，然后训练损失与验证损失曲线从左到右画出，标出提前停止的位置。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "flow--flow-scene--definition": {
+      "id": "flow--flow-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/flow.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1800,
+          2000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一个小神经网络：前向传播的脉冲从输入层流到输出层，梯度再从输出层流回输入层。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "emphasis--emphasis-scene--definition": {
+      "id": "emphasis--emphasis-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/emphasis.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          800,
+          1300,
+          1000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一段求平均值的代码：高亮条先框住循环，再移到 return 一行变红并抖动，最后多余的“- 1”弹一下。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "labels--labels-scene--definition": {
+      "id": "labels--labels-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/labels.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          2200,
+          1800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "编译器的五个阶段依次出现，箭头连接；然后逐个强调，出现说明文字。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "heatmap--heatmap-scene--definition": {
+      "id": "heatmap--heatmap-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/heatmap.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1400,
+          1400
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "八个词的注意力矩阵：从均匀分布变成局部注意力，再变成带因果遮罩的注意力。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "morph--morph-scene--definition": {
+      "id": "morph--morph-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/morph.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1200,
+          1200,
+          1200
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "十八个数据点与一条拟合曲线：直线变成恰当的曲线，再变成穿过每个点的波浪线。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "ring--ring-scene--definition": {
+      "id": "ring--ring-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/ring.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1400,
+          1200
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一个进度环与四个任务：25%、72%，到 100% 时变成绿色。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "scan--scan-scene--definition": {
+      "id": "scan--scan-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/scan.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1600,
+          1800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "在有序数组里找 61：线性查找一格一格走了八次，二分查找两次就找到。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "packet--packet-scene--definition": {
+      "id": "packet--packet-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/packet.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          2200,
+          1800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "客户端与服务器之间：一个请求去了又回来；然后是 TCP 的三次握手。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "matrix--matrix-scene--definition": {
+      "id": "matrix--matrix-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/matrix.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1100,
+          1100,
+          1100
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一张网格与两个基向量依次缩放、旋转、切变，右边显示对应的矩阵。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "easings--easings-scene--definition": {
+      "id": "easings--easings-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/easings.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1800,
+          1800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "九种缓动并排：左边是缓动曲线，右边的点用同样的缓动跑过去再跑回来。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "spring-compare--spring-compare-scene--definition": {
+      "id": "spring-compare--spring-compare-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/spring-compare.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          2300,
+          2300
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "五个弹簧并排：回弹 0、0.25、0.5、0.75，以及用刚度与阻尼定义的弹簧。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "blur--blur-scene--definition": {
+      "id": "blur--blur-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/blur.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          900,
+          800,
+          800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "机器学习的四种范式卡片：先依次出现，再让正在讲的一张清晰放大，其他的模糊变淡。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "wipe--wipe-scene--definition": {
+      "id": "wipe--wipe-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/wipe.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1200,
+          1100,
+          1000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一张带噪声的图像被分割线从左向右擦成去噪后的图像，最后圆形展开说明文字。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "flip--flip-scene--definition": {
+      "id": "flip--flip-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/flip.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "三张问答卡片发到桌上，再依次翻面显示答案。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "cssvar--cssvar-scene--definition": {
+      "id": "cssvar--cssvar-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/cssvar.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1100,
+          1100
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "数据集的训练与测试划分：分割点移动时，两部分的宽度、分割线和颜色深浅一起变化。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "canvas--canvas-scene--definition": {
+      "id": "canvas--canvas-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/canvas.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          2600,
+          2600
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一个狭长山谷的等高线图：梯度下降来回折返地走向最小值，动量法顺着山谷滚下去。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "pulse--pulse-scene--definition": {
+      "id": "pulse--pulse-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/pulse.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1200,
+          2300
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "领导者节点跳动四下，然后向外发出一圈圈广播，周围的节点依次响应。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

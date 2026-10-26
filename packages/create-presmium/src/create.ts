@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+import { DOCUMENT_ENTRY } from '@lincyaw/kernel'
 import { spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
@@ -61,8 +63,13 @@ export function createProject(options: ProjectOptions): void {
   if (!isValidPackageName(name)) throw new CreateError(t.badName(name))
   mkdirSync(dir, { recursive: true })
   const document = (to: string, documentTitle: string) => {
-    const quoted = JSON.stringify(documentTitle).slice(1, -1)
-    copyTemplate('document/default', to, (path, text) => path.endsWith('.md') ? text.replaceAll('{{title}}', () => quoted) : text)
+    copyTemplate('document/default', to, (path, text) => {
+      if (path !== DOCUMENT_ENTRY) return text
+      const value = JSON.parse(text)
+      value.id = randomUUID()
+      value.metadata.title = documentTitle
+      return `${JSON.stringify(value, null, 2)}\n`
+    })
   }
   if (kind === 'lecture') {
     document(dir, title)

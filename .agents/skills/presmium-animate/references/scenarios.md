@@ -1,17 +1,19 @@
+> Document authority: `lecture.json` uses normalized entities; scene implementations below are project code. Bind scenes through `definitions`, component blocks and declared step states.
+
 # Teaching scenarios and how to animate them
 
-Each entry: what the viewer should see change, step by step, and how to build it. A gallery scene is written ``<library> `<name>` ``: the file `gallery/<library>/scenes/<name>.ts` in this skill's folder (how to read, copy and run one: "The gallery" in `SKILL.md`). Scenes need the plugin `@lincyaw/addon-motion` installed (`SKILL.md`, "Setup for scenes"). The other directives here (`{slide}`, `{code-ref}`, `{spotlight}` …) are described in `presmium-author/references/directives.md`, with the plugin each needs in `plugins`; those plugins come with `@lincyaw/presmium`.
+Each entry: what the viewer should see change, step by step, and how to build it. A gallery scene is written ``<library> `<name>` ``: the file `gallery/<library>/scenes/<name>.ts` in this skill's folder (how to read, copy and run one: "The gallery" in `SKILL.md`). Scenes need the plugin `@lincyaw/addon-motion` installed (`SKILL.md`, "Setup for scenes"). Use the explicit block, step, narration and definition entities in `presmium-author/references/document.md`; the table below describes outcomes, not an extra authoring syntax.
 
 ## 1. Pacing and attention (usually no scene)
 
 | Scenario | Do | Notes |
 |---|---|---|
-| Points appear one by one | `{slide}` with `:reveal: items` | One step per item; narration paragraph per item |
-| A diagram built up piece by piece | Several blocks with `:reveal:`, or one `{slide}` per state with `:at:`/`:until:` | Static pieces don't need a scene; use a scene only when pieces *move* |
-| Replace a result with the next one (before → after, wrong → right) | Two `{slide}` blocks: `:at: 0` `:until: 1`, then `:at: 1` | Reversible, no code |
-| Look here | ``{cue to=<label>}`spot` ``, `point`, `ink` in the narration; `{spotlight}`, `{hint}` as blocks | `<label>` is the block's label, written `(label)=` on the line before it; without `to` the cue acts on the nearest block above. `ink` circles with a marker; `spot` dims the rest |
-| Show where to click in a UI or a component | `{cursor}` (`move`, `hover`, `click` per step) and ``{cue}`click <action>` `` | `<action>` is one of the actions the component names (a component's author declares them; see the presmium-develop skill) |
-| Learner guesses first, then sees | `{predict}` followed by a `:reveal:` block (the reveal can be a scene) | The scene's first step is the answer |
+| Points appear one by one | Text block reveal with ordered item IDs | One step per item; narration paragraph per item |
+| A diagram built up piece by piece | Explicit block visibility for each declared step | Static pieces don't need a scene; use a scene only when pieces *move* |
+| Replace a result with the next one (before → after, wrong → right) | Two content blocks, each visible on its intended step | Reversible, no code |
+| Look here | Structured spot, point or ink narration cues targeting a stable block ID | The cue target is an explicit block ID; never infer it from a nearby block. `ink` circles with a marker; `spot` dims the rest |
+| Show where to click in a UI or a component | A cursor component with declared states and a structured click cue | `<action>` is one of the actions the component names (a component's author declares them; see the presmium-develop skill) |
+| Learner guesses first, then sees | A prediction component followed by a block visible on the answer step | The scene's first step is the answer |
 | Draw on the slide live | The pen of `@lincyaw/addon-stage` (key `d`) | Strokes are saved in the document's `.presmium/drawings/` when `presmium dev` or `presmium serve` serves the page; a static site does not save them |
 
 Write a scene when something must **move, morph, grow or be computed** between states. Otherwise blocks and cues are lighter and work in every form.
@@ -20,11 +22,11 @@ Write a scene when something must **move, morph, grow or be computed** between s
 
 | Scenario | Do | Notes |
 |---|---|---|
-| Walk through a function part by part | `{code-ref}` with `:steps:` over `#region`s | Highlight moves per step, narration per part |
-| Code evolving: refactor, fix, add a feature | `{code-ref}` with `:variants:` (commits) | Lines move to their new places (Shiki Magic Move); honours reduced motion |
-| Line-by-line execution with variables | `{step-run}` (Python) | The learner can step it themselves in the document view |
-| Show it runs | `{code}` with `:run:`; `{run-panel}` for an editable playground | Output recorded at build |
-| The data structure behind the code changing (array, pointers, stack, tree) | Code block + a **GSAP** scene in the same section; narration cues ``{cue to=code lines=3-4}`spot` `` at the moment the scene moves | Gallery: gsap `keyframes` (binary search), `nested` (selection sort); the last section of `gallery/timeline/lecture.md` (scene `bubble` beside its code, with the cues) |
+| Walk through a function part by part | Code origin references with explicit per-step highlights | Highlight moves per step, narration per part |
+| Code evolving: refactor, fix, add a feature | Code variants with explicit source/value references | Lines move to their new places (Shiki Magic Move); honours reduced motion |
+| Line-by-line execution with variables | A step-execution component definition (Python) | The learner can step it themselves in the document view |
+| Show it runs | Code execution settings; an explicit playground component definition | Output recorded at build |
+| The data structure behind the code changing (array, pointers, stack, tree) | Code block + a **GSAP** scene in the same section; narration cues a spot cue targeting the code block with lines 3–4 at the moment the scene moves | Gallery: gsap `keyframes` (binary search), `nested` (selection sort); the last section of `gallery/timeline/lecture.json` (scene `bubble` beside its code, with the cues) |
 | Typing code as if live | GSAP `text-plugin` (`preserveSpaces: true`), Remotion `typewriter` | Prefer real code blocks when learners must copy it |
 
 ## 3. Algorithms and data structures (GSAP first)
@@ -57,7 +59,7 @@ Run the algorithm in plain JS while building the scene, record its events (compa
 | Solids of revolution, cross-sections, convex hulls | Lathe sweep, clipping plane, hull edges | three `lathe`, `hull` |
 | Probability by simulation (Monte Carlo, sampling, histograms) | Seeded samples arrive, estimate updates | remotion `monte-carlo`; d3 `histogram`, `contour-density` |
 | Easing and rates of change compared | Same motion with different curves side by side | anime `easing-lanes`; motion `easings`; remotion `easing` |
-| **Formulas and derivations** | **Typeset in the page**, not in a scene: `$$…$$` in `{slide}` blocks that replace each other with `:at:`/`:until:`, one line of the derivation per step, with ``{cue}`ink` `` on the changing term. A scene cannot typeset LaTeX yet; plain-text formulas (`σ(x) = 1 / (1 + e⁻ˣ)`) work as labels. Morphing one formula into the next (Manim's `TransformMatchingTex`) and handwriting a formula are not available | gsap `morph-svg` labels show the plain-text style |
+| **Formulas and derivations** | **Typeset in the page**, not in a scene: typed math blocks with explicit step visibility, one line of the derivation per step, with a structured ink cue on the changing term. A scene cannot typeset LaTeX yet; plain-text formulas (`σ(x) = 1 / (1 + e⁻ˣ)`) work as labels. Morphing one formula into the next (Manim's `TransformMatchingTex`) and handwriting a formula are not available | gsap `morph-svg` labels show the plain-text style |
 
 ## 5. Data and statistics
 

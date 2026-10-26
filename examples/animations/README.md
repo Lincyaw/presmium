@@ -4,8 +4,8 @@
 
 | 讲义 | 内容 |
 |---|---|
-| [冒泡排序](bubble-sort/lecture.md) | 一趟冒泡排序：代码、GSAP 动画、讲解点击的计数组件与光标提示，最后合成为带字幕的讲授 |
-| [代码写成的动画](libraries/lecture.md) | GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节动画，再到讲到哪里点哪里与讲授视频 |
+| [冒泡排序](bubble-sort/lecture.json) | 一趟冒泡排序：代码、GSAP 动画、讲解点击的计数组件与光标提示，最后合成为带字幕的讲授 |
+| [代码写成的动画](libraries/lecture.json) | GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节动画，再到讲到哪里点哪里与讲授视频 |
 
 每讲的 `scenes/` 是动画源码，一个场景一条时间线，由 `{scene}` 的 `:durations:` 切成放映的步骤；`components/` 是讲义自己的组件。讲解合成的语音存在各讲的 `.presmium/speech/`（合成缓存，随讲义提交），没有语音引擎也能构建和播放讲授；改过的句子要配置语音引擎才能重新合成。
 

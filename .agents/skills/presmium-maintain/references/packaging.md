@@ -48,14 +48,9 @@ Copy `packages/addon-guide/package.json` and adapt it. Official plugins are name
   temporary directory with `plugins` set to the package's absolute path and runs the real CLI (model:
   `packages/addon-exec/test/compile.test.ts`).
 
-## A new directive
+## A new document capability
 
-A new directive, from a plugin or from the compiler's built-ins, is added in three places:
-
-1. the directive table of `docs/ir.md` 5.1;
-2. a `` ### `{name}` `` section in `.agents/skills/presmium-author/references/directives.md`
-   (`scripts/check-skills.mjs` fails without it);
-3. the user-facing syntax in `site/plugins/lecture.md`.
+Define its typed entities and Schema in the kernel, validate references and parameter/state capability, and document the author workflow in `.agents/skills/presmium-author/references/document.md`. Add a real JSON example for the relevant plugin/renderer and mirror the public contract in the site documentation. New content capabilities do not introduce another source syntax or a Markdown authoring fallback.
 
 ## Skills
 
@@ -65,7 +60,7 @@ Skills are in `.agents/skills`; `.claude/skills` is a symbolic link to it and `A
 `packages/create-presmium/src/templates.ts`. Shipped skills must be self-contained (no references to
 `docs/`, `packages/`, `scripts/` or `e2e/`); `presmium-maintain` is listed in neither. When instructions,
 commands or the development flow change, update the skills in the same change. `scripts/check-skills.mjs`
-checks frontmatter, links between `references/` files, that every directive has a section, and that every
+checks skill metadata, links between `references/` files, the sole JSON document contract, and that every
 `presmium <command> --<option>` written in a skill exists in the CLI.
 
 ## Structure checks

@@ -1,0 +1,2405 @@
+{
+  "schemaVersion": 1,
+  "id": "document-13b1185e4e9c4c74",
+  "metadata": {
+    "title": "时间轴：动画怎样对上讲解",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-lecture"
+    ],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "intro",
+    "one-per-step",
+    "fewer",
+    "more",
+    "long",
+    "cue-next",
+    "early",
+    "two-scenes",
+    "pause",
+    "with-code"
+  ],
+  "sections": {
+    "intro": {
+      "id": "intro",
+      "title": "时间轴：动画怎样对上讲解",
+      "level": 1,
+      "children": [
+        "intro--paragraph-1"
+      ],
+      "stepOrder": [
+        "intro--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "one-per-step": {
+      "id": "one-per-step",
+      "title": "每步一段讲解",
+      "level": 2,
+      "children": [
+        "one-per-step--one-per-step-scene",
+        "one-per-step--paragraph-1",
+        "one-per-step--paragraph-2",
+        "one-per-step--paragraph-3"
+      ],
+      "stepOrder": [
+        "one-per-step--step-0",
+        "one-per-step--step-1",
+        "one-per-step--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "fewer": {
+      "id": "fewer",
+      "title": "段落少于步数",
+      "level": 2,
+      "children": [
+        "fewer--fewer-scene",
+        "fewer--paragraph-1",
+        "fewer--paragraph-2"
+      ],
+      "stepOrder": [
+        "fewer--step-0",
+        "fewer--step-1",
+        "fewer--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "more": {
+      "id": "more",
+      "title": "段落多于步数",
+      "level": 2,
+      "children": [
+        "more--more-scene",
+        "more--paragraph-1",
+        "more--paragraph-2",
+        "more--paragraph-3"
+      ],
+      "stepOrder": [
+        "more--step-0",
+        "more--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "long": {
+      "id": "long",
+      "title": "动画比讲解长",
+      "level": 2,
+      "children": [
+        "long--long-scene",
+        "long--paragraph-1",
+        "long--paragraph-2"
+      ],
+      "stepOrder": [
+        "long--step-0",
+        "long--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "cue-next": {
+      "id": "cue-next",
+      "title": "一段之内推进",
+      "level": 2,
+      "children": [
+        "cue-next--cue-next-scene",
+        "cue-next--paragraph-1"
+      ],
+      "stepOrder": [
+        "cue-next--step-0",
+        "cue-next--step-1",
+        "cue-next--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "early": {
+      "id": "early",
+      "title": "推进得太早",
+      "level": 2,
+      "children": [
+        "early--early-scene",
+        "early--paragraph-1"
+      ],
+      "stepOrder": [
+        "early--step-0",
+        "early--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "two-scenes": {
+      "id": "two-scenes",
+      "title": "一节里的两个场景",
+      "level": 2,
+      "children": [
+        "two-scenes--first",
+        "two-scenes--paragraph-1",
+        "two-scenes--paragraph-2",
+        "two-scenes--second",
+        "two-scenes--paragraph-3",
+        "two-scenes--paragraph-4"
+      ],
+      "stepOrder": [
+        "two-scenes--step-0",
+        "two-scenes--step-1",
+        "two-scenes--step-2",
+        "two-scenes--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "pause": {
+      "id": "pause",
+      "title": "停顿与聚光",
+      "level": 2,
+      "children": [
+        "pause--pause-scene",
+        "pause--paragraph-1",
+        "pause--paragraph-2"
+      ],
+      "stepOrder": [
+        "pause--step-0",
+        "pause--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "with-code": {
+      "id": "with-code",
+      "title": "场景与代码一起走",
+      "level": 2,
+      "children": [
+        "with-code--sort-code",
+        "with-code--bubble",
+        "with-code--paragraph-1",
+        "with-code--paragraph-2",
+        "with-code--paragraph-3",
+        "with-code--paragraph-4",
+        "with-code--paragraph-5"
+      ],
+      "stepOrder": [
+        "with-code--step-0",
+        "with-code--step-1",
+        "with-code--step-2",
+        "with-code--step-3",
+        "with-code--step-4"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "intro--paragraph-1": {
+      "id": "intro--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每一节用同一个场景：一排圆点，每一步亮起一个，所以看画面就知道走到了第几步。在放映视图中逐步前进，演讲者窗口显示每一步对应的讲解；给文稿加上 "
+            },
+            {
+              "type": "text",
+              "text": "lecture",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 渲染端与语音后构建，"
+            },
+            {
+              "type": "text",
+              "text": "dist/lecture/script/track.json",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 列出每一步开始的时刻。"
+            }
+          ]
+        }
+      ]
+    },
+    "one-per-step--one-per-step-scene": {
+      "id": "one-per-step--one-per-step-scene",
+      "type": "component",
+      "definitionId": "one-per-step--one-per-step-scene--definition",
+      "parameters": {
+        "scene": "steps",
+        "alt": "三个圆点，每一步亮起一个。"
+      }
+    },
+    "one-per-step--paragraph-1": {
+      "id": "one-per-step--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "one-per-step--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一步，第一个点亮起。讲解的第一个字一出来，这一步的动画就开始演。"
+            }
+          ]
+        }
+      ]
+    },
+    "one-per-step--paragraph-2": {
+      "id": "one-per-step--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "one-per-step--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步，第二个点。块后面的第二段讲解属于第二步。"
+            }
+          ]
+        }
+      ]
+    },
+    "one-per-step--paragraph-3": {
+      "id": "one-per-step--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "one-per-step--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第三步，第三个点。讲解比动画长，动画演完就停在那里等着。"
+            }
+          ]
+        }
+      ]
+    },
+    "fewer--fewer-scene": {
+      "id": "fewer--fewer-scene",
+      "type": "component",
+      "definitionId": "fewer--fewer-scene--definition",
+      "parameters": {
+        "scene": "steps",
+        "alt": "三个圆点，只有两段讲解。"
+      }
+    },
+    "fewer--paragraph-1": {
+      "id": "fewer--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "fewer--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一个点。"
+            }
+          ]
+        }
+      ]
+    },
+    "fewer--paragraph-2": {
+      "id": "fewer--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "fewer--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二个点。下一步没有讲解，只停到动画演完。"
+            }
+          ]
+        }
+      ]
+    },
+    "more--more-scene": {
+      "id": "more--more-scene",
+      "type": "component",
+      "definitionId": "more--more-scene--definition",
+      "parameters": {
+        "scene": "steps",
+        "alt": "两个圆点，三段讲解。"
+      }
+    },
+    "more--paragraph-1": {
+      "id": "more--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "more--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一个点。"
+            }
+          ]
+        }
+      ]
+    },
+    "more--paragraph-2": {
+      "id": "more--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "more--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二个点。"
+            }
+          ]
+        }
+      ]
+    },
+    "more--paragraph-3": {
+      "id": "more--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "more--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这一段已经超出了步数，也算在最后一步，画面不再变化。"
+            }
+          ]
+        }
+      ]
+    },
+    "long--long-scene": {
+      "id": "long--long-scene",
+      "type": "component",
+      "definitionId": "long--long-scene--definition",
+      "parameters": {
+        "scene": "steps",
+        "alt": "两个慢慢亮起的圆点。"
+      }
+    },
+    "long--paragraph-1": {
+      "id": "long--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "long--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "很短的一句。"
+            }
+          ]
+        }
+      ]
+    },
+    "long--paragraph-2": {
+      "id": "long--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "long--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "又一句。"
+            }
+          ]
+        }
+      ]
+    },
+    "cue-next--cue-next-scene": {
+      "id": "cue-next--cue-next-scene",
+      "type": "component",
+      "definitionId": "cue-next--cue-next-scene--definition",
+      "parameters": {
+        "scene": "steps",
+        "alt": "三个圆点，在一句话里依次亮起。"
+      }
+    },
+    "cue-next--paragraph-1": {
+      "id": "cue-next--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "cue-next--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先看第一个点，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "value": "next"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 说到这里第二个亮起，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "value": "next"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 说到这里第三个也亮了。"
+            }
+          ]
+        }
+      ]
+    },
+    "early--early-scene": {
+      "id": "early--early-scene",
+      "type": "component",
+      "definitionId": "early--early-scene--definition",
+      "parameters": {
+        "scene": "steps",
+        "alt": "两个慢点，第一步还没演完就推进。"
+      }
+    },
+    "early--paragraph-1": {
+      "id": "early--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "early--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "马上 "
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "value": "next"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 推进，构建会在这一段给出警告。"
+            }
+          ]
+        }
+      ]
+    },
+    "two-scenes--first": {
+      "id": "two-scenes--first",
+      "type": "component",
+      "definitionId": "two-scenes--first--definition",
+      "parameters": {
+        "scene": "steps",
+        "alt": "前一个场景。"
+      }
+    },
+    "two-scenes--paragraph-1": {
+      "id": "two-scenes--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "two-scenes--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "前一个场景的第一步。"
+            }
+          ]
+        }
+      ]
+    },
+    "two-scenes--paragraph-2": {
+      "id": "two-scenes--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "two-scenes--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "前一个场景的第二步。"
+            }
+          ]
+        }
+      ]
+    },
+    "two-scenes--second": {
+      "id": "two-scenes--second",
+      "type": "component",
+      "definitionId": "two-scenes--second--definition",
+      "parameters": {
+        "scene": "steps",
+        "alt": "后一个场景，写了 reveal，在前一个演完之后才开始。"
+      }
+    },
+    "two-scenes--paragraph-3": {
+      "id": "two-scenes--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "two-scenes--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "后一个场景的第一步。"
+            }
+          ]
+        }
+      ]
+    },
+    "two-scenes--paragraph-4": {
+      "id": "two-scenes--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "two-scenes--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "后一个场景的第二步。"
+            }
+          ]
+        }
+      ]
+    },
+    "pause--pause-scene": {
+      "id": "pause--pause-scene",
+      "type": "component",
+      "definitionId": "pause--pause-scene--definition",
+      "parameters": {
+        "scene": "steps",
+        "alt": "两个圆点。"
+      }
+    },
+    "pause--paragraph-1": {
+      "id": "pause--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "pause--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "说完这半句，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "value": "pause 1s"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 停一秒再说下半句。"
+            }
+          ]
+        }
+      ]
+    },
+    "pause--paragraph-2": {
+      "id": "pause--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "pause--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "to": "pause-scene",
+                    "value": "spot"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 聚光落在这个场景上。"
+            }
+          ]
+        }
+      ]
+    },
+    "with-code--sort-code": {
+      "id": "with-code--sort-code",
+      "type": "code",
+      "language": "python",
+      "value": "def bubble_pass(a):\n    for i in range(len(a) - 1):\n        if a[i] > a[i + 1]:\n            a[i], a[i + 1] = a[i + 1], a[i]\n    return a"
+    },
+    "with-code--bubble": {
+      "id": "with-code--bubble",
+      "type": "component",
+      "definitionId": "with-code--bubble--definition",
+      "parameters": {
+        "scene": "bubble",
+        "alt": "5 2 4 1 3 的一趟冒泡：5 与右边的数逐个比较、交换，最后停在末尾。"
+      }
+    },
+    "with-code--paragraph-1": {
+      "id": "with-code--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "with-code--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "代码和场景放在同一节：场景占五步，讲解逐段对应，提示标记指向代码。先看这五个数。"
+            }
+          ]
+        }
+      ]
+    },
+    "with-code--paragraph-2": {
+      "id": "with-code--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "with-code--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一次比较 5 和 2，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "to": "sort-code",
+                    "lines": "3",
+                    "value": "spot"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 这一行做比较。"
+            }
+          ]
+        }
+      ]
+    },
+    "with-code--paragraph-3": {
+      "id": "with-code--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "with-code--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "5 比 2 大，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "to": "sort-code",
+                    "lines": "4",
+                    "value": "spot"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 这一行交换它们。"
+            }
+          ]
+        }
+      ]
+    },
+    "with-code--paragraph-4": {
+      "id": "with-code--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "with-code--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "再比较 5 和 4，又是前面大，再交换。"
+            }
+          ]
+        }
+      ]
+    },
+    "with-code--paragraph-5": {
+      "id": "with-code--paragraph-5",
+      "type": "text",
+      "content": [
+        {
+          "id": "with-code--paragraph-5--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "5 继续往后，越过 1 和 3，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "value": "pause 300ms"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 停在最后，这一趟结束。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "intro--step-0": {
+      "id": "intro--step-0",
+      "sectionId": "intro",
+      "visuals": [
+        {
+          "blockId": "intro--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "intro--paragraph-1--narration"
+      ]
+    },
+    "one-per-step--step-0": {
+      "id": "one-per-step--step-0",
+      "sectionId": "one-per-step",
+      "visuals": [
+        {
+          "blockId": "one-per-step--one-per-step-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "one-per-step--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "one-per-step--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "one-per-step--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "one-per-step--paragraph-1--narration"
+      ]
+    },
+    "one-per-step--step-1": {
+      "id": "one-per-step--step-1",
+      "sectionId": "one-per-step",
+      "visuals": [
+        {
+          "blockId": "one-per-step--one-per-step-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "one-per-step--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "one-per-step--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "one-per-step--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "one-per-step--paragraph-2--narration"
+      ]
+    },
+    "one-per-step--step-2": {
+      "id": "one-per-step--step-2",
+      "sectionId": "one-per-step",
+      "visuals": [
+        {
+          "blockId": "one-per-step--one-per-step-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "one-per-step--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "one-per-step--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "one-per-step--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "one-per-step--paragraph-3--narration"
+      ]
+    },
+    "fewer--step-0": {
+      "id": "fewer--step-0",
+      "sectionId": "fewer",
+      "visuals": [
+        {
+          "blockId": "fewer--fewer-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "fewer--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "fewer--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "fewer--paragraph-1--narration"
+      ]
+    },
+    "fewer--step-1": {
+      "id": "fewer--step-1",
+      "sectionId": "fewer",
+      "visuals": [
+        {
+          "blockId": "fewer--fewer-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "fewer--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "fewer--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "fewer--paragraph-2--narration"
+      ]
+    },
+    "fewer--step-2": {
+      "id": "fewer--step-2",
+      "sectionId": "fewer",
+      "visuals": [
+        {
+          "blockId": "fewer--fewer-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "fewer--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "fewer--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "more--step-0": {
+      "id": "more--step-0",
+      "sectionId": "more",
+      "visuals": [
+        {
+          "blockId": "more--more-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "more--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "more--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "more--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "more--paragraph-1--narration"
+      ]
+    },
+    "more--step-1": {
+      "id": "more--step-1",
+      "sectionId": "more",
+      "visuals": [
+        {
+          "blockId": "more--more-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "more--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "more--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "more--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "more--paragraph-2--narration",
+        "more--paragraph-3--narration"
+      ]
+    },
+    "long--step-0": {
+      "id": "long--step-0",
+      "sectionId": "long",
+      "visuals": [
+        {
+          "blockId": "long--long-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "long--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "long--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "long--paragraph-1--narration"
+      ]
+    },
+    "long--step-1": {
+      "id": "long--step-1",
+      "sectionId": "long",
+      "visuals": [
+        {
+          "blockId": "long--long-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "long--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "long--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "long--paragraph-2--narration"
+      ]
+    },
+    "cue-next--step-0": {
+      "id": "cue-next--step-0",
+      "sectionId": "cue-next",
+      "visuals": [
+        {
+          "blockId": "cue-next--cue-next-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "cue-next--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "cue-next--paragraph-1--narration"
+      ]
+    },
+    "cue-next--step-1": {
+      "id": "cue-next--step-1",
+      "sectionId": "cue-next",
+      "visuals": [
+        {
+          "blockId": "cue-next--cue-next-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "cue-next--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "cue-next--step-2": {
+      "id": "cue-next--step-2",
+      "sectionId": "cue-next",
+      "visuals": [
+        {
+          "blockId": "cue-next--cue-next-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "cue-next--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "early--step-0": {
+      "id": "early--step-0",
+      "sectionId": "early",
+      "visuals": [
+        {
+          "blockId": "early--early-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "early--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "early--paragraph-1--narration"
+      ]
+    },
+    "early--step-1": {
+      "id": "early--step-1",
+      "sectionId": "early",
+      "visuals": [
+        {
+          "blockId": "early--early-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "early--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "two-scenes--step-0": {
+      "id": "two-scenes--step-0",
+      "sectionId": "two-scenes",
+      "visuals": [
+        {
+          "blockId": "two-scenes--first",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "two-scenes--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "two-scenes--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "two-scenes--second",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "two-scenes--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "two-scenes--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "two-scenes--paragraph-1--narration"
+      ]
+    },
+    "two-scenes--step-1": {
+      "id": "two-scenes--step-1",
+      "sectionId": "two-scenes",
+      "visuals": [
+        {
+          "blockId": "two-scenes--first",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "two-scenes--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "two-scenes--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "two-scenes--second",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "two-scenes--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "two-scenes--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "two-scenes--paragraph-2--narration"
+      ]
+    },
+    "two-scenes--step-2": {
+      "id": "two-scenes--step-2",
+      "sectionId": "two-scenes",
+      "visuals": [
+        {
+          "blockId": "two-scenes--first",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "two-scenes--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "two-scenes--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "two-scenes--second",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "two-scenes--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "two-scenes--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "two-scenes--paragraph-3--narration"
+      ]
+    },
+    "two-scenes--step-3": {
+      "id": "two-scenes--step-3",
+      "sectionId": "two-scenes",
+      "visuals": [
+        {
+          "blockId": "two-scenes--first",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "two-scenes--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "two-scenes--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "two-scenes--second",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "two-scenes--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "two-scenes--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "two-scenes--paragraph-4--narration"
+      ]
+    },
+    "pause--step-0": {
+      "id": "pause--step-0",
+      "sectionId": "pause",
+      "visuals": [
+        {
+          "blockId": "pause--pause-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "pause--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "pause--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "pause--paragraph-1--narration"
+      ]
+    },
+    "pause--step-1": {
+      "id": "pause--step-1",
+      "sectionId": "pause",
+      "visuals": [
+        {
+          "blockId": "pause--pause-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "pause--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "pause--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "pause--paragraph-2--narration"
+      ]
+    },
+    "with-code--step-0": {
+      "id": "with-code--step-0",
+      "sectionId": "with-code",
+      "visuals": [
+        {
+          "blockId": "with-code--sort-code",
+          "visible": true
+        },
+        {
+          "blockId": "with-code--bubble",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "with-code--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "with-code--paragraph-1--narration"
+      ]
+    },
+    "with-code--step-1": {
+      "id": "with-code--step-1",
+      "sectionId": "with-code",
+      "visuals": [
+        {
+          "blockId": "with-code--sort-code",
+          "visible": true
+        },
+        {
+          "blockId": "with-code--bubble",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "with-code--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "with-code--paragraph-2--narration"
+      ]
+    },
+    "with-code--step-2": {
+      "id": "with-code--step-2",
+      "sectionId": "with-code",
+      "visuals": [
+        {
+          "blockId": "with-code--sort-code",
+          "visible": true
+        },
+        {
+          "blockId": "with-code--bubble",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "with-code--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "with-code--paragraph-3--narration"
+      ]
+    },
+    "with-code--step-3": {
+      "id": "with-code--step-3",
+      "sectionId": "with-code",
+      "visuals": [
+        {
+          "blockId": "with-code--sort-code",
+          "visible": true
+        },
+        {
+          "blockId": "with-code--bubble",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "with-code--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "with-code--paragraph-4--narration"
+      ]
+    },
+    "with-code--step-4": {
+      "id": "with-code--step-4",
+      "sectionId": "with-code",
+      "visuals": [
+        {
+          "blockId": "with-code--sort-code",
+          "visible": true
+        },
+        {
+          "blockId": "with-code--bubble",
+          "visible": true,
+          "state": "legacy-4"
+        },
+        {
+          "blockId": "with-code--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "with-code--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "with-code--paragraph-5--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "intro--paragraph-1--narration": {
+      "id": "intro--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "每一节用同一个场景：一排圆点，每一步亮起一个，所以看画面就知道走到了第几步。在放映视图中逐步前进，演讲者窗口显示每一步对应的讲解；给文稿加上 lecture 渲染端与语音后构建，dist/lecture/script/track.json 列出每一步开始的时刻。"
+        }
+      ]
+    },
+    "one-per-step--paragraph-1--narration": {
+      "id": "one-per-step--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第一步，第一个点亮起。讲解的第一个字一出来，这一步的动画就开始演。"
+        }
+      ]
+    },
+    "one-per-step--paragraph-2--narration": {
+      "id": "one-per-step--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二步，第二个点。块后面的第二段讲解属于第二步。"
+        }
+      ]
+    },
+    "one-per-step--paragraph-3--narration": {
+      "id": "one-per-step--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第三步，第三个点。讲解比动画长，动画演完就停在那里等着。"
+        }
+      ]
+    },
+    "fewer--paragraph-1--narration": {
+      "id": "fewer--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第一个点。"
+        }
+      ]
+    },
+    "fewer--paragraph-2--narration": {
+      "id": "fewer--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二个点。下一步没有讲解，只停到动画演完。"
+        }
+      ]
+    },
+    "more--paragraph-1--narration": {
+      "id": "more--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第一个点。"
+        }
+      ]
+    },
+    "more--paragraph-2--narration": {
+      "id": "more--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二个点。"
+        }
+      ]
+    },
+    "more--paragraph-3--narration": {
+      "id": "more--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这一段已经超出了步数，也算在最后一步，画面不再变化。"
+        }
+      ]
+    },
+    "long--paragraph-1--narration": {
+      "id": "long--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "很短的一句。"
+        }
+      ]
+    },
+    "long--paragraph-2--narration": {
+      "id": "long--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "又一句。"
+        }
+      ]
+    },
+    "cue-next--paragraph-1--narration": {
+      "id": "cue-next--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先看第一个点，"
+        },
+        {
+          "id": "cue-cue-next-1",
+          "type": "cue",
+          "action": "next"
+        },
+        {
+          "type": "text",
+          "text": " 说到这里第二个亮起，"
+        },
+        {
+          "id": "cue-cue-next-3",
+          "type": "cue",
+          "action": "next"
+        },
+        {
+          "type": "text",
+          "text": " 说到这里第三个也亮了。"
+        }
+      ]
+    },
+    "early--paragraph-1--narration": {
+      "id": "early--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "马上 "
+        },
+        {
+          "id": "cue-early-1",
+          "type": "cue",
+          "action": "next"
+        },
+        {
+          "type": "text",
+          "text": " 推进，构建会在这一段给出警告。"
+        }
+      ]
+    },
+    "two-scenes--paragraph-1--narration": {
+      "id": "two-scenes--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "前一个场景的第一步。"
+        }
+      ]
+    },
+    "two-scenes--paragraph-2--narration": {
+      "id": "two-scenes--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "前一个场景的第二步。"
+        }
+      ]
+    },
+    "two-scenes--paragraph-3--narration": {
+      "id": "two-scenes--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "后一个场景的第一步。"
+        }
+      ]
+    },
+    "two-scenes--paragraph-4--narration": {
+      "id": "two-scenes--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "后一个场景的第二步。"
+        }
+      ]
+    },
+    "pause--paragraph-1--narration": {
+      "id": "pause--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "说完这半句，"
+        },
+        {
+          "id": "cue-pause-1",
+          "type": "cue",
+          "action": "pause"
+        },
+        {
+          "type": "text",
+          "text": " 停一秒再说下半句。"
+        }
+      ]
+    },
+    "pause--paragraph-2--narration": {
+      "id": "pause--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二步，"
+        },
+        {
+          "id": "cue-pause-1-2",
+          "type": "cue",
+          "action": "spot",
+          "target": {
+            "blockId": "pause--pause-scene"
+          }
+        },
+        {
+          "type": "text",
+          "text": " 聚光落在这个场景上。"
+        }
+      ]
+    },
+    "with-code--paragraph-1--narration": {
+      "id": "with-code--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "代码和场景放在同一节：场景占五步，讲解逐段对应，提示标记指向代码。先看这五个数。"
+        }
+      ]
+    },
+    "with-code--paragraph-2--narration": {
+      "id": "with-code--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第一次比较 5 和 2，"
+        },
+        {
+          "id": "cue-with-code-1",
+          "type": "cue",
+          "action": "spot",
+          "target": {
+            "blockId": "with-code--sort-code"
+          },
+          "parameters": {
+            "lines": "3"
+          }
+        },
+        {
+          "type": "text",
+          "text": " 这一行做比较。"
+        }
+      ]
+    },
+    "with-code--paragraph-3--narration": {
+      "id": "with-code--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "5 比 2 大，"
+        },
+        {
+          "id": "cue-with-code-1-2",
+          "type": "cue",
+          "action": "spot",
+          "target": {
+            "blockId": "with-code--sort-code"
+          },
+          "parameters": {
+            "lines": "4"
+          }
+        },
+        {
+          "type": "text",
+          "text": " 这一行交换它们。"
+        }
+      ]
+    },
+    "with-code--paragraph-4--narration": {
+      "id": "with-code--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "再比较 5 和 4，又是前面大，再交换。"
+        }
+      ]
+    },
+    "with-code--paragraph-5--narration": {
+      "id": "with-code--paragraph-5--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "5 继续往后，越过 1 和 3，"
+        },
+        {
+          "id": "cue-with-code-1-3",
+          "type": "cue",
+          "action": "pause"
+        },
+        {
+          "type": "text",
+          "text": " 停在最后，这一趟结束。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "one-per-step--one-per-step-scene--definition": {
+      "id": "one-per-step--one-per-step-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/steps.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          800,
+          800,
+          800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "三个圆点，每一步亮起一个。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "fewer--fewer-scene--definition": {
+      "id": "fewer--fewer-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/steps.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          800,
+          800,
+          800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "三个圆点，只有两段讲解。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "more--more-scene--definition": {
+      "id": "more--more-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/steps.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          800,
+          800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "两个圆点，三段讲解。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "long--long-scene--definition": {
+      "id": "long--long-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/steps.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          3000,
+          3000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "两个慢慢亮起的圆点。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "cue-next--cue-next-scene--definition": {
+      "id": "cue-next--cue-next-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/steps.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          600,
+          600,
+          600
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "三个圆点，在一句话里依次亮起。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "early--early-scene--definition": {
+      "id": "early--early-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/steps.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          2500,
+          2500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "两个慢点，第一步还没演完就推进。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "two-scenes--first--definition": {
+      "id": "two-scenes--first--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/steps.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          800,
+          800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "前一个场景。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "two-scenes--second--definition": {
+      "id": "two-scenes--second--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/steps.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          800,
+          800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "后一个场景，写了 reveal，在前一个演完之后才开始。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "pause--pause-scene--definition": {
+      "id": "pause--pause-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/steps.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          800,
+          800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "两个圆点。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "with-code--bubble--definition": {
+      "id": "with-code--bubble--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/bubble.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        },
+        {
+          "id": "legacy-4",
+          "legacyIndex": 4
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          800,
+          1000,
+          1000,
+          1500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "5 2 4 1 3 的一趟冒泡：5 与右边的数逐个比较、交换，最后停在末尾。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": [],
+    "cueTimings": {
+      "cue-pause-1": {
+        "pauseMs": 1000
+      },
+      "cue-with-code-1-3": {
+        "pauseMs": 300
+      }
+    }
+  }
+}

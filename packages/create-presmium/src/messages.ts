@@ -58,7 +58,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     readme: (kind, title) => kind === 'lecture'
       ? `# ${title}
 
-一份 Presmium 讲义：源码是 \`lecture.md\`（MyST Markdown），Presmium 把它编译为网页、幻灯片与 notebook。命令来自 \`pnpm add -g @lincyaw/presmium\`；在本目录 \`pnpm install\` 之后，用的是 \`package.json\` 锁定的版本。
+一份 Presmium 讲义：源码是 \`lecture.json\`（可编辑教学文稿 IR），Presmium 把它编译为网页、幻灯片与 notebook。命令来自 \`pnpm add -g @lincyaw/presmium\`；在本目录 \`pnpm install\` 之后，用的是 \`package.json\` 锁定的版本。
 
 \`\`\`sh
 presmium dev       # 实时预览网页与幻灯片
@@ -70,7 +70,7 @@ presmium build     # 构建网页、幻灯片与 notebook，产物在 dist/
 `
       : `# ${title}
 
-一个 Presmium 工作区：每个子目录中的 \`lecture.md\` 是一份文档（第一份在 \`intro/\`），\`presmium.workspace.yaml\` 是工作区的配置。命令来自 \`pnpm add -g @lincyaw/presmium\`；在本目录 \`pnpm install\` 之后，用的是 \`package.json\` 锁定的版本。
+一个 Presmium 工作区：每个子目录中的 \`lecture.json\` 是一份文档（第一份在 \`intro/\`），\`presmium.workspace.yaml\` 是工作区的配置。命令来自 \`pnpm add -g @lincyaw/presmium\`；在本目录 \`pnpm install\` 之后，用的是 \`package.json\` 锁定的版本。
 
 \`\`\`sh
 presmium serve           # 文档列表与各文档的实时预览，只在本机
@@ -85,12 +85,12 @@ presmium build           # 构建工作区的站点，产物在 dist/web/
     agentsFile: (kind, title) => `# ${title}
 
 ${kind === 'lecture'
-  ? '这是一份 Presmium 讲义：`lecture.md` 是源码（MyST Markdown），`presmium` 把它编译为网页、幻灯片与 notebook。'
-  : '这是一个 Presmium 工作区：每个子目录中的 `lecture.md` 是一份文档，`presmium.workspace.yaml` 是工作区的配置（运营者设置在 `settings` 中，文档改不了它）。'}只改源码，不改 \`dist/\` 中的产物。
+  ? '这是一份 Presmium 讲义：`lecture.json` 是源码（可编辑教学文稿 IR），`presmium` 把它编译为网页、幻灯片与 notebook。'
+  : '这是一个 Presmium 工作区：每个子目录中的 `lecture.json` 是一份文档，`presmium.workspace.yaml` 是工作区的配置（运营者设置在 `settings` 中，文档改不了它）。'}只改源码，不改 \`dist/\` 中的产物。
 
 技能（\`.agents/skills\`，英文，自包含）：
 
-- \`presmium-author\`：编写与修改讲义：文稿头部、章节、讲解与上屏内容、指令、检查与构建。
+- \`presmium-author\`：编写与修改讲义：文稿实体、页面、内容块、步骤与讲稿、检查与构建。
 - \`presmium-animate\`：动画：按教学场景选做法、用代码写的动画场景（自带每个动画库的效果合集）、让动画对上讲解。
 - \`presmium-present\`：放映、演讲者视图、课堂与讲授。
 
@@ -130,7 +130,7 @@ Options:
     readme: (kind, title) => kind === 'lecture'
       ? `# ${title}
 
-A Presmium lecture: \`lecture.md\` (MyST Markdown) is the source, which Presmium compiles to a web page,
+A Presmium lecture: \`lecture.json\` (editable teaching document IR) is the source, which Presmium compiles to a web page,
 slides and a notebook. The commands come from \`pnpm add -g @lincyaw/presmium\`; after \`pnpm install\` here, they
 are the version \`package.json\` pins.
 
@@ -144,7 +144,7 @@ presmium build     # builds the web page, the slides and the notebook into dist/
 `
       : `# ${title}
 
-A Presmium workspace: the \`lecture.md\` of each subdirectory is a document (the first in \`intro/\`), and
+A Presmium workspace: the \`lecture.json\` of each subdirectory is a document (the first in \`intro/\`), and
 \`presmium.workspace.yaml\` is the workspace's configuration. The commands come from \`pnpm add -g @lincyaw/presmium\`;
 after \`pnpm install\` here, they are the version \`package.json\` pins.
 
@@ -164,12 +164,12 @@ gives readers "Ask".
     agentsFile: (kind, title) => `# ${title}
 
 ${kind === 'lecture'
-  ? 'This is a Presmium lecture: `lecture.md` is the source (MyST Markdown), which `presmium` compiles to a web page, slides and a notebook.'
-  : 'This is a Presmium workspace: the `lecture.md` of each subdirectory is a document, and `presmium.workspace.yaml` is the workspace\'s configuration (the operator\'s settings are in its `settings`, which no document changes).'} Change the sources, never the output in \`dist/\`.
+  ? 'This is a Presmium lecture: `lecture.json` is the source (editable teaching document IR), which `presmium` compiles to a web page, slides and a notebook.'
+  : 'This is a Presmium workspace: the `lecture.json` of each subdirectory is a document, and `presmium.workspace.yaml` is the workspace\'s configuration (the operator\'s settings are in its `settings`, which no document changes).'} Change the sources, never the output in \`dist/\`.
 
 Skills (\`.agents/skills\`, self-contained):
 
-- \`presmium-author\`: writing and changing documents: the frontmatter, sections, narration and what shows on screen, directives, checks and builds.
+- \`presmium-author\`: writing and changing documents: document entities, pages, content blocks, steps and narration, checks and builds.
 - \`presmium-animate\`: animation: the way to show each teaching moment, scenes written in code (with a gallery of effects for each animation library), and putting them on the narration.
 - \`presmium-present\`: presenting, the presenter view, the classroom and lectures.
 

@@ -1,8 +1,8 @@
 # A workspace (docs/ir.md section 10): this file at the root of a git repository whose documents are its
-# subdirectories, each with a lecture.md. `presmium new --type workspace` makes one. Then `presmium serve`
+# subdirectories, each with a lecture.json. `presmium new --type workspace` makes one. Then `presmium serve`
 # there, or `presmium build`.
 title: 课程名称
-documents: ['*/lecture.md']         # where the documents are, in this order; default '*/lecture.md'
+documents: ['*/lecture.json']         # where the documents are, in this order; default '*/lecture.json'
 site: {}                            # the site shell: nav, footer, head, sitemap (as renderers.web)
 approvals: { operate: ask, spend: ask, write: ask, agent: ask }
 settings:                           # the plugins' operator settings, by plugin id; never in a deck

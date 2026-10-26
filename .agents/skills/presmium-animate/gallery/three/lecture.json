@@ -1,0 +1,3767 @@
+{
+  "schemaVersion": 1,
+  "id": "document-3e3992035764bde4",
+  "metadata": {
+    "title": "Three.js：原子动画合集",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-motion"
+    ],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "intro",
+    "clusters",
+    "descent",
+    "projection",
+    "matrix",
+    "lorenz",
+    "surfaces",
+    "route",
+    "galaxy",
+    "hanoi",
+    "lathe",
+    "hull",
+    "materials",
+    "shadows"
+  ],
+  "sections": {
+    "intro": {
+      "id": "intro",
+      "title": "Three.js：原子动画合集",
+      "level": 1,
+      "children": [
+        "intro--paragraph-1"
+      ],
+      "stepOrder": [
+        "intro--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "clusters": {
+      "id": "clusters",
+      "title": "点云聚类：InstancedMesh 与逐个实例的颜色",
+      "level": 2,
+      "children": [
+        "clusters--clusters-scene",
+        "clusters--paragraph-1",
+        "clusters--paragraph-2",
+        "clusters--paragraph-3",
+        "clusters--paragraph-4"
+      ],
+      "stepOrder": [
+        "clusters--step-0",
+        "clusters--step-1",
+        "clusters--step-2",
+        "clusters--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "descent": {
+      "id": "descent",
+      "title": "损失曲面与梯度下降：顶点位移、顶点颜色与粗线",
+      "level": 2,
+      "children": [
+        "descent--descent-scene",
+        "descent--paragraph-1",
+        "descent--paragraph-2",
+        "descent--paragraph-3",
+        "descent--paragraph-4"
+      ],
+      "stepOrder": [
+        "descent--step-0",
+        "descent--step-1",
+        "descent--step-2",
+        "descent--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "projection": {
+      "id": "projection",
+      "title": "向量与投影：ArrowHelper 与虚线",
+      "level": 2,
+      "children": [
+        "projection--projection-scene",
+        "projection--paragraph-1",
+        "projection--paragraph-2",
+        "projection--paragraph-3"
+      ],
+      "stepOrder": [
+        "projection--step-0",
+        "projection--step-1",
+        "projection--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "matrix": {
+      "id": "matrix",
+      "title": "矩阵变换平面：正交相机与逐帧改写的网格",
+      "level": 2,
+      "children": [
+        "matrix--matrix-scene",
+        "matrix--paragraph-1",
+        "matrix--paragraph-2",
+        "matrix--paragraph-3",
+        "matrix--paragraph-4"
+      ],
+      "stepOrder": [
+        "matrix--step-0",
+        "matrix--step-1",
+        "matrix--step-2",
+        "matrix--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "lorenz": {
+      "id": "lorenz",
+      "title": "坐标轴与轨迹：AxesHelper、刻度标签与逐段画出的曲线",
+      "level": 2,
+      "children": [
+        "lorenz--lorenz-scene",
+        "lorenz--paragraph-1",
+        "lorenz--paragraph-2",
+        "lorenz--paragraph-3"
+      ],
+      "stepOrder": [
+        "lorenz--step-0",
+        "lorenz--step-1",
+        "lorenz--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "surfaces": {
+      "id": "surfaces",
+      "title": "曲面之间的变形：ParametricGeometry 与形变目标",
+      "level": 2,
+      "children": [
+        "surfaces--surfaces-scene",
+        "surfaces--paragraph-1",
+        "surfaces--paragraph-2",
+        "surfaces--paragraph-3",
+        "surfaces--paragraph-4"
+      ],
+      "stepOrder": [
+        "surfaces--step-0",
+        "surfaces--step-1",
+        "surfaces--step-2",
+        "surfaces--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "route": {
+      "id": "route",
+      "title": "沿路径运动：曲线、管道与跟拍镜头",
+      "level": 2,
+      "children": [
+        "route--route-scene",
+        "route--paragraph-1",
+        "route--paragraph-2",
+        "route--paragraph-3",
+        "route--paragraph-4"
+      ],
+      "stepOrder": [
+        "route--step-0",
+        "route--step-1",
+        "route--step-2",
+        "route--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "galaxy": {
+      "id": "galaxy",
+      "title": "着色器里的粒子：Points 与 ShaderMaterial",
+      "level": 2,
+      "children": [
+        "galaxy--galaxy-scene",
+        "galaxy--paragraph-1",
+        "galaxy--paragraph-2",
+        "galaxy--paragraph-3",
+        "galaxy--paragraph-4"
+      ],
+      "stepOrder": [
+        "galaxy--step-0",
+        "galaxy--step-1",
+        "galaxy--step-2",
+        "galaxy--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "hanoi": {
+      "id": "hanoi",
+      "title": "关键帧数据：AnimationClip 与 AnimationMixer",
+      "level": 2,
+      "children": [
+        "hanoi--hanoi-scene",
+        "hanoi--paragraph-1",
+        "hanoi--paragraph-2",
+        "hanoi--paragraph-3",
+        "hanoi--paragraph-4"
+      ],
+      "stepOrder": [
+        "hanoi--step-0",
+        "hanoi--step-1",
+        "hanoi--step-2",
+        "hanoi--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "lathe": {
+      "id": "lathe",
+      "title": "旋转体与剖面：LatheGeometry 与裁剪平面",
+      "level": 2,
+      "children": [
+        "lathe--lathe-scene",
+        "lathe--paragraph-1",
+        "lathe--paragraph-2",
+        "lathe--paragraph-3",
+        "lathe--paragraph-4"
+      ],
+      "stepOrder": [
+        "lathe--step-0",
+        "lathe--step-1",
+        "lathe--step-2",
+        "lathe--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "hull": {
+      "id": "hull",
+      "title": "凸包：ConvexGeometry 与描边",
+      "level": 2,
+      "children": [
+        "hull--hull-scene",
+        "hull--paragraph-1",
+        "hull--paragraph-2",
+        "hull--paragraph-3"
+      ],
+      "stepOrder": [
+        "hull--step-0",
+        "hull--step-1",
+        "hull--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "materials": {
+      "id": "materials",
+      "title": "材质对比：标准、物理、卡通、法线与线框",
+      "level": 2,
+      "children": [
+        "materials--materials-scene",
+        "materials--paragraph-1",
+        "materials--paragraph-2",
+        "materials--paragraph-3"
+      ],
+      "stepOrder": [
+        "materials--step-0",
+        "materials--step-1",
+        "materials--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "shadows": {
+      "id": "shadows",
+      "title": "光照与阴影：太阳的一天与雾",
+      "level": 2,
+      "children": [
+        "shadows--shadows-scene",
+        "shadows--paragraph-1",
+        "shadows--paragraph-2",
+        "shadows--paragraph-3",
+        "shadows--paragraph-4"
+      ],
+      "stepOrder": [
+        "shadows--step-0",
+        "shadows--step-1",
+        "shadows--step-2",
+        "shadows--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "intro--paragraph-1": {
+      "id": "intro--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Three.js 适合深度本身就是内容的画面：三维空间里的点与向量、曲面、相机的推拉，以及成千上万个粒子。"
+            }
+          ]
+        }
+      ]
+    },
+    "clusters--clusters-scene": {
+      "id": "clusters--clusters-scene",
+      "type": "component",
+      "definitionId": "clusters--clusters-scene--definition",
+      "parameters": {
+        "scene": "clusters",
+        "alt": "三维空间中的词向量：散开的灰点聚成三团并染色，标出类别，镜头推近其中一团。"
+      }
+    },
+    "clusters--paragraph-1": {
+      "id": "clusters--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "clusters--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "三百多个点散在空间里，一次绘制画出全部点。"
+            }
+          ]
+        }
+      ]
+    },
+    "clusters--paragraph-2": {
+      "id": "clusters--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "clusters--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "点按类别聚拢，颜色从灰色过渡到各自类别的颜色。"
+            }
+          ]
+        }
+      ]
+    },
+    "clusters--paragraph-3": {
+      "id": "clusters--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "clusters--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每一团上方出现类别的名字，是 HTML 标签，跟着三维位置走。"
+            }
+          ]
+        }
+      ]
+    },
+    "clusters--paragraph-4": {
+      "id": "clusters--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "clusters--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "镜头推近“动物”这一团，其他两团缩小变淡。"
+            }
+          ]
+        }
+      ]
+    },
+    "descent--descent-scene": {
+      "id": "descent--descent-scene",
+      "type": "component",
+      "definitionId": "descent--descent-scene--definition",
+      "parameters": {
+        "scene": "descent",
+        "alt": "一张起伏的损失曲面，小球落在山坡上，沿梯度一步步滚到谷底，身后留下轨迹，镜头推近终点。"
+      }
+    },
+    "descent--paragraph-1": {
+      "id": "descent--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "descent--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "平面的每个顶点按损失函数抬高，低处是青色，高处是橙色。"
+            }
+          ]
+        }
+      ]
+    },
+    "descent--paragraph-2": {
+      "id": "descent--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "descent--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "小球落到起点，旁边是此处的损失值。"
+            }
+          ]
+        }
+      ]
+    },
+    "descent--paragraph-3": {
+      "id": "descent--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "descent--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "梯度下降一步一步走向低处，红色轨迹记下走过的路，损失值随之下降。"
+            }
+          ]
+        }
+      ]
+    },
+    "descent--paragraph-4": {
+      "id": "descent--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "descent--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "镜头推近终点，这里是一个局部极小值。"
+            }
+          ]
+        }
+      ]
+    },
+    "projection--projection-scene": {
+      "id": "projection--projection-scene",
+      "type": "component",
+      "definitionId": "projection--projection-scene--definition",
+      "parameters": {
+        "scene": "projection",
+        "alt": "三维空间中的向量 a 与 b：b 绕竖轴转动，点积随之变化；再从 a 的端点垂直落到 b 上，得到投影。"
+      }
+    },
+    "projection--paragraph-1": {
+      "id": "projection--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "projection--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "坐标网格上画出两个向量 a 和 b。"
+            }
+          ]
+        }
+      ]
+    },
+    "projection--paragraph-2": {
+      "id": "projection--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "projection--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "b 绕竖轴转动，左上角的点积 a·b 跟着变。"
+            }
+          ]
+        }
+      ]
+    },
+    "projection--paragraph-3": {
+      "id": "projection--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "projection--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "从 a 的端点作虚线垂直落到 b 所在的直线上，红色箭头就是 a 在 b 上的投影。"
+            }
+          ]
+        }
+      ]
+    },
+    "matrix--matrix-scene": {
+      "id": "matrix--matrix-scene",
+      "type": "component",
+      "definitionId": "matrix--matrix-scene--definition",
+      "parameters": {
+        "scene": "matrix",
+        "alt": "一个二阶矩阵作用在平面上：网格、基向量与单位正方形跟着矩阵变形，行列式标在正方形中间。"
+      }
+    },
+    "matrix--paragraph-1": {
+      "id": "matrix--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "matrix--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "单位矩阵下，网格就是原来的方格，单位正方形的面积是 1。"
+            }
+          ]
+        }
+      ]
+    },
+    "matrix--paragraph-2": {
+      "id": "matrix--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "matrix--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "切变把 î 留在原地，ĵ 向右倾斜，面积不变，行列式仍是 1。"
+            }
+          ]
+        }
+      ]
+    },
+    "matrix--paragraph-3": {
+      "id": "matrix--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "matrix--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "换一个一般的矩阵，方格变成平行四边形，面积放大到 1.75 倍。"
+            }
+          ]
+        }
+      ]
+    },
+    "matrix--paragraph-4": {
+      "id": "matrix--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "matrix--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "两列成比例时，整个平面被压到一条直线上，行列式变为 0。"
+            }
+          ]
+        }
+      ]
+    },
+    "lorenz--lorenz-scene": {
+      "id": "lorenz--lorenz-scene",
+      "type": "component",
+      "definitionId": "lorenz--lorenz-scene--definition",
+      "parameters": {
+        "scene": "lorenz",
+        "alt": "三维坐标轴上，洛伦兹方程的解从原点附近出发，画出蝴蝶形的吸引子，镜头绕它转半圈。"
+      }
+    },
+    "lorenz--paragraph-1": {
+      "id": "lorenz--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "lorenz--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "坐标轴和刻度先出现，三个轴的名字跟着各自的颜色。"
+            }
+          ]
+        }
+      ]
+    },
+    "lorenz--paragraph-2": {
+      "id": "lorenz--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "lorenz--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "洛伦兹方程的轨迹一段一段画出来，在两翼之间来回跳，颜色随时间由青变橙。"
+            }
+          ]
+        }
+      ]
+    },
+    "lorenz--paragraph-3": {
+      "id": "lorenz--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "lorenz--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "镜头绕吸引子转半圈，从侧面看出它是两片近乎平的翅膀。"
+            }
+          ]
+        }
+      ]
+    },
+    "surfaces--surfaces-scene": {
+      "id": "surfaces--surfaces-scene",
+      "type": "component",
+      "definitionId": "surfaces--surfaces-scene--definition",
+      "parameters": {
+        "scene": "surfaces",
+        "alt": "同一块网格在马鞍面、碗形曲面与猴鞍面之间连续变形，最后叠上网格线。"
+      }
+    },
+    "surfaces--paragraph-1": {
+      "id": "surfaces--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "surfaces--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "马鞍面 z = x² − y²：一个方向向上弯，另一个方向向下弯。"
+            }
+          ]
+        }
+      ]
+    },
+    "surfaces--paragraph-2": {
+      "id": "surfaces--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "surfaces--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "同一块网格变成碗形 z = x² + y²，原点成了最低点。"
+            }
+          ]
+        }
+      ]
+    },
+    "surfaces--paragraph-3": {
+      "id": "surfaces--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "surfaces--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "再变成猴鞍面，三个方向向下、三个方向向上。"
+            }
+          ]
+        }
+      ]
+    },
+    "surfaces--paragraph-4": {
+      "id": "surfaces--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "surfaces--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "叠上网格线，看清每个顶点都只是换了高度。"
+            }
+          ]
+        }
+      ]
+    },
+    "route--route-scene": {
+      "id": "route--route-scene",
+      "type": "component",
+      "definitionId": "route--route-scene--definition",
+      "parameters": {
+        "scene": "route",
+        "alt": "一次请求的路径：浏览器、网关、服务、缓存与数据库依次出现，管道连起它们，数据包沿管道前进，镜头跟在后面。"
+      }
+    },
+    "route--paragraph-1": {
+      "id": "route--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "route--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "请求经过的五个节点依次出现。"
+            }
+          ]
+        }
+      ]
+    },
+    "route--paragraph-2": {
+      "id": "route--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "route--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一条平滑的管道把它们连起来。"
+            }
+          ]
+        }
+      ]
+    },
+    "route--paragraph-3": {
+      "id": "route--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "route--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "数据包沿管道前进，镜头跟在它后方。"
+            }
+          ]
+        }
+      ]
+    },
+    "route--paragraph-4": {
+      "id": "route--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "route--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "镜头拉回全景，数据包停在数据库。"
+            }
+          ]
+        }
+      ]
+    },
+    "galaxy--galaxy-scene": {
+      "id": "galaxy--galaxy-scene",
+      "type": "component",
+      "definitionId": "galaxy--galaxy-scene--definition",
+      "parameters": {
+        "scene": "galaxy",
+        "alt": "六万颗星从中心散开，扭成三条旋臂，内圈转得比外圈快，最后镜头倾斜看到星系的侧面。"
+      }
+    },
+    "galaxy--paragraph-1": {
+      "id": "galaxy--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "galaxy--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "六万颗星从中心向外散开，位置全部在着色器里算出。"
+            }
+          ]
+        }
+      ]
+    },
+    "galaxy--paragraph-2": {
+      "id": "galaxy--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "galaxy--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "旋臂出现：越远的星，转过的角度越大。"
+            }
+          ]
+        }
+      ]
+    },
+    "galaxy--paragraph-3": {
+      "id": "galaxy--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "galaxy--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "星系转起来，内圈比外圈转得快，旋臂越缠越紧。"
+            }
+          ]
+        }
+      ]
+    },
+    "galaxy--paragraph-4": {
+      "id": "galaxy--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "galaxy--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "镜头倾斜，看到星系是一个薄薄的盘。"
+            }
+          ]
+        }
+      ]
+    },
+    "hanoi--hanoi-scene": {
+      "id": "hanoi--hanoi-scene",
+      "type": "component",
+      "definitionId": "hanoi--hanoi-scene--definition",
+      "parameters": {
+        "scene": "hanoi",
+        "alt": "三个圆盘的汉诺塔：七次移动写成关键帧轨道，正在移动的圆盘变成橙色。"
+      }
+    },
+    "hanoi--paragraph-1": {
+      "id": "hanoi--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "hanoi--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "架子转到正面，三个圆盘叠在 A 柱上。"
+            }
+          ]
+        }
+      ]
+    },
+    "hanoi--paragraph-2": {
+      "id": "hanoi--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "hanoi--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "前三步把上面两个圆盘挪到 B 柱，给最大的圆盘让路。"
+            }
+          ]
+        }
+      ]
+    },
+    "hanoi--paragraph-3": {
+      "id": "hanoi--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "hanoi--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "最大的圆盘从 A 移到 C。"
+            }
+          ]
+        }
+      ]
+    },
+    "hanoi--paragraph-4": {
+      "id": "hanoi--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "hanoi--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "最后三步把两个小圆盘从 B 移到 C 上，完成。"
+            }
+          ]
+        }
+      ]
+    },
+    "lathe--lathe-scene": {
+      "id": "lathe--lathe-scene",
+      "type": "component",
+      "definitionId": "lathe--lathe-scene--definition",
+      "parameters": {
+        "scene": "lathe",
+        "alt": "一条轮廓线绕竖轴旋转一周扫出花瓶形的旋转体，再用一个平面把前半部分切掉，露出剖面。"
+      }
+    },
+    "lathe--paragraph-1": {
+      "id": "lathe--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "lathe--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先画出半径随高度变化的轮廓 r(y)。"
+            }
+          ]
+        }
+      ]
+    },
+    "lathe--paragraph-2": {
+      "id": "lathe--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "lathe--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "轮廓绕竖轴转一周，扫出旋转体，体积公式随之出现。"
+            }
+          ]
+        }
+      ]
+    },
+    "lathe--paragraph-3": {
+      "id": "lathe--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "lathe--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一个平面从前方推进到中间，切掉前半部分。"
+            }
+          ]
+        }
+      ]
+    },
+    "lathe--paragraph-4": {
+      "id": "lathe--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "lathe--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "转动视角，从剖开处看到壁和内部。"
+            }
+          ]
+        }
+      ]
+    },
+    "hull--hull-scene": {
+      "id": "hull--hull-scene",
+      "type": "component",
+      "definitionId": "hull--hull-scene--definition",
+      "parameters": {
+        "scene": "hull",
+        "alt": "一组三维点，凸包的棱一条条画出，再填上半透明的面，位于凸包顶点上的点变成红色。"
+      }
+    },
+    "hull--paragraph-1": {
+      "id": "hull--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "hull--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "四十八个点出现在空间里。"
+            }
+          ]
+        }
+      ]
+    },
+    "hull--paragraph-2": {
+      "id": "hull--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "hull--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "凸包的棱一条条画出来。"
+            }
+          ]
+        }
+      ]
+    },
+    "hull--paragraph-3": {
+      "id": "hull--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "hull--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "填上半透明的面，在凸包顶点上的点变红、变大，其余的点都在内部。"
+            }
+          ]
+        }
+      ]
+    },
+    "materials--materials-scene": {
+      "id": "materials--materials-scene",
+      "type": "component",
+      "definitionId": "materials--materials-scene--definition",
+      "parameters": {
+        "scene": "materials",
+        "alt": "同一个环面结用五种材质并排，一盏灯从左向右划过，最后金属材质的粗糙度逐渐增大。"
+      }
+    },
+    "materials--paragraph-1": {
+      "id": "materials--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "materials--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "五种材质并排出现：金属、清漆、卡通、法线着色和线框。"
+            }
+          ]
+        }
+      ]
+    },
+    "materials--paragraph-2": {
+      "id": "materials--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "materials--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一盏点光源从左上方划到右侧，看高光在各种材质上怎样移动。"
+            }
+          ]
+        }
+      ]
+    },
+    "materials--paragraph-3": {
+      "id": "materials--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "materials--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "金属的粗糙度从 0.2 增加到 0.9，倒影从清晰变成模糊。"
+            }
+          ]
+        }
+      ]
+    },
+    "shadows--shadows-scene": {
+      "id": "shadows--shadows-scene",
+      "type": "component",
+      "definitionId": "shadows--shadows-scene--definition",
+      "parameters": {
+        "scene": "shadows",
+        "alt": "一座小城的楼房升起，太阳从东方升到头顶再落向西方，影子随之转动变长，最后雾气漫上来。"
+      }
+    },
+    "shadows--paragraph-1": {
+      "id": "shadows--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "shadows--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "楼房从地面升起。"
+            }
+          ]
+        }
+      ]
+    },
+    "shadows--paragraph-2": {
+      "id": "shadows--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "shadows--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "太阳从东边升到头顶，影子由长变短。"
+            }
+          ]
+        }
+      ]
+    },
+    "shadows--paragraph-3": {
+      "id": "shadows--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "shadows--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "太阳落向西边，光线变暖，影子拉长到另一侧。"
+            }
+          ]
+        }
+      ]
+    },
+    "shadows--paragraph-4": {
+      "id": "shadows--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "shadows--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "雾漫上来，远处的楼房渐渐融入背景。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "intro--step-0": {
+      "id": "intro--step-0",
+      "sectionId": "intro",
+      "visuals": [
+        {
+          "blockId": "intro--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "intro--paragraph-1--narration"
+      ]
+    },
+    "clusters--step-0": {
+      "id": "clusters--step-0",
+      "sectionId": "clusters",
+      "visuals": [
+        {
+          "blockId": "clusters--clusters-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "clusters--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "clusters--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "clusters--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "clusters--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "clusters--paragraph-1--narration"
+      ]
+    },
+    "clusters--step-1": {
+      "id": "clusters--step-1",
+      "sectionId": "clusters",
+      "visuals": [
+        {
+          "blockId": "clusters--clusters-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "clusters--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "clusters--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "clusters--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "clusters--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "clusters--paragraph-2--narration"
+      ]
+    },
+    "clusters--step-2": {
+      "id": "clusters--step-2",
+      "sectionId": "clusters",
+      "visuals": [
+        {
+          "blockId": "clusters--clusters-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "clusters--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "clusters--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "clusters--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "clusters--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "clusters--paragraph-3--narration"
+      ]
+    },
+    "clusters--step-3": {
+      "id": "clusters--step-3",
+      "sectionId": "clusters",
+      "visuals": [
+        {
+          "blockId": "clusters--clusters-scene",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "clusters--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "clusters--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "clusters--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "clusters--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "clusters--paragraph-4--narration"
+      ]
+    },
+    "descent--step-0": {
+      "id": "descent--step-0",
+      "sectionId": "descent",
+      "visuals": [
+        {
+          "blockId": "descent--descent-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "descent--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "descent--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "descent--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "descent--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "descent--paragraph-1--narration"
+      ]
+    },
+    "descent--step-1": {
+      "id": "descent--step-1",
+      "sectionId": "descent",
+      "visuals": [
+        {
+          "blockId": "descent--descent-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "descent--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "descent--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "descent--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "descent--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "descent--paragraph-2--narration"
+      ]
+    },
+    "descent--step-2": {
+      "id": "descent--step-2",
+      "sectionId": "descent",
+      "visuals": [
+        {
+          "blockId": "descent--descent-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "descent--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "descent--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "descent--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "descent--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "descent--paragraph-3--narration"
+      ]
+    },
+    "descent--step-3": {
+      "id": "descent--step-3",
+      "sectionId": "descent",
+      "visuals": [
+        {
+          "blockId": "descent--descent-scene",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "descent--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "descent--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "descent--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "descent--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "descent--paragraph-4--narration"
+      ]
+    },
+    "projection--step-0": {
+      "id": "projection--step-0",
+      "sectionId": "projection",
+      "visuals": [
+        {
+          "blockId": "projection--projection-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "projection--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "projection--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "projection--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "projection--paragraph-1--narration"
+      ]
+    },
+    "projection--step-1": {
+      "id": "projection--step-1",
+      "sectionId": "projection",
+      "visuals": [
+        {
+          "blockId": "projection--projection-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "projection--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "projection--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "projection--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "projection--paragraph-2--narration"
+      ]
+    },
+    "projection--step-2": {
+      "id": "projection--step-2",
+      "sectionId": "projection",
+      "visuals": [
+        {
+          "blockId": "projection--projection-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "projection--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "projection--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "projection--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "projection--paragraph-3--narration"
+      ]
+    },
+    "matrix--step-0": {
+      "id": "matrix--step-0",
+      "sectionId": "matrix",
+      "visuals": [
+        {
+          "blockId": "matrix--matrix-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "matrix--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "matrix--paragraph-1--narration"
+      ]
+    },
+    "matrix--step-1": {
+      "id": "matrix--step-1",
+      "sectionId": "matrix",
+      "visuals": [
+        {
+          "blockId": "matrix--matrix-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "matrix--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "matrix--paragraph-2--narration"
+      ]
+    },
+    "matrix--step-2": {
+      "id": "matrix--step-2",
+      "sectionId": "matrix",
+      "visuals": [
+        {
+          "blockId": "matrix--matrix-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "matrix--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "matrix--paragraph-3--narration"
+      ]
+    },
+    "matrix--step-3": {
+      "id": "matrix--step-3",
+      "sectionId": "matrix",
+      "visuals": [
+        {
+          "blockId": "matrix--matrix-scene",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "matrix--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "matrix--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "matrix--paragraph-4--narration"
+      ]
+    },
+    "lorenz--step-0": {
+      "id": "lorenz--step-0",
+      "sectionId": "lorenz",
+      "visuals": [
+        {
+          "blockId": "lorenz--lorenz-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "lorenz--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "lorenz--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "lorenz--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "lorenz--paragraph-1--narration"
+      ]
+    },
+    "lorenz--step-1": {
+      "id": "lorenz--step-1",
+      "sectionId": "lorenz",
+      "visuals": [
+        {
+          "blockId": "lorenz--lorenz-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "lorenz--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "lorenz--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "lorenz--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "lorenz--paragraph-2--narration"
+      ]
+    },
+    "lorenz--step-2": {
+      "id": "lorenz--step-2",
+      "sectionId": "lorenz",
+      "visuals": [
+        {
+          "blockId": "lorenz--lorenz-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "lorenz--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "lorenz--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "lorenz--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "lorenz--paragraph-3--narration"
+      ]
+    },
+    "surfaces--step-0": {
+      "id": "surfaces--step-0",
+      "sectionId": "surfaces",
+      "visuals": [
+        {
+          "blockId": "surfaces--surfaces-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "surfaces--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "surfaces--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "surfaces--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "surfaces--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "surfaces--paragraph-1--narration"
+      ]
+    },
+    "surfaces--step-1": {
+      "id": "surfaces--step-1",
+      "sectionId": "surfaces",
+      "visuals": [
+        {
+          "blockId": "surfaces--surfaces-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "surfaces--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "surfaces--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "surfaces--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "surfaces--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "surfaces--paragraph-2--narration"
+      ]
+    },
+    "surfaces--step-2": {
+      "id": "surfaces--step-2",
+      "sectionId": "surfaces",
+      "visuals": [
+        {
+          "blockId": "surfaces--surfaces-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "surfaces--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "surfaces--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "surfaces--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "surfaces--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "surfaces--paragraph-3--narration"
+      ]
+    },
+    "surfaces--step-3": {
+      "id": "surfaces--step-3",
+      "sectionId": "surfaces",
+      "visuals": [
+        {
+          "blockId": "surfaces--surfaces-scene",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "surfaces--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "surfaces--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "surfaces--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "surfaces--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "surfaces--paragraph-4--narration"
+      ]
+    },
+    "route--step-0": {
+      "id": "route--step-0",
+      "sectionId": "route",
+      "visuals": [
+        {
+          "blockId": "route--route-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "route--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "route--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "route--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "route--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "route--paragraph-1--narration"
+      ]
+    },
+    "route--step-1": {
+      "id": "route--step-1",
+      "sectionId": "route",
+      "visuals": [
+        {
+          "blockId": "route--route-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "route--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "route--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "route--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "route--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "route--paragraph-2--narration"
+      ]
+    },
+    "route--step-2": {
+      "id": "route--step-2",
+      "sectionId": "route",
+      "visuals": [
+        {
+          "blockId": "route--route-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "route--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "route--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "route--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "route--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "route--paragraph-3--narration"
+      ]
+    },
+    "route--step-3": {
+      "id": "route--step-3",
+      "sectionId": "route",
+      "visuals": [
+        {
+          "blockId": "route--route-scene",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "route--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "route--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "route--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "route--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "route--paragraph-4--narration"
+      ]
+    },
+    "galaxy--step-0": {
+      "id": "galaxy--step-0",
+      "sectionId": "galaxy",
+      "visuals": [
+        {
+          "blockId": "galaxy--galaxy-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "galaxy--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "galaxy--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "galaxy--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "galaxy--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "galaxy--paragraph-1--narration"
+      ]
+    },
+    "galaxy--step-1": {
+      "id": "galaxy--step-1",
+      "sectionId": "galaxy",
+      "visuals": [
+        {
+          "blockId": "galaxy--galaxy-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "galaxy--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "galaxy--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "galaxy--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "galaxy--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "galaxy--paragraph-2--narration"
+      ]
+    },
+    "galaxy--step-2": {
+      "id": "galaxy--step-2",
+      "sectionId": "galaxy",
+      "visuals": [
+        {
+          "blockId": "galaxy--galaxy-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "galaxy--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "galaxy--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "galaxy--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "galaxy--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "galaxy--paragraph-3--narration"
+      ]
+    },
+    "galaxy--step-3": {
+      "id": "galaxy--step-3",
+      "sectionId": "galaxy",
+      "visuals": [
+        {
+          "blockId": "galaxy--galaxy-scene",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "galaxy--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "galaxy--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "galaxy--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "galaxy--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "galaxy--paragraph-4--narration"
+      ]
+    },
+    "hanoi--step-0": {
+      "id": "hanoi--step-0",
+      "sectionId": "hanoi",
+      "visuals": [
+        {
+          "blockId": "hanoi--hanoi-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "hanoi--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "hanoi--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "hanoi--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "hanoi--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "hanoi--paragraph-1--narration"
+      ]
+    },
+    "hanoi--step-1": {
+      "id": "hanoi--step-1",
+      "sectionId": "hanoi",
+      "visuals": [
+        {
+          "blockId": "hanoi--hanoi-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "hanoi--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "hanoi--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "hanoi--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "hanoi--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "hanoi--paragraph-2--narration"
+      ]
+    },
+    "hanoi--step-2": {
+      "id": "hanoi--step-2",
+      "sectionId": "hanoi",
+      "visuals": [
+        {
+          "blockId": "hanoi--hanoi-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "hanoi--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "hanoi--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "hanoi--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "hanoi--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "hanoi--paragraph-3--narration"
+      ]
+    },
+    "hanoi--step-3": {
+      "id": "hanoi--step-3",
+      "sectionId": "hanoi",
+      "visuals": [
+        {
+          "blockId": "hanoi--hanoi-scene",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "hanoi--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "hanoi--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "hanoi--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "hanoi--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "hanoi--paragraph-4--narration"
+      ]
+    },
+    "lathe--step-0": {
+      "id": "lathe--step-0",
+      "sectionId": "lathe",
+      "visuals": [
+        {
+          "blockId": "lathe--lathe-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "lathe--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "lathe--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "lathe--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "lathe--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "lathe--paragraph-1--narration"
+      ]
+    },
+    "lathe--step-1": {
+      "id": "lathe--step-1",
+      "sectionId": "lathe",
+      "visuals": [
+        {
+          "blockId": "lathe--lathe-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "lathe--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "lathe--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "lathe--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "lathe--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "lathe--paragraph-2--narration"
+      ]
+    },
+    "lathe--step-2": {
+      "id": "lathe--step-2",
+      "sectionId": "lathe",
+      "visuals": [
+        {
+          "blockId": "lathe--lathe-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "lathe--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "lathe--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "lathe--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "lathe--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "lathe--paragraph-3--narration"
+      ]
+    },
+    "lathe--step-3": {
+      "id": "lathe--step-3",
+      "sectionId": "lathe",
+      "visuals": [
+        {
+          "blockId": "lathe--lathe-scene",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "lathe--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "lathe--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "lathe--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "lathe--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "lathe--paragraph-4--narration"
+      ]
+    },
+    "hull--step-0": {
+      "id": "hull--step-0",
+      "sectionId": "hull",
+      "visuals": [
+        {
+          "blockId": "hull--hull-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "hull--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "hull--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "hull--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "hull--paragraph-1--narration"
+      ]
+    },
+    "hull--step-1": {
+      "id": "hull--step-1",
+      "sectionId": "hull",
+      "visuals": [
+        {
+          "blockId": "hull--hull-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "hull--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "hull--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "hull--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "hull--paragraph-2--narration"
+      ]
+    },
+    "hull--step-2": {
+      "id": "hull--step-2",
+      "sectionId": "hull",
+      "visuals": [
+        {
+          "blockId": "hull--hull-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "hull--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "hull--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "hull--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "hull--paragraph-3--narration"
+      ]
+    },
+    "materials--step-0": {
+      "id": "materials--step-0",
+      "sectionId": "materials",
+      "visuals": [
+        {
+          "blockId": "materials--materials-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "materials--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "materials--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "materials--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "materials--paragraph-1--narration"
+      ]
+    },
+    "materials--step-1": {
+      "id": "materials--step-1",
+      "sectionId": "materials",
+      "visuals": [
+        {
+          "blockId": "materials--materials-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "materials--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "materials--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "materials--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "materials--paragraph-2--narration"
+      ]
+    },
+    "materials--step-2": {
+      "id": "materials--step-2",
+      "sectionId": "materials",
+      "visuals": [
+        {
+          "blockId": "materials--materials-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "materials--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "materials--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "materials--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "materials--paragraph-3--narration"
+      ]
+    },
+    "shadows--step-0": {
+      "id": "shadows--step-0",
+      "sectionId": "shadows",
+      "visuals": [
+        {
+          "blockId": "shadows--shadows-scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "shadows--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "shadows--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "shadows--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "shadows--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "shadows--paragraph-1--narration"
+      ]
+    },
+    "shadows--step-1": {
+      "id": "shadows--step-1",
+      "sectionId": "shadows",
+      "visuals": [
+        {
+          "blockId": "shadows--shadows-scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "shadows--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "shadows--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "shadows--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "shadows--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "shadows--paragraph-2--narration"
+      ]
+    },
+    "shadows--step-2": {
+      "id": "shadows--step-2",
+      "sectionId": "shadows",
+      "visuals": [
+        {
+          "blockId": "shadows--shadows-scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "shadows--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "shadows--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "shadows--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "shadows--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "shadows--paragraph-3--narration"
+      ]
+    },
+    "shadows--step-3": {
+      "id": "shadows--step-3",
+      "sectionId": "shadows",
+      "visuals": [
+        {
+          "blockId": "shadows--shadows-scene",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "shadows--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "shadows--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "shadows--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "shadows--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "shadows--paragraph-4--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "intro--paragraph-1--narration": {
+      "id": "intro--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Three.js 适合深度本身就是内容的画面：三维空间里的点与向量、曲面、相机的推拉，以及成千上万个粒子。"
+        }
+      ]
+    },
+    "clusters--paragraph-1--narration": {
+      "id": "clusters--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "三百多个点散在空间里，一次绘制画出全部点。"
+        }
+      ]
+    },
+    "clusters--paragraph-2--narration": {
+      "id": "clusters--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "点按类别聚拢，颜色从灰色过渡到各自类别的颜色。"
+        }
+      ]
+    },
+    "clusters--paragraph-3--narration": {
+      "id": "clusters--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "每一团上方出现类别的名字，是 HTML 标签，跟着三维位置走。"
+        }
+      ]
+    },
+    "clusters--paragraph-4--narration": {
+      "id": "clusters--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "镜头推近“动物”这一团，其他两团缩小变淡。"
+        }
+      ]
+    },
+    "descent--paragraph-1--narration": {
+      "id": "descent--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "平面的每个顶点按损失函数抬高，低处是青色，高处是橙色。"
+        }
+      ]
+    },
+    "descent--paragraph-2--narration": {
+      "id": "descent--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "小球落到起点，旁边是此处的损失值。"
+        }
+      ]
+    },
+    "descent--paragraph-3--narration": {
+      "id": "descent--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "梯度下降一步一步走向低处，红色轨迹记下走过的路，损失值随之下降。"
+        }
+      ]
+    },
+    "descent--paragraph-4--narration": {
+      "id": "descent--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "镜头推近终点，这里是一个局部极小值。"
+        }
+      ]
+    },
+    "projection--paragraph-1--narration": {
+      "id": "projection--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "坐标网格上画出两个向量 a 和 b。"
+        }
+      ]
+    },
+    "projection--paragraph-2--narration": {
+      "id": "projection--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "b 绕竖轴转动，左上角的点积 a·b 跟着变。"
+        }
+      ]
+    },
+    "projection--paragraph-3--narration": {
+      "id": "projection--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "从 a 的端点作虚线垂直落到 b 所在的直线上，红色箭头就是 a 在 b 上的投影。"
+        }
+      ]
+    },
+    "matrix--paragraph-1--narration": {
+      "id": "matrix--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "单位矩阵下，网格就是原来的方格，单位正方形的面积是 1。"
+        }
+      ]
+    },
+    "matrix--paragraph-2--narration": {
+      "id": "matrix--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "切变把 î 留在原地，ĵ 向右倾斜，面积不变，行列式仍是 1。"
+        }
+      ]
+    },
+    "matrix--paragraph-3--narration": {
+      "id": "matrix--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "换一个一般的矩阵，方格变成平行四边形，面积放大到 1.75 倍。"
+        }
+      ]
+    },
+    "matrix--paragraph-4--narration": {
+      "id": "matrix--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "两列成比例时，整个平面被压到一条直线上，行列式变为 0。"
+        }
+      ]
+    },
+    "lorenz--paragraph-1--narration": {
+      "id": "lorenz--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "坐标轴和刻度先出现，三个轴的名字跟着各自的颜色。"
+        }
+      ]
+    },
+    "lorenz--paragraph-2--narration": {
+      "id": "lorenz--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "洛伦兹方程的轨迹一段一段画出来，在两翼之间来回跳，颜色随时间由青变橙。"
+        }
+      ]
+    },
+    "lorenz--paragraph-3--narration": {
+      "id": "lorenz--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "镜头绕吸引子转半圈，从侧面看出它是两片近乎平的翅膀。"
+        }
+      ]
+    },
+    "surfaces--paragraph-1--narration": {
+      "id": "surfaces--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "马鞍面 z = x² − y²：一个方向向上弯，另一个方向向下弯。"
+        }
+      ]
+    },
+    "surfaces--paragraph-2--narration": {
+      "id": "surfaces--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "同一块网格变成碗形 z = x² + y²，原点成了最低点。"
+        }
+      ]
+    },
+    "surfaces--paragraph-3--narration": {
+      "id": "surfaces--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "再变成猴鞍面，三个方向向下、三个方向向上。"
+        }
+      ]
+    },
+    "surfaces--paragraph-4--narration": {
+      "id": "surfaces--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "叠上网格线，看清每个顶点都只是换了高度。"
+        }
+      ]
+    },
+    "route--paragraph-1--narration": {
+      "id": "route--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "请求经过的五个节点依次出现。"
+        }
+      ]
+    },
+    "route--paragraph-2--narration": {
+      "id": "route--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "一条平滑的管道把它们连起来。"
+        }
+      ]
+    },
+    "route--paragraph-3--narration": {
+      "id": "route--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "数据包沿管道前进，镜头跟在它后方。"
+        }
+      ]
+    },
+    "route--paragraph-4--narration": {
+      "id": "route--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "镜头拉回全景，数据包停在数据库。"
+        }
+      ]
+    },
+    "galaxy--paragraph-1--narration": {
+      "id": "galaxy--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "六万颗星从中心向外散开，位置全部在着色器里算出。"
+        }
+      ]
+    },
+    "galaxy--paragraph-2--narration": {
+      "id": "galaxy--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "旋臂出现：越远的星，转过的角度越大。"
+        }
+      ]
+    },
+    "galaxy--paragraph-3--narration": {
+      "id": "galaxy--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "星系转起来，内圈比外圈转得快，旋臂越缠越紧。"
+        }
+      ]
+    },
+    "galaxy--paragraph-4--narration": {
+      "id": "galaxy--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "镜头倾斜，看到星系是一个薄薄的盘。"
+        }
+      ]
+    },
+    "hanoi--paragraph-1--narration": {
+      "id": "hanoi--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "架子转到正面，三个圆盘叠在 A 柱上。"
+        }
+      ]
+    },
+    "hanoi--paragraph-2--narration": {
+      "id": "hanoi--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "前三步把上面两个圆盘挪到 B 柱，给最大的圆盘让路。"
+        }
+      ]
+    },
+    "hanoi--paragraph-3--narration": {
+      "id": "hanoi--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "最大的圆盘从 A 移到 C。"
+        }
+      ]
+    },
+    "hanoi--paragraph-4--narration": {
+      "id": "hanoi--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "最后三步把两个小圆盘从 B 移到 C 上，完成。"
+        }
+      ]
+    },
+    "lathe--paragraph-1--narration": {
+      "id": "lathe--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先画出半径随高度变化的轮廓 r(y)。"
+        }
+      ]
+    },
+    "lathe--paragraph-2--narration": {
+      "id": "lathe--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "轮廓绕竖轴转一周，扫出旋转体，体积公式随之出现。"
+        }
+      ]
+    },
+    "lathe--paragraph-3--narration": {
+      "id": "lathe--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "一个平面从前方推进到中间，切掉前半部分。"
+        }
+      ]
+    },
+    "lathe--paragraph-4--narration": {
+      "id": "lathe--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "转动视角，从剖开处看到壁和内部。"
+        }
+      ]
+    },
+    "hull--paragraph-1--narration": {
+      "id": "hull--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "四十八个点出现在空间里。"
+        }
+      ]
+    },
+    "hull--paragraph-2--narration": {
+      "id": "hull--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "凸包的棱一条条画出来。"
+        }
+      ]
+    },
+    "hull--paragraph-3--narration": {
+      "id": "hull--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "填上半透明的面，在凸包顶点上的点变红、变大，其余的点都在内部。"
+        }
+      ]
+    },
+    "materials--paragraph-1--narration": {
+      "id": "materials--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "五种材质并排出现：金属、清漆、卡通、法线着色和线框。"
+        }
+      ]
+    },
+    "materials--paragraph-2--narration": {
+      "id": "materials--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "一盏点光源从左上方划到右侧，看高光在各种材质上怎样移动。"
+        }
+      ]
+    },
+    "materials--paragraph-3--narration": {
+      "id": "materials--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "金属的粗糙度从 0.2 增加到 0.9，倒影从清晰变成模糊。"
+        }
+      ]
+    },
+    "shadows--paragraph-1--narration": {
+      "id": "shadows--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "楼房从地面升起。"
+        }
+      ]
+    },
+    "shadows--paragraph-2--narration": {
+      "id": "shadows--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "太阳从东边升到头顶，影子由长变短。"
+        }
+      ]
+    },
+    "shadows--paragraph-3--narration": {
+      "id": "shadows--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "太阳落向西边，光线变暖，影子拉长到另一侧。"
+        }
+      ]
+    },
+    "shadows--paragraph-4--narration": {
+      "id": "shadows--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "雾漫上来，远处的楼房渐渐融入背景。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "clusters--clusters-scene--definition": {
+      "id": "clusters--clusters-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/clusters.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1200,
+          2000,
+          1000,
+          1600
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "三维空间中的词向量：散开的灰点聚成三团并染色，标出类别，镜头推近其中一团。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "descent--descent-scene--definition": {
+      "id": "descent--descent-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/descent.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1200,
+          800,
+          2600,
+          1400
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一张起伏的损失曲面，小球落在山坡上，沿梯度一步步滚到谷底，身后留下轨迹，镜头推近终点。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "projection--projection-scene--definition": {
+      "id": "projection--projection-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/projection.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1600,
+          1600
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "三维空间中的向量 a 与 b：b 绕竖轴转动，点积随之变化；再从 a 的端点垂直落到 b 上，得到投影。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "matrix--matrix-scene--definition": {
+      "id": "matrix--matrix-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/matrix.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          800,
+          1600,
+          1600,
+          1600
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一个二阶矩阵作用在平面上：网格、基向量与单位正方形跟着矩阵变形，行列式标在正方形中间。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "lorenz--lorenz-scene--definition": {
+      "id": "lorenz--lorenz-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/lorenz.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          800,
+          4000,
+          2000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "三维坐标轴上，洛伦兹方程的解从原点附近出发，画出蝴蝶形的吸引子，镜头绕它转半圈。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "surfaces--surfaces-scene--definition": {
+      "id": "surfaces--surfaces-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/surfaces.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1400,
+          1400,
+          1200
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "同一块网格在马鞍面、碗形曲面与猴鞍面之间连续变形，最后叠上网格线。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "route--route-scene--definition": {
+      "id": "route--route-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/route.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1400,
+          2600,
+          1200
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一次请求的路径：浏览器、网关、服务、缓存与数据库依次出现，管道连起它们，数据包沿管道前进，镜头跟在后面。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "galaxy--galaxy-scene--definition": {
+      "id": "galaxy--galaxy-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/galaxy.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1200,
+          1600,
+          2400,
+          1600
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "六万颗星从中心散开，扭成三条旋臂，内圈转得比外圈快，最后镜头倾斜看到星系的侧面。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "hanoi--hanoi-scene--definition": {
+      "id": "hanoi--hanoi-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/hanoi.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          2400,
+          1000,
+          2400
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "三个圆盘的汉诺塔：七次移动写成关键帧轨道，正在移动的圆盘变成橙色。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "lathe--lathe-scene--definition": {
+      "id": "lathe--lathe-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/lathe.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1800,
+          1400,
+          1200
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一条轮廓线绕竖轴旋转一周扫出花瓶形的旋转体，再用一个平面把前半部分切掉，露出剖面。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "hull--hull-scene--definition": {
+      "id": "hull--hull-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/hull.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1600,
+          1200
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一组三维点，凸包的棱一条条画出，再填上半透明的面，位于凸包顶点上的点变成红色。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "materials--materials-scene--definition": {
+      "id": "materials--materials-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/materials.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1200,
+          1800,
+          1400
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "同一个环面结用五种材质并排，一盏灯从左向右划过，最后金属材质的粗糙度逐渐增大。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "shadows--shadows-scene--definition": {
+      "id": "shadows--shadows-scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/shadows.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1400,
+          1600,
+          1600,
+          1200
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一座小城的楼房升起，太阳从东方升到头顶再落向西方，影子随之转动变长，最后雾气漫上来。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

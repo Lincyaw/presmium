@@ -1,14 +1,14 @@
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { DECK_ENTRY, parseFrontmatter, WORKSPACE_CONFIG } from '@lincyaw/compiler'
+import { WORKSPACE_CONFIG } from '@lincyaw/compiler'
 import type { OperatorSettings } from '@lincyaw/compiler'
-import { APPROVAL_KINDS, errorMessage, isRecord } from '@lincyaw/kernel'
+import { APPROVAL_KINDS, DOCUMENT_ENTRY, errorMessage, isRecord } from '@lincyaw/kernel'
 import type { ApprovalKind, DocumentSummary } from '@lincyaw/kernel'
 import type { ApprovalPolicy } from '@lincyaw/server'
 import { parse as parseYaml } from 'yaml'
 import { matchesPattern, patternSegments } from '../domain/paths.ts'
 
-export const DEFAULT_DOCUMENTS = [`*/${DECK_ENTRY}`]
+export const DEFAULT_DOCUMENTS = [`*/${DOCUMENT_ENTRY}`]
 
 const SKIPPED = new Set(['node_modules', '.git', '.presmium', 'dist'])
 
@@ -42,13 +42,13 @@ export function readWorkspaceConfig(root: string): WorkspaceConfig {
     }
   }
   const declared = strings(data.documents)
-  const singleDeck = declared.length === 0 && existsSync(join(dir, DECK_ENTRY))
+  const singleDeck = declared.length === 0 && existsSync(join(dir, DOCUMENT_ENTRY))
   const approvals = isRecord(data.approvals) ? data.approvals : {}
   const settings = isRecord(data.settings) ? data.settings : {}
   return {
     root: dir,
     title: typeof data.title === 'string' && data.title.trim() ? data.title.trim() : dir.split('/').at(-1) ?? 'Presmium',
-    documents: singleDeck ? [DECK_ENTRY] : declared.length > 0 ? declared : DEFAULT_DOCUMENTS,
+    documents: singleDeck ? [DOCUMENT_ENTRY] : declared.length > 0 ? declared : DEFAULT_DOCUMENTS,
     singleDeck,
     site: isRecord(data.site) ? data.site : {},
     approvals: Object.fromEntries(APPROVAL_KINDS.flatMap(kind => (POLICIES.has(approvals[kind] as ApprovalPolicy) ? [[kind, approvals[kind] as ApprovalPolicy]] : []))),
@@ -85,7 +85,7 @@ function entries(config: WorkspaceConfig): string[] {
       return names.flatMap((name) => {
         const path = join(dir, name)
         const next = rel ? `${rel}/${name}` : name
-        if (last) return existsSync(path) && statSync(path).isFile() ? [next] : []
+        if (last) return name === DOCUMENT_ENTRY && existsSync(path) && statSync(path).isFile() ? [next] : []
         return existsSync(path) && statSync(path).isDirectory() ? walk(path, next, i + 1) : []
       })
     }
@@ -102,7 +102,8 @@ function documentOf(config: WorkspaceConfig, entry: string): FoundDocument {
   const dir = entry.split('/').slice(0, -1).join('/')
   let headmatter: Record<string, unknown> = {}
   try {
-    headmatter = parseFrontmatter(readFileSync(join(config.root, entry), 'utf8'))
+    const parsed: unknown = JSON.parse(readFileSync(join(config.root, entry), 'utf8'))
+    headmatter = isRecord(parsed) && isRecord(parsed.metadata) ? parsed.metadata : {}
   } catch {
   }
   const tags = strings(headmatter.tags)
@@ -124,5 +125,5 @@ export function documentSummaries(config: WorkspaceConfig): DocumentSummary[] {
 }
 
 export function isDocumentDir(config: WorkspaceConfig, dir: string): boolean {
-  return config.documents.some(pattern => matchesPattern(pattern, dir ? `${dir}/${DECK_ENTRY}` : DECK_ENTRY))
+  return config.documents.some(pattern => matchesPattern(pattern, dir ? `${dir}/${DOCUMENT_ENTRY}` : DOCUMENT_ENTRY))
 }

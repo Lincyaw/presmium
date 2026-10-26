@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "id": "document-template",
+  "metadata": {
+    "title": "{{title}}",
+    "lang": "zh-CN",
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {}
+    }
+  },
+  "sectionOrder": [
+    "intro",
+    "points",
+    "summary"
+  ],
+  "sections": {
+    "intro": {
+      "id": "intro",
+      "title": "引言",
+      "children": [
+        "intro-body"
+      ],
+      "stepOrder": [
+        "intro-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "points": {
+      "id": "points",
+      "title": "要点",
+      "children": [
+        "points-body"
+      ],
+      "stepOrder": [
+        "points-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "summary": {
+      "id": "summary",
+      "title": "小结",
+      "children": [
+        "summary-body"
+      ],
+      "stepOrder": [
+        "summary-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "intro-body": {
+      "id": "intro-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro-paragraph",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "请在此输入正文内容。"
+            }
+          ]
+        }
+      ]
+    },
+    "points-body": {
+      "id": "points-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "points-paragraph",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在文档中编写内容，通过独立的编译预览检查放映画面。"
+            }
+          ]
+        }
+      ]
+    },
+    "summary-body": {
+      "id": "summary-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "summary-paragraph",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本讲的要点。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "intro-step": {
+      "id": "intro-step",
+      "sectionId": "intro",
+      "visuals": [
+        {
+          "blockId": "intro-body",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "points-step": {
+      "id": "points-step",
+      "sectionId": "points",
+      "visuals": [
+        {
+          "blockId": "points-body",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "summary-step": {
+      "id": "summary-step",
+      "sectionId": "summary",
+      "visuals": [
+        {
+          "blockId": "summary-body",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

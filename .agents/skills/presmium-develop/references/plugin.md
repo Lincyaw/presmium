@@ -22,7 +22,7 @@ presmium-plugin-poll/
 │   └── client/            optional: plugin.ts (browser plugin), viewer.ts (viewer extension), React hooks
 ├── components/PmPoll.tsx  a component; its file name is its name
 ├── vite.config.ts         optional: Vite plugins and JSX configuration for the viewer's build
-├── example/lecture.md     a document that lists the plugin by its directory
+├── example/lecture.json     a document that lists the plugin by its directory
 └── test/plugin.test.ts    integration tests
 ```
 
@@ -97,53 +97,31 @@ publishes), and relative imports stay inside the package. A contract two plugins
 ```ts
 // src/node/presmium.ts
 import { createRequire } from 'node:module'
-import { deckLocale } from '@lincyaw/kernel'
-import type { DirectiveSpec, PresmiumNodePlugin } from '@lincyaw/kernel'
-import { MESSAGES, POLL_ID, parseChoices } from '../domain/index.ts'
+import { jsonResponse } from '@lincyaw/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
+import { PLUGIN_ID } from '../domain/index.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
-const poll: DirectiveSpec = {
-  name: 'poll',
-  arg: true,                          // the argument: the question
-  body: true,                         // the body: one choice per line
-  options: { anonymous: 'boolean' },  // option types: 'string' | 'number' | 'boolean' | 'list'
-  toIR(input, ctx) {
-    const t = MESSAGES[deckLocale(ctx.lang)]
-    const choices = parseChoices(input.body)
-    if (choices.length < 2) ctx.report({ checkId: POLL_ID, severity: 'error', message: '{poll} needs at least two choices' })
-    return {
-      node: {
-        type: 'component',
-        plugin: POLL_ID,
-        name: 'PmPoll',
-        props: { question: input.arg ?? '', choices, anonymous: input.options.anonymous === true },
-        // What static outputs show (notebook, PDF): mdast
-        fallback: {
-          type: 'root',
-          children: [
-            { type: 'paragraph', children: [{ type: 'strong', children: [{ type: 'text', value: input.arg ?? t.poll }] }] },
-            { type: 'list', ordered: false, children: choices.map(c => ({ type: 'listItem', children: [{ type: 'paragraph', children: [{ type: 'text', value: c }] }] })) },
-          ],
-        },
-      },
-      span: 0,                        // internal steps: the block has span + 1 states
-    }
+const plugin: PresmiumNodePlugin = {
+  id: PLUGIN_ID,
+  version,
+  kernel: '^1.0.0',
+  server() {
+    let waves = 0
+    return { routes: { waves: { role: 'reader', handle(request) {
+      if (request.method === 'POST') waves++
+      return jsonResponse({ waves })
+    } } } }
   },
 }
-
-const plugin: PresmiumNodePlugin = {
-  id: POLL_ID,
-  version,
-  kernel: '^1.0.0',                   // the plugin contract's version (KERNEL_VERSION of @lincyaw/kernel, now 1.0.0), not the packages' version
-  directives: [poll],
-}
-
 export default plugin
 ```
 
+Author a component definition in `example/lecture.json` with implementation `{ type: "plugin", plugin: PLUGIN_ID, name: "GreetingCard" }`, a real parameter Schema and fallback. The matching public component file is `components/GreetingCard.tsx`.
+
 The plugin id names the plugin everywhere: the `plugin` of its component nodes, its configuration
-(the key `<id>` under `presmium:` in the frontmatter, written `presmium.<id>` below), its routes under
+(the key `<id>` under `metadata.presmium`, written `presmium.<id>` below), its routes under
 `/__presmium/<id>/`, its shared-state keys (`useSharedState`, section 7).
 
 ### `PresmiumNodePlugin` fields
@@ -152,19 +130,17 @@ The plugin id names the plugin everywhere: the `plugin` of its component nodes, 
 |---|---|---|
 | `id` | string | Required |
 | `version`, `kernel` | string | Declare both: `version` equal to `package.json`, `kernel` the contract range (`^1.0.0`). A plugin whose range excludes the installed contract is not loaded |
-| `directives` | `DirectiveSpec[]` | MyST directives to IR nodes (section 3) |
-| `roles` | `RoleSpec[]` | Inline roles `` {name key=value}`content` ``: `{ name, options?, children?(input, ctx) }`; in the IR a `presmiumRole` mdast node (`plugin`, `name`, `options`, `children`). Renderers show `children`; one without children shows a marker `〔name value〕` in the presenter view |
-| `passes` | `IRPass { name, order?, after?, run(doc, ctx) }` | Compile passes: functions that read and change the whole IR. They run after Presmium's own passes and before code blocks are executed at compile time, ordered by `order`; with `after: 'execute'` they run after execution, when code nodes have `outputs`. `ctx`: `deckDir` (the document folder), `workspaceRoot`, `lang`, `src` and `resolvers` (read files so that `presmium dev` watches them; see section 3), `lock` (the recorded anchors), `executors`, `cache`, `config` (`presmium.<id>`), `configFor(section)` (merged with the section's `{config}`), `report`, `watch`, `service` |
+| `passes` | `IRPass { name, order?, after?, run(doc, ctx) }` | Compile passes: functions that read and change the whole IR. They run after Presmium's own passes and before code blocks are executed at compile time, ordered by `order`; with `after: 'execute'` they run after execution, when code nodes have `outputs`. `ctx`: `deckDir` (the document folder), `workspaceRoot`, `lang`, `src` and `resolvers` (read files so that `presmium dev` watches them; see section 3), `lock` (the recorded anchors), `executors`, `cache`, `config` (`presmium.<id>`), `configFor(section)` (merged with the section configuration), `report`, `watch`, `service` |
 | `executors` | `Executor` | Compile-time execution (section 4) |
-| `checks` | `Check { id, run(ctx) }` | Run by `presmium check`; return `Finding[]`, each `{ checkId, severity: 'error' \| 'warning' \| 'info', message, source?: { file, line } }`. `ctx` has the compiled `ir`, `headmatter` (the frontmatter), `src`, `resolvers`, `lock`, `service` |
-| `resolvers`, `anchors` | `AnchorResolver { scheme, resolve(anchor, src, recorded?, ref?) }`; `(ctx) => AnchorString[]` | An anchor is a reference `scheme:target` to a piece of a source file that survives edits, such as `region:src/sort.py#loop` in `{code-ref}` (presmium-author/references/directives.md). `resolvers` adds a new scheme; `anchors` lists the anchors `presmium check --update-lock` records in `.presmium/anchors.lock.json`. A resolution is `exact`, `moved`, `fuzzy` or `lost`; only the first two may render, the others must report a diagnostic |
+| `checks` | `Check { id, run(ctx) }` | Run by `presmium check`; return `Finding[]`, each `{ checkId, severity: 'error' \| 'warning' \| 'info', message, source?: { file, line } }`. `ctx` has the compiled `ir`, `headmatter` (the metadata), `src`, `resolvers`, `lock`, `service` |
+| `resolvers`, `anchors` | `AnchorResolver { scheme, resolve(anchor, src, recorded?, ref?) }`; `(ctx) => AnchorString[]` | An anchor is a reference `scheme:target` to a piece of a source file that survives edits, such as `region:src/sort.py#loop` on code blocks (presmium-author/references/document.md). `resolvers` adds a new scheme; `anchors` lists the anchors `presmium check --update-lock` records in `.presmium/anchors.lock.json`. A resolution is `exact`, `moved`, `fuzzy` or `lost`; only the first two may render, the others must report a diagnostic |
 | `rendererExtensions` | `{ [rendererId]: { components: { [ComponentName]: (node, block, ctx) => unknown } } }` | How a static renderer writes a component (section 5) |
 | `assets` | `(ctx: { deckDir, workspaceRoot, config }) => RuntimeAssets[]` | Files the browser code loads while it runs (a language runtime): `{ name, prefix, types, emitted?, source(file) }`, served at `<site base><prefix><file>` and copied into a built site (`emitted`, default all). Browser code builds the URL from `siteBase()` of `@lincyaw/host`, not `import.meta.env.BASE_URL` |
 | `documentModules` | `(ctx: { deckDir, workspaceRoot, config }) => Record<string, string>` | Virtual modules the browser code imports whose content depends on the document (e.g. `'virtual:presmium-poll/data'`), by id, with their source; only the default export is read. The viewer is prebuilt once per set of plugins and gets these from the document's own bundle |
 | `services` | `(ctx: NodeServiceContext) => [token, implementation][]` | Node services (objects registered under a token made with `defineService`, section 7) for passes, renderers, checks and server routes, which get them with `ctx.service?.(token)`. `ctx.config` is `presmium.<id>` of the document, `ctx.settings` the operator's `settings.<id>` in `presmium.workspace.yaml` (the operator is whoever runs `presmium serve` for a workspace; a document cannot change these settings), plus `lang`, `secret(name)`, `operatorDir`, `service`, `log`. Created per compilation; one implementation per token, duplicates are ignored with a warning |
 | `server` | `(ctx: ServerContext) => { routes?, proxies?, close? }` | Routes under `/__presmium/<id>/` (section 6) |
 | `exporters` | `Exporter[]` | Heavy outputs made on request as jobs (section 6) |
-| `environments` | `{ [kind]: EnvironmentProvider { create(name, spec, ctx), probe? } }` | Named execution environments (a container, a remote machine) that a document declares under `execute.environments` in its frontmatter, each with a `kind`; the executor's id is `environmentExecutor(name)`; `probe` serves `presmium check --env` |
+| `environments` | `{ [kind]: EnvironmentProvider { create(name, spec, ctx), probe? } }` | Named execution environments (a container, a remote machine) that a document declares under `execute.environments` in its metadata, each with a `kind`; the executor's id is `environmentExecutor(name)`; `probe` serves `presmium check --env` |
 | `tools` | `AgentTool { name, description, input, kind, run(input, ctx) }` | Tools that the MCP server (the `mcp <url>` line of `presmium dev` and `presmium serve`) lists for AI agents: `name` lower case with underscores, `input` a JSON Schema of an object; `kind` `read` (any token may call it), `operate` or `spend` (only the author's token, and the author approves each call first); `ctx` has `document`, `member`, `service`, `signal`; return JSON data or text |
 | `operator` | boolean | An operator plugin is loaded for every document of a workspace when the operator lists it in `presmium.workspace.yaml` under `settings: { presmium.workspace: { plugins: [...] } }` and installs it at the workspace root; on the `presmium serve` home page its server part gets an empty directory as `deckDir`, so routes there must not read or write files |
 
@@ -174,102 +150,17 @@ included), `nodeMdast` (a node as mdast), `mdastText` (the plain text of mdast),
 `deckLocale(lang)` (the document's `lang` to `'zh-CN'` or `'en'`), `jsonResponse`, `problemResponse`,
 `sseResponse` (section 6), `defineService` (section 7), `stepStateAt` (`useStepState` outside a component).
 
-## 3. Directives and the IR
+## 3. Document definitions and the runtime snapshot
 
-### `DirectiveSpec`
+The only authored entry is `lecture.json`. A component block is `{ id, type: "component", definitionId, parameters }`; its definition declares `kind`, `schemaVersion`, `implementation`, `parameterSchema`, `states` and optional versioned `data`. Implementation references name a project file, installed module or plugin/component pair. The example document shows the exact structure.
 
-```ts
-interface DirectiveSpec {
-  name: string
-  arg?: boolean | 'anchor'          // 'anchor': the argument is scheme:target; editors jump, hover and complete it
-  body?: boolean
-  options?: Record<string, 'string' | 'number' | 'boolean' | 'list'>
-  toIR(input: DirectiveInput, ctx: DirectiveContext): DirectiveResult | Promise<DirectiveResult>
-}
-interface DirectiveInput { name: string, arg?: string, options: Record<string, unknown>, body: string }
-interface DirectiveResult { node: IRNode, role?: 'visual' | 'narration', span?: number }   // role default 'visual'
-```
+The compiler validates authored parameters/state references and lowers them into a runtime `component` node with plugin, name, props, optional nested child blocks, assets, timing and static fallback. These runtime nodes are renderer input; never copy their numeric `at`, `span`, absolute paths or generated props back into the document as a second authority.
 
-- The compiler handles the options every directive has, `:reveal:` (the block appears at the next step), `:label:` and
-  `:audience:` (see presmium-author/references/directives.md); they never reach `toIR`. With `options`
-  declared, undeclared options get a warning.
-- A name equal to a built-in directive (`slide`, `only`, `hints`, `config`, `component`, `audience`) or to
-  another plugin's directive is an error.
-- Plugin directives are allowed at the top level of a section and inside `{slide}` and `{only}`; elsewhere
-  they are dropped with a warning.
-- `ctx` (`DirectiveContext`): `file`, `deckDir` (the document folder), `workspaceRoot` (the root of the git
-  repository containing the document, or the document folder when it is not in git),
-  `lang` (pick output text with `deckLocale(ctx.lang)`), `config` (the plugin's global configuration merged
-  with the section's `{config}`), `source` (`{ file, line, endLine? }`), `parse(markdown)` (MyST to mdast,
-  e.g. for a body with formatting), `report(finding)`, `watch(...files)`.
-- Files a plugin reads: a compile pass or check reads them through `ctx.src` or `ctx.resolvers`, which the
-  compiler records so `presmium dev` recompiles when they change. A directive (which has no `ctx.src`), or
-  any code that reads a file another way, declares it with `ctx.watch(file)`. A plugin that resolves a
-  branch or tag to a commit itself must also watch that git ref.
+Rich text is versioned Presmium structure, adapted through the editor's public API. A registered extension retains complete structured data and an explicit fallback; unknown extensions remain intact and report unavailable behavior. Component states have declared IDs. Migrated numeric implementations use explicit `legacyIndex` mappings, not fabricated semantic labels.
 
-### IR shapes
+Document configuration is `metadata.presmium[pluginId]`; renderer configuration is `metadata.renderers[rendererId]`. Operator settings remain in workspace/operator configuration. Steps and narrations are explicit entities; timing/voice inheritance is owned only by `production`.
 
-```ts
-// meta.entry: the source file; config: the frontmatter's plugins, presmium (plugin configuration), renderers, execute
-interface IRDocument { ir: 1, meta: { title, entry, lang?, ... }, config: { plugins, presmium, renderers, execute? }, sections: IRSection[], diagnostics: Finding[] }
-// steps: last zero-based step (steps + 1 states); hints: the {hints} directive's content; config: its {config}
-interface IRSection { id, index, title, depth, source, steps, hints, config?, blocks: IRBlock[], audience? }
-interface IRBlock {
-  id: string                         // stable within the section
-  role: 'visual' | 'narration'       // shown content, or narration
-  at: number                         // the step it appears at
-  until?: number                     // the step it disappears at
-  span?: number                      // internal steps
-  only?: string[]                    // renderer ids it is limited to
-  audience?: string[]
-  source: { file: string, line: number, endLine?: number }
-  node: MarkdownNode | CodeNode | ComponentNode
-}
-interface MarkdownNode { type: 'markdown', mdast: MdastNode, reveal?: 'items', narration?: { mode: 'during' | 'after' } }
-interface CodeNode { type: 'code', lang, value, title?, origin?, highlight?: number[][], run?, outputs?, variants?, echo?: false }
-interface ComponentNode {
-  type: 'component'
-  plugin: string                     // the plugin id
-  name: string                       // the component's file name in components/
-  props: Record<string, unknown>     // JSON data
-  children?: IRBlock[]               // child blocks, passed through the React children prop
-  ownsCode?: boolean                 // false: child code keeps its run controls and recorded output
-  fallback?: MdastNode               // what static outputs show
-  assets?: Record<string, string>    // prop name to a local file URL the renderers publish and rewrite
-  layer?: 'overlay'                  // drawn above the content, takes no space (e.g. a cursor)
-  durations?: number[]               // ms per internal step's animation (the author's :durations:); passed as the prop durations
-  definition?: { file: string, language: string } // authored code behind this node, relative to the document
-}
-interface MdastNode { type: string, children?: MdastNode[], value?: string, [key: string]: unknown }
-```
-
-- Steps: a block appears at step `at`. A block with `span: n` has `n + 1` internal states; state k shows at
-  step `at + k`. In `contentModel: blocks`, explicit `{narration}` uses `:at:` for the section's zero-based
-  step and `:mode: during` or `after` for its timing; ordinary text remains on-screen content. Legacy
-  documents keep implicit narration after a block, one paragraph per step. A component's
-  `useStepState({ from: k })` is relative to the block's `at`.
-- Child blocks: a directive builds them itself, e.g. `children: [{ id: 'source', role: 'visual', at: 0,
-  source: ctx.source, node: codeNode }]`. A component owns the code of its children by default: the viewer
-  gives that code no run controls and shows no recorded output. Put code the component runs in a prop; never
-  read it back from the rendered DOM. A container that only arranges content sets `ownsCode: false`.
-- A node generated from authored code can declare `definition: { file, language }`, pointing to the
-  document-relative code that produces this content. The workbench then edits that source within the same
-  block instead of replacing the component with another scene. Keep the block ID and step bindings stable;
-  nodes sharing one definition file share source changes. The definition is an editing locator, not a
-  second persisted component state. Declare files read by the directive with `ctx.watch` as above.
-- A component that uses local files (images, media) puts the URL in a prop and lists it in `assets` (prop
-  name to URL); renderers publish the file and rewrite the prop.
-- The document's own `components/*.tsx` are registered under the plugin id `deck` and placed with the
-  built-in `{component}` directive; a component of the document overrides a plugin component of the same
-  name. Two plugins with the same component name: the first in `plugins` wins, with a warning.
-
-### Configuration
-
-| Scope | Written | Read |
-|---|---|---|
-| Global | Frontmatter `presmium: { <id>: {...} }` | `ctx.config` in directives and passes; `PluginContext.config` in the browser plugin |
-| Section | The `{config}` directive, whose YAML body is keyed by plugin id, e.g. `poll: { anonymous: true }` | Merged over the global one for directives and passes in that section; components read the merge with `useSectionConfig(POLL_ID)` |
-| One node | Directive options, component props | Props |
+The old directive parsing API is not a document runtime entry. Do not add a directive-based author workflow or a MyST compatibility compiler. Existing library contracts that mention mdast describe derived rendering/fallback trees, not editable Markdown source.
 
 ## 4. Executors
 
@@ -406,7 +297,7 @@ export default function PmPoll({ question, choices }: {
 | `usePrefersReducedMotion()` | When true, show the final state directly |
 | `useActions(elementRef, { name: (seeking) => ... }, { clear })` | Named actions: call the returned `run(name)` from buttons. A recorded lecture replays them, and the narration's ``{cue to=<block>}`click <name>` `` runs them; on a jump the host calls `clear` and replays in order. The look must be a function of the actions so far |
 | `useCursor()`, `useViewRole()`, `usePresentationMode()` | `{ slide, step }`; `'audience' \| 'presenter' \| 'reader'`; `'slides' \| 'document'`. The current step (`useHost().useStep()`, `useHost()` being the object behind these functions) is `Infinity` in the fully expanded document view: a component with internal steps may then give readers its own stepper; the look is a function of (section step, local step) |
-| `useSectionConfig(POLL_ID)` | The global configuration merged with the section's `{config}` |
+| `useSectionConfig(POLL_ID)` | The global configuration merged with the section configuration |
 | `useSharedState(key, initial, { scope })` | Returns `[value, setValue]`: JSON state shared by key (start the key with the plugin id): `'view'` this view only, `'local'` (default) all windows of this machine, `'remote'` also other devices through sync transports (a classroom) |
 | `useMessages(catalog)`, `useLocale()`, `currentLocale()` | Text by the page's language (`'zh-CN'` or `'en'`); `currentLocale()` outside components |
 | `useStaticRender()` | True on the printed slides (PDF, PNG, PowerPoint exports); the host already swaps components with a `fallback` there |
@@ -418,7 +309,7 @@ export default function PmPoll({ question, choices }: {
 - The viewer wraps every plugin component in `PmBoundary`; do not add one yourself.
 - Components are React function components. Derive step-dependent visibility from `useStepState` or
   `useStep`; do not keep a separate animation counter. Render block content through `children`.
-- `useDoc()` returns the current `IRDocument`. Document frontmatter is in `doc.meta`, renderer options in
+- `useDoc()` returns the current `IRDocument`. Runtime document metadata is in `doc.meta`, renderer options in
   `doc.config.renderers`; use `useCursor()` for the current position.
 - Services with observable state expose `Store<T>` values. In a component call `useStore(store)`; in plugin
   setup or event handlers use `store.getSnapshot()` and `store.subscribe(listener)`, releasing subscriptions
