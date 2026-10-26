@@ -1,0 +1,1352 @@
+{
+  "schemaVersion": 1,
+  "id": "document-0539158aa4214451",
+  "metadata": {
+    "title": "Presmium Fixture Deck With A Title Too Long For A Phone",
+    "lang": "en-US",
+    "plugins": [
+      "@lincyaw/addon-session",
+      "@lincyaw/addon-stage",
+      "./plugin",
+      "../../host/plugin",
+      "../../host/services"
+    ],
+    "presmium": {
+      "fixture.core": {
+        "label": "global"
+      },
+      "presmium.session": {
+        "server": "ws://127.0.0.1:9"
+      }
+    },
+    "renderers": {
+      "web": {
+        "base": "/web/"
+      },
+      "slides": {
+        "base": "/slides/",
+        "transition": "slide-left"
+      }
+    }
+  },
+  "sectionOrder": [
+    "presmium-fixture-deck-with-a-title-too-long-for-a-phone",
+    "global",
+    "scoped",
+    "shared",
+    "lifecycle",
+    "motion",
+    "after-motion",
+    "setup-error",
+    "steps",
+    "late-steps",
+    "services"
+  ],
+  "sections": {
+    "presmium-fixture-deck-with-a-title-too-long-for-a-phone": {
+      "id": "presmium-fixture-deck-with-a-title-too-long-for-a-phone",
+      "title": "Presmium Fixture Deck With A Title Too Long For A Phone",
+      "level": 1,
+      "children": [
+        "presmium-fixture-deck-with-a-title-too-long-for-a-phone--paragraph-1",
+        "presmium-fixture-deck-with-a-title-too-long-for-a-phone--fixture-config-1"
+      ],
+      "stepOrder": [
+        "presmium-fixture-deck-with-a-title-too-long-for-a-phone--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      },
+      "config": {
+        "fixture.core": {
+          "label": "cover"
+        }
+      }
+    },
+    "global": {
+      "id": "global",
+      "title": "Global options",
+      "level": 2,
+      "children": [
+        "global--fixture-config-1"
+      ],
+      "stepOrder": [
+        "global--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "scoped": {
+      "id": "scoped",
+      "title": "Section options",
+      "level": 2,
+      "children": [
+        "scoped--fixture-config-1"
+      ],
+      "stepOrder": [
+        "scoped--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      },
+      "config": {
+        "fixture.core": {
+          "label": "section"
+        }
+      }
+    },
+    "shared": {
+      "id": "shared",
+      "title": "Shared state",
+      "level": 2,
+      "children": [
+        "shared--fixture-shared-1"
+      ],
+      "stepOrder": [
+        "shared--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "lifecycle": {
+      "id": "lifecycle",
+      "title": "Plugin lifecycle",
+      "level": 2,
+      "children": [
+        "lifecycle--fixture-broken-1",
+        "lifecycle--paragraph-1"
+      ],
+      "stepOrder": [
+        "lifecycle--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "motion": {
+      "id": "motion",
+      "title": "Motion",
+      "level": 2,
+      "children": [
+        "motion--list-1"
+      ],
+      "stepOrder": [
+        "motion--step-0",
+        "motion--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "after-motion": {
+      "id": "after-motion",
+      "title": "After the motion",
+      "level": 2,
+      "children": [
+        "after-motion--paragraph-1"
+      ],
+      "stepOrder": [
+        "after-motion--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "setup-error": {
+      "id": "setup-error",
+      "title": "A component that fails in its own setup",
+      "level": 2,
+      "children": [
+        "setup-error--paragraph-1",
+        "setup-error--fixture-setup-throws-1"
+      ],
+      "stepOrder": [
+        "setup-error--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "steps": {
+      "id": "steps",
+      "title": "Steps",
+      "level": 2,
+      "children": [
+        "steps--paragraph-1",
+        "steps--paragraph-2",
+        "steps--demo-stepper-1",
+        "steps--paragraph-3",
+        "steps--paragraph-4",
+        "steps--paragraph-5",
+        "steps--paragraph-6",
+        "steps--paragraph-7"
+      ],
+      "stepOrder": [
+        "steps--step-0",
+        "steps--step-1",
+        "steps--step-2",
+        "steps--step-3"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "fx-steps"
+          }
+        }
+      }
+    },
+    "late-steps": {
+      "id": "late-steps",
+      "title": "Steps of a later block",
+      "level": 2,
+      "children": [
+        "late-steps--paragraph-1",
+        "late-steps--paragraph-2",
+        "late-steps--demo-stepper-1"
+      ],
+      "stepOrder": [
+        "late-steps--step-0",
+        "late-steps--step-1",
+        "late-steps--step-2",
+        "late-steps--step-3",
+        "late-steps--step-4",
+        "late-steps--step-5"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "fx-late-steps"
+          }
+        }
+      }
+    },
+    "services": {
+      "id": "services",
+      "title": "Services and motion",
+      "level": 2,
+      "children": [
+        "services--demo-greeting-1",
+        "services--demo-animated-1"
+      ],
+      "stepOrder": [
+        "services--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "fx-services"
+          }
+        }
+      }
+    }
+  },
+  "blocks": {
+    "presmium-fixture-deck-with-a-title-too-long-for-a-phone--paragraph-1": {
+      "id": "presmium-fixture-deck-with-a-title-too-long-for-a-phone--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "presmium-fixture-deck-with-a-title-too-long-for-a-phone--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A deck of e2e/core.spec.ts and e2e/web.spec.ts."
+            }
+          ]
+        }
+      ]
+    },
+    "presmium-fixture-deck-with-a-title-too-long-for-a-phone--fixture-config-1": {
+      "id": "presmium-fixture-deck-with-a-title-too-long-for-a-phone--fixture-config-1",
+      "type": "component",
+      "definitionId": "presmium-fixture-deck-with-a-title-too-long-for-a-phone--fixture-config-1--definition",
+      "parameters": {}
+    },
+    "global--fixture-config-1": {
+      "id": "global--fixture-config-1",
+      "type": "component",
+      "definitionId": "global--fixture-config-1--definition",
+      "parameters": {}
+    },
+    "scoped--fixture-config-1": {
+      "id": "scoped--fixture-config-1",
+      "type": "component",
+      "definitionId": "scoped--fixture-config-1--definition",
+      "parameters": {}
+    },
+    "shared--fixture-shared-1": {
+      "id": "shared--fixture-shared-1",
+      "type": "component",
+      "definitionId": "shared--fixture-shared-1--definition",
+      "parameters": {}
+    },
+    "lifecycle--fixture-broken-1": {
+      "id": "lifecycle--fixture-broken-1",
+      "type": "component",
+      "definitionId": "lifecycle--fixture-broken-1--definition",
+      "parameters": {}
+    },
+    "lifecycle--paragraph-1": {
+      "id": "lifecycle--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "lifecycle--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The rest of the slide renders."
+            }
+          ]
+        }
+      ]
+    },
+    "motion--list-1": {
+      "id": "motion--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "motion--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "motion--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "motion--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "The first point"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "motion--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "motion--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "The second point"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "reveal": {
+        "type": "items",
+        "order": [
+          "motion--list-1--text-0-item-0",
+          "motion--list-1--text-0-item-1"
+        ]
+      }
+    },
+    "after-motion--paragraph-1": {
+      "id": "after-motion--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "after-motion--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The last slide."
+            }
+          ]
+        }
+      ]
+    },
+    "setup-error--paragraph-1": {
+      "id": "setup-error--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "setup-error--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The renderer isolates the component: its own setup throws, and the rest of the slide renders."
+            }
+          ]
+        }
+      ]
+    },
+    "setup-error--fixture-setup-throws-1": {
+      "id": "setup-error--fixture-setup-throws-1",
+      "type": "component",
+      "definitionId": "setup-error--fixture-setup-throws-1--definition",
+      "parameters": {}
+    },
+    "steps--paragraph-1": {
+      "id": "steps--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Here a component follows the steps: its state is a function of the step."
+            }
+          ]
+        }
+      ]
+    },
+    "steps--paragraph-2": {
+      "id": "steps--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Steps",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": ": jumping to a step looks the same as stepping there"
+            }
+          ]
+        }
+      ]
+    },
+    "steps--demo-stepper-1": {
+      "id": "steps--demo-stepper-1",
+      "type": "component",
+      "definitionId": "steps--demo-stepper-1--definition",
+      "parameters": {
+        "steps": [
+          "Parse",
+          "Start",
+          "Render"
+        ]
+      }
+    },
+    "steps--paragraph-3": {
+      "id": "steps--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The stepper has three labels and takes three steps."
+            }
+          ]
+        }
+      ]
+    },
+    "steps--paragraph-4": {
+      "id": "steps--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The first step highlights Parse."
+            }
+          ]
+        }
+      ]
+    },
+    "steps--paragraph-5": {
+      "id": "steps--paragraph-5",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-5--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The second step highlights Start."
+            }
+          ]
+        }
+      ]
+    },
+    "steps--paragraph-6": {
+      "id": "steps--paragraph-6",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-6--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The third step highlights Render."
+            }
+          ]
+        }
+      ]
+    },
+    "steps--paragraph-7": {
+      "id": "steps--paragraph-7",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-7--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A note for the web form only."
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "late-steps--paragraph-1": {
+      "id": "late-steps--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "late-steps--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "First",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": ": a sentence"
+            }
+          ]
+        }
+      ]
+    },
+    "late-steps--paragraph-2": {
+      "id": "late-steps--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "late-steps--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Second",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": ": the stepper comes next and counts its steps from here"
+            }
+          ]
+        }
+      ]
+    },
+    "late-steps--demo-stepper-1": {
+      "id": "late-steps--demo-stepper-1",
+      "type": "component",
+      "definitionId": "late-steps--demo-stepper-1--definition",
+      "parameters": {
+        "steps": [
+          "Parse",
+          "Start",
+          "Render"
+        ]
+      }
+    },
+    "services--demo-greeting-1": {
+      "id": "services--demo-greeting-1",
+      "type": "component",
+      "definitionId": "services--demo-greeting-1--definition",
+      "parameters": {}
+    },
+    "services--demo-animated-1": {
+      "id": "services--demo-animated-1",
+      "type": "component",
+      "definitionId": "services--demo-animated-1--definition",
+      "parameters": {}
+    }
+  },
+  "steps": {
+    "presmium-fixture-deck-with-a-title-too-long-for-a-phone--step-0": {
+      "id": "presmium-fixture-deck-with-a-title-too-long-for-a-phone--step-0",
+      "sectionId": "presmium-fixture-deck-with-a-title-too-long-for-a-phone",
+      "visuals": [
+        {
+          "blockId": "presmium-fixture-deck-with-a-title-too-long-for-a-phone--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "presmium-fixture-deck-with-a-title-too-long-for-a-phone--fixture-config-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "global--step-0": {
+      "id": "global--step-0",
+      "sectionId": "global",
+      "visuals": [
+        {
+          "blockId": "global--fixture-config-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "scoped--step-0": {
+      "id": "scoped--step-0",
+      "sectionId": "scoped",
+      "visuals": [
+        {
+          "blockId": "scoped--fixture-config-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "shared--step-0": {
+      "id": "shared--step-0",
+      "sectionId": "shared",
+      "visuals": [
+        {
+          "blockId": "shared--fixture-shared-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "lifecycle--step-0": {
+      "id": "lifecycle--step-0",
+      "sectionId": "lifecycle",
+      "visuals": [
+        {
+          "blockId": "lifecycle--fixture-broken-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "lifecycle--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "motion--step-0": {
+      "id": "motion--step-0",
+      "sectionId": "motion",
+      "visuals": [
+        {
+          "blockId": "motion--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 1
+          }
+        }
+      ],
+      "narrationIds": []
+    },
+    "motion--step-1": {
+      "id": "motion--step-1",
+      "sectionId": "motion",
+      "visuals": [
+        {
+          "blockId": "motion--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        }
+      ],
+      "narrationIds": []
+    },
+    "after-motion--step-0": {
+      "id": "after-motion--step-0",
+      "sectionId": "after-motion",
+      "visuals": [
+        {
+          "blockId": "after-motion--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "setup-error--step-0": {
+      "id": "setup-error--step-0",
+      "sectionId": "setup-error",
+      "visuals": [
+        {
+          "blockId": "setup-error--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "setup-error--fixture-setup-throws-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "steps--step-0": {
+      "id": "steps--step-0",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "steps--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "steps--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-7",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "steps--paragraph-1--narration",
+        "steps--paragraph-3--narration"
+      ]
+    },
+    "steps--step-1": {
+      "id": "steps--step-1",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "steps--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "steps--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-7",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "steps--paragraph-4--narration"
+      ]
+    },
+    "steps--step-2": {
+      "id": "steps--step-2",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "steps--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "steps--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-7",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "steps--paragraph-5--narration"
+      ]
+    },
+    "steps--step-3": {
+      "id": "steps--step-3",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "steps--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "steps--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-7",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "steps--paragraph-6--narration"
+      ]
+    },
+    "late-steps--step-0": {
+      "id": "late-steps--step-0",
+      "sectionId": "late-steps",
+      "visuals": [
+        {
+          "blockId": "late-steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "late-steps--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "late-steps--demo-stepper-1",
+          "visible": false,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "late-steps--step-1": {
+      "id": "late-steps--step-1",
+      "sectionId": "late-steps",
+      "visuals": [
+        {
+          "blockId": "late-steps--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "late-steps--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "late-steps--demo-stepper-1",
+          "visible": false,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "late-steps--step-2": {
+      "id": "late-steps--step-2",
+      "sectionId": "late-steps",
+      "visuals": [
+        {
+          "blockId": "late-steps--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "late-steps--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "late-steps--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "late-steps--step-3": {
+      "id": "late-steps--step-3",
+      "sectionId": "late-steps",
+      "visuals": [
+        {
+          "blockId": "late-steps--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "late-steps--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "late-steps--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-1"
+        }
+      ],
+      "narrationIds": []
+    },
+    "late-steps--step-4": {
+      "id": "late-steps--step-4",
+      "sectionId": "late-steps",
+      "visuals": [
+        {
+          "blockId": "late-steps--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "late-steps--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "late-steps--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-2"
+        }
+      ],
+      "narrationIds": []
+    },
+    "late-steps--step-5": {
+      "id": "late-steps--step-5",
+      "sectionId": "late-steps",
+      "visuals": [
+        {
+          "blockId": "late-steps--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "late-steps--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "late-steps--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-3"
+        }
+      ],
+      "narrationIds": []
+    },
+    "services--step-0": {
+      "id": "services--step-0",
+      "sectionId": "services",
+      "visuals": [
+        {
+          "blockId": "services--demo-greeting-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "services--demo-animated-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "steps--paragraph-1--narration": {
+      "id": "steps--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Here a component follows the steps: its state is a function of the step."
+        }
+      ]
+    },
+    "steps--paragraph-3--narration": {
+      "id": "steps--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "The stepper has three labels and takes three steps."
+        }
+      ]
+    },
+    "steps--paragraph-4--narration": {
+      "id": "steps--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "The first step highlights Parse."
+        }
+      ]
+    },
+    "steps--paragraph-5--narration": {
+      "id": "steps--paragraph-5--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "The second step highlights Start."
+        }
+      ]
+    },
+    "steps--paragraph-6--narration": {
+      "id": "steps--paragraph-6--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "The third step highlights Render."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "presmium-fixture-deck-with-a-title-too-long-for-a-phone--fixture-config-1--definition": {
+      "id": "presmium-fixture-deck-with-a-title-too-long-for-a-phone--fixture-config-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.core",
+        "name": "FixtureConfig"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.core",
+        "name": "FixtureConfig"
+      }
+    },
+    "global--fixture-config-1--definition": {
+      "id": "global--fixture-config-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.core",
+        "name": "FixtureConfig"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.core",
+        "name": "FixtureConfig"
+      }
+    },
+    "scoped--fixture-config-1--definition": {
+      "id": "scoped--fixture-config-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.core",
+        "name": "FixtureConfig"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.core",
+        "name": "FixtureConfig"
+      }
+    },
+    "shared--fixture-shared-1--definition": {
+      "id": "shared--fixture-shared-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.core",
+        "name": "FixtureShared"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.core",
+        "name": "FixtureShared"
+      }
+    },
+    "lifecycle--fixture-broken-1--definition": {
+      "id": "lifecycle--fixture-broken-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.core",
+        "name": "FixtureBroken"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.core",
+        "name": "FixtureBroken"
+      }
+    },
+    "setup-error--fixture-setup-throws-1--definition": {
+      "id": "setup-error--fixture-setup-throws-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.core",
+        "name": "FixtureSetupThrows"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.core",
+        "name": "FixtureSetupThrows"
+      }
+    },
+    "steps--demo-stepper-1--definition": {
+      "id": "steps--demo-stepper-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.host",
+        "name": "DemoStepper"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "fixture.host",
+        "name": "DemoStepper"
+      }
+    },
+    "late-steps--demo-stepper-1--definition": {
+      "id": "late-steps--demo-stepper-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.host",
+        "name": "DemoStepper"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "fixture.host",
+        "name": "DemoStepper"
+      }
+    },
+    "services--demo-greeting-1--definition": {
+      "id": "services--demo-greeting-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.host",
+        "name": "DemoGreeting"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.host",
+        "name": "DemoGreeting"
+      }
+    },
+    "services--demo-animated-1--definition": {
+      "id": "services--demo-animated-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.host",
+        "name": "DemoAnimated"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.host",
+        "name": "DemoAnimated"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

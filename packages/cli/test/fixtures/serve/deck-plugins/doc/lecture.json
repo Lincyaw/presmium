@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "id": "document-d2860bd7fb5c16b2",
+  "metadata": {
+    "title": "插件来源",
+    "lang": "zh-CN",
+    "plugins": [
+      "./relative",
+      "presmium-fixture-deckonly"
+    ]
+  },
+  "sectionOrder": [
+    "插件来源"
+  ],
+  "sections": {
+    "插件来源": {
+      "id": "插件来源",
+      "title": "插件来源",
+      "level": 1,
+      "children": [
+        "插件来源--paragraph-1"
+      ],
+      "stepOrder": [
+        "插件来源--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "插件来源--paragraph-1": {
+      "id": "插件来源--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "插件来源--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "presmium serve 与 presmium dev 一样，加载文稿列出的插件。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "插件来源--step-0": {
+      "id": "插件来源--step-0",
+      "sectionId": "插件来源",
+      "visuals": [
+        {
+          "blockId": "插件来源--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "插件来源--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "插件来源--paragraph-1--narration": {
+      "id": "插件来源--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "presmium serve 与 presmium dev 一样，加载文稿列出的插件。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
