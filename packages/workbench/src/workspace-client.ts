@@ -1,6 +1,6 @@
 import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobSource, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, SourceTransactionAnswer, SourceTransactionChange, StartJobRequest, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
 import type { OperationBatch } from './telemetry.ts'
-import type { VoiceCatalogAnswer, VoiceoverCancellation, VoiceoverJob, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest, VoiceSettingsAnswer, VoiceSettingsChange, VoiceSettingsUpdate } from '@lincyaw/kernel'
+import type { VoiceCatalogAnswer, VoiceoverCancellation, VoiceoverJob, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest } from '@lincyaw/kernel'
 import type { PageDeleteAnswer, PageDeletePlan, PageDeleteRequest } from '@lincyaw/kernel'
 import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, DocumentEvent } from '@lincyaw/kernel'
 
@@ -47,8 +47,6 @@ export interface WorkspaceClient {
   subscribeDocument(document: string, changed: (event: DocumentEvent) => void, failed?: () => void): () => void
   readPageDeletion(document: string, section: string): Promise<PageDeletePlan>
   deletePage(document: string, request: PageDeleteRequest): Promise<PageDeleteAnswer>
-  readVoiceSettings(document: string, section?: string, step?: number, signal?: AbortSignal): Promise<VoiceSettingsAnswer>
-  updateVoiceSettings(document: string, update: VoiceSettingsUpdate, signal?: AbortSignal): Promise<VoiceSettingsChange>
   readVoiceCatalog(document: string, engine?: string, lang?: string, signal?: AbortSignal): Promise<VoiceCatalogAnswer>
   readVoiceover(document: string, signal?: AbortSignal): Promise<VoiceoverSnapshot>
   /** Allocates an intent before sending; aborted or undelivered requests cancel by intent even without a job id. */
@@ -254,8 +252,6 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     subscribeDocument: (document, changed, failed) => subscribe(url('document/events', document), 'document', changed, failed),
     readPageDeletion: (document, section) => call(url('pages/delete', document, { section })),
     deletePage: (document, request) => post(url('pages/delete', document), request),
-    readVoiceSettings: (document, section, step, signal) => call(url('voice-settings', document, { ...section ? { section } : {}, ...step !== undefined ? { step: String(step) } : {} }), { signal }),
-    updateVoiceSettings: (document, update, signal) => post(url('voice-settings', document), update, signal),
     readVoiceCatalog: (document, engine, lang, signal) => call(url('voice-catalog', document, { ...engine ? { engine } : {}, ...lang ? { lang } : {} }), { signal }),
     readVoiceover: (document, signal) => call(url('voiceover', document), { signal }),
     startVoiceover,
