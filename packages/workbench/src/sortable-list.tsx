@@ -74,12 +74,14 @@ function defaultLocale(): 'zh-CN' | 'en' {
 /** A changed list identity owns a fresh gesture and cannot receive an earlier move's completion. */
 export function PmSortableList(props: SortableListProps) {
   const gesture = useRef(false), focus = useRef<string>()
-  const order = JSON.stringify(props.items.map(item => item.id)), previous = useRef({ scope: props.scopeKey, order, reset: props.resetKey, generation: 0 })
+  const order = JSON.stringify(props.items.map(item => item.id))
+  const availability = JSON.stringify([props.reorderDisabled, props.loading, Boolean(props.onMove), props.items.map(item => [item.id, item.disabled, item.reorderDisabled])])
+  const previous = useRef({ scope: props.scopeKey, order, reset: props.resetKey, availability, generation: 0 })
   if (previous.current.scope !== props.scopeKey) focus.current = undefined
-  if (gesture.current && (previous.current.scope !== props.scopeKey || previous.current.order !== order || previous.current.reset !== props.resetKey)) {
+  if (gesture.current && (previous.current.scope !== props.scopeKey || previous.current.order !== order || previous.current.reset !== props.resetKey || previous.current.availability !== availability)) {
     previous.current.generation++; gesture.current = false
   }
-  previous.current = { scope: props.scopeKey, order, reset: props.resetKey, generation: previous.current.generation }
+  previous.current = { scope: props.scopeKey, order, reset: props.resetKey, availability, generation: previous.current.generation }
   const signature = JSON.stringify([props.scopeKey, props.items.map(item => item.id).sort(), previous.current.generation, props.locale ?? defaultLocale(), props.labels?.instructions])
   return <SortableSession key={signature} {...props} gesture={gesture} focus={focus} />
 }
@@ -123,7 +125,7 @@ function SortableSession(props: SortableListProps & { gesture: MutableRefObject<
     document.addEventListener('focusin', select); document.addEventListener('pointerdown', point); document.addEventListener('keydown', tab); window.addEventListener('blur', blur)
     return () => { document.removeEventListener('focusin', select); document.removeEventListener('pointerdown', point); document.removeEventListener('keydown', tab); window.removeEventListener('blur', blur) }
   }, [])
-  useLayoutEffect(restoreFocus, [orderKey, props.resetKey, Boolean(pending), props.loading, props.reorderDisabled])
+  useLayoutEffect(restoreFocus, [orderKey, props.resetKey, Boolean(pending), signature])
   const ordered = pending ? pending.order.flatMap(id => { const item = items.find(item => item.id === id); return item ? [item] : [] }) : items
   const named = (id?: string | number) => current.current.props.items.find(item => item.id === id)?.label ?? ''
   const accessibility = useMemo<AccessibilityOptions>(() => ({
@@ -135,7 +137,11 @@ function SortableSession(props: SortableListProps & { gesture: MutableRefObject<
     },
   }), [labels])
   return <DragDropProvider plugins={defaults => [...defaults, Feedback.configure({ dropAnimation: null, keyboardTransition: null }), Accessibility.configure(accessibility)]}
-    onBeforeDragStart={event => { const source = event.operation.source, item = items.find(item => item.id === source?.id); if (disabled || !item || item.disabled || item.reorderDisabled) event.preventDefault() }}
+    onBeforeDragStart={event => {
+      const source = event.operation.source, item = items.find(item => item.id === source?.id)
+      if (event.defaultPrevented || disabled || !item || item.disabled || item.reorderDisabled) event.preventDefault()
+      else active.current = true
+    }}
     onDragStart={() => { active.current = true; setAnnouncement('') }}
     onDragEnd={event => {
       active.current = false
