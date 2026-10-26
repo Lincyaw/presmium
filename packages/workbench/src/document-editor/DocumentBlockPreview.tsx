@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import type { BlockPreviewCommand } from '@lincyaw/kernel'
-import { toBlockPreviewPlaybackCancelled, toBlockPreviewPlaybackRequest } from '@lincyaw/kernel'
+import { toBlockPreviewPlaybackCancelled, toBlockPreviewPlaybackRequest, toBlockPreviewPosition } from '@lincyaw/kernel'
 import { PmIconButton, PmIcon } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import type { WorkspaceClient } from '../workspace-client.ts'
@@ -52,6 +52,8 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   const dark = useWorkbenchState(state => state.isDark)
   const locale = useWorkbenchState(state => state.locale), t = DOCUMENT_EDITOR_MESSAGES[locale]
   const position = useWorkbenchState(state => state.position)
+  const navigation = useWorkbenchState(state => state.documentPositionToken)
+  const navigationIntent = useWorkbenchState(state => state.documentPositionIntent)
   const sectionId = source?.content && documentBlockSection(source.content, blockId)
   const section = sectionId ? source?.content?.sections[sectionId] : undefined
   const stepId = section?.stepOrder[position && position.section === sectionId ? position.step : 0] ?? section?.stepOrder[0]
@@ -67,6 +69,7 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   const mismatches = useRef(0)
   const frameReady = useRef(false), [readiness, setReadiness] = useState(0)
   const reportedStep = useRef<string>()
+  const reportedNavigation = useRef<string>()
   const editingStep = useRef<string>()
   const playback = useRef<DocumentBlockPlayback>()
   const [loadedVersion, setLoadedVersion] = useState<string>()
@@ -99,14 +102,19 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   address?.searchParams.set('presmium-block-version', loadedVersion ?? '')
   address?.searchParams.set('presmium-block-refresh', `${loadedProject}:${loadedAttempt}`)
   const src = address?.href, origin = address?.origin
-  const command = useCallback((action: 'seek' | 'pause', at?: 'start' | 'end') => {
+  const command = useCallback((action: 'seek' | 'pause', at?: 'start' | 'end', token = navigation) => {
     if (!origin || !state.snapshot || !sectionId || !stepId) return
-    const value: BlockPreviewCommand = { type: 'presmium:block-preview-command', action, document: directory ?? '', blockId, revision: state.snapshot.revision, sectionId, stepId, ...at ? { at } : {} }
+    const value: BlockPreviewCommand = { type: 'presmium:block-preview-command', action, document: directory ?? '', blockId, revision: state.snapshot.revision, sectionId, stepId, navigation: token, ...at ? { at } : {} }
     frame.current?.contentWindow?.postMessage(value, origin)
-  }, [origin, state.snapshot, directory, blockId, sectionId, stepId])
+  }, [origin, state.snapshot, directory, blockId, sectionId, stepId, navigation])
   const pause = useCallback(() => {
-    if (sectionId && stepId) editingStep.current = JSON.stringify([sectionId, stepId])
-    command('pause'); workbench.stopAuditions()
+    if (sectionId && stepId) {
+      editingStep.current = JSON.stringify([sectionId, stepId])
+      workbench.pauseDocumentStep(sectionId, stepId)
+      reportedStep.current = editingStep.current
+      reportedNavigation.current = workbench.getState().documentPositionToken
+    }
+    command('pause', undefined, reportedNavigation.current); workbench.stopAuditions()
   }, [command, workbench, sectionId, stepId])
   useEffect(() => {
     if (!src || !origin || !enabled || !state.snapshot) return
@@ -115,12 +123,14 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
       current: request => {
         const current = workbench.getState(), document = current.authoring?.content
         return Boolean(current.document === directory && current.authoring?.version === loadedVersion && (current.authoring?.projectRevision ?? 0) === loadedProject && document
+          && request.navigation === current.documentPositionToken
           && documentBlockSection(document, blockId) === request.sectionId && document.sections[request.sectionId]?.stepOrder.includes(request.stepId))
       },
       adopt: request => {
         editingStep.current = undefined
         reportedStep.current = JSON.stringify([request.sectionId, request.stepId])
         workbench.observeDocumentStep(request.sectionId, request.stepId)
+        return reportedNavigation.current = workbench.getState().documentPositionToken
       },
       post: value => frame.current?.contentWindow?.postMessage(value, origin),
     })
@@ -130,13 +140,14 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   useEffect(() => {
     if (editingStep.current && sectionId && stepId) editingStep.current = JSON.stringify([sectionId, stepId])
   }, [sectionId, stepId])
-  useEffect(() => { reportedStep.current = undefined; frameReady.current = false }, [src, enabled])
+  useEffect(() => { reportedStep.current = undefined; reportedNavigation.current = undefined; frameReady.current = false }, [src, enabled])
   useEffect(() => {
-    if (!enabled || !frameReady.current || state.status !== 'ready' || !sectionId || !stepId || reportedStep.current === JSON.stringify([sectionId, stepId])) return
-    const initial = reportedStep.current === undefined
+    if (!enabled || !frameReady.current || state.status !== 'ready' || !sectionId || !stepId || reportedStep.current === JSON.stringify([sectionId, stepId]) && reportedNavigation.current === navigation) return
+    const initial = reportedNavigation.current === undefined
     reportedStep.current = JSON.stringify([sectionId, stepId])
-    command('seek', initial ? 'start' : 'end')
-  }, [state.status, sectionId, stepId, command, enabled, src, readiness])
+    reportedNavigation.current = navigation
+    command(!initial && navigationIntent === 'pause' ? 'pause' : 'seek', initial ? 'start' : 'end')
+  }, [state.status, sectionId, stepId, navigation, navigationIntent, command, enabled, src, readiness])
   useEffect(() => { frame.current?.toggleAttribute('inert', !frameReady.current || state.status !== 'ready') }, [readiness, state.status, enabled, src])
   useEffect(() => {
     if (!src || !origin || !enabled || !state.snapshot) return
@@ -164,11 +175,16 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
       if (value.type === 'presmium:block-preview-position') {
         const current = workbench.getState()
         if (current.document !== directory || current.authoring?.version !== loadedVersion || (current.authoring?.projectRevision ?? 0) !== loadedProject) return
-        if (typeof value.sectionId === 'string' && typeof value.stepId === 'string') {
+        const position = toBlockPreviewPosition(value), document = current.authoring?.content
+        if (position && position.navigation === current.documentPositionToken && document
+          && documentBlockSection(document, blockId) === position.sectionId && document.sections[position.sectionId]?.stepOrder.includes(position.stepId)) {
           // A position posted just before pause must not replace an active field's target.
-          if (editingStep.current && editingStep.current !== JSON.stringify([value.sectionId, value.stepId])) return
-          reportedStep.current = JSON.stringify([value.sectionId, value.stepId])
-          workbench.observeDocumentStep(value.sectionId, value.stepId)
+          if (editingStep.current && editingStep.current !== JSON.stringify([position.sectionId, position.stepId])) return
+          reportedStep.current = JSON.stringify([position.sectionId, position.stepId])
+          workbench.observeDocumentStep(position.sectionId, position.stepId)
+          reportedNavigation.current = workbench.getState().documentPositionToken
+          const accepted: BlockPreviewCommand = { type: 'presmium:block-preview-command', action: 'sync', document: directory ?? '', blockId, revision: expected, sectionId: position.sectionId, stepId: position.stepId, navigation: reportedNavigation.current }
+          frame.current?.contentWindow?.postMessage(accepted, origin)
         }
         return
       }

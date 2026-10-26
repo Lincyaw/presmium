@@ -92,6 +92,9 @@ export interface WorkbenchState {
   previewIrRevision?: string
   /** Where the preview is: the section the author reads, or the slide and its step. */
   position?: PreviewPosition
+  /** Changes on every position intent, including A → B → A, without changing the source. */
+  documentPositionToken: string
+  documentPositionIntent: 'seek' | 'pause'
   /** An explicit source navigation request; scrolling updates position without issuing another request. */
   documentNavigation?: { section: string, request: string }
   isCreatingPage?: boolean
@@ -218,6 +221,8 @@ export class Workbench {
   #pendingDocumentField?: { field: Omit<DocumentFieldRegistration, 'focus'>, bookmark: DocumentFieldBookmark, reset: number, generation: number }
   #state: WorkbenchState
   readonly #listeners = new Set<Listener>()
+  readonly #positionSeed = Array.from(crypto.getRandomValues(new Uint32Array(2)), value => value.toString(36)).join('-')
+  #positionSequence = 0
   readonly #selectedSteps = new Map<string, number>()
   #pendingGo?: { document: string | undefined, command: Extract<PreviewCommand, { type: 'go' }> }
   readonly #diagnostics: DocumentDiagnostics
@@ -254,6 +259,8 @@ export class Workbench {
       previewRenderer: 'web',
       webView: 'document',
       previewReload: 0,
+      documentPositionToken: this.#nextDocumentPosition(),
+      documentPositionIntent: 'seek',
       isDiagnosticsUnavailable: false,
       canRepairDiagnostics: false,
       isRepairingDiagnostics: false,
@@ -336,8 +343,10 @@ export class Workbench {
     return () => this.#askers.delete(asker)
   }
 
+  #nextDocumentPosition(): string { return `${this.#positionSeed}:${++this.#positionSequence}` }
+
   #set(patch: Partial<WorkbenchState>): void {
-    this.#state = { ...this.#state, ...patch }
+    this.#state = { ...this.#state, ...patch, ...Object.hasOwn(patch, 'position') ? { documentPositionToken: this.#nextDocumentPosition(), documentPositionIntent: patch.documentPositionIntent ?? 'seek' } : {} }
     for (const listener of this.#listeners) listener()
   }
 
@@ -942,13 +951,23 @@ export class Workbench {
 
   /** A read-only inline runtime chooses a source step without navigating or editing the document. */
   observeDocumentStep(sectionId: string, stepId: string): void {
+    this.#documentStep(sectionId, stepId, false)
+  }
+
+  /** An author freezes this target even when its step has not changed. */
+  pauseDocumentStep(sectionId: string, stepId: string): void {
+    this.#documentStep(sectionId, stepId, true)
+  }
+
+  #documentStep(sectionId: string, stepId: string, pause: boolean): void {
     const content = this.#state.authoring?.content, section = content?.sections[sectionId]
     if (this.#state.webView !== 'document' || !content?.sectionOrder.includes(sectionId) || !section) return
     const step = section.stepOrder.indexOf(stepId)
     if (step < 0 || content.steps[stepId]?.sectionId !== sectionId) return
     this.#selectedSteps.set(`${this.#state.document}\0${sectionId}`, step)
-    if (this.#state.position?.section === sectionId && this.#state.position.step === step) return
-    this.#set({ position: { section: sectionId, step, trail: section.stepOrder.slice(1, step + 1).map(id => `step:${id}`), view: 'document' } })
+    const same = this.#state.position?.section === sectionId && this.#state.position.step === step
+    if (same && !pause) return
+    this.#set({ position: { section: sectionId, step, trail: section.stepOrder.slice(1, step + 1).map(id => `step:${id}`), view: 'document' }, documentPositionIntent: same && pause ? 'pause' : 'seek' })
   }
 
   /** Complete-IR position; trail maps the same step into a filtered preview without reusing its ordinal. */
