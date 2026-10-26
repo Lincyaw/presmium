@@ -23,8 +23,7 @@ function stepElement(viewer: ReturnType<typeof useViewer>, sectionId: string, st
     })
   for (const block of candidates) {
     const id = CSS.escape(block.id)
-    // BlockNote owns native body blocks; plugin blocks and published pages use the IR anchor.
-    const element = root.querySelector<HTMLElement>(`[data-block="${id}"], [data-id="${id}"]`)
+    const element = root.querySelector<HTMLElement>(`[data-block="${id}"]`)
     if (element && element.getBoundingClientRect().height > 0 && getComputedStyle(element).visibility !== 'hidden') return element
   }
   return heading

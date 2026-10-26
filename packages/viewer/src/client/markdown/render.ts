@@ -1,3 +1,4 @@
+import { blockStepState } from '@lincyaw/kernel'
 import { currentLocale } from '@lincyaw/host'
 import type { IRBlock, MarkdownNode } from '@lincyaw/kernel'
 import type { ElementContent, Properties, RootContent } from 'hast'
@@ -72,6 +73,7 @@ export function MarkdownView(props: { block: IRBlock, step: number, expanded?: b
   const links = viewerLinks(viewer)
   const node = props.block.node as MarkdownNode
   const tree = viewer && doc ? cachedTree(viewer, doc, node.mdast, props.prefix ?? '', links, currentLocale()) : markdownToHast(node.mdast, props.prefix ?? '', links)
-  const hidden = node.reveal === 'items' && !props.expanded ? (k: number) => !itemVisible(props.block, k, props.step) : undefined
+  const revealed = blockStepState(props.block, props.step)?.parameters?.revealedItems
+  const hidden = node.reveal === 'items' && !props.expanded ? (k: number) => typeof revealed === 'number' ? k >= revealed : !itemVisible(props.block, k, props.step) : undefined
   return h('div', { className: 'pm-markdown' }, hastToVNodes(tree.children, { hidden }))
 }

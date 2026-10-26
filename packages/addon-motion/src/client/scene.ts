@@ -8,6 +8,9 @@ import type * as ThreeModule from 'three'
 
 /** What a scene gets to draw itself. */
 export interface SceneContext {
+  /** Complete parameters and semantic state resolved for the authored Step ID. */
+  parameters: Readonly<Record<string, unknown>>
+  state?: string
   /** The element the scene draws in; the scene owns its children. */
   root: HTMLElement
   /** The length of each step of the scene (ms), from `:durations:`. */

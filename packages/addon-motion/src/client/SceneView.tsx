@@ -55,7 +55,7 @@ export default function SceneView(props: SceneProps) {
   const shown =
     expanded && local !== undefined
       ? local
-      : timelinePosition(durations, hostStep - scope.at, stepTime)
+      : timelinePosition(durations, scope.localStepAt(hostStep), stepTime)
   const shownNow = useRef(shown)
   shownNow.current = shown
   const selectedStep = Math.max(
@@ -70,7 +70,7 @@ export default function SceneView(props: SceneProps) {
                 i < durations.length && local <= start + durations[i]!,
             ),
           )
-        : hostStep - scope.at,
+        : scope.localStepAt(hostStep),
     ),
   )
   const stop = () => {
@@ -84,7 +84,8 @@ export default function SceneView(props: SceneProps) {
   }
   const jump = (step: number) => {
     seekLocal(starts[step]! + durations[step]!)
-    navigation?.go({ slide: cursor.slide, step: scope.step(step) })
+    const target = scope.step(step)
+    if (target >= 0) navigation?.go({ slide: cursor.slide, step: target })
   }
   const fail = (error: unknown) => {
     setStatus('failed')
@@ -93,10 +94,10 @@ export default function SceneView(props: SceneProps) {
   }
   useEffect(() => {
     if (!expanded || !navigated || navigated.slide !== cursor.slide) return
-    const step = navigated.step - scope.at
+    const step = scope.localStepAt(navigated.step)
     if (step >= 0 && step < durations.length)
       seekLocal(starts[step]! + durations[step]!)
-  }, [navigated, expanded, cursor.slide, scope.at])
+  }, [navigated, expanded, cursor.slide, scope.at, props.durations])
   useEffect(() => {
     if (!playing) return
     const from =
@@ -166,6 +167,8 @@ export default function SceneView(props: SceneProps) {
       let swatch: CanvasRenderingContext2D | null | undefined
       const made = await definition.create({
         root,
+        parameters: scope.parameters ?? {},
+        state: scope.state,
         durations,
         at: (step) => starts[Math.max(0, Math.min(step, durations.length))]!,
         total,
@@ -225,7 +228,7 @@ export default function SceneView(props: SceneProps) {
       instance.current?.dispose?.()
       instance.current = undefined
     }
-  }, [enabled, props.scene, JSON.stringify(durations), dark, clock])
+  }, [enabled, props.scene, JSON.stringify(durations), JSON.stringify(scope.parameters), scope.state, dark, clock])
   const box: CSSProperties = props.height
     ? { height: props.height }
     : { aspectRatio: (props.aspect ?? '16/9').replace('/', ' / ') }
@@ -277,6 +280,7 @@ export default function SceneView(props: SceneProps) {
               title={t.jump(step + 1)}
               aria-pressed={selectedStep === step}
               data-scene-jump={scope.step(step)}
+              disabled={scope.step(step) < 0}
               onClick={() => jump(step)}
             >
               {step + 1}
