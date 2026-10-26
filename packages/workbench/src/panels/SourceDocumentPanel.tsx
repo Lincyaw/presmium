@@ -61,7 +61,7 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
     {error && <PmNotice tone="danger"><span>{error}</span><span className="pmw-notice__actions"><PmButton small onClick={() => void workbench.retryDocument()}>{t.retry}</PmButton>{source?.dirty && <PmButton small onClick={() => void workbench.discardDocument()}>{t.narrationDiscard}</PmButton>}</span></PmNotice>}
     {source?.issues.length ? <PmNotice tone="warn"><details><summary>{messages.diagnostics(source.issues.length)}</summary><ul>{source.issues.map((issue, index) => <li key={`${issue.path}:${index}`}><code>{issue.path}</code> {issue.message}</li>)}</ul></details></PmNotice> : null}
     {!source?.content || !source.identity ? <p className="pmw-muted">{source?.loading ? messages.loading : messages.unavailable}</p> : <div className="pmw-source-document__sheet">
-      <DocumentEditor identity={source.identity} document={source.content} reset={source.reset} locale={locale} readOnly={readOnly}
+      <DocumentEditor identity={source.identity} document={source.content} getDocument={() => workbench.getDocument(source.identity)} reset={source.reset} locale={locale} readOnly={readOnly}
         nodeViews={{ renderBlock: id => {
           const block = source.content?.blocks[id]
           if (!block || !source.content) return undefined
@@ -69,7 +69,7 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
           return block.type === 'component' ? <DocumentBlockPreview blockId={id} fallback={fallback} /> : fallback
         } }}
         commentsPortal={commentsPortal} onChange={document => workbench.recordDocument(document)} onReady={editor => workbench.attachDocumentEditor(editor)}
-        onComposition={composing => workbench.documentComposition(composing)} onError={() => workbench.documentError(new Error(messages.adapterError))} />
+        onComposition={composing => workbench.documentComposition(composing, 'body', source.identity)} onError={() => workbench.documentError(new Error(messages.adapterError))} />
     </div>}
   </section>
 }
