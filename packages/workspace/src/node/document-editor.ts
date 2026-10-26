@@ -8,6 +8,7 @@ import { catchRequestErrors, RequestError } from './errors.ts'
 import type { SourceEditor, SourceTransactionHistory } from './source-editor.ts'
 import type { Revisions } from './revisions.ts'
 import type { WorkbenchApi } from './workbench-api.ts'
+import { documentAssetResponse } from './document-assets.ts'
 
 interface Options { root: string, editor: SourceEditor, revisions?: Revisions, workbench?: WorkbenchApi }
 
@@ -36,6 +37,16 @@ export function documentEditorRoutes({ root, editor, revisions, workbench }: Opt
         if (request.method !== 'GET') throw new RequestError(405, 'GET')
         const { source, content, issues } = opened(ctx)
         return jsonResponse({ document: ctx.document, version: source.version, fingerprint: fnv1a64(source.content), content, issues } satisfies DocumentAnswer)
+      }),
+    },
+    'document/asset': {
+      role: 'editor',
+      handle: (request, ctx) => catchRequestErrors(async () => {
+        if (request.method !== 'GET') throw new RequestError(405, 'GET')
+        const { content } = opened(ctx)
+        const id = new URL(request.url).searchParams.get('asset')
+        if (!id) throw new RequestError(400, 'document-asset-id-required')
+        return documentAssetResponse(root, ctx.document, content, id, path => editor.readableFile(editor.scope(ctx.document), path, ctx.member), request.signal)
       }),
     },
     'document/events': {

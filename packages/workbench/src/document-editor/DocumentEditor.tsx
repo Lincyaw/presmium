@@ -14,6 +14,8 @@ export interface DocumentEditorProps {
   document: TeachingDocument
   /** Read sibling field edits before their React render has committed. */
   getDocument?(): TeachingDocument | undefined
+  /** Display-only URL resolution; native block URLs keep their canonical source locations. */
+  resolveAssetURL?(location: string): Promise<string>
   reset?: number
   locale: Locale
   readOnly?: boolean
@@ -50,6 +52,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
     } catch (error) { current.current.onError?.(error instanceof Error ? error : new Error(String(error))) }
   }
   return <BlockNoteSurface identity={props.identity} reset={props.reset} initialContent={projection.content} locale={props.locale} readOnly={props.readOnly}
+    resolveAssetURL={props.resolveAssetURL}
     comments={comments} commentsPortal={props.commentsPortal} nodeViews={props.nodeViews} onComposition={props.onComposition} onSelection={props.onSelection}
     onChange={emit} onReady={value => {
       if (projection !== active.current) return

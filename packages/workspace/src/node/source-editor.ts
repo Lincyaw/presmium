@@ -122,7 +122,8 @@ export class SourceEditor {
     if (!this.canEdit(scope, path, member)) throw new RequestError(403, `${path} is not a file this page edits`)
   }
 
-  #readBytes(scope: Scope, path: string, member: Member): Buffer {
+  /** A regular file under the same path and document policy as source editing. */
+  readableFile(scope: Scope, path: string, member: Member): string {
     this.#assertEditable(scope, path, member)
     const file = join(this.#config.root, path)
     let real: string
@@ -132,6 +133,11 @@ export class SourceEditor {
       throw new RequestError(404, `no file ${path}`)
     }
     if (real !== file || !lstatSync(file).isFile()) throw new RequestError(403, `${path} is not a regular file of the workspace`)
+    return file
+  }
+
+  #readBytes(scope: Scope, path: string, member: Member): Buffer {
+    const file = this.readableFile(scope, path, member)
     const bytes = readFileSync(file)
     if (bytes.byteLength > MAX_SOURCE) throw new RequestError(413, `${path} is larger than the editor opens (${MAX_SOURCE} bytes)`)
     return bytes
