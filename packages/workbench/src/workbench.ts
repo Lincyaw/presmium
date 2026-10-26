@@ -198,6 +198,8 @@ export function documentDirFor(title: string, taken: readonly string[]): string 
 export class Workbench {
   readonly client: WorkspaceClient
   readonly #documentSession: DocumentSession
+  readonly #removedCueTimings = new Map<string, { pauseMs: number }>()
+  #cueTimingScope?: string
   #documentEditor?: NativeDocumentEditor
   #unsubscribeEditor?: () => void
   #unsubscribeDocumentSelection?: () => void
@@ -260,6 +262,8 @@ export class Workbench {
     }
     this.#documentSession = new DocumentSession(this.client, authoring => {
       if (this.#state.document !== authoring.directory) return
+      const cueTimingScope = JSON.stringify([authoring.identity, authoring.reset])
+      if (this.#cueTimingScope !== cueTimingScope) { this.#removedCueTimings.clear(); this.#cueTimingScope = cueTimingScope }
       const previous = this.#state.authoring
       this.#set({ authoring,
         save: authoring.error ? { kind: 'failed', message: authoring.error } : authoring.saving ? { kind: 'saving' } : !authoring.dirty && previous?.dirty ? { kind: 'saved', at: new Date().toISOString() } : this.#state.save.kind === 'failed' ? { kind: 'idle' } : this.#state.save })
@@ -642,14 +646,27 @@ export class Workbench {
       narrations: { ...document.narrations, [id]: { ...existing, id, content: structuredClone(content) } },
       ...step.narrationIds.includes(id) ? {} : { steps: { ...document.steps, [stepId]: { ...step, narrationIds: [...step.narrationIds, id] } } },
     }
-    if (existing && document.production.cueTimings) {
-      const cueIds = new Set(content.flatMap(node => node.type === 'cue' ? [node.id] : []))
-      const removed = existing.content.flatMap(node => node.type === 'cue' && !cueIds.has(node.id) ? [node.id] : [])
-        .filter(cue => Object.hasOwn(document.production.cueTimings!, cue) && !Object.values(next.narrations).some(narration => narration.content.some(node => node.type === 'cue' && node.id === cue)))
+    const cueIds = new Set(content.flatMap(node => node.type === 'cue' ? [node.id] : []))
+    const previousCues = new Set(existing?.content.flatMap(node => node.type === 'cue' ? [node.id] : []) ?? [])
+    if (document.production.cueTimings) {
+      const removed = [...previousCues].filter(cue => !cueIds.has(cue) && Object.hasOwn(document.production.cueTimings!, cue)
+        && !Object.values(next.narrations).some(narration => narration.content.some(node => node.type === 'cue' && node.id === cue)))
       if (removed.length) {
         const cueTimings = { ...document.production.cueTimings }
-        for (const cue of removed) delete cueTimings[cue]
+        for (const cue of removed) {
+          this.#removedCueTimings.delete(cue)
+          this.#removedCueTimings.set(cue, { ...cueTimings[cue]! })
+          delete cueTimings[cue]
+        }
+        while (this.#removedCueTimings.size > 512) this.#removedCueTimings.delete(this.#removedCueTimings.keys().next().value!)
         next.production = { ...document.production, cueTimings }
+      }
+    }
+    for (const cue of cueIds) {
+      const timing = this.#removedCueTimings.get(cue)
+      if (!previousCues.has(cue) && timing && !Object.hasOwn(next.production.cueTimings ?? {}, cue)) {
+        next.production = { ...next.production, cueTimings: { ...next.production.cueTimings, [cue]: { ...timing } } }
+        this.#removedCueTimings.delete(cue)
       }
     }
     this.stopAuditions()
@@ -1044,6 +1061,7 @@ export class Workbench {
   }
 
   #stopSubscriptions(): void {
+    this.#removedCueTimings.clear(); this.#cueTimingScope = undefined
     this.#documentSession.close()
     this.#unsubscribeEditor?.(); this.#unsubscribeEditor = undefined; this.#documentEditor = undefined
     this.#unsubscribeDocumentSelection?.(); this.#unsubscribeDocumentSelection = undefined
