@@ -966,6 +966,20 @@ export class Workbench {
     return pending && pending.generation === this.#documentSelectionGeneration && pending.field.blockId === blockId
       && pending.field.identity === (identity ?? source?.identity) && pending.reset === source?.reset ? pending.field : undefined
   }
+  /** A live native field owns its target only while it still has focus in this source. */
+  focusedDocumentField(): Readonly<Pick<DocumentFieldRegistration, 'identity' | 'reset' | 'blockId' | 'stepId' | 'narrationId' | 'slot'>> & { readonly editor: DocumentHistoryEditor } | undefined {
+    const source = this.#state.authoring, editor = this.#activeDocumentHistory
+    if (!source?.identity || !source.content || !editor || editor === this.#documentEditor || editor.prosemirrorView.isDestroyed || !editor.prosemirrorView.hasFocus()) return
+    for (const field of this.#documentFields.values()) {
+      if (field.editor !== editor || field.identity !== source.identity || field.reset !== source.reset) continue
+      const step = source.content.steps[field.stepId], section = step && source.content.sections[step.sectionId]
+      if (!step || !section?.stepOrder.includes(field.stepId) || field.slot < 0 || field.slot >= Math.max(1, step.narrationIds.length)
+        || step.narrationIds[field.slot] !== undefined && step.narrationIds[field.slot] !== field.narrationId) return
+      const { identity, reset, blockId, stepId, narrationId, slot } = field
+      return { identity, reset, blockId, stepId, narrationId, slot, editor }
+    }
+    return undefined
+  }
   registerDocumentField(field: DocumentFieldRegistration): () => void {
     if (field.identity !== this.#state.authoring?.identity || field.reset !== this.#state.authoring.reset) return () => {}
     const key = JSON.stringify([field.identity, field.blockId, field.stepId, field.slot, field.narrationId])

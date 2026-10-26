@@ -45,6 +45,20 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
       if (!gesture || !element.clientHeight) return
       const viewport = measure(), state = workbench.getState()
       if (gesture.generation !== state.documentPositionToken || !sameGeometry(gesture.viewport, viewport) || gesture.viewport.top !== viewport.top) return
+      if (!state.authoring?.loading && !isAgentChanging(state)) {
+        const field = workbench.focusedDocumentField(), root = field?.editor.prosemirrorView.dom.getRootNode()
+        if (field && root instanceof ShadowRoot && element.contains(root.host)) {
+          try {
+            const point = field.editor.prosemirrorView.coordsAtPos(field.editor.prosemirrorState.selection.head), bounds = element.getBoundingClientRect()
+            if (![point.left, point.right, point.top, point.bottom].every(Number.isFinite)) return
+            const step = state.authoring?.content?.steps[field.stepId]
+            if (step && point.bottom >= bounds.top && point.top <= bounds.bottom && point.right >= bounds.left && point.left <= bounds.right) {
+              workbench.observeDocumentStep(step.sectionId, field.stepId)
+              return
+            }
+          } catch { return }
+        }
+      }
       const editor = bodyEditor.current
       if (editor?.prosemirrorView.isDestroyed) return
       if (editor?.isFocused() && !state.authoring?.loading && !isAgentChanging(state)) {
