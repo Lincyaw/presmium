@@ -1,4 +1,4 @@
-import { createContext, createElement as h, forwardRef, useContext, useRef } from 'react'
+import { createContext, createElement as h, forwardRef, useContext, useEffect, useId, useRef } from 'react'
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as Popover from '@radix-ui/react-popover'
@@ -58,21 +58,38 @@ interface OverlayProps {
 function DialogSurface({ open, label, closeLabel, name, children, actions, trigger, description, footer, busy, onOpenChange, onClose, onOpenAutoFocus, onCloseAutoFocus, drawer = false }: OverlayProps & { drawer?: boolean }) {
   const kind = drawer ? 'pm-ui-drawer' : 'pm-ui-dialog'
   const locale = useLocale()
-  const focusTarget = useRef<HTMLElement | null>(null)
+  const id = useId()
+  const focusTarget = useRef<HTMLElement | null>(typeof document === 'undefined' ? null : document.activeElement as HTMLElement)
+  useEffect(() => {
+    if (open) return
+    const remember = (event: FocusEvent) => {
+      if (event.target instanceof HTMLElement && event.target !== document.body && event.target.closest('[data-pm-dialog]')?.getAttribute('data-pm-dialog') !== id) focusTarget.current = event.target
+    }
+    document.addEventListener('focusin', remember, true)
+    return () => document.removeEventListener('focusin', remember, true)
+  }, [id, open])
   return h(Dialog.Root, { open, modal: true, onOpenChange: next => { if (!next && busy) return; onOpenChange?.(next); if (!next) onClose?.() } },
     trigger ? h(Dialog.Trigger, { asChild: true }, trigger) : null,
     h(Dialog.Portal, {}, h(Dialog.Overlay, { className: 'pm-ui-dialog-overlay' }),
       h(Dialog.Content, {
-        className: cls(kind, 'pm-ui', name && `${name}__panel`), ...{ 'data-density': 'regular' }, 'aria-busy': busy || undefined,
+        className: cls(kind, 'pm-ui', name && `${name}__panel`), ...{ 'data-density': 'regular', 'data-pm-dialog': id }, 'aria-busy': busy || undefined,
         ...description ? {} : { 'aria-describedby': undefined },
         onInteractOutside: event => event.preventDefault(),
         onEscapeKeyDown: event => { event.stopPropagation(); if (busy) event.preventDefault() },
-        onOpenAutoFocus: event => { focusTarget.current = document.activeElement as HTMLElement | null; onOpenAutoFocus?.(event) },
+        onOpenAutoFocus: event => {
+          onOpenAutoFocus?.(event)
+          if (event.defaultPrevented || !(event.target instanceof HTMLElement)) return
+          const panel = event.target
+          if (panel.contains(document.activeElement)) { event.preventDefault(); return }
+          const target = [...panel.querySelectorAll<HTMLElement>(`.${kind}__body :is(button, input, textarea, select, a[href], [tabindex]), .pm-ui-dialog__footer :is(button, input, textarea, select, a[href], [tabindex])`)].find(element => element.tabIndex >= 0 && !element.closest('[inert], [hidden]') && !element.matches(':disabled, [aria-disabled="true"]') && element.getClientRects().length && getComputedStyle(element).visibility === 'visible')
+          if (target) { event.preventDefault(); target.focus() }
+        },
         onCloseAutoFocus: event => {
           onCloseAutoFocus?.(event)
           if (event.defaultPrevented) return
           event.preventDefault()
-          const target = focusTarget.current?.isConnected ? focusTarget.current : document.querySelector<HTMLElement>('[role="toolbar"] button:not(:disabled), main button:not(:disabled)')
+          const available = (element: HTMLElement | null): element is HTMLElement => Boolean(element?.isConnected && element !== document.body && !element.closest(`[data-pm-dialog="${id}"], [inert], [hidden]`) && !element.matches(':disabled, [aria-disabled="true"]') && element.getClientRects().length && getComputedStyle(element).visibility === 'visible')
+          const target = available(focusTarget.current) ? focusTarget.current : [...document.querySelectorAll<HTMLElement>('[role="toolbar"] button, main button')].find(available)
           target?.focus()
         },
       }, h('div', { className: `${kind}__header` },

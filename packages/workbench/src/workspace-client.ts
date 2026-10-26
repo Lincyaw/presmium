@@ -1,6 +1,7 @@
 import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, SourceTransactionAnswer, SourceTransactionChange, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
 import type { OperationBatch } from './telemetry.ts'
 import type { VoiceCatalogAnswer, VoiceoverJob, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest, VoiceSettingsAnswer, VoiceSettingsChange, VoiceSettingsUpdate } from '@lincyaw/kernel'
+import type { PageDeleteAnswer, PageDeletePlan, PageDeleteRequest } from '@lincyaw/kernel'
 
 const observedFailures = new WeakSet<object>()
 /** Whether the owned request observer already received this transport failure. */
@@ -38,6 +39,8 @@ export interface WorkspaceClient {
   /** Saves a small set of files in one document with one version and rollback boundary. */
   saveSourceTransaction(document: string, changes: SourceTransactionChange[], message?: string): Promise<SourceTransactionAnswer>
   readIr(document: string): Promise<IrAnswer>
+  readPageDeletion(document: string, section: string): Promise<PageDeletePlan>
+  deletePage(document: string, request: PageDeleteRequest): Promise<PageDeleteAnswer>
   readVoiceSettings(document: string, section?: string, step?: number, signal?: AbortSignal): Promise<VoiceSettingsAnswer>
   updateVoiceSettings(document: string, update: VoiceSettingsUpdate, signal?: AbortSignal): Promise<VoiceSettingsChange>
   readVoiceCatalog(document: string, engine?: string, lang?: string, signal?: AbortSignal): Promise<VoiceCatalogAnswer>
@@ -218,6 +221,8 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     saveSource: (document, path, content, base, message) => post(url('source', document), { path, content, base, ...message ? { message } : {} }),
     saveSourceTransaction: (document, changes, message) => post(url('source/transaction', document), { changes, ...message ? { message } : {} }),
     readIr,
+    readPageDeletion: (document, section) => call(url('pages/delete', document, { section })),
+    deletePage: (document, request) => post(url('pages/delete', document), request),
     readVoiceSettings: (document, section, step, signal) => call(url('voice-settings', document, { ...section ? { section } : {}, ...step !== undefined ? { step: String(step) } : {} }), { signal }),
     updateVoiceSettings: (document, update, signal) => post(url('voice-settings', document), update, signal),
     readVoiceCatalog: (document, engine, lang, signal) => call(url('voice-catalog', document, { ...engine ? { engine } : {}, ...lang ? { lang } : {} }), { signal }),

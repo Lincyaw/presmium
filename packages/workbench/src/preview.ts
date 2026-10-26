@@ -29,7 +29,8 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
   if (options.dark !== undefined) url.searchParams.set(PREVIEW_APPEARANCE_PARAM, options.dark ? 'dark' : 'light')
   const origin = url.origin
   const latest = new Map<string, PreviewCommand>()
-  const transient = new Set<PreviewCommand['type']>(['page-insert', 'flush', 'pause-playback', 'playback-granted', 'document-history', 'document-history-reset', 'blocks-result', 'source-result', 'source-saved', 'source-created', 'page-created'])
+  const replies = new Set<PreviewCommand['type']>(['edit-result', 'blocks-result', 'source-result', 'source-saved', 'source-created', 'page-created', 'playback-granted'])
+  const transient = new Set<PreviewCommand['type']>(['page-insert', 'flush', 'pause-playback', 'playback-granted', 'document-history', 'document-history-reset', 'edit', 'edit-result', 'blocks-result', 'source-result', 'source-saved', 'source-created', 'page-created'])
   const oneShot = (command: PreviewCommand) => transient.has(command.type)
   let ready = false
   let generation = 0
@@ -67,11 +68,15 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
     },
     get generation() { return generation },
     send(command) {
+      if (!ready && replies.has(command.type)) return
       // Queue a mutation until the first ready report, but never replay it after a reload.
       if (!oneShot(command) || !ready) latest.set(command.type, command)
       if (ready) post(command)
     },
     dispose() {
+      ready = false
+      generation++
+      latest.clear()
       window.removeEventListener('message', listener)
     },
   }

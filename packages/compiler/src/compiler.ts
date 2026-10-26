@@ -78,6 +78,8 @@ export interface Compilation {
   options: CompilerOptions
   /** The MyST files of the document: the entry and the files it includes. */
   sourceFiles: string[]
+  /** Fingerprints of exact parsed MyST text, including BOM. Keys are absolute source paths. */
+  sourceFingerprints?: Record<string, string>
   /** The other files the compilation read, and the files it read at a git ref. */
   inputs: { files: string[], gitReads: GitRead[] }
   runStats: RunStats
@@ -199,7 +201,7 @@ export class Compiler {
     const run = await this.#start(options)
     const { headmatter, execute, findings, report } = run
     const contributions = await this.#collectContributions(run)
-    const { sections, marks, sourceFiles } = await this.#compileSections(run, contributions)
+    const { sections, marks, sourceFiles, sourceFingerprints } = await this.#compileSections(run, contributions)
 
     const { title: _title, lang: _lang, plugins: _plugins, presmium, renderers, sectionDepth: _sectionDepth, execute: _execute, translations: _translations, translationOf: _translationOf, ...rest } = headmatter
     const doc: IRDocument = {
@@ -239,7 +241,7 @@ export class Compiler {
     options.signal?.throwIfAborted()
     doc.diagnostics = sortFindings(findings)
     if (options.pruneCache && !audience && !findings.some(f => f.severity === 'error')) passes.cache.prune()
-    return this.#assemble(doc, run, contributions, { sourceFiles, marks, audience, passes })
+    return this.#assemble(doc, run, contributions, { sourceFiles, sourceFingerprints, marks, audience, passes })
   }
 
   /** Reads the entry's headmatter, loads the plugins with their Node services and reads the execution settings. */
@@ -339,7 +341,7 @@ export class Compiler {
   }
 
   /** Parses the source, splits it into sections and turns each into blocks and steps; unchanged sections come from the cache. */
-  async #compileSections(run: CompileRun, contributions: Contributions): Promise<{ sections: IRSection[], marks: AudienceMark[], sourceFiles: string[] }> {
+  async #compileSections(run: CompileRun, contributions: Contributions): Promise<{ sections: IRSection[], marks: AudienceMark[], sourceFiles: string[], sourceFingerprints: Record<string, string> }> {
     const { headmatter, inputs, findings, report, signal } = run
     const { directives, roles, components } = contributions
     const parser = this.#parserFor(directives, roles)
@@ -412,7 +414,7 @@ export class Compiler {
     })
 
     markBlocks(sections, marks)
-    return { sections, marks, sourceFiles: source.files }
+    return { sections, marks, sourceFiles: source.files, sourceFingerprints: source.fingerprints }
   }
 
   /** Runs the plugins' passes, resolves references and runs the code at compile time, validating the IR in between. */
@@ -478,7 +480,7 @@ export class Compiler {
     return { lock, runStats, runContext, cache, filled, invalid }
   }
 
-  #assemble(doc: IRDocument, run: CompileRun, contributions: Contributions, results: { sourceFiles: string[], marks: AudienceMark[], audience?: AudienceCompilation, passes: PassResults }): Compilation {
+  #assemble(doc: IRDocument, run: CompileRun, contributions: Contributions, results: { sourceFiles: string[], sourceFingerprints: Record<string, string>, marks: AudienceMark[], audience?: AudienceCompilation, passes: PassResults }): Compilation {
     const { workspace, headmatter, plugins, execute, inputs } = run
     const { executors } = contributions
     const { marks, audience, passes } = results
@@ -489,6 +491,7 @@ export class Compiler {
       sourceCapabilities: this.#parser?.parser.sourceCapabilities,
       options: this.options,
       sourceFiles: results.sourceFiles,
+      sourceFingerprints: results.sourceFingerprints,
       inputs: { files: inputs.files, gitReads: inputs.gitReads },
       runStats: passes.runStats,
       deckDir: this.deckDir,

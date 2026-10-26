@@ -2,6 +2,19 @@ import { AUTHOR_MARKS_CLASS, PREVIEW_APPEARANCE_PARAM, PREVIEW_NAME, PREVIEW_PAR
 import type { PreviewAnchor, PreviewCommand, PreviewCommandType, PreviewPin, PreviewPoint, PreviewPosition, PreviewRect, PreviewReport } from './contracts/preview.ts'
 import { errorMessage } from './errors.ts'
 
+/** A source-bound native text draft, owned by the page rather than its DOM adapter. */
+export interface PreviewTextEdit {
+  target: PreviewAnchor
+  before: string
+  revision: string
+  binding: string
+}
+export interface PreviewTextHandle {
+  change(after: string, composing: boolean): void
+  finish(after: string, interrupted?: boolean): void
+  cancel(): void
+}
+
 /** What a web or slides page gives the preview frame: its position, navigation and DOM. */
 export interface PreviewPage {
   renderer: 'web' | 'slides'
@@ -20,6 +33,8 @@ export interface PreviewPage {
   resetDocumentHistory?(): void
   /** Visible editor tools that the embedding workbench should leave unobscured. */
   selectionTools?(): PreviewRect[]
+  /** Present only when the page can retain text until a request-bound source acknowledgement. */
+  nativeText?(edit: PreviewTextEdit): PreviewTextHandle | undefined
   pausePlayback?(): void | Promise<void>
   /** Installs author permission for a formal playback start; never owns a media clock. */
   setPlaybackGate?(authorize: (signal: AbortSignal) => Promise<void>): () => void
@@ -480,6 +495,8 @@ interface Edited {
   element: HTMLElement
   html: string
   before: string
+  after: string
+  native?: PreviewTextHandle
   attributes: [string, string | null][]
   closed: HTMLElement[]
   changes: MutationObserver
@@ -541,9 +558,9 @@ function undoChanges(records: MutationRecord[]): void {
 
 /**
  * Edits a block's text, or a section's heading, in place, as a word processor would: only plain text, Enter keeps it and
- * Escape or leaving puts the text back; the page's own keys do not see the keys typed into it.
+ * Escape puts the text back; the page's own keys do not see the keys typed into it.
  */
-function createEditing(state: FrameState, locate: Locator, picking: Picking, post: (message: PreviewReport) => void) {
+function createEditing(page: PreviewPage, state: FrameState, locate: Locator, picking: Picking, post: (message: PreviewReport) => void) {
   let current: Edited | undefined
   const waiting = new Set<() => void>()
   const changed = () => { for (const check of [...waiting]) check() }
@@ -568,6 +585,11 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
   const input = (event: InputEvent) => {
     if (event.inputType.startsWith('format') || event.inputType === 'insertParagraph' || event.inputType === 'insertLineBreak') event.preventDefault()
   }
+  const capture = () => {
+    if (!current) return
+    current.after = textOf(current.element)
+    current.native?.change(current.after, current.composing)
+  }
   const paste = (event: ClipboardEvent) => {
     event.preventDefault()
     const value = event.clipboardData?.getData('text/plain').replace(/\s*[\r\n]+\s*/g, ' ') ?? ''
@@ -579,6 +601,7 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
     range.insertNode(text)
     range.setStartAfter(text)
     range.collapse(true)
+    capture()
   }
   const drop = (event: DragEvent) => event.preventDefault()
   const leave = (event: FocusEvent) => {
@@ -588,7 +611,9 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
     if (!current || !inside(event.target)) return
     const edited = current
     edited.composing = event.type === 'compositionstart'
+    capture()
     if (!edited.composing) queueMicrotask(() => {
+      if (current === edited) capture()
       if (current === edited && edited.finishAfterComposition) finish(true)
       else changed()
     })
@@ -597,6 +622,7 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
     const method = on ? 'addEventListener' : 'removeEventListener'
     for (const type of ['keydown', 'keyup', 'keypress'] as const) window[method](type, keys as EventListener, true)
     element[method]('beforeinput', input as EventListener)
+    element[method]('input', capture)
     element[method]('paste', paste as EventListener)
     element[method]('drop', drop as EventListener)
     element[method]('focusout', leave as EventListener)
@@ -610,10 +636,10 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
     selection?.addRange(caretIn(element, at))
   }
   /** Ends editing: keeps the text and reports it when it changed and `keep`, else puts the page's nodes back. */
-  const finish = (keep: boolean) => {
+  const finish = (keep: boolean, interrupt = false) => {
     const edited = current
     if (!edited) return
-    if (keep && edited.composing) {
+    if (keep && edited.composing && !interrupt) {
       edited.finishAfterComposition = true
       return
     }
@@ -622,15 +648,24 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
     listen(element, false)
     const records = [...edited.records, ...edited.changes.takeRecords()]
     edited.changes.disconnect()
-    const after = textOf(element)
+    // Framework re-renders are not author input. The input event records the
+    // draft before an unrelated IR update can replace this element's text.
+    const after = edited.native ? edited.after : textOf(element)
     element.removeAttribute(EDITING)
     for (const [name, value] of edited.attributes) {
       if (value === null) element.removeAttribute(name)
       else element.setAttribute(name, value)
     }
     for (const closed of edited.closed) closed.removeAttribute('contenteditable')
-    if (keep && after !== before) post({ type: 'edited', target, before, after })
+    if (edited.native) {
+      if (keep) edited.native.finish(after, interrupt && edited.composing)
+      else edited.native.cancel()
+    }
+    if (keep && after !== before && !edited.native) post({ type: 'edited', target, before, after })
     else {
+      // A source-bound page retains unconfirmed text in its recovery field.
+      // Its rich document DOM updates only from the confirmed IR, so discarding
+      // a draft never has to reconstruct source formatting from plain text.
       undoChanges(records)
       if (element.innerHTML !== edited.html) element.innerHTML = edited.html
     }
@@ -638,13 +673,18 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
     post({ type: 'editing', target, active: false })
     changed()
   }
-  const start = (target: PreviewAnchor, at: PreviewPoint | undefined) => {
+  const start = (command: Extract<PreviewCommand, { type: 'edit' }> & { target: PreviewAnchor }) => {
+    const { target, at } = command
     if (current && current.target.section === target.section && current.target.block === target.block) {
       if (at) place(current.element, at)
       return post({ type: 'editing', target, active: true })
     }
     finish(true)
     if (current) return post({ type: 'editing', target, active: false })
+    // A binding for a newer source must never authorize edits against stale
+    // rendered text. Once started, unrelated source changes are checked by the
+    // target binding at write time rather than this document-wide revision.
+    if (command.revision !== undefined && command.revision !== page.revision()) return post({ type: 'editing', target, active: false })
     const element = editable(target)
     if (!element) return post({ type: 'editing', target, active: false })
     if (element.hasAttribute('data-presmium-editor-block') && element.isContentEditable) {
@@ -658,6 +698,10 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
     }
     picking.clearHover()
     const html = element.innerHTML
+    const before = textOf(element)
+    const bound = page.nativeText && command.revision !== undefined && command.binding !== undefined
+    const native = bound ? page.nativeText!({ target, before, revision: command.revision!, binding: command.binding! }) : undefined
+    if (bound && !native) return post({ type: 'editing', target, active: false })
     const closed = [...element.querySelectorAll<HTMLElement>(notText())].filter(child => !child.hasAttribute('contenteditable'))
     for (const child of closed) child.setAttribute('contenteditable', 'false')
     const records: MutationRecord[] = []
@@ -666,7 +710,9 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
       target,
       element,
       html,
-      before: textOf(element),
+      before,
+      after: before,
+      native,
       attributes: ['contenteditable', 'spellcheck'].map(name => [name, element.getAttribute(name)]),
       closed,
       changes,
@@ -707,7 +753,7 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
     },
     edit(command: Extract<PreviewCommand, { type: 'edit' }>) {
       if (!isLive(state)) return
-      if (command.target) start(command.target, command.at)
+      if (command.target) start({ ...command, target: command.target })
       else finish(false)
     },
     /** Keeps an edit whose element the page took away. */
@@ -715,6 +761,7 @@ function createEditing(state: FrameState, locate: Locator, picking: Picking, pos
       if (current && !current.element.isConnected) finish(true)
     },
     cancel: () => finish(false),
+    preserve: () => finish(true, true),
   }
 }
 
@@ -832,7 +879,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
   if (!nonce) return undefined
   const state: FrameState = { active: isPreviewActive(), stopped: false }
   const playbackSupported = Boolean(page.pausePlayback && page.setPlaybackGate)
-  const capabilities: PreviewCommandType[] = [...COMMANDS, ...page.setActive ? ['activity' as const] : [], ...page.flush ? ['flush' as const] : [], ...page.documentHistory ? ['document-history' as const] : [], ...playbackSupported ? ['pause-playback' as const, 'playback-granted' as const] : []]
+  const capabilities: PreviewCommandType[] = [...COMMANDS, ...page.nativeText ? ['edit-result' as const] : [], ...page.setActive ? ['activity' as const] : [], ...page.flush ? ['flush' as const] : [], ...page.documentHistory ? ['document-history' as const] : [], ...playbackSupported ? ['pause-playback' as const, 'playback-granted' as const] : []]
   const nameWindow = (active: boolean) => {
     window.name = `${framePrefix()}${nonce}${active ? '' : PAUSED}`
   }
@@ -900,7 +947,8 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
   const flash = createFlash(page, state, locate)
   const rects = createRectReport(page, state, locate, post)
   const picking = createPicking(page, state, locate, rects, post)
-  const editing = createEditing(state, locate, picking, post)
+  const editing = createEditing(page, state, locate, picking, post)
+  window.addEventListener('pagehide', editing.preserve)
   const position = createPositionReport(page, state, post, capabilities)
   const selection = watchSelection(page, state, locate, rects, editing.isEditing, post)
 
@@ -927,7 +975,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
   let activity = Promise.resolve()
   const pause = () => {
     cancelPlayback()
-    editing.cancel()
+    editing.preserve()
     state.active = false
     page.activityChanged?.(false)
     nameWindow(false)
@@ -991,6 +1039,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
     try {
       switch (command.type) {
         case 'blocks-result': return void window.dispatchEvent(new CustomEvent('presmium:blocks-result', { detail: command }))
+        case 'edit-result': return void window.dispatchEvent(new CustomEvent('presmium:edit-result', { detail: command }))
         case 'source-result': return void window.dispatchEvent(new CustomEvent('presmium:source-result', { detail: command }))
         case 'source-saved': return void window.dispatchEvent(new CustomEvent('presmium:source-saved', { detail: command }))
         case 'source-created': return void window.dispatchEvent(new CustomEvent('presmium:source-created', { detail: command }))
@@ -1044,7 +1093,8 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
     stop() {
       cancelPlayback()
       stopPlaybackGate?.()
-      editing.cancel()
+      editing.preserve()
+      window.removeEventListener('pagehide', editing.preserve)
       if (editorReport === post) editorReport = undefined
       state.stopped = true
       page.activityChanged?.(false)

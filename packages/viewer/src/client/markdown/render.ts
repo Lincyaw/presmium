@@ -41,6 +41,7 @@ export interface HastRenderContext {
 }
 
 const RAW_TEXT = new Set(['script', 'style'])
+const VOID_ELEMENTS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'])
 
 export function hastToVNodes(nodes: readonly (RootContent | ElementContent)[], ctx: HastRenderContext): ReactNode[] {
   return nodes.map((node): ReactNode => {
@@ -54,6 +55,9 @@ export function hastToVNodes(nodes: readonly (RootContent | ElementContent)[], c
     const attrs = attributes(node.properties)
     const item = node.properties.dataPmItem
     if (typeof item === 'number' && ctx.hidden?.(item)) attrs.class = [attrs.class, 'pm-hidden']
+    // HAST represents a void element with an empty children array. React treats
+    // even that array as children and refuses img/br/input before mounting.
+    if (VOID_ELEMENTS.has(node.tagName)) return h(node.tagName, attrs)
     if (RAW_TEXT.has(node.tagName)) return h(node.tagName, { ...attrs, innerHTML: node.children.map(c => (c.type === 'text' ? c.value : '')).join('') })
     if (node.properties.dataPmTabs !== undefined) {
       return h(TabSetView, { class: attrs.class, tabs: tabEntries(node, children => hastToVNodes(children, ctx)) })

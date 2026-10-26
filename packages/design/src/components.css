@@ -892,6 +892,19 @@
   cursor: pointer;
 }
 
+.pm-ui-menu[data-description] {
+  max-width: min(var(--pm-popover-max-width), calc(100vw - var(--pm-space-8)));
+}
+
+.pm-ui-menu__description {
+  margin: 0;
+  padding: var(--pm-space-2) var(--pm-space-3);
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-xs);
+  line-height: var(--pm-leading-ui);
+  overflow-wrap: anywhere;
+}
+
 .pm-ui-menu__item:hover:not([data-disabled]),
 .pm-ui-menu__item:focus:not([data-disabled]),
 .pm-ui-menu__item[data-highlighted]:not([data-disabled]) {

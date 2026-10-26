@@ -6,7 +6,7 @@ export const inject = ['presmium', 'connection']
 
 export const ROUTES: Record<string, string> = Object.fromEntries([
   ...['documents', 'files', 'source', 'source/create', 'source/transaction', 'changes', 'changes/commit', 'changes/discard', 'revisions', 'revisions/revert', 'history/undo', 'history/redo',
-    'ir', 'ir/events', 'preview', 'build', 'check', 'jobs', 'jobs/cancel', 'jobs/events', 'voice-settings', 'voice-catalog',
+    'ir', 'ir/events', 'preview', 'build', 'check', 'jobs', 'jobs/cancel', 'jobs/events', 'voice-settings', 'voice-catalog', 'pages/delete',
     'review', 'review/open', 'review/step', 'review/accept', 'review/reject', 'review/restore'].map(path => [path, `${WORKSPACE_ROUTES}${path}`]),
   ['focus', `${SERVER_ROUTES}focus`],
   ['diagnostics', `${SERVER_ROUTES}diagnostics`],

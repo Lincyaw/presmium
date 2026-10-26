@@ -20,6 +20,7 @@ import { listTemplates } from './templates.ts'
 import type { Jobs } from './jobs.ts'
 import type { WorkbenchApi } from './workbench-api.ts'
 import { voiceSettingsRoutes } from './voice-settings.ts'
+import { pageDeleteRoute } from './page-delete.ts'
 import { documentDirOf } from './writer.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
@@ -230,7 +231,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       })),
     },
     ...workbench ? workbenchRoutes(workbench) : {},
-    ...workbench ? voiceSettingsRoutes({ editor, workbench, revisions }) : {},
+    ...workbench ? { ...voiceSettingsRoutes({ editor, workbench, revisions }), 'pages/delete': pageDeleteRoute({ config, editor, workbench, locks, revisions }) } : {},
     ...options.jobs ? jobRoutes(options.jobs) : {},
     ...reviews ? reviewRoutes(reviews) : {},
     'changes/discard': {
@@ -267,7 +268,7 @@ function workbenchRoutes(workbench: WorkbenchApi): Record<string, Route> {
       handle: (request, ctx) => catchRequestErrors(async () => {
         if (request.method !== 'GET') return problemResponse(405, 'GET')
         const ir = await workbench.ir(ctx.document)
-        const capabilities = createHash('sha256').update(JSON.stringify(ir.sourceCapabilities ?? {})).digest('hex').slice(0, 8)
+        const capabilities = createHash('sha256').update(JSON.stringify([ir.sourceCapabilities ?? {}, ir.sourceFingerprints ?? {}, ir.authoring ?? {}])).digest('hex').slice(0, 8)
         const etag = `"${ir.revision}-${capabilities}"`
         if (request.headers.get('if-none-match') === etag) return new Response(null, { status: 304, headers: { ETag: etag, 'Cache-Control': 'no-store' } })
         const response = jsonResponse(ir)

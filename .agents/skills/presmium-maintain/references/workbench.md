@@ -91,6 +91,23 @@ An empty paragraph placeholder has no Markdown IR block. Clearing a body must re
 instead of emitting an invisible labelled slide; inserting text again must keep one unique source label.
 Check empty-page undo and redo against both the saved source and the compiled block count.
 
+Page removal uses the workspace `pages/delete` endpoint only when `IrAnswer.authoring.deletePage` is
+advertised. Prepare its versioned plan after flushing document edits, show the actual steps and script
+count, then confirm that plan. Check local and cross-document explicit links, shared includes and the
+actual parsed source fingerprints again at the write. Commit only after compiling and comparing the
+remaining pages; a failed compile check or Git commit restores the source. Keep shared assets and retain
+an empty page with the same ID when deleting the last page. Verify real source restoration on Undo,
+source-version rejection, and rollback while another source changes. Unsupported external scripts and
+ambiguous page boundaries stay unavailable.
+
+Native title and complex-text edits use `edit`/`edited`/`edit-result` with a frozen request, IR revision and
+opaque `previewEditBinding` from the parent. Confirm the original document's source and compilation even
+after navigation; reply only to the original preview generation. Newer input advances from that confirmed
+baseline without being cleared. Native drafts have their own `native-draft` flag and participate in the
+Doc flush barrier. Persist unconfirmed input across preview reloads; recovery requires an explicit save.
+`IrAnswer.sourceFingerprints` must match the exact source text before applying IR line ranges. Missing
+capabilities, external changes and unsupported formatting retain the draft, rather than reloading it away.
+
 Restoring a deleted simple block uses `BodyBindings`: a short-lived IR binding snapshot keyed by file,
 section and block ID, valid only at the confirmed version of this editor's own source-write chain. It
 restores role, timing and scope; the requested Markdown still supplies the text. An external source

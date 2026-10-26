@@ -3,7 +3,7 @@ import type { NavigationPosition, PlaybackControl } from '@lincyaw/host'
 import { connectPreviewFrame, irBlocks, isPreviewActive, isPreviewEmbedded, PREVIEW_REVISION, stepKeys, stepTrail } from '@lincyaw/kernel'
 import type { FollowAnchor, PreviewFrame } from '@lincyaw/kernel'
 import type { Viewer } from '@lincyaw/viewer'
-import { documentHistory, resetDocumentHistory, findView, flushViewerEdits, registryRevision } from '@lincyaw/viewer'
+import { documentHistory, resetDocumentHistory, findView, flushViewerEdits, nativeTextSession, registryRevision } from '@lincyaw/viewer'
 import type { Store } from '@lincyaw/host'
 import { createViewerNavigation } from './host.ts'
 
@@ -74,6 +74,7 @@ function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions
     setActive: page.setActive,
     activityChanged: value => viewer.options.editingActive?.set(value),
     flush: () => flushViewerEdits(viewer),
+    nativeText: edit => nativeTextSession(viewer).begin(edit),
     documentHistory: action => documentHistory(viewer, action),
     resetDocumentHistory: () => resetDocumentHistory(viewer),
     selectionTools: () => [...document.querySelectorAll<HTMLElement>('[data-preview-selection-tools]')].filter(element => element.getClientRects().length > 0).map(element => {

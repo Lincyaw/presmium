@@ -10,3 +10,5 @@
 .pm-generated-preview__position { font-variant-numeric: tabular-nums; }
 .pm-block-editor__recovery { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--pm-space-2); }
 .pm-legacy-narration__header { display: flex; align-items: center; gap: var(--pm-space-2); }
+.pm-native-text-recovery { display: grid; gap: var(--pm-space-2); margin-block: var(--pm-space-3); }
+.pm-native-text-draft { display: grid; gap: var(--pm-space-2); min-width: 0; }

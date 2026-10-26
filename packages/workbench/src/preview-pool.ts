@@ -184,7 +184,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     if (report.type === 'ready') return handleReady(entry, report)
     // A write posted just before deactivation still needs a request-scoped
     // answer; the workbench decides whether it may run or must be deferred.
-    if (report.type === 'blocks-edited') return workbench.handlePreviewReport(entry.target.document, entry.target.renderer, report, entry.connection)
+    if (report.type === 'blocks-edited' || report.type === 'edited') return workbench.handlePreviewReport(entry.target.document, entry.target.renderer, report, entry.connection)
     if (report.type === 'updated') entry.irRevision = report.revision
     if (report.type === 'report') {
       const key = JSON.stringify([report.level, report.plugin, report.message])

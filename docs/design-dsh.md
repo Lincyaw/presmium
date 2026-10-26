@@ -164,13 +164,14 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 工作台 → 产物 | `flash` | `targets`：`[{ section, block? }]` | 让这些块（或节）闪烁三下，约 2.4 秒，先把第一块带到眼前（幻灯片翻到它所在的那一页）；读者要求减少动态效果时改为同样时长的淡色底。工作台用它标出 AI 刚改过的地方 |
 | 工作台 → 产物 | `marks` | `on` | 显示作者用的标记（如 `{cue}`），`PmRoleMark` 看它 |
 | 工作台 → 产物 | `appearance` | `dark` | 明暗跟随工作台 |
-| 工作台 → 产物 | `edit` | `target`：`{ section, block? }` 或 `null`、`at?`：`{ x, y }` | 就地编辑一块的文字；只有 `section` 时编辑该节的标题。光标放在 `at`（iframe 视口中的点，通常取 `picked` 的 `point`）下的文字处，不在元素的文字上时放在末尾。只能输入纯文本：格式命令、换行与拖放被拦下，粘贴只取纯文本。编辑中的按键不交给页面（幻灯片的翻页、站内搜索与 `shortcut` 都不响应），输入法组字时的按键不算。`Enter` 结束并保留，焦点离开该元素时同样；`Esc` 或 `target: null` 取消，页面恢复原来的节点。正在编辑另一处时先结束并保留那一处。每条带 `target` 的 `edit` 都有 `editing` 回答 |
+| 工作台 → 产物 | `edit` | `target`：`{ section, block? }` 或 `null`、`at?`：`{ x, y }`、`revision?`、`binding?` | 就地编辑一块的文字；只有 `section` 时编辑该节的标题。新流程成对提供 IR 修订与目标语义指纹，由宿主生成，页面原样保存和回传。光标放在 `at` 下的文字处。只输入纯文本，格式命令、换行与拖放被拦下；输入法组字按完整事务处理。`Enter` 或离焦提交，`Esc` 或 `target: null` 取消本次输入；暂停、切换文稿与重载保留未确认草稿 |
 | 产物 → 工作台 | `source-read` | `section`、`block`、`request`、`part?` | 按当前 IR 块读取其源码；默认有 `definition` 时读取定义文件，否则读取该块的 MyST 片段；`part: block` 读取块配置。请求不能指定任意文件 |
 | 工作台 → 产物 | `source-result` | `section`、`block`、`request`、`source?`、`error?` | 源码快照：`part`、`path`、`language`、`content`、`version`、`shared`（引用同一定义的块数）；失败时给出原因 |
 | 产物 → 工作台 | `source-save` | `section`、`block`、`request`、`path`、`base`、`content`、`part?` | 保存当前块已经打开的源码；工作台重新核对块与文件的绑定、版本与编辑锁，沿用正文的串行保存队列 |
 | 工作台 → 产物 | `source-saved` | `section`、`block`、`request`、`sourceVersion?`、`error?` | 保存确认或错误；请求编号关联原草稿，失败不清除编辑内容 |
 | 产物 → 工作台 | `source-draft` | `dirty` | 汇总未保存的块源码草稿；文档编辑顶栏与正文草稿共同显示“未保存”，不传源码内容 |
 | 产物 → 工作台 | `body-draft` | `dirty` | 汇总未确认保存的正文块草稿，包括恢复的草稿 |
+| 产物 → 工作台 | `native-draft` | `dirty` | 汇总原生标题与复杂文字镜头的编辑、待确认、失败和恢复草稿；独立于正文块、素材源码和视频讲稿草稿 |
 | 产物 → 工作台 | `blocks-edited` | `section`、`request`、`revision`、`blocks` | 提交一个页面的正文块；工作台核对 IR 修订与当前源码版本后串行写回 |
 | 工作台 → 产物 | `blocks-result` | `section`、`request`、`revision?`、`error?` | 正文写回结果；真实改写须等到更新的 IR 并再次确认源码版本，旧请求不能清除其后输入 |
 | 产物 → 工作台 | `source-create` | `section`、`id`、`after?`、`request`、`revision` | 在指定正文块后创建独立动画；预览先为新 UUID 保存源码视图状态，再请求创建。使用插件提供的初始代码，代码文件与文稿引用保存为同一个版本 |
@@ -185,7 +186,8 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 产物 → 工作台 | `selection` | `{ section, block?, text, rect?, obstacles? }` 或 `null` | 页面中的文字选中，供焦点带上（8.2 节的 `quote`）。`rect` 是选区的框（选区没有框时取它最后一行的框）。已有 IR 锚点的正文选区可报告，新块待保存确认后才可批注；原生文本镜头编辑期间不报告。`obstacles` 为至多 16 个可见编辑工具区的框，使用相同视口坐标，供宿主避让 |
 | 产物 → 工作台 | `rect` | `rect`：框或 `null`、`obstacles?` | 跟随的对象在页面滚动（任何滚动区域）或尺寸变化后的框，供工作台把工具条留在它旁边；完全移出视野或已不在页面中时为 `null`。跟随的对象是最近一次点选的块，直到再次点选或有了非空的选区；有选区时是选区，选区清空后不再跟随。没有跟随的对象时不发，框与编辑工具避让区均不变时也不发 |
 | 产物 → 工作台 | `editing` | `target`、`active` | 就地编辑开始（`true`）或结束（`false`）；找不到要编辑的元素时立即回答 `false` |
-| 产物 → 工作台 | `edited` | `target`、`before`、`after` | 编辑结束并保留、文字有变化时发出一次，先于 `editing` 的 `false`。`before`、`after` 是元素的文字（`textContent`，不含代理画的编号标记，不间断空格按普通空格）。页面保留编辑后的样子，新的 IR 到来时重新渲染；工作台据此改写源码。没有变化时页面恢复原来的节点，不发 |
+| 产物 → 工作台 | `edited` | `target`、`before`、`after`、`request?`、`revision?`、`binding?` | 新流程后三项必须一同提供。请求冻结本次输入版本；元素恢复原有富文本 DOM，待确认文字保留在目标旁的草稿中。宿主重新核对目标语义、编译时源码指纹、当前源版本与新编译结果。旧版省略后三项的报告仅保留兼容保存路径 |
+| 工作台 → 产物 | `edit-result` | `request`、`target`、`revision?`、`binding?`、`error?` | 只向原预览实例和代次回复一次。成功成对返回已确认的修订与新语义指纹；仅确认同一输入版本，有后续输入时推进其来源基线而不清空新文字。失败保留可重试、复制或明确放弃的草稿 |
 | 产物 → 工作台 | `updated` | `revision` | 页面换上了新的 IR。工作台据此重新加上高亮与焦点的标记，并判断预览是否已反映刚保存的源码 |
 | 产物 → 工作台 | `report` | `level`（`error` 或 `warning`）、`plugin?`、`message`、`resolved?` | 页面中的运行时问题；`resolved: true` 清除同一问题。工作台按预览实例报告到诊断接口 |
 | 产物 → 工作台 | `shortcut` | `command`（`undo`、`redo` 或 `dismiss`） | 预览获得键盘焦点后，转发撤消、恢复或关闭工具条的意图；正文优先使用原生历史，再按保存边界回退到源码版本。页面自己的输入框与就地编辑中的按键不转发。只传这三种意图，经原有来源、nonce 与文稿身份检查 |
@@ -195,6 +197,8 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 保存确认绑定文稿、目标、提交版本、预览实例与代次，失败或过期回调均不表示新输入已保存。工作台沿用现有 IR 订阅；等待写回后的新 IR 使用有界的条件读取，不为每次保存新增 SSE 连接。
 
 切换文稿后，已经派发的正文写入仍核对原文稿的 IR 与源码版本，并只向原预览实例的原代次回复。它不会改动当前文稿的保存状态。尚未写入的过期请求明确取消；暂停的预览保留草稿与待确认写入，不发起下一次写入，恢复并完成握手后再继续。
+
+提交后的原生文字请求也属于原文稿，不因切换文稿而静默丢弃。`previewEditBinding` 比较目标的内容、角色、步骤和范围，忽略无关行号变化；`IrAnswer.sourceFingerprints` 再核对行图实际解析过的源码。请求回复不作为可重播状态。宿主可短暂保留已完成请求的回执，但重试仍须核对请求内容、目标指纹与已确认的源码版本；不能用旧回执清除新输入。浏览器恢复的原生文字草稿需明确确认后重试，缺少版本能力或不能安全写回时继续保留输入。
 
 ### 4.4 坐标与步骤
 
@@ -234,6 +238,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | `GET documents`、`POST documents` | 文档列表、编译状态与章节；新建、重命名、复制、删除 |
 | `GET files`、`GET source`、`POST source` | 列出文件；带版本的读写，冲突时 409，加锁（`architecture.md` 5.11 节）。git 仓库中的保存在持有文档锁时随即提交这一个文件（来源 `editor`），回答带这个 `revision`：说明是请求的 `message`（去掉首尾空白后的第一行，至多 200 个字符），没有时按文件所在文稿的 `lang` 写成 `编辑 <文件名>`（`lang` 缺省或以 `zh` 开头）或 `Edit <文件名>`。内容不变、文件被 git 忽略时不提交；提交失败时文件恢复原样，保存失败 |
 | `POST source/transaction` | 小批量源码保存：`changes: [{ path, content, base }]` 与可选 `message`，`base` 是打开时的版本，`null` 表示只创建尚不存在的新文件。至多 16 个文件，总 UTF-8 内容不超过源码编辑上限，所有文件属于同一文档；先校验全部路径、权限与版本，再在一个文档锁和 git 队列中保存并提交一次。写入或提交失败时恢复原文件、移除本次新建文件并恢复 git 索引。回答每个文件的 `version` 与可选的单个 `revision` |
+| `GET pages/delete`、`POST pages/delete` | `IrAnswer.authoring.deletePage` 为真时可用。GET 按 `section` 返回绑定源版本和 IR 修订的 `PageDeletePlan`，含实际步骤／讲稿数量、最后一页标记与引用限制。POST 接收 `{ section, revision, base }`，重新检查来源、当前与相关文稿的显式引用、共享 include、源指纹及版本，再移除完整页面；不删素材文件。编译确认其他页的 ID、内容和绑定保持后才记录单次历史；失败恢复原源码。最后一页清空并保留原 ID。独立讲稿、外部绑定和来源不明的范围拒绝删除 |
 | `GET changes`、`POST changes/commit`、`POST changes/discard` | 未提交的修改（工作台之外的写入） |
 | `GET revisions`、`POST revisions/revert` | 修改历史（新的在前）与撤销其中任一个修改；`revisions` 另给出下一次撤销与重做收回的修改 `undo`、`redo`，按文档的整个历史计算，不受 `limit` 截断 |
 | `POST history/undo`、`POST history/redo` | 按修改撤销与重做，请求体 `{ expect? }`。从旧到新看文档历史中的 Presmium 修改：普通修改压入撤销栈并清空重做栈；撤销一个修改把它移出撤销栈，这次撤销压入重做栈；重做（撤销一次撤销）把那次撤销移出重做栈，原来的修改放回撤销栈；文档操作清空两个栈，撤销按钮不收回它与它之前的修改。`undo` 是撤销栈顶的修改，`redo` 是重做栈顶的撤销。服务在 git 锁中取目标：没有可撤销或重做的、`expect`（读到的 `undo` 或 `redo`，可以是前缀）不是当前目标时 409；之后与 `revisions/revert` 相同，回答 `RevertResult`，冲突时 409 |

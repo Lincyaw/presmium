@@ -14,9 +14,12 @@ export function bodyBlocks(section: IRSection, doc?: IRDocument): IRBlock[] {
   )
 }
 
-const proseNodes = new Set(['root', 'paragraph', 'text', 'emphasis', 'strong', 'delete', 'inlineCode', 'link', 'image', 'blockquote', 'list', 'listItem', 'break', 'thematicBreak'])
-function simpleProse(node: MdastNode, headings = false): boolean {
-  return (proseNodes.has(node.type) || headings && node.type === 'heading') && (node.children ?? []).every(child => simpleProse(child, headings))
+const proseNodes = new Set(['root', 'paragraph', 'text', 'emphasis', 'strong', 'delete', 'inlineCode', 'link', 'image', 'blockquote', 'list', 'listItem', 'break', 'thematicBreak', 'table', 'tableRow', 'tableCell'])
+function simpleProse(node: MdastNode, headings = false, table = false): boolean {
+  if (node.type === 'table' && Array.isArray(node.align) && node.align.some(align => align !== null && align !== 'left')) return false
+  if (node.type === 'tableCell' && node.align !== undefined && node.align !== null && node.align !== 'left') return false
+  if (table && node.type === 'image') return false
+  return (proseNodes.has(node.type) || headings && node.type === 'heading') && (node.children ?? []).every(child => simpleProse(child, headings, table || node.type === 'table'))
 }
 function opaqueNarration(block: IRBlock): boolean {
   return block.role === 'narration' && (block.until !== undefined || (block.span ?? 0) > 0 || block.node.type !== 'markdown' || Boolean(block.node.reveal) || !simpleProse(block.node.mdast))

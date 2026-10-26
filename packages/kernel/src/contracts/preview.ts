@@ -72,6 +72,7 @@ export type PreviewCommand =
   | { type: 'pause-playback', request: number }
   | { type: 'playback-granted', request: number }
   | { type: 'flush', request: number }
+  | { type: 'edit-result', target: PreviewAnchor, request: number, revision?: string, binding?: string, error?: string }
   | { type: 'blocks-result', section: string, request: number, revision?: string, error?: string }
   | { type: 'source-result', section: string, block: string, request: number, source?: PreviewSource, error?: string }
   | { type: 'source-saved', section: string, block: string, request: number, sourceVersion?: string, error?: string }
@@ -86,7 +87,7 @@ export type PreviewCommand =
   | { type: 'appearance', dark: boolean }
   | { type: 'activity', active: boolean, request: number }
   /** Edits the text of a block (a section's heading when there is no block) in place, the caret at `at`; null ends editing and puts the text back. */
-  | { type: 'edit', target: PreviewAnchor | null, at?: PreviewPoint }
+  | { type: 'edit', target: PreviewAnchor | null, at?: PreviewPoint, revision?: string, binding?: string }
   /** Makes the blocks (or sections) blink a few times, the first brought into view: what the AI just changed. */
   | { type: 'flash', targets: PreviewAnchor[] }
 
@@ -108,6 +109,8 @@ export type PreviewReport =
   | { type: 'source-draft', dirty: boolean }
   /** Aggregate unsaved body blocks, independent of generated-source and narration drafts. */
   | { type: 'body-draft', dirty: boolean }
+  /** Aggregate unacknowledged native title and complex-text drafts. */
+  | { type: 'native-draft', dirty: boolean }
   | { type: 'page-create', section: string, id: string, request: number, revision: string }
   | { type: 'page-create-error', request: number, error: string }
   | { type: 'narrate', section: string, step: number, navigate?: boolean }
@@ -119,7 +122,7 @@ export type PreviewReport =
   | { type: 'rect', rect: PreviewRect | null, obstacles?: PreviewRect[] }
   | { type: 'editing', target: PreviewAnchor, active: boolean }
   /** The text of a block edited in place, before and after (its `textContent`); sent only when it changed. */
-  | { type: 'edited', target: PreviewAnchor, before: string, after: string }
+  | { type: 'edited', target: PreviewAnchor, before: string, after: string, request?: number, revision?: string, binding?: string }
   | { type: 'updated', revision?: string }
   | { type: 'activity', active: boolean, request: number, revision?: string, error?: string }
   | { type: 'report', level: 'error' | 'warning', plugin?: string, message: string, resolved?: boolean }
@@ -147,6 +150,8 @@ const toRect = (value: PreviewRect): PreviewRect => ({ x: value.x, y: value.y, w
 const toPoint = (value: PreviewPoint): PreviewPoint => ({ x: value.x, y: value.y })
 const MAX_EDITED = 200_000
 const bounded = (value: unknown, max: number): value is string => text(value) && value.length > 0 && value.length <= max
+const editBaseline = (m: Record<string, unknown>) => m.revision === undefined && m.binding === undefined || bounded(m.revision, 200) && bounded(m.binding, 200)
+const editedRequest = (m: Record<string, unknown>) => m.request === undefined && m.revision === undefined && m.binding === undefined || request(m.request) && bounded(m.revision, 200) && bounded(m.binding, 200)
 const sourceTarget = (m: Record<string, unknown>) => bounded(m.section, 200) && bounded(m.block, 200) && request(m.request)
 const sourcePart = (value: unknown): value is 'definition' | 'block' => value === 'definition' || value === 'block'
 const pageId = (value: unknown): value is string => text(value) && /^page-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value)
@@ -165,6 +170,7 @@ export function toPreviewCommand(data: unknown, nonce: string): PreviewCommand |
     case 'pause-playback':
     case 'playback-granted': return request(m.request) ? { type: m.type, request: m.request } : undefined
     case 'flush': return request(m.request) ? { type: 'flush', request: m.request } : undefined
+    case 'edit-result': return anchor(m.target) && request(m.request) && editBaseline(m) && optional(m.error, text) ? { type: 'edit-result', target: toAnchor(m.target), request: m.request, ...m.revision === undefined ? {} : { revision: m.revision as string, binding: m.binding as string }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
     case 'blocks-result': return text(m.section) && request(m.request) && optional(m.revision, text) && optional(m.error, text) ? { type: 'blocks-result', section: m.section, request: m.request, ...m.revision === undefined ? {} : { revision: m.revision as string }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
     case 'source-result': return sourceTarget(m) && optional(m.source, sourceValue) && optional(m.error, text) ? { type: 'source-result', section: m.section as string, block: m.block as string, request: m.request as number, ...m.source === undefined ? {} : { source: m.source as PreviewSource }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
     case 'source-saved': return sourceTarget(m) && optional(m.sourceVersion, (value): value is string => bounded(value, 200)) && optional(m.error, text) ? { type: 'source-saved', section: m.section as string, block: m.block as string, request: m.request as number, ...m.sourceVersion === undefined ? {} : { sourceVersion: m.sourceVersion as string }, ...m.error === undefined ? {} : { error: m.error as string } } : undefined
@@ -177,7 +183,7 @@ export function toPreviewCommand(data: unknown, nonce: string): PreviewCommand |
     case 'marks': return typeof m.on === 'boolean' ? { type: m.type, on: m.on } : undefined
     case 'appearance': return typeof m.dark === 'boolean' ? { type: 'appearance', dark: m.dark } : undefined
     case 'activity': return typeof m.active === 'boolean' && request(m.request) ? { type: 'activity', active: m.active, request: m.request } : undefined
-    case 'edit': return (m.target === null || anchor(m.target)) && optional(m.at, point) ? { type: 'edit', target: m.target === null ? null : toAnchor(m.target), ...m.at ? { at: toPoint(m.at as PreviewPoint) } : {} } : undefined
+    case 'edit': return (m.target === null || anchor(m.target)) && optional(m.at, point) && editBaseline(m) ? { type: 'edit', target: m.target === null ? null : toAnchor(m.target), ...m.at ? { at: toPoint(m.at as PreviewPoint) } : {}, ...m.revision === undefined ? {} : { revision: m.revision as string, binding: m.binding as string } } : undefined
     case 'pins': return Array.isArray(m.targets) && m.targets.length <= 1000 && m.targets.every(t => isRecord(t) && text(t.id) && text(t.section) && text(t.block) && text(t.label))
       ? { type: 'pins', targets: (m.targets as PreviewPin[]).map(({ id, section, block, label }) => ({ id, section, block, label })) }
       : undefined
@@ -201,6 +207,7 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
     case 'source-create': return bounded(m.section, 200) && text(m.id) && /^scene-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(m.id) && request(m.request) && bounded(m.revision, 200) && optional(m.after, (value): value is string => bounded(value, 200)) ? { type: 'source-create', section: m.section, id: m.id, request: m.request, revision: m.revision, ...m.after === undefined ? {} : { after: m.after as string } } : undefined
     case 'source-draft': return typeof m.dirty === 'boolean' ? { type: 'source-draft', dirty: m.dirty } : undefined
     case 'body-draft': return typeof m.dirty === 'boolean' ? { type: 'body-draft', dirty: m.dirty } : undefined
+    case 'native-draft': return typeof m.dirty === 'boolean' ? { type: 'native-draft', dirty: m.dirty } : undefined
     case 'page-create': return bounded(m.section, 200) && pageId(m.id) && request(m.request) && bounded(m.revision, 200) ? { type: 'page-create', section: m.section, id: m.id, request: m.request, revision: m.revision } : undefined
     case 'page-create-error': return request(m.request) && bounded(m.error, 4000) ? { type: 'page-create-error', request: m.request, error: m.error } : undefined
     case 'narrate': return text(m.section) && step(m.step) && optional(m.navigate, (value): value is boolean => typeof value === 'boolean') ? { type: 'narrate', section: m.section, step: m.step, ...m.navigate === undefined ? {} : { navigate: m.navigate as boolean } } : undefined
@@ -218,7 +225,7 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
     }
     case 'rect': return (m.rect === null || rect(m.rect)) && optional(m.obstacles, obstacles) ? { type: 'rect', rect: m.rect === null ? null : toRect(m.rect), ...m.obstacles !== undefined ? { obstacles: (m.obstacles as PreviewRect[]).map(toRect) } : {} } : undefined
     case 'editing': return anchor(m.target) && typeof m.active === 'boolean' ? { type: 'editing', target: toAnchor(m.target), active: m.active } : undefined
-    case 'edited': return anchor(m.target) && text(m.before) && text(m.after) && m.before.length <= MAX_EDITED && m.after.length <= MAX_EDITED ? { type: 'edited', target: toAnchor(m.target), before: m.before, after: m.after } : undefined
+    case 'edited': return anchor(m.target) && text(m.before) && text(m.after) && m.before.length <= MAX_EDITED && m.after.length <= MAX_EDITED && editedRequest(m) ? { type: 'edited', target: toAnchor(m.target), before: m.before, after: m.after, ...m.request === undefined ? {} : { request: m.request as number, revision: m.revision as string, binding: m.binding as string } } : undefined
     case 'updated': return optional(m.revision, text) ? { type: 'updated', ...m.revision ? { revision: m.revision as string } : {} } : undefined
     case 'activity': return typeof m.active === 'boolean' && request(m.request) && optional(m.revision, text) && optional(m.error, text)
       ? { type: 'activity', active: m.active, request: m.request, ...m.revision === undefined ? {} : { revision: m.revision as string }, ...m.error === undefined ? {} : { error: m.error as string } }

@@ -104,7 +104,8 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
       const compilation = await options.compileSessionOf(document).ready()
       let doc = relativeDocs.get(compilation)
       if (!doc) relativeDocs.set(compilation, doc = relativeIR(compilation.doc, root, root))
-      return { document, revision: irRevisionOf(compilation), doc, diagnostics: doc.diagnostics, sourceCapabilities: compilation.sourceCapabilities }
+      return { document, revision: irRevisionOf(compilation), doc, diagnostics: doc.diagnostics, sourceCapabilities: compilation.sourceCapabilities, authoring: { deletePage: true },
+        ...compilation.sourceFingerprints ? { sourceFingerprints: Object.fromEntries(Object.entries(compilation.sourceFingerprints).map(([file, value]) => [workspacePath(root, file), value])) } : {} }
     },
     events(document, signal) {
       const session = options.compileSessionOf(document)

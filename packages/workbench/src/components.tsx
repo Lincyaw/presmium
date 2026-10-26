@@ -200,7 +200,7 @@ export const PmSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
 export type PopoverPlacement = 'below-end' | 'below-start' | 'above-end' | 'above-start'
 const placementOf = (placement: PopoverPlacement) => ({ side: placement.startsWith('above') ? 'top' as const : 'bottom' as const, align: placement.endsWith('start') ? 'start' as const : 'end' as const })
 
-export function PmDialog({ open, label, closeLabel, name, actions, description, footer, busy, onClose, onCloseAutoFocus, children }: { open: boolean, label: string, closeLabel: string, name?: string, actions?: ReactNode, description?: string, footer?: ReactNode, busy?: boolean, onClose(): void, onCloseAutoFocus?(event: Event): void, children?: ReactNode }) {
+export function PmDialog({ open, label, closeLabel, name, actions, description, footer, busy, onClose, onOpenAutoFocus, onCloseAutoFocus, children }: { open: boolean, label: string, closeLabel: string, name?: string, actions?: ReactNode, description?: string, footer?: ReactNode, busy?: boolean, onClose(): void, onOpenAutoFocus?(event: Event): void, onCloseAutoFocus?(event: Event): void, children?: ReactNode }) {
   const id = useId()
   // A descendant's React autoFocus runs before Radix's open-focus event.
   const trigger = useRef<HTMLElement | null>(typeof document === 'undefined' ? null : document.activeElement as HTMLElement)
@@ -217,7 +217,14 @@ export function PmDialog({ open, label, closeLabel, name, actions, description, 
     <Dialog.Root open={open} modal onOpenChange={next => { if (!next && !busy) onClose() }}>
       <Dialog.Portal>
         <Dialog.Overlay className="pm-ui-dialog-overlay" />
-        <Dialog.Content className={cls('pm-ui-dialog', 'pm-ui', name && `${name}__panel`)} data-pm-dialog={id} data-density="regular" aria-busy={busy || undefined} {...description ? {} : { 'aria-describedby': undefined }} onInteractOutside={event => event.preventDefault()} onEscapeKeyDown={event => { event.stopPropagation(); if (busy) event.preventDefault() }} onCloseAutoFocus={event => {
+        <Dialog.Content className={cls('pm-ui-dialog', 'pm-ui', name && `${name}__panel`)} data-pm-dialog={id} data-density="regular" aria-busy={busy || undefined} {...description ? {} : { 'aria-describedby': undefined }} onInteractOutside={event => event.preventDefault()} onEscapeKeyDown={event => { event.stopPropagation(); if (busy) event.preventDefault() }} onOpenAutoFocus={event => {
+          onOpenAutoFocus?.(event)
+          if (event.defaultPrevented || !(event.target instanceof HTMLElement)) return
+          const panel = event.target
+          if (panel.contains(document.activeElement)) { event.preventDefault(); return }
+          const target = [...panel.querySelectorAll<HTMLElement>('.pm-ui-dialog__body :is(button, input, textarea, select, a[href], [tabindex]), .pm-ui-dialog__footer :is(button, input, textarea, select, a[href], [tabindex])')].find(element => element.tabIndex >= 0 && !element.closest('[inert], [hidden]') && !element.matches(':disabled, [aria-disabled="true"]') && element.getClientRects().length && getComputedStyle(element).visibility === 'visible')
+          if (target) { event.preventDefault(); target.focus() }
+        }} onCloseAutoFocus={event => {
           onCloseAutoFocus?.(event)
           if (event.defaultPrevented) return
           event.preventDefault()
@@ -250,12 +257,14 @@ export interface MenuItem {
   separator?: boolean
 }
 
-export function PmMenu({ label, items, icon = 'more', placement = 'below-end', triggerRef, onSelect }: { label: string, items: MenuItem[], icon?: IconName, placement?: PopoverPlacement, triggerRef?: Ref<HTMLButtonElement>, onSelect(id: string): void }) {
+export function PmMenu({ label, description, items, icon = 'more', placement = 'below-end', triggerRef, onSelect }: { label: string, description?: string, items: MenuItem[], icon?: IconName, placement?: PopoverPlacement, triggerRef?: Ref<HTMLButtonElement>, onSelect(id: string): void }) {
+  const descriptionId = useId()
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild><PmIconButton ref={triggerRef} icon={icon} label={label} small /></DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content className="pm-ui-menu pm-ui-floating pm-ui" data-density="compact" aria-label={label} {...placementOf(placement)} sideOffset={6} collisionPadding={16} onEscapeKeyDown={event => event.stopPropagation()}>
+        <DropdownMenu.Content className="pm-ui-menu pm-ui-floating pm-ui" data-density="compact" data-description={description ? '' : undefined} aria-label={label} aria-describedby={description ? descriptionId : undefined} {...placementOf(placement)} sideOffset={6} collisionPadding={16} onEscapeKeyDown={event => event.stopPropagation()}>
+          {description && <p className="pm-ui-menu__description" id={descriptionId}>{description}</p>}
           {items.map(item => (
             <DropdownMenu.Group key={item.id}>{item.separator && <DropdownMenu.Separator className="pm-ui-menu__separator" />}{item.checked === undefined ? <DropdownMenu.Item textValue={item.label} className={cls('pm-ui-menu__item', item.danger && 'pm-ui-menu__item--danger')} disabled={item.disabled} onSelect={() => onSelect(item.id)}>
               {item.icon && <PmIcon name={item.icon} />}{item.label}{item.shortcut && <kbd className="pm-ui-shortcut">{item.shortcut}</kbd>}

@@ -1,4 +1,4 @@
-import { errorMessage, irBlocks, slideShape, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
+import { errorMessage, fnv1a64, irBlocks, previewEditBinding, slideShape, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
 import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, JobsAnswer, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPin, PreviewPoint, PreviewPosition, PreviewRect, PreviewRenderer, PreviewReport, ReviewChange, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
 import { CommentStore, newComment } from './comments.ts'
 import type { DocumentComment } from './comments.ts'
@@ -26,6 +26,7 @@ import type { BlockSourceDraft } from './block-source.ts'
 import { workspaceClient, WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 import type { VoiceoverRequest, VoiceoverSnapshot, VoiceSettingsChange, VoiceSettingsUpdate } from '@lincyaw/kernel'
+import type { PageDeletePlan } from '@lincyaw/kernel'
 import { DocumentVoiceover } from './voiceover.ts'
 
 /** `editing`: blocks are picked, commented on and edited in place; `viewing`: the document reads as its readers see it. */
@@ -101,6 +102,7 @@ export interface WorkbenchState {
   narrationDirty?: boolean
   sourceDirty?: boolean
   bodyDirty?: boolean
+  nativeDirty?: boolean
   isCreatingPage?: boolean
   isEditingPage?: boolean
   isEditingVoice?: boolean
@@ -202,6 +204,7 @@ const DOCUMENT_RESET = {
   narrationDirty: false,
   sourceDirty: false,
   bodyDirty: false,
+  nativeDirty: false,
   isCreatingPage: false,
   isEditingPage: false,
   isEditingVoice: false,
@@ -253,6 +256,7 @@ export function withTitle(source: string, title: string): string {
  */
 export class Workbench {
   readonly #bodyBindings = new BodyBindings()
+  readonly #nativeReceipts = new Map<string, { path: string, version: string, revision: string, binding: string }>()
   readonly client: WorkspaceClient
   #state: WorkbenchState
   readonly #listeners = new Set<Listener>()
@@ -723,6 +727,8 @@ export class Workbench {
 
   #pageEditMessage(reason: string): string {
     const t = this.#messages
+    if (reason === 'native-unavailable') return t.nativeEditUnavailable
+    if (reason.startsWith('native-')) return t.nativeEditDraft
     switch (reason) {
       case 'page-multiple-files': return t.pageEditFiles
       case 'page-boundary': return t.pageEditBoundary
@@ -731,6 +737,9 @@ export class Workbench {
       case 'page-formatted-title': return t.pageEditFormattedTitle
       case 'page-title': return t.pageEditInvalidTitle
       case 'page-compiler': return t.pageEditCompiler
+      case 'page-referenced': return t.pageDeleteReferenced
+      case 'page-external-bindings': return t.pageDeleteExternalBindings
+      case 'page-references-unavailable': return t.pageDeleteReferencesUnavailable
       case 'page-busy': return t.pageEditBusy
       case 'preview-flush-unavailable': return t.pageEditPreview
       case 'page-context-changed': return t.pageEditChanged
@@ -871,7 +880,7 @@ export class Workbench {
     await this.#edits
     if (!current()) throw new Error('page-context-changed')
     if (isAgentChanging(this.#state)) throw new Error('save-locked')
-    if (this.#state.bodyDirty || this.#state.editFallback || this.#state.save.kind === 'failed' || this.#state.save.kind === 'locked') throw new Error('page-draft')
+    if (this.#state.bodyDirty || this.#state.nativeDirty || this.#state.editFallback || this.#state.save.kind === 'failed' || this.#state.save.kind === 'locked') throw new Error('page-draft')
     await this.#readIr(document)
     if (!current()) throw new Error('page-context-changed')
   }
@@ -882,6 +891,46 @@ export class Workbench {
 
   movePage(section: string, before: string | null): Promise<boolean> {
     return this.#editPage(section, { kind: 'move', before })
+  }
+
+  pageDeleteMessage(reason: string): string { return this.#pageEditMessage(reason) }
+
+  async preparePageDeletion(section: string): Promise<PageDeletePlan> {
+    const document = this.#state.document, scope = this.#narrationScope
+    if (document === undefined || !this.#state.ir?.authoring?.deletePage) throw new Error(this.#messages.pageEditPreview)
+    await this.flushPendingEdits()
+    if (document !== this.#state.document || scope !== this.#narrationScope) throw new Error(this.#messages.pageEditChanged)
+    return this.client.readPageDeletion(document, section)
+  }
+
+  async deletePage(plan: PageDeletePlan): Promise<boolean> {
+    if (!plan.allowed || this.#state.document !== plan.document || this.#state.isCreatingPage || this.#state.isEditingPage || this.#state.isHistoryBusy) return false
+    const document = plan.document, scope = this.#narrationScope
+    const current = () => document === this.#state.document && scope === this.#narrationScope
+    this.#bodyHistory.reset()
+    this.#set({ isEditingPage: true, pageEditFailure: undefined })
+    try {
+      await this.flushPendingEdits()
+      if (!current()) return false
+      const work = this.#edits.then(async () => {
+        if (!current() || isAgentChanging(this.#state)) throw new Error('page-context-changed')
+        const result = await this.client.deletePage(document, { section: plan.section, revision: plan.revision, base: plan.source.version })
+        if (!current()) return false
+        await this.#readIr(document)
+        await this.#history.read(document)
+        if (!current()) return false
+        if (this.#state.ir?.revision !== result.irRevision) throw new Error('source-refresh')
+        this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
+        this.goToSection(result.selected)
+        this.#record('page.delete', { 'presmium.section': plan.section, 'presmium.retainedEmpty': result.retainedEmpty })
+        return true
+      })
+      this.#edits = work.then(() => {}, () => {})
+      return await work
+    } catch (error) {
+      if (current()) this.#set({ pageEditFailure: this.#pageEditMessage(errorMessage(error)) })
+      return false
+    } finally { if (current()) this.#set({ isEditingPage: false }) }
   }
 
   async #editPage(section: string, operation: { kind: 'rename', title: string } | { kind: 'move', before: string | null }): Promise<boolean> {
@@ -1186,13 +1235,17 @@ export class Workbench {
   /** Edits the target's text in place in the preview; none ends editing without saving. */
   editText(target: PreviewAnchor | null, at?: PreviewPoint): void {
     if (target && (isAgentChanging(this.#state) || !this.isEditable(target))) return
+    const opened = this.#state.ir
+    if (target && this.#state.previewIrRevision !== opened?.revision) return
+    const binding = target && opened ? previewEditBinding(opened.doc, target) : undefined
+    if (target && !binding) return
     if (target) this.#record('edit.start', { 'presmium.section': target.section, 'presmium.block': target.block })
     else if (this.#state.editing) this.#record('edit.cancel', { 'presmium.section': this.#state.editing.section, 'presmium.block': this.#state.editing.block })
     if (target) {
       this.#set({ pointer: undefined, editFallback: undefined })
       this.#broadcast({ type: 'highlight', target: null })
     }
-    this.#broadcast({ type: 'edit', target, ...at ? { at } : {} })
+    this.#broadcast({ type: 'edit', target, ...at ? { at } : {}, ...target && opened && binding ? { revision: opened.revision, binding } : {} })
   }
 
   #sourceOf(target: PreviewAnchor, doc: IRDocument): { file: string, line: number, endLine?: number } | undefined {
@@ -1201,6 +1254,77 @@ export class Workbench {
       return section && { file: section.source.file, line: section.source.line }
     }
     return findPlaceSource(doc, target.section, target.block)?.source
+  }
+
+  /** A committed native edit belongs to its original document, even while another document is selected. */
+  #saveNativeEdit(document: string, renderer: PreviewRenderer, report: Extract<PreviewReport, { type: 'edited' }> & { request: number, revision: string, binding: string }, origin: PreviewSink): void {
+    const scope = this.#narrationScope, generation = origin.generation
+    const current = () => scope === this.#narrationScope && document === this.#state.document && renderer === this.#state.previewRenderer && this.#previewSinks.has(origin) && generation === origin.generation
+    const reply = (error?: string, revision?: string, binding?: string) => {
+      if (origin.generation === generation) origin.send({ type: 'edit-result', request: report.request, target: report.target, ...error ? { error } : { revision, binding } })
+    }
+    const receiptKey = fnv1a64(JSON.stringify([document, renderer, report.target, report.binding, report.before, report.after]))
+    const message = (reason: string) => reason === 'native-target' ? this.#messages.nativeEditTarget : reason === 'native-format' ? this.#messages.nativeEditFormat : reason === 'native-confirmation' ? this.#messages.nativeEditConfirmation : reason === 'native-unavailable' ? this.#messages.nativeEditUnavailable : reason === 'native-conflict' ? this.#messages.nativeEditConflict : reason === 'save-locked' ? this.#messages.saveLocked : reason.startsWith('page-') ? this.#pageEditMessage(reason) : reason
+    if (current()) { this.#bodyHistory.reset(); this.#set({ save: { kind: 'saving' }, editFallback: undefined }) }
+    this.#edits = this.#edits.then(async () => {
+      let wrote = false
+      let submitted = false
+      try {
+        const opened = await this.client.readIr(document)
+        const targetBinding = previewEditBinding(opened.doc, report.target)
+        if (!targetBinding) throw new Error('native-target')
+        const receipt = this.#nativeReceipts.get(receiptKey)
+        if (receipt && receipt.binding === targetBinding) {
+          const source = await this.client.readSource(WORKSPACE_SCOPE, receipt.path)
+          if (source.version === receipt.version) {
+            if (current()) this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
+            return reply(undefined, opened.revision, targetBinding)
+          }
+          this.#nativeReceipts.delete(receiptKey)
+        }
+        if (targetBinding !== report.binding) throw new Error('native-conflict')
+        const location = this.#sourceOf(report.target, opened.doc)
+        if (!location) throw new Error('native-target')
+        const source = await this.client.readSource(WORKSPACE_SCOPE, location.file)
+        if (!opened.sourceFingerprints?.[source.path]) throw new Error('native-unavailable')
+        if (opened.sourceFingerprints[source.path] !== fnv1a64(source.content)) throw new Error('native-conflict')
+        // Re-read the IR after the source read: a line map from another revision cannot be adopted.
+        if ((await this.client.readIr(document)).revision !== opened.revision) throw new Error('native-conflict')
+        const edited = applyRenderedEdit(source.content, location, report.before, report.after)
+        if (!edited.ok) throw new Error('native-format')
+        let content = edited.content
+        if (!report.target.block && content !== source.content) {
+          try { content = renamePageSource(opened.doc, report.target.section, source.content, report.after, opened.sourceCapabilities) }
+          catch (error) {
+            if (errorMessage(error) !== 'page-formatted-title') throw error
+            content = pinPageSource(opened.doc, report.target.section, content, opened.sourceCapabilities)
+          }
+        }
+        const changed = content !== source.content
+        const title = opened.doc.sections.find(section => section.id === report.target.section)?.title ?? ''
+        submitted = changed
+        const saved = changed ? await this.client.saveSource(WORKSPACE_SCOPE, source.path, content, source.version, this.#messages.editedSection(title)) : { version: source.version }
+        wrote = changed
+        const compiled = changed ? await waitForSourceRevision(this.client, document, opened.revision) : opened
+        const confirmed = await this.client.readSource(WORKSPACE_SCOPE, source.path)
+        const binding = previewEditBinding(compiled.doc, report.target)
+        if (confirmed.version !== saved.version || !binding) throw new Error('native-confirmation')
+        this.#nativeReceipts.set(receiptKey, { path: source.path, version: saved.version, revision: compiled.revision, binding })
+        while (this.#nativeReceipts.size > 64) this.#nativeReceipts.delete(this.#nativeReceipts.keys().next().value!)
+        if (current()) {
+          await this.#readIr(document)
+          await this.#history.read(document)
+          if (current()) this.#set({ save: { kind: 'saved', at: new Date().toISOString() } })
+        }
+        this.#record('edit.save', { 'presmium.document': document, 'presmium.section': report.target.section, 'presmium.block': report.target.block, 'presmium.outcome': 'saved' })
+        reply(undefined, compiled.revision, binding)
+      } catch (error) {
+        const reason = error instanceof WorkspaceServerError && error.answer.locked ? 'save-locked' : error instanceof WorkspaceServerError && error.answer.conflict ? 'native-conflict' : wrote || submitted && !(error instanceof WorkspaceServerError) ? 'native-confirmation' : errorMessage(error)
+        if (current()) this.#set({ save: { kind: 'failed', message: message(reason) } })
+        this.#record('edit.save', { 'presmium.document': document, 'presmium.section': report.target.section, 'presmium.block': report.target.block, 'presmium.outcome': 'failed', 'presmium.error': reason })
+        reply(reason)
+      }
+    })
   }
 
   #saveEdit(target: PreviewAnchor, before: string, after: string): void {
@@ -1504,6 +1628,10 @@ export class Workbench {
 
   /** A report of the shown preview. */
   handlePreviewReport(document: string, renderer: PreviewRenderer, report: PreviewReport, origin?: PreviewSink): void {
+    if (report.type === 'edited' && report.request !== undefined && report.revision !== undefined && report.binding !== undefined && origin) {
+      this.#saveNativeEdit(document, renderer, { ...report, request: report.request, revision: report.revision, binding: report.binding }, origin)
+      return
+    }
     if (document !== this.#state.document || renderer !== this.#state.previewRenderer) {
       if (report.type === 'blocks-edited') origin?.send({ type: 'blocks-result', section: report.section, request: report.request, error: 'document-inactive' })
       return
@@ -1552,6 +1680,9 @@ export class Workbench {
         break
       case 'body-draft':
         if (this.#state.bodyDirty !== report.dirty) this.#set({ bodyDirty: report.dirty })
+        break
+      case 'native-draft':
+        if (this.#state.nativeDirty !== report.dirty) this.#set({ nativeDirty: report.dirty })
         break
       case 'page-create':
         this.#edits = this.#edits.then(() => current() ? this.#createPage(report, current) : undefined)

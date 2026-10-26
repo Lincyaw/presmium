@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
-import { errorMessage, isRecord } from '@lincyaw/kernel'
+import { errorMessage, fnv1a64, isRecord } from '@lincyaw/kernel'
 import type { DirectiveOptionType, Finding, MdastNode, SourcePos } from '@lincyaw/kernel'
 import { buttonRole } from 'myst-ext-button'
 import { cardDirective } from 'myst-ext-card'
@@ -32,6 +32,7 @@ export interface ExpandedSource {
   files: string[]
   missing: string[]
   findings: Finding[]
+  fingerprints: Record<string, string>
 }
 
 const origin = new WeakMap<object, string>()
@@ -77,6 +78,7 @@ export class Parser {
   readonly #specs: object[]
   readonly #roles: object[]
   readonly #cache = new Map<string, ParsedFile>()
+  readonly #fingerprints = new Map<string, string>()
   readonly #fragments = new FragmentParser()
 
   constructor(directives: Map<string, boolean>, roles: Map<string, Record<string, DirectiveOptionType> | undefined> = new Map()) {
@@ -110,6 +112,7 @@ export class Parser {
     this.signal?.throwIfAborted()
     const read = await readFile(file, 'utf8').catch(() => undefined)
     if (read === undefined) return undefined
+    this.#fingerprints.set(file, fnv1a64(read))
     const text = withoutBom(read)
     const cached = this.#cache.get(file)
     if (cached?.text === text) return cached
@@ -128,9 +131,9 @@ export class Parser {
     findings.push(...parsed.findings)
     const children = await this.#expandAll(parsed.children, entry, [entry], { files, missing, findings })
     for (const file of this.#cache.keys()) {
-      if (!files.includes(file)) this.#cache.delete(file)
+      if (!files.includes(file)) { this.#cache.delete(file); this.#fingerprints.delete(file) }
     }
-    return { children, files, missing, findings }
+    return { children, files, missing, findings, fingerprints: Object.fromEntries(files.map(file => [file, this.#fingerprints.get(file)!])) }
   }
 
   async #parseFile(file: string, text: string): Promise<ParsedFile> {

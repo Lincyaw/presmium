@@ -9,6 +9,7 @@ import { ExportPanel } from './ExportPanel.tsx'
 import { HistoryPanel } from './HistoryPanel.tsx'
 import { PreviewPanel } from './PreviewPanel.tsx'
 import { PageRenameDialog } from './PageRenameDialog.tsx'
+import { PageDeleteDialog } from './PageDeleteDialog.tsx'
 
 export type DocumentAside = 'comments' | 'history' | 'export'
 
@@ -122,12 +123,14 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
   const failure = useWorkbenchState(state => state.pageEditFailure)
   const document = useWorkbenchState(state => state.document)
   const [renaming, setRenaming] = useState<{ id: string, title: string, trigger?: HTMLButtonElement }>()
+  const [deleting, setDeleting] = useState<{ id: string, title: string, trigger?: HTMLButtonElement }>()
+  const canDelete = useWorkbenchState(state => Boolean(state.ir?.authoring?.deletePage))
   const menuTriggers = useRef(new Map<string, HTMLButtonElement>())
-  useEffect(() => { setRenaming(undefined) }, [document])
+  useEffect(() => { setRenaming(undefined); setDeleting(undefined) }, [document])
   const canCreate = useWorkbenchState(state => state.previewRenderer === 'web' && state.webView === 'document' && Boolean(state.previewIrRevision) && !state.editing && !isAgentChanging(state))
   const pages = editing || slides
   const items = useMemo(() => documentOutline(doc), [doc])
-  const top = Math.min(...items.map(item => item.depth))
+  const top = Math.min(...items.map(item => Math.max(1, item.depth)))
   return (
     <nav className="pmw-navigation" aria-label={t.navigation}>
       <header className="pmw-pane__header">
@@ -135,33 +138,37 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
         {editing && <PmIconButton icon="plus" label={t.newPage} small loading={creating} disabled={!canCreate || pageBusy || !items.length} onClick={() => workbench.createPage()} />}
         <PmIconButton icon="close" label={t.closeNavigation} small onClick={onClose} />
       </header>
-      {failure && !renaming && <PmNotice tone="danger">{failure}</PmNotice>}
+      {failure && !renaming && !deleting && <PmNotice tone="danger">{failure}</PmNotice>}
       {items.length === 0
         ? <p className="pmw-muted pmw-navigation__empty">{t.noSections}</p>
         : (
             <ol className="pmw-navigation__list" data-kind={pages ? 'slides' : 'headings'}>
               {items.map((item, index) => {
                 const capability = workbench.pageEditCapability(item.id)
+                const previousPeer = index > 0 && items[index - 1]?.depth === item.depth
+                const nextPeer = index < items.length - 1 && items[index + 1]?.depth === item.depth
+                const moveDescription = capability.reason ?? (!previousPeer || !nextPeer ? t.pageEditHierarchy : undefined)
                 return (
                 <li key={item.id} className="pmw-navigation__row">
                   <button
                     type="button"
                     className="pmw-navigation__item"
-                    data-depth={pages ? undefined : Math.min(item.depth - top, 3)}
+                    data-depth={slides ? undefined : Math.min(Math.max(1, item.depth) - top, 3)}
                     aria-current={item.id === current ? 'location' : undefined}
                     onClick={() => { workbench.goToSection(item.id); onSelect() }}
                   >
                     {pages && <span className="pmw-navigation__number">{item.number}</span>}
                     <span className="pmw-navigation__title">{item.title}</span>
                   </button>
-                  {editing && <PmMenu label={t.pageMore(item.title)} triggerRef={node => { if (node) menuTriggers.current.set(item.id, node); else menuTriggers.current.delete(item.id) }} items={[
-                    ...(!capability.rename && capability.reason ? [{ id: 'unavailable', label: capability.reason, disabled: true }] : []),
+                  {editing && <PmMenu label={t.pageMore(item.title)} description={moveDescription} triggerRef={node => { if (node) menuTriggers.current.set(item.id, node); else menuTriggers.current.delete(item.id) }} items={[
                     { id: 'rename', label: t.rename, icon: 'edit', disabled: !capability.rename || !canCreate || pageBusy || creating },
-                    { id: 'up', label: t.movePageUp, disabled: !capability.move || !canCreate || pageBusy || creating || index === 0 || items[index - 1]?.depth !== item.depth },
-                    { id: 'down', label: t.movePageDown, disabled: !capability.move || !canCreate || pageBusy || creating || index === items.length - 1 || items[index + 1]?.depth !== item.depth },
+                    { id: 'up', label: t.movePageUp, disabled: !capability.move || !canCreate || pageBusy || creating || !previousPeer },
+                    { id: 'down', label: t.movePageDown, disabled: !capability.move || !canCreate || pageBusy || creating || !nextPeer },
+                    ...(canDelete ? [{ id: 'delete', label: t.pageDelete, icon: 'trash' as const, danger: true, separator: true, disabled: !canCreate || pageBusy || creating }] : []),
                   ]} onSelect={id => {
                     workbench.clearPageEditFailure()
                     if (id === 'rename') setRenaming({ id: item.id, title: item.title, trigger: menuTriggers.current.get(item.id) })
+                    else if (id === 'delete') setDeleting({ id: item.id, title: item.title, trigger: menuTriggers.current.get(item.id) })
                     else if (id === 'up' && index > 0) void workbench.movePage(item.id, items[index - 1]!.id)
                     else if (id === 'down') void workbench.movePage(item.id, items[index + 2]?.id ?? null)
                   }} />}
@@ -170,6 +177,7 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
             </ol>
           )}
       {renaming && <PageRenameDialog section={renaming.id} title={renaming.title} trigger={renaming.trigger} onClose={() => { setRenaming(undefined); workbench.clearPageEditFailure() }} />}
+      {deleting && <PageDeleteDialog section={deleting.id} title={deleting.title} trigger={deleting.trigger} onClose={() => { setDeleting(undefined); workbench.clearPageEditFailure() }} />}
     </nav>
   )
 }
@@ -201,9 +209,9 @@ function DocumentToolbar({ framed, aside, navigation, onPresent, onNavigation, o
   const title = useWorkbenchState(state => state.documents?.documents.find(doc => doc.dir === state.document)?.title ?? state.ir?.doc.meta.title ?? '')
   const history = useWorkbenchState(state => state.history)
   const editorHistory = useWorkbenchState(state => state.editorHistory)
-  const dirty = useWorkbenchState(state => Boolean(state.bodyDirty))
+  const dirty = useWorkbenchState(state => Boolean(state.bodyDirty || state.nativeDirty))
   const busy = useWorkbenchState(state => state.isHistoryBusy || state.isHistoryPreparing || Boolean(state.editing) || Boolean(state.isCreatingPage) || Boolean(state.isEditingPage || state.isEditingVoice) || isAgentChanging(state))
-  const blocked = useWorkbenchState(state => Boolean(state.bodyDirty || state.sourceDirty || state.save.kind === 'saving' || state.save.kind === 'failed' || !state.previewIrRevision || state.previewIrRevision !== state.ir?.revision))
+  const blocked = useWorkbenchState(state => Boolean(state.bodyDirty || state.nativeDirty || state.sourceDirty || state.save.kind === 'saving' || state.save.kind === 'failed' || !state.previewIrRevision || state.previewIrRevision !== state.ir?.revision))
   const openComments = useWorkbenchState(state => state.comments.filter(comment => comment.status === 'open').length)
   return (
     <PmToolbar className="pmw-toolbar" label={t.commands}>
@@ -228,7 +236,7 @@ function DocumentToolbar({ framed, aside, navigation, onPresent, onNavigation, o
 function SaveStatus() {
   const t = useMessages()
   const save = useWorkbenchState(state => state.save)
-  const dirty = useWorkbenchState(state => Boolean(state.bodyDirty || state.sourceDirty))
+  const dirty = useWorkbenchState(state => Boolean(state.bodyDirty || state.nativeDirty || state.sourceDirty))
   const locale = useWorkbenchState(state => state.locale)
   const [, tick] = useState(0)
   useEffect(() => {

@@ -175,6 +175,23 @@ export interface SavedAnswer {
   revision?: Revision
 }
 
+/** @experimental A fresh page-removal check; confirmation applies only to this source version. */
+export interface PageDeletePlan {
+  document: string
+  section: string
+  revision: string
+  source: { path: string, version: string }
+  counts: { steps: number, blocks: number, narration: number }
+  last: boolean
+  allowed: boolean
+  reason?: string
+  references?: { document: string, section: string, block?: string }[]
+}
+
+/** @experimental Removes one page or retains an empty page when it was the last one. */
+export interface PageDeleteRequest { section: string, revision: string, base: string }
+export interface PageDeleteAnswer { document: string, selected: string, retainedEmpty: boolean, sourceVersion: string, irRevision: string, commit?: Revision }
+
 /** @experimental One version-checked file in an authoring transaction; null creates a new file exclusively. */
 export interface SourceTransactionChange {
   path: string
@@ -239,6 +256,10 @@ export interface IrAnswer {
   doc: IRDocument
   diagnostics: Finding[]
   sourceCapabilities?: SourceCapabilities
+  /** FNV-1a-64 of the exact parsed MyST text, including BOM; workspace-relative source paths. */
+  sourceFingerprints?: Record<string, string>
+  /** Workspace authoring endpoints available beside this compilation. */
+  authoring?: { deletePage?: true }
 }
 
 /** @experimental Sent on `ir/events` after each compilation. */

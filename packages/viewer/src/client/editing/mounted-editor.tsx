@@ -6,6 +6,7 @@ import {
   defaultBlockSpecs,
   defaultStyleSpecs,
   filterSuggestionItems,
+  insertOrUpdateBlockForSlashMenu,
 } from '@blocknote/core'
 import { SideMenuExtension } from '@blocknote/core/extensions'
 import { en, zh } from '@blocknote/core/locales'
@@ -272,12 +273,24 @@ const SUPPORTED = new Set([
   'listItem',
   'break',
   'thematicBreak',
+  'table',
+  'tableRow',
+  'tableCell',
 ])
+const TABLE_INLINE = new Set(['text', 'strong', 'emphasis', 'delete', 'inlineCode', 'link', 'break'])
+function simpleTable(node: MdastNode): boolean {
+  const inline = (part: MdastNode): boolean => TABLE_INLINE.has(part.type) && (part.children ?? []).every(inline)
+  const rows = node.children ?? []
+  const width = rows[0]?.children?.length ?? 0
+  return width > 0 && rows.every(row => row.type === 'tableRow' && row.children?.length === width && row.children.every(cell => cell.type === 'tableCell' && (cell.align === undefined || cell.align === null || cell.align === 'left') && (cell.children ?? []).every(inline))) &&
+    (!Array.isArray(node.align) || node.align.every(value => value === null || value === 'left'))
+}
 function simple(node: MdastNode): boolean {
+  if (node.type === 'table') return simpleTable(node)
   return SUPPORTED.has(node.type) && (node.children ?? []).every(simple)
 }
 function editableNarration(block: IRBlock): boolean {
-  const plain = (node: MdastNode): boolean => node.type !== 'heading' && SUPPORTED.has(node.type) && (node.children ?? []).every(plain)
+  const plain = (node: MdastNode): boolean => node.type === 'table' ? simpleTable(node) : node.type !== 'heading' && SUPPORTED.has(node.type) && (node.children ?? []).every(plain)
   return block.node.type === 'markdown' && !block.node.reveal && block.until === undefined && !(block.span && block.span > 0) && plain(block.node.mdast)
 }
 function body(section: IRSection, document: IRDocument) {
@@ -366,6 +379,7 @@ export default function MountedEditor({ section }: { section: IRSection }) {
   const editor = useCreateBlockNote(
     {
       schema,
+      tables: { splitCells: false, cellBackgroundColor: false, cellTextColor: false, headers: false },
       domAttributes: { block: { 'data-presmium-editor-block': '' } },
       dictionary: {
         ...dictionary,
@@ -624,12 +638,24 @@ export default function MountedEditor({ section }: { section: IRSection }) {
   useEffect(() => editor.onBeforeChange(({ tr }) => {
     if (!ready.current) return
     let unsupported = false
+    let unsupportedTable = false
     tr.doc.descendants(node => {
+      if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
+        if (node.attrs.colwidth !== undefined && node.attrs.colwidth !== null
+          || node.attrs.colspan > 1 || node.attrs.rowspan > 1
+          || node.attrs.textAlignment !== undefined && node.attrs.textAlignment !== 'left'
+          || node.attrs.textColor !== undefined && node.attrs.textColor !== 'default'
+          || node.attrs.backgroundColor !== undefined && node.attrs.backgroundColor !== 'default') unsupportedTable = true
+      }
       if (!Object.prototype.hasOwnProperty.call(schema.blockSchema, node.type.name)) return
       if (node.attrs.textAlignment !== undefined && node.attrs.textAlignment !== 'left'
         || node.attrs.textColor !== undefined && node.attrs.textColor !== 'default'
         || node.attrs.backgroundColor !== undefined && node.attrs.backgroundColor !== 'default') unsupported = true
     })
+    if (unsupportedTable) {
+      setReadonlyFailure(t.unsupportedTableFormatting)
+      return false
+    }
     if (unsupported) {
       setReadonlyFailure(t.unsupportedFormatting)
       return false
@@ -654,7 +680,7 @@ export default function MountedEditor({ section }: { section: IRSection }) {
       setReadonlyFailure(t.legacyProtected)
       return false
     }
-  }), [editor, t.legacyProtected, t.unsupportedFormatting])
+  }), [editor, t.legacyProtected, t.unsupportedFormatting, t.unsupportedTableFormatting])
   const copyDraft = async () => {
     setCopyFailure('')
     try {
@@ -835,7 +861,16 @@ export default function MountedEditor({ section }: { section: IRSection }) {
             getItems={async (query) =>
               filterSuggestionItems(
                 [
-                  ...getDefaultReactSlashMenuItems(editor),
+                  ...getDefaultReactSlashMenuItems(editor).map(item => item.title === dictionary.slash_menu.table.title ? {
+                    ...item,
+                    // GFM always has a header row. Create that real structure
+                    // through BlockNote's public insertion API so saving does
+                    // not add an invisible empty header above the author's rows.
+                    onItemClick: () => insertOrUpdateBlockForSlashMenu(editor, {
+                      type: 'table',
+                      content: { type: 'tableContent', headerRows: 1, rows: Array.from({ length: 3 }, () => ({ cells: ['', '', ''] })) },
+                    }),
+                  } : item),
                   {
                     title: t.newPage,
                     onItemClick: insertPage,

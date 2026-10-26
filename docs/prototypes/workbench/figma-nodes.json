@@ -46,7 +46,17 @@
       },
       "Menu": {
         "nodeId": "25:524",
-        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-524"
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-524",
+        "description": {
+          "properties": [
+            "Show description",
+            "Description"
+          ],
+          "exampleNodeId": "86:1621",
+          "exampleUrl": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=86-1621",
+          "source": "packages/workbench/src/components.tsx",
+          "semantics": "Optional visible capability description; wraps within the viewport and is associated by aria-describedby without becoming an action or keyboard stop."
+        }
       },
       "Tabs": {
         "nodeId": "25:537",
