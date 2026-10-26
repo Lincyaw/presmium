@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { PmBadge, PmButton, PmIcon, PmIconButton, PmMenu, PmNotice, PmToolbar, PmToolbarButton } from '../components.tsx'
+import { PmBadge, PmButton, PmIcon, PmIconButton, PmMenu, PmNotice, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
 import { countWords, documentOutline } from '../outline.ts'
@@ -181,7 +181,8 @@ function StepTimeline() {
 function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): void }) {
   const t = useMessages()
   const workbench = useWorkbench()
-  const doc = useWorkbenchState(state => state.authoring?.content)
+  const source = useWorkbenchState(state => state.authoring), doc = source?.content
+  const locale = useWorkbenchState(state => state.locale)
   const slides = useWorkbenchState(state => state.previewRenderer === 'slides' || state.webView !== 'document')
   const current = useWorkbenchState(state => state.position?.section)
   const editing = useWorkbenchState(state => state.mode === 'editing')
@@ -195,9 +196,28 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
   const menuTriggers = useRef(new Map<string, HTMLButtonElement>())
   useEffect(() => { setRenaming(undefined); setDeleting(undefined) }, [document])
   const canCreate = useWorkbenchState(state => Boolean(state.authoring?.content) && !state.authoring?.loading && !state.authoring?.composing && !isAgentChanging(state))
+  const reorderDisabled = useWorkbenchState(state => !state.authoring?.content || Boolean(state.authoring.loading || state.authoring.composing || state.authoring.restored || state.authoring.error || state.isCreatingPage || state.isEditingPage || state.isHistoryPreparing || state.isHistoryBusy) || isAgentChanging(state))
   const pages = editing || slides
   const items = useMemo(() => documentOutline(doc), [doc])
   const top = Math.min(...items.map(item => Math.max(1, item.depth)))
+  const pageActions = (item: typeof items[number], index: number) => {
+    const capability = workbench.pageEditCapability(item.id), previousPeer = index > 0, nextPeer = index < items.length - 1
+    const moveDescription = capability.reason ?? (!previousPeer || !nextPeer ? t.pageEditHierarchy : undefined)
+    return <PmMenu label={t.pageMore(item.title)} description={[t.pageCopyHint, moveDescription].filter(Boolean).join(' ')} triggerRef={node => { if (node) menuTriggers.current.set(item.id, node); else menuTriggers.current.delete(item.id) }} items={[
+      { id: 'rename', label: t.rename, icon: 'edit', disabled: !capability.rename || !canCreate || pageBusy || creating },
+      { id: 'copy', label: t.pageCopy, icon: 'copy', disabled: !canCreate || pageBusy || creating },
+      { id: 'up', label: t.movePageUp, disabled: !capability.move || !canCreate || pageBusy || creating || !previousPeer },
+      { id: 'down', label: t.movePageDown, disabled: !capability.move || !canCreate || pageBusy || creating || !nextPeer },
+      ...(canDelete ? [{ id: 'delete', label: t.pageDelete, icon: 'trash' as const, danger: true, separator: true, disabled: !canCreate || pageBusy || creating }] : []),
+    ]} onSelect={id => {
+      workbench.clearPageEditFailure()
+      if (id === 'rename') setRenaming({ id: item.id, title: item.title, trigger: menuTriggers.current.get(item.id) })
+      else if (id === 'copy') void workbench.duplicatePage(item.id)
+      else if (id === 'delete') setDeleting({ id: item.id, title: item.title, trigger: menuTriggers.current.get(item.id) })
+      else if (id === 'up' && index > 0) void workbench.movePage(item.id, items[index - 1]!.id)
+      else if (id === 'down') void workbench.movePage(item.id, items[index + 2]?.id ?? null)
+    }} />
+  }
   return (
     <nav className="pmw-navigation" aria-label={t.navigation}>
       <header className="pmw-pane__header">
@@ -208,14 +228,17 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
       {failure && !renaming && !deleting && <PmNotice tone="danger">{failure}</PmNotice>}
       {items.length === 0
         ? <p className="pmw-muted pmw-navigation__empty">{t.noSections}</p>
-        : (
+        : editing ? <PmSortableList label={t.pages} scopeKey={JSON.stringify([source?.identity, doc?.id, document])} resetKey={source?.reset} className="pmw-navigation__list" locale={locale}
+          items={items.map((item, index) => ({ id: item.id, label: item.title, prefix: item.number, reorderDisabled: !workbench.pageEditCapability(item.id).move, actions: pageActions(item, index) }))}
+          value={current} reorderDisabled={reorderDisabled} loading={pageBusy || creating}
+          onSelect={id => { workbench.goToSection(id); onSelect() }}
+          onMove={async (id, before) => {
+            const state = workbench.getState()
+            if (state.document !== document || state.authoring?.identity !== source?.identity || state.authoring?.content?.id !== doc?.id) return
+            if (!await workbench.movePage(id, before)) throw new Error('page-reorder-failed')
+          }} /> : (
             <ol className="pmw-navigation__list" data-kind={pages ? 'slides' : 'headings'}>
-              {items.map((item, index) => {
-                const capability = workbench.pageEditCapability(item.id)
-                const previousPeer = index > 0
-                const nextPeer = index < items.length - 1
-                const moveDescription = capability.reason ?? (!previousPeer || !nextPeer ? t.pageEditHierarchy : undefined)
-                return (
+              {items.map(item => (
                 <li key={item.id} className="pmw-navigation__row">
                   <button
                     type="button"
@@ -227,22 +250,8 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
                     {pages && <span className="pmw-navigation__number">{item.number}</span>}
                     <span className="pmw-navigation__title">{item.title}</span>
                   </button>
-                  {editing && <PmMenu label={t.pageMore(item.title)} description={[t.pageCopyHint, moveDescription].filter(Boolean).join(' ')} triggerRef={node => { if (node) menuTriggers.current.set(item.id, node); else menuTriggers.current.delete(item.id) }} items={[
-                    { id: 'rename', label: t.rename, icon: 'edit', disabled: !capability.rename || !canCreate || pageBusy || creating },
-                    { id: 'copy', label: t.pageCopy, icon: 'copy', disabled: !canCreate || pageBusy || creating },
-                    { id: 'up', label: t.movePageUp, disabled: !capability.move || !canCreate || pageBusy || creating || !previousPeer },
-                    { id: 'down', label: t.movePageDown, disabled: !capability.move || !canCreate || pageBusy || creating || !nextPeer },
-                    ...(canDelete ? [{ id: 'delete', label: t.pageDelete, icon: 'trash' as const, danger: true, separator: true, disabled: !canCreate || pageBusy || creating }] : []),
-                  ]} onSelect={id => {
-                    workbench.clearPageEditFailure()
-                    if (id === 'rename') setRenaming({ id: item.id, title: item.title, trigger: menuTriggers.current.get(item.id) })
-                    else if (id === 'copy') void workbench.duplicatePage(item.id)
-                    else if (id === 'delete') setDeleting({ id: item.id, title: item.title, trigger: menuTriggers.current.get(item.id) })
-                    else if (id === 'up' && index > 0) void workbench.movePage(item.id, items[index - 1]!.id)
-                    else if (id === 'down') void workbench.movePage(item.id, items[index + 2]?.id ?? null)
-                  }} />}
                 </li>
-              )})}
+              ))}
             </ol>
           )}
       {renaming && <PageRenameDialog section={renaming.id} title={renaming.title} trigger={renaming.trigger} onClose={() => { setRenaming(undefined); workbench.clearPageEditFailure() }} />}

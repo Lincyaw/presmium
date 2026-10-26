@@ -111,6 +111,7 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 | Field／Notice／Empty | `PmField`、`PmNotice`、`PmEmpty` | 同一位置展示字段说明、错误和恢复入口，不把所有状态写成页面私有提示卡 |
 | Range | workbench `PmRange`、`pm-ui-range`，使用原生 range | 提供受控数值、读屏值、焦点、禁用和三种密度；方向键／Home／End 提交意图，拖动先显示本地预览，释放时单次提交，Esc／取消／失焦／卸载丢弃手势草稿 |
 | Timeline | workbench `PmTimeline`、`pm-ui-timeline` | 接收真实画面／配音／字幕三轨与稳定步骤身份；支持尺面点击、精确秒输入、Range、横滚、视图缩放与适配；未知／估算时长不开放任意时间定位，仍可选择步骤；只有真实样本才绘制波形 |
+| SortableList | workbench `PmSortableList`、`pm-ui-sortable-list` | dnd kit 负责指针、触屏、键盘和取消；按稳定 ID 提交一次相对位置移动。排序禁用与页面选择分开，保存前的视觉顺序不成为第二份文稿；身份、页面集合和重置变化中止过期手势 |
 | Checkbox／Radio／Switch | 现有 `pm-ui-checkbox` 仅提供部分基础着色，其余公共能力待补齐 | 在使用前规定选择、焦点、禁用、数值和错误状态，不在业务页各自实现 |
 
 原生选择器的展开列表可能由操作系统绘制，不能把这种差异当作已完成统一视觉。音色选择使用公共可搜索弹层，组合搜索、语言筛选、共享列表项、试听与选中态；桌面可使用 Popover，空间不足时使用公共 Dialog 或 Drawer。素材等复杂选择复用同一类公共能力，在 Figma 单独规定相关状态，不能退回每页自绘的下拉列表。
@@ -134,6 +135,8 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 | 现有 Radix Primitives | ARIA、焦点管理和键盘导航，见[官方可访问性文档](https://www.radix-ui.com/primitives/docs/overview/accessibility) | 沿用已经使用的公共封装，补齐密度、错误和加载状态；视觉仍由统一令牌提供 |
 
 编辑回归也区分依赖缺陷与接入缺陷：原装 BlockNote 0.56 在 `onBeforeChange.getChanges()` 处理 Enter 的问题有独立复现，本轮通过公开事务接口规避。菜单被正文样式撑高、批注编号写进正文、撤消错用保存历史、旧确认清除新草稿均来自我们的适配，已在对应公共层修复。具体真实操作与能力边界见[文档编辑验证记录](benchmarks/document-authoring-2026-10-26.md)。
+
+页面排序使用 `@dnd-kit/react` 与 `@dnd-kit/dom` 的公开接口，封装为 `PmSortableList`；正文块拖动仍由 BlockNote 负责。Figma [SortableItem](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=158-2823) 的 21 个变体覆盖三种密度及默认、悬停、焦点、选中、拖动、禁用和加载，[明暗矩阵](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=158-3034)展示对应实例。禁用和加载只阻止排序，不阻止作者选择另一页。错误使用已有 Notice；手势说明通过可访问描述提供。拖动柄交由 dnd kit 管理读屏关系时，IconButton 可通过公开属性关闭 Tooltip，其他调用保持默认行为。
 
 ## 5. 状态与行为合同
 

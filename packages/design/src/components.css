@@ -1321,6 +1321,65 @@
 .pm-ui-timeline__wave path { fill: none; stroke: currentColor; stroke-width: 1; }
 .pm-ui-timeline__steps { display: flex; flex-wrap: wrap; gap: var(--pm-space-2); }
 .pm-ui-timeline__steps > .pm-ui-button { min-width: var(--pm-control-hit-area); }
+
+.pm-ui-sortable-list {
+  display: grid;
+  align-content: start;
+  gap: var(--pm-space-1);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pm-ui-sortable-list__row {
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-1);
+  min-width: 0;
+  min-height: var(--pm-ui-control-height, var(--pm-size-tool));
+  border-radius: var(--pm-radius-small);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-sm);
+  line-height: var(--pm-leading-ui);
+}
+
+.pm-ui-sortable-list__row:hover { background: var(--pm-color-hover); }
+.pm-ui-sortable-list__row[data-selected] { background: var(--pm-color-accent-soft); }
+.pm-ui-sortable-list__row:focus-within,
+.pm-ui-sortable-list__row[data-dragging] { box-shadow: inset 0 0 0 var(--pm-size-stroke) var(--pm-color-accent); }
+.pm-ui-sortable-list__row[data-dragging] { background: var(--pm-color-surface); }
+.pm-ui-sortable-list__handle { flex: none; touch-action: none; }
+
+.pm-ui-sortable-list__select {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  align-self: stretch;
+  gap: var(--pm-space-1);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.pm-ui-sortable-list__select:focus-visible { outline: 0; }
+.pm-ui-sortable-list__select:disabled { opacity: var(--pm-opacity-disabled); cursor: not-allowed; }
+.pm-ui-sortable-list__row[data-selected] .pm-ui-sortable-list__select { color: var(--pm-color-accent); }
+.pm-ui-sortable-list__prefix { flex: none; color: var(--pm-color-muted); text-align: end; }
+.pm-ui-sortable-list__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pm-ui-sortable-list__actions { display: flex; flex: none; align-items: center; }
+.pm-ui-sortable-list__row[data-density='touch'] { font-size: var(--pm-text-lg); }
+
+@media (pointer: coarse) {
+  .pm-ui-sortable-list__row { --pm-ui-control-height: var(--pm-control-hit-area); font-size: var(--pm-text-lg); }
+}
 @media (max-width: 767px) {
   .pm-ui-timeline__tracks { grid-template-columns: var(--pm-control-hit-area) minmax(0, 1fr); }
 }
