@@ -159,6 +159,8 @@ The only authored entry is `lecture.json`. A component block is `{ id, type: "co
 
 The compiler validates authored parameters/state references and lowers them into a runtime `component` node with plugin, name, props, optional nested child blocks, assets, timing and static fallback. These runtime nodes are renderer input; never copy their numeric `at`, `span`, absolute paths or generated props back into the document as a second authority.
 
+Resource mappings use dotted parameter paths. If a step introduces resources beyond the base component's declared paths, its compile pass derives `stepStates[].assets`, watches the real files and leaves their parameter values intact. Publication rewrites both the base props and those step parameters; the link checker checks every declared step resource. The built-in `PmMedia` pass derives its maps from the actual media parameters, including caption languages introduced only in one step.
+
 Rich text is versioned Presmium structure, adapted through the editor's public API. A registered extension retains complete structured data and an explicit fallback; unknown extensions remain intact and report unavailable behavior. Component states have declared IDs. Migrated numeric implementations use explicit `legacyIndex` mappings, not fabricated semantic labels.
 
 Document configuration is `metadata.presmium[pluginId]`; renderer configuration is `metadata.renderers[rendererId]`. Operator settings remain in workspace/operator configuration. Steps and narrations are explicit entities; timing/voice inheritance is owned only by `production`.

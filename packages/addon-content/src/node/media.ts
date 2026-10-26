@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
-import { deckLocale } from '@lincyaw/kernel'
-import type { ComponentNode, DirectiveContext, DirectiveSpec, IRBlock, RenderContext } from '@lincyaw/kernel'
+import { deckLocale, docBlocks, isRecord, NON_FILE_URL } from '@lincyaw/kernel'
+import type { ComponentNode, DirectiveContext, DirectiveSpec, IRBlock, IRPass, RenderContext } from '@lincyaw/kernel'
 import { captionTracks, CONTENT_ID, isRemote, languageTag, MEDIA_OPTIONS, mediaFallback, parseCaptions, videoHtml, youtubeId } from '../domain/index.ts'
 import type { MediaKind, MediaOptions } from '../domain/index.ts'
 
@@ -17,6 +17,33 @@ function resolveMedia(path: string, ctx: DirectiveContext): string | undefined {
 }
 
 const posix = (path: string) => path.split(sep).join('/')
+
+/** Resource paths belong to the actual media parameters, including step overrides. */
+function mediaAssets(props: Record<string, unknown>): Record<string, string> {
+  const assets: Record<string, string> = {}
+  for (const key of ['src', 'poster', 'still']) if (typeof props[key] === 'string' && props[key]) assets[key] = props[key]
+  if (isRecord(props.captions)) for (const [lang, value] of Object.entries(props.captions)) if (typeof value === 'string' && value) assets[`captions.${lang}`] = value
+  return assets
+}
+
+export const mediaAssetsPass: IRPass = {
+  name: 'presmium.content.media-assets',
+  run(doc, ctx) {
+    for (const { block } of docBlocks(doc)) {
+      const { node } = block
+      if (node.type !== 'component' || node.plugin !== CONTENT_ID || node.name !== 'PmMedia') continue
+      node.assets = mediaAssets(node.props)
+      for (const state of block.stepStates ?? []) state.assets = mediaAssets(state.parameters ?? node.props)
+      const urls = new Set([node.assets, ...(block.stepStates ?? []).map(state => state.assets)].flatMap(assets => Object.values(assets ?? {})))
+      for (const url of urls) {
+        if (NON_FILE_URL.test(url)) continue
+        let file = url.replace(/[?#].*$/s, '')
+        try { file = decodeURIComponent(file) } catch {}
+        if (file) ctx.watch(file.startsWith('/') ? join(ctx.deckDir, 'public', file) : resolve(dirname(block.source.file), file))
+      }
+    }
+  },
+}
 
 const FILE_OPTIONS = {
   video: { 'poster': 'string', 'captions': 'string', 'captions-default': 'string' },

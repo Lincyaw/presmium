@@ -79,7 +79,7 @@ export interface IRBlock {
   source: SourcePos
   node: IRNode
   /** Complete resolved state at every section step, derived from the authoring graph. */
-  stepStates?: { visible: boolean, state?: string, parameters?: Record<string, unknown>, localStep: number }[]
+  stepStates?: { visible: boolean, state?: string, parameters?: Record<string, unknown>, assets?: Record<string, string>, localStep: number }[]
 }
 
 export type IRNode = MarkdownNode | CodeNode | ComponentNode

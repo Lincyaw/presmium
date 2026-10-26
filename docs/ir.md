@@ -46,13 +46,15 @@ lecture.json + 引用的代码与媒体
 
 ## 4. 原生编辑
 
-工作台在父 React 页面挂载一个全篇 BlockNote 编辑器，页面与正文属于同一原生选区和历史。通过公开 API 在 Presmium 富文本与编辑器模型间适配。批注使用原生 CommentsExtension；内部的 Y.Doc 是编辑机制，唯一持久化仍是文稿 JSON。
+工作台在父 React 页面挂载一个全篇 BlockNote 编辑器，页面与正文属于同一原生选区和历史。通过公开 API 在 Presmium 富文本与编辑器模型间适配。批注使用原生 CommentsExtension，依据文稿 JSON 中的讨论实体与稳定正文锚点重建原生标记和位置。
 
 文档编辑、编译放映和视频制作是独立入口。输入正文、添加页面、撤消、批注和保存不隐式切换到放映或字幕。编译预览不是作者编辑的 iframe；其协议只负责派生画面的定位、播放、诊断和 agent 焦点。
 
 ## 5. 运行快照与渲染
 
 `IRDocument` 包含元数据、插件/渲染配置、章节与诊断。`IRSection` 带稳定页面身份与派生数字步号，以及对应的稳定 `stepIds`。`IRBlock` 的 `at`、`span` 与 `stepStates` 是运行时投影；`stepStates` 表达每一步的可见性、公开状态、参数与实现局部步号。它们不能回写为长期作者格式。
+
+组件的资源映射 `assets` 使用参数的点分路径。插件可为 `stepStates` 派生该步自己的资源映射；链接检查包含这些资源，发布时同步改写该步参数中的地址，避免步骤参数覆盖已发布的 URL。内置媒体从实际 `src`、`poster`、`still` 与 `captions` 参数派生映射，并跟踪步骤专属文件；资源不存在时产生链接诊断。
 
 运行节点继续为 Markdown 派生树、代码和组件。富文本直接 lowering 成结构化渲染树，不生成 Markdown 再解析。组件由定义与实例参数 lowering，代码来源由锚点解析器读取真实工程文件。mdast、HAST 和运行组件 fallback 是渲染接口，不是旧 Markdown 内容入口。
 
