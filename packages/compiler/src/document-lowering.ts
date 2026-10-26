@@ -1,4 +1,4 @@
-import { isRecord } from '@lincyaw/kernel'
+import { isRecord, voiceTarget } from '@lincyaw/kernel'
 import type { CodeNode, ComponentNode, DocumentBlock, Finding, InlineNode, IRBlock, IRSection, JsonObject, MdastNode, NarrationNode, RichTextNode, SourcePos, TeachingDocument, TextStyle, VisualState } from '@lincyaw/kernel'
 import { resolve } from 'node:path'
 
@@ -89,7 +89,10 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
     const resolvedNarrationVoices = Object.fromEntries(blocks.filter(block => block.role === 'narration').map(block => {
       const stepId = section.stepOrder[block.at]!
       const voice = doc.production.stepOverrides[stepId]?.voiceSource ?? defaultVoice
-      return [block.id, voice?.type === 'tts' ? { voice: voice.voice } : { issue: voice?.type === 'recording' ? 'voice-recording' : 'voice-unset' }]
+      const id = block.source.pointer!.split('/').at(-1)!.replaceAll('~1', '/').replaceAll('~0', '~')
+      const advances = doc.narrations[id]!.content.some(node => node.type === 'cue' && node.action === 'next')
+      const target = advances ? undefined : voiceTarget({ id: sectionId, steps: section.stepOrder.length - 1, stepIds: section.stepOrder, blocks }, block.at)
+      return [block.id, { ...target ? { target } : {}, ...advances && section.stepOrder.some(id => doc.production.stepOverrides[id]?.voiceSource) ? { issue: 'cue-step' } : voice?.type === 'tts' ? { voice: voice.voice } : { issue: voice?.type === 'recording' ? 'recording-unavailable' : 'voice-unset' } }]
     }))
     return { id: sectionId, index: index + 1, title: section.title, depth: index === 0 && (section.level ?? 1) === 1 ? 0 : section.level ?? 1, source: source(entry, `/sections/${pointerKey(sectionId)}`), steps: Math.max(0, section.stepOrder.length - 1), stepIds: [...section.stepOrder], hints: section.layout.renderers ?? {}, ...section.audience ? { audience: section.audience } : {}, config: { ...section.config, 'presmium.lecture': { ...section.config?.['presmium.lecture'], resolvedNarrationVoices } }, blocks }
   })

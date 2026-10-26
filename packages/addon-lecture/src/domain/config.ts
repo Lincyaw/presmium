@@ -17,6 +17,9 @@ export function configuredLectureVoice(doc: IRDocument): LectureVoice | undefine
 
 /** Resolve against the complete IR before renderer filtering compacts its steps. */
 export function prepareNarrationVoices(doc: IRDocument): void {
+  // JSON lowering resolves each authored narration against its stable step and
+  // Production scope. Do not replace those bindings with legacy source hints.
+  if (doc.production) return
   const overrides = voiceOverrides(doc)
   for (const section of doc.sections) {
     const bindings = Object.fromEntries([...irBlocks(section.blocks)].filter(block => block.role === 'narration').map(block => {

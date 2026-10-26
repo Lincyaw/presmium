@@ -1,6 +1,6 @@
 import { PmIcon, PmTabs, useMessages, useServer, useStore } from '@lincyaw/host'
 import { isPreviewEmbedded } from '@lincyaw/kernel'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   captionLanguages,
   captionText,
@@ -9,14 +9,13 @@ import {
   isStale,
   LECTURE_ID,
   LECTURE_MESSAGES,
-  SCRIPT_TRACK,
   trackChapters,
   utteranceAt,
 } from '../domain/index.ts'
 import type { Utterance } from '../domain/index.ts'
 import ChapterList from './ChapterList.tsx'
 import { useLecturePlayback } from './playback.ts'
-import { lectureSource, serverEditing } from './source.ts'
+import { lectureSource } from './source.ts'
 import {
   burnedCaptions,
   exporting,
@@ -35,9 +34,8 @@ export default function PlayerPanel(_props: { view?: string }) {
     server = useServer()
   const available = useLecturesAvailable(),
     id = useStore(playing),
-    doc = useStore(viewer.doc),
-    member = useStore(server.member, undefined)
-  const { player, status, failure, language, setLanguage, reloadTrack } =
+    doc = useStore(viewer.doc)
+  const { player, status, failure, language, setLanguage } =
     useLecturePlayback()
   const time = useStore(player?.time, 0),
     trying = useStore(player?.trying, false),
@@ -69,15 +67,6 @@ export default function PlayerPanel(_props: { view?: string }) {
       active = false
     }
   }, [server.available, available, doc])
-  const editing = useMemo(
-    () =>
-      server.available &&
-      member?.roles.some((role) => role === 'editor' || role === 'owner')
-        ? serverEditing(server)
-        : undefined,
-    [server, server.available, member],
-  )
-  const trackEditing = player && id !== SCRIPT_TRACK ? editing : undefined
   const state = !player
     ? undefined
     : trying
@@ -175,12 +164,10 @@ export default function PlayerPanel(_props: { view?: string }) {
               {panel === 'transcript' ? (
                 <TranscriptList
                   track={player.track}
-                  editing={trackEditing}
                   language={lang}
                   current={current?.id}
                   stale={stale}
                   onSeek={(at) => player.seek(at)}
-                  onChanged={reloadTrack}
                 />
               ) : (
                 <ChapterList

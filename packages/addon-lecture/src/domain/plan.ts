@@ -1,4 +1,4 @@
-import { irBlocks, parseDuration } from '@lincyaw/kernel'
+import { blockVisible, irBlocks, parseDuration } from '@lincyaw/kernel'
 import type { CodeNode, IRBlock, IRDocument, IRSection, MdastNode, RecordedRun, SourcePos, SpeechVoice, VoiceTarget, WordSpan } from '@lincyaw/kernel'
 import { narrationVoice } from './config.ts'
 import { blockKey, codeLineCount, lastNamedLine } from './drift.ts'
@@ -38,6 +38,7 @@ export interface PlannedSection {
   from: 'narration' | 'scriptFile'
   paragraphs: PlannedParagraph[]
   holds: number[]
+  trailingPauseMs?: number[]
   webStep(step: number): number
 }
 
@@ -216,20 +217,32 @@ function linesOf(node: MdastNode, section: SourcePos | undefined): SourcePos | u
 }
 
 /** The least time of each step (ms): the longest animation of a component shown in it (`ComponentNode.durations`). */
-function stepHolds(section: IRSection): number[] {
+function stepHolds(section: IRSection, doc: IRDocument): number[] {
   const holds = Array.from({ length: section.steps + 1 }, () => 0)
   for (const block of irBlocks(section.blocks)) {
     if (block.node.type !== 'component' || !block.node.durations || !isShown(block)) continue
+    if (block.stepStates) {
+      for (const [step, state] of block.stepStates.entries()) {
+        const previous = block.stepStates[step - 1]
+        if (!state.visible || previous?.visible && previous.localStep === state.localStep && previous.state === state.state && JSON.stringify(previous.parameters) === JSON.stringify(state.parameters)) continue
+        holds[step] = Math.max(holds[step] ?? 0, block.node.durations[state.localStep] ?? 0)
+      }
+      continue
+    }
     block.node.durations.forEach((ms, k) => {
       const step = block.at + k
       if (step <= section.steps) holds[step] = Math.max(holds[step]!, ms)
     })
   }
+  for (const [step, id] of (section.stepIds ?? []).entries()) {
+    const production = { ...doc.production?.defaults, ...doc.production?.sectionOverrides?.[section.id], ...doc.production?.stepOverrides[id] }
+    holds[step] = Math.max(holds[step] ?? 0, production.minimumHoldMs ?? 0)
+  }
   return holds
 }
 
 function stepTarget(section: IRSection, step: number): IRBlock | undefined {
-  return section.blocks.filter(b => b.role === 'visual' && isShown(b) && b.at <= step).at(-1)
+  return section.blocks.filter(b => b.role === 'visual' && isShown(b) && blockVisible(b, step)).at(-1)
 }
 
 export function lecturePlan(doc: IRDocument, scriptFile?: ScriptFileSections): LecturePlan {
@@ -256,7 +269,9 @@ export function lecturePlan(doc: IRDocument, scriptFile?: ScriptFileSections): L
       }
     }
     paragraphs.sort((a, b) => a.step - b.step)
-    return { id: section.id, title: section.title, steps: section.steps, from: fromScriptFile ? 'scriptFile' : 'narration', paragraphs, holds: stepHolds(section), webStep: webSteps(section) }
+    const settings = (section.stepIds ?? []).map(id => ({ ...doc.production?.defaults, ...doc.production?.sectionOverrides?.[section.id], ...doc.production?.stepOverrides[id] }))
+    const trailingPauseMs = settings.some(value => value.trailingPauseMs !== undefined) ? settings.map(value => value.trailingPauseMs ?? 500) : undefined
+    return { id: section.id, title: section.title, steps: section.steps, from: fromScriptFile ? 'scriptFile' : 'narration', paragraphs, holds: stepHolds(section, doc), ...trailingPauseMs ? { trailingPauseMs } : {}, webStep: webSteps(section) }
   })
   let n = 0
   for (const section of sections) {

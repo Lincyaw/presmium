@@ -14,14 +14,26 @@ export function speechVoice(value: unknown): SpeechVoice | undefined {
   return { voice: value.voice, ...typeof value.engine === 'string' ? { engine: value.engine } : {}, ...typeof value.rate === 'number' ? { rate: value.rate } : {}, ...typeof value.style === 'string' ? { style: value.style } : {} }
 }
 
-export function voiceTarget(section: IRSection, step: number): VoiceTarget {
+export function voiceTarget(section: Pick<IRSection, 'id' | 'steps' | 'stepIds' | 'blocks'>, step: number): VoiceTarget {
   if (!Number.isSafeInteger(step) || step < 0 || step > section.steps) throw new Error('voice-target')
   return { section: section.id, step, binding: fnv1a64(JSON.stringify([section.id, stepKeys(section)])) }
 }
 
-export function documentVoice(doc: IRDocument): SpeechVoice | undefined { return speechVoice(doc.config.renderers.lecture?.voice) }
+export function documentVoice(doc: IRDocument): SpeechVoice | undefined {
+  if (doc.production) return doc.production.defaults.voiceSource?.type === 'tts' ? doc.production.defaults.voiceSource.voice : undefined
+  return speechVoice(doc.config.renderers.lecture?.voice)
+}
 
 export function voiceOverrides(doc: IRDocument): VoiceOverrides {
+  if (doc.production) {
+    const production = doc.production
+    const pages = Object.fromEntries(Object.entries(production.sectionOverrides ?? {}).flatMap(([id, value]) => value.voiceSource?.type === 'tts' ? [[id, value.voiceSource.voice]] : []))
+    const steps = doc.sections.flatMap(section => (section.stepIds ?? []).flatMap((id, step) => {
+      const source = production.stepOverrides[id]?.voiceSource
+      return source?.type === 'tts' ? [{ ...voiceTarget(section, step), voice: source.voice }] : []
+    }))
+    return { pages, steps }
+  }
   const raw = doc.config.renderers.lecture?.voiceOverrides
   if (raw === undefined) return { pages: {}, steps: [] }
   if (!isRecord(raw) || raw.pages !== undefined && !isRecord(raw.pages) || raw.steps !== undefined && !Array.isArray(raw.steps)) throw new Error('voice-settings-invalid')
@@ -58,6 +70,15 @@ export function stepVoiceReason(doc: IRDocument, section: IRSection): ResolvedVo
 }
 
 export function resolvedVoice(doc: IRDocument, section: IRSection, step: number): ResolvedVoice {
+  if (doc.production) {
+    const target = voiceTarget(section, step), production = doc.production
+    const stepId = section.stepIds?.[step]
+    const own = stepId ? production.stepOverrides[stepId]?.voiceSource : undefined
+    const page = production.sectionOverrides?.[section.id]?.voiceSource
+    const source = own ?? page ?? production.defaults.voiceSource
+    const reason = source?.type === 'recording' ? 'recording-unavailable' as const : stepVoiceReason(doc, section)
+    return { target, ...source?.type === 'tts' ? { voice: source.voice, ...own ? { override: source.voice } : {} } : {}, inheritedFrom: own ? 'step' : page ? 'page' : source ? 'document' : 'unset', editable: !reason, ...reason ? { reason } : {} }
+  }
   const target = voiceTarget(section, step), overrides = voiceOverrides(doc)
   const reason = stepVoiceReason(doc, section)
   const own = !reason && overrides.steps.find(entry => entry.section === section.id && entry.step === step && entry.binding === target.binding)?.voice

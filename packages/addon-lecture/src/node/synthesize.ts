@@ -112,6 +112,7 @@ export interface SynthesizedLecture {
 export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech: SpeechService, signal?: AbortSignal, options: { cacheOnly?: boolean } = {}): Promise<SynthesizedLecture> {
   const deck = deckPlan(doc, deckDir)
   const clips = new Map<string, SynthesizedClip>()
+  if (deck.findings.some(finding => finding.severity === 'error')) return { deck, clips, failures: [], cuts: [] }
   if (!deck.voice) return { deck, clips, failures: [], cuts: [] }
   const synthesized = await synthesizePlan(speech, deck.plan, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, cacheOnly: options.cacheOnly }, signal)
   const unsaid = new Map(synthesized.failures.map(failure => [failure.id, failure.reason]))

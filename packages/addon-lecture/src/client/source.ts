@@ -53,47 +53,11 @@ export function serverSource(server: ServerClient): LectureSource {
   }
 }
 
-export interface EngineChoice {
-  engine: string
-  provider: string
-  local: boolean
-}
-
-export interface SpeechChoices {
-  transcribe?: EngineChoice
-  synthesize?: EngineChoice & { voices: { id: string, label: string, cloned?: boolean }[] }
-}
-
-export interface LectureEditing {
-  speech(engine?: string): Promise<SpeechChoices>
-  transcribe(id: string): Promise<LectureTrack>
-  editUtterance(id: string, utterance: string, text: string): Promise<LectureTrack>
-  synthesize(id: string, voice: string, engine?: string): Promise<LectureTrack>
-}
-
 export async function readAnswer<T = unknown>(response: Promise<Response>): Promise<T> {
   const r = await response
   const body: unknown = await r.json().catch(() => ({}))
   if (!r.ok) throw new Error(isRecord(body) && typeof body.error === 'string' ? body.error : `HTTP ${r.status}`)
   return body as T
-}
-
-async function readChangedTrack(response: Promise<Response>): Promise<LectureTrack> {
-  const body = await readAnswer(response)
-  const track = isRecord(body) ? parseTrack(body.track).track : undefined
-  if (!track) throw new Error('the server gave no track')
-  return track
-}
-
-export function serverEditing(server: ServerClient): LectureEditing {
-  const send = (path: string, method: string, body: unknown = {}) => server.fetch(LECTURE_ID, path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-  const at = (id: string) => `editing/${encodeURIComponent(id)}`
-  return {
-    speech: engine => readAnswer<SpeechChoices>(server.fetch(LECTURE_ID, engine ? `speech?engine=${encodeURIComponent(engine)}` : 'speech')),
-    transcribe: id => readChangedTrack(send(`${at(id)}/transcribe`, 'POST')),
-    editUtterance: (id, utterance, text) => readChangedTrack(send(`${at(id)}/utterances/${encodeURIComponent(utterance)}`, 'PUT', { text })),
-    synthesize: (id, voice, engine) => readChangedTrack(send(`${at(id)}/synthesize`, 'POST', { voice, ...engine ? { engine } : {} })),
-  }
 }
 
 /** The lectures published at the first of `bases` that has an index (the last when none answers). */

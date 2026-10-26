@@ -29,6 +29,8 @@ export function deckPlan(doc: IRDocument, deckDir: string): DeckPlan {
   }
   const plan = lecturePlan(doc, scriptFile)
   findings.push(...plan.problems.filter(p => !p.reportedAtCompile).map((p): Finding => ({ checkId: LECTURE_ID, severity: 'warning', message: p.message, ...p.source ? { source: { file: p.source.file, line: p.source.line } } : {} })))
+  if (doc.production?.mediaClips.length) findings.push({ checkId: LECTURE_ID, severity: 'error', message: 'Production media clips are retained, but this runtime cannot yet mix or trim them. Lecture export is unavailable for this production.', source: { file: doc.meta.entry, line: 1 } })
+  for (const section of plan.sections) if (section.trailingPauseMs && section.paragraphs.some(paragraph => paragraph.pieces.some(piece => piece.cues.some(cue => cue.name === 'next')))) findings.push({ checkId: LECTURE_ID, severity: 'error', message: `Section ${section.id}: step trailing pauses cannot yet be placed inside narration audio that advances with a next cue. Split the narration into step-bound entries before exporting this production.`, source: { file: doc.meta.entry, line: 1 } })
   const own = doc.config.presmium[LECTURE_ID]
   const voice = configuredLectureVoice(doc)
   const lexicon = lexiconOf(isRecord(own) ? own : undefined)

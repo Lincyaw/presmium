@@ -110,9 +110,10 @@ export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>,
           if (utterance) t += utterance.d
           if (piece.pause) t += piece.pause
         }
-        t += head.gap
+        if (!section.trailingPauseMs) t += head.gap
       }
-      if (paragraphs.length === 0) t += head.gap
+      if (section.trailingPauseMs) { hold(); t += section.trailingPauseMs[step] ?? head.gap }
+      else if (paragraphs.length === 0) t += head.gap
     }
     hold()
   }
