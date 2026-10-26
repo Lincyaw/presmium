@@ -55,6 +55,7 @@ export function seedTableIdentities(editor: NativeDocumentEditor, context: RichP
 
 export function captureTableIdentities(editor: NativeDocumentEditor, context: RichProjection): void {
   const state = editor.prosemirrorState
+  context.tables.clear()
   state.doc.descendants((node, position) => {
     if (node.type.name !== 'table') return
     const info = getBlockInfoNearPos(state, position), tableId = getNodeId(info.block.node, state.doc)

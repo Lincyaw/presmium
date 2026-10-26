@@ -1,6 +1,6 @@
 import type { DocumentBlock, RichTextNode, Section, TeachingDocument, TextBlock } from '@lincyaw/kernel'
 import { productInlineToNative } from './inline.ts'
-import { createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
+import { captureRichBaseline, createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
 import type { RichProjection } from './rich-text.ts'
 import type { DocumentEditorBlock, DocumentEditorInput } from './schema.tsx'
 
@@ -9,6 +9,8 @@ export interface DocumentProjection extends RichProjection {
   pages: Map<string, string>
   document: TeachingDocument
   content: DocumentEditorInput[]
+  structure?: string
+  structures: Map<string, Pick<DocumentProjection, 'document' | 'rich' | 'owners' | 'pages' | 'baseline'>>
 }
 const newId = () => crypto.randomUUID()
 const pageId = (sectionId: string) => `page:${sectionId}`
@@ -35,13 +37,52 @@ function productBlock(blockId: string, context: DocumentProjection): DocumentEdi
 }
 
 export function createDocumentProjection(document: TeachingDocument): DocumentProjection {
-  const context: DocumentProjection = { ...createRichProjection(), owners: new Map(), pages: new Map(), document: structuredClone(document), content: [] }
+  const context: DocumentProjection = { ...createRichProjection(), owners: new Map(), pages: new Map(), structures: new Map(), document: structuredClone(document), content: [] }
   context.content = document.sectionOrder.flatMap(sectionId => {
     const section = document.sections[sectionId]!
     context.pages.set(pageId(sectionId), sectionId)
     return [{ id: pageId(sectionId), type: 'presmiumPage' as const, props: { sectionId, level: section.level ?? 1 }, content: [{ type: 'text' as const, text: section.title, styles: {} }] }, ...section.children.flatMap(blockId => productBlock(blockId, context))]
   })
   return context
+}
+
+function structureOf(blocks: readonly DocumentEditorBlock[], context: DocumentProjection): string {
+  const tree = (blocks: readonly DocumentEditorBlock[]): unknown[] => blocks.map(block => [block.id, block.type,
+    block.type === 'presmiumPage' ? block.props.sectionId : block.type === 'presmiumAtom' ? [block.props.entityId, block.props.kind] : undefined, tree(block.children)])
+  return JSON.stringify([tree(blocks), [...context.tables]])
+}
+
+/** Canonical structural snapshots accompany native history; no editor envelope is persisted. */
+export function rememberDocumentStructure(blocks: readonly DocumentEditorBlock[], context: DocumentProjection): void {
+  const structure = structureOf(blocks, context)
+  context.structure = structure
+  if (!context.structures.has(structure)) context.structures.set(structure, {
+    document: context.document, rich: new Map(context.rich), owners: new Map(context.owners), pages: new Map(context.pages), baseline: new Map(context.baseline),
+  })
+}
+
+/** Share unchanged JSON branches across the editor's in-memory structural history. */
+function share(before: unknown, after: unknown): unknown {
+  if (before === after || !before || !after || typeof before !== 'object' || typeof after !== 'object' || Array.isArray(before) !== Array.isArray(after)) return after
+  if (Array.isArray(after)) {
+    const prior = before as unknown[]
+    let same = prior.length === after.length
+    after.forEach((value, index) => { after[index] = share(prior[index], value); same &&= after[index] === prior[index] })
+    return same ? before : after
+  }
+  const prior = before as Record<string, unknown>, next = after as Record<string, unknown>, keys = Object.keys(next)
+  let same = Object.keys(prior).length === keys.length
+  for (const key of keys) { next[key] = share(prior[key], next[key]); same &&= Object.hasOwn(prior, key) && next[key] === prior[key] }
+  return same ? before : after
+}
+
+function rememberRich(nodes: readonly RichTextNode[], context: DocumentProjection): void {
+  for (const node of nodes) {
+    context.rich.set(node.id, { ...context.rich.get(node.id), original: node })
+    if (node.type === 'list') for (const item of node.children) rememberRich(item.children, context)
+    else if (node.type === 'blockquote') rememberRich(node.children, context)
+    else if (node.type === 'extension') rememberRich(node.fallback, context)
+  }
 }
 
 function nativePlain(block: DocumentEditorBlock): string {
@@ -115,6 +156,11 @@ function nativeChildren(native: readonly DocumentEditorBlock[], context: Documen
 
 /** Reconstruct the normalized product tree without visiting or reparsing Markdown. */
 export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], context: DocumentProjection): TeachingDocument {
+  const structure = structureOf(blocks, context), restored = structure === context.structure ? undefined : context.structures.get(structure)
+  if (restored) {
+    context.document = restored.document
+    context.rich = new Map(restored.rich); context.owners = new Map(restored.owners); context.pages = new Map(restored.pages); context.baseline = new Map(restored.baseline)
+  }
   const next = structuredClone(context.document)
   next.blocks = {}; next.sections = {}; next.sectionOrder = []
   let section: Section | undefined, content: DocumentEditorBlock[] = []
@@ -126,7 +172,7 @@ export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], 
       if (!sectionId || next.sections[sectionId]) sectionId = newId()
       context.pages.set(block.id, sectionId)
       const original = context.document.sections[sectionId]
-      section = { ...original ? structuredClone(original) : {}, id: sectionId, title: nativePlain(block), children: [], stepOrder: original?.stepOrder ?? [], layout: original?.layout ?? { type: 'stack' } }
+      section = { ...original ? structuredClone(original) : {}, id: sectionId, title: nativePlain(block), children: [], stepOrder: [...(original?.stepOrder ?? [])], layout: original?.layout ?? { type: 'stack' } }
     } else {
       if (!section) {
         const original = context.document.sections[context.document.sectionOrder[0] ?? '']
@@ -174,8 +220,15 @@ export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], 
     step.visuals = step.visuals.filter(visual => sectionOf.get(visual.blockId) === step.sectionId)
     for (const [blockId, sectionId] of sectionOf) if (sectionId === step.sectionId && (previousSectionOf.get(blockId) !== sectionId || newSteps.has(step.id)) && !step.visuals.some(visual => visual.blockId === blockId)) step.visuals.push({ blockId, visible: true })
   }
-  for (const narration of Object.values(next.narrations)) for (const node of narration.content) if (node.type === 'cue' && node.target && !next.blocks[node.target.blockId]) delete node.target
-  context.document = structuredClone(next)
+  for (const narration of Object.values(next.narrations)) narration.content = narration.content.filter(node => {
+    if (node.type !== 'cue' || !node.target || next.blocks[node.target.blockId]) return true
+    if (next.production.cueTimings) delete next.production.cueTimings[node.id]
+    return false
+  })
+  context.document = share(context.document, structuredClone(next)) as TeachingDocument
+  for (const block of Object.values(context.document.blocks)) if (block.type === 'text') rememberRich(block.content, context)
+  context.baseline.clear(); captureRichBaseline(blocks, context)
+  rememberDocumentStructure(blocks, context)
   return next
 }
 
