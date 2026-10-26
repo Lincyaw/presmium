@@ -7,6 +7,7 @@ import type { DocumentEditorBlock, DocumentEditorInput } from './schema.tsx'
 export interface DocumentProjection extends RichProjection {
   owners: Map<string, string>
   pages: Map<string, string>
+  blockSections: Map<string, string>
   document: TeachingDocument
   content: DocumentEditorInput[]
   structure?: string
@@ -20,9 +21,10 @@ function plain(nodes: readonly { type: string, text?: string, children?: readonl
 function register(blocks: readonly DocumentEditorInput[], owner: string, context: DocumentProjection): void {
   for (const block of blocks) { if (block.id) context.owners.set(block.id, owner); if (block.children) register(block.children, owner, context) }
 }
-function productBlock(blockId: string, context: DocumentProjection): DocumentEditorInput[] {
+function productBlock(blockId: string, context: DocumentProjection, sectionId: string): DocumentEditorInput[] {
   const document = context.document, block = document.blocks[blockId]
   if (!block) throw new Error('document-block-reference')
+  context.blockSections.set(blockId, sectionId)
   if (block.type === 'text') {
     const native = productRichTextToNative(block.content, context)
     if (!native.length) native.push({ id: newId(), type: 'paragraph', content: [] })
@@ -30,18 +32,18 @@ function productBlock(blockId: string, context: DocumentProjection): DocumentEdi
     return native
   }
   context.owners.set(block.id, block.id)
-  if (block.type === 'container') return [{ id: block.id, type: 'presmiumContainer', props: { entityId: block.id, layout: block.layout, title: block.properties.title ?? '' }, children: block.children.flatMap(child => productBlock(child, context)) }]
+  if (block.type === 'container') return [{ id: block.id, type: 'presmiumContainer', props: { entityId: block.id, layout: block.layout, title: block.properties.title ?? '' }, children: block.children.flatMap(child => productBlock(child, context, sectionId)) }]
   if (block.type === 'image') return [{ id: block.id, type: 'image', props: { url: document.assets[block.assetId]?.location ?? '', caption: plain(block.caption ?? []), name: block.alt, textAlignment: block.alignment ?? 'left', ...block.width !== undefined ? { previewWidth: block.width } : {} } }]
   if (block.type === 'code' && block.value !== undefined) return [{ id: block.id, type: 'codeBlock', props: { language: block.language }, content: block.value }]
-  return [{ id: block.id, type: 'presmiumAtom', props: { entityId: block.id, kind: block.type, label: block.type === 'code' ? block.title ?? block.origin?.anchor ?? block.language : document.definitions[block.definitionId]?.kind ?? block.definitionId }, ...block.type === 'component' && block.children ? { children: block.children.flatMap(child => productBlock(child, context)) } : {} }]
+  return [{ id: block.id, type: 'presmiumAtom', props: { entityId: block.id, kind: block.type, label: block.type === 'code' ? block.title ?? block.origin?.anchor ?? block.language : document.definitions[block.definitionId]?.kind ?? block.definitionId }, ...block.type === 'component' && block.children ? { children: block.children.flatMap(child => productBlock(child, context, sectionId)) } : {} }]
 }
 
 export function createDocumentProjection(document: TeachingDocument): DocumentProjection {
-  const context: DocumentProjection = { ...createRichProjection(), owners: new Map(), pages: new Map(), structures: new Map(), document: structuredClone(document), content: [] }
+  const context: DocumentProjection = { ...createRichProjection(), owners: new Map(), pages: new Map(), blockSections: new Map(), structures: new Map(), document: structuredClone(document), content: [] }
   context.content = document.sectionOrder.flatMap(sectionId => {
     const section = document.sections[sectionId]!
     context.pages.set(pageId(sectionId), sectionId)
-    return [{ id: pageId(sectionId), type: 'presmiumPage' as const, props: { sectionId, level: section.level ?? 1 }, content: [{ type: 'text' as const, text: section.title, styles: {} }] }, ...section.children.flatMap(blockId => productBlock(blockId, context))]
+    return [{ id: pageId(sectionId), type: 'presmiumPage' as const, props: { sectionId, level: section.level ?? 1 }, content: [{ type: 'text' as const, text: section.title, styles: {} }] }, ...section.children.flatMap(blockId => productBlock(blockId, context, sectionId))]
   })
   return context
 }
@@ -295,6 +297,7 @@ export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], 
     return false
   })
   context.document = share(context.document, structuredClone(next)) as TeachingDocument
+  context.blockSections = sectionOf
   for (const block of Object.values(context.document.blocks)) if (block.type === 'text') rememberRich(block.content, context)
   context.baseline.clear(); captureRichBaseline(blocks, context)
   rememberDocumentStructure(blocks, context)

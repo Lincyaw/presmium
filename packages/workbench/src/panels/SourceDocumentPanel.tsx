@@ -5,6 +5,8 @@ import { DocumentEditor } from '../document-editor/DocumentEditor.tsx'
 import { DOCUMENT_EDITOR_MESSAGES } from '../document-editor/messages.ts'
 import { DocumentBlockFallback } from '../document-editor/DocumentBlockFallback.tsx'
 import { DocumentBlockPreview } from '../document-editor/DocumentBlockPreview.tsx'
+import { nativeEditingCursor } from '../document-editor/selection.ts'
+import type { NativeDocumentEditor } from '../document-editor/schema.tsx'
 import { isAgentChanging } from '../workbench.ts'
 
 /** Source editing is available before the first successful runtime compilation. */
@@ -16,6 +18,9 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
   const readOnly = useWorkbenchState(state => Boolean(state.authoring?.loading) || isAgentChanging(state))
   const container = useRef<HTMLElement>(null)
   const consumedNavigation = useRef<string>()
+  const bodyEditor = useRef<NativeDocumentEditor>()
+  const editingPosition = useRef<{ nativeBlockId: string, sectionId: string, position: number, editor: NativeDocumentEditor, identity: string, reset: number | undefined }>()
+  const cancelReading = useRef<() => void>()
   useEffect(() => {
     if (!navigation) return
     const request = JSON.stringify([source?.identity, navigation.request])
@@ -32,13 +37,30 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
     const sameGeometry = (a: Viewport, b: Viewport) => a.width === b.width && a.height === b.height && a.extent === b.extent
     let baseline = measure(), reading: { generation: string, viewport: Viewport } | undefined
     const cancel = () => { reading = undefined }
+    cancelReading.current = cancel
     const read = () => {
       frame = undefined
       const gesture = reading
       cancel()
       if (!gesture || !element.clientHeight) return
-      const viewport = measure()
-      if (gesture.generation !== workbench.getState().documentPositionToken || !sameGeometry(gesture.viewport, viewport) || gesture.viewport.top !== viewport.top) return
+      const viewport = measure(), state = workbench.getState()
+      if (gesture.generation !== state.documentPositionToken || !sameGeometry(gesture.viewport, viewport) || gesture.viewport.top !== viewport.top) return
+      const editor = bodyEditor.current
+      if (editor?.prosemirrorView.isDestroyed) return
+      if (editor?.isFocused() && !state.authoring?.loading && !isAgentChanging(state)) {
+        const current = editingPosition.current, source = state.authoring
+        if (!source || !current || current.editor !== editor || current.identity !== source.identity || current.reset !== source.reset) return
+        try {
+          const cursor = nativeEditingCursor(editor)
+          if (!cursor || cursor.nativeBlockId !== current.nativeBlockId || cursor.position !== current.position) return
+          const point = editor.prosemirrorView.coordsAtPos(cursor.position), bounds = element.getBoundingClientRect()
+          if (![point.left, point.right, point.top, point.bottom].every(Number.isFinite)) return
+          if (point.bottom >= bounds.top && point.top <= bounds.bottom && point.right >= bounds.left && point.left <= bounds.right) {
+            workbench.observeDocumentSection(current.sectionId)
+            return
+          }
+        } catch { return }
+      }
       const headings = [...element.querySelectorAll<HTMLElement>('[data-document-section]')]
       const band = element.getBoundingClientRect().top + element.clientHeight * 0.05
       let current = headings[0]
@@ -84,6 +106,7 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
     const sheet = element.querySelector('.pmw-source-document__sheet')
     if (sheet) resize.observe(sheet)
     return () => {
+      if (cancelReading.current === cancel) cancelReading.current = undefined
       element.removeEventListener('scroll', scroll); element.removeEventListener('wheel', interact); element.removeEventListener('touchmove', interact)
       element.removeEventListener('pointerdown', pointer, true); element.removeEventListener('focusin', cancel, true); element.removeEventListener('keydown', keys)
       resize.disconnect(); if (frame !== undefined) cancelAnimationFrame(frame)
@@ -98,6 +121,7 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
     {source?.issues.length ? <PmNotice tone="warn"><details><summary>{messages.diagnostics(source.issues.length)}</summary><ul>{source.issues.map((issue, index) => <li key={`${issue.path}:${index}`}><code>{issue.path}</code> {issue.message}</li>)}</ul></details></PmNotice> : null}
     {!source?.content || !source.identity ? <p className="pmw-muted">{source?.loading ? messages.loading : messages.unavailable}</p> : <div className="pmw-source-document__sheet">
       <DocumentEditor identity={source.identity} document={source.content} getDocument={() => workbench.getDocument(source.identity)} reset={source.reset} locale={locale} readOnly={readOnly}
+        getPositionToken={() => workbench.getState().documentPositionToken}
         resolveAssetURL={async location => {
           if (/^(?:[a-z][a-z\d+.-]*:|\/)/i.test(location)) return location
           const asset = Object.values(workbench.getDocument(source.identity)?.assets ?? {}).find(asset => asset.location === location)
@@ -109,7 +133,18 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
           const fallback = <DocumentBlockFallback block={block} document={source.content} locale={locale} />
           return block.type === 'component' ? <DocumentBlockPreview blockId={id} fallback={fallback} /> : fallback
         } }}
-        commentsPortal={commentsPortal} onChange={document => workbench.recordDocument(document)} onReady={editor => workbench.attachDocumentEditor(editor)}
+        commentsPortal={commentsPortal} onChange={document => workbench.recordDocument(document)} onReady={editor => {
+          bodyEditor.current = editor
+          editingPosition.current = undefined
+          workbench.attachDocumentEditor(editor)
+        }}
+        onEditingPosition={(position, editor) => {
+          const state = workbench.getState(), current = state.authoring
+          if (!current?.identity || current.loading || isAgentChanging(state) || editor !== bodyEditor.current || !editor.isFocused() || current.identity !== source.identity || current.reset !== source.reset) return
+          cancelReading.current?.()
+          editingPosition.current = { ...position, editor, identity: current.identity, reset: current.reset }
+          workbench.observeDocumentSection(position.sectionId)
+        }}
         onComposition={composing => workbench.documentComposition(composing, 'body', source.identity)} onError={() => workbench.documentError(new Error(messages.adapterError))} />
     </div>}
   </section>
