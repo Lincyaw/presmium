@@ -480,7 +480,9 @@
       "document": "guide-production",
       "section": "script",
       "package": "@lincyaw/addon-lecture",
-      "requires": [],
+      "requires": [
+        "讲稿结构与组件按钮可直接编辑和操作；文字中间动作 cue 的按时触发需要确认音频，静音不推测词语时码"
+      ],
       "mode": "demonstration"
     },
     {
@@ -500,7 +502,7 @@
       "package": "@lincyaw/addon-speech",
       "requires": [
         "真实已配置的语音 provider",
-        "视频制作已有讲稿、音色范围、缓存试听和配音状态入口；目录与新合成需真实服务，完整时间线仍待实现"
+        "视频制作已有讲稿、音色范围、缓存试听和配音状态入口；目录与新合成需真实服务，三轨时间线与共享播放头已提供，真实 provider 正向合成到播放仍待验收"
       ],
       "mode": "conditional"
     },
@@ -512,7 +514,7 @@
       "package": "@lincyaw/addon-speech",
       "requires": [
         "真实语音 provider；修改讲稿后需重新明确生成",
-        "视频制作已有讲稿、音色范围、缓存试听和配音状态入口；目录与新合成需真实服务，完整时间线仍待实现"
+        "视频制作已有讲稿、音色范围、缓存试听和配音状态入口；目录与新合成需真实服务，三轨时间线与共享播放头已提供，真实 provider 正向合成到播放仍待验收"
       ],
       "mode": "conditional"
     },
@@ -523,8 +525,8 @@
       "section": "voices",
       "package": "@lincyaw/host",
       "requires": [
-        "工作台试听需真实可用音色",
-        "视频制作已有讲稿、音色范围、缓存试听和配音状态入口；目录与新合成需真实服务，完整时间线仍待实现"
+        "已有精确试听缓存，或真实服务支持所选音色；用户明确确认后播放",
+        "视频制作已有讲稿、音色范围、缓存试听和配音状态入口；目录与新合成需真实服务，三轨时间线与共享播放头已提供，真实 provider 正向合成到播放仍待验收"
       ],
       "mode": "instructions"
     },
@@ -535,7 +537,7 @@
       "section": "recording",
       "package": "@lincyaw/addon-lecture",
       "requires": [
-        "已启用讲授插件的真实 Presmium 服务运行页、安全上下文、支持的浏览器及用户授权；当前 Doc 不提供完整制作界面"
+        "已启用讲授插件的真实 Presmium 服务运行页、安全上下文、支持的浏览器及用户授权；制作区尚无录音采用与混音界面"
       ],
       "mode": "conditional"
     },
@@ -568,7 +570,7 @@
       "section": "deliver",
       "package": "@lincyaw/addon-lecture",
       "requires": [
-        "匹配版本的音频、媒体能力及导出工具"
+        "当前来源及已确认的静音或配音计划、媒体能力与导出工具；未知时序不能导出"
       ],
       "mode": "conditional"
     },
@@ -1064,6 +1066,61 @@
         "浏览器能够实际解码本地媒体；音频播放由用户明确启动"
       ],
       "mode": "demonstration"
+    },
+    {
+      "id": "production-three-tracks",
+      "title": "当前页画面、配音与字幕三轨时间线",
+      "document": "guide-production",
+      "section": "timeline",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "当前保存版本及已确认播放计划；可用冒泡排序的提交缓存体验"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "production-exact-seek",
+      "title": "本页毫秒精确定位、任意步骤与缩放",
+      "document": "guide-production",
+      "section": "timeline",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "当前计划有确认时长；缺缓存估计和未知时长不能任意按时间定位"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "production-shared-player",
+      "title": "制作播放头与讲授共享真实时钟",
+      "document": "guide-production",
+      "section": "timeline",
+      "package": "@lincyaw/host",
+      "requires": [
+        "明确点击播放；同一来源、完整运行修订与播放计划；试听先暂停正式播放"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "production-audio-waveform",
+      "title": "从已有精确缓存解码真实音频波形",
+      "document": "guide-production",
+      "section": "timeline",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "真实缓存可读取且浏览器能够解码；静音、缺失或解码失败不伪造波形"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "production-silent-plan",
+      "title": "明确静音的真实播放计划与单源字幕",
+      "document": "guide-production",
+      "section": "silent",
+      "package": "@lincyaw/addon-lecture",
+      "requires": [
+        "新建纯文字文稿、明确静音和停留时机；不插入无词语时码的文字中间动作 cue"
+      ],
+      "mode": "instructions"
     }
   ],
   "schemaVersion": 1,
@@ -1335,11 +1392,11 @@
         "reason": "production 片段能保存；当前讲授运行时拒绝裁切和混音。"
       },
       {
-        "feature": "Complete Studio production timeline and media editing",
+        "feature": "Advanced production media editing and provider synthesis acceptance",
         "status": "pending",
         "document": "guide-production",
-        "section": "voices",
-        "reason": "独立视频制作已组合讲稿、时机、音色范围、精确缓存试听和源版本绑定任务；完整三轨时间线、波形、裁切混音、字幕对齐与录音采用仍待实施，真实 provider 正向合成尚未完成 UI 验收。"
+        "section": "silent",
+        "reason": "三轨时间线、精确定位、共享播放器、真实缓存波形及简单静音计划已接入；裁切混音、录音采用与精确词级对齐仍有门槛。真实 provider 缺缓存到 UI 合成完成并播放的正向流程尚未完成验收。"
       },
       {
         "feature": "Generic component properties and shared-asset version management UI",
@@ -1347,6 +1404,13 @@
         "document": "guide-steps",
         "section": "semantic",
         "reason": "当前 Doc 没有通用组件参数表单或共享素材版本管理界面；状态与参数可通过实际步骤观察，定义与参数约束修改仍经 canonical JSON 或助手工程事务。"
+      },
+      {
+        "feature": "Text-anchored cues in a silent production plan",
+        "status": "conditional",
+        "document": "guide-production",
+        "section": "silent",
+        "reason": "静音没有真实词语时码；句子中间动作 cue 保留并报告未知时序，不用字数估计冒充准确时间。本导览保留此边界，简单静音练习在新建文稿中进行。"
       }
     ],
     "scope": "官方插件 components/ 教学组件入口；核心布局、正文和工作台操作另由功能条目映射。",
@@ -1416,6 +1480,36 @@
         "document": "guide-authoring",
         "section": "delivery",
         "integration": "canonical source editing through the workbench"
+      },
+      {
+        "id": "production-three-tracks",
+        "document": "guide-production",
+        "section": "timeline",
+        "integration": "one source-bound production plan and the existing lecture player"
+      },
+      {
+        "id": "production-exact-seek",
+        "document": "guide-production",
+        "section": "timeline",
+        "integration": "one source-bound production plan and the existing lecture player"
+      },
+      {
+        "id": "production-shared-player",
+        "document": "guide-production",
+        "section": "timeline",
+        "integration": "one source-bound production plan and the existing lecture player"
+      },
+      {
+        "id": "production-audio-waveform",
+        "document": "guide-production",
+        "section": "timeline",
+        "integration": "one source-bound production plan and the existing lecture player"
+      },
+      {
+        "id": "production-silent-plan",
+        "document": "guide-production",
+        "section": "silent",
+        "integration": "one source-bound production plan and the existing lecture player"
       }
     ],
     "verification": {
@@ -1427,7 +1521,11 @@
         "record": "docs/benchmarks/feature-authoring-supplement-2026-10-26.md",
         "scope": "New guide-authoring and the changed production/media instructions; current source inventory audit and only the targeted runtime checks recorded there."
       },
-      "rule": "A located example is coverage; a conditional requirement or instruction is not proof that its external service, device or paid provider was exercised."
+      "rule": "A located example is coverage; a conditional requirement or instruction is not proof that its external service, device or paid provider was exercised.",
+      "productionPlaybackSupplement": {
+        "record": "docs/benchmarks/feature-guides-2026-10-26.md",
+        "scope": "Guide-production timeline/silent instructions and index mapping. Public host/iframe 24 checks and actual Studio 14 checks are recorded separately; conditional provider synthesis, mixing and text-anchored silent cues remain gated."
+      }
     }
   }
 }
