@@ -19,15 +19,17 @@ export interface NativeDocumentSelection {
 export interface NativeEditingCursor {
   nativeBlockId: string
   position: number
+  objectSelected: boolean
 }
 
 /** The active endpoint owns text ranges; an object selection owns the selected object. */
 export function nativeEditingCursor(editor: NativeDocumentEditor): NativeEditingCursor | undefined {
   if (editor.prosemirrorView.isDestroyed || !editor.isFocused()) return undefined
   const state = editor.prosemirrorState
-  const position = state.selection instanceof NodeSelection ? state.selection.from : state.selection.head
+  const objectSelected = state.selection instanceof NodeSelection
+  const position = objectSelected ? state.selection.from : state.selection.head
   const info = getBlockInfoNearPos(state, position)
-  return { nativeBlockId: getNodeId(info.block.node, state.doc), position }
+  return { nativeBlockId: getNodeId(info.block.node, state.doc), position, objectSelected }
 }
 
 export function nativeTextPoint(editor: NativeDocumentEditor, position: number): NativeTextPoint | undefined {
