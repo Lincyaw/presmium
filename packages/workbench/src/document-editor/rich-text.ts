@@ -8,7 +8,6 @@ import { fallbackText } from './DocumentBlockFallback.tsx'
 interface RichIdentity {
   original?: RichTextNode
   listId?: string
-  listStart?: number
   itemId?: string
   paragraphId?: string
 }
@@ -42,7 +41,7 @@ export function productRichTextToNative(nodes: readonly RichTextNode[], context:
     if (node.type === 'list') return node.children.map((item, index) => {
       const [first, ...rest] = item.children
       const paragraph = first?.type === 'paragraph' ? first : undefined
-      context.rich.set(item.id, { listId: node.id, listStart: node.start, itemId: item.id, paragraphId: paragraph?.id })
+      context.rich.set(item.id, { listId: node.id, itemId: item.id, paragraphId: paragraph?.id })
       return {
         id: item.id, type: item.checked !== undefined ? 'checkListItem' : node.ordered ? 'numberedListItem' : 'bulletListItem',
         props: { ...productTextStyleToNative(paragraph?.style), ...item.checked !== undefined ? { checked: item.checked } : {}, ...node.ordered && index === 0 && node.start !== undefined ? { start: node.start } : {} },
@@ -73,9 +72,10 @@ export function nativeRichTextToProduct(blocks: readonly DocumentEditorBlock[], 
     if (identity?.original && context.baseline.get(block.id) === JSON.stringify(block)) { result.push(structuredClone(identity.original)); continue }
     if (listType(block)) {
       const ordered = block.type === 'numberedListItem'
+      const start = block.type === 'numberedListItem' ? block.props.start : undefined
       let previous = result.at(-1)
       if (previous?.type !== 'list' || previous.ordered !== ordered || identity?.listId && identity.listId !== previous.id) {
-        previous = { id: identity?.listId ?? id(), type: 'list', ordered, ...identity?.listStart !== undefined ? { start: identity.listStart } : {}, children: [] }
+        previous = { id: identity?.listId ?? id(), type: 'list', ordered, ...start !== undefined ? { start } : {}, children: [] }
         result.push(previous)
       }
       const item: ListItemNode = {
@@ -84,7 +84,7 @@ export function nativeRichTextToProduct(blocks: readonly DocumentEditorBlock[], 
         ...block.type === 'checkListItem' ? { checked: block.props.checked } : {},
       }
       previous.children.push(item)
-      context.rich.set(block.id, { ...identity, listId: previous.id, itemId: item.id, paragraphId: item.children[0]!.id })
+      context.rich.set(block.id, { ...identity, original: undefined, listId: previous.id, itemId: item.id, paragraphId: item.children[0]!.id })
       continue
     }
     if (block.type === 'paragraph') result.push(paragraph(block, context))
