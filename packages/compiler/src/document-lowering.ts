@@ -96,6 +96,7 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
       }
     }
     const defaultVoice = doc.production.sectionOverrides?.[sectionId]?.voiceSource ?? doc.production.defaults.voiceSource
+    const stepNarrations = Object.fromEntries(section.stepOrder.map(stepId => [stepId, doc.steps[stepId]!.narrationIds.map(id => ({ id, text: doc.narrations[id]!.content.map(node => node.type === 'text' ? node.text : node.type === 'pronunciation' ? node.display : '').join('') }))]))
     const resolvedNarrationVoices = Object.fromEntries(blocks.filter(block => block.role === 'narration').map(block => {
       const stepId = section.stepOrder[block.at]!
       const voice = doc.production.stepOverrides[stepId]?.voiceSource ?? defaultVoice
@@ -104,7 +105,7 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
       const target = advances ? undefined : voiceTarget({ id: sectionId, steps: section.stepOrder.length - 1, stepIds: section.stepOrder, blocks }, block.at)
       return [block.id, { ...target ? { target } : {}, ...advances && section.stepOrder.some(id => doc.production.stepOverrides[id]?.voiceSource) ? { issue: 'cue-step' } : voice?.type === 'tts' ? { voice: voice.voice } : { issue: voice?.type === 'recording' ? 'recording-unavailable' : 'voice-unset' } }]
     }))
-    return { id: sectionId, index: index + 1, title: section.title, depth: index === 0 && (section.level ?? 1) === 1 ? 0 : section.level ?? 1, source: source(entry, `/sections/${pointerKey(sectionId)}`), steps: Math.max(0, section.stepOrder.length - 1), stepIds: [...section.stepOrder], hints: section.layout.renderers ?? {}, ...section.audience ? { audience: section.audience } : {}, config: { ...section.config, 'presmium.lecture': { ...section.config?.['presmium.lecture'], resolvedNarrationVoices } }, blocks }
+    return { id: sectionId, index: index + 1, title: section.title, depth: index === 0 && (section.level ?? 1) === 1 ? 0 : section.level ?? 1, source: source(entry, `/sections/${pointerKey(sectionId)}`), steps: Math.max(0, section.stepOrder.length - 1), stepIds: [...section.stepOrder], stepNarrations, hints: section.layout.renderers ?? {}, ...section.audience ? { audience: section.audience } : {}, config: { ...section.config, 'presmium.lecture': { ...section.config?.['presmium.lecture'], resolvedNarrationVoices } }, blocks }
   })
 }
 

@@ -1,14 +1,14 @@
-import { PmIcon, PmTabs, useMessages, useServer, useStore } from '@lincyaw/host'
+import { PmIcon, PmTabs, TIMED_CAPTIONS, useMessages, useServer, useService, useStore } from '@lincyaw/host'
 import { isPreviewEmbedded } from '@lincyaw/kernel'
 import { useEffect, useState } from 'react'
 import {
   captionLanguages,
   captionText,
   clockText,
-  defaultTrack,
   isStale,
   LECTURE_ID,
   LECTURE_MESSAGES,
+  SCRIPT_TRACK,
   trackChapters,
   utteranceAt,
 } from '../domain/index.ts'
@@ -37,6 +37,8 @@ export default function PlayerPanel(_props: { view?: string }) {
     doc = useStore(viewer.doc)
   const { player, status, failure, language, setLanguage } =
     useLecturePlayback()
+  const timedCaptions = useService(TIMED_CAPTIONS)
+  useEffect(() => player && status === 'ready' ? timedCaptions?.claim() : undefined, [player, status, timedCaptions])
   const time = useStore(player?.time, 0),
     trying = useStore(player?.trying, false),
     clockPlaying = useStore(player?.clock.playing, false),
@@ -54,8 +56,8 @@ export default function PlayerPanel(_props: { view?: string }) {
     void lectureSource(server, doc.config.presmium[LECTURE_ID])
       .list()
       .then((tracks) => {
-        if (active && !playing.getSnapshot())
-          play(defaultTrack(tracks.map((track) => track.id)))
+        if (active && !playing.getSnapshot() && tracks.some(track => track.id === SCRIPT_TRACK))
+          play(SCRIPT_TRACK)
       })
       .catch((error) =>
         console.warn(

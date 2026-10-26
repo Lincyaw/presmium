@@ -48,6 +48,8 @@
   --pm-text-sm: 0.8125rem;
   --pm-text-md: 0.875rem;
   --pm-text-lg: 1rem;
+  --pm-caption-max-width: 48rem;
+  --pm-caption-max-height: 28vh;
   --pm-text-reading: 1.0625rem;
   --pm-text-title: 1.25rem;
   --pm-text-display: 2rem;

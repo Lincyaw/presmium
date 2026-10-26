@@ -2,7 +2,17 @@ import type { PresenterPanel, PresenterPanels, Unsubscribe } from '@lincyaw/kern
 import { currentLocale } from './locale.ts'
 import { HOST_MESSAGES } from './messages.ts'
 import StartReportPanel from './start-report-panel.ts'
-import type { StatusProvider, StatusRegistry, Toolbar, ToolbarItem } from './contracts.ts'
+import type { StatusProvider, StatusRegistry, TimedCaptions, Toolbar, ToolbarItem } from './contracts.ts'
+import { createStore } from './store.ts'
+
+export function createTimedCaptions(): TimedCaptions {
+  const owners = new Set<symbol>(), active = createStore(false)
+  return { active, claim() {
+    const owner = Symbol()
+    owners.add(owner); active.set(true)
+    return () => { if (owners.delete(owner)) active.set(owners.size > 0) }
+  } }
+}
 
 interface Item {
   id: string

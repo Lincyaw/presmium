@@ -60,6 +60,8 @@ export interface IRSection {
   steps: number
   stepMap?: number[]
   stepIds?: string[]
+  /** Display-only canonical narration by stable step, without an audio or timing claim. */
+  stepNarrations?: Record<string, { id: string, text: string }[]>
   hints: Record<RendererId, Record<string, unknown>>
   config?: Record<string, Record<string, unknown>>
   blocks: IRBlock[]
