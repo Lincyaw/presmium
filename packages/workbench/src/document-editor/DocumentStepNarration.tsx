@@ -64,7 +64,7 @@ export function DocumentStepNarration({ blockId, sectionId, stepId, expanded, pa
   const text = ids.map(id => narrationDisplay(document.narrations[id]?.content ?? [])).filter(Boolean).join('\n')
   const navigate = (offset: number) => {
     const id = section.stepOrder[index + offset]
-    if (id) { onPause(); workbench.observeDocumentStep(sectionId, id) }
+    if (id) { onPause(); workbench.selectDocumentStep(sectionId, id) }
   }
   return <section className="pm-ui-block-preview__narration" aria-label={t.stepNarration} data-step-narration={stepId}>
     <header className="pm-ui-block-preview__narration-header">

@@ -16,6 +16,18 @@ function wait<T>(work: Promise<T>, signal?: AbortSignal): Promise<T> {
   })
 }
 
+/** Speech preflights need a confirmed source snapshot without building a visual output. */
+export async function readDocumentSnapshot(client: WorkspaceClient, source: Pick<PreviewSource, 'directory' | 'version' | 'fingerprint'>, signal?: AbortSignal): Promise<IrAnswer> {
+  const entry = source.directory ? `${source.directory}/lecture.json` : 'lecture.json', started = Date.now()
+  for (;;) {
+    signal?.throwIfAborted()
+    const ir = await wait(client.readIr(source.directory), signal)
+    if (ir.sourceFingerprints?.[entry] === source.fingerprint && ir.doc.source?.version === source.version && ir.doc.source.fingerprint === source.fingerprint) return ir
+    if (Date.now() - started > 15_000) throw new Error('voice-source-pending')
+    await wait(new Promise<void>(resolve => setTimeout(resolve, 150)), signal)
+  }
+}
+
 /** The explicit request owner can abort while the compiler confirms one exact source snapshot. */
 export async function compileDocumentPreview(client: WorkspaceClient, source: PreviewSource, signal?: AbortSignal): Promise<CompiledDocumentPreview> {
   const { directory, fingerprint } = source, entry = directory ? `${directory}/lecture.json` : 'lecture.json'

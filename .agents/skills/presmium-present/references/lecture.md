@@ -8,6 +8,14 @@ Use the document toolbar's presentation preview action after the authoring save 
 
 The presentation identifies its confirmed source version. When the source or an observed project dependency changes, use the refresh icon's explicit recompile action to adopt the new result. Unconfirmed runtime revisions are hidden. This version check does not freeze historical project assets or external dependencies.
 
+## Edit scripts and voices in video production
+
+Use the document toolbar's **Video production** action for the independent production workspace. Its page and step controls select stable authoring steps; the script and timing fields write to the same canonical source. The visual preview compiles a confirmed saved version separately. Returning to the document retains the original body editor.
+
+**Choose a voice** edits a recoverable settings draft. Choose this step, selected steps, this page or the document; review the affected scope before applying. Batch changes preserve independent settings by default, including explicit silence and recording sources. Replacing them requires a separate count-based confirmation. Restoring inheritance removes voice settings at the chosen level; it does not mean explicit silence. A changed source invalidates the confirmation and keeps the draft.
+
+Audition and generation each require their own explicit confirmation. No connected provider does not invalidate exact existing cache audio. The generation dialog reports actual cache, missing and unavailable counts; these are not a price quote. Closing requests cancellation of work confirmed in that dialog, retaining completed exact caches. Full media timelines, recording adoption and subtitle alignment are not implemented in this workspace yet.
+
 ## Configure the intended source
 
 Put lecture renderer options in `metadata.renderers.lecture`. Put timing and voice choice only in `production`: document defaults, optional section overrides and step overrides. A voice source is `none`, TTS with an actual engine/voice, or a recording asset. Do not keep a second `voice` or timing decision on renderer options, a step or narration text.
