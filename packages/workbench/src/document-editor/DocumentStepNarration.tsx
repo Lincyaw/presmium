@@ -55,7 +55,7 @@ export function DocumentStepNarration({ blockId, sectionId, stepId, expanded, pa
 }) {
   const workbench = useWorkbench(), source = useWorkbenchState(state => state.authoring)
   const locale = useWorkbenchState(state => state.locale), t = DOCUMENT_EDITOR_MESSAGES[locale]
-  const readOnly = useWorkbenchState(isAgentChanging)
+  const readOnly = useWorkbenchState(state => Boolean(state.authoring?.loading) || isAgentChanging(state))
   const timingStorageFailure = useWorkbenchState(state => state.documentTimingDraftStorageFailure)
   const document = source?.content, section = document?.sections[sectionId], step = document?.steps[stepId]
   if (!source?.identity || !document || !section || !step) return null

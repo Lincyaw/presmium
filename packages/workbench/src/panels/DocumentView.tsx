@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { PmButton, PmIcon, PmIconButton, PmMenu, PmNotice, PmToolbar, PmToolbarButton } from '../components.tsx'
+import { PmBadge, PmButton, PmIcon, PmIconButton, PmMenu, PmNotice, PmToolbar, PmToolbarButton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
 import { countWords, documentOutline } from '../outline.ts'
@@ -34,9 +34,24 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   const t = useMessages()
   const document = useWorkbenchState(state => state.document)
   const view = useWorkbenchState(state => state.webView)
+  const preparing = useWorkbenchState(state => Boolean(state.isPreparingPresentation))
+  const presentationSourceCurrent = useWorkbenchState(state => Boolean(state.presentationSnapshot && state.authoring?.version === state.presentationSnapshot.version
+    && state.authoring.fingerprint === state.presentationSnapshot.fingerprint && (state.authoring.projectRevision ?? 0) === state.presentationSnapshot.project
+    && !state.authoring.dirty && !state.authoring.saving && !state.authoring.error))
+  const presentationFrameCurrent = useWorkbenchState(state => Boolean(state.presentationSnapshot && state.previewIrRevision === state.presentationSnapshot.revision))
+  const presentationCurrent = presentationSourceCurrent && presentationFrameCurrent
   const currentScope = useRef({ document, active })
   currentScope.current = { document, active }
   const [navigation, setNavigation] = useState(() => typeof matchMedia === 'function' && matchMedia(ROOMY).matches)
+  const compilePresentation = async (ready?: () => void): Promise<void> => {
+    if (workbench.getState().isPreparingPresentation) return
+    const generation = ++transition.current, identity = workbench.getState().authoring?.identity
+    setViewFailure(undefined)
+    const prepared = await workbench.preparePresentation()
+    if (generation !== transition.current || !currentScope.current.active || currentScope.current.document !== document || workbench.getState().authoring?.identity !== identity) return
+    if (prepared) ready?.()
+    else setViewFailure(workbench.getState().presentationFailure)
+  }
   const exitPresent = (): Promise<void> => {
     if (exiting.current) return exiting.current
     const generation = ++transition.current, identity = workbench.getState().authoring?.identity
@@ -85,19 +100,21 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   }, [active, workbench])
   return (
     <div className="pmw-document" data-workspace={presenting ? 'presentation' : 'content'} data-presenting={presenting || undefined} data-aside={aside ?? undefined} data-navigation={navigation || undefined}>
-      {presenting ? <PmToolbar className="pmw-toolbar pmw-toolbar--present" label={t.presentationPreview}><PmToolbarButton asChild><PmIconButton small icon="close" label={t.exitPresentation} shortcut="Escape" loading={changingView} onClick={() => void exitPresent()} /></PmToolbarButton></PmToolbar> : <DocumentToolbar framed={framed} aside={aside} navigation={navigation} onPresent={() => {
-        const current = workbench.getState(), source = current.authoring
-        if (!source?.content || source.loading || source.dirty || source.saving || source.restored || source.error || source.composing || current.hasDocumentTimingDrafts || current.isEditingPage || current.isCreatingPage || isAgentChanging(current)) return
-        transition.current++; setViewFailure(undefined)
+      {presenting ? <PmToolbar className="pmw-toolbar pmw-toolbar--present" label={t.presentationPreview}>
+        <PmBadge tone={presentationCurrent ? 'ok' : presentationSourceCurrent || preparing ? 'accent' : 'warn'}>{presentationCurrent ? t.presentationCompiled : presentationSourceCurrent || preparing ? t.presentationPreparing : t.presentationOutdated}</PmBadge>
+        <span className="pmw-spacer" />
+        <PmToolbarButton asChild><PmIconButton small icon="refresh" label={t.presentationRecompile} hint={preparing ? t.presentationPreparing : t.presentationRecompile} loading={preparing} disabled={changingView} onClick={() => void compilePresentation()} /></PmToolbarButton>
+        <PmToolbarButton asChild><PmIconButton small icon="close" label={t.exitPresentation} shortcut="Escape" loading={changingView} onClick={() => void exitPresent()} /></PmToolbarButton>
+      </PmToolbar> : <DocumentToolbar framed={framed} aside={aside} navigation={navigation} onPresent={() => void compilePresentation(() => {
         workbench.setMode('viewing')
         workbench.setWebView('present')
         setPresenting(true)
-      }} onNavigation={() => { setNavigation(shown => !shown); if (!navigation && matchMedia('(max-width: 1279px)').matches) setAside(null) }} onAside={next => { setAside(current => (current === next ? null : next)); if (matchMedia('(max-width: 1279px)').matches) setNavigation(false) }} />}
+      })} onNavigation={() => { setNavigation(shown => !shown); if (!navigation && matchMedia('(max-width: 1279px)').matches) setAside(null) }} onAside={next => { setAside(current => (current === next ? null : next)); if (matchMedia('(max-width: 1279px)').matches) setNavigation(false) }} />}
       {viewFailure && <PmNotice tone="danger">{viewFailure}</PmNotice>}
       <DocumentNotices />
       <div className="pmw-document__body" role="region" aria-label={presenting ? t.presentationPreview : t.documentEditor}>
         {!presenting && navigation && <NavigationPane onClose={() => setNavigation(false)} onSelect={() => { if (matchMedia('(max-width: 1279px)').matches) setNavigation(false) }} />}
-        <div className="pmw-document__main"><div className="pmw-document__source" hidden={presenting}><SourceDocumentPanel commentsPortal={commentsPortal} /></div>{presenting && <><PreviewPanel active={active} /><StepTimeline /></>}</div>
+        <div className="pmw-document__main"><div className="pmw-document__source" hidden={presenting}><SourceDocumentPanel commentsPortal={commentsPortal} /></div>{presenting && <><PreviewPanel active={active} />{presentationCurrent && <StepTimeline />}</>}</div>
         {!presenting && aside && (
           <aside className="pmw-document__aside pm-ui-block-editor" aria-label={aside === 'narration' ? t.documentNarration : aside}>
             {aside === 'comments' ? <section className="pmw-pane"><header className="pmw-pane__header"><h2 className="pmw-pane__title">{t.comments}</h2><PmIconButton small icon="close" label={t.close} onClick={() => setAside(null)} /></header><div ref={setCommentsPortal} /></section> : aside === 'narration' ? <DocumentNarrationPanel onClose={() => setAside(null)} /> : aside === 'export' ? <ExportPanel documentOnly onClose={() => setAside(null)} /> : <HistoryPanel onClose={() => setAside(null)} />}
@@ -146,7 +163,7 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
   const current = useWorkbenchState(state => state.position?.section)
   const editing = useWorkbenchState(state => state.mode === 'editing')
   const creating = useWorkbenchState(state => Boolean(state.isCreatingPage))
-  const pageBusy = useWorkbenchState(state => Boolean(state.isEditingPage))
+  const pageBusy = useWorkbenchState(state => Boolean(state.isEditingPage || state.isHistoryPreparing || state.isHistoryBusy))
   const failure = useWorkbenchState(state => state.pageEditFailure)
   const document = useWorkbenchState(state => state.document)
   const [renaming, setRenaming] = useState<{ id: string, title: string, trigger?: HTMLButtonElement }>()
@@ -241,6 +258,7 @@ function DocumentToolbar({ framed, aside, navigation, onPresent, onNavigation, o
   const dirty = useWorkbenchState(state => Boolean(state.authoring?.dirty))
   const busy = useWorkbenchState(state => state.isHistoryBusy || state.isHistoryPreparing || Boolean(state.isCreatingPage) || Boolean(state.isEditingPage || state.authoring?.composing) || isAgentChanging(state))
   const timingDrafts = useWorkbenchState(state => state.hasDocumentTimingDrafts)
+  const preparing = useWorkbenchState(state => Boolean(state.isPreparingPresentation))
   const blocked = useWorkbenchState(state => Boolean(!state.authoring?.content || state.authoring.loading || state.authoring.dirty || state.authoring.saving || state.authoring.restored || state.authoring.error || state.authoring.composing || state.hasDocumentTimingDrafts || state.isEditingPage || state.isCreatingPage || isAgentChanging(state)))
   const openComments = useWorkbenchState(state => Object.values(state.authoring?.content?.comments ?? {}).filter(comment => !comment.resolved && !comment.deletedAt).length)
   const hasStep = useWorkbenchState(state => !state.authoring?.loading && Boolean(state.authoring?.content?.sectionOrder.length))
@@ -259,7 +277,7 @@ function DocumentToolbar({ framed, aside, navigation, onPresent, onNavigation, o
       <PmToolbarButton asChild><PmIconButton small icon="comment" label={openComments ? `${t.comments} (${openComments})` : t.comments} aria-pressed={aside === 'comments'} onClick={() => onAside('comments')} /></PmToolbarButton>
       <PmToolbarButton asChild><PmIconButton small icon="versions" label={t.versionHistory} aria-pressed={aside === 'history'} onClick={() => onAside('history')} /></PmToolbarButton>
       <span className="pmw-toolbar__divider" aria-hidden="true" />
-      <PmToolbarButton asChild><PmIconButton small icon="slides" label={t.presentationPreview} hint={timingDrafts ? t.timingDraftPending : blocked ? t.presentationPending : t.presentHint} disabled={blocked} onClick={onPresent} /></PmToolbarButton>
+      <PmToolbarButton asChild><PmIconButton small icon="slides" label={t.presentationPreview} hint={preparing ? t.presentationPreparing : timingDrafts ? t.timingDraftPending : blocked ? t.presentationPending : t.presentHint} loading={preparing} disabled={blocked} onClick={onPresent} /></PmToolbarButton>
       <PmToolbarButton asChild><PmIconButton small icon="export" label={t.exportPane} aria-pressed={aside === 'export'} onClick={() => onAside('export')} /></PmToolbarButton>
     </PmToolbar>
   )

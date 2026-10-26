@@ -11,6 +11,7 @@ import { duplicateDocumentPage, pageDeletion, removeDocumentPage } from './docum
 import { changeStepTiming } from './step-production.ts'
 import type { StepDurationDraft, StepDurationKey, StepTimingPatch } from './step-production.ts'
 import { DocumentTimingDrafts } from './document-timing-drafts.ts'
+import { compileDocumentPreview } from './document-preview.ts'
 import { errorMessage, slideShape, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
 import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, JobsAnswer, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPoint, PreviewPosition, PreviewRect, PreviewRenderer, PreviewReport, ReviewChange, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
 import { DocumentDiagnostics } from './diagnostics.ts'
@@ -90,6 +91,9 @@ export interface WorkbenchState {
   previewFailure?: string
   /** The IR revision the preview shows. */
   previewIrRevision?: string
+  isPreparingPresentation?: boolean
+  presentationFailure?: string
+  presentationSnapshot?: { version: string, fingerprint: string, revision: string, project: number }
   /** Where the preview is: the section the author reads, or the slide and its step. */
   position?: PreviewPosition
   /** Changes on every position intent, including A → B → A, without changing the source. */
@@ -237,6 +241,7 @@ export class Workbench {
   #jobsDocument?: string
   readonly #jobObservers = new Set<symbol>()
   #previewReads = 0
+  #presentationPreparation = 0
   #irReads = 0
   #focusVersion = 0
   #focusWriting: Promise<void> = Promise.resolve()
@@ -527,6 +532,46 @@ export class Workbench {
     this.#syncRuntimeStreams()
     const document = this.#state.document
     if (document !== undefined) void this.#readPreview(document)
+  }
+
+  /** An explicit presentation may adopt only a compiled snapshot of the confirmed source. */
+  async preparePresentation(): Promise<boolean> {
+    const directory = this.#state.document, source = this.#state.authoring
+    if (directory === undefined || !source?.identity || !source.version || !source.fingerprint || !source.content
+      || source.loading || source.dirty || source.saving || source.restored || source.error || source.composing
+      || this.#state.hasDocumentTimingDrafts || this.#state.isCreatingPage || this.#state.isEditingPage || isAgentChanging(this.#state)) {
+      this.#set({ presentationFailure: this.#state.hasDocumentTimingDrafts ? this.#messages.timingDraftPending : this.#messages.presentationPending })
+      return false
+    }
+    const request = ++this.#presentationPreparation, scope = this.#documentScope
+    const { identity, version, fingerprint } = source, project = source.projectRevision ?? 0
+    const current = () => request === this.#presentationPreparation && scope === this.#documentScope && this.#state.document === directory && this.#state.authoring?.identity === identity
+    const unchanged = () => {
+      const latest = this.#state.authoring
+      return current() && latest?.version === version && latest.fingerprint === fingerprint && (latest.projectRevision ?? 0) === project
+        && !latest.loading && !latest.dirty && !latest.saving && !latest.error && !latest.restored && !latest.composing
+        && !this.#state.hasDocumentTimingDrafts && !this.#state.isCreatingPage && !this.#state.isEditingPage && !isAgentChanging(this.#state)
+    }
+    this.#set({ isPreparingPresentation: true, presentationFailure: undefined })
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(new DOMException('Presentation preparation timed out', 'TimeoutError')), 45_000)
+    const stop = this.subscribe(() => { if (!unchanged()) controller.abort(new Error('presentation-source-changed')) })
+    try {
+      await this.pausePlayback()
+      if (!current()) return false
+      controller.signal.throwIfAborted()
+      const snapshot = await compileDocumentPreview(this.client, { directory, version, fingerprint, project }, controller.signal)
+      const ir = snapshot.ir
+      if (!current()) return false
+      const entry = directory ? `${directory}/lecture.json` : 'lecture.json'
+      if (!unchanged() || ir.revision !== snapshot.revision || ir.sourceFingerprints?.[entry] !== fingerprint) throw new Error('presentation-source-changed')
+      if (ir.diagnostics.some(finding => finding.severity === 'error')) throw new Error('document-preview-compile-failed')
+      this.#set({ ir, preview: snapshot.preview, previewRenderer: 'web', previewFailure: undefined, presentationSnapshot: { version, fingerprint, revision: ir.revision, project } })
+      return true
+    } catch (error) {
+      if (current()) this.#set({ presentationFailure: error instanceof Error && error.message === 'presentation-source-changed' ? this.#messages.presentationSourceChanged : this.#messages.presentationCompileFailed })
+      return false
+    } finally { clearTimeout(timeout); stop(); if (current()) this.#set({ isPreparingPresentation: false }) }
   }
 
   /**
@@ -1233,6 +1278,8 @@ export class Workbench {
   }
 
   #stopSubscriptions(): void {
+    this.#presentationPreparation++
+    this.#set({ isPreparingPresentation: false, presentationFailure: undefined, presentationSnapshot: undefined })
     this.#removedCueTimings.clear(); this.#cueTimingScope = undefined
     this.#documentSession.close()
     this.#unsubscribeDocumentHistory?.(); this.#unsubscribeDocumentHistory = undefined; this.#activeDocumentHistory = undefined; this.#documentEditor = undefined

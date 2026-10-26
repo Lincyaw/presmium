@@ -2,6 +2,12 @@
 
 `lecture.json` is the only content authority. Narrations contain typed text, pronunciation and cue nodes; steps name narration IDs. Read the installed kernel contract for exact fields. Captions, spoken text and alignments derive from the same narration structure. A transcript becomes authored text only through an explicit adopt action.
 
+## Open the saved version in the studio
+
+Use the document toolbar's presentation preview action after the authoring save is acknowledged. Preparation compiles the exact confirmed document and stays in the editor until compilation succeeds. Continue editing to cancel that transition; a late response must not take the author away from new input or another document. A compilation error leaves the document and draft intact with a readable failure.
+
+The presentation identifies its confirmed source version. When the source or an observed project dependency changes, use the refresh icon's explicit recompile action to adopt the new result. Unconfirmed runtime revisions are hidden. This version check does not freeze historical project assets or external dependencies.
+
 ## Configure the intended source
 
 Put lecture renderer options in `metadata.renderers.lecture`. Put timing and voice choice only in `production`: document defaults, optional section overrides and step overrides. A voice source is `none`, TTS with an actual engine/voice, or a recording asset. Do not keep a second `voice` or timing decision on renderer options, a step or narration text.

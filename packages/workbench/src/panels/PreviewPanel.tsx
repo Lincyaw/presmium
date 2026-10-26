@@ -15,6 +15,7 @@ export function PreviewPanel({ active = true }: { active?: boolean }) {
   const preview = useWorkbenchState(state => state.preview)
   const failure = useWorkbenchState(state => state.previewFailure)
   const renderer = useWorkbenchState(state => state.previewRenderer)
+  const snapshotMatches = useWorkbenchState(state => !state.presentationSnapshot || state.webView !== 'present' || state.presentationSnapshot.revision === state.previewIrRevision)
   const reload = useWorkbenchState(state => state.previewReload)
   const aspect = useWorkbenchState(state => (state.previewRenderer === 'slides' ? slideAspect(state.ir) : undefined))
   const container = useRef<HTMLDivElement>(null)
@@ -40,15 +41,15 @@ export function PreviewPanel({ active = true }: { active?: boolean }) {
   }, [active, document, renderer, address, title, loads, reload, failure, t, workbench])
 
   return (
-    <section className="pmw-preview" aria-label={t.preview} data-ready={(active && document !== undefined && ready) || undefined}>
+    <section className="pmw-preview" aria-label={t.preview} data-ready={(active && document !== undefined && ready && snapshotMatches) || undefined}>
       {mismatch && <PmNotice tone="warn">{t.versionMismatch}</PmNotice>}
       {identityFailure && <PmNotice tone="danger"><span>{t.previewIdentityMismatch}</span><PmButton small onClick={() => workbench.reloadPreview()}>{t.reloadPreview}</PmButton></PmNotice>}
       {handshakeFailure && <PmNotice tone="danger"><span>{t.previewStalled}</span><PmButton small onClick={() => workbench.reloadPreview()}>{t.reloadPreview}</PmButton></PmNotice>}
       {failure && <PmNotice tone="danger"><span>{t.previewFailed(failure)}</span><PmButton small onClick={() => workbench.retryPreview()}>{t.retry}</PmButton></PmNotice>}
-      {!ready && !failure && !handshakeFailure && !(renderer === 'slides' && preview && !preview.slides) && <p className="pmw-muted pmw-preview__loading">{address ? t.previewLoading : t.previewPreparing}</p>}
+      {(!ready || !snapshotMatches) && !failure && !handshakeFailure && !(renderer === 'slides' && preview && !preview.slides) && <p className="pmw-muted pmw-preview__loading">{address ? t.previewLoading : t.previewPreparing}</p>}
       {renderer === 'slides' && preview && !preview.slides && <p className="pmw-muted pmw-preview__loading">{t.noSlides}</p>}
       <div className="pmw-preview__stage">
-        <div ref={container} className="pmw-preview__frames" data-renderer={renderer} style={aspect === undefined ? undefined : { '--pmw-slide-aspect': aspect } as CSSProperties} />
+        <div ref={container} className="pmw-preview__frames" data-renderer={renderer} data-pending-snapshot={!snapshotMatches || undefined} style={aspect === undefined ? undefined : { '--pmw-slide-aspect': aspect } as CSSProperties} />
       </div>
     </section>
   )

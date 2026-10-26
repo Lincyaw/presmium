@@ -3,6 +3,8 @@
 @import './document-editor/style.css';
 @import './step-production.css';
 
+.pmw-preview__frames[data-pending-snapshot] { visibility: hidden; }
+
 .pmw-muted {
   color: var(--pm-color-muted);
   font-size: var(--pm-text-sm);
