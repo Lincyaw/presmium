@@ -7,7 +7,7 @@ import type { DeckPlan } from './plan.ts'
 import { deckPlan } from './plan.ts'
 
 export interface SynthesisOptions {
-  voice: LectureVoice
+  voice?: LectureVoice
   lang: string
   lexicon?: Record<string, string>
   alignByTranscription?: boolean
@@ -27,6 +27,7 @@ export interface SynthesizedClip extends Clip {
 
 export async function synthesizeClip(speech: SpeechService, said: { text: string, spoken: string, spans: WordSpan[] }, options: SynthesisOptions, signal?: AbortSignal): Promise<SynthesizedClip> {
   const { voice } = options
+  if (!voice) throw new Error('voice-unset')
   const request: SynthesisRequest = {
     ...voice.engine ? { engine: voice.engine } : {},
     voice: voice.voice,
@@ -57,13 +58,14 @@ export async function synthesizeClip(speech: SpeechService, said: { text: string
   }
 }
 
-export function clipVoice(clips: Iterable<SynthesizedClip>, fallback: LectureVoice): Voice {
+export function clipVoice(clips: Iterable<SynthesizedClip>, fallback: LectureVoice | undefined): Voice {
   const first = clips[Symbol.iterator]().next().value as SynthesizedClip | undefined
+  if (!first && !fallback) return { kind: 'silent' }
   return {
     kind: 'synthetic',
-    engine: first?.engine ?? fallback.engine ?? '',
+    engine: first?.engine ?? fallback?.engine ?? '',
     ...first?.model ? { model: first.model } : {},
-    voice: first?.voice ?? fallback.voice,
+    voice: first?.voice ?? fallback?.voice ?? '',
     ...first?.provider ? { provider: first.provider } : {},
   }
 }
@@ -87,6 +89,7 @@ export async function synthesizePlan(speech: SpeechService, plan: LecturePlan, o
   const clips = new Map<string, SynthesizedClip>()
   const failures: SynthesisFailure[] = []
   await each(plannedUtterances(plan), async (u) => {
+    if (u.sourceKind === 'none') return
     await options.assertCurrent?.()
     if (options.assertCurrent) signal?.throwIfAborted()
     try {
@@ -120,22 +123,22 @@ export interface SynthesizedLecture {
   cuts: CutAnimation[]
 }
 
-export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech: SpeechService, signal?: AbortSignal, options: Pick<SynthesisOptions, 'cacheOnly' | 'assertCurrent'> = {}): Promise<SynthesizedLecture> {
+export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech: SpeechService | undefined, signal?: AbortSignal, options: Pick<SynthesisOptions, 'cacheOnly' | 'assertCurrent'> = {}): Promise<SynthesizedLecture> {
   const deck = deckPlan(doc)
   const clips = new Map<string, SynthesizedClip>()
-  if (deck.findings.some(finding => finding.severity === 'error')) return { deck, clips, failures: [], cuts: [] }
-  if (!deck.voice) return { deck, clips, failures: [], cuts: [] }
-  const synthesized = await synthesizePlan(speech, deck.plan, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, cacheOnly: options.cacheOnly, assertCurrent: options.assertCurrent }, signal)
+  if (!options.cacheOnly && deck.findings.some(finding => finding.severity === 'error')) return { deck, clips, failures: [], cuts: [] }
+  const units = plannedUtterances(deck.plan)
+  const synthesized = speech ? await synthesizePlan(speech, deck.plan, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, cacheOnly: options.cacheOnly, assertCurrent: options.assertCurrent }, signal) : { clips, failures: units.filter(unit => unit.sourceKind !== 'none').map(unit => ({ id: unit.id, section: unit.section, text: unit.text, reason: unit.voiceIssue ?? 'speech-unavailable' })) }
   const unsaid = new Map(synthesized.failures.map(failure => [failure.id, failure.reason]))
   const { track, cuts } = scriptTrack(deck.plan, synthesized.clips, {
     id: SCRIPT_TRACK,
     doc: relative(deckDir, doc.meta.entry) || doc.meta.entry,
     lang: deck.lang,
     ir: { hash: irHash(doc), sections: sectionHashes(doc) },
-    voice: clipVoice(synthesized.clips.values(), deck.voice),
+    voice: units.every(unit => unit.sourceKind === 'none') ? { kind: 'silent' } : clipVoice(units.flatMap(unit => synthesized.clips.get(unit.id) ?? []), deck.voice),
     gap: deck.gap,
-  }, events => referencedBlocks(doc, events), unsaid)
-  if (synthesized.failures.length > 0) return { deck, preview: track, clips: synthesized.clips, failures: synthesized.failures, cuts: [] }
+  }, events => referencedBlocks(doc, events), unsaid, new Set(units.filter(unit => unit.sourceKind === 'none').map(unit => unit.id)))
+  if (synthesized.failures.length > 0 || deck.findings.some(finding => finding.severity === 'error')) return { deck, preview: track, clips: synthesized.clips, failures: synthesized.failures, cuts: [] }
   return { deck, track, preview: track, clips: synthesized.clips, failures: [], cuts }
 }
 

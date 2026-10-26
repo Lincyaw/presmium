@@ -3,6 +3,7 @@ import { viewFor } from '@lincyaw/compiler'
 import { isRecord } from '@lincyaw/kernel'
 import type { IRDocument, IRPass } from '@lincyaw/kernel'
 import { configuredLectureVoice, LECTURE_ID, LECTURE_RENDERER, prepareNarrationVoices } from '../domain/index.ts'
+import { deckPlan } from './plan.ts'
 import { trackIds } from './store.ts'
 
 const views = new WeakMap<IRDocument, IRDocument>()
@@ -34,7 +35,8 @@ function writeLecturesFlag(doc: IRDocument, deckDir: string): void {
   const own = isRecord(doc.config.presmium[LECTURE_ID]) ? doc.config.presmium[LECTURE_ID] as Record<string, unknown> : {}
   const renderers = Object.keys(doc.config.renderers)
   const built = renderers.length === 0 || renderers.includes(LECTURE_RENDERER)
-  const lectures = typeof own.url === 'string' || (built && (Boolean(configuredLectureVoice(doc)) || trackIds(deckDir).length > 0))
+  const silent = deckPlan(doc).silent
+  const lectures = typeof own.url === 'string' || (built && (Boolean(configuredLectureVoice(doc)) || silent || trackIds(deckDir).length > 0))
   doc.config.presmium = { ...doc.config.presmium, [LECTURE_ID]: { ...own, lectures } }
 }
 

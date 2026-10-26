@@ -1,5 +1,5 @@
 import { DOCUMENT_ENTRY, isRecord } from '@lincyaw/kernel'
-import type { TrackEvent } from '@lincyaw/kernel'
+import type { ProductionBinding, TrackEvent } from '@lincyaw/kernel'
 
 export const LECTURE_ID = 'presmium.lecture'
 
@@ -28,6 +28,10 @@ export interface Utterance {
   step?: number
   translations?: Record<string, Translation>
   clip?: string
+  clipId?: string
+  narrationIds?: string[]
+  /** Authored no-audio narration; its range comes from actual step boundaries, never reading-speed estimates. */
+  silent?: true
   /** Exact provider/voice metadata of this sentence, when a scripted track uses multiple voices. */
   voice?: Voice
   /**
@@ -71,6 +75,7 @@ export interface VideoSegment extends MediaSegment {
 }
 
 export type Voice =
+  | { kind: 'silent' }
   | { kind: 'recorded', speaker?: string }
   | { kind: 'synthetic', engine: string, model?: string, voice: string, provider?: string }
 
@@ -86,6 +91,8 @@ export interface LectureTrack {
   lang: string
   ir: { hash: string, sections?: Record<string, string> }
   voice: Voice
+  binding?: ProductionBinding
+  durationMs?: number
   audio?: MediaSegment[]
   video?: VideoSegment[]
   blocks: Record<string, TrackBlock>
@@ -123,6 +130,9 @@ function utterance(value: unknown, problems: string[], i: number): Utterance | u
     ...typeof value.section === 'string' ? { section: value.section } : {},
     ...isNumber(value.step) ? { step: value.step } : {},
     ...translations ? { translations } : {},
+    ...typeof value.clipId === 'string' ? { clipId: value.clipId } : {},
+    ...Array.isArray(value.narrationIds) && value.narrationIds.every(id => typeof id === 'string') ? { narrationIds: value.narrationIds as string[] } : {},
+    ...value.silent === true ? { silent: true as const } : {},
     ...typeof value.clip === 'string' && CLIP_FILE.test(value.clip) ? { clip: value.clip } : {},
     ...isRecord(value.voice) ? { voice: voice(value.voice) } : {},
     ...typeof value.unsaid === 'string' ? { unsaid: value.unsaid } : {},
@@ -143,6 +153,7 @@ function irOf(value: unknown): LectureTrack['ir'] {
 }
 
 function voice(value: unknown): Voice {
+  if (isRecord(value) && value.kind === 'silent') return { kind: 'silent' }
   if (isRecord(value) && value.kind === 'synthetic' && typeof value.engine === 'string' && typeof value.voice === 'string') {
     return {
       kind: 'synthetic',
@@ -184,6 +195,8 @@ export function parseTrack(value: unknown): { track?: LectureTrack, problems: st
       lang: typeof value.lang === 'string' ? value.lang : 'zh-CN',
       ir: irOf(value.ir),
       voice: voice(value.voice),
+      ...isNumber(value.durationMs) && value.durationMs >= 0 ? { durationMs: value.durationMs } : {},
+      ...isRecord(value.binding) && typeof value.binding.planId === 'string' && typeof value.binding.irRevision === 'string' && isRecord(value.binding.source) && typeof value.binding.source.documentId === 'string' && typeof value.binding.source.version === 'string' && typeof value.binding.source.fingerprint === 'string' ? { binding: value.binding as unknown as ProductionBinding } : {},
       ...audio?.length ? { audio } : {},
       ...video?.length ? { video } : {},
       blocks,
@@ -234,7 +247,7 @@ export function utteranceLine(text: string, id: string): number | undefined {
 
 export function trackDuration(track: LectureTrack): number {
   return Math.max(
-    0,
+    0, track.durationMs ?? 0,
     ...(track.audio ?? []).map(a => (a.start + a.duration) * 1000),
     ...track.utterances.map(u => u.t + u.d),
     ...track.events.map(([t, type, data]) => (type === 'pause' && typeof data.ms === 'number' ? t + data.ms : t)),
@@ -242,6 +255,7 @@ export function trackDuration(track: LectureTrack): number {
 }
 
 export interface AudioSegment {
+  clipId?: string
   src: string
   start: number
   duration: number
@@ -249,7 +263,7 @@ export interface AudioSegment {
 
 export function audioSegments(track: LectureTrack): AudioSegment[] {
   if (track.voice.kind === 'synthetic') {
-    return track.utterances.filter(u => u.clip).map(u => ({ src: `${CLIPS_DIR}/${u.clip}`, start: u.t, duration: u.d }))
+    return track.utterances.filter(u => u.clip).map(u => ({ src: `${CLIPS_DIR}/${u.clip}`, start: u.t, duration: u.d, ...u.clipId ? { clipId: u.clipId } : {} }))
   }
   return (track.audio ?? []).map(a => ({ src: a.src, start: a.start * 1000, duration: a.duration * 1000 }))
 }

@@ -3,13 +3,14 @@ import { dirname, join } from 'node:path'
 import { workspaceSettings } from '@lincyaw/compiler'
 import { deckLocale, errorMessage, SPEECH } from '@lincyaw/kernel'
 import type { IRDocument, RenderContext, Renderer, SpeechService } from '@lincyaw/kernel'
-import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, dropChangedSections, eventsVtt, formatTrack, LECTURE_ID, LECTURE_RENDERER, LECTURE_MESSAGES, SCRIPT_TRACK, trackDuration, trimToDeck, utteranceLine } from '../domain/index.ts'
+import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, dropChangedSections, eventsVtt, formatTrack, LECTURE_ID, LECTURE_RENDERER, LECTURE_MESSAGES, plannedUtterances, SCRIPT_TRACK, trackDuration, trimToDeck, utteranceLine } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 import { cachedClip, clipKeys } from './clips.ts'
 import { latestDoc } from './latest-ir.ts'
 import { deckPlan } from './plan.ts'
 import { mediaFile, mediaPolicy, publishedMedia, readTrack, TRACK_FILE, trackIds } from './store.ts'
 import type { MediaPolicy } from './store.ts'
+import { productionMessages } from '../domain/production.ts'
 import { synthesizeLecture } from './synthesize.ts'
 
 const clipsOf = (track: LectureTrack) => new Set(track.utterances.flatMap(u => u.clip ?? []))
@@ -69,12 +70,11 @@ function publishTrack(track: LectureTrack, text: string, file: string, doc: IRDo
 async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: unknown[], tracks: LectureTrack[]): Promise<boolean> {
   const source = { file: doc.meta.entry, line: 1 }, t = LECTURE_MESSAGES[deckLocale(doc.meta.lang)].production
   const speech = ctx.service?.(SPEECH)
-  if (!speech) {
+  if (!speech && plannedUtterances(deckPlan(doc).plan).some(unit => unit.sourceKind !== 'none')) {
     ctx.report({ checkId: LECTURE_ID, severity: 'error', message: t.missingSpeech, source })
     return false
   }
   const synthesized = await synthesizeLecture(doc, ctx.deckDir, speech, undefined, { cacheOnly: true })
-  synthesized.deck.findings.forEach(ctx.report)
   for (const failure of synthesized.failures) {
     ctx.report({ checkId: LECTURE_ID, severity: 'error', message: t.cacheMissing(failure.text.slice(0, 40), failure.section, failure.reason), source: failure.source ?? source, hint: t.generateHint })
   }
@@ -125,7 +125,11 @@ export const lectureRenderer: Renderer = {
   async build(doc, ctx) {
     const index: unknown[] = []
     const tracks: LectureTrack[] = []
-    const synthesize = Boolean(deckPlan(doc).voice)
+    const plan = deckPlan(doc)
+    plan.findings.forEach(ctx.report)
+    if (plan.findings.some(finding => finding.severity === 'error')) throw new Error(plan.findings.find(finding => finding.severity === 'error')!.message)
+    if (!plan.voice && !plan.silent && plannedUtterances(plan.plan).length) throw new Error(productionMessages(doc).unset)
+    const synthesize = Boolean(plan.voice || plan.silent)
     const policy = mediaPolicy(workspaceSettings(ctx.workspaceRoot).settings[LECTURE_ID] ?? {})
     const published = publishedTrack(doc, ctx.deckDir)
     let complete = !synthesize || await publishSynthesized(doc, ctx, index, tracks)
