@@ -1,0 +1,832 @@
+{
+  "schemaVersion": 1,
+  "id": "document-86931b0184a03018",
+  "metadata": {
+    "title": "引导测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-guide"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {
+        "theme": "default"
+      }
+    }
+  },
+  "sectionOrder": [
+    "引导测试文稿",
+    "guide"
+  ],
+  "sections": {
+    "引导测试文稿": {
+      "id": "引导测试文稿",
+      "title": "引导测试文稿",
+      "level": 1,
+      "children": [
+        "引导测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "引导测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "guide": {
+      "id": "guide",
+      "title": "引导",
+      "level": 2,
+      "children": [
+        "guide--paragraph-1",
+        "guide--html-1",
+        "guide--html-2",
+        "guide--pm-cursor-1",
+        "guide--paragraph-2",
+        "guide--paragraph-3",
+        "guide--paragraph-4",
+        "guide--pm-spotlight-1",
+        "guide--paragraph-5",
+        "guide--pm-hint-1",
+        "guide--paragraph-6"
+      ],
+      "stepOrder": [
+        "guide--step-0",
+        "guide--step-1",
+        "guide--step-2",
+        "guide--step-3",
+        "guide--step-4",
+        "guide--step-5"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "pm-guide"
+          }
+        }
+      }
+    }
+  },
+  "blocks": {
+    "引导测试文稿--paragraph-1": {
+      "id": "引导测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "引导测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/guide.spec.ts 的测试文稿：光标、聚光与提示。"
+            }
+          ]
+        }
+      ]
+    },
+    "guide--paragraph-1": {
+      "id": "guide--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "guide--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "光标、聚光与提示都由步骤驱动：后退或直接跳到某一步，画面与逐步前进到那一步一致。下面是一个模拟的搜索界面，引导指令按 CSS 选择器指向其中的元素。"
+            }
+          ]
+        }
+      ]
+    },
+    "guide--html-1": {
+      "id": "guide--html-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "guide--html-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "html",
+              "value": "<div class=\"pm-guide-app\">\n  <input id=\"guide-query\" value=\"presmium\" readonly aria-label=\"关键字\">\n  <button id=\"guide-run\" type=\"button\">搜索</button>\n  <button id=\"guide-help\" type=\"button\" aria-label=\"帮助\">?</button>\n  <div id=\"guide-output\" class=\"pm-guide-app__output\"><p>找到 3 条结果</p></div>\n</div>"
+            }
+          },
+          "fallback": [
+            {
+              "id": "guide--html-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "<div class=\"pm-guide-app\">\n  <input id=\"guide-query\" value=\"presmium\" readonly aria-label=\"关键字\">\n  <button id=\"guide-run\" type=\"button\">搜索</button>\n  <button id=\"guide-help\" type=\"button\" aria-label=\"帮助\">?</button>\n  <div id=\"guide-output\" class=\"pm-guide-app__output\"><p>找到 3 条结果</p></div>\n</div>"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "guide--html-2": {
+      "id": "guide--html-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "guide--html-2--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "html",
+              "value": "<style>\n.pm-guide-app {\n  display: grid;\n  grid-template-columns: 1fr auto auto;\n  gap: 0.5rem;\n  margin-top: 1.5rem;\n  padding: 1rem;\n  border: 1px solid rgb(125 125 125 / 0.4);\n  border-radius: 0.5rem;\n}\n.pm-guide-app input {\n  min-width: 0;\n  padding: 0.25rem 0.5rem;\n  border: 1px solid rgb(125 125 125 / 0.4);\n  border-radius: 0.25rem;\n  background: transparent;\n}\n.pm-guide-app button {\n  padding: 0.25rem 0.75rem;\n  border-radius: 0.25rem;\n  background: #0369a1;\n  color: #fff;\n}\n.pm-guide-app__output {\n  grid-column: 1 / -1;\n  min-height: 6rem;\n  padding: 0.5rem 0.75rem;\n  border-radius: 0.25rem;\n  background: rgb(125 125 125 / 0.1);\n}\n/* The results show once the cursor has clicked the search button. */\n.pm-guide-app__output p {\n  visibility: hidden;\n}\n#guide-run[data-pm-cursor='click'] ~ .pm-guide-app__output p {\n  visibility: visible;\n}\n</style>"
+            }
+          },
+          "fallback": [
+            {
+              "id": "guide--html-2--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "<style>\n.pm-guide-app {\n  display: grid;\n  grid-template-columns: 1fr auto auto;\n  gap: 0.5rem;\n  margin-top: 1.5rem;\n  padding: 1rem;\n  border: 1px solid rgb(125 125 125 / 0.4);\n  border-radius: 0.5rem;\n}\n.pm-guide-app input {\n  min-width: 0;\n  padding: 0.25rem 0.5rem;\n  border: 1px solid rgb(125 125 125 / 0.4);\n  border-radius: 0.25rem;\n  background: transparent;\n}\n.pm-guide-app button {\n  padding: 0.25rem 0.75rem;\n  border-radius: 0.25rem;\n  background: #0369a1;\n  color: #fff;\n}\n.pm-guide-app__output {\n  grid-column: 1 / -1;\n  min-height: 6rem;\n  padding: 0.5rem 0.75rem;\n  border-radius: 0.25rem;\n  background: rgb(125 125 125 / 0.1);\n}\n/* The results show once the cursor has clicked the search button. */\n.pm-guide-app__output p {\n  visibility: hidden;\n}\n#guide-run[data-pm-cursor='click'] ~ .pm-guide-app__output p {\n  visibility: visible;\n}\n</style>"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "guide--pm-cursor-1": {
+      "id": "guide--pm-cursor-1",
+      "type": "component",
+      "definitionId": "guide--pm-cursor-1--definition",
+      "parameters": {
+        "path": [
+          {
+            "to": "#guide-query",
+            "action": "move",
+            "at": 0
+          },
+          {
+            "to": "#guide-run",
+            "action": "hover",
+            "at": 1
+          },
+          {
+            "to": "#guide-run",
+            "action": "click",
+            "at": 2
+          }
+        ]
+      }
+    },
+    "guide--paragraph-2": {
+      "id": "guide--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "guide--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "光标移到输入框。"
+            }
+          ]
+        }
+      ]
+    },
+    "guide--paragraph-3": {
+      "id": "guide--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "guide--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "光标悬停在“搜索”按钮上。"
+            }
+          ]
+        }
+      ]
+    },
+    "guide--paragraph-4": {
+      "id": "guide--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "guide--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "光标点击“搜索”，结果出现。"
+            }
+          ]
+        }
+      ]
+    },
+    "guide--pm-spotlight-1": {
+      "id": "guide--pm-spotlight-1",
+      "type": "component",
+      "definitionId": "guide--pm-spotlight-1--definition",
+      "parameters": {
+        "target": "#guide-output",
+        "until": 1,
+        "title": "搜索结果",
+        "text": "点击搜索后，结果出现在这里。"
+      }
+    },
+    "guide--paragraph-5": {
+      "id": "guide--paragraph-5",
+      "type": "text",
+      "content": [
+        {
+          "id": "guide--paragraph-5--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "聚光结果区域，其余部分变暗。聚光时按 Tab 键，焦点落在被聚光的区域上。"
+            }
+          ]
+        }
+      ]
+    },
+    "guide--pm-hint-1": {
+      "id": "guide--pm-hint-1",
+      "type": "component",
+      "definitionId": "guide--pm-hint-1--definition",
+      "parameters": {
+        "target": "#guide-help",
+        "until": 1,
+        "title": "帮助",
+        "text": "不确定关键字怎么写时，点这里查看语法。"
+      }
+    },
+    "guide--paragraph-6": {
+      "id": "guide--paragraph-6",
+      "type": "text",
+      "content": [
+        {
+          "id": "guide--paragraph-6--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "“帮助”按钮上出现提示动画，点击提示点可以看到说明。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "引导测试文稿--step-0": {
+      "id": "引导测试文稿--step-0",
+      "sectionId": "引导测试文稿",
+      "visuals": [
+        {
+          "blockId": "引导测试文稿--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "guide--step-0": {
+      "id": "guide--step-0",
+      "sectionId": "guide",
+      "visuals": [
+        {
+          "blockId": "guide--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "guide--html-1",
+          "visible": true
+        },
+        {
+          "blockId": "guide--html-2",
+          "visible": true
+        },
+        {
+          "blockId": "guide--pm-cursor-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "guide--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "guide--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "guide--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "guide--pm-spotlight-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "guide--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "guide--pm-hint-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "guide--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "guide--paragraph-1--narration"
+      ]
+    },
+    "guide--step-1": {
+      "id": "guide--step-1",
+      "sectionId": "guide",
+      "visuals": [
+        {
+          "blockId": "guide--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "guide--html-1",
+          "visible": true
+        },
+        {
+          "blockId": "guide--html-2",
+          "visible": true
+        },
+        {
+          "blockId": "guide--pm-cursor-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "guide--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "guide--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "guide--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "guide--pm-spotlight-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "guide--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "guide--pm-hint-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "guide--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "guide--paragraph-2--narration"
+      ]
+    },
+    "guide--step-2": {
+      "id": "guide--step-2",
+      "sectionId": "guide",
+      "visuals": [
+        {
+          "blockId": "guide--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "guide--html-1",
+          "visible": true
+        },
+        {
+          "blockId": "guide--html-2",
+          "visible": true
+        },
+        {
+          "blockId": "guide--pm-cursor-1",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "guide--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "guide--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "guide--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "guide--pm-spotlight-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "guide--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "guide--pm-hint-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "guide--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "guide--paragraph-3--narration"
+      ]
+    },
+    "guide--step-3": {
+      "id": "guide--step-3",
+      "sectionId": "guide",
+      "visuals": [
+        {
+          "blockId": "guide--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "guide--html-1",
+          "visible": true
+        },
+        {
+          "blockId": "guide--html-2",
+          "visible": true
+        },
+        {
+          "blockId": "guide--pm-cursor-1",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "guide--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "guide--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "guide--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "guide--pm-spotlight-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "guide--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "guide--pm-hint-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "guide--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "guide--paragraph-4--narration"
+      ]
+    },
+    "guide--step-4": {
+      "id": "guide--step-4",
+      "sectionId": "guide",
+      "visuals": [
+        {
+          "blockId": "guide--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "guide--html-1",
+          "visible": true
+        },
+        {
+          "blockId": "guide--html-2",
+          "visible": true
+        },
+        {
+          "blockId": "guide--pm-cursor-1",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "guide--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "guide--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "guide--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "guide--pm-spotlight-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "guide--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "guide--pm-hint-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "guide--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "guide--paragraph-5--narration"
+      ]
+    },
+    "guide--step-5": {
+      "id": "guide--step-5",
+      "sectionId": "guide",
+      "visuals": [
+        {
+          "blockId": "guide--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "guide--html-1",
+          "visible": true
+        },
+        {
+          "blockId": "guide--html-2",
+          "visible": true
+        },
+        {
+          "blockId": "guide--pm-cursor-1",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "guide--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "guide--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "guide--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "guide--pm-spotlight-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "guide--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "guide--pm-hint-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "guide--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "guide--paragraph-6--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "guide--paragraph-1--narration": {
+      "id": "guide--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "光标、聚光与提示都由步骤驱动：后退或直接跳到某一步，画面与逐步前进到那一步一致。下面是一个模拟的搜索界面，引导指令按 CSS 选择器指向其中的元素。"
+        }
+      ]
+    },
+    "guide--paragraph-2--narration": {
+      "id": "guide--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "光标移到输入框。"
+        }
+      ]
+    },
+    "guide--paragraph-3--narration": {
+      "id": "guide--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "光标悬停在“搜索”按钮上。"
+        }
+      ]
+    },
+    "guide--paragraph-4--narration": {
+      "id": "guide--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "光标点击“搜索”，结果出现。"
+        }
+      ]
+    },
+    "guide--paragraph-5--narration": {
+      "id": "guide--paragraph-5--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "聚光结果区域，其余部分变暗。聚光时按 Tab 键，焦点落在被聚光的区域上。"
+        }
+      ]
+    },
+    "guide--paragraph-6--narration": {
+      "id": "guide--paragraph-6--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "“帮助”按钮上出现提示动画，点击提示点可以看到说明。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "guide--pm-cursor-1--definition": {
+      "id": "guide--pm-cursor-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.guide",
+        "name": "PmCursor"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.guide",
+        "name": "PmCursor",
+        "fallback": {
+          "type": "root",
+          "children": []
+        },
+        "layer": "overlay"
+      }
+    },
+    "guide--pm-spotlight-1--definition": {
+      "id": "guide--pm-spotlight-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.guide",
+        "name": "PmSpotlight"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.guide",
+        "name": "PmSpotlight",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "搜索结果"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "：点击搜索后，结果出现在这里。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "guide--pm-hint-1--definition": {
+      "id": "guide--pm-hint-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.guide",
+        "name": "PmHint"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.guide",
+        "name": "PmHint",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "帮助"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "：不确定关键字怎么写时，点这里查看语法。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

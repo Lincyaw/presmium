@@ -1,0 +1,591 @@
+{
+  "schemaVersion": 1,
+  "id": "document-cf50b03ca16b3d6f",
+  "metadata": {
+    "title": "Running Code",
+    "lang": "fr",
+    "plugins": [
+      "@lincyaw/addon-exec",
+      "@lincyaw/addon-exec-local",
+      "@lincyaw/addon-publish"
+    ],
+    "presmium": {
+      "presmium.publish": {
+        "offline": false
+      }
+    },
+    "renderers": {
+      "web": {},
+      "slides": {
+        "theme": "default"
+      }
+    }
+  },
+  "sectionOrder": [
+    "running-code",
+    "js-panel",
+    "ts-panel",
+    "js-timeout",
+    "js-later",
+    "js-rejected",
+    "js-live",
+    "local-env"
+  ],
+  "sections": {
+    "running-code": {
+      "id": "running-code",
+      "title": "Running Code",
+      "level": 1,
+      "children": [
+        "running-code--paragraph-1"
+      ],
+      "stepOrder": [
+        "running-code--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "js-panel": {
+      "id": "js-panel",
+      "title": "JavaScript",
+      "level": 2,
+      "children": [
+        "js-panel--pm-run-panel-1"
+      ],
+      "stepOrder": [
+        "js-panel--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "ts-panel": {
+      "id": "ts-panel",
+      "title": "TypeScript",
+      "level": 2,
+      "children": [
+        "ts-panel--pm-run-panel-1"
+      ],
+      "stepOrder": [
+        "ts-panel--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "js-timeout": {
+      "id": "js-timeout",
+      "title": "Timeout",
+      "level": 2,
+      "children": [
+        "js-timeout--pm-run-panel-1"
+      ],
+      "stepOrder": [
+        "js-timeout--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "js-later": {
+      "id": "js-later",
+      "title": "Later output",
+      "level": 2,
+      "children": [
+        "js-later--pm-run-panel-1"
+      ],
+      "stepOrder": [
+        "js-later--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "js-rejected": {
+      "id": "js-rejected",
+      "title": "A promise rejected later",
+      "level": 2,
+      "children": [
+        "js-rejected--pm-run-panel-1"
+      ],
+      "stepOrder": [
+        "js-rejected--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "js-live": {
+      "id": "js-live",
+      "title": "Live code",
+      "level": 2,
+      "children": [
+        "js-live--code-1"
+      ],
+      "stepOrder": [
+        "js-live--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "local-env": {
+      "id": "local-env",
+      "title": "Local environment",
+      "level": 2,
+      "children": [
+        "local-env--pm-local-env-1"
+      ],
+      "stepOrder": [
+        "local-env--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "running-code--paragraph-1": {
+      "id": "running-code--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "running-code--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A deck in French, a language Presmium has no messages for: the execution, local environment and publishing plugins speak the browser’s language, English."
+            }
+          ]
+        }
+      ]
+    },
+    "js-panel--pm-run-panel-1": {
+      "id": "js-panel--pm-run-panel-1",
+      "type": "component",
+      "definitionId": "js-panel--pm-run-panel-1--definition",
+      "parameters": {
+        "params": {
+          "n": 4
+        }
+      },
+      "children": [
+        "js-panel--pm-run-panel-1--source"
+      ]
+    },
+    "js-panel--pm-run-panel-1--source": {
+      "id": "js-panel--pm-run-panel-1--source",
+      "type": "code",
+      "language": "javascript",
+      "value": "for (let i = 1; i <= n; i++) console.log(i, i * i)",
+      "execution": {
+        "when": "live",
+        "args": {
+          "n": "4"
+        }
+      }
+    },
+    "ts-panel--pm-run-panel-1": {
+      "id": "ts-panel--pm-run-panel-1",
+      "type": "component",
+      "definitionId": "ts-panel--pm-run-panel-1--definition",
+      "parameters": {
+        "params": {
+          "who": "Presmium"
+        }
+      },
+      "children": [
+        "ts-panel--pm-run-panel-1--source"
+      ]
+    },
+    "ts-panel--pm-run-panel-1--source": {
+      "id": "ts-panel--pm-run-panel-1--source",
+      "type": "code",
+      "language": "typescript",
+      "value": "interface Greeting { text: string }\nconst greet = (name: string): Greeting => ({ text: `Hello, ${name}` })\nconsole.log(greet(who).text)",
+      "execution": {
+        "when": "live",
+        "args": {
+          "who": "Presmium"
+        }
+      }
+    },
+    "js-timeout--pm-run-panel-1": {
+      "id": "js-timeout--pm-run-panel-1",
+      "type": "component",
+      "definitionId": "js-timeout--pm-run-panel-1--definition",
+      "parameters": {
+        "timeout": 1000,
+        "recorded": "settled at 1.4142135623730951 (recorded)"
+      },
+      "children": [
+        "js-timeout--pm-run-panel-1--source"
+      ]
+    },
+    "js-timeout--pm-run-panel-1--source": {
+      "id": "js-timeout--pm-run-panel-1--source",
+      "type": "code",
+      "language": "javascript",
+      "value": "let x = 1\nwhile (true) x = (x + 2 / x) / 2",
+      "execution": {
+        "when": "live",
+        "timeoutMs": 1000
+      }
+    },
+    "js-later--pm-run-panel-1": {
+      "id": "js-later--pm-run-panel-1",
+      "type": "component",
+      "definitionId": "js-later--pm-run-panel-1--definition",
+      "parameters": {},
+      "children": [
+        "js-later--pm-run-panel-1--source"
+      ]
+    },
+    "js-later--pm-run-panel-1--source": {
+      "id": "js-later--pm-run-panel-1--source",
+      "type": "code",
+      "language": "javascript",
+      "value": "setTimeout(() => console.log('later'), 50)\nconsole.log('now')",
+      "execution": {
+        "when": "both"
+      }
+    },
+    "js-rejected--pm-run-panel-1": {
+      "id": "js-rejected--pm-run-panel-1",
+      "type": "component",
+      "definitionId": "js-rejected--pm-run-panel-1--definition",
+      "parameters": {},
+      "children": [
+        "js-rejected--pm-run-panel-1--source"
+      ]
+    },
+    "js-rejected--pm-run-panel-1--source": {
+      "id": "js-rejected--pm-run-panel-1--source",
+      "type": "code",
+      "language": "javascript",
+      "value": "new Promise((_, reject) => setTimeout(() => reject(new Error('late')), 20))\nconsole.log('started')",
+      "execution": {
+        "when": "both"
+      }
+    },
+    "js-live--code-1": {
+      "id": "js-live--code-1",
+      "type": "code",
+      "language": "javascript",
+      "value": "const words = ['run', 'in', 'the', 'browser']\nconsole.log(words.map(w => w.toUpperCase()).join(' '))",
+      "execution": {
+        "when": "live"
+      }
+    },
+    "local-env--pm-local-env-1": {
+      "id": "local-env--pm-local-env-1",
+      "type": "component",
+      "definitionId": "local-env--pm-local-env-1--definition",
+      "parameters": {
+        "file": "hello.py",
+        "lang": "python",
+        "code": "print(\"hello\")"
+      },
+      "children": [
+        "local-env--pm-local-env-1--source"
+      ]
+    },
+    "local-env--pm-local-env-1--source": {
+      "id": "local-env--pm-local-env-1--source",
+      "type": "code",
+      "language": "python",
+      "value": "print(\"hello\")"
+    }
+  },
+  "steps": {
+    "running-code--step-0": {
+      "id": "running-code--step-0",
+      "sectionId": "running-code",
+      "visuals": [
+        {
+          "blockId": "running-code--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "running-code--paragraph-1--narration"
+      ]
+    },
+    "js-panel--step-0": {
+      "id": "js-panel--step-0",
+      "sectionId": "js-panel",
+      "visuals": [
+        {
+          "blockId": "js-panel--pm-run-panel-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "js-panel--pm-run-panel-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "ts-panel--step-0": {
+      "id": "ts-panel--step-0",
+      "sectionId": "ts-panel",
+      "visuals": [
+        {
+          "blockId": "ts-panel--pm-run-panel-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "ts-panel--pm-run-panel-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "js-timeout--step-0": {
+      "id": "js-timeout--step-0",
+      "sectionId": "js-timeout",
+      "visuals": [
+        {
+          "blockId": "js-timeout--pm-run-panel-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "js-timeout--pm-run-panel-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "js-later--step-0": {
+      "id": "js-later--step-0",
+      "sectionId": "js-later",
+      "visuals": [
+        {
+          "blockId": "js-later--pm-run-panel-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "js-later--pm-run-panel-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "js-rejected--step-0": {
+      "id": "js-rejected--step-0",
+      "sectionId": "js-rejected",
+      "visuals": [
+        {
+          "blockId": "js-rejected--pm-run-panel-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "js-rejected--pm-run-panel-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "js-live--step-0": {
+      "id": "js-live--step-0",
+      "sectionId": "js-live",
+      "visuals": [
+        {
+          "blockId": "js-live--code-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "local-env--step-0": {
+      "id": "local-env--step-0",
+      "sectionId": "local-env",
+      "visuals": [
+        {
+          "blockId": "local-env--pm-local-env-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "local-env--pm-local-env-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "running-code--paragraph-1--narration": {
+      "id": "running-code--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "A deck in French, a language Presmium has no messages for: the execution, local environment and publishing plugins speak the browser’s language, English."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "js-panel--pm-run-panel-1--definition": {
+      "id": "js-panel--pm-run-panel-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      }
+    },
+    "ts-panel--pm-run-panel-1--definition": {
+      "id": "ts-panel--pm-run-panel-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      }
+    },
+    "js-timeout--pm-run-panel-1--definition": {
+      "id": "js-timeout--pm-run-panel-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      }
+    },
+    "js-later--pm-run-panel-1--definition": {
+      "id": "js-later--pm-run-panel-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      }
+    },
+    "js-rejected--pm-run-panel-1--definition": {
+      "id": "js-rejected--pm-run-panel-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      }
+    },
+    "local-env--pm-local-env-1--definition": {
+      "id": "local-env--pm-local-env-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.execLocal",
+        "name": "PmLocalEnv"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.execLocal",
+        "name": "PmLocalEnv",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "code",
+              "lang": "python",
+              "value": "print(\"hello\")"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

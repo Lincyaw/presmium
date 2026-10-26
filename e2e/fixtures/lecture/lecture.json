@@ -1,0 +1,437 @@
+{
+  "schemaVersion": 1,
+  "id": "document-c36a74c0b5c286dc",
+  "metadata": {
+    "title": "讲授测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-guide",
+      "@lincyaw/addon-lecture"
+    ],
+    "renderers": {
+      "web": {
+        "port": 5323
+      }
+    }
+  },
+  "sectionOrder": [
+    "intro",
+    "merge",
+    "end",
+    "part.two:x"
+  ],
+  "sections": {
+    "intro": {
+      "id": "intro",
+      "title": "讲授测试文稿",
+      "level": 1,
+      "children": [
+        "intro--paragraph-1"
+      ],
+      "stepOrder": [
+        "intro--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "merge": {
+      "id": "merge",
+      "title": "合并",
+      "level": 2,
+      "children": [
+        "merge--merge-code",
+        "merge--paragraph-1",
+        "merge--paragraph-2",
+        "merge--paragraph-3",
+        "merge--paragraph-4"
+      ],
+      "stepOrder": [
+        "merge--step-0",
+        "merge--step-1",
+        "merge--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "end": {
+      "id": "end",
+      "title": "结尾",
+      "level": 2,
+      "children": [
+        "end--paragraph-1"
+      ],
+      "stepOrder": [
+        "end--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "part.two:x": {
+      "id": "part.two:x",
+      "title": "第二部分",
+      "level": 2,
+      "children": [
+        "part.two:x--paragraph-1",
+        "part.two:x--part-code"
+      ],
+      "stepOrder": [
+        "part.two:x--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "intro--paragraph-1": {
+      "id": "intro--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/lecture.spec.ts 的测试文稿：在放映视图中录制讲授，并以讲授轨回放（"
+            },
+            {
+              "type": "text",
+              "text": "lectures/demo/track.json",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "）。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--merge-code": {
+      "id": "merge--merge-code",
+      "type": "code",
+      "language": "python",
+      "value": "def merge(ids, pair, idx):\n    out = []\n    i = 0\n    while i < len(ids):\n        if ids[i:i + 2] == list(pair):\n            out.append(idx)\n            i += 2\n        else:\n            out.append(ids[i])\n            i += 1\n    return out"
+    },
+    "merge--paragraph-1": {
+      "id": "merge--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一步：找出出现最多的字节对。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--paragraph-2": {
+      "id": "merge--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲解第一步。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--paragraph-3": {
+      "id": "merge--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步：把它合并成新符号。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--paragraph-4": {
+      "id": "merge--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲解第二步。"
+            }
+          ]
+        }
+      ]
+    },
+    "end--paragraph-1": {
+      "id": "end--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "end--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "最后一节。"
+            }
+          ]
+        }
+      ]
+    },
+    "part.two:x--paragraph-1": {
+      "id": "part.two:x--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "part.two:x--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "章节 ID 带有 CSS 中有含义的字符（"
+            },
+            {
+              "type": "text",
+              "text": ".",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 与 "
+            },
+            {
+              "type": "text",
+              "text": ":",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "）。"
+            }
+          ]
+        }
+      ]
+    },
+    "part.two:x--part-code": {
+      "id": "part.two:x--part-code",
+      "type": "code",
+      "language": "python",
+      "value": "total = sum(ids)"
+    }
+  },
+  "steps": {
+    "intro--step-0": {
+      "id": "intro--step-0",
+      "sectionId": "intro",
+      "visuals": [
+        {
+          "blockId": "intro--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "intro--paragraph-1--narration"
+      ]
+    },
+    "merge--step-0": {
+      "id": "merge--step-0",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--merge-code",
+          "visible": true
+        },
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "merge--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "merge--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "merge--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "merge--step-1": {
+      "id": "merge--step-1",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--merge-code",
+          "visible": true
+        },
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "merge--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "merge--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "merge--paragraph-2--narration"
+      ]
+    },
+    "merge--step-2": {
+      "id": "merge--step-2",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--merge-code",
+          "visible": true
+        },
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "merge--paragraph-3",
+          "visible": true
+        },
+        {
+          "blockId": "merge--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "merge--paragraph-4--narration"
+      ]
+    },
+    "end--step-0": {
+      "id": "end--step-0",
+      "sectionId": "end",
+      "visuals": [
+        {
+          "blockId": "end--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "end--paragraph-1--narration"
+      ]
+    },
+    "part.two:x--step-0": {
+      "id": "part.two:x--step-0",
+      "sectionId": "part.two:x",
+      "visuals": [
+        {
+          "blockId": "part.two:x--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "part.two:x--part-code",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "part.two:x--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "intro--paragraph-1--narration": {
+      "id": "intro--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "e2e/lecture.spec.ts 的测试文稿：在放映视图中录制讲授，并以讲授轨回放（lectures/demo/track.json）。"
+        }
+      ]
+    },
+    "merge--paragraph-2--narration": {
+      "id": "merge--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "讲解第一步。"
+        }
+      ]
+    },
+    "merge--paragraph-4--narration": {
+      "id": "merge--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "讲解第二步。"
+        }
+      ]
+    },
+    "end--paragraph-1--narration": {
+      "id": "end--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "最后一节。"
+        }
+      ]
+    },
+    "part.two:x--paragraph-1--narration": {
+      "id": "part.two:x--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "章节 ID 带有 CSS 中有含义的字符（. 与 :）。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

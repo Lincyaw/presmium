@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "id": "document-682946769203598d",
+  "metadata": {
+    "title": "Content roles",
+    "lang": "en",
+    "renderers": {
+      "web": {},
+      "slides": {}
+    }
+  },
+  "sectionOrder": [
+    "content-roles"
+  ],
+  "sections": {
+    "content-roles": {
+      "id": "content-roles",
+      "title": "Content roles",
+      "level": 1,
+      "children": [
+        "content-roles--spoken",
+        "content-roles--screen",
+        "content-roles--reading"
+      ],
+      "stepOrder": [
+        "content-roles--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "content-roles--spoken": {
+      "id": "content-roles--spoken",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-roles--spoken--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This paragraph becomes narration and captions."
+            }
+          ]
+        }
+      ]
+    },
+    "content-roles--screen": {
+      "id": "content-roles--screen",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-roles--screen--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This sentence appears on the slide."
+            }
+          ]
+        }
+      ]
+    },
+    "content-roles--reading": {
+      "id": "content-roles--reading",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-roles--reading--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This extra explanation is not read aloud."
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    }
+  },
+  "steps": {
+    "content-roles--step-0": {
+      "id": "content-roles--step-0",
+      "sectionId": "content-roles",
+      "visuals": [
+        {
+          "blockId": "content-roles--spoken",
+          "visible": false
+        },
+        {
+          "blockId": "content-roles--screen",
+          "visible": true
+        },
+        {
+          "blockId": "content-roles--reading",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "content-roles--spoken--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "content-roles--spoken--narration": {
+      "id": "content-roles--spoken--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "This paragraph becomes narration and captions."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

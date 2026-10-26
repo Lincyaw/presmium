@@ -3,6 +3,7 @@ import type { TableCellProps } from '@blocknote/core'
 import { nativeInlineToProduct, nativeTextStyleToProduct, productInlineToNative, productTextStyleToNative } from './inline.ts'
 import type { InlineProjectionContext, NativeInline } from './inline.ts'
 import type { DocumentEditorBlock, DocumentEditorInput } from './schema.tsx'
+import { fallbackText } from './DocumentBlockFallback.tsx'
 
 interface RichIdentity {
   original?: RichTextNode
@@ -23,7 +24,7 @@ export function captureRichBaseline(blocks: readonly DocumentEditorBlock[], cont
   for (const block of blocks) { context.baseline.set(block.id, JSON.stringify(block)); captureRichBaseline(block.children, context) }
 }
 const id = () => crypto.randomUUID()
-const atom = (node: RichTextNode): DocumentEditorInput => ({ id: node.id, type: 'presmiumAtom', props: { entityId: node.id, kind: `rich:${node.type}`, label: node.type === 'math' ? node.value : node.type } })
+const atom = (node: RichTextNode): DocumentEditorInput => ({ id: node.id, type: 'presmiumAtom', props: { entityId: node.id, kind: `rich:${node.type}`, label: node.type === 'math' ? node.value : node.type === 'extension' ? fallbackText(node.fallback) : fallbackText(node) } })
 
 /** The projection records structural identities; the saved document owns all content. */
 export function productRichTextToNative(nodes: readonly RichTextNode[], context: RichProjection): DocumentEditorInput[] {

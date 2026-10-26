@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "id": "document-9479b87a3ef45fb9",
+  "metadata": {
+    "title": "不可信的输出",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec",
+      "./evil"
+    ],
+    "renderers": {
+      "slides": {
+        "theme": "default"
+      }
+    }
+  },
+  "sectionOrder": [
+    "不可信的输出",
+    "evil-image"
+  ],
+  "sections": {
+    "不可信的输出": {
+      "id": "不可信的输出",
+      "title": "不可信的输出",
+      "level": 1,
+      "children": [
+        "不可信的输出--paragraph-1"
+      ],
+      "stepOrder": [
+        "不可信的输出--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "evil-image": {
+      "id": "evil-image",
+      "title": "带引号的图片数据",
+      "level": 2,
+      "children": [
+        "evil-image--code-1"
+      ],
+      "stepOrder": [
+        "evil-image--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "不可信的输出--paragraph-1": {
+      "id": "不可信的输出--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "不可信的输出--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/exec.spec.ts 的测试文稿：测试插件的执行器替 Pyodide 运行 Python，返回的图片输出在数据中带引号与事件处理器（第 11 节“不可信的富输出”）。"
+            }
+          ]
+        }
+      ]
+    },
+    "evil-image--code-1": {
+      "id": "evil-image--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "print(\"the fixture's executor answers instead\")",
+      "execution": {
+        "when": "live"
+      }
+    }
+  },
+  "steps": {
+    "不可信的输出--step-0": {
+      "id": "不可信的输出--step-0",
+      "sectionId": "不可信的输出",
+      "visuals": [
+        {
+          "blockId": "不可信的输出--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "evil-image--step-0": {
+      "id": "evil-image--step-0",
+      "sectionId": "evil-image",
+      "visuals": [
+        {
+          "blockId": "evil-image--code-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

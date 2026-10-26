@@ -26,6 +26,10 @@
 
 `json-editor-code-native.json` 确认代码字符串的官方原生批注、保存后的稳定代码块 ID 与字符偏移，以及刷新恢复。`json-editor-cell-native.json` 确认表格批注使用稳定单元格 ID 加格内偏移；在前方插入一行并重新挂载后，原生线程仍指向原格，未按行列位置重新绑定。
 
+`json-app-reading-visual.json` 补查了关闭窄屏导航后的四种阅读组合，四组页面的滚动宽度均等于视口宽度。原生线程侧栏宽 `321px`，没有内容横向溢出。
+
+`native-ux-current.json` 复现了新增页后直接输入未落入文稿、手动滚动后当前页仍为第一页。修复后的 `native-ux-after.json` 中，新增页后直接输入已保存，焦点在原生正文编辑器；手动滚至末尾时状态为第 5 页，共 5 页，滚动位置没有被导航反馈拉回。显式导航请求与滚动位置现在分开处理。
+
 ### 工作台集成补充验证
 
 真实 Studio 的 HTTP/1 对照定位了持续连接耗尽：原页面同时建立 review、diagnostics、jobs、IR、document 五条工作区长流，叠加宿主连接后，读取 IR 和保存 POST 一直排队。只取消 IR 长流即可使同样的输入保存返回 200。现正文仅保留 source、review、diagnostics；放映与导出按需互斥订阅 IR 或 jobs。证据：`.presmium/ui-evidence/json-network-probe.json`。

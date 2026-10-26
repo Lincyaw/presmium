@@ -1,8 +1,11 @@
 import { undoDepth, redoDepth } from '@tiptap/pm/history'
+import { TextSelection } from '@tiptap/pm/state'
 import { DocumentSession } from './document-session.ts'
 import type { DocumentSessionState } from './document-session.ts'
 import type { TeachingDocument } from '@lincyaw/kernel'
 import type { NativeDocumentEditor } from './document-editor/schema.tsx'
+import { nativeTextPoint, nativeTextPosition } from './document-editor/selection.ts'
+import type { NativeTextPoint } from './document-editor/selection.ts'
 import { pageDeletion, removeDocumentPage } from './document-pages.ts'
 import { errorMessage, slideShape, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
 import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, JobsAnswer, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPoint, PreviewPosition, PreviewRect, PreviewRenderer, PreviewReport, ReviewChange, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
@@ -82,6 +85,8 @@ export interface WorkbenchState {
   previewIrRevision?: string
   /** Where the preview is: the section the author reads, or the slide and its step. */
   position?: PreviewPosition
+  /** An explicit source navigation request; scrolling updates position without issuing another request. */
+  documentNavigation?: { section: string, request: string }
   isCreatingPage?: boolean
   isEditingPage?: boolean
   editorHistory?: EditorHistoryState
@@ -162,7 +167,7 @@ const DOCUMENT_RESET = {
   editorHistory: undefined,
   isHistoryPreparing: false,
   pageEditFailure: undefined,
-  ir: undefined, preview: undefined, previewFailure: undefined, previewIrRevision: undefined, position: undefined,
+  ir: undefined, preview: undefined, previewFailure: undefined, previewIrRevision: undefined, position: undefined, documentNavigation: undefined,
   diagnostics: undefined, isDiagnosticsUnavailable: false, isRepairingDiagnostics: false, diagnosticsRepairFailure: undefined,
   pointer: undefined, save: { kind: 'idle' },
   focus: [], isFocusPending: false, focusFailure: undefined,
@@ -195,6 +200,10 @@ export class Workbench {
   readonly #documentSession: DocumentSession
   #documentEditor?: NativeDocumentEditor
   #unsubscribeEditor?: () => void
+  #unsubscribeDocumentSelection?: () => void
+  #documentSelectionGeneration = 0
+  #pendingDocumentFocus?: { documentId: string, nodeId: string, generation: number }
+  #pendingDocumentSelection?: { documentId: string, anchor: NativeTextPoint, head: NativeTextPoint, focused: boolean }
   #state: WorkbenchState
   readonly #listeners = new Set<Listener>()
   readonly #selectedSteps = new Map<string, number>()
@@ -606,9 +615,23 @@ export class Workbench {
   discardDocument(): Promise<void> { return this.#documentSession.discard() }
   documentError(error: Error): void { this.#set({ save: { kind: 'failed', message: error.message } }) }
   attachDocumentEditor(editor: NativeDocumentEditor | undefined): void {
-    this.#unsubscribeEditor?.(); this.#documentEditor = editor
+    this.#unsubscribeEditor?.(); this.#unsubscribeDocumentSelection?.(); this.#documentEditor = editor
+    if (editor) {
+      const focus = this.#pendingDocumentFocus, selection = this.#pendingDocumentSelection
+      this.#pendingDocumentFocus = undefined; this.#pendingDocumentSelection = undefined
+      if (focus && focus.documentId === this.#state.authoring?.content?.id && focus.generation === this.#documentSelectionGeneration && editor.getBlock(focus.nodeId)) {
+        editor.setTextCursorPosition(focus.nodeId, 'start'); editor.focus()
+      } else if (selection && selection.documentId === this.#state.authoring?.content?.id) {
+        const anchor = nativeTextPosition(editor, selection.anchor), head = nativeTextPosition(editor, selection.head)
+        if (anchor !== undefined && head !== undefined) {
+          editor.transact(transaction => transaction.setSelection(TextSelection.create(transaction.doc, anchor, head)))
+          if (selection.focused) editor.focus()
+        }
+      }
+    }
     const update = () => this.#set({ editorHistory: editor ? { section: this.#state.position?.section ?? '', undo: undoDepth(editor.prosemirrorState) > 0, redo: redoDepth(editor.prosemirrorState) > 0 } : undefined })
     this.#unsubscribeEditor = editor?.onChange(update); update()
+    this.#unsubscribeDocumentSelection = editor?.onSelectionChange(() => { this.#documentSelectionGeneration++ })
   }
   async flushPendingEdits(): Promise<void> {
     if (isAgentChanging(this.#state)) throw new Error('save-locked')
@@ -623,6 +646,11 @@ export class Workbench {
       if (directory !== this.#state.document) return false
       const document = structuredClone(this.#state.authoring!.content!)
       change(document)
+      const editor = this.#documentEditor
+      if (editor) {
+        const state = editor.prosemirrorState, anchor = nativeTextPoint(editor, state.selection.anchor), head = nativeTextPoint(editor, state.selection.head)
+        if (anchor && head) this.#pendingDocumentSelection = { documentId: document.id, anchor, head, focused: editor.prosemirrorView.hasFocus() }
+      }
       this.#documentSession.replace(document)
       await this.#documentSession.flush()
       return true
@@ -654,19 +682,23 @@ export class Workbench {
       const current = pageDeletion(document, plan.document, plan.source.version, plan.section)
       if (!current.allowed) throw new Error(current.reason)
       Object.assign(document, removeDocumentPage(document, plan.section))
-      this.#set({ position: { section: document.sectionOrder[0]!, step: 0, trail: [], view: 'document' } })
+      this.#set({ position: { section: document.sectionOrder[0]!, step: 0, trail: [], view: 'document' }, documentNavigation: { section: document.sectionOrder[0]!, request: crypto.randomUUID() } })
     })
   }
   createPage(after = this.#state.position?.section): void {
     if (this.#state.isEditingPage || this.#state.isCreatingPage) return
     const id = crypto.randomUUID(), stepId = crypto.randomUUID(), blockId = crypto.randomUUID(), nodeId = crypto.randomUUID()
+    const generation = this.#documentSelectionGeneration
     void this.#changeDocumentPage(document => {
       document.sections[id] = { id, title: this.#messages.newPage, children: [blockId], stepOrder: [stepId], layout: { type: 'stack' } }
       document.blocks[blockId] = { id: blockId, type: 'text', content: [{ id: nodeId, type: 'paragraph', children: [] }] }
       document.steps[stepId] = { id: stepId, sectionId: id, visuals: [{ blockId, visible: true }], narrationIds: [] }
       const index = after ? document.sectionOrder.indexOf(after) : document.sectionOrder.length - 1
       document.sectionOrder.splice(index + 1, 0, id)
-      this.#set({ position: { section: id, step: 0, trail: [], view: 'document' } })
+      if (generation === this.#documentSelectionGeneration) {
+        this.#pendingDocumentFocus = { documentId: document.id, nodeId, generation }
+        this.#set({ position: { section: id, step: 0, trail: [], view: 'document' }, documentNavigation: { section: id, request: crypto.randomUUID() } })
+      }
     })
   }
 
@@ -767,9 +799,14 @@ export class Workbench {
   /** Shows a section in the preview: from the navigation pane, the section to read or the slide to show. */
   goToSection(section: string): void {
     if (this.#state.webView === 'document' && this.#state.authoring?.content?.sections[section]) {
-      this.#set({ position: { section, step: 0, trail: [], view: 'document' } }); return
+      this.#set({ position: { section, step: 0, trail: [], view: 'document' }, documentNavigation: { section, request: crypto.randomUUID() } }); return
     }
     this.goToStep(section, this.#selectedSteps.get(`${this.#state.document}\0${section}`) ?? 0)
+  }
+
+  observeDocumentSection(section: string): void {
+    if (this.#state.webView !== 'document' || !this.#state.authoring?.content?.sections[section] || this.#state.position?.section === section) return
+    this.#set({ position: { section, step: this.#selectedSteps.get(`${this.#state.document}\0${section}`) ?? 0, trail: [], view: 'document' } })
   }
 
   /** Complete-IR position; trail maps the same step into a filtered preview without reusing its ordinal. */
@@ -949,6 +986,8 @@ export class Workbench {
   #stopSubscriptions(): void {
     this.#documentSession.close()
     this.#unsubscribeEditor?.(); this.#unsubscribeEditor = undefined; this.#documentEditor = undefined
+    this.#unsubscribeDocumentSelection?.(); this.#unsubscribeDocumentSelection = undefined
+    this.#pendingDocumentFocus = undefined; this.#pendingDocumentSelection = undefined; this.#documentSelectionGeneration++
     this.#playback.reset()
     this.#focusVersion++
     this.#pendingReveal = undefined
