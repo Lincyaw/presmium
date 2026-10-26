@@ -1,4 +1,4 @@
-import type { DocumentBlock, RichTextNode, Section, TeachingDocument, TextBlock } from '@lincyaw/kernel'
+import type { DocumentBlock, NarrationNode, RichTextNode, Section, TeachingDocument, TextBlock } from '@lincyaw/kernel'
 import { productInlineToNative } from './inline.ts'
 import { captureRichBaseline, createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
 import type { RichProjection } from './rich-text.ts'
@@ -155,11 +155,25 @@ function nativeChildren(native: readonly DocumentEditorBlock[], context: Documen
 }
 
 /** Reconstruct the normalized product tree without visiting or reparsing Markdown. */
-export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], context: DocumentProjection): TeachingDocument {
-  const structure = structureOf(blocks, context), restored = structure === context.structure ? undefined : context.structures.get(structure)
+export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], context: DocumentProjection, latest = context.document): TeachingDocument {
+  const targetStructure = structureOf(blocks, context)
+  if (context.structure && targetStructure !== context.structure) context.structures.set(context.structure, {
+    document: structuredClone(latest), rich: new Map(context.rich), owners: new Map(context.owners), pages: new Map(context.pages), baseline: new Map(context.baseline),
+  })
+  const restored = targetStructure === context.structure ? undefined : context.structures.get(targetStructure)
   if (restored) {
-    context.document = restored.document
     context.rich = new Map(restored.rich); context.owners = new Map(restored.owners); context.pages = new Map(restored.pages); context.baseline = new Map(restored.baseline)
+  }
+  const snapshot = restored?.document
+  // Source fields are current; a body history snapshot only supplies missing structural entities.
+  context.document = snapshot ? structuredClone({ ...latest,
+    blocks: { ...snapshot.blocks, ...latest.blocks }, sections: { ...snapshot.sections, ...latest.sections },
+  }) : structuredClone(latest)
+  if (snapshot) for (const id of snapshot.sectionOrder) {
+    if (latest.sections[id]) continue
+    const returned = context.document.sections[id]!
+    for (const other of Object.values(context.document.sections)) if (other.id !== id) other.stepOrder = other.stepOrder.filter(step => !returned.stepOrder.includes(step))
+    for (const step of returned.stepOrder) if (context.document.steps[step]) context.document.steps[step]!.sectionId = id
   }
   const next = structuredClone(context.document)
   next.blocks = {}; next.sections = {}; next.sectionOrder = []
@@ -199,10 +213,10 @@ export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], 
   const previousSectionOf = new Map<string, string>(), newSteps = new Set<string>()
   const previous = (blockId: string, sectionId: string) => {
     previousSectionOf.set(blockId, sectionId)
-    const block = context.document.blocks[blockId]
+    const block = latest.blocks[blockId]
     if (block?.type === 'container' || block?.type === 'component') for (const child of block.children ?? []) previous(child, sectionId)
   }
-  for (const section of Object.values(context.document.sections)) section.children.forEach(blockId => previous(blockId, section.id))
+  for (const section of Object.values(latest.sections)) section.children.forEach(blockId => previous(blockId, section.id))
   const assign = (blockId: string, sectionId: string) => {
     sectionOf.set(blockId, sectionId)
     const block = next.blocks[blockId]
@@ -220,6 +234,31 @@ export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], 
     step.visuals = step.visuals.filter(visual => sectionOf.get(visual.blockId) === step.sectionId)
     for (const [blockId, sectionId] of sectionOf) if (sectionId === step.sectionId && (previousSectionOf.get(blockId) !== sectionId || newSteps.has(step.id)) && !step.visuals.some(visual => visual.blockId === blockId)) step.visuals.push({ blockId, visible: true })
   }
+  if (snapshot) {
+    const returned = new Set(Object.keys(next.blocks).filter(id => !latest.blocks[id]))
+    for (const step of Object.values(next.steps)) for (const visual of snapshot.steps[step.id]?.visuals ?? []) {
+      if (sectionOf.get(visual.blockId) !== step.sectionId || previousSectionOf.get(visual.blockId) === step.sectionId) continue
+      const index = step.visuals.findIndex(value => value.blockId === visual.blockId)
+      if (index < 0) step.visuals.push(structuredClone(visual)); else step.visuals[index] = structuredClone(visual)
+    }
+    for (const id of next.sectionOrder) if (!latest.sections[id] && snapshot.production.sectionOverrides?.[id]) {
+      next.production.sectionOverrides ??= {}; next.production.sectionOverrides[id] ??= structuredClone(snapshot.production.sectionOverrides[id]!)
+    }
+    const cueIds = new Set(Object.values(next.narrations).flatMap(value => value.content.flatMap(node => node.type === 'cue' ? [node.id] : [])))
+    for (const narration of Object.values(snapshot.narrations)) {
+      const current = next.narrations[narration.id]
+      if (!current) continue
+      let offset = 0
+      for (const node of narration.content) {
+        if (node.type === 'text') offset += node.text.length
+        else if (node.type === 'pronunciation') offset += node.display.length
+        else if (node.target && returned.has(node.target.blockId) && !cueIds.has(node.id)) {
+          current.content = insertCue(current.content, structuredClone(node), offset); cueIds.add(node.id)
+          if (snapshot.production.cueTimings?.[node.id]) { next.production.cueTimings ??= {}; next.production.cueTimings[node.id] ??= structuredClone(snapshot.production.cueTimings[node.id]!) }
+        }
+      }
+    }
+  }
   for (const narration of Object.values(next.narrations)) narration.content = narration.content.filter(node => {
     if (node.type !== 'cue' || !node.target || next.blocks[node.target.blockId]) return true
     if (next.production.cueTimings) delete next.production.cueTimings[node.id]
@@ -230,6 +269,23 @@ export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], 
   context.baseline.clear(); captureRichBaseline(blocks, context)
   rememberDocumentStructure(blocks, context)
   return next
+}
+
+/** A restored cue keeps its written offset without replacing later narration text. */
+function insertCue(content: NarrationNode[], cue: Extract<NarrationNode, { type: 'cue' }>, offset: number): NarrationNode[] {
+  const next = structuredClone(content)
+  for (let index = 0; index < next.length; index++) {
+    const node = next[index]!
+    if (node.type === 'cue') continue
+    const length = node.type === 'text' ? node.text.length : node.display.length
+    if (offset <= length) {
+      if (node.type === 'text') next.splice(index, 1, ...offset ? [{ type: 'text' as const, text: node.text.slice(0, offset) }] : [], cue, ...offset < length ? [{ type: 'text' as const, text: node.text.slice(offset) }] : [])
+      else next.splice(index + (offset ? 1 : 0), 0, cue)
+      return next
+    }
+    offset -= length
+  }
+  next.push(cue); return next
 }
 
 export function nativePage(sectionId: string, title: string): DocumentEditorInput {
