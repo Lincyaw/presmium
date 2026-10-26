@@ -1120,35 +1120,6 @@
       "type": "text",
       "content": [
         {
-          "id": "semantic-extension-0",
-          "type": "extension",
-          "kind": "presmium.mdast",
-          "schemaVersion": 1,
-          "data": {
-            "node": {
-              "type": "paragraph",
-              "children": [
-                {
-                  "type": "text",
-                  "value": "扩展内容仍以结构化节点保存在 lecture.json。没有原生编辑控件的节点会保留身份与回退内容，不会转换成另一份源码。"
-                }
-              ]
-            }
-          },
-          "fallback": [
-            {
-              "id": "semantic-fallback-0",
-              "type": "paragraph",
-              "children": [
-                {
-                  "type": "text",
-                  "text": "提示、折叠、术语与语义标记"
-                }
-              ]
-            }
-          ]
-        },
-        {
           "id": "page:cards",
           "type": "paragraph",
           "children": [
