@@ -130,10 +130,16 @@
           "Previous",
           "Failed",
           "CaptionEditing",
-          "CaptionEmpty"
+          "CaptionEmpty",
+          "FallbackOverflow",
+          "FallbackFocused"
         ],
         "captionEditingNodeId": "102:1760",
-        "captionEmptyNodeId": "102:1778"
+        "captionEmptyNodeId": "102:1778",
+        "fallbackOverflowNodeId": "177:4305",
+        "fallbackFocusedNodeId": "177:4328",
+        "viewportReviewNodeId": "177:4351",
+        "viewportContract": "Persistent viewport retains the last measured height across deferred mounting and iframe release; unknown height uses existing default/min/max tokens. Fallback scrolls natively and owns a placeholder-only Tabstop; mounting the iframe preserves the viewport node and current focus. Reading keys keep their native default; Tab exits."
       },
       "Caption": {
         "nodeId": "110:1847",

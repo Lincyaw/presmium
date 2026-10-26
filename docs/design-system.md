@@ -113,6 +113,7 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 | MediaClipEditor | workbench `MediaClipEditor`、`pm-ui-media-clip-editor` | 组合公开素材选择、成对时间输入、短偏移、音量与静音；导入和采用分开，非法输入保留。调用方提供真实音频检查、已确认步骤范围和版本化提交，不绘制虚构波形 |
 | Timeline | workbench `PmTimeline`、`pm-ui-timeline` | 接收真实画面／配音／字幕三轨与稳定步骤身份；支持尺面点击、精确秒输入、Range、横滚、视图缩放与适配；未知／估算时长不开放任意时间定位，仍可选择步骤；只有真实样本才绘制波形 |
 | SortableList | workbench `PmSortableList`、`pm-ui-sortable-list` | dnd kit 负责指针、触屏、键盘和取消；按稳定 ID 提交一次相对位置移动。排序禁用与页面选择分开，保存前的视觉顺序不成为第二份文稿；身份、页面集合和重置变化中止过期手势 |
+| BlockPreview | workbench `DocumentBlockPreview`、`pm-ui-block-preview` | iframe 与可读 fallback 共用持久 viewport；释放 iframe 保留最近真实测量高度，未测量时使用既有预览高度令牌。fallback 原生滚动、显示键盘焦点，Tab 可离开；挂载 iframe 不替换 viewport 或主动转移焦点 |
 | Checkbox／Radio／Switch | 现有 `pm-ui-checkbox` 仅提供部分基础着色，其余公共能力待补齐 | 在使用前规定选择、焦点、禁用、数值和错误状态，不在业务页各自实现 |
 
 原生选择器的展开列表可能由操作系统绘制，不能把这种差异当作已完成统一视觉。音色选择使用公共可搜索弹层，组合搜索、语言筛选、共享列表项、试听与选中态；桌面可使用 Popover，空间不足时使用公共 Dialog 或 Drawer。素材等复杂选择复用同一类公共能力，在 Figma 单独规定相关状态，不能退回每页自绘的下拉列表。
