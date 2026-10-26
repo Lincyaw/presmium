@@ -13,6 +13,7 @@ export function blockPreviewReporter(config: AppConfig, doc: IRDocument, viewer:
   const root = document.getElementById('app')!
   let localPosition = false
   const playback = blockPlaybackGate(config, doc, viewer, origin, () => { localPosition = true })
+  playback.enable()
   let enabled = false, fatal = false, queued = false, disposed = false
   let lastReport: string | undefined
   let stopPosition: (() => void) | undefined
