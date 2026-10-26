@@ -26,3 +26,5 @@ overrides:
   # BlockNote and its public schema extensions share one Tiptap runtime.
   '@tiptap/core': 3.32.0
   '@tiptap/pm': 3.32.0
+  # 1.42.7/8 misinterpret shrinking IME preedit as Backspace in BlockNote.
+  prosemirror-view: 1.42.6
