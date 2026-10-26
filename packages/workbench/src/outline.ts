@@ -13,6 +13,24 @@ export function documentOutline(doc: IRDocument | TeachingDocument | undefined):
   return (doc?.sections ?? []).map((section, i) => ({ id: section.id, title: section.title, depth: section.depth, number: i + 1 }))
 }
 
+/** A stable display snapshot lets navigation ignore changes to the document body. */
+export class DocumentOutline {
+  #identity?: string
+  #items: readonly OutlineItem[] = []
+
+  read(document: TeachingDocument | undefined, identity = document?.id): readonly OutlineItem[] {
+    const items = documentOutline(document)
+    if (identity !== this.#identity || items.length !== this.#items.length || items.some((item, index) => {
+      const previous = this.#items[index]!
+      return item.id !== previous.id || item.title !== previous.title || item.depth !== previous.depth || item.number !== previous.number
+    })) {
+      this.#identity = identity
+      this.#items = items
+    }
+    return this.#items
+  }
+}
+
 // As a word processor counts: each CJK character is a word, and so is each run of Latin letters or digits.
 const CJK = /[぀-ヿ㐀-䶿一-鿿가-힯豈-﫿]/g
 const WORD = /[A-Za-z0-9À-ɏ]+(?:['’.-][A-Za-z0-9À-ɏ]+)*/g
