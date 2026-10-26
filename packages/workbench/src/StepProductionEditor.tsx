@@ -13,7 +13,7 @@ const MESSAGES = {
     legacy: '继承讲稿设置', mixed: '本步讲稿的开始时机不同。',
     unify: '统一本步时机', unifyHint: '仅覆盖本步；恢复继承后继续使用讲稿原有时机。',
     invalid: '未采用：请输入不小于 0 的毫秒数。', intent: '此处设置讲授时序；文档内预览只播放动画，不生成配音。',
-    review: '暂存输入尚未采用。请核对当前来源设置，再修改或恢复继承。', storageFailure: '临时输入暂存失败，请保持页面打开并保留输入。',
+    review: '暂存输入尚未采用。请核对当前来源设置，再修改或恢复继承。', pending: '输入尚未采用。', storageFailure: '临时输入暂存失败，请保持页面打开并保留输入。',
     count: (index: number, value: string) => `讲稿 ${index}：${value}`,
   },
   en: {
@@ -23,7 +23,7 @@ const MESSAGES = {
     legacy: 'Inherited from narration', mixed: 'Narrations in this step start at different times.',
     unify: 'Unify this step’s timing', unifyHint: 'Applies only to this step. Restoring inheritance returns to the original narration settings.',
     invalid: 'Not applied: enter a duration of 0 ms or more.', intent: 'These settings control the lecture. The document preview plays animation without generating speech.',
-    review: 'This draft has not been applied. Check the current source setting, then edit it or restore inheritance.', storageFailure: 'The pending input could not be stored. Keep this page open and retain the input.',
+    review: 'This draft has not been applied. Check the current source setting, then edit it or restore inheritance.', pending: 'Input has not been applied.', storageFailure: 'The pending input could not be stored. Keep this page open and retain the input.',
     count: (index: number, value: string) => `Narration ${index}: ${value}`,
   },
 }
@@ -48,21 +48,25 @@ function DurationField({ label, value, source, locale, readOnly, draft, onDraft,
   const focused = useRef(false), composing = useRef(false)
   useEffect(() => { if (!focused.current) { setText(draft?.text ?? (value === undefined ? '' : String(value))); setError(draft?.error ?? false) } }, [value, source, draft?.text, draft?.error, draft?.review])
   useEffect(() => () => { if (composing.current) current.current.onComposition?.(false) }, [])
-  const commit = (input: string, reportError = true): boolean => {
+  const commit = (input: string): boolean => {
     const normalized = input.normalize('NFKC').trim()
     if (!normalized) { setError(false); current.current.onDraft?.(undefined); current.current.onChange(null); return true }
     const number = Number(normalized)
-    if (!/^\d+(?:\.\d+)?$/.test(normalized) || !Number.isFinite(number)) { if (reportError) setError(true); current.current.onDraft?.({ text: input, error: reportError }); return false }
+    if (!/^\d+(?:\.\d+)?$/.test(normalized) || !Number.isFinite(number)) { setError(true); current.current.onDraft?.({ text: input, error: true }); return false }
     setError(false); current.current.onDraft?.(undefined); current.current.onChange(number); return true
   }
   return <PmInput label={locale === 'zh-CN' ? `${label}（${t.unit}）` : `${label} (${t.unit})`} width="number" inputMode="decimal" maxLength={256} value={text} placeholder={t.automatic}
-    hint={t.source[source]} error={draft?.review ? t.review : error ? t.invalid : undefined} readOnly={readOnly}
+    hint={draft && !error && !draft.review ? `${t.source[source]} · ${t.pending}` : t.source[source]} error={draft?.review ? t.review : error ? t.invalid : undefined} readOnly={readOnly}
     onFocus={() => { focused.current = true }}
-    onChange={event => { setText(event.target.value); if (!readOnly) commit(event.target.value, !composing.current) }}
-    onBlur={event => {
+    onChange={event => {
+      setText(event.target.value)
+      if (readOnly) return
+      if (composing.current) { setError(false); current.current.onDraft?.({ text: event.target.value, error: false }) }
+      else commit(event.target.value)
+    }}
+    onBlur={() => {
       focused.current = false
-      if (composing.current || !readOnly && !commit(event.target.value)) return
-      current.current.onDraft?.(undefined)
+      if (readOnly || composing.current || error || draft) return
       setText(current.current.value === undefined ? '' : String(current.current.value))
     }}
     onCompositionStart={() => { composing.current = true; onComposition?.(true) }}
