@@ -1,7 +1,7 @@
-import { useLocale } from '@lincyaw/host'
-import { createElement, useEffect, useRef } from 'react'
-import { useMediaActive } from '../src/client/media.ts'
-import { captionTracks, mediaElements } from '../src/domain/index.ts'
+import { PmNotice, useLocale, useMessages } from '@lincyaw/host'
+import { createElement, useRef } from 'react'
+import { useMediaPlayback } from '../src/client/media.ts'
+import { captionTracks, mediaElements, MESSAGES } from '../src/domain/index.ts'
 import type { MediaKind } from '../src/domain/index.ts'
 import './PmMedia.css'
 interface Props {
@@ -22,30 +22,9 @@ interface Props {
 }
 export default function PmMedia(props: Props) {
   const locale = useLocale(),
+    t = useMessages(MESSAGES),
     figure = useRef<HTMLElement>(null),
-    active = useMediaActive(),
-    resume = useRef(false)
-  useEffect(() => {
-    const media = [
-      ...(figure.current?.querySelectorAll<HTMLMediaElement>('video,audio') ??
-        []),
-    ]
-    if (!active) {
-      resume.current =
-        props.autoplay === true && media.some((el) => !el.paused && !el.ended)
-      media.forEach((el) => el.pause())
-    } else if (resume.current && props.autoplay) {
-      resume.current = false
-      media.forEach((el) => void el.play().catch(() => {}))
-    }
-  }, [active, props.autoplay])
-  useEffect(
-    () => () =>
-      figure.current
-        ?.querySelectorAll<HTMLMediaElement>('video,audio')
-        .forEach((el) => el.pause()),
-    [],
-  )
+    failed = useMediaPlayback(figure, `${props.kind}\0${props.src}`)
   const elements = mediaElements(props.kind, props, props.still !== undefined),
     tracks =
       props.kind === 'video'
@@ -56,12 +35,6 @@ export default function PmMedia(props: Props) {
       ref={figure}
       className="pm-media"
       data-kind={props.kind}
-      onPlayCapture={(event) => {
-        if (!active && event.target instanceof HTMLMediaElement) {
-          resume.current = props.autoplay === true
-          event.target.pause()
-        }
-      }}
     >
       {elements.map(({ tag, file, attrs }, i) => {
         const {
@@ -98,6 +71,7 @@ export default function PmMedia(props: Props) {
         )
       })}
       {props.caption && <figcaption>{props.caption}</figcaption>}
+      {failed && <PmNotice tone="danger">{t.mediaPlaybackFailed}</PmNotice>}
     </figure>
   )
 }
