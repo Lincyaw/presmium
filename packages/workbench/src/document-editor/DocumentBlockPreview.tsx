@@ -89,10 +89,16 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
     const listener = (event: MessageEvent) => {
       if (event.source !== frame.current?.contentWindow || event.origin !== origin) return
       const value = event.data
-      if (!value || value.type !== 'presmium:block-preview' || value.blockId !== blockId || value.document !== directory) return
+      if (!value || !['presmium:block-preview', 'presmium:block-preview-position'].includes(value.type) || value.blockId !== blockId || value.document !== directory) return
       if (value.revision !== expected) {
         if (mismatches.current++ < 3) setAttempt(value => value + 1)
         else setState(before => ({ ...before, status: 'failed', error: t.previewFailure }))
+        return
+      }
+      if (value.type === 'presmium:block-preview-position') {
+        const current = workbench.getState()
+        if (current.document !== directory || current.authoring?.version !== loadedVersion || (current.authoring?.projectRevision ?? 0) !== loadedProject) return
+        if (typeof value.sectionId === 'string' && typeof value.stepId === 'string') workbench.observeDocumentStep(value.sectionId, value.stepId)
         return
       }
       if (typeof value.height === 'number' && Number.isFinite(value.height)) setHeight(Math.max(1, Math.min(value.height, 4096)))
@@ -102,7 +108,7 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
     window.addEventListener('message', listener)
     const timeout = setTimeout(() => setState(before => before.status === 'loading' ? { ...before, status: 'failed', error: t.previewFailure } : before), 30_000)
     return () => { clearTimeout(timeout); window.removeEventListener('message', listener) }
-  }, [src, origin, enabled, state.snapshot?.revision, blockId, directory, t.previewFailure])
+  }, [src, origin, enabled, state.snapshot?.revision, blockId, directory, loadedVersion, loadedProject, workbench, t.previewFailure])
   const old = source?.dirty || source?.saving || source?.error || source?.restored || loadedVersion !== source?.version || loadedProject !== (source?.projectRevision ?? 0)
   return <section ref={root} className="pm-ui-block-preview" data-block-preview={blockId} data-status={state.status} data-interactive={interactive || undefined} contentEditable={false}>
     <header className="pm-ui-block-preview__header"><span className="pm-ui-block-preview__label"><PmIcon name="slides" />{old && state.snapshot ? t.previewPrevious : state.status === 'loading' ? t.previewLoading : t.previewSnapshot}</span>

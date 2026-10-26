@@ -159,7 +159,7 @@ async function bootDocument(): Promise<void> {
     events.addEventListener('open', () => void (lifecycle.isRequested() && refresh()))
   }
   if (config.block) {
-    const reporter = blockPreviewReporter(config, doc)
+    const reporter = blockPreviewReporter(config, doc, viewer!)
     try { if (lifecycle.isRequested()) await lifecycle.setActive(true); await reporter.ready() }
     catch (error) { reporter.failed(); console.error('[presmium] the block runtime did not start', error) }
     return

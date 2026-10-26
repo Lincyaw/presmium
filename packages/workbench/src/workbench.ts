@@ -810,6 +810,17 @@ export class Workbench {
     this.#set({ position: { section, step: this.#selectedSteps.get(`${this.#state.document}\0${section}`) ?? 0, trail: [], view: 'document' } })
   }
 
+  /** A read-only inline runtime chooses a source step without navigating or editing the document. */
+  observeDocumentStep(sectionId: string, stepId: string): void {
+    const content = this.#state.authoring?.content, section = content?.sections[sectionId]
+    if (this.#state.webView !== 'document' || !content?.sectionOrder.includes(sectionId) || !section) return
+    const step = section.stepOrder.indexOf(stepId)
+    if (step < 0 || content.steps[stepId]?.sectionId !== sectionId) return
+    this.#selectedSteps.set(`${this.#state.document}\0${sectionId}`, step)
+    if (this.#state.position?.section === sectionId && this.#state.position.step === step) return
+    this.#set({ position: { section: sectionId, step, trail: section.stepOrder.slice(1, step + 1).map(id => `step:${id}`), view: 'document' } })
+  }
+
   /** Complete-IR position; trail maps the same step into a filtered preview without reusing its ordinal. */
   goToStep(section: string, step: number): void {
     const target = this.#state.ir?.doc.sections.find(item => item.id === section)
