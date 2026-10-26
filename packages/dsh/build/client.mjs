@@ -32,6 +32,7 @@ export async function buildClient() {
     minify: true,
     metafile: true,
     absWorkingDir: PACKAGE,
+    conditions: ['style'],
     loader: { '.woff2': 'dataurl' },
     plugins: [noWoffFallback],
     logLevel: 'warning',

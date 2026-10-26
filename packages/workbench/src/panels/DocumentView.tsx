@@ -4,12 +4,12 @@ import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
 import { countWords, documentOutline } from '../outline.ts'
 import { isAgentChanging } from '../workbench.ts'
-import { CommentsPanel } from './CommentsPanel.tsx'
 import { ExportPanel } from './ExportPanel.tsx'
 import { HistoryPanel } from './HistoryPanel.tsx'
 import { PreviewPanel } from './PreviewPanel.tsx'
 import { PageRenameDialog } from './PageRenameDialog.tsx'
 import { PageDeleteDialog } from './PageDeleteDialog.tsx'
+import { SourceDocumentPanel } from './SourceDocumentPanel.tsx'
 
 export type DocumentAside = 'comments' | 'history' | 'export'
 
@@ -27,6 +27,7 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   const workbench = useWorkbench()
   const [aside, setAside] = useState<DocumentAside | null>(null)
   const [presenting, setPresenting] = useState(false)
+  const [commentsPortal, setCommentsPortal] = useState<HTMLDivElement | null>(null)
   const t = useMessages()
   const document = useWorkbenchState(state => state.document)
   const view = useWorkbenchState(state => state.webView)
@@ -62,18 +63,17 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   return (
     <div className="pmw-document" data-workspace={presenting ? 'presentation' : 'content'} data-presenting={presenting || undefined} data-aside={aside ?? undefined} data-navigation={navigation || undefined}>
       {presenting ? <PmToolbar className="pmw-toolbar pmw-toolbar--present" label={t.presentationPreview}><PmToolbarButton asChild><PmIconButton small icon="close" label={t.exitPresentation} shortcut="Escape" onClick={exitPresent} /></PmToolbarButton></PmToolbar> : <DocumentToolbar framed={framed} aside={aside} navigation={navigation} onPresent={() => {
-        workbench.closeNarration()
         workbench.setMode('viewing')
         workbench.setWebView('present')
         setPresenting(true)
-      }} onNavigation={() => { setNavigation(shown => !shown); if (!navigation && matchMedia('(max-width: 1279px)').matches) { setAside(null); workbench.closeNarration() } }} onAside={next => { workbench.closeNarration(); setAside(current => (current === next ? null : next)); if (matchMedia('(max-width: 1279px)').matches) setNavigation(false) }} />}
+      }} onNavigation={() => { setNavigation(shown => !shown); if (!navigation && matchMedia('(max-width: 1279px)').matches) setAside(null) }} onAside={next => { setAside(current => (current === next ? null : next)); if (matchMedia('(max-width: 1279px)').matches) setNavigation(false) }} />}
       <DocumentNotices />
       <div className="pmw-document__body" role="region" aria-label={presenting ? t.presentationPreview : t.documentEditor}>
         {!presenting && navigation && <NavigationPane onClose={() => setNavigation(false)} onSelect={() => { if (matchMedia('(max-width: 1279px)').matches) setNavigation(false) }} />}
-        <div className="pmw-document__main"><PreviewPanel active={active} />{presenting && <StepTimeline />}</div>
+        <div className="pmw-document__main"><div className="pmw-document__source" hidden={presenting}><SourceDocumentPanel commentsPortal={commentsPortal} /></div>{presenting && <><PreviewPanel active={active} /><StepTimeline /></>}</div>
         {!presenting && aside && (
-          <aside className="pmw-document__aside" aria-label={aside}>
-            {aside === 'comments' ? <CommentsPanel onClose={() => setAside(null)} /> : aside === 'export' ? <ExportPanel documentOnly onClose={() => setAside(null)} /> : <HistoryPanel onClose={() => setAside(null)} />}
+          <aside className="pmw-document__aside pm-ui-block-editor" aria-label={aside}>
+            {aside === 'comments' ? <section className="pmw-pane"><header className="pmw-pane__header"><h2 className="pmw-pane__title">{t.comments}</h2><PmIconButton small icon="close" label={t.close} onClick={() => setAside(null)} /></header><div ref={setCommentsPortal} /></section> : aside === 'export' ? <ExportPanel documentOnly onClose={() => setAside(null)} /> : <HistoryPanel onClose={() => setAside(null)} />}
           </aside>
         )}
       </div>
@@ -114,20 +114,20 @@ function StepTimeline() {
 function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): void }) {
   const t = useMessages()
   const workbench = useWorkbench()
-  const doc = useWorkbenchState(state => state.ir?.doc)
+  const doc = useWorkbenchState(state => state.authoring?.content)
   const slides = useWorkbenchState(state => state.previewRenderer === 'slides' || state.webView !== 'document')
   const current = useWorkbenchState(state => state.position?.section)
   const editing = useWorkbenchState(state => state.mode === 'editing')
   const creating = useWorkbenchState(state => Boolean(state.isCreatingPage))
-  const pageBusy = useWorkbenchState(state => Boolean(state.isEditingPage || state.isEditingVoice))
+  const pageBusy = useWorkbenchState(state => Boolean(state.isEditingPage))
   const failure = useWorkbenchState(state => state.pageEditFailure)
   const document = useWorkbenchState(state => state.document)
   const [renaming, setRenaming] = useState<{ id: string, title: string, trigger?: HTMLButtonElement }>()
   const [deleting, setDeleting] = useState<{ id: string, title: string, trigger?: HTMLButtonElement }>()
-  const canDelete = useWorkbenchState(state => Boolean(state.ir?.authoring?.deletePage))
+  const canDelete = useWorkbenchState(state => Boolean(state.authoring?.content))
   const menuTriggers = useRef(new Map<string, HTMLButtonElement>())
   useEffect(() => { setRenaming(undefined); setDeleting(undefined) }, [document])
-  const canCreate = useWorkbenchState(state => state.previewRenderer === 'web' && state.webView === 'document' && Boolean(state.previewIrRevision) && !state.editing && !isAgentChanging(state))
+  const canCreate = useWorkbenchState(state => Boolean(state.authoring?.content) && !state.authoring?.loading && !state.authoring?.composing && !isAgentChanging(state))
   const pages = editing || slides
   const items = useMemo(() => documentOutline(doc), [doc])
   const top = Math.min(...items.map(item => Math.max(1, item.depth)))
@@ -145,8 +145,8 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
             <ol className="pmw-navigation__list" data-kind={pages ? 'slides' : 'headings'}>
               {items.map((item, index) => {
                 const capability = workbench.pageEditCapability(item.id)
-                const previousPeer = index > 0 && items[index - 1]?.depth === item.depth
-                const nextPeer = index < items.length - 1 && items[index + 1]?.depth === item.depth
+                const previousPeer = index > 0
+                const nextPeer = index < items.length - 1
                 const moveDescription = capability.reason ?? (!previousPeer || !nextPeer ? t.pageEditHierarchy : undefined)
                 return (
                 <li key={item.id} className="pmw-navigation__row">
@@ -185,13 +185,13 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
 /** Where the author is, how long the document is, and what the mode lets them do. */
 function StatusBar() {
   const t = useMessages()
-  const doc = useWorkbenchState(state => state.ir?.doc)
+  const doc = useWorkbenchState(state => state.authoring?.content)
   const slides = useWorkbenchState(state => state.previewRenderer === 'slides' || state.webView !== 'document')
   const section = useWorkbenchState(state => state.position?.section)
   const mode = useWorkbenchState(state => state.mode)
   const words = useMemo(() => countWords(doc), [doc])
-  const total = doc?.sections.length ?? 0
-  const at = section === undefined ? -1 : doc?.sections.findIndex(s => s.id === section) ?? -1
+  const total = doc?.sectionOrder.length ?? 0
+  const at = section === undefined ? -1 : doc?.sectionOrder.indexOf(section) ?? -1
   return (
     <footer className="pmw-statusbar" aria-label={t.statusBar}>
       {at >= 0 && <span className="pmw-statusbar__item">{slides ? t.slideOf(at + 1, total) : t.sectionOf(at + 1, total)}</span>}
@@ -206,13 +206,13 @@ function StatusBar() {
 function DocumentToolbar({ framed, aside, navigation, onPresent, onNavigation, onAside }: { framed: boolean, aside: DocumentAside | null, navigation: boolean, onPresent(): void, onNavigation(): void, onAside(aside: DocumentAside): void }) {
   const t = useMessages()
   const workbench = useWorkbench()
-  const title = useWorkbenchState(state => state.documents?.documents.find(doc => doc.dir === state.document)?.title ?? state.ir?.doc.meta.title ?? '')
+  const title = useWorkbenchState(state => state.authoring?.content?.metadata.title ?? state.documents?.documents.find(doc => doc.dir === state.document)?.title ?? '')
   const history = useWorkbenchState(state => state.history)
   const editorHistory = useWorkbenchState(state => state.editorHistory)
-  const dirty = useWorkbenchState(state => Boolean(state.bodyDirty || state.nativeDirty))
-  const busy = useWorkbenchState(state => state.isHistoryBusy || state.isHistoryPreparing || Boolean(state.editing) || Boolean(state.isCreatingPage) || Boolean(state.isEditingPage || state.isEditingVoice) || isAgentChanging(state))
-  const blocked = useWorkbenchState(state => Boolean(state.bodyDirty || state.nativeDirty || state.sourceDirty || state.save.kind === 'saving' || state.save.kind === 'failed' || !state.previewIrRevision || state.previewIrRevision !== state.ir?.revision))
-  const openComments = useWorkbenchState(state => state.comments.filter(comment => comment.status === 'open').length)
+  const dirty = useWorkbenchState(state => Boolean(state.authoring?.dirty))
+  const busy = useWorkbenchState(state => state.isHistoryBusy || state.isHistoryPreparing || Boolean(state.isCreatingPage) || Boolean(state.isEditingPage || state.authoring?.composing) || isAgentChanging(state))
+  const blocked = useWorkbenchState(state => Boolean(!state.authoring?.content || state.authoring.loading || state.authoring.dirty || state.authoring.saving || state.authoring.restored || state.authoring.error || state.authoring.composing || state.isEditingPage || state.isCreatingPage || isAgentChanging(state)))
+  const openComments = useWorkbenchState(state => Object.values(state.authoring?.content?.comments ?? {}).filter(comment => !comment.resolved && !comment.deletedAt).length)
   return (
     <PmToolbar className="pmw-toolbar" label={t.commands}>
       {!framed && <>
@@ -236,7 +236,7 @@ function DocumentToolbar({ framed, aside, navigation, onPresent, onNavigation, o
 function SaveStatus() {
   const t = useMessages()
   const save = useWorkbenchState(state => state.save)
-  const dirty = useWorkbenchState(state => Boolean(state.bodyDirty || state.nativeDirty || state.sourceDirty))
+  const dirty = useWorkbenchState(state => Boolean(state.authoring?.dirty))
   const locale = useWorkbenchState(state => state.locale)
   const [, tick] = useState(0)
   useEffect(() => {
@@ -255,11 +255,10 @@ function DocumentNotices() {
   const t = useMessages()
   const workbench = useWorkbench()
   const review = useWorkbenchState(state => state.review)
-  const fallback = useWorkbenchState(state => state.editFallback)
   const save = useWorkbenchState(state => state.save)
+  const sourceError = useWorkbenchState(state => state.authoring?.error)
   const historyFailure = useWorkbenchState(state => state.historyFailure)
   const focusFailure = useWorkbenchState(state => state.focusFailure)
-  const asking = useWorkbenchState(state => state.isAsking)
   const askFailure = useWorkbenchState(state => (state.pointer ? undefined : state.askFailure))
   return (
     <div className="pmw-notices">
@@ -273,20 +272,8 @@ function DocumentNotices() {
           </span>
         </PmNotice>
       )}
-      {fallback && (
-        <PmNotice tone="warn">
-          <span>{t.formattedEdit}</span>
-          <span className="pmw-notice__actions">
-            <PmButton small onClick={() => workbench.dismissEditFallback()}>{t.cancel}</PmButton>
-            <PmButton small variant="accent" icon="sparkle" disabled={asking} onClick={() => {
-              void workbench.askAgent(t.rewriteEditRequest(fallback.before, fallback.after), [{ id: 'selection', from: workbench.state.previewRenderer, section: fallback.target.section, ...fallback.target.block ? { block: fallback.target.block } : {} }])
-                .then(asked => { if (asked) workbench.dismissEditFallback() })
-            }}>{t.rewriteEdit}</PmButton>
-          </span>
-        </PmNotice>
-      )}
       {save.kind === 'locked' && <PmNotice tone="warn">{t.saveLocked}</PmNotice>}
-      {save.kind === 'failed' && <PmNotice tone="danger">{t.saveFailed(save.message)}</PmNotice>}
+      {save.kind === 'failed' && !sourceError && <PmNotice tone="danger">{t.saveFailed(save.message)}</PmNotice>}
       {historyFailure && <PmNotice tone="danger">{t.historyFailed(historyFailure)}</PmNotice>}
       {focusFailure && <PmNotice tone="warn">{t.focusFailed(focusFailure)}</PmNotice>}
       {askFailure && <PmNotice tone="danger">{t.askFailed(askFailure)}</PmNotice>}

@@ -1,0 +1,191 @@
+import type { DocumentBlock, RichTextNode, Section, TeachingDocument, TextBlock } from '@lincyaw/kernel'
+import { productInlineToNative } from './inline.ts'
+import { createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
+import type { RichProjection } from './rich-text.ts'
+import type { DocumentEditorBlock, DocumentEditorInput } from './schema.tsx'
+
+export interface DocumentProjection extends RichProjection {
+  owners: Map<string, string>
+  pages: Map<string, string>
+  document: TeachingDocument
+  content: DocumentEditorInput[]
+}
+const newId = () => crypto.randomUUID()
+const pageId = (sectionId: string) => `page:${sectionId}`
+function plain(nodes: readonly { type: string, text?: string, children?: readonly unknown[] }[]): string {
+  return nodes.map(node => node.type === 'text' ? node.text ?? '' : node.type === 'break' ? '\n' : node.children ? plain(node.children as Parameters<typeof plain>[0]) : '').join('')
+}
+function register(blocks: readonly DocumentEditorInput[], owner: string, context: DocumentProjection): void {
+  for (const block of blocks) { if (block.id) context.owners.set(block.id, owner); if (block.children) register(block.children, owner, context) }
+}
+function productBlock(blockId: string, context: DocumentProjection): DocumentEditorInput[] {
+  const document = context.document, block = document.blocks[blockId]
+  if (!block) throw new Error('document-block-reference')
+  if (block.type === 'text') {
+    const native = productRichTextToNative(block.content, context)
+    if (!native.length) native.push({ id: newId(), type: 'paragraph', content: [] })
+    register(native, blockId, context)
+    return native
+  }
+  context.owners.set(block.id, block.id)
+  if (block.type === 'container') return [{ id: block.id, type: 'presmiumContainer', props: { entityId: block.id, layout: block.layout, title: block.properties.title ?? '' }, children: block.children.flatMap(child => productBlock(child, context)) }]
+  if (block.type === 'image') return [{ id: block.id, type: 'image', props: { url: document.assets[block.assetId]?.location ?? '', caption: plain(block.caption ?? []), name: block.alt, textAlignment: block.alignment ?? 'left', ...block.width !== undefined ? { previewWidth: block.width } : {} } }]
+  if (block.type === 'code' && block.value !== undefined) return [{ id: block.id, type: 'codeBlock', props: { language: block.language }, content: block.value }]
+  return [{ id: block.id, type: 'presmiumAtom', props: { entityId: block.id, kind: block.type, label: block.type === 'code' ? block.title ?? block.origin?.anchor ?? block.language : document.definitions[block.definitionId]?.kind ?? block.definitionId }, ...block.type === 'component' && block.children ? { children: block.children.flatMap(child => productBlock(child, context)) } : {} }]
+}
+
+export function createDocumentProjection(document: TeachingDocument): DocumentProjection {
+  const context: DocumentProjection = { ...createRichProjection(), owners: new Map(), pages: new Map(), document: structuredClone(document), content: [] }
+  context.content = document.sectionOrder.flatMap(sectionId => {
+    const section = document.sections[sectionId]!
+    context.pages.set(pageId(sectionId), sectionId)
+    return [{ id: pageId(sectionId), type: 'presmiumPage' as const, props: { sectionId, level: section.level ?? 1 }, content: [{ type: 'text' as const, text: section.title, styles: {} }] }, ...section.children.flatMap(blockId => productBlock(blockId, context))]
+  })
+  return context
+}
+
+function nativePlain(block: DocumentEditorBlock): string {
+  if (!Array.isArray(block.content)) return ''
+  return plain(block.content as Parameters<typeof plain>[0])
+}
+function isEntity(block: DocumentEditorBlock, context: DocumentProjection): boolean {
+  if (block.type === 'presmiumAtom') return !block.props.kind.startsWith('rich:')
+  if (block.type === 'presmiumContainer' || block.type === 'image') return true
+  return block.type === 'codeBlock' && context.document.blocks[context.owners.get(block.id) ?? block.id]?.type !== 'text' && !context.rich.has(block.id)
+}
+function nativeChildren(native: readonly DocumentEditorBlock[], context: DocumentProjection, next: TeachingDocument): string[] {
+  const children: string[] = []
+  let buffer: DocumentEditorBlock[] = [], owner: string | undefined
+  const flush = () => {
+    if (!buffer.length) return
+    const blockId = owner && !next.blocks[owner] ? owner : newId()
+    const original = context.document.blocks[owner ?? '']
+    const block: TextBlock = { ...original?.type === 'text' ? structuredClone(original) : {}, id: blockId, type: 'text', content: nativeRichTextToProduct(buffer, context) }
+    if (block.reveal) { const ids = richNodeIds(block.content); block.reveal.order = block.reveal.order.filter(id => ids.has(id)) }
+    next.blocks[blockId] = block
+    children.push(blockId)
+    register(buffer, blockId, context)
+    buffer = []; owner = undefined
+  }
+  for (const block of native) {
+    if (block.type === 'presmiumPage') throw new Error('document-page-nesting')
+    if (!isEntity(block, context)) {
+      const knownOwner = context.owners.get(block.id)
+      if (buffer.length && knownOwner && owner && knownOwner !== owner) flush()
+      owner ??= knownOwner
+      buffer.push(block)
+      continue
+    }
+    flush()
+    const original = context.document.blocks[block.id] ?? (block.type === 'presmiumAtom' || block.type === 'presmiumContainer' ? context.document.blocks[block.props.entityId] : undefined)
+    let product: DocumentBlock
+    if (block.type === 'presmiumContainer') {
+      const children = nativeChildren(block.children, context, next)
+      const properties = { ...original?.type === 'container' ? original.properties : {}, ...block.props.title ? { title: block.props.title } : {} }
+      if (original?.type === 'container') {
+        if (properties.columnWidths) properties.columnWidths = children.map(child => original.properties.columnWidths?.[original.children.indexOf(child)] ?? 1)
+        if (properties.tabTitles) properties.tabTitles = children.map(child => original.properties.tabTitles?.[original.children.indexOf(child)] ?? '')
+      }
+      product = { ...original?.type === 'container' ? structuredClone(original) : {}, id: block.id, type: 'container', layout: block.props.layout, properties, children }
+    }
+    else if (block.type === 'image') {
+      if (original?.type === 'image' && context.baseline.get(block.id) === JSON.stringify(block)) { next.blocks[block.id] = structuredClone(original); children.push(block.id); continue }
+      const assetId = original?.type === 'image' ? original.assetId : newId()
+      const asset = { ...next.assets[assetId], id: assetId, kind: 'image' as const, location: block.props.url }
+      if (next.assets[assetId]?.location !== asset.location) delete asset.fingerprint
+      next.assets[assetId] = asset
+      const previousCaption = original?.type === 'image' ? original.caption : undefined
+      const caption = plain(previousCaption ?? []) === block.props.caption ? previousCaption : block.props.caption ? [{ type: 'text' as const, text: block.props.caption }] : undefined
+      product = { ...original?.type === 'image' ? structuredClone(original) : {}, id: block.id, type: 'image', assetId, alt: block.props.name, ...caption ? { caption } : {}, width: block.props.previewWidth, alignment: block.props.textAlignment }
+      if (!caption) delete product.caption
+    } else if (block.type === 'codeBlock') product = { ...original?.type === 'code' ? structuredClone(original) : {}, id: block.id, type: 'code', language: block.props.language, value: nativePlain(block) }
+    else {
+      if (!original) throw new Error('document-opaque-reference')
+      product = structuredClone(original)
+      product.id = block.id
+      if (product.type === 'component' && (product.children || block.children.length)) product.children = nativeChildren(block.children, context, next)
+    }
+    next.blocks[product.id] = product
+    context.owners.set(block.id, product.id)
+    children.push(product.id)
+  }
+  flush()
+  return children
+}
+
+/** Reconstruct the normalized product tree without visiting or reparsing Markdown. */
+export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], context: DocumentProjection): TeachingDocument {
+  const next = structuredClone(context.document)
+  next.blocks = {}; next.sections = {}; next.sectionOrder = []
+  let section: Section | undefined, content: DocumentEditorBlock[] = []
+  const flush = () => { if (section) { section.children = nativeChildren(content, context, next); next.sections[section.id] = section; next.sectionOrder.push(section.id) }; content = [] }
+  for (const block of blocks) {
+    if (block.type === 'presmiumPage') {
+      flush()
+      let sectionId = context.pages.get(block.id) ?? block.props.sectionId
+      if (!sectionId || next.sections[sectionId]) sectionId = newId()
+      context.pages.set(block.id, sectionId)
+      const original = context.document.sections[sectionId]
+      section = { ...original ? structuredClone(original) : {}, id: sectionId, title: nativePlain(block), children: [], stepOrder: original?.stepOrder ?? [], layout: original?.layout ?? { type: 'stack' } }
+    } else {
+      if (!section) {
+        const original = context.document.sections[context.document.sectionOrder[0] ?? '']
+        section = original ? structuredClone(original) : { id: newId(), title: next.metadata.title, children: [], stepOrder: [], layout: { type: 'stack' } }
+      }
+      content.push(block)
+    }
+  }
+  flush()
+  if (!next.sectionOrder.length) throw new Error('document-empty')
+  // Removing a page boundary merges its teaching sequence into the preceding page.
+  let destination = next.sectionOrder[0]!
+  for (const sectionId of context.document.sectionOrder) {
+    if (next.sections[sectionId]) { destination = sectionId; continue }
+    const removed = context.document.sections[sectionId]!
+    for (const stepId of removed.stepOrder) {
+      if (!next.steps[stepId]) continue
+      next.steps[stepId]!.sectionId = destination
+      if (!next.sections[destination]!.stepOrder.includes(stepId)) next.sections[destination]!.stepOrder.push(stepId)
+    }
+    if (next.production.sectionOverrides) delete next.production.sectionOverrides[sectionId]
+  }
+  const sectionOf = new Map<string, string>()
+  const previousSectionOf = new Map<string, string>(), newSteps = new Set<string>()
+  const previous = (blockId: string, sectionId: string) => {
+    previousSectionOf.set(blockId, sectionId)
+    const block = context.document.blocks[blockId]
+    if (block?.type === 'container' || block?.type === 'component') for (const child of block.children ?? []) previous(child, sectionId)
+  }
+  for (const section of Object.values(context.document.sections)) section.children.forEach(blockId => previous(blockId, section.id))
+  const assign = (blockId: string, sectionId: string) => {
+    sectionOf.set(blockId, sectionId)
+    const block = next.blocks[blockId]
+    if (block?.type === 'container' || block?.type === 'component') for (const child of block.children ?? []) assign(child, sectionId)
+  }
+  for (const section of Object.values(next.sections)) {
+    section.children.forEach(blockId => assign(blockId, section.id))
+    if (!section.stepOrder.length) {
+      const stepId = newId(); section.stepOrder.push(stepId)
+      newSteps.add(stepId)
+      next.steps[stepId] = { id: stepId, sectionId: section.id, visuals: [], narrationIds: [] }
+    }
+  }
+  for (const step of Object.values(next.steps)) {
+    step.visuals = step.visuals.filter(visual => sectionOf.get(visual.blockId) === step.sectionId)
+    for (const [blockId, sectionId] of sectionOf) if (sectionId === step.sectionId && (previousSectionOf.get(blockId) !== sectionId || newSteps.has(step.id)) && !step.visuals.some(visual => visual.blockId === blockId)) step.visuals.push({ blockId, visible: true })
+  }
+  for (const narration of Object.values(next.narrations)) for (const node of narration.content) if (node.type === 'cue' && node.target && !next.blocks[node.target.blockId]) delete node.target
+  context.document = structuredClone(next)
+  return next
+}
+
+export function nativePage(sectionId: string, title: string): DocumentEditorInput {
+  return { id: pageId(sectionId), type: 'presmiumPage', props: { sectionId }, content: productInlineToNative([{ type: 'text', text: title }], createRichProjection()) }
+}
+
+export function richNodeIds(nodes: readonly RichTextNode[]): Set<string> {
+  const ids = new Set<string>()
+  const visit = (node: RichTextNode | { id: string, type: string, children?: unknown[] }) => { ids.add(node.id); if ('children' in node) for (const child of node.children ?? []) if (typeof child === 'object' && child && 'id' in child) visit(child as RichTextNode) }
+  nodes.forEach(visit)
+  return ids
+}

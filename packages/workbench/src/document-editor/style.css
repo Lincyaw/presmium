@@ -1,0 +1,4 @@
+.pm-document-editor { min-width: 0; }
+.pm-document-editor .pm-document-editor__page-title { margin-block: var(--pm-space-5) var(--pm-space-3); font-family: var(--pm-font-sans); font-size: var(--pm-text-title); font-weight: var(--pm-weight-semibold); line-height: var(--pm-leading-tight); }
+.pm-document-editor__atom { min-width: 0; }
+.pm-document-editor__comment-tools { position: sticky; top: var(--pm-space-2); z-index: var(--pm-z-site-header); width: fit-content; margin-inline-start: var(--pm-space-5); }
