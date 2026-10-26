@@ -62,8 +62,7 @@
           "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=120-1795",
           "componentId": "25:524",
           "properties": {
-            "Show description": true,
-            "Description": "复制正文、步骤、讲稿与播放设置；素材继续共享，批注留在原页。"
+            "Show description": false
           },
           "verification": "docs/benchmarks/document-page-copy-2026-10-26.md"
         }
@@ -297,6 +296,56 @@
           "Density=Touch, State=Loading": "158:2822"
         },
         "behavior": "Pointer, touch and keyboard reordering use dnd kit public APIs. Completed gestures submit one stable ID-relative move. Cancel, no-op, scope or item-set changes discard gestures. Disabled and loading affect reorder handles; page selection stays independent. Errors use the existing Notice. Keyboard guidance is accessible without a permanent visible footer."
+      },
+      "MediaClipEditor": {
+        "nodeId": "168:4683",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=168-4683",
+        "reviewNodeId": "168:4684",
+        "source": "packages/workbench/src/MediaClipEditor.tsx / packages/design/src/components.css",
+        "publicComponent": "MediaClipEditor",
+        "variantCount": 15,
+        "variants": {
+          "Compact": {
+            "Empty": "168:3732",
+            "Ready": "168:3749",
+            "Invalid": "168:3821",
+            "Busy": "168:3906",
+            "Unavailable": "168:3976"
+          },
+          "Regular": {
+            "Empty": "168:4049",
+            "Ready": "168:4066",
+            "Invalid": "168:4138",
+            "Busy": "168:4223",
+            "Unavailable": "168:4293"
+          },
+          "Touch": {
+            "Empty": "168:4366",
+            "Ready": "168:4383",
+            "Invalid": "168:4455",
+            "Busy": "168:4540",
+            "Unavailable": "168:4610"
+          }
+        },
+        "uses": [
+          "PmInput width=time",
+          "PmInput width=number",
+          "PmSelect",
+          "PmRange",
+          "PmButton",
+          "PmField",
+          "PmNotice"
+        ],
+        "interactionContract": [
+          "Import preserves original audio bytes and only adds a canonical asset. The author explicitly adopts a full or trimmed range into the current stable step.",
+          "Paired mm:ss.mmm input preserves invalid text and untouched numeric precision. Offset is a short seconds field. Inputs never silently trim the clip or extend the hold.",
+          "The caller supplies actual inspected duration and a confirmed step interval. Range/offset/gain/mute are adopted as one explicit complete clip change with a source-versioned production binding.",
+          "Volume is 0–100%. The native Range previews locally and release changes the unaccepted draft once. Mute retains gain; Restore full changes only the range draft; removing the clip retains its asset.",
+          "The caller pauses playback before editing, stores stable-target drafts, and prevents an old acknowledgement from clearing newer input. Drafts are not a second content source or a playback clock.",
+          "Only proven local audio appears. No video, recording, decorative waveform or free animation trim controls are shown."
+        ],
+        "verification": "docs/benchmarks/audio-clip-editor-2026-10-27.md",
+        "implementationBoundary": "Formal public composition; current source integration and real browser evidence are recorded separately in the linked benchmark."
       }
     },
     "variantCounts": {
@@ -318,7 +367,8 @@
         "SearchList": 8
       },
       "Timing": 2,
-      "StatusChip": 3
+      "StatusChip": 3,
+      "MediaClipEditor": 15
     },
     "elevationStyles": {
       "Control/Light": "S:742cbffd8ac27f492f2a1e40a44dc5228aeebcec,",
