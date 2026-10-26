@@ -1168,15 +1168,6 @@ importers:
 
   packages/viewer:
     dependencies:
-      '@blocknote/core':
-        specifier: 0.56.0
-        version: 0.56.0(@lezer/common@1.5.4)(@lezer/highlight@1.2.5)(@types/hast@3.0.5)(highlight.js@11.12.0)(y-protocols@1.0.7(yjs@13.6.33))(yjs@13.6.33)
-      '@blocknote/mantine':
-        specifier: 0.56.0
-        version: 0.56.0(@floating-ui/dom@1.8.0)(@lezer/common@1.5.4)(@lezer/highlight@1.2.5)(@mantine/core@8.3.11(@mantine/hooks@8.3.11(react@18.3.1))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@mantine/hooks@8.3.11(react@18.3.1))(@types/hast@3.0.5)(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(highlight.js@11.12.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(y-protocols@1.0.7(yjs@13.6.33))(yjs@13.6.33)
-      '@blocknote/react':
-        specifier: 0.56.0
-        version: 0.56.0(@floating-ui/dom@1.8.0)(@lezer/common@1.5.4)(@lezer/highlight@1.2.5)(@types/hast@3.0.5)(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(highlight.js@11.12.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(y-protocols@1.0.7(yjs@13.6.33))(yjs@13.6.33)
       '@codemirror/commands':
         specifier: 6.11.1
         version: 6.11.1
@@ -1204,12 +1195,6 @@ importers:
       '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@mantine/core':
-        specifier: 8.3.11
-        version: 8.3.11(@mantine/hooks@8.3.11(react@18.3.1))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@mantine/hooks':
-        specifier: 8.3.11
-        version: 8.3.11(react@18.3.1)
       '@radix-ui/react-focus-scope':
         specifier: ^1.1.8
         version: 1.3.1(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1243,9 +1228,6 @@ importers:
       mdast-util-to-hast:
         specifier: 13.2.1
         version: 13.2.1
-      mdast-util-to-markdown:
-        specifier: 2.2.0
-        version: 2.2.0
       mermaid:
         specifier: 12.2.0
         version: 12.2.0
@@ -1255,9 +1237,6 @@ importers:
       property-information:
         specifier: 7.2.0
         version: 7.2.0
-      prosemirror-history:
-        specifier: 1.5.1
-        version: 1.5.1
       react:
         specifier: 18.3.1
         version: 18.3.1
@@ -1267,6 +1246,9 @@ importers:
       shiki:
         specifier: 4.5.0
         version: 4.5.0
+      style-to-js:
+        specifier: 2.0.2
+        version: 2.0.2
     devDependencies:
       '@types/hast':
         specifier: 3.0.5
@@ -7552,6 +7534,9 @@ packages:
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
 
+  inline-style-parser@0.2.9:
+    resolution: {integrity: sha512-IttN8BqKLxzUrnTqHI+/hwAJQItBAUjdoHERCDv+oOuX48VP6bzW8+QjOXSfoevzq3YrYAwX1uLHp8TqO9yIeg==}
+
   internmap@1.0.1:
     resolution: {integrity: sha512-lDB5YccMydFBtasVtxnZ3MRBHuaoE8GKsppq+EchKL2U4nK/DmEpPHNH8MZe5HkMtpSiTSOZwfN0tzYjO/lJEw==}
 
@@ -9155,6 +9140,12 @@ packages:
 
   style-mod@4.1.4:
     resolution: {integrity: sha512-XXWIQt633/EpAFx8aZDOTjBzrCaGmhvEQlQo6MVPfa2OzO2cWo+4hV9h+6UkHYlXGfy+ODXKUdP7Pthmcu5ATw==}
+
+  style-to-js@2.0.2:
+    resolution: {integrity: sha512-ctgbFvvi406Jvhi/s6TJtX6XYYCCTg6POgsL+SLmrl2RHFgwulepqtYPrtKuEmT8kmyk/+fxfNzuhRLO4zsASg==}
+
+  style-to-object@2.0.2:
+    resolution: {integrity: sha512-QmbXPUylqU80HAgTOJeEOdbA40W9KtxmjMhQy+tq+b8F2aoh3aQLuy82hh2jm2qsC9hR9eI0+eQidTMydKcqRA==}
 
   stylis@4.4.0:
     resolution: {integrity: sha512-5Z9ZpRzfuH6l/UAvCPAPUo3665Nk2wLaZU3x+TLHKVzIz33+sbJqbtrYoC3KD4/uVOr2Zp+L0LySezP9OHV9yA==}
@@ -16918,6 +16909,8 @@ snapshots:
 
   inherits@2.0.4: {}
 
+  inline-style-parser@0.2.9: {}
+
   internmap@1.0.1: {}
 
   internmap@2.0.3: {}
@@ -18969,6 +18962,14 @@ snapshots:
       boundary: 2.0.0
 
   style-mod@4.1.4: {}
+
+  style-to-js@2.0.2:
+    dependencies:
+      style-to-object: 2.0.2
+
+  style-to-object@2.0.2:
+    dependencies:
+      inline-style-parser: 0.2.9
 
   stylis@4.4.0: {}
 

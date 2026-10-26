@@ -31,9 +31,6 @@
     "src"
   ],
   "dependencies": {
-    "@blocknote/core": "0.56.0",
-    "@blocknote/mantine": "0.56.0",
-    "@blocknote/react": "0.56.0",
     "@codemirror/commands": "6.11.1",
     "@codemirror/lang-javascript": "6.2.5",
     "@codemirror/lang-python": "6.2.1",
@@ -43,8 +40,6 @@
     "@lezer/highlight": "1.2.5",
     "@lincyaw/host": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
-    "@mantine/core": "8.3.11",
-    "@mantine/hooks": "8.3.11",
     "@radix-ui/react-focus-scope": "^1.1.8",
     "@radix-ui/react-tabs": "^1.1.13",
     "@shikijs/magic-move": "4.5.0",
@@ -56,14 +51,13 @@
     "mdast-util-from-markdown": "2.1.0",
     "mdast-util-gfm": "3.1.0",
     "mdast-util-to-hast": "13.2.1",
-    "mdast-util-to-markdown": "2.2.0",
     "mermaid": "12.2.0",
     "micromark-extension-gfm": "3.0.0",
     "property-information": "7.2.0",
-    "prosemirror-history": "1.5.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "shiki": "4.5.0"
+    "shiki": "4.5.0",
+    "style-to-js": "2.0.2"
   },
   "devDependencies": {
     "@types/hast": "3.0.5",

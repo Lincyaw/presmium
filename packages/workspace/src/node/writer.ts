@@ -1,7 +1,8 @@
-import { randomBytes } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import { closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, renameSync, rmdirSync, rmSync, symlinkSync, writeFileSync, writeSync } from 'node:fs'
 import type { Stats } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { DOCUMENT_ENTRY, validateDocument } from '@lincyaw/kernel'
 import type { DocumentFileChange, DocumentFiles } from '@lincyaw/kernel'
 import { isWithin, rewriteLinks } from '../domain/paths.ts'
 import { isDocumentDir, listDocuments } from './config.ts'
@@ -210,19 +211,39 @@ function writeTemplate(config: WorkspaceConfig, dir: string, template: string, t
   assertDocumentDir(config, dir)
   const source = findTemplate(config, template)
   if (!source) throw new FilesError(`no document template ${JSON.stringify(template)}`)
-  const quoted = JSON.stringify(title).slice(1, -1)
-  writeChanges(config, sourceEntries(source).filter(entry => entry.link === undefined).map(({ path, executable }) => {
+  const entries = sourceEntries(source).filter(entry => entry.link === undefined)
+  if (!entries.some(entry => entry.path === DOCUMENT_ENTRY)) throw new FilesError(`The document template must contain ${DOCUMENT_ENTRY}.`)
+  writeChanges(config, entries.map(({ path, executable }) => {
     const content = readFileSync(join(source, path))
-    return { path: `${dir}/${path}`, content: path.endsWith('.md') ? Buffer.from(content.toString('utf8').replaceAll('{{title}}', () => quoted)) : content, ...executable ? { executable } : {} }
+    return { path: `${dir}/${path}`, content: path === DOCUMENT_ENTRY ? freshDocument(content, title) : content, ...executable ? { executable } : {} }
   }))
+}
+
+/** A copy is a new document; block/section identities remain inside its new namespace. */
+function freshDocument(content: Uint8Array, title?: string): Buffer {
+  let value: unknown
+  try { value = JSON.parse(Buffer.from(content).toString('utf8')) }
+  catch { throw new FilesError(`Invalid ${DOCUMENT_ENTRY}: expected a JSON teaching document.`) }
+  const validated = validateDocument(value)
+  if (!validated.document) throw new FilesError(`Invalid ${DOCUMENT_ENTRY}: ${validated.issues[0]?.message ?? 'document validation failed'}`)
+  const document = validated.document
+  document.id = randomUUID()
+  if (title !== undefined) document.metadata.title = title
+  return Buffer.from(`${JSON.stringify(document, null, 2)}\n`)
 }
 
 function copyDocument(config: WorkspaceConfig, from: string, to: string): void {
   assertDocumentDir(config, from)
   assertDocumentDir(config, to)
-  writeChanges(config, sourceEntries(join(config.root, from)).map(({ path, link, executable }): DocumentFileChange => {
-    if (link !== undefined) return { path: `${to}/${path}`, link }
+  const entries = sourceEntries(join(config.root, from))
+  if (!entries.some(entry => entry.path === DOCUMENT_ENTRY)) throw new FilesError(`The copied document must contain ${DOCUMENT_ENTRY}.`)
+  writeChanges(config, entries.map(({ path, link, executable }): DocumentFileChange => {
+    if (link !== undefined) {
+      if (path === DOCUMENT_ENTRY) throw new FilesError('The canonical document entry cannot be a symbolic link when copied.')
+      return { path: `${to}/${path}`, link }
+    }
     const content = readFileSync(join(config.root, from, path))
+    if (path === DOCUMENT_ENTRY) return { path: `${to}/${path}`, content: freshDocument(content) }
     if (path.endsWith('.md')) return { path: `${to}/${path}`, content: Buffer.from(rewriteLinks(content.toString('utf8'), `${to}/${path}`, `${from}/${path}`, from, to)) }
     return { path: `${to}/${path}`, content, ...executable ? { executable } : {} }
   }))
