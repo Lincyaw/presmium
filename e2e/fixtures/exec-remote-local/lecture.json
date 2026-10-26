@@ -1,0 +1,260 @@
+{
+  "schemaVersion": 1,
+  "id": "document-4c5638c3e751a5b1",
+  "metadata": {
+    "title": "Jupyter 浏览器功能",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec",
+      "@lincyaw/addon-exec-jupyter"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {
+        "theme": "default"
+      }
+    },
+    "execute": {
+      "environments": {
+        "lab": {
+          "kind": "jupyter",
+          "auth": "proxy"
+        }
+      }
+    }
+  },
+  "sectionOrder": [
+    "jupyter-浏览器功能",
+    "remote",
+    "session",
+    "rich",
+    "shell"
+  ],
+  "sections": {
+    "jupyter-浏览器功能": {
+      "id": "jupyter-浏览器功能",
+      "title": "Jupyter 浏览器功能",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "jupyter-浏览器功能--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "remote": {
+      "id": "remote",
+      "title": "远端执行",
+      "level": 2,
+      "children": [
+        "remote--where"
+      ],
+      "stepOrder": [
+        "remote--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "session": {
+      "id": "session",
+      "title": "会话隔离",
+      "level": 2,
+      "children": [
+        "session--define",
+        "session--use"
+      ],
+      "stepOrder": [
+        "session--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "rich": {
+      "id": "rich",
+      "title": "富输出",
+      "level": 2,
+      "children": [
+        "rich--display"
+      ],
+      "stepOrder": [
+        "rich--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "shell": {
+      "id": "shell",
+      "title": "终端",
+      "level": 2,
+      "children": [
+        "shell--pm-terminal-1"
+      ],
+      "stepOrder": [
+        "shell--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "remote--where": {
+      "id": "remote--where",
+      "type": "code",
+      "language": "python",
+      "value": "import platform\nprint(\"Jupyter\", platform.python_implementation(), 6 * 7)",
+      "execution": {
+        "when": "both",
+        "executor": "presmium.env.lab"
+      }
+    },
+    "session--define": {
+      "id": "session--define",
+      "type": "code",
+      "language": "python",
+      "value": "x = 41\nprint(\"defined\")",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.env.lab",
+        "session": "browser"
+      }
+    },
+    "session--use": {
+      "id": "session--use",
+      "type": "code",
+      "language": "python",
+      "value": "print(x + 1)",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.env.lab",
+        "session": "browser"
+      }
+    },
+    "rich--display": {
+      "id": "rich--display",
+      "type": "code",
+      "language": "python",
+      "value": "from IPython.display import HTML, display\ndisplay(HTML('<strong id=\"jupyter-safe\">rich-42</strong><img src=\"x\" onerror=\"window.__jupyterUnsafe = 1\"><script>window.__jupyterUnsafe = 2</script>'))\nprint(\"rich output\")",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.env.lab"
+      }
+    },
+    "shell--pm-terminal-1": {
+      "id": "shell--pm-terminal-1",
+      "type": "component",
+      "definitionId": "shell--pm-terminal-1--definition",
+      "parameters": {
+        "env": "lab",
+        "rows": 8
+      }
+    }
+  },
+  "steps": {
+    "jupyter-浏览器功能--step-0": {
+      "id": "jupyter-浏览器功能--step-0",
+      "sectionId": "jupyter-浏览器功能",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "remote--step-0": {
+      "id": "remote--step-0",
+      "sectionId": "remote",
+      "visuals": [
+        {
+          "blockId": "remote--where",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "session--step-0": {
+      "id": "session--step-0",
+      "sectionId": "session",
+      "visuals": [
+        {
+          "blockId": "session--define",
+          "visible": true
+        },
+        {
+          "blockId": "session--use",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "rich--step-0": {
+      "id": "rich--step-0",
+      "sectionId": "rich",
+      "visuals": [
+        {
+          "blockId": "rich--display",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "shell--step-0": {
+      "id": "shell--step-0",
+      "sectionId": "shell",
+      "visuals": [
+        {
+          "blockId": "shell--pm-terminal-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "shell--pm-terminal-1--definition": {
+      "id": "shell--pm-terminal-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.execJupyter",
+        "name": "PmTerminal"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.execJupyter",
+        "name": "PmTerminal",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "环境 lab 的终端：在网页或幻灯片中打开。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

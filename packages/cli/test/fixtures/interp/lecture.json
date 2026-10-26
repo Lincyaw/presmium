@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "document-1c010b1b4ca86472",
+  "metadata": {
+    "title": "Recorded output",
+    "lang": "zh-CN",
+    "plugins": [
+      "../addons/interp"
+    ]
+  },
+  "sectionOrder": [
+    "recorded-output",
+    "run"
+  ],
+  "sections": {
+    "recorded-output": {
+      "id": "recorded-output",
+      "title": "Recorded output",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "recorded-output--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "run": {
+      "id": "run",
+      "title": "Run",
+      "level": 2,
+      "children": [
+        "run--code-1"
+      ],
+      "stepOrder": [
+        "run--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "run--code-1": {
+      "id": "run--code-1",
+      "type": "code",
+      "language": "interp",
+      "value": "print hello",
+      "execution": {
+        "when": "compile"
+      }
+    }
+  },
+  "steps": {
+    "recorded-output--step-0": {
+      "id": "recorded-output--step-0",
+      "sectionId": "recorded-output",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "run--step-0": {
+      "id": "run--step-0",
+      "sectionId": "run",
+      "visuals": [
+        {
+          "blockId": "run--code-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
