@@ -153,7 +153,7 @@
 | 渲染扩展 | `RendererContribution`（`PresmiumNodePlugin.rendererExtensions` 的值） | 插件为某个渲染端提供的组件转换；渲染端拿到的是绑定了渲染上下文的 `BoundRendererExtension` |
 | 渲染输出 | `RenderOutput` | 产物目录与未渲染的块；与编译诊断一起组成构建报告 |
 | 运行时视图 | `ViewDefinition` | IR 运行时中的一种呈现方式：文档、滚动叙事、放映，可由插件注册 |
-| 实时更新 | `LiveUpdate` | `presmium dev` 推送的变化章节、章节顺序与诊断 |
+| 实时更新 | `LiveUpdate` | `presmium dev` 推送的文稿根属性、变化章节、章节顺序与诊断 |
 | 富输出的渲染 | `registerNodeRenderer('mime:<类型>')` | 按 MIME 类型显示执行输出；插件可以为新的类型注册渲染器 |
 | 讲授渲染端 | `addon-lecture` 的 `lecture` 渲染端 | 把 IR 编译为讲授计划（每一步要说的文字与提示标记）并合成音频（第 15 节） |
 | 工作区站点 | `Renderer.buildSite`、`SiteSpec` | 多份文档组成的一个网站（第 14 节） |
