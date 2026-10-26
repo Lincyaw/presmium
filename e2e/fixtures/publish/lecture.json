@@ -775,46 +775,7 @@
           "children": [
             {
               "type": "text",
-              "text": "除了本目录的 "
-            },
-            {
-              "type": "text",
-              "text": "publish.md",
-              "marks": [
-                {
-                  "type": "code"
-                }
-              ]
-            },
-            {
-              "type": "text",
-              "text": "，其他页面来自各自的测试文稿目录，构建时复制到本文稿中（"
-            },
-            {
-              "type": "text",
-              "text": "e2e/fixtures/deck.ts",
-              "marks": [
-                {
-                  "type": "code"
-                }
-              ]
-            },
-            {
-              "type": "text",
-              "text": "）；PlantUML 图已下载到 "
-            },
-            {
-              "type": "text",
-              "text": ".presmium/assets",
-              "marks": [
-                {
-                  "type": "code"
-                }
-              ]
-            },
-            {
-              "type": "text",
-              "text": "。"
+              "text": "这份回归文稿把宿主、放映、代码执行、富内容和课堂会话整理为同一个规范化文稿；组件实现和素材引用相邻夹具的真实工程文件。"
             }
           ]
         }
@@ -7324,7 +7285,7 @@
       "content": [
         {
           "type": "text",
-          "text": "除了本目录的 publish.md，其他页面来自各自的测试文稿目录，构建时复制到本文稿中（e2e/fixtures/deck.ts）；PlantUML 图已下载到 .presmium/assets。"
+          "text": "这份回归文稿把宿主、放映、代码执行、富内容和课堂会话整理为同一个规范化文稿；组件实现和素材引用相邻夹具的真实工程文件。"
         }
       ]
     },
