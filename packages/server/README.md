@@ -2,7 +2,7 @@
 
 The server of `presmium dev` and `presmium serve`: plugin routes and proxies under `/__presmium/`, approvals, the control channel and the MCP endpoint. It listens on this machine only unless `presmium serve --host` is given.
 
-Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonical lecture.json teaching documents into web pages, slides, Jupyter notebooks and narrated playback.
 
 ## Install
 
@@ -10,7 +10,7 @@ It comes with `@lincyaw/cli`; you do not install it yourself. Its programming in
 
 ## Documentation
 
-- [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/lecture.en.md): server routes
+- [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/locales/en/lecture.json): server routes
 - [Security and the trust model](https://github.com/Lincyaw/presmium/blob/main/SECURITY.md)
 
 ## License

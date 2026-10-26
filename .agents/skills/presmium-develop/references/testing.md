@@ -9,7 +9,7 @@ frameworks. One or two cases per thing the plugin promises.
 
 | Change | Test | How |
 |---|---|---|
-| Directive, options, diagnostics, steps | Compile the example, read the IR or the diagnostics | The `presmium()` helper (section 1): `presmium(dir, ['check'])`, `presmium(dir, ['build', '--to', 'notebook', '--out', out])` then `ir.json` |
+| Definition, parameters, diagnostics, states | Compile the example, read the snapshot or diagnostics | The `presmium()` helper (section 1): `presmium(dir, ['check'])`, `presmium(dir, ['build', '--to', 'notebook', '--out', out])` then `ir.json` |
 | Fallback and notebook extension | Build the notebook, read the cells | `<out>/notebook/lecture.ipynb` |
 | Server route | Start `presmium dev`, call the route with `fetch` | Section 2; the case "counts the waves on its server route under presmium dev" in `test/plugin.test.ts` |
 | Component, steps, keyboard, toolbar | Build or start a dev server, drive a browser, compare what the user sees | Playwright, section 4 |
@@ -53,11 +53,11 @@ it('writes the poll\'s question into the notebook', async () => {
 
 - `presmium check` prints `no problems` when clean; `--json` prints `{ entry, counts, findings, lock }`, for
   asserting a finding's `checkId`, `severity`, `message` and `source.line`.
-- `<out>/ir.json` is the compiled IR: find a section by its label (`(label)=` above the heading becomes the
-  section `id`) and look at `blocks[].node`.
+- `<out>/ir.json` is the derived runtime snapshot: find the stable authored section `id` and inspect
+  `blocks[].node`. Numeric runtime step positions are not authoring data.
 - A case that needs another document (an error case, other options) writes a small normalized `lecture.json` into a
-  temporary directory with `plugins: ['<absolute path of the plugin>']` and the `renderers` it needs. Give
-  the document `lang: en` or `lang: zh-CN` explicitly when asserting text.
+  temporary directory with `metadata.plugins: ['<absolute path of the plugin>']` and the `metadata.renderers`
+  it needs. Set `metadata.lang` to `en` or `zh-CN` explicitly when asserting text.
 - Build only the renderers the case reads (`--to notebook` is the fastest; `--to web,slides` builds the
   viewer, which takes longer on the first run).
 

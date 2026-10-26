@@ -1,0 +1,587 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-docs-plugins-zh",
+  "metadata": {
+    "title": "插件开发指南",
+    "description": "通过公开契约实现文稿组件、服务和渲染扩展",
+    "lang": "zh-CN",
+    "renderers": {
+      "web": {}
+    },
+    "translations": {
+      "en": "locales/en/lecture.json"
+    }
+  },
+  "sectionOrder": [
+    "plugins",
+    "plugin-package",
+    "plugin-definitions",
+    "plugin-components",
+    "plugin-services",
+    "plugin-routes",
+    "plugin-views",
+    "plugin-renderers",
+    "plugin-testing"
+  ],
+  "sections": {
+    "plugins": {
+      "id": "plugins",
+      "title": "插件开发指南",
+      "level": 1,
+      "children": [
+        "plugins--body-0"
+      ],
+      "stepOrder": [
+        "plugins--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plugin-package": {
+      "id": "plugin-package",
+      "title": "创建插件工程",
+      "level": 2,
+      "children": [
+        "plugin-package--body-0",
+        "plugin-package--body-1"
+      ],
+      "stepOrder": [
+        "plugin-package--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plugin-definitions": {
+      "id": "plugin-definitions",
+      "title": "声明组件定义",
+      "level": 2,
+      "children": [
+        "plugin-definitions--body-0",
+        "plugin-definitions--body-1"
+      ],
+      "stepOrder": [
+        "plugin-definitions--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plugin-components": {
+      "id": "plugin-components",
+      "title": "实现可逆组件",
+      "level": 2,
+      "children": [
+        "plugin-components--body-0",
+        "plugin-components--body-1"
+      ],
+      "stepOrder": [
+        "plugin-components--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plugin-services": {
+      "id": "plugin-services",
+      "title": "通过服务协作",
+      "level": 2,
+      "children": [
+        "plugin-services--body-0",
+        "plugin-services--body-1"
+      ],
+      "stepOrder": [
+        "plugin-services--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plugin-routes": {
+      "id": "plugin-routes",
+      "title": "路由、执行与诊断",
+      "level": 2,
+      "children": [
+        "plugin-routes--body-0",
+        "plugin-routes--body-1"
+      ],
+      "stepOrder": [
+        "plugin-routes--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plugin-views": {
+      "id": "plugin-views",
+      "title": "扩展查看器",
+      "level": 2,
+      "children": [
+        "plugin-views--body-0",
+        "plugin-views--body-1"
+      ],
+      "stepOrder": [
+        "plugin-views--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plugin-renderers": {
+      "id": "plugin-renderers",
+      "title": "输出与降级",
+      "level": 2,
+      "children": [
+        "plugin-renderers--body-0"
+      ],
+      "stepOrder": [
+        "plugin-renderers--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plugin-testing": {
+      "id": "plugin-testing",
+      "title": "真实验证与发布",
+      "level": 2,
+      "children": [
+        "plugin-testing--body-0",
+        "plugin-testing--body-1",
+        "plugin-testing--body-2"
+      ],
+      "stepOrder": [
+        "plugin-testing--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "plugins--body-0": {
+      "id": "plugins--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugins--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "插件扩展 Presmium 的组件、服务、执行器和渲染端。可编辑内容仍保存在 lecture.json；插件通过版本化定义与结构化参数参与编译，不另建内容入口。先用模板得到能运行的项目，再增加需要的能力。"
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-package--body-0": {
+      "id": "plugin-package--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-package--body-0--text",
+          "type": "code",
+          "language": "sh",
+          "value": "presmium new my-plugin --type plugin\ncd my-plugin\npnpm install\npnpm dev"
+        }
+      ]
+    },
+    "plugin-package--body-1": {
+      "id": "plugin-package--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-package--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "模板的 example/lecture.json 是真实示例。包的 ./presmium 导出 Node 端插件；components/ 放 React 组件，src/domain/ 放纯计算，src/client/ 放浏览器逻辑。用到的 Presmium 包作为对等依赖，与宿主共用一份运行时。"
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-definitions--body-0": {
+      "id": "plugin-definitions--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-definitions--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在文稿 definitions 映射中声明稳定 id、kind、schemaVersion、implementation、parameterSchema 和 states。implementation 指向工程文件、公开模块或已安装插件的组件。块引用 definitionId，并保存自己的 parameters。"
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-definitions--body-1": {
+      "id": "plugin-definitions--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-definitions--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "参数和状态都通过共同校验器校验。版本化 data 保留实现所需的结构化语义；未知版本应保留原数据和可读回退。不要把已解析 HTML、组件运行态或编译后的代码写成作者内容。"
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-components--body-0": {
+      "id": "plugin-components--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-components--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "组件通过 @lincyaw/host 的公开 hooks 读取步骤、时钟、服务、语言和主题。视觉状态应由当前步骤和局部时间决定，直接跳到一步与按顺序播放必须一致。"
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-components--body-1": {
+      "id": "plugin-components--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-components--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "静态输出提供可理解的 fallback。定时器、订阅、Worker 和媒体资源在生命周期结束时释放；不能仅依赖前一次动画执行后的副作用来重建画面。"
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-services--body-0": {
+      "id": "plugin-services--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-services--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "服务接口和令牌定义在共享契约包中。提供方注册服务，消费者依赖令牌，不直接导入另一个插件。Node 服务和浏览器服务分别遵守各自的宿主边界。"
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-services--body-1": {
+      "id": "plugin-services--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-services--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "src/domain/ 保持纯 TypeScript。组件和 src/client/ 通过 @lincyaw/host 获取运行状态，Node 能力留在 src/node/。通过依赖公开 exports 扩展，不引用内部路径或修改依赖实现。"
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-routes--body-0": {
+      "id": "plugin-routes--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-routes--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "服务端路由通过现有服务器贡献点注册。请求必须声明输入校验、返回真实错误，并沿用来源、授权和取消契约。凭据放在运营者设置或服务端环境中，不写进文稿和浏览器日志。"
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-routes--body-1": {
+      "id": "plugin-routes--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-routes--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "执行器返回真实运行结果和环境指纹。编译步骤读取外部文件时登记依赖，使变化触发重新编译。诊断使用结构化 Finding 和稳定检查 ID，将失败定位到实际文稿实体或工程文件。"
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-views--body-0": {
+      "id": "plugin-views--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-views--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "查看器消费运行快照，不能重新读取作者文件作为第二内容入口。使用公开的 ViewerPlugin 和宿主注册接口增加视图或工具。网页与幻灯片复用同一组件与能力判断。"
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-views--body-1": {
+      "id": "plugin-views--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-views--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "主题、图标和控件遵循公共设计系统。公共能力缺失时先补令牌与共享组件，业务样式只负责布局。界面文字同时提供中文和英文。"
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-renderers--body-0": {
+      "id": "plugin-renderers--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-renderers--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "渲染端声明能够表示哪些节点和交互。无法交互时使用静态回退，无法表示时报告能力诊断。导出不能通过截取错误状态或伪造成功状态来通过验证。"
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-testing--body-0": {
+      "id": "plugin-testing--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-testing--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先编译模板中的 JSON 示例，再在浏览器打开需要的形态，检查跳步、卸载、错误反馈和静态回退。包安装到单仓之外后仍须能够解析公开入口、资源和对等依赖。"
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-testing--body-1": {
+      "id": "plugin-testing--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-testing--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在本仓库维护时遵循根 AGENTS 的定向验证策略，不为迁移运行全量套件。完整接口签名见导航栏的 API；包的 exports 决定可导入路径。"
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-testing--body-2": {
+      "id": "plugin-testing--body-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-testing--body-2--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "作者格式见"
+            },
+            {
+              "type": "link",
+              "href": "../guide/lecture.json",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "作者指南"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "，格式版本与兼容边界见接口与版本。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "plugins--step": {
+      "id": "plugins--step",
+      "sectionId": "plugins",
+      "visuals": [
+        {
+          "blockId": "plugins--body-0",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "plugin-package--step": {
+      "id": "plugin-package--step",
+      "sectionId": "plugin-package",
+      "visuals": [
+        {
+          "blockId": "plugin-package--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "plugin-package--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "plugin-definitions--step": {
+      "id": "plugin-definitions--step",
+      "sectionId": "plugin-definitions",
+      "visuals": [
+        {
+          "blockId": "plugin-definitions--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "plugin-definitions--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "plugin-components--step": {
+      "id": "plugin-components--step",
+      "sectionId": "plugin-components",
+      "visuals": [
+        {
+          "blockId": "plugin-components--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "plugin-components--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "plugin-services--step": {
+      "id": "plugin-services--step",
+      "sectionId": "plugin-services",
+      "visuals": [
+        {
+          "blockId": "plugin-services--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "plugin-services--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "plugin-routes--step": {
+      "id": "plugin-routes--step",
+      "sectionId": "plugin-routes",
+      "visuals": [
+        {
+          "blockId": "plugin-routes--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "plugin-routes--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "plugin-views--step": {
+      "id": "plugin-views--step",
+      "sectionId": "plugin-views",
+      "visuals": [
+        {
+          "blockId": "plugin-views--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "plugin-views--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "plugin-renderers--step": {
+      "id": "plugin-renderers--step",
+      "sectionId": "plugin-renderers",
+      "visuals": [
+        {
+          "blockId": "plugin-renderers--body-0",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "plugin-testing--step": {
+      "id": "plugin-testing--step",
+      "sectionId": "plugin-testing",
+      "visuals": [
+        {
+          "blockId": "plugin-testing--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "plugin-testing--body-1",
+          "visible": true
+        },
+        {
+          "blockId": "plugin-testing--body-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

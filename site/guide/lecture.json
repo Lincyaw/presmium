@@ -1,0 +1,736 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-docs-guide-zh",
+  "metadata": {
+    "title": "作者指南",
+    "description": "在工作台编辑文稿，保存规范化 JSON，并编译为阅读和放映快照",
+    "lang": "zh-CN",
+    "renderers": {
+      "web": {}
+    },
+    "translations": {
+      "en": "locales/en/lecture.json"
+    }
+  },
+  "sectionOrder": [
+    "guide",
+    "start",
+    "document",
+    "steps",
+    "code",
+    "media",
+    "production",
+    "workspace",
+    "publishing",
+    "recovery"
+  ],
+  "sections": {
+    "guide": {
+      "id": "guide",
+      "title": "作者指南",
+      "level": 1,
+      "children": [
+        "guide--body-0"
+      ],
+      "stepOrder": [
+        "guide--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "start": {
+      "id": "start",
+      "title": "新建和打开文稿",
+      "level": 2,
+      "children": [
+        "start--body-0",
+        "start--body-1",
+        "start--body-2"
+      ],
+      "stepOrder": [
+        "start--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "document": {
+      "id": "document",
+      "title": "理解保存的文件",
+      "level": 2,
+      "children": [
+        "document--body-0",
+        "document--body-1",
+        "document--body-2"
+      ],
+      "stepOrder": [
+        "document--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "steps": {
+      "id": "steps",
+      "title": "安排步骤和讲稿",
+      "level": 2,
+      "children": [
+        "steps--body-0",
+        "steps--body-1"
+      ],
+      "stepOrder": [
+        "steps--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "code": {
+      "id": "code",
+      "title": "引用代码和动画",
+      "level": 2,
+      "children": [
+        "code--body-0",
+        "code--body-1"
+      ],
+      "stepOrder": [
+        "code--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "media": {
+      "id": "media",
+      "title": "素材与布局",
+      "level": 2,
+      "children": [
+        "media--body-0",
+        "media--body-1"
+      ],
+      "stepOrder": [
+        "media--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "production": {
+      "id": "production",
+      "title": "配音、字幕和视频边界",
+      "level": 2,
+      "children": [
+        "production--body-0",
+        "production--body-1"
+      ],
+      "stepOrder": [
+        "production--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "workspace": {
+      "id": "workspace",
+      "title": "组织工作区和译本",
+      "level": 2,
+      "children": [
+        "workspace--body-0",
+        "workspace--body-1",
+        "workspace--body-2"
+      ],
+      "stepOrder": [
+        "workspace--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "publishing": {
+      "id": "publishing",
+      "title": "检查和构建",
+      "level": 2,
+      "children": [
+        "publishing--body-0",
+        "publishing--body-1",
+        "publishing--body-2"
+      ],
+      "stepOrder": [
+        "publishing--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "recovery": {
+      "id": "recovery",
+      "title": "处理保存失败",
+      "level": 2,
+      "children": [
+        "recovery--body-0",
+        "recovery--body-1"
+      ],
+      "stepOrder": [
+        "recovery--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "guide--body-0": {
+      "id": "guide--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "guide--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Presmium 的文稿是目录中的 lecture.json。它保存页面、富文本、步骤、讲稿、素材与组件定义；工作台和 agent 修改同一份数据。本文帮助作者从新建文稿走到检查与发布。"
+            }
+          ]
+        }
+      ]
+    },
+    "start--body-0": {
+      "id": "start--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "start--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "安装 Node.js 22.19 或更新版本与 pnpm。在已经安装 Presmium 的环境中，运行下面的命令新建文稿，再打开工作台。编辑与预览不需要模型。"
+            }
+          ]
+        }
+      ]
+    },
+    "start--body-1": {
+      "id": "start--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "start--body-1--text",
+          "type": "code",
+          "language": "sh",
+          "value": "presmium new lesson --type lecture --title '第一课'\npresmium studio lesson"
+        }
+      ]
+    },
+    "start--body-2": {
+      "id": "start--body-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "start--body-2--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在工作台直接写标题和正文，用原生插入菜单添加列表、表格和代码。正文、选区、撤消与批注属于同一个全篇编辑器。放映是显式进入的独立视图。"
+            }
+          ]
+        }
+      ]
+    },
+    "document--body-0": {
+      "id": "document--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "document--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "lecture.json 是可编辑教学文稿 IR，格式版本由 schemaVersion 表示。sectionOrder 与页面的 children、stepOrder 保存顺序，映射中的实体保存内容。移动页面和块时保留 ID；复制文稿分配新的文稿 ID。"
+            }
+          ]
+        }
+      ]
+    },
+    "document--body-1": {
+      "id": "document--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "document--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "下面是一份完整的最小文稿。正式编辑时优先使用工作台；直接编辑 JSON 时先保留原 ID，再运行检查。不要修改 dist/ 中的派生快照来保存正文。"
+            }
+          ]
+        }
+      ]
+    },
+    "document--body-2": {
+      "id": "document--body-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "document--body-2--text",
+          "type": "code",
+          "language": "json",
+          "value": "{\n  \"schemaVersion\": 1,\n  \"id\": \"my-lesson\",\n  \"metadata\": {\n    \"title\": \"A lesson\",\n    \"lang\": \"en\"\n  },\n  \"sectionOrder\": [\n    \"intro\"\n  ],\n  \"sections\": {\n    \"intro\": {\n      \"id\": \"intro\",\n      \"title\": \"Introduction\",\n      \"level\": 1,\n      \"children\": [\n        \"body\"\n      ],\n      \"stepOrder\": [\n        \"intro-step\"\n      ],\n      \"layout\": {\n        \"type\": \"stack\"\n      }\n    }\n  },\n  \"blocks\": {\n    \"body\": {\n      \"id\": \"body\",\n      \"type\": \"text\",\n      \"content\": [\n        {\n          \"id\": \"paragraph\",\n          \"type\": \"paragraph\",\n          \"children\": [\n            {\n              \"type\": \"text\",\n              \"text\": \"Hello, Presmium.\"\n            }\n          ]\n        }\n      ]\n    }\n  },\n  \"steps\": {\n    \"intro-step\": {\n      \"id\": \"intro-step\",\n      \"sectionId\": \"intro\",\n      \"visuals\": [\n        {\n          \"blockId\": \"body\",\n          \"visible\": true\n        }\n      ],\n      \"narrationIds\": []\n    }\n  },\n  \"narrations\": {},\n  \"assets\": {},\n  \"definitions\": {},\n  \"production\": {\n    \"defaults\": {},\n    \"stepOverrides\": {},\n    \"mediaClips\": []\n  }\n}"
+        }
+      ]
+    },
+    "steps--body-0": {
+      "id": "steps--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每页至少一个稳定步骤。步骤的 visuals 指明可见块、组件的公开状态和参数；未列出的块不可见。状态可以显式继承，直接定位任何步骤都必须重建相同画面。"
+            }
+          ]
+        }
+      ]
+    },
+    "steps--body-1": {
+      "id": "steps--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "narrations 中的讲稿保存文字、发音替换和 cue。字幕文字、合成文字与提示目标由该结构派生。正文编辑不隐式改写讲稿；讲授时机只写在 production 的默认值和覆盖项中。"
+            }
+          ]
+        }
+      ]
+    },
+    "code--body-0": {
+      "id": "code--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "code--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "短代码可以保存在 code 块的 value 中。工程代码用 origin 锚点引用真实文件；路径相对工作区根目录，区域引用使用文件中的实际标记。保留引用和固定提交，不把编译后取得的代码当成另一个权威副本。"
+            }
+          ]
+        }
+      ]
+    },
+    "code--body-1": {
+      "id": "code--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "code--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "动画组件由 definitions 中的实现、参数 Schema 和公开状态描述。块只保存定义引用与自己的参数。声明实际存在的状态，保证来回跳步结果一致；大型代码和媒体文件继续留在工程中。"
+            }
+          ]
+        }
+      ]
+    },
+    "media--body-0": {
+      "id": "media--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "media--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "图片块引用 assets 中的素材。素材位置、组件文件和本地链接以所在文稿目录为基准；代码锚点按工作区根目录解析。容器保存自己的子块顺序，一个内容块只有一个父节点。"
+            }
+          ]
+        }
+      ]
+    },
+    "media--body-1": {
+      "id": "media--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "media--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "阅读页与幻灯片消费同一运行快照。不能交互的输出使用组件提供的静态回退；未知扩展保留完整结构和可读回退，无法使用的能力由诊断说明。"
+            }
+          ]
+        }
+      ]
+    },
+    "production--body-0": {
+      "id": "production--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "production--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "production 唯一保存音色来源、讲稿起播方式、页面或步骤覆盖、cue 延迟与媒体裁切范围。绝对播放时间和精确成片时长是编译结果，不回写到正文实体。"
+            }
+          ]
+        }
+      ]
+    },
+    "production--body-1": {
+      "id": "production--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "production--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "已有语音缓存可用于构建。文字或音色变化后，旧配音不能表示当前版本；重新合成前应确认服务返回的真实音色和能力。打开文稿、保存正文或查看预览不应隐式调用付费合成。"
+            }
+          ]
+        }
+      ]
+    },
+    "workspace--body-0": {
+      "id": "workspace--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "workspace--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "多个文稿由 presmium.workspace.yaml 管理。documents 只匹配 lecture.json。译本同样是完整文稿，例如 locales/en/lecture.json；原文的 metadata.translations 指向它，译本的 translationOf 保存原文入口与摘要。"
+            }
+          ]
+        }
+      ]
+    },
+    "workspace--body-1": {
+      "id": "workspace--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "workspace--body-1--text",
+          "type": "code",
+          "language": "yaml",
+          "value": "title: 我的课程\ndocuments: ['*/lecture.json']"
+        }
+      ]
+    },
+    "workspace--body-2": {
+      "id": "workspace--body-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "workspace--body-2--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "译本中的相对素材和定义路径以译本自己的目录为基准。修改原文后检查摘要，确认译文内容后再更新 metadata.translationOf.digest。JSON 排版和翻译登记字段不改变内容摘要。"
+            }
+          ]
+        }
+      ]
+    },
+    "publishing--body-0": {
+      "id": "publishing--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "publishing--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在文稿所在工程运行以下命令。check 返回定位到实体和 JSON 字段的诊断；build 生成需要的形态，ir 导出运行快照。命令参数以安装版本的帮助为准。"
+            }
+          ]
+        }
+      ]
+    },
+    "publishing--body-1": {
+      "id": "publishing--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "publishing--body-1--text",
+          "type": "code",
+          "language": "sh",
+          "value": "presmium check lesson --json\npresmium build lesson --to web\npresmium ir lesson --out runtime-snapshot.json"
+        }
+      ]
+    },
+    "publishing--body-2": {
+      "id": "publishing--body-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "publishing--body-2--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "网页是预先打包的查看器加文稿数据，幻灯片复用同一查看器。涉及代码执行或远端服务时，先配置真实执行环境；不能执行时保留诊断，不能用占位结果证明成功。"
+            }
+          ]
+        }
+      ]
+    },
+    "recovery--body-0": {
+      "id": "recovery--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "recovery--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "工作台保存使用文稿版本确认。发生冲突、离线或请求失败时保留输入，检查恢复草稿和诊断后再重试。编译失败不阻止保存合法文稿，但最后成功预览可能已经过期。"
+            }
+          ]
+        }
+      ]
+    },
+    "recovery--body-1": {
+      "id": "recovery--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "recovery--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "插件实现见"
+            },
+            {
+              "type": "link",
+              "href": "../plugins/lecture.json",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "插件开发指南"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "；格式版本和公开契约见接口与版本。"
+            },
+            {
+              "type": "text",
+              "text": " English: "
+            },
+            {
+              "type": "link",
+              "href": "../plugins/locales/en/lecture.json#plugin-package",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Plugin project setup"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "guide--step": {
+      "id": "guide--step",
+      "sectionId": "guide",
+      "visuals": [
+        {
+          "blockId": "guide--body-0",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "start--step": {
+      "id": "start--step",
+      "sectionId": "start",
+      "visuals": [
+        {
+          "blockId": "start--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "start--body-1",
+          "visible": true
+        },
+        {
+          "blockId": "start--body-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "document--step": {
+      "id": "document--step",
+      "sectionId": "document",
+      "visuals": [
+        {
+          "blockId": "document--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "document--body-1",
+          "visible": true
+        },
+        {
+          "blockId": "document--body-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "steps--step": {
+      "id": "steps--step",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "steps--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "code--step": {
+      "id": "code--step",
+      "sectionId": "code",
+      "visuals": [
+        {
+          "blockId": "code--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "code--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "media--step": {
+      "id": "media--step",
+      "sectionId": "media",
+      "visuals": [
+        {
+          "blockId": "media--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "media--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "production--step": {
+      "id": "production--step",
+      "sectionId": "production",
+      "visuals": [
+        {
+          "blockId": "production--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "production--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "workspace--step": {
+      "id": "workspace--step",
+      "sectionId": "workspace",
+      "visuals": [
+        {
+          "blockId": "workspace--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "workspace--body-1",
+          "visible": true
+        },
+        {
+          "blockId": "workspace--body-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "publishing--step": {
+      "id": "publishing--step",
+      "sectionId": "publishing",
+      "visuals": [
+        {
+          "blockId": "publishing--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "publishing--body-1",
+          "visible": true
+        },
+        {
+          "blockId": "publishing--body-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "recovery--step": {
+      "id": "recovery--step",
+      "sectionId": "recovery",
+      "visuals": [
+        {
+          "blockId": "recovery--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "recovery--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

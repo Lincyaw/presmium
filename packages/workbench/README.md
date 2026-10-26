@@ -8,7 +8,7 @@ Presmium's workbench panels in React, for teachers who know no code. The panels 
 
 Under them, bound to no framework, are the client of the workspace service (`presmium serve`), the workbench's state, the mapping of an edit on the page back to the source, the preview protocol's workbench side, and the shared components of Presmium's design (`PmButton`, `PmDialog`, `PmMenu` and the others) in React. Experimental (0.x).
 
-Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonical lecture.json teaching documents into web pages, slides, Jupyter notebooks and narrated playback.
 
 ## Usage
 

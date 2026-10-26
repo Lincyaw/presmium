@@ -2,7 +2,7 @@
 
 Presmium's bundle for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (MIT): Presmium's workbench as a DeepSeek Harness distribution. Its host side keeps web sessions at the workspace root with read/write access throughout that directory. Selecting a lecture updates Presmium's document tools and context without changing the session or its working directory. It also provides Presmium's approval policy, authoring skills, and the workbench's data routes. Its client side (`./client`, precompiled) replaces DeepSeek Harness's layout with Presmium's (the documents, a document edited on its rendered page with comments and version history, the AI assistant docked at the right), maps its colours onto Presmium's and puts Presmium's brand in its places. Experimental (0.x): it follows one exact version of DeepSeek Harness, `0.2.1-alpha.4`.
 
-Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonical lecture.json teaching documents into web pages, slides, Jupyter notebooks and narrated playback.
 
 ## Usage
 

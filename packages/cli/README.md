@@ -44,8 +44,8 @@ const { code, stdout } = await presmium(dir, ['build', '--to', 'web'])
 
 ## Documentation
 
-- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md)
-- [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/lecture.en.md)
+- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/locales/en/lecture.json)
+- [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/locales/en/lecture.json)
 
 ## License
 

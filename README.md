@@ -1,6 +1,6 @@
 # Presmium
 
-用 MyST Markdown 写讲义，生成网页、幻灯片、Jupyter notebook 与带语音的讲授。
+在工作台编辑教学文稿，以 lecture.json 保存唯一内容，编译为网页、幻灯片、Jupyter notebook 与讲授快照。
 
 示例：[用代码讲课](examples/animations/README.md)，两讲为 Presmium 写的中文讲义（冒泡排序、代码写成的动画），用 GSAP、Anime.js、Motion、Three.js 与 Remotion 写动画，讲解、字幕、点击与光标编进同一条时间线，合成为讲授与视频。`pnpm demo:check` 检查，`pnpm demo:build` 构建网页、幻灯片、notebook 与讲授。
 
@@ -20,7 +20,7 @@ pnpm add -g @lincyaw/presmium
 presmium new my-lecture     # 新建
 cd my-lecture
 presmium dev                # 本机预览网页与幻灯片，保存即更新
-presmium check              # 检查：指令、链接、代码引用
+presmium check              # 检查：文稿结构、链接、代码引用
 presmium build              # 构建到 dist/：网页、幻灯片、notebook
 ```
 
@@ -35,7 +35,7 @@ presmium build              # 整个站点构建到 dist/web/
 
 工作台（实验性，编辑、预览与 AI agent）：`pnpm add -g @lincyaw/studio`，然后在工作区中运行 `presmium-studio`。
 
-讲义怎么写见[作者指南](site/guide/lecture.md)，插件怎么写见[插件开发指南](site/plugins/lecture.md)。
+讲义怎么写见[作者指南](site/guide/lecture.json)，插件怎么写见[插件开发指南](site/plugins/lecture.json)。
 
 ## 从源码使用
 

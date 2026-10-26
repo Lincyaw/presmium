@@ -1,0 +1,588 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-docs-plugins-en",
+  "metadata": {
+    "title": "Plugin guide",
+    "description": "Implement components, services and render extensions through public contracts",
+    "lang": "en",
+    "renderers": {
+      "web": {}
+    },
+    "translationOf": {
+      "entry": "../../lecture.json",
+      "digest": "cc524fab6179b8410610116df961f66a88b2f9cf3a5b4b2035dac8cc3852745a"
+    }
+  },
+  "sectionOrder": [
+    "plugins",
+    "plugin-package",
+    "plugin-definitions",
+    "plugin-components",
+    "plugin-services",
+    "plugin-routes",
+    "plugin-views",
+    "plugin-renderers",
+    "plugin-testing"
+  ],
+  "sections": {
+    "plugins": {
+      "id": "plugins",
+      "title": "Plugin guide",
+      "level": 1,
+      "children": [
+        "plugins--body-0"
+      ],
+      "stepOrder": [
+        "plugins--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plugin-package": {
+      "id": "plugin-package",
+      "title": "Create a plugin project",
+      "level": 2,
+      "children": [
+        "plugin-package--body-0",
+        "plugin-package--body-1"
+      ],
+      "stepOrder": [
+        "plugin-package--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plugin-definitions": {
+      "id": "plugin-definitions",
+      "title": "Declare component definitions",
+      "level": 2,
+      "children": [
+        "plugin-definitions--body-0",
+        "plugin-definitions--body-1"
+      ],
+      "stepOrder": [
+        "plugin-definitions--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plugin-components": {
+      "id": "plugin-components",
+      "title": "Implement reversible components",
+      "level": 2,
+      "children": [
+        "plugin-components--body-0",
+        "plugin-components--body-1"
+      ],
+      "stepOrder": [
+        "plugin-components--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plugin-services": {
+      "id": "plugin-services",
+      "title": "Collaborate through services",
+      "level": 2,
+      "children": [
+        "plugin-services--body-0",
+        "plugin-services--body-1"
+      ],
+      "stepOrder": [
+        "plugin-services--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plugin-routes": {
+      "id": "plugin-routes",
+      "title": "Routes, execution and diagnostics",
+      "level": 2,
+      "children": [
+        "plugin-routes--body-0",
+        "plugin-routes--body-1"
+      ],
+      "stepOrder": [
+        "plugin-routes--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plugin-views": {
+      "id": "plugin-views",
+      "title": "Extend the viewer",
+      "level": 2,
+      "children": [
+        "plugin-views--body-0",
+        "plugin-views--body-1"
+      ],
+      "stepOrder": [
+        "plugin-views--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plugin-renderers": {
+      "id": "plugin-renderers",
+      "title": "Outputs and fallbacks",
+      "level": 2,
+      "children": [
+        "plugin-renderers--body-0"
+      ],
+      "stepOrder": [
+        "plugin-renderers--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plugin-testing": {
+      "id": "plugin-testing",
+      "title": "Verify and publish",
+      "level": 2,
+      "children": [
+        "plugin-testing--body-0",
+        "plugin-testing--body-1",
+        "plugin-testing--body-2"
+      ],
+      "stepOrder": [
+        "plugin-testing--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "plugins--body-0": {
+      "id": "plugins--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugins--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Plugins add components, services, executors and renderers. Editable content stays in lecture.json. Versioned definitions and structured parameters connect a plugin to compilation without creating another content entry."
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-package--body-0": {
+      "id": "plugin-package--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-package--body-0--text",
+          "type": "code",
+          "language": "sh",
+          "value": "presmium new my-plugin --type plugin\ncd my-plugin\npnpm install\npnpm dev"
+        }
+      ]
+    },
+    "plugin-package--body-1": {
+      "id": "plugin-package--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-package--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The template includes a real example/lecture.json. Its ./presmium export loads the Node plugin. React components live in components/, pure computation in src/domain/, and browser behavior in src/client/. Use peer dependencies for shared Presmium runtime packages."
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-definitions--body-0": {
+      "id": "plugin-definitions--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-definitions--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A definition declares id, kind, schemaVersion, implementation, parameterSchema and states. Implementations reference a project file, a public module or an installed plugin component. Instances store definitionId and parameters."
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-definitions--body-1": {
+      "id": "plugin-definitions--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-definitions--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The shared validator checks parameters and states. Versioned data preserves implementation semantics. Unknown versions retain their structure and readable fallback. Resolved HTML, component state and compiled code are not authoring data."
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-components--body-0": {
+      "id": "plugin-components--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-components--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Read steps, clocks, services, language and theme through public @lincyaw/host hooks. The current step and local time determine the picture. Seeking directly must match sequential playback."
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-components--body-1": {
+      "id": "plugin-components--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-components--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Provide an understandable static fallback. Release timers, subscriptions, Workers and media resources when their lifetime ends. Do not require previous animation side effects to reconstruct a state."
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-services--body-0": {
+      "id": "plugin-services--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-services--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Shared contract packages define service interfaces and tokens. Providers register implementations; consumers depend on tokens rather than another plugin. Node and browser services follow their respective host boundaries."
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-services--body-1": {
+      "id": "plugin-services--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-services--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Keep src/domain/ pure TypeScript. Components and src/client/ obtain runtime state through @lincyaw/host. Put Node capabilities in src/node/. Use dependency public exports, with no internal imports or patches."
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-routes--body-0": {
+      "id": "plugin-routes--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-routes--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Register server routes through existing contribution points. Validate input and report actual failures. Preserve origin checks, authorization and cancellation. Credentials belong in operator settings or server environments."
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-routes--body-1": {
+      "id": "plugin-routes--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-routes--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Executors return real results and environment fingerprints. Compile passes register external file dependencies. Structured findings use stable check IDs and point to the relevant document entity or project file."
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-views--body-0": {
+      "id": "plugin-views--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-views--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The viewer consumes runtime snapshots. It does not reopen authoring files as another content authority. Use public ViewerPlugin and host registration interfaces. Web and slides share components and capability checks."
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-views--body-1": {
+      "id": "plugin-views--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-views--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Use the shared design system for themes, icons and controls. Add missing primitives at the public layer; business CSS handles layout. Provide Chinese and English interface text."
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-renderers--body-0": {
+      "id": "plugin-renderers--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-renderers--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Renderers declare supported nodes and interactions. Use static fallbacks when interaction is unavailable and report unsupported output capabilities. Never substitute a fabricated success state for a failed capability."
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-testing--body-0": {
+      "id": "plugin-testing--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-testing--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Compile the JSON example and open the required form in a browser. Verify seeking, disposal, errors and static output. An installation outside the monorepo must resolve public entries, resources and peer dependencies."
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-testing--body-1": {
+      "id": "plugin-testing--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-testing--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "For repository maintenance, follow the root AGENTS targeted verification policy. Public signatures are generated under API in the navigation; package exports define import paths."
+            }
+          ]
+        }
+      ]
+    },
+    "plugin-testing--body-2": {
+      "id": "plugin-testing--body-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "plugin-testing--body-2--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "For authoring data, read the "
+            },
+            {
+              "type": "link",
+              "href": "../../../guide/lecture.json",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "author guide"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": ". The interface reference explains format and version boundaries."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "plugins--step": {
+      "id": "plugins--step",
+      "sectionId": "plugins",
+      "visuals": [
+        {
+          "blockId": "plugins--body-0",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "plugin-package--step": {
+      "id": "plugin-package--step",
+      "sectionId": "plugin-package",
+      "visuals": [
+        {
+          "blockId": "plugin-package--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "plugin-package--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "plugin-definitions--step": {
+      "id": "plugin-definitions--step",
+      "sectionId": "plugin-definitions",
+      "visuals": [
+        {
+          "blockId": "plugin-definitions--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "plugin-definitions--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "plugin-components--step": {
+      "id": "plugin-components--step",
+      "sectionId": "plugin-components",
+      "visuals": [
+        {
+          "blockId": "plugin-components--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "plugin-components--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "plugin-services--step": {
+      "id": "plugin-services--step",
+      "sectionId": "plugin-services",
+      "visuals": [
+        {
+          "blockId": "plugin-services--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "plugin-services--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "plugin-routes--step": {
+      "id": "plugin-routes--step",
+      "sectionId": "plugin-routes",
+      "visuals": [
+        {
+          "blockId": "plugin-routes--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "plugin-routes--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "plugin-views--step": {
+      "id": "plugin-views--step",
+      "sectionId": "plugin-views",
+      "visuals": [
+        {
+          "blockId": "plugin-views--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "plugin-views--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "plugin-renderers--step": {
+      "id": "plugin-renderers--step",
+      "sectionId": "plugin-renderers",
+      "visuals": [
+        {
+          "blockId": "plugin-renderers--body-0",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "plugin-testing--step": {
+      "id": "plugin-testing--step",
+      "sectionId": "plugin-testing",
+      "visuals": [
+        {
+          "blockId": "plugin-testing--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "plugin-testing--body-1",
+          "visible": true
+        },
+        {
+          "blockId": "plugin-testing--body-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
