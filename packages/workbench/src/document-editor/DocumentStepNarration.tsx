@@ -6,6 +6,7 @@ import { isAgentChanging } from '../workbench.ts'
 import { NarrationEditor } from './NarrationEditor.tsx'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
 import { narrationFieldFocus } from './narration.ts'
+import { StepProductionEditor } from '../StepProductionEditor.tsx'
 
 /** Content ownership determines the page, even when the author is reading another page. */
 export function documentBlockSection(document: TeachingDocument, blockId: string): string | undefined {
@@ -47,6 +48,7 @@ export function DocumentStepNarration({ blockId, sectionId, stepId, expanded, pa
   const workbench = useWorkbench(), source = useWorkbenchState(state => state.authoring)
   const locale = useWorkbenchState(state => state.locale), t = DOCUMENT_EDITOR_MESSAGES[locale]
   const readOnly = useWorkbenchState(isAgentChanging)
+  const timingStorageFailure = useWorkbenchState(state => state.documentTimingDraftStorageFailure)
   const document = source?.content, section = document?.sections[sectionId], step = document?.steps[stepId]
   if (!source?.identity || !document || !section || !step) return null
   const index = section.stepOrder.indexOf(stepId), ids = step.narrationIds
@@ -71,6 +73,13 @@ export function DocumentStepNarration({ blockId, sectionId, stepId, expanded, pa
         identity={source.identity!} reset={source.reset} blockId={blockId} stepId={stepId} slot={slot} narrationId={id}
         content={id ? document.narrations[id]?.content ?? [] : []} readOnly={readOnly} onPause={onPause} />)}
       <p className="pm-ui-block-preview__narration-hint">{t.narrationHint}</p>
+      <StepProductionEditor key={`${source.identity}:${source.reset}:${stepId}`} document={document} stepId={stepId} locale={locale} readOnly={readOnly}
+        onPause={onPause} onInteraction={() => workbench.documentInteraction()}
+        onChange={patch => workbench.setDocumentStepProduction(stepId, patch, source.identity)}
+        drafts={{ minimumHoldMs: workbench.documentTimingDraft(stepId, 'minimumHoldMs', source.identity, source.reset), trailingPauseMs: workbench.documentTimingDraft(stepId, 'trailingPauseMs', source.identity, source.reset) }}
+        draftStorageFailure={timingStorageFailure}
+        onDraft={(key, draft) => workbench.setDocumentTimingDraft(stepId, key, draft, source.identity!, source.reset)}
+        onComposition={(key, composing) => workbench.documentComposition(composing, `production:${source.identity}:${source.reset}:${blockId}:${stepId}:${key}`, source.identity)} />
     </div>}
   </section>
 }

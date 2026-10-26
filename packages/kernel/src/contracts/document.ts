@@ -165,6 +165,7 @@ export interface Production {
   defaults: ProductionDefaults
   sectionOverrides?: Record<SectionId, StepProduction>
   stepOverrides: Record<StepId, StepProduction>
+  /** Migrated narration defaults: after page settings, before an explicit step override; shared narrations retain this source. */
   narrationOverrides?: Record<NarrationId, { narrationStart: 'with-animation' | 'after-animation' }>
   /** Cue placement is authored in narration; its delay is owned only here. */
   cueTimings?: Record<string, { pauseMs: number }>

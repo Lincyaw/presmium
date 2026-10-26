@@ -55,7 +55,8 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   const sectionId = source?.content && documentBlockSection(source.content, blockId)
   const section = sectionId ? source?.content?.sections[sectionId] : undefined
   const stepId = section?.stepOrder[position && position.section === sectionId ? position.step : 0] ?? section?.stepOrder[0]
-  const [narrationOpen, setNarrationOpen] = useState(() => Boolean(workbench.pendingDocumentField(blockId, source?.identity))), narrationPanel = useId()
+  const [narrationOpen, setNarrationOpen] = useState(() => Boolean(workbench.pendingDocumentField(blockId, source?.identity)
+    || source?.identity && stepId && (workbench.documentTimingDraft(stepId, 'minimumHoldMs', source.identity, source.reset) || workbench.documentTimingDraft(stepId, 'trailingPauseMs', source.identity, source.reset)))), narrationPanel = useId()
   const root = useRef<HTMLElement>(null), frame = useRef<HTMLIFrameElement | null>(null)
   const mountFrame = useCallback((element: HTMLIFrameElement | null) => {
     frame.current = element
