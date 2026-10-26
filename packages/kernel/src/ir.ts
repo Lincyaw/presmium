@@ -138,7 +138,7 @@ export interface CodeNode {
   variants?: CodeVariant[]
   echo?: false
   /** Structured source references for the resolver pass, independent of authoring syntax. */
-  reference?: { anchor: AnchorString, pin?: string, variants?: { anchor?: AnchorString, pin?: string, label: string, value?: string }[] }
+  reference?: { anchor: AnchorString, pin?: string, repo?: string, highlightRegions?: string[], variants?: { anchor?: AnchorString, pin?: string, repo?: string, label: string, value?: string }[] }
 }
 
 export interface ComponentNode {

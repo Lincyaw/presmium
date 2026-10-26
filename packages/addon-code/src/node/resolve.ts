@@ -27,12 +27,12 @@ export const codeRefPass: IRPass = {
     const tree: GitTree = { ...own, src: { read: (file, ref) => (ref === undefined ? ctx.src.read(file) : own.src.read(file, ref)) } }
     for (const { section, block } of docBlocks(doc)) {
       const reference = block.node.type === 'code' ? block.node.reference : undefined
-      const spec = block.node.type === 'code' ? codeRefs.get(block.node) ?? (reference ? { anchor: reference.anchor, ...reference.pin ? { pin: reference.pin } : {} } : undefined) : undefined
+      const spec = block.node.type === 'code' ? codeRefs.get(block.node) ?? (reference ? { anchor: reference.anchor, ...reference.pin ? { pin: reference.pin } : {}, ...reference.repo ? { repo: reference.repo } : {}, ...reference.highlightRegions ? { steps: reference.highlightRegions } : {} } : undefined) : undefined
       if (!spec) continue
       const report: Report = (checkId, severity, message, hint) =>
         ctx.report({ checkId, severity, message, source: { file: block.source.file, line: block.source.line }, ...hint ? { hint } : {} })
       const code = block.node as CodeNode
-      const repo = toCodeConfig(ctx.configFor(section)).repo
+      const repo = reference?.repo ?? toCodeConfig(ctx.configFor(section)).repo
       if (code.origin) await resolveCodeRef(code, spec, repo, tree, ctx, report)
       if (reference?.variants) {
         const variants: CodeVariant[] = []
@@ -40,7 +40,7 @@ export const codeRefPass: IRPass = {
           if (variant.value !== undefined) { variants.push({ label: variant.label, value: variant.value }); continue }
           if (!variant.anchor) continue
           const snapshot: CodeNode = { type: 'code', lang: code.lang, value: '', origin: { anchor: variant.anchor, file: '', startLine: 0, endLine: 0, status: 'lost' } }
-          await resolveCodeRef(snapshot, { anchor: variant.anchor, ...variant.pin ? { pin: variant.pin } : {} }, repo, tree, ctx, report)
+          await resolveCodeRef(snapshot, { anchor: variant.anchor, ...variant.pin ? { pin: variant.pin } : {}, ...variant.repo ? { repo: variant.repo } : {} }, repo, tree, ctx, report)
           if (snapshot.origin?.status !== 'lost') variants.push({ label: variant.label, value: snapshot.value, startLine: snapshot.origin!.startLine, endLine: snapshot.origin!.endLine, ...snapshot.origin?.permalink ? { permalink: snapshot.origin.permalink } : {} })
         }
         code.variants = variants
