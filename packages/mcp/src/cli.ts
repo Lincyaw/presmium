@@ -2,7 +2,7 @@ import { stat } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
-import { APPROVAL_KINDS, errorMessage, LOCAL_AUTHOR } from '@lincyaw/kernel'
+import { APPROVAL_KINDS, DOCUMENT_ENTRY, errorMessage, LOCAL_AUTHOR } from '@lincyaw/kernel'
 import type { ApprovalKind } from '@lincyaw/kernel'
 import { buildSummary, buildToDist, Compiler, findPackageDir, resolveEntry, runBlock } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
@@ -14,7 +14,7 @@ const CLI_PACKAGE = '@lincyaw/cli'
 
 const USAGE = `Usage: presmium-mcp [deck] [--allow <kinds>]
 
-Serves the deck (a directory holding lecture.md, or an entry file; default: .)
+Serves the document (a directory holding ${DOCUMENT_ENTRY}, or that JSON entry; default: .)
 as MCP tools and resources on stdio, for the agent of an editor.
 
   --allow <kinds>  offer and allow these operations: operate (run_code, build), spend

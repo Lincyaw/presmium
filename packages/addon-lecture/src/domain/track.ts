@@ -1,4 +1,4 @@
-import { isRecord } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, isRecord } from '@lincyaw/kernel'
 import type { TrackEvent } from '@lincyaw/kernel'
 
 export const LECTURE_ID = 'presmium.lecture'
@@ -180,7 +180,7 @@ export function parseTrack(value: unknown): { track?: LectureTrack, problems: st
     track: {
       track: TRACK_VERSION,
       id: value.id,
-      doc: typeof value.doc === 'string' ? value.doc : 'lecture.md',
+      doc: typeof value.doc === 'string' ? value.doc : DOCUMENT_ENTRY,
       lang: typeof value.lang === 'string' ? value.lang : 'zh-CN',
       ir: irOf(value.ir),
       voice: voice(value.voice),
