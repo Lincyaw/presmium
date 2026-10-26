@@ -1,0 +1,1424 @@
+{
+  "schemaVersion": 1,
+  "id": "document-eeda1eff2a1ae3c6",
+  "metadata": {
+    "title": "宿主适配测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "./plugin",
+      "./services"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {
+        "theme": "default"
+      }
+    }
+  },
+  "sectionOrder": [
+    "宿主适配测试文稿",
+    "core",
+    "core-scope"
+  ],
+  "sections": {
+    "宿主适配测试文稿": {
+      "id": "宿主适配测试文稿",
+      "title": "宿主适配测试文稿",
+      "level": 1,
+      "children": [
+        "宿主适配测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "宿主适配测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "core": {
+      "id": "core",
+      "title": "宿主适配",
+      "level": 2,
+      "children": [
+        "core--paragraph-1",
+        "core--paragraph-2",
+        "core--demo-greeting-1",
+        "core--paragraph-3",
+        "core--paragraph-4",
+        "core--demo-stepper-1",
+        "core--paragraph-5",
+        "core--paragraph-6",
+        "core--paragraph-7",
+        "core--paragraph-8",
+        "core--paragraph-9",
+        "core--demo-animated-1",
+        "core--paragraph-10",
+        "core--demo-broken-1",
+        "core--paragraph-11",
+        "core--paragraph-12"
+      ],
+      "stepOrder": [
+        "core--step-0",
+        "core--step-1",
+        "core--step-2",
+        "core--step-3"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "pm-core"
+          }
+        }
+      }
+    },
+    "core-scope": {
+      "id": "core-scope",
+      "title": "步骤作用域",
+      "level": 2,
+      "children": [
+        "core-scope--paragraph-1",
+        "core-scope--paragraph-2",
+        "core-scope--paragraph-3",
+        "core-scope--demo-stepper-1",
+        "core-scope--paragraph-4",
+        "core-scope--paragraph-5",
+        "core-scope--paragraph-6",
+        "core-scope--paragraph-7"
+      ],
+      "stepOrder": [
+        "core-scope--step-0",
+        "core-scope--step-1",
+        "core-scope--step-2",
+        "core-scope--step-3",
+        "core-scope--step-4",
+        "core-scope--step-5"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "pm-core-scope"
+          }
+        }
+      }
+    }
+  },
+  "blocks": {
+    "宿主适配测试文稿--paragraph-1": {
+      "id": "宿主适配测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "宿主适配测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "插件之间的服务依赖、步骤驱动的组件、动画、错误边界与步骤作用域。组件与三个演示插件来自本目录的测试插件 "
+            },
+            {
+              "type": "text",
+              "text": "./plugin",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 与 "
+            },
+            {
+              "type": "text",
+              "text": "./services",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。"
+            }
+          ]
+        }
+      ]
+    },
+    "core--paragraph-1": {
+      "id": "core--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "core--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本章演示宿主适配：插件之间通过服务协作，组件的状态由步骤推导，动画尊重减少动态效果的设置，出错的组件只影响自身。组件与三个演示插件来自本目录的测试插件 "
+            },
+            {
+              "type": "text",
+              "text": "plugin",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 与 "
+            },
+            {
+              "type": "text",
+              "text": "services",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。"
+            }
+          ]
+        }
+      ]
+    },
+    "core--paragraph-2": {
+      "id": "core--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "core--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "服务依赖",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：消费方插件拿到提供方的实现"
+            }
+          ]
+        }
+      ]
+    },
+    "core--demo-greeting-1": {
+      "id": "core--demo-greeting-1",
+      "type": "component",
+      "definitionId": "core--demo-greeting-1--definition",
+      "parameters": {}
+    },
+    "core--paragraph-3": {
+      "id": "core--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "core--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "fixture.host.provider 提供问候服务，fixture.host.consumer 依赖它，fixture.host.orphan 缺少必需服务而被禁用。启动报告显示在演讲者视图的 Presmium 面板中。"
+            }
+          ]
+        }
+      ]
+    },
+    "core--paragraph-4": {
+      "id": "core--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "core--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "步骤驱动",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：状态由步骤推导，跳转与逐步前进一致"
+            }
+          ]
+        }
+      ]
+    },
+    "core--demo-stepper-1": {
+      "id": "core--demo-stepper-1",
+      "type": "component",
+      "definitionId": "core--demo-stepper-1--definition",
+      "parameters": {
+        "steps": [
+          "解析文稿",
+          "启动插件",
+          "渲染页面"
+        ]
+      }
+    },
+    "core--paragraph-5": {
+      "id": "core--paragraph-5",
+      "type": "text",
+      "content": [
+        {
+          "id": "core--paragraph-5--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "步进组件有三个标签，占用三步：每一步显示并突出一个标签。"
+            }
+          ]
+        }
+      ]
+    },
+    "core--paragraph-6": {
+      "id": "core--paragraph-6",
+      "type": "text",
+      "content": [
+        {
+          "id": "core--paragraph-6--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一步突出“解析文稿”：步进组件的状态完全由步骤推导。"
+            }
+          ]
+        }
+      ]
+    },
+    "core--paragraph-7": {
+      "id": "core--paragraph-7",
+      "type": "text",
+      "content": [
+        {
+          "id": "core--paragraph-7--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步突出“启动插件”。"
+            }
+          ]
+        }
+      ]
+    },
+    "core--paragraph-8": {
+      "id": "core--paragraph-8",
+      "type": "text",
+      "content": [
+        {
+          "id": "core--paragraph-8--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第三步突出“渲染页面”：直接跳到这一步与从第零步逐步前进到这里，页面完全一致。"
+            }
+          ]
+        }
+      ]
+    },
+    "core--paragraph-9": {
+      "id": "core--paragraph-9",
+      "type": "text",
+      "content": [
+        {
+          "id": "core--paragraph-9--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "动画",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：减少动态效果时直接显示终态"
+            }
+          ]
+        }
+      ]
+    },
+    "core--demo-animated-1": {
+      "id": "core--demo-animated-1",
+      "type": "component",
+      "definitionId": "core--demo-animated-1--definition",
+      "parameters": {}
+    },
+    "core--paragraph-10": {
+      "id": "core--paragraph-10",
+      "type": "text",
+      "content": [
+        {
+          "id": "core--paragraph-10--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "错误边界",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：出错的组件只影响自身"
+            }
+          ]
+        }
+      ]
+    },
+    "core--demo-broken-1": {
+      "id": "core--demo-broken-1",
+      "type": "component",
+      "definitionId": "core--demo-broken-1--definition",
+      "parameters": {}
+    },
+    "core--paragraph-11": {
+      "id": "core--paragraph-11",
+      "type": "text",
+      "content": [
+        {
+          "id": "core--paragraph-11--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "故意抛错的组件显示错误占位，本页其他内容照常渲染，错误同时列在演讲者面板中。"
+            }
+          ]
+        }
+      ]
+    },
+    "core--paragraph-12": {
+      "id": "core--paragraph-12",
+      "type": "text",
+      "content": [
+        {
+          "id": "core--paragraph-12--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "网页形态中才出现的补充说明：本章的演示插件来自测试插件 "
+            },
+            {
+              "type": "text",
+              "text": "services",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "core-scope--paragraph-1": {
+      "id": "core-scope--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "core-scope--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "组件的内部步骤从它所在块出现的那一步算起：同一个步进组件放在第 0 步出现的块中，或者放在第 2 步出现的块中，它的第 k 个内部步骤都显示同样的状态。"
+            }
+          ]
+        }
+      ]
+    },
+    "core-scope--paragraph-2": {
+      "id": "core-scope--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "core-scope--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一步",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：先出现一段说明"
+            }
+          ]
+        }
+      ]
+    },
+    "core-scope--paragraph-3": {
+      "id": "core-scope--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "core-scope--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：步进组件随后出现，从这一步开始数它自己的步骤"
+            }
+          ]
+        }
+      ]
+    },
+    "core-scope--demo-stepper-1": {
+      "id": "core-scope--demo-stepper-1",
+      "type": "component",
+      "definitionId": "core-scope--demo-stepper-1--definition",
+      "parameters": {
+        "steps": [
+          "解析文稿",
+          "启动插件",
+          "渲染页面"
+        ]
+      }
+    },
+    "core-scope--paragraph-4": {
+      "id": "core-scope--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "core-scope--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "步进组件在第 2 步出现，此时还没有突出任何标签。"
+            }
+          ]
+        }
+      ]
+    },
+    "core-scope--paragraph-5": {
+      "id": "core-scope--paragraph-5",
+      "type": "text",
+      "content": [
+        {
+          "id": "core-scope--paragraph-5--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第 3 步是它的第 1 个内部步骤，突出“解析文稿”，与上一页第 1 步的步进组件一致。"
+            }
+          ]
+        }
+      ]
+    },
+    "core-scope--paragraph-6": {
+      "id": "core-scope--paragraph-6",
+      "type": "text",
+      "content": [
+        {
+          "id": "core-scope--paragraph-6--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第 4 步突出“启动插件”。"
+            }
+          ]
+        }
+      ]
+    },
+    "core-scope--paragraph-7": {
+      "id": "core-scope--paragraph-7",
+      "type": "text",
+      "content": [
+        {
+          "id": "core-scope--paragraph-7--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第 5 步突出“渲染页面”。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "宿主适配测试文稿--step-0": {
+      "id": "宿主适配测试文稿--step-0",
+      "sectionId": "宿主适配测试文稿",
+      "visuals": [
+        {
+          "blockId": "宿主适配测试文稿--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "core--step-0": {
+      "id": "core--step-0",
+      "sectionId": "core",
+      "visuals": [
+        {
+          "blockId": "core--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "core--demo-greeting-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "core--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-4",
+          "visible": true
+        },
+        {
+          "blockId": "core--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "core--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-7",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-8",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-9",
+          "visible": true
+        },
+        {
+          "blockId": "core--demo-animated-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "core--paragraph-10",
+          "visible": true
+        },
+        {
+          "blockId": "core--demo-broken-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "core--paragraph-11",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-12",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "core--paragraph-1--narration",
+        "core--paragraph-3--narration",
+        "core--paragraph-5--narration",
+        "core--paragraph-11--narration"
+      ]
+    },
+    "core--step-1": {
+      "id": "core--step-1",
+      "sectionId": "core",
+      "visuals": [
+        {
+          "blockId": "core--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "core--demo-greeting-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "core--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-4",
+          "visible": true
+        },
+        {
+          "blockId": "core--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "core--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-7",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-8",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-9",
+          "visible": true
+        },
+        {
+          "blockId": "core--demo-animated-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "core--paragraph-10",
+          "visible": true
+        },
+        {
+          "blockId": "core--demo-broken-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "core--paragraph-11",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-12",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "core--paragraph-6--narration"
+      ]
+    },
+    "core--step-2": {
+      "id": "core--step-2",
+      "sectionId": "core",
+      "visuals": [
+        {
+          "blockId": "core--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "core--demo-greeting-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "core--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-4",
+          "visible": true
+        },
+        {
+          "blockId": "core--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "core--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-7",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-8",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-9",
+          "visible": true
+        },
+        {
+          "blockId": "core--demo-animated-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "core--paragraph-10",
+          "visible": true
+        },
+        {
+          "blockId": "core--demo-broken-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "core--paragraph-11",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-12",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "core--paragraph-7--narration"
+      ]
+    },
+    "core--step-3": {
+      "id": "core--step-3",
+      "sectionId": "core",
+      "visuals": [
+        {
+          "blockId": "core--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "core--demo-greeting-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "core--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-4",
+          "visible": true
+        },
+        {
+          "blockId": "core--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "core--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-7",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-8",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-9",
+          "visible": true
+        },
+        {
+          "blockId": "core--demo-animated-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "core--paragraph-10",
+          "visible": true
+        },
+        {
+          "blockId": "core--demo-broken-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "core--paragraph-11",
+          "visible": false
+        },
+        {
+          "blockId": "core--paragraph-12",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "core--paragraph-8--narration"
+      ]
+    },
+    "core-scope--step-0": {
+      "id": "core-scope--step-0",
+      "sectionId": "core-scope",
+      "visuals": [
+        {
+          "blockId": "core-scope--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--demo-stepper-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "core-scope--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-7",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "core-scope--paragraph-1--narration"
+      ]
+    },
+    "core-scope--step-1": {
+      "id": "core-scope--step-1",
+      "sectionId": "core-scope",
+      "visuals": [
+        {
+          "blockId": "core-scope--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "core-scope--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--demo-stepper-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "core-scope--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-7",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "core-scope--step-2": {
+      "id": "core-scope--step-2",
+      "sectionId": "core-scope",
+      "visuals": [
+        {
+          "blockId": "core-scope--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "core-scope--paragraph-3",
+          "visible": true
+        },
+        {
+          "blockId": "core-scope--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "core-scope--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-7",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "core-scope--paragraph-4--narration"
+      ]
+    },
+    "core-scope--step-3": {
+      "id": "core-scope--step-3",
+      "sectionId": "core-scope",
+      "visuals": [
+        {
+          "blockId": "core-scope--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "core-scope--paragraph-3",
+          "visible": true
+        },
+        {
+          "blockId": "core-scope--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "core-scope--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-7",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "core-scope--paragraph-5--narration"
+      ]
+    },
+    "core-scope--step-4": {
+      "id": "core-scope--step-4",
+      "sectionId": "core-scope",
+      "visuals": [
+        {
+          "blockId": "core-scope--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "core-scope--paragraph-3",
+          "visible": true
+        },
+        {
+          "blockId": "core-scope--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "core-scope--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-7",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "core-scope--paragraph-6--narration"
+      ]
+    },
+    "core-scope--step-5": {
+      "id": "core-scope--step-5",
+      "sectionId": "core-scope",
+      "visuals": [
+        {
+          "blockId": "core-scope--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "core-scope--paragraph-3",
+          "visible": true
+        },
+        {
+          "blockId": "core-scope--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "core-scope--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "core-scope--paragraph-7",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "core-scope--paragraph-7--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "core--paragraph-1--narration": {
+      "id": "core--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "本章演示宿主适配：插件之间通过服务协作，组件的状态由步骤推导，动画尊重减少动态效果的设置，出错的组件只影响自身。组件与三个演示插件来自本目录的测试插件 plugin 与 services。"
+        }
+      ]
+    },
+    "core--paragraph-3--narration": {
+      "id": "core--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "fixture.host.provider 提供问候服务，fixture.host.consumer 依赖它，fixture.host.orphan 缺少必需服务而被禁用。启动报告显示在演讲者视图的 Presmium 面板中。"
+        }
+      ]
+    },
+    "core--paragraph-5--narration": {
+      "id": "core--paragraph-5--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "步进组件有三个标签，占用三步：每一步显示并突出一个标签。"
+        }
+      ]
+    },
+    "core--paragraph-6--narration": {
+      "id": "core--paragraph-6--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第一步突出“解析文稿”：步进组件的状态完全由步骤推导。"
+        }
+      ]
+    },
+    "core--paragraph-7--narration": {
+      "id": "core--paragraph-7--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二步突出“启动插件”。"
+        }
+      ]
+    },
+    "core--paragraph-8--narration": {
+      "id": "core--paragraph-8--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第三步突出“渲染页面”：直接跳到这一步与从第零步逐步前进到这里，页面完全一致。"
+        }
+      ]
+    },
+    "core--paragraph-11--narration": {
+      "id": "core--paragraph-11--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "故意抛错的组件显示错误占位，本页其他内容照常渲染，错误同时列在演讲者面板中。"
+        }
+      ]
+    },
+    "core-scope--paragraph-1--narration": {
+      "id": "core-scope--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "组件的内部步骤从它所在块出现的那一步算起：同一个步进组件放在第 0 步出现的块中，或者放在第 2 步出现的块中，它的第 k 个内部步骤都显示同样的状态。"
+        }
+      ]
+    },
+    "core-scope--paragraph-4--narration": {
+      "id": "core-scope--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "步进组件在第 2 步出现，此时还没有突出任何标签。"
+        }
+      ]
+    },
+    "core-scope--paragraph-5--narration": {
+      "id": "core-scope--paragraph-5--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第 3 步是它的第 1 个内部步骤，突出“解析文稿”，与上一页第 1 步的步进组件一致。"
+        }
+      ]
+    },
+    "core-scope--paragraph-6--narration": {
+      "id": "core-scope--paragraph-6--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第 4 步突出“启动插件”。"
+        }
+      ]
+    },
+    "core-scope--paragraph-7--narration": {
+      "id": "core-scope--paragraph-7--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第 5 步突出“渲染页面”。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "core--demo-greeting-1--definition": {
+      "id": "core--demo-greeting-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.host",
+        "name": "DemoGreeting"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.host",
+        "name": "DemoGreeting"
+      }
+    },
+    "core--demo-stepper-1--definition": {
+      "id": "core--demo-stepper-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.host",
+        "name": "DemoStepper"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "fixture.host",
+        "name": "DemoStepper"
+      }
+    },
+    "core--demo-animated-1--definition": {
+      "id": "core--demo-animated-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.host",
+        "name": "DemoAnimated"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.host",
+        "name": "DemoAnimated"
+      }
+    },
+    "core--demo-broken-1--definition": {
+      "id": "core--demo-broken-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.host",
+        "name": "DemoBroken"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.host",
+        "name": "DemoBroken"
+      }
+    },
+    "core-scope--demo-stepper-1--definition": {
+      "id": "core-scope--demo-stepper-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.host",
+        "name": "DemoStepper"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "fixture.host",
+        "name": "DemoStepper"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

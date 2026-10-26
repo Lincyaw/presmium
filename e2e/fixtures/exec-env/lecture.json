@@ -1,0 +1,399 @@
+{
+  "schemaVersion": 1,
+  "id": "document-8d5834d2a8cc9906",
+  "metadata": {
+    "title": "执行环境测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec",
+      "./lab"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {
+        "theme": "default"
+      }
+    },
+    "execute": {
+      "environments": {
+        "lab": {
+          "kind": "fixture-lab"
+        }
+      }
+    }
+  },
+  "sectionOrder": [
+    "执行环境测试文稿",
+    "env-missing",
+    "session",
+    "image",
+    "table",
+    "slides-live"
+  ],
+  "sections": {
+    "执行环境测试文稿": {
+      "id": "执行环境测试文稿",
+      "title": "执行环境测试文稿",
+      "level": 1,
+      "children": [
+        "执行环境测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "执行环境测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "env-missing": {
+      "id": "env-missing",
+      "title": "未登记的环境",
+      "level": 2,
+      "children": [
+        "env-missing--paragraph-1",
+        "env-missing--in-lab"
+      ],
+      "stepOrder": [
+        "env-missing--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "session": {
+      "id": "session",
+      "title": "执行会话",
+      "level": 2,
+      "children": [
+        "session--paragraph-1",
+        "session--define",
+        "session--use"
+      ],
+      "stepOrder": [
+        "session--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "image": {
+      "id": "image",
+      "title": "图片输出",
+      "level": 2,
+      "children": [
+        "image--png"
+      ],
+      "stepOrder": [
+        "image--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "table": {
+      "id": "table",
+      "title": "生成的表格",
+      "level": 2,
+      "children": [
+        "table--paragraph-1",
+        "table--counts"
+      ],
+      "stepOrder": [
+        "table--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "slides-live": {
+      "id": "slides-live",
+      "title": "幻灯片中的现场代码",
+      "level": 2,
+      "children": [
+        "slides-live--live-sum"
+      ],
+      "stepOrder": [
+        "slides-live--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "执行环境测试文稿--paragraph-1": {
+      "id": "执行环境测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "执行环境测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/exec-env.spec.ts 的测试文稿：具名环境、执行会话与富输出。"
+            }
+          ]
+        }
+      ]
+    },
+    "env-missing--paragraph-1": {
+      "id": "env-missing--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "env-missing--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "浏览器中没有插件登记环境 "
+            },
+            {
+              "type": "text",
+              "text": "lab",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 的执行器：运行失败，显示编译时录制的输出与原因。"
+            }
+          ]
+        }
+      ]
+    },
+    "env-missing--in-lab": {
+      "id": "env-missing--in-lab",
+      "type": "code",
+      "language": "python",
+      "value": "print(\"这一行在浏览器中运行不了\")",
+      "execution": {
+        "when": "both",
+        "executor": "presmium.env.lab"
+      }
+    },
+    "session--paragraph-1": {
+      "id": "session--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "session--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "同一会话的两个代码块共享解释器：先运行定义 "
+            },
+            {
+              "type": "text",
+              "text": "x",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 的一块，再运行使用它的一块。"
+            }
+          ]
+        }
+      ]
+    },
+    "session--define": {
+      "id": "session--define",
+      "type": "code",
+      "language": "python",
+      "value": "x = 41\nprint(\"定义了 x\")",
+      "execution": {
+        "when": "live",
+        "session": "counter"
+      }
+    },
+    "session--use": {
+      "id": "session--use",
+      "type": "code",
+      "language": "python",
+      "value": "print(x + 1)",
+      "execution": {
+        "when": "live",
+        "session": "counter"
+      }
+    },
+    "image--png": {
+      "id": "image--png",
+      "type": "code",
+      "language": "python",
+      "value": "import struct, zlib\nfrom IPython.display import Image, display\n\ndef chunk(kind, data):\n    return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))\n\nrows = b''.join(b'\\x00' + b'\\xd0\\x40\\x20' * 8 for _ in range(8))\npng = b'\\x89PNG\\r\\n\\x1a\\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', 8, 8, 8, 2, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(rows)) + chunk(b'IEND', b'')\ndisplay(Image(data=png))",
+      "execution": {
+        "when": "compile"
+      }
+    },
+    "table--paragraph-1": {
+      "id": "table--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "table--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "下面的表格由代码生成，代码本身不显示。"
+            }
+          ]
+        }
+      ]
+    },
+    "table--counts": {
+      "id": "table--counts",
+      "type": "code",
+      "language": "python",
+      "value": "from IPython.display import Markdown, display\ncounts = {\"低\": 3, \"你好\": 5}\nrows = \"\\n\".join(f\"| {word} | {n} |\" for word, n in counts.items())\ndisplay(Markdown(\"| 词 | 次数 |\\n|---|---|\\n\" + rows))",
+      "execution": {
+        "when": "compile"
+      },
+      "echo": false
+    },
+    "slides-live--live-sum": {
+      "id": "slides-live--live-sum",
+      "type": "code",
+      "language": "python",
+      "value": "print(sum(range(10)))",
+      "execution": {
+        "when": "live"
+      }
+    }
+  },
+  "steps": {
+    "执行环境测试文稿--step-0": {
+      "id": "执行环境测试文稿--step-0",
+      "sectionId": "执行环境测试文稿",
+      "visuals": [
+        {
+          "blockId": "执行环境测试文稿--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "env-missing--step-0": {
+      "id": "env-missing--step-0",
+      "sectionId": "env-missing",
+      "visuals": [
+        {
+          "blockId": "env-missing--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "env-missing--in-lab",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "env-missing--paragraph-1--narration"
+      ]
+    },
+    "session--step-0": {
+      "id": "session--step-0",
+      "sectionId": "session",
+      "visuals": [
+        {
+          "blockId": "session--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "session--define",
+          "visible": true
+        },
+        {
+          "blockId": "session--use",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "session--paragraph-1--narration"
+      ]
+    },
+    "image--step-0": {
+      "id": "image--step-0",
+      "sectionId": "image",
+      "visuals": [
+        {
+          "blockId": "image--png",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "table--step-0": {
+      "id": "table--step-0",
+      "sectionId": "table",
+      "visuals": [
+        {
+          "blockId": "table--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "table--counts",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "table--paragraph-1--narration"
+      ]
+    },
+    "slides-live--step-0": {
+      "id": "slides-live--step-0",
+      "sectionId": "slides-live",
+      "visuals": [
+        {
+          "blockId": "slides-live--live-sum",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "env-missing--paragraph-1--narration": {
+      "id": "env-missing--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "浏览器中没有插件登记环境 lab 的执行器：运行失败，显示编译时录制的输出与原因。"
+        }
+      ]
+    },
+    "session--paragraph-1--narration": {
+      "id": "session--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "同一会话的两个代码块共享解释器：先运行定义 x 的一块，再运行使用它的一块。"
+        }
+      ]
+    },
+    "table--paragraph-1--narration": {
+      "id": "table--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "下面的表格由代码生成，代码本身不显示。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

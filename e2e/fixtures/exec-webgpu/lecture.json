@@ -1,0 +1,449 @@
+{
+  "schemaVersion": 1,
+  "id": "document-70663e1d44ac235a",
+  "metadata": {
+    "title": "浏览器 GPU 测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec",
+      "@lincyaw/addon-exec-webgpu"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {
+        "theme": "default"
+      }
+    }
+  },
+  "sectionOrder": [
+    "浏览器-gpu-测试文稿",
+    "shader",
+    "python",
+    "tensor"
+  ],
+  "sections": {
+    "浏览器-gpu-测试文稿": {
+      "id": "浏览器-gpu-测试文稿",
+      "title": "浏览器 GPU 测试文稿",
+      "level": 1,
+      "children": [
+        "浏览器-gpu-测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "浏览器-gpu-测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "shader": {
+      "id": "shader",
+      "title": "向量加法",
+      "level": 2,
+      "children": [
+        "shader--paragraph-1",
+        "shader--add"
+      ],
+      "stepOrder": [
+        "shader--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "python": {
+      "id": "python",
+      "title": "Python 中的 GPU",
+      "level": 2,
+      "children": [
+        "python--paragraph-1",
+        "python--py-async",
+        "python--py-sync",
+        "python--py-limits"
+      ],
+      "stepOrder": [
+        "python--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "tensor": {
+      "id": "tensor",
+      "title": "jax-js 张量",
+      "level": 2,
+      "children": [
+        "tensor--paragraph-1",
+        "tensor--matmul"
+      ],
+      "stepOrder": [
+        "tensor--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "浏览器-gpu-测试文稿--paragraph-1": {
+      "id": "浏览器-gpu-测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "浏览器-gpu-测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/exec-webgpu.spec.ts 的测试文稿：WGSL 计算着色器、Python 中的 "
+            },
+            {
+              "type": "text",
+              "text": "presmium_gpu",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 与 jax-js。"
+            }
+          ]
+        }
+      ]
+    },
+    "shader--paragraph-1": {
+      "id": "shader--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "shader--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "计算着色器把 "
+            },
+            {
+              "type": "text",
+              "text": "a",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 与 "
+            },
+            {
+              "type": "text",
+              "text": "b",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 逐项相加，写进 "
+            },
+            {
+              "type": "text",
+              "text": "out",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "；构建时在 Chromium 中录制输出。"
+            }
+          ]
+        }
+      ]
+    },
+    "shader--add": {
+      "id": "shader--add",
+      "type": "component",
+      "definitionId": "shader--add--definition",
+      "parameters": {
+        "params": {
+          "buffers": {
+            "a": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "b": [
+              10,
+              20,
+              30,
+              40
+            ],
+            "out": {
+              "size": 4
+            }
+          },
+          "dispatch": 1,
+          "repeat": 5
+        }
+      },
+      "children": [
+        "shader--add--source"
+      ]
+    },
+    "shader--add--source": {
+      "id": "shader--add--source",
+      "type": "code",
+      "language": "wgsl",
+      "value": "@group(0) @binding(0) var<storage, read> a: array<f32>;\n@group(0) @binding(1) var<storage, read> b: array<f32>;\n@group(0) @binding(2) var<storage, read_write> out: array<f32>;\n\n@compute @workgroup_size(64)\nfn main(@builtin(global_invocation_id) id: vec3<u32>) {\n  if (id.x < arrayLength(&out)) {\n    out[id.x] = a[id.x] + b[id.x];\n  }\n}",
+      "execution": {
+        "when": "both",
+        "args": {
+          "buffers": "{\"a\":[1,2,3,4],\"b\":[10,20,30,40],\"out\":{\"size\":4}}",
+          "dispatch": "1",
+          "repeat": "5"
+        }
+      }
+    },
+    "python--paragraph-1": {
+      "id": "python--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "python--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "同一个着色器经 "
+            },
+            {
+              "type": "text",
+              "text": "presmium_gpu",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 运行：先用 "
+            },
+            {
+              "type": "text",
+              "text": "await",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "，再用同步写法（需要 JSPI）；超过规模限制的缓冲区与重复次数在请求 GPU 之前就被拒绝。"
+            }
+          ]
+        }
+      ]
+    },
+    "python--py-async": {
+      "id": "python--py-async",
+      "type": "code",
+      "language": "python",
+      "value": "import presmium_gpu as gpu\n\nSHADER = \"\"\"\n@group(0) @binding(0) var<storage, read> a: array<f32>;\n@group(0) @binding(1) var<storage, read> b: array<f32>;\n@group(0) @binding(2) var<storage, read_write> out: array<f32>;\n\n@compute @workgroup_size(64)\nfn main(@builtin(global_invocation_id) id: vec3<u32>) {\n  if (id.x < arrayLength(&out)) {\n    out[id.x] = a[id.x] + b[id.x];\n  }\n}\n\"\"\"\nresult = await gpu.run(SHADER, buffers={'a': [1, 2, 3, 4], 'b': [10, 20, 30, 40], 'out': {'size': 4}})\nprint(result)",
+      "execution": {
+        "when": "live"
+      }
+    },
+    "python--py-sync": {
+      "id": "python--py-sync",
+      "type": "code",
+      "language": "python",
+      "value": "import presmium_gpu as gpu\n\nSHADER = \"\"\"\n@group(0) @binding(0) var<storage, read> a: array<f32>;\n@group(0) @binding(1) var<storage, read> b: array<f32>;\n@group(0) @binding(2) var<storage, read_write> out: array<f32>;\n\n@compute @workgroup_size(64)\nfn main(@builtin(global_invocation_id) id: vec3<u32>) {\n  if (id.x < arrayLength(&out)) {\n    out[id.x] = a[id.x] + b[id.x];\n  }\n}\n\"\"\"\nprint('JSPI:', gpu.can_run_sync())\nprint(gpu.run_sync(SHADER, buffers={'a': [1, 2, 3, 4], 'b': [10, 20, 30, 40], 'out': {'size': 4}})['out'])",
+      "execution": {
+        "when": "live"
+      }
+    },
+    "python--py-limits": {
+      "id": "python--py-limits",
+      "type": "code",
+      "language": "python",
+      "value": "import presmium_gpu as gpu\n\nSHADER = \"@group(0) @binding(0) var<storage, read_write> out: array<f32>; @compute @workgroup_size(1) fn main() {}\"\nfor options in ({'buffers': {'out': {'size': 40_000_000}}}, {'buffers': {'out': {'size': 4}}, 'repeat': 1001}):\n    try:\n        await gpu.run(SHADER, **options)\n    except ValueError as error:\n        print(error)",
+      "execution": {
+        "when": "live"
+      }
+    },
+    "tensor--paragraph-1": {
+      "id": "tensor--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "tensor--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "2×2 矩阵乘法，有 WebGPU 时在 GPU 上计算。"
+            }
+          ]
+        }
+      ]
+    },
+    "tensor--matmul": {
+      "id": "tensor--matmul",
+      "type": "code",
+      "language": "javascript",
+      "value": "import { defaultDevice, init, numpy as np } from '@jax-js/jax'\n\nconst devices = await init()\nif (devices.includes('webgpu')) defaultDevice('webgpu')\nconst product = np.matmul(np.array([[1, 2], [3, 4]]), np.array([[5, 6], [7, 8]]))\nconsole.log(defaultDevice(), JSON.stringify(await product.jsAsync()))",
+      "execution": {
+        "when": "live"
+      }
+    }
+  },
+  "steps": {
+    "浏览器-gpu-测试文稿--step-0": {
+      "id": "浏览器-gpu-测试文稿--step-0",
+      "sectionId": "浏览器-gpu-测试文稿",
+      "visuals": [
+        {
+          "blockId": "浏览器-gpu-测试文稿--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "shader--step-0": {
+      "id": "shader--step-0",
+      "sectionId": "shader",
+      "visuals": [
+        {
+          "blockId": "shader--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "shader--add--source",
+          "visible": true
+        },
+        {
+          "blockId": "shader--add",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": [
+        "shader--paragraph-1--narration"
+      ]
+    },
+    "python--step-0": {
+      "id": "python--step-0",
+      "sectionId": "python",
+      "visuals": [
+        {
+          "blockId": "python--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "python--py-async",
+          "visible": true
+        },
+        {
+          "blockId": "python--py-sync",
+          "visible": true
+        },
+        {
+          "blockId": "python--py-limits",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "python--paragraph-1--narration"
+      ]
+    },
+    "tensor--step-0": {
+      "id": "tensor--step-0",
+      "sectionId": "tensor",
+      "visuals": [
+        {
+          "blockId": "tensor--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "tensor--matmul",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "tensor--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "shader--paragraph-1--narration": {
+      "id": "shader--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "计算着色器把 a 与 b 逐项相加，写进 out；构建时在 Chromium 中录制输出。"
+        }
+      ]
+    },
+    "python--paragraph-1--narration": {
+      "id": "python--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "同一个着色器经 presmium_gpu 运行：先用 await，再用同步写法（需要 JSPI）；超过规模限制的缓冲区与重复次数在请求 GPU 之前就被拒绝。"
+        }
+      ]
+    },
+    "tensor--paragraph-1--narration": {
+      "id": "tensor--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "2×2 矩阵乘法，有 WebGPU 时在 GPU 上计算。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "shader--add--definition": {
+      "id": "shader--add--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

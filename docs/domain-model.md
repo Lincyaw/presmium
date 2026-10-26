@@ -1,5 +1,7 @@
 # Presmium 领域模型
 
+当前权威文稿是 `lecture.json` 中的 `TeachingDocument`，运行快照为派生的 `IRDocument`；精确实体契约见 `packages/kernel/src/contracts/document.ts`，决策见 [文稿 IR RFC](rfc-document-ir.md)。MyST 运行入口与按源码范围写回的作者模型已移除。
+
 本文档按领域驱动设计（DDD）描述 Presmium 的限界上下文、通用语言和领域对象，工程落地见 `architecture.md`。通用语言表中的“标识符”是代码中的名字；没有对应类型、只是某个类型的字段时，写出字段所在的位置。
 
 ## 1. 限界上下文总览
@@ -7,7 +9,7 @@
 | 上下文 | 包 | 职责 |
 |---|---|---|
 | 内核 Kernel | `@lincyaw/kernel` | 插件清单、服务注册、锚点契约、检查契约、步骤契约、IR 契约，以及插件共用的服务契约 |
-| 编译 Compilation | `@lincyaw/compiler`、`@lincyaw/cli` | 解析 MyST 源码、执行编译步骤与行内角色、编译时执行与缓存（含执行会话）、受众筛选、生成 IR、运行检查 |
+| 编译 Compilation | `@lincyaw/compiler`、`@lincyaw/cli` | 校验可编辑文稿 IR、解析完整步骤状态、插件编译步骤、执行与缓存、受众筛选、派生运行快照与诊断 |
 | 渲染 Rendering | `@lincyaw/viewer`、`@lincyaw/web`、`@lincyaw/render-slides`、`@lincyaw/render-notebook` | 从 IR 生成各媒介或在浏览器中动态渲染 IR，声明支持程度并降级；运行时视图；站点外壳、文件发布与译本；工作区站点 |
 | 宿主适配 Host | `@lincyaw/host`、`@lincyaw/web`、`@lincyaw/server` | 形态无关的宿主接口，及其在查看器上的实现（网页与幻灯片两种形态共用）；服务端：插件的服务端贡献、请求来源的检查、操作确认、控制通道 |
 | 讲台 Stage | `@lincyaw/addon-stage` | 基础内容、步骤备注、冻结画面、圈画标注 |
@@ -32,7 +34,7 @@
 ## 2. 上下文映射
 
 ```
-   源码（MyST）──► 编译 ──► IR（公开语言）──► 渲染：网页 · 幻灯片 · notebook · 讲授（lecture）
+   文稿 IR（lecture.json）──► 编译 ──► 运行快照──► 渲染：网页 · 幻灯片 · notebook · 讲授（lecture）
                     ▲                               │
   插件的指令、角色、编译步骤、执行器、环境提供方       ▼
                                   宿主适配（防腐层：查看器的宿主接口）+ 服务端（presmium dev / serve）
@@ -121,35 +123,26 @@
 
 内核在事件总线（`EventBus`）上发出 `kernel.plugin.started`、`kernel.plugin.degraded`、`kernel.plugin.disabled`、`kernel.plugin.failed`。其他上下文目前不发出领域事件，各节列出的事件是规划中的名字。
 
-## 3A. 编译
+## 3A. 可编辑文稿与编译
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
-| 源码 | 入口文件（`IRDocument.meta.entry`）及其 `{include}` 的文件 | 文稿的 MyST 源码 |
-| 指令 | `DirectiveSpec` | 插件注册的 MyST 指令，把源码节点转换为 IR 节点 |
-| 编译步骤 | `IRPass` | IR 上的有序变换 |
-| 中间表示 | `IRDocument` | 编译结果：章节、块、步骤、讲解、录制输出 |
-| 章节 | `IRSection` | 一页幻灯片、一节网页；带提示 `hints` 与可选的章节配置 `config` |
-| 块 | `IRBlock` | 章节中的一个单元：角色、出现与消失的步骤、内部步数、节点 |
-| 块角色 | `BlockRole` | `visual`（上屏内容）或 `narration`（讲解） |
-| 执行规格 | `RunSpec` | 代码节点的 `run`：语言、参数、超时、执行时机（编译时、现场、两者）、指定的执行器（`:env:` 编译为 `presmium.env.<名>`）、执行会话 `session` |
-| 执行缓存 | `RunCache` | 按内容哈希保存的执行结果（`RecordedRun`），位于 `.presmium/freeze/`；较大的 MIME 数据单独存为 `blobs/<sha256>` |
-| 会话键链 | 编译时执行的缓存键 | 同一会话中第 i 个代码块的键包含第 i−1 个的键（第 12 节） |
-| 行内角色 | `RoleSpec`（`PresmiumNodePlugin.roles`） | 插件登记的 MyST 角色，如 `{cue}`、`{say}`；IR 中为 mdast 节点 `presmiumRole` |
-| 受众 | `IRBlock.audience`、`IRSection.audience` | 只给某些受众的块与章节，如 `teacher`；`--audience` 在编译时筛掉其余受众的内容（第 10 节） |
-| 译本 | 头部 `translations`，译本的 `meta.translationOf` | 同一文稿的另一种语言的入口文件，记录它所依据的原文摘要（第 9 节） |
+| 教学文稿 | `TeachingDocument` | `lecture.json` 中的唯一内容聚合，实体映射和有序 ID 数组保存身份与顺序 |
+| 页面 | `Section` | 标题、层级、内容所有权、步骤顺序与布局 |
+| 内容块 | `DocumentBlock` | 富文本、容器、图片、代码或组件实例；每个块只有一个父节点 |
+| 富文本 | `RichTextNode`、`InlineNode` | Presmium 版本化文字结构，实际编辑单元有稳定身份；未知扩展完整保留 |
+| 步骤 | `Step`、`VisualState` | 独立的完整状态或显式继承，不依赖顺序播放历史 |
+| 讲稿 | `Narration`、`NarrationNode` | 文字、发音替换与 cue；由它派生字幕、合成文字与提示目标 |
+| 素材 | `Asset` | 媒体或文件位置与指纹 |
+| 定义 | `Definition` | 实现引用、参数 Schema、公开状态和版本化插件数据；实例保存自己的参数 |
+| 讲授编排 | `Production` | 默认值、页面/步骤覆盖、音色来源、cue 延迟和媒体片段；唯一作者时序来源 |
+| 运行快照 | `IRDocument` | 编译器为当前文稿版本派生的章节、运行块、步骤状态与诊断 |
+| 编译步骤 | `IRPass` | 派生运行数据的有序变换，不成为另一份可编辑文稿 |
+| 执行规格与缓存 | `CodeExecution`、`RunSpec`、`RunCache` | 显式代码执行、具名环境、会话链与实际录制输出 |
 
-不变量：
+不变量：实体映射键等于 ID，内容树单父且无环，引用与参数/状态必须有效。每页至少一步，任意定位可重建同一状态。未知扩展保留数据和回退，不按数组位置重新绑定。复制产生新文稿身份，移动不改变实体身份。
 
-- 编译是确定的：同一源码、同一缓存得到相同的 IR。
-- 每个章节 ID 在文稿内唯一；块 ID 在章节内唯一。
-- 讲解块的 `at` 不超过所在章节的步骤数。
-- 编译诊断与检查诊断使用同一个 `Finding` 类型，都带源码位置。
-- 不认识的角色保留文字并给出警告；登记过的角色在 IR 中保留为 `presmiumRole` 节点，不认识它的渲染端只显示它的子内容。
-- 不指定环境与会话的代码块，IR 中没有 `executor` 与 `session`，缓存键只由这个代码块自己的输入决定。
-- 受众筛选在编译时完成：带 `--audience` 编译出的 IR 中没有其他受众的块与章节，所有渲染端都拿不到它们。
-
-规划中的领域事件：`DocumentCompiled`、`RunRecorded`、`RunCacheHit`（编译报告与 `presmium build` 的“code runs”统计目前承担其作用）。
+编辑提交绑定 `baseDocumentVersion`；编译快照有独立标识。保存不等待编译，编译失败不丢失有效编辑，也不将旧快照冒充当前。JSON 语法、Schema 与领域校验在 Web、agent 和编译器间共用。
 
 ## 3B. 渲染
 
@@ -169,7 +162,7 @@
 
 - 网页渲染端对所有节点的支持程度都是 `full`。
 - 渲染端只读 IR，不读源码，不回写源码。
-- 支持程度为 `none` 的块必须出现在构建报告中；notebook 中无法转换的 MyST 节点作为降级列出。
+- 支持程度为 `none` 的块必须出现在构建报告中；notebook 中无法转换的结构化扩展作为降级列出。
 
 ## 4. 宿主适配
 
@@ -295,7 +288,7 @@
 | 媒体 | `PmMedia`（`{video}`、`{audio}`、`{animation}`） | 媒体文件与播放选项；本地文件经组件的 `assets` 随产物发布 |
 | 封面 | `PmMedia` 的属性 `poster` | 视频播放前显示的图片 |
 | 字幕轨 | `PmMedia` 的属性 `captions`（语言到 VTT 文件） | 各语言的字幕，浏览器原生的 `<track>`；`assets` 的键为属性路径 `captions.<语言>` |
-| 卡片、栅格、选项卡、按钮 | mdast 节点 `card`、`grid`、`tabSet` 与 `tabItem`、`{button}` 生成的链接 | MyST 标准写法，作为 `markdown` 节点进入 IR，不是组件 |
+| 卡片、栅格、选项卡、按钮 | mdast 节点 `card`、`grid`、`tabSet` 与 `tabItem`、`{button}` 生成的链接 | 由容器与版本化内容扩展 lowering 为运行节点，不构成旧语法入口 |
 
 不变量：
 
@@ -355,7 +348,7 @@
 
 ## 9. 网页形态
 
-网页形态由 IR 生成，不由幻灯片转换：Presmium 自己的站点外壳提供导航、章节列表、页内大纲、上一章与下一章、搜索、语言、明暗与手机布局，页面正文由 IR 运行时 `@lincyaw/viewer` 渲染；构建的站点在服务端渲染每一页，浏览器中再接管（`ir.md` 第 8 节）。幻灯片形态是同一个查看器的幻灯片页。
+网页形态由 IR 生成，不由幻灯片转换：Presmium 自己的站点外壳提供导航、章节列表、页内大纲、上一章与下一章、搜索、语言、明暗与手机布局，页面正文由 IR 运行时 `@lincyaw/viewer` 渲染；构建的站点在服务端渲染每一页，浏览器中再接管（`ir.md`）。幻灯片形态是同一个查看器的幻灯片页。
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
@@ -371,7 +364,7 @@
 
 不变量：
 
-- 每个章节恰好对应一页幻灯片和一节网页，章节 ID 稳定（来自 MyST 标签或标题），形态切换依赖此映射。
+- 每个章节恰好对应一页幻灯片和一节网页，章节 ID 来自可编辑文稿的稳定实体，形态切换依赖此映射。
 - 讲解在网页中是正文；文档视图全部显示，滚动叙事视图随滚动推进步骤。
 - 网页搜索索引在构建时从 IR 文本生成并随产物发布，离线可用。
 - IR 运行时渲染的 `.pm-section[data-section]`、`.pm-block[data-block]` 是对外的标记契约（课堂笔记、讲授的指针录制与工作台的点选据此定位）。
@@ -385,7 +378,7 @@
 | 导出任务 | `ExportJob` | 格式、范围、是否按步骤展开 |
 | 离线缓存规则 | `OfflineCacheRules` | Service Worker 预缓存与运行时缓存的资源 |
 | 视觉差异 | `VisualDiff` | 两个提交在同一页同一步骤上的像素差异比例 |
-| 发布检查 | 检查项 `presmium.links`、`presmium.directive`、`presmium.forbid` | 各媒介中无法解析的本地链接与 `#片段`、MyST 指令错误、文稿头部 `checks.forbid` 中正则的命中 |
+| 发布检查 | 检查项 `presmium.links`、`presmium.directive`、`presmium.forbid` | 各媒介中无法解析的本地链接与 `#片段`、结构化文稿校验、`metadata.checks.forbid` 中正则的命中 |
 | 受众 | `IRBlock.audience`、`IRSection.audience` | 只给某些受众（如 `teacher`）的块与章节 |
 | 学生版 | `presmium build --audience student` | 只含不带受众或受众包含 `student` 的内容的构建 |
 | 完整编译的学生版 | `Compilation.audienceDocument('student')`、`build` 的 `audience` 选项 | 在完整编译的文稿上做与学生版同样的筛选，并按泄漏扫描的句子再去掉块；服务端与 MCP 不给出它（`presmium serve` 只供本机作者使用） |
@@ -411,11 +404,11 @@
 
 ## 12. 执行环境
 
-执行环境与语言分离：文稿头部声明具名环境，代码块与执行面板用 `:env:` 选择环境，编译器把它写成指定的执行器 `presmium.env.<名>`，`executor` 路由据此精确选择。远端只对接 Jupyter 内核协议，部署差异交给现成的基础设施（`architecture.md` 第 10 节）。
+执行环境与语言分离：文稿 metadata声明具名环境，代码块与执行面板显式选择环境，编译器把它写成指定的执行器 `presmium.env.<名>`，`executor` 路由据此精确选择。远端只对接 Jupyter 内核协议，部署差异交给现成的基础设施（`architecture.md` 第 10 节）。
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
-| 具名环境 | `EnvironmentSpec`（IR 的 `config.execute.environments`） | 文稿头部声明的运行环境：提供方类型 `kind`、地址、内核规格、可用语言、凭据方式、镜像摘要；不含凭据 |
+| 具名环境 | `EnvironmentSpec`（IR 的 `config.execute.environments`） | 文稿 metadata声明的运行环境：提供方类型 `kind`、地址、内核规格、可用语言、凭据方式、镜像摘要；不含凭据 |
 | 默认环境 | `ExecuteConfig.env` | 有 `:run:` 而不写 `:env:` 的代码块所用的环境；省略或为保留名 `browser` 时按语言路由 |
 | 环境提供方 | `EnvironmentProvider`（`PresmiumNodePlugin.environments`） | 插件按 `kind` 为声明的环境创建 Node 端执行器，并可探测环境是否可达；浏览器端由同一插件为同类环境登记执行器 |
 | 环境执行器 | `environmentExecutor(name)` | 具名环境的执行器 ID `presmium.env.<名>`，即代码块的 `RunSpec.executor` |
@@ -443,7 +436,7 @@
 2. **环境不可用时不悄悄换环境**：指定的执行器没有登记、缺凭据、不可达或超时，运行失败，显示录制输出与原因（第 6 节），不改到别的执行器上运行。
 3. **会话代码块的缓存键包含前序代码**：同一会话中第 i 个代码块的键是第 i−1 个的键加上本块的输入、执行器与环境指纹；有一块未命中时，整个会话从头重新执行并重新录制。
 4. 同一会话的代码块使用同一个环境；在一个会话中混用环境是错误。
-5. 文稿与 IR 不含凭据；`presmium check` 对文稿头部中像凭据的字段告警。文稿中的地址不决定凭据的去向：服务端的令牌只发往运营者给出的地址，与文稿的 `url` 不同源时不连接。编译时执行的代码只得到清理过的环境变量（`RunContext.env`，4A 节），执行器不读进程的环境，所以代码不会经自己的环境把服务端的凭据带进录制、IR 与产物；有意读取其他进程信息的代码只由可用时的进程沙箱挡住，是残余风险（4A 节）。
+5. 文稿与 IR 不含凭据；`presmium check` 对文稿 metadata中像凭据的字段告警。文稿中的地址不决定凭据的去向：服务端的令牌只发往运营者给出的地址，与文稿的 `url` 不同源时不连接。编译时执行的代码只得到清理过的环境变量（`RunContext.env`，4A 节），执行器不读进程的环境，所以代码不会经自己的环境把服务端的凭据带进录制、IR 与产物；有意读取其他进程信息的代码只由可用时的进程沙箱挡住，是残余风险（4A 节）。
 6. 远端与现场运行返回的 HTML 不可信：先清洗再显示。
 7. 编译时与浏览器中尽量使用同一份运行时（同一个 WASI 二进制；WebGPU 在 Chromium 中录制），录制输出与现场输出一致；用 CPU 模拟的 GPU 计时标明为模拟。
 
@@ -490,7 +483,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
-| 工作区 | `Workspace`；根目录的 `presmium.workspace.yaml` | 一个 git 仓库，包含多份文档；配置声明文档的位置（默认 `*/lecture.md`）、站点、确认策略与插件的运营者设置 `settings`（如工作区的插件列表、修改的审阅） |
+| 工作区 | `Workspace`；根目录的 `presmium.workspace.yaml` | 一个 git 仓库，包含多份文档；配置声明文档的位置（默认 `*/lecture.json`）、站点、确认策略与插件的运营者设置 `settings`（如工作区的插件列表、修改的审阅） |
 | 文档 | `Document` | 一份文稿：目录（身份）、入口文件、标题、语言、标签，取自它的头部 |
 | 文档操作 | `DocumentOperation` | 新建（从模板，或由 agent 起草）、重命名、复制、删除 |
 | 文档模板 | `packages/workspace/templates/document/<名>/`（随 `@lincyaw/workspace` 发布）或工作区配置 `templates` 指定的目录 | 新建文档时复制的目录 |
@@ -530,18 +523,18 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
-| 讲授轨 | `LectureTrack`（`addon-lecture` 的领域层） | 一堂讲授：语音段、事件、音频片段、可选的摄像头与屏幕录像、块指纹与 IR 哈希、音色；存为文稿目录中的 `lectures/<id>/track.json`（格式见 `ir.md` 第 9 节） |
+| 讲授轨 | `LectureTrack`（`addon-lecture` 的领域层） | 一堂讲授：语音段、事件、音频片段、可选的摄像头与屏幕录像、块指纹与 IR 哈希、音色；存为文稿目录中的 `lectures/<id>/track.json`（格式见 `ir.md`） |
 | 语音段 | `Utterance` | 一句话：开始时刻、时长、文字、逐字（中文）或逐词时间、所在章节与步骤、可选的译文 |
 | 事件 | `TrackEvent`（内核） | `[毫秒, 类型, 数据]`；类型以插件 ID 或内置名开头，不认识的类型被忽略 |
 | 操作 | `Operation`（内核）、`OPERATIONS`（宿主） | 插件报告的语义化操作：`go`、`point`、`spot`、`hint`、`ink`、`select`、`click`、`run`、`scroll`、`mark`、`pause` |
 | 字锚 | `UtteranceAnchor`（事件数据的 `at`） | 把事件绑定到语音段的第几个字；改文字、换音色后按新的逐字时间重新计算事件时刻 |
 | 块指纹 | `LectureTrack.blocks` | 被事件引用的块的内容指纹，用于漂移检查 |
-| 时钟 | `TrackClock` | `now`、`play`、`pause`、`seek`、`rate`；有声明音频时用 `MediaClock` 同步录音或合成片段，未声明音频时用 `SilentClock`；加载失败的行为见 `ir.md` 9.4 节。播放器由它驱动宿主的步内时间（`STEP_CLOCK`）：讲授的时刻减去最近的 `go` 事件的时刻 |
+| 时钟 | `TrackClock` | `now`、`play`、`pause`、`seek`、`rate`；有声明音频时用 `MediaClock` 同步录音或合成片段，未声明音频时用 `SilentClock`；加载失败的行为见 `ir.md`。播放器由它驱动宿主的步内时间（`STEP_CLOCK`）：讲授的时刻减去最近的 `go` 事件的时刻 |
 | 音色 | `Voice` | 录制（说话人）或合成（引擎、模型、音色）；克隆音色要有同意记录 `ConsentRecord`（见下文“语音”） |
 | 讲授计划 | `LecturePlan` | `lecture` 渲染端从 IR 得到的每一步要说的文字与提示标记 |
 | 提示标记 | `{cue}` 角色 | 讲解中的行内标记：说到此处时推进一步、聚光、提示、指点、点击、运行、圈画、停顿或标记章节 |
 | 读音 | `{say}` 角色、头部的读音词典 | 显示一种写法，读出另一种 |
-| 讲授脚本 | 讲解本身；可选的 `renderers.lecture.script` | 讲解逐段绑定到步骤，就是脚本；也可以用单独的 MyST 文件按章节标签代替讲解 |
+| 讲授脚本 | `Narration` 与步骤的 `narrationIds` | 结构化讲稿绑定稳定步骤；不使用另一份脚本文件作为权威入口 |
 | 字幕译文 | `Utterance.translations` | 语音段的其他语言文字，记录所依据的原文摘要 |
 | 导出 | `captions.<语言>.vtt`、`chapters.vtt`、`events.vtt`；视频文件 | 只作为导出格式，不作为主存储 |
 
@@ -599,7 +592,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 | 工作区服务 | `presmium serve` | `presmium serve` 中不含界面的部分：编译会话、产物的开发服务器、文档与源码的路由、审阅、修改历史、焦点、MCP |
 | bundle | `@lincyaw/dsh` | dsh 的扩展包（不是 Presmium 自己的插件包）：宿主部分的行（工具、确认策略、上下文、技能、文档的工作区登记、turn 与审阅、路由）与客户端部分（根布局插件与面板） |
 | 根布局插件 | `@lincyaw/dsh` 的客户端部分 | 占据 dsh 客户端 `root` 槽位、决定整页布局的客户端插件，替换 dsh 自带的 `ui-layout` |
-| 预览协议 | `PREVIEW_PROTOCOL`（`packages/kernel/src/contracts/preview.ts`） | 工作台与嵌在它里面的产物页面之间的 `postMessage` 消息约定，只传章节、块与步骤的 ID |
+| 预览协议 | `PREVIEW_PROTOCOL`（`packages/kernel/src/contracts/preview.ts`） | 工作台与嵌在它里面的产物页面之间的 `postMessage` 消息约定，只传派生画面的定位、播放与诊断，不控制原生作者选区 |
 | 预览代理 | `connectPreviewFrame`（`packages/kernel/src/preview-frame.ts`），由网页与幻灯片的客户端调用 | 产物页面中实现预览协议的部分，只在工作区服务启动的开发服务器的页面中 |
 | 当前诊断 | `DiagnosticSnapshot` | 编译、检查、预览、运行时与服务的当前问题，由工作区服务合并，按文稿经 SSE 与 MCP 订阅；生命周期见 `design-dsh.md` 5.4 节 |
 | 焦点 | `Focus` | 用户指向的一处：源码中的一段，带上它在文稿中的位置（见下） |
