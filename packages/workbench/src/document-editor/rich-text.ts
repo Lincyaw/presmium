@@ -64,34 +64,47 @@ function paragraph(block: DocumentEditorBlock, context: RichProjection, paragrap
 }
 function listType(block: DocumentEditorBlock): boolean { return block.type === 'bulletListItem' || block.type === 'numberedListItem' || block.type === 'checkListItem' }
 
+function rememberListIds(node: RichTextNode, used?: Set<string>): Set<string> | undefined {
+  if (node.type === 'list') { used ??= new Set(); used.add(node.id); for (const item of node.children) for (const child of item.children) used = rememberListIds(child, used) }
+  else if (node.type === 'blockquote') for (const child of node.children) used = rememberListIds(child, used)
+  else if (node.type === 'extension') for (const child of node.fallback) used = rememberListIds(child, used)
+  return used
+}
+
 /** Native text, table and list edits are read through BlockNote's public block API. */
-export function nativeRichTextToProduct(blocks: readonly DocumentEditorBlock[], context: RichProjection): RichTextNode[] {
+export function nativeRichTextToProduct(blocks: readonly DocumentEditorBlock[], context: RichProjection, usedListIds?: Set<string>): RichTextNode[] {
   const result: RichTextNode[] = []
+  let groupOrigin: string | undefined
   for (const block of blocks) {
     const identity = context.rich.get(block.id)
-    if (identity?.original && context.baseline.get(block.id) === JSON.stringify(block)) { result.push(structuredClone(identity.original)); continue }
+    if (identity?.original && context.baseline.get(block.id) === JSON.stringify(block)) { usedListIds = rememberListIds(identity.original, usedListIds); result.push(structuredClone(identity.original)); groupOrigin = undefined; continue }
     if (listType(block)) {
+      usedListIds ??= new Set()
       const ordered = block.type === 'numberedListItem'
       const start = block.type === 'numberedListItem' ? block.props.start : undefined
       let previous = result.at(-1)
-      if (previous?.type !== 'list' || previous.ordered !== ordered || identity?.listId && identity.listId !== previous.id) {
-        previous = { id: identity?.listId ?? id(), type: 'list', ordered, ...start !== undefined ? { start } : {}, children: [] }
+      if (previous?.type !== 'list' || previous.ordered !== ordered || identity?.listId && identity.listId !== groupOrigin) {
+        const listId = identity?.listId && !usedListIds.has(identity.listId) ? identity.listId : id()
+        groupOrigin = identity?.listId ?? listId
+        previous = { id: listId, type: 'list', ordered, ...start !== undefined ? { start } : {}, children: [] }
+        usedListIds.add(listId)
         result.push(previous)
       }
       const item: ListItemNode = {
         id: identity?.itemId ?? block.id, type: 'listItem',
-        children: [paragraph(block, context, identity?.paragraphId ?? id()), ...nativeRichTextToProduct(block.children, context)],
+        children: [paragraph(block, context, identity?.paragraphId ?? id()), ...nativeRichTextToProduct(block.children, context, usedListIds)],
         ...block.type === 'checkListItem' ? { checked: block.props.checked } : {},
       }
       previous.children.push(item)
       context.rich.set(block.id, { ...identity, original: undefined, listId: previous.id, itemId: item.id, paragraphId: item.children[0]!.id })
       continue
     }
+    groupOrigin = undefined
     if (block.type === 'paragraph') result.push(paragraph(block, context))
     else if (block.type === 'heading') {
       const style = nativeTextStyleToProduct(block.props)
       result.push({ id: block.id, type: 'heading', level: Math.max(1, Math.min(6, block.props.level)) as 1 | 2 | 3 | 4 | 5 | 6, children: inline(block, context), ...style ? { style } : {} })
-    } else if (block.type === 'quote') result.push({ id: block.id, type: 'blockquote', children: [paragraph(block, context, identity?.paragraphId ?? id()), ...nativeRichTextToProduct(block.children, context)] })
+    } else if (block.type === 'quote') result.push({ id: block.id, type: 'blockquote', children: [paragraph(block, context, identity?.paragraphId ?? id()), ...nativeRichTextToProduct(block.children, context, usedListIds ??= new Set())] })
     else if (block.type === 'codeBlock') result.push({ id: block.id, type: 'code', language: block.props.language, value: block.content.map(part => part.text).join('') })
     else if (block.type === 'table') {
       const original = identity?.original?.type === 'table' ? identity.original : undefined
@@ -111,10 +124,11 @@ export function nativeRichTextToProduct(blocks: readonly DocumentEditorBlock[], 
     } else if (block.type === 'presmiumAtom' && block.props.kind.startsWith('rich:')) {
       if (!identity?.original) throw new Error('document-rich-reference')
       const original = structuredClone(identity.original)
-      if (original.type === 'blockquote') original.children = nativeRichTextToProduct(block.children, context)
+      if (original.type === 'blockquote') original.children = nativeRichTextToProduct(block.children, context, usedListIds ??= new Set())
+      else usedListIds = rememberListIds(original, usedListIds)
       result.push(original)
     } else throw new Error(`document-rich-block:${block.type}`)
-    if (block.children.length && block.type !== 'quote' && block.type !== 'presmiumAtom') result.push(...nativeRichTextToProduct(block.children, context))
+    if (block.children.length && block.type !== 'quote' && block.type !== 'presmiumAtom') result.push(...nativeRichTextToProduct(block.children, context, usedListIds ??= new Set()))
   }
   return result
 }

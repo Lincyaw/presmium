@@ -94,14 +94,14 @@ function isEntity(block: DocumentEditorBlock, context: DocumentProjection): bool
   if (block.type === 'presmiumContainer' || block.type === 'image') return true
   return block.type === 'codeBlock' && context.document.blocks[context.owners.get(block.id) ?? block.id]?.type !== 'text' && !context.rich.has(block.id)
 }
-function nativeChildren(native: readonly DocumentEditorBlock[], context: DocumentProjection, next: TeachingDocument): string[] {
+function nativeChildren(native: readonly DocumentEditorBlock[], context: DocumentProjection, next: TeachingDocument, usedListIds: Set<string>): string[] {
   const children: string[] = []
   let buffer: DocumentEditorBlock[] = [], owner: string | undefined
   const flush = () => {
     if (!buffer.length) return
     const blockId = owner && !next.blocks[owner] ? owner : newId()
     const original = context.document.blocks[owner ?? '']
-    const block: TextBlock = { ...original?.type === 'text' ? structuredClone(original) : {}, id: blockId, type: 'text', content: nativeRichTextToProduct(buffer, context) }
+    const block: TextBlock = { ...original?.type === 'text' ? structuredClone(original) : {}, id: blockId, type: 'text', content: nativeRichTextToProduct(buffer, context, usedListIds) }
     if (block.reveal) { const ids = richNodeIds(block.content); block.reveal.order = block.reveal.order.filter(id => ids.has(id)) }
     next.blocks[blockId] = block
     children.push(blockId)
@@ -121,7 +121,7 @@ function nativeChildren(native: readonly DocumentEditorBlock[], context: Documen
     const original = context.document.blocks[block.id] ?? (block.type === 'presmiumAtom' || block.type === 'presmiumContainer' ? context.document.blocks[block.props.entityId] : undefined)
     let product: DocumentBlock
     if (block.type === 'presmiumContainer') {
-      const children = nativeChildren(block.children, context, next)
+      const children = nativeChildren(block.children, context, next, usedListIds)
       const properties = { ...original?.type === 'container' ? original.properties : {}, ...block.props.title ? { title: block.props.title } : {} }
       if (original?.type === 'container') {
         if (properties.columnWidths) properties.columnWidths = children.map(child => original.properties.columnWidths?.[original.children.indexOf(child)] ?? 1)
@@ -144,7 +144,7 @@ function nativeChildren(native: readonly DocumentEditorBlock[], context: Documen
       if (!original) throw new Error('document-opaque-reference')
       product = structuredClone(original)
       product.id = block.id
-      if (product.type === 'component' && (product.children || block.children.length)) product.children = nativeChildren(block.children, context, next)
+      if (product.type === 'component' && (product.children || block.children.length)) product.children = nativeChildren(block.children, context, next, usedListIds)
     }
     next.blocks[product.id] = product
     context.owners.set(block.id, product.id)
@@ -206,8 +206,9 @@ export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], 
   }
   const next = structuredClone(context.document)
   next.blocks = {}; next.sections = {}; next.sectionOrder = []
+  const usedListIds = new Set<string>()
   let section: Section | undefined, content: DocumentEditorBlock[] = []
-  const flush = () => { if (section) { section.children = nativeChildren(content, context, next); next.sections[section.id] = section; next.sectionOrder.push(section.id) }; content = [] }
+  const flush = () => { if (section) { section.children = nativeChildren(content, context, next, usedListIds); next.sections[section.id] = section; next.sectionOrder.push(section.id) }; content = [] }
   for (const block of blocks) {
     if (block.type === 'presmiumPage') {
       flush()
