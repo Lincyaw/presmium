@@ -1,47 +1,89 @@
 import { isRecord } from '@lincyaw/kernel'
-import type { SpeechVoice, VoiceScope, VoiceTarget } from '@lincyaw/kernel'
+import type { VoiceSource } from '@lincyaw/kernel'
+import type { DocumentVoiceScope } from './document-voices.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 
-export interface VoiceDraft { revision: string, base: string, scope: VoiceScope, voice: SpeechVoice | null, replaceOverrides: boolean, rateInput?: string }
-const drafts = new WeakMap<WorkspaceClient, Map<string, VoiceDraft>>()
-const keyOf = (document: string, target: VoiceTarget) => JSON.stringify([document, target.section, target.step])
-const storageKey = (key: string) => `presmium.voice-draft:${key}`
-const target = (value: unknown): value is VoiceTarget => isRecord(value) && typeof value.section === 'string' && Number.isInteger(value.step) && Number(value.step) >= 0 && typeof value.binding === 'string'
+export interface VoiceDraft { version: string, scope: DocumentVoiceScope, source: VoiceSource | null, replaceOverrides: boolean, rateInput?: string }
+export type VoiceDraftStorageStatus = 'available' | 'unavailable' | 'corrupt'
+interface StoredDraft { draft?: VoiceDraft, status: VoiceDraftStorageStatus, unreadable?: string }
+const drafts = new WeakMap<WorkspaceClient, Map<string, StoredDraft>>()
+const keyOf = (identity: string, stepId: string) => JSON.stringify([identity, stepId])
+const storageKey = (key: string) => `presmium.voice-draft.v2:${key}`
+
+/** Only safe shape is checked here; current source IDs, assets and supported values are rechecked on apply. */
 function valid(value: unknown): value is VoiceDraft {
-  if (!isRecord(value) || typeof value.revision !== 'string' || typeof value.base !== 'string' || typeof value.replaceOverrides !== 'boolean' || !isRecord(value.scope) || value.rateInput !== undefined && typeof value.rateInput !== 'string') return false
+  if (!isRecord(value) || typeof value.version !== 'string' || typeof value.replaceOverrides !== 'boolean' || !isRecord(value.scope) || value.rateInput !== undefined && typeof value.rateInput !== 'string') return false
   const scope = value.scope
-  if (!(scope.kind === 'document' || scope.kind === 'page' && typeof scope.section === 'string' || scope.kind === 'step' && target(scope.target) || scope.kind === 'steps' && Array.isArray(scope.targets) && scope.targets.every(target))) return false
-  const voice = value.voice
-  return voice === null || isRecord(voice) && typeof voice.voice === 'string' && (voice.engine === undefined || typeof voice.engine === 'string') && (voice.rate === undefined || typeof voice.rate === 'number' && Number.isFinite(voice.rate)) && (voice.style === undefined || typeof voice.style === 'string')
+  if (!(scope.kind === 'document' || scope.kind === 'page' && typeof scope.sectionId === 'string' || scope.kind === 'step' && typeof scope.stepId === 'string' || scope.kind === 'steps' && Array.isArray(scope.stepIds) && scope.stepIds.every(id => typeof id === 'string'))) return false
+  const source = value.source
+  if (source === null) return true
+  if (!isRecord(source)) return false
+  if (source.type === 'none') return true
+  if (source.type === 'recording') return typeof source.assetId === 'string'
+  if (source.type !== 'tts' || !isRecord(source.voice)) return false
+  const voice = source.voice
+  return typeof voice.voice === 'string' && (voice.engine === undefined || typeof voice.engine === 'string') && (voice.rate === undefined || typeof voice.rate === 'number' && Number.isFinite(voice.rate)) && (voice.style === undefined || typeof voice.style === 'string')
 }
-function store(client: WorkspaceClient): Map<string, VoiceDraft> {
+function store(client: WorkspaceClient): Map<string, StoredDraft> {
   let known = drafts.get(client)
   if (!known) drafts.set(client, known = new Map())
   return known
 }
-export function readVoiceDraft(client: WorkspaceClient, document: string, selected: VoiceTarget): VoiceDraft | undefined {
-  const key = keyOf(document, selected), known = store(client)
-  if (known.has(key)) return known.get(key)
+function load(client: WorkspaceClient, key: string): StoredDraft {
+  const known = store(client), previous = known.get(key)
+  if (previous) return previous
+  const entry: StoredDraft = { status: 'available' }
+  known.set(key, entry)
   try {
-    const value: unknown = JSON.parse(sessionStorage.getItem(storageKey(key)) ?? 'null')
-    if (valid(value)) { known.set(key, value); return value }
-  } catch { /* The caller can still edit without browser recovery storage. */ }
+    const raw = sessionStorage.getItem(storageKey(key))
+    if (raw !== null) {
+      entry.unreadable = raw
+      const value: unknown = JSON.parse(raw)
+      if (!valid(value)) { entry.status = 'corrupt'; return entry }
+      entry.draft = value
+      delete entry.unreadable
+    }
+  } catch { entry.status = entry.unreadable === undefined ? 'unavailable' : 'corrupt' }
+  return entry
 }
+
+export function readVoiceDraft(client: WorkspaceClient, identity: string, stepId: string): VoiceDraft | undefined {
+  const value = load(client, keyOf(identity, stepId)).draft
+  return value && structuredClone(value)
+}
+
+/** Corrupt storage is left untouched on read; a later write preserves its raw text in one recovery slot. */
+export function voiceDraftStorageStatus(client: WorkspaceClient, identity: string, stepId: string): VoiceDraftStorageStatus {
+  return load(client, keyOf(identity, stepId)).status
+}
+
 /** Returns whether the browser also kept the draft for a reload. */
-export function keepVoiceDraft(client: WorkspaceClient, document: string, selected: VoiceTarget, value: VoiceDraft): boolean {
-  const key = keyOf(document, selected)
-  store(client).set(key, value)
-  try { sessionStorage.setItem(storageKey(key), JSON.stringify(value)); return true } catch { return false }
+export function keepVoiceDraft(client: WorkspaceClient, identity: string, stepId: string, value: VoiceDraft): boolean {
+  if (!valid(value)) throw new Error('voice-draft-invalid')
+  const key = keyOf(identity, stepId), entry = load(client, key)
+  entry.draft = structuredClone(value)
+  try {
+    if (entry.unreadable !== undefined) sessionStorage.setItem(`${storageKey(key)}:unreadable`, entry.unreadable)
+    sessionStorage.setItem(storageKey(key), JSON.stringify(entry.draft))
+    entry.status = 'available'; delete entry.unreadable
+    return true
+  } catch { entry.status = 'unavailable'; return false }
 }
-export function clearVoiceDraft(client: WorkspaceClient, document: string, selected: VoiceTarget, expected?: VoiceDraft): void {
-  const key = keyOf(document, selected)
-  if (expected && JSON.stringify(store(client).get(key)) !== JSON.stringify(expected)) return
-  if (expected) {
-    try {
-      const persisted = sessionStorage.getItem(storageKey(key))
-      if (persisted && JSON.stringify(JSON.parse(persisted)) !== JSON.stringify(expected)) return
-    } catch { /* Keep the in-memory acknowledgement scoped even when browser storage is unavailable. */ }
-  }
-  store(client).delete(key)
-  try { sessionStorage.removeItem(storageKey(key)) } catch { /* The applied source remains authoritative. */ }
+
+/** A late acknowledgement cannot clear newer memory or persisted input. Failure keeps memory for retry. */
+export function clearVoiceDraft(client: WorkspaceClient, identity: string, stepId: string, expected?: VoiceDraft): boolean {
+  const key = keyOf(identity, stepId), entry = load(client, key)
+  if (expected && JSON.stringify(entry.draft) !== JSON.stringify(expected)) return false
+  try {
+    const raw = sessionStorage.getItem(storageKey(key))
+    if (expected && raw !== null) {
+      let persisted: unknown
+      try { persisted = JSON.parse(raw) } catch { entry.status = 'corrupt'; entry.unreadable = raw; return false }
+      if (!valid(persisted)) { entry.status = 'corrupt'; entry.unreadable = raw; return false }
+      if (JSON.stringify(persisted) !== JSON.stringify(expected)) return false
+    }
+    sessionStorage.removeItem(storageKey(key))
+    delete entry.draft; delete entry.unreadable; entry.status = 'available'
+    return true
+  } catch { entry.status = 'unavailable'; return false }
 }
