@@ -163,7 +163,25 @@
           "Filled": "107:1785",
           "Focus": "107:1795",
           "Readonly": "107:1805"
-        }
+        },
+        "modes": {
+          "Document": {
+            "Empty": "152:2790",
+            "Filled": "152:2795",
+            "Focus": "152:2800",
+            "Readonly": "152:2805",
+            "Cue": "186:4357"
+          },
+          "Production": {
+            "Empty": "107:1775",
+            "Filled": "107:1785",
+            "Focus": "107:1795",
+            "Readonly": "107:1805",
+            "Cue": "186:4364"
+          }
+        },
+        "cueReviewNodeId": "186:4375",
+        "cueContract": "advanced=false renders only localized Cue/提示, without action or cueId title; the native atom payload, stable ID, selection and history are retained. Production keeps its existing action and cueId title."
       },
       "Timeline": {
         "nodeId": "136:3258",
