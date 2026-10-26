@@ -146,6 +146,8 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 
 Doc 中的单块只读预览使用独立消息，不建立 v1 编辑握手或 SSE。`presmium:block-preview` 报告文稿、块、运行修订、状态与自然高度；同一状态和高度不重复报告。就绪后的实际步骤导航另外发送 `presmium:block-preview-position`，字段为 `document`、`blockId`、`revision`、`sectionId`、`stepId`，仅报告包含该块的章节。初次加载不报告默认位置。父工作台核对 iframe 窗口、来源、修订和当前源码版本，再按权威文稿的稳定步骤 ID 更新当前位置；不滚动正文、不写 JSON，也不创建另一套播放时钟。正式放映从这个位置开始。
 
+父工作台通过 `presmium:block-preview-command` 控制同一个只读块，携带 `document`、`blockId`、`revision`、`sectionId`、`stepId` 和 `action`（`seek` 或 `pause`）。`seek` 默认显示该步完成画面；首次加载和重载使用 `at: 'start'` 对齐当前步骤起点，`at: 'end'` 显式选择完成画面。子页面核对允许的父源、窗口、运行修订与块所属章节后执行；起止边界只是运行导航意图，不写入文稿或 Production。暂停复用现有播放协调服务，立即停止该帧的本地动画并保留时间。工作台避免把子页面刚报告的位置再回送为跳步，以保留连续播放。
+
 ### 4.3 消息
 
 | 方向 | 类型 | 字段 | 说明 |

@@ -22,7 +22,7 @@ export function createViewer(initial: IRDocument, options: ViewerOptions = {}): 
   const viewer: Viewer = {
     doc, view, pageView, position, restoring, options: { ...options, renderer: options.renderer ?? 'web' }, section: id => doc.getSnapshot().sections.find(s => s.id === id),
     footnoteHref(identifier) { const anchor = `#${footnoteId(identifier)}`; const section = footnoteSections(doc.getSnapshot()).get(identifier); return section && options.sectionHref ? `${options.sectionHref(section).split('#')[0]}${anchor}` : anchor },
-    go(target, remote = false) { const next = clampPosition(doc.getSnapshot(), target); const before = position.getSnapshot(); if (before.section === next.section && before.step === next.step) return; position.set(next); if (!remote && presenting()) windows?.send(next) },
+    go(target, remote = false) { const next = clampPosition(doc.getSnapshot(), target); const before = position.getSnapshot(); if (before.section === next.section && before.step === next.step && before.boundary === next.boundary) return; position.set(next); if (!remote && presenting()) windows?.send(next) },
     show(target) {
       const before = position.getSnapshot()
       viewer.go(target)

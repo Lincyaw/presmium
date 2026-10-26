@@ -13,6 +13,19 @@ export const PREVIEW_REVISION = 'presmiumRevision'
 
 export const AUTHOR_MARKS_CLASS = 'pm-author-marks'
 
+/** Read-only, version-bound control of an individual document widget. */
+export interface BlockPreviewCommand {
+  type: 'presmium:block-preview-command'
+  document: string
+  blockId: string
+  revision: string
+  sectionId: string
+  stepId: string
+  action: 'seek' | 'pause'
+  /** Omitted seeks show the completed step; initial/reload seeks explicitly request its start. */
+  at?: 'start' | 'end'
+}
+
 export interface PreviewAnchor {
   section: string
   block?: string
@@ -156,6 +169,15 @@ const sourceTarget = (m: Record<string, unknown>) => bounded(m.section, 200) && 
 const sourcePart = (value: unknown): value is 'definition' | 'block' => value === 'definition' || value === 'block'
 const pageId = (value: unknown): value is string => text(value) && /^page-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value)
 const sourceValue = (value: unknown): value is PreviewSource => isRecord(value) && sourcePart(value.part) && bounded(value.path, 4096) && bounded(value.language, 100) && text(value.content) && value.content.length <= MAX_EDITED && bounded(value.version, 200) && request(value.shared) && value.shared > 0
+
+export function toBlockPreviewCommand(value: unknown): BlockPreviewCommand | undefined {
+  if (!isRecord(value) || value.type !== 'presmium:block-preview-command' || !text(value.document)
+    || !text(value.blockId) || !value.blockId || !text(value.revision) || !value.revision
+    || !text(value.sectionId) || !value.sectionId || !text(value.stepId) || !value.stepId
+    || value.action !== 'seek' && value.action !== 'pause'
+    || value.at !== undefined && value.at !== 'start' && value.at !== 'end') return undefined
+  return { type: value.type, document: value.document, blockId: value.blockId, revision: value.revision, sectionId: value.sectionId, stepId: value.stepId, action: value.action, ...value.at !== undefined ? { at: value.at } : {} }
+}
 
 export function isPreviewEnvelope(data: unknown, nonce: string): data is PreviewEnvelope<{ type: string }> {
   return isRecord(data) && data.protocol === PREVIEW_NAME && data.nonce === nonce && typeof data.version === 'number' && text(data.type)

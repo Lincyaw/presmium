@@ -43,6 +43,8 @@ export interface SyncTransports {
 export const SYNC_TRANSPORTS = defineService<SyncTransports>('presmium.syncTransports')
 
 export interface NavigationPosition extends Cursor {
+  /** Transient seek intent; authoring steps and Production retain no duplicate timing. */
+  boundary?: 'start' | 'end'
   view?: string
   section?: string
 }

@@ -5,6 +5,7 @@ export const FINAL_STEP = Number.POSITIVE_INFINITY
 export interface Position {
   section: string
   step: number
+  boundary?: 'start' | 'end'
 }
 
 export function itemVisible(block: IRBlock, item: number, step: number): boolean {
@@ -19,7 +20,7 @@ export function clampPosition(doc: IRDocument, position: Position): Position {
   const section = doc.sections.find(s => s.id === position.section) ?? doc.sections[0]
   if (!section) return position
   const step = Number.isFinite(position.step) ? Math.min(Math.max(Math.round(position.step), 0), section.steps) : section.steps
-  return { section: section.id, step }
+  return { section: section.id, step, ...position.boundary ? { boundary: position.boundary } : {} }
 }
 
 export function keepPosition(prev: IRDocument, next: IRDocument, position: Position): Position {

@@ -1,5 +1,5 @@
-import { componentErrors, componentErrorRevision, presmiumService, STEP_CLOCK } from '@lincyaw/host'
-import { deckLocale, irBlocks, PREVIEW_REVISION } from '@lincyaw/kernel'
+import { componentErrors, componentErrorRevision, presmiumService, PLAYBACK_CONTROL, STEP_CLOCK } from '@lincyaw/host'
+import { deckLocale, irBlocks, PREVIEW_REVISION, toBlockPreviewCommand } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import type { Viewer } from '@lincyaw/viewer'
 import { WEB_MESSAGES } from '../domain/index.ts'
@@ -32,9 +32,19 @@ export function blockPreviewReporter(config: AppConfig, doc: IRDocument, viewer:
   resize.observe(root)
   mutations.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-status', 'class'] })
   const stopErrors = componentErrorRevision.subscribe(changed)
+  const command = (event: MessageEvent) => {
+    if (!enabled || disposed || fatal || !origin || event.source !== window.parent || event.origin !== origin) return
+    const value = toBlockPreviewCommand(event.data), revision = doc.meta[PREVIEW_REVISION]
+    if (!value || value.type !== 'presmium:block-preview-command' || value.document !== config.document || value.blockId !== config.block || typeof revision !== 'string' || value.revision !== revision) return
+    const section = viewer.section(value.sectionId), step = section?.stepIds?.indexOf(value.stepId) ?? -1
+    if (!section || step < 0 || ![...irBlocks(section.blocks)].some(block => block.id === config.block)) return
+    presmiumService(PLAYBACK_CONTROL)?.pause()
+    if (value.action === 'seek') viewer.show({ section: section.id, step, boundary: value.at ?? 'end' })
+  }
+  window.addEventListener('message', command)
   window.addEventListener('error', failed)
   window.addEventListener('unhandledrejection', failed)
-  window.addEventListener('pagehide', () => { disposed = true; resize.disconnect(); mutations.disconnect(); stopErrors(); stopPosition?.(); window.removeEventListener('error', failed); window.removeEventListener('unhandledrejection', failed) }, { once: true })
+  window.addEventListener('pagehide', () => { disposed = true; resize.disconnect(); mutations.disconnect(); stopErrors(); stopPosition?.(); window.removeEventListener('message', command); window.removeEventListener('error', failed); window.removeEventListener('unhandledrejection', failed) }, { once: true })
   return {
     async ready() {
       await new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => done())))
