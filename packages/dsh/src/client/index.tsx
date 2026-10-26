@@ -11,6 +11,7 @@ import { createObservable } from './observable.ts'
 import { isSamePath } from './paths.ts'
 import { registerAgentRequests } from './agent-requests.ts'
 import { rootLayoutFor } from './RootLayout.tsx'
+import { beginRootReload, restoreRootReturnPoint, saveRootReturnPoint } from './root-reload.ts'
 import { registerSourceLinks } from './source-links.tsx'
 import { runtimeDiagnostics } from './runtime-diagnostics.tsx'
 import { DSH_THEME_TOKENS, syncDarkClass, ThemePresenter } from './theme.ts'
@@ -34,6 +35,9 @@ function workbenchLocale(active: string | undefined): Locale {
 }
 
 export function apply(ctx: DshClientContext): void {
+  const nativeLayout = isBootEntryLoaded(UI_LAYOUT)
+  const reload = nativeLayout ? { reloading: false } : beginRootReload()
+  if (reload.reloading) return
   const uiWorkspace = new Promise<DshClientContext['uiWorkspace']>(resolve => ctx.inject(['uiWorkspace'], inner => resolve(inner.uiWorkspace)))
   const dshWorkspaces = createObservable<ReturnType<DshClientContext['workspaces']['list']['getSnapshot']>>({ items: [] })
   // Register the root before the renderer boots; remote-backed workspace data follows later.
@@ -44,10 +48,12 @@ export function apply(ctx: DshClientContext): void {
   }, 'presmium: workspace list'))
   const workbench = new Workbench({ locale: workbenchLocale(ctx.locale.getLocale().active) })
   ctx.effect(() => runtimeDiagnostics(workbench).start(), 'presmium: runtime diagnostics')
-  const nativeLayout = isBootEntryLoaded(UI_LAYOUT)
   let showEditor = (layout: DshClientContext['layout']) => layout.selectPanel(FALLBACK_PANEL)
   registerSourceLinks(ctx, workbench, layout => showEditor(layout))
-  ctx.effect(() => () => workbench.dispose(), 'presmium: workbench')
+  ctx.effect(() => () => {
+    workbench.dispose()
+    if (!nativeLayout) saveRootReturnPoint(workbench)
+  }, 'presmium: workbench')
   syncDocumentContext(ctx, workbench)
   registerAgentRequests(ctx, workbench)
   ctx.effect(() => ctx.locale.subscribe(() => workbench.setLocale(workbenchLocale(ctx.locale.getLocale().active))), 'presmium: language')
@@ -132,4 +138,7 @@ export function apply(ctx: DshClientContext): void {
     }, 'presmium: the root layout and ctx.layout')
   }
   registerBrand(ctx, workbench)
+  if (!nativeLayout) {
+    ctx.effect(() => restoreRootReturnPoint(workbench, reload.point), 'presmium: restore root return point')
+  }
 }
