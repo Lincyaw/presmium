@@ -100,6 +100,7 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 | IconButton | workbench、host 的 `PmIconButton`，`pm-ui-icon-button` | 已提供 `label`、`hint`、`shortcut`、`density` 与 `loading`，通过公共 Tooltip 显示名称和快捷键 |
 | Input | workbench `PmInput`；host 使用 `PmField`＋`pm-ui-input` | workbench 包装关联 `label`、`hint`、`error`，支持原生只读／禁用属性、前图标、后缀和 `width="number"`／`"time"` |
 | Textarea | workbench `PmTextarea`；host 使用 `PmField`＋`pm-ui-textarea` | workbench 包装支持标签、说明、错误、`density` 与 `autoGrow`；讲稿保持独立多行区域 |
+| NarrationEditor | workbench 原生 `NarrationEditor`、`pm-ui-narration-editor` | 文档 basic cue 只显示“提示／Cue”，保留可选择的原子及 payload／ID；视频制作 advanced 保留动作与 cueId title，同一规范讲稿保存 |
 | Select | workbench `PmSelect`；host 使用 `PmField`＋`pm-ui-select` | 简单选项统一字段关系与密度；复杂单选使用 `PmSearchList`，不以原生列表冒充 |
 | SearchList | workbench `PmSearchList`、`pm-ui-search-list`，复用 `PmInput` 与 Radix Radio Group | 提供搜索、结果计数、单选、描述、空／加载／错误／禁用态及三种密度；过滤不改写所选值，加载与错误保留已有结果但禁选，列表按公共高度令牌滚动 |
 | Dialog | workbench、host 的 `PmDialog`，Radix Dialog | 已统一模态、标题／说明、操作区、忙碌拦截、外部按下不关闭与焦点归还 |

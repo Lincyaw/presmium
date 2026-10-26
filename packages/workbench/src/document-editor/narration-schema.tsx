@@ -25,6 +25,7 @@ const atom = createReactInlineContentSpec({
     const [open, setOpen] = useState(false), [display, setDisplay] = useState(''), [spoken, setSpoken] = useState('')
     const props = inlineContent.props
     if (props.kind === 'cue') {
+      if (advanced === false) return <span contentEditable={false} className="pm-ui-narration-editor__cue">{t.cue}</span>
       let action = ''
       try { action = String(JSON.parse(props.payload).action ?? '') } catch { /* The adapter reports malformed content. */ }
       return <span contentEditable={false} className="pm-ui-narration-editor__cue" title={props.cueId}>{t.cue}{action ? ` · ${action}` : ''}</span>
