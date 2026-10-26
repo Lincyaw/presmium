@@ -391,6 +391,7 @@ function waveformPath(samples: readonly number[] | undefined): string | undefine
 
 /** Data-only timeline; source, playback, seeking authority and all labels remain with its caller. */
 export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, currentTimeMs, selectedStepId, zoom, onZoomChange, onSelectStep, onSeek, seekDisabled, disabled, loading, seeking, density = 'compact' }: TimelineProps) {
+  const hintId = useId()
   const viewport = useRef<HTMLDivElement>(null), tick = useRef<HTMLSpanElement>(null), composing = useRef(false)
   const [width, setWidth] = useState(0), [tickWidth, setTickWidth] = useState(1), [localZoom, setLocalZoom] = useState(1), [raw, setRaw] = useState<string>(), [previewTime, setPreviewTime] = useState<number>()
   const span = Number.isFinite(durationMs) && durationMs! >= 0 ? durationMs : undefined
@@ -446,7 +447,7 @@ export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, 
     <div className="pm-ui-timeline__status" role="status">{loading ? labels.loading : timing === 'unknown' || span === undefined ? labels.unknown : `${timing === 'estimated' ? `${labels.estimated} · ` : ''}${timelineTime(span)}`}</div>
     <div className="pm-ui-timeline__tracks">
       <div className="pm-ui-timeline__labels" aria-hidden="true">{timed && <><span /><span /></>}{tracks.map(track => <span key={track.id}>{track.label}</span>)}</div>
-      <div ref={viewport} className="pm-ui-timeline__viewport" tabIndex={0} aria-label={label}>
+      <div ref={viewport} className="pm-ui-timeline__viewport" tabIndex={0} aria-label={label} aria-describedby={hintId}>
         <div className="pm-ui-timeline__canvas" style={{ width: timed ? `${width * scale}px` : '100%' }}>
           {timed && <><div className="pm-ui-timeline__ruler" aria-hidden="true" onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); requestSeek((event.clientX - rect.left) / rect.width * span!) }}>
             {ticks.map((time, index) => <span key={time} ref={index === 0 ? tick : undefined} data-end={time === span || undefined} style={{ left: `${time / span! * 100}%` }}>{timelineTime(time).replace(/\.000$/, '')}</span>)}
@@ -465,6 +466,6 @@ export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, 
     </div>
     <div className="pm-ui-timeline__steps">{steps.map(segment => <PmButton key={segment.stepId} density={density} disabled={blocked || segment.disabled} aria-pressed={segment.stepId === selectedStepId} variant={segment.stepId === selectedStepId ? 'accent' : 'default'} onClick={() => onSelectStep(segment.stepId!)}>{segment.label}</PmButton>)}</div>
     {!tracks.some(track => track.segments.length) && <PmNotice>{labels.empty}</PmNotice>}
-    <p className="pm-ui-timeline__hint">{labels.seekHint}</p>
+    <p id={hintId} className="pm-ui-sr-only">{labels.seekHint}</p>
   </section>
 }

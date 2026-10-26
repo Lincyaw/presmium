@@ -171,7 +171,7 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   return <section ref={root} className="pm-ui-block-preview" data-block-preview={blockId} data-status={state.status} contentEditable={false}>
     <header className="pm-ui-block-preview__header"><span className="pm-ui-block-preview__label"><PmIcon name="slides" />{old && state.snapshot ? t.previewPrevious : state.status === 'loading' ? t.previewLoading : t.previewSnapshot}</span>
       <span className="pm-ui-block-preview__actions">
-        <PmIconButton small icon="captions" label={t.stepNarration} aria-expanded={narrationOpen} aria-controls={narrationOpen ? narrationPanel : undefined} aria-pressed={narrationOpen} disabled={!stepId} onClick={() => {
+        <PmIconButton small icon="captions" label={t.stepCaptions} aria-expanded={narrationOpen} aria-controls={narrationOpen ? narrationPanel : undefined} aria-pressed={narrationOpen} disabled={!stepId} onClick={() => {
           pause()
           if (sectionId && stepId) workbench.observeDocumentStep(sectionId, stepId)
           setNarrationOpen(value => !value)

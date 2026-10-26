@@ -202,7 +202,6 @@
         ],
         "properties": [
           "Position label",
-          "Seek hint",
           "Visual track",
           "Voice track",
           "Caption track"
@@ -210,18 +209,18 @@
         "geometry": {
           "compact": {
             "width": 760,
-            "height": 359,
+            "height": 331,
             "controlHeight": 30,
             "textSize": 13
           },
           "regular": {
             "width": 760,
-            "height": 395,
+            "height": 367,
             "controlHeight": 36
           },
           "touch": {
             "width": 390,
-            "height": 448,
+            "height": 420,
             "controlHeight": 44,
             "inputTextSize": 16
           },
@@ -265,7 +264,8 @@
           "Waveform SVG requires supplied finite normalized real samples. The Figma sample intentionally contains no invented waveform."
         ],
         "verification": "docs/benchmarks/public-timeline-2026-10-26.md",
-        "completionBoundary": "Formal public primitive design and standalone consumer acceptance; business production integration and host playback are separately verified."
+        "completionBoundary": "Formal public primitive design and standalone consumer acceptance; business production integration and host playback are separately verified.",
+        "keyboardHelp": "Accessible description on the timeline viewport; no permanent visible footer."
       }
     },
     "variantCounts": {
@@ -1065,7 +1065,34 @@
       "narration": "Step.narrationIds → Narration.content; canonical typed nodes, no separate caption text",
       "captionEditingNodeId": "102:1760",
       "captionEmptyNodeId": "102:1778",
-      "narrationFieldComponent": "NarrationEditor"
+      "narrationFieldComponent": "NarrationEditor",
+      "documentFields": [
+        "captions",
+        "narrationStart"
+      ],
+      "productionOnlyFields": [
+        "minimumHoldMs",
+        "trailingPauseMs",
+        "restoreInheritance",
+        "pronunciationTools"
+      ]
+    },
+    "narrationModes": {
+      "componentId": "107:1820",
+      "Document": {
+        "Empty": "152:2790",
+        "Filled": "152:2795",
+        "Focus": "152:2800",
+        "Readonly": "152:2805"
+      },
+      "Production": {
+        "Empty": "107:1775",
+        "Filled": "107:1785",
+        "Focus": "107:1795",
+        "Readonly": "107:1805"
+      },
+      "source": "packages/workbench/src/document-editor/NarrationEditor.tsx",
+      "description": "Document mode keeps captions and narration start; professional controls remain in Video production."
     }
   },
   "exportSourceConfirmation": {

@@ -1285,7 +1285,7 @@
 .pm-ui-timeline__tools { display: flex; flex-wrap: wrap; align-items: end; gap: var(--pm-space-2); }
 .pm-ui-timeline__zoom { display: flex; align-items: center; gap: var(--pm-space-2); }
 .pm-ui-timeline__scale { min-width: var(--pm-size-row); text-align: center; font-variant-numeric: tabular-nums; }
-.pm-ui-timeline__status, .pm-ui-timeline__hint { margin: 0; color: var(--pm-color-muted); font-size: var(--pm-text-xs); }
+.pm-ui-timeline__status { margin: 0; color: var(--pm-color-muted); font-size: var(--pm-text-xs); }
 .pm-ui-timeline__tracks { display: grid; grid-template-columns: var(--pm-timeline-label-width) minmax(0, 1fr); gap: var(--pm-space-2); min-width: 0; }
 .pm-ui-timeline__labels { display: flex; flex-direction: column; gap: var(--pm-space-2); }
 .pm-ui-timeline__labels > span { display: flex; align-items: center; height: var(--pm-ui-control-height, var(--pm-size-tool)); min-width: 0; overflow: hidden; }

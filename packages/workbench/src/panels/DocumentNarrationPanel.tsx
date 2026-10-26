@@ -21,7 +21,7 @@ export function DocumentNarrationPanel({ onClose }: { onClose(): void }) {
     <header className="pmw-pane__header"><h2 id={panelId} className="pmw-pane__title">{t.documentNarration}</h2><PmIconButton small icon="close" label={t.close} onClick={onClose} /></header>
     {section && sectionId && stepId ? <>
       <p className="pmw-pane__footer">{section.title}</p>
-      <DocumentStepNarration sectionId={sectionId} stepId={stepId} expanded panelId={`${panelId}-fields`} onPause={pause} />
+      <DocumentStepNarration sectionId={sectionId} stepId={stepId} expanded showLabel={false} panelId={`${panelId}-fields`} onPause={pause} />
     </> : <PmEmpty icon="captions">{t.noSections}</PmEmpty>}
   </section>
 }
