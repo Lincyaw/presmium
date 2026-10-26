@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "id": "document-c568ca76d3b75ff1",
+  "metadata": {
+    "title": "Fresh Talk",
+    "lang": "en",
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "fresh-talk",
+    "only"
+  ],
+  "sections": {
+    "fresh-talk": {
+      "id": "fresh-talk",
+      "title": "Fresh Talk",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "fresh-talk--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "only": {
+      "id": "only",
+      "title": "Only",
+      "level": 2,
+      "children": [
+        "only--paragraph-1"
+      ],
+      "stepOrder": [
+        "only--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "only--paragraph-1": {
+      "id": "only--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "only--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Nothing compiles this document before a workbench asks for its revisions."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "fresh-talk--step-0": {
+      "id": "fresh-talk--step-0",
+      "sectionId": "fresh-talk",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "only--step-0": {
+      "id": "only--step-0",
+      "sectionId": "only",
+      "visuals": [
+        {
+          "blockId": "only--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

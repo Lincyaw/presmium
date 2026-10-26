@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "id": "document-2b66e5ca886c5b9f",
+  "metadata": {
+    "title": "指南",
+    "lang": "zh-CN"
+  },
+  "sectionOrder": [
+    "指南"
+  ],
+  "sections": {
+    "指南": {
+      "id": "指南",
+      "title": "指南",
+      "level": 1,
+      "children": [
+        "指南--paragraph-1",
+        "指南--image-1"
+      ],
+      "stepOrder": [
+        "指南--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "指南--paragraph-1": {
+      "id": "指南--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "指南--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "回到"
+            },
+            {
+              "type": "link",
+              "href": "../intro/lecture.json",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "导论"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。"
+            }
+          ]
+        }
+      ]
+    },
+    "指南--image-1": {
+      "id": "指南--image-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "指南--image-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "image",
+              "url": "img/plan.svg",
+              "alt": "计划"
+            }
+          },
+          "fallback": []
+        }
+      ]
+    }
+  },
+  "steps": {
+    "指南--step-0": {
+      "id": "指南--step-0",
+      "sectionId": "指南",
+      "visuals": [
+        {
+          "blockId": "指南--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "指南--image-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "指南--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "指南--paragraph-1--narration": {
+      "id": "指南--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "回到导论。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

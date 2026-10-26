@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "id": "document-491ac223d30350bc",
+  "metadata": {
+    "title": "Links to the web",
+    "lang": "en",
+    "renderers": {
+      "web": {},
+      "notebook": {}
+    }
+  },
+  "sectionOrder": [
+    "links-to-the-web",
+    "gauges",
+    "the-gauge"
+  ],
+  "sections": {
+    "links-to-the-web": {
+      "id": "links-to-the-web",
+      "title": "Links to the web",
+      "level": 1,
+      "children": [
+        "links-to-the-web--paragraph-1"
+      ],
+      "stepOrder": [
+        "links-to-the-web--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "gauges": {
+      "id": "gauges",
+      "title": "Gauges",
+      "level": 1,
+      "children": [
+        "gauges--paragraph-1"
+      ],
+      "stepOrder": [
+        "gauges--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "the-gauge": {
+      "id": "the-gauge",
+      "title": "The gauge",
+      "level": 2,
+      "children": [
+        "the-gauge--gauge-1"
+      ],
+      "stepOrder": [
+        "the-gauge--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "links-to-the-web--paragraph-1": {
+      "id": "links-to-the-web--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "links-to-the-web--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A deck in two chapters."
+            }
+          ]
+        }
+      ]
+    },
+    "gauges--paragraph-1": {
+      "id": "gauges--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "gauges--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The chapter opens its own page."
+            }
+          ]
+        }
+      ]
+    },
+    "the-gauge--gauge-1": {
+      "id": "the-gauge--gauge-1",
+      "type": "component",
+      "definitionId": "the-gauge--gauge-1--definition",
+      "parameters": {
+        "level": 3
+      }
+    }
+  },
+  "steps": {
+    "links-to-the-web--step-0": {
+      "id": "links-to-the-web--step-0",
+      "sectionId": "links-to-the-web",
+      "visuals": [
+        {
+          "blockId": "links-to-the-web--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "gauges--step-0": {
+      "id": "gauges--step-0",
+      "sectionId": "gauges",
+      "visuals": [
+        {
+          "blockId": "gauges--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "the-gauge--step-0": {
+      "id": "the-gauge--step-0",
+      "sectionId": "the-gauge",
+      "visuals": [
+        {
+          "blockId": "the-gauge--gauge-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "the-gauge--gauge-1--definition": {
+      "id": "the-gauge--gauge-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "components/Gauge.tsx"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "deck",
+        "name": "Gauge",
+        "language": "tsx"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

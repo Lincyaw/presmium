@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "id": "document-556e65a14ea79a21",
+  "metadata": {
+    "title": "关闭离线",
+    "lang": "zh-CN",
+    "presmium": {
+      "presmium.publish": {
+        "offline": false
+      }
+    },
+    "renderers": {
+      "web": {
+        "package": "../../.."
+      }
+    }
+  },
+  "sectionOrder": [
+    "关闭离线",
+    "only"
+  ],
+  "sections": {
+    "关闭离线": {
+      "id": "关闭离线",
+      "title": "关闭离线",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "关闭离线--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "only": {
+      "id": "only",
+      "title": "唯一一节",
+      "level": 2,
+      "children": [
+        "only--paragraph-1"
+      ],
+      "stepOrder": [
+        "only--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "only--paragraph-1": {
+      "id": "only--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "only--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "presmium.publish.offline: false",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 关闭离线支持：网页形态不带 service worker。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "关闭离线--step-0": {
+      "id": "关闭离线--step-0",
+      "sectionId": "关闭离线",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "only--step-0": {
+      "id": "only--step-0",
+      "sectionId": "only",
+      "visuals": [
+        {
+          "blockId": "only--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "only--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "only--paragraph-1--narration": {
+      "id": "only--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "presmium.publish.offline: false 关闭离线支持：网页形态不带 service worker。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

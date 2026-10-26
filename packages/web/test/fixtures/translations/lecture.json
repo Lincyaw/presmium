@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "id": "document-fa01ba05da2a5c69",
+  "metadata": {
+    "title": "译本检查",
+    "lang": "zh-CN",
+    "translations": {
+      "en": "lecture.en.md"
+    }
+  },
+  "sectionOrder": [
+    "译本检查",
+    "first"
+  ],
+  "sections": {
+    "译本检查": {
+      "id": "译本检查",
+      "title": "译本检查",
+      "level": 1,
+      "children": [
+        "译本检查--paragraph-1"
+      ],
+      "stepOrder": [
+        "译本检查--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "first": {
+      "id": "first",
+      "title": "第一节",
+      "level": 2,
+      "children": [
+        "first--paragraph-1"
+      ],
+      "stepOrder": [
+        "first--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "译本检查--paragraph-1": {
+      "id": "译本检查--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "译本检查--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "封面的讲解。"
+            }
+          ]
+        }
+      ]
+    },
+    "first--paragraph-1": {
+      "id": "first--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "first--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一节的内容。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "译本检查--step-0": {
+      "id": "译本检查--step-0",
+      "sectionId": "译本检查",
+      "visuals": [
+        {
+          "blockId": "译本检查--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "译本检查--paragraph-1--narration"
+      ]
+    },
+    "first--step-0": {
+      "id": "first--step-0",
+      "sectionId": "first",
+      "visuals": [
+        {
+          "blockId": "first--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "first--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "译本检查--paragraph-1--narration": {
+      "id": "译本检查--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "封面的讲解。"
+        }
+      ]
+    },
+    "first--paragraph-1--narration": {
+      "id": "first--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第一节的内容。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
