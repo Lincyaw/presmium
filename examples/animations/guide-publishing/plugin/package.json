@@ -1,0 +1,7 @@
+{
+  "name": "presmium-example-elements",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "用户示例：通过公开浏览器插件入口注册原生 Web Component。"
+}

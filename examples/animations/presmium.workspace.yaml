@@ -13,6 +13,8 @@ site:
           link: '/guide-code/'
         - text: '课堂互动'
           link: '/guide-classroom/'
+        - text: '发布与协作'
+          link: '/guide-publishing/'
     - text: '幻灯片'
       items:
         - text: '冒泡排序'

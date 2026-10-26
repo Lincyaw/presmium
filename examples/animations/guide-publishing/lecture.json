@@ -1,0 +1,768 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-guide-publishing",
+  "metadata": {
+    "title": "功能导览 06：阅读、协作与发布",
+    "lang": "zh-CN",
+    "description": "可编辑、可运行的 Presmium 功能导览。",
+    "plugins": [
+      "@lincyaw/addon-publish",
+      "@lincyaw/addon-stage",
+      "@lincyaw/addon-assistant",
+      "./plugin"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {}
+    },
+    "translations": {
+      "en": "locales/en/lecture.json"
+    }
+  },
+  "sectionOrder": [
+    "start",
+    "reading",
+    "views",
+    "collaboration",
+    "scope",
+    "extension",
+    "offline",
+    "translation",
+    "assistant",
+    "export"
+  ],
+  "sections": {
+    "start": {
+      "id": "start",
+      "title": "一份文稿，按场景选择输出",
+      "level": 1,
+      "children": [
+        "text-1"
+      ],
+      "stepOrder": [
+        "start-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "reading": {
+      "id": "reading",
+      "title": "搜索、导航、链接与注释",
+      "level": 2,
+      "children": [
+        "text-7"
+      ],
+      "stepOrder": [
+        "reading-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "views": {
+      "id": "views",
+      "title": "放映、演讲者视图与讲台工具",
+      "level": 2,
+      "children": [
+        "text-8"
+      ],
+      "stepOrder": [
+        "views-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "collaboration": {
+      "id": "collaboration",
+      "title": "正文批注、撤消与保存恢复",
+      "level": 2,
+      "children": [
+        "text-11"
+      ],
+      "stepOrder": [
+        "collaboration-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "scope": {
+      "id": "scope",
+      "title": "按媒介和受众选择内容",
+      "level": 2,
+      "children": [
+        "web-only",
+        "notebook-only",
+        "teacher-only",
+        "text-18"
+      ],
+      "stepOrder": [
+        "scope-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "extension": {
+      "id": "extension",
+      "title": "Web Component 与静态回退",
+      "level": 2,
+      "children": [
+        "text-20",
+        "text-23"
+      ],
+      "stepOrder": [
+        "extension-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "offline": {
+      "id": "offline",
+      "title": "高对比度与离线保存",
+      "level": 2,
+      "children": [
+        "contrast",
+        "text-24"
+      ],
+      "stepOrder": [
+        "offline-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "translation": {
+      "id": "translation",
+      "title": "文稿译文与语言切换",
+      "level": 2,
+      "children": [
+        "text-27"
+      ],
+      "stepOrder": [
+        "translation-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "assistant": {
+      "id": "assistant",
+      "title": "按真实模型能力启用问答",
+      "level": 2,
+      "children": [
+        "text-30"
+      ],
+      "stepOrder": [
+        "assistant-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "export": {
+      "id": "export",
+      "title": "PDF、图片、PowerPoint、差异与 Notebook",
+      "level": 2,
+      "children": [
+        "text-33",
+        "export-commands"
+      ],
+      "stepOrder": [
+        "export-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "text-1": {
+      "id": "text-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "网页适合阅读、搜索和互动；幻灯片适合按步骤讲授；notebook 保留代码单元与静态回退。Doc 的修改仍只写回 lecture.json。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在本页试试搜索、目录、深浅色、字体与窄屏导航。使用右上角视图菜单进入放映或演讲者视图，不会改变权威内容。"
+            }
+          ]
+        }
+      ]
+    },
+    "text-7": {
+      "id": "text-7",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-4",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "搜索这句独特的示例文字：星河笔记。"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "footnoteReference",
+                  "identifier": "reading-footnote",
+                  "label": "reading-footnote"
+                }
+              },
+              "fallback": "[注]"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-5",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "link",
+              "href": "#collaboration",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "跳到协作一节"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "footnote-definition",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "footnoteDefinition",
+              "identifier": "reading-footnote",
+              "label": "reading-footnote",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "脚注保留显式语义身份，引用与定义配对。"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "paragraph-6",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "注：脚注保留显式身份，引用与定义配对。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "text-8": {
+      "id": "text-8",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-9",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "放映模式支持步骤导航、讲稿、画笔、黑屏与冻结听众画面。演讲者视图展示当前画面、后续画面和本步讲稿；多窗口需允许浏览器打开窗口。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-10",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "黑屏和冻结是讲台状态，不是删除内容。切换回来后应保留当前位置。"
+            }
+          ]
+        }
+      ]
+    },
+    "text-11": {
+      "id": "text-11",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-12",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在工作台框选这段正文，使用原生批注扩展添加评论。多段选择、插入和撤消由同一个正文编辑器处理。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-13",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "同一文稿的最新正文与讲稿复用同一个版本化保存 actor。旧保存回调不能清除新的输入；发生冲突或中断的输入法草稿，应明确恢复或放弃。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-14",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "版本历史可以查看和恢复真实保存记录。页面重命名、移动与删除保留稳定身份；删除前检查引用与依赖，不能只从界面移除。"
+            }
+          ]
+        }
+      ]
+    },
+    "web-only": {
+      "id": "web-only",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-15",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这段只用于网页阅读。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "notebook-only": {
+      "id": "notebook-only",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-16",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这段只出现在 notebook 输出中。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "notebook"
+      ]
+    },
+    "teacher-only": {
+      "id": "teacher-only",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-17",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "教师专属口令：先让学生独立解释，再展示答案。"
+            }
+          ]
+        }
+      ],
+      "audience": [
+        "teacher"
+      ]
+    },
+    "text-18": {
+      "id": "text-18",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-19",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这段公共内容会保留在学生输出。--audience student 必须从输出中移除教师内容。"
+            }
+          ]
+        }
+      ]
+    },
+    "text-20": {
+      "id": "text-20",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-21",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "下面是使用浏览器 Custom Elements API 的真实计数器。点击后数值增加，按钮沿用公共设计系统。组件的注册通过本讲的本地插件公开入口完成。"
+            }
+          ]
+        }
+      ]
+    },
+    "text-23": {
+      "id": "text-23",
+      "type": "text",
+      "content": [
+        {
+          "id": "web-component-node",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "html",
+              "value": "<presmium-feature-counter label=\"Web Component\" start=\"2\"></presmium-feature-counter>"
+            }
+          },
+          "fallback": [
+            {
+              "id": "paragraph-22",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Web Component 计数器，初值 2，点击后增加。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "contrast": {
+      "id": "contrast",
+      "type": "component",
+      "definitionId": "contrast-definition",
+      "parameters": {}
+    },
+    "text-24": {
+      "id": "text-24",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-25",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "高对比度与深浅色是不同设置。静态构建的网页还可以使用发布插件的离线保存功能；必须实际完成资源缓存后才算可离线。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-26",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "离线能力受浏览器、安全上下文、存储配额和资源来源影响。外部播放器或服务不会因为缓存页面就变得离线可用。"
+            }
+          ]
+        }
+      ]
+    },
+    "text-27": {
+      "id": "text-27",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-28",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本讲包含英文译文。语言菜单切换的是独立的 canonical JSON 文稿，保留章节和块的稳定 ID。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-29",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "原文 digest 只反映规范化内容；格式变化不会制造过期状态。原文内容改变后，译文必须同步或明确显示已经过期。"
+            }
+          ]
+        }
+      ]
+    },
+    "text-30": {
+      "id": "text-30",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-31",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "阅读页的“提问”助手由用户自己的模型服务提供，需要在浏览器配置真实提供方。模型不可用、网络失败与请求取消都不能显示成成功。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-32",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "课堂中的 AI 答案先由主讲审阅，再明确发送给全班。编辑工作台的 AI 助手、IDE 与 MCP 是另外的操作入口，仍通过同一文稿事务保存，不建立第二份内容。"
+            }
+          ]
+        }
+      ]
+    },
+    "text-33": {
+      "id": "text-33",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-34",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先构建所需媒介，再使用真实导出工具。PDF、PNG 与 PowerPoint 需要可启动的 Chromium；视频与字幕烧录还依赖编码工具和已准备的媒体能力。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-35",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "视觉差异工具比较实际渲染结果，不能替代内容和交互检查。notebook 中的互动控件使用可读回退或真实代码单元。"
+            }
+          ]
+        }
+      ]
+    },
+    "export-commands": {
+      "id": "export-commands",
+      "type": "code",
+      "language": "shell",
+      "value": "presmium build guide-publishing --to web,notebook\npresmium build guide-publishing --to web --audience student\n# presmium-export --help 查看当前安装版本支持的真实输出格式。"
+    }
+  },
+  "steps": {
+    "start-step": {
+      "id": "start-step",
+      "sectionId": "start",
+      "visuals": [
+        {
+          "blockId": "text-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "reading-step": {
+      "id": "reading-step",
+      "sectionId": "reading",
+      "visuals": [
+        {
+          "blockId": "text-7",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "views-step": {
+      "id": "views-step",
+      "sectionId": "views",
+      "visuals": [
+        {
+          "blockId": "text-8",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "collaboration-step": {
+      "id": "collaboration-step",
+      "sectionId": "collaboration",
+      "visuals": [
+        {
+          "blockId": "text-11",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "scope-step": {
+      "id": "scope-step",
+      "sectionId": "scope",
+      "visuals": [
+        {
+          "blockId": "web-only",
+          "visible": true
+        },
+        {
+          "blockId": "notebook-only",
+          "visible": true
+        },
+        {
+          "blockId": "teacher-only",
+          "visible": true
+        },
+        {
+          "blockId": "text-18",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "extension-step": {
+      "id": "extension-step",
+      "sectionId": "extension",
+      "visuals": [
+        {
+          "blockId": "text-20",
+          "visible": true
+        },
+        {
+          "blockId": "text-23",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "offline-step": {
+      "id": "offline-step",
+      "sectionId": "offline",
+      "visuals": [
+        {
+          "blockId": "contrast",
+          "visible": true
+        },
+        {
+          "blockId": "text-24",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "translation-step": {
+      "id": "translation-step",
+      "sectionId": "translation",
+      "visuals": [
+        {
+          "blockId": "text-27",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "assistant-step": {
+      "id": "assistant-step",
+      "sectionId": "assistant",
+      "visuals": [
+        {
+          "blockId": "text-30",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "export-step": {
+      "id": "export-step",
+      "sectionId": "export",
+      "visuals": [
+        {
+          "blockId": "text-33",
+          "visible": true
+        },
+        {
+          "blockId": "export-commands",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "contrast-definition": {
+      "id": "contrast-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.publish",
+        "name": "PmContrastToggle"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "网页支持高对比度模式。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

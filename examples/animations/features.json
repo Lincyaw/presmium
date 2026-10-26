@@ -276,6 +276,136 @@
       "section": "failure",
       "package": "@lincyaw/addon-exec",
       "requires": []
+    },
+    {
+      "id": "reader-search",
+      "title": "全文搜索与真实结果跳转",
+      "document": "guide-publishing",
+      "section": "reading",
+      "package": "@lincyaw/web",
+      "requires": []
+    },
+    {
+      "id": "footnotes",
+      "title": "脚注与稳定语义引用",
+      "document": "guide-publishing",
+      "section": "reading",
+      "package": "@lincyaw/kernel",
+      "requires": []
+    },
+    {
+      "id": "reader-navigation",
+      "title": "目录、锚点、外观与窄屏导航",
+      "document": "guide-publishing",
+      "section": "start",
+      "package": "@lincyaw/web",
+      "requires": []
+    },
+    {
+      "id": "presentation-tools",
+      "title": "放映、演讲者视图、画笔、黑屏与冻结",
+      "document": "guide-publishing",
+      "section": "views",
+      "package": "@lincyaw/addon-stage",
+      "requires": []
+    },
+    {
+      "id": "native-comments-history",
+      "title": "原生批注、撤消、历史与保存恢复",
+      "document": "guide-publishing",
+      "section": "collaboration",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "工作台编辑视图"
+      ]
+    },
+    {
+      "id": "medium-scope",
+      "title": "媒介内容筛选",
+      "document": "guide-publishing",
+      "section": "scope",
+      "package": "@lincyaw/kernel",
+      "requires": []
+    },
+    {
+      "id": "audience-scope",
+      "title": "教师与学生内容的真实输出隔离",
+      "document": "guide-publishing",
+      "section": "scope",
+      "package": "@lincyaw/compiler",
+      "requires": []
+    },
+    {
+      "id": "web-components",
+      "title": "本地插件注册真实 Custom Element",
+      "document": "guide-publishing",
+      "section": "extension",
+      "package": "@lincyaw/host",
+      "requires": []
+    },
+    {
+      "id": "high-contrast",
+      "title": "高对比度开关",
+      "document": "guide-publishing",
+      "section": "offline",
+      "package": "@lincyaw/addon-publish",
+      "requires": []
+    },
+    {
+      "id": "offline-read",
+      "title": "离线阅读与可选运行资源缓存",
+      "document": "guide-publishing",
+      "section": "offline",
+      "package": "@lincyaw/addon-publish",
+      "requires": [
+        "安全上下文、Service Worker 与可用存储；运行资源示例见 guide-environments"
+      ]
+    },
+    {
+      "id": "canonical-translation",
+      "title": "独立 JSON 译文、语言切换与内容 digest",
+      "document": "guide-publishing",
+      "section": "translation",
+      "package": "@lincyaw/compiler",
+      "requires": []
+    },
+    {
+      "id": "reader-assistant",
+      "title": "阅读问答与明确的模型能力边界",
+      "document": "guide-publishing",
+      "section": "assistant",
+      "package": "@lincyaw/addon-assistant",
+      "requires": [
+        "用户自行配置真实模型服务"
+      ]
+    },
+    {
+      "id": "classroom-ai-review",
+      "title": "课堂 AI 答案先审阅再分享",
+      "document": "guide-publishing",
+      "section": "assistant",
+      "package": "@lincyaw/addon-assistant",
+      "requires": [
+        "模型服务和真实课堂会话"
+      ]
+    },
+    {
+      "id": "multiformat-export",
+      "title": "PDF、图片、PowerPoint 与视觉差异工具",
+      "document": "guide-publishing",
+      "section": "export",
+      "package": "@lincyaw/cli",
+      "requires": [
+        "相应导出工具及可启动 Chromium；视频另需编码器"
+      ]
+    },
+    {
+      "id": "notebook-output",
+      "title": "Notebook 静态回退与代码单元",
+      "document": "guide-publishing",
+      "section": "export",
+      "package": "@lincyaw/render-notebook",
+      "requires": []
     }
   ]
 }
