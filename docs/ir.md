@@ -62,6 +62,8 @@ lecture.json + 引用的代码与媒体
 
 普通阅读器的场景局部控制也从 `stepStates` 重建状态与参数：`StepScope.stateAt(localStep)` 与 `step(localStep)` 使用同一个首个可见作者快照。局部跳步和播放复用场景原有时钟，不改变全文导航或作者文稿。
 
+定义的命名状态按 `Definition.states` 的声明顺序派生实现局部步号。新文稿只需状态标识；`legacyIndex` 仅在迁移已有实现且需要保留原索引时显式覆盖，不是新文稿的必填字段。
+
 运行节点继续为 Markdown 派生树、代码和组件。富文本直接 lowering 成结构化渲染树，不生成 Markdown 再解析。组件由定义与实例参数 lowering，代码来源由锚点解析器读取真实工程文件。mdast、HAST 和运行组件 fallback 是渲染接口，不是旧 Markdown 内容入口。
 
 网页是能力最完整的参考媒介；幻灯片复用同一查看器与宿主。其他渲染端声明支持程度：不能交互时提供静态回退，无法表示的节点出现在构建诊断中。CSS 样式字符串经公开解析库转为 React style 对象，服务端渲染不依赖 DOM；非法样式保留正文并给出诊断。
