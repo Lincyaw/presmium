@@ -42,9 +42,9 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
         case 'code': {
           const node: CodeNode = { type: 'code', lang: block.language, value: block.value ?? '', ...block.title ? { title: block.title } : {}, ...block.execution ? { run: { lang: block.language, ...block.execution } } : {}, ...block.echo === false ? { echo: false } : {} }
           if (block.origin) {
-            node.reference = { anchor: block.origin.anchor as `${string}:${string}`, ...block.origin.pin ? { pin: block.origin.pin } : {} }
+            node.reference = { anchor: block.origin.anchor as `${string}:${string}`, ...block.origin.pin ? { pin: block.origin.pin } : {}, ...block.origin.repo ? { repo: block.origin.repo } : {}, ...block.origin.highlightRegions ? { highlightRegions: stepIds.map(id => block.origin!.highlightRegions![id] ?? 'none') } : {} }
           }
-          if (block.variants?.some(variant => variant.origin)) node.reference = { ...node.reference, anchor: (block.origin?.anchor ?? block.variants.find(variant => variant.origin)!.origin!.anchor) as `${string}:${string}`, variants: block.variants.map(variant => ({ ...variant.origin ? { anchor: variant.origin.anchor as `${string}:${string}`, ...variant.origin.pin ? { pin: variant.origin.pin } : {} } : { value: variant.value! }, label: variant.title })) }
+          if (block.variants?.some(variant => variant.origin)) node.reference = { ...node.reference, anchor: (block.origin?.anchor ?? block.variants.find(variant => variant.origin)!.origin!.anchor) as `${string}:${string}`, variants: block.variants.map(variant => ({ ...variant.origin ? { anchor: variant.origin.anchor as `${string}:${string}`, ...variant.origin.pin ? { pin: variant.origin.pin } : {}, ...variant.origin.repo ? { repo: variant.origin.repo } : {} } : { value: variant.value! }, label: variant.title })) }
           if (block.origin) {
             if (!/^[a-z][a-z0-9+-]*:/i.test(block.origin.anchor)) report({ checkId: 'presmium.document', severity: 'error', message: 'A code origin requires a registered anchor scheme.', source: where })
             else node.origin = { anchor: block.origin.anchor as `${string}:${string}`, file: '', startLine: 0, endLine: 0, status: 'lost', ...block.origin.pin ? { pin: block.origin.pin } : {} }

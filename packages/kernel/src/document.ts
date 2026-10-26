@@ -104,7 +104,10 @@ export function validateDocument(value: unknown): DocumentValidation {
     } else if (block.type === 'component') {
       if (reference(doc.definitions, block.definitionId, `${path}/definitionId`, 'definition')) schema(doc.definitions[block.definitionId]!.parameterSchema, block.parameters, `${path}/parameters`)
     } else if (block.type === 'code') {
-      for (const step of Object.keys(block.highlight ?? {})) reference(doc.steps, step, at(`${path}/highlight`, step), 'step')
+      if (block.highlight && block.origin?.highlightRegions) issue(`${path}/highlight`, 'code.highlight-owner', 'Choose authored line numbers or tracked source regions, not both.')
+      for (const [field, values] of [['highlight', block.highlight], ['origin/highlightRegions', block.origin?.highlightRegions]] as const) for (const step of Object.keys(values ?? {})) {
+        if (reference(doc.steps, step, `${path}/${field}/${escape(step)}`, 'step') && doc.steps[step]!.sectionId !== sectionOf.get(id)) issue(`${path}/${field}/${escape(step)}`, 'code.highlight-section', 'A code highlight must belong to a step of its own section.')
+      }
       for (const [index, variant] of (block.variants ?? []).entries()) identify(variant.id, `${path}/variants/${index}/id`)
     } else if (block.type === 'container') {
       if (block.properties.columnWidths && block.properties.columnWidths.length !== block.children.length) issue(`${path}/properties/columnWidths`, 'container.columns', 'Column widths must match the child count.')
@@ -193,6 +196,7 @@ export function validateDocument(value: unknown): DocumentValidation {
   if (lecture && ['voice', 'gap', 'script'].some(key => own(lecture, key))) issue('/metadata/renderers/lecture', 'production.owner', 'Voice, narration sources and playback timing belong only to production and narration entities.')
   const textTargets = new Set([...richIds.values()].flatMap(values => [...values]))
   for (const id of doc.sectionOrder) textTargets.add(`page:${id}`)
+  for (const [id, block] of Object.entries(doc.blocks)) if (block.type === 'code' && block.value !== undefined) textTargets.add(id)
   for (const [id, thread] of Object.entries(doc.comments ?? {})) {
     const path = at('/comments', id)
     if (id !== thread.id) issue(`${path}/id`, 'id.key', 'A thread ID must match its map key.')

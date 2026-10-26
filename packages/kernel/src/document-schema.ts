@@ -54,8 +54,9 @@ export const DOCUMENT_JSON_SCHEMA: Schema = {
     ListItem: rich('listItem', { children: list(ref('RichTextNode')), checked: { type: 'boolean' } }, ['children']),
     TableRow: rich('tableRow', { children: list(ref('TableCell')) }),
     TableCell: rich('tableCell', { children: list(ref('Inline')), style, colspan: { type: 'integer', minimum: 1 }, rowspan: { type: 'integer', minimum: 1 } }, ['children']),
-    CodeReference: object({ anchor: { type: 'string', minLength: 1 }, pin: string }, ['anchor']),
-    CodeVariant: { ...object({ id, title: string, value: string, origin: ref('CodeReference') }, ['id', 'title']), oneOf: exclusiveCode },
+    CodeReference: object({ anchor: { type: 'string', minLength: 1 }, pin: string, repo: string, highlightRegions: record({ type: 'string', minLength: 1 }) }, ['anchor']),
+    VariantReference: object({ anchor: { type: 'string', minLength: 1 }, pin: string, repo: string }, ['anchor']),
+    CodeVariant: { ...object({ id, title: string, value: string, origin: ref('VariantReference') }, ['id', 'title']), oneOf: exclusiveCode },
     CodeExecution: object({ args: record(string), stdin: string, timeoutMs: positive, executor: string, when: { enum: ['compile', 'live', 'both'] }, session: string }, ['when']),
     Block: { oneOf: [
       block('text', { content: list(ref('RichTextNode')), reveal: object({ type: tag('items'), order: ids }) }, ['content']),
