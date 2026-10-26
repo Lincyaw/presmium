@@ -71,6 +71,8 @@ export async function startStudio(options: { port: number, model?: FakeModel, pa
       symlinkSync(join(PACKAGE, 'node_modules'), join(bundle, 'node_modules'), 'junction')
       const profile = home.profile('web')
       writeProfile(home.dshHome, profile, 'web', bundle)
+      // The host reads this roster on startup; finish the isolated client before it caches generated routes.
+      await (await import(join(bundle, 'build/client.mjs'))).buildClient()
     }
     const workspace = home.workspace(options.prefix ?? 'workbench', fixtureFiles(options.fixture))
     // The copy's own components import packages from the node_modules it links.
