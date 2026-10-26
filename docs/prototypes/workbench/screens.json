@@ -136,22 +136,22 @@
     },
     {
       "id": "P08",
-      "title": "内容编辑",
+      "title": "文档编辑",
       "section": "内容编辑",
       "layout": "workspace",
-      "purpose": "直接编辑页面中的正文和内容块，并查看生成画面。",
-      "nav": [{ "label": "内容", "target": "P08" }, { "label": "素材", "target": "P04" }, { "label": "编排", "target": "P16" }],
+      "purpose": "连续编辑完整文稿；新页、输入、格式、批注、撤消和保存始终留在文档。",
+      "nav": [{ "label": "文档编辑", "target": "P08" }, { "label": "素材", "target": "P04" }],
       "panels": [
         { "title": "页面", "kind": "list", "lines": ["01 课程目标", "02 从材料到画面 · 当前页", "03 动画时间与讲解", "04 小结与练习"] },
-        { "title": "当前页面", "kind": "canvas", "lines": ["从材料到画面", "一份内容可以用于阅读、演示和视频。", "动画预览：输入、结构、组件、画面", "页 2 · 步骤 1–4"] },
-        { "title": "编辑状态", "kind": "status", "lines": ["正文直接在页面内编辑", "讲稿在编排中按步骤编辑", "所有修改已保存"] }
+        { "title": "连续文稿", "kind": "canvas", "lines": ["从材料到画面", "一份内容可以用于阅读、演示和视频。", "动画预览：输入、结构、组件、画面", "其余页面连续显示，页面栏只负责定位"] },
+        { "title": "编辑状态", "kind": "status", "lines": ["正文直接在页面内编辑", "放映预览使用独立入口", "视频制作单独处理讲稿、配音和字幕", "所有修改已保存"] }
       ],
       "fields": [],
-      "actions": [{ "label": "插入内容块", "icon": "plus", "target": "P10", "primary": false }, { "label": "描述修改", "icon": "sparkle", "target": "P12", "primary": true }, { "label": "放映", "icon": "slides", "target": "P25", "primary": false }, { "label": "导出", "icon": "export", "target": "P27", "primary": false }],
+      "actions": [{ "label": "插入内容块", "icon": "plus", "target": "P10", "primary": false }, { "label": "描述修改", "icon": "sparkle", "target": "P12", "primary": true }, { "label": "放映预览（独立入口）", "icon": "slides", "target": "P25", "primary": false }, { "label": "文档导出", "icon": "export", "target": "P27", "primary": false }],
       "states": ["正文保存中", "画面正在更新", "显示上次可用画面", "本地草稿可恢复"],
-      "features": ["正文块编辑", "纯文字页面", "混合内容页面", "动画预览", "页步骤标记", "自动保存", "工作区切换"],
-      "entry": "打开项目、采用生成结果，或从编排返回。",
-      "success": "正文、块预览与已保存版本一致，选择位置保持有效。",
+      "features": ["正文块编辑", "连续全文", "页面管理", "纯文字页面", "混合内容页面", "动画预览", "自动保存", "原生撤消与恢复"],
+      "entry": "打开或新建文稿，或从放映预览返回原文档位置。",
+      "success": "新页可立即连打，换行、列表和格式正确写回；保存与刷新不丢内容，不自动跳放映或字幕。",
       "failure": "保留输入和上次画面，以可理解的原因提示恢复操作。"
     },
     {
@@ -289,7 +289,7 @@
     },
     {
       "id": "P16",
-      "title": "编排工作区",
+      "title": "视频制作",
       "section": "编排配音",
       "layout": "timeline",
       "purpose": "将画面、配音和字幕按步骤安排在同一时间线上。",
@@ -303,7 +303,7 @@
       "actions": [{ "label": "播放预览", "icon": "play", "target": "P16", "primary": true }, { "label": "编辑讲稿", "icon": "edit-text", "target": "P18", "primary": false }, { "label": "剪辑属性", "icon": "scissors", "target": "P22", "primary": false }, { "label": "步骤总览", "icon": "steps", "target": "P17", "primary": false }],
       "states": ["播放已暂停", "正在准备当前步骤", "配音待更新，预览使用静音占位", "画面加载失败，可重试"],
       "features": ["最终画面预览", "页面时间线", "三轨对齐", "播放头定位", "播放暂停", "缩放适配", "步骤属性联动"],
-      "entry": "从内容工作区切换到编排，保留当前页与步骤。",
+      "entry": "作者从已保存的文稿显式进入视频制作；正文点击、选区、保存和动画跳步均不触发此入口。",
       "success": "画面、播放头与属性始终指向同一步骤。",
       "failure": "暂停并显示具体步骤状态，保留有效选择和草稿。"
     },

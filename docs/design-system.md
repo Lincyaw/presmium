@@ -107,6 +107,18 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 
 `PmSearchList` 放在公共 Dialog、Drawer 或页面内，不另套下拉层。搜索框的向下键进入当前或首个可用结果，方向键、Home、End 与 Space 由 Radix Radio Group 管理；没有可用结果时焦点留在搜索框。`label`、`keywords` 用于检索，`description` 只展示非交互说明，试听等操作放在列表外。错误只渲染一个关联提示，额外说明通过 `aria-describedby` 关联；关闭时由外层公共容器归还焦点。Figma 的 [SearchList 组件集](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=77-554) 与[状态矩阵](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=77-1704) 对应 `packages/workbench/src/components.tsx` 的 `PmSearchList`、公共 CSS 与 `--pm-search-list-max-height`；24 个变体覆盖三种密度及默认、悬停、按下、焦点、禁用、加载、错误和空状态。
 
+### 4.1 组件库取用决定
+
+本轮继续使用 BlockNote 编辑正文、Radix Primitives 提供公共浮层和键盘行为，样式由 `@lincyaw/design` 令牌与公共适配层负责。公共组件封装只组合现成行为和样式，不另写焦点循环、菜单键盘控制或文本编辑内核。
+
+| 方案 | 已有公开能力 | 对本轮的取舍 |
+|---|---|---|
+| Ant Design | `ConfigProvider` 的全局与组件 Token、动态主题，见[官方主题文档](https://ant.design/docs/react/customize-theme/) | 能满足常规表单；迁移需要将现有令牌映射到另一套主题和控件接口。本轮已定位的问题在编辑事件、保存确认和草稿身份，替换表单库无法修复它们，因此暂不引入 |
+| 字节 Semi Design | 全局及组件设计变量、定制主题与明暗主题，见[官方定制主题文档](https://semi.design/zh-CN/advanced/customize-theme) | 可以通过公开主题接口统一外观；本轮公共控件已有 Radix 行为，先完善这层接入，不并存第二套完整控件体系 |
+| 现有 Radix Primitives | ARIA、焦点管理和键盘导航，见[官方可访问性文档](https://www.radix-ui.com/primitives/docs/overview/accessibility) | 沿用已经使用的公共封装，补齐密度、错误和加载状态；视觉仍由统一令牌提供 |
+
+编辑回归也区分依赖缺陷与接入缺陷：原装 BlockNote 0.56 在 `onBeforeChange.getChanges()` 处理 Enter 的问题有独立复现，本轮通过公开事务接口规避。菜单被正文样式撑高、批注编号写进正文、撤消错用保存历史、旧确认清除新草稿均来自我们的适配，已在对应公共层修复。具体真实操作与能力边界见[文档编辑验证记录](benchmarks/document-authoring-2026-10-26.md)。
+
 ## 5. 状态与行为合同
 
 ### 5.1 所有控件共有的状态
