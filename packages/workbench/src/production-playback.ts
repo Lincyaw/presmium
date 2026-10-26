@@ -16,6 +16,7 @@ interface Pending {
   sink: PreviewSink
   generation?: number
   binding: ProductionBinding
+  selection?: { sectionId: string, stepId: string }
   finish(state?: ProductionPlaybackState, error?: string): void
 }
 
@@ -29,6 +30,14 @@ export class ProductionPlayback {
 
   constructor(context: () => Context, publish: (state: ProductionPlaybackState | undefined) => void) {
     this.#context = context; this.#publish = publish
+  }
+
+  /** A stable selection owns its target until the current frame has acknowledged it. */
+  selecting(sectionId?: string, stepId?: string): boolean {
+    const pending = this.#pending, context = this.#context()
+    return Boolean(pending?.selection && context.ready && pending.scope === context.scope && pending.document === context.document
+      && context.binding && sameProductionBinding(pending.binding, context.binding)
+      && (sectionId === undefined || pending.selection.sectionId === sectionId && pending.selection.stepId === stepId))
   }
 
   control(control: ProductionPlaybackCommand, signal?: AbortSignal): Promise<ProductionPlaybackState> {
@@ -49,7 +58,8 @@ export class ProductionPlayback {
         if (error || !state) { this.#release(); reject(new Error(error ?? 'production-playback-unavailable')) }
         else { this.#publish(state); resolve(state) }
       }
-      this.#pending = { request, document: context.document!, scope: context.scope, sink, generation: sink.generation, binding: control.binding, finish }
+      this.#pending = { request, document: context.document!, scope: context.scope, sink, generation: sink.generation, binding: control.binding,
+        ...control.action === 'step' ? { selection: { sectionId: control.sectionId, stepId: control.stepId } } : {}, finish }
       signal?.addEventListener('abort', cancel, { once: true })
       try { sink.send({ type: 'production-playback', request, control }) }
       catch { finish(undefined, 'production-playback-unavailable') }

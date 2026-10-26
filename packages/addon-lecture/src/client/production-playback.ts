@@ -102,12 +102,15 @@ export class ProductionPlaybackController implements ProductionPlayback {
     signal?.throwIfAborted()
     if (this.#stopped) throw new Error('production-playback-unavailable')
     if (this.#loader && !this.#loader.current(command.binding)) throw new Error('production-binding-stale')
-    const cancellingLoad = command.action === 'pause' && this.#request && this.#command?.action === 'load' && sameProductionBinding(this.#command.binding, command.binding)
-    if (command.action !== 'load' && !cancellingLoad && !sameProductionBinding(this.state.getSnapshot()?.binding ?? command.binding, command.binding)) throw new Error('production-binding-stale')
+    const cancellingLoad = command.action === 'pause' && this.#request && this.#command
+      && (this.#command.action === 'load' || this.state.getSnapshot()?.status === 'loading') && sameProductionBinding(this.#command.binding, command.binding)
+    if (command.action !== 'load' && command.action !== 'step' && !cancellingLoad && !sameProductionBinding(this.state.getSnapshot()?.binding ?? command.binding, command.binding)) throw new Error('production-binding-stale')
     const request = new AbortController(), generation = ++this.#generation
     this.#request?.abort(); this.#request = request; this.#command = command
     const combined = signal ? AbortSignal.any([signal, request.signal]) : request.signal
     let driver = this.#driver
+    const loads = command.action === 'load' || command.action === 'step'
+      && (!driver || !sameProductionBinding(driver.plan.binding, command.binding) || this.state.getSnapshot()?.status !== 'ready')
     const cancel = () => { if (driver && this.#driver === driver) driver.player.pause() }
     combined.addEventListener('abort', cancel, { once: true })
     const check = () => {
@@ -125,13 +128,14 @@ export class ProductionPlaybackController implements ProductionPlayback {
         this.state.set(state)
         return state
       }
-      if (command.action === 'load') { this.engaged.set(true); this.loading(command.binding) }
+      if (loads) { this.engaged.set(true); this.loading(command.binding) }
       const loader = await this.#ready(combined)
       if (!loader.current(command.binding)) throw new Error('production-binding-stale')
-      if (command.action === 'load') {
+      if (loads) {
         await loader.load(command.binding, combined); check()
         if (!sameProductionBinding(this.state.getSnapshot()?.binding ?? command.binding, command.binding)) throw new Error('production-binding-stale')
-      } else {
+      }
+      if (command.action !== 'load') {
         check()
         driver = this.#driver
         if (driver && !sameProductionBinding(driver.plan.binding, command.binding)) throw new Error('production-binding-stale')
@@ -160,7 +164,7 @@ export class ProductionPlaybackController implements ProductionPlayback {
       if (!state || !sameProductionBinding(state.binding, command.binding)) throw new Error('production-playback-unavailable')
       return state
     } catch (error) {
-      if (this.#request === request && command.action === 'load') this.state.set({ binding: command.binding, status: combined.aborted ? 'unavailable' : 'failed', error: combined.aborted ? 'production-playback-cancelled' : 'production-playback-failed' })
+      if (this.#request === request && (command.action === 'load' || loads && this.state.getSnapshot()?.status === 'loading')) this.state.set({ binding: command.binding, status: combined.aborted ? 'unavailable' : 'failed', error: combined.aborted ? 'production-playback-cancelled' : 'production-playback-failed' })
       throw error
     } finally {
       combined.removeEventListener('abort', cancel)

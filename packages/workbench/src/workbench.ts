@@ -1193,8 +1193,9 @@ export class Workbench {
     if (!section || step < 0) return
     if (this.#state.webView === 'document') { this.pauseDocumentStep(sectionId, stepId); return }
     const plan = this.#state.productionPlan, range = plan?.pages.find(page => page.sectionId === sectionId)?.steps.find(step => step.stepId === stepId)
-    if (plan?.canPreview && this.#productionReady() && this.#state.productionPlayback?.status === 'ready' && range?.timing === 'confirmed' && range.startMs !== undefined) {
+    if (plan?.canPreview && this.#productionReady() && range?.timing === 'confirmed' && range.startMs !== undefined) {
       this.stopAuditions()
+      if (this.#production.selecting(sectionId, stepId)) return
       this.#selectedSteps.set(`${this.#state.document}\0${sectionId}`, step)
       this.#set({ position: { section: sectionId, step, trail: [], view: 'present' } })
       void this.controlProduction({ binding: plan.binding, action: 'step', sectionId, stepId }).catch(() => {})
@@ -1396,6 +1397,9 @@ export class Workbench {
       case 'position': {
         const snapshot = this.#state.presentationSnapshot, source = this.#state.authoring
         if (snapshot && source && (source.dirty || source.loading || source.version !== snapshot.version || source.fingerprint !== snapshot.fingerprint)) break
+        // An initial loader can report its old cursor while a newer stable selection is preparing.
+        // Explicit native exits still reach the outer document workspace.
+        if (report.view !== 'document' && this.#production.selecting()) break
         // A fresh frame announces its document view before applying the queued
         // presentation command. Only the requested view completes that switch.
         if (renderer === 'web' && this.#awaitingView) {
