@@ -65,8 +65,10 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
         setPresenting(false)
         workbench.setMode('editing')
         workbench.setWebView('document')
-      } catch { if (current()) setViewFailure(t.presentationReturnFailed) }
-      finally { if (current()) setChangingView(false); if (exiting.current === work) exiting.current = undefined }
+      } catch {
+        if (current()) setViewFailure(t.presentationReturnFailed)
+        if (exiting.current === work) exiting.current = undefined
+      } finally { if (current()) setChangingView(false) }
     })
     exiting.current = work
     return work
@@ -80,7 +82,9 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   useEffect(() => { if (!active) { transition.current++; exiting.current = undefined; setChangingView(false) } }, [active])
   useEffect(() => () => { transition.current++ }, [])
   useEffect(() => {
-    if (presenting && view === 'document') void exitPresent()
+    // Keep a successful exit owned until React has committed the closed view.
+    if (!presenting) exiting.current = undefined
+    else if (view === 'document') void exitPresent()
   }, [view, presenting])
   useEffect(() => {
     if (!active) return
