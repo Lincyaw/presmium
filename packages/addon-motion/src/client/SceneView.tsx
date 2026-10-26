@@ -56,6 +56,8 @@ export default function SceneView(props: SceneProps) {
   const frame = useRef(0)
   const localTime = useRef<number | undefined>(undefined)
   const playbackLease = useRef<PlaybackLease>()
+  const playbackGeneration = useRef(0)
+  const activePlayback = useRef<number>()
   const localNavigation = useRef<{ slide: number, step: number }>()
   const followedNavigation = useRef({ source: navigation, position: navigated })
   const shown =
@@ -82,6 +84,8 @@ export default function SceneView(props: SceneProps) {
     ),
   )
   const stop = () => {
+    playbackGeneration.current++
+    activePlayback.current = undefined
     playbackLease.current?.cancel()
     localNavigation.current = undefined
     cancelAnimationFrame(frame.current)
@@ -106,6 +110,7 @@ export default function SceneView(props: SceneProps) {
     if (target >= 0) navigation?.go({ slide: cursor.slide, step: target })
   }
   const fail = (error: unknown) => {
+    stop()
     setStatus('failed')
     setFailure(errorMessage(error))
     console.error(`[presmium.motion] the scene ${props.scene} failed`, error)
@@ -132,18 +137,20 @@ export default function SceneView(props: SceneProps) {
     navigation.go(localNavigation.current)
   }, [scope.localPreview, local !== undefined, selectedStep, navigation, cursor.slide, Number.isFinite(hostStep)])
   useEffect(() => {
-    if (!playing) return
+    const generation = activePlayback.current
+    if (!playing || generation === undefined || generation !== playbackGeneration.current) return
     const from =
       localTime.current === undefined || localTime.current >= total
         ? 0
         : localTime.current
     const began = performance.now() - from
     const tick = () => {
+      if (activePlayback.current !== generation || playbackGeneration.current !== generation) return
       const at = Math.min(total, performance.now() - began)
       localTime.current = at
       setLocal(at)
       if (at < total) frame.current = requestAnimationFrame(tick)
-      else setPlaying(false)
+      else stop()
     }
     frame.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame.current)
@@ -333,8 +340,16 @@ export default function SceneView(props: SceneProps) {
             aria-pressed={playing}
             onClick={() => {
               if (playing) stop()
-              else if (playbackLease.current) void playbackLease.current.requestStart().then(allowed => { if (allowed) setPlaying(true) }).catch(fail)
-              else setPlaying(true)
+              else {
+                const lease = playbackLease.current, generation = ++playbackGeneration.current
+                const start = () => {
+                  if (generation !== playbackGeneration.current || lease !== playbackLease.current) return
+                  activePlayback.current = generation
+                  setPlaying(true)
+                }
+                if (lease) void lease.requestStart().then(allowed => { if (allowed) start() }).catch(error => { if (generation === playbackGeneration.current) fail(error) })
+                else start()
+              }
             }}
           />
           <input
