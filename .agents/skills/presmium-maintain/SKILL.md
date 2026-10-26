@@ -126,7 +126,8 @@ compilation, reviews and preview sync, and does not reimplement focus, keyboard,
 that a dependency already handles.
 
 - **Workbench (React):** dialogs and menus wrap Radix Primitives (`packages/workbench/src/components.tsx`);
-  split panes use react-resizable-panels; the first-run welcome uses Harness's own `Modal`
+  split panes use react-resizable-panels; sortable page lists wrap dnd kit through `PmSortableList`
+  (body block dragging stays with BlockNote); the first-run welcome uses Harness's own `Modal`
   (`@deepseek-ai/dsh-client-ui-primitives`, see `packages/dsh/src/client/brand.tsx`). Use the existing
   design tokens.
 - **Outputs (React):** dialogs, drawers, menus, popovers, tabs, segmented controls and presentation focus

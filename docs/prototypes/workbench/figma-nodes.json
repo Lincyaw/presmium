@@ -266,6 +266,37 @@
         "verification": "docs/benchmarks/public-timeline-2026-10-26.md",
         "completionBoundary": "Formal public primitive design and standalone consumer acceptance; business production integration and host playback are separately verified.",
         "keyboardHelp": "Accessible description on the timeline viewport; no permanent visible footer."
+      },
+      "SortableItem": {
+        "nodeId": "158:2823",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=158-2823",
+        "source": "packages/workbench/src/sortable-list.tsx / packages/design/src/components.css",
+        "publicComponent": "PmSortableList",
+        "matrixNodeId": "158:3034",
+        "variants": {
+          "Density=Compact, State=Default": "158:2802",
+          "Density=Compact, State=Hover": "158:2803",
+          "Density=Compact, State=Focus": "158:2804",
+          "Density=Compact, State=Selected": "158:2805",
+          "Density=Compact, State=Dragging": "158:2806",
+          "Density=Compact, State=Disabled": "158:2807",
+          "Density=Compact, State=Loading": "158:2808",
+          "Density=Regular, State=Default": "158:2809",
+          "Density=Regular, State=Hover": "158:2810",
+          "Density=Regular, State=Focus": "158:2811",
+          "Density=Regular, State=Selected": "158:2812",
+          "Density=Regular, State=Dragging": "158:2813",
+          "Density=Regular, State=Disabled": "158:2814",
+          "Density=Regular, State=Loading": "158:2815",
+          "Density=Touch, State=Default": "158:2816",
+          "Density=Touch, State=Hover": "158:2817",
+          "Density=Touch, State=Focus": "158:2818",
+          "Density=Touch, State=Selected": "158:2819",
+          "Density=Touch, State=Dragging": "158:2820",
+          "Density=Touch, State=Disabled": "158:2821",
+          "Density=Touch, State=Loading": "158:2822"
+        },
+        "behavior": "Pointer, touch and keyboard reordering use dnd kit public APIs. Completed gestures submit one stable ID-relative move. Cancel, no-op, scope or item-set changes discard gestures. Disabled and loading affect reorder handles; page selection stays independent. Errors use the existing Notice. Keyboard guidance is accessible without a permanent visible footer."
       }
     },
     "variantCounts": {
@@ -770,7 +801,8 @@
       "document": "40:525",
       "image": "40:532",
       "sparkle": "40:537",
-      "loading": "65:543"
+      "loading": "65:543",
+      "grip": "158:2790"
     },
     "implementationReference": "docs/rfc-workbench-uiux.md#101-当前实施状态",
     "sourceFiles": {
@@ -1093,6 +1125,19 @@
       },
       "source": "packages/workbench/src/document-editor/NarrationEditor.tsx",
       "description": "Document mode keeps captions and narration start; professional controls remain in Video production."
+    },
+    "pageReorder": {
+      "componentId": "158:2823",
+      "source": "packages/workbench/src/panels/DocumentView.tsx",
+      "authority": "TeachingDocument.sectionOrder",
+      "commit": "Existing movePage(sectionId,beforeId|null) flushes pending text and captions, checks the version and preserves selection; menus remain available."
+    },
+    "comments": {
+      "frameId": "9:15",
+      "annotationNodeId": "12:3317",
+      "mechanism": "BlockNote CommentsExtension and public ComponentsContext. Existing native comment actions stay visible for coarse pointers; desktop retains native hover behavior. Existing user identities are prefilled through the public UserStore before resolved summaries render.",
+      "source": "packages/workbench/src/document-editor/BlockNoteSurface.tsx / comments.ts",
+      "controls": "Native comment, reaction, resolve/reopen and menu controls keep their original callbacks and the shared BlockNote density adapter."
     }
   },
   "exportSourceConfirmation": {

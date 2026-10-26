@@ -1490,7 +1490,7 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 
 产物的 React 通用交互由依赖实现：`@lincyaw/host` 的弹窗、抽屉、菜单、浮层和标签页封装 Radix Primitives；查看器的内容标签页与放映焦点范围也使用 Radix。文稿标签的 `sync` 联动、背景页面禁用与步骤导航由 Presmium 维护。主题由宿主的 React hook 与浏览器观察器同步；图标由 Lucide 提供，`@lincyaw/design` 保留语义名称与框架无关的节点和 HTML 接口。读者问答的 SSE 事件边界由 eventsource-parser 解析。
 
-工作台的通用交互由依赖实现：Radix Primitives 提供弹窗、菜单、Tooltip、手动激活的 Tabs、Radio Group 与工具栏焦点移动，react-resizable-panels 提供分栏与鼠标、键盘调整。`Pm*` 只封装样式与业务回调；首次欢迎在 dsh 适配层直接复用 Harness 的 `Modal`。文档操作、就地编辑落回源码、版本历史、编译、审阅与预览协议由 Presmium 维护。
+工作台的通用交互由依赖实现：Radix Primitives 提供弹窗、菜单、Tooltip、手动激活的 Tabs、Radio Group 与工具栏焦点移动，react-resizable-panels 提供分栏与鼠标、键盘调整，dnd kit 提供页面列表的指针、触屏和键盘排序。`Pm*` 只封装样式与业务回调；首次欢迎在 dsh 适配层直接复用 Harness 的 `Modal`。文档操作、就地编辑落回源码、版本历史、编译、审阅与预览协议由 Presmium 维护。
 
 `@lincyaw/host` 提供设计令牌与通用组件；网页形态的外壳（工作区首页、阅读页）、幻灯片与插件都用它们，不各自定义颜色与控件。插件界面与幻灯片的书卷版式见 5.12 节。
 
@@ -1897,8 +1897,9 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 | D3（`d3`） | ISC | 动画场景：比例尺、坐标轴、布局与形状生成器建出的图形，按时刻插值画出（不用 D3 的过渡） | addon-motion |
 | simple-git | MIT | 代码引用读取 git 中的文件、本地环境的仓库；工作区审阅直接运行 git，以控制 git 目录、对象库与钩子设置（10.7 节） | addon-code、addon-exec-local |
 | React、React DOM | MIT | 工作台、预打包查看器、插件组件与 SSR；工作台由 dsh 外壳提供同一份 React，查看器通过 import map 共享 | host、viewer、web、workbench、dsh、各浏览器插件 |
-| BlockNote（`@blocknote/core`、`@blocknote/react`、`@blocknote/mantine`） | MPL-2.0 | 正文块编辑、类型转换与拖动；只在作者编辑画布时加载 | viewer |
+| BlockNote（`@blocknote/core`、`@blocknote/react`、`@blocknote/mantine`） | MPL-2.0 | 正文块编辑、类型转换与拖动；只在作者编辑画布时加载 | workbench |
 | Radix Primitives（`@radix-ui/react-*`） | MIT | 弹窗、菜单、浮层、标签页、焦点范围 | host、viewer、workbench |
+| dnd kit（`@dnd-kit/react`、`@dnd-kit/dom`） | MIT | 页面列表的指针、触屏、键盘排序与读屏反馈，提交仍经过文稿保存边界 | workbench |
 | esbuild | MIT | 把 `@lincyaw/dsh` 的客户端部分构建为 dsh 的工厂格式 | dsh |
 | `@hono/node-server` | MIT | Node 请求与 Fetch API 之间的转换 | server |
 | http-proxy-3 | MIT | HTTP 与 WebSocket 反向代理（远端环境、工作区站点；`presmium dev` 的站点服务把 `/__presmium/` 代理到服务端） | server、web |
