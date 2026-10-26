@@ -1,6 +1,7 @@
-import { OPERATIONS, PLAYBACK_CONTROL, STEP_CLOCK, useMessages, useServer, useService, useStore } from '@lincyaw/host'
+import { OPERATIONS, PLAYBACK_CONTROL, PRODUCTION_PLAYBACK, STEP_CLOCK, useMessages, useServer, useService, useStore } from '@lincyaw/host'
 import type { Operations, StepClock } from '@lincyaw/host'
-import { errorMessage } from '@lincyaw/kernel'
+import { errorMessage, PREVIEW_REVISION, sameProductionBinding } from '@lincyaw/kernel'
+import type { ProductionBinding, ProductionPlan } from '@lincyaw/kernel'
 import { flushSync } from 'react-dom'
 import { useEffect, useRef, useState } from 'react'
 import { audioSegments, LECTURE_ID, LECTURE_MESSAGES, SCRIPT_TRACK, timedEvents, trackDuration } from '../domain/index.ts'
@@ -10,16 +11,21 @@ import { MediaClock, SilentClock } from './clock.ts'
 import { LecturePlayer } from './player.ts'
 import type { LectureSource } from './source.ts'
 import { lectureSource } from './source.ts'
+import { ProductionPlaybackController, settleProductionPlayback } from './production-playback.ts'
 import { exporting, play, playing, useViewer } from './state.ts'
 
-async function createClock(track: LectureTrack, source: LectureSource): Promise<TrackClock> {
+async function createClock(track: LectureTrack, source: LectureSource, signal?: AbortSignal): Promise<TrackClock> {
   const length = trackDuration(track)
   const segments = audioSegments(track)
   if (!segments.length) return new SilentClock(length)
-  const loaded = await Promise.allSettled(segments.map(async (segment): Promise<ClockMedia> => ({ url: await source.media(track.id, segment.src), start: segment.start, duration: segment.duration })))
+  const loaded = await Promise.allSettled(segments.map(async (segment): Promise<ClockMedia> => {
+    if (track.binding && source.productionMedia && !segment.clipId) throw new Error('production-clip-unavailable')
+    const url = track.binding && source.productionMedia && segment.clipId ? await source.productionMedia(track.binding, segment.clipId, signal) : await source.media(track.id, segment.src)
+    return { url, start: segment.start, duration: segment.duration }
+  }))
   const media = loaded.flatMap(result => result.status === 'fulfilled' ? [result.value] : [])
   const failed = loaded.find(result => result.status === 'rejected')
-  if (failed) { for (const { url } of media) if (url.startsWith('blob:')) URL.revokeObjectURL(url); throw failed.reason }
+  if (failed || signal?.aborted) { for (const { url } of media) if (url.startsWith('blob:')) URL.revokeObjectURL(url); if (failed) throw failed.reason; signal?.throwIfAborted() }
   return new MediaClock(length, media)
 }
 function installExportHook(player: LecturePlayer, clock: StepClock | undefined): void {
@@ -31,47 +37,91 @@ function installExportHook(player: LecturePlayer, clock: StepClock | undefined):
 export function useLecturePlayback() {
   const viewer = useViewer()
   const doc = useStore(viewer.doc)
-  const id = useStore(playing)
   const server = useServer()
   const operations = useService(OPERATIONS)
   const stepClock = useService(STEP_CLOCK)
   const playback = useService(PLAYBACK_CONTROL)
+  const provided = useService(PRODUCTION_PLAYBACK)
+  const production = provided instanceof ProductionPlaybackController ? provided : undefined
   const t = useMessages(LECTURE_MESSAGES)
   const [player, setPlayer] = useState<LecturePlayer>()
-  const [status, setStatus] = useState<'loading' | 'missing' | 'ready' | 'failed'>()
+  const [status, setStatus] = useState<'loading' | 'missing' | 'ready' | 'failed' | 'estimated' | 'unavailable'>()
   const [failure, setFailure] = useState<string>()
   const [language, setLanguage] = useState<string>()
   const current = useRef<LecturePlayer>()
   const generation = useRef(0)
   const releaseClock = useRef<() => void>(() => {})
-  const start = async (track: LectureTrack, source: LectureSource, ops: Operations, load: number, at = 0) => {
-    const clock = await createClock(track, source)
-    if (load !== generation.current) return clock.dispose()
-    current.current?.dispose(); releaseClock.current()
+  const releaseProduction = useRef<() => void>(() => {})
+  const clear = () => { releaseProduction.current(); releaseProduction.current = () => {}; current.current?.dispose(); current.current = undefined; releaseClock.current(); releaseClock.current = () => {} }
+  const start = async (track: LectureTrack, source: LectureSource, ops: Operations, load: number, at = 0, plan?: ProductionPlan, signal?: AbortSignal) => {
+    const clock = await createClock(track, source, signal)
+    if (load !== generation.current || signal?.aborted) { clock.dispose(); signal?.throwIfAborted(); return }
+    clear()
     const next = new LecturePlayer(track, doc, ops, clock, playback)
     current.current = next
     releaseClock.current = stepClock?.drive({ elapsed: next.stepTime, recording: exporting }) ?? (() => {})
-    setPlayer(next); setLanguage(old => old ?? track.lang); setStatus('ready'); next.seek(at)
+    if (plan) flushSync(() => next.seek(at))
+    else next.seek(at)
+    if (plan && production) {
+      await settleProductionPlayback(stepClock, signal)
+      if (load !== generation.current || signal?.aborted) { signal?.throwIfAborted(); return }
+      releaseProduction.current = production.attach(plan, next, stepClock)
+    }
+    setPlayer(next); setLanguage(old => old ?? track.lang); setStatus('ready')
     if (exporting) installExportHook(next, stepClock)
   }
   useEffect(() => {
-    const load = ++generation.current
-    current.current?.dispose(); current.current = undefined; releaseClock.current(); setPlayer(undefined); setFailure(undefined)
-    if (!id || !operations) { setStatus(undefined); return }
-    setStatus('loading')
+    clear(); setPlayer(undefined); setFailure(undefined)
+    if (!operations) { setStatus(undefined); return }
     const source = lectureSource(server, doc.config.presmium[LECTURE_ID])
-    void source.track(id).then(async track => {
-      if (load !== generation.current) return
-      if (!track) { setStatus('missing'); return }
-      // A word-count estimate is not a prepared audio timeline. Without any
-      // actual clip, presentation keeps its canonical step-caption surface.
-      if (!exporting && track.id === SCRIPT_TRACK && track.utterances.length > 0 && track.utterances.every(utterance => Boolean(utterance.unsaid)) && audioSegments(track).length === 0) { play(undefined); return }
+    const currentBinding = (binding: ProductionBinding) => viewer.doc.getSnapshot() === doc && doc.source?.documentId === binding.source.documentId && doc.source.version === binding.source.version && doc.source.fingerprint === binding.source.fingerprint && doc.meta[PREVIEW_REVISION] === binding.irRevision
+    const loadTrack = async (id: string | undefined, binding?: ProductionBinding, signal?: AbortSignal) => {
+      const load = ++generation.current
+      const check = () => { signal?.throwIfAborted(); if (load !== generation.current || viewer.doc.getSnapshot() !== doc) throw new Error('production-binding-stale') }
+      if (binding && !currentBinding(binding)) throw new Error('production-binding-stale')
+      current.current?.pause(); setFailure(undefined)
+      if (!id) { clear(); setPlayer(undefined); setStatus(undefined); return }
+      setStatus('loading')
+      let plan: ProductionPlan | undefined
+      if (binding) {
+        if (!source.plan || !production) throw new Error('production-playback-unavailable')
+        plan = await source.plan({ source: binding.source, irRevision: binding.irRevision }, signal); check()
+        if (!sameProductionBinding(plan.binding, binding)) throw new Error('production-binding-stale')
+        clear(); setPlayer(undefined); production.loading(binding)
+        if (!plan.canPreview) {
+          releaseProduction.current = production.attach(plan)
+          setStatus(plan.timing === 'estimated' ? 'estimated' : 'unavailable')
+          return
+        }
+      }
+      const track = await source.track(id, plan?.binding.planId, signal); check()
+      if (!track) { clear(); setPlayer(undefined); setStatus('missing'); throw new Error('production-track-unavailable') }
+      if (binding && (!track.binding || !sameProductionBinding(track.binding, binding))) throw new Error('production-binding-stale')
+      // An estimate remains a caption fallback for ordinary readers; explicit production loads inspect its plan.
+      if (!binding && !exporting && track.id === SCRIPT_TRACK && track.utterances.length > 0 && track.utterances.every(utterance => Boolean(utterance.unsaid)) && audioSegments(track).length === 0) { play(undefined); return }
       const position = viewer.position.getSnapshot()
       const at = exporting ? 0 : timedEvents(track).find(event => event.type === 'go' && event.data.section === position.section && Number(event.data.step ?? 0) === position.step)?.t ?? 0
-      await start(track, source, operations, load, at)
-    }).catch(error => { if (load === generation.current) { setFailure(errorMessage(error)); setStatus('failed') } })
-    return () => { generation.current++; current.current?.dispose(); current.current = undefined; releaseClock.current() }
-  }, [id, operations, doc, stepClock, playback, server.available])
+      await start(track, source, operations, load, at, plan, signal); check()
+    }
+    let selecting = false
+    const select = () => {
+      if (selecting) return
+      const request = generation.current + 1
+      void loadTrack(playing.getSnapshot()).catch(error => { if (generation.current === request) { setFailure(errorMessage(error)); setStatus('failed') } })
+    }
+    const stopSelect = playing.subscribe(select)
+    const stopLoader = production?.register({ current: currentBinding, async load(binding, signal) {
+      try {
+        await loadTrack(SCRIPT_TRACK, binding, signal)
+        selecting = true; play(SCRIPT_TRACK); selecting = false
+      } catch (error) {
+        if (!signal.aborted && currentBinding(binding)) { setFailure(errorMessage(error)); setStatus('failed') }
+        throw error
+      }
+    } })
+    select()
+    return () => { generation.current++; stopSelect(); stopLoader?.(); clear() }
+  }, [operations, doc, stepClock, playback, server.available, production])
   // Cancel permission synchronously when IR changes, before a late parent grant can run.
   useEffect(() => viewer.doc.subscribe(() => current.current?.pause()), [viewer])
   useEffect(() => () => { play(undefined) }, [])

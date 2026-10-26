@@ -1,6 +1,7 @@
 import { siteBase } from '@lincyaw/host'
 import type { ServerClient } from '@lincyaw/host'
 import { ABSOLUTE_URL, isRecord } from '@lincyaw/kernel'
+import type { ProductionBinding, ProductionPlan, ProductionPlanQuery } from '@lincyaw/kernel'
 import { LECTURE_ID, parseTrack } from '../domain/index.ts'
 import type { LectureTrack, Voice } from '../domain/index.ts'
 
@@ -13,8 +14,10 @@ export interface LectureSummary {
 
 export interface LectureSource {
   list(): Promise<LectureSummary[]>
-  track(id: string): Promise<LectureTrack | undefined>
+  track(id: string, planId?: string, signal?: AbortSignal): Promise<LectureTrack | undefined>
   media(id: string, src: string): Promise<string>
+  plan?(query: ProductionPlanQuery, signal?: AbortSignal): Promise<ProductionPlan>
+  productionMedia?(binding: ProductionBinding, clipId: string, signal?: AbortSignal): Promise<string>
 }
 
 function summaries(value: unknown): LectureSummary[] {
@@ -43,7 +46,14 @@ async function readTrackAnswer(response: Response): Promise<LectureTrack | undef
 export function serverSource(server: ServerClient): LectureSource {
   return {
     list: async () => summaries(await (await server.fetch(LECTURE_ID, 'tracks')).json()),
-    track: async id => readTrackAnswer(await server.fetch(LECTURE_ID, `tracks/${encodeURIComponent(id)}`)),
+    track: async (id, planId, signal) => readTrackAnswer(await server.fetch(LECTURE_ID, `tracks/${encodeURIComponent(id)}${planId ? `?planId=${encodeURIComponent(planId)}` : ''}`, { signal })),
+    plan: (query, signal) => readAnswer<ProductionPlan>(server.fetch(LECTURE_ID, `production-plan?source=${encodeURIComponent(JSON.stringify(query.source))}&irRevision=${encodeURIComponent(query.irRevision)}`, { signal })),
+    async productionMedia(binding, clipId, signal) {
+      const query = `source=${encodeURIComponent(JSON.stringify(binding.source))}&irRevision=${encodeURIComponent(binding.irRevision)}&planId=${encodeURIComponent(binding.planId)}&clipId=${encodeURIComponent(clipId)}`
+      const response = await server.fetch(LECTURE_ID, `production-media?${query}`, { signal })
+      if (!response.ok) throw new Error(await refusal(response))
+      return URL.createObjectURL(await response.blob())
+    },
     async media(id, src) {
       if (ABSOLUTE_URL.test(src)) return src
       const response = await server.fetch(LECTURE_ID, `tracks/${encodeURIComponent(id)}/${src.split('/').map(encodeURIComponent).join('/')}`)
@@ -75,7 +85,7 @@ export function staticSource(bases: readonly string[]): LectureSource {
       const response = await fetch(new URL('index.json', await base()))
       return response.ok ? summaries(await response.json()) : []
     },
-    track: async id => readTrackAnswer(await fetch(new URL(`${encodeURIComponent(id)}/track.json`, await base()), { cache: 'no-cache' })),
+    track: async (id, _planId, signal) => readTrackAnswer(await fetch(new URL(`${encodeURIComponent(id)}/track.json`, await base()), { cache: 'no-cache', signal })),
     media: async (id, src) => (ABSOLUTE_URL.test(src) ? src : new URL(`${encodeURIComponent(id)}/${src.split('/').map(encodeURIComponent).join('/')}`, await base()).href),
   }
 }

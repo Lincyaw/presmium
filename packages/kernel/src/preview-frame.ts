@@ -1,6 +1,8 @@
 import { AUTHOR_MARKS_CLASS, PREVIEW_APPEARANCE_PARAM, PREVIEW_NAME, PREVIEW_PARAM, previewEnvelope, toPreviewCommand } from './contracts/preview.ts'
 import type { PreviewAnchor, PreviewCommand, PreviewCommandType, PreviewPin, PreviewPoint, PreviewPosition, PreviewRect, PreviewReport } from './contracts/preview.ts'
 import { errorMessage } from './errors.ts'
+import { sameProductionBinding } from './contracts/production.ts'
+import type { ProductionBinding, ProductionPlaybackCommand, ProductionPlaybackState } from './contracts/production.ts'
 
 /** A source-bound native text draft, owned by the page rather than its DOM adapter. */
 export interface PreviewTextEdit {
@@ -38,6 +40,8 @@ export interface PreviewPage {
   pausePlayback?(): void | Promise<void>
   /** Installs author permission for a formal playback start; never owns a media clock. */
   setPlaybackGate?(authorize: (signal: AbortSignal) => Promise<void>): () => void
+  productionPlayback?(command: ProductionPlaybackCommand, signal: AbortSignal): Promise<ProductionPlaybackState>
+  subscribeProductionPlayback?(listener: (state: ProductionPlaybackState | undefined) => void): () => void
   sectionOf?(element: Element): string | undefined
   sectionElement?(section: string): HTMLElement | undefined
   seen?(element: Element): boolean
@@ -880,7 +884,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
   if (!nonce) return undefined
   const state: FrameState = { active: isPreviewActive(), stopped: false }
   const playbackSupported = Boolean(page.pausePlayback && page.setPlaybackGate)
-  const capabilities: PreviewCommandType[] = [...COMMANDS, ...page.nativeText ? ['edit-result' as const] : [], ...page.setActive ? ['activity' as const] : [], ...page.flush ? ['flush' as const] : [], ...page.documentHistory ? ['document-history' as const] : [], ...playbackSupported ? ['pause-playback' as const, 'playback-granted' as const] : []]
+  const capabilities: PreviewCommandType[] = [...COMMANDS, ...page.nativeText ? ['edit-result' as const] : [], ...page.setActive ? ['activity' as const] : [], ...page.flush ? ['flush' as const] : [], ...page.documentHistory ? ['document-history' as const] : [], ...playbackSupported ? ['pause-playback' as const, 'playback-granted' as const] : [], ...page.productionPlayback && page.subscribeProductionPlayback ? ['production-playback' as const] : []]
   const nameWindow = (active: boolean) => {
     window.name = `${framePrefix()}${nonce}${active ? '' : PAUSED}`
   }
@@ -890,7 +894,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
   installStyle()
 
   const post = (message: PreviewReport) => {
-    if (state.stopped || (!state.active && message.type !== 'ready' && message.type !== 'activity' && message.type !== 'playback-paused')) return
+    if (state.stopped || (!state.active && message.type !== 'ready' && message.type !== 'activity' && message.type !== 'playback-paused' && message.type !== 'production-playback-result')) return
     for (const origin of page.origins) window.parent.postMessage(previewEnvelope(nonce, message), origin)
   }
   editorReport = post
@@ -927,6 +931,48 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
   const enablePlaybackGate = () => {
     if (playbackSupported && !stopPlaybackGate) stopPlaybackGate = page.setPlaybackGate!(authorizePlayback)
   }
+
+  let productionRequest = -1
+  let pendingProduction: { request: number, binding: ProductionBinding, controller: AbortController } | undefined
+  const cancelProduction = () => {
+    const pending = pendingProduction
+    if (!pending) return
+    pendingProduction = undefined; pending.controller.abort()
+    post({ type: 'production-playback-result', request: pending.request, binding: pending.binding, error: 'production-playback-cancelled' })
+  }
+  let productionSent: ProductionPlaybackState | undefined, productionAt = 0
+  const stopProduction = page.subscribeProductionPlayback?.(next => {
+    if (!next || !isLive(state) || page.revision() !== next.binding.irRevision) return
+    const previous = productionSent, before = previous?.position, position = next.position
+    const urgent = !previous || !sameProductionBinding(previous.binding, next.binding) || previous.status !== next.status || previous.error !== next.error
+      || !position?.playing || before?.playing !== position.playing || before?.sectionId !== position.sectionId || before?.stepId !== position.stepId || before?.rate !== position.rate || before?.trying !== position.trying
+    const now = performance.now()
+    if (!urgent && now - productionAt < 100) return
+    productionSent = next; productionAt = now
+    post({ type: 'production-playback-state', state: next })
+  })
+  const productionControl = (command: Extract<PreviewCommand, { type: 'production-playback' }>) => {
+    if (command.request <= productionRequest) return post({ type: 'production-playback-result', request: command.request, binding: command.control.binding, error: 'production-request-stale' })
+    productionRequest = command.request; cancelProduction()
+    if (!isLive(state) || !page.productionPlayback) return post({ type: 'production-playback-result', request: command.request, binding: command.control.binding, error: 'production-playback-unavailable' })
+    if (page.revision() !== command.control.binding.irRevision) return post({ type: 'production-playback-result', request: command.request, binding: command.control.binding, error: 'production-binding-stale' })
+    enablePlaybackGate()
+    const pending = { request: command.request, binding: command.control.binding, controller: new AbortController() }
+    pendingProduction = pending
+    void page.productionPlayback(command.control, pending.controller.signal).then(answer => {
+      if (pendingProduction !== pending || pending.controller.signal.aborted) return
+      pendingProduction = undefined
+      if (!isLive(state) || page.revision() !== pending.binding.irRevision || !sameProductionBinding(answer.binding, pending.binding)) return post({ type: 'production-playback-result', request: pending.request, binding: pending.binding, error: 'production-binding-stale' })
+      position.flush()
+      post({ type: 'production-playback-result', request: pending.request, binding: pending.binding, state: answer })
+    }, error => {
+      if (pendingProduction !== pending || pending.controller.signal.aborted) return
+      pendingProduction = undefined
+      const code = error instanceof Error && /^[a-z][a-z0-9-]{0,99}$/.test(error.message) ? error.message : 'production-playback-failed'
+      post({ type: 'production-playback-result', request: pending.request, binding: pending.binding, error: code })
+    })
+  }
+  window.addEventListener('pagehide', cancelProduction)
 
   // Undo, redo and Escape belong to the workbench, except where the page's own fields take typing.
   const shortcut = (event: KeyboardEvent) => {
@@ -975,6 +1021,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
 
   let activity = Promise.resolve()
   const pause = () => {
+    cancelProduction()
     cancelPlayback()
     editing.preserve()
     state.active = false
@@ -1040,6 +1087,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
     if (!command) return
     try {
       switch (command.type) {
+        case 'production-playback': return productionControl(command)
         case 'blocks-result': return void window.dispatchEvent(new CustomEvent('presmium:blocks-result', { detail: command }))
         case 'edit-result': return void window.dispatchEvent(new CustomEvent('presmium:edit-result', { detail: command }))
         case 'source-result': return void window.dispatchEvent(new CustomEvent('presmium:source-result', { detail: command }))
@@ -1047,7 +1095,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
         case 'source-created': return void window.dispatchEvent(new CustomEvent('presmium:source-created', { detail: command }))
         case 'page-insert': return void window.dispatchEvent(new CustomEvent('presmium:page-insert', { detail: command }))
         case 'page-created': return void window.dispatchEvent(new CustomEvent('presmium:page-created', { detail: command }))
-        case 'go': return page.go(command)
+        case 'go': cancelProduction(); return page.go(command)
         case 'highlight': return highlight.show(command.target)
         case 'pick': return picking.set(command.on)
         case 'pins': return pins.set(command.targets)
@@ -1056,6 +1104,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
         case 'activity': return changeActivity(command)
         case 'pause-playback':
           if (!playbackSupported) return
+          cancelProduction()
           enablePlaybackGate()
           cancelPlayback()
           return void Promise.resolve().then(() => page.pausePlayback!()).then(() => {
@@ -1086,7 +1135,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
     moved: position.moved,
     updated() {
       if (!isLive(state)) return
-      if (position.updated()) redraw()
+      if (position.updated()) { cancelProduction(); redraw() }
     },
     redraw,
     report(problem) {
@@ -1094,10 +1143,12 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
       position.report(problem)
     },
     stop() {
+      cancelProduction(); stopProduction?.()
       cancelPlayback()
       stopPlaybackGate?.()
       editing.preserve()
       window.removeEventListener('pagehide', editing.preserve)
+      window.removeEventListener('pagehide', cancelProduction)
       if (editorReport === post) editorReport = undefined
       state.stopped = true
       page.activityChanged?.(false)
