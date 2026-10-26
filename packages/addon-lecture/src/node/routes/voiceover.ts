@@ -202,6 +202,7 @@ export function voiceoverRoutes(served: ServedDeck): ServerContribution {
             catch (error) { if (request.signal.aborted || stale(error)) throw error; issues.set(unit.id, errorMessage(error)) }
             await assertCurrent(now)
           }
+          request.signal.throwIfAborted()
           if (issues.size === units.length) throw new RouteRefusal(409, issues.values().next().value ?? 'voice-unavailable')
           if (closed) throw new RouteRefusal(503, 'voice-service-closing')
           const job: VoiceoverJob = { id: randomUUID(), source: now.source, revision: now.revision, scope: body.scope, state: 'queued', total: units.length, completed: 0, failed: 0, createdAt: new Date().toISOString() }
