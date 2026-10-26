@@ -23,6 +23,7 @@ export interface DocumentSessionState {
 interface Draft { content: TeachingDocument, baseVersion: string, baseHash: string, input: number, pendingHash?: string, composing?: boolean }
 interface Slot {
   state: DocumentSessionState
+  read: number
   compositions: Set<string>
   input: number
   baseHash: string
@@ -58,17 +59,17 @@ export class DocumentSession {
     this.#active = directory
     this.#unsubscribe?.()
     const cached = this.#slots.get(directory)
-    if (cached) cached.state = { ...cached.state, loading: true }
+    if (cached) { cached.read++; cached.state = { ...cached.state, loading: true } }
     this.#changed(cached ? { ...cached.state } : { directory, loading: true, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: [] })
     try {
       const [info, answer] = await Promise.all([this.#client.readWorkbenchInfo(), this.#client.readDocument(directory)])
       if (this.#active !== directory || opening !== this.#opening) return
       let slot = this.#slots.get(directory)
       if (!slot) {
-        slot = { input: 0, compositions: new Set(), baseHash: await digest(answer.content), storage: `presmium.document.v1:${JSON.stringify([info.root, answer.content.id])}`, state: { directory, identity: JSON.stringify([info.root, answer.content.id]), content: answer.content, version: answer.version, fingerprint: answer.fingerprint, loading: false, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: answer.issues } }
+        slot = { input: 0, read: 0, compositions: new Set(), baseHash: await digest(answer.content), storage: `presmium.document.v1:${JSON.stringify([info.root, answer.content.id])}`, state: { directory, identity: JSON.stringify([info.root, answer.content.id]), content: answer.content, version: answer.version, fingerprint: answer.fingerprint, loading: false, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: answer.issues } }
         this.#slots.set(directory, slot)
         await this.#restore(slot, answer)
-      } else await this.#adopt(slot, answer)
+      } else await this.#adopt(slot, answer, () => this.#active === directory && opening === this.#opening)
       if (this.#active !== directory || opening !== this.#opening) return
       // A fresh observation invalidates idle project references before the editor becomes ready.
       slot.projectObservation = undefined
@@ -105,7 +106,7 @@ export class DocumentSession {
       this.#slots.delete(directory)
     }
   }
-  #emit(slot: Slot): void { if (this.#active === slot.state.directory) this.#changed({ ...slot.state }) }
+  #emit(slot: Slot): void { if (this.#active === slot.state.directory && this.#slots.get(slot.state.directory) === slot) this.#changed({ ...slot.state }) }
   #error(error: unknown): string { return error instanceof WorkspaceServerError ? error.answer.error ?? 'document-request-failed' : 'document-disconnected' }
   #issues(error: unknown): DocumentIssue[] { const value = error instanceof WorkspaceServerError ? (error.answer as { issues?: DocumentIssue[] }).issues : undefined; return Array.isArray(value) ? value : [] }
 
@@ -114,22 +115,35 @@ export class DocumentSession {
     const slot = this.#slots.get(directory)
     if (!slot) { if (directory === this.#active) await this.open(directory); return }
     if (slot.flight) { slot.refreshed = true; return }
-    try { await this.#adopt(slot, await this.#client.readDocument(directory)); this.#persist(slot); this.#emit(slot) }
-    catch (error) { slot.state = { ...slot.state, error: this.#error(error), issues: this.#issues(error) }; this.#emit(slot) }
+    const read = ++slot.read, current = () => slot.read === read && this.#slots.get(directory) === slot
+    try {
+      const answer = await this.#client.readDocument(directory)
+      if (!current()) return
+      if (slot.flight) { slot.refreshed = true; return }
+      await this.#adopt(slot, answer, current)
+      if (current()) { this.#persist(slot); this.#emit(slot) }
+    } catch (error) {
+      if (current()) { slot.state = { ...slot.state, error: this.#error(error), issues: this.#issues(error) }; this.#emit(slot) }
+    }
   }
 
-  async #adopt(slot: Slot, answer: DocumentAnswer): Promise<void> {
+  async #adopt(slot: Slot, answer: DocumentAnswer, current = () => true): Promise<void> {
+    if (!current()) return
     if (answer.content.id !== slot.state.content?.id) { slot.state = { ...slot.state, error: 'document-identity-changed' }; return }
     if (answer.version === slot.state.version) {
       if (answer.fingerprint !== slot.state.fingerprint) slot.state = { ...slot.state, fingerprint: answer.fingerprint, issues: answer.issues }
       return
     }
     const remoteHash = await digest(answer.content)
+    if (!current()) return
     if (slot.state.dirty || slot.state.composing) {
-      if (remoteHash === await digest(slot.state.content!) && !slot.state.composing) {
+      const input = slot.input, localHash = await digest(slot.state.content!)
+      if (!current()) return
+      if (remoteHash === localHash) {
+        const same = slot.input === input && !slot.state.composing
         slot.baseHash = remoteHash
         slot.pendingHash = undefined
-        slot.state = { ...slot.state, version: answer.version, fingerprint: answer.fingerprint, dirty: false, error: undefined, issues: answer.issues }
+        slot.state = { ...slot.state, version: answer.version, fingerprint: answer.fingerprint, dirty: !same, error: undefined, issues: answer.issues }
       } else if (remoteHash === slot.pendingHash) {
         slot.baseHash = remoteHash; slot.pendingHash = undefined
         slot.state = { ...slot.state, version: answer.version, fingerprint: answer.fingerprint, error: undefined, issues: answer.issues }
@@ -177,6 +191,7 @@ export class DocumentSession {
   async #save(slot: Slot): Promise<void> {
     clearTimeout(slot.timer)
     if (slot.flight || !slot.state.dirty || slot.state.composing || slot.state.restored || slot.state.error || !slot.state.content || !slot.state.version) return
+    slot.read++
     const flight = { id: crypto.randomUUID(), input: slot.input, content: structuredClone(slot.state.content), baseVersion: slot.state.version, hash: undefined as string | undefined }
     slot.flight = flight
     slot.state = { ...slot.state, saving: true }; this.#emit(slot)
