@@ -99,6 +99,7 @@ export function createPageApp(input: PageAppInput): PageApp {
   const t = WEB_MESSAGES[deckLocale(config.lang)]
   const viewer = current = createViewer(initial, {
     renderer: 'web',
+    embedded,
     documentIdentity: JSON.stringify([config.base, config.document]),
     editingActive: createStore(true),
     sectionHref: router?.sectionHref,
