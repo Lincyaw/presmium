@@ -8,5 +8,3 @@
 .pm-ui-block-preview > .pm-document-editor__fallback { padding: var(--pm-space-3); }
 
 .pm-ui-block-preview__actions { display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: var(--pm-space-1); }
-.pm-ui-block-preview__frame { pointer-events: none; }
-.pm-ui-block-preview[data-interactive] .pm-ui-block-preview__frame { pointer-events: auto; }
