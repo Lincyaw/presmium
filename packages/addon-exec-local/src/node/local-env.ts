@@ -5,7 +5,7 @@ import { EXEC_LOCAL_ID, execLocalConfig, workspacePath } from '../domain/index.t
 import type { ContainerExecutor } from './container.ts'
 import { createContainerExecutor } from './container.ts'
 import { findDefinition } from './devcontainer.ts'
-import { inLanguage } from './messages.ts'
+import { inLanguage, text } from './messages.ts'
 import { replicateArchive } from './replicate.ts'
 
 /** The `:workspace:` each {local-env} names, resolved, for the workspace pass of the same compile. */
@@ -67,9 +67,21 @@ export function localEnvPass(pluginContainer: Executor): IRPass {
       doc.config.presmium = { ...doc.config.presmium, [EXEC_LOCAL_ID]: { ...ctx.config, workspace: shared } }
       const named = (dir: string) => relative(ctx.deckDir, dir).split(sep).join('/') || '.'
 
-      for (const { node, source } of envs) {
+      for (const { node, source, stepStates } of envs) {
         const dir = requestedWorkspaces.get(node) ?? workspace
         const at = { file: source.file, line: source.line }
+        const code = componentCode(node)
+        if (!code || node.children?.filter(child => child.node.type === 'code').length !== 1) {
+          ctx.report({ checkId: EXEC_LOCAL_ID, severity: 'error', message: inLanguage(ctx.lang, () => text().codeChild), source })
+          continue
+        }
+        node.props.code = code.value
+        node.props.lang = code.lang
+        delete node.props.archive
+        delete node.props.devcontainer
+        for (const state of stepStates ?? []) if (state.parameters) {
+          for (const key of ['code', 'lang', 'archive', 'devcontainer']) delete state.parameters[key]
+        }
         if (dir !== workspace) {
           ctx.report({
             checkId: 'presmium.execLocal.workspace',
@@ -89,8 +101,6 @@ export function localEnvPass(pluginContainer: Executor): IRPass {
           })
           continue
         }
-        const code = componentCode(node)
-        if (!code) continue
         const file = String(node.props.file)
         const request = { file, content: `${code.value}\n`, lang: String(node.props.lang) }
         const { zip } = inLanguage(ctx.lang, () => replicateArchive(dir, definition, request))

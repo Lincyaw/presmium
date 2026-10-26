@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import { deckLocale } from '@lincyaw/kernel'
 
 const zhCN = {
+  codeChild: 'PmLocalEnv 必须有且只有一个 canonical 代码子块。',
   noDefinition: '工作区没有 devcontainer 定义',
   unreadableDefinition: '无法读取 devcontainer 定义，请确认 Docker 可用',
   unsupportedLanguage: (lang: string) => `容器执行器不支持语言 ${lang}`,
@@ -35,6 +36,7 @@ const zhCN = {
 export type ServerMessages = typeof zhCN
 
 const en: ServerMessages = {
+  codeChild: 'PmLocalEnv requires exactly one canonical code child.',
   noDefinition: 'The workspace has no devcontainer definition',
   unreadableDefinition: 'Cannot read the devcontainer definition; check that Docker is available',
   unsupportedLanguage: lang => `The container executor does not run ${lang}`,
