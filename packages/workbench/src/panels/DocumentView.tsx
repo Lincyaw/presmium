@@ -37,6 +37,7 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   const t = useMessages()
   const document = useWorkbenchState(state => state.document)
   const view = useWorkbenchState(state => state.webView)
+  const previousView = useRef({ document, workspace, view, active })
   const preparing = useWorkbenchState(state => Boolean(state.isPreparingPresentation))
   const presentationSourceCurrent = useWorkbenchState(state => Boolean(state.presentationSnapshot && state.authoring?.version === state.presentationSnapshot.version
     && state.authoring.fingerprint === state.presentationSnapshot.fingerprint && (state.authoring.projectRevision ?? 0) === state.presentationSnapshot.project
@@ -97,10 +98,13 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   useEffect(() => { if (!active) { transition.current++; exiting.current = undefined; setChangingView(false) } }, [active])
   useEffect(() => () => { transition.current++ }, [])
   useEffect(() => {
+    const previous = previousView.current
+    previousView.current = { document, workspace, view, active }
     // Keep a successful exit owned until React has committed the closed view.
     if (workspace === 'document') exiting.current = undefined
-    else if (presenting && view === 'document') void exitPresent()
-  }, [view, workspace])
+    else if (view === 'document' && (presenting || producing && active && previous.active
+      && previous.document === document && previous.workspace === workspace && previous.view === 'present')) void exitPresent()
+  }, [document, view, workspace, active])
   useEffect(() => {
     if (!active) return
     const keys = (event: KeyboardEvent) => {
