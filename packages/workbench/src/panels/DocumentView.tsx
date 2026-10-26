@@ -85,8 +85,8 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   return (
     <div className="pmw-document" data-workspace={presenting ? 'presentation' : 'content'} data-presenting={presenting || undefined} data-aside={aside ?? undefined} data-navigation={navigation || undefined}>
       {presenting ? <PmToolbar className="pmw-toolbar pmw-toolbar--present" label={t.presentationPreview}><PmToolbarButton asChild><PmIconButton small icon="close" label={t.exitPresentation} shortcut="Escape" loading={changingView} onClick={() => void exitPresent()} /></PmToolbarButton></PmToolbar> : <DocumentToolbar framed={framed} aside={aside} navigation={navigation} onPresent={() => {
-        const source = workbench.getState().authoring
-        if (!source?.content || source.loading || source.dirty || source.saving || source.restored || source.error || source.composing || isAgentChanging(workbench.getState())) return
+        const current = workbench.getState(), source = current.authoring
+        if (!source?.content || source.loading || source.dirty || source.saving || source.restored || source.error || source.composing || current.hasDocumentTimingDrafts || current.isEditingPage || current.isCreatingPage || isAgentChanging(current)) return
         transition.current++; setViewFailure(undefined)
         workbench.setMode('viewing')
         workbench.setWebView('present')
@@ -237,7 +237,8 @@ function DocumentToolbar({ framed, aside, navigation, onPresent, onNavigation, o
   const editorHistory = useWorkbenchState(state => state.editorHistory)
   const dirty = useWorkbenchState(state => Boolean(state.authoring?.dirty))
   const busy = useWorkbenchState(state => state.isHistoryBusy || state.isHistoryPreparing || Boolean(state.isCreatingPage) || Boolean(state.isEditingPage || state.authoring?.composing) || isAgentChanging(state))
-  const blocked = useWorkbenchState(state => Boolean(!state.authoring?.content || state.authoring.loading || state.authoring.dirty || state.authoring.saving || state.authoring.restored || state.authoring.error || state.authoring.composing || state.isEditingPage || state.isCreatingPage || isAgentChanging(state)))
+  const timingDrafts = useWorkbenchState(state => state.hasDocumentTimingDrafts)
+  const blocked = useWorkbenchState(state => Boolean(!state.authoring?.content || state.authoring.loading || state.authoring.dirty || state.authoring.saving || state.authoring.restored || state.authoring.error || state.authoring.composing || state.hasDocumentTimingDrafts || state.isEditingPage || state.isCreatingPage || isAgentChanging(state)))
   const openComments = useWorkbenchState(state => Object.values(state.authoring?.content?.comments ?? {}).filter(comment => !comment.resolved && !comment.deletedAt).length)
   return (
     <PmToolbar className="pmw-toolbar" label={t.commands}>
@@ -253,7 +254,7 @@ function DocumentToolbar({ framed, aside, navigation, onPresent, onNavigation, o
       <PmToolbarButton asChild><PmIconButton small icon="comment" label={openComments ? `${t.comments} (${openComments})` : t.comments} aria-pressed={aside === 'comments'} onClick={() => onAside('comments')} /></PmToolbarButton>
       <PmToolbarButton asChild><PmIconButton small icon="versions" label={t.versionHistory} aria-pressed={aside === 'history'} onClick={() => onAside('history')} /></PmToolbarButton>
       <span className="pmw-toolbar__divider" aria-hidden="true" />
-      <PmToolbarButton asChild><PmIconButton small icon="slides" label={t.presentationPreview} hint={blocked ? t.presentationPending : t.presentHint} disabled={blocked} onClick={onPresent} /></PmToolbarButton>
+      <PmToolbarButton asChild><PmIconButton small icon="slides" label={t.presentationPreview} hint={timingDrafts ? t.timingDraftPending : blocked ? t.presentationPending : t.presentHint} disabled={blocked} onClick={onPresent} /></PmToolbarButton>
       <PmToolbarButton asChild><PmIconButton small icon="export" label={t.exportPane} aria-pressed={aside === 'export'} onClick={() => onAside('export')} /></PmToolbarButton>
     </PmToolbar>
   )
@@ -283,6 +284,7 @@ function DocumentNotices() {
   const review = useWorkbenchState(state => state.review)
   const save = useWorkbenchState(state => state.save)
   const sourceError = useWorkbenchState(state => state.authoring?.error)
+  const timingDrafts = useWorkbenchState(state => state.hasDocumentTimingDrafts)
   const historyFailure = useWorkbenchState(state => state.historyFailure)
   const focusFailure = useWorkbenchState(state => state.focusFailure)
   const askFailure = useWorkbenchState(state => (state.pointer ? undefined : state.askFailure))
@@ -299,6 +301,7 @@ function DocumentNotices() {
         </PmNotice>
       )}
       {save.kind === 'locked' && <PmNotice tone="warn">{t.saveLocked}</PmNotice>}
+      {timingDrafts && <PmNotice tone="warn">{t.timingDraftPending}</PmNotice>}
       {save.kind === 'failed' && !sourceError && <PmNotice tone="danger">{t.saveFailed(save.message)}</PmNotice>}
       {historyFailure && <PmNotice tone="danger">{t.historyFailed(historyFailure)}</PmNotice>}
       {focusFailure && <PmNotice tone="warn">{t.focusFailed(focusFailure)}</PmNotice>}
