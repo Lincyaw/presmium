@@ -253,33 +253,7 @@
         {
           "id": "pass--paragraph-5--text-0",
           "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "5 继续往后，越过 1 和 3，"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "value": "pause 300ms"
-                  },
-                  "children": []
-                }
-              },
-              "fallback": ""
-            },
-            {
-              "type": "text",
-              "text": " 停在最后，这一趟结束。"
-            }
-          ]
+          "children": []
         }
       ]
     },
