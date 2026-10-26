@@ -1,0 +1,1405 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-guide-content",
+  "metadata": {
+    "title": "功能导览 01：正文、排版与富内容",
+    "lang": "zh-CN",
+    "description": "可编辑、可运行的 Presmium 功能导览。",
+    "plugins": [
+      "@lincyaw/addon-content"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {}
+    }
+  },
+  "sectionOrder": [
+    "start",
+    "rich-text",
+    "lists",
+    "tables",
+    "layout",
+    "diagrams",
+    "mindmap",
+    "media",
+    "images",
+    "next"
+  ],
+  "sections": {
+    "start": {
+      "id": "start",
+      "title": "从一份可编辑文稿开始",
+      "level": 1,
+      "children": [
+        "text-2"
+      ],
+      "stepOrder": [
+        "start-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "rich-text": {
+      "id": "rich-text",
+      "title": "富文本、链接与公式",
+      "level": 2,
+      "children": [
+        "text-12"
+      ],
+      "stepOrder": [
+        "rich-text-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "lists": {
+      "id": "lists",
+      "title": "嵌套列表、任务与引用",
+      "level": 2,
+      "children": [
+        "text-36"
+      ],
+      "stepOrder": [
+        "lists-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "tables": {
+      "id": "tables",
+      "title": "表格、合并单元格与对齐",
+      "level": 2,
+      "children": [
+        "text-59"
+      ],
+      "stepOrder": [
+        "tables-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "layout": {
+      "id": "layout",
+      "title": "分栏、堆叠与选项卡",
+      "level": 2,
+      "children": [
+        "columns",
+        "tabs",
+        "stack"
+      ],
+      "stepOrder": [
+        "layout-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "diagrams": {
+      "id": "diagrams",
+      "title": "Mermaid 流程图与时序图",
+      "level": 2,
+      "children": [
+        "text-68",
+        "flowchart",
+        "sequence"
+      ],
+      "stepOrder": [
+        "diagrams-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "mindmap": {
+      "id": "mindmap",
+      "title": "可缩放的思维导图",
+      "level": 2,
+      "children": [
+        "markmap",
+        "text-70"
+      ],
+      "stepOrder": [
+        "mindmap-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "media": {
+      "id": "media",
+      "title": "本地视频、音频与字幕",
+      "level": 2,
+      "children": [
+        "video",
+        "audio",
+        "text-72"
+      ],
+      "stepOrder": [
+        "media-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "images": {
+      "id": "images",
+      "title": "图片、动图与减少动态效果",
+      "level": 2,
+      "children": [
+        "still-image",
+        "animation"
+      ],
+      "stepOrder": [
+        "images-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "next": {
+      "id": "next",
+      "title": "下一步：把内容变成讲课过程",
+      "level": 2,
+      "children": [
+        "text-74"
+      ],
+      "stepOrder": [
+        "next-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "text-2": {
+      "id": "text-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本讲是功能样例，也是一份可以直接修改的文稿。先阅读，再在工作台改一段文字；讲授、网页和 notebook 都由同一份 lecture.json 派生。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-4",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "以下内容不需要模型、语音引擎或外部媒体服务。音视频是仓库随附的小资源；点击播放会发声。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "link",
+              "href": "#rich-text",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "从富文本开始"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " · "
+            },
+            {
+              "type": "link",
+              "href": "#media",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "直接查看音视频"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "text-12": {
+      "id": "text-12",
+      "type": "text",
+      "content": [
+        {
+          "id": "heading-5",
+          "type": "heading",
+          "level": 3,
+          "children": [
+            {
+              "type": "text",
+              "text": "正文内部的小标题"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-6",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "粗体",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "、"
+            },
+            {
+              "type": "text",
+              "text": "斜体",
+              "marks": [
+                {
+                  "type": "italic"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "、"
+            },
+            {
+              "type": "text",
+              "text": "下划线",
+              "marks": [
+                {
+                  "type": "underline"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "、"
+            },
+            {
+              "type": "text",
+              "text": "删除线",
+              "marks": [
+                {
+                  "type": "strike"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "、"
+            },
+            {
+              "type": "text",
+              "text": "行内代码",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。样式来自公共设计令牌。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-7",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "带语义颜色的说明",
+              "marks": [
+                {
+                  "type": "color",
+                  "value": "var(--pm-color-accent)"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "与"
+            },
+            {
+              "type": "text",
+              "text": "背景强调",
+              "marks": [
+                {
+                  "type": "background",
+                  "value": "var(--pm-color-accent-soft)"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "paragraph-8",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "行内公式："
+            },
+            {
+              "type": "math",
+              "value": "a^2+b^2=c^2"
+            },
+            {
+              "type": "break"
+            },
+            {
+              "type": "text",
+              "text": "同一段落内的换行保留。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-9",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本段居中，保留段落对齐数据。"
+            }
+          ],
+          "style": {
+            "alignment": "center"
+          }
+        },
+        {
+          "id": "math-10",
+          "type": "math",
+          "value": "\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}"
+        },
+        {
+          "id": "code-text-11",
+          "type": "code",
+          "language": "javascript",
+          "value": "console.log(\"这里只展示源码，不自动执行。\")"
+        }
+      ]
+    },
+    "text-36": {
+      "id": "text-36",
+      "type": "text",
+      "content": [
+        {
+          "id": "list-13",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "item-14",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "paragraph-16",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "先整理内容"
+                    }
+                  ]
+                },
+                {
+                  "id": "nested-list-17",
+                  "type": "list",
+                  "ordered": false,
+                  "children": [
+                    {
+                      "id": "item-18",
+                      "type": "listItem",
+                      "children": [
+                        {
+                          "id": "paragraph-19",
+                          "type": "paragraph",
+                          "children": [
+                            {
+                              "type": "text",
+                              "text": "文字是结构化数据"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "item-20",
+                      "type": "listItem",
+                      "children": [
+                        {
+                          "id": "paragraph-21",
+                          "type": "paragraph",
+                          "children": [
+                            {
+                              "type": "text",
+                              "text": "每个编辑单元保留稳定身份"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "item-22",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "paragraph-23",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "再安排步骤"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "list-24",
+          "type": "list",
+          "ordered": true,
+          "start": 3,
+          "children": [
+            {
+              "id": "item-25",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "paragraph-26",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "第三步：检查"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "item-27",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "paragraph-28",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "第四步：发布"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "checklist-29",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "item-30",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "paragraph-31",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "已经阅读"
+                    }
+                  ]
+                }
+              ],
+              "checked": true
+            },
+            {
+              "id": "item-32",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "paragraph-33",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "待亲自修改"
+                    }
+                  ]
+                }
+              ],
+              "checked": false
+            }
+          ]
+        },
+        {
+          "id": "quote-34",
+          "type": "blockquote",
+          "children": [
+            {
+              "id": "paragraph-35",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "一份内容，一处修改。网页、幻灯片与 notebook 使用相同的教学语义。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "text-59": {
+      "id": "text-59",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-60",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "表头、列宽、合并与颜色都保存在文稿中。窄屏可以在表格内横向滚动，正文不应整体横向溢出。"
+            }
+          ]
+        },
+        {
+          "id": "table-37",
+          "type": "table",
+          "headerRows": 1,
+          "headerColumns": 1,
+          "columnWidths": [
+            180,
+            160,
+            180
+          ],
+          "children": [
+            {
+              "id": "row-41",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "cell-38",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "媒介"
+                    }
+                  ]
+                },
+                {
+                  "id": "cell-39",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "可交互"
+                    }
+                  ]
+                },
+                {
+                  "id": "cell-40",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "适合场景"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "row-45",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "cell-42",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "网页"
+                    }
+                  ]
+                },
+                {
+                  "id": "cell-43",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "是"
+                    }
+                  ],
+                  "style": {
+                    "alignment": "center"
+                  }
+                },
+                {
+                  "id": "cell-44",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "阅读与动手"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "row-49",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "cell-46",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "Notebook"
+                    }
+                  ]
+                },
+                {
+                  "id": "cell-47",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "代码单元"
+                    }
+                  ],
+                  "style": {
+                    "alignment": "center"
+                  }
+                },
+                {
+                  "id": "cell-48",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "实验与复现"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "row-53",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "cell-50",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "连续两行"
+                    }
+                  ],
+                  "rowspan": 2
+                },
+                {
+                  "id": "cell-51",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "第 1 行"
+                    }
+                  ]
+                },
+                {
+                  "id": "cell-52",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "上半"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "row-56",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "cell-54",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "第 2 行"
+                    }
+                  ]
+                },
+                {
+                  "id": "cell-55",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "下半"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "row-58",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "cell-57",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "同一份文稿，按需要选择输出。"
+                    }
+                  ],
+                  "colspan": 3,
+                  "style": {
+                    "background": "var(--pm-color-surface-sunk)"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "layout-left": {
+      "id": "layout-left",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-61",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "分栏左侧：介绍问题。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-62",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "容器组织的是内容身份，不复制正文。"
+            }
+          ]
+        }
+      ]
+    },
+    "layout-right": {
+      "id": "layout-right",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-63",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "分栏右侧：给出解释。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-64",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "窄屏会重新排列，方便阅读。"
+            }
+          ]
+        }
+      ]
+    },
+    "columns": {
+      "id": "columns",
+      "type": "container",
+      "layout": "columns",
+      "children": [
+        "layout-left",
+        "layout-right"
+      ],
+      "properties": {
+        "title": "对照阅读",
+        "columnWidths": [
+          1,
+          1
+        ]
+      }
+    },
+    "layout-web": {
+      "id": "layout-web",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-65",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "网页适合连续阅读、搜索与互动。"
+            }
+          ]
+        }
+      ]
+    },
+    "layout-slides": {
+      "id": "layout-slides",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-66",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "幻灯片适合按步骤讲授，并使用演讲者视图。"
+            }
+          ]
+        }
+      ]
+    },
+    "tabs": {
+      "id": "tabs",
+      "type": "container",
+      "layout": "tabs",
+      "children": [
+        "layout-web",
+        "layout-slides"
+      ],
+      "properties": {
+        "title": "选择一种媒介",
+        "tabTitles": [
+          "网页",
+          "幻灯片"
+        ]
+      }
+    },
+    "layout-stacked": {
+      "id": "layout-stacked",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-67",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这个文本块由 stack 容器持有。"
+            }
+          ]
+        }
+      ]
+    },
+    "stack": {
+      "id": "stack",
+      "type": "container",
+      "layout": "stack",
+      "children": [
+        "layout-stacked"
+      ],
+      "properties": {
+        "title": "堆叠容器"
+      }
+    },
+    "text-68": {
+      "id": "text-68",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-69",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "图表在浏览器中绘制；失败时会保留源码，便于定位。以下流程同时解释 Presmium 的内容管线。"
+            }
+          ]
+        }
+      ]
+    },
+    "flowchart": {
+      "id": "flowchart",
+      "type": "code",
+      "language": "mermaid",
+      "value": "flowchart LR\n  A[lecture.json 文稿] --> B[编译快照]\n  B --> C[网页]\n  B --> D[幻灯片]\n  B --> E[Notebook]"
+    },
+    "sequence": {
+      "id": "sequence",
+      "type": "code",
+      "language": "mermaid",
+      "value": "sequenceDiagram\n  participant 作者\n  participant 文稿服务\n  participant 预览\n  作者->>文稿服务: 带版本提交修改\n  文稿服务-->>作者: 确认新版本\n  文稿服务->>预览: 派生运行快照"
+    },
+    "markmap": {
+      "id": "markmap",
+      "type": "component",
+      "definitionId": "markmap-definition",
+      "parameters": {
+        "data": "%7B%22root%22%3A%7B%22content%22%3A%22Presmium%22%2C%22children%22%3A%5B%7B%22content%22%3A%22%E5%86%85%E5%AE%B9%22%2C%22children%22%3A%5B%7B%22content%22%3A%22%E5%AF%8C%E6%96%87%E6%9C%AC%22%2C%22children%22%3A%5B%5D%7D%2C%7B%22content%22%3A%22%E4%BB%A3%E7%A0%81%22%2C%22children%22%3A%5B%5D%7D%2C%7B%22content%22%3A%22%E5%AA%92%E4%BD%93%22%2C%22children%22%3A%5B%5D%7D%5D%7D%2C%7B%22content%22%3A%22%E6%95%99%E5%AD%A6%22%2C%22children%22%3A%5B%7B%22content%22%3A%22%E6%AD%A5%E9%AA%A4%22%2C%22children%22%3A%5B%5D%7D%2C%7B%22content%22%3A%22%E8%AE%B2%E7%A8%BF%22%2C%22children%22%3A%5B%5D%7D%2C%7B%22content%22%3A%22%E8%AF%BE%E5%A0%82%22%2C%22children%22%3A%5B%5D%7D%5D%7D%5D%7D%2C%22options%22%3A%7B%22colorFreezeLevel%22%3A2%7D%7D"
+      }
+    },
+    "text-70": {
+      "id": "text-70",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-71",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "尝试缩放与拖动导图。静态输出保留文字提纲；信息不只存在于画布里。"
+            }
+          ]
+        }
+      ]
+    },
+    "video": {
+      "id": "video",
+      "type": "component",
+      "definitionId": "video-definition",
+      "parameters": {
+        "kind": "video",
+        "src": "media/clip.webm",
+        "poster": "media/poster.png",
+        "captions": {
+          "zh-CN": "media/clip.zh-CN.vtt",
+          "en": "media/clip.en.vtt"
+        },
+        "captionsDefault": "zh-CN",
+        "controls": true,
+        "muted": true,
+        "caption": "可切换中英文字幕的小视频。"
+      }
+    },
+    "audio": {
+      "id": "audio",
+      "type": "component",
+      "definitionId": "audio-definition",
+      "parameters": {
+        "kind": "audio",
+        "src": "media/tone.ogg",
+        "controls": true,
+        "caption": "短提示音。播放前请调低音量。"
+      }
+    },
+    "text-72": {
+      "id": "text-72",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-73",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "媒体使用浏览器原生控制。自动播放受到浏览器策略限制；离开当前展示范围时会暂停，播放错误应检查实际文件与浏览器支持。"
+            }
+          ]
+        }
+      ]
+    },
+    "still-image": {
+      "id": "still-image",
+      "type": "image",
+      "assetId": "still-asset",
+      "alt": "动图的静态替代帧",
+      "caption": [
+        {
+          "type": "text",
+          "text": "图片的说明与替代文字属于文稿。"
+        }
+      ],
+      "width": 96,
+      "alignment": "left"
+    },
+    "animation": {
+      "id": "animation",
+      "type": "component",
+      "definitionId": "animation-definition",
+      "parameters": {
+        "kind": "animation",
+        "src": "media/spinner.gif",
+        "still": "media/spinner.png",
+        "width": 96,
+        "height": 96,
+        "alt": "旋转的加载图标",
+        "caption": "操作系统启用“减少动态效果”时显示静止帧。"
+      }
+    },
+    "text-74": {
+      "id": "text-74",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-75",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本讲只展示真实可离线运行的富内容。步骤、参数与动画将在下一讲展开；代码执行、课堂与讲授制作分别有独立文稿。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-76",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "外部视频和 PlantUML 服务需要网络。功能索引会明确列出这类条件，不把外部服务是否可达当成演示成功。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "start-step": {
+      "id": "start-step",
+      "sectionId": "start",
+      "visuals": [
+        {
+          "blockId": "text-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "rich-text-step": {
+      "id": "rich-text-step",
+      "sectionId": "rich-text",
+      "visuals": [
+        {
+          "blockId": "text-12",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "lists-step": {
+      "id": "lists-step",
+      "sectionId": "lists",
+      "visuals": [
+        {
+          "blockId": "text-36",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "tables-step": {
+      "id": "tables-step",
+      "sectionId": "tables",
+      "visuals": [
+        {
+          "blockId": "text-59",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "layout-step": {
+      "id": "layout-step",
+      "sectionId": "layout",
+      "visuals": [
+        {
+          "blockId": "columns",
+          "visible": true
+        },
+        {
+          "blockId": "layout-left",
+          "visible": true
+        },
+        {
+          "blockId": "layout-right",
+          "visible": true
+        },
+        {
+          "blockId": "tabs",
+          "visible": true
+        },
+        {
+          "blockId": "layout-web",
+          "visible": true
+        },
+        {
+          "blockId": "layout-slides",
+          "visible": true
+        },
+        {
+          "blockId": "stack",
+          "visible": true
+        },
+        {
+          "blockId": "layout-stacked",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "diagrams-step": {
+      "id": "diagrams-step",
+      "sectionId": "diagrams",
+      "visuals": [
+        {
+          "blockId": "text-68",
+          "visible": true
+        },
+        {
+          "blockId": "flowchart",
+          "visible": true
+        },
+        {
+          "blockId": "sequence",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "mindmap-step": {
+      "id": "mindmap-step",
+      "sectionId": "mindmap",
+      "visuals": [
+        {
+          "blockId": "markmap",
+          "visible": true
+        },
+        {
+          "blockId": "text-70",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "media-step": {
+      "id": "media-step",
+      "sectionId": "media",
+      "visuals": [
+        {
+          "blockId": "video",
+          "visible": true
+        },
+        {
+          "blockId": "audio",
+          "visible": true
+        },
+        {
+          "blockId": "text-72",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "images-step": {
+      "id": "images-step",
+      "sectionId": "images",
+      "visuals": [
+        {
+          "blockId": "still-image",
+          "visible": true
+        },
+        {
+          "blockId": "animation",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "next-step": {
+      "id": "next-step",
+      "sectionId": "next",
+      "visuals": [
+        {
+          "blockId": "text-74",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {
+    "still-asset": {
+      "id": "still-asset",
+      "kind": "image",
+      "location": "media/spinner.png",
+      "mediaType": "image/png"
+    }
+  },
+  "definitions": {
+    "markmap-definition": {
+      "id": "markmap-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.content",
+        "name": "PmMarkmap"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Presmium：内容包括富文本、代码与媒体；教学包括步骤、讲稿与课堂。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "video-definition": {
+      "id": "video-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.content",
+        "name": "PmMedia"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "本地视频，提供中文和英文字幕。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "audio-definition": {
+      "id": "audio-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.content",
+        "name": "PmMedia"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "本地短提示音。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "animation-definition": {
+      "id": "animation-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.content",
+        "name": "PmMedia"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "加载动画；静态替代是同一个图标。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

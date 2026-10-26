@@ -7,6 +7,8 @@ site:
   nav:
     - text: '功能导览'
       items:
+        - text: '正文与富内容'
+          link: '/guide-content/'
         - text: '代码与运行'
           link: '/guide-code/'
         - text: '课堂互动'

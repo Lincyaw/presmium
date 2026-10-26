@@ -7,6 +7,7 @@
 |---|---|
 | [冒泡排序](bubble-sort/lecture.json) | 一趟冒泡排序：代码、GSAP 动画、讲解点击的计数组件与光标提示，最后合成为带字幕的讲授 |
 | [代码写成的动画](libraries/lecture.json) | GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节动画，再到讲到哪里点哪里与讲授视频 |
+| [功能导览：正文与富内容](guide-content/lecture.json) | 富文本、数学、列表、合并表格、分栏、选项卡、Mermaid、思维导图与本地音视频字幕 |
 | [功能导览：代码与运行](guide-code/lecture.json) | 项目引用、高亮与变体、JavaScript / Python、参数、逐行轨迹、会话、运行比较与错误反馈 |
 | [功能导览：课堂互动](guide-classroom/lecture.json) | 单选、多选、先预测再揭晓、真实代码校验、锚定提问、理解度投票、笔记、学生跟随与受众输出 |
 
