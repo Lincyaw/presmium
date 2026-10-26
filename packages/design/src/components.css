@@ -1036,6 +1036,10 @@
   line-height: var(--pm-leading-ui);
 }
 
+.pm-ui-block-editor .pm-ui-comment-actions-row {
+  padding-block-start: calc(var(--pm-size-tool) + var(--pm-space-2));
+}
+
 .pm-ui-block-editor .bn-threads-sidebar .bn-thread {
   min-width: 0;
   max-width: 100%;
@@ -1103,6 +1107,9 @@
   .pm-ui-block-editor .bn-thread button {
     min-width: var(--pm-control-hit-area);
     min-height: var(--pm-control-hit-area);
+  }
+  .pm-ui-block-editor .pm-ui-comment-actions-row {
+    padding-block-start: calc(var(--pm-control-hit-area) + var(--pm-space-2));
   }
   .pm-ui-block-editor .bn-comment-editor .bn-editor {
     font-size: var(--pm-text-lg);

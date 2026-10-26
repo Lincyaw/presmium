@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react'
-import type { ReactNode } from 'react'
+import { forwardRef, useEffect, useRef } from 'react'
+import type { ForwardRefExoticComponent, ReactNode, RefAttributes } from 'react'
 import { filterSuggestionItems } from '@blocknote/core'
 import { en, zh } from '@blocknote/core/locales'
-import { BlockNoteView } from '@blocknote/mantine'
-import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ColorStyleButton, CreateLinkButton, FloatingComposerController, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, NestBlockButton, RenderInPortalElement, SuggestionMenuController, TextAlignButton, ThreadsSidebar, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
-import type { FormattingToolbarProps } from '@blocknote/react'
+import { BlockNoteView, components } from '@blocknote/mantine'
+import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ColorStyleButton, ComponentsContext, CreateLinkButton, FloatingComposerController, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, NestBlockButton, RenderInPortalElement, SuggestionMenuController, TextAlignButton, ThreadsSidebar, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
+import type { ComponentProps, FormattingToolbarProps } from '@blocknote/react'
+import { useMediaQuery } from '@mantine/hooks'
 import type { Locale } from '../messages.ts'
 import { DOCUMENT_NODE_VIEWS, documentEditorSchema } from './schema.tsx'
 import type { DocumentEditorBlock, DocumentEditorInput, DocumentNodeViews, NativeDocumentEditor } from './schema.tsx'
@@ -26,6 +27,14 @@ export const DOCUMENT_EDITOR_THEME = {
   },
   fontFamily: 'var(--pm-font-sans)',
 }
+
+const MantineComment = components.Comments.Comment as ForwardRefExoticComponent<ComponentProps['Comments']['Comment'] & RefAttributes<HTMLDivElement>>
+const DocumentComment = forwardRef<HTMLDivElement, ComponentProps['Comments']['Comment']>(function DocumentComment(props, ref) {
+  const coarse = useMediaQuery('(pointer: coarse)', false, { getInitialValueInEffect: false })
+  const className = [props.className, props.actions ? 'pm-ui-comment-actions-row' : undefined].filter(Boolean).join(' ')
+  return <MantineComment {...props} ref={ref} className={className} showActions={coarse && props.showActions === 'hover' ? true : props.showActions} />
+})
+const DOCUMENT_EDITOR_COMPONENTS = { ...components, Comments: { ...components.Comments, Comment: DocumentComment } }
 
 export interface BlockNoteSurfaceProps {
   identity: string
@@ -93,6 +102,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
       <BlockNoteView editor={editor} editable={!props.readOnly} theme={DOCUMENT_EDITOR_THEME} formattingToolbar={false} slashMenu={false} renderEditor={false} comments={props.commentsPortal ? false : undefined}
         onChange={() => current.current.onChange(editor.document, editor)}
         onSelectionChange={() => current.current.onSelection?.(documentSelection(editor))}>
+        <ComponentsContext.Provider value={DOCUMENT_EDITOR_COMPONENTS}>
         <PlainContentComments editor={editor} />
         <BlockNoteViewEditor>
         {props.commentsPortal && <><FloatingComposerController /><RenderInPortalElement target={props.commentsPortal}><ThreadsSidebar filter="all" /></RenderInPortalElement></>}
@@ -103,6 +113,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         }], query)} />
         {props.children}
         </BlockNoteViewEditor>
+        </ComponentsContext.Provider>
       </BlockNoteView>
     </div>
   </DOCUMENT_NODE_VIEWS.Provider>
