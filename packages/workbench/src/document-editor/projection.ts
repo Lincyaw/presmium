@@ -154,9 +154,38 @@ function nativeChildren(native: readonly DocumentEditorBlock[], context: Documen
   return children
 }
 
+/** A plain text transaction keeps the teaching graph and untouched rich nodes by identity. */
+function projectTextEdits(blocks: readonly DocumentEditorBlock[], context: DocumentProjection, latest: TeachingDocument): TeachingDocument | undefined {
+  const changed: { native: DocumentEditorBlock, serialized: string, owner: TextBlock }[] = []
+  const visit = (blocks: readonly DocumentEditorBlock[]): boolean => blocks.every(block => {
+    const serialized = JSON.stringify(block)
+    if (context.baseline.get(block.id) === serialized) return true
+    const owner = latest.blocks[context.owners.get(block.id) ?? '']
+    if (block.children.length || (block.type !== 'paragraph' && block.type !== 'heading') || owner?.type !== 'text'
+      || !owner.content.some(node => node.id === block.id && (node.type === 'paragraph' || node.type === 'heading'))) return false
+    changed.push({ native: block, serialized, owner })
+    return true
+  })
+  if (!visit(blocks)) return undefined
+  const next = { ...latest, ...changed.length ? { blocks: { ...latest.blocks } } : {} }
+  for (const { native, serialized, owner } of changed) {
+    const content = nativeRichTextToProduct([native], context)[0]!
+    const current = next.blocks[owner.id] as TextBlock
+    next.blocks[owner.id] = { ...current, content: current.content.map(node => node.id === native.id ? content : node) }
+    context.rich.set(native.id, { ...context.rich.get(native.id), original: content })
+    context.baseline.set(native.id, serialized)
+  }
+  context.document = next
+  return next
+}
+
 /** Reconstruct the normalized product tree without visiting or reparsing Markdown. */
 export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], context: DocumentProjection, latest = context.document): TeachingDocument {
   const targetStructure = structureOf(blocks, context)
+  if (targetStructure === context.structure) {
+    const edited = projectTextEdits(blocks, context, latest)
+    if (edited) return edited
+  }
   if (context.structure && targetStructure !== context.structure) context.structures.set(context.structure, {
     document: structuredClone(latest), rich: new Map(context.rich), owners: new Map(context.owners), pages: new Map(context.pages), baseline: new Map(context.baseline),
   })
