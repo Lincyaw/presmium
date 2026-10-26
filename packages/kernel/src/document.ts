@@ -80,7 +80,31 @@ export function validateDocument(value: unknown): DocumentValidation {
     if (node.type === 'table') {
       const table = node as Extract<RichTextNode, { type: 'table' }>
       if ((table.headerRows ?? 0) > table.children.length) issue(`${path}/headerRows`, 'table.header', 'Header rows cannot exceed table rows.')
-      const widths = table.children.map(row => row.children.reduce((sum, cell) => sum + (cell.colspan ?? 1), 0))
+      let spans: { from: number, to: number, until: number }[] = []
+      const widths = table.children.map((row, rowIndex) => {
+        spans = spans.filter(span => span.until > rowIndex).sort((a, b) => a.from - b.from)
+        let column = 0, index = 0
+        const added: typeof spans = []
+        for (const [cellIndex, cell] of row.children.entries()) {
+          const cellPath = `${path}/children/${rowIndex}/children/${cellIndex}`
+          const colspan = cell.colspan ?? 1, rowspan = cell.rowspan ?? 1
+          if (!Number.isSafeInteger(colspan) || !Number.isSafeInteger(rowspan)) {
+            issue(cellPath, 'table.span', 'Cell spans must be safe positive integers.')
+            continue
+          }
+          while (spans[index] && spans[index]!.from <= column) { column = Math.max(column, spans[index]!.to); index++ }
+          const end = column + colspan
+          const overlap = spans[index] && spans[index]!.from < end
+          if (overlap) issue(cellPath, 'table.overlap', 'A cell cannot overlap a cell spanning from an earlier row.')
+          if (rowIndex + rowspan > table.children.length) issue(`${cellPath}/rowspan`, 'table.span', 'A row span cannot extend beyond the table rows.')
+          if (!Number.isSafeInteger(end) || table.columnWidths && end > table.columnWidths.length) issue(`${cellPath}/colspan`, 'table.span', 'A cell span cannot extend beyond the declared table columns.')
+          if (rowspan > 1 && !overlap) added.push({ from: column, to: end, until: rowIndex + rowspan })
+          column = end
+        }
+        const width = spans.reduce((width, span) => Math.max(width, span.to), column)
+        spans.push(...added)
+        return width
+      })
       if (table.headerColumns !== undefined && widths.some(width => table.headerColumns! > width)) issue(`${path}/headerColumns`, 'table.header', 'Header columns cannot exceed table columns.')
       if (table.columnWidths && widths.some(width => width !== table.columnWidths!.length)) issue(`${path}/columnWidths`, 'table.widths', 'Column widths must match the logical table columns.')
     }

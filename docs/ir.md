@@ -38,6 +38,8 @@ lecture.json + 引用的代码与媒体
 
 ## 3. 保存与校验
 
+表格按包含跨行占位的逻辑网格校验列宽；`rowspan`、`colspan` 可以组合，单元格不能越过已声明的边界或与前行跨入的单元格重叠。
+
 `validateDocument` 是 Web、agent、直接文件编辑与编译器共用的 Schema 和领域校验边界。检查格式版本、全局 ID、引用、内容所有权、步骤归属、参数与状态契约、媒体范围；诊断定位到实体和 JSON 字段路径。
 
 工作区 `GET document` 返回可编辑内容与 `version`；`POST document/change` 使用 `baseDocumentVersion`，提交语义操作或完整 replacement。涉及的工程文件与文稿在一个工作区事务内保存并记录一次历史。已有文稿不允许悄悄改变文稿 ID，复制操作必须在创建副本前分配新身份。
