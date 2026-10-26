@@ -187,14 +187,16 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
                     {pages && <span className="pmw-navigation__number">{item.number}</span>}
                     <span className="pmw-navigation__title">{item.title}</span>
                   </button>
-                  {editing && <PmMenu label={t.pageMore(item.title)} description={moveDescription} triggerRef={node => { if (node) menuTriggers.current.set(item.id, node); else menuTriggers.current.delete(item.id) }} items={[
+                  {editing && <PmMenu label={t.pageMore(item.title)} description={[t.pageCopyHint, moveDescription].filter(Boolean).join(' ')} triggerRef={node => { if (node) menuTriggers.current.set(item.id, node); else menuTriggers.current.delete(item.id) }} items={[
                     { id: 'rename', label: t.rename, icon: 'edit', disabled: !capability.rename || !canCreate || pageBusy || creating },
+                    { id: 'copy', label: t.pageCopy, icon: 'copy', disabled: !canCreate || pageBusy || creating },
                     { id: 'up', label: t.movePageUp, disabled: !capability.move || !canCreate || pageBusy || creating || !previousPeer },
                     { id: 'down', label: t.movePageDown, disabled: !capability.move || !canCreate || pageBusy || creating || !nextPeer },
                     ...(canDelete ? [{ id: 'delete', label: t.pageDelete, icon: 'trash' as const, danger: true, separator: true, disabled: !canCreate || pageBusy || creating }] : []),
                   ]} onSelect={id => {
                     workbench.clearPageEditFailure()
                     if (id === 'rename') setRenaming({ id: item.id, title: item.title, trigger: menuTriggers.current.get(item.id) })
+                    else if (id === 'copy') void workbench.duplicatePage(item.id)
                     else if (id === 'delete') setDeleting({ id: item.id, title: item.title, trigger: menuTriggers.current.get(item.id) })
                     else if (id === 'up' && index > 0) void workbench.movePage(item.id, items[index - 1]!.id)
                     else if (id === 'down') void workbench.movePage(item.id, items[index + 2]?.id ?? null)

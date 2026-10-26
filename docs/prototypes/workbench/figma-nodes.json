@@ -56,6 +56,16 @@
           "exampleUrl": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=86-1621",
           "source": "packages/workbench/src/components.tsx",
           "semantics": "Optional visible capability description; wraps within the viewport and is associated by aria-describedby without becoming an action or keyboard stop."
+        },
+        "pageCopyExample": {
+          "nodeId": "120:1795",
+          "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=120-1795",
+          "componentId": "25:524",
+          "properties": {
+            "Show description": true,
+            "Description": "复制正文、步骤、讲稿与播放设置；素材继续共享，批注留在原页。"
+          },
+          "verification": "docs/benchmarks/document-page-copy-2026-10-26.md"
         }
       },
       "Tabs": {
