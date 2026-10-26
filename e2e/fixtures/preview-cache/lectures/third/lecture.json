@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "id": "document-99f6404899a90075",
+  "metadata": {
+    "title": "Third lecture",
+    "lang": "en",
+    "plugins": [
+      "./plugin"
+    ],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "third-lecture",
+    "cache-limit"
+  ],
+  "sections": {
+    "third-lecture": {
+      "id": "third-lecture",
+      "title": "Third lecture",
+      "level": 1,
+      "children": [
+        "third-lecture--paragraph-1"
+      ],
+      "stepOrder": [
+        "third-lecture--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "cache-limit": {
+      "id": "cache-limit",
+      "title": "Cache limit",
+      "level": 2,
+      "children": [
+        "cache-limit--paragraph-1",
+        "cache-limit--paragraph-2"
+      ],
+      "stepOrder": [
+        "cache-limit--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "third-lecture--paragraph-1": {
+      "id": "third-lecture--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "third-lecture--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The third document makes the preview pool evict its least recently used iframe."
+            }
+          ]
+        }
+      ]
+    },
+    "cache-limit--paragraph-1": {
+      "id": "cache-limit--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "cache-limit--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Only the current lecture and one inactive lecture may keep their loaded modules."
+            }
+          ]
+        }
+      ]
+    },
+    "cache-limit--paragraph-2": {
+      "id": "cache-limit--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "cache-limit--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This lecture’s plugin has not declared that it can restart, so leaving the lecture destroys its iframe."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "third-lecture--step-0": {
+      "id": "third-lecture--step-0",
+      "sectionId": "third-lecture",
+      "visuals": [
+        {
+          "blockId": "third-lecture--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "third-lecture--paragraph-1--narration"
+      ]
+    },
+    "cache-limit--step-0": {
+      "id": "cache-limit--step-0",
+      "sectionId": "cache-limit",
+      "visuals": [
+        {
+          "blockId": "cache-limit--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "cache-limit--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "cache-limit--paragraph-1--narration",
+        "cache-limit--paragraph-2--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "third-lecture--paragraph-1--narration": {
+      "id": "third-lecture--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "The third document makes the preview pool evict its least recently used iframe."
+        }
+      ]
+    },
+    "cache-limit--paragraph-1--narration": {
+      "id": "cache-limit--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Only the current lecture and one inactive lecture may keep their loaded modules."
+        }
+      ]
+    },
+    "cache-limit--paragraph-2--narration": {
+      "id": "cache-limit--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "This lecture’s plugin has not declared that it can restart, so leaving the lecture destroys its iframe."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

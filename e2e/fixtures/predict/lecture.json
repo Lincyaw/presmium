@@ -1,0 +1,582 @@
+{
+  "schemaVersion": 1,
+  "id": "document-3054455a09d22456",
+  "metadata": {
+    "title": "先预测再揭示",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-session",
+      "@lincyaw/addon-classroom"
+    ],
+    "presmium": {
+      "presmium.session": {
+        "server": "ws://classroom.invalid"
+      }
+    },
+    "renderers": {
+      "web": {},
+      "slides": {
+        "theme": "default"
+      }
+    }
+  },
+  "sectionOrder": [
+    "先预测再揭示",
+    "merge",
+    "why"
+  ],
+  "sections": {
+    "先预测再揭示": {
+      "id": "先预测再揭示",
+      "title": "先预测再揭示",
+      "level": 1,
+      "children": [
+        "先预测再揭示--paragraph-1"
+      ],
+      "stepOrder": [
+        "先预测再揭示--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "merge": {
+      "id": "merge",
+      "title": "合并三轮",
+      "level": 2,
+      "children": [
+        "merge--paragraph-1",
+        "merge--pm-predict-1"
+      ],
+      "stepOrder": [
+        "merge--step-0",
+        "merge--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "why": {
+      "id": "why",
+      "title": "从字符开始",
+      "level": 2,
+      "children": [
+        "why--pm-predict-1"
+      ],
+      "stepOrder": [
+        "why--step-0",
+        "why--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "先预测再揭示--paragraph-1": {
+      "id": "先预测再揭示--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "先预测再揭示--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/predict.spec.ts 的测试文稿：读者先写下预测，之后一步的内容才显示。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--paragraph-1": {
+      "id": "merge--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "语料 "
+            },
+            {
+              "type": "text",
+              "text": "aaabdaaabac",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：BPE 每一轮把出现次数最多的相邻符号对合并成一个新符号。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--pm-predict-1": {
+      "id": "merge--pm-predict-1",
+      "type": "component",
+      "definitionId": "merge--pm-predict-1--definition",
+      "parameters": {
+        "question": "合并三轮之后，词表中有几个新符号？",
+        "choices": [
+          "1",
+          "2",
+          "3"
+        ],
+        "reveal": [
+          "paragraph-2"
+        ],
+        "notes": [
+          "paragraph-3"
+        ],
+        "place": {
+          "section": "merge",
+          "block": "pm-predict-1",
+          "title": "合并三轮",
+          "index": 2
+        }
+      },
+      "children": [
+        "merge--pm-predict-1--paragraph-2",
+        "merge--pm-predict-1--paragraph-3"
+      ]
+    },
+    "merge--pm-predict-1--paragraph-2": {
+      "id": "merge--pm-predict-1--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--pm-predict-1--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "三个：每一轮新增一个符号。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--pm-predict-1--paragraph-3": {
+      "id": "merge--pm-predict-1--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--pm-predict-1--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每一轮只合并出现最多的那一对，所以三轮新增三个符号。"
+            }
+          ]
+        }
+      ]
+    },
+    "why--pm-predict-1": {
+      "id": "why--pm-predict-1",
+      "type": "component",
+      "definitionId": "why--pm-predict-1--definition",
+      "parameters": {
+        "question": "为什么 BPE 从单个字符开始合并？",
+        "reveal": [
+          "paragraph-1"
+        ],
+        "notes": [],
+        "place": {
+          "section": "why",
+          "block": "pm-predict-1",
+          "title": "从字符开始",
+          "index": 3
+        }
+      },
+      "children": [
+        "why--pm-predict-1--prompt",
+        "why--pm-predict-1--paragraph-1"
+      ]
+    },
+    "why--pm-predict-1--prompt": {
+      "id": "why--pm-predict-1--prompt",
+      "type": "text",
+      "content": [
+        {
+          "id": "why--pm-predict-1--prompt--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "写一句话就好。"
+            }
+          ]
+        }
+      ]
+    },
+    "why--pm-predict-1--paragraph-1": {
+      "id": "why--pm-predict-1--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "why--pm-predict-1--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "从字符开始，任何词都能切分，不会遇到词表之外的词。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "先预测再揭示--step-0": {
+      "id": "先预测再揭示--step-0",
+      "sectionId": "先预测再揭示",
+      "visuals": [
+        {
+          "blockId": "先预测再揭示--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "先预测再揭示--paragraph-1--narration"
+      ]
+    },
+    "merge--step-0": {
+      "id": "merge--step-0",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--pm-predict-1--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "merge--pm-predict-1--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "merge--pm-predict-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "merge--step-1": {
+      "id": "merge--step-1",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--pm-predict-1--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "merge--pm-predict-1--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "merge--pm-predict-1",
+          "visible": true,
+          "state": "legacy-1"
+        }
+      ],
+      "narrationIds": [
+        "merge--pm-predict-1--paragraph-3--narration"
+      ]
+    },
+    "why--step-0": {
+      "id": "why--step-0",
+      "sectionId": "why",
+      "visuals": [
+        {
+          "blockId": "why--pm-predict-1--prompt",
+          "visible": true
+        },
+        {
+          "blockId": "why--pm-predict-1--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "why--pm-predict-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "why--step-1": {
+      "id": "why--step-1",
+      "sectionId": "why",
+      "visuals": [
+        {
+          "blockId": "why--pm-predict-1--prompt",
+          "visible": true
+        },
+        {
+          "blockId": "why--pm-predict-1--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "why--pm-predict-1",
+          "visible": true,
+          "state": "legacy-1"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "先预测再揭示--paragraph-1--narration": {
+      "id": "先预测再揭示--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "e2e/predict.spec.ts 的测试文稿：读者先写下预测，之后一步的内容才显示。"
+        }
+      ]
+    },
+    "merge--pm-predict-1--paragraph-3--narration": {
+      "id": "merge--pm-predict-1--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "每一轮只合并出现最多的那一对，所以三轮新增三个符号。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "merge--pm-predict-1--definition": {
+      "id": "merge--pm-predict-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmPredict"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.classroom",
+        "name": "PmPredict",
+        "ownsCode": false,
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "预测"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "：合并三轮之后，词表中有几个新符号？"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "ordered": true,
+              "spread": false,
+              "children": [
+                {
+                  "type": "listItem",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "1"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "2"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "3"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "html",
+              "value": "<details data-static=\"open\"><summary>写下预测后展开</summary>"
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "三个：每一轮新增一个符号。"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "每一轮只合并出现最多的那一对，所以三轮新增三个符号。"
+                }
+              ]
+            },
+            {
+              "type": "html",
+              "value": "</details>"
+            }
+          ]
+        }
+      }
+    },
+    "why--pm-predict-1--definition": {
+      "id": "why--pm-predict-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmPredict"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.classroom",
+        "name": "PmPredict",
+        "ownsCode": false,
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "预测"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "：为什么 BPE 从单个字符开始合并？"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "写一句话就好。"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "先写下你的预测。"
+                }
+              ]
+            },
+            {
+              "type": "html",
+              "value": "<details data-static=\"open\"><summary>写下预测后展开</summary>"
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "从字符开始，任何词都能切分，不会遇到词表之外的词。"
+                }
+              ]
+            },
+            {
+              "type": "html",
+              "value": "</details>"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

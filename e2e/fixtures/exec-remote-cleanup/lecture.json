@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "document-d24b945fe2926f82",
+  "metadata": {
+    "title": "Jupyter 生命周期回归",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec",
+      "@lincyaw/addon-exec-jupyter"
+    ],
+    "renderers": {
+      "web": {}
+    },
+    "execute": {
+      "environments": {
+        "lab": {
+          "kind": "jupyter",
+          "auth": "proxy"
+        }
+      }
+    }
+  },
+  "sectionOrder": [
+    "jupyter-生命周期回归"
+  ],
+  "sections": {
+    "jupyter-生命周期回归": {
+      "id": "jupyter-生命周期回归",
+      "title": "Jupyter 生命周期回归",
+      "level": 1,
+      "children": [
+        "jupyter-生命周期回归--transient",
+        "jupyter-生命周期回归--persistent",
+        "jupyter-生命周期回归--hidden",
+        "jupyter-生命周期回归--pm-terminal-1"
+      ],
+      "stepOrder": [
+        "jupyter-生命周期回归--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "jupyter-生命周期回归--transient": {
+      "id": "jupyter-生命周期回归--transient",
+      "type": "code",
+      "language": "python",
+      "value": "print(\"transient-42\")",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.env.lab"
+      }
+    },
+    "jupyter-生命周期回归--persistent": {
+      "id": "jupyter-生命周期回归--persistent",
+      "type": "code",
+      "language": "python",
+      "value": "from pathlib import Path\nPath(\"nested\").mkdir(exist_ok=True)\nPath(\"nested/result.txt\").write_text(\"session-42\")\nprint(\"session-42\")",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.env.lab",
+        "session": "cleanup"
+      }
+    },
+    "jupyter-生命周期回归--hidden": {
+      "id": "jupyter-生命周期回归--hidden",
+      "type": "code",
+      "language": "python",
+      "value": "from pathlib import Path\nPath(\".hidden\").write_text(\"hidden from the Jupyter Contents API\")\nprint(42)",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.env.lab"
+      }
+    },
+    "jupyter-生命周期回归--pm-terminal-1": {
+      "id": "jupyter-生命周期回归--pm-terminal-1",
+      "type": "component",
+      "definitionId": "jupyter-生命周期回归--pm-terminal-1--definition",
+      "parameters": {
+        "env": "lab",
+        "rows": 8
+      }
+    }
+  },
+  "steps": {
+    "jupyter-生命周期回归--step-0": {
+      "id": "jupyter-生命周期回归--step-0",
+      "sectionId": "jupyter-生命周期回归",
+      "visuals": [
+        {
+          "blockId": "jupyter-生命周期回归--transient",
+          "visible": true
+        },
+        {
+          "blockId": "jupyter-生命周期回归--persistent",
+          "visible": true
+        },
+        {
+          "blockId": "jupyter-生命周期回归--hidden",
+          "visible": true
+        },
+        {
+          "blockId": "jupyter-生命周期回归--pm-terminal-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "jupyter-生命周期回归--pm-terminal-1--definition": {
+      "id": "jupyter-生命周期回归--pm-terminal-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.execJupyter",
+        "name": "PmTerminal"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.execJupyter",
+        "name": "PmTerminal",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "环境 lab 的终端：在网页或幻灯片中打开。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

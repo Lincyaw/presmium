@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 1,
+  "id": "document-7286d0a8b9cd07ed",
+  "metadata": {
+    "title": "紧凑放映",
+    "lang": "zh-CN",
+    "renderers": {
+      "web": {},
+      "slides": {}
+    }
+  },
+  "sectionOrder": [
+    "intro",
+    "second"
+  ],
+  "sections": {
+    "intro": {
+      "id": "intro",
+      "title": "紧凑放映",
+      "level": 1,
+      "children": [
+        "intro--paragraph-1"
+      ],
+      "stepOrder": [
+        "intro--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "second": {
+      "id": "second",
+      "title": "第二页",
+      "level": 2,
+      "children": [
+        "second--paragraph-1",
+        "second--paragraph-2"
+      ],
+      "stepOrder": [
+        "second--step-0",
+        "second--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "intro--paragraph-1": {
+      "id": "intro--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "开场讲解。"
+            }
+          ]
+        }
+      ]
+    },
+    "second--paragraph-1": {
+      "id": "second--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "second--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这一页的第一步。"
+            }
+          ]
+        }
+      ]
+    },
+    "second--paragraph-2": {
+      "id": "second--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "second--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这一页的第二步。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "intro--step-0": {
+      "id": "intro--step-0",
+      "sectionId": "intro",
+      "visuals": [
+        {
+          "blockId": "intro--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "intro--paragraph-1--narration"
+      ]
+    },
+    "second--step-0": {
+      "id": "second--step-0",
+      "sectionId": "second",
+      "visuals": [
+        {
+          "blockId": "second--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "second--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "second--step-1": {
+      "id": "second--step-1",
+      "sectionId": "second",
+      "visuals": [
+        {
+          "blockId": "second--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "second--paragraph-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "intro--paragraph-1--narration": {
+      "id": "intro--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "开场讲解。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

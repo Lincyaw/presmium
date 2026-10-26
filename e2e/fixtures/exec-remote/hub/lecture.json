@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "id": "document-2f1c89e40f022123",
+  "metadata": {
+    "title": "JupyterHub 测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec",
+      "@lincyaw/addon-exec-jupyter"
+    ],
+    "renderers": {
+      "web": {}
+    },
+    "execute": {
+      "environments": {
+        "hub": {
+          "kind": "jupyter",
+          "auth": "prompt",
+          "url": "http://127.0.0.1:5337/user/{user}/"
+        }
+      }
+    }
+  },
+  "sectionOrder": [
+    "jupyterhub-测试文稿",
+    "mine"
+  ],
+  "sections": {
+    "jupyterhub-测试文稿": {
+      "id": "jupyterhub-测试文稿",
+      "title": "JupyterHub 测试文稿",
+      "level": 1,
+      "children": [
+        "jupyterhub-测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "jupyterhub-测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "mine": {
+      "id": "mine",
+      "title": "我的服务器",
+      "level": 2,
+      "children": [
+        "mine--whose"
+      ],
+      "stepOrder": [
+        "mine--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "jupyterhub-测试文稿--paragraph-1": {
+      "id": "jupyterhub-测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "jupyterhub-测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/exec-remote.spec.ts 的测试文稿：学习者粘贴 hub 的令牌后，代码在他自己的单用户服务器上运行。"
+            }
+          ]
+        }
+      ]
+    },
+    "mine--whose": {
+      "id": "mine--whose",
+      "type": "code",
+      "language": "python",
+      "value": "import os\nprint(\"服务器属于\", os.environ[\"JUPYTERHUB_USER\"])",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.env.hub"
+      }
+    }
+  },
+  "steps": {
+    "jupyterhub-测试文稿--step-0": {
+      "id": "jupyterhub-测试文稿--step-0",
+      "sectionId": "jupyterhub-测试文稿",
+      "visuals": [
+        {
+          "blockId": "jupyterhub-测试文稿--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "mine--step-0": {
+      "id": "mine--step-0",
+      "sectionId": "mine",
+      "visuals": [
+        {
+          "blockId": "mine--whose",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

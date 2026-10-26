@@ -1,0 +1,347 @@
+{
+  "schemaVersion": 1,
+  "id": "document-8c07b673cdb5ea7f",
+  "metadata": {
+    "title": "浏览器执行生命周期",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec"
+    ],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "python-session",
+    "queued-python",
+    "javascript",
+    "typescript"
+  ],
+  "sections": {
+    "python-session": {
+      "id": "python-session",
+      "title": "Python 会话",
+      "level": 2,
+      "children": [
+        "python-session--pm-run-panel-1"
+      ],
+      "stepOrder": [
+        "python-session--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "queued-python": {
+      "id": "queued-python",
+      "title": "排队的 Python",
+      "level": 2,
+      "children": [
+        "queued-python--pm-run-panel-1"
+      ],
+      "stepOrder": [
+        "queued-python--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "javascript": {
+      "id": "javascript",
+      "title": "JavaScript",
+      "level": 2,
+      "children": [
+        "javascript--pm-run-panel-1"
+      ],
+      "stepOrder": [
+        "javascript--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "typescript": {
+      "id": "typescript",
+      "title": "TypeScript",
+      "level": 2,
+      "children": [
+        "typescript--pm-run-panel-1"
+      ],
+      "stepOrder": [
+        "typescript--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "python-session--pm-run-panel-1": {
+      "id": "python-session--pm-run-panel-1",
+      "type": "component",
+      "definitionId": "python-session--pm-run-panel-1--definition",
+      "parameters": {
+        "params": {
+          "wait": false
+        },
+        "timeout": 30000
+      },
+      "children": [
+        "python-session--pm-run-panel-1--source"
+      ]
+    },
+    "python-session--pm-run-panel-1--source": {
+      "id": "python-session--pm-run-panel-1--source",
+      "type": "code",
+      "language": "python",
+      "value": "import time\nif wait:\n    from js import console\n    console.info(\"exec-python-wait-started\")\n    time.sleep(30)\ncount = globals().get('count', 0) + 1\nprint(count)",
+      "execution": {
+        "when": "live",
+        "args": {
+          "wait": "false"
+        },
+        "timeoutMs": 30000,
+        "session": "lifecycle"
+      }
+    },
+    "queued-python--pm-run-panel-1": {
+      "id": "queued-python--pm-run-panel-1",
+      "type": "component",
+      "definitionId": "queued-python--pm-run-panel-1--definition",
+      "parameters": {},
+      "children": [
+        "queued-python--pm-run-panel-1--source"
+      ]
+    },
+    "queued-python--pm-run-panel-1--source": {
+      "id": "queued-python--pm-run-panel-1--source",
+      "type": "code",
+      "language": "python",
+      "value": "print(\"queued-42\")",
+      "execution": {
+        "when": "live"
+      }
+    },
+    "javascript--pm-run-panel-1": {
+      "id": "javascript--pm-run-panel-1",
+      "type": "component",
+      "definitionId": "javascript--pm-run-panel-1--definition",
+      "parameters": {
+        "params": {
+          "value": 21
+        }
+      },
+      "children": [
+        "javascript--pm-run-panel-1--source"
+      ]
+    },
+    "javascript--pm-run-panel-1--source": {
+      "id": "javascript--pm-run-panel-1--source",
+      "type": "code",
+      "language": "javascript",
+      "value": "console.log(value * 2)",
+      "execution": {
+        "when": "live",
+        "args": {
+          "value": "21"
+        }
+      }
+    },
+    "typescript--pm-run-panel-1": {
+      "id": "typescript--pm-run-panel-1",
+      "type": "component",
+      "definitionId": "typescript--pm-run-panel-1--definition",
+      "parameters": {
+        "params": {
+          "value": 21,
+          "wait": false
+        },
+        "timeout": 30000
+      },
+      "children": [
+        "typescript--pm-run-panel-1--source"
+      ]
+    },
+    "typescript--pm-run-panel-1--source": {
+      "id": "typescript--pm-run-panel-1--source",
+      "type": "code",
+      "language": "typescript",
+      "value": "if (wait) await new Promise(resolve => setTimeout(resolve, 30000))\nconst answer: number = value * 2\nconsole.log(answer)",
+      "execution": {
+        "when": "live",
+        "args": {
+          "value": "21",
+          "wait": "false"
+        },
+        "timeoutMs": 30000
+      }
+    }
+  },
+  "steps": {
+    "python-session--step-0": {
+      "id": "python-session--step-0",
+      "sectionId": "python-session",
+      "visuals": [
+        {
+          "blockId": "python-session--pm-run-panel-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "python-session--pm-run-panel-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "queued-python--step-0": {
+      "id": "queued-python--step-0",
+      "sectionId": "queued-python",
+      "visuals": [
+        {
+          "blockId": "queued-python--pm-run-panel-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "queued-python--pm-run-panel-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "javascript--step-0": {
+      "id": "javascript--step-0",
+      "sectionId": "javascript",
+      "visuals": [
+        {
+          "blockId": "javascript--pm-run-panel-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "javascript--pm-run-panel-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "typescript--step-0": {
+      "id": "typescript--step-0",
+      "sectionId": "typescript",
+      "visuals": [
+        {
+          "blockId": "typescript--pm-run-panel-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "typescript--pm-run-panel-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "python-session--pm-run-panel-1--definition": {
+      "id": "python-session--pm-run-panel-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      }
+    },
+    "queued-python--pm-run-panel-1--definition": {
+      "id": "queued-python--pm-run-panel-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      }
+    },
+    "javascript--pm-run-panel-1--definition": {
+      "id": "javascript--pm-run-panel-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      }
+    },
+    "typescript--pm-run-panel-1--definition": {
+      "id": "typescript--pm-run-panel-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
