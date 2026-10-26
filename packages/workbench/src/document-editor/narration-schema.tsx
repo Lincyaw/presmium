@@ -13,7 +13,7 @@ export const NARRATION_MESSAGES = {
   'zh-CN': { field: '讲稿', captions: '字幕', pronunciation: '发音', display: '显示文字', spoken: '实际读音', done: '确定', cancel: '取消', cue: '提示', empty: '输入本步讲稿…', emptyCaptions: '输入字幕…' },
   en: { field: 'Narration', captions: 'Captions', pronunciation: 'Pronunciation', display: 'Written text', spoken: 'Spoken text', done: 'Apply', cancel: 'Cancel', cue: 'Cue', empty: 'Write this step’s narration…', emptyCaptions: 'Write captions…' },
 }
-export const NARRATION_CONTEXT = createContext<{ locale: Locale, readOnly?: boolean }>({ locale: 'zh-CN' })
+export const NARRATION_CONTEXT = createContext<{ locale: Locale, readOnly?: boolean, advanced?: boolean }>({ locale: 'zh-CN' })
 
 const atom = createReactInlineContentSpec({
   type: 'narrationAtom',
@@ -21,7 +21,7 @@ const atom = createReactInlineContentSpec({
   content: 'none',
 }, {
   render: ({ inlineContent, updateInlineContent }) => {
-    const { locale, readOnly } = useContext(NARRATION_CONTEXT), t = NARRATION_MESSAGES[locale]
+    const { locale, readOnly, advanced } = useContext(NARRATION_CONTEXT), t = NARRATION_MESSAGES[locale]
     const [open, setOpen] = useState(false), [display, setDisplay] = useState(''), [spoken, setSpoken] = useState('')
     const props = inlineContent.props
     if (props.kind === 'cue') {
@@ -29,6 +29,7 @@ const atom = createReactInlineContentSpec({
       try { action = String(JSON.parse(props.payload).action ?? '') } catch { /* The adapter reports malformed content. */ }
       return <span contentEditable={false} className="pm-ui-narration-editor__cue" title={props.cueId}>{t.cue}{action ? ` · ${action}` : ''}</span>
     }
+    if (advanced === false) return <span contentEditable={false}>{props.display}</span>
     return <span contentEditable={false}>
       <PmButton small variant="ghost" disabled={readOnly} title={props.spoken} onClick={() => { setDisplay(props.display); setSpoken(props.spoken); setOpen(true) }}>{props.display || t.pronunciation}</PmButton>
       <PmDialog open={open} label={t.pronunciation} closeLabel={t.cancel} onClose={() => setOpen(false)} actions={<>
