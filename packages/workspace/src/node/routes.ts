@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
-import { DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, problemResponse, pushStream, sseResponse } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, problemResponse, PRODUCTION_AUDIO_AUTHORING, pushStream, sseResponse } from '@lincyaw/kernel'
 import type { ChangesAnswer, CommitAnswer, CompileJob, DocumentOperation, DocumentsAnswer, JobsAnswer, Member, PresmiumNodePlugin, RequestContext, RevertResult, RevisionsAnswer, Route, SavedAnswer, ServerContribution, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
 import { hasBearerToken } from '@lincyaw/server'
 import { REVERT_TRAILER, saveSummary, trailers } from '../domain/commit-message.ts'
@@ -20,6 +20,8 @@ import { listTemplates } from './templates.ts'
 import type { Jobs } from './jobs.ts'
 import type { WorkbenchApi } from './workbench-api.ts'
 import { documentEditorRoutes } from './document-editor.ts'
+import { documentAudioRoutes } from './document-audio.ts'
+import type { ProductionAudioAuthoring } from '@lincyaw/kernel'
 import { documentDirOf } from './writer.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
@@ -38,6 +40,7 @@ export interface WorkspaceRoutesOptions {
   workbench?: WorkbenchApi
   jobs?: Jobs
   launcherToken?: string
+  audio?: ProductionAudioAuthoring
 }
 
 function toRendererIds(body: unknown): string[] | undefined {
@@ -125,6 +128,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
   })
   const routes: Record<string, Route> = {
     ...documentEditorRoutes({ root: config.root, editor, revisions, workbench }),
+    ...documentAudioRoutes({ root: config.root, editor, revisions, audio: options.audio }),
     documents: {
       role: 'reader',
       handle: (request, ctx) => catchRequestErrors(async () => {
@@ -359,6 +363,6 @@ export function workspaceRoutesPlugin(options: WorkspaceRoutesOptions): Presmium
     id: WORKSPACE_ID,
     version,
     kernel: '^1.0.0',
-    server: () => workspaceRoutes(options),
+    server: ctx => workspaceRoutes({ ...options, audio: ctx.service(PRODUCTION_AUDIO_AUTHORING) }),
   }
 }

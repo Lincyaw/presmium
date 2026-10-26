@@ -69,6 +69,8 @@ lecture.json + 引用的代码与媒体
 
 `production.mediaClips` 支持同文稿非隐藏常规音频文件。`sourceRange` 给出实际音频内的入点与出点，`attachment` 给出稳定步骤与步内偏移；片段必须完整处于已确认步骤时段，不自动跨步或改变 cue／hold。`volume` 为 0..1，独立的 `muted` 保留原音量。编译器将被引用的资产声明投影为 `productionAssets` 并跟踪文件，受众过滤同步排除相应片段与声明。`GET production-asset` 按 `ProductionAssetQuery { source, irRevision, assetId }` 返回实际时长、SHA-256、编码与声道信息；媒体段使用 `media` 表示这份检查结果，与语音缓存的 `audio` 分开。Node 有界读取并在媒体响应与发布时复核 SHA，Mediabunny 读取实际单音轨音频；预览和导出共用同一放置、裁切与混音计算。远程、共享路径、符号链接、视频和录音采用仍拒绝。当前上限与真实验证见[本地音频记录](benchmarks/production-audio-clips-2026-10-26.md)。
 
+原始二进制导入、尚未引用资产的检查与显式 clip 提交使用独立的[作者事务接口](audio-authoring.md)，不向运行 IR 或媒体响应写回作者内容。
+
 组件的资源映射 `assets` 使用参数的点分路径。插件可为 `stepStates` 派生该步自己的资源映射；链接检查包含这些资源，发布时同步改写该步参数中的地址，避免步骤参数覆盖已发布的 URL。内置媒体从实际 `src`、`poster`、`still` 与 `captions` 参数派生映射，并跟踪步骤专属文件；资源不存在时产生链接诊断。
 
 普通阅读器的场景局部控制也从 `stepStates` 重建状态与参数：`StepScope.stateAt(localStep)` 与 `step(localStep)` 使用同一个首个可见作者快照。局部跳步和播放复用场景原有时钟，不改变全文导航或作者文稿。

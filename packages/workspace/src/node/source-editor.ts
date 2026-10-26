@@ -52,6 +52,7 @@ export interface SourceTransactionHistory {
   run<T>(work: () => Promise<T>): Promise<T>
   commit(paths: string[], lang: string | undefined): Promise<Revision | undefined>
 }
+interface TransactionFile { path: string, content: string | Uint8Array, base: string | null }
 
 /** The source files the browser's editor lists, opens, creates and saves, as far as the member and the page's document may. */
 export class SourceEditor {
@@ -177,6 +178,17 @@ export class SourceEditor {
 
   /** Saves related sources as one authoring change; any failed write or commit restores all preimages. */
   async transaction(scope: Scope, changes: SourceTransactionChange[], member: Member, history?: SourceTransactionHistory): Promise<SourceTransactionAnswer> {
+    return this.#transaction(scope, changes, member, history)
+  }
+
+  /** A validated authoring document and one new original attachment share CAS, rollback and history. */
+  async transactionWithBinary(scope: Scope, document: SourceTransactionChange, attachment: { path: string, content: Uint8Array }, member: Member, history?: SourceTransactionHistory): Promise<SourceTransactionAnswer> {
+    if (document.path !== DOCUMENT_ENTRY && !document.path.endsWith(`/${DOCUMENT_ENTRY}`) || document.base === null) throw new RequestError(400, 'document-transaction-required')
+    if (!attachment.content.byteLength || attachment.content.byteLength > 16 << 20) throw new RequestError(413, 'production.asset-size')
+    return this.#transaction(scope, [document, { ...attachment, content: new Uint8Array(attachment.content), base: null }], member, history, attachment.path)
+  }
+
+  async #transaction(scope: Scope, changes: TransactionFile[], member: Member, history?: SourceTransactionHistory, binaryPath?: string): Promise<SourceTransactionAnswer> {
     if (changes.length === 0 || changes.length > MAX_SOURCE_CHANGES) throw new RequestError(400, `a source transaction takes 1 to ${MAX_SOURCE_CHANGES} files`)
     const paths = new Set<string>()
     let bytes = 0
@@ -184,8 +196,10 @@ export class SourceEditor {
       this.#assertEditable(scope, change.path, member)
       if (paths.has(change.path)) throw new RequestError(400, `a source path occurs twice: ${change.path}`)
       paths.add(change.path)
-      if (BINARY.test(change.path) || change.content.includes('\0')) throw new RequestError(415, `${change.path} is not a text file`)
-      bytes += Buffer.byteLength(change.content, 'utf8')
+      if (change.path !== binaryPath) {
+        if (typeof change.content !== 'string' || BINARY.test(change.path) || change.content.includes('\0')) throw new RequestError(415, `${change.path} is not a text file`)
+        bytes += Buffer.byteLength(change.content, 'utf8')
+      }
       return this.#documentHolding(change.path)
     })
     if (bytes > MAX_SOURCE) throw new RequestError(413, `the transaction is larger than the editor saves (${MAX_SOURCE} bytes)`)
@@ -198,7 +212,7 @@ export class SourceEditor {
     const work = async (): Promise<SourceTransactionAnswer> => {
       // Read every preimage before creating directories or writing any file.
       const snapshots = changes.map(change => {
-        const written = Buffer.from(change.content, 'utf8')
+        const written = typeof change.content === 'string' ? Buffer.from(change.content, 'utf8') : Buffer.from(change.content)
         if (change.base !== null) {
           const before = this.#readBytes(scope, change.path, member)
           const version = versionOf(before)
@@ -219,7 +233,7 @@ export class SourceEditor {
         if (lstatSync(file, { throwIfNoEntry: false })) throw new RequestError(409, `${change.path} already exists`, { exists: true })
         return { path: change.path, before: undefined, written, executable: false }
       })
-      for (const snapshot of snapshots) validateDocumentSource(snapshot.path, snapshot.written.toString('utf8'), snapshot.before)
+      for (const snapshot of snapshots) if (snapshot.path !== binaryPath) validateDocumentSource(snapshot.path, snapshot.written.toString('utf8'), snapshot.before)
       const created: string[] = []
       const write = (next: DocumentFileChange[]) => this.#writer.write(next)
       try {

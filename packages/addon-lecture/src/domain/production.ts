@@ -100,7 +100,7 @@ export function projectProductionPlan(doc: IRDocument, plan: LecturePlan, track:
     if (!segment.assetId || !segment.mediaClipId) continue
     const clip = doc.production?.mediaClips.find(clip => clip.id === segment.mediaClipId), media = assets.get(segment.assetId)
     if (!clip || !media) continue
-    voice.push({ id: `media:${clip.id}`, sectionId: segment.section, stepId: clip.attachment.stepId, stepIds: [clip.attachment.stepId], mediaClipId: clip.id, assetId: clip.assetId, label: clip.assetId, media, sourceRange: { ...clip.sourceRange }, volume: clip.volume, muted: clip.muted ?? false, alignment: 'none', ...range(segment.start * 1000, (segment.start + segment.duration) * 1000) })
+    voice.push({ id: `media:${clip.id}`, sectionId: segment.section, stepId: clip.attachment.stepId, stepIds: [clip.attachment.stepId], mediaClipId: clip.id, assetId: clip.assetId, label: doc.productionAssets?.[clip.assetId]?.title || clip.assetId, media, sourceRange: { ...clip.sourceRange }, volume: clip.volume, muted: clip.muted ?? false, alignment: 'none', ...range(segment.start * 1000, (segment.start + segment.duration) * 1000) })
   }
   const timing: ProductionTiming = unknown.length ? 'unknown' : Number.isFinite(estimatedAt) ? 'estimated' : 'confirmed'
   const ready = timing === 'confirmed' && failures.length === 0 && duration > 0

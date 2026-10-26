@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
 import { basename, join } from 'node:path'
-import { VOICEOVER } from '@lincyaw/kernel'
+import { PRODUCTION_AUDIO_AUTHORING, VOICEOVER } from '@lincyaw/kernel'
 import type { Exporter, PresmiumNodePlugin } from '@lincyaw/kernel'
 import { LECTURE_ID } from '../domain/index.ts'
 import { lectureCheck } from './check.ts'
@@ -10,6 +10,7 @@ import { lectureRenderer } from './renderer.ts'
 import { cueRole, sayRole } from './roles.ts'
 import { lectureServer } from './routes/server.ts'
 import { LECTURE_DECK, lectureTools } from './tools.ts'
+import { productionAudioAuthoring } from './audio-authoring.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
@@ -47,7 +48,7 @@ const plugin: PresmiumNodePlugin = {
   server: lectureServer,
   roles: [cueRole, sayRole],
   passes: [rememberLatestIrPass],
-  services: ctx => [[LECTURE_DECK, { deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot }], [VOICEOVER, { version: 1, preview: true }]],
+  services: ctx => [[LECTURE_DECK, { deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot }], [VOICEOVER, { version: 1, preview: true }], [PRODUCTION_AUDIO_AUTHORING, productionAudioAuthoring(ctx)]],
   tools: lectureTools,
   exporters: [videoExporter],
 }
