@@ -35,7 +35,16 @@ interface Slot {
   projectObservation?: string
 }
 
-const serialize = (value: TeachingDocument) => JSON.stringify(value, (_, entry) => entry && typeof entry === 'object' && !Array.isArray(entry) ? Object.fromEntries(Object.entries(entry).sort(([a], [b]) => a.localeCompare(b))) : entry)
+const serialize = (value: unknown) => JSON.stringify(value, (_, entry) => entry && typeof entry === 'object' && !Array.isArray(entry) ? Object.fromEntries(Object.entries(entry).sort(([a], [b]) => a.localeCompare(b))) : entry)
+/** Media clips and new unused assets do not replace any mounted editor's content or identity. */
+function keepsEditorContent(before: TeachingDocument, after: TeachingDocument): boolean {
+  const editing = ({ assets: _assets, production, ...document }: TeachingDocument) => {
+    const { mediaClips: _clips, ...settings } = production
+    return { ...document, production: settings }
+  }
+  return serialize(editing(before)) === serialize(editing(after))
+    && Object.entries(before.assets).every(([id, asset]) => Object.hasOwn(after.assets, id) && serialize(asset) === serialize(after.assets[id]))
+}
 async function digest(value: TeachingDocument): Promise<string> {
   const text = serialize(value)
   if (!globalThis.crypto?.subtle) return `json:${text}`
@@ -151,8 +160,9 @@ export class DocumentSession {
       else slot.state = { ...slot.state, error: 'document-version-changed', issues: answer.issues }
       return
     }
+    const reset = slot.state.reset + (keepsEditorContent(slot.state.content!, answer.content) ? 0 : 1)
     slot.baseHash = remoteHash
-    slot.state = { ...slot.state, version: answer.version, fingerprint: answer.fingerprint, content: answer.content, reset: slot.state.reset + 1, error: undefined, issues: answer.issues }
+    slot.state = { ...slot.state, version: answer.version, fingerprint: answer.fingerprint, content: answer.content, reset, error: undefined, issues: answer.issues }
   }
 
   record(content: TeachingDocument): void {
