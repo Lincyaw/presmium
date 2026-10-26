@@ -27,7 +27,8 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
     const element = container.current
     if (!element || !source?.content) return
     let frame: number | undefined
-    let manual = !navigation
+    // A source structure reset can move headings without an author navigating.
+    let manual = false
     const read = () => {
       frame = undefined
       if (!manual || !element.clientHeight) return
