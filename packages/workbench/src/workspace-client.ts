@@ -3,6 +3,7 @@ import type { OperationBatch } from './telemetry.ts'
 import type { VoiceCatalogAnswer, VoiceoverCancellation, VoiceoverJob, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest } from '@lincyaw/kernel'
 import type { PageDeleteAnswer, PageDeletePlan, PageDeleteRequest } from '@lincyaw/kernel'
 import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, DocumentEvent } from '@lincyaw/kernel'
+import type { DocumentAudioImport, DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentMediaClipChange } from '@lincyaw/kernel'
 import type { ProductionAssetAnswer, ProductionAssetQuery, ProductionMediaQuery, ProductionPlan, ProductionPlanQuery } from '@lincyaw/kernel'
 
 const observedFailures = new WeakSet<object>()
@@ -45,6 +46,9 @@ export interface WorkspaceClient {
   /** A same-origin display URL; the canonical asset location remains untouched. */
   documentAssetURL(document: string, assetId: string): string
   changeDocument(document: string, change: DocumentChange): Promise<DocumentChangeAnswer>
+  readDocumentAudio(document: string, assetId: string, baseDocumentVersion: string, signal?: AbortSignal): Promise<DocumentAudioInspectionAnswer>
+  importDocumentAudio(document: string, file: File, change: DocumentAudioImport, signal?: AbortSignal): Promise<DocumentAudioImportAnswer>
+  changeDocumentMediaClip(document: string, change: DocumentMediaClipChange, signal?: AbortSignal): Promise<DocumentChangeAnswer>
   subscribeDocument(document: string, changed: (event: DocumentEvent) => void, failed?: () => void): () => void
   readPageDeletion(document: string, section: string): Promise<PageDeletePlan>
   deletePage(document: string, request: PageDeleteRequest): Promise<PageDeleteAnswer>
@@ -253,6 +257,13 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     readDocument: document => call(url('document', document)),
     documentAssetURL: (document, asset) => url('document/asset', document, { asset }),
     changeDocument: (document, change) => post(url('document/change', document), change),
+    readDocumentAudio: (document, assetId, baseDocumentVersion, signal) => call(url('document/audio', document, { assetId, baseDocumentVersion }), { signal }),
+    importDocumentAudio: (document, file, change, signal) => {
+      const body = new FormData()
+      body.set('change', JSON.stringify(change)); body.set('file', file)
+      return call(url('document/audio', document), { method: 'POST', body, signal })
+    },
+    changeDocumentMediaClip: (document, change, signal) => post(url('document/media-clip', document), change, signal),
     subscribeDocument: (document, changed, failed) => subscribe(url('document/events', document), 'document', changed, failed),
     readPageDeletion: (document, section) => call(url('pages/delete', document, { section })),
     deletePage: (document, request) => post(url('pages/delete', document), request),

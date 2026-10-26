@@ -2,7 +2,7 @@ import { undoDepth, redoDepth } from '@tiptap/pm/history'
 import { TextSelection } from '@tiptap/pm/state'
 import { DocumentSession } from './document-session.ts'
 import type { DocumentSessionState } from './document-session.ts'
-import type { NarrationNode, TeachingDocument } from '@lincyaw/kernel'
+import type { DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentChangeAnswer, MediaClip, NarrationNode, TeachingDocument } from '@lincyaw/kernel'
 import type { NativeDocumentEditor } from './document-editor/schema.tsx'
 import { nativeTextPoint, nativeTextPosition } from './document-editor/selection.ts'
 import type { NativeTextPoint } from './document-editor/selection.ts'
@@ -224,6 +224,7 @@ export function documentDirFor(title: string, taken: readonly string[]): string 
 export class Workbench {
   readonly client: WorkspaceClient
   readonly #documentSession: DocumentSession
+  readonly #audioImports = new WeakMap<File, { identity: string, version: string, id: string }>()
   readonly #documentTimingDrafts = new DocumentTimingDrafts()
   readonly #removedCueTimings = new Map<string, { pauseMs: number }>()
   #cueTimingScope?: string
@@ -803,6 +804,67 @@ export class Workbench {
     const source = this.#state.authoring
     if (!source || source.loading || source.directory !== this.#state.document || identity !== undefined && identity !== source.identity) return undefined
     return source.content
+  }
+  #mediaSource(expected: { identity: string, version: string }): DocumentSessionState {
+    const source = this.#state.authoring
+    if (!source || !this.getDocument(expected.identity) || source.version !== expected.version || !source.fingerprint
+      || source.dirty || source.saving || source.composing || source.restored || source.error || isAgentChanging(this.#state)) throw new Error('production-source-changed')
+    return source
+  }
+  /** Inspects the saved declaration, including a local asset not yet attached to a step. */
+  async inspectDocumentAudio(assetId: string, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<DocumentAudioInspectionAnswer> {
+    const source = this.#mediaSource(expected), scope = this.#documentScope
+    const answer = await this.client.readDocumentAudio(source.directory, assetId, expected.version, signal)
+    signal?.throwIfAborted()
+    if (scope !== this.#documentScope || answer.document !== source.directory || answer.version !== expected.version || answer.fingerprint !== source.fingerprint || answer.inspection.assetId !== assetId) throw new Error('production-source-changed')
+    this.#mediaSource(expected)
+    return answer
+  }
+  async #writeDocumentMedia<T extends DocumentChangeAnswer>(expected: { identity: string, version: string }, write: (directory: string) => Promise<T>, signal?: AbortSignal): Promise<T> {
+    const scope = this.#documentScope, source = this.#mediaSource(expected)
+    this.stopAuditions()
+    await this.pausePlayback()
+    await this.flushPendingEdits(signal)
+    signal?.throwIfAborted()
+    if (scope !== this.#documentScope) throw new Error('production-source-changed')
+    this.#mediaSource(expected)
+    let answer: T
+    try { answer = await write(source.directory) }
+    finally { await this.#documentSession.refresh(source.directory) }
+    signal?.throwIfAborted()
+    if (scope !== this.#documentScope || answer.document !== source.directory || answer.content.id !== source.content?.id) throw new Error('production-source-changed')
+    this.#mediaSource({ identity: expected.identity, version: answer.version })
+    return answer
+  }
+  /** Import commits the original file and its declaration together, without creating a clip or narration. */
+  async importDocumentAudio(file: File, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<DocumentAudioImportAnswer> {
+    let request: { identity: string, version: string, id: string } | undefined
+    const answer = await this.#writeDocumentMedia(expected, async directory => {
+      const existing = this.#audioImports.get(file), first = !existing || existing.identity !== expected.identity
+      request = first ? { identity: expected.identity, version: expected.version, id: crypto.randomUUID() } : existing!
+      this.#audioImports.set(file, request)
+      try { return await this.client.importDocumentAudio(directory, file, { id: request.id, baseDocumentVersion: request.version }, signal) }
+      catch (error) {
+        if (first && error instanceof WorkspaceServerError && error.status >= 400 && error.status < 500 && this.#audioImports.get(file) === request) this.#audioImports.delete(file)
+        throw error
+      }
+    }, signal)
+    if (answer.changeId !== request?.id || answer.inspection.assetId !== answer.assetId || !answer.content.assets[answer.assetId]) throw new Error('production-source-changed')
+    return answer
+  }
+  async applyDocumentMediaClip(clip: MediaClip, expected: { identity: string, version: string, binding: ProductionBinding }, signal?: AbortSignal): Promise<DocumentChangeAnswer> {
+    this.#mediaSource(expected)
+    if (!this.#state.productionPlan || !sameProductionBinding(this.#state.productionPlan.binding, expected.binding) || !this.#productionSourceCurrent(expected.binding)) throw new Error('production-source-changed')
+    const id = crypto.randomUUID(), value = structuredClone(clip)
+    const answer = await this.#writeDocumentMedia(expected, directory => this.client.changeDocumentMediaClip(directory, { id, baseDocumentVersion: expected.version, binding: expected.binding, clip: value }, signal), signal)
+    if (answer.changeId !== id) throw new Error('production-source-changed')
+    return answer
+  }
+  async removeDocumentMediaClip(clipId: string, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<DocumentChangeAnswer> {
+    const id = crypto.randomUUID()
+    const answer = await this.#writeDocumentMedia(expected, directory => this.client.changeDocumentMediaClip(directory, { id, baseDocumentVersion: expected.version, removeClipId: clipId }, signal), signal)
+    if (answer.changeId !== id) throw new Error('production-source-changed')
+    return answer
   }
   /** Applies a reviewed voice scope to the current source actor, without replacing body or narration. */
   async applyDocumentVoice(scope: DocumentVoiceScope, value: VoiceSource | null, options: DocumentVoiceOptions, expected: { identity: string, version: string, fingerprint: string }): Promise<boolean> {
