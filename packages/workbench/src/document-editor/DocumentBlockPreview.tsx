@@ -147,6 +147,7 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
         if (position && position.navigation === current.documentPositionToken && document
           && documentBlockSection(document, blockId) === position.sectionId && document.sections[position.sectionId]?.stepOrder.includes(position.stepId)) {
           // A position posted just before pause must not replace an active field's target.
+          if (frame.current && frame.current.ownerDocument.activeElement === frame.current) editingStep.current = undefined
           if (editingStep.current && editingStep.current !== JSON.stringify([position.sectionId, position.stepId])) return
           reportedStep.current = JSON.stringify([position.sectionId, position.stepId])
           workbench.observeDocumentStep(position.sectionId, position.stepId)
