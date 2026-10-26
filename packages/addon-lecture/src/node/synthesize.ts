@@ -110,7 +110,7 @@ export interface SynthesizedLecture {
 }
 
 export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech: SpeechService, signal?: AbortSignal, options: { cacheOnly?: boolean } = {}): Promise<SynthesizedLecture> {
-  const deck = deckPlan(doc, deckDir)
+  const deck = deckPlan(doc)
   const clips = new Map<string, SynthesizedClip>()
   if (deck.findings.some(finding => finding.severity === 'error')) return { deck, clips, failures: [], cuts: [] }
   if (!deck.voice) return { deck, clips, failures: [], cuts: [] }

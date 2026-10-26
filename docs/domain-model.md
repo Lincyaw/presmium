@@ -659,7 +659,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 | theme | 框架的主题：dsh 的界面主题、代码高亮（Shiki）的主题 | 明暗写 appearance 或 dark（`useAppearance`、预览命令 `appearance`、`HostAdapter.useDarkMode`）；设计系统的取值写 design token |
 | cue | 讲解中在某一步触发的提示动作：`{cue}` 角色、讲授计划中的提示标记、引导插件的提示目标（`CueTarget`） | 页面上指出的一处写 target；讲授的指点写 point |
 | mark | 必须带限定：受众标记 `AudienceMark`、作者标记（页面上显示的 `{cue}` 与 `{say}` 位置，`AUTHOR_MARKS_CLASS`）、角色的文字记号 `roleMark`、讲授的操作 `mark`（标记章节）、分步执行的行标记 `StepMark` | 圈画写 ink；指点写 point；高亮写 highlight |
-| script | 讲授脚本：讲解本身或 `renderers.lecture.script` 给出的文件（合成讲授的 ID `script`） | 浏览器与 Node 中运行 JavaScript、TypeScript 的执行器写 `ScriptExecutor`，常量按运行之处区分（`BROWSER_SCRIPT_EXECUTOR_ID`、`NODE_SCRIPT_EXECUTOR_ID`）；`package.json` 的 scripts 与 HTML 的 `<script>` 照旧 |
+| script | 讲授脚本：`lecture.json` 中由步骤绑定的 canonical Narration（合成讲授的 ID `script`） | 浏览器与 Node 中运行 JavaScript、TypeScript 的执行器写 `ScriptExecutor`，常量按运行之处区分（`BROWSER_SCRIPT_EXECUTOR_ID`、`NODE_SCRIPT_EXECUTOR_ID`）；`package.json` 的 scripts 与 HTML 的 `<script>` 照旧 |
 | token | 单写 token 指服务令牌（`ServiceToken`，参数名 `token`） | 访问凭据写 accessToken 或带上服务名（`mcpToken`；环境变量 `PRESMIUM_ENV_<名>_TOKEN` 不变）；设计系统的取值写 design token（`colorToken`）；搜索的分词是 `tokenize`，结果写 word |
 | workspace | 工作区：一个 git 仓库，根目录可有 `presmium.workspace.yaml`，包含多份文档（`Workspace`、`workspaceRoot`） | dsh 的工作区写 `dshWorkspace`；VS Code 的工作区写 `workspaceFolder`；Node 包管理器的工作区写 package workspace |
 

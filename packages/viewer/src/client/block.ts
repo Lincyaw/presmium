@@ -42,13 +42,12 @@ function content(props: BlockProps): ReactNode {
   }
 }
 function BlockViewContent(props: BlockProps) {
-  const viewer = useContext(VIEWER); const doc = useStore(viewer?.doc); const el = useRef<HTMLDivElement>(null)
+  const viewer = useContext(VIEWER); const el = useRef<HTMLDivElement>(null)
   useStore(registryRevision)
   useEffect(() => el.current ? trackClicks(el.current, props.expanded ? FINAL_STEP : props.step) : undefined, [props.step, props.expanded, props.block])
   const { block } = props
   const visible = props.expanded || blockVisible(block, props.step)
-  const script = doc?.config.renderers.lecture?.script
-  const role = block.role === 'narration' && ((block.only && !block.only.includes('lecture')) || (typeof script === 'string' && script.trim())) ? 'reading' : block.role
+  const role = block.role === 'narration' && block.only && !block.only.includes('lecture') ? 'reading' : block.role
   return h(StepScope, { at: block.at, until: block.until, states: block.stepStates, step: props.step, localPreview: props.localPreview }, h('div', {
     ref: el, className: [BLOCK_CLASS, `pm-block--${block.role}`, `pm-block--${block.node.type}`, block.until !== undefined ? 'pm-step-range' : '', block.node.type === 'component' && block.node.layer === 'overlay' ? 'pm-block--overlay' : '', !visible ? 'pm-hidden' : ''].filter(Boolean).join(' '),
     'data-block': block.id, 'data-content-role': role, 'data-content-label': viewerMessages().contentRoles[role], 'data-at': block.at, 'data-component': block.node.type === 'component' ? block.node.name : undefined, 'aria-hidden': visible ? undefined : true,

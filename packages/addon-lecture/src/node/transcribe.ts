@@ -41,7 +41,7 @@ export async function transcribeLecture(files: DeckFiles, deckDir: string, id: s
     const bytes = file && readInDeck(deckDir, file)
     return file && bytes ? audioBlob(file, bytes) : undefined
   }
-  const plan = doc && deckPlan(doc, deckDir).plan
+  const plan = doc && deckPlan(doc).plan
   const hints = (section: string) => {
     const planned = plan?.sections.find(s => s.id === section)
     return planned ? sectionHints(planned, stored.track.lang) : []

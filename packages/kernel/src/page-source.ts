@@ -302,8 +302,6 @@ export function removePageSource(doc: IRDocument, id: string, source: string, em
   const index = spans.findIndex(span => span.section.id === id)
   if (index < 0) throw new Error('page-boundary')
   const removed = spans[index]!, targets = pageTargets(removed.section, source.slice(removed.start, removed.end))
-  // An independent script uses page IDs outside these ranges; it needs its own atomic adapter.
-  if (typeof doc.config.renderers.lecture?.script === 'string' && doc.config.renderers.lecture.script) throw new Error('page-external-bindings')
   if (referencesTargets(doc.config, targets, doc.meta.entry)
     || Object.values(doc.config.presmium).some(value => value && typeof value === 'object' && Object.keys(value).some(key => targets.has(key)))
     || doc.sections.some(section => section.id !== id && referencesTargets(section.blocks, targets, doc.meta.entry))) throw new Error('page-referenced')

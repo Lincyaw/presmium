@@ -233,43 +233,6 @@ describe('presmium check with a deck that names its engine in another spelling',
   }, 120_000)
 })
 
-describe('a separate lecture script', () => {
-  let dir: string
-  beforeAll(() => {
-    dir = deck(WORK, `  web: {}\n${VOICE}\n    script: lecture.script.md`, NARRATION)
-    writeFileSync(join(dir, 'lecture.script.md'), '(merge)=\n## 合并\n\n脚本第一段先看代码。\n\n脚本第二段再看 {cue to=code-1}`spot` 结果。\n')
-  })
-  afterAll(() => {
-    if (dir) rmSync(dir, { recursive: true, force: true })
-  })
-
-  it('says the script\'s paragraphs at the steps of its section, the k-th at step k, and the narration elsewhere; the web form shows the narration', async () => {
-    const built = await presmium(dir, ['build', '--to', 'web,lecture'], engine())
-    expect(built.code, built.stdout + built.stderr).toBe(0)
-    const track = JSON.parse(readFileSync(join(dir, 'dist/lecture/script/track.json'), 'utf8')) as Track
-    expect(track.utterances.map(u => [u.section, u.step, u.text])).toEqual([
-      ['intro', 0, '我们先看合并。'],
-      ['merge', 0, '脚本第一段先看代码。'],
-      ['merge', 1, '脚本第二段再看结果。'],
-    ])
-    expect(track.utterances.map(u => [u.id, u.t])).toEqual([['u1', 0], ['u2', 2220], ['u3', 5340]])
-    expect(track.events).toEqual([
-      [0, 'go', { section: 'intro', step: 0 }],
-      [2220, 'go', { section: 'merge', step: 0 }],
-      [5340, 'go', { section: 'merge', step: 1 }],
-      [5340 + 7 * 300, 'spot', { block: 'merge/code-1', at: ['u3', 7] }],
-    ])
-    const page = readdirSync(join(dir, 'dist/web')).filter(file => file.endsWith('.html')).map(file => readFileSync(join(dir, 'dist/web', file), 'utf8')).join('\n')
-    expect(page).toContain('合并之后词表变大')
-    expect(page).not.toContain('脚本第一段')
-
-    writeFileSync(join(dir, 'lecture.script.md'), '(merge)=\n## 合并\n\n脚本第一段先看代码。\n\n脚本第二段再看\n{cue to=nope}`spot` 结果。\n')
-    const checked = await presmium(dir, ['check', '--json'], engine())
-    const findings = (JSON.parse(checked.stdout) as { findings: { checkId: string, message: string, source?: { file: string, line?: number } }[] }).findings
-    expect(findings.filter(f => f.message.includes('nope')).map(f => [f.checkId, f.source?.file.split('/').at(-1), f.source?.line])).toEqual([['presmium.lecture', 'lecture.script.md', 6]])
-  }, 300_000)
-})
-
 async function wordless(state: { transcribe: boolean }): Promise<{ url: string, close(): Promise<void> }> {
   const upstream = new URL(fake.url)
   const server = createServer((req, res) => {

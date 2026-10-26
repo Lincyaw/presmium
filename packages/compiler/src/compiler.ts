@@ -254,6 +254,7 @@ export class Compiler {
     const headmatter = withHeadmatter({ ...document.metadata }, this.options.headmatter)
     const defaultVoice = document.production.defaults.voiceSource
     const lecture = isRecord((headmatter.renderers as Record<string, unknown> | undefined)?.lecture) ? (headmatter.renderers as Record<string, Record<string, unknown>>).lecture : {}
+    if (lecture && Object.hasOwn(lecture, 'script')) throw new Error('/metadata/renderers/lecture/script: External lecture scripts are not supported. Author narration in lecture.json narrations and bind it through each step narrationIds.')
     if (defaultVoice?.type === 'tts' || document.production.defaults.trailingPauseMs !== undefined || Object.keys(lecture ?? {}).length) headmatter.renderers = { ...(isRecord(headmatter.renderers) ? headmatter.renderers : {}), lecture: { ...lecture, ...defaultVoice?.type === 'tts' ? { voice: defaultVoice.voice } : {}, ...document.production.defaults.trailingPauseMs !== undefined ? { gap: document.production.defaults.trailingPauseMs } : {} } }
     const lang = typeof headmatter.lang === 'string' && headmatter.lang.trim() ? headmatter.lang.trim() : DEFAULT_LANG
     const inputs = new CompileInputs(workspaceRoot, this.#committed)

@@ -62,7 +62,6 @@ function advances(node: MdastNode): boolean {
 
 /** A cue can change the visual step inside one audio clip. That clip cannot yet take independent step voices. */
 export function stepVoiceReason(doc: IRDocument, section: IRSection): ResolvedVoice['reason'] | undefined {
-  if (typeof doc.config.renderers.lecture?.script === 'string' && doc.config.renderers.lecture.script) return 'script-file'
   if ([...irBlocks(section.blocks)].some(block => block.role === 'narration' && block.node.type === 'markdown' && advances(block.node.mdast))) return 'cue-step'
   const expected = voiceTarget(section, 0).binding
   if (voiceOverrides(doc).steps.some(entry => entry.section === section.id && (entry.binding !== expected || entry.step > section.steps))) return 'step-binding-stale'

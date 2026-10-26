@@ -39,6 +39,8 @@ export function validateDocument(value: unknown): DocumentValidation {
     return { issues }
   }
   const doc = value as TeachingDocument
+  const lectureRenderer = doc.metadata.renderers?.lecture
+  if (isRecord(lectureRenderer) && own(lectureRenderer, 'script')) issue('/metadata/renderers/lecture/script', 'narration.external-source', 'External lecture scripts are not supported. Author narration in lecture.json narrations and bind it through each step narrationIds.')
   const ids = new Map<string, string>()
   const identify = (id: string, path: string) => {
     const prior = ids.get(id)
