@@ -124,14 +124,14 @@ export default function SceneView(props: SceneProps) {
     const before = followedNavigation.current
     followedNavigation.current = { source: navigation, position: navigated }
     if (before.source !== navigation || before.position === navigated) return
-    if (!expanded || !navigated || navigated.slide !== cursor.slide) return
+    if (!scope.localPreview || !expanded || !navigated || navigated.slide !== cursor.slide) return
     const own = localNavigation.current
     localNavigation.current = undefined
     if (own?.slide === navigated.slide && own.step === navigated.step) return
     const step = scope.localStepAt(navigated.step)
     if (step >= 0 && step < durations.length)
       seekLocal(starts[step]! + (navigated.boundary === 'start' ? 0 : durations[step]!))
-  }, [navigation, navigated, expanded, cursor.slide, scope.at, props.durations])
+  }, [navigation, navigated, expanded, cursor.slide, scope.localPreview, scope.at, props.durations])
   useEffect(() => {
     if (!scope.localPreview || local === undefined || !navigation) return
     const target = scope.step(selectedStep), current = navigation.position.getSnapshot()
