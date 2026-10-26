@@ -22,13 +22,13 @@ const BINARY = /\.(?:png|jpe?g|gif|webp|avif|ico|bmp|pdf|wasm|zip|gz|tgz|bz2|xz|
 export function validateDocumentSource(path: string, content: string, before?: Uint8Array): void {
   if (path !== DOCUMENT_ENTRY && !path.endsWith(`/${DOCUMENT_ENTRY}`)) return
   let value: unknown
-  try { value = JSON.parse(content) }
+  try { value = JSON.parse(content.replace(/^\uFEFF/, '')) }
   catch { throw new RequestError(422, 'document-invalid', { issues: [{ path: '', code: 'json-syntax', message: 'The document is not valid JSON.', severity: 'error' }] }) }
   const checked = validateDocument(value)
   if (!checked.document || checked.issues.some(issue => issue.severity === 'error')) throw new RequestError(422, 'document-invalid', { issues: checked.issues })
   if (before) {
     let previous: unknown
-    try { previous = JSON.parse(Buffer.from(before).toString('utf8')) } catch {}
+    try { previous = JSON.parse(Buffer.from(before).toString('utf8').replace(/^\uFEFF/, '')) } catch {}
     if (previous && typeof previous === 'object' && 'id' in previous && typeof previous.id === 'string' && previous.id !== checked.document.id) throw new RequestError(422, 'document-identity-changed')
   }
 }

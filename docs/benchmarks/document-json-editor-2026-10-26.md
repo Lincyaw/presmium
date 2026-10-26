@@ -25,3 +25,17 @@
 工作台四组截图为 `json-app-{light,dark}-{1440,390}.png`。窄屏截图仍打开导航覆盖层，正文视口关闭导航后的检查另行记录。
 
 `json-editor-code-native.json` 确认代码字符串的官方原生批注、保存后的稳定代码块 ID 与字符偏移，以及刷新恢复。`json-editor-cell-native.json` 确认表格批注使用稳定单元格 ID 加格内偏移；在前方插入一行并重新挂载后，原生线程仍指向原格，未按行列位置重新绑定。
+
+### 工作台集成补充验证
+
+真实 Studio 的 HTTP/1 对照定位了持续连接耗尽：原页面同时建立 review、diagnostics、jobs、IR、document 五条工作区长流，叠加宿主连接后，读取 IR 和保存 POST 一直排队。只取消 IR 长流即可使同样的输入保存返回 200。现正文仅保留 source、review、diagnostics；放映与导出按需互斥订阅 IR 或 jobs。证据：`.presmium/ui-evidence/json-network-probe.json`。
+
+`.presmium/ui-evidence/json-source-proof.json` 的真实服务验证覆盖 schema/引用/文稿身份拒绝、多文件一个 Git 提交、丢失回执的幂等重试、旧源版本与旧代码文件版本拒绝、Git 提交失败后恢复 JSON 并删除本次新建文件，以及普通 source 接口无法绕过校验。缺失场景实现时，源文稿仍可在 138ms 内保存与读取；这不代表场景能成功播放。
+
+`.presmium/ui-evidence/json-draft-browser.json` 覆盖迟到回执与后续输入、离线刷新恢复并显式采用、跨文稿草稿隔离、正常输入不切换放映。四次实际保存均为 200，没有浏览器异常。
+
+`.presmium/ui-evidence/json-runtime-steps.json` 使用真实场景、列表与代码高亮，按 4→0→3→1→2→4→2→0 顺序定位，验证显隐可逆、语义状态和参数恢复、列表显示数量与代码高亮；没有浏览器异常或 HTTP 失败。场景时间为零的验证文稿只证明状态定位，不宣称测过所有动画库的帧精度。
+
+`.presmium/ui-evidence/json-long-document.json`：585227 字节、40 页、480 段全部显示，一个原生编辑器；源文稿替换到完整显示约 801ms，末页定位约 62ms，连续输入“真实长文稿输入”约 281ms，源文件确认约 1024ms。输入阶段没有观测到超过 50ms 的主线程长任务。测量包含浏览器自动化开销和自动保存等待，不是单键延迟。
+
+以上均为直接运行服务、操作浏览器或真实编译；没有运行单元测试、完整测试套件或两个公开示例的全量构建。

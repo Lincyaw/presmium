@@ -14,7 +14,7 @@ const entryOf = (directory: string): string => directory ? `${directory}/${DOCUM
 
 function decode(content: string): { document?: TeachingDocument, issues: DocumentIssue[] } {
   let value: unknown
-  try { value = JSON.parse(content) }
+  try { value = JSON.parse(content.replace(/^\uFEFF/, '')) }
   catch { return { issues: [{ path: '', code: 'json-syntax', message: 'The document is not valid JSON.', severity: 'error' }] } }
   return validateDocument(value)
 }

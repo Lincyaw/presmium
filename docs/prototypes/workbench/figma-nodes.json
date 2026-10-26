@@ -856,5 +856,24 @@
       }
     }
   },
-  "designBaseline": "2026-10-25"
+  "designBaseline": "2026-10-25",
+  "nativeDocumentEditor": {
+    "sourceEntry": "lecture.json",
+    "authority": "TeachingDocument",
+    "selection": "BlockNote native selection and CommentsExtension",
+    "frames": [
+      "9:10",
+      "9:15"
+    ],
+    "updatedTextNodes": [
+      "11:511",
+      "11:813",
+      "12:3317",
+      "12:3529",
+      "12:3592",
+      "12:3593",
+      "12:3600"
+    ],
+    "verification": "docs/benchmarks/document-json-editor-2026-10-26.md"
+  }
 }
