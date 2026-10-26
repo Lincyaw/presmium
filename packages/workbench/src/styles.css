@@ -1,3 +1,6 @@
+@import '@blocknote/mantine/style.css';
+@import './document-editor/style.css';
+
 .pmw-muted {
   color: var(--pm-color-muted);
   font-size: var(--pm-text-sm);
@@ -920,6 +923,11 @@
 
 /* Business regions arrange shared controls; their surfaces and states stay in design. */
 .pmw-document__main { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
+.pmw-document__source { display: flex; flex: 1; min-width: 0; min-height: 0; }
+.pmw-document__source[hidden] { display: none; }
+.pmw-source-document { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: var(--pm-space-5); background: var(--pm-color-canvas); }
+.pmw-source-document > .pm-ui-notice { margin-block-end: var(--pm-space-3); }
+.pmw-source-document__sheet { max-width: var(--pm-sheet-width); min-height: 100%; margin-inline: auto; padding-block: var(--pm-space-4); background: var(--pm-color-surface); box-shadow: var(--pm-shadow-page); }
 .pmw-voice__filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--pm-space-3); }
 .pmw-voice__summary, .pmw-voice__status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pm-space-2); min-width: 0; overflow-wrap: anywhere; }
 .pmw-voice__status { justify-content: space-between; }
@@ -932,6 +940,7 @@
 .pmw-step-timeline__steps > * { flex: none; }
 .pmw-toolbar--present { justify-content: flex-end; }
 @media (max-width: 767px) {
+  .pmw-source-document { padding: var(--pm-space-2); }
   .pmw-toolbar { flex-wrap: wrap; overflow: visible; }
   .pmw-toolbar__status { margin-inline-start: auto; }
   .pmw-document__aside { width: 100%; }

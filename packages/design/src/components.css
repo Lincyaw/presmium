@@ -990,6 +990,8 @@
 }
 
 /* BlockNote's public UI stays separate from document typography. */
+.pm-ui-block-editor { color: var(--pm-color-ink); }
+
 .pm-ui-block-editor .bn-suggestion-menu p {
   margin: 0;
   line-height: var(--pm-leading-ui);
@@ -1008,6 +1010,24 @@
   font-family: var(--pm-font-sans);
   font-size: var(--pm-text-sm);
   line-height: var(--pm-leading-ui);
+}
+
+.pm-ui-block-editor .bn-thread button {
+  min-width: var(--pm-size-tool);
+  min-height: var(--pm-size-tool);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-sm);
+  line-height: var(--pm-leading-ui);
+}
+
+.pm-ui-block-editor .bn-threads-sidebar .bn-thread {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pm-ui-block-editor .bn-thread button svg {
+  width: var(--pm-size-icon);
+  height: var(--pm-size-icon);
 }
 
 .pm-ui-block-editor .bn-side-menu {
@@ -1063,6 +1083,13 @@
   .pm-ui-block-editor .bn-formatting-toolbar button {
     min-width: var(--pm-control-hit-area);
     min-height: var(--pm-control-hit-area);
+  }
+  .pm-ui-block-editor .bn-thread button {
+    min-width: var(--pm-control-hit-area);
+    min-height: var(--pm-control-hit-area);
+  }
+  .pm-ui-block-editor .bn-comment-editor .bn-editor {
+    font-size: var(--pm-text-lg);
   }
   .pm-ui-block-editor .bn-side-menu button {
     width: var(--pm-control-hit-area);

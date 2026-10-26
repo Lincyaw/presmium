@@ -25,11 +25,11 @@
 
 `@lincyaw/design` 维持框架无关。React 封装留在 workbench 与 host，不为复用控件而让 workbench 引用 host，也不让插件引用 workbench。跨边界共用的是令牌、语义图标、`pm-ui-*` 及一致的交互规范。
 
-BlockNote 的公共适配类为 `pm-ui-block-editor`，由 `MountedEditor` 挂载，选中态样式集中在 `packages/design/src/components.css`。
+BlockNote 的公共适配类为 `pm-ui-block-editor`，由工作台的全篇 `BlockNoteSurface` 挂载，选中态样式集中在 `packages/design/src/components.css`。文稿与富文本结构由 `@lincyaw/kernel` 定义，编辑器只通过公开接口投影与回写 `lecture.json`，不持久化另一份编辑器工程。
 适配使用 BlockNote 的公开 `.ProseMirror-selectednode`、`.bn-block-content` 选择器，仅在编辑器内有焦点时以 `accent-soft` 表面与 `accent` 描边表示当前块；伪元素保持透明，不遮住正文或动画。
 斜杠菜单使用公开 `.bn-suggestion-menu` 选择器隔离阅读正文的段落留白与行高，菜单文字恢复公共 `leading-ui`，避免正文排版把每条插入项撑高；菜单的布局、滚动与键盘行为仍由 BlockNote 提供。
 正文侧边的添加与拖拽按钮使用公开 `.bn-side-menu` 适配，沿用 compact 的 30px 与触屏的 44px 热区、公共图标和焦点令牌；窄屏或粗指针设备纵排，放在页边留白内，避免工具被视口裁掉。
-格式工具条使用公开 `.bn-formatting-toolbar` 适配，限制为视口内宽度并换行，按钮沿用同一 30px／44px 最小热区。预览通过可选的工具区矩形报告，让宿主批注浮层避开现有格式工具条；批注表单获得焦点后沿用原有布局。
+格式工具条使用公开 `.bn-formatting-toolbar` 适配，限制为视口内宽度并换行，按钮沿用同一 30px／44px 最小热区。正文批注使用 BlockNote 的 `CommentsExtension`、`AddCommentButton` 和原生表单，删除旧宿主 DOM 选区与批注浮层。跨代码选区下，BlockNote 默认隐藏格式工具条；工作台在编辑器内提供同一个原生批注按钮。`.bn-thread` 按钮沿用公共热区，触屏批注输入至少 16px。
 
 ## 2. Tokens、公共控件与业务布局
 

@@ -23,3 +23,6 @@ minimumReleaseAgeExclude:
 # Magic Move's React entry does not use its optional Vue peer.
 overrides:
   '@shikijs/magic-move>vue': '-'
+  # BlockNote and its public schema extensions share one Tiptap runtime.
+  '@tiptap/core': 3.32.0
+  '@tiptap/pm': 3.32.0

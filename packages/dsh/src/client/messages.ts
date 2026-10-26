@@ -23,7 +23,7 @@ const zh = {
   resize: '拖动调整宽度',
   centre: '文稿',
   welcomeTitle: '欢迎使用 Presmium',
-  welcome: '打开一份文稿，直接在页面上操作：单击一段内容或选中文字，旁边会出现工具条，可以编辑文字、新建批注，或请 AI 改写。所有修改都会自动保存，随时可以撤消。使用 AI 助手需要先设置模型。',
+  welcome: '打开文稿即可编辑全文、调整页面并添加原生批注，修改自动保存，支持撤消。放映会单独准备运行版本；配音和视频制作会先检查所需能力。使用 AI 助手前请设置模型。',
   start: '开始使用',
   models: '设置模型',
   helpItems: [
@@ -69,7 +69,7 @@ const en: ClientMessages = {
   resize: 'Drag to resize',
   centre: 'Document',
   welcomeTitle: 'Welcome to Presmium',
-  welcome: 'Open a document and work right on the page: click a block or select some text, and a toolbar appears beside it to edit the text, add a comment or have the AI rewrite it. Every change is saved automatically and can be undone. The AI assistant needs a model set up first.',
+  welcome: 'Open a document to edit its full text, arrange pages and add native comments. Changes save automatically and can be undone. Presentation prepares a separate running version; voice and video production check their required capabilities first. Set up a model before using the AI assistant.',
   start: 'Get started',
   models: 'Set up a model',
   helpItems: [
