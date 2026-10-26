@@ -21,7 +21,7 @@ export function useHost(): HostAdapter {
 }
 export function useDoc() { const host = useHost(); if (!host.useDoc) throw new Error("[presmium] this host has no document"); return host.useDoc() }
 export function useStep(): number { return useHost().useStep() }
-export function useStepState(range: StepRange): StepState { const step = useStep(); const { at } = useStepScope(); return stepStateAt(range, step - at) }
+export function useStepState(range: StepRange): StepState { const step = useStep(); const scope = useStepScope(); return stepStateAt(range, scope.localStepAt(step)) }
 export function useCursor() { return useHost().useCursor() }
 export function useViewRole() { return useHost().useViewRole() }
 export function usePresentationMode() { const host = useHost(); host.useViewRole(); return host.mode }

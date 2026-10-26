@@ -1,7 +1,7 @@
 import { createContext, memo, useContext, useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { PmBoundary, StepScope, useStaticRender, useStore } from '@lincyaw/host'
-import { blockVisible, componentProps, fnv1a64 } from '@lincyaw/kernel'
+import { blockStepState, blockVisible, componentProps, fnv1a64 } from '@lincyaw/kernel'
 import type { ComponentNode, IRBlock, IRSection } from '@lincyaw/kernel'
 import { FINAL_STEP } from '../domain/index.ts'
 import { CODE_OWNED, CodeBlockView } from './code/code-block.ts'
@@ -25,9 +25,10 @@ function ComponentView(props: BlockProps) {
   const component = findComponent(node.name)
   if (printed && node.fallback) return h('div', { className: 'pm-static-fallback', 'data-component': node.name }, fallbackOf(node, props.section.id))
   if (!component) { const fallback = fallbackOf(node, props.section.id); return h('div', { className: 'pm-component-missing', 'data-component': node.name }, fallback.length ? fallback : viewerMessages().missingComponent(node.name)) }
+  const state = blockStepState(props.block, props.step)
   const children = node.children?.map(child => h(BlockView, { key: child.id, block: child, section: props.section, step: props.step, expanded: props.expanded }))
   const key = fnv1a64(JSON.stringify([node.props, node.children ?? []]))
-  return h(CODE_OWNED.Provider, { value: node.ownsCode !== false }, h(COMPONENT_NODE.Provider, { value: { node, section: props.section.id } }, h(PmBoundary, { name: node.name, resetKey: props.expanded ? key : `${key}@${props.step}` }, h(component, componentProps(node), children))))
+  return h(CODE_OWNED.Provider, { value: node.ownsCode !== false }, h(COMPONENT_NODE.Provider, { value: { node, section: props.section.id } }, h(PmBoundary, { name: node.name, resetKey: props.expanded ? key : `${key}@${props.step}` }, h(component, { ...componentProps(node), ...state?.parameters }, children))))
 }
 function content(props: BlockProps): ReactNode {
   const node = props.block.node
@@ -47,7 +48,7 @@ function BlockViewContent(props: BlockProps) {
   const visible = props.expanded || blockVisible(block, props.step)
   const script = doc?.config.renderers.lecture?.script
   const role = block.role === 'narration' && ((block.only && !block.only.includes('lecture')) || (typeof script === 'string' && script.trim())) ? 'reading' : block.role
-  return h(StepScope, { at: block.at, until: block.until }, h('div', {
+  return h(StepScope, { at: block.at, until: block.until, states: block.stepStates, step: props.step }, h('div', {
     ref: el, className: [BLOCK_CLASS, `pm-block--${block.role}`, `pm-block--${block.node.type}`, block.until !== undefined ? 'pm-step-range' : '', block.node.type === 'component' && block.node.layer === 'overlay' ? 'pm-block--overlay' : '', !visible ? 'pm-hidden' : ''].filter(Boolean).join(' '),
     'data-block': block.id, 'data-content-role': role, 'data-content-label': viewerMessages().contentRoles[role], 'data-at': block.at, 'data-component': block.node.type === 'component' ? block.node.name : undefined, 'aria-hidden': visible ? undefined : true,
     onClick: viewer?.options.openSource ? (event: MouseEvent) => { if (event.altKey) { event.preventDefault(); event.stopPropagation(); viewer.options.openSource!(block.source) } } : undefined,

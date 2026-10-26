@@ -17,9 +17,9 @@ export default function CursorPath({ plan }: { plan: PlannedWaypoint[] }) {
     stepTime = useStepTime({ until: 850 }),
     reduced = usePrefersReducedMotion()
   const index =
-      plan.filter((point) => hostStep - scope.at >= point.at).length - 1,
+      plan.filter((point) => scope.localStepAt(hostStep) >= point.at).length - 1,
     point = plan[index]
-  const time = point && hostStep - scope.at === point.at ? stepTime : Infinity
+  const time = point && scope.localStepAt(hostStep) === point.at ? stepTime : Infinity
   const cursor = useRef<HTMLDivElement>(null)
   const [points, setPoints] = useState<{ from?: Point; to?: Point }>({})
   useLayoutEffect(() => {

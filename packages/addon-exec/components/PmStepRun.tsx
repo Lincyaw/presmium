@@ -54,7 +54,7 @@ export default function PmStepRun({
   const count = steps ?? trace?.events.length ?? 0
   const traced = trace?.error === undefined ? trace?.events.length : undefined
   const last = traced ?? count
-  const sectionStep = Math.max(0, Math.min(count, hostStep - scope.at))
+  const sectionStep = Math.max(0, Math.min(count, scope.localStepAt(hostStep)))
   const step = expanded ? (local ?? last) : sectionStep
   const frame = trace ? frameAt(trace, step) : undefined
   const state = trace
