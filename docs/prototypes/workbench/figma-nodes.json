@@ -101,6 +101,17 @@
       "SearchList": {
         "nodeId": "77:554",
         "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=77-554"
+      },
+      "BlockPreview": {
+        "nodeId": "98:1719",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=98-1719",
+        "reviewNodeId": "98:1720",
+        "states": [
+          "Loading",
+          "Ready",
+          "Previous",
+          "Failed"
+        ]
       }
     },
     "variantCounts": {
@@ -874,6 +885,12 @@
       "12:3593",
       "12:3600"
     ],
-    "verification": "docs/benchmarks/document-json-editor-2026-10-26.md"
+    "verification": "docs/benchmarks/document-json-editor-2026-10-26.md",
+    "inlineRuntime": {
+      "component": "BlockPreview",
+      "source": "TeachingDocument definitions and instances",
+      "runtime": "read-only compiled block; no per-block event stream",
+      "versionConfirmation": "exact source fingerprint, project revision and runtime IR revision"
+    }
   }
 }

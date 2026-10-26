@@ -1,5 +1,5 @@
-import { DOCUMENT_ENTRY, isRecord, jsonResponse, pushStream, sseResponse, validateDocument } from '@lincyaw/kernel'
-import { createHash } from 'node:crypto'
+import { DOCUMENT_ENTRY, fnv1a64, isRecord, jsonResponse, pushStream, sseResponse, validateDocument } from '@lincyaw/kernel'
+import { createHash, randomUUID } from 'node:crypto'
 import { watch } from 'node:fs'
 import { join } from 'node:path'
 import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, DocumentEvent, DocumentIssue, RequestContext, Route, TeachingDocument } from '@lincyaw/kernel'
@@ -7,8 +7,9 @@ import { applyDocumentOperations } from '@lincyaw/kernel'
 import { catchRequestErrors, RequestError } from './errors.ts'
 import type { SourceEditor, SourceTransactionHistory } from './source-editor.ts'
 import type { Revisions } from './revisions.ts'
+import type { WorkbenchApi } from './workbench-api.ts'
 
-interface Options { root: string, editor: SourceEditor, revisions?: Revisions }
+interface Options { root: string, editor: SourceEditor, revisions?: Revisions, workbench?: WorkbenchApi }
 
 const entryOf = (directory: string): string => directory ? `${directory}/${DOCUMENT_ENTRY}` : DOCUMENT_ENTRY
 
@@ -20,7 +21,7 @@ function decode(content: string): { document?: TeachingDocument, issues: Documen
 }
 
 /** A document save validates author intent and never waits for a compiled preview. */
-export function documentEditorRoutes({ root, editor, revisions }: Options): Record<string, Route> {
+export function documentEditorRoutes({ root, editor, revisions, workbench }: Options): Record<string, Route> {
   const opened = (ctx: RequestContext) => {
     const source = editor.read(editor.scope(ctx.document), entryOf(ctx.document), ctx.member)
     const checked = decode(source.content)
@@ -34,7 +35,7 @@ export function documentEditorRoutes({ root, editor, revisions }: Options): Reco
       handle: (request, ctx) => catchRequestErrors(async () => {
         if (request.method !== 'GET') throw new RequestError(405, 'GET')
         const { source, content, issues } = opened(ctx)
-        return jsonResponse({ document: ctx.document, version: source.version, content, issues } satisfies DocumentAnswer)
+        return jsonResponse({ document: ctx.document, version: source.version, fingerprint: fnv1a64(source.content), content, issues } satisfies DocumentAnswer)
       }),
     },
     'document/events': {
@@ -45,6 +46,8 @@ export function documentEditorRoutes({ root, editor, revisions }: Options): Reco
         editor.read(editor.scope(ctx.document), entryOf(ctx.document), ctx.member)
         const stream = pushStream<{ event: string, data: DocumentEvent }>(push => {
           let timer: ReturnType<typeof setTimeout> | undefined, last: string | undefined
+          const observation = randomUUID()
+          let project = 0
           const emit = () => {
             let event: DocumentEvent
             try {
@@ -53,6 +56,7 @@ export function documentEditorRoutes({ root, editor, revisions }: Options): Reco
             } catch {
               event = { document: ctx.document, version: '', valid: false, issues: [{ path: '', code: 'document-unavailable', message: 'The document is unavailable.', severity: 'error' }] }
             }
+            event.projectRevision = `${observation}:${project}`
             const signature = JSON.stringify(event)
             if (signature !== last) { last = signature; push({ event: 'document', data: event }) }
           }
@@ -62,8 +66,12 @@ export function documentEditorRoutes({ root, editor, revisions }: Options): Reco
             timer = setTimeout(emit, 30)
           })
           watcher.on('error', emit)
+          const stopProject = workbench?.onCompiled(ctx.document, event => {
+            if (!event.files.some(file => file !== entryOf(ctx.document))) return
+            project++; clearTimeout(timer); timer = setTimeout(emit, 30)
+          })
           emit()
-          return () => { clearTimeout(timer); watcher.close() }
+          return () => { clearTimeout(timer); watcher.close(); stopProject?.() }
         }, { signal: request.signal, latestOnly: true })
         return sseResponse(stream, request.signal)
       }),
@@ -84,7 +92,7 @@ export function documentEditorRoutes({ root, editor, revisions }: Options): Reco
           if (receipt.signature !== signature) throw new RequestError(409, 'document-change-id-reused')
           if (receipt.version !== current.source.version) throw new RequestError(409, 'document-version-changed', { version: current.source.version })
           if (receipt.files.some(file => editor.read(editor.scope(ctx.document), file.path, ctx.member).version !== file.version)) throw new RequestError(409, 'document-files-changed')
-          return jsonResponse({ changeId: change.id, document: ctx.document, version: current.source.version, content: current.content, issues: current.issues, files: receipt.files, ...receipt.commit ? { commit: receipt.commit } : {} } satisfies DocumentChangeAnswer)
+          return jsonResponse({ changeId: change.id, document: ctx.document, version: current.source.version, fingerprint: fnv1a64(current.source.content), content: current.content, issues: current.issues, files: receipt.files, ...receipt.commit ? { commit: receipt.commit } : {} } satisfies DocumentChangeAnswer)
         }
         if (current.source.version !== change.baseDocumentVersion) throw new RequestError(409, 'document-version-changed', { version: current.source.version })
         let candidate: unknown = change.replacement
@@ -109,7 +117,7 @@ export function documentEditorRoutes({ root, editor, revisions }: Options): Reco
         } : undefined
         const saved = await editor.transaction(editor.scope(ctx.document), [{ path: current.source.path, content, base: current.source.version }, ...fileChanges], ctx.member, history)
         const version = saved.versions.find(file => file.path === current.source.path)!.version
-        const answer: DocumentChangeAnswer = { changeId: change.id, document: ctx.document, version, content: checked.document, issues: checked.issues, files: saved.versions, ...saved.revision ? { commit: saved.revision } : {} }
+        const answer: DocumentChangeAnswer = { changeId: change.id, document: ctx.document, version, fingerprint: fnv1a64(content), content: checked.document, issues: checked.issues, files: saved.versions, ...saved.revision ? { commit: saved.revision } : {} }
         receipts.set(key, { signature, version, files: saved.versions, ...saved.revision ? { commit: saved.revision } : {} })
         while (receipts.size > 64) receipts.delete(receipts.keys().next().value!)
         return jsonResponse(answer)

@@ -7,7 +7,7 @@ import type { AddressInfo } from 'node:net'
 import type { Duplex } from 'node:stream'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { errorMessage, localRequestRefusal, previewFrameAncestors, safeDecodeURIComponent, viewFor } from '@lincyaw/kernel'
+import { errorMessage, irBlocks, localRequestRefusal, previewFrameAncestors, safeDecodeURIComponent, viewFor } from '@lincyaw/kernel'
 import type { IRDocument, NodeVitePlugin, RenderContext, RuntimeAssets, SiteSpec } from '@lincyaw/kernel'
 import { spawnInteractiveNode } from '@lincyaw/kernel/node'
 import { diffDocuments } from '@lincyaw/viewer/domain'
@@ -15,7 +15,7 @@ import { createProxyServer } from 'http-proxy-3'
 import send from 'send'
 import { searchDocuments, translationPages, UPDATE_EVENT, webPages } from '../domain/index.ts'
 import type { AppConfig, DevUpdateEvent, WebPage } from '../domain/index.ts'
-import { BUNDLE_ENTRY, findDocumentBundle } from './document-bundle.ts'
+import { BUNDLE_ENTRY, documentComponents, findDocumentBundle } from './document-bundle.ts'
 import type { DocumentBundle, DocumentBundleInput } from './document-bundle.ts'
 import { irRevisionOfJson, PublicationCache, publishedDocument } from './publish.ts'
 import { findRuntimeAsset, REVISION_HEADER, runtimeAssets, searchIndex } from './site-files.ts'
@@ -305,6 +305,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     outDir: join(options.workDir, 'bundles', segment(dir)),
     externals: [...externals],
     nodePlugins: options.nodePlugins(dir).map(({ entry, config }) => ({ entry, config })),
+    components: documentComponents(latest.get(dir)),
   })
 
   /** Watches the document's files: when its code changes, its bundle is built again and its pages reload. */
@@ -399,9 +400,9 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   const docs = () => new Map([...latest].map(([dir, doc]) => [dir, viewOf(doc, 'web')] as const))
 
   /** The document's IR in a form and language as its pages read it: published, its files below its site path. */
-  const published = (dir: string, doc: IRDocument, lang = '', form: Form = 'web'): Published => {
+  const published = (dir: string, doc: IRDocument, lang = '', form: Form = 'web', unfiltered = false): Published => {
     const state = stateOf(dir)
-    const key = `${form}:${lang}`
+    const key = `${unfiltered ? 'block' : form}:${lang}`
     const known = state.published.get(key)
     if (known?.source === doc) return known
     const own = options.context(dir, doc)
@@ -409,7 +410,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     const linked = isSingle(options.site()) ? undefined : documentPage(options.site(), base, docs())
     let cache = state.caches.get(form)
     if (!cache) state.caches.set(form, cache = new PublicationCache())
-    const shown = publishedDocument(lang ? doc : viewOf(doc, form), own, join(options.workDir, 'media', segment(dir)), docBase, linked, lang ? undefined : cache)
+    const shown = publishedDocument(lang || unfiltered ? doc : viewOf(doc, form), own, join(options.workDir, 'media', segment(dir)), docBase, linked, lang ? undefined : cache)
     const json = JSON.stringify(shown)
     const next = { source: doc, doc: shown, json, revision: irRevisionOfJson(json) }
     state.published.set(key, next)
@@ -473,19 +474,41 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     html(res, kind === 'missing' ? 404 : 200, config, title)
   }
 
+  /** A widget request must confirm current project files, even before the debounced watcher rebuilds. */
+  const currentBlockBundle = async (dir: string, doc: IRDocument): Promise<boolean> => {
+    const state = stateOf(dir), own = options.context(dir, doc)
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const externals = state.externals
+      if (closed || !externals || !current) return false
+      const found = await findDocumentBundle(bundleInput(dir, own.deckDir, externals)).catch(() => undefined)
+      if (closed || state.externals !== externals) continue
+      if (found !== undefined) { state.bundle = found; return true }
+      await (state.building ?? buildBundle(dir, own.deckDir, state, externals))
+    }
+    return false
+  }
+
   /** A document's page (or its workbench page), once the app and the document's bundle are there. */
-  const documentPageResponse = async (res: ServerResponse, dir: string, lang: string, rest: string | undefined, form: Form = 'web') => {
+  const documentPageResponse = async (res: ServerResponse, dir: string, lang: string, rest: string | undefined, form: Form = 'web', block?: string) => {
     const { ready, done } = await prepare(dir)
     if (!ready()) await done
     if (!ready() || !current) return void res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end('the viewer app or the document\'s code could not be built; the server\'s log says why')
     const doc = await documentOf(dir)
     const shown = lang ? translationOf(dir, lang)?.doc : doc
     if (!shown) return plainPage(res, 'missing')
+    if (block !== undefined && !await currentBlockBundle(dir, doc)) return void res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end('the compiled block code is not current')
+    if (block !== undefined && !shown.sections.some(section => [...irBlocks(section.blocks)].some(node => node.id === block))) return void res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('the compiled block does not exist')
     const pages = lang ? translationPages(published(dir, shown, lang).doc, webPages(published(dir, doc).doc)) : webPages(published(dir, doc).doc)
     const page = rest === undefined ? undefined : pageAt(pages, rest)
     if (rest !== undefined && !page) return plainPage(res, 'missing')
     const state = stateOf(dir)
-    html(res, 200, documentConfig(dir, doc, lang, form === 'slides' ? undefined : page, state.bundle, rest === undefined, form), page && page.title !== shown.meta.title ? `${page.title} | ${shown.meta.title}` : shown.meta.title)
+    const config = documentConfig(dir, doc, lang, form === 'slides' ? undefined : page, state.bundle, rest === undefined, block === undefined ? form : 'web')
+    if (block !== undefined) {
+      config.block = block
+      config.ir += `&presmium-block=${encodeURIComponent(block)}`
+      delete config.events; delete config.source; delete config.search; delete config.serviceWorker
+    }
+    html(res, 200, config, page && page.title !== shown.meta.title ? `${page.title} | ${shown.meta.title}` : shown.meta.title)
   }
 
   const formOf = (url: URL): Form => (url.searchParams.get('form') === 'slides' ? 'slides' : url.searchParams.get('form') === 'web' ? 'web' : options.form ?? 'web')
@@ -497,7 +520,9 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     const doc = await documentOf(dir)
     const shown = lang ? translationOf(dir, lang)?.doc : doc
     if (!shown) return void res.writeHead(404).end()
-    const answer = published(dir, shown, lang, formOf(url))
+    const block = url.searchParams.get('presmium-block')
+    if (block !== null && !shown.sections.some(section => [...irBlocks(section.blocks)].some(node => node.id === block))) return void res.writeHead(404).end()
+    const answer = published(dir, shown, lang, formOf(url), block !== null)
     const etag = `"${answer.revision}"`
     const headers = { 'ETag': etag, [REVISION_HEADER]: answer.revision, 'Cache-Control': 'no-store' }
     if (req.headers['if-none-match'] === etag) return void res.writeHead(304, headers).end()
@@ -550,7 +575,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   const appRoute = async (req: IncomingMessage, res: ServerResponse, url: URL, rest: string) => {
     if (rest === 'view') {
       const dir = url.searchParams.get('document') ?? ''
-      return documents().includes(dir) ? documentPageResponse(res, dir, '', undefined, formOf(url)) : plainPage(res, 'missing')
+      return documents().includes(dir) ? documentPageResponse(res, dir, '', undefined, formOf(url), url.searchParams.get('presmium-block') ?? undefined) : plainPage(res, 'missing')
     }
     if (rest === 'ir') return irRoute(req, res, url)
     if (rest === 'search') return searchRoute(res, url)
@@ -568,11 +593,11 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     const doc = await documentOf(dir)
     const own = options.context(dir, doc)
     const [first, ...others] = rest.split('/')
-    if (formOf(url) === 'slides' && (rest === '' || rest === 'index.html')) return documentPageResponse(res, dir, '', undefined, 'slides')
-    if (first && others.length > 0 && translationOf(dir, first)) return documentPageResponse(res, dir, first, others.join('/'))
+    if (formOf(url) === 'slides' && (rest === '' || rest === 'index.html')) return documentPageResponse(res, dir, '', undefined, 'slides', url.searchParams.get('presmium-block') ?? undefined)
+    if (first && others.length > 0 && translationOf(dir, first)) return documentPageResponse(res, dir, first, others.join('/'), formOf(url), url.searchParams.get('presmium-block') ?? undefined)
     if (rest === '' || rest.endsWith('.html')) {
       const pages = webPages(published(dir, doc).doc)
-      if (pageAt(pages, rest)) return documentPageResponse(res, dir, '', rest)
+      if (pageAt(pages, rest)) return documentPageResponse(res, dir, '', rest, formOf(url), url.searchParams.get('presmium-block') ?? undefined)
     }
     if (rest.startsWith('media/')) return serveFile(req, res, join(options.workDir, 'media', segment(dir)), `/${rest.split('/').map(encodeURIComponent).join('/')}`, false)
     const state = stateOf(dir)

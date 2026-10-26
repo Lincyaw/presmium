@@ -38,6 +38,8 @@ export interface AppConfig {
   kind: 'document' | 'home' | 'missing'
   /** The document's directory in the workspace (`''` for the document at its root). */
   document: string
+  /** One compiled block in a read-only authoring widget; no live or source-edit transport. */
+  block?: string
   /** The document's site path, ending with `/`: its pages, its published files and its plugins' run-time files. */
   base: string
   /** The language of the page; a translation's pages are below `<base><lang>/`. */

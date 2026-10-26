@@ -61,7 +61,7 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
           const implementation = definition.implementation
           const data = definition.data ?? {}
           const plugin = typeof data.plugin === 'string' ? data.plugin : implementation.type === 'plugin' ? implementation.plugin : isMotionScene(definition) ? 'presmium.motion' : 'deck'
-          const name = typeof data.name === 'string' ? data.name : implementation.type === 'plugin' ? implementation.name : isMotionScene(definition) ? 'PmScene' : implementation.exportName ?? definition.kind
+          const name = typeof data.name === 'string' ? data.name : implementation.type === 'plugin' ? implementation.name : isMotionScene(definition) ? 'PmScene' : `presmium-definition:${definition.id}`
           const node: ComponentNode = { type: 'component', plugin, name, props: { ...block.parameters }, ...block.children ? { children: block.children.map(child) } : {} }
           if (Array.isArray(data.durations) && data.durations.every(value => typeof value === 'number')) node.durations = data.durations
           if (isRecord(data.fallback) && typeof data.fallback.type === 'string') node.fallback = structuredClone(data.fallback) as MdastNode
@@ -72,13 +72,15 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
             const file = resolve(deckDir, implementation.path)
             watch(file)
             if (isMotionScene(definition)) {
+              if (implementation.exportName && implementation.exportName !== 'default') report({ checkId: 'presmium.document', severity: 'error', message: 'Motion scene files currently require their default export.', source: where })
               const path = relative(deckDir, file).split(sep).join('/')
               const scene = /^scenes\/([\w-]+(?:\/[\w-]+)*)\.(?:ts|js|mjs)$/.exec(path)?.[1]
               if (scene) node.props.scene = scene
               else report({ checkId: 'presmium.document', severity: 'error', message: 'A motion scene implementation must be a supported file below scenes/.', source: where })
             }
-            node.definition = { file, language: typeof data.language === 'string' ? data.language : /\.[cm]?tsx?$/.test(file) ? 'typescript' : 'javascript' }
+            node.definition = { file, language: typeof data.language === 'string' ? data.language : /\.[cm]?tsx?$/.test(file) ? 'typescript' : 'javascript', ...implementation.exportName !== undefined ? { exportName: implementation.exportName } : {} }
           }
+          if (implementation.type === 'module') report({ checkId: 'presmium.document', severity: 'error', message: 'Module component implementations are not available in the current document runtime; use a project file or a registered plugin component.', source: where })
           return node
         }
       }
