@@ -11,6 +11,7 @@ interface RuntimeIssue {
   document?: string
   checkId: string
   message: string
+  feedbackOwner?: WorkspaceRequestEvent['feedbackOwner']
 }
 interface RuntimeSnapshot { issues: readonly RuntimeIssue[], reportFailed: boolean }
 const instances = new WeakMap<Workbench, WorkbenchRuntimeDiagnostics>()
@@ -40,7 +41,7 @@ export class WorkbenchRuntimeDiagnostics {
   readonly #instance = `workbench:${globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`}`
   readonly #seen = new WeakSet<object>()
   readonly #attempted = new Map<string, string>()
-  readonly #requests = new Map<number, { document?: string, key: string }>()
+  readonly #requests = new Map<number, { document?: string, key: string, feedbackOwner?: WorkspaceRequestEvent['feedbackOwner'] }>()
   readonly #latestRequests = new Map<string, number>()
   #reports = Promise.resolve()
   #timer?: ReturnType<typeof setTimeout>
@@ -97,8 +98,8 @@ export class WorkbenchRuntimeDiagnostics {
   #request(event: WorkspaceRequestEvent): void {
     if (event.kind === 'start') {
       const document = event.document === '' ? this.#workbench.state.document : event.document
-      const key = JSON.stringify(['request', document, event.method, event.path])
-      this.#requests.set(event.requestId, { document, key })
+      const key = JSON.stringify(['request', document, event.method, event.path, event.feedbackOwner])
+      this.#requests.set(event.requestId, { document, key, feedbackOwner: event.feedbackOwner })
       this.#latestRequests.delete(key)
       this.#latestRequests.set(key, event.requestId)
       while (this.#requests.size > LIMIT * 8) this.#requests.delete(this.#requests.keys().next().value!)
@@ -108,19 +109,23 @@ export class WorkbenchRuntimeDiagnostics {
     const request = this.#requests.get(event.requestId)
     this.#requests.delete(event.requestId)
     if (!request || this.#latestRequests.get(request.key) !== event.requestId || event.kind === 'cancel') return
-    const { document, key } = request
+    const { document, key, feedbackOwner } = request
     if (event.kind === 'recovery') {
       const issues = this.state.getSnapshot().issues
       if (issues.some(issue => issue.key === key)) this.#replace(issues.filter(issue => issue.key !== key))
       return
     }
     const message = `${event.method} /api/presmium/${event.path}: ${event.status === undefined ? 'the workspace service could not be reached' : `HTTP ${event.status}`}`
-    this.#add({ key, document, checkId: 'presmium.workbench.request', message })
+    this.#add({ key, document, checkId: 'presmium.workbench.request', message, ...event.status !== undefined && feedbackOwner ? { feedbackOwner } : {} })
   }
 
   #add(issue: RuntimeIssue): void {
     const issues = this.state.getSnapshot().issues
-    if (issues.some(known => known.key === issue.key)) return
+    const known = issues.find(known => known.key === issue.key)
+    if (known) {
+      if (known.message !== issue.message || known.feedbackOwner !== issue.feedbackOwner) this.#replace(issues.map(value => value === known ? issue : value))
+      return
+    }
     this.#replace([...issues, issue].slice(-LIMIT))
   }
   #replace(issues: readonly RuntimeIssue[]): void {
@@ -130,7 +135,7 @@ export class WorkbenchRuntimeDiagnostics {
 
   visible(): readonly RuntimeIssue[] {
     const { document } = this.#workbench.state
-    return this.state.getSnapshot().issues.filter(issue => issue.document === undefined || issue.document === document)
+    return this.state.getSnapshot().issues.filter(issue => (issue.document === undefined || issue.document === document) && issue.feedbackOwner !== 'inline-preview')
   }
 
   dismiss(): void {

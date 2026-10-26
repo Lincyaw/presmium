@@ -136,10 +136,14 @@
         ],
         "captionEditingNodeId": "102:1760",
         "captionEmptyNodeId": "102:1778",
+        "failedNodeId": "98:1702",
+        "failedFallbackNodeId": "98:1717",
+        "failedContract": "Terminal failure pauses and removes the old iframe, rejects late child messages and uses a compact readable fallback with the existing refresh action. Retry adopts a new prepared snapshot. Only inline HTTP failure feedback is local; complete request diagnostics remain recorded and reported, while network and explicit presentation failures stay global.",
+        "idlePlaybackContract": "Initial and reloaded paused snapshots show the completed current step. Once playback permission is granted, Play replays the selected step from its start with stable step identity; mid-step pause resumes, scrub clears this replay intent, and natural completion retains whole-scene replay.",
         "fallbackOverflowNodeId": "177:4305",
         "fallbackFocusedNodeId": "177:4328",
         "viewportReviewNodeId": "177:4351",
-        "viewportContract": "Persistent viewport retains the last measured height across deferred mounting and iframe release; unknown height uses existing default/min/max tokens. Fallback scrolls natively and owns a placeholder-only Tabstop; mounting the iframe preserves the viewport node and current focus. Reading keys keep their native default; Tab exits."
+        "viewportContract": "Persistent viewport retains the last measured height across deferred mounting and offscreen iframe release; unknown height uses existing default/min/max tokens. Terminal failure uses a compact auto-height fallback. Fallback scrolls natively and owns a placeholder-only Tabstop; mounting the iframe preserves the viewport node and current focus. Reading keys keep their native default; Tab exits."
       },
       "Caption": {
         "nodeId": "110:1847",

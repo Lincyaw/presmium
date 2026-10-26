@@ -29,6 +29,8 @@ export interface WorkspaceRequestEvent {
   method: string
   document?: string
   status?: number
+  /** The caller renders HTTP failures locally; transport failures remain global. */
+  feedbackOwner?: 'inline-preview'
 }
 
 /** The workbench's client of the workspace server's routes; each `subscribe*` returns its unsubscribe. */
@@ -67,7 +69,7 @@ export interface WorkspaceClient {
   readDiagnostics(document: string): Promise<DiagnosticSnapshot>
   subscribeDiagnostics(document: string, snapshot: (event: DiagnosticSnapshot) => void, failed: () => void): () => void
   reportDiagnostics(report: PreviewDiagnostics): Promise<unknown>
-  readPreview(document: string, renderer?: PreviewRenderer, signal?: AbortSignal): Promise<PreviewAnswer>
+  readPreview(document: string, renderer?: PreviewRenderer, signal?: AbortSignal, feedbackOwner?: WorkspaceRequestEvent['feedbackOwner']): Promise<PreviewAnswer>
   /** Asks the service to prepare a form of the document ahead of the author, when the machine has room. */
   prefetchPreview(document: string, renderer: PreviewRenderer): Promise<PreviewAnswer>
   /** The MCP address and the workspace root, read once. */
@@ -103,7 +105,7 @@ export interface WorkspaceClient {
 export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
   const requestListeners = new Set<(event: WorkspaceRequestEvent) => void>()
   let requestSequence = 0
-  const observedFetch = async (address: string, init?: RequestInit): Promise<Response> => {
+  const observedFetch = async (address: string, init?: RequestInit, feedbackOwner?: WorkspaceRequestEvent['feedbackOwner']): Promise<Response> => {
     const target = new URL(address)
     const prefix = new URL(base, globalThis.document.baseURI).pathname
     const path = target.pathname.slice(prefix.length)
@@ -112,7 +114,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     const document = target.searchParams.get('document') ?? undefined
     const requestId = ++requestSequence
     const emit = (kind: WorkspaceRequestEvent['kind'], status?: number) => {
-      const event: WorkspaceRequestEvent = { kind, requestId, path, method, ...document !== undefined ? { document } : {}, ...status !== undefined ? { status } : {} }
+      const event: WorkspaceRequestEvent = { kind, requestId, path, method, ...document !== undefined ? { document } : {}, ...status !== undefined ? { status } : {}, ...feedbackOwner ? { feedbackOwner } : {} }
       for (const listener of requestListeners) {
         const notify = () => {
           if (!requestListeners.has(listener)) return
@@ -152,8 +154,8 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     for (const [name, value] of Object.entries(query)) address.searchParams.set(name, value)
     return address.href
   }
-  const call = async <T>(address: string, init?: RequestInit): Promise<T> => {
-    const response = await observedFetch(address, init)
+  const call = async <T>(address: string, init?: RequestInit, feedbackOwner?: WorkspaceRequestEvent['feedbackOwner']): Promise<T> => {
+    const response = await observedFetch(address, init, feedbackOwner)
     const data = await response.json().catch(() => ({})) as T & ErrorAnswer
     if (!response.ok) {
       const error = new WorkspaceServerError(response.status, data)
@@ -289,7 +291,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     readDiagnostics: document => call(url('diagnostics', document)),
     subscribeDiagnostics: (document, snapshot, failed) => subscribe(url('diagnostics/events', document), 'diagnostics', snapshot, failed),
     reportDiagnostics: report => post(url('diagnostics'), report),
-    readPreview: (document, renderer, signal) => call(url('preview', document, renderer ? { view: renderer } : {}), { signal }),
+    readPreview: (document, renderer, signal, feedbackOwner) => call(url('preview', document, renderer ? { view: renderer } : {}), { signal }, feedbackOwner),
     prefetchPreview: (document, renderer) => call(url('preview', document, { view: renderer, prefetch: '1' })),
     readWorkbenchInfo: () => {
       workbenchInfo ??= call<WorkbenchAnswer>(url('workbench')).catch((error: unknown) => {
