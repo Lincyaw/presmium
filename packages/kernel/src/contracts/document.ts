@@ -19,6 +19,7 @@ export type ClipId = string
 export interface DocumentMetadata {
   title: string
   lang: string
+  tags?: string[]
   plugins?: string[]
   presmium?: Record<string, JsonObject>
   renderers?: Record<string, JsonObject>
