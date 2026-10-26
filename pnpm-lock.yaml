@@ -1448,6 +1448,9 @@ importers:
       '@lincyaw/cli':
         specifier: workspace:*
         version: link:../packages/cli
+      '@lincyaw/kernel':
+        specifier: workspace:*
+        version: link:../packages/kernel
       '@lincyaw/web':
         specifier: workspace:*
         version: link:../packages/web
