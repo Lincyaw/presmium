@@ -110,7 +110,12 @@
       },
       "SearchList": {
         "nodeId": "77:554",
-        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=77-554"
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=77-554",
+        "resizeContract": {
+          "description": "All 24 existing density/state variants fill their available width; the 340px default, IDs, component properties and token bindings are retained.",
+          "source": "packages/workbench/src/components.tsx / packages/design/src/components.css",
+          "reconciledFor": "voiceAuthoringDesign"
+        }
       },
       "BlockPreview": {
         "nodeId": "98:1719",
@@ -981,5 +986,133 @@
     "behavior": "Compile and confirm the saved source before entering presentation. Later author input or document switches cancel the transition. Unconfirmed runtime revisions remain hidden until explicit recompile. This is not an immutable project-files snapshot.",
     "implementation": "packages/workbench/src/document-preview.ts",
     "verification": "docs/benchmarks/presentation-source-confirmation-2026-10-26.md"
+  },
+  "voiceAuthoringDesign": {
+    "pageId": "40:4644",
+    "nodeId": "126:385",
+    "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=126-385",
+    "status": "Formal design combinations and state targets; not product implementation acceptance.",
+    "prototypeFrames": {
+      "P19": "9:21",
+      "P20": "9:22",
+      "P21": "9:23"
+    },
+    "combinations": {
+      "desktopLight": {
+        "nodeId": "127:388",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=127-388"
+      },
+      "desktopDark": {
+        "nodeId": "127:520",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=127-520"
+      },
+      "touch390Light": {
+        "nodeId": "127:627",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=127-627"
+      },
+      "touch390Dark": {
+        "nodeId": "127:746",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=127-746"
+      },
+      "scopeAndInheritance": {
+        "nodeId": "127:840",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=127-840"
+      }
+    },
+    "stateBoard": {
+      "nodeId": "128:644",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=128-644"
+    },
+    "states": {
+      "notConfiguredWithCache": {
+        "nodeId": "128:646",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=128-646"
+      },
+      "availableEmpty": {
+        "nodeId": "128:663",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=128-663"
+      },
+      "catalogFailedWithPreviousResults": {
+        "nodeId": "128:692",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=128-692"
+      },
+      "catalogLoading": {
+        "nodeId": "128:780",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=128-780"
+      },
+      "replaceOverridesConfirmation": {
+        "nodeId": "128:864",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=128-864"
+      },
+      "sourceChanged": {
+        "nodeId": "128:887",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=128-887"
+      },
+      "auditionConfirmation": {
+        "nodeId": "128:908",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=128-908"
+      },
+      "generationCancelling": {
+        "nodeId": "128:928",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=128-928"
+      },
+      "currentStaleFailedClips": {
+        "nodeId": "128:947",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=128-947"
+      },
+      "generationConfirmation": {
+        "nodeId": "130:819",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=130-819"
+      },
+      "catalogUnsupported": {
+        "nodeId": "130:839",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=130-839"
+      },
+      "searchEmpty": {
+        "nodeId": "130:856",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=130-856"
+      }
+    },
+    "publicControls": [
+      "PmDialog",
+      "PmSearchList",
+      "PmSelect",
+      "PmField",
+      "PmNotice",
+      "PmButton",
+      "PmSegmented"
+    ],
+    "canonicalSources": [
+      "TeachingDocument.production.defaults",
+      "TeachingDocument.production.sectionOverrides",
+      "TeachingDocument.production.stepOverrides"
+    ],
+    "voiceSourceDiscriminator": "type: none | tts | recording; absence means no local override. Resolve step → page → document; all absent stays unset, never implicit silence.",
+    "rules": [
+      "Selection updates a draft only. Audition and generation require separate explicit scope/use confirmation.",
+      "Unconfigured, unsupported, empty, filtered-empty, loading and failed catalogues are distinct; exact current caches remain independently playable.",
+      "Show rate/style controls only for explicitly declared real provider capabilities.",
+      "Stable document/page/step scopes preserve independent overrides by default; replacement explicitly counts affected steps and voice slots, including silent and recording slots.",
+      "Source changes invalidate prior confirmations without clearing later drafts; stale generation cannot become current.",
+      "Cancelling waits for service acknowledgement; completed cache remains. Closing audition never restarts prior playback."
+    ],
+    "validation": {
+      "editableDescendants": 765,
+      "imageNodes": 0,
+      "fontFamily": "Noto Sans SC",
+      "visualCombinations": [
+        "desktopLight",
+        "desktopDark",
+        "touch390Light",
+        "touch390Dark"
+      ],
+      "boundaries": "Figma design inspected; runtime catalogue, saving, synthesis, OS input methods and the independent Video entry require separate real verification.",
+      "nodeCounts": {
+        "TEXT": 214,
+        "FRAME": 227,
+        "INSTANCE": 131,
+        "VECTOR": 193
+      }
+    }
   }
 }

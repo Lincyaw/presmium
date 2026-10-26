@@ -110,6 +110,10 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 
 `PmSearchList` 放在公共 Dialog、Drawer 或页面内，不另套下拉层。搜索框的向下键进入当前或首个可用结果，方向键、Home、End 与 Space 由 Radix Radio Group 管理；没有可用结果时焦点留在搜索框。`label`、`keywords` 用于检索，`description` 只展示非交互说明，试听等操作放在列表外。错误只渲染一个关联提示，额外说明通过 `aria-describedby` 关联；关闭时由外层公共容器归还焦点。Figma 的 [SearchList 组件集](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=77-554) 与[状态矩阵](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=77-1704) 对应 `packages/workbench/src/components.tsx` 的 `PmSearchList`、公共 CSS 与 `--pm-search-list-max-height`；24 个变体覆盖三种密度及默认、悬停、按下、焦点、禁用、加载、错误和空状态。
 
+音色选择的[正式组合与状态](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=126-385)复用上述公共控件，不新增一套音色专用下拉。SearchList 的 Figma 变体内部按可用宽度伸缩，与公共实现的满宽、换行和滚动行为一致；默认宽度仍为 340px。组合包括桌面与 390px 触屏的浅／深色，以及目录未配置、不提供目录、空结果、读取失败、加载、确认覆盖、确认调用、取消中与源版本变化等状态。它们是正式设计目标，不能据此宣称独立视频制作入口或配音流程已经完成验收。
+
+选择结果只更新设置草稿，试听与生成放在列表外显式确认。目录状态与已完成缓存是否可播放分开呈现；服务未配置不能遮掉当前可用缓存。语速与风格仅在真实服务声明支持时展示。应用范围使用文稿、页面与稳定步骤身份，对应 canonical Production 的默认值、页面覆盖和步骤覆盖，不在讲稿上新增音色层。恢复继承与明确静音使用不同动作；批量默认保留独立设置，替换时确认更新／保留的步骤数，并说明包含静音或录音的覆盖槽位数。旧源版本的确认失效时保留草稿，要求重新检查，不采用迟到结果。
+
 ### 4.1 组件库取用决定
 
 本轮继续使用 BlockNote 编辑正文、Radix Primitives 提供公共浮层和键盘行为，样式由 `@lincyaw/design` 令牌与公共适配层负责。公共组件封装只组合现成行为和样式，不另写焦点循环、菜单键盘控制或文本编辑内核。
