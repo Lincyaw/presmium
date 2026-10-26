@@ -21,3 +21,19 @@
 未知同级字段的保留另以扩展的内存对象检查，证明辅助层没有重建或清洗其它数据。当前 canonical schema 仍拒绝未声明字段；此项不表示这样的扩展文稿已通过领域校验或被写入文件。
 
 本轮只验收纯模型层。没有浏览器、音色目录、试听、任务保存竞态或系统输入法验证，也没有调用语音引擎或付费服务。录音来源仅按现有契约保留，并在编译解析中如实显示 `recording-unavailable`，未宣称已能混音或生成录音讲授。类型检查（1123 个文件）、分层、40 个包的发布结构和差异检查通过；未新增测试、未运行测试套件或原两讲完整构建。
+
+## Canonical 配音草稿恢复
+
+同一模块族中的 `voice-drafts.ts` 改为保存 `{ version, scope, source, replaceOverrides, rateInput? }`，使用包含工作区和文稿身份的 `identity` 加稳定步骤 ID 定位。它只是尚未采用的表单草稿，未创建第二份配音权威，也不兼容旧数值步骤格式。`source: null` 表示恢复继承，`type: none` 表示显式静音，录音引用保持原值。读取只核对安全结构；旧版本、已删除页面／步骤／素材和未采用的语速文本仍保留，采用时再以当前文稿校验。
+
+`.presmium/voice-drafts-browser-proof.mjs` 将实际 `workspaceClient()` 与草稿模块打包，在独立随机端口用真实 Chromium 的 `sessionStorage` 运行，结果 `.presmium/ui-evidence/voice-drafts.json` 为 20 项全部通过，浏览器与 HTTP 错误均为零。
+
+| 范围 | 实际结果 |
+| --- | --- |
+| 身份与刷新 | 两个工作区的相同文稿 ID／步骤 ID 不串稿，步骤重排后仍随稳定 ID 恢复；真实刷新保留批选范围、录音引用和 `三`、`-` 等未采用文本 |
+| 迟到清理 | `clearVoiceDraft(expected)` 同时检查当前内存和持久化快照；旧回执不能清除后来输入，也不能清除另一 client 写入的新版本 |
+| 数据损坏 | 损坏 JSON 或旧数值格式返回空草稿并报告 `corrupt`，读取不删除原始数据；后续明确写入新草稿前将损坏文本保存在同一键的一个 `:unreadable` 恢复槽 |
+| 存储失败 | 真实 `sandbox="allow-scripts"` 的不透明来源 iframe 触发原生 `SecurityError`；写入返回 `false`、状态为 `unavailable`，草稿仍保留在内存；清理失败也保留内存供重试 |
+| 来源与输入 | 恢复继承和静音保持不同含义，陈旧录音引用、空 TTS 选择、待复核参数及原始语速文本没有被静默清洗或改成合法数值 |
+
+新增的 `voiceDraftStorageStatus` 独立报告 `available`／`unavailable`／`corrupt`，`readVoiceDraft` 仍返回草稿或 `undefined`，`clearVoiceDraft` 的布尔结果表示是否确实完成清理。恢复槽每个目标仅保留最近一次损坏原文；浏览器完全禁止存储时只能保留当前页面内存，刷新不能保证恢复。本轮没有操作音色面板、真实系统输入法、音色服务或生成任务，不将存储检查等同于整条作者流程验收。类型检查（1125 个文件）、分层和差异检查通过，未新增测试或运行套件。
