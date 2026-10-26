@@ -110,6 +110,7 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 | Popover／Drawer | host 的 `PmPopover`、`PmDrawer` 与共用 CSS | 依据任务使用浮层或侧抽屉；workbench 需要时走公开公共封装，不引用 host 或复制私有实现 |
 | Field／Notice／Empty | `PmField`、`PmNotice`、`PmEmpty` | 同一位置展示字段说明、错误和恢复入口，不把所有状态写成页面私有提示卡 |
 | Range | workbench `PmRange`、`pm-ui-range`，使用原生 range | 提供受控数值、读屏值、焦点、禁用和三种密度；方向键／Home／End 提交意图，拖动先显示本地预览，释放时单次提交，Esc／取消／失焦／卸载丢弃手势草稿 |
+| MediaClipEditor | workbench `MediaClipEditor`、`pm-ui-media-clip-editor` | 组合公开素材选择、成对时间输入、短偏移、音量与静音；导入和采用分开，非法输入保留。调用方提供真实音频检查、已确认步骤范围和版本化提交，不绘制虚构波形 |
 | Timeline | workbench `PmTimeline`、`pm-ui-timeline` | 接收真实画面／配音／字幕三轨与稳定步骤身份；支持尺面点击、精确秒输入、Range、横滚、视图缩放与适配；未知／估算时长不开放任意时间定位，仍可选择步骤；只有真实样本才绘制波形 |
 | SortableList | workbench `PmSortableList`、`pm-ui-sortable-list` | dnd kit 负责指针、触屏、键盘和取消；按稳定 ID 提交一次相对位置移动。排序禁用与页面选择分开，保存前的视觉顺序不成为第二份文稿；身份、页面集合和重置变化中止过期手势 |
 | Checkbox／Radio／Switch | 现有 `pm-ui-checkbox` 仅提供部分基础着色，其余公共能力待补齐 | 在使用前规定选择、焦点、禁用、数值和错误状态，不在业务页各自实现 |

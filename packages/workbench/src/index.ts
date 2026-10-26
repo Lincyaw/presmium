@@ -1,6 +1,8 @@
 export * from './components.tsx'
 export { StepProductionEditor } from './StepProductionEditor.tsx'
 export type { StepProductionEditorProps } from './StepProductionEditor.tsx'
+export { MediaClipEditor } from './MediaClipEditor.tsx'
+export type { MediaClipAssetChoice, MediaClipDraft, MediaClipEditorProps } from './MediaClipEditor.tsx'
 export type { StepDurationDraft, StepDurationKey, StepTimingKey, StepTimingPatch } from './step-production.ts'
 export { useMessages, useWorkbench, useWorkbenchState, WorkbenchProvider } from './context.tsx'
 export type { DocumentComment } from '@lincyaw/kernel'

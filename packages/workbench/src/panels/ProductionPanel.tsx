@@ -12,6 +12,7 @@ import { ExportPanel } from './ExportPanel.tsx'
 import { PreviewPanel } from './PreviewPanel.tsx'
 import { VoiceoverDialog } from './VoiceoverDialog.tsx'
 import { ProductionTimeline } from './ProductionTimeline.tsx'
+import { ProductionMediaClips } from './ProductionMediaClips.tsx'
 
 const clockTime = (value?: number) => {
   if (value === undefined || !Number.isFinite(value)) return '--:--.---'
@@ -35,6 +36,7 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
   const [planBusy, setPlanBusy] = useState(false), [planFailure, setPlanFailure] = useState<string>(), [planReload, setPlanReload] = useState(0)
   const [playerBusy, setPlayerBusy] = useState(false), [seeking, setSeeking] = useState(false), controlRequest = useRef<AbortController>()
   const [enabling, setEnabling] = useState(false)
+  const [mediaRefresh, setMediaRefresh] = useState(false)
   const owner = useRef({ active: true, generation: 0 }), initial = useRef(false)
   const document = source?.content, sectionId = position && document?.sections[position.section] ? position.section : document?.sectionOrder[0]
   const declared = Boolean(document?.metadata.plugins?.includes('@lincyaw/addon-lecture'))
@@ -98,6 +100,13 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
       if (refreshPlan) setPlanReload(value => value + 1)
     } catch { if (current()) setFailure(t.presentationCompileFailed) }
   }
+  useEffect(() => {
+    if (!mediaRefresh || preparing || workbench.getState().isPreparingPresentation || blocked || closing || !source?.identity
+      || source.loading || source.dirty || source.saving || source.composing || source.restored || source.error) return
+    // Consume one merged intent; a later accepted media change can queue the next saved version.
+    setMediaRefresh(false)
+    if (!sourceCurrent || !frameCurrent) void compile()
+  }, [mediaRefresh, preparing, blocked, closing, source?.identity, source?.version, source?.fingerprint, source?.loading, source?.dirty, source?.saving, source?.composing, source?.restored, source?.error, sourceCurrent, frameCurrent])
   useEffect(() => { if (!initial.current) { initial.current = true; void compile(false) } }, [])
   const select = (page: string, step: string) => { workbench.stopAuditions(); workbench.selectDocumentStep(page, step) }
   const enable = async () => {
@@ -154,6 +163,9 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
           {voice.value?.type === 'recording' && <PmNotice tone="warn">{p.recordingLimit}</PmNotice>}
           <div className="pmw-voice__actions"><PmButton small icon="audio" disabled={blocked || closing} onClick={() => { workbench.stopAuditions(); setVoiceStep(stepId) }}>{p.choose}</PmButton><PmButton small icon="refresh" disabled={blocked || closing} onClick={() => { workbench.stopAuditions(); setGenerateStep(stepId) }}>{p.generate}</PmButton></div>
         </PmCard>
+        <ProductionMediaClips key={`${source.identity}:${stepId}`} identity={source.identity} version={source.version ?? ''} document={document} sectionId={sectionId} stepId={stepId}
+          binding={planCurrent ? plan?.binding : undefined} stepDurationMs={(() => { const step = planCurrent ? plan?.pages.find(page => page.sectionId === sectionId)?.steps.find(step => step.stepId === stepId) : undefined; return step?.timing === 'confirmed' && step.startMs !== undefined && step.endMs !== undefined ? step.endMs - step.startMs : undefined })()}
+          disabled={blocked || closing || !declared || !source.version || Boolean(source.dirty || source.saving || source.restored || source.error)} onChanged={() => setMediaRefresh(true)} />
       </div>
       {tab === 'outputs' && <div className="pmw-production__outputs"><ExportPanel onClose={() => setTab('script')} /></div>}
     </div>
