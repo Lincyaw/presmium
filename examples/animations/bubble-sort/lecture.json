@@ -118,12 +118,7 @@
         {
           "id": "pass--paragraph-1--text-0",
           "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "冒泡排序每一趟比较相邻的两个数，把大的往后换。先看这五个数。"
-            }
-          ]
+          "children": []
         }
       ]
     },
