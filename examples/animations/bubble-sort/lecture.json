@@ -45,8 +45,7 @@
         "pass--sort-code",
         "pass--stats",
         "pass--bubble",
-        "pass--paragraph-1",
-        "pass--paragraph-2"
+        "pass--paragraph-1"
       ],
       "stepOrder": [
         "pass--step-0",
@@ -128,17 +127,6 @@
         }
       ]
     },
-    "pass--paragraph-2": {
-      "id": "pass--paragraph-2",
-      "type": "text",
-      "content": [
-        {
-          "id": "pass--paragraph-2--text-0",
-          "type": "paragraph",
-          "children": []
-        }
-      ]
-    },
     "summary--paragraph-1": {
       "id": "summary--paragraph-1",
       "type": "text",
@@ -191,10 +179,6 @@
         {
           "blockId": "pass--paragraph-1",
           "visible": false
-        },
-        {
-          "blockId": "pass--paragraph-2",
-          "visible": false
         }
       ],
       "narrationIds": [
@@ -221,10 +205,6 @@
         },
         {
           "blockId": "pass--paragraph-1",
-          "visible": false
-        },
-        {
-          "blockId": "pass--paragraph-2",
           "visible": false
         }
       ],
@@ -253,10 +233,6 @@
         {
           "blockId": "pass--paragraph-1",
           "visible": false
-        },
-        {
-          "blockId": "pass--paragraph-2",
-          "visible": false
         }
       ],
       "narrationIds": [
@@ -284,10 +260,6 @@
         {
           "blockId": "pass--paragraph-1",
           "visible": false
-        },
-        {
-          "blockId": "pass--paragraph-2",
-          "visible": false
         }
       ],
       "narrationIds": [
@@ -314,10 +286,6 @@
         },
         {
           "blockId": "pass--paragraph-1",
-          "visible": false
-        },
-        {
-          "blockId": "pass--paragraph-2",
           "visible": false
         }
       ],
