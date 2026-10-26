@@ -30,7 +30,7 @@ export const codeRefPass: IRPass = {
       const spec = block.node.type === 'code' ? codeRefs.get(block.node) ?? (reference ? { anchor: reference.anchor, ...reference.pin ? { pin: reference.pin } : {}, ...reference.repo ? { repo: reference.repo } : {}, ...reference.highlightRegions ? { steps: reference.highlightRegions } : {} } : undefined) : undefined
       if (!spec) continue
       const report: Report = (checkId, severity, message, hint) =>
-        ctx.report({ checkId, severity, message, source: { file: block.source.file, line: block.source.line }, ...hint ? { hint } : {} })
+        ctx.report({ checkId, severity, message, source: { ...block.source }, ...hint ? { hint } : {} })
       const code = block.node as CodeNode
       const repo = reference?.repo ?? toCodeConfig(ctx.configFor(section)).repo
       if (code.origin) await resolveCodeRef(code, spec, repo, tree, ctx, report)

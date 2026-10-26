@@ -1,39 +1,39 @@
-import type { Finding, Severity } from '@lincyaw/kernel'
+import type { Finding, Severity, SourcePos } from '@lincyaw/kernel'
+import { printParseErrorCode } from 'jsonc-parser'
+import { TextDocument } from 'vscode-languageserver-textdocument'
 import { DiagnosticSeverity } from 'vscode-languageserver/node'
 import type { Diagnostic, Range } from 'vscode-languageserver/node'
-import { fenceAt } from '../domain/index.ts'
+import { nodeAtPointer, readDocument } from '../domain/document.ts'
 
-const SEVERITY: Record<Severity, DiagnosticSeverity> = {
-  error: DiagnosticSeverity.Error,
-  warning: DiagnosticSeverity.Warning,
-  info: DiagnosticSeverity.Information,
+const SEVERITY: Record<Severity, DiagnosticSeverity> = { error: DiagnosticSeverity.Error, warning: DiagnosticSeverity.Warning, info: DiagnosticSeverity.Information }
+export const offsetRange = (document: TextDocument, offset: number, length: number): Range => ({ start: document.positionAt(offset), end: document.positionAt(offset + Math.max(1, length)) })
+
+/** The same syntax and graph validator used by source saves, before compilation is available. */
+export function documentDiagnostics(text: string): Diagnostic[] {
+  const document = TextDocument.create('', 'json', 0, text), source = readDocument(text)
+  return [
+    ...source.errors.map(error => ({ range: offsetRange(document, error.offset, error.length), severity: DiagnosticSeverity.Error, source: 'presmium', code: 'document.json', message: printParseErrorCode(error.error) })),
+    ...(source.validation?.issues.map(issue => {
+      const node = nodeAtPointer(source.tree!, issue.path)
+      return { range: offsetRange(document, node.offset, node.length), severity: SEVERITY[issue.severity], source: 'presmium', code: issue.code, message: issue.message }
+    }) ?? []),
+  ]
 }
 
-function rangeOf(text: string, line: number, message: string): Range {
-  const fence = fenceAt([text], 0)
-  const word = fence?.arg.split(/\s/)[0]
-  if (fence && word && message.includes(word)) {
-    return { start: { line, character: fence.argStart }, end: { line, character: fence.argStart + word.length } }
-  }
-  const start = text.length - text.trimStart().length
-  return { start: { line, character: start }, end: { line, character: text.trimEnd().length } }
-}
-
-/** The findings as LSP diagnostics, by file; a finding without a file is the entry's. */
-export function diagnosticsByFile(findings: Finding[], entry: string, lines: (file: string) => string[]): Map<string, Diagnostic[]> {
-  const byFile = new Map<string, Diagnostic[]>()
-  const texts = new Map<string, string[]>()
+/** Compiler JSON pointers resolve to real token ranges; project findings retain their code lines. */
+export function diagnosticsByFile(findings: Finding[], entry: string, textOf: (file: string) => string): Map<string, Diagnostic[]> {
+  const byFile = new Map<string, Diagnostic[]>(), documents = new Map<string, TextDocument>()
+  const trees = new Map<string, ReturnType<typeof readDocument>['tree']>()
   for (const finding of findings) {
-    const file = finding.source?.file ?? entry
-    const line = Math.max(1, finding.source?.line ?? 1) - 1
-    if (!texts.has(file)) texts.set(file, lines(file))
-    const diagnostic: Diagnostic = {
-      range: rangeOf(texts.get(file)![line] ?? '', line, finding.message),
-      severity: SEVERITY[finding.severity],
-      source: 'presmium',
-      code: finding.checkId,
-      message: finding.hint ? `${finding.message}\n${finding.hint}` : finding.message,
-    }
+    const source = finding.source as SourcePos | undefined, file = source?.file ?? entry
+    let document = documents.get(file)
+    if (!document) { document = TextDocument.create('', 'json', 0, textOf(file)); documents.set(file, document) }
+    if (source?.pointer && !trees.has(file)) trees.set(file, readDocument(document.getText()).tree)
+    const tree = trees.get(file)
+    const node = tree && source?.pointer ? nodeAtPointer(tree, source.pointer) : undefined
+    const line = Math.max(1, source?.line ?? 1) - 1, text = document.getText().split(/\r?\n/)[line] ?? ''
+    const range = node ? offsetRange(document, node.offset, node.length) : { start: { line, character: text.length - text.trimStart().length }, end: { line, character: text.trimEnd().length } }
+    const diagnostic: Diagnostic = { range, severity: SEVERITY[finding.severity], source: 'presmium', code: finding.checkId, message: finding.hint ? `${finding.message}\n${finding.hint}` : finding.message }
     byFile.set(file, [...byFile.get(file) ?? [], diagnostic])
   }
   return byFile

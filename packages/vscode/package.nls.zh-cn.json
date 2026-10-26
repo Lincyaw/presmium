@@ -1,6 +1,6 @@
 {
   "displayName": "Presmium",
-  "description": "在 VS Code 中编写 Presmium 文稿：Presmium 语言服务提供的诊断、锚点跳转与补全，以及跟随光标的 presmium dev 预览",
+  "description": "使用原生 JSON 编辑器编写 lecture.json：公共契约补全、教学图诊断、代码锚点导航，以及跟随当前页面的预览",
   "category": "Presmium",
   "command.openPreview": "在侧边打开预览",
   "configuration.title": "Presmium",

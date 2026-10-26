@@ -1,6 +1,6 @@
 {
   "displayName": "Presmium",
-  "description": "Presmium decks in VS Code: diagnostics, anchor navigation and completion from the Presmium language server, and a presmium dev preview that follows the cursor",
+  "description": "Edit lecture.json with native JSON schema support, teaching graph diagnostics, code anchor navigation and a preview that follows the current page",
   "category": "Presmium",
   "command.openPreview": "Open Preview to the Side",
   "configuration.title": "Presmium",
