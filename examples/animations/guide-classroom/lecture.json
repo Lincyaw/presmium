@@ -840,7 +840,11 @@
         "type": "none"
       }
     },
-    "stepOverrides": {},
+    "stepOverrides": {
+      "quiz-step": {
+        "narrationStart": "with-animation"
+      }
+    },
     "mediaClips": []
   }
 }
