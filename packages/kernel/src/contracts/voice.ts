@@ -1,5 +1,4 @@
 import type { SpeechEngineInfo, SpeechVoice, VoiceCatalog } from './speech.ts'
-import type { Revision } from './workspace.ts'
 import type { CanonicalSource } from '../ir.ts'
 import { defineService } from './service.ts'
 
@@ -16,38 +15,8 @@ export interface ResolvedVoice {
   editable: boolean
   reason?: 'cue-step' | 'step-binding-stale' | 'recording-unavailable'
 }
-export interface VoiceSettingsAnswer {
-  document: string
-  revision: string
-  source: { path: string, version: string }
-  default?: SpeechVoice
-  overrides: VoiceOverrides
-  steps: ResolvedVoice[]
-  selected?: ResolvedVoice
-  capabilities: { voiceover: boolean, preview: boolean }
-  defaultEngine?: string
-}
-
 /** Registered by the actual lecture plugin implementation, never inferred from authored configuration. */
 export const VOICEOVER = defineService<{ version: 1, preview: true }>('presmium.voiceover')
-export interface VoiceSettingsUpdate {
-  revision: string
-  base: string
-  scope: VoiceScope
-  voice: SpeechVoice | null
-  replaceOverrides?: boolean
-  /** Preview affected counts first. Source is changed only when this is explicitly true. */
-  apply?: boolean
-}
-export interface VoiceSettingsChange extends VoiceSettingsAnswer {
-  updated: number
-  preserved: number
-  applied: boolean
-  /** A write returns its source version; compilation may still be pending. */
-  sourceVersion?: string
-  commit?: Revision
-}
-
 export interface VoiceoverCapability {
   available: boolean
   reason?: 'not-configured' | 'voice-unset' | 'step-binding-stale' | 'speech-unavailable' | 'voice-unavailable' | 'catalog-unavailable'
