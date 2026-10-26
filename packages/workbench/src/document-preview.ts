@@ -1,4 +1,4 @@
-import type { WorkspaceClient } from './workspace-client.ts'
+import type { WorkspaceClient, WorkspaceRequestEvent } from './workspace-client.ts'
 import type { IrAnswer, PreviewAnswer } from '@lincyaw/kernel'
 
 export interface DocumentPreview { address: string, revision: string, preview: PreviewAnswer }
@@ -29,7 +29,7 @@ export async function readDocumentSnapshot(client: WorkspaceClient, source: Pick
 }
 
 /** The explicit request owner can abort while the compiler confirms one exact source snapshot. */
-export async function compileDocumentPreview(client: WorkspaceClient, source: PreviewSource, signal?: AbortSignal): Promise<CompiledDocumentPreview> {
+export async function compileDocumentPreview(client: WorkspaceClient, source: PreviewSource, signal?: AbortSignal, feedbackOwner?: WorkspaceRequestEvent['feedbackOwner']): Promise<CompiledDocumentPreview> {
   const { directory, fingerprint } = source, entry = directory ? `${directory}/lecture.json` : 'lecture.json'
   const started = Date.now()
   for (;;) {
@@ -41,7 +41,7 @@ export async function compileDocumentPreview(client: WorkspaceClient, source: Pr
       signal?.addEventListener('abort', cancel, { once: true })
       try {
         signal?.throwIfAborted()
-        const preview = await client.readPreview(directory, 'web', request.signal)
+        const preview = await client.readPreview(directory, 'web', request.signal, feedbackOwner)
         const confirmed = await wait(client.readIr(directory), signal)
         if (confirmed.sourceFingerprints?.[entry] !== fingerprint) throw new Error('presentation-source-changed')
         if (confirmed.revision === ir.revision) return { address: preview.web, revision: confirmed.revision, preview, ir: confirmed }
@@ -61,7 +61,7 @@ export function prepareDocumentPreview(client: WorkspaceClient, source: PreviewS
   if (retry) cache.delete(key)
   let work = cache.get(key)
   if (!work) {
-    work = compileDocumentPreview(client, source).then(({ address, revision, preview }) => ({ address, revision, preview }))
+    work = compileDocumentPreview(client, source, undefined, 'inline-preview').then(({ address, revision, preview }) => ({ address, revision, preview }))
     cache.set(key, work)
     work.catch(() => { if (cache?.get(key) === work) cache.delete(key) })
     while (cache.size > 8) cache.delete(cache.keys().next().value!)

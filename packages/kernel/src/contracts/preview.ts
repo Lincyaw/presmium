@@ -25,7 +25,7 @@ export interface BlockPreviewCommand {
   action: 'seek' | 'pause' | 'sync'
   /** The parent's current navigation intent, including repeat visits to the same step. */
   navigation?: string
-  /** Omitted seeks show the completed step; initial/reload seeks explicitly request its start. */
+  /** Omitted and document initial/reload seeks show the completed step; start is an explicit playback boundary. */
   at?: 'start' | 'end'
 }
 

@@ -10,7 +10,7 @@ import { documentBlockSection, DocumentStepNarration } from './DocumentStepNarra
 import { DocumentBlockPlayback } from './block-playback.ts'
 
 interface Snapshot { address: string, revision: string }
-interface PreviewState { snapshot?: Snapshot, status: 'idle' | 'loading' | 'ready' | 'failed', error?: string }
+interface PreviewState { snapshot?: Snapshot, status: 'idle' | 'loading' | 'ready' | 'failed' }
 /** A read-only runtime is a custom native block, independent from the document's editable JSON and selection. */
 export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, fallback?: ReactNode }) {
   const workbench = useWorkbench()
@@ -34,12 +34,25 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   }, [])
   const [visible, setVisible] = useState(false), [attempt, setAttempt] = useState(0), [height, setHeight] = useState<number>()
   const [state, setState] = useState<PreviewState>({ status: 'idle' })
+  const currentState = useRef(state)
+  currentState.current = state
+  const runtimeGeneration = useRef(0), pauseRuntime = useRef<() => void>(() => {})
   const mismatches = useRef(0)
   const frameReady = useRef(false), [readiness, setReadiness] = useState(0)
   const reportedStep = useRef<string>()
   const reportedNavigation = useRef<string>()
   const editingStep = useRef<string>()
   const playback = useRef<DocumentBlockPlayback>()
+  const fail = useCallback(() => {
+    // Retire this child before React removes it. A queued ready/position message
+    // cannot restore a failed runtime or adopt its position in the document.
+    pauseRuntime.current()
+    runtimeGeneration.current++
+    frameReady.current = false
+    playback.current?.dispose()
+    playback.current = undefined
+    setState({ status: 'failed' })
+  }, [])
   const [loadedVersion, setLoadedVersion] = useState<string>()
   const [loadedProject, setLoadedProject] = useState(0), [loadedAttempt, setLoadedAttempt] = useState(0)
   const enabled = visible && documentView
@@ -53,16 +66,16 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   }, [])
   useEffect(() => {
     if (!enabled || directory === undefined || !source?.version) return
-    if (!source.fingerprint) { setState(before => ({ ...before, status: 'failed', error: t.previewFailure })); return }
+    if (!source.fingerprint) { fail(); return }
     let current = true
     const version = source.version
-    setState(before => ({ ...before, status: 'loading', error: undefined }))
+    setState(before => ({ ...before, status: 'loading' }))
     void prepareDocumentPreview(workbench.client, { directory, version, fingerprint: source.fingerprint, project: source.projectRevision ?? 0 }, attempt > 0).then(snapshot => {
       if (!current) return
       setState({ snapshot, status: 'loading' }); setLoadedVersion(version); setLoadedProject(source.projectRevision ?? 0); setLoadedAttempt(attempt)
-    }, () => { if (current) setState(before => ({ ...before, status: 'failed', error: t.previewFailure })) })
+    }, () => { if (current) fail() })
     return () => { current = false }
-  }, [enabled, directory, source?.version, source?.fingerprint, source?.projectRevision, attempt, workbench, t.previewFailure])
+  }, [enabled, directory, source?.version, source?.fingerprint, source?.projectRevision, attempt, workbench, fail])
   const address = state.snapshot ? new URL(state.snapshot.address) : undefined
   address?.searchParams.set('presmium-block', blockId)
   address?.searchParams.set('presmium-appearance', dark ? 'dark' : 'light')
@@ -75,6 +88,7 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
     const value: BlockPreviewCommand = { type: 'presmium:block-preview-command', action, document: directory ?? '', blockId, revision: state.snapshot.revision, sectionId, stepId, navigation: token, ...at ? { at } : {} }
     frame.current?.contentWindow?.postMessage(value, origin)
   }, [origin, state.snapshot, directory, blockId, sectionId, stepId, navigation])
+  pauseRuntime.current = () => command('pause')
   const pause = useCallback(() => {
     if (sectionId && stepId) {
       editingStep.current = JSON.stringify([sectionId, stepId])
@@ -114,19 +128,20 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
     const initial = reportedNavigation.current === undefined
     reportedStep.current = JSON.stringify([sectionId, stepId])
     reportedNavigation.current = navigation
-    command(!initial && navigationIntent === 'pause' ? 'pause' : 'seek', initial ? 'start' : 'end')
+    command(!initial && navigationIntent === 'pause' ? 'pause' : 'seek', 'end')
   }, [state.status, sectionId, stepId, navigation, navigationIntent, command, enabled, src, readiness])
   useEffect(() => { frame.current?.toggleAttribute('inert', !frameReady.current || state.status !== 'ready') }, [readiness, state.status, enabled, src])
   useEffect(() => {
     if (!src || !origin || !enabled || !state.snapshot) return
     const expected = state.snapshot.revision
+    const generation = runtimeGeneration.current
     const listener = (event: MessageEvent) => {
-      if (event.source !== frame.current?.contentWindow || event.origin !== origin) return
+      if (generation !== runtimeGeneration.current || event.source !== frame.current?.contentWindow || event.origin !== origin) return
       const value = event.data
       if (!value || !['presmium:block-preview', 'presmium:block-preview-position', 'presmium:block-preview-playback-request', 'presmium:block-preview-playback-cancelled'].includes(value.type) || value.blockId !== blockId || value.document !== directory) return
       if (value.revision !== expected) {
         if (mismatches.current++ < 3) setAttempt(value => value + 1)
-        else setState(before => ({ ...before, status: 'failed', error: t.previewFailure }))
+        else fail()
         return
       }
       const cancelled = toBlockPreviewPlaybackCancelled(value)
@@ -158,19 +173,19 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
         return
       }
       if (typeof value.height === 'number' && Number.isFinite(value.height)) setHeight(Math.max(1, Math.min(value.height, 4096)))
-      if (value.status === 'failed') setState(before => ({ ...before, status: 'failed', error: t.previewFailure }))
+      if (value.status === 'failed') fail()
       else if (value.status === 'ready') {
         if (!frameReady.current) { frameReady.current = true; setReadiness(value => value + 1) }
-        mismatches.current = 0; setState(before => ({ ...before, status: 'ready', error: undefined }))
+        mismatches.current = 0; setState(before => ({ ...before, status: 'ready' }))
       }
     }
     window.addEventListener('message', listener)
-    const timeout = setTimeout(() => setState(before => before.status === 'loading' ? { ...before, status: 'failed', error: t.previewFailure } : before), 30_000)
+    const timeout = setTimeout(() => { if (generation === runtimeGeneration.current && currentState.current.status === 'loading') fail() }, 30_000)
     return () => { clearTimeout(timeout); window.removeEventListener('message', listener) }
-  }, [src, origin, enabled, state.snapshot?.revision, blockId, directory, loadedVersion, loadedProject, workbench, t.previewFailure])
+  }, [src, origin, enabled, state.snapshot?.revision, blockId, directory, loadedVersion, loadedProject, workbench, fail])
   const old = source?.dirty || source?.saving || source?.error || source?.restored || loadedVersion !== source?.version || loadedProject !== (source?.projectRevision ?? 0)
   return <section ref={root} className="pm-ui-block-preview" data-block-preview={blockId} data-status={state.status} contentEditable={false}>
-    <header className="pm-ui-block-preview__header"><span className="pm-ui-block-preview__label"><PmIcon name="slides" />{old && state.snapshot ? t.previewPrevious : state.status === 'loading' ? t.previewLoading : t.previewSnapshot}</span>
+    <header className="pm-ui-block-preview__header"><span className="pm-ui-block-preview__label" role={state.status === 'failed' ? 'status' : undefined}><PmIcon name="slides" />{state.status === 'failed' ? t.previewFailure : old && state.snapshot ? t.previewPrevious : state.status === 'loading' ? t.previewLoading : t.previewSnapshot}</span>
       <span className="pm-ui-block-preview__actions">
         <PmIconButton small icon="captions" label={t.stepCaptions} aria-expanded={narrationOpen} aria-controls={narrationOpen ? narrationPanel : undefined} aria-pressed={narrationOpen} disabled={!stepId} onClick={() => {
           pause()
@@ -179,7 +194,6 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
         }} />
         <PmIconButton small icon="refresh" label={state.status === 'failed' ? t.previewRetry : t.previewRefresh} hint={state.status === 'loading' ? t.previewLoading : state.status === 'failed' ? t.previewRetry : t.previewRefresh} loading={state.status === 'loading'} onClick={() => { pause(); if (!source?.fingerprint) void workbench.retryDocument(); setAttempt(value => value + 1) }} disabled={!enabled} />
       </span></header>
-    {state.error && <p className="pm-ui-block-preview__failure" role="status">{state.error}</p>}
     <div className="pm-ui-block-preview__viewport" role="region" aria-label={t.previewTitle} tabIndex={enabled && src ? -1 : 0}
       style={height === undefined ? undefined : { '--pm-block-content-height': `${height}px` } as CSSProperties}
       onKeyDownCapture={event => { if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) event.stopPropagation() }}>

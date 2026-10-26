@@ -55,6 +55,7 @@ export default function SceneView(props: SceneProps) {
   const instance = useRef<Scene | undefined>(undefined)
   const frame = useRef(0)
   const localTime = useRef<number | undefined>(undefined)
+  const previewReplay = useRef<number>()
   const playbackLease = useRef<PlaybackLease>()
   const playbackGeneration = useRef(0)
   const activePlayback = useRef<number>()
@@ -106,11 +107,13 @@ export default function SceneView(props: SceneProps) {
   }, [playbackControl])
   const seekLocal = (at: number) => {
     stop()
+    previewReplay.current = undefined
     localTime.current = at
     setLocal(at)
   }
   const jump = (step: number) => {
     seekLocal(starts[step]! + durations[step]!)
+    if (scope.localPreview) previewReplay.current = step
     const target = scope.step(step)
     if (scope.localPreview && target >= 0) navigation?.go({ slide: cursor.slide, step: target })
   }
@@ -129,8 +132,10 @@ export default function SceneView(props: SceneProps) {
     localNavigation.current = undefined
     if (own?.slide === navigated.slide && own.step === navigated.step) return
     const step = scope.localStepAt(navigated.step)
-    if (step >= 0 && step < durations.length)
+    if (step >= 0 && step < durations.length) {
       seekLocal(starts[step]! + (navigated.boundary === 'start' ? 0 : durations[step]!))
+      if (navigated.boundary !== 'start') previewReplay.current = step
+    }
   }, [navigation, navigated, expanded, cursor.slide, scope.localPreview, scope.at, props.durations])
   useEffect(() => {
     if (!scope.localPreview || local === undefined || !navigation) return
@@ -349,6 +354,16 @@ export default function SceneView(props: SceneProps) {
                 const lease = playbackLease.current, generation = ++playbackGeneration.current
                 const start = () => {
                   if (generation !== playbackGeneration.current || lease !== playbackLease.current) return
+                  const replay = previewReplay.current
+                  previewReplay.current = undefined
+                  if (scope.localPreview && replay !== undefined && replay < durations.length) {
+                    localTime.current = starts[replay]!
+                    setLocal(localTime.current)
+                    // The exact start is also the previous step's end. Keep
+                    // the selected step's identity while replaying its entry.
+                    localNavigation.current = { slide: cursor.slide, step: scope.step(replay) }
+                    navigation?.go({ ...localNavigation.current, boundary: 'start' })
+                  }
                   activePlayback.current = generation
                   setPlaying(true)
                 }
