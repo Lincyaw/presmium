@@ -112,7 +112,7 @@ export default function SceneView(props: SceneProps) {
   const jump = (step: number) => {
     seekLocal(starts[step]! + durations[step]!)
     const target = scope.step(step)
-    if (target >= 0) navigation?.go({ slide: cursor.slide, step: target })
+    if (scope.localPreview && target >= 0) navigation?.go({ slide: cursor.slide, step: target })
   }
   const fail = (error: unknown) => {
     stop()
