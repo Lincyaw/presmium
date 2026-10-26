@@ -25,7 +25,6 @@
     "media",
     "images",
     "semantic",
-    "cards",
     "next"
   ],
   "sections": {
@@ -164,6 +163,22 @@
         "type": "stack"
       }
     },
+    "semantic": {
+      "id": "semantic",
+      "title": "提示、折叠、术语与语义标记",
+      "level": 2,
+      "children": [
+        "semantic-body",
+        "cards-body"
+      ],
+      "stepOrder": [
+        "semantic-step",
+        "cards-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
     "next": {
       "id": "next",
       "title": "下一步：把内容变成讲课过程",
@@ -173,34 +188,6 @@
       ],
       "stepOrder": [
         "next-step"
-      ],
-      "layout": {
-        "type": "stack"
-      }
-    },
-    "semantic": {
-      "id": "semantic",
-      "title": "提示、折叠、术语与语义标记",
-      "level": 2,
-      "children": [
-        "semantic-body"
-      ],
-      "stepOrder": [
-        "semantic-step"
-      ],
-      "layout": {
-        "type": "stack"
-      }
-    },
-    "cards": {
-      "id": "cards",
-      "title": "响应栅格、卡片与同步选项卡",
-      "level": 2,
-      "children": [
-        "cards-body"
-      ],
-      "stepOrder": [
-        "cards-step"
       ],
       "layout": {
         "type": "stack"
@@ -1074,6 +1061,32 @@
         }
       ]
     },
+    "media-playback-practice": {
+      "id": "media-playback-practice",
+      "type": "text",
+      "content": [
+        {
+          "id": "media-playback-practice-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "动手比较：先播放本页的本地视频，再播放音频，确认之前的媒体已暂停；反过来再试一次。它们与文档内动画、讲授及试听通过同一播放控制权交接。"
+            }
+          ]
+        },
+        {
+          "id": "media-playback-practice-p2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "用原生暂停和进度条检查实际媒体；循环能否使用取决于本讲设置与浏览器提供的控制。工作台首次定位会取消尚未获准的自动播放；需要时请明确点播放，手动暂停后切步不会自动重新开始。浏览器自动播放策略仍适用。"
+            }
+          ]
+        }
+      ]
+    },
     "still-image": {
       "id": "still-image",
       "type": "image",
@@ -1101,32 +1114,6 @@
         "alt": "旋转的加载图标",
         "caption": "操作系统启用“减少动态效果”时显示静止帧。"
       }
-    },
-    "text-74": {
-      "id": "text-74",
-      "type": "text",
-      "content": [
-        {
-          "id": "paragraph-75",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "本讲只展示真实可离线运行的富内容。步骤、参数与动画将在下一讲展开；代码执行、课堂与讲授制作分别有独立文稿。"
-            }
-          ]
-        },
-        {
-          "id": "paragraph-76",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "外部视频和 PlantUML 服务需要网络。功能索引会明确列出这类条件，不把外部服务是否可达当成演示成功。"
-            }
-          ]
-        }
-      ]
     },
     "semantic-body": {
       "id": "semantic-body",
@@ -1162,419 +1149,12 @@
           ]
         },
         {
-          "id": "semantic-extension-1",
-          "type": "extension",
-          "kind": "presmium.mdast",
-          "schemaVersion": 1,
-          "data": {
-            "node": {
-              "type": "admonition",
-              "kind": "note",
-              "children": [
-                {
-                  "type": "admonitionTitle",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "补充说明"
-                    }
-                  ]
-                },
-                {
-                  "type": "paragraph",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "这个说明与正文分开，便于回看。"
-                    }
-                  ]
-                }
-              ]
-            }
-          },
-          "fallback": [
+          "id": "page:cards",
+          "type": "paragraph",
+          "children": [
             {
-              "id": "semantic-fallback-1",
-              "type": "paragraph",
-              "children": [
-                {
-                  "type": "text",
-                  "text": "结构化扩展内容：提示、折叠、术语与语义标记"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "semantic-extension-2",
-          "type": "extension",
-          "kind": "presmium.mdast",
-          "schemaVersion": 1,
-          "data": {
-            "node": {
-              "type": "admonition",
-              "kind": "tip",
-              "children": [
-                {
-                  "type": "admonitionTitle",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "实践提示"
-                    }
-                  ]
-                },
-                {
-                  "type": "paragraph",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "先在独立示例中验证，再用于自己的课程。"
-                    }
-                  ]
-                }
-              ]
-            }
-          },
-          "fallback": [
-            {
-              "id": "semantic-fallback-2",
-              "type": "paragraph",
-              "children": [
-                {
-                  "type": "text",
-                  "text": "结构化扩展内容：提示、折叠、术语与语义标记"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "semantic-extension-3",
-          "type": "extension",
-          "kind": "presmium.mdast",
-          "schemaVersion": 1,
-          "data": {
-            "node": {
-              "type": "admonition",
-              "kind": "warning",
-              "children": [
-                {
-                  "type": "admonitionTitle",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "注意条件"
-                    }
-                  ]
-                },
-                {
-                  "type": "paragraph",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "依赖外部服务的内容要确认可用性。"
-                    }
-                  ]
-                }
-              ]
-            }
-          },
-          "fallback": [
-            {
-              "id": "semantic-fallback-3",
-              "type": "paragraph",
-              "children": [
-                {
-                  "type": "text",
-                  "text": "结构化扩展内容：提示、折叠、术语与语义标记"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "semantic-extension-4",
-          "type": "extension",
-          "kind": "presmium.mdast",
-          "schemaVersion": 1,
-          "data": {
-            "node": {
-              "type": "admonition",
-              "kind": "danger",
-              "children": [
-                {
-                  "type": "admonitionTitle",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "重要边界"
-                    }
-                  ]
-                },
-                {
-                  "type": "paragraph",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "不要把未运行的代码或过期音频当成当前结果。"
-                    }
-                  ]
-                }
-              ]
-            }
-          },
-          "fallback": [
-            {
-              "id": "semantic-fallback-4",
-              "type": "paragraph",
-              "children": [
-                {
-                  "type": "text",
-                  "text": "结构化扩展内容：提示、折叠、术语与语义标记"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "semantic-extension-5",
-          "type": "extension",
-          "kind": "presmium.mdast",
-          "schemaVersion": 1,
-          "data": {
-            "node": {
-              "type": "details",
-              "open": false,
-              "children": [
-                {
-                  "type": "summary",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "展开查看练习思路"
-                    }
-                  ]
-                },
-                {
-                  "type": "paragraph",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "先列出输入、观察过程，再用结果解释原因。再次点击可以收起。"
-                    }
-                  ]
-                }
-              ]
-            }
-          },
-          "fallback": [
-            {
-              "id": "semantic-fallback-5",
-              "type": "paragraph",
-              "children": [
-                {
-                  "type": "text",
-                  "text": "结构化扩展内容：提示、折叠、术语与语义标记"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "semantic-extension-6",
-          "type": "extension",
-          "kind": "presmium.mdast",
-          "schemaVersion": 1,
-          "data": {
-            "node": {
-              "type": "definitionList",
-              "children": [
-                {
-                  "type": "definitionTerm",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "稳定身份"
-                    }
-                  ]
-                },
-                {
-                  "type": "definitionDescription",
-                  "children": [
-                    {
-                      "type": "paragraph",
-                      "children": [
-                        {
-                          "type": "text",
-                          "value": "页面、块和步骤移动之后，ID 保持不变。"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "definitionTerm",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "单一权威内容"
-                    }
-                  ]
-                },
-                {
-                  "type": "definitionDescription",
-                  "children": [
-                    {
-                      "type": "paragraph",
-                      "children": [
-                        {
-                          "type": "text",
-                          "value": "正文、讲稿与制作参数一起保存在 lecture.json 中。"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          },
-          "fallback": [
-            {
-              "id": "semantic-fallback-6",
-              "type": "paragraph",
-              "children": [
-                {
-                  "type": "text",
-                  "text": "结构化扩展内容：提示、折叠、术语与语义标记"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "semantic-extension-7",
-          "type": "extension",
-          "kind": "presmium.mdast",
-          "schemaVersion": 1,
-          "data": {
-            "node": {
-              "type": "paragraph",
-              "children": [
-                {
-                  "type": "text",
-                  "value": "键盘标记 "
-                },
-                {
-                  "type": "keyboard",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "Ctrl + S"
-                    }
-                  ]
-                },
-                {
-                  "type": "text",
-                  "value": "；下标 H"
-                },
-                {
-                  "type": "subscript",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "2"
-                    }
-                  ]
-                },
-                {
-                  "type": "text",
-                  "value": "O；上标 x"
-                },
-                {
-                  "type": "superscript",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "2"
-                    }
-                  ]
-                },
-                {
-                  "type": "text",
-                  "value": "；缩写 "
-                },
-                {
-                  "type": "abbreviation",
-                  "title": "Intermediate Representation",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "IR"
-                    }
-                  ]
-                },
-                {
-                  "type": "text",
-                  "value": "。"
-                }
-              ]
-            }
-          },
-          "fallback": [
-            {
-              "id": "semantic-fallback-7",
-              "type": "paragraph",
-              "children": [
-                {
-                  "type": "text",
-                  "text": "结构化扩展内容：提示、折叠、术语与语义标记"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "semantic-extension-8",
-          "type": "extension",
-          "kind": "presmium.mdast",
-          "schemaVersion": 1,
-          "data": {
-            "node": {
-              "type": "paragraph",
-              "children": [
-                {
-                  "type": "text",
-                  "value": "语义交叉引用可以跳转到 "
-                },
-                {
-                  "type": "crossReference",
-                  "identifier": "tables",
-                  "label": "表格示例",
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "表格示例"
-                    }
-                  ]
-                },
-                {
-                  "type": "text",
-                  "value": "。"
-                }
-              ]
-            }
-          },
-          "fallback": [
-            {
-              "id": "semantic-fallback-8",
-              "type": "paragraph",
-              "children": [
-                {
-                  "type": "text",
-                  "text": "结构化扩展内容：提示、折叠、术语与语义标记"
-                }
-              ]
+              "type": "text",
+              "text": "响应栅格、卡片与同步选项卡"
             }
           ]
         }
@@ -1844,27 +1424,27 @@
         }
       ]
     },
-    "media-playback-practice": {
-      "id": "media-playback-practice",
+    "text-74": {
+      "id": "text-74",
       "type": "text",
       "content": [
         {
-          "id": "media-playback-practice-p1",
+          "id": "paragraph-75",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "动手比较：先播放本页的本地视频，再播放音频，确认之前的媒体已暂停；反过来再试一次。它们与文档内动画、讲授及试听通过同一播放控制权交接。"
+              "text": "本讲只展示真实可离线运行的富内容。步骤、参数与动画将在下一讲展开；代码执行、课堂与讲授制作分别有独立文稿。"
             }
           ]
         },
         {
-          "id": "media-playback-practice-p2",
+          "id": "paragraph-76",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "用原生暂停和进度条检查实际媒体；循环能否使用取决于本讲设置与浏览器提供的控制。工作台首次定位会取消尚未获准的自动播放；需要时请明确点播放，手动暂停后切步不会自动重新开始。浏览器自动播放策略仍适用。"
+              "text": "外部视频和 PlantUML 服务需要网络。功能索引会明确列出这类条件，不把外部服务是否可达当成演示成功。"
             }
           ]
         }
@@ -2045,13 +1625,17 @@
         {
           "blockId": "semantic-body",
           "visible": true
+        },
+        {
+          "blockId": "cards-body",
+          "visible": true
         }
       ],
       "narrationIds": []
     },
     "cards-step": {
       "id": "cards-step",
-      "sectionId": "cards",
+      "sectionId": "semantic",
       "visuals": [
         {
           "blockId": "cards-body",
