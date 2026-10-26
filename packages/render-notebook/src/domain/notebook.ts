@@ -78,7 +78,9 @@ function text(value: string): MdastNode {
 }
 
 /** How well a notebook shows a node: a component without a notebook extension is degraded. */
+const documentLayout = (node: IRNode): boolean => node.type === 'component' && node.plugin === 'presmium.layout' && ['PmColumns', 'PmStack', 'PmTabs'].includes(node.name)
 export function notebookSupport(node: IRNode, extensions: BoundRendererExtension[]): Support {
+  if (documentLayout(node)) return 'full'
   return node.type === 'component' && !hasRendererExtension(node, extensions) ? 'degraded' : 'full'
 }
 
@@ -156,6 +158,15 @@ function renderSection(section: IRSection, options: NotebookOptions, out: Notebo
 
   const component = (original: ComponentNode, block: IRBlock) => {
     const node = published(original, block, options)
+    if (documentLayout(node)) {
+      if (typeof node.props.title === 'string' && node.props.title) markdown({ type: 'heading', depth: 3, children: [text(node.props.title)] }, block)
+      for (const [index, child] of (node.children ?? []).entries()) {
+        const title = node.name === 'PmTabs' && Array.isArray(node.props.tabTitles) ? node.props.tabTitles[index] : undefined
+        if (typeof title === 'string' && title) markdown({ type: 'heading', depth: 4, children: [text(title)] }, child)
+        renderBlock(child)
+      }
+      return
+    }
     const render = options.extensionFor(node)
     if (render) {
       try {

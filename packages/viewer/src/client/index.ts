@@ -1,6 +1,7 @@
 import { createElement } from 'react'
 import type { ReactNode } from 'react'
-import { registerAction, registerView } from './registry.ts'
+import { registerAction, registerComponent, registerView } from './registry.ts'
+import { DOCUMENT_LAYOUT_COMPONENTS } from './layout.ts'
 import { viewerMessages } from './viewer-messages.ts'
 import { VIEWER } from './viewer-state.ts'
 import type { Viewer } from './viewer-state.ts'
@@ -16,6 +17,7 @@ registerView({ id: 'scrolly', get label() { return viewerMessages().views.scroll
 registerView({ id: 'present', get label() { return viewerMessages().views.present }, kind: 'overlay', component: PresentView })
 registerView({ id: 'presenter', get label() { return viewerMessages().views.presenter }, kind: 'overlay', component: PresenterView, hidden: true })
 BUILTIN_ACTIONS.forEach(registerAction)
+Object.entries(DOCUMENT_LAYOUT_COMPONENTS).forEach(([name, component]) => registerComponent(name, component))
 
 export function ViewerProvider({ viewer, children }: { viewer: Viewer, children?: ReactNode }) { return createElement(VIEWER.Provider, { value: viewer }, children) }
 
