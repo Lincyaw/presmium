@@ -110,8 +110,22 @@
           "Loading",
           "Ready",
           "Previous",
-          "Failed"
-        ]
+          "Failed",
+          "CaptionEditing",
+          "CaptionEmpty"
+        ],
+        "captionEditingNodeId": "102:1760",
+        "captionEmptyNodeId": "102:1778"
+      },
+      "NarrationEditor": {
+        "nodeId": "107:1820",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=107-1820",
+        "states": {
+          "Empty": "107:1775",
+          "Filled": "107:1785",
+          "Focus": "107:1795",
+          "Readonly": "107:1805"
+        }
       }
     },
     "variantCounts": {
@@ -890,7 +904,12 @@
       "component": "BlockPreview",
       "source": "TeachingDocument definitions and instances",
       "runtime": "read-only compiled block; no per-block event stream",
-      "versionConfirmation": "exact source fingerprint, project revision and runtime IR revision"
+      "versionConfirmation": "exact source fingerprint, project revision and runtime IR revision",
+      "interaction": "Direct runtime controls; shared compact icon buttons for captions and refresh",
+      "narration": "Step.narrationIds → Narration.content; canonical typed nodes, no separate caption text",
+      "captionEditingNodeId": "102:1760",
+      "captionEmptyNodeId": "102:1778",
+      "narrationFieldComponent": "NarrationEditor"
     }
   }
 }

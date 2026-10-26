@@ -6,6 +6,7 @@ import type { NarrationNode, TeachingDocument } from '@lincyaw/kernel'
 import type { NativeDocumentEditor } from './document-editor/schema.tsx'
 import { nativeTextPoint, nativeTextPosition } from './document-editor/selection.ts'
 import type { NativeTextPoint } from './document-editor/selection.ts'
+import type { DocumentFieldBookmark, DocumentFieldRegistration } from './document-editor/focus.ts'
 import { pageDeletion, removeDocumentPage } from './document-pages.ts'
 import { errorMessage, slideShape, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
 import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, JobsAnswer, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPoint, PreviewPosition, PreviewRect, PreviewRenderer, PreviewReport, ReviewChange, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
@@ -206,6 +207,8 @@ export class Workbench {
   #documentSelectionGeneration = 0
   #pendingDocumentFocus?: { documentId: string, nodeId: string, generation: number }
   #pendingDocumentSelection?: { documentId: string, anchor: NativeTextPoint, head: NativeTextPoint, focused: boolean }
+  readonly #documentFields = new Map<string, DocumentFieldRegistration>()
+  #pendingDocumentField?: { field: Omit<DocumentFieldRegistration, 'focus'>, bookmark: DocumentFieldBookmark, reset: number, generation: number }
   #state: WorkbenchState
   readonly #listeners = new Set<Listener>()
   readonly #selectedSteps = new Map<string, number>()
@@ -262,6 +265,8 @@ export class Workbench {
     }
     this.#documentSession = new DocumentSession(this.client, authoring => {
       if (this.#state.document !== authoring.directory) return
+      const pendingField = this.#pendingDocumentField
+      if (pendingField && (pendingField.field.identity !== authoring.identity || authoring.reset > pendingField.reset || !authoring.content?.blocks[pendingField.field.blockId])) this.#pendingDocumentField = undefined
       const cueTimingScope = JSON.stringify([authoring.identity, authoring.reset])
       if (this.#cueTimingScope !== cueTimingScope) { this.#removedCueTimings.clear(); this.#cueTimingScope = cueTimingScope }
       const previous = this.#state.authoring
@@ -611,6 +616,9 @@ export class Workbench {
   /** The owner must invalidate pending audio responses as well as stop its current audio element. */
   registerAudition(stop: () => void): () => void { return this.#playback.registerAudition(stop) }
 
+  /** Inline runtimes join the same exclusive playback group as author auditions. */
+  startDocumentPlayback(stop: () => Promise<void>): Promise<() => void> { return this.#playback.startDocumentPlayback(stop) }
+
   stopAuditions(): void { this.#playback.stopAuditions() }
 
   /** The latest source actor value, scoped to the field/editor that captured its identity. */
@@ -679,6 +687,22 @@ export class Workbench {
   discardDocument(): Promise<void> { return this.#documentSession.discard() }
   documentError(error: Error): void { this.#set({ save: { kind: 'failed', message: error.message } }) }
   documentInteraction(): void { this.#documentSelectionGeneration++ }
+  pendingDocumentField(blockId: string, identity?: string): Pick<DocumentFieldRegistration, 'stepId' | 'narrationId' | 'slot'> | undefined {
+    const pending = this.#pendingDocumentField, source = this.#state.authoring
+    return pending && pending.generation === this.#documentSelectionGeneration && pending.field.blockId === blockId
+      && pending.field.identity === (identity ?? source?.identity) && pending.reset === source?.reset ? pending.field : undefined
+  }
+  registerDocumentField(field: DocumentFieldRegistration): () => void {
+    if (field.identity !== this.#state.authoring?.identity || field.reset !== this.#state.authoring.reset) return () => {}
+    const key = JSON.stringify([field.identity, field.blockId, field.stepId, field.slot, field.narrationId])
+    this.#documentFields.set(key, field)
+    const pending = this.#pendingDocumentField
+    if (pending && pending.reset === field.reset && JSON.stringify([pending.field.identity, pending.field.blockId, pending.field.stepId, pending.field.slot, pending.field.narrationId]) === key) {
+      this.#pendingDocumentField = undefined
+      if (pending.generation === this.#documentSelectionGeneration && field.identity === this.#state.authoring?.identity && field.reset === this.#state.authoring.reset) field.focus.restore(pending.bookmark)
+    }
+    return () => { if (this.#documentFields.get(key) === field) this.#documentFields.delete(key) }
+  }
   attachDocumentEditor(editor: NativeDocumentEditor | undefined): void {
     if (editor !== this.#documentEditor) this.#documentSession.composition(false, 'body')
     this.#unsubscribeEditor?.(); this.#unsubscribeDocumentSelection?.(); this.#documentEditor = editor
@@ -687,7 +711,7 @@ export class Workbench {
       this.#pendingDocumentFocus = undefined; this.#pendingDocumentSelection = undefined
       if (focus && focus.documentId === this.#state.authoring?.content?.id && focus.generation === this.#documentSelectionGeneration && editor.getBlock(focus.nodeId)) {
         editor.setTextCursorPosition(focus.nodeId, 'start'); editor.focus()
-      } else if (selection && selection.documentId === this.#state.authoring?.content?.id) {
+      } else if (!this.#pendingDocumentField && selection && selection.documentId === this.#state.authoring?.content?.id) {
         const anchor = nativeTextPosition(editor, selection.anchor), head = nativeTextPosition(editor, selection.head)
         if (anchor !== undefined && head !== undefined) {
           editor.transact(transaction => transaction.setSelection(TextSelection.create(transaction.doc, anchor, head)))
@@ -713,7 +737,19 @@ export class Workbench {
       const document = structuredClone(this.#state.authoring!.content!)
       change(document)
       const editor = this.#documentEditor
-      if (editor) {
+      this.#pendingDocumentField = undefined
+      const plannedFocus = this.#pendingDocumentFocus
+      if (!plannedFocus || plannedFocus.generation !== this.#documentSelectionGeneration) for (const field of this.#documentFields.values()) {
+        if (field.identity !== source.identity || field.reset !== this.#state.authoring!.reset || !document.blocks[field.blockId] || !document.steps[field.stepId]) continue
+        const bookmark = field.focus.capture()
+        if (bookmark) {
+          const { focus: _focus, ...target } = field
+          this.#pendingDocumentField = { field: target, bookmark, reset: this.#state.authoring!.reset + 1, generation: this.#documentSelectionGeneration }
+          this.#pendingDocumentSelection = undefined
+          break
+        }
+      }
+      if (editor && !this.#pendingDocumentField) {
         const state = editor.prosemirrorState, anchor = nativeTextPoint(editor, state.selection.anchor), head = nativeTextPoint(editor, state.selection.head)
         if (anchor && head) this.#pendingDocumentSelection = { documentId: document.id, anchor, head, focused: editor.prosemirrorView.hasFocus() }
       }
@@ -1066,6 +1102,7 @@ export class Workbench {
     this.#unsubscribeEditor?.(); this.#unsubscribeEditor = undefined; this.#documentEditor = undefined
     this.#unsubscribeDocumentSelection?.(); this.#unsubscribeDocumentSelection = undefined
     this.#pendingDocumentFocus = undefined; this.#pendingDocumentSelection = undefined; this.#documentSelectionGeneration++
+    this.#documentFields.clear(); this.#pendingDocumentField = undefined
     this.#playback.reset()
     this.#focusVersion++
     this.#pendingReveal = undefined

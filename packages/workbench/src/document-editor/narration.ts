@@ -1,5 +1,9 @@
 import type { NarrationNode } from '@lincyaw/kernel'
 import type { NativeNarrationBlock, NativeNarrationInput, NativeNarrationInline } from './narration-schema.tsx'
+import type { NativeNarrationEditor } from './narration-schema.tsx'
+import { nativeFieldFocus } from './focus.ts'
+
+export const narrationFieldFocus = (editor: NativeNarrationEditor) => nativeFieldFocus(editor, () => JSON.stringify(nativeToNarration(editor.document)))
 
 export function narrationToNative(id: string, content: readonly NarrationNode[]): NativeNarrationInput[] {
   return [{ id: `narration:${id}`, type: 'paragraph', content: content.map((node): NativeNarrationInline => {
