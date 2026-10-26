@@ -6,6 +6,8 @@
 
 运行代码的实施范围见 [RFC 第 10.1 节](../../rfc-workbench-uiux.md#101-当前实施状态)。P09 已接入规范 JSON 中的页面新建、重命名、上下移动、复制与带引用检查的删除；最后一页清空并保留，共享素材文件保留。复制创建独立实体并重映射内部教学绑定，批注留在原位置，详见[真实验证](../../benchmarks/document-page-copy-2026-10-26.md)。拖动重排仍待实现。
 
+P25 的文稿入口先编译并确认保存版本，编译期间正文仍可编辑，继续输入或切换文稿会取消本次进入。编译错误保留正文并反馈诊断；放映中的刷新图标明确重新编译，未确认的运行修订不显示。该确认不等同于冻结历史附件，见[真实验证](../../benchmarks/presentation-source-confirmation-2026-10-26.md)。
+
 从 [Figma 功能索引][P00]开始，或直接[播放原型](https://www.figma.com/proto/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-2&starting-point-node-id=9%3A2)。[完整 Figma 文件](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8)可查看各单元的可编辑图层和跳转关系。
 
 ## 原型与视觉规范的边界

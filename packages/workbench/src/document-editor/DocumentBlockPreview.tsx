@@ -4,45 +4,13 @@ import type { BlockPreviewCommand } from '@lincyaw/kernel'
 import { toBlockPreviewPlaybackCancelled, toBlockPreviewPlaybackRequest, toBlockPreviewPosition } from '@lincyaw/kernel'
 import { PmIconButton, PmIcon } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
-import type { WorkspaceClient } from '../workspace-client.ts'
+import { prepareDocumentPreview } from '../document-preview.ts'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
 import { documentBlockSection, DocumentStepNarration } from './DocumentStepNarration.tsx'
 import { DocumentBlockPlayback } from './block-playback.ts'
 
 interface Snapshot { address: string, revision: string }
 interface PreviewState { snapshot?: Snapshot, status: 'idle' | 'loading' | 'ready' | 'failed', error?: string }
-const prepared = new WeakMap<WorkspaceClient, Map<string, Promise<Snapshot>>>()
-const keyOf = (directory: string, version: string, project: number) => JSON.stringify([directory, version, project])
-
-/** One compilation request is shared by the visible blocks; widgets never keep an IR event stream. */
-function prepare(client: WorkspaceClient, directory: string, version: string, fingerprint: string, project: number, retry: boolean): Promise<Snapshot> {
-  let cache = prepared.get(client)
-  if (!cache) prepared.set(client, cache = new Map())
-  const key = keyOf(directory, version, project)
-  if (retry) cache.delete(key)
-  let work = cache.get(key)
-  if (!work) {
-    work = (async () => {
-      const entry = directory ? `${directory}/lecture.json` : 'lecture.json'
-      const started = Date.now()
-      for (;;) {
-        const ir = await client.readIr(directory)
-        if (ir.sourceFingerprints?.[entry] === fingerprint) {
-          const preview = await client.readPreview(directory, 'web', AbortSignal.timeout(45_000))
-          const confirmed = await client.readIr(directory)
-          if (confirmed.sourceFingerprints?.[entry] === fingerprint) return { address: preview.web, revision: confirmed.revision }
-        }
-        if (Date.now() - started > 15_000) throw new Error('block-preview-source-pending')
-        await new Promise(resolve => setTimeout(resolve, 150))
-      }
-    })()
-    cache.set(key, work)
-    work.catch(() => { if (cache?.get(key) === work) cache.delete(key) })
-    while (cache.size > 8) cache.delete(cache.keys().next().value!)
-  }
-  return work
-}
-
 /** A read-only runtime is a custom native block, independent from the document's editable JSON and selection. */
 export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, fallback?: ReactNode }) {
   const workbench = useWorkbench()
@@ -89,7 +57,7 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
     let current = true
     const version = source.version
     setState(before => ({ ...before, status: 'loading', error: undefined }))
-    void prepare(workbench.client, directory, version, source.fingerprint, source.projectRevision ?? 0, attempt > 0).then(snapshot => {
+    void prepareDocumentPreview(workbench.client, { directory, version, fingerprint: source.fingerprint, project: source.projectRevision ?? 0 }, attempt > 0).then(snapshot => {
       if (!current) return
       setState({ snapshot, status: 'loading' }); setLoadedVersion(version); setLoadedProject(source.projectRevision ?? 0); setLoadedAttempt(attempt)
     }, () => { if (current) setState(before => ({ ...before, status: 'failed', error: t.previewFailure })) })

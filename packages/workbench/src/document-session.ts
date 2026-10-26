@@ -58,6 +58,7 @@ export class DocumentSession {
     this.#active = directory
     this.#unsubscribe?.()
     const cached = this.#slots.get(directory)
+    if (cached) cached.state = { ...cached.state, loading: true }
     this.#changed(cached ? { ...cached.state } : { directory, loading: true, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: [] })
     try {
       const [info, answer] = await Promise.all([this.#client.readWorkbenchInfo(), this.#client.readDocument(directory)])
@@ -69,6 +70,9 @@ export class DocumentSession {
         await this.#restore(slot, answer)
       } else await this.#adopt(slot, answer)
       if (this.#active !== directory || opening !== this.#opening) return
+      // A fresh observation invalidates idle project references before the editor becomes ready.
+      slot.projectObservation = undefined
+      slot.state = { ...slot.state, loading: false, projectRevision: (slot.state.projectRevision ?? 0) + 1 }
       this.#emit(slot)
       this.#prune()
       this.#unsubscribe = this.#client.subscribeDocument(directory, event => {
@@ -84,7 +88,11 @@ export class DocumentSession {
         void this.refresh(directory)
       }, () => {})
     } catch (error) {
-      if (this.#active === directory && opening === this.#opening) this.#changed({ ...(cached?.state ?? { directory, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: [] }), loading: false, error: this.#error(error), issues: this.#issues(error) })
+      if (this.#active === directory && opening === this.#opening) {
+        const state = { ...(cached?.state ?? { directory, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: [] }), loading: false, error: this.#error(error), issues: this.#issues(error) }
+        if (cached) cached.state = state
+        this.#changed(state)
+      }
     }
   }
 

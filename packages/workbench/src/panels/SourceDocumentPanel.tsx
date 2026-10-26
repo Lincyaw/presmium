@@ -13,7 +13,7 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
   const source = useWorkbenchState(state => state.authoring)
   const locale = useWorkbenchState(state => state.locale), messages = DOCUMENT_EDITOR_MESSAGES[locale]
   const navigation = useWorkbenchState(state => state.documentNavigation)
-  const readOnly = useWorkbenchState(isAgentChanging)
+  const readOnly = useWorkbenchState(state => Boolean(state.authoring?.loading) || isAgentChanging(state))
   const container = useRef<HTMLElement>(null)
   const consumedNavigation = useRef<string>()
   useEffect(() => {
