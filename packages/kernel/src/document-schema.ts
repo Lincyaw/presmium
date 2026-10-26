@@ -24,7 +24,7 @@ export const DOCUMENT_JSON_SCHEMA: Schema = {
   $id: 'urn:presmium:teaching-document:1',
   ...object({
     schemaVersion: { const: DOCUMENT_SCHEMA_VERSION }, id,
-    metadata: object({ title: string, tags: list(string), lang: { type: 'string', minLength: 1 }, plugins: list(string), presmium: record(ref('JsonObject')), renderers: record(ref('JsonObject')), execute: ref('JsonObject'), checks: ref('JsonObject'), translations: record(string), translationOf: object({ entry: string, digest: string }) }, ['title', 'lang']),
+    metadata: object({ title: string, description: string, tags: list(string), lang: { type: 'string', minLength: 1 }, plugins: list(string), presmium: record(ref('JsonObject')), renderers: record(ref('JsonObject')), execute: ref('JsonObject'), checks: ref('JsonObject'), translations: record(string), translationOf: object({ entry: string, digest: string }) }, ['title', 'lang']),
     sectionOrder: { ...ids, minItems: 1 }, sections: record(ref('Section')), blocks: record(ref('Block')),
     steps: record(ref('Step')), narrations: record(ref('Narration')), assets: record(ref('Asset')),
     definitions: record(ref('Definition')), production: ref('Production'), comments: record(ref('Thread')),
