@@ -1,6 +1,7 @@
 import { CommentsExtension, DefaultThreadStoreAuth, ThreadStore } from '@blocknote/core/comments'
 import { createUserStore } from '@blocknote/core'
 import type { CommentData, ThreadData } from '@blocknote/core/comments'
+import { AddMarkStep, RemoveMarkStep } from '@tiptap/pm/transform'
 import type { DocumentComment, DocumentThread, RichTextNode, TeachingDocument } from '@lincyaw/kernel'
 import { createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
 import type { RichProjection } from './rich-text.ts'
@@ -133,4 +134,12 @@ export function nativeComments(store: DocumentThreadStore, username: string) {
   // Resolved-thread summaries read their resolver during the first render.
   users.setUser(resolve([...identities]))
   return CommentsExtension({ threadStore: store, schema: commentEditorSchema, resolveUsers: users })
+}
+
+/** Thread entities own their state; pure comment marks must not consume body undo. */
+export function excludeCommentMarkHistory(editor: NativeDocumentEditor): () => void {
+  const name = editor.getExtension(CommentsExtension)!.tiptapExtensions[0].name
+  return editor.onBeforeChange(({ tr }) => {
+    if (tr.steps.length && tr.steps.every(step => (step instanceof AddMarkStep || step instanceof RemoveMarkStep) && step.mark.type.name === name)) tr.setMeta('addToHistory', false)
+  })
 }
