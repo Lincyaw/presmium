@@ -10,11 +10,13 @@ import { fileURLToPath } from 'node:url'
 const { values, positionals } = parseArgs({ allowPositionals: true, options: {
   legacy: { type: 'string' }, source: { type: 'string' }, root: { type: 'string', default: '.' },
   output: { type: 'string', default: '.presmium/migrated-documents' },
+  'local-code-root': { type: 'boolean', default: false },
+  'allow-diagnostic': { type: 'string', multiple: true },
   continue: { type: 'boolean', default: false }, 'plugin-map': { type: 'string' },
   apply: { type: 'boolean', default: false }, workspace: { type: 'boolean', default: false }, help: { type: 'boolean', short: 'h' },
 } })
 if (values.help || !values.legacy || !positionals.length) {
-  console.log('Usage: node scripts/migrate-documents.mjs --legacy <isolated old checkout> [--source <snapshot root>] [--root <destination>] [--output <dry-run directory>] [--apply] [--workspace] <document directory>...\n\nDefault: compile old source, validate normalized lecture.json and write dry-run copies only.\n--apply atomically replaces unchanged lecture.md files after successful validation; never runs speech synthesis.')
+  console.log('Usage: node scripts/migrate-documents.mjs --legacy <isolated old checkout> [--source <snapshot root>] [--root <destination>] [--output <dry-run directory>] [--local-code-root] [--allow-diagnostic <checkId>] [--apply] [--workspace] <document directory>...\n\nDefault: compile old source, validate normalized lecture.json and write dry-run copies only.\n--local-code-root reads references from a standalone document and rebases them to the destination repository.\n--allow-diagnostic explicitly retains a negative fixture\'s real legacy errors for old/new comparison.\n--apply replaces unchanged lecture.md files with an exclusively created JSON entry after successful validation; never runs speech synthesis.')
   process.exit(values.help ? 0 : 2)
 }
 if (values.continue && values.apply) throw new Error('--continue is only available for dry-run inventory; apply a validated group without it.')
@@ -30,6 +32,7 @@ const { Compiler } = await jiti.import(join(legacy, 'packages/compiler/src/compi
 const { Parser } = await jiti.import(join(legacy, 'packages/compiler/src/parser.ts'))
 const { findWorkspaceRoot } = await jiti.import(join(legacy, 'packages/compiler/src/workspace.ts'))
 const { codeRefs } = await jiti.import(join(legacy, 'packages/addon-code/src/node/directive.ts'))
+const { splitTarget } = await jiti.import(join(legacy, 'packages/addon-code/src/domain/index.ts'))
 const { listedPlugins } = await jiti.import(join(legacy, 'packages/compiler/src/plugins.ts'))
 const { BUILTIN_DIRECTIVES } = await jiti.import(join(legacy, 'packages/compiler/src/blocks.ts'))
 const { mapHtmlUrls } = await jiti.import(fileURLToPath(new URL('../packages/kernel/src/html.ts', import.meta.url)))
@@ -57,19 +60,20 @@ for (const name of positionals) {
     if (existsSync(join(candidate, 'presmium.workspace.yaml'))) { workspaceRoot = candidate; break }
     if (candidate === sourceRoot || candidate === dirname(candidate)) break
   }
+  if (values['local-code-root']) workspaceRoot = sourceDir
   const plugins = parsed.frontmatter.plugins?.map(name => pluginMap[name] ?? name)
   const frontmatter = { ...parsed.frontmatter, ...plugins ? { plugins } : {} }
   const compilation = await new Compiler(sourceDir, { workspaceRoot, bundled: join(legacy, 'packages/presmium'), ...plugins ? { headmatter: { plugins } } : {} }).compile({ signal: AbortSignal.timeout(30_000) })
   const errors = compilation.doc.diagnostics.filter(d => d.severity === 'error')
-  if (errors.length) throw new Error(`${name}: legacy compilation failed: ${json(errors)}`)
-  const migrated = convert(compilation.doc, frontmatter, sourceDir, name)
+  if (errors.some(error => !values['allow-diagnostic']?.includes(error.checkId))) throw new Error(`${name}: legacy compilation failed: ${json(errors)}`)
+  const migrated = convert(compilation.doc, frontmatter, sourceDir, name, values['local-code-root'] ? relative(await findWorkspaceRoot(targetDir), targetDir).split('\\').join('/') : undefined)
   const validation = validateDocument(migrated)
   if (!validation.document) throw new Error(`${name}: normalized document is invalid: ${json(validation.issues)}`)
   const targetText = json(migrated), dryDir = join(resolve(values.output), name)
   await mkdir(dryDir, { recursive: true })
   await writeFile(join(dryDir, DOCUMENT_ENTRY), targetText)
   await writeFile(join(dryDir, 'legacy-runtime.json'), json(compilation.doc))
-  const record = { document: name, before: hash(before), after: hash(targetText), sections: migrated.sectionOrder.length, blocks: Object.keys(migrated.blocks).length, steps: Object.keys(migrated.steps).length, narrations: Object.keys(migrated.narrations).length, definitions: Object.keys(migrated.definitions).length, sourceFiles: compilation.sourceFiles.map(file => relative(sourceDir, file)), diagnostics: validation.issues, ms: performance.now() - start, applied: false }
+  const record = { document: name, before: hash(before), after: hash(targetText), sections: migrated.sectionOrder.length, blocks: Object.keys(migrated.blocks).length, steps: Object.keys(migrated.steps).length, narrations: Object.keys(migrated.narrations).length, definitions: Object.keys(migrated.definitions).length, sourceFiles: compilation.sourceFiles.map(file => relative(sourceDir, file)), diagnostics: validation.issues, ...errors.length ? { legacyErrors: errors } : {}, ms: performance.now() - start, applied: false }
   const dependencyFiles = new Set(compilation.sourceFiles)
   const collect = block => {
     if (block.node.definition?.file) dependencyFiles.add(block.node.definition.file)
@@ -130,7 +134,13 @@ for (const record of records) console.log(json(record).trim())
 await mkdir(resolve(values.output), { recursive: true })
 await writeFile(join(resolve(values.output), 'migration-report.json'), json(records))
 
-function convert(runtime, frontmatter, sourceDir, name) {
+function convert(runtime, frontmatter, sourceDir, name, codePrefix) {
+  const anchor = value => {
+    if (!codePrefix) return value
+    const file = splitTarget(value)?.file
+    if (!file) throw new Error(`${name}: code reference has no file: ${value}`)
+    return value.replace(file, `${codePrefix}/${file}`)
+  }
   const metadata = { title: String(frontmatter.title ?? runtime.meta.title), lang: String(frontmatter.lang ?? runtime.meta.lang ?? 'zh-CN') }
   for (const key of ['tags', 'plugins', 'presmium', 'renderers', 'execute', 'checks', 'translations', 'translationOf']) if (frontmatter[key] !== undefined) metadata[key] = clone(frontmatter[key])
   if (metadata.plugins) metadata.plugins = listedPlugins(metadata.plugins)
@@ -204,14 +214,14 @@ function convert(runtime, frontmatter, sourceDir, name) {
       let next
       if (node.type === 'markdown') next = { id: bid, type: 'text', content: rich }
       else if (node.type === 'code') {
-        next = { id: bid, type: 'code', language: node.lang ?? '', ...(node.origin?.anchor ? { origin: { anchor: authoredCode?.anchor ?? node.origin.anchor, ...((authoredCode ? authoredCode.pin : node.origin?.pin) ? { pin: authoredCode ? authoredCode.pin : node.origin.pin } : {}), ...(authoredCode?.repo ? { repo: authoredCode.repo } : {}) } } : { value: node.value }) }
+        next = { id: bid, type: 'code', language: node.lang ?? '', ...(node.origin?.anchor ? { origin: { anchor: anchor(authoredCode?.anchor ?? node.origin.anchor), ...((authoredCode ? authoredCode.pin : node.origin?.pin) ? { pin: authoredCode ? authoredCode.pin : node.origin.pin } : {}), ...(authoredCode?.repo ? { repo: authoredCode.repo } : {}) } } : { value: node.value }) }
         if (node.title) next.title = node.title
         if (node.run) { const { lang: _, ...execution } = node.run; next.execution = clone(execution) }
         if (node.echo === false) next.echo = false
         if (authoredCode?.steps) next.origin.highlightRegions = Object.fromEntries(stepIds.map((step, index) => [step, authoredCode.steps[Math.min(Math.max(0, index - oldBlock.at), authoredCode.steps.length - 1)]]))
         else if (node.highlight) next.highlight = Object.fromEntries(stepIds.map((step, index) => [step, clone(node.highlight[Math.min(Math.max(0, index - oldBlock.at), node.highlight.length - 1)] ?? [])]))
         if (node.variants) {
-          if (authoredCode?.variants?.length === node.variants.length) next.variants = node.variants.map((variant, index) => ({ id: id(`${bid}--variant-${index}`), title: variant.label, origin: { anchor: authoredCode.anchor, pin: authoredCode.variants[index], ...(authoredCode.repo ? { repo: authoredCode.repo } : {}) } }))
+          if (authoredCode?.variants?.length === node.variants.length) next.variants = node.variants.map((variant, index) => ({ id: id(`${bid}--variant-${index}`), title: variant.label, origin: { anchor: anchor(authoredCode.anchor), pin: authoredCode.variants[index], ...(authoredCode.repo ? { repo: authoredCode.repo } : {}) } }))
           else if (!node.origin) next.variants = node.variants.map((variant, index) => ({ id: id(`${bid}--variant-${index}`), title: variant.label, value: variant.value }))
           else throw new Error(`${name}: original code-variant references unavailable for ${bid}`)
         }

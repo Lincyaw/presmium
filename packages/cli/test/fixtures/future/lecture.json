@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "id": "document-807f32b9127c4977",
+  "metadata": {
+    "title": "A plugin for another kernel",
+    "lang": "zh-CN",
+    "plugins": [
+      "../addons/future"
+    ]
+  },
+  "sectionOrder": [
+    "a-plugin-for-another-kernel",
+    "only-section"
+  ],
+  "sections": {
+    "a-plugin-for-another-kernel": {
+      "id": "a-plugin-for-another-kernel",
+      "title": "A plugin for another kernel",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "a-plugin-for-another-kernel--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "only-section": {
+      "id": "only-section",
+      "title": "Only section",
+      "level": 2,
+      "children": [
+        "only-section--paragraph-1"
+      ],
+      "stepOrder": [
+        "only-section--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "only-section--paragraph-1": {
+      "id": "only-section--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "only-section--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Plain text."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "a-plugin-for-another-kernel--step-0": {
+      "id": "a-plugin-for-another-kernel--step-0",
+      "sectionId": "a-plugin-for-another-kernel",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "only-section--step-0": {
+      "id": "only-section--step-0",
+      "sectionId": "only-section",
+      "visuals": [
+        {
+          "blockId": "only-section--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "only-section--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "only-section--paragraph-1--narration": {
+      "id": "only-section--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Plain text."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

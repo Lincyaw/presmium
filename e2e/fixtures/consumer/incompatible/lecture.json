@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "id": "document-7a3743e2e76648cd",
+  "metadata": {
+    "title": "A plugin for another Presmium",
+    "lang": "en",
+    "plugins": [
+      "./plugin"
+    ],
+    "renderers": {
+      "notebook": {}
+    }
+  },
+  "sectionOrder": [
+    "a-plugin-for-another-presmium",
+    "the-rest-of-the-document"
+  ],
+  "sections": {
+    "a-plugin-for-another-presmium": {
+      "id": "a-plugin-for-another-presmium",
+      "title": "A plugin for another Presmium",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "a-plugin-for-another-presmium--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "the-rest-of-the-document": {
+      "id": "the-rest-of-the-document",
+      "title": "The rest of the document",
+      "level": 2,
+      "children": [
+        "the-rest-of-the-document--paragraph-1"
+      ],
+      "stepOrder": [
+        "the-rest-of-the-document--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "the-rest-of-the-document--paragraph-1": {
+      "id": "the-rest-of-the-document--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "the-rest-of-the-document--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "It is built all the same."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "a-plugin-for-another-presmium--step-0": {
+      "id": "a-plugin-for-another-presmium--step-0",
+      "sectionId": "a-plugin-for-another-presmium",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "the-rest-of-the-document--step-0": {
+      "id": "the-rest-of-the-document--step-0",
+      "sectionId": "the-rest-of-the-document",
+      "visuals": [
+        {
+          "blockId": "the-rest-of-the-document--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "the-rest-of-the-document--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "the-rest-of-the-document--paragraph-1--narration": {
+      "id": "the-rest-of-the-document--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "It is built all the same."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

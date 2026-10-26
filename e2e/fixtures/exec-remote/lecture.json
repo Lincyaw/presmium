@@ -1,0 +1,315 @@
+{
+  "schemaVersion": 1,
+  "id": "document-34c9155587b4a283",
+  "metadata": {
+    "title": "远端环境测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec",
+      "@lincyaw/addon-exec-jupyter"
+    ],
+    "renderers": {
+      "web": {
+        "port": 5339
+      },
+      "slides": {
+        "theme": "default"
+      }
+    },
+    "execute": {
+      "environments": {
+        "lab": {
+          "kind": "jupyter",
+          "auth": "proxy",
+          "image": "quay.io/jupyter/base-notebook:2026-10-12@sha256:3fc2b8023bb7e3f11a09bd77aa07575c1ece16a0b9b64556757e34c52f667a1a"
+        }
+      }
+    }
+  },
+  "sectionOrder": [
+    "远端环境测试文稿",
+    "remote",
+    "session",
+    "shell"
+  ],
+  "sections": {
+    "远端环境测试文稿": {
+      "id": "远端环境测试文稿",
+      "title": "远端环境测试文稿",
+      "level": 1,
+      "children": [
+        "远端环境测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "远端环境测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "remote": {
+      "id": "remote",
+      "title": "远端内核",
+      "level": 2,
+      "children": [
+        "remote--paragraph-1",
+        "remote--where"
+      ],
+      "stepOrder": [
+        "remote--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "session": {
+      "id": "session",
+      "title": "执行会话",
+      "level": 2,
+      "children": [
+        "session--paragraph-1",
+        "session--define",
+        "session--use"
+      ],
+      "stepOrder": [
+        "session--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "shell": {
+      "id": "shell",
+      "title": "终端",
+      "level": 2,
+      "children": [
+        "shell--pm-terminal-1"
+      ],
+      "stepOrder": [
+        "shell--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "远端环境测试文稿--paragraph-1": {
+      "id": "远端环境测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "远端环境测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/exec-remote.spec.ts 的测试文稿：Jupyter 环境中的代码块、会话与终端。"
+            }
+          ]
+        }
+      ]
+    },
+    "remote--paragraph-1": {
+      "id": "remote--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "remote--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "构建时与浏览器中都在 compose 的内核中运行，输出相同。"
+            }
+          ]
+        }
+      ]
+    },
+    "remote--where": {
+      "id": "remote--where",
+      "type": "code",
+      "language": "python",
+      "value": "import platform\nprint(\"远端内核\", platform.python_implementation(), 6 * 7)",
+      "execution": {
+        "when": "both",
+        "executor": "presmium.env.lab"
+      }
+    },
+    "session--paragraph-1": {
+      "id": "session--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "session--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "同一会话的代码块在同一个内核中运行；每个页面、每个学习者有自己的内核。"
+            }
+          ]
+        }
+      ]
+    },
+    "session--define": {
+      "id": "session--define",
+      "type": "code",
+      "language": "python",
+      "value": "x = 41\nprint(\"定义了 x\")",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.env.lab",
+        "session": "counter"
+      }
+    },
+    "session--use": {
+      "id": "session--use",
+      "type": "code",
+      "language": "python",
+      "value": "print(x + 1)",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.env.lab",
+        "session": "counter"
+      }
+    },
+    "shell--pm-terminal-1": {
+      "id": "shell--pm-terminal-1",
+      "type": "component",
+      "definitionId": "shell--pm-terminal-1--definition",
+      "parameters": {
+        "env": "lab",
+        "rows": 12
+      }
+    }
+  },
+  "steps": {
+    "远端环境测试文稿--step-0": {
+      "id": "远端环境测试文稿--step-0",
+      "sectionId": "远端环境测试文稿",
+      "visuals": [
+        {
+          "blockId": "远端环境测试文稿--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "remote--step-0": {
+      "id": "remote--step-0",
+      "sectionId": "remote",
+      "visuals": [
+        {
+          "blockId": "remote--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "remote--where",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "remote--paragraph-1--narration"
+      ]
+    },
+    "session--step-0": {
+      "id": "session--step-0",
+      "sectionId": "session",
+      "visuals": [
+        {
+          "blockId": "session--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "session--define",
+          "visible": true
+        },
+        {
+          "blockId": "session--use",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "session--paragraph-1--narration"
+      ]
+    },
+    "shell--step-0": {
+      "id": "shell--step-0",
+      "sectionId": "shell",
+      "visuals": [
+        {
+          "blockId": "shell--pm-terminal-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "remote--paragraph-1--narration": {
+      "id": "remote--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "构建时与浏览器中都在 compose 的内核中运行，输出相同。"
+        }
+      ]
+    },
+    "session--paragraph-1--narration": {
+      "id": "session--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "同一会话的代码块在同一个内核中运行；每个页面、每个学习者有自己的内核。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "shell--pm-terminal-1--definition": {
+      "id": "shell--pm-terminal-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.execJupyter",
+        "name": "PmTerminal"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.execJupyter",
+        "name": "PmTerminal",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "环境 lab 的终端：在网页或幻灯片中打开。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "id": "document-df0b8beb3cd68f42",
+  "metadata": {
+    "title": "Broken deck",
+    "lang": "zh-CN",
+    "plugins": [
+      "../addons/sample",
+      "presmium-fixture-addon-not-installed",
+      "../addons/throws"
+    ],
+    "presmium": {
+      "sample": {
+        "crash": true
+      }
+    }
+  },
+  "sectionOrder": [
+    "broken-deck",
+    "fine",
+    "unfinished"
+  ],
+  "sections": {
+    "broken-deck": {
+      "id": "broken-deck",
+      "title": "Broken deck",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "broken-deck--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "fine": {
+      "id": "fine",
+      "title": "Fine",
+      "level": 2,
+      "children": [
+        "fine--paragraph-1"
+      ],
+      "stepOrder": [
+        "fine--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "unfinished": {
+      "id": "unfinished",
+      "title": "Unfinished",
+      "level": 2,
+      "children": [
+        "unfinished--paragraph-1"
+      ],
+      "stepOrder": [
+        "unfinished--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "fine--paragraph-1": {
+      "id": "fine--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "fine--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This section is complete."
+            }
+          ]
+        }
+      ]
+    },
+    "unfinished--paragraph-1": {
+      "id": "unfinished--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "unfinished--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "TODO: write this section"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "broken-deck--step-0": {
+      "id": "broken-deck--step-0",
+      "sectionId": "broken-deck",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "fine--step-0": {
+      "id": "fine--step-0",
+      "sectionId": "fine",
+      "visuals": [
+        {
+          "blockId": "fine--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "fine--paragraph-1--narration"
+      ]
+    },
+    "unfinished--step-0": {
+      "id": "unfinished--step-0",
+      "sectionId": "unfinished",
+      "visuals": [
+        {
+          "blockId": "unfinished--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "unfinished--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "fine--paragraph-1--narration": {
+      "id": "fine--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "This section is complete."
+        }
+      ]
+    },
+    "unfinished--paragraph-1--narration": {
+      "id": "unfinished--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "TODO: write this section"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
