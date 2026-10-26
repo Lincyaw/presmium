@@ -1,8 +1,20 @@
-import { PmBadge, PmEmpty, PmIcon, useMessages } from '@lincyaw/host'
+import { PmBadge, PmDrawer, PmEmpty, PmIcon, useMessages } from '@lincyaw/host'
 import { useEffect, useRef, useState } from 'react'
 import { WEB_MESSAGES } from '../../domain/index.ts'
 import type { AppConfig, HomeDocument } from '../../domain/index.ts'
-import { SiteFooter, SiteHeader } from './layout.tsx'
+import { NavLinks, SiteFooter, SiteHeader } from './layout.tsx'
+
+function HomeHeader({ config }: { config: AppConfig }) {
+  const t = useMessages(WEB_MESSAGES)
+  const [open, setOpen] = useState(false)
+  const configured = config.site.nav ?? config.site.shell.nav ?? []
+  const documents = (config.documents ?? []).map(document => ({ text: document.title, link: document.href }))
+  const items = configured.length ? configured : documents.length ? documents : [{ text: t.backHome, link: config.base }]
+  return <><SiteHeader config={config} titleHref={config.base} hrefIn={locale => locale.base} onMenu={() => setOpen(true)} />
+    <PmDrawer open={open} label={t.mobileNav} closeLabel={t.close} name="pm-site-menu" onOpenChange={setOpen}>
+      <NavLinks items={items} vertical onNavigate={() => setOpen(false)} />
+    </PmDrawer></>
+}
 
 export function WorkspaceHome({ config }: { config: AppConfig }) {
   const t = useMessages(WEB_MESSAGES)
@@ -19,6 +31,6 @@ export function WorkspaceHome({ config }: { config: AppConfig }) {
     {doc.description && <p className="pm-site-home__description">{doc.description}</p>}
     <div className="pm-ui-badges"><PmBadge className="pm-site-home__dir">{doc.dir}/</PmBadge>{doc.pages ? <PmBadge>{t.pages(doc.pages)}</PmBadge> : null}{doc.lang && <PmBadge>{doc.lang}</PmBadge>}{doc.tags?.map(name => <PmBadge key={name} className="pm-site-home__badge">{name}</PmBadge>)}{doc.problems && <PmBadge tone={doc.problems.errors ? 'danger' : doc.problems.warnings ? 'warn' : 'ok'}>{doc.problems.errors ? t.errors(doc.problems.errors) : doc.problems.warnings ? t.warnings(doc.problems.warnings) : t.checked}</PmBadge>}</div>
   </li>
-  return <div className="pm-site pm-site--home"><a className="pm-site__skip" href="#pm-site-main">{t.skipToContent}</a><SiteHeader config={config} titleHref={config.base} hrefIn={locale => locale.base} /><main id="pm-site-main" className="pm-site-home pm-ui" tabIndex={-1}><h1 className="pm-site-home__title">{config.site.title}</h1><section className="pm-site-home__section" aria-labelledby="pm-site-home-documents"><div className="pm-site-home__filters"><h2 id="pm-site-home-documents" className="pm-ui-heading">{t.documentsHeading}</h2><label className="pm-ui-search pm-site-home__search-box"><PmIcon name="search" /><input ref={input} className="pm-site-home__search" type="search" value={query} placeholder={t.searchDocuments} aria-label={t.searchDocuments} onChange={event => setQuery(event.target.value)} /><kbd className="pm-ui-kbd">{t.searchShortcut}</kbd></label>{tags.length > 0 && <div className="pm-site-home__tags pm-ui-segmented" role="group" aria-label={t.tags}><button type="button" className="pm-site-home__tag pm-ui-segmented__option" aria-pressed={tag === undefined} onClick={() => setTag(undefined)}>{t.allTags}</button>{tags.map(name => <button key={name} type="button" className="pm-site-home__tag pm-ui-segmented__option" aria-pressed={tag === name} onClick={() => setTag(tag === name ? undefined : name)}>{name}</button>)}</div>}</div>{shown.length ? <ul className="pm-site-home__documents">{shown.map(card)}</ul> : <PmEmpty icon="document">{t.noDocuments}</PmEmpty>}</section><SiteFooter config={config} /></main></div>
+  return <div className="pm-site pm-site--home"><a className="pm-site__skip" href="#pm-site-main">{t.skipToContent}</a><HomeHeader config={config} /><main id="pm-site-main" className="pm-site-home pm-ui" tabIndex={-1}><h1 className="pm-site-home__title">{config.site.title}</h1><section className="pm-site-home__section" aria-labelledby="pm-site-home-documents"><div className="pm-site-home__filters"><h2 id="pm-site-home-documents" className="pm-ui-heading">{t.documentsHeading}</h2><label className="pm-ui-search pm-site-home__search-box"><PmIcon name="search" /><input ref={input} className="pm-site-home__search" type="search" value={query} placeholder={t.searchDocuments} aria-label={t.searchDocuments} onChange={event => setQuery(event.target.value)} /><kbd className="pm-ui-kbd">{t.searchShortcut}</kbd></label>{tags.length > 0 && <div className="pm-site-home__tags pm-ui-segmented" role="group" aria-label={t.tags}><button type="button" className="pm-site-home__tag pm-ui-segmented__option" aria-pressed={tag === undefined} onClick={() => setTag(undefined)}>{t.allTags}</button>{tags.map(name => <button key={name} type="button" className="pm-site-home__tag pm-ui-segmented__option" aria-pressed={tag === name} onClick={() => setTag(tag === name ? undefined : name)}>{name}</button>)}</div>}</div>{shown.length ? <ul className="pm-site-home__documents">{shown.map(card)}</ul> : <PmEmpty icon="document">{t.noDocuments}</PmEmpty>}</section><SiteFooter config={config} /></main></div>
 }
-export function MissingPage({ config }: { config: AppConfig }) { const t = useMessages(WEB_MESSAGES); return <div className="pm-site pm-site--missing"><SiteHeader config={config} titleHref={config.base} hrefIn={locale => locale.base} /><main id="pm-site-main" className="pm-site-missing"><p className="pm-site-missing__code">404</p><h1 className="pm-site-missing__title">{t.notFound}</h1><p className="pm-site-missing__text">{t.notFoundText}</p><a className="pm-ui-button pm-ui-button--primary" href={config.base}>{t.backHome}</a></main></div> }
+export function MissingPage({ config }: { config: AppConfig }) { const t = useMessages(WEB_MESSAGES); return <div className="pm-site pm-site--missing"><HomeHeader config={config} /><main id="pm-site-main" className="pm-site-missing"><p className="pm-site-missing__code">404</p><h1 className="pm-site-missing__title">{t.notFound}</h1><p className="pm-site-missing__text">{t.notFoundText}</p><a className="pm-ui-button pm-ui-button--primary" href={config.base}>{t.backHome}</a></main></div> }
