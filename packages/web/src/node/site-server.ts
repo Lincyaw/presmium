@@ -7,6 +7,7 @@ import type { AddressInfo } from 'node:net'
 import type { Duplex } from 'node:stream'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { stripVTControlCharacters } from 'node:util'
 import { errorMessage, irBlocks, localRequestRefusal, previewFrameAncestors, safeDecodeURIComponent, viewFor } from '@lincyaw/kernel'
 import type { IRDocument, NodeVitePlugin, RenderContext, RuntimeAssets, SiteSpec } from '@lincyaw/kernel'
 import { spawnInteractiveNode } from '@lincyaw/kernel/node'
@@ -99,6 +100,7 @@ interface Published {
 interface DocumentState {
   /** The document's bundle: none when it has no code of its own, unknown until looked for. */
   bundle?: DocumentBundle | null
+  bundleFailure?: string
   /** The modules the bundle imports by name: the app's. */
   externals?: readonly string[]
   building?: Promise<void>
@@ -348,9 +350,10 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
       const started = Date.now()
       try {
         const bundle = await worker.run<DocumentBundle | null>({ kind: 'document', input: bundleInput(dir, deckDir, externals) })
-        if (state.externals === externals) state.bundle = bundle
+        if (state.externals === externals) { state.bundle = bundle; state.bundleFailure = undefined }
         if (bundle) log(`the code of ${dir || '.'} was bundled in ${((Date.now() - started) / 1000).toFixed(1)} s`)
       } catch (error) {
+        if (state.externals === externals) state.bundleFailure = stripVTControlCharacters(errorMessage(error))
         log(`the code of ${dir || '.'} could not be bundled: ${errorMessage(error)}`)
       } finally {
         state.building = undefined
@@ -378,6 +381,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     if (!importsOnly(state.externals, externals)) {
       state.externals = externals
       state.bundle = undefined
+      state.bundleFailure = undefined
     }
     if (state.bundle === undefined && !state.building) {
       const found = await findDocumentBundle(bundleInput(dir, own.deckDir, externals)).catch(() => undefined)
@@ -474,15 +478,15 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     html(res, kind === 'missing' ? 404 : 200, config, title)
   }
 
-  /** A widget request must confirm current project files, even before the debounced watcher rebuilds. */
-  const currentBlockBundle = async (dir: string, doc: IRDocument): Promise<boolean> => {
+  /** A new preview must confirm current project files, even before the debounced watcher rebuilds. */
+  const currentDocumentBundle = async (dir: string, doc: IRDocument): Promise<boolean> => {
     const state = stateOf(dir), own = options.context(dir, doc)
     for (let attempt = 0; attempt < 3; attempt++) {
       const externals = state.externals
       if (closed || !externals || !current) return false
       const found = await findDocumentBundle(bundleInput(dir, own.deckDir, externals)).catch(() => undefined)
       if (closed || state.externals !== externals) continue
-      if (found !== undefined) { state.bundle = found; return true }
+      if (found !== undefined) { state.bundle = found; state.bundleFailure = undefined; return true }
       await (state.building ?? buildBundle(dir, own.deckDir, state, externals))
     }
     return false
@@ -496,7 +500,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     const doc = await documentOf(dir)
     const shown = lang ? translationOf(dir, lang)?.doc : doc
     if (!shown) return plainPage(res, 'missing')
-    if (block !== undefined && !await currentBlockBundle(dir, doc)) return void res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end('the compiled block code is not current')
+    if (!await currentDocumentBundle(dir, doc)) return void res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end('the compiled document code is not current')
     if (block !== undefined && !shown.sections.some(section => [...irBlocks(section.blocks)].some(node => node.id === block))) return void res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('the compiled block does not exist')
     const pages = lang ? translationPages(published(dir, shown, lang).doc, webPages(published(dir, doc).doc)) : webPages(published(dir, doc).doc)
     const page = rest === undefined ? undefined : pageAt(pages, rest)
@@ -712,8 +716,9 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
         await Promise.race([done, new Promise(resolve => timer = setTimeout(resolve, WAIT_MS))])
         clearTimeout(timer)
       }
-      const available = ready()
-      log(`[viewer] document=${JSON.stringify(dir || '.')} cache=${cached ? 'hit' : 'miss'} wait=${wait} state=${available ? 'ready' : 'building'} elapsedMs=${Date.now() - started}`)
+      const available = ready() && (!wait || await currentDocumentBundle(dir, await documentOf(dir)))
+      log(`[viewer] document=${JSON.stringify(dir || '.')} cache=${cached ? 'hit' : 'miss'} wait=${wait} state=${available ? 'ready' : wait ? 'failed' : 'building'} elapsedMs=${Date.now() - started}`)
+      if (wait && !available) throw new Error(stateOf(dir).bundleFailure ?? 'the viewer app or the current document code could not be built; the server\'s log says why')
       return available ? `${base}${PREFIX}view?document=${encodeURIComponent(dir)}` : undefined
     },
     async warm(dir) {

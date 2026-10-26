@@ -139,6 +139,7 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
         // document's page on the site.
         const page = await options.viewerPage?.(document, !prefetch).catch((error: unknown) => {
           log.warn(`the viewer app cannot show ${document || '.'}: ${errorMessage(error)}`)
+          if (!prefetch) throw error
           return undefined
         })
         const web = page ? `${base}${page}` : `${base}/${document ? `${urlPath(document)}/` : ''}`
