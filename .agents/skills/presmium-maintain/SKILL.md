@@ -145,7 +145,7 @@ the example in `.presmium/example-workspace` (its own git repository, with the s
 `AGENTS.md` for the AI) via `examples/animations/try.mjs`, and reuses it afterwards.
 
 `examples/animations/` is the public example workspace: two complete Chinese courses (bubble sort and
-animations written in code), plus eight topic guides indexed by `examples/animations/FEATURES.md` and
+animations written in code), plus nine topic guides indexed by `examples/animations/FEATURES.md` and
 `features.json`. The guides cover the official plugins and public components, with real prerequisites
 and explicit capability limits. `demo:check` and `demo:ir` still target the original two courses;
 `demo:build` includes every document's web page and adds slides, notebook and narrated lecture for the

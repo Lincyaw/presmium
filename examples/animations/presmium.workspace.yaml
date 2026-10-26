@@ -13,6 +13,8 @@ site:
           link: /libraries/
     - text: 功能导览
       items:
+        - text: 动手编辑一份讲义
+          link: /guide-authoring/
         - text: 正文与富内容
           link: /guide-content/
         - text: 步骤与动画

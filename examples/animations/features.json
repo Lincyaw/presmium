@@ -499,7 +499,8 @@
       "section": "voices",
       "package": "@lincyaw/addon-speech",
       "requires": [
-        "真实已配置的语音 provider"
+        "真实已配置的语音 provider",
+        "当前 Doc 未组合音色与任务入口；本节为服务/配置说明，独立视频制作界面仍待实现"
       ],
       "mode": "conditional"
     },
@@ -510,7 +511,8 @@
       "section": "generate",
       "package": "@lincyaw/addon-speech",
       "requires": [
-        "真实语音 provider；修改讲稿后需重新明确生成"
+        "真实语音 provider；修改讲稿后需重新明确生成",
+        "当前 Doc 未组合音色与任务入口；本节为服务/配置说明，独立视频制作界面仍待实现"
       ],
       "mode": "conditional"
     },
@@ -521,7 +523,8 @@
       "section": "voices",
       "package": "@lincyaw/host",
       "requires": [
-        "工作台试听需真实可用音色"
+        "工作台试听需真实可用音色",
+        "当前 Doc 未组合音色与任务入口；本节为服务/配置说明，独立视频制作界面仍待实现"
       ],
       "mode": "instructions"
     },
@@ -532,7 +535,7 @@
       "section": "recording",
       "package": "@lincyaw/addon-lecture",
       "requires": [
-        "安全上下文、支持的浏览器及用户授权"
+        "已启用讲授插件的真实 Presmium 服务运行页、安全上下文、支持的浏览器及用户授权；当前 Doc 不提供完整制作界面"
       ],
       "mode": "conditional"
     },
@@ -929,6 +932,138 @@
       "package": "@lincyaw/addon-code",
       "requires": [],
       "mode": "demonstration"
+    },
+    {
+      "id": "page-create",
+      "title": "在当前页后新建并编辑页面",
+      "document": "guide-authoring",
+      "section": "start",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "工作台文档编辑入口"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "page-rename-move-delete",
+      "title": "页面重命名、上下移动与安全删除",
+      "document": "guide-authoring",
+      "section": "copy",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "工作台文档编辑入口；删除前处理实际引用"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "page-duplicate",
+      "title": "复制完整页面并独立修改教学绑定",
+      "document": "guide-authoring",
+      "section": "copy",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "工作台文档编辑入口"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "page-copy-history",
+      "title": "复制作为完整事务撤消与恢复",
+      "document": "guide-authoring",
+      "section": "copy",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "先复制，未输入其他新修改时尝试"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "text-page-script-panel",
+      "title": "纯文字页与空页的本步讲稿旁栏",
+      "document": "guide-authoring",
+      "section": "scripts",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "工作台顶部“本步字幕 / 讲稿”"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "body-narration-save",
+      "title": "正文与讲稿连续输入后共同保存",
+      "document": "guide-authoring",
+      "section": "scripts",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "工作台文档编辑入口；等待真实保存确认"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "step-timing-inheritance",
+      "title": "逐项显示时机来源、混合讲稿与恢复继承",
+      "document": "guide-authoring",
+      "section": "timing",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "工作台本步讲稿字段；不需要语音服务"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "timing-unaccepted-draft",
+      "title": "无效毫秒输入保留、核对与放映门禁",
+      "document": "guide-authoring",
+      "section": "timing",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "工作台讲稿旁栏；修改为有效值或恢复继承"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "source-save-recovery",
+      "title": "原生批注、保存冲突与恢复草稿处理",
+      "document": "guide-authoring",
+      "section": "comments",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "工作台编辑入口；发生冲突时明确核对草稿"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "saved-presentation",
+      "title": "从已保存文稿明确进入放映",
+      "document": "guide-authoring",
+      "section": "delivery",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "工作台放映预览；成功编译所需组件与资源"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "saved-version-output",
+      "title": "导出前保存确认、取消准备与生成记录版本",
+      "document": "guide-authoring",
+      "section": "delivery",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "工作台文档导出；所需输出工具实际可用"
+      ],
+      "mode": "instructions"
+    },
+    {
+      "id": "native-media-exclusive",
+      "title": "本地视频、音频与动画共享播放控制权",
+      "document": "guide-content",
+      "section": "media",
+      "package": "@lincyaw/addon-content",
+      "requires": [
+        "浏览器能够实际解码本地媒体；音频播放由用户明确启动"
+      ],
+      "mode": "demonstration"
     }
   ],
   "schemaVersion": 1,
@@ -1000,6 +1135,7 @@
       {
         "package": "@lincyaw/addon-lecture",
         "documents": [
+          "guide-authoring",
           "guide-production"
         ]
       },
@@ -1197,8 +1333,101 @@
         "document": "guide-production",
         "section": "media-editing",
         "reason": "production 片段能保存；当前讲授运行时拒绝裁切和混音。"
+      },
+      {
+        "feature": "Studio voiceover and video production workspace",
+        "status": "pending",
+        "document": "guide-production",
+        "section": "voices",
+        "reason": "当前 Doc 仅提供每步讲稿与时机，完整音色/配音任务界面和独立视频制作入口未组合；后端源版本与并发保护仍需完善。服务存在不代表已具备普通作者可点击的完整流程。"
+      },
+      {
+        "feature": "Generic component properties and shared-asset version management UI",
+        "status": "pending",
+        "document": "guide-steps",
+        "section": "semantic",
+        "reason": "当前 Doc 没有通用组件参数表单或共享素材版本管理界面；状态与参数可通过实际步骤观察，定义与参数约束修改仍经 canonical JSON 或助手工程事务。"
       }
     ],
-    "scope": "官方插件 components/ 教学组件入口；核心布局、正文和工作台操作另由功能条目映射。"
+    "scope": "官方插件 components/ 教学组件入口；核心布局、正文和工作台操作另由功能条目映射。",
+    "authoringFlows": [
+      {
+        "id": "page-create",
+        "document": "guide-authoring",
+        "section": "start",
+        "integration": "canonical source editing through the workbench"
+      },
+      {
+        "id": "page-rename-move-delete",
+        "document": "guide-authoring",
+        "section": "copy",
+        "integration": "canonical source editing through the workbench"
+      },
+      {
+        "id": "page-duplicate",
+        "document": "guide-authoring",
+        "section": "copy",
+        "integration": "canonical source editing through the workbench"
+      },
+      {
+        "id": "page-copy-history",
+        "document": "guide-authoring",
+        "section": "copy",
+        "integration": "canonical source editing through the workbench"
+      },
+      {
+        "id": "text-page-script-panel",
+        "document": "guide-authoring",
+        "section": "scripts",
+        "integration": "canonical source editing through the workbench"
+      },
+      {
+        "id": "body-narration-save",
+        "document": "guide-authoring",
+        "section": "scripts",
+        "integration": "canonical source editing through the workbench"
+      },
+      {
+        "id": "step-timing-inheritance",
+        "document": "guide-authoring",
+        "section": "timing",
+        "integration": "canonical source editing through the workbench"
+      },
+      {
+        "id": "timing-unaccepted-draft",
+        "document": "guide-authoring",
+        "section": "timing",
+        "integration": "canonical source editing through the workbench"
+      },
+      {
+        "id": "source-save-recovery",
+        "document": "guide-authoring",
+        "section": "comments",
+        "integration": "canonical source editing through the workbench"
+      },
+      {
+        "id": "saved-presentation",
+        "document": "guide-authoring",
+        "section": "delivery",
+        "integration": "canonical source editing through the workbench"
+      },
+      {
+        "id": "saved-version-output",
+        "document": "guide-authoring",
+        "section": "delivery",
+        "integration": "canonical source editing through the workbench"
+      }
+    ],
+    "verification": {
+      "baseline": {
+        "record": "docs/benchmarks/feature-guides-2026-10-26.md",
+        "scope": "The existing eight guides: 95 feature mappings, 16 official plugins, 18 public teaching components; earlier targeted real runs and explicit external capability limits."
+      },
+      "authoringSupplement": {
+        "record": "docs/benchmarks/feature-authoring-supplement-2026-10-26.md",
+        "scope": "New guide-authoring and the changed production/media instructions; current source inventory audit and only the targeted runtime checks recorded there."
+      },
+      "rule": "A located example is coverage; a conditional requirement or instruction is not proof that its external service, device or paid provider was exercised."
+    }
   }
 }
