@@ -22,6 +22,8 @@
     "start",
     "script",
     "timing",
+    "timeline",
+    "silent",
     "voices",
     "generate",
     "recording",
@@ -141,6 +143,34 @@
       ],
       "stepOrder": [
         "deliver-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "timeline": {
+      "id": "timeline",
+      "title": "用真实缓存练习三轨时间线与播放头",
+      "level": 2,
+      "children": [
+        "timeline-practice"
+      ],
+      "stepOrder": [
+        "timeline-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "silent": {
+      "id": "silent",
+      "title": "新建一份不需要配音服务的静音讲授",
+      "level": 2,
+      "children": [
+        "silent-practice"
+      ],
+      "stepOrder": [
+        "silent-step"
       ],
       "layout": {
         "type": "stack"
@@ -267,7 +297,7 @@
           "children": [
             {
               "type": "text",
-              "text": "在文档工具栏点击“视频制作”，选择页面和步骤后编辑讲稿与播放时机。点击“选择音色”可设置本步、多步、本页或整份文稿；检查应用范围后再保存，批量默认保留静音和录音等独立设置。试听和生成各自需要明确确认；未配置服务时仍可试听原有两讲的精确缓存。本讲默认静音，不能假装已经生成配音。完整时间线和真实服务合成仍有验收门槛。"
+              "text": "在文档工具栏点击“视频制作”，选择页面和步骤后编辑讲稿与播放时机。点击“选择音色”可设置本步、多步、本页或整份文稿；检查应用范围后再保存，批量默认保留静音和录音等独立设置。试听和生成各自需要明确确认；未配置服务时仍可试听原有两讲的精确缓存。三轨时间线和共享播放头的动手路径见前两页；真实 provider 新合成到播放的完整正向流程仍待验收。"
             }
           ]
         }
@@ -367,7 +397,7 @@
           "children": [
             {
               "type": "text",
-              "text": "配置并生成真实音频后，定向构建 lecture，再按导出工具要求检查字幕、动画时机、任意步骤定位和录制媒体。"
+              "text": "已有精确配音缓存，或纯文字与已声明时长的动画使用明确静音时，可以定向构建 lecture。先核对同一计划中的字幕、动画与任意步骤定位，再按导出工具要求导出视频；未知时序、缺失缓存和未支持的录音／混音应明确拒绝，不能伪造完成。"
             }
           ]
         },
@@ -420,6 +450,138 @@
             {
               "type": "text",
               "text": "本讲默认不配音。字段保存的是制作意图，局部播放只运行真实场景，不能用它假装听到了配音。“动手编辑一份讲义”的时机练习还可尝试混合讲稿来源与非法数值草稿。"
+            }
+          ]
+        }
+      ]
+    },
+    "timeline-practice": {
+      "id": "timeline-practice",
+      "type": "text",
+      "content": [
+        {
+          "id": "timeline-entry",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先在工作台文稿列表打开“冒泡排序”，保持其讲稿与音色不变，再点击文档工具栏的“视频制作”。原有课程附带精确配音缓存，不需要配置服务或点击生成。等待显示“当前保存版本”及可用的播放按钮；如果本地副本缓存不完整，应先查看缺失原因。"
+            }
+          ]
+        },
+        {
+          "id": "timeline-tracks",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "选择“一趟冒泡”页，核对“画面、配音、字幕”三轨。画面片段对应稳定步骤，配音和字幕来自同一份讲稿。已有音频会实际解码成波形；静音和缺失音频不会显示装饰波形，解码失败会明确提示波形不可用。"
+            }
+          ]
+        },
+        {
+          "id": "timeline-seek",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在时间线“位置（秒）”输入 1.000 并按回车，再改为 0.250：这里是本页起点后的秒数。顶部播放时间显示整份讲授的位置，两者可能不同。定位会先暂停；等回执确认后，播放头与动画一起到达实际位置。也可聚焦播放头滑块，用 Home、End 或方向键定位。"
+            }
+          ]
+        },
+        {
+          "id": "timeline-steps",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "依次点时间线的“步骤 4”和“步骤 2”，观察当前讲稿和排序画面随稳定步骤一起前进、返回。按“放大时间线”查看片段，再点“适配本页”。缩放只改变视图，不改讲稿、时机或音频。"
+            }
+          ]
+        },
+        {
+          "id": "timeline-transport",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "明确点击“播放”，再点击“暂停”；把“播放速度”改为 1.5 倍。制作区控制的是现有讲授播放器的同一个时钟，不会自动启动第二个播放器。暂停后可点击制作区顶栏的“编译预览”图标，确认当前保存版本；同一计划重新加载仍保留实际时间和速率。试听也必须先暂停正式播放。"
+            }
+          ]
+        },
+        {
+          "id": "timeline-versions",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "返回文档会保留原正文编辑器。正文、讲稿或音色更新后，旧计划不能当作当前结果继续定位；等待保存，按界面提示重新编译并读取当前计划。改过讲稿而缺少精确缓存时会显示估计时长，不能用估计时间假装配音已经准备好。"
+            }
+          ]
+        }
+      ]
+    },
+    "silent-practice": {
+      "id": "silent-practice",
+      "type": "text",
+      "content": [
+        {
+          "id": "silent-entry",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "从工作台新建一份文稿，先保留纯文字页面，再进入“视频制作”。新建文稿默认包含制作所需能力；没有讲稿时也可用明确停留时机形成真实静音计划，不会生成声音。本页练习以新建文稿为前提。"
+            }
+          ]
+        },
+        {
+          "id": "silent-script",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "选择一页，在“本步字幕 / 讲稿”写一句“这一步先观察材料，再给出结论。”，不插入句子中间的动作提示。点击“选择音色”，将“声音来源”设为“静音”，检查本步范围后应用设置。等待保存；按需编译当前版本。"
+            }
+          ]
+        },
+        {
+          "id": "silent-timing",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "把本步“最短停留”设为 2000 毫秒、“结束停顿”设为 300 毫秒。读取当前计划后，纯文字这一步的时长由这两个明确设置决定；点击播放应看到实际时间和单源字幕推进，听不到声音，也不出现音频波形。无需音色目录、provider 或合成请求。"
+            }
+          ]
+        },
+        {
+          "id": "silent-scope",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "若你添加了多个有讲稿的步骤，应逐步明确静音，或选择整份文稿范围并核对已有独立设置再应用。只有没有讲稿的步骤才能在未设置音色时直接使用其真实停留时长；“未设置音色”不能被当作已明确静音。"
+            }
+          ]
+        },
+        {
+          "id": "silent-limits",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本导览“本步讲稿、发音与动作提示”页保留 SQL 发音与句子中间的动作 cue，默认静音没有确认的词语时码，因此本导览整份按时播放会报告编排问题。这不是可以直接播放的静音练习：请按上面的新建文稿操作，或使用上一页的已有缓存课程。"
+            }
+          ]
+        },
+        {
+          "id": "silent-gates",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "未声明动画时长、没有精确配音缓存、静音文字中间的动作 cue、尚不支持的录音采用与裁切混音，都会保留具体原因。仍可选择稳定步骤检查正文和讲稿；只有时间经过确认的当前计划才启用任意毫秒定位与播放。"
             }
           ]
         }
@@ -555,6 +717,28 @@
         },
         {
           "blockId": "production-commands",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "timeline-step": {
+      "id": "timeline-step",
+      "sectionId": "timeline",
+      "visuals": [
+        {
+          "blockId": "timeline-practice",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "silent-step": {
+      "id": "silent-step",
+      "sectionId": "silent",
+      "visuals": [
+        {
+          "blockId": "silent-practice",
           "visible": true
         }
       ],
