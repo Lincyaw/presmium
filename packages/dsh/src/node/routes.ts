@@ -11,7 +11,7 @@ export const ROUTES: Record<string, string> = Object.fromEntries([
   ['focus', `${SERVER_ROUTES}focus`],
   ['diagnostics', `${SERVER_ROUTES}diagnostics`],
   ['diagnostics/events', `${SERVER_ROUTES}diagnostics/events`],
-  ...['voiceover', 'voiceover/cancel', 'voice-preview', 'production-plan', 'production-media'].map(path => [path, `/__presmium/presmium.lecture/${path}`]),
+  ...['voiceover', 'voiceover/cancel', 'voice-preview', 'production-plan', 'production-media', 'production-asset'].map(path => [path, `/__presmium/presmium.lecture/${path}`]),
 ])
 
 const PASSED = ['accept', 'content-type', 'presmium-document', 'last-event-id', 'if-none-match']

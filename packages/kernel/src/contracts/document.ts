@@ -160,7 +160,15 @@ export interface StepProduction {
 }
 export interface ProductionDefaults extends StepProduction {}
 export interface TimeRange { startMs: number, endMs: number }
-export interface MediaClip { id: ClipId, assetId: AssetId, sourceRange: TimeRange, attachment: { stepId: StepId, offsetMs: number }, volume: number }
+export interface MediaClip {
+  id: ClipId
+  assetId: AssetId
+  sourceRange: TimeRange
+  attachment: { stepId: StepId, offsetMs: number }
+  /** Output gain, from zero to one; muting does not replace this value. */
+  volume: number
+  muted?: boolean
+}
 export interface Production {
   defaults: ProductionDefaults
   sectionOverrides?: Record<SectionId, StepProduction>

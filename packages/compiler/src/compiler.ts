@@ -3,6 +3,7 @@ import { existsSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, fnv1a64, isRecord, validateDocument } from '@lincyaw/kernel'
+import { productionAssetFile } from '@lincyaw/kernel/node'
 import type { AnchorResolverRegistry, CodeNode, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceCapabilities, SourceReader, TeachingDocument } from '@lincyaw/kernel'
 import { audienceDocument, emptyReferences, filterForAudience, scanOutputs, withheld } from './audience.ts'
 import type { AudienceMark, Withheld } from './audience.ts'
@@ -206,6 +207,7 @@ export class Compiler {
       sections,
       diagnostics: [],
       production: structuredClone(run.document.production),
+      productionAssets: Object.fromEntries([...new Set(run.document.production.mediaClips.map(clip => clip.assetId))].map(id => [id, structuredClone(run.document.assets[id]!)])),
     }
     applyTranslations(doc, translationFields(headmatter), report)
     let audience: AudienceCompilation | undefined
@@ -214,6 +216,8 @@ export class Compiler {
       const filtered = filterForAudience(doc, name, marks)
       doc.sections = filtered.doc.sections
       doc.meta.audience = name
+      doc.production = filtered.doc.production
+      doc.productionAssets = filtered.doc.productionAssets
       audience = audienceCompilation(name, withheld(filtered.removed, doc))
       const left = findings.filter(finding => !filtered.keeps(finding))
       findings.splice(0, findings.length, ...findings.filter(filtered.keeps))
@@ -329,6 +333,10 @@ export class Compiler {
   /** Validated JSON is the sole runtime source; compiler output remains a derived snapshot. */
   async #compileSections(run: CompileRun, _contributions: Contributions): Promise<{ sections: IRSection[], marks: AudienceMark[], sourceFiles: string[], sourceFingerprints: Record<string, string> }> {
     const sections = lowerDocument(run.document, this.entry, this.deckDir, run.report, (...files) => run.inputs.watch(...files))
+    for (const id of new Set(run.document.production.mediaClips.map(clip => clip.assetId))) {
+      const asset = run.document.assets[id], file = asset && productionAssetFile(this.deckDir, asset.location)
+      if (file) run.inputs.watch(file)
+    }
     run.inputs.watch(this.entry)
     return { sections, marks: [], sourceFiles: [this.entry], sourceFingerprints: { [this.entry]: fnv1a64(run.rawSource) } }
   }

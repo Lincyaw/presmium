@@ -1,4 +1,4 @@
-export { copyPublished } from './assets.ts'
+export { copyPublished, productionAssetFile } from './assets.ts'
 export { FONT_LICENSE, fontLicense } from './fonts.ts'
 export { findPackageBin, importSpecifier, literalGlob, packageOf, playwrightChromium, TYPESCRIPT_IMPORT } from './packages.ts'
 export { bracketIPv6, lanAddresses } from './network.ts'

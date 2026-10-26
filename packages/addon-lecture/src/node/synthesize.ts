@@ -1,10 +1,14 @@
 import { basename, relative } from 'node:path'
 import { errorMessage, remapWords } from '@lincyaw/kernel'
-import type { IRDocument, SpeechService, SynthesisRequest, WordSpan, WrittenWord } from '@lincyaw/kernel'
+import type { IRDocument, ProductionDiagnostic, SpeechService, SynthesisRequest, WordSpan, WrittenWord } from '@lincyaw/kernel'
 import { irHash, plannedUtterances, referencedBlocks, SCRIPT_TRACK, scriptTrack, sectionHashes } from '../domain/index.ts'
 import type { Clip, CutAnimation, LecturePlan, LectureTrack, LectureVoice, Voice } from '../domain/index.ts'
 import type { DeckPlan } from './plan.ts'
 import { deckPlan } from './plan.ts'
+import { projectProductionPlan } from '../domain/production.ts'
+import { placeProductionAudio, productionAudioMessage } from '../domain/production-audio.ts'
+import { inspectProductionAssets } from './production-assets.ts'
+import type { ProductionAssetFile } from './production-assets.ts'
 
 export interface SynthesisOptions {
   voice?: LectureVoice
@@ -121,6 +125,8 @@ export interface SynthesizedLecture {
   failures: SynthesisFailure[]
   /** Where `{cue}next` moves on before an animation has played. */
   cuts: CutAnimation[]
+  assets?: Map<string, ProductionAssetFile>
+  mediaDiagnostics?: ProductionDiagnostic[]
 }
 
 export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech: SpeechService | undefined, signal?: AbortSignal, options: Pick<SynthesisOptions, 'cacheOnly' | 'assertCurrent'> = {}): Promise<SynthesizedLecture> {
@@ -138,8 +144,19 @@ export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech
     voice: units.every(unit => unit.sourceKind === 'none') ? { kind: 'silent' } : clipVoice(units.flatMap(unit => synthesized.clips.get(unit.id) ?? []), deck.voice),
     gap: deck.gap,
   }, events => referencedBlocks(doc, events), unsaid, new Set(units.filter(unit => unit.sourceKind === 'none').map(unit => unit.id)))
-  if (synthesized.failures.length > 0 || deck.findings.some(finding => finding.severity === 'error')) return { deck, preview: track, clips: synthesized.clips, failures: synthesized.failures, cuts: [] }
-  return { deck, track, preview: track, clips: synthesized.clips, failures: [], cuts }
+  const assets = await inspectProductionAssets(doc, deckDir, signal)
+  const base = projectProductionPlan(doc, deck.plan, track, new Map(), synthesized.failures)
+  const media = placeProductionAudio(doc, base.pages, new Map([...assets.assets].map(([id, file]) => [id, file.asset])), assets.errors)
+  const mediaDiagnostics: ProductionDiagnostic[] = media.issues.map(issue => ({ ...issue, severity: 'error', message: productionAudioMessage(doc, issue.code) }))
+  if (media.clips.length) track.audio = media.clips.map(clip => {
+    const file = assets.assets.get(clip.assetId)!
+    return { section: clip.sectionId, start: clip.startMs / 1000, duration: (clip.endMs - clip.startMs) / 1000, src: `audio/${clip.mediaId}.${file.extension}`, clipId: clip.mediaId, assetId: clip.assetId, mediaClipId: clip.id, sourceStartMs: clip.sourceRange.startMs, volume: clip.volume, muted: clip.muted, sha256: file.asset.sha256 }
+  })
+  await options.assertCurrent?.()
+  signal?.throwIfAborted()
+  const common = { deck, preview: track, clips: synthesized.clips, failures: synthesized.failures, assets: assets.assets, mediaDiagnostics }
+  if (synthesized.failures.length > 0 || mediaDiagnostics.length || deck.findings.some(finding => finding.severity === 'error')) return { ...common, cuts: [] }
+  return { ...common, track, cuts }
 }
 
 export function synthesisFailureMessage(failure: SynthesisFailure, cacheOnly = false): string {

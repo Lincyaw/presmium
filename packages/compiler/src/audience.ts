@@ -207,11 +207,14 @@ export function filterForAudience(doc: IRDocument, name: string, marks: Audience
   if (removed.length === 0 && marked.length === 0) return { doc, removed, keeps: () => true }
   const spans = [...leftOut(doc, name, removed), ...marked]
   const keeps = ({ source: at }: Finding) => !at || !spans.some(span => at.file === span.file && (at.line ?? 0) >= span.line && (at.line ?? 0) <= (span.endLine ?? span.line))
+  const stepIds = new Set(sections.flatMap(section => section.stepIds ?? []))
+  const production = doc.production && { ...doc.production, mediaClips: doc.production.mediaClips.filter(clip => stepIds.has(clip.attachment.stepId)) }
   return {
     doc: {
       ...doc,
       sections: sections.map((section, i) => (section.index === i + 1 ? section : { ...section, index: i + 1 })),
       diagnostics: doc.diagnostics.filter(keeps),
+      ...production ? { production, productionAssets: Object.fromEntries([...new Set(production.mediaClips.map(clip => clip.assetId))].flatMap(id => doc.productionAssets?.[id] ? [[id, doc.productionAssets[id]!]] : [])) } : {},
     },
     removed,
     keeps,

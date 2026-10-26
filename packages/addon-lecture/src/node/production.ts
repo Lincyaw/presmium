@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
-import type { CanonicalSource, IRDocument, ProductionAudio, ProductionMediaQuery, ProductionPlan, ProductionPlanQuery } from '@lincyaw/kernel'
+import type { CanonicalSource, IRDocument, ProductionAssetAnswer, ProductionAssetQuery, ProductionAudio, ProductionMediaQuery, ProductionPlan, ProductionPlanQuery } from '@lincyaw/kernel'
 import { irRevision } from '@lincyaw/kernel/node'
 import type { LectureTrack } from '../domain/index.ts'
 import { projectProductionPlan } from '../domain/production.ts'
@@ -11,8 +11,10 @@ import { synthesizeLecture } from './synthesize.ts'
 import type { SynthesizedClip } from './synthesize.ts'
 import type { ServedDeck } from './routes/served-deck.ts'
 import { RouteRefusal } from './routes/served-deck.ts'
+import { assertProductionAssetFile, inspectProductionAsset, readProductionAssetFile } from './production-assets.ts'
+import type { ProductionAssetFile } from './production-assets.ts'
 
-interface ClipFile { audio: ProductionAudio, path: string, stamp: string }
+interface ClipFile { audio?: ProductionAudio, asset?: ProductionAssetFile, path: string, stamp: string }
 export interface ProductionSnapshot { plan: ProductionPlan, track: LectureTrack, clips: Map<string, ClipFile> }
 const recent = new WeakMap<ServedDeck, Map<string, ProductionSnapshot>>()
 const fileStamp = async (path: string) => { const value = await stat(path); return [value.dev, value.ino, value.size, value.mtimeMs, value.ctimeMs].join(':') }
@@ -41,7 +43,7 @@ export async function productionSnapshot(served: ServedDeck, query?: ProductionP
   if (query?.planId) {
     const found = recent.get(served)?.get(query.planId)
     if (!found || found.plan.binding.irRevision !== now.revision) throw new RouteRefusal(409, 'production-plan-changed')
-    await Promise.all([...found.clips.values()].map(async file => { if (await fileStamp(file.path) !== file.stamp) throw new RouteRefusal(409, 'production-media-changed') }))
+    await Promise.all([...found.clips.values()].map(async file => { if (file.asset) assertProductionAssetFile(file.asset, served.deckDir); else if (await fileStamp(file.path) !== file.stamp) throw new RouteRefusal(409, 'production-media-changed') }))
     await current(served, found.plan.binding)
     signal?.throwIfAborted()
     return found
@@ -51,13 +53,17 @@ export async function productionSnapshot(served: ServedDeck, query?: ProductionP
   const made = await synthesizeLecture(lectureView(now.doc), served.deckDir, speech, signal, { cacheOnly: true }), track = made.preview
   if (!track) throw new RouteRefusal(409, 'production-plan-unavailable')
   const clips = new Map<string, ClipFile>(), unique = [...new Map([...made.clips.values()].map(clip => [clip.key, clip])).values()].sort((a, b) => a.key.localeCompare(b.key))
-  for (let offset = 0; offset < unique.length; offset += 4) for (const file of await Promise.all(unique.slice(offset, offset + 4).map(clip => clipFile(clip, signal)))) clips.set(file.audio.clipId, file)
+  for (let offset = 0; offset < unique.length; offset += 4) for (const file of await Promise.all(unique.slice(offset, offset + 4).map(clip => clipFile(clip, signal)))) clips.set(file.audio!.clipId, file)
+  for (const file of [...made.assets?.values() ?? []].sort((a, b) => a.asset.mediaId.localeCompare(b.asset.mediaId))) {
+    assertProductionAssetFile(file, served.deckDir)
+    clips.set(file.asset.mediaId, { asset: file, path: file.path, stamp: file.stamp })
+  }
   for (const utterance of track.utterances) {
     const clip = made.clips.get(utterance.id)
     if (clip) utterance.clipId = clip.key
   }
-  const projected = projectProductionPlan(now.doc, made.deck.plan, track, new Map([...clips].map(([key, file]) => [key, file.audio])), made.failures)
-  const planId = createHash('sha256').update(JSON.stringify({ source: now.source, irRevision: now.revision, projected, track, audio: [...clips.values()].map(file => file.audio) })).digest('hex').slice(0, 32)
+  const projected = projectProductionPlan(now.doc, made.deck.plan, track, new Map([...clips].flatMap(([key, file]) => file.audio ? [[key, file.audio] as const] : [])), made.failures, made.mediaDiagnostics, new Map([...made.assets ?? []].map(([id, file]) => [id, file.asset])))
+  const planId = createHash('sha256').update(JSON.stringify({ source: now.source, irRevision: now.revision, projected, track, audio: [...clips.values()].map(file => file.audio ?? file.asset!.asset) })).digest('hex').slice(0, 32)
   const binding = { source: now.source, irRevision: now.revision, planId }, plan: ProductionPlan = { binding, ...projected }
   track.binding = binding
   await current(served, binding)
@@ -68,11 +74,23 @@ export async function productionSnapshot(served: ServedDeck, query?: ProductionP
   return snapshot
 }
 
-export async function productionMedia(served: ServedDeck, query: ProductionMediaQuery, signal?: AbortSignal): Promise<string> {
+export async function productionAsset(served: ServedDeck, query: ProductionAssetQuery, signal?: AbortSignal): Promise<ProductionAssetAnswer> {
+  const now = await current(served, query), inspected = await inspectProductionAsset(now.doc, served.deckDir, query.assetId, signal)
+  await current(served, { source: now.source, irRevision: now.revision })
+  signal?.throwIfAborted()
+  return { source: now.source, irRevision: now.revision, asset: inspected.asset }
+}
+
+export async function productionMedia(served: ServedDeck, query: ProductionMediaQuery, signal?: AbortSignal): Promise<string | { bytes: Uint8Array<ArrayBuffer>, mediaType: string }> {
   const snapshot = await productionSnapshot(served, query, signal), file = snapshot.clips.get(query.clipId)
   if (!file) throw new RouteRefusal(404, 'production-clip-unknown')
+  if (file.asset) {
+    const bytes = await readProductionAssetFile(file.asset, served.deckDir, signal)
+    await current(served, query); signal?.throwIfAborted()
+    return { bytes: new Uint8Array(bytes), mediaType: file.asset.asset.mediaType }
+  }
   const hit = await served.speech().cached?.(query.clipId, signal)
-  if (!hit || typeof hit.audio !== 'string' || hit.audio !== file.path || Math.round(hit.duration * 1000) !== file.audio.durationMs) throw new RouteRefusal(409, 'production-media-changed')
+  if (!hit || typeof hit.audio !== 'string' || hit.audio !== file.path || Math.round(hit.duration * 1000) !== file.audio!.durationMs) throw new RouteRefusal(409, 'production-media-changed')
   if (await fileStamp(file.path) !== file.stamp) throw new RouteRefusal(409, 'production-media-changed')
   await current(served, query)
   signal?.throwIfAborted()
