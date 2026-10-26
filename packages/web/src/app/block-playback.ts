@@ -6,10 +6,10 @@ import type { Viewer } from '@lincyaw/viewer'
 import type { AppConfig } from '../domain/index.ts'
 
 /** Authorise the existing player; this bridge owns no clock or content. */
-export function blockPlaybackGate(config: AppConfig, doc: IRDocument, viewer: Viewer, origin: string | undefined, onGranted: () => void) {
+export function blockPlaybackGate(config: AppConfig, doc: IRDocument, viewer: Viewer, origin: string | undefined, navigation: () => string | undefined, onGranted: (navigation: string) => void) {
   const random = crypto.getRandomValues(new Uint32Array(2))
   let sequence = (random[0]! & 0x000f_ffff) * 0x1_0000_0000 + random[1]!
-  const pending = new Map<number, (error?: Error) => void>()
+  const pending = new Map<number, (error?: Error, navigation?: string) => void>()
   const active = new Map<number, () => void>()
   let disposed = false, armed = false, control: PlaybackControl | undefined
   let stopGate = () => {}, stopRuntime = () => {}
@@ -27,13 +27,13 @@ export function blockPlaybackGate(config: AppConfig, doc: IRDocument, viewer: Vi
   const authorize = (signal: AbortSignal): Promise<void> => {
     if (disposed || !origin || typeof revision !== 'string' || signal.aborted) return Promise.reject(abortError())
     const position = viewer.position.getSnapshot(), section = viewer.section(position.section)
-    const stepId = section?.stepIds?.[position.step]
-    if (!section || !stepId || ![...irBlocks(section.blocks)].some(block => block.id === config.block)) return Promise.reject(new Error('The selected preview step is unavailable.'))
+    const stepId = section?.stepIds?.[position.step], selectedNavigation = navigation()
+    if (!section || !stepId || !selectedNavigation || ![...irBlocks(section.blocks)].some(block => block.id === config.block)) return Promise.reject(new Error('The selected preview step is unavailable.'))
     const request = ++sequence
     return new Promise<void>((resolve, reject) => {
       let granted = false
       const abort = () => { if (granted) active.get(request)?.(); else finish(abortError()) }
-      const finish = (error?: Error) => {
+      const finish = (error?: Error, acceptedNavigation?: string) => {
         if (!pending.delete(request)) return
         clearTimeout(timeout)
         if (error) {
@@ -47,14 +47,14 @@ export function blockPlaybackGate(config: AppConfig, doc: IRDocument, viewer: Vi
             signal.removeEventListener('abort', abort)
             cancelled(request)
           })
-          onGranted()
+          onGranted(acceptedNavigation!)
           resolve()
         }
       }
       const timeout = setTimeout(() => finish(new Error('Playback authorization timed out.')), 15_000)
       pending.set(request, finish)
       signal.addEventListener('abort', abort, { once: true })
-      const message: BlockPreviewPlaybackRequest = { type: 'presmium:block-preview-playback-request', document: config.document, blockId: config.block!, revision, request, sectionId: section.id, stepId }
+      const message: BlockPreviewPlaybackRequest = { type: 'presmium:block-preview-playback-request', document: config.document, blockId: config.block!, revision, request, sectionId: section.id, stepId, navigation: selectedNavigation }
       try { window.parent.postMessage(message, origin) } catch { finish(new Error('Playback authorization is unavailable.')) }
     })
   }
@@ -74,7 +74,7 @@ export function blockPlaybackGate(config: AppConfig, doc: IRDocument, viewer: Vi
     },
     grant(data: unknown) {
       const value = toBlockPreviewPlaybackGranted(data)
-      if (!disposed && value?.document === config.document && value.blockId === config.block && value.revision === revision) pending.get(value.request)?.(value.error === undefined ? undefined : new Error(value.error || 'Playback authorization is unavailable.'))
+      if (!disposed && value?.document === config.document && value.blockId === config.block && value.revision === revision) pending.get(value.request)?.(value.error === undefined ? undefined : new Error(value.error || 'Playback authorization is unavailable.'), value.navigation)
     },
     dispose() { if (disposed) return; disposed = true; stopRuntime(); stopGate(); cancel() },
   }

@@ -10,7 +10,7 @@ interface Member {
 interface PlaybackOptions {
   activate(stop: () => Promise<void>): Promise<() => void>
   current(request: BlockPreviewPlaybackRequest): boolean
-  adopt(request: BlockPreviewPlaybackRequest): void
+  adopt(request: BlockPreviewPlaybackRequest): string
   post(message: BlockPreviewCommand | BlockPreviewPlaybackGranted): void
   failure: string
 }
@@ -35,8 +35,8 @@ export class DocumentBlockPlayback {
         this.#grant(request, this.#options.failure)
         return
       }
-      this.#options.adopt(request)
-      this.#grant(request)
+      const navigation = this.#options.adopt(request)
+      this.#grant(request, undefined, navigation)
     }, error => {
       this.#members.delete(request.request)
       if (this.#disposed || member.stopped) return
@@ -52,10 +52,10 @@ export class DocumentBlockPlayback {
     this.#members.delete(request)
   }
 
-  #grant(request: BlockPreviewPlaybackRequest, error?: string): void {
+  #grant(request: BlockPreviewPlaybackRequest, error?: string, navigation = request.navigation): void {
     if (this.#disposed) return
     const { document, blockId, revision } = request
-    this.#options.post({ type: 'presmium:block-preview-playback-granted', document, blockId, revision, request: request.request, ...error ? { error } : {} })
+    this.#options.post({ type: 'presmium:block-preview-playback-granted', document, blockId, revision, request: request.request, navigation, ...error ? { error } : {} })
   }
 
   #pause(request: BlockPreviewPlaybackRequest): void {

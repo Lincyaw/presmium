@@ -12,7 +12,8 @@ export function blockPreviewReporter(config: AppConfig, doc: IRDocument, viewer:
   try { const referrer = new URL(document.referrer).origin; if (config.origins.includes(referrer)) origin = referrer } catch {}
   const root = document.getElementById('app')!
   let localPosition = false
-  const playback = blockPlaybackGate(config, doc, viewer, origin, () => { localPosition = true })
+  let navigation: string | undefined
+  const playback = blockPlaybackGate(config, doc, viewer, origin, () => navigation, accepted => { navigation = accepted; localPosition = true })
   playback.enable()
   let enabled = false, fatal = false, queued = false, disposed = false
   let lastReport: string | undefined
@@ -36,6 +37,14 @@ export function blockPreviewReporter(config: AppConfig, doc: IRDocument, viewer:
   resize.observe(root)
   mutations.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-status', 'class'] })
   const stopErrors = componentErrorRevision.subscribe(changed)
+  const sendPosition = () => {
+    if (!enabled || !origin || disposed || fatal || !localPosition || !navigation || window.parent === window) return
+    const position = viewer.position.getSnapshot(), section = viewer.section(position.section)
+    if (!section || ![...irBlocks(section.blocks)].some(block => block.id === config.block)) return
+    const stepId = section.stepIds?.[position.step], revision = doc.meta[PREVIEW_REVISION]
+    if (typeof stepId !== 'string' || typeof revision !== 'string') return
+    window.parent.postMessage({ type: 'presmium:block-preview-position', document: config.document, blockId: config.block, revision, sectionId: section.id, stepId, navigation }, origin)
+  }
   const command = (event: MessageEvent) => {
     if (!enabled || disposed || fatal || !origin || event.source !== window.parent || event.origin !== origin) return
     playback.grant(event.data)
@@ -44,12 +53,27 @@ export function blockPreviewReporter(config: AppConfig, doc: IRDocument, viewer:
     // A draft may name a step not in this older snapshot yet; its author can
     // still pause this exact frame without adopting that target.
     if (value.action === 'pause') {
+      localPosition = false
+      if (value.navigation) navigation = value.navigation
       playback.enable()
       presmiumService(PLAYBACK_CONTROL)?.pause()
+      const section = viewer.section(value.sectionId), step = section?.stepIds?.indexOf(value.stepId) ?? -1
+      const current = viewer.position.getSnapshot()
+      if (value.navigation && section && step >= 0 && [...irBlocks(section.blocks)].some(block => block.id === config.block)
+        && (current.section !== section.id || current.step !== step)) viewer.show({ section: section.id, step, boundary: 'end' })
       return
     }
     const section = viewer.section(value.sectionId), step = section?.stepIds?.indexOf(value.stepId) ?? -1
     if (!section || step < 0 || ![...irBlocks(section.blocks)].some(block => block.id === config.block)) return
+    navigation = value.navigation
+    // Acknowledging this frame's accepted position must not seek its active clock.
+    if (value.action === 'sync') {
+      const current = viewer.position.getSnapshot()
+      // Local input may have advanced again while this acknowledgement was in
+      // transit. Re-publish that actual cursor under the accepted generation.
+      if (current.section !== section.id || current.step !== step) sendPosition()
+      return
+    }
     // An externally selected step may cause intermediate local React navigation.
     // Only a new local author action or granted clock can publish a new target.
     localPosition = false
@@ -73,14 +97,7 @@ export function blockPreviewReporter(config: AppConfig, doc: IRDocument, viewer:
       send()
       // The initial viewer position is only a loading default. Publish subsequent
       // navigation, using the canonical step identity of this block's section.
-      stopPosition ??= viewer.position.subscribe(() => {
-        if (!origin || disposed || fatal || !localPosition || window.parent === window) return
-        const position = viewer.position.getSnapshot(), section = viewer.section(position.section)
-        if (!section || ![...irBlocks(section.blocks)].some(block => block.id === config.block)) return
-        const stepId = section.stepIds?.[position.step], revision = doc.meta[PREVIEW_REVISION]
-        if (typeof stepId !== 'string' || typeof revision !== 'string') return
-        window.parent.postMessage({ type: 'presmium:block-preview-position', document: config.document, blockId: config.block, revision, sectionId: section.id, stepId }, origin)
-      })
+      stopPosition ??= viewer.position.subscribe(sendPosition)
     },
     failed() { enabled = true; failed() },
   }

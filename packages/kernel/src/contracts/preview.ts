@@ -21,9 +21,21 @@ export interface BlockPreviewCommand {
   revision: string
   sectionId: string
   stepId: string
-  action: 'seek' | 'pause'
+  action: 'seek' | 'pause' | 'sync'
+  /** The parent's current navigation intent, including repeat visits to the same step. */
+  navigation?: string
   /** Omitted seeks show the completed step; initial/reload seeks explicitly request its start. */
   at?: 'start' | 'end'
+}
+
+export interface BlockPreviewPosition {
+  type: 'presmium:block-preview-position'
+  document: string
+  blockId: string
+  revision: string
+  sectionId: string
+  stepId: string
+  navigation: string
 }
 
 export interface BlockPreviewPlaybackIdentity {
@@ -37,11 +49,13 @@ export interface BlockPreviewPlaybackRequest extends BlockPreviewPlaybackIdentit
   type: 'presmium:block-preview-playback-request'
   sectionId: string
   stepId: string
+  navigation: string
 }
 
 export interface BlockPreviewPlaybackGranted extends BlockPreviewPlaybackIdentity {
   type: 'presmium:block-preview-playback-granted'
   error?: string
+  navigation: string
 }
 
 export interface BlockPreviewPlaybackCancelled extends BlockPreviewPlaybackIdentity {
@@ -196,22 +210,30 @@ export function toBlockPreviewCommand(value: unknown): BlockPreviewCommand | und
   if (!isRecord(value) || value.type !== 'presmium:block-preview-command' || !text(value.document)
     || !text(value.blockId) || !value.blockId || !text(value.revision) || !value.revision
     || !text(value.sectionId) || !value.sectionId || !text(value.stepId) || !value.stepId
-    || value.action !== 'seek' && value.action !== 'pause'
+    || value.action !== 'seek' && value.action !== 'pause' && value.action !== 'sync'
+    || (value.action === 'pause' ? !optional(value.navigation, value => bounded(value, 200)) : !bounded(value.navigation, 200))
     || value.at !== undefined && value.at !== 'start' && value.at !== 'end') return undefined
-  return { type: value.type, document: value.document, blockId: value.blockId, revision: value.revision, sectionId: value.sectionId, stepId: value.stepId, action: value.action, ...value.at !== undefined ? { at: value.at } : {} }
+  return { type: value.type, document: value.document, blockId: value.blockId, revision: value.revision, sectionId: value.sectionId, stepId: value.stepId, action: value.action, ...value.navigation !== undefined ? { navigation: value.navigation as string } : {}, ...value.at !== undefined ? { at: value.at } : {} }
+}
+
+export function toBlockPreviewPosition(value: unknown): BlockPreviewPosition | undefined {
+  if (!isRecord(value) || value.type !== 'presmium:block-preview-position' || !text(value.document)
+    || !bounded(value.blockId, 4096) || !bounded(value.revision, 200) || !bounded(value.sectionId, 4096)
+    || !bounded(value.stepId, 4096) || !bounded(value.navigation, 200)) return undefined
+  return { type: value.type, document: value.document, blockId: value.blockId, revision: value.revision, sectionId: value.sectionId, stepId: value.stepId, navigation: value.navigation }
 }
 
 const playbackIdentity = (value: unknown): value is Record<string, unknown> & BlockPreviewPlaybackIdentity => isRecord(value) && text(value.document) && bounded(value.blockId, 4096) && bounded(value.revision, 200) && request(value.request)
 const toPlaybackIdentity = (value: BlockPreviewPlaybackIdentity): BlockPreviewPlaybackIdentity => ({ document: value.document, blockId: value.blockId, revision: value.revision, request: value.request })
 
 export function toBlockPreviewPlaybackRequest(value: unknown): BlockPreviewPlaybackRequest | undefined {
-  return playbackIdentity(value) && value.type === 'presmium:block-preview-playback-request' && bounded(value.sectionId, 4096) && bounded(value.stepId, 4096)
-    ? { ...toPlaybackIdentity(value), type: value.type, sectionId: value.sectionId, stepId: value.stepId } : undefined
+  return playbackIdentity(value) && value.type === 'presmium:block-preview-playback-request' && bounded(value.sectionId, 4096) && bounded(value.stepId, 4096) && bounded(value.navigation, 200)
+    ? { ...toPlaybackIdentity(value), type: value.type, sectionId: value.sectionId, stepId: value.stepId, navigation: value.navigation } : undefined
 }
 
 export function toBlockPreviewPlaybackGranted(value: unknown): BlockPreviewPlaybackGranted | undefined {
-  return playbackIdentity(value) && value.type === 'presmium:block-preview-playback-granted' && optional(value.error, text)
-    ? { ...toPlaybackIdentity(value), type: value.type, ...value.error !== undefined ? { error: value.error as string } : {} } : undefined
+  return playbackIdentity(value) && value.type === 'presmium:block-preview-playback-granted' && optional(value.error, text) && bounded(value.navigation, 200)
+    ? { ...toPlaybackIdentity(value), type: value.type, navigation: value.navigation, ...value.error !== undefined ? { error: value.error as string } : {} } : undefined
 }
 
 export function toBlockPreviewPlaybackCancelled(value: unknown): BlockPreviewPlaybackCancelled | undefined {
