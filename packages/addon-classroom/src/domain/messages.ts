@@ -78,6 +78,8 @@ const zh = {
   },
   predict: {
     yours: '你的预测',
+    invalidTargets: (property: string) => `预测的 ${property} 必须列出不重复的子块 ID。`,
+    missingTarget: (property: string, target: string, block: string) => `预测的 ${property} 目标 ${target} 不是 ${block} 的直接子块。`,
     placeholder: '写下你的预测',
     save: '保存预测',
     saved: (what: string) => `你的预测：${what}`,
@@ -222,6 +224,8 @@ const en: ClassroomMessages = {
   },
   predict: {
     yours: 'Your prediction',
+    invalidTargets: property => `Prediction ${property} must contain unique child block IDs.`,
+    missingTarget: (property, target, block) => `Prediction ${property} target ${target} is not an authored child of ${block}.`,
     placeholder: 'Write down your prediction',
     save: 'Save prediction',
     saved: what => `Your prediction: ${what}`,

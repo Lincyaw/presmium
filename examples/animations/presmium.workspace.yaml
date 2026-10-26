@@ -5,6 +5,10 @@ site:
   footer:
     message: 'Presmium 示例'
   nav:
+    - text: '功能导览'
+      items:
+        - text: '课堂互动'
+          link: '/guide-classroom/'
     - text: '幻灯片'
       items:
         - text: '冒泡排序'
