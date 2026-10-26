@@ -8,12 +8,12 @@ const slot = (i: number) => `${4 + i * 19}%`
 export default gsapScene(({ root, gsap, at, color }) => {
   root.innerHTML = `
     <div class="bs" style="position:relative;height:100%;font-family:var(--pm-font-mono)">
-      ${VALUES.map((v, i) => `<div class="bs__bar" data-value="${v}" style="position:absolute;bottom:14%;left:${slot(i)};width:16%;height:${v * 14}%;border-radius:6px 6px 0 0;background:${color('line-strong')};display:flex;align-items:flex-start;justify-content:center;color:${color('bg')};font-size:1.6rem;padding-top:.4rem;box-sizing:border-box">${v}</div>`).join('')}
+      ${VALUES.map((v, i) => `<div class="bs__bar" data-value="${v}" style="position:absolute;bottom:14%;left:${slot(i)};width:16%;height:${v * 14}%;border-radius:var(--pm-radius-control) var(--pm-radius-control) 0 0;background:${color('muted')};display:flex;align-items:flex-start;justify-content:center;color:${color('bg')};font-size:clamp(var(--pm-text-sm),3.6vw,calc(var(--pm-text-lg) * 1.6));line-height:1;padding-top:min(var(--pm-space-2),1vw);box-sizing:border-box">${v}</div>`).join('')}
     </div>`
   const bar = (v: number) => root.querySelector<HTMLElement>(`[data-value="${v}"]`)!
   const s = (k: number) => at(k) / 1000
   const lit = color('accent')
-  const plain = color('line-strong')
+  const plain = color('muted')
   const tl = gsap.timeline()
   // Step 0: the bars rise.
   tl.from('.bs__bar', { scaleY: 0, transformOrigin: '50% 100%', duration: 0.5, stagger: 0.08, ease: 'power2.out' }, s(0))
@@ -33,6 +33,6 @@ export default gsapScene(({ root, gsap, at, color }) => {
   tl.to(bar(1), { left: slot(2), duration: 0.5 }, s(4))
   tl.to(bar(5), { left: slot(4), duration: 0.5 }, s(4) + 0.6)
   tl.to(bar(3), { left: slot(3), duration: 0.5 }, s(4) + 0.6)
-  tl.to(bar(5), { backgroundColor: '#2e8b57', duration: 0.3 }, s(4) + 1.1)
+  tl.to(bar(5), { backgroundColor: color('ok'), duration: 0.3 }, s(4) + 1.1)
   return tl
 })
