@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "id": "document-d9cf9c598f08f08a",
+  "metadata": {
+    "title": "Run-time files of its own",
+    "lang": "en",
+    "plugins": [
+      "./plugin"
+    ],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "run-time-files-of-its-own"
+  ],
+  "sections": {
+    "run-time-files-of-its-own": {
+      "id": "run-time-files-of-its-own",
+      "title": "Run-time files of its own",
+      "level": 1,
+      "children": [
+        "run-time-files-of-its-own--paragraph-1"
+      ],
+      "stepOrder": [
+        "run-time-files-of-its-own--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "run-time-files-of-its-own--paragraph-1": {
+      "id": "run-time-files-of-its-own--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "run-time-files-of-its-own--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This lecture’s plugin brings a file its browser part loads while it runs: the viewer’s server gives it below the lecture’s site path."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "run-time-files-of-its-own--step-0": {
+      "id": "run-time-files-of-its-own--step-0",
+      "sectionId": "run-time-files-of-its-own",
+      "visuals": [
+        {
+          "blockId": "run-time-files-of-its-own--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "run-time-files-of-its-own--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "run-time-files-of-its-own--paragraph-1--narration": {
+      "id": "run-time-files-of-its-own--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "This lecture’s plugin brings a file its browser part loads while it runs: the viewer’s server gives it below the lecture’s site path."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

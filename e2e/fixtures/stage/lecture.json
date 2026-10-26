@@ -1,0 +1,766 @@
+{
+  "schemaVersion": 1,
+  "id": "document-6ff3f4aa85a99eb2",
+  "metadata": {
+    "title": "讲台测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-stage"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {
+        "theme": "default"
+      }
+    }
+  },
+  "sectionOrder": [
+    "讲台测试文稿",
+    "stage-basics",
+    "stage-steps"
+  ],
+  "sections": {
+    "讲台测试文稿": {
+      "id": "讲台测试文稿",
+      "title": "讲台测试文稿",
+      "level": 1,
+      "children": [
+        "讲台测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "讲台测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "stage-basics": {
+      "id": "stage-basics",
+      "title": "讲台：基础内容",
+      "level": 2,
+      "children": [
+        "stage-basics--paragraph-1",
+        "stage-basics--list-1",
+        "stage-basics--table-1",
+        "stage-basics--footnoteDefinition-1",
+        "stage-basics--code-1"
+      ],
+      "stepOrder": [
+        "stage-basics--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "pm-stage-basics"
+          }
+        }
+      }
+    },
+    "stage-steps": {
+      "id": "stage-steps",
+      "title": "讲台：步骤与画面",
+      "level": 2,
+      "children": [
+        "stage-steps--list-1",
+        "stage-steps--paragraph-1",
+        "stage-steps--paragraph-2",
+        "stage-steps--paragraph-3",
+        "stage-steps--image-1"
+      ],
+      "stepOrder": [
+        "stage-steps--step-0",
+        "stage-steps--step-1",
+        "stage-steps--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "pm-stage-steps"
+          }
+        }
+      }
+    }
+  },
+  "blocks": {
+    "讲台测试文稿--paragraph-1": {
+      "id": "讲台测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "讲台测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/stage.spec.ts 的测试文稿。"
+            }
+          ]
+        }
+      ]
+    },
+    "stage-basics--paragraph-1": {
+      "id": "stage-basics--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "stage-basics--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本章的内容都由渲染端直接呈现：标题、列表、表格、脚注与代码高亮。讲台插件只补充表格与脚注的样式。"
+            }
+          ]
+        }
+      ]
+    },
+    "stage-basics--list-1": {
+      "id": "stage-basics--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "stage-basics--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "stage-basics--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "stage-basics--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "标题、列表与"
+                    },
+                    {
+                      "type": "text",
+                      "text": "强调",
+                      "marks": [
+                        {
+                          "type": "bold"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "stage-basics--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "stage-basics--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "表格与脚注"
+                    },
+                    {
+                      "type": "extension",
+                      "kind": "presmium.mdast",
+                      "schemaVersion": 1,
+                      "data": {
+                        "node": {
+                          "type": "footnoteReference",
+                          "identifier": "keys",
+                          "label": "keys",
+                          "enumerator": "1"
+                        }
+                      },
+                      "fallback": ""
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "stage-basics--list-1--text-0-item-2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "stage-basics--list-1--text-0-2-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "语法高亮的代码"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "stage-basics--table-1": {
+      "id": "stage-basics--table-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "stage-basics--table-1--text-0",
+          "type": "table",
+          "headerRows": 1,
+          "children": [
+            {
+              "id": "stage-basics--table-1--text-0-row-0",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "stage-basics--table-1--text-0-cell-0-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "快捷键"
+                    }
+                  ]
+                },
+                {
+                  "id": "stage-basics--table-1--text-0-cell-0-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "作用"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "stage-basics--table-1--text-0-row-1",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "stage-basics--table-1--text-0-cell-1-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "b",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "stage-basics--table-1--text-0-cell-1-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "听众视图黑屏"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "stage-basics--table-1--text-0-row-2",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "stage-basics--table-1--text-0-cell-2-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "f",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "stage-basics--table-1--text-0-cell-2-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "冻结听众视图"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "stage-basics--table-1--text-0-row-3",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "stage-basics--table-1--text-0-cell-3-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "绘图工具"
+                    }
+                  ]
+                },
+                {
+                  "id": "stage-basics--table-1--text-0-cell-3-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "圈画标注"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "stage-basics--footnoteDefinition-1": {
+      "id": "stage-basics--footnoteDefinition-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "stage-basics--footnoteDefinition-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "footnoteDefinition",
+              "identifier": "keys",
+              "label": "keys",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "快捷键在演讲者视图和听众视图中都可用，状态同步到所有窗口；再按一次恢复。"
+                    }
+                  ]
+                }
+              ],
+              "enumerator": "1"
+            }
+          },
+          "fallback": [
+            {
+              "id": "stage-basics--footnoteDefinition-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "快捷键在演讲者视图和听众视图中都可用，状态同步到所有窗口；再按一次恢复。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "stage-basics--code-1": {
+      "id": "stage-basics--code-1",
+      "type": "code",
+      "language": "ts",
+      "value": "function toggleScreen(current, wanted) {\n  return current === wanted ? 'live' : wanted\n}"
+    },
+    "stage-steps--list-1": {
+      "id": "stage-steps--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "stage-steps--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "stage-steps--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "stage-steps--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "步骤备注",
+                      "marks": [
+                        {
+                          "type": "bold"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：讲解按步骤分段，演讲者视图只突出当前步骤"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "stage-steps--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "stage-steps--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "冻结画面",
+                      "marks": [
+                        {
+                          "type": "bold"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "："
+                    },
+                    {
+                      "type": "text",
+                      "text": "b",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " 让听众视图黑屏，"
+                    },
+                    {
+                      "type": "text",
+                      "text": "f",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " 让它停在当前画面"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "stage-steps--list-1--text-0-item-2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "stage-steps--list-1--text-0-2-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "圈画标注",
+                      "marks": [
+                        {
+                          "type": "bold"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：标注保存在文稿目录的 "
+                    },
+                    {
+                      "type": "text",
+                      "text": ".presmium/drawings",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "，随文稿提交"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "reveal": {
+        "type": "items",
+        "order": [
+          "stage-steps--list-1--text-0-item-0",
+          "stage-steps--list-1--text-0-item-1",
+          "stage-steps--list-1--text-0-item-2"
+        ]
+      }
+    },
+    "stage-steps--paragraph-1": {
+      "id": "stage-steps--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "stage-steps--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "步骤备注：每一步对应一段讲解，演讲者视图突出当前步骤的那一段，其余段落变淡。"
+            }
+          ]
+        }
+      ]
+    },
+    "stage-steps--paragraph-2": {
+      "id": "stage-steps--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "stage-steps--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "冻结画面：演讲者按 b 或 f，听众视图随即黑屏或冻结，演讲者视图右上角提示当前状态；再按一次恢复。"
+            }
+          ]
+        }
+      ]
+    },
+    "stage-steps--paragraph-3": {
+      "id": "stage-steps--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "stage-steps--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "圈画标注：用导航栏的绘图工具标注，开发服务器把标注写入 .presmium/drawings，构建与导出都带上它们，也可以一键清除。"
+            }
+          ]
+        }
+      ]
+    },
+    "stage-steps--image-1": {
+      "id": "stage-steps--image-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "stage-steps--image-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "image",
+              "url": "img/screen-modes.png",
+              "alt": "听众视图的三种状态：正常、黑屏、冻结"
+            }
+          },
+          "fallback": []
+        }
+      ]
+    }
+  },
+  "steps": {
+    "讲台测试文稿--step-0": {
+      "id": "讲台测试文稿--step-0",
+      "sectionId": "讲台测试文稿",
+      "visuals": [
+        {
+          "blockId": "讲台测试文稿--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "stage-basics--step-0": {
+      "id": "stage-basics--step-0",
+      "sectionId": "stage-basics",
+      "visuals": [
+        {
+          "blockId": "stage-basics--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "stage-basics--list-1",
+          "visible": true
+        },
+        {
+          "blockId": "stage-basics--table-1",
+          "visible": true
+        },
+        {
+          "blockId": "stage-basics--footnoteDefinition-1",
+          "visible": true
+        },
+        {
+          "blockId": "stage-basics--code-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "stage-basics--paragraph-1--narration"
+      ]
+    },
+    "stage-steps--step-0": {
+      "id": "stage-steps--step-0",
+      "sectionId": "stage-steps",
+      "visuals": [
+        {
+          "blockId": "stage-steps--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 1
+          }
+        },
+        {
+          "blockId": "stage-steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "stage-steps--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "stage-steps--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "stage-steps--image-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "stage-steps--paragraph-1--narration"
+      ]
+    },
+    "stage-steps--step-1": {
+      "id": "stage-steps--step-1",
+      "sectionId": "stage-steps",
+      "visuals": [
+        {
+          "blockId": "stage-steps--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        },
+        {
+          "blockId": "stage-steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "stage-steps--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "stage-steps--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "stage-steps--image-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "stage-steps--paragraph-2--narration"
+      ]
+    },
+    "stage-steps--step-2": {
+      "id": "stage-steps--step-2",
+      "sectionId": "stage-steps",
+      "visuals": [
+        {
+          "blockId": "stage-steps--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 3
+          }
+        },
+        {
+          "blockId": "stage-steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "stage-steps--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "stage-steps--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "stage-steps--image-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "stage-steps--paragraph-3--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "stage-basics--paragraph-1--narration": {
+      "id": "stage-basics--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "本章的内容都由渲染端直接呈现：标题、列表、表格、脚注与代码高亮。讲台插件只补充表格与脚注的样式。"
+        }
+      ]
+    },
+    "stage-steps--paragraph-1--narration": {
+      "id": "stage-steps--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "步骤备注：每一步对应一段讲解，演讲者视图突出当前步骤的那一段，其余段落变淡。"
+        }
+      ]
+    },
+    "stage-steps--paragraph-2--narration": {
+      "id": "stage-steps--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "冻结画面：演讲者按 b 或 f，听众视图随即黑屏或冻结，演讲者视图右上角提示当前状态；再按一次恢复。"
+        }
+      ]
+    },
+    "stage-steps--paragraph-3--narration": {
+      "id": "stage-steps--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "圈画标注：用导航栏的绘图工具标注，开发服务器把标注写入 .presmium/drawings，构建与导出都带上它们，也可以一键清除。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

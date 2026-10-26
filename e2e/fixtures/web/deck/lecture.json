@@ -1,0 +1,2895 @@
+{
+  "schemaVersion": 1,
+  "id": "document-bb5d3a8fdea01332",
+  "metadata": {
+    "title": "网页阅读测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec",
+      "@lincyaw/addon-publish",
+      "./plugin"
+    ],
+    "renderers": {
+      "web": {
+        "base": "/web/"
+      },
+      "slides": {
+        "base": "/slides/"
+      }
+    }
+  },
+  "sectionOrder": [
+    "cover",
+    "reading",
+    "scrolly",
+    "advanced",
+    "stepper",
+    "steps",
+    "panel",
+    "live-code",
+    "wide-content",
+    "highlight",
+    "wide"
+  ],
+  "sections": {
+    "cover": {
+      "id": "cover",
+      "title": "网页阅读测试文稿",
+      "level": 1,
+      "children": [
+        "cover--paragraph-1",
+        "cover--paragraph-2"
+      ],
+      "stepOrder": [
+        "cover--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "reading": {
+      "id": "reading",
+      "title": "阅读页面",
+      "level": 2,
+      "children": [
+        "reading--paragraph-1",
+        "reading--list-1",
+        "reading--code-1",
+        "reading--paragraph-2",
+        "reading--paragraph-3",
+        "reading--paragraph-4"
+      ],
+      "stepOrder": [
+        "reading--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "scrolly": {
+      "id": "scrolly",
+      "title": "滚动叙事",
+      "level": 2,
+      "children": [
+        "scrolly--list-1",
+        "scrolly--paragraph-1",
+        "scrolly--paragraph-2",
+        "scrolly--paragraph-3",
+        "scrolly--fixture-stepper-1",
+        "scrolly--paragraph-4",
+        "scrolly--paragraph-5",
+        "scrolly--paragraph-6"
+      ],
+      "stepOrder": [
+        "scrolly--step-0",
+        "scrolly--step-1",
+        "scrolly--step-2",
+        "scrolly--step-3",
+        "scrolly--step-4"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          }
+        }
+      }
+    },
+    "advanced": {
+      "id": "advanced",
+      "title": "第二章 进阶",
+      "level": 1,
+      "children": [
+        "advanced--list-1",
+        "advanced--paragraph-1"
+      ],
+      "stepOrder": [
+        "advanced--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "stepper": {
+      "id": "stepper",
+      "title": "步进组件",
+      "level": 2,
+      "children": [
+        "stepper--paragraph-1",
+        "stepper--fixture-stepper-1",
+        "stepper--paragraph-2",
+        "stepper--paragraph-3",
+        "stepper--paragraph-4",
+        "stepper--paragraph-5"
+      ],
+      "stepOrder": [
+        "stepper--step-0",
+        "stepper--step-1",
+        "stepper--step-2",
+        "stepper--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "steps": {
+      "id": "steps",
+      "title": "步骤作用域",
+      "level": 2,
+      "children": [
+        "steps--paragraph-1",
+        "steps--paragraph-2",
+        "steps--paragraph-3",
+        "steps--fixture-stepper-1",
+        "steps--paragraph-4",
+        "steps--paragraph-5",
+        "steps--paragraph-6",
+        "steps--paragraph-7"
+      ],
+      "stepOrder": [
+        "steps--step-0",
+        "steps--step-1",
+        "steps--step-2",
+        "steps--step-3",
+        "steps--step-4",
+        "steps--step-5"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "panel": {
+      "id": "panel",
+      "title": "执行面板与图表",
+      "level": 2,
+      "children": [
+        "panel--paragraph-1",
+        "panel--pm-run-panel-1",
+        "panel--code-1",
+        "panel--paragraph-2",
+        "panel--paragraph-3",
+        "panel--image-1",
+        "panel--paragraph-4"
+      ],
+      "stepOrder": [
+        "panel--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "live-code": {
+      "id": "live-code",
+      "title": "现场运行",
+      "level": 2,
+      "children": [
+        "live-code--code-1",
+        "live-code--paragraph-1"
+      ],
+      "stepOrder": [
+        "live-code--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "wide-content": {
+      "id": "wide-content",
+      "title": "第三章 宽内容",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "wide-content--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "highlight": {
+      "id": "highlight",
+      "title": "着色器、Ruby 与表格中的代码",
+      "level": 2,
+      "children": [
+        "highlight--code-1",
+        "highlight--code-2",
+        "highlight--table-1",
+        "highlight--paragraph-1"
+      ],
+      "stepOrder": [
+        "highlight--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "wide": {
+      "id": "wide",
+      "title": "宽代码与宽表格",
+      "level": 2,
+      "children": [
+        "wide--code-1",
+        "wide--paragraph-1",
+        "wide--code-2",
+        "wide--paragraph-2",
+        "wide--table-1",
+        "wide--paragraph-3"
+      ],
+      "stepOrder": [
+        "wide--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          }
+        }
+      }
+    }
+  },
+  "blocks": {
+    "cover--paragraph-1": {
+      "id": "cover--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "cover--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "同一份源码，生成网页与幻灯片。"
+            }
+          ]
+        }
+      ]
+    },
+    "cover--paragraph-2": {
+      "id": "cover--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "cover--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "封面的讲解：这份文稿供 e2e/web.spec.ts 与 e2e/viewer.spec.ts 测试网页形态，第一章是一个不带章标题的源文件，第二章与第三章由同一个源文件中的章标题分开。"
+            }
+          ]
+        }
+      ]
+    },
+    "reading--paragraph-1": {
+      "id": "reading--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "reading--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "网页是主媒介：讲解段落按原顺序显示为正文，读者不看幻灯片也能读懂这一节。"
+            }
+          ]
+        }
+      ]
+    },
+    "reading--list-1": {
+      "id": "reading--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "reading--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "reading--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "reading--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "上屏内容",
+                      "marks": [
+                        {
+                          "type": "bold"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "写在板书上"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "reading--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "reading--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "讲解是正文"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "reading--list-1--text-0-item-2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "reading--list-1--text-0-2-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "幻灯片与网页一键互跳"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "reading--code-1": {
+      "id": "reading--code-1",
+      "type": "code",
+      "language": "ts",
+      "value": "// 网页渲染端：IR 运行时按视图渲染同一份 IR\nconst viewer = createViewer(doc)\nviewer.setView('present')"
+    },
+    "reading--paragraph-2": {
+      "id": "reading--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "reading--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲稿即正文：搜索框支持中文分词，断网后也能检索。"
+            }
+          ]
+        }
+      ]
+    },
+    "reading--paragraph-3": {
+      "id": "reading--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "reading--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "网页中才有的补充说明：切换视图不需要重新构建。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "reading--paragraph-4": {
+      "id": "reading--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "reading--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "幻灯片中才有的提示：在网页中阅读本节。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides"
+      ]
+    },
+    "scrolly--list-1": {
+      "id": "scrolly--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "scrolly--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "scrolly--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "编译：源码编译为 IR"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "scrolly--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "scrolly--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "渲染：IR 运行时按章节渲染"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "scrolly--list-1--text-0-item-2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "scrolly--list-1--text-0-2-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "发布：VitePress 外壳生成静态站点"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "reveal": {
+        "type": "items",
+        "order": [
+          "scrolly--list-1--text-0-item-0",
+          "scrolly--list-1--text-0-item-1",
+          "scrolly--list-1--text-0-item-2"
+        ]
+      }
+    },
+    "scrolly--paragraph-1": {
+      "id": "scrolly--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "上屏内容固定在一侧，讲解在另一侧滚动，步骤随滚动推进。第一步，编译源码。"
+            }
+          ]
+        }
+      ]
+    },
+    "scrolly--paragraph-2": {
+      "id": "scrolly--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步，渲染章节。"
+            }
+          ]
+        }
+      ]
+    },
+    "scrolly--paragraph-3": {
+      "id": "scrolly--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第三步，发布站点。"
+            }
+          ]
+        }
+      ]
+    },
+    "scrolly--fixture-stepper-1": {
+      "id": "scrolly--fixture-stepper-1",
+      "type": "component",
+      "definitionId": "scrolly--fixture-stepper-1--definition",
+      "parameters": {
+        "steps": [
+          "离线缓存",
+          "形态互跳"
+        ]
+      }
+    },
+    "scrolly--paragraph-4": {
+      "id": "scrolly--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "步进组件接在列表之后出现，再占用两步。"
+            }
+          ]
+        }
+      ]
+    },
+    "scrolly--paragraph-5": {
+      "id": "scrolly--paragraph-5",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--paragraph-5--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先是离线缓存：网页加载一次之后，断网也能阅读与搜索。"
+            }
+          ]
+        }
+      ]
+    },
+    "scrolly--paragraph-6": {
+      "id": "scrolly--paragraph-6",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--paragraph-6--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "然后是形态互跳：每个章节都能在幻灯片中打开，停在当前步骤。"
+            }
+          ]
+        }
+      ]
+    },
+    "advanced--list-1": {
+      "id": "advanced--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "advanced--list-1--text-0",
+          "type": "list",
+          "ordered": true,
+          "start": 1,
+          "children": [
+            {
+              "id": "advanced--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "advanced--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "步进组件"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "advanced--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "advanced--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "步骤作用域"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "advanced--list-1--text-0-item-2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "advanced--list-1--text-0-2-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "执行面板与图表"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "advanced--list-1--text-0-item-3",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "advanced--list-1--text-0-3-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "现场运行"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "advanced--paragraph-1": {
+      "id": "advanced--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "advanced--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "章首的讲解：第二章从一个章标题开始，这一段写在章标题之下、第一节之前。"
+            }
+          ]
+        }
+      ]
+    },
+    "stepper--paragraph-1": {
+      "id": "stepper--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "stepper--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "步骤驱动",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：状态由步骤推导"
+            }
+          ]
+        }
+      ]
+    },
+    "stepper--fixture-stepper-1": {
+      "id": "stepper--fixture-stepper-1",
+      "type": "component",
+      "definitionId": "stepper--fixture-stepper-1--definition",
+      "parameters": {
+        "steps": [
+          "解析文稿",
+          "启动插件",
+          "渲染页面"
+        ]
+      }
+    },
+    "stepper--paragraph-2": {
+      "id": "stepper--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "stepper--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "步进组件有三个标签，占用三步。"
+            }
+          ]
+        }
+      ]
+    },
+    "stepper--paragraph-3": {
+      "id": "stepper--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "stepper--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一步突出“解析文稿”。"
+            }
+          ]
+        }
+      ]
+    },
+    "stepper--paragraph-4": {
+      "id": "stepper--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "stepper--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步突出“启动插件”。"
+            }
+          ]
+        }
+      ]
+    },
+    "stepper--paragraph-5": {
+      "id": "stepper--paragraph-5",
+      "type": "text",
+      "content": [
+        {
+          "id": "stepper--paragraph-5--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第三步突出“渲染页面”。"
+            }
+          ]
+        }
+      ]
+    },
+    "steps--paragraph-1": {
+      "id": "steps--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "组件的内部步骤从它所在块出现的那一步算起。"
+            }
+          ]
+        }
+      ]
+    },
+    "steps--paragraph-2": {
+      "id": "steps--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一步",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：先出现一段说明"
+            }
+          ]
+        }
+      ]
+    },
+    "steps--paragraph-3": {
+      "id": "steps--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：步进组件随后出现"
+            }
+          ]
+        }
+      ]
+    },
+    "steps--fixture-stepper-1": {
+      "id": "steps--fixture-stepper-1",
+      "type": "component",
+      "definitionId": "steps--fixture-stepper-1--definition",
+      "parameters": {
+        "steps": [
+          "解析文稿",
+          "启动插件",
+          "渲染页面"
+        ]
+      }
+    },
+    "steps--paragraph-4": {
+      "id": "steps--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "步进组件在第 2 步出现。"
+            }
+          ]
+        }
+      ]
+    },
+    "steps--paragraph-5": {
+      "id": "steps--paragraph-5",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-5--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第 3 步是它的第 1 个内部步骤。"
+            }
+          ]
+        }
+      ]
+    },
+    "steps--paragraph-6": {
+      "id": "steps--paragraph-6",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-6--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第 4 步突出“启动插件”。"
+            }
+          ]
+        }
+      ]
+    },
+    "steps--paragraph-7": {
+      "id": "steps--paragraph-7",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-7--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第 5 步突出“渲染页面”。"
+            }
+          ]
+        }
+      ]
+    },
+    "panel--paragraph-1": {
+      "id": "panel--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "panel--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "执行面板与图表都在浏览器中渲染：它们在页面加载之后才有高度。"
+            }
+          ]
+        }
+      ]
+    },
+    "panel--pm-run-panel-1": {
+      "id": "panel--pm-run-panel-1",
+      "type": "component",
+      "definitionId": "panel--pm-run-panel-1--definition",
+      "parameters": {},
+      "children": [
+        "panel--pm-run-panel-1--source"
+      ]
+    },
+    "panel--pm-run-panel-1--source": {
+      "id": "panel--pm-run-panel-1--source",
+      "type": "code",
+      "language": "javascript",
+      "value": "const words = ['low', 'lower', 'newest']\nconsole.log(words.join(' '))",
+      "execution": {
+        "when": "both"
+      }
+    },
+    "panel--code-1": {
+      "id": "panel--code-1",
+      "type": "code",
+      "language": "mermaid",
+      "value": "flowchart LR\n  A[文本的字节] --> B[统计相邻的对]\n  B --> C[选出次数最多的一对]\n  C --> D[合并成新词元并记下规则]\n  D --> E{词表够大了吗}\n  E -- 还不够 --> B\n  E -- 够了 --> F[合并规则表]"
+    },
+    "panel--paragraph-2": {
+      "id": "panel--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "panel--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "反复合并最常见的一对，直到词表够大。"
+            }
+          ]
+        }
+      ]
+    },
+    "panel--paragraph-3": {
+      "id": "panel--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "panel--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "排序的代价是 "
+            },
+            {
+              "type": "math",
+              "value": "O(n \\log n)"
+            },
+            {
+              "type": "text",
+              "text": "，图表的文件名里有一个井号："
+            }
+          ]
+        }
+      ]
+    },
+    "panel--image-1": {
+      "id": "panel--image-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "panel--image-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "image",
+              "url": "chapters/img/chart%231.svg",
+              "alt": "三根柱子的图表"
+            }
+          },
+          "fallback": []
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "panel--paragraph-4": {
+      "id": "panel--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "panel--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "link",
+              "href": "#%E0%A4",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "一个写坏的锚点"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 不影响页面。"
+            }
+          ]
+        }
+      ]
+    },
+    "live-code--code-1": {
+      "id": "live-code--code-1",
+      "type": "code",
+      "language": "javascript",
+      "value": "const squares = [1, 2, 3, 4, 5].map(n => n * n)\nconsole.log('平方：', squares.join(', '))\nconsole.log('合计：', squares.reduce((a, b) => a + b, 0))",
+      "execution": {
+        "when": "both"
+      }
+    },
+    "live-code--paragraph-1": {
+      "id": "live-code--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "live-code--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这段代码在编译时运行，输出随代码显示；读者也可以在浏览器中重新运行它。"
+            }
+          ]
+        }
+      ]
+    },
+    "highlight--code-1": {
+      "id": "highlight--code-1",
+      "type": "code",
+      "language": "wgsl",
+      "value": "@compute @workgroup_size(64)\nfn main(@builtin(global_invocation_id) id: vec3<u32>) {\n  counts[id.x] = counts[id.x] + 1u;\n}"
+    },
+    "highlight--code-2": {
+      "id": "highlight--code-2",
+      "type": "code",
+      "language": "ruby",
+      "value": "pairs = tokens.each_cons(2).tally\nputs pairs.max_by { |_, n| n }.first.join"
+    },
+    "highlight--table-1": {
+      "id": "highlight--table-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "highlight--table-1--text-0",
+          "type": "table",
+          "headerRows": 1,
+          "children": [
+            {
+              "id": "highlight--table-1--text-0-row-0",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "highlight--table-1--text-0-cell-0-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "顺序"
+                    }
+                  ]
+                },
+                {
+                  "id": "highlight--table-1--text-0-cell-0-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "合并的一对"
+                    }
+                  ]
+                },
+                {
+                  "id": "highlight--table-1--text-0-cell-0-2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "新词元编号"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "highlight--table-1--text-0-row-1",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "highlight--table-1--text-0-cell-1-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "1"
+                    }
+                  ]
+                },
+                {
+                  "id": "highlight--table-1--text-0-cell-1-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "'e' 's'",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "highlight--table-1--text-0-cell-1-2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "256",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "highlight--table-1--text-0-row-2",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "highlight--table-1--text-0-cell-2-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "2"
+                    }
+                  ]
+                },
+                {
+                  "id": "highlight--table-1--text-0-cell-2-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "'es' 't'",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "highlight--table-1--text-0-cell-2-2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "257",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "highlight--table-1--text-0-row-3",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "highlight--table-1--text-0-cell-3-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "3"
+                    }
+                  ]
+                },
+                {
+                  "id": "highlight--table-1--text-0-cell-3-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "'l' 'o'",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "'lo' 'w'",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "highlight--table-1--text-0-cell-3-2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "258",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "259",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "highlight--table-1--text-0-row-4",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "highlight--table-1--text-0-cell-4-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "4"
+                    }
+                  ]
+                },
+                {
+                  "id": "highlight--table-1--text-0-cell-4-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "est ",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "newest ",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "highlight--table-1--text-0-cell-4-2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "260",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "highlight--paragraph-1": {
+      "id": "highlight--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "highlight--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "网页中的着色器与 Ruby 代码同样高亮；手机上表格中的行内代码不在词元内部断开。"
+            }
+          ]
+        }
+      ]
+    },
+    "wide--code-1": {
+      "id": "wide--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "def merge(tokens, pair, new_id):\n    out, i = [], 0\n    while i < len(tokens):\n        if tuple(tokens[i:i + 2]) == pair:\n            out.append(new_id)\n            i += 2\n        else:\n            out.append(tokens[i])\n            i += 1\n    return out"
+    },
+    "wide--paragraph-1": {
+      "id": "wide--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "wide--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "上屏一侧的代码按最宽的一行缩小字号，整段放得下。"
+            }
+          ]
+        }
+      ]
+    },
+    "wide--code-2": {
+      "id": "wide--code-2",
+      "type": "code",
+      "language": "text",
+      "value": "merges = {('l', 'o'): 256, ('lo', 'w'): 257, ('e', 'r'): 258, ('n', 'e'): 259, ('ne', 'w'): 260, ('w', 'i'): 261, ('d', 'e'): 262}"
+    },
+    "wide--paragraph-2": {
+      "id": "wide--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "wide--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "缩到下限仍放不下的一行可以横向滚动，边缘的阴影提示还有内容。"
+            }
+          ]
+        }
+      ]
+    },
+    "wide--table-1": {
+      "id": "wide--table-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "wide--table-1--text-0",
+          "type": "table",
+          "headerRows": 1,
+          "children": [
+            {
+              "id": "wide--table-1--text-0-row-0",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "wide--table-1--text-0-cell-0-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "词"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-0-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "出现次数"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-0-2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "初始切分"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-0-3",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "第一次合并"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-0-4",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "第二次合并"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-0-5",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "第三次合并"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-0-6",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "最终切分"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "wide--table-1--text-0-row-1",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "wide--table-1--text-0-cell-1-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "lower"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-1-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "5"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-1-2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "l o w e r"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-1-3",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "lo w e r"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-1-4",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "low e r"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-1-5",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "low er"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-1-6",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "low er"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "wide--table-1--text-0-row-2",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "wide--table-1--text-0-cell-2-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "newest"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-2-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "6"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-2-2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "n e w e s t"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-2-3",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "n e w e s t"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-2-4",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "ne w e s t"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-2-5",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "new e s t"
+                    }
+                  ]
+                },
+                {
+                  "id": "wide--table-1--text-0-cell-2-6",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "new est"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "wide--paragraph-3": {
+      "id": "wide--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "wide--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "表格同样不被截断。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "cover--step-0": {
+      "id": "cover--step-0",
+      "sectionId": "cover",
+      "visuals": [
+        {
+          "blockId": "cover--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "cover--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "cover--paragraph-2--narration"
+      ]
+    },
+    "reading--step-0": {
+      "id": "reading--step-0",
+      "sectionId": "reading",
+      "visuals": [
+        {
+          "blockId": "reading--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "reading--list-1",
+          "visible": true
+        },
+        {
+          "blockId": "reading--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "reading--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "reading--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "reading--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "reading--paragraph-1--narration",
+        "reading--paragraph-2--narration"
+      ]
+    },
+    "scrolly--step-0": {
+      "id": "scrolly--step-0",
+      "sectionId": "scrolly",
+      "visuals": [
+        {
+          "blockId": "scrolly--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 1
+          }
+        },
+        {
+          "blockId": "scrolly--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--fixture-stepper-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "scrolly--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "scrolly--paragraph-1--narration"
+      ]
+    },
+    "scrolly--step-1": {
+      "id": "scrolly--step-1",
+      "sectionId": "scrolly",
+      "visuals": [
+        {
+          "blockId": "scrolly--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        },
+        {
+          "blockId": "scrolly--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--fixture-stepper-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "scrolly--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "scrolly--paragraph-2--narration"
+      ]
+    },
+    "scrolly--step-2": {
+      "id": "scrolly--step-2",
+      "sectionId": "scrolly",
+      "visuals": [
+        {
+          "blockId": "scrolly--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 3
+          }
+        },
+        {
+          "blockId": "scrolly--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--fixture-stepper-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "scrolly--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "scrolly--paragraph-3--narration",
+        "scrolly--paragraph-4--narration"
+      ]
+    },
+    "scrolly--step-3": {
+      "id": "scrolly--step-3",
+      "sectionId": "scrolly",
+      "visuals": [
+        {
+          "blockId": "scrolly--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 3
+          }
+        },
+        {
+          "blockId": "scrolly--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--fixture-stepper-1",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "scrolly--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "scrolly--paragraph-5--narration"
+      ]
+    },
+    "scrolly--step-4": {
+      "id": "scrolly--step-4",
+      "sectionId": "scrolly",
+      "visuals": [
+        {
+          "blockId": "scrolly--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 3
+          }
+        },
+        {
+          "blockId": "scrolly--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--fixture-stepper-1",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "scrolly--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "scrolly--paragraph-6--narration"
+      ]
+    },
+    "advanced--step-0": {
+      "id": "advanced--step-0",
+      "sectionId": "advanced",
+      "visuals": [
+        {
+          "blockId": "advanced--list-1",
+          "visible": true
+        },
+        {
+          "blockId": "advanced--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "advanced--paragraph-1--narration"
+      ]
+    },
+    "stepper--step-0": {
+      "id": "stepper--step-0",
+      "sectionId": "stepper",
+      "visuals": [
+        {
+          "blockId": "stepper--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "stepper--fixture-stepper-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "stepper--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "stepper--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "stepper--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "stepper--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "stepper--paragraph-2--narration"
+      ]
+    },
+    "stepper--step-1": {
+      "id": "stepper--step-1",
+      "sectionId": "stepper",
+      "visuals": [
+        {
+          "blockId": "stepper--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "stepper--fixture-stepper-1",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "stepper--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "stepper--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "stepper--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "stepper--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "stepper--paragraph-3--narration"
+      ]
+    },
+    "stepper--step-2": {
+      "id": "stepper--step-2",
+      "sectionId": "stepper",
+      "visuals": [
+        {
+          "blockId": "stepper--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "stepper--fixture-stepper-1",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "stepper--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "stepper--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "stepper--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "stepper--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "stepper--paragraph-4--narration"
+      ]
+    },
+    "stepper--step-3": {
+      "id": "stepper--step-3",
+      "sectionId": "stepper",
+      "visuals": [
+        {
+          "blockId": "stepper--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "stepper--fixture-stepper-1",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "stepper--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "stepper--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "stepper--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "stepper--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "stepper--paragraph-5--narration"
+      ]
+    },
+    "steps--step-0": {
+      "id": "steps--step-0",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "steps--fixture-stepper-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "steps--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-7",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "steps--paragraph-1--narration"
+      ]
+    },
+    "steps--step-1": {
+      "id": "steps--step-1",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "steps--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "steps--fixture-stepper-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "steps--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-7",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "steps--step-2": {
+      "id": "steps--step-2",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "steps--paragraph-3",
+          "visible": true
+        },
+        {
+          "blockId": "steps--fixture-stepper-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "steps--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-7",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "steps--paragraph-4--narration"
+      ]
+    },
+    "steps--step-3": {
+      "id": "steps--step-3",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "steps--paragraph-3",
+          "visible": true
+        },
+        {
+          "blockId": "steps--fixture-stepper-1",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "steps--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-7",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "steps--paragraph-5--narration"
+      ]
+    },
+    "steps--step-4": {
+      "id": "steps--step-4",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "steps--paragraph-3",
+          "visible": true
+        },
+        {
+          "blockId": "steps--fixture-stepper-1",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "steps--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-7",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "steps--paragraph-6--narration"
+      ]
+    },
+    "steps--step-5": {
+      "id": "steps--step-5",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "steps--paragraph-3",
+          "visible": true
+        },
+        {
+          "blockId": "steps--fixture-stepper-1",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "steps--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-6",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-7",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "steps--paragraph-7--narration"
+      ]
+    },
+    "panel--step-0": {
+      "id": "panel--step-0",
+      "sectionId": "panel",
+      "visuals": [
+        {
+          "blockId": "panel--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "panel--pm-run-panel-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "panel--pm-run-panel-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "panel--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "panel--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "panel--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "panel--image-1",
+          "visible": true
+        },
+        {
+          "blockId": "panel--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "panel--paragraph-1--narration",
+        "panel--paragraph-2--narration",
+        "panel--paragraph-3--narration",
+        "panel--paragraph-4--narration"
+      ]
+    },
+    "live-code--step-0": {
+      "id": "live-code--step-0",
+      "sectionId": "live-code",
+      "visuals": [
+        {
+          "blockId": "live-code--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "live-code--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "live-code--paragraph-1--narration"
+      ]
+    },
+    "wide-content--step-0": {
+      "id": "wide-content--step-0",
+      "sectionId": "wide-content",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "highlight--step-0": {
+      "id": "highlight--step-0",
+      "sectionId": "highlight",
+      "visuals": [
+        {
+          "blockId": "highlight--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "highlight--code-2",
+          "visible": true
+        },
+        {
+          "blockId": "highlight--table-1",
+          "visible": true
+        },
+        {
+          "blockId": "highlight--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "highlight--paragraph-1--narration"
+      ]
+    },
+    "wide--step-0": {
+      "id": "wide--step-0",
+      "sectionId": "wide",
+      "visuals": [
+        {
+          "blockId": "wide--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "wide--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "wide--code-2",
+          "visible": true
+        },
+        {
+          "blockId": "wide--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "wide--table-1",
+          "visible": true
+        },
+        {
+          "blockId": "wide--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "wide--paragraph-1--narration",
+        "wide--paragraph-2--narration",
+        "wide--paragraph-3--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "cover--paragraph-2--narration": {
+      "id": "cover--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "封面的讲解：这份文稿供 e2e/web.spec.ts 与 e2e/viewer.spec.ts 测试网页形态，第一章是一个不带章标题的源文件，第二章与第三章由同一个源文件中的章标题分开。"
+        }
+      ]
+    },
+    "reading--paragraph-1--narration": {
+      "id": "reading--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "网页是主媒介：讲解段落按原顺序显示为正文，读者不看幻灯片也能读懂这一节。"
+        }
+      ]
+    },
+    "reading--paragraph-2--narration": {
+      "id": "reading--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "讲稿即正文：搜索框支持中文分词，断网后也能检索。"
+        }
+      ]
+    },
+    "scrolly--paragraph-1--narration": {
+      "id": "scrolly--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "上屏内容固定在一侧，讲解在另一侧滚动，步骤随滚动推进。第一步，编译源码。"
+        }
+      ]
+    },
+    "scrolly--paragraph-2--narration": {
+      "id": "scrolly--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二步，渲染章节。"
+        }
+      ]
+    },
+    "scrolly--paragraph-3--narration": {
+      "id": "scrolly--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第三步，发布站点。"
+        }
+      ]
+    },
+    "scrolly--paragraph-4--narration": {
+      "id": "scrolly--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "步进组件接在列表之后出现，再占用两步。"
+        }
+      ]
+    },
+    "scrolly--paragraph-5--narration": {
+      "id": "scrolly--paragraph-5--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先是离线缓存：网页加载一次之后，断网也能阅读与搜索。"
+        }
+      ]
+    },
+    "scrolly--paragraph-6--narration": {
+      "id": "scrolly--paragraph-6--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "然后是形态互跳：每个章节都能在幻灯片中打开，停在当前步骤。"
+        }
+      ]
+    },
+    "advanced--paragraph-1--narration": {
+      "id": "advanced--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "章首的讲解：第二章从一个章标题开始，这一段写在章标题之下、第一节之前。"
+        }
+      ]
+    },
+    "stepper--paragraph-2--narration": {
+      "id": "stepper--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "步进组件有三个标签，占用三步。"
+        }
+      ]
+    },
+    "stepper--paragraph-3--narration": {
+      "id": "stepper--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第一步突出“解析文稿”。"
+        }
+      ]
+    },
+    "stepper--paragraph-4--narration": {
+      "id": "stepper--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二步突出“启动插件”。"
+        }
+      ]
+    },
+    "stepper--paragraph-5--narration": {
+      "id": "stepper--paragraph-5--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第三步突出“渲染页面”。"
+        }
+      ]
+    },
+    "steps--paragraph-1--narration": {
+      "id": "steps--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "组件的内部步骤从它所在块出现的那一步算起。"
+        }
+      ]
+    },
+    "steps--paragraph-4--narration": {
+      "id": "steps--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "步进组件在第 2 步出现。"
+        }
+      ]
+    },
+    "steps--paragraph-5--narration": {
+      "id": "steps--paragraph-5--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第 3 步是它的第 1 个内部步骤。"
+        }
+      ]
+    },
+    "steps--paragraph-6--narration": {
+      "id": "steps--paragraph-6--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第 4 步突出“启动插件”。"
+        }
+      ]
+    },
+    "steps--paragraph-7--narration": {
+      "id": "steps--paragraph-7--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第 5 步突出“渲染页面”。"
+        }
+      ]
+    },
+    "panel--paragraph-1--narration": {
+      "id": "panel--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "执行面板与图表都在浏览器中渲染：它们在页面加载之后才有高度。"
+        }
+      ]
+    },
+    "panel--paragraph-2--narration": {
+      "id": "panel--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "反复合并最常见的一对，直到词表够大。"
+        }
+      ]
+    },
+    "panel--paragraph-3--narration": {
+      "id": "panel--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "排序的代价是 O(n \\log n)，图表的文件名里有一个井号："
+        }
+      ]
+    },
+    "panel--paragraph-4--narration": {
+      "id": "panel--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "一个写坏的锚点 不影响页面。"
+        }
+      ]
+    },
+    "live-code--paragraph-1--narration": {
+      "id": "live-code--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这段代码在编译时运行，输出随代码显示；读者也可以在浏览器中重新运行它。"
+        }
+      ]
+    },
+    "highlight--paragraph-1--narration": {
+      "id": "highlight--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "网页中的着色器与 Ruby 代码同样高亮；手机上表格中的行内代码不在词元内部断开。"
+        }
+      ]
+    },
+    "wide--paragraph-1--narration": {
+      "id": "wide--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "上屏一侧的代码按最宽的一行缩小字号，整段放得下。"
+        }
+      ]
+    },
+    "wide--paragraph-2--narration": {
+      "id": "wide--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "缩到下限仍放不下的一行可以横向滚动，边缘的阴影提示还有内容。"
+        }
+      ]
+    },
+    "wide--paragraph-3--narration": {
+      "id": "wide--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "表格同样不被截断。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "scrolly--fixture-stepper-1--definition": {
+      "id": "scrolly--fixture-stepper-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.web",
+        "name": "FixtureStepper"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "fixture.web",
+        "name": "FixtureStepper"
+      }
+    },
+    "stepper--fixture-stepper-1--definition": {
+      "id": "stepper--fixture-stepper-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.web",
+        "name": "FixtureStepper"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "fixture.web",
+        "name": "FixtureStepper"
+      }
+    },
+    "steps--fixture-stepper-1--definition": {
+      "id": "steps--fixture-stepper-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.web",
+        "name": "FixtureStepper"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "fixture.web",
+        "name": "FixtureStepper"
+      }
+    },
+    "panel--pm-run-panel-1--definition": {
+      "id": "panel--pm-run-panel-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

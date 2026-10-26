@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "id": "document-35fecaa65b5e3d14",
+  "metadata": {
+    "title": "Native Markdown steps",
+    "lang": "en",
+    "plugins": [],
+    "renderers": {
+      "web": {},
+      "slides": {}
+    }
+  },
+  "sectionOrder": [
+    "native-markdown-steps",
+    "values"
+  ],
+  "sections": {
+    "native-markdown-steps": {
+      "id": "native-markdown-steps",
+      "title": "Native Markdown steps",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "native-markdown-steps--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "values": {
+      "id": "values",
+      "title": "Computed results",
+      "level": 2,
+      "children": [
+        "values--result-one",
+        "values--result-two",
+        "values--result-three"
+      ],
+      "stepOrder": [
+        "values--step-0",
+        "values--step-1",
+        "values--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "values--result-one": {
+      "id": "values--result-one",
+      "type": "text",
+      "content": [
+        {
+          "id": "values--result-one--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "x = 1",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "values--result-two": {
+      "id": "values--result-two",
+      "type": "text",
+      "content": [
+        {
+          "id": "values--result-two--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "x = 2",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "values--result-three": {
+      "id": "values--result-three",
+      "type": "text",
+      "content": [
+        {
+          "id": "values--result-three--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "x = 3",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "native-markdown-steps--step-0": {
+      "id": "native-markdown-steps--step-0",
+      "sectionId": "native-markdown-steps",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "values--step-0": {
+      "id": "values--step-0",
+      "sectionId": "values",
+      "visuals": [
+        {
+          "blockId": "values--result-one",
+          "visible": true
+        },
+        {
+          "blockId": "values--result-two",
+          "visible": false
+        },
+        {
+          "blockId": "values--result-three",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "values--step-1": {
+      "id": "values--step-1",
+      "sectionId": "values",
+      "visuals": [
+        {
+          "blockId": "values--result-one",
+          "visible": false
+        },
+        {
+          "blockId": "values--result-two",
+          "visible": true
+        },
+        {
+          "blockId": "values--result-three",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "values--step-2": {
+      "id": "values--step-2",
+      "sectionId": "values",
+      "visuals": [
+        {
+          "blockId": "values--result-one",
+          "visible": false
+        },
+        {
+          "blockId": "values--result-two",
+          "visible": false
+        },
+        {
+          "blockId": "values--result-three",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

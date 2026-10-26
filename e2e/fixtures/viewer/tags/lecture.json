@@ -1,0 +1,374 @@
+{
+  "schemaVersion": 1,
+  "id": "document-48c2f72d96e26939",
+  "metadata": {
+    "title": "轨迹里的标签",
+    "lang": "zh-CN"
+  },
+  "sectionOrder": [
+    "trace"
+  ],
+  "sections": {
+    "trace": {
+      "id": "trace",
+      "title": "智能体的轨迹",
+      "level": 2,
+      "children": [
+        "trace--table-1",
+        "trace--paragraph-1"
+      ],
+      "stepOrder": [
+        "trace--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "trace--table-1": {
+      "id": "trace--table-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "trace--table-1--text-0",
+          "type": "table",
+          "headerRows": 1,
+          "children": [
+            {
+              "id": "trace--table-1--text-0-row-0",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "trace--table-1--text-0-cell-0-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "回合"
+                    }
+                  ]
+                },
+                {
+                  "id": "trace--table-1--text-0-cell-0-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "消息"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "trace--table-1--text-0-row-1",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "trace--table-1--text-0-cell-1-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "1"
+                    }
+                  ]
+                },
+                {
+                  "id": "trace--table-1--text-0-cell-1-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "<reminder>"
+                    },
+                    {
+                      "type": "text",
+                      "text": " 保持测试通过"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "trace--table-1--text-0-row-2",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "trace--table-1--text-0-cell-2-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "2"
+                    }
+                  ]
+                },
+                {
+                  "id": "trace--table-1--text-0-cell-2-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "完成 "
+                    },
+                    {
+                      "type": "extension",
+                      "kind": "presmium.mdast",
+                      "schemaVersion": 1,
+                      "data": {
+                        "node": {
+                          "type": "html",
+                          "value": "<svg class=\"pm-fixture-dot\" width=\"12\" height=\"12\" viewBox=\"0 0 12 12\">"
+                        }
+                      },
+                      "fallback": "<svg class=\"pm-fixture-dot\" width=\"12\" height=\"12\" viewBox=\"0 0 12 12\">"
+                    },
+                    {
+                      "type": "extension",
+                      "kind": "presmium.mdast",
+                      "schemaVersion": 1,
+                      "data": {
+                        "node": {
+                          "type": "html",
+                          "value": "<circle cx=\"6\" cy=\"6\" r=\"5\" fill=\"currentColor\"/>"
+                        }
+                      },
+                      "fallback": "<circle cx=\"6\" cy=\"6\" r=\"5\" fill=\"currentColor\"/>"
+                    },
+                    {
+                      "type": "extension",
+                      "kind": "presmium.mdast",
+                      "schemaVersion": 1,
+                      "data": {
+                        "node": {
+                          "type": "html",
+                          "value": "</svg>"
+                        }
+                      },
+                      "fallback": "</svg>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "trace--paragraph-1": {
+      "id": "trace--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "trace--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "轨迹在每次请求之前写一个 "
+            },
+            {
+              "type": "text",
+              "text": "<reminder>"
+            },
+            {
+              "type": "text",
+              "text": "；圆点 "
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "html",
+                  "value": "<svg class=\"pm-fixture-dot\" width=\"12\" height=\"12\" viewBox=\"0 0 12 12\">"
+                }
+              },
+              "fallback": "<svg class=\"pm-fixture-dot\" width=\"12\" height=\"12\" viewBox=\"0 0 12 12\">"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "html",
+                  "value": "<circle cx=\"6\" cy=\"6\" r=\"5\" fill=\"currentColor\"/>"
+                }
+              },
+              "fallback": "<circle cx=\"6\" cy=\"6\" r=\"5\" fill=\"currentColor\"/>"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "html",
+                  "value": "</svg>"
+                }
+              },
+              "fallback": "</svg>"
+            },
+            {
+              "type": "text",
+              "text": " 是完成的回合，共 "
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "html",
+                  "value": "<math>"
+                }
+              },
+              "fallback": "<math>"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "html",
+                  "value": "<mi>"
+                }
+              },
+              "fallback": "<mi>"
+            },
+            {
+              "type": "text",
+              "text": "n"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "html",
+                  "value": "</mi>"
+                }
+              },
+              "fallback": "</mi>"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "html",
+                  "value": "<mo>"
+                }
+              },
+              "fallback": "<mo>"
+            },
+            {
+              "type": "text",
+              "text": "+"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "html",
+                  "value": "</mo>"
+                }
+              },
+              "fallback": "</mo>"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "html",
+                  "value": "<mn>"
+                }
+              },
+              "fallback": "<mn>"
+            },
+            {
+              "type": "text",
+              "text": "1"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "html",
+                  "value": "</mn>"
+                }
+              },
+              "fallback": "</mn>"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "html",
+                  "value": "</math>"
+                }
+              },
+              "fallback": "</math>"
+            },
+            {
+              "type": "text",
+              "text": " 回合。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "trace--step-0": {
+      "id": "trace--step-0",
+      "sectionId": "trace",
+      "visuals": [
+        {
+          "blockId": "trace--table-1",
+          "visible": true
+        },
+        {
+          "blockId": "trace--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "trace--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "trace--paragraph-1--narration": {
+      "id": "trace--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "轨迹在每次请求之前写一个 <reminder>；圆点  是完成的回合，共 n+1 回合。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

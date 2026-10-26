@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "id": "document-7366bf607151f946",
+  "metadata": {
+    "title": "Second lecture",
+    "lang": "en",
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "second-lecture",
+    "only-section"
+  ],
+  "sections": {
+    "second-lecture": {
+      "id": "second-lecture",
+      "title": "Second lecture",
+      "level": 1,
+      "children": [
+        "second-lecture--paragraph-1"
+      ],
+      "stepOrder": [
+        "second-lecture--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "only-section": {
+      "id": "only-section",
+      "title": "Only section",
+      "level": 2,
+      "children": [
+        "only-section--paragraph-1"
+      ],
+      "stepOrder": [
+        "only-section--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "second-lecture--paragraph-1": {
+      "id": "second-lecture--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "second-lecture--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The second document of the workspace."
+            }
+          ]
+        }
+      ]
+    },
+    "only-section--paragraph-1": {
+      "id": "only-section--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "only-section--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Its one paragraph."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "second-lecture--step-0": {
+      "id": "second-lecture--step-0",
+      "sectionId": "second-lecture",
+      "visuals": [
+        {
+          "blockId": "second-lecture--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "second-lecture--paragraph-1--narration"
+      ]
+    },
+    "only-section--step-0": {
+      "id": "only-section--step-0",
+      "sectionId": "only-section",
+      "visuals": [
+        {
+          "blockId": "only-section--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "only-section--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "second-lecture--paragraph-1--narration": {
+      "id": "second-lecture--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "The second document of the workspace."
+        }
+      ]
+    },
+    "only-section--paragraph-1--narration": {
+      "id": "only-section--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Its one paragraph."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

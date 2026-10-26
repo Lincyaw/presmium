@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "id": "document-bbe6a4d07f36ddd2",
+  "metadata": {
+    "title": "第 1 周",
+    "lang": "zh-CN"
+  },
+  "sectionOrder": [
+    "第-1-周",
+    "w1-basics",
+    "w1-review",
+    "w1-recap"
+  ],
+  "sections": {
+    "第-1-周": {
+      "id": "第-1-周",
+      "title": "第 1 周",
+      "level": 1,
+      "children": [
+        "第-1-周--paragraph-1"
+      ],
+      "stepOrder": [
+        "第-1-周--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "w1-basics": {
+      "id": "w1-basics",
+      "title": "第 1 周的基础",
+      "level": 2,
+      "children": [
+        "w1-basics--paragraph-1"
+      ],
+      "stepOrder": [
+        "w1-basics--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "w1-review": {
+      "id": "w1-review",
+      "title": "第 1 周的复习",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "w1-review--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "w1-recap": {
+      "id": "w1-recap",
+      "title": "复习要点",
+      "level": 2,
+      "children": [
+        "w1-recap--paragraph-1"
+      ],
+      "stepOrder": [
+        "w1-recap--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "第-1-周--paragraph-1": {
+      "id": "第-1-周--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "第-1-周--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第 1 周的封面。"
+            }
+          ]
+        }
+      ]
+    },
+    "w1-basics--paragraph-1": {
+      "id": "w1-basics--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "w1-basics--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "基础的内容。下周再看"
+            },
+            {
+              "type": "link",
+              "href": "../week2/lecture.json#w2-spiral",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "第 2 周的螺线"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。"
+            }
+          ]
+        }
+      ]
+    },
+    "w1-recap--paragraph-1": {
+      "id": "w1-recap--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "w1-recap--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本周的要点回顾。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "第-1-周--step-0": {
+      "id": "第-1-周--step-0",
+      "sectionId": "第-1-周",
+      "visuals": [
+        {
+          "blockId": "第-1-周--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "第-1-周--paragraph-1--narration"
+      ]
+    },
+    "w1-basics--step-0": {
+      "id": "w1-basics--step-0",
+      "sectionId": "w1-basics",
+      "visuals": [
+        {
+          "blockId": "w1-basics--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "w1-basics--paragraph-1--narration"
+      ]
+    },
+    "w1-review--step-0": {
+      "id": "w1-review--step-0",
+      "sectionId": "w1-review",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "w1-recap--step-0": {
+      "id": "w1-recap--step-0",
+      "sectionId": "w1-recap",
+      "visuals": [
+        {
+          "blockId": "w1-recap--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "w1-recap--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "第-1-周--paragraph-1--narration": {
+      "id": "第-1-周--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第 1 周的封面。"
+        }
+      ]
+    },
+    "w1-basics--paragraph-1--narration": {
+      "id": "w1-basics--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "基础的内容。下周再看第 2 周的螺线。"
+        }
+      ]
+    },
+    "w1-recap--paragraph-1--narration": {
+      "id": "w1-recap--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "本周的要点回顾。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
