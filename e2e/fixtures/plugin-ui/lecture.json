@@ -1,0 +1,1623 @@
+{
+  "schemaVersion": 1,
+  "id": "document-ff60a3fc2bc78b10",
+  "metadata": {
+    "title": "书卷样式",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec",
+      "@lincyaw/addon-session",
+      "@lincyaw/addon-classroom",
+      "@lincyaw/addon-publish",
+      "@lincyaw/addon-assistant",
+      "../host/plugin"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {}
+    }
+  },
+  "sectionOrder": [
+    "cover",
+    "basics",
+    "merge",
+    "emphasis",
+    "quiz",
+    "predict",
+    "run",
+    "trace",
+    "exercise",
+    "classroom",
+    "stepper",
+    "diagram"
+  ],
+  "sections": {
+    "cover": {
+      "id": "cover",
+      "title": "书卷样式",
+      "level": 1,
+      "children": [
+        "cover--paragraph-1",
+        "cover--paragraph-2"
+      ],
+      "stepOrder": [
+        "cover--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "basics": {
+      "id": "basics",
+      "title": "合并的规则",
+      "level": 1,
+      "children": [
+        "basics--list-1",
+        "basics--paragraph-1"
+      ],
+      "stepOrder": [
+        "basics--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "merge": {
+      "id": "merge",
+      "title": "每一轮合并哪一对",
+      "level": 2,
+      "children": [
+        "merge--list-1",
+        "merge--code-1",
+        "merge--paragraph-1"
+      ],
+      "stepOrder": [
+        "merge--step-0",
+        "merge--step-1",
+        "merge--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "emphasis": {
+      "id": "emphasis",
+      "title": "强调一行",
+      "level": 2,
+      "children": [
+        "emphasis--code-1",
+        "emphasis--paragraph-1"
+      ],
+      "stepOrder": [
+        "emphasis--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "quiz": {
+      "id": "quiz",
+      "title": "小测验",
+      "level": 2,
+      "children": [
+        "quiz--pm-quiz-1"
+      ],
+      "stepOrder": [
+        "quiz--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "predict": {
+      "id": "predict",
+      "title": "先预测",
+      "level": 2,
+      "children": [
+        "predict--pm-predict-1"
+      ],
+      "stepOrder": [
+        "predict--step-0",
+        "predict--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "run": {
+      "id": "run",
+      "title": "在浏览器里运行",
+      "level": 2,
+      "children": [
+        "run--pm-run-panel-1"
+      ],
+      "stepOrder": [
+        "run--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "trace": {
+      "id": "trace",
+      "title": "逐行执行",
+      "level": 2,
+      "children": [
+        "trace--pm-step-run-1"
+      ],
+      "stepOrder": [
+        "trace--step-0",
+        "trace--step-1",
+        "trace--step-2",
+        "trace--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "exercise": {
+      "id": "exercise",
+      "title": "动手：合并一对",
+      "level": 2,
+      "children": [
+        "exercise--pm-exercise-1"
+      ],
+      "stepOrder": [
+        "exercise--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "classroom": {
+      "id": "classroom",
+      "title": "提问与反馈",
+      "level": 2,
+      "children": [
+        "classroom--pm-question-box-1",
+        "classroom--pm-pulse-1"
+      ],
+      "stepOrder": [
+        "classroom--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "stepper": {
+      "id": "stepper",
+      "title": "分三步",
+      "level": 2,
+      "children": [
+        "stepper--demo-stepper-1",
+        "stepper--paragraph-1"
+      ],
+      "stepOrder": [
+        "stepper--step-0",
+        "stepper--step-1",
+        "stepper--step-2",
+        "stepper--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "diagram": {
+      "id": "diagram",
+      "title": "流程图",
+      "level": 2,
+      "children": [
+        "diagram--code-1",
+        "diagram--paragraph-1"
+      ],
+      "stepOrder": [
+        "diagram--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "cover--paragraph-1": {
+      "id": "cover--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "cover--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "插件界面与幻灯片默认主题",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：e2e/plugin-ui.spec.ts 的测试文稿"
+            }
+          ]
+        }
+      ]
+    },
+    "cover--paragraph-2": {
+      "id": "cover--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "cover--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "封面之后是一章，每一节放一类插件组件。"
+            }
+          ]
+        }
+      ]
+    },
+    "basics--list-1": {
+      "id": "basics--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "basics--list-1--text-0",
+          "type": "list",
+          "ordered": true,
+          "start": 1,
+          "children": [
+            {
+              "id": "basics--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "basics--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "每一轮合并哪一对"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "basics--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "basics--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "小测验"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "basics--list-1--text-0-item-2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "basics--list-1--text-0-2-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "在浏览器里运行"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "basics--paragraph-1": {
+      "id": "basics--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "basics--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这一章的几节分别是讲解、测验、预测、运行面板、练习与课堂。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--list-1": {
+      "id": "merge--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "merge--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "merge--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "统计相邻的每一对出现的次数"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "merge--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "merge--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "选出次数最多的一对，例如 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "a a",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "merge--list-1--text-0-item-2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "merge--list-1--text-0-2-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "把它合并成一个新的词元"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "reveal": {
+        "type": "items",
+        "order": [
+          "merge--list-1--text-0-item-0",
+          "merge--list-1--text-0-item-1",
+          "merge--list-1--text-0-item-2"
+        ]
+      }
+    },
+    "merge--code-1": {
+      "id": "merge--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "def get_stats(ids):\n    counts = {}\n    for pair in zip(ids, ids[1:]):\n        counts[pair] = counts.get(pair, 0) + 1\n    return counts"
+    },
+    "merge--paragraph-1": {
+      "id": "merge--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每一步显示一条，代码在幻灯片上不小于 18 px。"
+            }
+          ]
+        }
+      ]
+    },
+    "emphasis--code-1": {
+      "id": "emphasis--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "# 统计之后，选出次数最多的一对\nstats = get_stats([1, 2, 1, 2])\nbest = max(stats, key=stats.get)\nprint(\"best:\", best, 256)",
+      "highlight": {
+        "emphasis--step-0": [
+          3
+        ]
+      }
+    },
+    "emphasis--paragraph-1": {
+      "id": "emphasis--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "emphasis--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "强调的一行之外，其余的行退为灰色，仍然清楚可读。"
+            }
+          ]
+        }
+      ]
+    },
+    "quiz--pm-quiz-1": {
+      "id": "quiz--pm-quiz-1",
+      "type": "component",
+      "definitionId": "quiz--pm-quiz-1--definition",
+      "parameters": {
+        "options": [
+          "文本中最先出现的一对",
+          "出现次数最多的一对",
+          "出现次数最少的一对"
+        ],
+        "correct": [
+          1
+        ],
+        "place": {
+          "section": "quiz",
+          "block": "pm-quiz-1",
+          "title": "小测验",
+          "index": 5
+        }
+      },
+      "children": [
+        "quiz--pm-quiz-1--prompt"
+      ]
+    },
+    "quiz--pm-quiz-1--prompt": {
+      "id": "quiz--pm-quiz-1--prompt",
+      "type": "text",
+      "content": [
+        {
+          "id": "quiz--pm-quiz-1--prompt--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "BPE 训练时，每一轮合并的是哪一对相邻词元？"
+            }
+          ]
+        }
+      ]
+    },
+    "predict--pm-predict-1": {
+      "id": "predict--pm-predict-1",
+      "type": "component",
+      "definitionId": "predict--pm-predict-1--definition",
+      "parameters": {
+        "question": "合并三轮之后，词表中有几个新词元？",
+        "choices": [
+          "1",
+          "2",
+          "3"
+        ],
+        "reveal": [
+          "paragraph-1"
+        ],
+        "notes": [],
+        "place": {
+          "section": "predict",
+          "block": "pm-predict-1",
+          "title": "先预测",
+          "index": 6
+        }
+      },
+      "children": [
+        "predict--pm-predict-1--paragraph-1"
+      ]
+    },
+    "predict--pm-predict-1--paragraph-1": {
+      "id": "predict--pm-predict-1--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "predict--pm-predict-1--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "三个：每一轮新增一个词元。"
+            }
+          ]
+        }
+      ]
+    },
+    "run--pm-run-panel-1": {
+      "id": "run--pm-run-panel-1",
+      "type": "component",
+      "definitionId": "run--pm-run-panel-1--definition",
+      "parameters": {
+        "params": {
+          "num_merges": 2
+        }
+      },
+      "children": [
+        "run--pm-run-panel-1--source"
+      ]
+    },
+    "run--pm-run-panel-1--source": {
+      "id": "run--pm-run-panel-1--source",
+      "type": "code",
+      "language": "python",
+      "value": "for i in range(num_merges):\n    print(\"合并第\", i + 1, \"轮\")",
+      "execution": {
+        "when": "both",
+        "args": {
+          "num_merges": "2"
+        }
+      }
+    },
+    "trace--pm-step-run-1": {
+      "id": "trace--pm-step-run-1",
+      "type": "component",
+      "definitionId": "trace--pm-step-run-1--definition",
+      "parameters": {
+        "steps": 3
+      },
+      "children": [
+        "trace--pm-step-run-1--source"
+      ]
+    },
+    "trace--pm-step-run-1--source": {
+      "id": "trace--pm-step-run-1--source",
+      "type": "code",
+      "language": "python",
+      "value": "a = 1\nb = a + 1\nprint(b)"
+    },
+    "exercise--pm-exercise-1": {
+      "id": "exercise--pm-exercise-1",
+      "type": "component",
+      "definitionId": "exercise--pm-exercise-1--definition",
+      "parameters": {
+        "lang": "python",
+        "starter": "def merge(ids, pair, new_id):\n    return ids",
+        "checks": "assert merge([1, 2, 3], (1, 2), 9) == [9, 3]",
+        "place": {
+          "section": "exercise",
+          "block": "pm-exercise-1",
+          "title": "动手：合并一对",
+          "index": 9
+        }
+      },
+      "children": [
+        "exercise--pm-exercise-1--prompt"
+      ]
+    },
+    "exercise--pm-exercise-1--prompt": {
+      "id": "exercise--pm-exercise-1--prompt",
+      "type": "text",
+      "content": [
+        {
+          "id": "exercise--pm-exercise-1--prompt--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "补全函数 "
+            },
+            {
+              "type": "text",
+              "text": "merge(ids, pair, new_id)",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。"
+            }
+          ]
+        }
+      ]
+    },
+    "classroom--pm-question-box-1": {
+      "id": "classroom--pm-question-box-1",
+      "type": "component",
+      "definitionId": "classroom--pm-question-box-1--definition",
+      "parameters": {
+        "place": {
+          "section": "classroom",
+          "block": "pm-question-box-1",
+          "title": "提问与反馈",
+          "index": 10
+        }
+      },
+      "children": [
+        "classroom--pm-question-box-1--prompt"
+      ]
+    },
+    "classroom--pm-question-box-1--prompt": {
+      "id": "classroom--pm-question-box-1--prompt",
+      "type": "text",
+      "content": [
+        {
+          "id": "classroom--pm-question-box-1--prompt--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "哪里还不清楚？"
+            }
+          ]
+        }
+      ]
+    },
+    "classroom--pm-pulse-1": {
+      "id": "classroom--pm-pulse-1",
+      "type": "component",
+      "definitionId": "classroom--pm-pulse-1--definition",
+      "parameters": {
+        "question": "你弄清楚了吗？",
+        "place": {
+          "section": "classroom",
+          "block": "pm-pulse-1",
+          "title": "提问与反馈",
+          "index": 10
+        },
+        "levels": [
+          "懂了",
+          "有点模糊",
+          "没懂"
+        ]
+      }
+    },
+    "stepper--demo-stepper-1": {
+      "id": "stepper--demo-stepper-1",
+      "type": "component",
+      "definitionId": "stepper--demo-stepper-1--definition",
+      "parameters": {
+        "steps": [
+          "统计",
+          "选出",
+          "合并"
+        ]
+      }
+    },
+    "stepper--paragraph-1": {
+      "id": "stepper--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "stepper--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "已经走过的步骤退为次要的颜色，仍然清楚可读。"
+            }
+          ]
+        }
+      ]
+    },
+    "diagram--code-1": {
+      "id": "diagram--code-1",
+      "type": "code",
+      "language": "mermaid",
+      "value": "flowchart LR\n  A[文本的字节] --> B[统计相邻的对]\n  B -- 次数最多 --> C[合并成新词元]\n  C -- 还不够 --> B"
+    },
+    "diagram--paragraph-1": {
+      "id": "diagram--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "diagram--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "连线上的标签在明暗两套下都清楚可读。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "cover--step-0": {
+      "id": "cover--step-0",
+      "sectionId": "cover",
+      "visuals": [
+        {
+          "blockId": "cover--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "cover--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "cover--paragraph-2--narration"
+      ]
+    },
+    "basics--step-0": {
+      "id": "basics--step-0",
+      "sectionId": "basics",
+      "visuals": [
+        {
+          "blockId": "basics--list-1",
+          "visible": true
+        },
+        {
+          "blockId": "basics--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "basics--paragraph-1--narration"
+      ]
+    },
+    "merge--step-0": {
+      "id": "merge--step-0",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 1
+          }
+        },
+        {
+          "blockId": "merge--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "merge--paragraph-1--narration"
+      ]
+    },
+    "merge--step-1": {
+      "id": "merge--step-1",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        },
+        {
+          "blockId": "merge--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "merge--step-2": {
+      "id": "merge--step-2",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 3
+          }
+        },
+        {
+          "blockId": "merge--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "emphasis--step-0": {
+      "id": "emphasis--step-0",
+      "sectionId": "emphasis",
+      "visuals": [
+        {
+          "blockId": "emphasis--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "emphasis--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "emphasis--paragraph-1--narration"
+      ]
+    },
+    "quiz--step-0": {
+      "id": "quiz--step-0",
+      "sectionId": "quiz",
+      "visuals": [
+        {
+          "blockId": "quiz--pm-quiz-1--prompt",
+          "visible": true
+        },
+        {
+          "blockId": "quiz--pm-quiz-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "predict--step-0": {
+      "id": "predict--step-0",
+      "sectionId": "predict",
+      "visuals": [
+        {
+          "blockId": "predict--pm-predict-1--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "predict--pm-predict-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "predict--step-1": {
+      "id": "predict--step-1",
+      "sectionId": "predict",
+      "visuals": [
+        {
+          "blockId": "predict--pm-predict-1--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "predict--pm-predict-1",
+          "visible": true,
+          "state": "legacy-1"
+        }
+      ],
+      "narrationIds": []
+    },
+    "run--step-0": {
+      "id": "run--step-0",
+      "sectionId": "run",
+      "visuals": [
+        {
+          "blockId": "run--pm-run-panel-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "run--pm-run-panel-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "trace--step-0": {
+      "id": "trace--step-0",
+      "sectionId": "trace",
+      "visuals": [
+        {
+          "blockId": "trace--pm-step-run-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "trace--pm-step-run-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "trace--step-1": {
+      "id": "trace--step-1",
+      "sectionId": "trace",
+      "visuals": [
+        {
+          "blockId": "trace--pm-step-run-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "trace--pm-step-run-1",
+          "visible": true,
+          "state": "legacy-1"
+        }
+      ],
+      "narrationIds": []
+    },
+    "trace--step-2": {
+      "id": "trace--step-2",
+      "sectionId": "trace",
+      "visuals": [
+        {
+          "blockId": "trace--pm-step-run-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "trace--pm-step-run-1",
+          "visible": true,
+          "state": "legacy-2"
+        }
+      ],
+      "narrationIds": []
+    },
+    "trace--step-3": {
+      "id": "trace--step-3",
+      "sectionId": "trace",
+      "visuals": [
+        {
+          "blockId": "trace--pm-step-run-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "trace--pm-step-run-1",
+          "visible": true,
+          "state": "legacy-3"
+        }
+      ],
+      "narrationIds": []
+    },
+    "exercise--step-0": {
+      "id": "exercise--step-0",
+      "sectionId": "exercise",
+      "visuals": [
+        {
+          "blockId": "exercise--pm-exercise-1--prompt",
+          "visible": true
+        },
+        {
+          "blockId": "exercise--pm-exercise-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "classroom--step-0": {
+      "id": "classroom--step-0",
+      "sectionId": "classroom",
+      "visuals": [
+        {
+          "blockId": "classroom--pm-question-box-1--prompt",
+          "visible": true
+        },
+        {
+          "blockId": "classroom--pm-question-box-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "classroom--pm-pulse-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "stepper--step-0": {
+      "id": "stepper--step-0",
+      "sectionId": "stepper",
+      "visuals": [
+        {
+          "blockId": "stepper--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "stepper--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "stepper--paragraph-1--narration"
+      ]
+    },
+    "stepper--step-1": {
+      "id": "stepper--step-1",
+      "sectionId": "stepper",
+      "visuals": [
+        {
+          "blockId": "stepper--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "stepper--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "stepper--step-2": {
+      "id": "stepper--step-2",
+      "sectionId": "stepper",
+      "visuals": [
+        {
+          "blockId": "stepper--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "stepper--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "stepper--step-3": {
+      "id": "stepper--step-3",
+      "sectionId": "stepper",
+      "visuals": [
+        {
+          "blockId": "stepper--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "stepper--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "diagram--step-0": {
+      "id": "diagram--step-0",
+      "sectionId": "diagram",
+      "visuals": [
+        {
+          "blockId": "diagram--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "diagram--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "diagram--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "cover--paragraph-2--narration": {
+      "id": "cover--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "封面之后是一章，每一节放一类插件组件。"
+        }
+      ]
+    },
+    "basics--paragraph-1--narration": {
+      "id": "basics--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这一章的几节分别是讲解、测验、预测、运行面板、练习与课堂。"
+        }
+      ]
+    },
+    "merge--paragraph-1--narration": {
+      "id": "merge--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "每一步显示一条，代码在幻灯片上不小于 18 px。"
+        }
+      ]
+    },
+    "emphasis--paragraph-1--narration": {
+      "id": "emphasis--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "强调的一行之外，其余的行退为灰色，仍然清楚可读。"
+        }
+      ]
+    },
+    "stepper--paragraph-1--narration": {
+      "id": "stepper--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "已经走过的步骤退为次要的颜色，仍然清楚可读。"
+        }
+      ]
+    },
+    "diagram--paragraph-1--narration": {
+      "id": "diagram--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "连线上的标签在明暗两套下都清楚可读。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "quiz--pm-quiz-1--definition": {
+      "id": "quiz--pm-quiz-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmQuiz"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.classroom",
+        "name": "PmQuiz",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "BPE 训练时，每一轮合并的是哪一对相邻词元？"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "A. 文本中最先出现的一对"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "B. 出现次数最多的一对"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "C. 出现次数最少的一对"
+                }
+              ]
+            },
+            {
+              "type": "html",
+              "value": "<details><summary>答案</summary>B</details>"
+            }
+          ]
+        }
+      }
+    },
+    "predict--pm-predict-1--definition": {
+      "id": "predict--pm-predict-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmPredict"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.classroom",
+        "name": "PmPredict",
+        "ownsCode": false,
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "预测"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "：合并三轮之后，词表中有几个新词元？"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "ordered": true,
+              "spread": false,
+              "children": [
+                {
+                  "type": "listItem",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "1"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "2"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "3"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "html",
+              "value": "<details data-static=\"open\"><summary>写下预测后展开</summary>"
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "三个：每一轮新增一个词元。"
+                }
+              ]
+            },
+            {
+              "type": "html",
+              "value": "</details>"
+            }
+          ]
+        }
+      }
+    },
+    "run--pm-run-panel-1--definition": {
+      "id": "run--pm-run-panel-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      }
+    },
+    "trace--pm-step-run-1--definition": {
+      "id": "trace--pm-step-run-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmStepRun"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmStepRun"
+      }
+    },
+    "exercise--pm-exercise-1--definition": {
+      "id": "exercise--pm-exercise-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmExercise"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.classroom",
+        "name": "PmExercise",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "补全函数 "
+                },
+                {
+                  "type": "inlineCode",
+                  "value": "merge(ids, pair, new_id)"
+                },
+                {
+                  "type": "text",
+                  "value": "。"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "lang": "python",
+              "value": "def merge(ids, pair, new_id):\n    return ids"
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "校验"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "lang": "python",
+              "value": "assert merge([1, 2, 3], (1, 2), 9) == [9, 3]"
+            }
+          ]
+        }
+      }
+    },
+    "classroom--pm-question-box-1--definition": {
+      "id": "classroom--pm-question-box-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmQuestionBox"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.classroom",
+        "name": "PmQuestionBox",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "哪里还不清楚？"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "提问"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "：加入课堂后，在网页或幻灯片中向主讲提问。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "classroom--pm-pulse-1--definition": {
+      "id": "classroom--pm-pulse-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmPulse"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.classroom",
+        "name": "PmPulse",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "理解度投票"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "：你弄清楚了吗？（懂了 / 有点模糊 / 没懂）"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "stepper--demo-stepper-1--definition": {
+      "id": "stepper--demo-stepper-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.host",
+        "name": "DemoStepper"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "fixture.host",
+        "name": "DemoStepper"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

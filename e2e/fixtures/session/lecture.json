@@ -1,0 +1,1411 @@
+{
+  "schemaVersion": 1,
+  "id": "document-d66f4dbdd44a43f9",
+  "metadata": {
+    "title": "课堂会话测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-stage",
+      "@lincyaw/addon-session",
+      "../host/plugin"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {
+        "theme": "default"
+      }
+    }
+  },
+  "sectionOrder": [
+    "课堂会话测试文稿",
+    "session",
+    "session-follow",
+    "web",
+    "scrolly"
+  ],
+  "sections": {
+    "课堂会话测试文稿": {
+      "id": "课堂会话测试文稿",
+      "title": "课堂会话测试文稿",
+      "level": 1,
+      "children": [
+        "课堂会话测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "课堂会话测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "session": {
+      "id": "session",
+      "title": "课堂会话",
+      "level": 2,
+      "children": [
+        "session--paragraph-1",
+        "session--list-1",
+        "session--paragraph-2",
+        "session--code-1"
+      ],
+      "stepOrder": [
+        "session--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "routeAlias": "session"
+          }
+        }
+      }
+    },
+    "session-follow": {
+      "id": "session-follow",
+      "title": "跟随与自主",
+      "level": 2,
+      "children": [
+        "session-follow--paragraph-1",
+        "session-follow--paragraph-2",
+        "session-follow--paragraph-3",
+        "session-follow--paragraph-4",
+        "session-follow--paragraph-5",
+        "session-follow--paragraph-6"
+      ],
+      "stepOrder": [
+        "session-follow--step-0",
+        "session-follow--step-1",
+        "session-follow--step-2",
+        "session-follow--step-3"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "web": {
+      "id": "web",
+      "title": "网页形态",
+      "level": 2,
+      "children": [
+        "web--paragraph-1",
+        "web--list-1",
+        "web--code-1",
+        "web--paragraph-2",
+        "web--paragraph-3",
+        "web--paragraph-4",
+        "web--paragraph-5"
+      ],
+      "stepOrder": [
+        "web--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "scrolly": {
+      "id": "scrolly",
+      "title": "滚动叙事",
+      "level": 2,
+      "children": [
+        "scrolly--list-1",
+        "scrolly--paragraph-1",
+        "scrolly--paragraph-2",
+        "scrolly--paragraph-3",
+        "scrolly--demo-stepper-1",
+        "scrolly--paragraph-4",
+        "scrolly--paragraph-5",
+        "scrolly--paragraph-6"
+      ],
+      "stepOrder": [
+        "scrolly--step-0",
+        "scrolly--step-1",
+        "scrolly--step-2",
+        "scrolly--step-3",
+        "scrolly--step-4"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          }
+        }
+      }
+    }
+  },
+  "blocks": {
+    "课堂会话测试文稿--paragraph-1": {
+      "id": "课堂会话测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "课堂会话测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/session.spec.ts 的测试文稿。这里没有配置课堂服务；需要课堂服务的用例在头部加上 "
+            },
+            {
+              "type": "text",
+              "text": "presmium.session.server",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。"
+            }
+          ]
+        }
+      ]
+    },
+    "session--paragraph-1": {
+      "id": "session--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "session--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "课堂会话把主讲与学习者连到同一个课堂：主讲创建课堂，学习者打开加入链接或扫描二维码进入，各自看到同一份文稿。课堂状态显示在网页导航栏的“课堂”按钮中，幻灯片形态显示在演讲者视图的 Presmium 面板中。"
+            }
+          ]
+        }
+      ]
+    },
+    "session--list-1": {
+      "id": "session--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "session--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "session--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "session--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "创建课堂",
+                      "marks": [
+                        {
+                          "type": "bold"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：主讲填写昵称后创建，得到加入链接与二维码"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "session--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "session--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "加入课堂",
+                      "marks": [
+                        {
+                          "type": "bold"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：学习者打开链接 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "?room=<课堂>&name=<昵称>",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "，或扫码后填写昵称"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "session--list-1--text-0-item-2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "session--list-1--text-0-2-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "结束课堂",
+                      "marks": [
+                        {
+                          "type": "bold"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：主讲结束后，学习者看到课堂已结束"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "session--paragraph-2": {
+      "id": "session--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "session--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "课堂服务由 "
+            },
+            {
+              "type": "text",
+              "text": "@lincyaw/classroom-server",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 包的命令 "
+            },
+            {
+              "type": "text",
+              "text": "presmium-classroom-server",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 提供，地址写在文稿 frontmatter 的 "
+            },
+            {
+              "type": "text",
+              "text": "presmium.session.server",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 中，例如 "
+            },
+            {
+              "type": "text",
+              "text": "ws://localhost:1234",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。没有配置课堂服务时，文稿照常放映与阅读，课堂按钮显示“未连接”。在本仓库中这样启动课堂服务："
+            }
+          ]
+        }
+      ]
+    },
+    "session--code-1": {
+      "id": "session--code-1",
+      "type": "code",
+      "language": "sh",
+      "value": "pnpm --filter @lincyaw/classroom-server start --port 1234"
+    },
+    "session-follow--paragraph-1": {
+      "id": "session-follow--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "session-follow--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "跟随主讲",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：主讲翻到哪一节、哪一步、哪个视图，学习者就到哪里"
+            }
+          ]
+        }
+      ]
+    },
+    "session-follow--paragraph-2": {
+      "id": "session-follow--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "session-follow--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "学习者加入课堂后默认跟随主讲：主讲的章节、步骤与视图实时共享，网页形态通过宿主的导航接口移动 IR 运行时，幻灯片形态还同步 Slidev 的状态，例如圈画标注。"
+            }
+          ]
+        }
+      ]
+    },
+    "session-follow--paragraph-3": {
+      "id": "session-follow--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "session-follow--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "自主浏览",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：学习者随时切换，自己翻阅前后内容"
+            }
+          ]
+        }
+      ]
+    },
+    "session-follow--paragraph-4": {
+      "id": "session-follow--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "session-follow--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "想回头看前面的内容时，学习者点“自主浏览”，主讲继续翻页也不会把他拉走。"
+            }
+          ]
+        }
+      ]
+    },
+    "session-follow--paragraph-5": {
+      "id": "session-follow--paragraph-5",
+      "type": "text",
+      "content": [
+        {
+          "id": "session-follow--paragraph-5--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "回到主讲进度",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：一键回到主讲当前的位置，并恢复跟随"
+            }
+          ]
+        }
+      ]
+    },
+    "session-follow--paragraph-6": {
+      "id": "session-follow--paragraph-6",
+      "type": "text",
+      "content": [
+        {
+          "id": "session-follow--paragraph-6--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "点“回到主讲进度”，立即回到主讲所在的章节与步骤，之后继续跟随。"
+            }
+          ]
+        }
+      ]
+    },
+    "web--paragraph-1": {
+      "id": "web--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "web--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "网页是主媒介：IR 运行时在浏览器中直接渲染每个章节，VitePress 提供导航、侧栏、大纲、深色模式与搜索界面。讲稿即正文，讲解段落按原顺序显示为正文，读者不看幻灯片也能读懂这一节。"
+            }
+          ]
+        }
+      ]
+    },
+    "web--list-1": {
+      "id": "web--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "web--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "web--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "web--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "侧边目录、页内大纲、上一节与下一节"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "web--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "web--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "全文搜索覆盖标题、讲解、上屏内容与代码"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "web--list-1--text-0-item-2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "web--list-1--text-0-2-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "幻灯片与网页一键互跳，停在对应位置"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "web--code-1": {
+      "id": "web--code-1",
+      "type": "code",
+      "language": "ts",
+      "value": "// 网页渲染端：IR 运行时按视图渲染同一份 IR\nconst viewer = createViewer(doc)\nviewer.setView('present')"
+    },
+    "web--paragraph-2": {
+      "id": "web--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "web--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "搜索框支持中文分词，断网后也能检索。导航栏的视图菜单在文档、滚动叙事与放映之间切换，当前章节与步骤保持不变。"
+            }
+          ]
+        }
+      ]
+    },
+    "web--paragraph-3": {
+      "id": "web--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "web--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "放映视图按画面大小缩放每一节，不需要滚动；按 o 打开章节总览，用方向键与回车跳转；讲台插件的 b 与 f 在这里同样让听众视图黑屏或冻结。"
+            }
+          ]
+        }
+      ]
+    },
+    "web--paragraph-4": {
+      "id": "web--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "web--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "网页中才有的补充说明：切换视图不需要重新构建，同一份 IR 在浏览器中换一种方式呈现。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "web--paragraph-5": {
+      "id": "web--paragraph-5",
+      "type": "text",
+      "content": [
+        {
+          "id": "web--paragraph-5--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "幻灯片中才有的提示：按导航栏的文档按钮在网页中阅读本节。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides"
+      ]
+    },
+    "scrolly--list-1": {
+      "id": "scrolly--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "scrolly--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "scrolly--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "编译：源码编译为 IR"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "scrolly--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "scrolly--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "渲染：IR 运行时按章节渲染"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "scrolly--list-1--text-0-item-2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "scrolly--list-1--text-0-2-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "发布：VitePress 外壳生成静态站点"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "reveal": {
+        "type": "items",
+        "order": [
+          "scrolly--list-1--text-0-item-0",
+          "scrolly--list-1--text-0-item-1",
+          "scrolly--list-1--text-0-item-2"
+        ]
+      }
+    },
+    "scrolly--paragraph-1": {
+      "id": "scrolly--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "滚动叙事式的章节：上屏内容固定在一侧，讲解在另一侧滚动，步骤随滚动推进。第一步，编译源码。"
+            }
+          ]
+        }
+      ]
+    },
+    "scrolly--paragraph-2": {
+      "id": "scrolly--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步，渲染章节。IR 运行时直接从 IR 渲染，不生成 Markdown。"
+            }
+          ]
+        }
+      ]
+    },
+    "scrolly--paragraph-3": {
+      "id": "scrolly--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第三步，发布站点。搜索索引在构建时从 IR 文本生成，随网页一起发布。"
+            }
+          ]
+        }
+      ]
+    },
+    "scrolly--demo-stepper-1": {
+      "id": "scrolly--demo-stepper-1",
+      "type": "component",
+      "definitionId": "scrolly--demo-stepper-1--definition",
+      "parameters": {
+        "steps": [
+          "离线缓存",
+          "形态互跳"
+        ]
+      }
+    },
+    "scrolly--paragraph-4": {
+      "id": "scrolly--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "步进组件接在列表之后出现，再占用两步。"
+            }
+          ]
+        }
+      ]
+    },
+    "scrolly--paragraph-5": {
+      "id": "scrolly--paragraph-5",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--paragraph-5--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先是离线缓存：网页加载一次之后，断网也能阅读与搜索。"
+            }
+          ]
+        }
+      ]
+    },
+    "scrolly--paragraph-6": {
+      "id": "scrolly--paragraph-6",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--paragraph-6--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "然后是形态互跳：每个章节都能在幻灯片中打开，停在当前步骤。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "课堂会话测试文稿--step-0": {
+      "id": "课堂会话测试文稿--step-0",
+      "sectionId": "课堂会话测试文稿",
+      "visuals": [
+        {
+          "blockId": "课堂会话测试文稿--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "session--step-0": {
+      "id": "session--step-0",
+      "sectionId": "session",
+      "visuals": [
+        {
+          "blockId": "session--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "session--list-1",
+          "visible": true
+        },
+        {
+          "blockId": "session--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "session--code-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "session--paragraph-1--narration",
+        "session--paragraph-2--narration"
+      ]
+    },
+    "session-follow--step-0": {
+      "id": "session-follow--step-0",
+      "sectionId": "session-follow",
+      "visuals": [
+        {
+          "blockId": "session-follow--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "session-follow--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "session-follow--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "session-follow--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "session-follow--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "session-follow--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "session-follow--step-1": {
+      "id": "session-follow--step-1",
+      "sectionId": "session-follow",
+      "visuals": [
+        {
+          "blockId": "session-follow--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "session-follow--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "session-follow--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "session-follow--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "session-follow--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "session-follow--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "session-follow--paragraph-2--narration"
+      ]
+    },
+    "session-follow--step-2": {
+      "id": "session-follow--step-2",
+      "sectionId": "session-follow",
+      "visuals": [
+        {
+          "blockId": "session-follow--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "session-follow--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "session-follow--paragraph-3",
+          "visible": true
+        },
+        {
+          "blockId": "session-follow--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "session-follow--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "session-follow--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "session-follow--paragraph-4--narration"
+      ]
+    },
+    "session-follow--step-3": {
+      "id": "session-follow--step-3",
+      "sectionId": "session-follow",
+      "visuals": [
+        {
+          "blockId": "session-follow--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "session-follow--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "session-follow--paragraph-3",
+          "visible": true
+        },
+        {
+          "blockId": "session-follow--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "session-follow--paragraph-5",
+          "visible": true
+        },
+        {
+          "blockId": "session-follow--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "session-follow--paragraph-6--narration"
+      ]
+    },
+    "web--step-0": {
+      "id": "web--step-0",
+      "sectionId": "web",
+      "visuals": [
+        {
+          "blockId": "web--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "web--list-1",
+          "visible": true
+        },
+        {
+          "blockId": "web--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "web--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "web--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "web--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "web--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "web--paragraph-1--narration",
+        "web--paragraph-2--narration",
+        "web--paragraph-3--narration"
+      ]
+    },
+    "scrolly--step-0": {
+      "id": "scrolly--step-0",
+      "sectionId": "scrolly",
+      "visuals": [
+        {
+          "blockId": "scrolly--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 1
+          }
+        },
+        {
+          "blockId": "scrolly--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--demo-stepper-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "scrolly--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "scrolly--paragraph-1--narration"
+      ]
+    },
+    "scrolly--step-1": {
+      "id": "scrolly--step-1",
+      "sectionId": "scrolly",
+      "visuals": [
+        {
+          "blockId": "scrolly--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        },
+        {
+          "blockId": "scrolly--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--demo-stepper-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "scrolly--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "scrolly--paragraph-2--narration"
+      ]
+    },
+    "scrolly--step-2": {
+      "id": "scrolly--step-2",
+      "sectionId": "scrolly",
+      "visuals": [
+        {
+          "blockId": "scrolly--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 3
+          }
+        },
+        {
+          "blockId": "scrolly--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "scrolly--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "scrolly--paragraph-3--narration",
+        "scrolly--paragraph-4--narration"
+      ]
+    },
+    "scrolly--step-3": {
+      "id": "scrolly--step-3",
+      "sectionId": "scrolly",
+      "visuals": [
+        {
+          "blockId": "scrolly--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 3
+          }
+        },
+        {
+          "blockId": "scrolly--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "scrolly--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "scrolly--paragraph-5--narration"
+      ]
+    },
+    "scrolly--step-4": {
+      "id": "scrolly--step-4",
+      "sectionId": "scrolly",
+      "visuals": [
+        {
+          "blockId": "scrolly--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 3
+          }
+        },
+        {
+          "blockId": "scrolly--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "scrolly--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-5",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-6",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "scrolly--paragraph-6--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "session--paragraph-1--narration": {
+      "id": "session--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "课堂会话把主讲与学习者连到同一个课堂：主讲创建课堂，学习者打开加入链接或扫描二维码进入，各自看到同一份文稿。课堂状态显示在网页导航栏的“课堂”按钮中，幻灯片形态显示在演讲者视图的 Presmium 面板中。"
+        }
+      ]
+    },
+    "session--paragraph-2--narration": {
+      "id": "session--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "课堂服务由 @lincyaw/classroom-server 包的命令 presmium-classroom-server 提供，地址写在文稿 frontmatter 的 presmium.session.server 中，例如 ws://localhost:1234。没有配置课堂服务时，文稿照常放映与阅读，课堂按钮显示“未连接”。在本仓库中这样启动课堂服务："
+        }
+      ]
+    },
+    "session-follow--paragraph-2--narration": {
+      "id": "session-follow--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "学习者加入课堂后默认跟随主讲：主讲的章节、步骤与视图实时共享，网页形态通过宿主的导航接口移动 IR 运行时，幻灯片形态还同步 Slidev 的状态，例如圈画标注。"
+        }
+      ]
+    },
+    "session-follow--paragraph-4--narration": {
+      "id": "session-follow--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "想回头看前面的内容时，学习者点“自主浏览”，主讲继续翻页也不会把他拉走。"
+        }
+      ]
+    },
+    "session-follow--paragraph-6--narration": {
+      "id": "session-follow--paragraph-6--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "点“回到主讲进度”，立即回到主讲所在的章节与步骤，之后继续跟随。"
+        }
+      ]
+    },
+    "web--paragraph-1--narration": {
+      "id": "web--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "网页是主媒介：IR 运行时在浏览器中直接渲染每个章节，VitePress 提供导航、侧栏、大纲、深色模式与搜索界面。讲稿即正文，讲解段落按原顺序显示为正文，读者不看幻灯片也能读懂这一节。"
+        }
+      ]
+    },
+    "web--paragraph-2--narration": {
+      "id": "web--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "搜索框支持中文分词，断网后也能检索。导航栏的视图菜单在文档、滚动叙事与放映之间切换，当前章节与步骤保持不变。"
+        }
+      ]
+    },
+    "web--paragraph-3--narration": {
+      "id": "web--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "放映视图按画面大小缩放每一节，不需要滚动；按 o 打开章节总览，用方向键与回车跳转；讲台插件的 b 与 f 在这里同样让听众视图黑屏或冻结。"
+        }
+      ]
+    },
+    "scrolly--paragraph-1--narration": {
+      "id": "scrolly--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "滚动叙事式的章节：上屏内容固定在一侧，讲解在另一侧滚动，步骤随滚动推进。第一步，编译源码。"
+        }
+      ]
+    },
+    "scrolly--paragraph-2--narration": {
+      "id": "scrolly--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二步，渲染章节。IR 运行时直接从 IR 渲染，不生成 Markdown。"
+        }
+      ]
+    },
+    "scrolly--paragraph-3--narration": {
+      "id": "scrolly--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第三步，发布站点。搜索索引在构建时从 IR 文本生成，随网页一起发布。"
+        }
+      ]
+    },
+    "scrolly--paragraph-4--narration": {
+      "id": "scrolly--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "步进组件接在列表之后出现，再占用两步。"
+        }
+      ]
+    },
+    "scrolly--paragraph-5--narration": {
+      "id": "scrolly--paragraph-5--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先是离线缓存：网页加载一次之后，断网也能阅读与搜索。"
+        }
+      ]
+    },
+    "scrolly--paragraph-6--narration": {
+      "id": "scrolly--paragraph-6--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "然后是形态互跳：每个章节都能在幻灯片中打开，停在当前步骤。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "scrolly--demo-stepper-1--definition": {
+      "id": "scrolly--demo-stepper-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.host",
+        "name": "DemoStepper"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "fixture.host",
+        "name": "DemoStepper"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

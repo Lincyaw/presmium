@@ -1,0 +1,506 @@
+{
+  "schemaVersion": 1,
+  "id": "document-421ff3bb7c169f70",
+  "metadata": {
+    "title": "步骤可逆",
+    "lang": "zh-CN",
+    "plugins": [
+      "../../host/plugin"
+    ],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "步骤可逆",
+    "walk"
+  ],
+  "sections": {
+    "步骤可逆": {
+      "id": "步骤可逆",
+      "title": "步骤可逆",
+      "level": 1,
+      "children": [
+        "步骤可逆--paragraph-1"
+      ],
+      "stepOrder": [
+        "步骤可逆--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "walk": {
+      "id": "walk",
+      "title": "一步一步合并",
+      "level": 2,
+      "children": [
+        "walk--list-1",
+        "walk--paragraph-1",
+        "walk--demo-stepper-1",
+        "walk--paragraph-2",
+        "walk--code-1",
+        "walk--paragraph-3"
+      ],
+      "stepOrder": [
+        "walk--step-0",
+        "walk--step-1",
+        "walk--step-2",
+        "walk--step-3",
+        "walk--step-4",
+        "walk--step-5"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "步骤可逆--paragraph-1": {
+      "id": "步骤可逆--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "步骤可逆--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/viewer.spec.ts 的测试文稿：网页形态中直接跳到第 N 步与从第 0 步走到第 N 步，画面相同。"
+            }
+          ]
+        }
+      ]
+    },
+    "walk--list-1": {
+      "id": "walk--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "walk--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "walk--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "walk--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "先把文本切成字节"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "walk--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "walk--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "再数相邻的每一对"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "reveal": {
+        "type": "items",
+        "order": [
+          "walk--list-1--text-0-item-0",
+          "walk--list-1--text-0-item-1"
+        ]
+      }
+    },
+    "walk--paragraph-1": {
+      "id": "walk--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "walk--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先切开，再计数。"
+            }
+          ]
+        }
+      ]
+    },
+    "walk--demo-stepper-1": {
+      "id": "walk--demo-stepper-1",
+      "type": "component",
+      "definitionId": "walk--demo-stepper-1--definition",
+      "parameters": {
+        "steps": [
+          "数对",
+          "选出最多的一对",
+          "合并"
+        ]
+      }
+    },
+    "walk--paragraph-2": {
+      "id": "walk--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "walk--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "步进组件依次突出三个阶段。"
+            }
+          ]
+        }
+      ]
+    },
+    "walk--code-1": {
+      "id": "walk--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "pairs = Counter(zip(tokens, tokens[1:]))\nbest = max(pairs, key=pairs.get)\ntokens = merge(tokens, best, 256)"
+    },
+    "walk--paragraph-3": {
+      "id": "walk--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "walk--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "最后一步出现合并的代码。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "步骤可逆--step-0": {
+      "id": "步骤可逆--step-0",
+      "sectionId": "步骤可逆",
+      "visuals": [
+        {
+          "blockId": "步骤可逆--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "步骤可逆--paragraph-1--narration"
+      ]
+    },
+    "walk--step-0": {
+      "id": "walk--step-0",
+      "sectionId": "walk",
+      "visuals": [
+        {
+          "blockId": "walk--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 1
+          }
+        },
+        {
+          "blockId": "walk--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "walk--demo-stepper-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "walk--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "walk--code-1",
+          "visible": false
+        },
+        {
+          "blockId": "walk--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "walk--paragraph-1--narration"
+      ]
+    },
+    "walk--step-1": {
+      "id": "walk--step-1",
+      "sectionId": "walk",
+      "visuals": [
+        {
+          "blockId": "walk--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        },
+        {
+          "blockId": "walk--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "walk--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "walk--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "walk--code-1",
+          "visible": false
+        },
+        {
+          "blockId": "walk--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "walk--paragraph-2--narration"
+      ]
+    },
+    "walk--step-2": {
+      "id": "walk--step-2",
+      "sectionId": "walk",
+      "visuals": [
+        {
+          "blockId": "walk--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        },
+        {
+          "blockId": "walk--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "walk--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "walk--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "walk--code-1",
+          "visible": false
+        },
+        {
+          "blockId": "walk--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "walk--step-3": {
+      "id": "walk--step-3",
+      "sectionId": "walk",
+      "visuals": [
+        {
+          "blockId": "walk--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        },
+        {
+          "blockId": "walk--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "walk--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "walk--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "walk--code-1",
+          "visible": false
+        },
+        {
+          "blockId": "walk--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "walk--step-4": {
+      "id": "walk--step-4",
+      "sectionId": "walk",
+      "visuals": [
+        {
+          "blockId": "walk--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        },
+        {
+          "blockId": "walk--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "walk--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "walk--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "walk--code-1",
+          "visible": false
+        },
+        {
+          "blockId": "walk--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "walk--step-5": {
+      "id": "walk--step-5",
+      "sectionId": "walk",
+      "visuals": [
+        {
+          "blockId": "walk--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        },
+        {
+          "blockId": "walk--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "walk--demo-stepper-1",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "walk--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "walk--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "walk--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "walk--paragraph-3--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "步骤可逆--paragraph-1--narration": {
+      "id": "步骤可逆--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "e2e/viewer.spec.ts 的测试文稿：网页形态中直接跳到第 N 步与从第 0 步走到第 N 步，画面相同。"
+        }
+      ]
+    },
+    "walk--paragraph-1--narration": {
+      "id": "walk--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先切开，再计数。"
+        }
+      ]
+    },
+    "walk--paragraph-2--narration": {
+      "id": "walk--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "步进组件依次突出三个阶段。"
+        }
+      ]
+    },
+    "walk--paragraph-3--narration": {
+      "id": "walk--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "最后一步出现合并的代码。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "walk--demo-stepper-1--definition": {
+      "id": "walk--demo-stepper-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.host",
+        "name": "DemoStepper"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "fixture.host",
+        "name": "DemoStepper"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

@@ -1,0 +1,1968 @@
+{
+  "schemaVersion": 1,
+  "id": "document-b0cdbe4c1391423d",
+  "metadata": {
+    "title": "富内容测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-content",
+      "@lincyaw/addon-publish",
+      "./plugin"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {
+        "theme": "default"
+      }
+    }
+  },
+  "sectionOrder": [
+    "富内容测试文稿",
+    "content-diagrams",
+    "content-sequence",
+    "content-mindmap",
+    "content-media",
+    "content-element",
+    "content-cards",
+    "content-tabs",
+    "content-captions",
+    "content-autoplay",
+    "content-media-range"
+  ],
+  "sections": {
+    "富内容测试文稿": {
+      "id": "富内容测试文稿",
+      "title": "富内容测试文稿",
+      "level": 1,
+      "children": [
+        "富内容测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "富内容测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "content-diagrams": {
+      "id": "content-diagrams",
+      "title": "公式与流程图",
+      "level": 2,
+      "children": [
+        "content-diagrams--paragraph-1",
+        "content-diagrams--paragraph-2",
+        "content-diagrams--math-1",
+        "content-diagrams--paragraph-3",
+        "content-diagrams--code-1"
+      ],
+      "stepOrder": [
+        "content-diagrams--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "pm-content-diagrams",
+            "routeAlias": "content-diagrams"
+          }
+        }
+      }
+    },
+    "content-sequence": {
+      "id": "content-sequence",
+      "title": "时序图",
+      "level": 2,
+      "children": [
+        "content-sequence--paragraph-1",
+        "content-sequence--code-1"
+      ],
+      "stepOrder": [
+        "content-sequence--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "pm-content-sequence",
+            "routeAlias": "content-sequence"
+          }
+        }
+      }
+    },
+    "content-mindmap": {
+      "id": "content-mindmap",
+      "title": "思维导图",
+      "level": 2,
+      "children": [
+        "content-mindmap--pm-markmap-1",
+        "content-mindmap--paragraph-1"
+      ],
+      "stepOrder": [
+        "content-mindmap--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "pm-content-mindmap",
+            "routeAlias": "content-mindmap"
+          }
+        }
+      }
+    },
+    "content-media": {
+      "id": "content-media",
+      "title": "音视频与动图",
+      "level": 2,
+      "children": [
+        "content-media--pm-media-1",
+        "content-media--pm-media-2",
+        "content-media--pm-media-3",
+        "content-media--paragraph-1"
+      ],
+      "stepOrder": [
+        "content-media--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "pm-content-media",
+            "routeAlias": "content-media"
+          }
+        }
+      }
+    },
+    "content-element": {
+      "id": "content-element",
+      "title": "Web 组件",
+      "level": 2,
+      "children": [
+        "content-element--paragraph-1",
+        "content-element--html-1",
+        "content-element--paragraph-2"
+      ],
+      "stepOrder": [
+        "content-element--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "pm-content-element",
+            "routeAlias": "content-element"
+          }
+        }
+      }
+    },
+    "content-cards": {
+      "id": "content-cards",
+      "title": "卡片与栅格",
+      "level": 2,
+      "children": [
+        "content-cards--paragraph-1",
+        "content-cards--grid-1"
+      ],
+      "stepOrder": [
+        "content-cards--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "pm-content-cards",
+            "routeAlias": "content-cards"
+          }
+        }
+      }
+    },
+    "content-tabs": {
+      "id": "content-tabs",
+      "title": "选项卡",
+      "level": 2,
+      "children": [
+        "content-tabs--paragraph-1",
+        "content-tabs--tab-set-1",
+        "content-tabs--tab-set-2"
+      ],
+      "stepOrder": [
+        "content-tabs--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "pm-content-tabs",
+            "routeAlias": "content-tabs"
+          }
+        }
+      }
+    },
+    "content-captions": {
+      "id": "content-captions",
+      "title": "封面与字幕",
+      "level": 2,
+      "children": [
+        "content-captions--pm-media-1"
+      ],
+      "stepOrder": [
+        "content-captions--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "pm-content-captions",
+            "routeAlias": "content-captions"
+          }
+        }
+      }
+    },
+    "content-autoplay": {
+      "id": "content-autoplay",
+      "title": "自动播放的生命周期",
+      "level": 2,
+      "children": [
+        "content-autoplay--pm-media-1"
+      ],
+      "stepOrder": [
+        "content-autoplay--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "pm-content-autoplay",
+            "routeAlias": "content-autoplay"
+          }
+        }
+      }
+    },
+    "content-media-range": {
+      "id": "content-media-range",
+      "title": "媒体的显示范围",
+      "level": 2,
+      "children": [
+        "content-media-range--pm-media-1",
+        "content-media-range--paragraph-1"
+      ],
+      "stepOrder": [
+        "content-media-range--step-0",
+        "content-media-range--step-1"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "class": "pm-content-media-range",
+            "routeAlias": "content-media-range"
+          }
+        }
+      }
+    }
+  },
+  "blocks": {
+    "富内容测试文稿--paragraph-1": {
+      "id": "富内容测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "富内容测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/content.spec.ts 的测试文稿。PlantUML 图已下载到 "
+            },
+            {
+              "type": "text",
+              "text": ".presmium/assets",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "，构建不需要网络。"
+            }
+          ]
+        }
+      ]
+    },
+    "content-diagrams--paragraph-1": {
+      "id": "content-diagrams--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-diagrams--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "公式用 "
+            },
+            {
+              "type": "text",
+              "text": "$…$",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 与 "
+            },
+            {
+              "type": "text",
+              "text": "$$…$$",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 书写，由 KaTeX 渲染。"
+            }
+          ]
+        }
+      ]
+    },
+    "content-diagrams--paragraph-2": {
+      "id": "content-diagrams--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-diagrams--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "公式",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "（KaTeX）：行内公式 "
+            },
+            {
+              "type": "math",
+              "value": "e^{i\\pi} + 1 = 0"
+            },
+            {
+              "type": "text",
+              "text": "，块级公式"
+            }
+          ]
+        }
+      ]
+    },
+    "content-diagrams--math-1": {
+      "id": "content-diagrams--math-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-diagrams--math-1--text-0",
+          "type": "math",
+          "value": "\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}"
+        }
+      ]
+    },
+    "content-diagrams--paragraph-3": {
+      "id": "content-diagrams--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-diagrams--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "mermaid",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 代码块由渲染端绘制为流程图。"
+            }
+          ]
+        }
+      ]
+    },
+    "content-diagrams--code-1": {
+      "id": "content-diagrams--code-1",
+      "type": "code",
+      "language": "mermaid",
+      "value": "flowchart LR\n  A[MyST 源码] --> B{渲染端}\n  B -->|幻灯片| C[Slidev]\n  B -->|网页| D[VitePress]"
+    },
+    "content-sequence--paragraph-1": {
+      "id": "content-sequence--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-sequence--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "plantuml",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 代码块由富内容插件交给 PlantUML 服务（"
+            },
+            {
+              "type": "text",
+              "text": "presmium.content.plantUmlServer",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "）生成图片；发布插件在构建时把图片下载到文稿中，离线也能显示。"
+            }
+          ]
+        }
+      ]
+    },
+    "content-sequence--code-1": {
+      "id": "content-sequence--code-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-sequence--code-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "image",
+                  "url": ".presmium/assets/81cc0b28a328938f.svg",
+                  "alt": "PlantUML 图"
+                }
+              },
+              "fallback": ""
+            }
+          ]
+        }
+      ]
+    },
+    "content-mindmap--pm-markmap-1": {
+      "id": "content-mindmap--pm-markmap-1",
+      "type": "component",
+      "definitionId": "content-mindmap--pm-markmap-1--definition",
+      "parameters": {
+        "data": "%7B%22root%22%3A%7B%22content%22%3A%22%26%23x5bcc%3B%26%23x5185%3B%26%23x5bb9%3B%22%2C%22children%22%3A%5B%7B%22content%22%3A%22%26%23x516c%3B%26%23x5f0f%3B%22%2C%22children%22%3A%5B%7B%22content%22%3A%22%26%23x884c%3B%26%23x5185%3B%26%23x4e0e%3B%26%23x5757%3B%26%23x7ea7%3B%22%2C%22children%22%3A%5B%5D%2C%22payload%22%3A%7B%22tag%22%3A%22li%22%2C%22lines%22%3A%222%2C3%22%7D%7D%2C%7B%22content%22%3A%22KaTeX%22%2C%22children%22%3A%5B%5D%2C%22payload%22%3A%7B%22tag%22%3A%22li%22%2C%22lines%22%3A%223%2C4%22%7D%7D%5D%2C%22payload%22%3A%7B%22tag%22%3A%22h2%22%2C%22lines%22%3A%221%2C2%22%7D%7D%2C%7B%22content%22%3A%22%26%23x56fe%3B%26%23x8868%3B%22%2C%22children%22%3A%5B%7B%22content%22%3A%22Mermaid%22%2C%22children%22%3A%5B%5D%2C%22payload%22%3A%7B%22tag%22%3A%22li%22%2C%22lines%22%3A%225%2C6%22%7D%7D%2C%7B%22content%22%3A%22PlantUML%22%2C%22children%22%3A%5B%5D%2C%22payload%22%3A%7B%22tag%22%3A%22li%22%2C%22lines%22%3A%226%2C7%22%7D%7D%5D%2C%22payload%22%3A%7B%22tag%22%3A%22h2%22%2C%22lines%22%3A%224%2C5%22%7D%7D%2C%7B%22content%22%3A%22%26%23x5a92%3B%26%23x4f53%3B%22%2C%22children%22%3A%5B%7B%22content%22%3A%22%26%23x89c6%3B%26%23x9891%3B%22%2C%22children%22%3A%5B%5D%2C%22payload%22%3A%7B%22tag%22%3A%22li%22%2C%22lines%22%3A%228%2C9%22%7D%7D%2C%7B%22content%22%3A%22%26%23x97f3%3B%26%23x9891%3B%22%2C%22children%22%3A%5B%5D%2C%22payload%22%3A%7B%22tag%22%3A%22li%22%2C%22lines%22%3A%229%2C10%22%7D%7D%2C%7B%22content%22%3A%22%26%23x52a8%3B%26%23x56fe%3B%22%2C%22children%22%3A%5B%5D%2C%22payload%22%3A%7B%22tag%22%3A%22li%22%2C%22lines%22%3A%2210%2C11%22%7D%7D%5D%2C%22payload%22%3A%7B%22tag%22%3A%22h2%22%2C%22lines%22%3A%227%2C8%22%7D%7D%2C%7B%22content%22%3A%22Web%20%26%23x7ec4%3B%26%23x4ef6%3B%22%2C%22children%22%3A%5B%7B%22content%22%3A%22%26%23x81ea%3B%26%23x5b9a%3B%26%23x4e49%3B%26%23x5143%3B%26%23x7d20%3B%22%2C%22children%22%3A%5B%5D%2C%22payload%22%3A%7B%22tag%22%3A%22li%22%2C%22lines%22%3A%2212%2C13%22%7D%7D%5D%2C%22payload%22%3A%7B%22tag%22%3A%22h2%22%2C%22lines%22%3A%2211%2C12%22%7D%7D%5D%2C%22payload%22%3A%7B%22tag%22%3A%22h1%22%2C%22lines%22%3A%220%2C1%22%7D%7D%2C%22options%22%3A%7B%22colorFreezeLevel%22%3A2%7D%7D"
+      }
+    },
+    "content-mindmap--paragraph-1": {
+      "id": "content-mindmap--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-mindmap--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "{markmap}",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 指令里写 Markdown 标题与列表，渲染为思维导图；指令开头的 "
+            },
+            {
+              "type": "text",
+              "text": "markmap",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 一项是 markmap 的选项，高度可用 CSS 变量 "
+            },
+            {
+              "type": "text",
+              "text": "--pm-markmap-height",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 调整。不能绘图的渲染端（例如 notebook）显示为嵌套列表。"
+            }
+          ]
+        }
+      ]
+    },
+    "content-media--pm-media-1": {
+      "id": "content-media--pm-media-1",
+      "type": "component",
+      "definitionId": "content-media--pm-media-1--definition",
+      "parameters": {
+        "kind": "video",
+        "src": "../../../packages/addon-content/media/clip.webm",
+        "controls": true,
+        "muted": true,
+        "loop": true,
+        "width": 280,
+        "caption": "视频：controls 显示播放控制，width 设定尺寸"
+      }
+    },
+    "content-media--pm-media-2": {
+      "id": "content-media--pm-media-2",
+      "type": "component",
+      "definitionId": "content-media--pm-media-2--definition",
+      "parameters": {
+        "kind": "audio",
+        "src": "../../../packages/addon-content/media/tone.ogg",
+        "controls": true,
+        "caption": "音频：同样用 controls 显示播放控制"
+      }
+    },
+    "content-media--pm-media-3": {
+      "id": "content-media--pm-media-3",
+      "type": "component",
+      "definitionId": "content-media--pm-media-3--definition",
+      "parameters": {
+        "kind": "animation",
+        "src": "../../../packages/addon-content/media/spinner.gif",
+        "still": "../../../packages/addon-content/media/spinner.png",
+        "width": 96,
+        "height": 96,
+        "alt": "旋转的加载动画",
+        "caption": "动图：减少动态效果时换成静止图片"
+      }
+    },
+    "content-media--paragraph-1": {
+      "id": "content-media--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-media--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "媒体指令的参数是相对源文件的路径或包路径，文件随构建一起发布。"
+            }
+          ]
+        }
+      ]
+    },
+    "content-element--paragraph-1": {
+      "id": "content-element--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-element--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "自定义元素直接写进页面，属性传入初值，每个元素保留自己的交互状态。"
+            }
+          ]
+        }
+      ]
+    },
+    "content-element--html-1": {
+      "id": "content-element--html-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-element--html-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "html",
+              "value": "<div class=\"pm-content-counters\">\n<presmium-demo-counter label=\"甲\"></presmium-demo-counter>\n<presmium-demo-counter label=\"乙\" start=\"10\"></presmium-demo-counter>\n</div>"
+            }
+          },
+          "fallback": [
+            {
+              "id": "content-element--html-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "<div class=\"pm-content-counters\">\n<presmium-demo-counter label=\"甲\"></presmium-demo-counter>\n<presmium-demo-counter label=\"乙\" start=\"10\"></presmium-demo-counter>\n</div>"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "content-element--paragraph-2": {
+      "id": "content-element--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-element--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "presmium-demo-counter",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 是用浏览器自己的接口写成的 Web 组件，由本目录的测试插件 "
+            },
+            {
+              "type": "text",
+              "text": "plugin",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 注册。以 "
+            },
+            {
+              "type": "text",
+              "text": "presmium-",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 开头的标签由浏览器当作自定义元素处理；其他第三方 Web 组件注册后同样可以嵌入。"
+            }
+          ]
+        }
+      ]
+    },
+    "content-cards--paragraph-1": {
+      "id": "content-cards--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-cards--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "{grid}",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 的参数是四档屏宽（手机、小、中、大）的列数；卡片的 "
+            },
+            {
+              "type": "text",
+              "text": ":link:",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 使整张卡片成为链接，"
+            },
+            {
+              "type": "text",
+              "text": "+++",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 之后是页脚。"
+            }
+          ]
+        }
+      ]
+    },
+    "content-cards--grid-1": {
+      "id": "content-cards--grid-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-cards--grid-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "grid",
+              "columns": [
+                1,
+                1,
+                2,
+                3
+              ],
+              "children": [
+                {
+                  "type": "card",
+                  "url": "https://example.com/week-01/",
+                  "children": [
+                    {
+                      "type": "cardTitle",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "第 1 周：智能体环路"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "读、想、做的循环与它的失败方式。"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "footer",
+                      "children": [
+                        {
+                          "type": "paragraph",
+                          "children": [
+                            {
+                              "type": "link",
+                              "url": "#content-tabs",
+                              "class": "button",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "value": "进入讲义"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "card",
+                  "children": [
+                    {
+                      "type": "cardTitle",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "第 2 周：上下文"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "上下文窗口里放什么。"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "card",
+                  "children": [
+                    {
+                      "type": "header",
+                      "children": [
+                        {
+                          "type": "paragraph",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "页眉"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "cardTitle",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "第 3 周：工具"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "工具的描述与调用。"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "content-cards--grid-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "第 1 周：智能体环路读、想、做的循环与它的失败方式。进入讲义第 2 周：上下文上下文窗口里放什么。页眉第 3 周：工具工具的描述与调用。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "content-tabs--paragraph-1": {
+      "id": "content-tabs--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-tabs--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "同一 "
+            },
+            {
+              "type": "text",
+              "text": ":sync:",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 的选项卡一起切换。"
+            }
+          ]
+        }
+      ]
+    },
+    "content-tabs--tab-set-1": {
+      "id": "content-tabs--tab-set-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-tabs--tab-set-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "tabSet",
+              "children": [
+                {
+                  "type": "tabItem",
+                  "title": "Python",
+                  "sync": "py",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "用 "
+                        },
+                        {
+                          "type": "inlineCode",
+                          "value": "print"
+                        },
+                        {
+                          "type": "text",
+                          "value": " 输出。"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tabItem",
+                  "title": "JavaScript",
+                  "sync": "js",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "用 "
+                        },
+                        {
+                          "type": "inlineCode",
+                          "value": "console.log"
+                        },
+                        {
+                          "type": "text",
+                          "value": " 输出。"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "content-tabs--tab-set-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "用 print 输出。用 console.log 输出。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "content-tabs--tab-set-2": {
+      "id": "content-tabs--tab-set-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-tabs--tab-set-2--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "tabSet",
+              "children": [
+                {
+                  "type": "tabItem",
+                  "title": "Python",
+                  "sync": "py",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "安装："
+                        },
+                        {
+                          "type": "inlineCode",
+                          "value": "pip install presmium"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tabItem",
+                  "title": "JavaScript",
+                  "sync": "js",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "安装："
+                        },
+                        {
+                          "type": "inlineCode",
+                          "value": "npm install presmium"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "content-tabs--tab-set-2--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "安装：pip install presmium安装：npm install presmium"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "content-captions--pm-media-1": {
+      "id": "content-captions--pm-media-1",
+      "type": "component",
+      "definitionId": "content-captions--pm-media-1--definition",
+      "parameters": {
+        "kind": "video",
+        "src": "../../../packages/addon-content/media/clip.webm",
+        "poster": "films/poster.png",
+        "captions": {
+          "en": "films/loop.en.vtt",
+          "zh-CN": "films/loop.zh.vtt"
+        },
+        "captionsDefault": "en",
+        "controls": true,
+        "muted": true,
+        "width": 280,
+        "caption": "带封面与中英字幕的视频"
+      }
+    },
+    "content-autoplay--pm-media-1": {
+      "id": "content-autoplay--pm-media-1",
+      "type": "component",
+      "definitionId": "content-autoplay--pm-media-1--definition",
+      "parameters": {
+        "kind": "video",
+        "src": "../../../packages/addon-content/media/clip.webm",
+        "autoplay": true,
+        "controls": true,
+        "loop": true,
+        "width": 280,
+        "caption": "只在当前幻灯片自动播放。"
+      }
+    },
+    "content-media-range--pm-media-1": {
+      "id": "content-media-range--pm-media-1",
+      "type": "component",
+      "definitionId": "content-media-range--pm-media-1--definition",
+      "parameters": {
+        "kind": "video",
+        "src": "../../../packages/addon-content/media/clip.webm",
+        "controls": true,
+        "muted": true,
+        "loop": true,
+        "caption": "第 0 步可播放，第 1 步隐藏并停止。"
+      }
+    },
+    "content-media-range--paragraph-1": {
+      "id": "content-media-range--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-media-range--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "媒体已经隐藏。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "富内容测试文稿--step-0": {
+      "id": "富内容测试文稿--step-0",
+      "sectionId": "富内容测试文稿",
+      "visuals": [
+        {
+          "blockId": "富内容测试文稿--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "content-diagrams--step-0": {
+      "id": "content-diagrams--step-0",
+      "sectionId": "content-diagrams",
+      "visuals": [
+        {
+          "blockId": "content-diagrams--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "content-diagrams--paragraph-2",
+          "visible": true
+        },
+        {
+          "blockId": "content-diagrams--math-1",
+          "visible": true
+        },
+        {
+          "blockId": "content-diagrams--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "content-diagrams--code-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "content-diagrams--paragraph-1--narration",
+        "content-diagrams--paragraph-3--narration"
+      ]
+    },
+    "content-sequence--step-0": {
+      "id": "content-sequence--step-0",
+      "sectionId": "content-sequence",
+      "visuals": [
+        {
+          "blockId": "content-sequence--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "content-sequence--code-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "content-sequence--paragraph-1--narration"
+      ]
+    },
+    "content-mindmap--step-0": {
+      "id": "content-mindmap--step-0",
+      "sectionId": "content-mindmap",
+      "visuals": [
+        {
+          "blockId": "content-mindmap--pm-markmap-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "content-mindmap--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "content-mindmap--paragraph-1--narration"
+      ]
+    },
+    "content-media--step-0": {
+      "id": "content-media--step-0",
+      "sectionId": "content-media",
+      "visuals": [
+        {
+          "blockId": "content-media--pm-media-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "content-media--pm-media-2",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "content-media--pm-media-3",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "content-media--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "content-media--paragraph-1--narration"
+      ]
+    },
+    "content-element--step-0": {
+      "id": "content-element--step-0",
+      "sectionId": "content-element",
+      "visuals": [
+        {
+          "blockId": "content-element--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "content-element--html-1",
+          "visible": true
+        },
+        {
+          "blockId": "content-element--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "content-element--paragraph-2--narration"
+      ]
+    },
+    "content-cards--step-0": {
+      "id": "content-cards--step-0",
+      "sectionId": "content-cards",
+      "visuals": [
+        {
+          "blockId": "content-cards--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "content-cards--grid-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "content-cards--paragraph-1--narration"
+      ]
+    },
+    "content-tabs--step-0": {
+      "id": "content-tabs--step-0",
+      "sectionId": "content-tabs",
+      "visuals": [
+        {
+          "blockId": "content-tabs--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "content-tabs--tab-set-1",
+          "visible": true
+        },
+        {
+          "blockId": "content-tabs--tab-set-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "content-tabs--paragraph-1--narration"
+      ]
+    },
+    "content-captions--step-0": {
+      "id": "content-captions--step-0",
+      "sectionId": "content-captions",
+      "visuals": [
+        {
+          "blockId": "content-captions--pm-media-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "content-autoplay--step-0": {
+      "id": "content-autoplay--step-0",
+      "sectionId": "content-autoplay",
+      "visuals": [
+        {
+          "blockId": "content-autoplay--pm-media-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "content-media-range--step-0": {
+      "id": "content-media-range--step-0",
+      "sectionId": "content-media-range",
+      "visuals": [
+        {
+          "blockId": "content-media-range--pm-media-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "content-media-range--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "content-media-range--step-1": {
+      "id": "content-media-range--step-1",
+      "sectionId": "content-media-range",
+      "visuals": [
+        {
+          "blockId": "content-media-range--pm-media-1",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "content-media-range--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "content-diagrams--paragraph-1--narration": {
+      "id": "content-diagrams--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "公式用 $…$ 与 $$…$$ 书写，由 KaTeX 渲染。"
+        }
+      ]
+    },
+    "content-diagrams--paragraph-3--narration": {
+      "id": "content-diagrams--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "mermaid 代码块由渲染端绘制为流程图。"
+        }
+      ]
+    },
+    "content-sequence--paragraph-1--narration": {
+      "id": "content-sequence--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "plantuml 代码块由富内容插件交给 PlantUML 服务（presmium.content.plantUmlServer）生成图片；发布插件在构建时把图片下载到文稿中，离线也能显示。"
+        }
+      ]
+    },
+    "content-mindmap--paragraph-1--narration": {
+      "id": "content-mindmap--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "{markmap} 指令里写 Markdown 标题与列表，渲染为思维导图；指令开头的 markmap 一项是 markmap 的选项，高度可用 CSS 变量 --pm-markmap-height 调整。不能绘图的渲染端（例如 notebook）显示为嵌套列表。"
+        }
+      ]
+    },
+    "content-media--paragraph-1--narration": {
+      "id": "content-media--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "媒体指令的参数是相对源文件的路径或包路径，文件随构建一起发布。"
+        }
+      ]
+    },
+    "content-element--paragraph-2--narration": {
+      "id": "content-element--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "presmium-demo-counter 是用浏览器自己的接口写成的 Web 组件，由本目录的测试插件 plugin 注册。以 presmium- 开头的标签由浏览器当作自定义元素处理；其他第三方 Web 组件注册后同样可以嵌入。"
+        }
+      ]
+    },
+    "content-cards--paragraph-1--narration": {
+      "id": "content-cards--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "{grid} 的参数是四档屏宽（手机、小、中、大）的列数；卡片的 :link: 使整张卡片成为链接，+++ 之后是页脚。"
+        }
+      ]
+    },
+    "content-tabs--paragraph-1--narration": {
+      "id": "content-tabs--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "同一 :sync: 的选项卡一起切换。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "content-mindmap--pm-markmap-1--definition": {
+      "id": "content-mindmap--pm-markmap-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.content",
+        "name": "PmMarkmap"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.content",
+        "name": "PmMarkmap",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "list",
+              "ordered": false,
+              "spread": false,
+              "children": [
+                {
+                  "type": "listItem",
+                  "spread": false,
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "富内容"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "list",
+                      "ordered": false,
+                      "spread": false,
+                      "children": [
+                        {
+                          "type": "listItem",
+                          "spread": false,
+                          "children": [
+                            {
+                              "type": "paragraph",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "value": "公式"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "list",
+                              "ordered": false,
+                              "spread": false,
+                              "children": [
+                                {
+                                  "type": "listItem",
+                                  "spread": false,
+                                  "children": [
+                                    {
+                                      "type": "paragraph",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "value": "行内与块级"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "listItem",
+                                  "spread": false,
+                                  "children": [
+                                    {
+                                      "type": "paragraph",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "value": "KaTeX"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "spread": false,
+                          "children": [
+                            {
+                              "type": "paragraph",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "value": "图表"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "list",
+                              "ordered": false,
+                              "spread": false,
+                              "children": [
+                                {
+                                  "type": "listItem",
+                                  "spread": false,
+                                  "children": [
+                                    {
+                                      "type": "paragraph",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "value": "Mermaid"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "listItem",
+                                  "spread": false,
+                                  "children": [
+                                    {
+                                      "type": "paragraph",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "value": "PlantUML"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "spread": false,
+                          "children": [
+                            {
+                              "type": "paragraph",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "value": "媒体"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "list",
+                              "ordered": false,
+                              "spread": false,
+                              "children": [
+                                {
+                                  "type": "listItem",
+                                  "spread": false,
+                                  "children": [
+                                    {
+                                      "type": "paragraph",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "value": "视频"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "listItem",
+                                  "spread": false,
+                                  "children": [
+                                    {
+                                      "type": "paragraph",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "value": "音频"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "listItem",
+                                  "spread": false,
+                                  "children": [
+                                    {
+                                      "type": "paragraph",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "value": "动图"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "spread": false,
+                          "children": [
+                            {
+                              "type": "paragraph",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "value": "Web 组件"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "list",
+                              "ordered": false,
+                              "spread": false,
+                              "children": [
+                                {
+                                  "type": "listItem",
+                                  "spread": false,
+                                  "children": [
+                                    {
+                                      "type": "paragraph",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "value": "自定义元素"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "content-media--pm-media-1--definition": {
+      "id": "content-media--pm-media-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.content",
+        "name": "PmMedia"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.content",
+        "name": "PmMedia",
+        "assets": {
+          "src": "../../../packages/addon-content/media/clip.webm"
+        },
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "link",
+                  "url": "../../../packages/addon-content/media/clip.webm",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "视频：controls 显示播放控制，width 设定尺寸"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "content-media--pm-media-2--definition": {
+      "id": "content-media--pm-media-2--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.content",
+        "name": "PmMedia"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.content",
+        "name": "PmMedia",
+        "assets": {
+          "src": "../../../packages/addon-content/media/tone.ogg"
+        },
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "link",
+                  "url": "../../../packages/addon-content/media/tone.ogg",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "音频：同样用 controls 显示播放控制"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "content-media--pm-media-3--definition": {
+      "id": "content-media--pm-media-3--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.content",
+        "name": "PmMedia"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.content",
+        "name": "PmMedia",
+        "assets": {
+          "src": "../../../packages/addon-content/media/spinner.gif",
+          "still": "../../../packages/addon-content/media/spinner.png"
+        },
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "link",
+                  "url": "../../../packages/addon-content/media/spinner.gif",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "动图：减少动态效果时换成静止图片"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "content-captions--pm-media-1--definition": {
+      "id": "content-captions--pm-media-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.content",
+        "name": "PmMedia"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.content",
+        "name": "PmMedia",
+        "assets": {
+          "src": "../../../packages/addon-content/media/clip.webm",
+          "poster": "films/poster.png",
+          "captions.en": "films/loop.en.vtt",
+          "captions.zh-CN": "films/loop.zh.vtt"
+        },
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "link",
+                  "url": "../../../packages/addon-content/media/clip.webm",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "带封面与中英字幕的视频"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "content-autoplay--pm-media-1--definition": {
+      "id": "content-autoplay--pm-media-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.content",
+        "name": "PmMedia"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.content",
+        "name": "PmMedia",
+        "assets": {
+          "src": "../../../packages/addon-content/media/clip.webm"
+        },
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "link",
+                  "url": "../../../packages/addon-content/media/clip.webm",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "只在当前幻灯片自动播放。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "content-media-range--pm-media-1--definition": {
+      "id": "content-media-range--pm-media-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.content",
+        "name": "PmMedia"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.content",
+        "name": "PmMedia",
+        "assets": {
+          "src": "../../../packages/addon-content/media/clip.webm"
+        },
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "link",
+                  "url": "../../../packages/addon-content/media/clip.webm",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "第 0 步可播放，第 1 步隐藏并停止。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

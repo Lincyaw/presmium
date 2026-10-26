@@ -1,0 +1,315 @@
+{
+  "schemaVersion": 1,
+  "id": "document-a8b8fa425dc3bb50",
+  "metadata": {
+    "title": "Installed from tarballs",
+    "lang": "en",
+    "plugins": [
+      "presmium-plugin-hello"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {}
+    }
+  },
+  "sectionOrder": [
+    "installed-from-tarballs",
+    "a-plugin-from-a-tarball",
+    "plain-content"
+  ],
+  "sections": {
+    "installed-from-tarballs": {
+      "id": "installed-from-tarballs",
+      "title": "Installed from tarballs",
+      "level": 1,
+      "children": [
+        "installed-from-tarballs--paragraph-1"
+      ],
+      "stepOrder": [
+        "installed-from-tarballs--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "a-plugin-from-a-tarball": {
+      "id": "a-plugin-from-a-tarball",
+      "title": "A plugin from a tarball",
+      "level": 2,
+      "children": [
+        "a-plugin-from-a-tarball--paragraph-1",
+        "a-plugin-from-a-tarball--hello-greeting-1"
+      ],
+      "stepOrder": [
+        "a-plugin-from-a-tarball--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "plain-content": {
+      "id": "plain-content",
+      "title": "Plain content",
+      "level": 2,
+      "children": [
+        "plain-content--paragraph-1",
+        "plain-content--list-1",
+        "plain-content--code-1"
+      ],
+      "stepOrder": [
+        "plain-content--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "installed-from-tarballs--paragraph-1": {
+      "id": "installed-from-tarballs--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "installed-from-tarballs--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A document built by Presmium as a user installs it: the packages’ tarballs, installed with pnpm."
+            }
+          ]
+        }
+      ]
+    },
+    "a-plugin-from-a-tarball--paragraph-1": {
+      "id": "a-plugin-from-a-tarball--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "a-plugin-from-a-tarball--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A third-party plugin’s directive, and its component in each form:"
+            }
+          ]
+        }
+      ]
+    },
+    "a-plugin-from-a-tarball--hello-greeting-1": {
+      "id": "a-plugin-from-a-tarball--hello-greeting-1",
+      "type": "component",
+      "definitionId": "a-plugin-from-a-tarball--hello-greeting-1--definition",
+      "parameters": {
+        "name": "reader"
+      }
+    },
+    "plain-content--paragraph-1": {
+      "id": "plain-content--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "plain-content--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Text, a list and code:"
+            }
+          ]
+        }
+      ]
+    },
+    "plain-content--list-1": {
+      "id": "plain-content--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "plain-content--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "plain-content--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "plain-content--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "one"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "plain-content--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "plain-content--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "two"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "plain-content--code-1": {
+      "id": "plain-content--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "print(1 + 1)"
+    }
+  },
+  "steps": {
+    "installed-from-tarballs--step-0": {
+      "id": "installed-from-tarballs--step-0",
+      "sectionId": "installed-from-tarballs",
+      "visuals": [
+        {
+          "blockId": "installed-from-tarballs--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "installed-from-tarballs--paragraph-1--narration"
+      ]
+    },
+    "a-plugin-from-a-tarball--step-0": {
+      "id": "a-plugin-from-a-tarball--step-0",
+      "sectionId": "a-plugin-from-a-tarball",
+      "visuals": [
+        {
+          "blockId": "a-plugin-from-a-tarball--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "a-plugin-from-a-tarball--hello-greeting-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": [
+        "a-plugin-from-a-tarball--paragraph-1--narration"
+      ]
+    },
+    "plain-content--step-0": {
+      "id": "plain-content--step-0",
+      "sectionId": "plain-content",
+      "visuals": [
+        {
+          "blockId": "plain-content--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "plain-content--list-1",
+          "visible": false
+        },
+        {
+          "blockId": "plain-content--code-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "plain-content--paragraph-1--narration",
+        "plain-content--list-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "installed-from-tarballs--paragraph-1--narration": {
+      "id": "installed-from-tarballs--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "A document built by Presmium as a user installs it: the packages’ tarballs, installed with pnpm."
+        }
+      ]
+    },
+    "a-plugin-from-a-tarball--paragraph-1--narration": {
+      "id": "a-plugin-from-a-tarball--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "A third-party plugin’s directive, and its component in each form:"
+        }
+      ]
+    },
+    "plain-content--paragraph-1--narration": {
+      "id": "plain-content--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Text, a list and code:"
+        }
+      ]
+    },
+    "plain-content--list-1--narration": {
+      "id": "plain-content--list-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "one\n\ntwo"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "a-plugin-from-a-tarball--hello-greeting-1--definition": {
+      "id": "a-plugin-from-a-tarball--hello-greeting-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "acme.hello",
+        "name": "HelloGreeting"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "acme.hello",
+        "name": "HelloGreeting",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Hello, reader! (fallback)"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
