@@ -1,0 +1,288 @@
+{
+  "schemaVersion": 1,
+  "id": "document-a1839af8371765ee",
+  "metadata": {
+    "title": "脚本化讲授测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-guide",
+      "@lincyaw/addon-lecture",
+      "@lincyaw/addon-speech"
+    ],
+    "renderers": {
+      "web": {
+        "port": 5324
+      },
+      "lecture": {}
+    }
+  },
+  "sectionOrder": [
+    "intro",
+    "merge",
+    "end"
+  ],
+  "sections": {
+    "intro": {
+      "id": "intro",
+      "title": "脚本化讲授测试文稿",
+      "level": 1,
+      "children": [
+        "intro--paragraph-1"
+      ],
+      "stepOrder": [
+        "intro--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "merge": {
+      "id": "merge",
+      "title": "合并",
+      "level": 2,
+      "children": [
+        "merge--code-1",
+        "merge--paragraph-1"
+      ],
+      "stepOrder": [
+        "merge--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "end": {
+      "id": "end",
+      "title": "结尾",
+      "level": 2,
+      "children": [
+        "end--paragraph-1"
+      ],
+      "stepOrder": [
+        "end--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "intro--paragraph-1": {
+      "id": "intro--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/lecture-script.spec.ts 的测试文稿：讲解由假引擎合成为讲授，也可以录制讲授并转写。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--code-1": {
+      "id": "merge--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "def merge(ids, pair, idx):\n    out = []\n    i = 0\n    return out"
+    },
+    "merge--paragraph-1": {
+      "id": "merge--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "我们先看 "
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "to": "code-1",
+                    "lines": "2-3",
+                    "value": "spot"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 这两行代码，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "say",
+                  "options": {
+                    "alias": "B P E",
+                    "value": "BPE"
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "BPE"
+                    }
+                  ]
+                }
+              },
+              "fallback": "BPE"
+            },
+            {
+              "type": "text",
+              "text": " 的词表就这样长出来。"
+            }
+          ]
+        }
+      ]
+    },
+    "end--paragraph-1": {
+      "id": "end--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "end--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "最后一节。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "intro--step-0": {
+      "id": "intro--step-0",
+      "sectionId": "intro",
+      "visuals": [
+        {
+          "blockId": "intro--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "intro--paragraph-1--narration"
+      ]
+    },
+    "merge--step-0": {
+      "id": "merge--step-0",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "merge--paragraph-1--narration"
+      ]
+    },
+    "end--step-0": {
+      "id": "end--step-0",
+      "sectionId": "end",
+      "visuals": [
+        {
+          "blockId": "end--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "end--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "intro--paragraph-1--narration": {
+      "id": "intro--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "e2e/lecture-script.spec.ts 的测试文稿：讲解由假引擎合成为讲授，也可以录制讲授并转写。"
+        }
+      ]
+    },
+    "merge--paragraph-1--narration": {
+      "id": "merge--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "我们先看 "
+        },
+        {
+          "id": "cue-merge-1",
+          "type": "cue",
+          "action": "spot",
+          "target": {
+            "blockId": "merge--code-1"
+          },
+          "parameters": {
+            "lines": "2-3"
+          }
+        },
+        {
+          "type": "text",
+          "text": " 这两行代码，"
+        },
+        {
+          "type": "pronunciation",
+          "display": "BPE",
+          "spoken": "B P E"
+        },
+        {
+          "type": "text",
+          "text": " 的词表就这样长出来。"
+        }
+      ]
+    },
+    "end--paragraph-1--narration": {
+      "id": "end--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "最后一节。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "tts",
+        "voice": {
+          "engine": "fake",
+          "voice": "alpha"
+        }
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

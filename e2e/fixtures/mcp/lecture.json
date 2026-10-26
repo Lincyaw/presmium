@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "id": "document-c3cde426324e30ba",
+  "metadata": {
+    "title": "MCP 端到端测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "./plugin"
+    ],
+    "renderers": {
+      "web": {
+        "port": 4883
+      }
+    }
+  },
+  "sectionOrder": [
+    "mcp-端到端测试文稿",
+    "第二节",
+    "第三节"
+  ],
+  "sections": {
+    "mcp-端到端测试文稿": {
+      "id": "mcp-端到端测试文稿",
+      "title": "MCP 端到端测试文稿",
+      "level": 1,
+      "children": [
+        "mcp-端到端测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "mcp-端到端测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "第二节": {
+      "id": "第二节",
+      "title": "第二节",
+      "level": 2,
+      "children": [
+        "第二节--paragraph-1"
+      ],
+      "stepOrder": [
+        "第二节--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "第三节": {
+      "id": "第三节",
+      "title": "第三节",
+      "level": 2,
+      "children": [
+        "第三节--paragraph-1"
+      ],
+      "stepOrder": [
+        "第三节--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "mcp-端到端测试文稿--paragraph-1": {
+      "id": "mcp-端到端测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "mcp-端到端测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "封面。"
+            }
+          ]
+        }
+      ]
+    },
+    "第二节--paragraph-1": {
+      "id": "第二节--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "第二节--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二节的正文。"
+            }
+          ]
+        }
+      ]
+    },
+    "第三节--paragraph-1": {
+      "id": "第三节--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "第三节--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "最后一节的正文。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "mcp-端到端测试文稿--step-0": {
+      "id": "mcp-端到端测试文稿--step-0",
+      "sectionId": "mcp-端到端测试文稿",
+      "visuals": [
+        {
+          "blockId": "mcp-端到端测试文稿--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "mcp-端到端测试文稿--paragraph-1--narration"
+      ]
+    },
+    "第二节--step-0": {
+      "id": "第二节--step-0",
+      "sectionId": "第二节",
+      "visuals": [
+        {
+          "blockId": "第二节--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "第二节--paragraph-1--narration"
+      ]
+    },
+    "第三节--step-0": {
+      "id": "第三节--step-0",
+      "sectionId": "第三节",
+      "visuals": [
+        {
+          "blockId": "第三节--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "第三节--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "mcp-端到端测试文稿--paragraph-1--narration": {
+      "id": "mcp-端到端测试文稿--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "封面。"
+        }
+      ]
+    },
+    "第二节--paragraph-1--narration": {
+      "id": "第二节--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二节的正文。"
+        }
+      ]
+    },
+    "第三节--paragraph-1--narration": {
+      "id": "第三节--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "最后一节的正文。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

@@ -149,8 +149,23 @@ function convert(runtime, frontmatter, sourceDir, name) {
   }
   const voice = metadata.renderers?.lecture?.voice
   if (voice) { out.production.defaults.voiceSource = { type: 'tts', voice }; delete metadata.renderers.lecture.voice }
+  // Rich-text IDs are also the runtime reference targets. Reserve authored labels before
+  // allocating generated IDs so a labelled equation/heading keeps its original target.
+  const labelledTypes = new Set(['paragraph', 'heading', 'blockquote', 'list', 'listItem', 'code', 'math', 'table', 'tableRow', 'tableCell'])
+  const labels = new Set()
+  const reserve = node => {
+    if (!node || typeof node !== 'object') return
+    if (labelledTypes.has(node.type) && typeof node.identifier === 'string') labels.add(node.identifier)
+    for (const child of Object.values(node)) if (child && typeof child === 'object') Array.isArray(child) ? child.forEach(reserve) : reserve(child)
+  }
+  for (const section of runtime.sections) for (const block of section.blocks) reserve(block.node)
   const globalIds = new Set([out.id])
-  const id = candidate => { let next = candidate, n = 2; while (globalIds.has(next)) next = `${candidate}-${n++}`; globalIds.add(next); return next }
+  const id = (candidate, authored = false) => {
+    if (authored && globalIds.has(candidate)) throw new Error(`${name}: duplicate authored reference target ${candidate}`)
+    let next = candidate, n = 2
+    while (globalIds.has(next) || !authored && labels.has(next)) next = `${candidate}-${n++}`
+    globalIds.add(next); return next
+  }
   const sectionIds = new Map(runtime.sections.map(section => [section.id, id(section.id)]))
   const blockIds = new Map()
   for (const section of runtime.sections) {
@@ -196,8 +211,9 @@ function convert(runtime, frontmatter, sourceDir, name) {
         if (authoredCode?.steps) next.origin.highlightRegions = Object.fromEntries(stepIds.map((step, index) => [step, authoredCode.steps[Math.min(Math.max(0, index - oldBlock.at), authoredCode.steps.length - 1)]]))
         else if (node.highlight) next.highlight = Object.fromEntries(stepIds.map((step, index) => [step, clone(node.highlight[Math.min(Math.max(0, index - oldBlock.at), node.highlight.length - 1)] ?? [])]))
         if (node.variants) {
-          if (!authoredCode?.variants || authoredCode.variants.length !== node.variants.length) throw new Error(`${name}: original code-variant references unavailable for ${bid}`)
-          next.variants = node.variants.map((variant, index) => ({ id: id(`${bid}--variant-${index}`), title: variant.label, origin: { anchor: authoredCode.anchor, pin: authoredCode.variants[index], ...(authoredCode.repo ? { repo: authoredCode.repo } : {}) } }))
+          if (authoredCode?.variants?.length === node.variants.length) next.variants = node.variants.map((variant, index) => ({ id: id(`${bid}--variant-${index}`), title: variant.label, origin: { anchor: authoredCode.anchor, pin: authoredCode.variants[index], ...(authoredCode.repo ? { repo: authoredCode.repo } : {}) } }))
+          else if (!node.origin) next.variants = node.variants.map((variant, index) => ({ id: id(`${bid}--variant-${index}`), title: variant.label, value: variant.value }))
+          else throw new Error(`${name}: original code-variant references unavailable for ${bid}`)
         }
       } else if (node.type === 'component') {
         const did = id(`${bid}--definition`), states = Array.from({ length: (oldBlock.span ?? 0) + 1 }, (_, index) => ({ id: `legacy-${index}`, legacyIndex: index }))
@@ -242,15 +258,17 @@ function convert(runtime, frontmatter, sourceDir, name) {
 }
 function richText(root, prefix, id) {
   if (!root) return []
+  const labelledTypes = new Set(['paragraph', 'heading', 'blockquote', 'list', 'listItem', 'code', 'math', 'table', 'tableRow', 'tableCell'])
+  const richId = (node, candidate) => id(labelledTypes.has(node.type) && node.identifier ? node.identifier : candidate, labelledTypes.has(node.type) && !!node.identifier)
   const convert = (node, path) => {
-    const nid = id(`${prefix}-${path}`), children = node.children ?? []
+    const nid = richId(node, `${prefix}-${path}`), children = node.children ?? []
     if (node.type === 'paragraph') return { id: nid, type: 'paragraph', children: inline(children) }
     if (node.type === 'heading') return { id: nid, type: 'heading', level: node.depth, children: inline(children) }
     if (node.type === 'blockquote') return { id: nid, type: 'blockquote', children: children.map((n,i) => convert(n,`${path}-${i}`)) }
-    if (node.type === 'list') return { id: nid, type: 'list', ordered: !!node.ordered, ...(node.start ? { start: node.start } : {}), children: children.map((item,index) => ({ id: id(`${prefix}-${path}-item-${index}`), type: 'listItem', ...(typeof item.checked === 'boolean' ? { checked: item.checked } : {}), children: (item.children ?? []).map((n,i) => convert(n,`${path}-${index}-${i}`)) })) }
+    if (node.type === 'list') return { id: nid, type: 'list', ordered: !!node.ordered, ...(node.start ? { start: node.start } : {}), children: children.map((item,index) => ({ id: richId(item, `${prefix}-${path}-item-${index}`), type: 'listItem', ...(typeof item.checked === 'boolean' ? { checked: item.checked } : {}), children: (item.children ?? []).map((n,i) => convert(n,`${path}-${index}-${i}`)) })) }
     if (node.type === 'code') return { id: nid, type: 'code', language: node.lang ?? '', value: node.value ?? '' }
     if (node.type === 'math') return { id: nid, type: 'math', value: node.value ?? '' }
-    if (node.type === 'table') return { id: nid, type: 'table', headerRows: 1, children: children.map((row,r) => ({ id: id(`${prefix}-${path}-row-${r}`), type: 'tableRow', children: (row.children ?? []).map((cell,c) => ({ id: id(`${prefix}-${path}-cell-${r}-${c}`), type: 'tableCell', children: inline(cell.children ?? []), ...(cell.align ?? node.align?.[c] ? { style: { alignment: cell.align ?? node.align[c] } } : {}) })) })) }
+    if (node.type === 'table') return { id: nid, type: 'table', headerRows: 1, children: children.map((row,r) => ({ id: richId(row, `${prefix}-${path}-row-${r}`), type: 'tableRow', children: (row.children ?? []).map((cell,c) => ({ id: richId(cell, `${prefix}-${path}-cell-${r}-${c}`), type: 'tableCell', children: inline(cell.children ?? []), ...(cell.align ?? node.align?.[c] ? { style: { alignment: cell.align ?? node.align[c] } } : {}) })) })) }
     return { id: nid, type: 'extension', kind: 'presmium.mdast', schemaVersion: 1, data: { node: clone(node) }, fallback: plain(node) ? [{ id: id(`${prefix}-${path}-fallback`), type: 'paragraph', children: [{ type: 'text', text: plain(node) }] }] : [] }
   }
   return (root.type === 'root' ? root.children ?? [] : [root]).map((node,index) => convert(node,index))
@@ -269,8 +287,10 @@ function inline(nodes, marks = []) {
 }
 function narration(root, section, blockId, id, production, nearest) {
   const out = []
+  const silent = new Set(['image', 'imageReference', 'html', 'footnoteReference', 'definition', 'footnoteDefinition', 'comment', 'mystComment', 'target', 'mystTarget'])
   const append = text => { if (!text) return; const last=out.at(-1); if (last?.type === 'text') last.text += text; else out.push({ type: 'text', text }) }
   const walk = node => {
+    if (silent.has(node.type)) return
     if (node.type === 'presmiumRole' && node.plugin === 'presmium.lecture') {
       const options = node.options ?? {}
       if (node.name === 'say') { out.push({ type: 'pronunciation', display: plain(node) || options.value || '', spoken: options.alias || plain(node) || options.value || '' }); return }
@@ -310,7 +330,9 @@ function relocate(node, sourceFile, documentDir) {
     const [, path, suffix] = /^([^?#]*)(.*)$/s.exec(value)
     if (!path) return value
     let decoded
-    try { decoded = decodeURIComponent(path) } catch { throw new Error(`Invalid asset URL in ${sourceFile}: ${value}`) }
+    // Invalid legacy URLs remain invalid data and retain their diagnostic; do not
+    // silently replace them or prevent the rest of the document from migrating.
+    try { decoded = decodeURIComponent(path) } catch { return value }
     const target = relative(documentDir, resolve(dirname(sourceFile), decoded)).split('\\').join('/').split('/').map(part => encodeURIComponent(part)).join('/')
     return target.replace(/lecture\.md$/, 'lecture.json') + suffix
   }

@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "id": "document-457978fd64ee523d",
+  "metadata": {
+    "title": "Fourth lecture",
+    "lang": "en",
+    "plugins": [
+      "./plugin"
+    ],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "fourth-lecture"
+  ],
+  "sections": {
+    "fourth-lecture": {
+      "id": "fourth-lecture",
+      "title": "Fourth lecture",
+      "level": 1,
+      "children": [
+        "fourth-lecture--paragraph-1"
+      ],
+      "stepOrder": [
+        "fourth-lecture--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "fourth-lecture--paragraph-1": {
+      "id": "fourth-lecture--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "fourth-lecture--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This viewer-only plugin has no kernel definition and no package promise of restartability."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "fourth-lecture--step-0": {
+      "id": "fourth-lecture--step-0",
+      "sectionId": "fourth-lecture",
+      "visuals": [
+        {
+          "blockId": "fourth-lecture--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "fourth-lecture--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "fourth-lecture--paragraph-1--narration": {
+      "id": "fourth-lecture--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "This viewer-only plugin has no kernel definition and no package promise of restartability."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

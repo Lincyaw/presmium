@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "id": "document-fefbb1af73dfd30d",
+  "metadata": {
+    "title": "本地 JupyterHub 协议验证",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec",
+      "@lincyaw/addon-exec-jupyter"
+    ],
+    "renderers": {
+      "web": {}
+    },
+    "execute": {
+      "environments": {
+        "hub": {
+          "kind": "jupyter",
+          "auth": "prompt",
+          "url": "__HUB_URL__user/{user}/"
+        }
+      }
+    }
+  },
+  "sectionOrder": [
+    "本地-jupyterhub-协议验证",
+    "mine"
+  ],
+  "sections": {
+    "本地-jupyterhub-协议验证": {
+      "id": "本地-jupyterhub-协议验证",
+      "title": "本地 JupyterHub 协议验证",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "本地-jupyterhub-协议验证--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "mine": {
+      "id": "mine",
+      "title": "我的服务器",
+      "level": 2,
+      "children": [
+        "mine--whose"
+      ],
+      "stepOrder": [
+        "mine--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "mine--whose": {
+      "id": "mine--whose",
+      "type": "code",
+      "language": "python",
+      "value": "import os\nprint(\"服务器属于\", os.environ[\"JUPYTERHUB_USER\"])\nprint(6 * 7)",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.env.hub"
+      }
+    }
+  },
+  "steps": {
+    "本地-jupyterhub-协议验证--step-0": {
+      "id": "本地-jupyterhub-协议验证--step-0",
+      "sectionId": "本地-jupyterhub-协议验证",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "mine--step-0": {
+      "id": "mine--step-0",
+      "sectionId": "mine",
+      "visuals": [
+        {
+          "blockId": "mine--whose",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

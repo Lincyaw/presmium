@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "document-dd3ab24c72af2fa0",
+  "metadata": {
+    "title": "隔离讲义",
+    "lang": "zh-CN",
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "隔离讲义"
+  ],
+  "sections": {
+    "隔离讲义": {
+      "id": "隔离讲义",
+      "title": "隔离讲义",
+      "level": 1,
+      "children": [
+        "隔离讲义--paragraph-1"
+      ],
+      "stepOrder": [
+        "隔离讲义--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "隔离讲义--paragraph-1": {
+      "id": "隔离讲义--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "隔离讲义--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这份讲义没有错误。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "隔离讲义--step-0": {
+      "id": "隔离讲义--step-0",
+      "sectionId": "隔离讲义",
+      "visuals": [
+        {
+          "blockId": "隔离讲义--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "隔离讲义--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "隔离讲义--paragraph-1--narration": {
+      "id": "隔离讲义--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这份讲义没有错误。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
