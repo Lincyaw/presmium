@@ -1187,7 +1187,7 @@
     min-height: var(--pm-control-hit-area);
   }
 
-  .pm-ui-icon-button {
+  :is(.pm-ui-button, .pm-ui-icon-button) {
     min-width: var(--pm-control-hit-area);
   }
 
@@ -1204,4 +1204,35 @@
   .pm-ui-loading {
     animation: none;
   }
+}
+
+/* Native narration is a compact typed field, including when embedded in a body node. */
+.pm-ui-narration-editor {
+  min-width: 0;
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-surface);
+}
+.pm-ui-narration-editor:focus-within {
+  border-color: var(--pm-color-accent-line);
+  box-shadow: var(--pm-shadow-control-focus);
+}
+.pm-ui-narration-editor .bn-editor {
+  min-height: var(--pm-narration-editor-compact-height);
+  padding: var(--pm-space-2) var(--pm-space-3);
+  font-size: var(--pm-text-sm);
+}
+.pm-ui-narration-editor .bn-block-content { font-size: inherit; }
+.pm-ui-narration-editor__actions { display: flex; padding: 0 var(--pm-space-2) var(--pm-space-2); }
+.pm-ui-narration-editor__cue {
+  display: inline-block;
+  padding: var(--pm-space-1) var(--pm-space-2);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-accent-soft);
+  color: var(--pm-color-accent);
+  font-size: var(--pm-text-xs);
+  white-space: normal;
+}
+@media (pointer: coarse) {
+  .pm-ui-narration-editor .bn-editor { font-size: var(--pm-text-lg); }
 }

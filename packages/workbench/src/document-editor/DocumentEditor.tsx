@@ -12,6 +12,8 @@ import type { NativeDocumentSelection } from './selection.ts'
 export interface DocumentEditorProps {
   identity: string
   document: TeachingDocument
+  /** Read sibling field edits before their React render has committed. */
+  getDocument?(): TeachingDocument | undefined
   reset?: number
   locale: Locale
   readOnly?: boolean
@@ -29,12 +31,18 @@ export function DocumentEditor(props: DocumentEditorProps) {
   const projection = useMemo(() => createDocumentProjection(props.document), [props.identity, props.reset])
   const comments = useMemo(() => new DocumentThreadStore(props.document.comments), [props.identity, props.reset])
   const current = useRef(props), editor = useRef<NativeDocumentEditor>(), unsubscribe = useRef<() => void>()
+  const binding = useRef(projection)
+  const active = useRef(projection)
+  active.current = projection
   current.current = props
   const emit = () => {
-    if (!editor.current) return
+    if (!editor.current || binding.current !== projection) return
     try {
       captureTableIdentities(editor.current, projection)
-      const document = nativeDocumentToProduct(editor.current.document, projection)
+      if (projection !== active.current) return
+      const latest = current.current.getDocument ? current.current.getDocument() : current.current.document
+      if (!latest) return
+      const document = nativeDocumentToProduct(editor.current.document, projection, latest)
       const threads = comments.snapshot(editor.current)
       if (Object.keys(threads).length) document.comments = threads
       else delete document.comments
@@ -44,6 +52,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
   return <BlockNoteSurface identity={props.identity} reset={props.reset} initialContent={projection.content} locale={props.locale} readOnly={props.readOnly}
     comments={comments} commentsPortal={props.commentsPortal} nodeViews={props.nodeViews} onComposition={props.onComposition} onSelection={props.onSelection}
     onChange={emit} onReady={value => {
+      if (projection !== active.current) return
       unsubscribe.current?.(); unsubscribe.current = undefined
       editor.current = undefined
       if (value) {
@@ -52,6 +61,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
         captureRichBaseline(value.document, projection)
         rememberDocumentStructure(value.document, projection)
         comments.restoreAnchors(value)
+        binding.current = projection
         editor.current = value
         unsubscribe.current = comments.subscribe(emit)
       }

@@ -14,7 +14,7 @@ import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
 import { nativeComments } from './comments.ts'
 import type { DocumentThreadStore } from './comments.ts'
 
-const THEME = {
+export const DOCUMENT_EDITOR_THEME = {
   colors: {
     editor: { background: 'var(--pm-color-surface)', text: 'var(--pm-color-ink)' },
     menu: { background: 'var(--pm-color-surface)', text: 'var(--pm-color-ink)' },
@@ -88,7 +88,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
     <div className="pm-document-editor pm-ui-block-editor pm-ui" data-document-editor={props.identity}
       onCompositionStart={() => current.current.onComposition?.(true)}
       onCompositionEnd={() => queueMicrotask(() => current.current.onComposition?.(false))}>
-      <BlockNoteView editor={editor} editable={!props.readOnly} theme={THEME} formattingToolbar={false} slashMenu={false} renderEditor={false} comments={props.commentsPortal ? false : undefined}
+      <BlockNoteView editor={editor} editable={!props.readOnly} theme={DOCUMENT_EDITOR_THEME} formattingToolbar={false} slashMenu={false} renderEditor={false} comments={props.commentsPortal ? false : undefined}
         onChange={() => current.current.onChange(editor.document, editor)}
         onSelectionChange={() => current.current.onSelection?.(documentSelection(editor))}>
         <PlainContentComments editor={editor} />
