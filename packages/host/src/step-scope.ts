@@ -21,13 +21,16 @@ export interface StepScope {
   localStepAt(globalStep: number): number
   /** First authored visible occurrence; -1 when this local state is not in the section. */
   step(k: number): number
+  /** First authored visible snapshot of an implementation's local step. */
+  stateAt(k: number): Pick<NonNullable<IRBlock['stepStates']>[number], 'state' | 'parameters'> | undefined
 }
 export function useStepScope(): StepScope {
   const { from, states, current, localPreview } = useContext(STEP_SCOPE)
   const selected = states && stateAt(states, current ?? Infinity)
   return { at: from, state: selected?.state, parameters: selected?.parameters, localPreview,
     localStepAt: k => !Number.isFinite(k) ? k : states ? stateAt(states, k)?.localStep ?? 0 : k - from,
-    step: k => states ? states.findIndex(value => value.visible && value.localStep === k) : from + k }
+    step: k => states ? states.findIndex(value => value.visible && value.localStep === k) : from + k,
+    stateAt: k => states?.find(value => value.visible && value.localStep === k) }
 }
 export function useBlockStepRange(): StepRange {
   const { from, to, states } = useContext(STEP_SCOPE)
