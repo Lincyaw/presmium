@@ -64,6 +64,7 @@ compact 与 regular 是公共控件的密度，不是每个业务面板各自定
 | 常规单行控件 | regular 最小高度使用本轮新增的 `--pm-control-height`；垂直留白取 `--pm-space-1`，水平留白取 `--pm-space-3` |
 | 紧凑单行控件与工具按钮 | compact 最小高度取 `--pm-size-tool`，适用于按钮、输入、选择与互斥参数；不以缩小图标代替合理热区 |
 | 短数值与时间 | 数值最小宽度取 `--pm-control-number-width`（80px），时间取 `--pm-control-time-width`（112px）；起止时间成对，单位放在字段说明或统一后缀，不让一个短值独占整行 |
+| 时间线 | 轨道标签列取 `--pm-timeline-label-width`（88px），窄屏复用触屏热区宽度；尺标预留宽度取 `--pm-timeline-tick-width`（80px），真实峰值图高度取 `--pm-timeline-wave-height`（20px） |
 | 触屏输入与操作 | 输入文字取 `--pm-text-lg`，有效热区取 `--pm-control-hit-area`；热区不能互相重叠 |
 | 图标 | 常规取 `--pm-size-icon`，小号取 `--pm-size-icon-sm`，较大上下文图标取本轮新增的 `--pm-size-icon-lg`；CSS 决定尺寸，业务组件不传数字 |
 | 多行输入 | regular 通用 Textarea 最小高度取 `calc(var(--pm-size-row) * 2)`；compact 讲稿最小高度取 `--pm-narration-editor-compact-height`，独占多行区域并按内容和窗格伸缩；保留的 `--pm-narration-editor-height` 不作为 compact 默认值 |
@@ -104,11 +105,15 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 | Segmented | workbench、host 的 `PmSegmented`、`pm-ui-segmented` | 已用 Radix Radio Group 管理横排互斥参数、图标、禁用和选中；不代替工作区导航 |
 | Popover／Drawer | host 的 `PmPopover`、`PmDrawer` 与共用 CSS | 依据任务使用浮层或侧抽屉；workbench 需要时走公开公共封装，不引用 host 或复制私有实现 |
 | Field／Notice／Empty | `PmField`、`PmNotice`、`PmEmpty` | 同一位置展示字段说明、错误和恢复入口，不把所有状态写成页面私有提示卡 |
-| Checkbox／Radio／Switch／Range | 现有 `pm-ui-checkbox` 仅提供部分基础着色，其余公共能力待补齐 | 在使用前规定选择、焦点、禁用、数值和错误状态；时间、语速和音量不能各自实现一套滑杆 |
+| Range | workbench `PmRange`、`pm-ui-range`，使用原生 range | 提供受控数值、读屏值、焦点、禁用和三种密度；方向键／Home／End 提交意图，拖动先显示本地预览，释放时单次提交，Esc／取消／失焦／卸载丢弃手势草稿 |
+| Timeline | workbench `PmTimeline`、`pm-ui-timeline` | 接收真实画面／配音／字幕三轨与稳定步骤身份；支持尺面点击、精确秒输入、Range、横滚、视图缩放与适配；未知／估算时长不开放任意时间定位，仍可选择步骤；只有真实样本才绘制波形 |
+| Checkbox／Radio／Switch | 现有 `pm-ui-checkbox` 仅提供部分基础着色，其余公共能力待补齐 | 在使用前规定选择、焦点、禁用、数值和错误状态，不在业务页各自实现 |
 
 原生选择器的展开列表可能由操作系统绘制，不能把这种差异当作已完成统一视觉。音色选择使用公共可搜索弹层，组合搜索、语言筛选、共享列表项、试听与选中态；桌面可使用 Popover，空间不足时使用公共 Dialog 或 Drawer。素材等复杂选择复用同一类公共能力，在 Figma 单独规定相关状态，不能退回每页自绘的下拉列表。
 
 `PmSearchList` 放在公共 Dialog、Drawer 或页面内，不另套下拉层。搜索框的向下键进入当前或首个可用结果，方向键、Home、End 与 Space 由 Radix Radio Group 管理；没有可用结果时焦点留在搜索框。`label`、`keywords` 用于检索，`description` 只展示非交互说明，试听等操作放在列表外。错误只渲染一个关联提示，额外说明通过 `aria-describedby` 关联；关闭时由外层公共容器归还焦点。Figma 的 [SearchList 组件集](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=77-554) 与[状态矩阵](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=77-1704) 对应 `packages/workbench/src/components.tsx` 的 `PmSearchList`、公共 CSS 与 `--pm-search-list-max-height`；24 个变体覆盖三种密度及默认、悬停、按下、焦点、禁用、加载、错误和空状态。
+
+`PmTimeline` 的[正式组件集](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=136-3258)与[明暗状态矩阵](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=137-2178)覆盖三种密度及就绪、焦点、估算、未知、加载和禁用共 18 个变体；复用公开 Range、Input、Button、IconButton 与既有 Lucide 图标，不新增时间线私有按钮。尺、位置滑杆和三轨共享时间轴起点。片段太短时仍有独立完整热区的步骤按钮，触屏无需依赖拖动；长时间线在轨道区内横滚。缩放只改变视图，不写入 Production。`onSeek` 只提交时间意图，由调用方先暂停并确认来源后更新受控位置；`seekDisabled` 仅禁时间定位，稳定步骤选择保持可用。估算与未知不能冒充确认时码，缺少真实 samples 不画装饰波形。实际公共消费者范围见[时间线验证](benchmarks/public-timeline-2026-10-26.md)，不能由组件存在推断整个制作流程已经验收。
 
 音色选择的[正式组合与状态](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=126-385)复用上述公共控件，不新增一套音色专用下拉。SearchList 的 Figma 变体内部按可用宽度伸缩，与公共实现的满宽、换行和滚动行为一致；默认宽度仍为 340px。组合包括桌面与 390px 触屏的浅／深色，以及目录未配置、不提供目录、空结果、读取失败、加载、确认覆盖、确认调用、取消中与源版本变化等状态。它们是正式设计目标，不能据此宣称独立视频制作入口或配音流程已经完成验收。
 
@@ -238,7 +243,7 @@ Web 面向非技术作者，组件名称、令牌名和映射说明只属于设�
 | 仍使用私有工具按钮或旧输入的业务区域 | 迁入第 4 节公共包装，删除对应控件外观覆盖，只保留布局 |
 | host 的输入包装与领域控件 | 按实际使用补公开属性与字段关系，不让插件依赖 workbench |
 | 音色搜索、试听、媒体时间与波形 | 先验证服务能力，再补公共选择弹层和领域控件；原型状态不能代替底层能力 |
-| Checkbox／Switch／Range | 在实际使用前补齐适用状态与可访问关系，不在业务页手写控件 |
+| Checkbox／Switch | 在实际使用前补齐适用状态与可访问关系，不在业务页手写控件 |
 | 新插画、品牌或其他公共素材 | 按第 6 节登记来源、许可、文件和消费位置 |
 | Figma 其余功能屏幕与领域组件 | 使用核心组件组合，补齐独立交互状态与映射后再实施 |
 
