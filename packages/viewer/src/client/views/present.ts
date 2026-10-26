@@ -1,5 +1,5 @@
 import { FocusScope } from '@radix-ui/react-focus-scope'
-import { PmApprovals, PmIcon, PmMenu } from '@lincyaw/host'
+import { PmApprovals, PmCaption, PmIcon, PmMenu, TIMED_CAPTIONS, useService } from '@lincyaw/host'
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@lincyaw/host'
 import { h } from '../element.ts'
@@ -36,6 +36,8 @@ export function PresentView() {
     useOverlayBar(bar)
     const ownsFullscreen = useRef(false)
     const [fullscreen, setFullscreen] = useState(false)
+    const [captions, setCaptions] = useState(true)
+    const timedCaptions = useStore(useService(TIMED_CAPTIONS)?.active, false)
     const overview = useStore(overviewOpen)
     const doc = useStore(viewer.doc)
     const position = useStore(viewer.position)
@@ -80,6 +82,9 @@ export function PresentView() {
       if (!current) return null
       const t = viewerMessages()
       const { sections } = doc
+      const stepId = current.stepIds?.[step]
+      const narration = stepId ? current.stepNarrations?.[stepId] ?? [] : []
+      const hasNarration = sections.some(section => Object.values(section.stepNarrations ?? {}).some(lines => lines.some(line => line.text.trim())))
       return h(FocusScope, { trapped: true, loop: true, asChild: true }, h('div', null, [h('div', {
         'ref': root,
         'class': 'pm-present',
@@ -101,12 +106,13 @@ export function PresentView() {
               }, [h('span', { class: 'pm-overview__index' }, String(s.index)), h('span', { class: 'pm-overview__title' }, s.title)])))))
             : null,
         ]),
+        captions && hasNarration && !timedCaptions ? h('div', { className: 'pm-present__caption', 'data-caption-section': current.id, 'data-caption-step': stepId }, h(PmCaption, { label: t.present.captions, lines: narration.map(item => item.text).filter(text => text.trim()), hint: narration.some(item => item.text.trim()) ? t.present.captionsHint : t.present.noCaptions, lang: doc.meta.lang })) : null,
         h('div', { ref: bar, class: 'pm-present__bar' }, [
           h('span', { 'class': 'pm-present__counter', 'title': t.present.counter(current.index, sections.length, step, current.steps) }, `${current.index} / ${sections.length}${current.steps > 0 ? ` · ${step + 1} / ${current.steps + 1}` : ''}`),
           button(t.present.prev, () => viewer.prev(), 'chevron-left', 'ArrowLeft'),
           button(t.present.next, () => viewer.next(), 'chevron-right', 'ArrowRight'),
           current.steps > 0 ? h(PmMenu, { label: t.present.jumpStep, icon: 'steps', placement: 'above-start', items: Array.from({ length: current.steps + 1 }, (_, k) => ({ id: String(k), label: t.present.step(k + 1), icon: k === step ? 'check' as const : undefined })), onSelect: (id: string) => viewer.go({ section: current.id, step: Number(id) }) }) : null,
-          h('button', { 'type': 'button', 'class': 'pm-ui-icon-button pm-ui-icon-button--small pm-present__narrate', 'data-narration-section': current.id, 'data-narration-step': step, 'aria-label': t.contentRoles.narration, 'title': t.contentRoles.narration }, [h(PmIcon, { name: 'captions' })]),
+          hasNarration && !timedCaptions ? button(t.present.captions, () => setCaptions(value => !value), 'captions', undefined, { 'aria-pressed': captions }) : null,
           button(t.present.overview, () => overviewOpen.set(!overview), 'overview', 'o', { 'aria-pressed': overview }),
           viewer.options.openPresenter ? button(t.present.presenter, () => viewer.options.openPresenter!(position), 'slides', 'p') : null,
           button(fullscreen ? t.present.exitFullscreen : t.present.fullscreen, enterFullscreen, fullscreen ? 'exit-fullscreen' : 'fullscreen', 'Shift+F', { 'aria-pressed': fullscreen }),

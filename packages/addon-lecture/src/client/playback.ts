@@ -3,7 +3,7 @@ import type { Operations, StepClock } from '@lincyaw/host'
 import { errorMessage } from '@lincyaw/kernel'
 import { flushSync } from 'react-dom'
 import { useEffect, useRef, useState } from 'react'
-import { audioSegments, LECTURE_ID, LECTURE_MESSAGES, timedEvents, trackDuration } from '../domain/index.ts'
+import { audioSegments, LECTURE_ID, LECTURE_MESSAGES, SCRIPT_TRACK, timedEvents, trackDuration } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 import type { ClockMedia, TrackClock } from './clock.ts'
 import { MediaClock, SilentClock } from './clock.ts'
@@ -63,6 +63,9 @@ export function useLecturePlayback() {
     void source.track(id).then(async track => {
       if (load !== generation.current) return
       if (!track) { setStatus('missing'); return }
+      // A word-count estimate is not a prepared audio timeline. Without any
+      // actual clip, presentation keeps its canonical step-caption surface.
+      if (!exporting && track.id === SCRIPT_TRACK && track.utterances.length > 0 && track.utterances.every(utterance => Boolean(utterance.unsaid)) && audioSegments(track).length === 0) { play(undefined); return }
       const position = viewer.position.getSnapshot()
       const at = exporting ? 0 : timedEvents(track).find(event => event.type === 'go' && event.data.section === position.section && Number(event.data.step ?? 0) === position.step)?.t ?? 0
       await start(track, source, operations, load, at)

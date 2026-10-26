@@ -10,5 +10,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-.pm-content-marks, .pm-present__narrate { display: none; }
-html[data-preview-picking] .pm-present__narrate { display: inline-flex; }
+.pm-content-marks { display: none; }
+.pm-present__caption {
+  align-self: center;
+  max-width: calc(100% - var(--pm-space-4) * 2);
+  min-height: 0;
+  flex: 0 0 auto;
+  margin: var(--pm-space-2) var(--pm-space-4);
+}

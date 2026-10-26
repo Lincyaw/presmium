@@ -3,7 +3,7 @@ import type { EnvironmentSpec, Logger, PluginDefinition, PluginReport, Presentat
 import { createStore } from './store.ts'
 import { connectActions } from './actions.ts'
 import { PmApprovals } from './approvals.ts'
-import { NAVIGATION, OPERATIONS, PLAYBACK_CONTROL, STATUS, STEP_CLOCK, SYNC_TRANSPORTS, TOOLBAR } from './contracts.ts'
+import { NAVIGATION, OPERATIONS, PLAYBACK_CONTROL, STATUS, STEP_CLOCK, SYNC_TRANSPORTS, TIMED_CAPTIONS, TOOLBAR } from './contracts.ts'
 import type { Navigation, ServerClient, SyncTransports } from './contracts.ts'
 import { connectControl } from './control.ts'
 import { componentErrors } from './error-boundary.ts'
@@ -11,7 +11,7 @@ import { currentLocale } from './locale.ts'
 import { HOST_MESSAGES } from './messages.ts'
 import { createOperations } from './operations.ts'
 import { createPlaybackControl } from './playback-control.ts'
-import { createPresenterPanels, createStatusRegistry, createToolbar } from './registries.ts'
+import { createPresenterPanels, createStatusRegistry, createTimedCaptions, createToolbar } from './registries.ts'
 import { provideServer } from './server.ts'
 import { createStepClock } from './step-clock.ts'
 
@@ -135,6 +135,7 @@ export function startHost(options: HostStart): Promise<StartReport> {
       connectActions(operations)
       kernel.provide(OPERATIONS, operations)
       kernel.provide(PLAYBACK_CONTROL, createPlaybackControl())
+      kernel.provide(TIMED_CAPTIONS, createTimedCaptions())
       stopClock?.()
       const stepClock = createStepClock(options.navigation)
       stopClock = stepClock.stop

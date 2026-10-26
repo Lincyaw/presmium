@@ -8,6 +8,9 @@ const zh = {
   present: {
     region: '放映',
     jumpStep: '跳转步骤',
+    captions: '字幕（按步骤）',
+    captionsHint: '字幕随步骤切换',
+    noCaptions: '本步没有讲稿',
     step: (step: number) => `第 ${step} 步`,
     counter: (index: number, total: number, step: number, steps: number) => `${index} / ${total}${steps > 0 ? ` · ${zhStep(step, steps)}` : ''}`,
     prev: '上一步',
@@ -71,6 +74,9 @@ const en: Messages = {
   present: {
     region: 'Presentation',
     jumpStep: 'Jump to step',
+    captions: 'Captions by step',
+    captionsHint: 'Captions follow the selected step',
+    noCaptions: 'No narration for this step',
     step: step => `Step ${step}`,
     counter: (index, total, step, steps) => `${index} / ${total}${steps > 0 ? ` · step ${step + 1} of ${steps + 1}` : ''}`,
     prev: 'Previous',

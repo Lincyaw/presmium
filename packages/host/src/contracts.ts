@@ -128,6 +128,13 @@ export interface PlaybackControl {
 
 export const PLAYBACK_CONTROL = defineService<PlaybackControl>('presmium.playbackControl')
 
+/** A loaded timed-caption player owns presentation captions until its lease is released. */
+export interface TimedCaptions {
+  readonly active: Store<boolean>
+  claim(): Unsubscribe
+}
+export const TIMED_CAPTIONS = defineService<TimedCaptions>('presmium.timedCaptions')
+
 export interface StepClockDriver {
   readonly elapsed: Store<number | undefined>
   readonly recording?: boolean
