@@ -1,6 +1,6 @@
-// The example's two lectures: `check` and `ir` run on each; `build` builds the workspace's site into dist/web/ and adds
-// each lecture's slides, notebook and narrated lecture to it, at <lecture>/slides/, <lecture>/notebook/ and
-// <lecture>/lecture/ (where the page's lecture view looks first).
+// `check` and `ir` target the two complete courses. `build` includes every document's web page,
+// then adds the original courses' slides, notebook and narrated lecture at <lecture>/slides/,
+// <lecture>/notebook/ and <lecture>/lecture/ (where the page's lecture view looks first).
 import { execFileSync } from 'node:child_process'
 import { cpSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
