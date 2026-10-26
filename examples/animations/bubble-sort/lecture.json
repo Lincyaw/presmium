@@ -1,0 +1,769 @@
+{
+  "schemaVersion": 1,
+  "id": "document-0494e2ae710133f3",
+  "metadata": {
+    "title": "冒泡排序",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-guide",
+      "@lincyaw/addon-lecture",
+      "@lincyaw/addon-speech"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {},
+      "lecture": {}
+    }
+  },
+  "sectionOrder": [
+    "intro",
+    "pass",
+    "summary"
+  ],
+  "sections": {
+    "intro": {
+      "id": "intro",
+      "title": "冒泡排序",
+      "level": 1,
+      "children": [
+        "intro--paragraph-1"
+      ],
+      "stepOrder": [
+        "intro--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "pass": {
+      "id": "pass",
+      "title": "一趟冒泡",
+      "level": 2,
+      "children": [
+        "pass--sort-code",
+        "pass--stats",
+        "pass--bubble",
+        "pass--paragraph-1",
+        "pass--paragraph-2",
+        "pass--paragraph-3",
+        "pass--paragraph-4",
+        "pass--paragraph-5"
+      ],
+      "stepOrder": [
+        "pass--step-0",
+        "pass--step-1",
+        "pass--step-2",
+        "pass--step-3",
+        "pass--step-4"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "summary": {
+      "id": "summary",
+      "title": "小结",
+      "level": 2,
+      "children": [
+        "summary--paragraph-1"
+      ],
+      "stepOrder": [
+        "summary--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "intro--paragraph-1": {
+      "id": "intro--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "用一个动画讲清楚冒泡排序的一趟。"
+            }
+          ]
+        }
+      ]
+    },
+    "pass--sort-code": {
+      "id": "pass--sort-code",
+      "type": "code",
+      "language": "python",
+      "value": "def bubble_pass(a):\n    for i in range(len(a) - 1):\n        if a[i] > a[i + 1]:\n            a[i], a[i + 1] = a[i + 1], a[i]\n    return a"
+    },
+    "pass--stats": {
+      "id": "pass--stats",
+      "type": "component",
+      "definitionId": "pass--stats--definition",
+      "parameters": {}
+    },
+    "pass--bubble": {
+      "id": "pass--bubble",
+      "type": "component",
+      "definitionId": "pass--bubble--definition",
+      "parameters": {
+        "scene": "bubble",
+        "alt": "5 2 4 1 3 的一趟冒泡：5 与右边的数逐个比较、交换，最后停在末尾。"
+      }
+    },
+    "pass--paragraph-1": {
+      "id": "pass--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "pass--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "冒泡排序每一趟比较相邻的两个数，把大的往后换。先看这五个数。"
+            }
+          ]
+        }
+      ]
+    },
+    "pass--paragraph-2": {
+      "id": "pass--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "pass--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一次比较 5 和 2，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "to": "stats",
+                    "value": "click compare"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 比较次数加一。"
+            }
+          ]
+        }
+      ]
+    },
+    "pass--paragraph-3": {
+      "id": "pass--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "pass--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "5 比 2 大，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "to": "sort-code",
+                    "lines": "3-4",
+                    "value": "spot"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 交换它们。"
+            }
+          ]
+        }
+      ]
+    },
+    "pass--paragraph-4": {
+      "id": "pass--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "pass--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "再比较 5 和 4，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "to": "stats",
+                    "value": "click compare"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 又是前面大，再交换。"
+            }
+          ]
+        }
+      ]
+    },
+    "pass--paragraph-5": {
+      "id": "pass--paragraph-5",
+      "type": "text",
+      "content": [
+        {
+          "id": "pass--paragraph-5--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "5 继续往后，越过 1 和 3，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "value": "pause 300ms"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 停在最后，这一趟结束。"
+            }
+          ]
+        }
+      ]
+    },
+    "summary--paragraph-1": {
+      "id": "summary--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "summary--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一趟下来，最大的数到了末尾。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "intro--step-0": {
+      "id": "intro--step-0",
+      "sectionId": "intro",
+      "visuals": [
+        {
+          "blockId": "intro--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "intro--paragraph-1--narration"
+      ]
+    },
+    "pass--step-0": {
+      "id": "pass--step-0",
+      "sectionId": "pass",
+      "visuals": [
+        {
+          "blockId": "pass--sort-code",
+          "visible": true
+        },
+        {
+          "blockId": "pass--stats",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "pass--bubble",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "pass--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "pass--paragraph-1--narration"
+      ]
+    },
+    "pass--step-1": {
+      "id": "pass--step-1",
+      "sectionId": "pass",
+      "visuals": [
+        {
+          "blockId": "pass--sort-code",
+          "visible": true
+        },
+        {
+          "blockId": "pass--stats",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "pass--bubble",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "pass--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "pass--paragraph-2--narration"
+      ]
+    },
+    "pass--step-2": {
+      "id": "pass--step-2",
+      "sectionId": "pass",
+      "visuals": [
+        {
+          "blockId": "pass--sort-code",
+          "visible": true
+        },
+        {
+          "blockId": "pass--stats",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "pass--bubble",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "pass--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "pass--paragraph-3--narration"
+      ]
+    },
+    "pass--step-3": {
+      "id": "pass--step-3",
+      "sectionId": "pass",
+      "visuals": [
+        {
+          "blockId": "pass--sort-code",
+          "visible": true
+        },
+        {
+          "blockId": "pass--stats",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "pass--bubble",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "pass--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "pass--paragraph-4--narration"
+      ]
+    },
+    "pass--step-4": {
+      "id": "pass--step-4",
+      "sectionId": "pass",
+      "visuals": [
+        {
+          "blockId": "pass--sort-code",
+          "visible": true
+        },
+        {
+          "blockId": "pass--stats",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "pass--bubble",
+          "visible": true,
+          "state": "legacy-4"
+        },
+        {
+          "blockId": "pass--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "pass--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "pass--paragraph-5--narration"
+      ]
+    },
+    "summary--step-0": {
+      "id": "summary--step-0",
+      "sectionId": "summary",
+      "visuals": [
+        {
+          "blockId": "summary--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "summary--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "intro--paragraph-1--narration": {
+      "id": "intro--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "用一个动画讲清楚冒泡排序的一趟。"
+        }
+      ]
+    },
+    "pass--paragraph-1--narration": {
+      "id": "pass--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "冒泡排序每一趟比较相邻的两个数，把大的往后换。先看这五个数。"
+        }
+      ]
+    },
+    "pass--paragraph-2--narration": {
+      "id": "pass--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第一次比较 5 和 2，"
+        },
+        {
+          "id": "cue-pass-1",
+          "type": "cue",
+          "action": "click",
+          "target": {
+            "blockId": "pass--stats"
+          },
+          "parameters": {
+            "arg": "compare"
+          }
+        },
+        {
+          "type": "text",
+          "text": " 比较次数加一。"
+        }
+      ]
+    },
+    "pass--paragraph-3--narration": {
+      "id": "pass--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "5 比 2 大，"
+        },
+        {
+          "id": "cue-pass-1-2",
+          "type": "cue",
+          "action": "spot",
+          "target": {
+            "blockId": "pass--sort-code"
+          },
+          "parameters": {
+            "lines": "3-4"
+          }
+        },
+        {
+          "type": "text",
+          "text": " 交换它们。"
+        }
+      ]
+    },
+    "pass--paragraph-4--narration": {
+      "id": "pass--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "再比较 5 和 4，"
+        },
+        {
+          "id": "cue-pass-1-3",
+          "type": "cue",
+          "action": "click",
+          "target": {
+            "blockId": "pass--stats"
+          },
+          "parameters": {
+            "arg": "compare"
+          }
+        },
+        {
+          "type": "text",
+          "text": " 又是前面大，再交换。"
+        }
+      ]
+    },
+    "pass--paragraph-5--narration": {
+      "id": "pass--paragraph-5--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "5 继续往后，越过 1 和 3，"
+        },
+        {
+          "id": "cue-pass-1-4",
+          "type": "cue",
+          "action": "pause"
+        },
+        {
+          "type": "text",
+          "text": " 停在最后，这一趟结束。"
+        }
+      ]
+    },
+    "summary--paragraph-1--narration": {
+      "id": "summary--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "一趟下来，最大的数到了末尾。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "pass--stats--definition": {
+      "id": "pass--stats--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "components/CompareCount.tsx"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "deck",
+        "name": "CompareCount",
+        "language": "tsx"
+      }
+    },
+    "pass--bubble--definition": {
+      "id": "pass--bubble--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/bubble.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        },
+        {
+          "id": "legacy-4",
+          "legacyIndex": 4
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          800,
+          1000,
+          1000,
+          1500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "5 2 4 1 3 的一趟冒泡：5 与右边的数逐个比较、交换，最后停在末尾。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "tts",
+        "voice": {
+          "engine": "edge",
+          "voice": "zh-CN-XiaoxiaoNeural"
+        }
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": [],
+    "cueTimings": {
+      "cue-pass-1-4": {
+        "pauseMs": 300
+      }
+    }
+  }
+}
