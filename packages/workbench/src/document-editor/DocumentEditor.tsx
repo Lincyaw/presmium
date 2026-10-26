@@ -3,7 +3,7 @@ import type { TeachingDocument } from '@lincyaw/kernel'
 import type { Locale } from '../messages.ts'
 import { BlockNoteSurface } from './BlockNoteSurface.tsx'
 import { DocumentThreadStore } from './comments.ts'
-import { createDocumentProjection, nativeDocumentToProduct } from './projection.ts'
+import { createDocumentProjection, nativeDocumentToProduct, rememberDocumentStructure } from './projection.ts'
 import { captureRichBaseline } from './rich-text.ts'
 import { captureTableIdentities, seedTableIdentities } from './table-identities.ts'
 import type { DocumentNodeViews, NativeDocumentEditor } from './schema.tsx'
@@ -50,6 +50,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
         seedTableIdentities(value, projection)
         captureTableIdentities(value, projection)
         captureRichBaseline(value.document, projection)
+        rememberDocumentStructure(value.document, projection)
         comments.restoreAnchors(value)
         editor.current = value
         unsubscribe.current = comments.subscribe(emit)
