@@ -1,4 +1,5 @@
 .pm-ui-step-production { display: grid; gap: var(--pm-space-3); min-width: 0; }
 .pm-ui-step-production__heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--pm-space-2); }
-.pm-ui-step-production__durations, .pm-ui-step-production__actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--pm-space-3); }
+.pm-ui-step-production__durations { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: calc(var(--pm-control-time-width) * 2 + var(--pm-space-3)); align-items: start; gap: var(--pm-space-3); }
+.pm-ui-step-production__actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--pm-space-3); }
 .pm-ui-step-production__narration-settings { display: grid; gap: var(--pm-space-1); }
