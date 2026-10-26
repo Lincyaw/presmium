@@ -24,11 +24,11 @@ const staging = mkdtempSync(join(tmpdir(), 'presmium-vsix-'))
 const output = join(pkg, 'dist', `${manifest.name}-${manifest.version}-${target}.vsix`)
 try {
   const runtime = join(staging, 'runtime')
-  run([pnpm, '--filter', '@lincyaw/language-server', 'deploy', '--prod', '--offline',
+  run([pnpm, '--filter', '@lincyaw/language-server', 'deploy', '--prod',
     '--config.inject-workspace-packages=true', '--config.node-linker=hoisted', runtime], root)
   for (const file of ['.pnpm', '.bin', '.modules.yaml']) rmSync(join(runtime, 'node_modules', file), { recursive: true, force: true })
   for (const file of ['pnpm-lock.yaml', 'pnpm-workspace.yaml']) rmSync(join(runtime, file), { force: true })
-  for (const file of ['README.md', 'LICENSE', 'package.nls.json', 'package.nls.zh-cn.json', 'dist/extension.cjs']) {
+  for (const file of ['README.md', 'LICENSE', 'package.nls.json', 'package.nls.zh-cn.json', 'dist/extension.cjs', 'dist/lecture.schema.json']) {
     cpSync(join(pkg, file), join(staging, file), { recursive: true })
   }
   const { dependencies, devDependencies, scripts, ...installed } = manifest

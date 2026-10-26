@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { errorMessage, escapeHtml } from '@lincyaw/kernel'
 import { previewUrl } from '@lincyaw/language-server/domain'
 import { PREVIEW_REQUEST, SECTION_REQUEST } from '@lincyaw/language-server/protocol'
@@ -12,6 +12,7 @@ import { LanguageClient, TransportKind } from 'vscode-languageclient/node'
 const SERVER_PACKAGE = '@lincyaw/language-server'
 const SERVER_BIN = 'bin/presmium-language-server.mjs'
 const SYNC_DELAY = 150
+const isDocument = (document: vscode.TextDocument) => document.uri.scheme === 'file' && document.languageId === 'json' && basename(document.uri.fsPath) === 'lecture.json'
 
 let client: LanguageClient | undefined
 
@@ -40,7 +41,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
   const runtime = vscode.workspace.getConfiguration('presmium').get<string>('server.runtime') || 'node'
   client = new LanguageClient('presmium', 'Presmium', { module: server, runtime, transport: TransportKind.ipc }, {
-    documentSelector: [{ scheme: 'file', language: 'markdown' }],
+    documentSelector: [{ scheme: 'file', language: 'json', pattern: '**/lecture.json' }],
   })
   context.subscriptions.push(vscode.commands.registerCommand('presmium.openPreview', () => openPreview(client!)))
   await client.start()
@@ -57,7 +58,8 @@ function requestSectionAtCursor(client: LanguageClient, editor: vscode.TextEdito
 
 async function openPreview(client: LanguageClient): Promise<void> {
   const editor = vscode.window.activeTextEditor
-  if (!editor) return
+  if (!editor || !isDocument(editor.document)) return
+  if (editor.document.isDirty && !await editor.document.save()) return
   let preview: Preview
   try {
     preview = await vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: 'Starting presmium dev' }, () =>
@@ -76,18 +78,21 @@ async function openPreview(client: LanguageClient): Promise<void> {
   shown = first ?? undefined
 
   let timer: NodeJS.Timeout | undefined
+  let cursorRequest = 0
   const syncPreviewToCursor = vscode.window.onDidChangeTextEditorSelection(({ textEditor }) => {
-    if (textEditor.document.languageId !== 'markdown') return
+    if (!isDocument(textEditor.document)) return
+    const request = ++cursorRequest
     clearTimeout(timer)
     timer = setTimeout(async () => {
       const section = await requestSectionAtCursor(client, textEditor).catch(() => null)
-      if (!section || section.entry !== preview.entry || section.id === shown?.id) return
+      if (request !== cursorRequest || !section || section.entry !== preview.entry || section.id === shown?.id) return
       const url = urlOf(section)
       shown = section
       void panel.webview.postMessage({ type: 'presmium:show', url })
     }, SYNC_DELAY)
   })
   panel.onDidDispose(() => {
+    cursorRequest++
     clearTimeout(timer)
     syncPreviewToCursor.dispose()
   })

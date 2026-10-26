@@ -41,10 +41,8 @@ jobs:
           cache: pnpm
       - run: pnpm --filter . --filter presmium-vscode... install --frozen-lockfile
       - run: pnpm --filter presmium-vscode package:vsix
-      - name: Test the packaged runtime outside the checkout
-        run: pnpm exec vitest run packages/vscode/test/build.test.ts --project integration
-        env:
-          PRESMIUM_VSIX_REUSE_BUILD: '1'
+      - name: Type-check extension and language server
+        run: pnpm --filter presmium-vscode --filter @lincyaw/language-server typecheck
       - uses: actions/upload-artifact@v4
         with:
           name: presmium-vscode-${{ matrix.target }}

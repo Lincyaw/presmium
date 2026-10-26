@@ -1,8 +1,8 @@
-import { existsSync, readFileSync } from 'node:fs'
-import { basename, dirname, join } from 'node:path'
-import { Compiler, DECK_ENTRY, parseFrontmatter } from '@lincyaw/compiler'
+import { basename, join } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { Compiler, DECK_ENTRY } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
-import { ANCHOR_LOCK_PATH, errorMessage } from '@lincyaw/kernel'
+import { ANCHOR_LOCK_PATH, errorMessage, fnv1a64 } from '@lincyaw/kernel'
 import type { Finding } from '@lincyaw/kernel'
 
 export class Deck {
@@ -11,8 +11,11 @@ export class Deck {
   readonly #compiled: (deck: Deck) => void
   compilation?: Compilation
   findings: Finding[] = []
+  sourceFingerprint?: string
   #running?: Promise<void>
   #again = false
+  #version = 0
+  #completedVersion = -1
 
   constructor(entry: string, compiled: (deck: Deck) => void) {
     this.entry = entry
@@ -39,9 +42,8 @@ export class Deck {
     return this.#running ?? Promise.resolve()
   }
 
-  hasSourceFile(file: string): boolean {
-    return this.compilation ? this.compilation.sourceFiles.includes(file) : file === this.entry
-  }
+  invalidate(): void { this.#version++ }
+  get findingsCurrent(): boolean { return this.#completedVersion === this.#version }
 
   dependsOn(file: string): boolean {
     const { compilation } = this
@@ -50,34 +52,22 @@ export class Deck {
   }
 
   async #compileOnce(): Promise<void> {
+    const version = this.#version
+    let attemptedFingerprint: string | undefined
+    try { attemptedFingerprint = fnv1a64(readFileSync(this.entry, 'utf8')) } catch { /* The compiler reports unavailable entries. */ }
     try {
       const compilation = await this.#compiler.compile()
       this.findings = [...compilation.doc.diagnostics, ...await compilation.check()]
       this.compilation = compilation
+      this.sourceFingerprint = compilation.sourceFingerprints?.[this.entry]
     } catch (error) {
+      this.compilation = undefined
+      this.sourceFingerprint = attemptedFingerprint
       this.findings = [{ checkId: 'presmium.compile', severity: 'error', message: errorMessage(error), source: { file: this.entry, line: 1 } }]
     }
-    this.#compiled(this)
+    this.#completedVersion = version
+    if (this.findingsCurrent && !this.#again) this.#compiled(this)
   }
-}
-
-function declaresPlugins(file: string): boolean {
-  try {
-    return 'plugins' in parseFrontmatter(readFileSync(file, 'utf8'))
-  } catch {
-    return false
-  }
-}
-
-function candidateEntries(file: string): string[] {
-  const entries = basename(file) === DECK_ENTRY ? [file] : []
-  for (let dir = dirname(file); ; dir = dirname(dir)) {
-    const entry = join(dir, DECK_ENTRY)
-    if (entry !== file && existsSync(entry)) entries.push(entry)
-    if (dirname(dir) === dir) break
-  }
-  if (basename(file) !== DECK_ENTRY && declaresPlugins(file)) entries.push(file)
-  return entries
 }
 
 export class Decks {
@@ -102,21 +92,11 @@ export class Decks {
     return deck
   }
 
-  /** The deck whose source the file is: an open one, or one opened at an entry above it. */
+  /** Only the canonical JSON entry opens a document; project inputs are watched dependencies. */
   async findByFile(file: string): Promise<Deck | undefined> {
-    const known = this.all()
-    const owner = known.find(deck => deck.compilation?.sourceFiles.includes(file))
-    if (owner) return owner
-    for (const deck of known) {
-      await deck.ready()
-      if (deck.hasSourceFile(file)) return deck
-    }
-    for (const entry of candidateEntries(file)) {
-      if (known.some(deck => deck.entry === entry)) continue
-      const deck = this.open(entry)
-      await deck.ready()
-      if (deck.hasSourceFile(file)) return deck
-    }
-    return undefined
+    if (basename(file) !== DECK_ENTRY) return undefined
+    const deck = this.open(file)
+    await deck.ready()
+    return deck
   }
 }

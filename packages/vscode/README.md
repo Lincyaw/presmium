@@ -1,22 +1,18 @@
 # Presmium for VS Code
 
-Presmium documents in VS Code: diagnostics, anchor navigation and completion from the Presmium language server, and a `presmium dev` preview that follows the cursor.
+Edit canonical `lecture.json` documents in VS Code with the built-in JSON editor, shared schema completion, teaching graph diagnostics, code anchor navigation and a preview that follows the current page.
 
-Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which derives web pages, slides, Jupyter notebooks and narrated playback from the same teaching document.
 
-## Features
+## Document authoring
 
-- Diagnostics of `presmium check` after saving, on the lines they concern.
-- Go to the definition of a code anchor (`region:`, `symbol:`, `pattern:`), hovers and completion of directives, options and anchors.
-- **Open Preview to the Side** (in the editor's title bar for Markdown files): the web form of `presmium dev`, which follows the cursor.
+Open a workspace containing `lecture.json`; the extension activates for these documents. For a standalone `lecture.json` file, run **Presmium: Open Preview to the Side**. The language client and editor action only select the canonical filename and VS Code's `json` language.
 
-## Install and preview
+The extension associates `lecture.json` with `dist/lecture.schema.json`, generated at build time from the public `@lincyaw/kernel` `DOCUMENT_JSON_SCHEMA`. VS Code supplies JSON completion and documentation. The Presmium language server adds the same graph validation used by the compiler and source saves, including diagnostics for unsaved buffers.
 
-Download a `.vsix` for your operating system and processor from the [GitHub Releases](https://github.com/Lincyaw/presmium/releases) assets. Apple Silicon uses `darwin-arm64`, Intel Macs use `darwin-x64`; Windows and Linux each have `x64` and `arm64` packages.
+Use **Go to Definition** on entity references such as `blockId`, `definitionId` or `stepOrder` to find the corresponding normalized entity. A code block's `origin.anchor` navigates to the actual project code and shows resolved code in a hover. After saving JSON or changing a watched project input, the language server recompiles the real document.
 
-In VS Code, run **Extensions: Install from VSIX…** and select the download. Reload the window if prompted. Open your lecture's `lecture.md`, then run **Presmium: Open Preview to the Side** from the Command Palette. The Presmium command is separate from VS Code's built-in Markdown preview. Save your changes to update the rendered page; moving the cursor to another section moves the preview there.
-
-The installation includes the language server, compiler and web renderer. It needs Node.js 22.19 or later on your PATH; document-specific plugins still come from your project. It does not need Studio, DeepSeek Harness or a model.
+**Open Preview to the Side** saves pending JSON changes and starts `presmium dev`. Preview navigation follows the page owning the entity under the cursor, using stable IDs and JSON paths; map order and JSON formatting do not determine the page. The browser studio provides the native rich-text editor for this same document.
 
 ## Settings
 
@@ -33,7 +29,7 @@ pnpm --filter presmium-vscode package:vsix
 
 This writes `dist/presmium-vscode-<version>-<platform>-<arch>.vsix` inside this package. Build on the target operating system and architecture: the renderer's esbuild and Rollup dependencies include native binaries. The runtime is deployed from the workspace lockfile into ordinary directories and included in the archive; it has no symlinks back to this checkout. `pnpm --filter presmium-vscode build` only writes the extension host bundle, for extension development.
 
-The **VS Code extension** GitHub Actions workflow builds and tests all six packages on pushes and pull requests affecting the packages. Manual runs provide workflow artifacts. Publishing a GitHub Release builds its tagged commit and attaches the tested `.vsix` files to that release. This workflow does not publish to the VS Code Marketplace or npm.
+The **VS Code extension** GitHub Actions workflow builds and type-checks all six packages on pushes and pull requests affecting the packages. Manual runs provide workflow artifacts. Publishing a GitHub Release builds its tagged commit and attaches the built `.vsix` files to that release. This workflow does not publish to the VS Code Marketplace or npm.
 
 ## License
 

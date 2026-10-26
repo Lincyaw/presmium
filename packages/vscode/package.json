@@ -23,9 +23,15 @@
     "workspace"
   ],
   "activationEvents": [
-    "onLanguage:markdown"
+    "workspaceContains:**/lecture.json"
   ],
   "contributes": {
+    "jsonValidation": [
+      {
+        "fileMatch": "**/lecture.json",
+        "url": "./dist/lecture.schema.json"
+      }
+    ],
     "commands": [
       {
         "command": "presmium.openPreview",
@@ -38,7 +44,7 @@
       "editor/title": [
         {
           "command": "presmium.openPreview",
-          "when": "editorLangId == markdown",
+          "when": "resourceScheme == file && resourceFilename == lecture.json && editorLangId == json",
           "group": "navigation"
         }
       ]

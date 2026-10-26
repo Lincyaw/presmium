@@ -90,8 +90,10 @@ the same. Publishing itself is the maintainers' steps in
 
 `pnpm --filter presmium-vscode package:vsix` builds the VSIX for the current OS and processor. The language
 server and the web rendering runtime are deployed into the VSIX from the lockfile; a symlink into the
-development tree is not a packaged dependency. Run `packages/vscode/test/build.test.ts` to verify that the
-unpacked service starts a preview outside the repository (a test: run it when the owner asks), and accept the
-package in an ordinary VS Code window (the real run). `.github/workflows/vscode.yml` builds and verifies it on six platforms and attaches the files to a
+development tree is not a packaged dependency. The build generates `dist/lecture.schema.json` directly
+from the public kernel `DOCUMENT_JSON_SCHEMA`; the archive must contain that file and the JSON validation
+association. Verify the unpacked language server with real LSP initialize/open/save, diagnostics, entity
+navigation and preview requests, then accept the package in an ordinary VS Code window. If a window
+cannot be started, report that boundary separately from the service and archive checks. `.github/workflows/vscode.yml` builds it on six platforms and attaches the files to a
 GitHub Release when one is published. Install and build steps are maintained in one place,
 `packages/vscode/README.md`.
