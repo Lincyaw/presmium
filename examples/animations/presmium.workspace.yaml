@@ -15,6 +15,12 @@ site:
           link: '/guide-classroom/'
         - text: '发布与协作'
           link: '/guide-publishing/'
+        - text: '讲稿与制作'
+          link: '/guide-production/'
+        - text: '可选执行环境'
+          link: '/guide-environments/'
+        - text: '联网资源（可选）'
+          link: '/guide-network/'
     - text: '幻灯片'
       items:
         - text: '冒泡排序'

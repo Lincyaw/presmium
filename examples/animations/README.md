@@ -9,10 +9,14 @@
 | [代码写成的动画](libraries/lecture.json) | GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节动画，再到讲到哪里点哪里与讲授视频 |
 | [功能导览：正文与富内容](guide-content/lecture.json) | 富文本、数学、列表、合并表格、分栏、选项卡、Mermaid、思维导图与本地音视频字幕 |
 | [功能导览：代码与运行](guide-code/lecture.json) | 项目引用、高亮与变体、JavaScript / Python、参数、逐行轨迹、会话、运行比较与错误反馈 |
+| [功能导览：讲稿与制作](guide-production/lecture.json) | 发音、动作 cue、播放时机、音色继承与显式生成；录制和媒体编辑的实际门槛 |
+| [功能导览：可选执行环境](guide-environments/lecture.json) | Docker 环境包、WASI、WGSL、jax-js、Python GPU 桥、Jupyter 与离线运行资源 |
+| [功能导览：联网资源](guide-network/lecture.json) | YouTube、PlantUML 与真实 HTTPS 媒体，独立说明网络及服务条件 |
 | [功能导览：发布与协作](guide-publishing/lecture.json) | 搜索、脚注、双语译文、原生 Web Component、高对比度、受众隔离、批注与导出指引 |
 | [功能导览：课堂互动](guide-classroom/lecture.json) | 单选、多选、先预测再揭晓、真实代码校验、锚定提问、理解度投票、笔记、学生跟随与受众输出 |
 
-功能与章节的对应关系见 [功能索引](features.json)。
+功能与章节的对应关系见 [功能索引](features.json)。索引中的 `mode` 区分现场演示、操作指引、需额外能力的场景与当前明确门槛。
+讲稿导览默认不配音，不会因打开文稿调用语音服务。可选环境导览也不会自动启动 Docker、远端内核或 GPU；WASI 运行资源可显式保存后离线使用。联网导览不作为离线验收的一部分。
 课堂导览中的个人测验和预测不需要模型或课堂服务器；全班统计、提问与跟随需要真实课堂会话，文稿写明了启用条件。
 代码导览包含真实执行入口；浏览器 Python 首次使用需加载 Pyodide，命名会话应按文稿顺序运行。
 导出 notebook 时，当前内核支持的语言成为代码单元，其它语言保留可读源码。
