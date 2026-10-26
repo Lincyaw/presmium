@@ -1,0 +1,2354 @@
+{
+  "schemaVersion": 1,
+  "id": "document-596103684779d5a7",
+  "metadata": {
+    "title": "从零写一个 Python 数据库",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-code",
+      "@lincyaw/addon-exec",
+      "@lincyaw/addon-session",
+      "@lincyaw/addon-classroom",
+      "@lincyaw/addon-stage",
+      "@lincyaw/addon-guide",
+      "@lincyaw/addon-lecture",
+      "@lincyaw/addon-publish"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {}
+    }
+  },
+  "sectionOrder": [
+    "从零写一个-python-数据库",
+    "memory",
+    "evolution",
+    "append-log",
+    "shared-session",
+    "predict-update",
+    "trace-lookup",
+    "delete",
+    "disk",
+    "exercise",
+    "classroom"
+  ],
+  "sections": {
+    "从零写一个-python-数据库": {
+      "id": "从零写一个-python-数据库",
+      "title": "从零写一个 Python 数据库",
+      "level": 1,
+      "children": [
+        "从零写一个-python-数据库--paragraph-1",
+        "从零写一个-python-数据库--list-1"
+      ],
+      "stepOrder": [
+        "从零写一个-python-数据库--step-0",
+        "从零写一个-python-数据库--step-1",
+        "从零写一个-python-数据库--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "memory": {
+      "id": "memory",
+      "title": "第一步：内存里的键值表",
+      "level": 2,
+      "children": [
+        "memory--paragraph-1",
+        "memory--code-1",
+        "memory--paragraph-2",
+        "memory--paragraph-3",
+        "memory--paragraph-4"
+      ],
+      "stepOrder": [
+        "memory--step-0",
+        "memory--step-1",
+        "memory--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "evolution": {
+      "id": "evolution",
+      "title": "第二步：覆盖写，还是追加写？",
+      "level": 2,
+      "children": [
+        "evolution--paragraph-1",
+        "evolution--code-1",
+        "evolution--code-2",
+        "evolution--paragraph-2"
+      ],
+      "stepOrder": [
+        "evolution--step-0",
+        "evolution--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "append-log": {
+      "id": "append-log",
+      "title": "第三步：日志成为唯一的状态",
+      "level": 2,
+      "children": [
+        "append-log--paragraph-1",
+        "append-log--code-1",
+        "append-log--paragraph-2",
+        "append-log--paragraph-3",
+        "append-log--paragraph-4"
+      ],
+      "stepOrder": [
+        "append-log--step-0",
+        "append-log--step-1",
+        "append-log--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "shared-session": {
+      "id": "shared-session",
+      "title": "第四步：继续操作同一个数据库",
+      "level": 2,
+      "children": [
+        "shared-session--paragraph-1",
+        "shared-session--code-1"
+      ],
+      "stepOrder": [
+        "shared-session--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "predict-update": {
+      "id": "predict-update",
+      "title": "第五步：先预测，再运行",
+      "level": 2,
+      "children": [
+        "predict-update--paragraph-1",
+        "predict-update--code-1",
+        "predict-update--pm-predict-1"
+      ],
+      "stepOrder": [
+        "predict-update--step-0",
+        "predict-update--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "trace-lookup": {
+      "id": "trace-lookup",
+      "title": "第六步：逐行看查询为什么返回最新值",
+      "level": 2,
+      "children": [
+        "trace-lookup--paragraph-1",
+        "trace-lookup--pm-step-run-1"
+      ],
+      "stepOrder": [
+        "trace-lookup--step-0",
+        "trace-lookup--step-1",
+        "trace-lookup--step-2",
+        "trace-lookup--step-3",
+        "trace-lookup--step-4",
+        "trace-lookup--step-5",
+        "trace-lookup--step-6",
+        "trace-lookup--step-7"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "delete": {
+      "id": "delete",
+      "title": "第七步：删除也是一条记录",
+      "level": 2,
+      "children": [
+        "delete--paragraph-1",
+        "delete--code-1",
+        "delete--code-2"
+      ],
+      "stepOrder": [
+        "delete--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "disk": {
+      "id": "disk",
+      "title": "第八步：写入磁盘，再重启恢复",
+      "level": 2,
+      "children": [
+        "disk--paragraph-1",
+        "disk--pm-run-panel-1"
+      ],
+      "stepOrder": [
+        "disk--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "exercise": {
+      "id": "exercise",
+      "title": "动手：补上倒序查询",
+      "level": 2,
+      "children": [
+        "exercise--paragraph-1",
+        "exercise--pm-exercise-1"
+      ],
+      "stepOrder": [
+        "exercise--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "classroom": {
+      "id": "classroom",
+      "title": "课堂检查：它离真正的数据库还差什么？",
+      "level": 2,
+      "children": [
+        "classroom--pm-quiz-1",
+        "classroom--pm-question-box-1",
+        "classroom--pm-pulse-1",
+        "classroom--paragraph-1"
+      ],
+      "stepOrder": [
+        "classroom--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "从零写一个-python-数据库--paragraph-1": {
+      "id": "从零写一个-python-数据库--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "从零写一个-python-数据库--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这堂课从空字典开始，逐步做出可以更新、删除和重启恢复的键值数据库。只使用 Python 标准库。网页中可以修改代码运行，notebook 可以从上到下重新执行。"
+            }
+          ]
+        }
+      ]
+    },
+    "从零写一个-python-数据库--list-1": {
+      "id": "从零写一个-python-数据库--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "从零写一个-python-数据库--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "从零写一个-python-数据库--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "从零写一个-python-数据库--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "先实现 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "put",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " 和 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "get",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "从零写一个-python-数据库--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "从零写一个-python-数据库--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "再用追加日志保留修改历史"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "从零写一个-python-数据库--list-1--text-0-item-2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "从零写一个-python-数据库--list-1--text-0-2-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "最后写入文件，并从日志恢复"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "reveal": {
+        "type": "items",
+        "order": [
+          "从零写一个-python-数据库--list-1--text-0-item-0",
+          "从零写一个-python-数据库--list-1--text-0-item-1",
+          "从零写一个-python-数据库--list-1--text-0-item-2"
+        ]
+      }
+    },
+    "memory--paragraph-1": {
+      "id": "memory--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "memory--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先不讨论磁盘。请同学说出写入和查询的输入、输出，再依次讲状态、写入、读取。源文件与投影共用同一份代码，修改 Python 文件后，引用跟着更新。"
+            }
+          ]
+        }
+      ]
+    },
+    "memory--code-1": {
+      "id": "memory--code-1",
+      "type": "code",
+      "language": "py",
+      "origin": {
+        "anchor": "region:e2e/fixtures/teacher-database/code/database.py#memory",
+        "highlightRegions": {
+          "memory--step-0": "state",
+          "memory--step-1": "write",
+          "memory--step-2": "read"
+        }
+      },
+      "execution": {
+        "when": "both",
+        "session": "teacher-db"
+      }
+    },
+    "memory--paragraph-2": {
+      "id": "memory--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "memory--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第 0 步先画出一个空字典，强调数据库必须先有保存状态的地方。"
+            }
+          ]
+        }
+      ]
+    },
+    "memory--paragraph-3": {
+      "id": "memory--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "memory--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第 1 步实现写入：同一个键再次赋值会覆盖旧值。"
+            }
+          ]
+        }
+      ]
+    },
+    "memory--paragraph-4": {
+      "id": "memory--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "memory--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第 2 步实现查询：不存在的键返回 "
+            },
+            {
+              "type": "text",
+              "text": "None",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。现场先运行这一块，后面的代码才能使用这些函数。"
+            }
+          ]
+        }
+      ]
+    },
+    "evolution--paragraph-1": {
+      "id": "evolution--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "evolution--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先回到刚才的实现，再推进一步替换成追加写。后退时应恢复原来的实现，便于比较两种思路。"
+            }
+          ]
+        }
+      ]
+    },
+    "evolution--code-1": {
+      "id": "evolution--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "rows = {}\n\ndef put(key, value):\n    rows[key] = value"
+    },
+    "evolution--code-2": {
+      "id": "evolution--code-2",
+      "type": "code",
+      "language": "python",
+      "value": "log = []\n\ndef put(key, value):\n    log.append((key, value))"
+    },
+    "evolution--paragraph-2": {
+      "id": "evolution--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "evolution--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "覆盖写只保留当前值；追加写保留每次修改，需要从后往前查。"
+            }
+          ]
+        }
+      ]
+    },
+    "append-log--paragraph-1": {
+      "id": "append-log--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "append-log--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "我们保留相同的函数名，改用日志保存状态。按顺序运行到这里后，共享会话中的 "
+            },
+            {
+              "type": "text",
+              "text": "put",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 和 "
+            },
+            {
+              "type": "text",
+              "text": "get",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 就会被新定义替换。"
+            }
+          ]
+        }
+      ]
+    },
+    "append-log--code-1": {
+      "id": "append-log--code-1",
+      "type": "code",
+      "language": "py",
+      "origin": {
+        "anchor": "region:e2e/fixtures/teacher-database/code/database.py#append-only",
+        "highlightRegions": {
+          "append-log--step-0": "log-state",
+          "append-log--step-1": "append",
+          "append-log--step-2": "lookup"
+        }
+      },
+      "execution": {
+        "when": "both",
+        "session": "teacher-db"
+      }
+    },
+    "append-log--paragraph-2": {
+      "id": "append-log--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "append-log--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先创建空日志。这里刻意重置状态，重新运行本块可以回到这一节的起点。"
+            }
+          ]
+        }
+      ]
+    },
+    "append-log--paragraph-3": {
+      "id": "append-log--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "append-log--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "写入只追加，不覆盖。追加的最后一条记录是最近一次写入。"
+            }
+          ]
+        }
+      ]
+    },
+    "append-log--paragraph-4": {
+      "id": "append-log--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "append-log--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "查询倒序扫描，在遇到第一个相同的键时返回；都没找到才返回 "
+            },
+            {
+              "type": "text",
+              "text": "None",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。"
+            }
+          ]
+        }
+      ]
+    },
+    "shared-session--paragraph-1": {
+      "id": "shared-session--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "shared-session--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这里没有复制上一节的定义。先运行“日志成为唯一的状态”，再运行本块；教师与每个学生的浏览器各有自己的会话。重置会话后需要重新运行初始化。"
+            }
+          ]
+        }
+      ]
+    },
+    "shared-session--code-1": {
+      "id": "shared-session--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "put(\"Lin\", 7)\nput(\"Ada\", 12)\nprint(\"history:\", log)\nprint(\"Ada:\", get(\"Ada\"))\nprint(\"missing:\", get(\"Grace\"))",
+      "execution": {
+        "when": "both",
+        "session": "teacher-db"
+      }
+    },
+    "predict-update--paragraph-1": {
+      "id": "predict-update--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "predict-update--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先读代码，暂时不要按运行。"
+            },
+            {
+              "type": "text",
+              "text": "put",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 在相同的会话中保留数据，推断最后一次写入会不会改变已经记录的历史。"
+            }
+          ]
+        }
+      ]
+    },
+    "predict-update--code-1": {
+      "id": "predict-update--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "put(\"Ada\", 15)\nprint(get(\"Ada\"), len(log))",
+      "only": [
+        "web",
+        "slides"
+      ]
+    },
+    "predict-update--pm-predict-1": {
+      "id": "predict-update--pm-predict-1",
+      "type": "component",
+      "definitionId": "predict-update--pm-predict-1--definition",
+      "parameters": {
+        "question": "顺序运行到这里，输出会是什么？",
+        "choices": [
+          "10 1",
+          "12 3",
+          "15 4"
+        ],
+        "reveal": [
+          "code-2"
+        ],
+        "notes": [
+          "paragraph-2"
+        ],
+        "place": {
+          "section": "predict-update",
+          "block": "pm-predict-1",
+          "title": "第五步：先预测，再运行",
+          "index": 6
+        }
+      },
+      "children": [
+        "predict-update--pm-predict-1--prompt",
+        "predict-update--pm-predict-1--code-2",
+        "predict-update--pm-predict-1--paragraph-2"
+      ]
+    },
+    "predict-update--pm-predict-1--prompt": {
+      "id": "predict-update--pm-predict-1--prompt",
+      "type": "text",
+      "content": [
+        {
+          "id": "predict-update--pm-predict-1--prompt--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "日志已经有 Ada=10、Lin=7、Ada=12 三条记录。"
+            }
+          ]
+        }
+      ]
+    },
+    "predict-update--pm-predict-1--code-2": {
+      "id": "predict-update--pm-predict-1--code-2",
+      "type": "code",
+      "language": "python",
+      "value": "put(\"Ada\", 15)\nprint(get(\"Ada\"), len(log))",
+      "execution": {
+        "when": "both",
+        "session": "teacher-db"
+      }
+    },
+    "predict-update--pm-predict-1--paragraph-2": {
+      "id": "predict-update--pm-predict-1--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "predict-update--pm-predict-1--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "答案是 "
+            },
+            {
+              "type": "text",
+              "text": "15 4",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。查询返回最新值，但日志仍然保留前三条记录。再次运行会再追加一条，因此记录数会继续增长；要重做整堂演示，重置会话后按顺序运行。"
+            }
+          ]
+        }
+      ]
+    },
+    "trace-lookup--paragraph-1": {
+      "id": "trace-lookup--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "trace-lookup--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这是独立的小实验，不依赖前面的共享会话。前进到 "
+            },
+            {
+              "type": "text",
+              "text": "print",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 才出现输出，后退则恢复到此前的行和输出。"
+            }
+          ]
+        }
+      ]
+    },
+    "trace-lookup--pm-step-run-1": {
+      "id": "trace-lookup--pm-step-run-1",
+      "type": "component",
+      "definitionId": "trace-lookup--pm-step-run-1--definition",
+      "parameters": {
+        "steps": 7
+      },
+      "children": [
+        "trace-lookup--pm-step-run-1--source"
+      ]
+    },
+    "trace-lookup--pm-step-run-1--source": {
+      "id": "trace-lookup--pm-step-run-1--source",
+      "type": "code",
+      "language": "python",
+      "value": "lookup_log = [(\"Ada\", 10), (\"Ada\", 15)]\nfound = None\nfor key, value in reversed(lookup_log):\n    if key == \"Ada\":\n        found = value\n        break\nprint(found)"
+    },
+    "delete--paragraph-1": {
+      "id": "delete--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "delete--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "我们约定 "
+            },
+            {
+              "type": "text",
+              "text": "None",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 是删除标记，暂不把它作为合法数据。解释这个限制后再加删除函数，不要让学生以为这个小数据库已经支持所有 Python 值。"
+            }
+          ]
+        }
+      ]
+    },
+    "delete--code-1": {
+      "id": "delete--code-1",
+      "type": "code",
+      "language": "py",
+      "origin": {
+        "anchor": "symbol:e2e/fixtures/teacher-database/code/database.py#delete"
+      },
+      "execution": {
+        "when": "both",
+        "session": "teacher-db"
+      }
+    },
+    "delete--code-2": {
+      "id": "delete--code-2",
+      "type": "code",
+      "language": "python",
+      "value": "delete(\"Lin\")\nprint(\"Lin:\", get(\"Lin\"))\nprint(\"last record:\", log[-1])",
+      "execution": {
+        "when": "both",
+        "session": "teacher-db"
+      }
+    },
+    "disk--paragraph-1": {
+      "id": "disk--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "disk--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这个实验使用临时目录，文件确实被写入并重新打开。现场修改更新次数，再比较历史记录数与最终值。临时文件会清理，不会把教师机器的路径放进输出。"
+            }
+          ]
+        }
+      ]
+    },
+    "disk--pm-run-panel-1": {
+      "id": "disk--pm-run-panel-1",
+      "type": "component",
+      "definitionId": "disk--pm-run-panel-1--definition",
+      "parameters": {
+        "params": {
+          "updates": 3
+        }
+      },
+      "children": [
+        "disk--pm-run-panel-1--source"
+      ]
+    },
+    "disk--pm-run-panel-1--source": {
+      "id": "disk--pm-run-panel-1--source",
+      "type": "code",
+      "language": "python",
+      "value": "import json\nfrom pathlib import Path\nfrom tempfile import TemporaryDirectory\n\nwith TemporaryDirectory() as directory:\n    path = Path(directory) / \"database.jsonl\"\n    with path.open(\"w\", encoding=\"utf-8\") as file:\n        for value in range(updates):\n            file.write(json.dumps([\"Ada\", value]) + \"\\n\")\n    recovered = {}\n    with path.open(encoding=\"utf-8\") as file:\n        records = [json.loads(line) for line in file]\n    for key, value in records:\n        recovered[key] = value\n    print(\"records:\", len(records))\n    print(\"recovered Ada:\", recovered.get(\"Ada\"))",
+      "execution": {
+        "when": "both",
+        "args": {
+          "updates": "3"
+        }
+      }
+    },
+    "exercise--paragraph-1": {
+      "id": "exercise--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "exercise--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "现在把查询函数交给学生。练习独立于教师会话，可以在网页中修改提交，也可以在 notebook 中完成后运行校验。"
+            }
+          ]
+        }
+      ]
+    },
+    "exercise--pm-exercise-1": {
+      "id": "exercise--pm-exercise-1",
+      "type": "component",
+      "definitionId": "exercise--pm-exercise-1--definition",
+      "parameters": {
+        "lang": "python",
+        "starter": "def latest(records, wanted):\n    return None",
+        "checks": "assert latest([(\"Ada\", 10), (\"Ada\", 15)], \"Ada\") == 15, \"返回最新值\"\nassert latest([(\"Ada\", 10)], \"Lin\") is None, \"找不到时返回 None\"\nassert latest([(\"Ada\", 10), (\"Ada\", None)], \"Ada\") is None, \"删除标记不能被越过\"",
+        "place": {
+          "section": "exercise",
+          "block": "pm-exercise-1",
+          "title": "动手：补上倒序查询",
+          "index": 10
+        }
+      },
+      "children": [
+        "exercise--pm-exercise-1--prompt"
+      ]
+    },
+    "exercise--pm-exercise-1--prompt": {
+      "id": "exercise--pm-exercise-1--prompt",
+      "type": "text",
+      "content": [
+        {
+          "id": "exercise--pm-exercise-1--prompt--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "实现 "
+            },
+            {
+              "type": "text",
+              "text": "latest(records, wanted)",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：返回最后一条匹配记录的值，没有匹配时返回 "
+            },
+            {
+              "type": "text",
+              "text": "None",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。最新值为 "
+            },
+            {
+              "type": "text",
+              "text": "None",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 时也要立即返回，不能越过删除标记读到旧值。"
+            }
+          ]
+        }
+      ]
+    },
+    "classroom--pm-quiz-1": {
+      "id": "classroom--pm-quiz-1",
+      "type": "component",
+      "definitionId": "classroom--pm-quiz-1--definition",
+      "parameters": {
+        "options": [
+          "追加记录后，日志可能有同一个键的多个版本。",
+          "用文件保存后，就自动支持多进程同时安全写入。",
+          "不处理写到一半的日志行，重启恢复可能报错。"
+        ],
+        "correct": [
+          0,
+          2
+        ],
+        "place": {
+          "section": "classroom",
+          "block": "pm-quiz-1",
+          "title": "课堂检查：它离真正的数据库还差什么？",
+          "index": 11
+        }
+      },
+      "children": [
+        "classroom--pm-quiz-1--prompt"
+      ]
+    },
+    "classroom--pm-quiz-1--prompt": {
+      "id": "classroom--pm-quiz-1--prompt",
+      "type": "text",
+      "content": [
+        {
+          "id": "classroom--pm-quiz-1--prompt--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "对于刚才的实现，哪些说法正确？"
+            }
+          ]
+        }
+      ]
+    },
+    "classroom--pm-question-box-1": {
+      "id": "classroom--pm-question-box-1",
+      "type": "component",
+      "definitionId": "classroom--pm-question-box-1--definition",
+      "parameters": {
+        "place": {
+          "section": "classroom",
+          "block": "pm-question-box-1",
+          "title": "课堂检查：它离真正的数据库还差什么？",
+          "index": 11
+        }
+      },
+      "children": [
+        "classroom--pm-question-box-1--prompt"
+      ]
+    },
+    "classroom--pm-question-box-1--prompt": {
+      "id": "classroom--pm-question-box-1--prompt",
+      "type": "text",
+      "content": [
+        {
+          "id": "classroom--pm-question-box-1--prompt--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "你最想继续实现索引、事务，还是崩溃恢复？写下一个具体问题。"
+            }
+          ]
+        }
+      ]
+    },
+    "classroom--pm-pulse-1": {
+      "id": "classroom--pm-pulse-1",
+      "type": "component",
+      "definitionId": "classroom--pm-pulse-1--definition",
+      "parameters": {
+        "question": "你能独立实现 put、get 和日志恢复了吗？",
+        "levels": [
+          "可以",
+          "还要再跟着做一遍",
+          "需要帮助"
+        ],
+        "place": {
+          "section": "classroom",
+          "block": "pm-pulse-1",
+          "title": "课堂检查：它离真正的数据库还差什么？",
+          "index": 11
+        }
+      }
+    },
+    "classroom--paragraph-1": {
+      "id": "classroom--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "classroom--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "教师备课：演示代码没有并发控制、事务提交和损坏恢复；下一课可以让同学中途截断最后一行 JSON，观察恢复失败，再设计“仅忽略末尾不完整记录”的协议。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web",
+        "slides",
+        "notebook"
+      ],
+      "audience": [
+        "teacher"
+      ]
+    }
+  },
+  "steps": {
+    "从零写一个-python-数据库--step-0": {
+      "id": "从零写一个-python-数据库--step-0",
+      "sectionId": "从零写一个-python-数据库",
+      "visuals": [
+        {
+          "blockId": "从零写一个-python-数据库--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "从零写一个-python-数据库--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 1
+          }
+        }
+      ],
+      "narrationIds": [
+        "从零写一个-python-数据库--paragraph-1--narration"
+      ]
+    },
+    "从零写一个-python-数据库--step-1": {
+      "id": "从零写一个-python-数据库--step-1",
+      "sectionId": "从零写一个-python-数据库",
+      "visuals": [
+        {
+          "blockId": "从零写一个-python-数据库--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "从零写一个-python-数据库--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        }
+      ],
+      "narrationIds": []
+    },
+    "从零写一个-python-数据库--step-2": {
+      "id": "从零写一个-python-数据库--step-2",
+      "sectionId": "从零写一个-python-数据库",
+      "visuals": [
+        {
+          "blockId": "从零写一个-python-数据库--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "从零写一个-python-数据库--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 3
+          }
+        }
+      ],
+      "narrationIds": []
+    },
+    "memory--step-0": {
+      "id": "memory--step-0",
+      "sectionId": "memory",
+      "visuals": [
+        {
+          "blockId": "memory--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "memory--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "memory--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "memory--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "memory--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "memory--paragraph-1--narration",
+        "memory--paragraph-2--narration"
+      ]
+    },
+    "memory--step-1": {
+      "id": "memory--step-1",
+      "sectionId": "memory",
+      "visuals": [
+        {
+          "blockId": "memory--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "memory--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "memory--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "memory--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "memory--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "memory--paragraph-3--narration"
+      ]
+    },
+    "memory--step-2": {
+      "id": "memory--step-2",
+      "sectionId": "memory",
+      "visuals": [
+        {
+          "blockId": "memory--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "memory--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "memory--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "memory--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "memory--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "memory--paragraph-4--narration"
+      ]
+    },
+    "evolution--step-0": {
+      "id": "evolution--step-0",
+      "sectionId": "evolution",
+      "visuals": [
+        {
+          "blockId": "evolution--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "evolution--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "evolution--code-2",
+          "visible": false
+        },
+        {
+          "blockId": "evolution--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "evolution--paragraph-1--narration"
+      ]
+    },
+    "evolution--step-1": {
+      "id": "evolution--step-1",
+      "sectionId": "evolution",
+      "visuals": [
+        {
+          "blockId": "evolution--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "evolution--code-1",
+          "visible": false
+        },
+        {
+          "blockId": "evolution--code-2",
+          "visible": true
+        },
+        {
+          "blockId": "evolution--paragraph-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "append-log--step-0": {
+      "id": "append-log--step-0",
+      "sectionId": "append-log",
+      "visuals": [
+        {
+          "blockId": "append-log--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "append-log--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "append-log--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "append-log--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "append-log--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "append-log--paragraph-1--narration",
+        "append-log--paragraph-2--narration"
+      ]
+    },
+    "append-log--step-1": {
+      "id": "append-log--step-1",
+      "sectionId": "append-log",
+      "visuals": [
+        {
+          "blockId": "append-log--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "append-log--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "append-log--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "append-log--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "append-log--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "append-log--paragraph-3--narration"
+      ]
+    },
+    "append-log--step-2": {
+      "id": "append-log--step-2",
+      "sectionId": "append-log",
+      "visuals": [
+        {
+          "blockId": "append-log--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "append-log--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "append-log--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "append-log--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "append-log--paragraph-4",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "append-log--paragraph-4--narration"
+      ]
+    },
+    "shared-session--step-0": {
+      "id": "shared-session--step-0",
+      "sectionId": "shared-session",
+      "visuals": [
+        {
+          "blockId": "shared-session--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "shared-session--code-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "shared-session--paragraph-1--narration"
+      ]
+    },
+    "predict-update--step-0": {
+      "id": "predict-update--step-0",
+      "sectionId": "predict-update",
+      "visuals": [
+        {
+          "blockId": "predict-update--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "predict-update--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "predict-update--pm-predict-1--prompt",
+          "visible": true
+        },
+        {
+          "blockId": "predict-update--pm-predict-1--code-2",
+          "visible": false
+        },
+        {
+          "blockId": "predict-update--pm-predict-1--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "predict-update--pm-predict-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": [
+        "predict-update--paragraph-1--narration"
+      ]
+    },
+    "predict-update--step-1": {
+      "id": "predict-update--step-1",
+      "sectionId": "predict-update",
+      "visuals": [
+        {
+          "blockId": "predict-update--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "predict-update--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "predict-update--pm-predict-1--prompt",
+          "visible": true
+        },
+        {
+          "blockId": "predict-update--pm-predict-1--code-2",
+          "visible": true
+        },
+        {
+          "blockId": "predict-update--pm-predict-1--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "predict-update--pm-predict-1",
+          "visible": true,
+          "state": "legacy-1"
+        }
+      ],
+      "narrationIds": [
+        "predict-update--pm-predict-1--paragraph-2--narration"
+      ]
+    },
+    "trace-lookup--step-0": {
+      "id": "trace-lookup--step-0",
+      "sectionId": "trace-lookup",
+      "visuals": [
+        {
+          "blockId": "trace-lookup--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "trace-lookup--pm-step-run-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "trace-lookup--pm-step-run-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": [
+        "trace-lookup--paragraph-1--narration"
+      ]
+    },
+    "trace-lookup--step-1": {
+      "id": "trace-lookup--step-1",
+      "sectionId": "trace-lookup",
+      "visuals": [
+        {
+          "blockId": "trace-lookup--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "trace-lookup--pm-step-run-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "trace-lookup--pm-step-run-1",
+          "visible": true,
+          "state": "legacy-1"
+        }
+      ],
+      "narrationIds": []
+    },
+    "trace-lookup--step-2": {
+      "id": "trace-lookup--step-2",
+      "sectionId": "trace-lookup",
+      "visuals": [
+        {
+          "blockId": "trace-lookup--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "trace-lookup--pm-step-run-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "trace-lookup--pm-step-run-1",
+          "visible": true,
+          "state": "legacy-2"
+        }
+      ],
+      "narrationIds": []
+    },
+    "trace-lookup--step-3": {
+      "id": "trace-lookup--step-3",
+      "sectionId": "trace-lookup",
+      "visuals": [
+        {
+          "blockId": "trace-lookup--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "trace-lookup--pm-step-run-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "trace-lookup--pm-step-run-1",
+          "visible": true,
+          "state": "legacy-3"
+        }
+      ],
+      "narrationIds": []
+    },
+    "trace-lookup--step-4": {
+      "id": "trace-lookup--step-4",
+      "sectionId": "trace-lookup",
+      "visuals": [
+        {
+          "blockId": "trace-lookup--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "trace-lookup--pm-step-run-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "trace-lookup--pm-step-run-1",
+          "visible": true,
+          "state": "legacy-4"
+        }
+      ],
+      "narrationIds": []
+    },
+    "trace-lookup--step-5": {
+      "id": "trace-lookup--step-5",
+      "sectionId": "trace-lookup",
+      "visuals": [
+        {
+          "blockId": "trace-lookup--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "trace-lookup--pm-step-run-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "trace-lookup--pm-step-run-1",
+          "visible": true,
+          "state": "legacy-5"
+        }
+      ],
+      "narrationIds": []
+    },
+    "trace-lookup--step-6": {
+      "id": "trace-lookup--step-6",
+      "sectionId": "trace-lookup",
+      "visuals": [
+        {
+          "blockId": "trace-lookup--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "trace-lookup--pm-step-run-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "trace-lookup--pm-step-run-1",
+          "visible": true,
+          "state": "legacy-6"
+        }
+      ],
+      "narrationIds": []
+    },
+    "trace-lookup--step-7": {
+      "id": "trace-lookup--step-7",
+      "sectionId": "trace-lookup",
+      "visuals": [
+        {
+          "blockId": "trace-lookup--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "trace-lookup--pm-step-run-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "trace-lookup--pm-step-run-1",
+          "visible": true,
+          "state": "legacy-7"
+        }
+      ],
+      "narrationIds": []
+    },
+    "delete--step-0": {
+      "id": "delete--step-0",
+      "sectionId": "delete",
+      "visuals": [
+        {
+          "blockId": "delete--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "delete--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "delete--code-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "delete--paragraph-1--narration"
+      ]
+    },
+    "disk--step-0": {
+      "id": "disk--step-0",
+      "sectionId": "disk",
+      "visuals": [
+        {
+          "blockId": "disk--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "disk--pm-run-panel-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "disk--pm-run-panel-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": [
+        "disk--paragraph-1--narration"
+      ]
+    },
+    "exercise--step-0": {
+      "id": "exercise--step-0",
+      "sectionId": "exercise",
+      "visuals": [
+        {
+          "blockId": "exercise--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "exercise--pm-exercise-1--prompt",
+          "visible": true
+        },
+        {
+          "blockId": "exercise--pm-exercise-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": [
+        "exercise--paragraph-1--narration"
+      ]
+    },
+    "classroom--step-0": {
+      "id": "classroom--step-0",
+      "sectionId": "classroom",
+      "visuals": [
+        {
+          "blockId": "classroom--pm-quiz-1--prompt",
+          "visible": true
+        },
+        {
+          "blockId": "classroom--pm-quiz-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "classroom--pm-question-box-1--prompt",
+          "visible": true
+        },
+        {
+          "blockId": "classroom--pm-question-box-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "classroom--pm-pulse-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "classroom--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "从零写一个-python-数据库--paragraph-1--narration": {
+      "id": "从零写一个-python-数据库--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这堂课从空字典开始，逐步做出可以更新、删除和重启恢复的键值数据库。只使用 Python 标准库。网页中可以修改代码运行，notebook 可以从上到下重新执行。"
+        }
+      ]
+    },
+    "memory--paragraph-1--narration": {
+      "id": "memory--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先不讨论磁盘。请同学说出写入和查询的输入、输出，再依次讲状态、写入、读取。源文件与投影共用同一份代码，修改 Python 文件后，引用跟着更新。"
+        }
+      ]
+    },
+    "memory--paragraph-2--narration": {
+      "id": "memory--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第 0 步先画出一个空字典，强调数据库必须先有保存状态的地方。"
+        }
+      ]
+    },
+    "memory--paragraph-3--narration": {
+      "id": "memory--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第 1 步实现写入：同一个键再次赋值会覆盖旧值。"
+        }
+      ]
+    },
+    "memory--paragraph-4--narration": {
+      "id": "memory--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第 2 步实现查询：不存在的键返回 None。现场先运行这一块，后面的代码才能使用这些函数。"
+        }
+      ]
+    },
+    "evolution--paragraph-1--narration": {
+      "id": "evolution--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先回到刚才的实现，再推进一步替换成追加写。后退时应恢复原来的实现，便于比较两种思路。"
+        }
+      ]
+    },
+    "append-log--paragraph-1--narration": {
+      "id": "append-log--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "我们保留相同的函数名，改用日志保存状态。按顺序运行到这里后，共享会话中的 put 和 get 就会被新定义替换。"
+        }
+      ]
+    },
+    "append-log--paragraph-2--narration": {
+      "id": "append-log--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先创建空日志。这里刻意重置状态，重新运行本块可以回到这一节的起点。"
+        }
+      ]
+    },
+    "append-log--paragraph-3--narration": {
+      "id": "append-log--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "写入只追加，不覆盖。追加的最后一条记录是最近一次写入。"
+        }
+      ]
+    },
+    "append-log--paragraph-4--narration": {
+      "id": "append-log--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "查询倒序扫描，在遇到第一个相同的键时返回；都没找到才返回 None。"
+        }
+      ]
+    },
+    "shared-session--paragraph-1--narration": {
+      "id": "shared-session--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这里没有复制上一节的定义。先运行“日志成为唯一的状态”，再运行本块；教师与每个学生的浏览器各有自己的会话。重置会话后需要重新运行初始化。"
+        }
+      ]
+    },
+    "predict-update--paragraph-1--narration": {
+      "id": "predict-update--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先读代码，暂时不要按运行。put 在相同的会话中保留数据，推断最后一次写入会不会改变已经记录的历史。"
+        }
+      ]
+    },
+    "predict-update--pm-predict-1--paragraph-2--narration": {
+      "id": "predict-update--pm-predict-1--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "答案是 15 4。查询返回最新值，但日志仍然保留前三条记录。再次运行会再追加一条，因此记录数会继续增长；要重做整堂演示，重置会话后按顺序运行。"
+        }
+      ]
+    },
+    "trace-lookup--paragraph-1--narration": {
+      "id": "trace-lookup--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这是独立的小实验，不依赖前面的共享会话。前进到 print 才出现输出，后退则恢复到此前的行和输出。"
+        }
+      ]
+    },
+    "delete--paragraph-1--narration": {
+      "id": "delete--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "我们约定 None 是删除标记，暂不把它作为合法数据。解释这个限制后再加删除函数，不要让学生以为这个小数据库已经支持所有 Python 值。"
+        }
+      ]
+    },
+    "disk--paragraph-1--narration": {
+      "id": "disk--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这个实验使用临时目录，文件确实被写入并重新打开。现场修改更新次数，再比较历史记录数与最终值。临时文件会清理，不会把教师机器的路径放进输出。"
+        }
+      ]
+    },
+    "exercise--paragraph-1--narration": {
+      "id": "exercise--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "现在把查询函数交给学生。练习独立于教师会话，可以在网页中修改提交，也可以在 notebook 中完成后运行校验。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "predict-update--pm-predict-1--definition": {
+      "id": "predict-update--pm-predict-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmPredict"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.classroom",
+        "name": "PmPredict",
+        "ownsCode": false,
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "预测"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "：顺序运行到这里，输出会是什么？"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "日志已经有 Ada=10、Lin=7、Ada=12 三条记录。"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "ordered": true,
+              "spread": false,
+              "children": [
+                {
+                  "type": "listItem",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "10 1"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "12 3"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "15 4"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "html",
+              "value": "<details data-static=\"open\"><summary>写下预测后展开</summary>"
+            },
+            {
+              "type": "code",
+              "lang": "python",
+              "value": "put(\"Ada\", 15)\nprint(get(\"Ada\"), len(log))"
+            },
+            {
+              "type": "code",
+              "lang": "text",
+              "value": "15 4"
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "答案是 "
+                },
+                {
+                  "type": "inlineCode",
+                  "value": "15 4"
+                },
+                {
+                  "type": "text",
+                  "value": "。查询返回最新值，但日志仍然保留前三条记录。再次运行会再追加一条，因此记录数会继续增长；要重做整堂演示，重置会话后按顺序运行。"
+                }
+              ]
+            },
+            {
+              "type": "html",
+              "value": "</details>"
+            }
+          ]
+        }
+      }
+    },
+    "trace-lookup--pm-step-run-1--definition": {
+      "id": "trace-lookup--pm-step-run-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmStepRun"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        },
+        {
+          "id": "legacy-4",
+          "legacyIndex": 4
+        },
+        {
+          "id": "legacy-5",
+          "legacyIndex": 5
+        },
+        {
+          "id": "legacy-6",
+          "legacyIndex": 6
+        },
+        {
+          "id": "legacy-7",
+          "legacyIndex": 7
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmStepRun"
+      }
+    },
+    "disk--pm-run-panel-1--definition": {
+      "id": "disk--pm-run-panel-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      }
+    },
+    "exercise--pm-exercise-1--definition": {
+      "id": "exercise--pm-exercise-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmExercise"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.classroom",
+        "name": "PmExercise",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "实现 "
+                },
+                {
+                  "type": "inlineCode",
+                  "value": "latest(records, wanted)"
+                },
+                {
+                  "type": "text",
+                  "value": "：返回最后一条匹配记录的值，没有匹配时返回 "
+                },
+                {
+                  "type": "inlineCode",
+                  "value": "None"
+                },
+                {
+                  "type": "text",
+                  "value": "。最新值为 "
+                },
+                {
+                  "type": "inlineCode",
+                  "value": "None"
+                },
+                {
+                  "type": "text",
+                  "value": " 时也要立即返回，不能越过删除标记读到旧值。"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "lang": "python",
+              "value": "def latest(records, wanted):\n    return None"
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "校验"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "lang": "python",
+              "value": "assert latest([(\"Ada\", 10), (\"Ada\", 15)], \"Ada\") == 15, \"返回最新值\"\nassert latest([(\"Ada\", 10)], \"Lin\") is None, \"找不到时返回 None\"\nassert latest([(\"Ada\", 10), (\"Ada\", None)], \"Ada\") is None, \"删除标记不能被越过\""
+            }
+          ]
+        }
+      }
+    },
+    "classroom--pm-quiz-1--definition": {
+      "id": "classroom--pm-quiz-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmQuiz"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.classroom",
+        "name": "PmQuiz",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "对于刚才的实现，哪些说法正确？"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "A. 追加记录后，日志可能有同一个键的多个版本。"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "B. 用文件保存后，就自动支持多进程同时安全写入。"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "C. 不处理写到一半的日志行，重启恢复可能报错。"
+                }
+              ]
+            },
+            {
+              "type": "html",
+              "value": "<details><summary>答案</summary>A、C</details>"
+            }
+          ]
+        }
+      }
+    },
+    "classroom--pm-question-box-1--definition": {
+      "id": "classroom--pm-question-box-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmQuestionBox"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.classroom",
+        "name": "PmQuestionBox",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "你最想继续实现索引、事务，还是崩溃恢复？写下一个具体问题。"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "提问"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "：加入课堂后，在网页或幻灯片中向主讲提问。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "classroom--pm-pulse-1--definition": {
+      "id": "classroom--pm-pulse-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmPulse"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.classroom",
+        "name": "PmPulse",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "理解度投票"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "：你能独立实现 put、get 和日志恢复了吗？（可以 / 还要再跟着做一遍 / 需要帮助）"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
