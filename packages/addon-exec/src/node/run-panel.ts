@@ -24,13 +24,24 @@ export const runPanelDirective: DirectiveSpec = {
 /** Gives each run panel its place in the document and its code's executor and session, which its runs send. */
 export const runPanelPass: IRPass = {
   name: 'presmium.exec.panels',
-  run(doc) {
-    for (const { section, block: { id, node } } of docBlocks(doc)) {
-      if (node.type !== 'component' || node.plugin !== EXEC_ID || node.name !== 'PmRunPanel') continue
+  order: 10,
+  run(doc, ctx) {
+    for (const { section, block: { id, node, source } } of docBlocks(doc)) {
+      if (node.type !== 'component' || node.plugin !== EXEC_ID || !['PmRunPanel', 'PmStepRun'].includes(node.name)) continue
+      const code = componentCode(node)
+      if (!code || node.children?.filter(child => child.node.type === 'code').length !== 1) {
+        ctx.report({ checkId: 'presmium.exec', severity: 'error', message: `${node.name} requires exactly one canonical code child.`, source })
+        continue
+      }
+      node.props.code = code.value
+      node.props.lang = code.lang
       node.props.place = { section: section.id, block: id }
-      const run = componentCode(node)?.run
+      const run = code.run
       if (run?.executor) node.props.executor = run.executor
+      else delete node.props.executor
       if (run?.session) node.props.session = run.session
+      else delete node.props.session
+      node.fallback = { type: 'root', children: [{ type: 'code', lang: code.lang, value: code.value }, ...typeof node.props.recorded === 'string' ? [{ type: 'code', lang: 'text', value: node.props.recorded }] : []] }
     }
   },
 }
