@@ -1,6 +1,6 @@
 import { isRecord, voiceTarget } from '@lincyaw/kernel'
-import type { CodeNode, ComponentNode, DocumentBlock, Finding, InlineNode, IRBlock, IRSection, JsonObject, MdastNode, NarrationNode, RichTextNode, SourcePos, TeachingDocument, TextStyle, VisualState } from '@lincyaw/kernel'
-import { resolve } from 'node:path'
+import type { CodeNode, ComponentNode, Definition, DocumentBlock, Finding, InlineNode, IRBlock, IRSection, JsonObject, MdastNode, NarrationNode, RichTextNode, SourcePos, TeachingDocument, TextStyle, VisualState } from '@lincyaw/kernel'
+import { relative, resolve, sep } from 'node:path'
 
 const pointerKey = (id: string) => id.replaceAll('~', '~0').replaceAll('/', '~1')
 const source = (entry: string, pointer: string): SourcePos => ({ file: entry, line: 1, format: 'json', pointer })
@@ -28,7 +28,9 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
       const stepStates = states.map((state, stepIndex) => {
         const visual = state.get(id)
         const local = definition?.states.find(state => state.id === visual?.state)?.legacyIndex ?? 0
-        return { visible: visual?.visible ?? false, localStep: block.type === 'code' ? stepIndex : local, ...visual?.state !== undefined ? { state: visual.state } : {}, ...block.type === 'component' || visual?.parameters ? { parameters: { ...block.type === 'component' ? block.parameters : {}, ...visual?.parameters } } : {} }
+        const parameters = { ...block.type === 'component' ? block.parameters : {}, ...visual?.parameters }
+        if (definition && isMotionScene(definition)) delete parameters.scene
+        return { visible: visual?.visible ?? false, localStep: block.type === 'code' ? stepIndex : local, ...visual?.state !== undefined ? { state: visual.state } : {}, ...block.type === 'component' || visual?.parameters ? { parameters } : {} }
       })
       const visible = stepStates.flatMap((state, at) => state.visible ? [at] : [])
       const at = visible[0] ?? 0
@@ -58,8 +60,8 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
           const definition = doc.definitions[block.definitionId]!
           const implementation = definition.implementation
           const data = definition.data ?? {}
-          const plugin = typeof data.plugin === 'string' ? data.plugin : implementation.type === 'plugin' ? implementation.plugin : 'deck'
-          const name = typeof data.name === 'string' ? data.name : implementation.type === 'plugin' ? implementation.name : implementation.exportName ?? definition.kind
+          const plugin = typeof data.plugin === 'string' ? data.plugin : implementation.type === 'plugin' ? implementation.plugin : isMotionScene(definition) ? 'presmium.motion' : 'deck'
+          const name = typeof data.name === 'string' ? data.name : implementation.type === 'plugin' ? implementation.name : isMotionScene(definition) ? 'PmScene' : implementation.exportName ?? definition.kind
           const node: ComponentNode = { type: 'component', plugin, name, props: { ...block.parameters }, ...block.children ? { children: block.children.map(child) } : {} }
           if (Array.isArray(data.durations) && data.durations.every(value => typeof value === 'number')) node.durations = data.durations
           if (isRecord(data.fallback) && typeof data.fallback.type === 'string') node.fallback = structuredClone(data.fallback) as MdastNode
@@ -69,6 +71,12 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
           if (implementation.type === 'file') {
             const file = resolve(deckDir, implementation.path)
             watch(file)
+            if (isMotionScene(definition)) {
+              const path = relative(deckDir, file).split(sep).join('/')
+              const scene = /^scenes\/([\w-]+(?:\/[\w-]+)*)\.(?:ts|js|mjs)$/.exec(path)?.[1]
+              if (scene) node.props.scene = scene
+              else report({ checkId: 'presmium.document', severity: 'error', message: 'A motion scene implementation must be a supported file below scenes/.', source: where })
+            }
             node.definition = { file, language: typeof data.language === 'string' ? data.language : /\.[cm]?tsx?$/.test(file) ? 'typescript' : 'javascript' }
           }
           return node
@@ -96,6 +104,10 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
     }))
     return { id: sectionId, index: index + 1, title: section.title, depth: index === 0 && (section.level ?? 1) === 1 ? 0 : section.level ?? 1, source: source(entry, `/sections/${pointerKey(sectionId)}`), steps: Math.max(0, section.stepOrder.length - 1), stepIds: [...section.stepOrder], hints: section.layout.renderers ?? {}, ...section.audience ? { audience: section.audience } : {}, config: { ...section.config, 'presmium.lecture': { ...section.config?.['presmium.lecture'], resolvedNarrationVoices } }, blocks }
   })
+}
+
+function isMotionScene(definition: Definition): boolean {
+  return definition.kind === 'scene' && definition.implementation.type === 'file' && (!definition.data?.plugin || definition.data.plugin === 'presmium.motion') && (!definition.data?.name || definition.data.name === 'PmScene')
 }
 
 function styled(node: MdastNode, style: TextStyle | undefined): MdastNode {
@@ -136,7 +148,7 @@ export function richText(node: RichTextNode): MdastNode {
     case 'table': result = { type: 'table', headerRows: node.headerRows, headerColumns: node.headerColumns, columnWidths: node.columnWidths, children: node.children.map(row => ({ type: 'tableRow', identifier: row.id, children: row.children.map(cell => styled({ type: 'tableCell', identifier: cell.id, colspan: cell.colspan, rowspan: cell.rowspan, children: inlineText(cell.children) }, cell.style)) })) }; break
     case 'extension': result = extensionNode(node.kind, node.schemaVersion, node.data, node.fallback.map(richText)); break
   }
-  return { ...result, identifier: node.id }
+  return { ...result, ...node.type === 'extension' ? {} : { identifier: node.id }, data: { ...isRecord(result.data) ? result.data : {}, presmiumId: node.id } }
 }
 
 /** Known imported semantic trees remain structured data, never a reparsed authoring string. */
