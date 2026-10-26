@@ -61,6 +61,12 @@ lecture.json + 引用的代码与媒体
 
 `IRSection.stepNarrations` 按稳定步骤标识保存讲稿的显示文本与讲稿标识，保留同一步多条讲稿的顺序。它直接派生自文稿，朗读替换取显示文本、提示动作不混入字幕；网页过滤掉讲授节点后仍可按步骤显示字幕。该投影不含音频、逐字对齐或估算时码，不要求配置配音服务。真实已加载的时序字幕播放器通过宿主 `TIMED_CAPTIONS` 租约取得字幕显示权，释放后恢复按步骤字幕。
 
+制作时间线读取公开的 `ProductionPlan`（`contracts/production.ts`）。`ProductionBinding { source, irRevision, planId }` 分别绑定已保存的 canonical 文稿、完整运行快照与不可变派生计划；`irRevision` 使用工作区确认的完整 revision，不重算过滤视图的哈希。`planId` 包含实际讲授轨、词时码、事件、字幕、时机与精确音频缓存键、字节摘要和时长，因此只补齐缓存或修正词时码也会产生新计划。`sameProductionBinding` 比较完整绑定。
+
+计划按稳定页面、步骤与 Narration 标识给出范围；画面每步一段，跨步 cue 对应的同一音频与字幕各保留一段，并列出覆盖的 `stepIds`。所有时间使用同一讲授时钟的毫秒。`confirmed` 表示已确认，`estimated` 表示含缺配音的估时，`unknown` 不填未知的边界与总时长；只有完整确认的计划开放 `canPreview`、`canExport`。没有 Narration 的文稿可形成纯画面静音计划；有 Narration 时，显式 `voiceSource: { type: 'none' }` 使用实际动画、hold、pause 与 gap，不按文字推算时长。来源未选、尚不支持的 recording／媒体混音、未声明的动画时长和没有确认时码的静音文字 cue 均保留诊断，不能冒充可播放计划。
+
+`GET production-plan` 接收 `ProductionPlanQuery { source, irRevision }`，只查询缓存；`GET tracks/script?planId=…` 复用同一轨与绑定。Node 在读取前后检查实际源与 revision，并保留最近四份同源不可变计划供显式读取；旧计划不代表最新缓存状态。`GET production-media` 接收完整绑定与 `clipId`，只提供该计划白名单中的真实缓存文件，核对服务授权与文件身份，支持范围读取，不接受任意文件路径。读取、播放与导出不隐式生成语音。
+
 组件的资源映射 `assets` 使用参数的点分路径。插件可为 `stepStates` 派生该步自己的资源映射；链接检查包含这些资源，发布时同步改写该步参数中的地址，避免步骤参数覆盖已发布的 URL。内置媒体从实际 `src`、`poster`、`still` 与 `captions` 参数派生映射，并跟踪步骤专属文件；资源不存在时产生链接诊断。
 
 普通阅读器的场景局部控制也从 `stepStates` 重建状态与参数：`StepScope.stateAt(localStep)` 与 `step(localStep)` 使用同一个首个可见作者快照。局部跳步和播放复用场景原有时钟，不改变全文导航或作者文稿。

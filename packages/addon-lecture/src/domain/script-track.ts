@@ -43,7 +43,7 @@ function anchorAt(utterance: Utterance, words: readonly WrittenWord[] | undefine
  * The lecture of `plan` said with `clips`. `unsaid`: the sentences without a clip, by id, with the reason; each plays
  * silent for the time it would take to say, so that a preview keeps the lecture's timeline.
  */
-export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>, head: ScriptHead, blocks: (events: TrackEvent[]) => Record<string, TrackBlock>, unsaid: ReadonlyMap<string, string> = new Map()): { track: LectureTrack, cuts: CutAnimation[] } {
+export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>, head: ScriptHead, blocks: (events: TrackEvent[]) => Record<string, TrackBlock>, unsaid: ReadonlyMap<string, string> = new Map(), silent: ReadonlySet<string> = new Set()): { track: LectureTrack, cuts: CutAnimation[] } {
   const cuts: CutAnimation[] = []
   const events: TrackEvent[] = []
   const utterances: Utterance[] = []
@@ -81,10 +81,14 @@ export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>,
             if (clip.speech) utterance.voice = clip.speech
             if (clip.words?.length) utterance.words = trackWords(clip.words, t)
             utterances.push(utterance)
+          } else if (piece.id && silent.has(piece.id)) {
+            utterance = { id: piece.id, t, d: 0, text: piece.text, section: section.id, step: section.webStep(current), silent: true }
+            utterances.push(utterance)
           } else if (piece.id && unsaid.has(piece.id)) {
             utterance = { id: piece.id, t, d: spokenDuration(piece.text, head.lang), text: piece.text, section: section.id, step: section.webStep(current), unsaid: unsaid.get(piece.id)! }
             utterances.push(utterance)
           }
+          if (utterance && paragraph.narrationId) utterance.narrationIds = [paragraph.narrationId]
           const cue = (c: PlannedCue, data: Record<string, unknown>): number => {
             if (c.name === 'ink') inked = true
             if (!utterance) {
@@ -117,6 +121,20 @@ export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>,
     }
     hold()
   }
+  const ordered = sortEvents(events)
+  const combined: Utterance[] = []
+  for (const utterance of utterances) {
+    const previous = combined.at(-1)
+    if (utterance.silent && previous?.silent && previous.t === utterance.t && previous.section === utterance.section && previous.step === utterance.step) {
+      previous.text += `\n\n${utterance.text}`
+      previous.narrationIds = [...new Set([...(previous.narrationIds ?? []), ...(utterance.narrationIds ?? [])])]
+    } else combined.push(utterance)
+  }
+  for (const [index, utterance] of combined.entries()) if (utterance.silent) {
+    const boundary = ordered.find(([at, type, data]) => type === 'go' && at > utterance.t && (data.section !== utterance.section || Number(data.step ?? 0) !== utterance.step))?.[0] ?? t
+    const next = combined[index + 1]?.t ?? t
+    utterance.d = Math.max(0, Math.min(boundary, next) - utterance.t)
+  }
   const track: LectureTrack = {
     track: TRACK_VERSION,
     id: head.id,
@@ -125,8 +143,9 @@ export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>,
     ir: head.ir,
     voice: head.voice,
     blocks: blocks(events),
-    utterances,
-    events: sortEvents(events),
+    durationMs: t,
+    utterances: combined,
+    events: ordered,
   }
   return { track, cuts }
 }

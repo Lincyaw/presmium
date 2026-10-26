@@ -22,6 +22,8 @@ export interface PlannedPiece {
 }
 
 export interface PlannedParagraph {
+  narrationId?: string
+  sourceKind?: 'none' | 'tts' | 'recording' | 'unset'
   step: number
   mode?: 'during' | 'after'
   pieces: PlannedPiece[]
@@ -206,24 +208,32 @@ function narration(section: IRSection): { block: IRBlock, target?: IRBlock }[] {
   return list
 }
 
-/** The least time of each step (ms): the longest animation of a component shown in it (`ComponentNode.durations`). */
-function stepHolds(section: IRSection, doc: IRDocument): number[] {
-  const holds = Array.from({ length: section.steps + 1 }, () => 0)
+export interface PlannedAnimation { blockId: string, step: number, durationMs?: number }
+
+/** Changes that start an animation; static built-ins do not invent an animation duration. */
+export function plannedAnimations(section: IRSection): PlannedAnimation[] {
+  const animations: PlannedAnimation[] = []
   for (const block of irBlocks(section.blocks)) {
-    if (block.node.type !== 'component' || !block.node.durations || !isShown(block)) continue
+    if (block.node.type !== 'component' || !isShown(block) || !block.node.durations && !(block.node.plugin === 'presmium.motion' && block.node.name === 'PmScene')) continue
+    const duration = (step: number, local: number) => {
+      const ms = block.node.type === 'component' ? block.node.durations?.[local] : undefined
+      animations.push({ blockId: block.id, step, ...typeof ms === 'number' && Number.isFinite(ms) && ms >= 0 ? { durationMs: ms } : {} })
+    }
     if (block.stepStates) {
       for (const [step, state] of block.stepStates.entries()) {
         const previous = block.stepStates[step - 1]
         if (!state.visible || previous?.visible && previous.localStep === state.localStep && previous.state === state.state && JSON.stringify(previous.parameters) === JSON.stringify(state.parameters)) continue
-        holds[step] = Math.max(holds[step] ?? 0, block.node.durations[state.localStep] ?? 0)
+        duration(step, state.localStep)
       }
-      continue
-    }
-    block.node.durations.forEach((ms, k) => {
-      const step = block.at + k
-      if (step <= section.steps) holds[step] = Math.max(holds[step]!, ms)
-    })
+    } else for (let local = 0; local <= (block.span ?? 0); local++) if (block.at + local <= section.steps) duration(block.at + local, local)
   }
+  return animations
+}
+
+/** Effective minimum step holds: declared animations and authored Production stay durations. */
+function stepHolds(section: IRSection, doc: IRDocument): number[] {
+  const holds = Array.from({ length: section.steps + 1 }, () => 0)
+  for (const animation of plannedAnimations(section)) holds[animation.step] = Math.max(holds[animation.step]!, animation.durationMs ?? 0)
   for (const [step, id] of (section.stepIds ?? []).entries()) {
     const production = { ...doc.production?.defaults, ...doc.production?.sectionOverrides?.[section.id], ...doc.production?.stepOverrides[id] }
     holds[step] = Math.max(holds[step] ?? 0, production.minimumHoldMs ?? 0)
@@ -240,7 +250,11 @@ export function lecturePlan(doc: IRDocument): LecturePlan {
       const spoken = spokenText(block.node.mdast)
       const cues = planCues(spoken, { doc, section, target, source: block.source, problems })
       const voice = narrationVoice(doc, section, block.id, block.at)
-      paragraphs.push({ step: Math.min(block.at, section.steps), mode: block.node.narration?.mode, pieces: pieces(spoken, cues), source: block.source, voice: voice.voice, voiceIssue: voice.issue, voiceTarget: voice.target })
+      const stepId = section.stepIds?.[block.at]
+      const source = (stepId ? doc.production?.stepOverrides[stepId]?.voiceSource : undefined) ?? doc.production?.sectionOverrides?.[section.id]?.voiceSource ?? doc.production?.defaults.voiceSource
+      const pointer = block.source.pointer
+      const narrationId = pointer?.startsWith('/narrations/') ? pointer.slice('/narrations/'.length).replaceAll('~1', '/').replaceAll('~0', '~') : undefined
+      paragraphs.push({ ...narrationId ? { narrationId } : {}, sourceKind: source?.type ?? (voice.voice ? 'tts' : 'unset'), step: Math.min(block.at, section.steps), mode: block.node.narration?.mode, pieces: pieces(spoken, cues), source: block.source, voice: voice.voice, voiceIssue: voice.issue, voiceTarget: voice.target })
     }
     paragraphs.sort((a, b) => a.step - b.step)
     const settings = (section.stepIds ?? []).map(id => ({ ...doc.production?.defaults, ...doc.production?.sectionOverrides?.[section.id], ...doc.production?.stepOverrides[id] }))
@@ -268,8 +282,8 @@ export function sectionHints(section: PlannedSection, lang: string): string[] {
   return [...new Set(words)].slice(0, HINT_WORDS)
 }
 
-export function plannedUtterances(plan: LecturePlan): (PlannedPiece & { id: string, section: string, step: number, source?: SourcePos, voice?: SpeechVoice, voiceIssue?: string, voiceTarget?: VoiceTarget })[] {
+export function plannedUtterances(plan: LecturePlan): (PlannedPiece & { id: string, section: string, step: number, source?: SourcePos, narrationId?: string, sourceKind?: PlannedParagraph['sourceKind'], voice?: SpeechVoice, voiceIssue?: string, voiceTarget?: VoiceTarget })[] {
   return plan.sections.flatMap(section => section.paragraphs.flatMap(paragraph => paragraph.pieces
     .filter((piece): piece is PlannedPiece & { id: string } => Boolean(piece.id))
-    .map(piece => ({ ...piece, section: section.id, step: paragraph.step, voice: paragraph.voice, voiceIssue: paragraph.voiceIssue, voiceTarget: paragraph.voiceTarget, ...paragraph.source ? { source: paragraph.source } : {} }))))
+    .map(piece => ({ ...piece, section: section.id, step: paragraph.step, narrationId: paragraph.narrationId, sourceKind: paragraph.sourceKind, voice: paragraph.voice, voiceIssue: paragraph.voiceIssue, voiceTarget: paragraph.voiceTarget, ...paragraph.source ? { source: paragraph.source } : {} }))))
 }

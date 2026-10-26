@@ -3,6 +3,7 @@ import type { OperationBatch } from './telemetry.ts'
 import type { VoiceCatalogAnswer, VoiceoverCancellation, VoiceoverJob, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest } from '@lincyaw/kernel'
 import type { PageDeleteAnswer, PageDeletePlan, PageDeleteRequest } from '@lincyaw/kernel'
 import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, DocumentEvent } from '@lincyaw/kernel'
+import type { ProductionMediaQuery, ProductionPlan, ProductionPlanQuery } from '@lincyaw/kernel'
 
 const observedFailures = new WeakSet<object>()
 /** Whether the owned request observer already received this transport failure. */
@@ -49,6 +50,8 @@ export interface WorkspaceClient {
   deletePage(document: string, request: PageDeleteRequest): Promise<PageDeleteAnswer>
   readVoiceCatalog(document: string, engine?: string, lang?: string, signal?: AbortSignal): Promise<VoiceCatalogAnswer>
   readVoiceover(document: string, signal?: AbortSignal): Promise<VoiceoverSnapshot>
+  readProductionPlan(document: string, query: ProductionPlanQuery, signal?: AbortSignal): Promise<ProductionPlan>
+  readProductionMedia(document: string, query: ProductionMediaQuery, signal?: AbortSignal): Promise<Blob>
   /** Allocates an intent before sending; aborted or undelivered requests cancel by intent even without a job id. */
   startVoiceover(document: string, request: Omit<VoiceoverRequest, 'intent'> & { intent?: string }, signal?: AbortSignal): Promise<VoiceoverJob>
   cancelVoiceover(document: string, id: string, signal?: AbortSignal): Promise<VoiceoverJob>
@@ -254,6 +257,16 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     deletePage: (document, request) => post(url('pages/delete', document), request),
     readVoiceCatalog: (document, engine, lang, signal) => call(url('voice-catalog', document, { ...engine ? { engine } : {}, ...lang ? { lang } : {} }), { signal }),
     readVoiceover: (document, signal) => call(url('voiceover', document), { signal }),
+    readProductionPlan: (document, query, signal) => call(url('production-plan', document, { source: JSON.stringify(query.source), irRevision: query.irRevision }), { signal }),
+    async readProductionMedia(document, query, signal) {
+      const response = await observedFetch(url('production-media', document, { source: JSON.stringify(query.source), irRevision: query.irRevision, planId: query.planId, clipId: query.clipId }), { signal })
+      if (!response.ok) {
+        const error = new WorkspaceServerError(response.status, await response.json().catch(() => ({})))
+        if (response.status >= 500) observedFailures.add(error)
+        throw error
+      }
+      return response.blob()
+    },
     startVoiceover,
     cancelVoiceover: (document, id, signal) => post(url('voiceover/cancel', document), { id }, signal),
     cancelVoiceoverIntent: (document, intent, signal) => post(url('voiceover/cancel', document), { intent }, signal),
