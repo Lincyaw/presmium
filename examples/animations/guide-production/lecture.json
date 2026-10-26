@@ -613,13 +613,11 @@
       "states": [
         {
           "id": "during",
-          "title": "随动画讲",
-          "legacyIndex": 0
+          "title": "随动画讲"
         },
         {
           "id": "after",
-          "title": "结束后讲",
-          "legacyIndex": 1
+          "title": "结束后讲"
         }
       ],
       "data": {
