@@ -614,6 +614,7 @@ export class Workbench {
   retryDocument(): Promise<void> { return this.#documentSession.retry() }
   discardDocument(): Promise<void> { return this.#documentSession.discard() }
   documentError(error: Error): void { this.#set({ save: { kind: 'failed', message: error.message } }) }
+  documentInteraction(): void { this.#documentSelectionGeneration++ }
   attachDocumentEditor(editor: NativeDocumentEditor | undefined): void {
     this.#unsubscribeEditor?.(); this.#unsubscribeDocumentSelection?.(); this.#documentEditor = editor
     if (editor) {

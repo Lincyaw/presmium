@@ -1,8 +1,8 @@
 import { createSharedStates, installHost, HostProvider, createStore, useStore, presmiumReport, presmiumService, setSiteBase } from '@lincyaw/host'
 import type { HostAdapter, SharedStates, Store } from '@lincyaw/host'
-import { deckLocale } from '@lincyaw/kernel'
+import { deckLocale, irBlocks } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
-import { createViewer, ViewerProvider, OverlayViewOutlet, PageViewOutlet, registerComponent, SlidesPrint } from '@lincyaw/viewer'
+import { createViewer, ViewerProvider, BlockPreview, OverlayViewOutlet, PageViewOutlet, registerComponent, SlidesPrint } from '@lincyaw/viewer'
 import type { Viewer } from '@lincyaw/viewer'
 import { FINAL_STEP } from '@lincyaw/viewer/domain'
 import { createElement as h, useEffect } from 'react'
@@ -90,10 +90,10 @@ export function createPageApp(input: PageAppInput): PageApp {
   }
 
   const initial = input.doc
-  const slides = config.form === 'slides'
+  const slides = !config.block && config.form === 'slides'
   // The router pages the document as the viewer has it now (a dev server's changes come to the viewer).
   let current: Viewer | undefined
-  const router = createPageRouter(config, () => current?.doc.getSnapshot() ?? initial, !embedded)
+  const router = config.block ? undefined : createPageRouter(config, () => current?.doc.getSnapshot() ?? initial, !embedded)
   const slidesUrl = embedded || slides ? undefined : slidesBase(config)
   const webUrl = embedded || !slides ? undefined : webBase(config)
   const t = WEB_MESSAGES[deckLocale(config.lang)]
@@ -101,7 +101,7 @@ export function createPageApp(input: PageAppInput): PageApp {
     renderer: 'web',
     documentIdentity: JSON.stringify([config.base, config.document]),
     editingActive: createStore(true),
-    sectionHref: router.sectionHref,
+    sectionHref: router?.sectionHref,
     slidesOnly: slides,
     ...webUrl
       ? {
@@ -121,11 +121,11 @@ export function createPageApp(input: PageAppInput): PageApp {
         }, [slideIcon()])
       : undefined,
     diagnostics: config.events !== undefined,
-    navigate: embedded ? undefined : position => router.turnTo(position, viewer.restoring.getSnapshot()),
+    navigate: embedded || config.block ? undefined : position => router!.turnTo(position, viewer.restoring.getSnapshot()),
     ...config.source
       ? { openSource: source => void fetch(`${config.source}?file=${encodeURIComponent(source.file)}&line=${source.line}`, { method: 'POST', headers: { 'Presmium-Request': 'source' } }) }
       : {},
-    ...embedded
+    ...embedded || config.block
       ? {}
       : {
           openPresenter(position) {
@@ -136,17 +136,25 @@ export function createPageApp(input: PageAppInput): PageApp {
           },
         },
   })
-  viewer.doc.subscribe(() => router.refresh())
+  if (router) viewer.doc.subscribe(() => router.refresh())
   // The slides alone: the presentation, which a slides page opens on (or every slide, printed).
   if (slides && !input.print) viewer.setView('present')
   const print = input.print
   const adapter = createWebHostAdapter(viewer, { lang: config.lang, shared, isDark: () => dark, printed: print !== undefined })
   installHost(adapter)
   function Content() {
+    const doc = useStore(viewer.doc)
     if (!useStore(active)) return null
+    if (config.block) {
+      for (const section of doc.sections) {
+        const block = [...irBlocks(section.blocks)].find(block => block.id === config.block)
+        if (block) return h(BlockPreview, { block, section })
+      }
+      return null
+    }
     if (print) return h(SlidesPrint, { steps: print.steps, slides: print.slides })
     if (slides) return h('div', { className: 'pm-slides-page pm-document' }, h(OverlayViewOutlet))
-    return embedded ? h(PreviewSheet, { viewer }) : h(DocumentSite, { config, router })
+    return embedded ? h(PreviewSheet, { viewer }) : h(DocumentSite, { config, router: router! })
   }
   const app = pageRoot(h(HostProvider, { adapter }, h(ViewerProvider, { viewer }, h(Content))), input.ssr)
   for (const [name, load] of Object.entries(input.components)) registerComponent(name, clientOnly(name, load))

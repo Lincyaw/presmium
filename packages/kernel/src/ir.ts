@@ -153,7 +153,7 @@ export interface ComponentNode {
   layer?: 'overlay'
   durations?: number[]
   /** The authored code that defines this component instance, when supplied by its plugin. */
-  definition?: { file: string, language: string }
+  definition?: { file: string, language: string, exportName?: string }
 }
 
 export type DirectiveOptionType = 'string' | 'number' | 'boolean' | 'list'

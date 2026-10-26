@@ -27,7 +27,8 @@
     "./design.css": "./src/design.css",
     "./tokens.css": "./src/tokens.css",
     "./components.css": "./src/components.css",
-    "./fonts.css": "./src/fonts.css"
+    "./fonts.css": "./src/fonts.css",
+    "./block-preview.css": "./src/block-preview.css"
   },
   "files": [
     "src"

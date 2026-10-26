@@ -8,7 +8,7 @@ import { FONT_LICENSE, fontLicense } from '@lincyaw/kernel/node'
 import { SitemapStream, streamToPromise } from 'sitemap'
 import { offlineEnabled, pageLink, SERVICE_WORKER, searchDocuments, translationPages, webPages } from '../domain/index.ts'
 import type { AppConfig, SiteConfig, SiteShell, WebPage } from '../domain/index.ts'
-import { BUNDLE_ENTRY, buildDocumentBundle } from './document-bundle.ts'
+import { BUNDLE_ENTRY, buildDocumentBundle, documentComponents } from './document-bundle.ts'
 import type { DocumentBundle } from './document-bundle.ts'
 import { writeServiceWorker } from './offline.ts'
 import { publishedDocument, publishedFile } from './publish.ts'
@@ -116,6 +116,7 @@ async function documentFiles(ctx: RenderContext, built: Built, entry: BuiltDocum
     outDir: join(ctx.workDir, 'bundles', segment(dir)),
     externals: Object.keys(built.app.manifest.shared),
     nodePlugins: entry.nodePlugins.map(({ entry: file, config }) => ({ entry: file, config })),
+    components: documentComponents(entry.doc),
   })
   // Named by its content, as the app is: the same in any checkout.
   const code = bundle && contentKey(bundle.dir, file => file === 'bundle.json')

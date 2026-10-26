@@ -4,6 +4,7 @@ import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { DocumentEditor } from '../document-editor/DocumentEditor.tsx'
 import { DOCUMENT_EDITOR_MESSAGES } from '../document-editor/messages.ts'
 import { DocumentBlockFallback } from '../document-editor/DocumentBlockFallback.tsx'
+import { DocumentBlockPreview } from '../document-editor/DocumentBlockPreview.tsx'
 import { isAgentChanging } from '../workbench.ts'
 
 /** Source editing is available before the first successful runtime compilation. */
@@ -38,7 +39,7 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
       if (current?.dataset.documentSection) workbench.observeDocumentSection(current.dataset.documentSection)
     }
     const queue = () => { if (frame === undefined) frame = requestAnimationFrame(read) }
-    const interact = () => { manual = true; queue() }
+    const interact = () => { manual = true; workbench.documentInteraction(); queue() }
     const keys = (event: KeyboardEvent) => { if (['PageDown', 'PageUp', 'Home', 'End'].includes(event.key)) interact() }
     element.addEventListener('scroll', queue, { passive: true })
     element.addEventListener('wheel', interact, { passive: true })
@@ -65,7 +66,7 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
           const block = source.content?.blocks[id]
           if (!block || !source.content) return undefined
           const fallback = <DocumentBlockFallback block={block} document={source.content} locale={locale} />
-          return fallback
+          return block.type === 'component' ? <DocumentBlockPreview blockId={id} fallback={fallback} /> : fallback
         } }}
         commentsPortal={commentsPortal} onChange={document => workbench.recordDocument(document)} onReady={editor => workbench.attachDocumentEditor(editor)}
         onComposition={composing => workbench.documentComposition(composing)} onError={() => workbench.documentError(new Error(messages.adapterError))} />

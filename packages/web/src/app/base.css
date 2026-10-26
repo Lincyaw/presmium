@@ -103,3 +103,15 @@ fieldset {
 :is(h1, h2, h3, h4, h5, h6, li, p) {
   overflow-wrap: break-word;
 }
+
+/* A compiled block widget has its own read-only host, without a page shell. */
+html.pm-block-document,
+.pm-block-document body {
+  min-height: 0;
+  background: transparent;
+}
+.pm-block-document #app,
+.pm-block-preview {
+  width: 100%;
+  min-width: 0;
+}

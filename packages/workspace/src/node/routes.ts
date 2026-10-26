@@ -124,7 +124,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
     }),
   })
   const routes: Record<string, Route> = {
-    ...documentEditorRoutes({ root: config.root, editor, revisions }),
+    ...documentEditorRoutes({ root: config.root, editor, revisions, workbench }),
     documents: {
       role: 'reader',
       handle: (request, ctx) => catchRequestErrors(async () => {

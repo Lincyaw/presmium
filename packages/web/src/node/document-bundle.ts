@@ -1,9 +1,10 @@
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { join, sep } from 'node:path'
+import { join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import type { PresmiumNodePlugin } from '@lincyaw/kernel'
-import { collectBrowserModules, deckPackage, emptyClientModules } from './client-modules.ts'
+import { irBlocks } from '@lincyaw/kernel'
+import type { IRDocument, PresmiumNodePlugin } from '@lincyaw/kernel'
+import { collectBrowserModules, deckPackage, emptyClientModules, isRestartablePackage } from './client-modules.ts'
 import { quietDirectives } from './viewer-app.ts'
 
 /**
@@ -26,6 +27,24 @@ export interface DocumentBundleInput {
   externals: string[]
   /** The Node entries of the document's plugins, with their configuration, for their document modules. */
   nodePlugins: { entry: string, config: Record<string, unknown> }[]
+  /** Canonical file implementations, registered by their derived runtime names. */
+  components?: DocumentComponent[]
+}
+
+export interface DocumentComponent { name: string, file: string, exportName?: string }
+
+/** Own React components are selected by the compiled definition, regardless of their directory. */
+export function documentComponents(doc: IRDocument | undefined): DocumentComponent[] {
+  const found = new Map<string, DocumentComponent>()
+  for (const section of doc?.sections ?? []) for (const block of irBlocks(section.blocks)) {
+    const node = block.node
+    if (node.type !== 'component' || node.plugin !== 'deck' || !node.definition) continue
+    const component = { name: node.name, file: node.definition.file, ...node.definition.exportName !== undefined ? { exportName: node.definition.exportName } : {} }
+    const known = found.get(component.name)
+    if (known && (known.file !== component.file || known.exportName !== component.exportName)) throw new Error(`Document component ${component.name} names multiple implementations.`)
+    found.set(component.name, component)
+  }
+  return [...found.values()]
 }
 
 export interface DocumentBundle {
@@ -60,17 +79,20 @@ const stamp = (file: string) => {
 async function documentCode(input: DocumentBundleInput): Promise<DocumentCode | undefined> {
   const modules = emptyClientModules()
   collectBrowserModules(input.deckDir, 'deck', modules, false, deckPackage(input.deckDir, input.workspaceRoot))
+  const components = new Map([...modules.components].map(([name, file]) => [name, { file, exportName: 'default' }]))
+  if (input.components?.length && !isRestartablePackage(deckPackage(input.deckDir, input.workspaceRoot))) modules.restartable = false
+  for (const component of input.components ?? []) components.set(component.name, { file: resolve(input.deckDir, component.file), exportName: component.exportName ?? 'default' })
   const generated: Record<string, string> = {}
   for (const { entry, config } of input.nodePlugins) {
     const plugin = (await import(pathToFileURL(entry).href) as { default?: PresmiumNodePlugin }).default
     Object.assign(generated, plugin?.documentModules?.({ deckDir: input.deckDir, workspaceRoot: input.workspaceRoot, config }) ?? {})
   }
-  if (modules.components.size + modules.plugins.length + modules.viewers.length + Object.keys(generated).length === 0) return undefined
+  if (components.size + modules.plugins.length + modules.viewers.length + Object.keys(generated).length === 0) return undefined
   const load = (file: string) => `() => import(${JSON.stringify(file)})`
   const ids = Object.keys(generated)
   const entry = `${ids.map((id, i) => `import module${i} from ${JSON.stringify(id)}\n`).join('')}
 export const components = {
-${[...modules.components].map(([name, file]) => `  ${JSON.stringify(name)}: ${load(file)},`).join('\n')}
+${[...components].map(([name, { file, exportName }]) => `  ${JSON.stringify(name)}: () => import(${JSON.stringify(file)}).then(module => { if (!module[${JSON.stringify(exportName)}]) throw new Error(${JSON.stringify(`Document component ${name} has no export ${exportName}.`)}); return { default: module[${JSON.stringify(exportName)}] } }),`).join('\n')}
 }
 export const plugins = [${modules.plugins.map(load).join(', ')}]
 export const viewers = [${modules.viewers.map(({ name, file }) => `{ name: ${JSON.stringify(name)}, load: ${load(file)} }`).join(', ')}]
@@ -80,7 +102,7 @@ ${ids.map((id, i) => `  ${JSON.stringify(id)}: module${i},`).join('\n')}
 export const restartable = ${modules.restartable}
 `
   const key = createHash('sha256').update(JSON.stringify([input.externals.toSorted(), entry, generated])).digest('hex').slice(0, 16)
-  return { key, entry, generated, restartable: modules.restartable, components: [...modules.components.keys()] }
+  return { key, entry, generated, restartable: modules.restartable, components: [...components.keys()] }
 }
 
 function readBundle(dir: string): DocumentBundle | undefined {

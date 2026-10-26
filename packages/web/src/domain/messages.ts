@@ -3,6 +3,7 @@ import type { Locale } from '@lincyaw/kernel/contracts'
 export const WEB_MESSAGES = {
   'zh-CN': {
     viewMenu: '视图',
+    blockPreviewFailed: '这个预览暂时无法显示，请检查组件与素材。',
     openInSlides: '在幻灯片中打开',
     slides: '幻灯片',
     readOnWeb: '在网页中阅读',
@@ -51,6 +52,7 @@ export const WEB_MESSAGES = {
   },
   'en': {
     viewMenu: 'View',
+    blockPreviewFailed: 'This preview could not be displayed. Check its component and assets.',
     openInSlides: 'Open in the slides',
     slides: 'Slides',
     readOnWeb: 'Read on the web',

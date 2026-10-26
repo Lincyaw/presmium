@@ -174,6 +174,8 @@ export interface SourceAnswer {
 export interface DocumentAnswer {
   document: string
   version: string
+  /** FNV-1a-64 of the exact authoritative bytes used to match a runtime snapshot. */
+  fingerprint: string
   content: TeachingDocument
   issues: DocumentIssue[]
 }
@@ -193,7 +195,7 @@ export interface DocumentChangeAnswer extends DocumentAnswer {
   commit?: Revision
 }
 
-export interface DocumentEvent { document: string, version: string, valid: boolean, issues: DocumentIssue[] }
+export interface DocumentEvent { document: string, version: string, valid: boolean, issues: DocumentIssue[], projectRevision?: string }
 
 /** @experimental A saved source file; in a git workspace the save is a revision of its own. */
 export interface SavedAnswer {
@@ -282,7 +284,7 @@ export interface IrAnswer {
   doc: IRDocument
   diagnostics: Finding[]
   sourceCapabilities?: SourceCapabilities
-  /** FNV-1a-64 of the exact parsed MyST text, including BOM; workspace-relative source paths. */
+  /** FNV-1a-64 of the exact authoring JSON text, including BOM; workspace-relative source paths. */
   sourceFingerprints?: Record<string, string>
   /** Workspace authoring endpoints available beside this compilation. */
   authoring?: { deletePage?: true }

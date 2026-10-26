@@ -19,7 +19,7 @@ BUILTIN_ACTIONS.forEach(registerAction)
 
 export function ViewerProvider({ viewer, children }: { viewer: Viewer, children?: ReactNode }) { return createElement(VIEWER.Provider, { value: viewer }, children) }
 
-export { BlockView, PmComponentFallback } from './block.ts'
+export { BlockView, BlockPreview, PmComponentFallback } from './block.ts'
 export { syncViewerWithOperations } from './operations.ts'
 export { findView, findComponent, listViews, registerComponent, registryRevision } from './registry.ts'
 export type { NodeRenderer, ViewDefinition, ViewerAction, ViewerLayer } from './registry.ts'

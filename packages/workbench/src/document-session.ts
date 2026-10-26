@@ -8,6 +8,8 @@ export interface DocumentSessionState {
   identity?: string
   content?: TeachingDocument
   version?: string
+  fingerprint?: string
+  projectRevision?: number
   loading: boolean
   dirty: boolean
   saving: boolean
@@ -28,6 +30,7 @@ interface Slot {
   timer?: ReturnType<typeof setTimeout>
   refreshed?: boolean
   pendingHash?: string
+  projectObservation?: string
 }
 
 const serialize = (value: TeachingDocument) => JSON.stringify(value, (_, entry) => entry && typeof entry === 'object' && !Array.isArray(entry) ? Object.fromEntries(Object.entries(entry).sort(([a], [b]) => a.localeCompare(b))) : entry)
@@ -59,7 +62,7 @@ export class DocumentSession {
       if (this.#active !== directory || opening !== this.#opening) return
       let slot = this.#slots.get(directory)
       if (!slot) {
-        slot = { input: 0, baseHash: await digest(answer.content), storage: `presmium.document.v1:${JSON.stringify([info.root, answer.content.id])}`, state: { directory, identity: JSON.stringify([info.root, answer.content.id]), content: answer.content, version: answer.version, loading: false, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: answer.issues } }
+        slot = { input: 0, baseHash: await digest(answer.content), storage: `presmium.document.v1:${JSON.stringify([info.root, answer.content.id])}`, state: { directory, identity: JSON.stringify([info.root, answer.content.id]), content: answer.content, version: answer.version, fingerprint: answer.fingerprint, loading: false, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: answer.issues } }
         this.#slots.set(directory, slot)
         await this.#restore(slot, answer)
       } else await this.#adopt(slot, answer)
@@ -68,7 +71,13 @@ export class DocumentSession {
       this.#prune()
       this.#unsubscribe = this.#client.subscribeDocument(directory, event => {
         const current = this.#slots.get(directory)
-        if (!current || event.version === current.state.version) return
+        if (!current) return
+        const projectChanged = current.projectObservation !== undefined && event.projectRevision !== undefined && event.projectRevision !== current.projectObservation
+        current.projectObservation = event.projectRevision
+        if (event.version === current.state.version) {
+          if (projectChanged) { current.state = { ...current.state, projectRevision: (current.state.projectRevision ?? 0) + 1 }; this.#emit(current) }
+          return
+        }
         if (current.flight) { current.refreshed = true; return }
         void this.refresh(directory)
       }, () => {})
@@ -101,22 +110,25 @@ export class DocumentSession {
 
   async #adopt(slot: Slot, answer: DocumentAnswer): Promise<void> {
     if (answer.content.id !== slot.state.content?.id) { slot.state = { ...slot.state, error: 'document-identity-changed' }; return }
-    if (answer.version === slot.state.version) return
+    if (answer.version === slot.state.version) {
+      if (answer.fingerprint !== slot.state.fingerprint) slot.state = { ...slot.state, fingerprint: answer.fingerprint, issues: answer.issues }
+      return
+    }
     const remoteHash = await digest(answer.content)
     if (slot.state.dirty || slot.state.composing) {
       if (remoteHash === await digest(slot.state.content!) && !slot.state.composing) {
         slot.baseHash = remoteHash
         slot.pendingHash = undefined
-        slot.state = { ...slot.state, version: answer.version, dirty: false, error: undefined, issues: answer.issues }
+        slot.state = { ...slot.state, version: answer.version, fingerprint: answer.fingerprint, dirty: false, error: undefined, issues: answer.issues }
       } else if (remoteHash === slot.pendingHash) {
         slot.baseHash = remoteHash; slot.pendingHash = undefined
-        slot.state = { ...slot.state, version: answer.version, error: undefined, issues: answer.issues }
-      } else if (remoteHash === slot.baseHash) slot.state = { ...slot.state, version: answer.version, issues: answer.issues }
+        slot.state = { ...slot.state, version: answer.version, fingerprint: answer.fingerprint, error: undefined, issues: answer.issues }
+      } else if (remoteHash === slot.baseHash) slot.state = { ...slot.state, version: answer.version, fingerprint: answer.fingerprint, issues: answer.issues }
       else slot.state = { ...slot.state, error: 'document-version-changed', issues: answer.issues }
       return
     }
     slot.baseHash = remoteHash
-    slot.state = { ...slot.state, version: answer.version, content: answer.content, reset: slot.state.reset + 1, error: undefined, issues: answer.issues }
+    slot.state = { ...slot.state, version: answer.version, fingerprint: answer.fingerprint, content: answer.content, reset: slot.state.reset + 1, error: undefined, issues: answer.issues }
   }
 
   record(content: TeachingDocument): void {
@@ -175,7 +187,7 @@ export class DocumentSession {
     slot.baseHash = flight.hash!
     slot.pendingHash = undefined
     const same = slot.input === flight.input
-    slot.state = { ...slot.state, version: answer.version, ...(same ? { content: answer.content } : {}), dirty: !same, saving: false, error: undefined, issues: answer.issues }
+    slot.state = { ...slot.state, version: answer.version, fingerprint: answer.fingerprint, ...(same ? { content: answer.content } : {}), dirty: !same, saving: false, error: undefined, issues: answer.issues }
   }
 
   async retry(): Promise<void> {
@@ -194,7 +206,7 @@ export class DocumentSession {
       const answer = await this.#client.readDocument(slot.state.directory)
       slot.input++; slot.baseHash = await digest(answer.content)
       slot.pendingHash = undefined
-      slot.state = { ...slot.state, content: answer.content, version: answer.version, dirty: false, restored: false, composing: false, reset: slot.state.reset + 1, error: undefined, issues: answer.issues }
+      slot.state = { ...slot.state, content: answer.content, version: answer.version, fingerprint: answer.fingerprint, dirty: false, restored: false, composing: false, reset: slot.state.reset + 1, error: undefined, issues: answer.issues }
       this.#persist(slot); this.#emit(slot)
     } catch (error) { slot.state = { ...slot.state, error: this.#error(error) }; this.#emit(slot) }
   }

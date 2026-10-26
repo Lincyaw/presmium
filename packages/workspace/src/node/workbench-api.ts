@@ -19,6 +19,8 @@ export interface CheckAnswer {
 /** What the workbench's routes ask of the workspace server: a document's IR and its changes, its previews, builds and checks. */
 export interface WorkbenchApi {
   ir(document: string): Promise<IrAnswer>
+  /** Observe already-requested compilations without starting one for source editing. */
+  onCompiled(document: string, listener: (event: IrEvent) => void): () => void
   voiceCatalog(document: string, engine?: string, lang?: string, signal?: AbortSignal): Promise<VoiceCatalogAnswer>
   voiceCapabilities(document: string): Promise<{ voiceover: boolean, preview: boolean, defaultEngine?: string }>
   events(document: string, signal: AbortSignal): AsyncIterable<{ event: string, data: IrEvent }>
@@ -83,6 +85,11 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
     return { document: dir, revision: irRevisionOf(compilation), diagnostics: { errors: count('error'), warnings: count('warning') }, files: changed.map(file => workspacePath(root, file)) }
   }
   return {
+    onCompiled(document, listener) {
+      const own = listeners.get(document) ?? new Set()
+      listeners.set(document, own); own.add(listener)
+      return () => { own.delete(listener); if (!own.size) listeners.delete(document) }
+    },
     async voiceCapabilities(document) {
       const compilation = await options.compileSessionOf(document).ready()
       const capability = compilation.service(VOICEOVER)

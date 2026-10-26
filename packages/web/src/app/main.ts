@@ -11,6 +11,7 @@ import { createRuntimeLifecycle } from '../client/runtime.ts'
 import type { ViewerModule } from '../client/runtime.ts'
 import { setDocumentModules } from './document-modules.ts'
 import { createPageApp } from './page-app.ts'
+import { blockPreviewReporter } from './block-report.ts'
 import { forgetIndex } from './site/search.tsx'
 import './base.css'
 import './site.css'
@@ -106,14 +107,15 @@ async function bootDocument(): Promise<void> {
   const plugins = [...own.flatMap(([, pkg]) => pkg.plugins), ...bundle.plugins ?? []]
   const restartable = own.every(([, pkg]) => pkg.restartable) && bundle.restartable !== false
 
-  const preview = webPreview({ origins: config.origins, document: config.document, renderer: config.form ?? 'web' })
-  document.documentElement.classList.toggle(IN_WORKBENCH, preview.embedded)
+  const preview = config.block ? undefined : webPreview({ origins: config.origins, document: config.document, renderer: config.form ?? 'web' })
+  document.documentElement.classList.toggle(IN_WORKBENCH, preview?.embedded ?? false)
+  document.documentElement.classList.toggle('pm-block-document', config.block !== undefined)
   const dark = createStore(config.rendered ? false : isDark())
   observe(dark, on => document.documentElement.classList.toggle('dark', on))
   // A slides page asked to print its slides: an export.
   const print = config.form === 'slides' ? parsePrintQuery(location.search) : undefined
-  const { app, viewer, router, shared, active } = createPageApp({ config, doc, components, embedded: preview.embedded, ssr: config.rendered === true, dark, print })
-  active.set(preview.active)
+  const { app, viewer, router, shared, active } = createPageApp({ config, doc, components, embedded: preview?.embedded ?? false, ssr: config.rendered === true, dark, print })
+  active.set(preview?.active ?? true)
   const original = createStore(doc)
   const refresh = async (force = false) => {
     try {
@@ -129,18 +131,18 @@ async function bootDocument(): Promise<void> {
     }
   }
   let viewersReady: Promise<unknown> = Promise.resolve()
-  const lifecycle = createRuntimeLifecycle({ modules: { plugins, viewers, restartable }, doc, viewer: viewer!, shared, original, active, ...config.events ? { server: { document: config.document } } : {}, refresh, onViewers: (ready) => {
+  const lifecycle = createRuntimeLifecycle({ modules: { plugins, viewers, restartable }, doc, viewer: viewer!, shared, original, active, ...!config.block && config.events ? { server: { document: config.document } } : {}, refresh, onViewers: (ready) => {
     viewersReady = ready
   } })
   let stopOperations: (() => void) | undefined
-  observe(runtimeRevision, () => { stopOperations?.(); const operations = presmiumService(OPERATIONS); stopOperations = operations ? syncViewerWithOperations(viewer!, operations) : undefined }, true)
+  if (!config.block) observe(runtimeRevision, () => { stopOperations?.(); const operations = presmiumService(OPERATIONS); stopOperations = operations ? syncViewerWithOperations(viewer!, operations) : undefined }, true)
   await app.mount('#app')
   dark.set(isDark())
-  preview.connect({ viewer: viewer!, dark, setActive: lifecycle.setActive })
-  router!.listen()
+  preview?.connect({ viewer: viewer!, dark, setActive: lifecycle.setActive })
+  router?.listen()
 
   // The dev server's changes: the sections that changed when the page has the revision they change, else the whole IR.
-  if (config.events) {
+  if (!config.block && config.events) {
     const events = new EventSource(config.events)
     events.addEventListener(UPDATE_EVENT, (message: MessageEvent<string>) => {
       if (config.search) forgetIndex(config.search)
@@ -155,6 +157,12 @@ async function bootDocument(): Promise<void> {
     })
     events.addEventListener('reload', () => location.reload())
     events.addEventListener('open', () => void (lifecycle.isRequested() && refresh()))
+  }
+  if (config.block) {
+    const reporter = blockPreviewReporter(config, doc)
+    try { if (lifecycle.isRequested()) await lifecycle.setActive(true); await reporter.ready() }
+    catch (error) { reporter.failed(); console.error('[presmium] the block runtime did not start', error) }
+    return
   }
   if (lifecycle.isRequested()) await lifecycle.setActive(true).catch(error => console.error('[presmium] the document runtime did not start', error))
   if (config.serviceWorker) registerServiceWorker(config.serviceWorker)

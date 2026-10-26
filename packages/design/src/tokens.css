@@ -130,6 +130,9 @@
   --pm-aside-width: 20rem;
   --pm-sheet-width: 52rem;
   --pm-scene-max-width: 44rem;
+  --pm-block-preview-height: 22.5rem;
+  --pm-block-preview-min-height: 7.5rem;
+  --pm-block-preview-max-height: 40rem;
   --pm-narration-editor-height: 12rem;
   --pm-narration-editor-compact-height: 5rem;
   --pm-tooltip-width: 18rem;

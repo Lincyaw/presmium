@@ -14,6 +14,7 @@ import { BLOCK_CLASS, trackClicks } from './slidev-compat/click-directives.ts'
 import { viewerMessages } from './viewer-messages.ts'
 import { VIEWER } from './viewer-state.ts'
 import { h } from './element.ts'
+import { SECTION_CONTEXT } from './section-context.ts'
 export interface BlockProps { block: IRBlock, section: IRSection, step: number, expanded?: boolean }
 const COMPONENT_NODE = createContext<{ node: ComponentNode, section: string } | undefined>(undefined)
 function fallbackOf(node: ComponentNode, section: string) { return node.fallback ? hastToVNodes(markdownToHast(node.fallback, section).children, {}) : [] }
@@ -56,3 +57,8 @@ function BlockViewContent(props: BlockProps) {
 }
 
 export const BlockView = memo(BlockViewContent)
+
+/** A compiled block's standalone read-only surface, using the same host scope as the full viewer. */
+export function BlockPreview({ block, section }: { block: IRBlock, section: IRSection }) {
+  return h(SECTION_CONTEXT.Provider, { value: { section, step: FINAL_STEP, view: 'document' } }, h('div', { className: 'pm-document pm-block-preview', 'data-section': section.id }, h(BlockView, { block, section, step: FINAL_STEP, expanded: true })))
+}
