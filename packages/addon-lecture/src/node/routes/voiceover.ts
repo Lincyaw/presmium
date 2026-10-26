@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { setImmediate } from 'node:timers/promises'
 import { errorMessage, isRecord, jsonResponse, resolvedVoice, speechEngineId, speechVoice, voiceTarget } from '@lincyaw/kernel'
 import { irRevision } from '@lincyaw/kernel/node'
-import type { CanonicalSource, IRDocument, Route, ServerContribution, SpeechService, SpeechVoice, Synthesis, SynthesisRequest, VoiceoverJob, VoiceoverSnapshot, VoicePreviewQuery, VoicePreviewQuote, VoiceScope, VoiceTarget } from '@lincyaw/kernel'
+import type { CanonicalSource, IRDocument, Route, ServerContribution, SpeechService, SpeechVoice, Synthesis, SynthesisRequest, VoiceoverCancellation, VoiceoverJob, VoiceoverSnapshot, VoicePreviewQuery, VoicePreviewQuote, VoiceScope, VoiceTarget } from '@lincyaw/kernel'
 import { plannedUtterances } from '../../domain/index.ts'
 import { latestDoc, lectureView } from '../latest-ir.ts'
 import { deckPlan } from '../plan.ts'
@@ -15,10 +15,19 @@ import { RouteRefusal } from './served-deck.ts'
 type Unit = ReturnType<typeof plannedUtterances>[number]
 interface Context { source: CanonicalSource, doc: IRDocument, revision: string, units: Unit[], lang: string, lexicon?: Record<string, string> }
 interface ActiveJob { job: VoiceoverJob, controller: AbortController, finished: Promise<void> }
+interface Intent { payload?: string, controller: AbortController, job?: ActiveJob, finished: Promise<void>, finish(): void }
+const MAX_INTENTS = 1024
+const validIntent = (value: unknown): value is string => typeof value === 'string' && /^[A-Za-z0-9_-]{16,128}$/.test(value)
 
 const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 const validTarget = (value: unknown): value is VoiceTarget => isRecord(value) && typeof value.section === 'string' && Number.isSafeInteger(value.step) && (value.step as number) >= 0 && typeof value.binding === 'string'
 const validScope = (value: unknown): value is VoiceScope => isRecord(value) && (value.kind === 'document' || value.kind === 'page' && typeof value.section === 'string' || value.kind === 'step' && validTarget(value.target) || value.kind === 'steps' && Array.isArray(value.targets) && value.targets.length > 0 && value.targets.length <= 500 && value.targets.every(validTarget))
+
+function intentPayload(revision: string, source: CanonicalSource, scope: VoiceScope): string {
+  const at = (target: VoiceTarget) => JSON.stringify([target.section, target.step, target.binding])
+  const selection = scope.kind === 'document' ? [] : scope.kind === 'page' ? [scope.section] : scope.kind === 'step' ? [at(scope.target)] : [...new Set(scope.targets.map(at))].sort()
+  return digest([revision, source.documentId, source.version, source.fingerprint, scope.kind, selection])
+}
 
 function scoped(context: Context, scope: VoiceScope): Unit[] {
   if (scope.kind === 'document') return context.units
@@ -44,6 +53,30 @@ function requestOf(context: Context, unit: Unit): SynthesisRequest {
 /** Explicit author jobs populate the exact-request cache; reading tracks never starts these jobs. */
 export function voiceoverRoutes(served: ServedDeck): ServerContribution {
   const jobs = new Map<string, ActiveJob>()
+  const intents = new Map<string, Intent>()
+  const newIntent = (id: string, payload?: string): Intent => {
+    // Do not evict a cancelled intent and later admit its delayed POST.
+    if (intents.size >= MAX_INTENTS) throw new RouteRefusal(503, 'voice-intent-capacity')
+    let finish!: () => void
+    const finished = new Promise<void>(resolve => { finish = resolve })
+    const intent = { payload, controller: new AbortController(), finished, finish }
+    intents.set(id, intent)
+    return intent
+  }
+  const cancelJob = (entry: ActiveJob) => {
+    if (['queued', 'running'].includes(entry.job.state)) {
+      const queued = entry.job.state === 'queued'
+      entry.job.state = queued ? 'cancelled' : 'cancelling'
+      if (queued) entry.job.finishedAt = new Date().toISOString()
+      entry.controller.abort(new Error('voice-cancelled'))
+    }
+  }
+  const cancelIntent = (id: string): VoiceoverCancellation => {
+    const intent = intents.get(id) ?? newIntent(id)
+    if (intent.job) cancelJob(intent.job)
+    else { intent.controller.abort(new Error('voice-cancelled')); if (!intent.payload) intent.finish() }
+    return { intent: id, state: intent.job?.job.state ?? 'cancelled', ...intent.job ? { job: { ...intent.job.job } } : {} }
+  }
   let closed = false
   const context = async (expected?: CanonicalSource): Promise<Context> => {
     const doc = latestDoc(served.deckDir)
@@ -184,48 +217,71 @@ export function voiceoverRoutes(served: ServedDeck): ServerContribution {
         if (request.method === 'GET') return jsonResponse(await snapshot(request.signal))
         if (request.method !== 'POST') throw new RouteRefusal(405, 'GET or POST')
         const body: unknown = await request.json().catch(() => undefined)
-        if (!isRecord(body) || typeof body.revision !== 'string' || !canonicalSource(body.source) || !validScope(body.scope)) throw new RouteRefusal(400, 'voice-generation-invalid')
+        if (!isRecord(body) || typeof body.revision !== 'string' || !validIntent(body.intent) || !canonicalSource(body.source) || !validScope(body.scope)) throw new RouteRefusal(400, 'voice-generation-invalid')
         if (body.confirmed !== true) throw new RouteRefusal(409, 'voice-confirmation-required')
         if (closed) throw new RouteRefusal(503, 'voice-service-closing')
-        const now = await assertRevision(body.revision, body.source), units = scoped(now, body.scope)
-        if (!units.length) throw new RouteRefusal(409, 'voice-script-empty')
-        const matching = [...jobs.values()].find(entry => entry.job.revision === now.revision && JSON.stringify(entry.job.scope) === JSON.stringify(body.scope) && ['queued', 'running', 'cancelling'].includes(entry.job.state))
-        if (matching) return jsonResponse(matching.job)
-        let release: (() => void) | undefined = claimVoiceGeneration(served.deckDir)
+        const payload = intentPayload(body.revision, body.source, body.scope)
+        const known = intents.get(body.intent)
+        if (known?.payload && known.payload !== payload) throw new RouteRefusal(409, 'voice-intent-changed')
+        if (known?.controller.signal.aborted) throw new RouteRefusal(409, 'voice-cancelled')
+        if (known?.job) {
+          await assertRevision(body.revision, body.source)
+          request.signal.throwIfAborted()
+          if (known.controller.signal.aborted) throw new RouteRefusal(409, 'voice-cancelled')
+          return jsonResponse({ ...known.job.job })
+        }
+        if (known) throw new RouteRefusal(409, 'voice-job-busy')
+        const intent = newIntent(body.intent, payload)
+        const signal = AbortSignal.any([request.signal, intent.controller.signal])
+        const checkCancelled = () => {
+          if (intent.controller.signal.aborted) throw new RouteRefusal(409, 'voice-cancelled')
+          signal.throwIfAborted()
+        }
+        let release: (() => void) | undefined, admitted = false
         try {
+          checkCancelled()
+          const now = await assertRevision(body.revision, body.source), units = scoped(now, body.scope)
+          checkCancelled()
+          if (!units.length) throw new RouteRefusal(409, 'voice-script-empty')
+          release = claimVoiceGeneration(served.deckDir)
           const speech = served.speech()
           const issues = new Map<string, string>()
           for (const unit of units) {
-            request.signal.throwIfAborted()
+            checkCancelled()
             await assertCurrent(now)
-            try { if (!await speech.lookup?.(requestOf(now, unit), request.signal)) await providerFor(speech, unit.voice!, now, request.signal) }
-            catch (error) { if (request.signal.aborted || stale(error)) throw error; issues.set(unit.id, errorMessage(error)) }
+            checkCancelled()
+            try { if (!await speech.lookup?.(requestOf(now, unit), signal)) await providerFor(speech, unit.voice!, now, signal) }
+            catch (error) { checkCancelled(); if (stale(error)) throw error; issues.set(unit.id, errorMessage(error)) }
             await assertCurrent(now)
           }
-          request.signal.throwIfAborted()
+          checkCancelled()
           if (issues.size === units.length) throw new RouteRefusal(409, issues.values().next().value ?? 'voice-unavailable')
           if (closed) throw new RouteRefusal(503, 'voice-service-closing')
-          const job: VoiceoverJob = { id: randomUUID(), source: now.source, revision: now.revision, scope: body.scope, state: 'queued', total: units.length, completed: 0, failed: 0, createdAt: new Date().toISOString() }
-          const entry: ActiveJob = { job, controller: new AbortController(), finished: Promise.resolve() }
+          const job: VoiceoverJob = { id: randomUUID(), intent: body.intent, source: now.source, revision: now.revision, scope: body.scope, state: 'queued', total: units.length, completed: 0, failed: 0, createdAt: new Date().toISOString() }
+          const entry: ActiveJob = { job, controller: intent.controller, finished: Promise.resolve() }
+          intent.job = entry
           jobs.set(job.id, entry)
           const finish = release
-          entry.finished = Promise.resolve().then(() => run(entry, now, units, issues)).finally(finish)
-          release = undefined
+          entry.finished = Promise.resolve().then(() => run(entry, now, units, issues)).finally(() => { finish(); intent.finish() })
+          release = undefined; admitted = true
           for (const [id, old] of jobs) if (jobs.size > 20 && !['queued', 'running', 'cancelling'].includes(old.job.state)) jobs.delete(id)
           return jsonResponse({ ...job }, 202)
-        } finally { release?.() }
+        } finally {
+          if (!admitted) { intent.controller.abort(new Error('voice-cancelled')); intent.finish() }
+          release?.()
+        }
       }),
       'voiceover/cancel': route(async request => {
         if (request.method !== 'POST') throw new RouteRefusal(405, 'POST')
         const body: unknown = await request.json().catch(() => undefined)
-        const entry = isRecord(body) && typeof body.id === 'string' ? jobs.get(body.id) : undefined
-        if (!entry) throw new RouteRefusal(404, 'voice-job-unknown')
-        if (['queued', 'running'].includes(entry.job.state)) {
-          const queued = entry.job.state === 'queued'
-          entry.job.state = queued ? 'cancelled' : 'cancelling'
-          if (queued) entry.job.finishedAt = new Date().toISOString()
-          entry.controller.abort(new Error('voice-cancelled'))
+        if (!isRecord(body) || (body.id !== undefined) === (body.intent !== undefined)) throw new RouteRefusal(400, 'voice-cancel-invalid')
+        if (body.intent !== undefined) {
+          if (!validIntent(body.intent)) throw new RouteRefusal(400, 'voice-cancel-invalid')
+          return jsonResponse(cancelIntent(body.intent))
         }
+        const entry = typeof body.id === 'string' ? jobs.get(body.id) : undefined
+        if (!entry) throw new RouteRefusal(404, 'voice-job-unknown')
+        cancelJob(entry)
         return jsonResponse({ ...entry.job })
       }),
       'voice-preview': route(async request => {
@@ -262,13 +318,11 @@ export function voiceoverRoutes(served: ServedDeck): ServerContribution {
     },
     async close() {
       closed = true
-      for (const entry of jobs.values()) if (['queued', 'running', 'cancelling'].includes(entry.job.state)) {
-        const queued = entry.job.state === 'queued'
-        entry.job.state = queued ? 'cancelled' : 'cancelling'
-        if (queued) entry.job.finishedAt = new Date().toISOString()
-        entry.controller.abort(new Error('voice-service-closing'))
+      for (const intent of intents.values()) {
+        if (intent.job) cancelJob(intent.job)
+        else intent.controller.abort(new Error('voice-service-closing'))
       }
-      await Promise.all([...jobs.values()].map(entry => entry.finished))
+      await Promise.all([...intents.values()].map(intent => intent.finished))
     },
   }
 }

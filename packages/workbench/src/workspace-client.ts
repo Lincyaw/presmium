@@ -1,6 +1,6 @@
 import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobSource, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, SourceTransactionAnswer, SourceTransactionChange, StartJobRequest, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
 import type { OperationBatch } from './telemetry.ts'
-import type { VoiceCatalogAnswer, VoiceoverJob, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest, VoiceSettingsAnswer, VoiceSettingsChange, VoiceSettingsUpdate } from '@lincyaw/kernel'
+import type { VoiceCatalogAnswer, VoiceoverCancellation, VoiceoverJob, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest, VoiceSettingsAnswer, VoiceSettingsChange, VoiceSettingsUpdate } from '@lincyaw/kernel'
 import type { PageDeleteAnswer, PageDeletePlan, PageDeleteRequest } from '@lincyaw/kernel'
 import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, DocumentEvent } from '@lincyaw/kernel'
 
@@ -51,8 +51,10 @@ export interface WorkspaceClient {
   updateVoiceSettings(document: string, update: VoiceSettingsUpdate, signal?: AbortSignal): Promise<VoiceSettingsChange>
   readVoiceCatalog(document: string, engine?: string, lang?: string, signal?: AbortSignal): Promise<VoiceCatalogAnswer>
   readVoiceover(document: string, signal?: AbortSignal): Promise<VoiceoverSnapshot>
-  startVoiceover(document: string, request: VoiceoverRequest, signal?: AbortSignal): Promise<VoiceoverJob>
+  /** Allocates an intent before sending; aborted or undelivered requests cancel by intent even without a job id. */
+  startVoiceover(document: string, request: Omit<VoiceoverRequest, 'intent'> & { intent?: string }, signal?: AbortSignal): Promise<VoiceoverJob>
   cancelVoiceover(document: string, id: string, signal?: AbortSignal): Promise<VoiceoverJob>
+  cancelVoiceoverIntent(document: string, intent: string, signal?: AbortSignal): Promise<VoiceoverCancellation>
   previewVoice(document: string, request: VoicePreviewRequest, signal?: AbortSignal): Promise<VoicePreviewAnswer>
   readVoicePreview(document: string, query: VoicePreviewQuery, signal?: AbortSignal): Promise<VoicePreviewQuote>
   subscribeIr(document: string, revision: (event: IrEvent) => void, failed?: () => void): () => void
@@ -155,6 +157,25 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     return data
   }
   const post = <T>(address: string, body: unknown, signal?: AbortSignal) => call<T>(address, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal })
+  const startVoiceover: WorkspaceClient['startVoiceover'] = async (document, request, signal) => {
+    signal?.throwIfAborted()
+    const intent = request.intent ?? Array.from(crypto.getRandomValues(new Uint32Array(4)), value => value.toString(16).padStart(8, '0')).join('')
+    let cancellation: Promise<VoiceoverCancellation> | undefined
+    const cancel = () => cancellation ??= post<VoiceoverCancellation>(url('voiceover/cancel', document), { intent }, AbortSignal.timeout(5000))
+    const aborted = () => { void cancel().catch(() => {}) }
+    signal?.addEventListener('abort', aborted, { once: true })
+    try {
+      const job = await post<VoiceoverJob>(url('voiceover', document), { ...request, intent }, signal)
+      signal?.throwIfAborted()
+      if (job.intent !== intent) throw new Error('voice-intent-changed')
+      return job
+    } catch (error) {
+      // The server may have admitted a job before the response was lost.
+      // Cancellation uses a fresh signal; the owned observer reports transport failures.
+      if (signal?.aborted || !(error instanceof WorkspaceServerError) || error.status >= 500) await cancel().catch(() => {})
+      throw error
+    } finally { signal?.removeEventListener('abort', aborted) }
+  }
   const rememberIR = (document: string, value?: CachedIR) => {
     const old = irCache.get(document)
     if (old) irBytes -= old.bytes
@@ -237,8 +258,9 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     updateVoiceSettings: (document, update, signal) => post(url('voice-settings', document), update, signal),
     readVoiceCatalog: (document, engine, lang, signal) => call(url('voice-catalog', document, { ...engine ? { engine } : {}, ...lang ? { lang } : {} }), { signal }),
     readVoiceover: (document, signal) => call(url('voiceover', document), { signal }),
-    startVoiceover: (document, request, signal) => post(url('voiceover', document), request, signal),
+    startVoiceover,
     cancelVoiceover: (document, id, signal) => post(url('voiceover/cancel', document), { id }, signal),
+    cancelVoiceoverIntent: (document, intent, signal) => post(url('voiceover/cancel', document), { intent }, signal),
     previewVoice: (document, request, signal) => post(url('voice-preview', document), request, signal),
     readVoicePreview: (document, query, signal) => call(url('voice-preview', document, { revision: query.revision, voice: JSON.stringify(query.voice), mode: query.mode, ...query.target ? { target: JSON.stringify(query.target) } : {} }), { signal }),
     subscribeIr: (document, revision, failed) => subscribe(url('ir/events', document), 'revision', revision, failed),
