@@ -144,13 +144,20 @@ Editing and preview need no model. Without a directory it prepares, on first run
 the example in `.presmium/example-workspace` (its own git repository, with the speech cache and an
 `AGENTS.md` for the AI) via `examples/animations/try.mjs`, and reuses it afterwards.
 
-`examples/animations/` is the only public example: two Chinese documents whose animations are written in
-code (bubble sort, and animations written in code); their narration audio comes from the speech cache
-committed with each document (`<document>/.presmium/speech/` and `speech.lock.json`), so builds need no
-speech engine. After changing narration, rebuild the document with a speech engine configured (how:
-`presmium-present/references/lecture.md`), commit the updated cache and lock, then run `pnpm demo:check`
-where no engine is configured to confirm the cache is complete. Documents for verifying a feature go in
-`e2e/fixtures/<group>/`; the old BPE document stays only in `e2e/fixtures/regression/` for regression.
+`examples/animations/` is the public example workspace: two complete Chinese courses (bubble sort and
+animations written in code), plus eight topic guides indexed by `examples/animations/FEATURES.md` and
+`features.json`. The guides cover the official plugins and public components, with real prerequisites
+and explicit capability limits. `demo:check` and `demo:ir` still target the original two courses;
+`demo:build` includes every document's web page and adds slides, notebook and narrated lecture for the
+two complete courses only.
+
+The original courses have matching narration audio committed in `<document>/.presmium/speech/` and
+`speech.lock.json`; builds need no speech engine while those requests remain unchanged. After editing
+narration, explicitly generate the affected targets with a real engine, commit their matching cache and
+lock, and check the changed document without an engine using `presmium check <document>`.
+Verification documents and deliberate failure cases stay in `e2e/fixtures/<group>/`; the old BPE
+course stays only in `e2e/fixtures/regression/`. Existing user copies in `.presmium/example-workspace`
+are reused and must not be overwritten to refresh the examples.
 
 From source, `pnpm add -g ./packages/presmium` makes the global CLI this checkout; `pnpm add -g
 ./packages/studio` does the same for `presmium-studio`. Commands written for users use only pnpm and the

@@ -38,10 +38,12 @@ Copy `packages/addon-guide/package.json` and adapt it. Official plugins are name
   official plugin declares both and is compatible.
 - **Install.** After adding a package or dependency run `pnpm install` at the root and commit
   `pnpm-lock.yaml`.
-- **The example.** The only public example is the two documents of `examples/animations/`. A new plugin's
-  verification document goes into `e2e/fixtures/<group>/` ([testing](testing.md)); do not mix feature demos
-  into the example. To use the plugin there, add it to `examples/animations/package.json` and to the
-  document's `plugins`.
+- **The example.** `examples/animations/` contains two complete courses and eight user-facing feature
+  guides. Add an authorable scenario to the relevant guide and its `features.json` index when a public
+  capability changes; declare real service, hardware and credential prerequisites. Regression and
+  deliberate failure documents stay in `e2e/fixtures/<group>/` ([testing](testing.md)). To use a plugin
+  in the public workspace, declare it in `examples/animations/package.json` and in the document's
+  `metadata.plugins`.
 - **Tests.** Under the owner's current rule (SKILL.md, Verify) a new package gets no tests; verify it by a
   real build of its fixture document. When the owner asks for tests, the existing shape is: a spec
   `e2e/<group>.spec.ts` for the fixture, and `packages/<pkg>/test/*.test.ts` that writes a document into a
