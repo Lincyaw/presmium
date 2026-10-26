@@ -54,7 +54,7 @@ and trade-offs), `docs/ir.md` (syntax to IR); for the workbench also `docs/desig
 and `docs/design-system.md` (formal controls, style ownership, asset registry and migration requirements);
 for studio debugging `docs/debugging.md`. The docs are in Chinese and cited here by section number.
 What 1.x keeps stable for users and the rules for package versions, `IR_VERSION` and `KERNEL_VERSION`
-are in `site/reference/lecture.md` (the page "接口与版本").
+are in `site/reference/lecture.json` (the page "接口与版本").
 
 The source is the contract: `packages/kernel/src/contracts/` (re-exported together by
 `packages/kernel/src/contracts.ts`, the package's `./contracts` entry) for plugins and services,

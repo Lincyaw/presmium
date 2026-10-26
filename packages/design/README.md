@@ -2,7 +2,7 @@
 
 Presmium's design system, shared by its outputs (the web form and the slides) and its workbench (`presmium studio`): the tokens (`--pm-*` CSS custom properties, light and dark), the classes of the shared components (`pm-ui-*`), the fonts (IBM Plex Sans, IBM Plex Mono and Source Serif 4, SIL Open Font License 1.1, from Fontsource) and the line icons. It uses no framework.
 
-Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonical lecture.json teaching documents into web pages, slides, Jupyter notebooks and narrated playback.
 
 ## Usage
 

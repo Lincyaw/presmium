@@ -2,7 +2,7 @@
 
 Presmium's agent environment: a document's tools and resources over MCP, for agents such as Claude Code, Codex or VS Code.
 
-Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonical lecture.json teaching documents into web pages, slides, Jupyter notebooks and narrated playback.
 
 ## Usage
 
@@ -18,7 +18,7 @@ The reading tools (`list_sections`, `get_section`, `get_step`, `search`, `get_co
 
 ## Documentation
 
-- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md): agents in your editor
+- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/locales/en/lecture.json): agents in your editor
 
 ## License
 

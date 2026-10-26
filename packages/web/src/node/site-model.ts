@@ -1,6 +1,6 @@
 import { existsSync, realpathSync, statSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
-import { DEFAULT_LANG, docBlocks, isRecord, nodeMdast, NON_FILE_URL, safeDecodeURIComponent } from '@lincyaw/kernel'
+import { DEFAULT_LANG, DOCUMENT_ENTRY, docBlocks, isRecord, nodeMdast, NON_FILE_URL, safeDecodeURIComponent } from '@lincyaw/kernel'
 import type { DocumentLink, Finding, IRDocument, MdastNode, RenderContext, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
 import { findInstalledPackage, isInside } from '@lincyaw/kernel/node'
 import { crossFormLinks, pageLink, searchDocuments, sectionLinks, siteShell, translationPages, urlPath, webPages } from '../domain/index.ts'
@@ -9,13 +9,12 @@ import type { DocumentPage } from './publish.ts'
 
 /**
  * A site of the web form: one document at its root, or a workspace's documents below their directories with a home page
- * that lists them. The links between documents (a link to another document's `lecture.md` goes to its page), the pager
+ * that lists them. The links between documents (a link to another document's `lecture.json` goes to its page), the pager
  * that goes on from one to the next and the search that finds the others' sections are the workspace's. The built site
  * (`site-build.ts`) and the dev server (`site-server.ts`) share these.
  */
 
 export const LIST_PAGE = 'documents'
-const DECK_ENTRY = 'lecture.md'
 const LINK_LANGUAGE = new WeakMap<DocumentLink, string>()
 const SHELL_KEYS = ['nav', 'footer', 'head', 'sitemap']
 
@@ -114,7 +113,7 @@ function documentLinkOf(ctx: RenderContext): (source: SourcePos, url: string) =>
       return undefined
     }
     const stat = statSync(target)
-    const dir = stat.isFile() && basename(target) === DECK_ENTRY ? dirname(target) : stat.isDirectory() && existsSync(join(target, DECK_ENTRY)) ? target : undefined
+    const dir = stat.isFile() && basename(target) === DOCUMENT_ENTRY ? dirname(target) : stat.isDirectory() && existsSync(join(target, DOCUMENT_ENTRY)) ? target : undefined
     const root = realpathSync(ctx.workspaceRoot)
     if (dir === undefined || !isInside(dir, root)) return undefined
     const rel = relative(root, dir)
@@ -165,9 +164,18 @@ export function documentContext(ctx: RenderContext, site: SiteSpec, dir: string,
   const linkOf = documentLinkOf(ctx)
   const entry = site.documents.find(other => other.dir === dir)
   const translated = translatedFiles(doc, entry?.translations)
+  const localeTargets = new Map<string, { dir: string, lang: string }>()
+  for (const target of site.documents) for (const locale of target.translations ?? []) {
+    const variant = { dir: target.dir, lang: locale.lang }
+    localeTargets.set(resolve(locale.doc.meta.entry), variant)
+    localeTargets.set(dirname(resolve(locale.doc.meta.entry)), variant)
+  }
   const documentLink = (source: SourcePos, url: string): DocumentLink | undefined => {
-    const link = linkOf(source, url)
-    const lang = translated.get(source.file)
+    const path = url.replace(/[?#].*$/s, '')
+    const locale = path && !NON_FILE_URL.test(url) && !path.startsWith('/') ? localeTargets.get(resolve(dirname(source.file), safeDecodeURIComponent(path))) : undefined
+    const hash = url.indexOf('#')
+    const link = locale ? { dir: locale.dir, ...hash >= 0 ? { fragment: safeDecodeURIComponent(url.slice(hash + 1)) } : {} } : linkOf(source, url)
+    const lang = locale?.lang ?? translated.get(source.file)
     if (link && lang) LINK_LANGUAGE.set(link, lang)
     return link
   }
@@ -193,7 +201,7 @@ export function documentContext(ctx: RenderContext, site: SiteSpec, dir: string,
       if (documentLink(source, url)) return undefined
       if (!url.startsWith('/') || url.startsWith('//')) {
         const found = ctx.localAsset(source, url)
-        return found && basename(realpathSync(found.file)) === DECK_ENTRY ? undefined : found
+        return found && basename(realpathSync(found.file)) === DOCUMENT_ENTRY ? undefined : found
       }
       const path = url.replace(/[?#].*$/s, '')
       let file = join(deckDir, 'public', path)

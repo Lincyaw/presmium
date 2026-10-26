@@ -1,0 +1,546 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-docs-reference-en",
+  "metadata": {
+    "title": "Interfaces and versions",
+    "description": "Distinguish editable documents, runtime snapshots, package versions and plugin contracts",
+    "lang": "en",
+    "renderers": {
+      "web": {}
+    },
+    "translationOf": {
+      "entry": "../../lecture.json",
+      "digest": "adbb89cd83cebb38791cfe9d3266c32a679c0b467ad0204fe7ed0fc1a6c3640b"
+    }
+  },
+  "sectionOrder": [
+    "reference",
+    "versions",
+    "versions-packages",
+    "versions-ir",
+    "versions-kernel",
+    "public",
+    "public-documents",
+    "public-contracts",
+    "experimental-workbench"
+  ],
+  "sections": {
+    "reference": {
+      "id": "reference",
+      "title": "Interfaces and versions",
+      "level": 1,
+      "children": [
+        "reference--body-0"
+      ],
+      "stepOrder": [
+        "reference--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "versions": {
+      "id": "versions",
+      "title": "Identify the version boundary",
+      "level": 2,
+      "children": [
+        "versions--body-0"
+      ],
+      "stepOrder": [
+        "versions--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "versions-packages": {
+      "id": "versions-packages",
+      "title": "Package dependencies",
+      "level": 2,
+      "children": [
+        "versions-packages--body-0",
+        "versions-packages--body-1"
+      ],
+      "stepOrder": [
+        "versions-packages--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "versions-ir": {
+      "id": "versions-ir",
+      "title": "Documents and snapshots",
+      "level": 2,
+      "children": [
+        "versions-ir--body-0",
+        "versions-ir--body-1"
+      ],
+      "stepOrder": [
+        "versions-ir--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "versions-kernel": {
+      "id": "versions-kernel",
+      "title": "Plugin contracts",
+      "level": 2,
+      "children": [
+        "versions-kernel--body-0"
+      ],
+      "stepOrder": [
+        "versions-kernel--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "public": {
+      "id": "public",
+      "title": "Public import paths",
+      "level": 2,
+      "children": [
+        "public--body-0",
+        "public--body-1"
+      ],
+      "stepOrder": [
+        "public--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "public-documents": {
+      "id": "public-documents",
+      "title": "Commands and workspaces",
+      "level": 2,
+      "children": [
+        "public-documents--body-0",
+        "public-documents--body-1"
+      ],
+      "stepOrder": [
+        "public-documents--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "public-contracts": {
+      "id": "public-contracts",
+      "title": "Validation and findings",
+      "level": 2,
+      "children": [
+        "public-contracts--body-0",
+        "public-contracts--body-1"
+      ],
+      "stepOrder": [
+        "public-contracts--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "experimental-workbench": {
+      "id": "experimental-workbench",
+      "title": "Workbench integrations",
+      "level": 2,
+      "children": [
+        "experimental-workbench--body-0",
+        "experimental-workbench--body-1"
+      ],
+      "stepOrder": [
+        "experimental-workbench--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "reference--body-0": {
+      "id": "reference--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "reference--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Editable documents, runtime snapshots and plugin contracts have separate version boundaries. Identify the layer you read or write before checking versions. API in the navigation contains signatures generated from source."
+            }
+          ]
+        }
+      ]
+    },
+    "versions--body-0": {
+      "id": "versions--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "versions--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Package versions identify installed implementations. DOCUMENT_SCHEMA_VERSION and schemaVersion identify editable documents. IR_VERSION and ir identify runtime snapshots. KERNEL_VERSION identifies plugin contracts. Check each relevant boundary separately."
+            }
+          ]
+        }
+      ]
+    },
+    "versions-packages--body-0": {
+      "id": "versions-packages--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "versions-packages--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "package.json and the pnpm lockfile pin project dependencies. Plugins declare peer ranges for the host, kernel and compiler packages they use. An incompatible plugin is unavailable and produces a diagnostic."
+            }
+          ]
+        }
+      ]
+    },
+    "versions-packages--body-1": {
+      "id": "versions-packages--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "versions-packages--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Use exports and TypeScript declarations from the installed release. Task examples do not replace installed command help and contracts."
+            }
+          ]
+        }
+      ]
+    },
+    "versions-ir--body-0": {
+      "id": "versions-ir--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "versions-ir--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The editable format currently uses schemaVersion: 1 and the canonical lecture.json entry. Shared validation checks IDs, references, ownership, parameters, states and media ranges. Old MyST source is not a runtime input."
+            }
+          ]
+        }
+      ]
+    },
+    "versions-ir--body-1": {
+      "id": "versions-ir--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "versions-ir--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "IRDocument is derived and contains resolved steps, states, resources and findings. Renderers consume it. Editors, agents and workspace transactions read and write TeachingDocument rather than reconstructing authoritative content from a snapshot."
+            }
+          ]
+        }
+      ]
+    },
+    "versions-kernel--body-0": {
+      "id": "versions-kernel--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "versions-kernel--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Node and browser plugins declare compatible kernel ranges. A plugin shares the host contract and service runtime. Incompatibility, missing implementations and unavailable services remain explicit diagnostics."
+            }
+          ]
+        }
+      ]
+    },
+    "public--body-0": {
+      "id": "public--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "public--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "@lincyaw/kernel supplies document, snapshot, plugin and service contracts. @lincyaw/host supplies browser host hooks and services. @lincyaw/compiler supplies compilation and build APIs. @lincyaw/viewer supplies runtime view extensions."
+            }
+          ]
+        }
+      ]
+    },
+    "public--body-1": {
+      "id": "public--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "public--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Import declared public paths. Avoid compiled output directories, dependency internals, private editor state and another plugin implementation."
+            }
+          ]
+        }
+      ]
+    },
+    "public-documents--body-0": {
+      "id": "public-documents--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "public-documents--body-0--text",
+          "type": "code",
+          "language": "sh",
+          "value": "presmium --help\npresmium check --help\npresmium build --help\npresmium serve --help"
+        }
+      ]
+    },
+    "public-documents--body-1": {
+      "id": "public-documents--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "public-documents--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "presmium.workspace.yaml groups lecture.json entries. Keep credentials and operator settings separate from content. Confirm document, save, snapshot and audio-cache versions independently. Late responses cannot represent newer input."
+            }
+          ]
+        }
+      ]
+    },
+    "public-contracts--body-0": {
+      "id": "public-contracts--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "public-contracts--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "validateDocument, DOCUMENT_JSON_SCHEMA and TeachingDocument form one authoring contract shared by Web, agents, direct file edits and compilation. Workspace changes carry baseDocumentVersion. Conflicts retain input."
+            }
+          ]
+        }
+      ]
+    },
+    "public-contracts--body-1": {
+      "id": "public-contracts--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "public-contracts--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Findings have stable check IDs, severity and locations. A failed compile may keep the last successful snapshot, but its staleness must be visible. It cannot acknowledge the current document version."
+            }
+          ]
+        }
+      ]
+    },
+    "experimental-workbench--body-0": {
+      "id": "experimental-workbench--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "experimental-workbench--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Workbench UI and private service routes can change with the implementation. Prefer host and service contracts. Pin installed versions when relying on experimental interfaces and verify the real integration. Body editing, compiled presentation and video production have separate lifecycles."
+            }
+          ]
+        }
+      ]
+    },
+    "experimental-workbench--body-1": {
+      "id": "experimental-workbench--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "experimental-workbench--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "For content authoring, read the "
+            },
+            {
+              "type": "link",
+              "href": "../../../guide/lecture.json",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "author guide"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": ". Component development is covered by the plugin guide."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "reference--step": {
+      "id": "reference--step",
+      "sectionId": "reference",
+      "visuals": [
+        {
+          "blockId": "reference--body-0",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "versions--step": {
+      "id": "versions--step",
+      "sectionId": "versions",
+      "visuals": [
+        {
+          "blockId": "versions--body-0",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "versions-packages--step": {
+      "id": "versions-packages--step",
+      "sectionId": "versions-packages",
+      "visuals": [
+        {
+          "blockId": "versions-packages--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "versions-packages--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "versions-ir--step": {
+      "id": "versions-ir--step",
+      "sectionId": "versions-ir",
+      "visuals": [
+        {
+          "blockId": "versions-ir--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "versions-ir--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "versions-kernel--step": {
+      "id": "versions-kernel--step",
+      "sectionId": "versions-kernel",
+      "visuals": [
+        {
+          "blockId": "versions-kernel--body-0",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "public--step": {
+      "id": "public--step",
+      "sectionId": "public",
+      "visuals": [
+        {
+          "blockId": "public--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "public--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "public-documents--step": {
+      "id": "public-documents--step",
+      "sectionId": "public-documents",
+      "visuals": [
+        {
+          "blockId": "public-documents--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "public-documents--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "public-contracts--step": {
+      "id": "public-contracts--step",
+      "sectionId": "public-contracts",
+      "visuals": [
+        {
+          "blockId": "public-contracts--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "public-contracts--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "experimental-workbench--step": {
+      "id": "experimental-workbench--step",
+      "sectionId": "experimental-workbench",
+      "visuals": [
+        {
+          "blockId": "experimental-workbench--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "experimental-workbench--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

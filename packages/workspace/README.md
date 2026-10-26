@@ -2,7 +2,7 @@
 
 Presmium's workspace: the site of several documents (`presmium build` at a workspace root) and the local workbench `presmium serve`, with the document templates.
 
-Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonical lecture.json teaching documents into web pages, slides, Jupyter notebooks and narrated playback.
 
 ## Install
 
@@ -10,11 +10,11 @@ It comes with `@lincyaw/cli`.
 
 ## Workspaces
 
-A workspace has `presmium.workspace.yaml` at its root and each document in a subdirectory with its own `lecture.md`:
+A workspace has `presmium.workspace.yaml` at its root and each document in a subdirectory with its own `lecture.json`:
 
 ```yaml
 title: Introduction to machine learning
-documents: [week1/lecture.md, week2/lecture.md]
+documents: [week1/lecture.json, week2/lecture.json]
 site:
   nav:
     - { text: Week 1, link: /week1/ }
@@ -28,7 +28,7 @@ site:
 
 ## Documentation
 
-- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md): workspaces
+- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/locales/en/lecture.json): workspaces
 - [Security and the trust model](https://github.com/Lincyaw/presmium/blob/main/SECURITY.md)
 
 ## License

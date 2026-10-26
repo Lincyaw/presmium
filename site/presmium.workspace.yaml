@@ -1,9 +1,9 @@
 # Presmium's documentation site: a Presmium workspace, built with `presmium build` here
-# (`pnpm --filter presmium-docs build`, see README.md). Each document is written in Chinese (lecture.md)
-# and translated into English (lecture.en.md): the site publishes the translation under /<document>/en/
+# (`pnpm --filter presmium-docs build`, see README.md). Each document uses canonical lecture.json,
+# with a complete English document in locales/en/lecture.json, published under /<document>/en/
 # and the home page in English under /en/.
 title: Presmium 文档
-documents: [guide/lecture.md, plugins/lecture.md, reference/lecture.md]
+documents: [guide/lecture.json, plugins/lecture.json, reference/lecture.json]
 site:
   lang: zh-CN
   locales:
@@ -15,4 +15,4 @@ site:
     message: Apache-2.0
     copyright: Presmium contributors
   head:
-    description: Presmium — MyST lectures for the web, slides, notebooks and narrated lectures
+    description: Presmium editable teaching documents for the web, slides and notebooks

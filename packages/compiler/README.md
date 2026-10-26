@@ -27,7 +27,7 @@ Stable authoring step IDs and complete visual states are retained in the derived
 
 ## Documentation
 
-- [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/lecture.en.md)
+- [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/locales/en/lecture.json)
 
 ## License
 

@@ -1,0 +1,545 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-docs-reference-zh",
+  "metadata": {
+    "title": "接口与版本",
+    "description": "区分可编辑文稿、派生快照、包版本和插件契约",
+    "lang": "zh-CN",
+    "renderers": {
+      "web": {}
+    },
+    "translations": {
+      "en": "locales/en/lecture.json"
+    }
+  },
+  "sectionOrder": [
+    "reference",
+    "versions",
+    "versions-packages",
+    "versions-ir",
+    "versions-kernel",
+    "public",
+    "public-documents",
+    "public-contracts",
+    "experimental-workbench"
+  ],
+  "sections": {
+    "reference": {
+      "id": "reference",
+      "title": "接口与版本",
+      "level": 1,
+      "children": [
+        "reference--body-0"
+      ],
+      "stepOrder": [
+        "reference--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "versions": {
+      "id": "versions",
+      "title": "识别版本边界",
+      "level": 2,
+      "children": [
+        "versions--body-0"
+      ],
+      "stepOrder": [
+        "versions--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "versions-packages": {
+      "id": "versions-packages",
+      "title": "依赖包版本",
+      "level": 2,
+      "children": [
+        "versions-packages--body-0",
+        "versions-packages--body-1"
+      ],
+      "stepOrder": [
+        "versions-packages--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "versions-ir": {
+      "id": "versions-ir",
+      "title": "文稿和快照格式",
+      "level": 2,
+      "children": [
+        "versions-ir--body-0",
+        "versions-ir--body-1"
+      ],
+      "stepOrder": [
+        "versions-ir--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "versions-kernel": {
+      "id": "versions-kernel",
+      "title": "插件契约",
+      "level": 2,
+      "children": [
+        "versions-kernel--body-0"
+      ],
+      "stepOrder": [
+        "versions-kernel--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "public": {
+      "id": "public",
+      "title": "公开导入路径",
+      "level": 2,
+      "children": [
+        "public--body-0",
+        "public--body-1"
+      ],
+      "stepOrder": [
+        "public--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "public-documents": {
+      "id": "public-documents",
+      "title": "命令和工作区",
+      "level": 2,
+      "children": [
+        "public-documents--body-0",
+        "public-documents--body-1"
+      ],
+      "stepOrder": [
+        "public-documents--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "public-contracts": {
+      "id": "public-contracts",
+      "title": "校验和诊断",
+      "level": 2,
+      "children": [
+        "public-contracts--body-0",
+        "public-contracts--body-1"
+      ],
+      "stepOrder": [
+        "public-contracts--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "experimental-workbench": {
+      "id": "experimental-workbench",
+      "title": "工作台集成边界",
+      "level": 2,
+      "children": [
+        "experimental-workbench--body-0",
+        "experimental-workbench--body-1"
+      ],
+      "stepOrder": [
+        "experimental-workbench--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "reference--body-0": {
+      "id": "reference--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "reference--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Presmium 的可编辑文稿、运行快照与插件契约具有不同的版本边界。集成时先确认自己读写的是哪一层，再检查安装版本与公开类型。完整接口签名由导航栏的 API 从源码生成。"
+            }
+          ]
+        }
+      ]
+    },
+    "versions--body-0": {
+      "id": "versions--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "versions--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "包版本标识已安装实现。DOCUMENT_SCHEMA_VERSION 和文稿的 schemaVersion 标识可编辑格式。IR_VERSION 和快照的 ir 标识运行快照格式。KERNEL_VERSION 标识插件契约，不能用其中一个版本替代其他层的检查。"
+            }
+          ]
+        }
+      ]
+    },
+    "versions-packages--body-0": {
+      "id": "versions-packages--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "versions-packages--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "工程通过 package.json 和 pnpm 锁文件固定依赖。插件声明它实际使用的宿主、内核和编译器对等依赖范围。不满足范围的插件不会被当成可用能力，检查命令会说明原因。"
+            }
+          ]
+        }
+      ]
+    },
+    "versions-packages--body-1": {
+      "id": "versions-packages--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "versions-packages--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "使用发布版本提供的 exports 和 TypeScript 声明。文档中的任务示例不能取代安装版本的命令帮助与契约。"
+            }
+          ]
+        }
+      ]
+    },
+    "versions-ir--body-0": {
+      "id": "versions-ir--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "versions-ir--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "当前可编辑文稿使用 schemaVersion: 1，入口为 lecture.json。共同校验器检查实体 ID、引用、内容树、参数状态和媒体范围。它不接受旧 MyST 源码作为运行输入。"
+            }
+          ]
+        }
+      ]
+    },
+    "versions-ir--body-1": {
+      "id": "versions-ir--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "versions-ir--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "运行 IRDocument 是编译结果，包含解析后的步号、状态、资源和诊断。渲染端只读它；编辑器、agent 和工作区事务读写 TeachingDocument，不能从快照反造另一个权威正文。"
+            }
+          ]
+        }
+      ]
+    },
+    "versions-kernel--body-0": {
+      "id": "versions-kernel--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "versions-kernel--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Node 与浏览器插件声明兼容的 kernel 范围。插件和宿主共用一份契约与服务运行时；兼容范围不足、实现缺失或服务不可用时保留明确诊断。"
+            }
+          ]
+        }
+      ]
+    },
+    "public--body-0": {
+      "id": "public--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "public--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "@lincyaw/kernel 提供文稿、运行快照、插件和服务契约；@lincyaw/host 提供浏览器宿主 hooks 与服务；@lincyaw/compiler 提供编译和构建接口；@lincyaw/viewer 提供运行快照的视图扩展。"
+            }
+          ]
+        }
+      ]
+    },
+    "public--body-1": {
+      "id": "public--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "public--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "只导入包声明的公开路径，不依赖编译产物目录、私有实现、编辑器私有状态或另一个插件的内部代码。"
+            }
+          ]
+        }
+      ]
+    },
+    "public-documents--body-0": {
+      "id": "public-documents--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "public-documents--body-0--text",
+          "type": "code",
+          "language": "sh",
+          "value": "presmium --help\npresmium check --help\npresmium build --help\npresmium serve --help"
+        }
+      ]
+    },
+    "public-documents--body-1": {
+      "id": "public-documents--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "public-documents--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "工作区配置是 presmium.workspace.yaml，documents 模式只列 lecture.json。凭据与运营者设置和文稿内容分开。源码、保存版本、快照版本与音频缓存版本分别确认，旧响应不能冒充当前版本。"
+            }
+          ]
+        }
+      ]
+    },
+    "public-contracts--body-0": {
+      "id": "public-contracts--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "public-contracts--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "validateDocument、DOCUMENT_JSON_SCHEMA 与 TeachingDocument 是 Web、agent、直接文件编辑和编译器共用的作者契约。工作区更改携带 baseDocumentVersion；冲突保留输入，不静默覆盖另一个版本。"
+            }
+          ]
+        }
+      ]
+    },
+    "public-contracts--body-1": {
+      "id": "public-contracts--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "public-contracts--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "诊断包含稳定检查 ID、严重程度与定位信息。编译失败允许保留最后成功快照，但界面必须说明它已经过期，不能将它作为当前文稿的确认回执。"
+            }
+          ]
+        }
+      ]
+    },
+    "experimental-workbench--body-0": {
+      "id": "experimental-workbench--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "experimental-workbench--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "工作台和私有服务路由可能随产品实现调整。外部插件优先使用宿主与服务契约，确需实验性接口时固定安装版本并真实验证。父页面正文编辑、独立编译放映和视频制作遵守各自的内容与生命周期边界。"
+            }
+          ]
+        }
+      ]
+    },
+    "experimental-workbench--body-1": {
+      "id": "experimental-workbench--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "experimental-workbench--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "写文稿见"
+            },
+            {
+              "type": "link",
+              "href": "../guide/lecture.json",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "作者指南"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "，实现扩展见插件开发指南。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "reference--step": {
+      "id": "reference--step",
+      "sectionId": "reference",
+      "visuals": [
+        {
+          "blockId": "reference--body-0",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "versions--step": {
+      "id": "versions--step",
+      "sectionId": "versions",
+      "visuals": [
+        {
+          "blockId": "versions--body-0",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "versions-packages--step": {
+      "id": "versions-packages--step",
+      "sectionId": "versions-packages",
+      "visuals": [
+        {
+          "blockId": "versions-packages--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "versions-packages--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "versions-ir--step": {
+      "id": "versions-ir--step",
+      "sectionId": "versions-ir",
+      "visuals": [
+        {
+          "blockId": "versions-ir--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "versions-ir--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "versions-kernel--step": {
+      "id": "versions-kernel--step",
+      "sectionId": "versions-kernel",
+      "visuals": [
+        {
+          "blockId": "versions-kernel--body-0",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "public--step": {
+      "id": "public--step",
+      "sectionId": "public",
+      "visuals": [
+        {
+          "blockId": "public--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "public--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "public-documents--step": {
+      "id": "public-documents--step",
+      "sectionId": "public-documents",
+      "visuals": [
+        {
+          "blockId": "public-documents--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "public-documents--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "public-contracts--step": {
+      "id": "public-contracts--step",
+      "sectionId": "public-contracts",
+      "visuals": [
+        {
+          "blockId": "public-contracts--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "public-contracts--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "experimental-workbench--step": {
+      "id": "experimental-workbench--step",
+      "sectionId": "experimental-workbench",
+      "visuals": [
+        {
+          "blockId": "experimental-workbench--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "experimental-workbench--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

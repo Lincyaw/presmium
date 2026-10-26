@@ -1,39 +1,31 @@
 # Presmium 的文档站
 
-文档站是一个 Presmium 工作区，用 Presmium 自己构建：
+文档站是由 Presmium 自己构建的 JSON 工作区。内容直接保存在下列规范化文稿中，构建脚本不接受 Markdown 教学入口。
 
-| 文档 | 中文（原文） | 英文（译本） |
+| 文档 | 中文原文 | 英文译本 |
 |---|---|---|
-| 作者指南 | `guide/lecture.md` | `guide/lecture.en.md` |
-| 插件开发指南 | `plugins/lecture.md` | `plugins/lecture.en.md` |
-| 接口与版本 | `reference/lecture.md` | `reference/lecture.en.md` |
+| 作者指南 | `guide/lecture.json` | `guide/locales/en/lecture.json` |
+| 插件开发指南 | `plugins/lecture.json` | `plugins/locales/en/lecture.json` |
+| 接口与版本 | `reference/lecture.json` | `reference/locales/en/lecture.json` |
 
-工作区配置在 `presmium.workspace.yaml`：首页的中文版在 `/`，英文版在 `/en/`（标题取 `site.locales.en.title`），每份文档在 `/<目录>/`，它的英文译本在 `/<目录>/en/`。接口参考由 TypeDoc 从源码生成（根目录的 `typedoc.json`），在 `/api/`，导航栏的“API”链接它。
+工作区配置在 `presmium.workspace.yaml`。中文版首页在 `/`，英文版在 `/en/`；每份文档位于 `/<目录>/`，英文译本位于 `/<目录>/en/`。TypeDoc 从源码生成的接口参考位于 `/api/`，可通过导航栏的 API 打开。
 
 ## 构建
 
-在仓库根目录：
+在仓库根目录运行：
 
 ```sh
-pnpm --filter presmium-docs build          # 写到 site/dist/web/
-node site/build.mjs --out <目录>            # 写到 <目录>/web/
-node site/build.mjs --site <工作区> --out <目录>   # 以同样的步骤构建另一个工作区
+pnpm --filter presmium-docs build
 ```
 
-`build.mjs` 依次：
+产物写入 `site/dist/web/`。需要指定输出目录时，运行 `node site/build.mjs --out <目录>`；`--site <工作区>` 可将同一流程用于另一个文档工作区。
 
-1. 对每份文档的原文与译本运行 `presmium check --json`：失效的链接与片段、MyST 指令的错误、过期的译本，有一条错误或警告就失败；
-2. 在这里运行 `presmium build`，构建两种语言的工作区站点；
-3. 运行 TypeDoc，把接口参考写到 `web/api/`；
-4. 检查产物：每个页面中本地的 `href` 与 `src` 都指向站点中存在的文件。
-
-任何一步失败，构建就以退出码 1 停止。`e2e/docs-site.spec.ts` 构建这份文档站并检查两种语言的目录、语言菜单与接口参考，另用 `--site` 构建临时写出的小工作区，证明失效的链接、过期的译本与产物中指向不存在文件的地址都使构建失败。
-
-产物是静态文件，可以放到任何静态托管上（站点的路径是 `/`）。编辑时可以在这里运行 `presmium serve` 预览（预览只显示中文原文）。
+构建脚本依次检查原文和已登记的译本，构建网页站点，生成 TypeDoc，再验证 HTML 中的本地链接和素材。错误、警告、过期译本或不存在的产物链接都会使构建失败。脚本没有旧文稿解析路径，也不把原文的资源目录强加给译本。
 
 ## 修改
 
-- 先改中文原文，再改英文译本；章节标签（`(syntax)=`）两边相同，语言菜单才能停在同一章。
-- 原文改了以后，`presmium check <目录>` 警告译本过期并给出新的摘要：核对译本后把它写进译本头部的 `translationOf.digest`。
-- 链接另一份文档写它的入口文件（`[接口与版本](../reference/lecture.md#versions)`），译本中也写原文的入口：站点把英文页面上的链接指向那份文档的英文译本。
-- 正文中不写指向 `/api/` 的链接（发布检查把 `/…` 当作文档的 `public/` 目录），写“导航栏的 API”。
+直接编辑对应 `lecture.json` 的富文本与实体。页面、段落、步骤和表格行列保留稳定 ID。两种语言共用页面 ID，语言切换才能停在同一页；每种语言保留自己的文稿 ID。
+
+先修改中文原文，再核对英文译本。原文通过 `metadata.translations.en` 指向 `locales/en/lecture.json`。译本的 `metadata.translationOf.entry` 是 `../../lecture.json`，内容确认后更新 `digest`；`presmium check <目录>` 会报告过期摘要。JSON 排版、属性顺序和翻译登记字段不改变摘要。
+
+相对链接以各自的文稿目录为基准。例如中文版链接插件指南为 `../plugins/lecture.json`，英文版为 `../../../plugins/lecture.json`。站点会将已发布的文稿链接映射到读者当前语言的页面。原始 JSON 入口与工程文件继续是内容和素材来源，`dist/` 中的运行快照与 HTML 不用于写回正文。

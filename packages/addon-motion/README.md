@@ -2,7 +2,7 @@
 
 Animations written in code: timelines made with GSAP, Anime.js, Motion, Three.js, Remotion or D3, played on the steps of a lecture and on the time of its narration.
 
-Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonical lecture.json teaching documents into web pages, slides, Jupyter notebooks and narrated playback.
 
 ## Install
 
@@ -10,25 +10,20 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 pnpm add -D @lincyaw/addon-motion
 ```
 
-List it in the headmatter of the documents that use it:
-
-```yaml
-plugins:
-  - '@lincyaw/addon-motion'
-```
+Add this package to `metadata.plugins` in the document's `lecture.json`.
 
 It is a Presmium plugin: its component works on the web page and in the slides. It needs `@lincyaw/cli` and the renderers in the same project, and declares the Presmium packages it shares with them as peer dependencies (Presmium 1.x). The animation libraries come with it.
 
 ## What it provides
 
-- `{scene}`: a scene of the document's `scenes/`, cut into steps by `:durations:`. Each step plays its part of the timeline; going back shows the step settled; a lecture plays it on the narration's time, and a video export draws it frame by frame.
-- The reading view has compact step buttons to jump directly to a scene’s step, alongside playback and scrubbing. In the workbench, choosing a step also opens its narration. The presentation’s step menu offers the same direct navigation without shrinking controls with the slide canvas.
+- Scenes referenced by component definitions, with declared states and actual implementation timing. Stable document steps choose visible states; lecture timing belongs to `production`.
+- Direct step navigation reconstructs a scene without replaying earlier steps. Authoring and presentation are separate views; ordinary document edits do not implicitly open narration or playback.
 - `@lincyaw/addon-motion/scene`: `gsapScene`, `animeScene`, `motionScene`, `threeScene`, `remotionScene`, `d3Scene` and `defineScene`, to write a scene with each library.
 
 ## Documentation
 
-- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md) (Chinese: `site/guide/lecture.md`)
-- [Directive reference](https://github.com/Lincyaw/presmium/blob/main/.agents/skills/presmium-author/references/document.md) (Chinese): every directive with its options and an example
+- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/locales/en/lecture.json) (Chinese: `site/guide/lecture.json`)
+- [Document contract](https://github.com/Lincyaw/presmium/blob/main/.agents/skills/presmium-author/references/document.md): normalized entities, parameters, states and shared validation
 
 ## License
 

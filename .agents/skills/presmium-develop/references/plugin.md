@@ -1,11 +1,14 @@
 # The plugin contract
 
-This reference walks from the source syntax to the forms, with a hypothetical plugin `poll` (package
-`presmium-plugin-poll`, plugin id `poll`): a `{poll}` directive whose component lets the audience vote. The
-project `presmium new --type plugin` made is the minimal case of the same shape (the `{greeting}`
-directive, `components/GreetingCard.tsx`, the route `waves`); `poll` shows the fields that project does not
-use. The words document, section, block, step, form, IR, node, mdast, renderer, viewer and fallback are
-defined at the top of the skill's SKILL.md.
+This reference connects a normalized document definition to its runtime component, services and outputs.
+The hypothetical plugin `poll` (package `presmium-plugin-poll`, plugin id `poll`) supplies a `PmPoll`
+component. An authored component block references a versioned definition and stores structured parameters.
+The project created by `presmium new --type plugin` demonstrates the same boundary with
+`components/GreetingCard.tsx`, `example/lecture.json` and the `waves` route.
+
+The sole authoring entry is `lecture.json`. See `presmium-author/references/document.md` for the editable
+document contract. References to mdast, runtime component props and fallback trees below describe compiler
+and renderer interfaces; they are not another authoring format.
 
 Types come from `@lincyaw/kernel` (Node and shared contracts; also `@lincyaw/kernel/contracts` for types
 only) and `@lincyaw/host` (the browser side). Your editor's go-to-definition on these imports shows the full
@@ -164,7 +167,8 @@ The old directive parsing API is not a document runtime entry. Do not add a dire
 
 ## 4. Executors
 
-An executor runs the code of a code block (one with `:run:`) in some language and returns its output. At
+An executor runs an authored code block whose `execution` declares `when` and optional executor/session
+settings, and returns its output. At
 compile time the Node entry's `executors` run code and the results are written into the IR; in the browser,
 the run controls of a code block send code to the executor registered for its language.
 

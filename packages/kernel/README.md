@@ -26,7 +26,7 @@ Plugins declare it as a peer dependency, so they share the application's copy:
 
 ## Documentation
 
-- [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/lecture.en.md)
+- [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/locales/en/lecture.json)
 
 ## License
 

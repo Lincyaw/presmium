@@ -1,0 +1,723 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-docs-guide-en",
+  "metadata": {
+    "title": "Author guide",
+    "description": "Edit the canonical teaching document and compile reading and presentation snapshots",
+    "lang": "en",
+    "renderers": {
+      "web": {}
+    },
+    "translationOf": {
+      "entry": "../../lecture.json",
+      "digest": "f64721f047152b717f5819b0420e275f6650d4b4fdc8543fcf4f81718091838b"
+    }
+  },
+  "sectionOrder": [
+    "guide",
+    "start",
+    "document",
+    "steps",
+    "code",
+    "media",
+    "production",
+    "workspace",
+    "publishing",
+    "recovery"
+  ],
+  "sections": {
+    "guide": {
+      "id": "guide",
+      "title": "Author guide",
+      "level": 1,
+      "children": [
+        "guide--body-0"
+      ],
+      "stepOrder": [
+        "guide--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "start": {
+      "id": "start",
+      "title": "Create and open a document",
+      "level": 2,
+      "children": [
+        "start--body-0",
+        "start--body-1",
+        "start--body-2"
+      ],
+      "stepOrder": [
+        "start--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "document": {
+      "id": "document",
+      "title": "Understand the saved file",
+      "level": 2,
+      "children": [
+        "document--body-0",
+        "document--body-1",
+        "document--body-2"
+      ],
+      "stepOrder": [
+        "document--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "steps": {
+      "id": "steps",
+      "title": "Plan steps and narration",
+      "level": 2,
+      "children": [
+        "steps--body-0",
+        "steps--body-1"
+      ],
+      "stepOrder": [
+        "steps--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "code": {
+      "id": "code",
+      "title": "Reference code and animations",
+      "level": 2,
+      "children": [
+        "code--body-0",
+        "code--body-1"
+      ],
+      "stepOrder": [
+        "code--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "media": {
+      "id": "media",
+      "title": "Assets and layout",
+      "level": 2,
+      "children": [
+        "media--body-0",
+        "media--body-1"
+      ],
+      "stepOrder": [
+        "media--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "production": {
+      "id": "production",
+      "title": "Speech, captions and video",
+      "level": 2,
+      "children": [
+        "production--body-0",
+        "production--body-1"
+      ],
+      "stepOrder": [
+        "production--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "workspace": {
+      "id": "workspace",
+      "title": "Workspaces and translations",
+      "level": 2,
+      "children": [
+        "workspace--body-0",
+        "workspace--body-1",
+        "workspace--body-2"
+      ],
+      "stepOrder": [
+        "workspace--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "publishing": {
+      "id": "publishing",
+      "title": "Check and build",
+      "level": 2,
+      "children": [
+        "publishing--body-0",
+        "publishing--body-1",
+        "publishing--body-2"
+      ],
+      "stepOrder": [
+        "publishing--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "recovery": {
+      "id": "recovery",
+      "title": "Handle failed saves",
+      "level": 2,
+      "children": [
+        "recovery--body-0",
+        "recovery--body-1"
+      ],
+      "stepOrder": [
+        "recovery--step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "guide--body-0": {
+      "id": "guide--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "guide--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A Presmium document is a directory containing lecture.json. It holds pages, rich text, steps, narration, assets and component definitions. The studio and agents edit this same data. This guide takes an author from creating a document to checking and publishing it."
+            }
+          ]
+        }
+      ]
+    },
+    "start--body-0": {
+      "id": "start--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "start--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Use Node.js 22.19 or later and pnpm. With Presmium installed, create a document and open the studio. Editing and preview need no model."
+            }
+          ]
+        }
+      ]
+    },
+    "start--body-1": {
+      "id": "start--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "start--body-1--text",
+          "type": "code",
+          "language": "sh",
+          "value": "presmium new lesson --type lecture --title 'First lesson'\npresmium studio lesson"
+        }
+      ]
+    },
+    "start--body-2": {
+      "id": "start--body-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "start--body-2--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Write titles and body content directly. Use the native insertion menu for lists, tables and code. The whole document shares one editor, selection, undo history and comments. Presentation is an explicit separate view."
+            }
+          ]
+        }
+      ]
+    },
+    "document--body-0": {
+      "id": "document--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "document--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "lecture.json contains the editable teaching document IR. schemaVersion identifies its format. Ordered ID arrays represent page, block and step order; entity maps hold their content. Moving an entity keeps its ID. Copying a document gives it a new document ID."
+            }
+          ]
+        }
+      ]
+    },
+    "document--body-1": {
+      "id": "document--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "document--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This is a complete minimal document. Prefer the studio for regular editing. When editing JSON directly, preserve IDs and run the checker. Files in dist/ are derived snapshots."
+            }
+          ]
+        }
+      ]
+    },
+    "document--body-2": {
+      "id": "document--body-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "document--body-2--text",
+          "type": "code",
+          "language": "json",
+          "value": "{\n  \"schemaVersion\": 1,\n  \"id\": \"my-lesson\",\n  \"metadata\": {\n    \"title\": \"A lesson\",\n    \"lang\": \"en\"\n  },\n  \"sectionOrder\": [\n    \"intro\"\n  ],\n  \"sections\": {\n    \"intro\": {\n      \"id\": \"intro\",\n      \"title\": \"Introduction\",\n      \"level\": 1,\n      \"children\": [\n        \"body\"\n      ],\n      \"stepOrder\": [\n        \"intro-step\"\n      ],\n      \"layout\": {\n        \"type\": \"stack\"\n      }\n    }\n  },\n  \"blocks\": {\n    \"body\": {\n      \"id\": \"body\",\n      \"type\": \"text\",\n      \"content\": [\n        {\n          \"id\": \"paragraph\",\n          \"type\": \"paragraph\",\n          \"children\": [\n            {\n              \"type\": \"text\",\n              \"text\": \"Hello, Presmium.\"\n            }\n          ]\n        }\n      ]\n    }\n  },\n  \"steps\": {\n    \"intro-step\": {\n      \"id\": \"intro-step\",\n      \"sectionId\": \"intro\",\n      \"visuals\": [\n        {\n          \"blockId\": \"body\",\n          \"visible\": true\n        }\n      ],\n      \"narrationIds\": []\n    }\n  },\n  \"narrations\": {},\n  \"assets\": {},\n  \"definitions\": {},\n  \"production\": {\n    \"defaults\": {},\n    \"stepOverrides\": {},\n    \"mediaClips\": []\n  }\n}"
+        }
+      ]
+    },
+    "steps--body-0": {
+      "id": "steps--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Every page has at least one stable step. Its visuals name visible blocks, declared component states and parameters. Omitted blocks are invisible. Explicit inheritance is supported; jumping straight to a step must reconstruct the same picture."
+            }
+          ]
+        }
+      ]
+    },
+    "steps--body-1": {
+      "id": "steps--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Narration contains text, pronunciation replacements and cue nodes. Caption text, spoken text and cue targets derive from that structure. Body edits do not silently rewrite narration. Playback timing belongs in production defaults and overrides."
+            }
+          ]
+        }
+      ]
+    },
+    "code--body-0": {
+      "id": "code--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "code--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A short code block can store value directly. Reference project code through origin anchors to real files. Anchor paths are relative to the workspace root. Preserve region names and pinned revisions instead of treating resolved code as another authority."
+            }
+          ]
+        }
+      ]
+    },
+    "code--body-1": {
+      "id": "code--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "code--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A component definition declares its implementation, parameter Schema and public states. An instance holds a definition reference and its own parameters. Use states the implementation actually supports and make seeking reversible."
+            }
+          ]
+        }
+      ]
+    },
+    "media--body-0": {
+      "id": "media--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "media--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Image blocks reference assets. Asset locations, implementation files and local links are relative to their own document directory; code anchors use the workspace root. Containers own ordered child IDs. A content block has one parent."
+            }
+          ]
+        }
+      ]
+    },
+    "media--body-1": {
+      "id": "media--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "media--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Reading and presentation consume the same runtime snapshot. Static forms use component fallbacks. Unknown extensions keep complete structured data and a readable fallback, with unsupported capabilities reported as diagnostics."
+            }
+          ]
+        }
+      ]
+    },
+    "production--body-0": {
+      "id": "production--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "production--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "production owns voice sources, narration start, page and step overrides, cue delays and media source ranges. Absolute playback times and final duration are derived rather than stored as body content."
+            }
+          ]
+        }
+      ]
+    },
+    "production--body-1": {
+      "id": "production--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "production--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Builds may use completed speech caches. Changed text or voice makes old audio stale. Verify actual provider voices and capabilities before synthesis. Opening, saving or previewing a document must not implicitly synthesize paid speech."
+            }
+          ]
+        }
+      ]
+    },
+    "workspace--body-0": {
+      "id": "workspace--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "workspace--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A presmium.workspace.yaml groups documents. Its patterns match lecture.json only. A translation is another complete document, such as locales/en/lecture.json, linked by the original metadata.translations and the translation metadata.translationOf."
+            }
+          ]
+        }
+      ]
+    },
+    "workspace--body-1": {
+      "id": "workspace--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "workspace--body-1--text",
+          "type": "code",
+          "language": "yaml",
+          "value": "title: My course\ndocuments: ['*/lecture.json']"
+        }
+      ]
+    },
+    "workspace--body-2": {
+      "id": "workspace--body-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "workspace--body-2--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Translation assets and definitions use the translation directory as their base. Check the content before updating metadata.translationOf.digest. Formatting and translation bookkeeping do not change the content digest."
+            }
+          ]
+        }
+      ]
+    },
+    "publishing--body-0": {
+      "id": "publishing--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "publishing--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Run these commands from the project containing lesson. Checks locate findings at entities and JSON fields. Build only the form you need; ir exports a runtime snapshot. Consult the installed command help for options."
+            }
+          ]
+        }
+      ]
+    },
+    "publishing--body-1": {
+      "id": "publishing--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "publishing--body-1--text",
+          "type": "code",
+          "language": "sh",
+          "value": "presmium check lesson --json\npresmium build lesson --to web\npresmium ir lesson --out runtime-snapshot.json"
+        }
+      ]
+    },
+    "publishing--body-2": {
+      "id": "publishing--body-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "publishing--body-2--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The web output combines a prebuilt viewer with document data. Slides reuse that viewer. Configure real execution environments and services when needed; keep failure diagnostics rather than substituting placeholder results."
+            }
+          ]
+        }
+      ]
+    },
+    "recovery--body-0": {
+      "id": "recovery--body-0",
+      "type": "text",
+      "content": [
+        {
+          "id": "recovery--body-0--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Studio saves confirm a document version. Conflicts, offline failures and failed requests retain input for recovery. A compile failure does not block saving a valid document, but the last successful preview may be stale."
+            }
+          ]
+        }
+      ]
+    },
+    "recovery--body-1": {
+      "id": "recovery--body-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "recovery--body-1--text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "For component implementation, read the "
+            },
+            {
+              "type": "link",
+              "href": "../../../plugins/lecture.json",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "plugin guide"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": ". Format and public contracts are covered by the interface reference."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "guide--step": {
+      "id": "guide--step",
+      "sectionId": "guide",
+      "visuals": [
+        {
+          "blockId": "guide--body-0",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "start--step": {
+      "id": "start--step",
+      "sectionId": "start",
+      "visuals": [
+        {
+          "blockId": "start--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "start--body-1",
+          "visible": true
+        },
+        {
+          "blockId": "start--body-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "document--step": {
+      "id": "document--step",
+      "sectionId": "document",
+      "visuals": [
+        {
+          "blockId": "document--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "document--body-1",
+          "visible": true
+        },
+        {
+          "blockId": "document--body-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "steps--step": {
+      "id": "steps--step",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "steps--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "code--step": {
+      "id": "code--step",
+      "sectionId": "code",
+      "visuals": [
+        {
+          "blockId": "code--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "code--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "media--step": {
+      "id": "media--step",
+      "sectionId": "media",
+      "visuals": [
+        {
+          "blockId": "media--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "media--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "production--step": {
+      "id": "production--step",
+      "sectionId": "production",
+      "visuals": [
+        {
+          "blockId": "production--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "production--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "workspace--step": {
+      "id": "workspace--step",
+      "sectionId": "workspace",
+      "visuals": [
+        {
+          "blockId": "workspace--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "workspace--body-1",
+          "visible": true
+        },
+        {
+          "blockId": "workspace--body-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "publishing--step": {
+      "id": "publishing--step",
+      "sectionId": "publishing",
+      "visuals": [
+        {
+          "blockId": "publishing--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "publishing--body-1",
+          "visible": true
+        },
+        {
+          "blockId": "publishing--body-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "recovery--step": {
+      "id": "recovery--step",
+      "sectionId": "recovery",
+      "visuals": [
+        {
+          "blockId": "recovery--body-0",
+          "visible": true
+        },
+        {
+          "blockId": "recovery--body-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

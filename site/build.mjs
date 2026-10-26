@@ -5,6 +5,7 @@ import { createRequire } from 'node:module'
 import { dirname, join, posix, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PRESMIUM_BIN as PRESMIUM } from '@lincyaw/cli/testing'
+import { DOCUMENT_ENTRY, validateDocument } from '@lincyaw/kernel'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, '..')
@@ -31,8 +32,14 @@ function step(title, command, commandArgs, options = {}) {
 }
 
 const entries = readdirSync(SITE, { withFileTypes: true })
-  .filter(entry => entry.isDirectory() && existsSync(join(SITE, entry.name, 'lecture.md')))
-  .flatMap(entry => readdirSync(join(SITE, entry.name)).filter(file => /^lecture(?:\.[\w-]+)?\.md$/.test(file)).sort().map(file => `${entry.name}/${file}`))
+  .filter(entry => entry.isDirectory() && existsSync(join(SITE, entry.name, DOCUMENT_ENTRY)))
+  .flatMap(entry => {
+    const original = join(entry.name, DOCUMENT_ENTRY)
+    const checked = validateDocument(JSON.parse(readFileSync(join(SITE, original), 'utf8')))
+    if (!checked.document) throw new Error(`${original}: invalid teaching document`)
+    return [original, ...Object.values(checked.document.metadata.translations ?? {}).map(file => join(entry.name, file))]
+  })
+if (entries.length === 0) throw new Error(`No ${DOCUMENT_ENTRY} documents found in ${SITE}`)
 let problems = 0
 console.log('== presmium check')
 for (const entry of entries) {

@@ -2,7 +2,7 @@
 
 Presmium's slides renderer: the slides are the viewer's slides page, built and served as the web form is (`@lincyaw/web`). Each section is a slide on a canvas of a fixed size, drawn in the Book (书卷) layout and scaled as a whole to the screen; plugin components render in it as on the web page. It also gives the document's exports of the slides: PDF, pictures and PowerPoint.
 
-Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonical lecture.json teaching documents into web pages, slides, Jupyter notebooks and narrated playback.
 
 ## Install
 
@@ -21,7 +21,7 @@ pnpm exec playwright install chromium
 
 ## Configuration
 
-In the headmatter, `renderers.slides`: `base` (the site path), `port` (the dev server), `aspectRatio` (`16/9` by default; `4:3` or a number) and `canvasWidth` (980 by default), which give the canvas the slides are drawn on.
+In `lecture.json`, `metadata.renderers.slides`: `base` (the site path), `port` (the dev server), `aspectRatio` (`16/9` by default; `4:3` or a number) and `canvasWidth` (980 by default), which give the canvas the slides are drawn on.
 
 A section's `{hints}` gives its slide, under `slides`: `layout` (`default`, `cover`, `center` or `full`; the first section is `cover` unless it says otherwise), `class` (classes added to the slide) and `zoom` (a scale of its content).
 
@@ -31,7 +31,7 @@ The exporters `pdf`, `png` (a picture of each slide, or of each step) and `pptx`
 
 ## Documentation
 
-- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md)
+- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/locales/en/lecture.json)
 
 ## License
 

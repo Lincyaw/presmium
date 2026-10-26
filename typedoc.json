@@ -28,5 +28,11 @@
     "GitHub": "https://github.com/Lincyaw/presmium"
   },
   "validation": { "notExported": false, "invalidLink": true, "notDocumented": false },
+  "externalSymbolLinkMappings": {
+    "@types/react": {
+      "React.Component.render": "https://react.dev/reference/react/Component#render",
+      "React.StaticLifecycle.getDerivedStateFromProps": "https://react.dev/reference/react/Component#static-getderivedstatefromprops"
+    }
+  },
   "treatWarningsAsErrors": true
 }
