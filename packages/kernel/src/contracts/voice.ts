@@ -1,5 +1,6 @@
 import type { SpeechEngineInfo, SpeechVoice, VoiceCatalog } from './speech.ts'
 import type { Revision } from './workspace.ts'
+import type { CanonicalSource } from '../ir.ts'
 import { defineService } from './service.ts'
 
 /** A step number is usable only with the structure binding returned by the current snapshot. */
@@ -62,6 +63,7 @@ export interface VoiceoverStepStatus {
 }
 export interface VoiceoverSnapshot {
   revision: string
+  source: CanonicalSource
   capability: VoiceoverCapability
   steps: VoiceoverStepStatus[]
   jobs: VoiceoverJob[]
@@ -72,6 +74,7 @@ export type VoiceoverJobState = 'queued' | 'running' | 'cancelling' | 'cancelled
 export interface VoiceoverJob {
   id: string
   revision: string
+  source: CanonicalSource
   scope: VoiceScope
   state: VoiceoverJobState
   total: number
@@ -81,17 +84,19 @@ export interface VoiceoverJob {
   finishedAt?: string
   error?: string
 }
-export interface VoiceoverRequest { revision: string, scope: VoiceScope, confirmed: boolean }
+export interface VoiceoverRequest { revision: string, source: CanonicalSource, scope: VoiceScope, confirmed: boolean }
 export interface VoicePreviewRequest {
   revision: string
+  source: CanonicalSource
   voice: SpeechVoice
   mode: 'sample' | 'step'
   target?: VoiceTarget
   confirmed: boolean
   quote: string
 }
-export type VoicePreviewQuery = Omit<VoicePreviewRequest, 'confirmed' | 'quote'>
+export type VoicePreviewQuery = Omit<VoicePreviewRequest, 'confirmed' | 'quote' | 'source'>
 export interface VoicePreviewQuote extends VoicePreviewQuery {
+  source: CanonicalSource
   text: string
   provider: string
   local: boolean
@@ -100,6 +105,7 @@ export interface VoicePreviewQuote extends VoicePreviewQuery {
 }
 export interface VoicePreviewAnswer {
   revision: string
+  source: CanonicalSource
   voice: SpeechVoice
   text: string
   cached: boolean

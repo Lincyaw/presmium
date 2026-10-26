@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
@@ -195,6 +195,7 @@ export class Compiler {
     const { title: _title, lang: _lang, plugins: _plugins, presmium, renderers, sectionDepth: _sectionDepth, execute: _execute, translations: _translations, translationOf: _translationOf, ...rest } = headmatter
     const doc: IRDocument = {
       ir: IR_VERSION,
+      source: { documentId: run.document.id, version: createHash('sha256').update(run.rawSource).digest('hex').slice(0, 20), fingerprint: fnv1a64(run.rawSource) },
       meta: { ...rest, title: titleOf(headmatter, this.entry), lang: run.lang, entry: this.entry, documentId: run.document.id },
       config: {
         plugins: listedPlugins(stringList(headmatter.plugins)),
@@ -230,6 +231,8 @@ export class Compiler {
     findings.push(...passes.invalid)
     options.signal?.throwIfAborted()
     doc.diagnostics = sortFindings(findings)
+    // Reassert provenance after extension passes; authored metadata cannot replace the source identity.
+    doc.source = { documentId: run.document.id, version: createHash('sha256').update(run.rawSource).digest('hex').slice(0, 20), fingerprint: fnv1a64(run.rawSource) }
     if (options.pruneCache && !audience && !findings.some(f => f.severity === 'error')) passes.cache.prune()
     return this.#assemble(doc, run, contributions, { sourceFiles, sourceFingerprints, marks, audience, passes })
   }

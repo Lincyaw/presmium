@@ -12,6 +12,8 @@ export interface SynthesisOptions {
   lexicon?: Record<string, string>
   alignByTranscription?: boolean
   cacheOnly?: boolean
+  /** Author generation verifies the canonical source; renderers omit this and remain IR/cache-only. */
+  assertCurrent?: () => Promise<void>
 }
 
 export interface SynthesizedClip extends Clip {
@@ -85,14 +87,23 @@ export async function synthesizePlan(speech: SpeechService, plan: LecturePlan, o
   const clips = new Map<string, SynthesizedClip>()
   const failures: SynthesisFailure[] = []
   await each(plannedUtterances(plan), async (u) => {
+    await options.assertCurrent?.()
+    if (options.assertCurrent) signal?.throwIfAborted()
     try {
       signal?.throwIfAborted()
       if (u.voiceIssue) throw new Error(u.voiceIssue)
-      clips.set(u.id, await synthesizeClip(speech, u, { ...options, voice: u.voice ?? options.voice }, signal))
+      const clip = await synthesizeClip(speech, u, { ...options, voice: u.voice ?? options.voice }, signal)
+      await options.assertCurrent?.()
+      if (options.assertCurrent) signal?.throwIfAborted()
+      clips.set(u.id, clip)
     } catch (error) {
+      await options.assertCurrent?.()
+      if (options.assertCurrent) signal?.throwIfAborted()
       failures.push({ id: u.id, section: u.section, text: u.text, ...u.source ? { source: { file: u.source.file, line: u.source.line } } : {}, reason: errorMessage(error) })
     }
-  })
+  }, options.assertCurrent ? 1 : 4)
+  await options.assertCurrent?.()
+  if (options.assertCurrent) signal?.throwIfAborted()
   failures.sort((a, b) => Number(a.id.slice(1)) - Number(b.id.slice(1)))
   return { clips, failures }
 }
@@ -109,12 +120,12 @@ export interface SynthesizedLecture {
   cuts: CutAnimation[]
 }
 
-export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech: SpeechService, signal?: AbortSignal, options: { cacheOnly?: boolean } = {}): Promise<SynthesizedLecture> {
+export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech: SpeechService, signal?: AbortSignal, options: Pick<SynthesisOptions, 'cacheOnly' | 'assertCurrent'> = {}): Promise<SynthesizedLecture> {
   const deck = deckPlan(doc)
   const clips = new Map<string, SynthesizedClip>()
   if (deck.findings.some(finding => finding.severity === 'error')) return { deck, clips, failures: [], cuts: [] }
   if (!deck.voice) return { deck, clips, failures: [], cuts: [] }
-  const synthesized = await synthesizePlan(speech, deck.plan, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, cacheOnly: options.cacheOnly }, signal)
+  const synthesized = await synthesizePlan(speech, deck.plan, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, cacheOnly: options.cacheOnly, assertCurrent: options.assertCurrent }, signal)
   const unsaid = new Map(synthesized.failures.map(failure => [failure.id, failure.reason]))
   const { track, cuts } = scriptTrack(deck.plan, synthesized.clips, {
     id: SCRIPT_TRACK,

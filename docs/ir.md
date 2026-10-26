@@ -57,6 +57,8 @@ lecture.json + 引用的代码与媒体
 
 `IRDocument` 包含元数据、插件/渲染配置、章节与诊断。`IRSection` 带稳定页面身份与派生数字步号，以及对应的稳定 `stepIds`。`IRBlock` 的 `at`、`span` 与 `stepStates` 是运行时投影；`stepStates` 表达每一步的可见性、公开状态、参数与实现局部步号。它们不能回写为长期作者格式。
 
+`IRDocument.source` 是编译器写入的 `CanonicalSource { documentId, version, fingerprint }`，指向本次实际读取的 `lecture.json`。`version` 是原始 UTF-8 内容的 SHA-256 前 20 位，与文稿保存版本一致；`fingerprint` 是同一内容的 FNV-1a 64 位摘要，均包含 BOM。它位于运行快照顶层，过滤视图仍保留，不能由作者 metadata 声明，也不替代运行快照的 revision。缺少来源标记的快照可供只读渲染，不能用于新的试听确认或配音生成。
+
 `IRSection.stepNarrations` 按稳定步骤标识保存讲稿的显示文本与讲稿标识，保留同一步多条讲稿的顺序。它直接派生自文稿，朗读替换取显示文本、提示动作不混入字幕；网页过滤掉讲授节点后仍可按步骤显示字幕。该投影不含音频、逐字对齐或估算时码，不要求配置配音服务。真实已加载的时序字幕播放器通过宿主 `TIMED_CAPTIONS` 租约取得字幕显示权，释放后恢复按步骤字幕。
 
 组件的资源映射 `assets` 使用参数的点分路径。插件可为 `stepStates` 派生该步自己的资源映射；链接检查包含这些资源，发布时同步改写该步参数中的地址，避免步骤参数覆盖已发布的 URL。内置媒体从实际 `src`、`poster`、`still` 与 `captions` 参数派生映射，并跟踪步骤专属文件；资源不存在时产生链接诊断。
