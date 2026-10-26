@@ -46,8 +46,7 @@
         "pass--stats",
         "pass--bubble",
         "pass--paragraph-1",
-        "pass--paragraph-2",
-        "pass--paragraph-3"
+        "pass--paragraph-2"
       ],
       "stepOrder": [
         "pass--step-0",
@@ -136,44 +135,6 @@
         {
           "id": "pass--paragraph-2--text-0",
           "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "第一次比较 5 和 2，"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "to": "stats",
-                    "value": "click compare"
-                  },
-                  "children": []
-                }
-              },
-              "fallback": ""
-            },
-            {
-              "type": "text",
-              "text": " 比较次数加一。"
-            }
-          ]
-        }
-      ]
-    },
-    "pass--paragraph-3": {
-      "id": "pass--paragraph-3",
-      "type": "text",
-      "content": [
-        {
-          "id": "pass--paragraph-3--text-0",
-          "type": "paragraph",
           "children": []
         }
       ]
@@ -234,10 +195,6 @@
         {
           "blockId": "pass--paragraph-2",
           "visible": false
-        },
-        {
-          "blockId": "pass--paragraph-3",
-          "visible": false
         }
       ],
       "narrationIds": [
@@ -268,10 +225,6 @@
         },
         {
           "blockId": "pass--paragraph-2",
-          "visible": false
-        },
-        {
-          "blockId": "pass--paragraph-3",
           "visible": false
         }
       ],
@@ -304,10 +257,6 @@
         {
           "blockId": "pass--paragraph-2",
           "visible": false
-        },
-        {
-          "blockId": "pass--paragraph-3",
-          "visible": false
         }
       ],
       "narrationIds": [
@@ -339,10 +288,6 @@
         {
           "blockId": "pass--paragraph-2",
           "visible": false
-        },
-        {
-          "blockId": "pass--paragraph-3",
-          "visible": false
         }
       ],
       "narrationIds": [
@@ -373,10 +318,6 @@
         },
         {
           "blockId": "pass--paragraph-2",
-          "visible": false
-        },
-        {
-          "blockId": "pass--paragraph-3",
           "visible": false
         }
       ],
