@@ -913,53 +913,43 @@
       "states": [
         {
           "id": "event-0",
-          "title": "开始",
-          "legacyIndex": 0
+          "title": "开始"
         },
         {
           "id": "event-1",
-          "title": "事件 1",
-          "legacyIndex": 1
+          "title": "事件 1"
         },
         {
           "id": "event-2",
-          "title": "事件 2",
-          "legacyIndex": 2
+          "title": "事件 2"
         },
         {
           "id": "event-3",
-          "title": "事件 3",
-          "legacyIndex": 3
+          "title": "事件 3"
         },
         {
           "id": "event-4",
-          "title": "事件 4",
-          "legacyIndex": 4
+          "title": "事件 4"
         },
         {
           "id": "event-5",
-          "title": "事件 5",
-          "legacyIndex": 5
+          "title": "事件 5"
         },
         {
           "id": "event-6",
-          "title": "事件 6",
-          "legacyIndex": 6
+          "title": "事件 6"
         },
         {
           "id": "event-7",
-          "title": "事件 7",
-          "legacyIndex": 7
+          "title": "事件 7"
         },
         {
           "id": "event-8",
-          "title": "事件 8",
-          "legacyIndex": 8
+          "title": "事件 8"
         },
         {
           "id": "event-9",
-          "title": "事件 9",
-          "legacyIndex": 9
+          "title": "事件 9"
         }
       ],
       "data": {

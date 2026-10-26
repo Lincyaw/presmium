@@ -1,0 +1,967 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-guide-steps",
+  "metadata": {
+    "title": "功能导览 02：步骤、动画与参数",
+    "lang": "zh-CN",
+    "description": "可编辑、可运行的 Presmium 功能导览。",
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-guide"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {}
+    }
+  },
+  "sectionOrder": [
+    "start",
+    "reveal",
+    "inherits",
+    "semantic",
+    "d3",
+    "component",
+    "guidance",
+    "libraries"
+  ],
+  "sections": {
+    "start": {
+      "id": "start",
+      "title": "把一页内容组织成可逆的教学过程",
+      "level": 1,
+      "children": [
+        "text-1"
+      ],
+      "stepOrder": [
+        "start-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "reveal": {
+      "id": "reveal",
+      "title": "逐项揭示与滚动叙事",
+      "level": 2,
+      "children": [
+        "reveal-list"
+      ],
+      "stepOrder": [
+        "reveal-one",
+        "reveal-two",
+        "reveal-three"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          }
+        }
+      }
+    },
+    "inherits": {
+      "id": "inherits",
+      "title": "继承状态，显式改变可见性",
+      "level": 2,
+      "children": [
+        "inherit-input",
+        "inherit-explanation"
+      ],
+      "stepOrder": [
+        "inherits-step",
+        "inherits-explain"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "semantic": {
+      "id": "semantic",
+      "title": "命名状态与参数共同决定画面",
+      "level": 2,
+      "children": [
+        "semantic-scene",
+        "text-9"
+      ],
+      "stepOrder": [
+        "semantic-ready",
+        "semantic-compare",
+        "semantic-complete"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "d3": {
+      "id": "d3",
+      "title": "D3 数据加入：enter、update、exit",
+      "level": 2,
+      "children": [
+        "d3-scene"
+      ],
+      "stepOrder": [
+        "d3-dataviz",
+        "d3-datajoin",
+        "d3-enter",
+        "d3-exit"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "component": {
+      "id": "component",
+      "title": "真实交互组件与公共控件",
+      "level": 2,
+      "children": [
+        "action-counter",
+        "text-11"
+      ],
+      "stepOrder": [
+        "component-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "guidance": {
+      "id": "guidance",
+      "title": "模拟光标、聚光与提示",
+      "level": 2,
+      "children": [
+        "guide-counter",
+        "guide-cursor",
+        "guide-spot",
+        "guide-hint"
+      ],
+      "stepOrder": [
+        "guidance-move",
+        "guidance-hover",
+        "guidance-click"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "libraries": {
+      "id": "libraries",
+      "title": "选择动画实现而不改内容模型",
+      "level": 2,
+      "children": [
+        "text-13"
+      ],
+      "stepOrder": [
+        "libraries-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "text-1": {
+      "id": "text-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先完整阅读，再切换到放映。尝试第 1 步 → 第 3 步 → 第 2 步，画面应直接重建，不需要重播此前动画。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "原有“冒泡排序”和“代码写成的动画”保留完整课程。这里补充显式状态、参数、内容揭示、D3 和自定义组件。"
+            }
+          ]
+        }
+      ]
+    },
+    "reveal-list": {
+      "id": "reveal-list",
+      "type": "text",
+      "content": [
+        {
+          "id": "reveal-items",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "reveal-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "paragraph-4",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "先给出问题"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "reveal-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "paragraph-5",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "再比较方案"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "reveal-item-2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "paragraph-6",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "最后总结理由"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "reveal": {
+        "type": "items",
+        "order": [
+          "reveal-item-0",
+          "reveal-item-1",
+          "reveal-item-2"
+        ]
+      }
+    },
+    "inherit-input": {
+      "id": "inherit-input",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-7",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先观察输入：[3, 1, 2]。"
+            }
+          ]
+        }
+      ]
+    },
+    "inherit-explanation": {
+      "id": "inherit-explanation",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-8",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "加入解释：只比较相邻的两个值。"
+            }
+          ]
+        }
+      ]
+    },
+    "semantic-scene": {
+      "id": "semantic-scene",
+      "type": "component",
+      "definitionId": "semantic-definition",
+      "parameters": {
+        "value": 20
+      }
+    },
+    "text-9": {
+      "id": "text-9",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-10",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "动画的进度由原有播放器驱动。状态名称和 value 参数绑定到稳定步骤；刷新或任意跳步都应得到相同的目标画面。"
+            }
+          ]
+        }
+      ]
+    },
+    "d3-scene": {
+      "id": "d3-scene",
+      "type": "component",
+      "definitionId": "d3-definition",
+      "parameters": {}
+    },
+    "action-counter": {
+      "id": "action-counter",
+      "type": "component",
+      "definitionId": "counter-definition",
+      "parameters": {
+        "label": "已完成练习",
+        "targetId": "component-action"
+      }
+    },
+    "text-11": {
+      "id": "text-11",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-12",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "点击“加一次”应确实增加计数。组件通过公开的 host 动作接口支持讲稿触发；这和只画一个按钮不同。"
+            }
+          ]
+        }
+      ]
+    },
+    "guide-counter": {
+      "id": "guide-counter",
+      "type": "component",
+      "definitionId": "counter-definition",
+      "parameters": {
+        "label": "提示目标",
+        "targetId": "feature-action"
+      }
+    },
+    "guide-cursor": {
+      "id": "guide-cursor",
+      "type": "component",
+      "definitionId": "guide-cursor-definition",
+      "parameters": {
+        "path": [
+          {
+            "to": "#feature-action-add",
+            "action": "move",
+            "at": 0
+          },
+          {
+            "to": "#feature-action-add",
+            "action": "hover",
+            "at": 1
+          },
+          {
+            "to": "#feature-action-add",
+            "action": "click",
+            "at": 2
+          }
+        ]
+      }
+    },
+    "guide-spot": {
+      "id": "guide-spot",
+      "type": "component",
+      "definitionId": "guide-spot-definition",
+      "parameters": {
+        "target": "#feature-action-add",
+        "until": 3,
+        "title": "实际按钮",
+        "text": "聚光提示目标，仍可手动点击按钮。"
+      }
+    },
+    "guide-hint": {
+      "id": "guide-hint",
+      "type": "component",
+      "definitionId": "guide-hint-definition",
+      "parameters": {
+        "target": "#feature-action-reset",
+        "until": 3,
+        "title": "重置",
+        "text": "清零后可以重新练习。"
+      }
+    },
+    "text-13": {
+      "id": "text-13",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-14",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本讲使用 defineScene 和 D3。原有“代码写成的动画”分别展示 GSAP、Anime.js、Motion、Three.js 与 Remotion，七种实现共享步骤、时间和静态回退契约。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-15",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Three.js 需要可用的 WebGL；性能与画面依赖实际设备。关闭或离开场景时必须释放动画、订阅、定时器及图形资源。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "start-step": {
+      "id": "start-step",
+      "sectionId": "start",
+      "visuals": [
+        {
+          "blockId": "text-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "reveal-one": {
+      "id": "reveal-one",
+      "sectionId": "reveal",
+      "title": "先给出问题",
+      "visuals": [
+        {
+          "blockId": "reveal-list",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 1
+          }
+        }
+      ],
+      "narrationIds": []
+    },
+    "reveal-two": {
+      "id": "reveal-two",
+      "sectionId": "reveal",
+      "title": "再比较方案",
+      "visuals": [
+        {
+          "blockId": "reveal-list",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        }
+      ],
+      "narrationIds": []
+    },
+    "reveal-three": {
+      "id": "reveal-three",
+      "sectionId": "reveal",
+      "title": "最后总结理由",
+      "visuals": [
+        {
+          "blockId": "reveal-list",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 3
+          }
+        }
+      ],
+      "narrationIds": []
+    },
+    "inherits-step": {
+      "id": "inherits-step",
+      "sectionId": "inherits",
+      "visuals": [
+        {
+          "blockId": "inherit-input",
+          "visible": true
+        },
+        {
+          "blockId": "inherit-explanation",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "inherits-explain": {
+      "id": "inherits-explain",
+      "sectionId": "inherits",
+      "inherits": "inherits-step",
+      "visuals": [
+        {
+          "blockId": "inherit-explanation",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "semantic-ready": {
+      "id": "semantic-ready",
+      "sectionId": "semantic",
+      "title": "准备",
+      "visuals": [
+        {
+          "blockId": "semantic-scene",
+          "visible": true,
+          "state": "ready",
+          "parameters": {
+            "value": 20
+          }
+        }
+      ],
+      "narrationIds": []
+    },
+    "semantic-compare": {
+      "id": "semantic-compare",
+      "sectionId": "semantic",
+      "title": "比较",
+      "visuals": [
+        {
+          "blockId": "semantic-scene",
+          "visible": true,
+          "state": "compare",
+          "parameters": {
+            "value": 55
+          }
+        }
+      ],
+      "narrationIds": []
+    },
+    "semantic-complete": {
+      "id": "semantic-complete",
+      "sectionId": "semantic",
+      "title": "完成",
+      "visuals": [
+        {
+          "blockId": "semantic-scene",
+          "visible": true,
+          "state": "complete",
+          "parameters": {
+            "value": 90
+          }
+        }
+      ],
+      "narrationIds": []
+    },
+    "d3-dataviz": {
+      "id": "d3-dataviz",
+      "sectionId": "d3",
+      "visuals": [
+        {
+          "blockId": "d3-scene",
+          "visible": true,
+          "state": "dataviz"
+        }
+      ],
+      "narrationIds": []
+    },
+    "d3-datajoin": {
+      "id": "d3-datajoin",
+      "sectionId": "d3",
+      "visuals": [
+        {
+          "blockId": "d3-scene",
+          "visible": true,
+          "state": "datajoin"
+        }
+      ],
+      "narrationIds": []
+    },
+    "d3-enter": {
+      "id": "d3-enter",
+      "sectionId": "d3",
+      "visuals": [
+        {
+          "blockId": "d3-scene",
+          "visible": true,
+          "state": "enter"
+        }
+      ],
+      "narrationIds": []
+    },
+    "d3-exit": {
+      "id": "d3-exit",
+      "sectionId": "d3",
+      "visuals": [
+        {
+          "blockId": "d3-scene",
+          "visible": true,
+          "state": "exit"
+        }
+      ],
+      "narrationIds": []
+    },
+    "component-step": {
+      "id": "component-step",
+      "sectionId": "component",
+      "visuals": [
+        {
+          "blockId": "action-counter",
+          "visible": true
+        },
+        {
+          "blockId": "text-11",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "guidance-move": {
+      "id": "guidance-move",
+      "sectionId": "guidance",
+      "visuals": [
+        {
+          "blockId": "guide-counter",
+          "visible": true
+        },
+        {
+          "blockId": "guide-cursor",
+          "visible": true,
+          "state": "waypoint-0"
+        },
+        {
+          "blockId": "guide-spot",
+          "visible": true
+        },
+        {
+          "blockId": "guide-hint",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "guidance-hover": {
+      "id": "guidance-hover",
+      "sectionId": "guidance",
+      "visuals": [
+        {
+          "blockId": "guide-counter",
+          "visible": true
+        },
+        {
+          "blockId": "guide-cursor",
+          "visible": true,
+          "state": "waypoint-1"
+        },
+        {
+          "blockId": "guide-spot",
+          "visible": true
+        },
+        {
+          "blockId": "guide-hint",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "guidance-click": {
+      "id": "guidance-click",
+      "sectionId": "guidance",
+      "visuals": [
+        {
+          "blockId": "guide-counter",
+          "visible": true
+        },
+        {
+          "blockId": "guide-cursor",
+          "visible": true,
+          "state": "waypoint-2"
+        },
+        {
+          "blockId": "guide-spot",
+          "visible": true
+        },
+        {
+          "blockId": "guide-hint",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "libraries-step": {
+      "id": "libraries-step",
+      "sectionId": "libraries",
+      "visuals": [
+        {
+          "blockId": "text-13",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "semantic-definition": {
+      "id": "semantic-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/semantic.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "value"
+        ]
+      },
+      "states": [
+        {
+          "id": "ready",
+          "title": "准备"
+        },
+        {
+          "id": "compare",
+          "title": "比较"
+        },
+        {
+          "id": "complete",
+          "title": "完成"
+        }
+      ],
+      "data": {
+        "durations": [
+          1200,
+          1200,
+          1200
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "准备 20 → 比较 55 → 完成 90。每一步保留完整参数。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "d3-definition": {
+      "id": "d3-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/data-join.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "dataviz"
+        },
+        {
+          "id": "datajoin"
+        },
+        {
+          "id": "enter"
+        },
+        {
+          "id": "exit"
+        }
+      ],
+      "data": {
+        "durations": [
+          1200,
+          1200,
+          1200,
+          1200
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "dataviz → datajoin → enter → exit，以稳定 key 区分保留、加入和退出的字母。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "counter-definition": {
+      "id": "counter-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "components/ActionCounter.tsx"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "targetId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "targetId"
+        ]
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "可点击的计数器，使用公共按钮与真实组件动作。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "guide-cursor-definition": {
+      "id": "guide-cursor-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.guide",
+        "name": "PmCursor"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "waypoint-0"
+        },
+        {
+          "id": "waypoint-1"
+        },
+        {
+          "id": "waypoint-2"
+        }
+      ],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "光标依次移动到按钮、停留并提示点击。"
+                }
+              ]
+            }
+          ]
+        },
+        "layer": "overlay"
+      }
+    },
+    "guide-spot-definition": {
+      "id": "guide-spot-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.guide",
+        "name": "PmSpotlight"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "提示真实计数按钮。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "guide-hint-definition": {
+      "id": "guide-hint-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.guide",
+        "name": "PmHint"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "重置按钮可以清零。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
