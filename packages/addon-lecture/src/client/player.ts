@@ -25,6 +25,7 @@ export class LecturePlayer {
   private readonly unsubscribe: () => void
   private readonly playback?: PlaybackLease
   private disposed = false
+  private generation = 0
 
   constructor(track: LectureTrack, doc: IRDocument, operations: Operations, clock: TrackClock, playback?: PlaybackControl) {
     this.track = track
@@ -71,20 +72,31 @@ export class LecturePlayer {
   }
 
   play(): void {
+    if (this.disposed || this.playing) return
+    const generation = ++this.generation
     const start = () => {
-      if (this.disposed) return
-      if (this.trying.getSnapshot()) this.back()
+      if (this.disposed || generation !== this.generation) return
+      if (this.trying.getSnapshot()) {
+        // Restore the timeline without cancelling the permission just granted
+        // for this start. Explicit Back/Seek still pause through their own API.
+        const at = this.clock.now()
+        this.trying.set(false)
+        this.clock.seek(at)
+        this.fold(at)
+      }
+      if (this.disposed || generation !== this.generation) return
       this.clock.error.set(undefined)
       this.clock.play()
-      this.loop()
+      this.loop(generation)
     }
     if (!this.playback) return start()
     void this.playback.requestStart().then(allowed => { if (allowed) start() }).catch(error => {
-      if (!this.disposed) this.clock.error.set(error instanceof Error ? error : new Error(String(error)))
+      if (!this.disposed && generation === this.generation) this.clock.error.set(error instanceof Error ? error : new Error(String(error)))
     })
   }
 
   pause(): void {
+    this.generation++
     this.playback?.cancel()
     cancelAnimationFrame(this.frame)
     this.frame = 0
@@ -104,8 +116,8 @@ export class LecturePlayer {
   }
 
   tryIt(): void {
-    if (this.trying.getSnapshot()) return
     this.pause()
+    if (this.trying.getSnapshot()) return
     this.trying.set(true)
     this.stepTime.set(undefined)
   }
@@ -145,13 +157,13 @@ export class LecturePlayer {
     this.setTime(t)
   }
 
-  private loop(): void {
+  private loop(generation: number): void {
     cancelAnimationFrame(this.frame)
     const step = () => {
-      if (!this.clock.playing.getSnapshot()) { this.frame = 0; return }
+      if (generation !== this.generation || !this.clock.playing.getSnapshot()) { this.frame = 0; return }
       this.clock.tick()
       this.advanceTo(this.clock.now())
-      this.frame = this.clock.playing.getSnapshot() ? requestAnimationFrame(step) : 0
+      this.frame = generation === this.generation && this.clock.playing.getSnapshot() ? requestAnimationFrame(step) : 0
     }
     this.frame = requestAnimationFrame(step)
   }
