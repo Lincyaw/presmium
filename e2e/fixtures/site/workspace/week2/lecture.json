@@ -5,7 +5,7 @@
     "title": "第 2 周",
     "lang": "zh-CN",
     "translations": {
-      "en": "lecture.en.md"
+      "en": "locales/en/lecture.json"
     }
   },
   "sectionOrder": [
