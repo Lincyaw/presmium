@@ -92,7 +92,7 @@ function NarrationSurface(props: NarrationEditorProps) {
       current.current.onChange(content)
     } catch (error) { current.current.onError?.(error instanceof Error ? error : new Error(String(error))) }
   }
-  return <NARRATION_CONTEXT.Provider value={{ locale: props.locale, readOnly: props.readOnly }}>
+  return <NARRATION_CONTEXT.Provider value={{ locale: props.locale, readOnly: props.readOnly, advanced: props.advanced }}>
     <div className="pm-ui-narration-editor pm-ui-block-editor pm-ui" onFocus={() => current.current.onFocus?.()}
       onCompositionStart={() => current.current.onComposition?.(true)}
       onCompositionEnd={() => queueMicrotask(() => { if (active.current === instance) current.current.onComposition?.(false) })}>
