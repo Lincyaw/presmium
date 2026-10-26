@@ -9,6 +9,9 @@ import type { NativeTextPoint } from './document-editor/selection.ts'
 import type { DocumentFieldBookmark, DocumentFieldRegistration, DocumentHistoryEditor } from './document-editor/focus.ts'
 import { duplicateDocumentPage, pageDeletion, removeDocumentPage } from './document-pages.ts'
 import { changeStepTiming } from './step-production.ts'
+import { changeDocumentVoice } from './document-voices.ts'
+import type { DocumentVoiceOptions, DocumentVoiceScope } from './document-voices.ts'
+import type { CanonicalSource, VoiceSource } from '@lincyaw/kernel'
 import type { StepDurationDraft, StepDurationKey, StepTimingPatch } from './step-production.ts'
 import { DocumentTimingDrafts } from './document-timing-drafts.ts'
 import { compileDocumentPreview } from './document-preview.ts'
@@ -294,7 +297,13 @@ export class Workbench {
       const cueTimingScope = JSON.stringify([authoring.identity, authoring.reset])
       if (this.#cueTimingScope !== cueTimingScope) { this.#removedCueTimings.clear(); this.#cueTimingScope = cueTimingScope }
       const previous = this.#state.authoring
+      const position = this.#state.position
+      const selected = position && previous && previous.identity === authoring.identity ? previous.content?.sections[position.section]?.stepOrder[position.step] : undefined
+      const selectedStep = selected ? authoring.content?.steps[selected] : undefined, selectedPage = selectedStep ? authoring.content?.sections[selectedStep.sectionId] : undefined
+      const selectedIndex = selectedPage?.stepOrder.indexOf(selected!) ?? -1
+      const moved = position && selectedStep && selectedIndex >= 0 && (position.section !== selectedStep.sectionId || position.step !== selectedIndex)
       this.#set({ authoring,
+        ...moved ? { position: { ...position, section: selectedStep.sectionId, step: selectedIndex, trail: [] } } : {},
         hasDocumentTimingDrafts: Boolean(authoring.identity && authoring.content && this.#documentTimingDrafts.has(authoring.identity, authoring.content)),
         documentTimingDraftStorageFailure: this.#documentTimingDrafts.failed,
         save: authoring.error ? { kind: 'failed', message: authoring.error } : authoring.saving ? { kind: 'saving' } : !authoring.dirty && previous?.dirty ? { kind: 'saved', at: new Date().toISOString() } : this.#state.save.kind === 'failed' ? { kind: 'idle' } : this.#state.save })
@@ -574,6 +583,13 @@ export class Workbench {
     } finally { clearTimeout(timeout); stop(); if (current()) this.#set({ isPreparingPresentation: false }) }
   }
 
+  /** Closing an explicit preview cancels its pending adoption, while source saves retain their owner. */
+  cancelPreviewPreparation(): void {
+    if (!this.#state.isPreparingPresentation) return
+    this.#presentationPreparation++
+    this.#set({ isPreparingPresentation: false, presentationFailure: undefined })
+  }
+
   /**
    * Shows the web form as a page or as its presentation. The page is the same (and stays loaded): the view changes there,
    * at the place the author is; from the slides, the web form is shown first.
@@ -625,6 +641,17 @@ export class Workbench {
   reloadPreview(): void {
     this.#record('preview.reload')
     this.#reloadPreview()
+  }
+
+  /** New exact audio caches can refresh an existing current preview, without compiling or starting playback. */
+  refreshVoicePlayback(source: CanonicalSource, revision: string): boolean {
+    const state = this.#state, authoring = state.authoring, snapshot = state.presentationSnapshot
+    if (!authoring || authoring.content?.id !== source.documentId || authoring.version !== source.version || authoring.fingerprint !== source.fingerprint
+      || authoring.loading || authoring.dirty || authoring.saving || authoring.composing || authoring.restored || authoring.error
+      || !snapshot || snapshot.version !== source.version || snapshot.fingerprint !== source.fingerprint || snapshot.revision !== revision
+      || snapshot.project !== (authoring.projectRevision ?? 0) || state.webView !== 'present' || state.previewRenderer !== 'web' || !state.preview?.web) return false
+    this.#reloadPreview()
+    return true
   }
 
   #reloadPreview(): void {
@@ -694,6 +721,21 @@ export class Workbench {
     const source = this.#state.authoring
     if (!source || source.loading || source.directory !== this.#state.document || identity !== undefined && identity !== source.identity) return undefined
     return source.content
+  }
+  /** Applies a reviewed voice scope to the current source actor, without replacing body or narration. */
+  async applyDocumentVoice(scope: DocumentVoiceScope, value: VoiceSource | null, options: DocumentVoiceOptions, expected: { identity: string, version: string, fingerprint: string }): Promise<boolean> {
+    const source = this.#state.authoring, document = this.getDocument(expected.identity), context = this.#documentScope
+    if (!source || !document || source.version !== expected.version || source.fingerprint !== expected.fingerprint
+      || source.dirty || source.saving || source.composing || source.restored || source.error || isAgentChanging(this.#state)) throw new Error('voice-context-changed')
+    const next = changeDocumentVoice(document, scope, value, options)
+    if (next === document) return true
+    this.stopAuditions()
+    this.#documentSession.record(next)
+    await this.flushPendingEdits()
+    if (context !== this.#documentScope || this.#state.authoring?.identity !== expected.identity) return false
+    const saved = this.#state.authoring
+    if (!saved || saved.dirty || saved.saving || saved.composing || saved.restored || saved.error) throw new Error('voice-save-unconfirmed')
+    return true
   }
   /** Uses the current actor revision so timing edits cannot replace later body or narration input. */
   setDocumentStepProduction(stepId: string, patch: StepTimingPatch, identity?: string): void {
@@ -1059,6 +1101,18 @@ export class Workbench {
     this.#documentStep(sectionId, stepId, true)
   }
 
+  /** A canonical step remains selectable while its next runtime snapshot is still compiling. */
+  selectDocumentStep(sectionId: string, stepId: string): void {
+    const source = this.#state.authoring, section = source?.content?.sections[sectionId]
+    const step = section?.stepOrder.indexOf(stepId) ?? -1
+    if (!section || step < 0) return
+    if (this.#state.webView === 'document') { this.pauseDocumentStep(sectionId, stepId); return }
+    const snapshot = this.#state.presentationSnapshot
+    const compiled = this.#state.ir?.doc.sections.find(page => page.id === sectionId)?.stepIds?.indexOf(stepId) ?? -1
+    if (snapshot && snapshot.version === source?.version && snapshot.fingerprint === source.fingerprint && compiled >= 0) this.goToStep(sectionId, compiled)
+    else this.#set({ position: { section: sectionId, step, trail: [], view: this.#state.webView } })
+  }
+
   #documentStep(sectionId: string, stepId: string, pause: boolean): void {
     const content = this.#state.authoring?.content, section = content?.sections[sectionId]
     if (this.#state.webView !== 'document' || !content?.sectionOrder.includes(sectionId) || !section) return
@@ -1243,6 +1297,8 @@ export class Workbench {
         if (this.#state.pointer) this.#set({ pointer: { ...this.#state.pointer, rect: report.rect ?? undefined, obstacles: report.obstacles } })
         break
       case 'position': {
+        const snapshot = this.#state.presentationSnapshot, source = this.#state.authoring
+        if (snapshot && source && (source.dirty || source.loading || source.version !== snapshot.version || source.fingerprint !== snapshot.fingerprint)) break
         // A fresh frame announces its document view before applying the queued
         // presentation command. Only the requested view completes that switch.
         if (renderer === 'web' && this.#awaitingView) {

@@ -500,7 +500,7 @@
       "package": "@lincyaw/addon-speech",
       "requires": [
         "真实已配置的语音 provider",
-        "当前 Doc 未组合音色与任务入口；本节为服务/配置说明，独立视频制作界面仍待实现"
+        "视频制作已有讲稿、音色范围、缓存试听和配音状态入口；目录与新合成需真实服务，完整时间线仍待实现"
       ],
       "mode": "conditional"
     },
@@ -512,7 +512,7 @@
       "package": "@lincyaw/addon-speech",
       "requires": [
         "真实语音 provider；修改讲稿后需重新明确生成",
-        "当前 Doc 未组合音色与任务入口；本节为服务/配置说明，独立视频制作界面仍待实现"
+        "视频制作已有讲稿、音色范围、缓存试听和配音状态入口；目录与新合成需真实服务，完整时间线仍待实现"
       ],
       "mode": "conditional"
     },
@@ -524,7 +524,7 @@
       "package": "@lincyaw/host",
       "requires": [
         "工作台试听需真实可用音色",
-        "当前 Doc 未组合音色与任务入口；本节为服务/配置说明，独立视频制作界面仍待实现"
+        "视频制作已有讲稿、音色范围、缓存试听和配音状态入口；目录与新合成需真实服务，完整时间线仍待实现"
       ],
       "mode": "instructions"
     },
@@ -1335,11 +1335,11 @@
         "reason": "production 片段能保存；当前讲授运行时拒绝裁切和混音。"
       },
       {
-        "feature": "Studio voiceover and video production workspace",
+        "feature": "Complete Studio production timeline and media editing",
         "status": "pending",
         "document": "guide-production",
         "section": "voices",
-        "reason": "当前 Doc 仅提供每步讲稿与时机，完整音色/配音任务界面和独立视频制作入口未组合；后端源版本与并发保护仍需完善。服务存在不代表已具备普通作者可点击的完整流程。"
+        "reason": "独立视频制作已组合讲稿、时机、音色范围、精确缓存试听和源版本绑定任务；完整三轨时间线、波形、裁切混音、字幕对齐与录音采用仍待实施，真实 provider 正向合成尚未完成 UI 验收。"
       },
       {
         "feature": "Generic component properties and shared-asset version management UI",
