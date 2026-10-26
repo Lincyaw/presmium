@@ -1,11 +1,13 @@
-import { randomBytes } from 'node:crypto'
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { createHash, randomBytes } from 'node:crypto'
+import { createReadStream, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
-import { availableRenderers, build, documentExporters, exportDocument, serveDirectory } from '@lincyaw/compiler'
+import { availableRenderers, build, compileTranslations, documentExporters, exportDocument, serveDirectory } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
-import { errorMessage } from '@lincyaw/kernel'
+import { errorMessage, fnv1a64 } from '@lincyaw/kernel'
 import { lookup } from 'mime-types'
-import type { CompileJob, JobFile, Logger, OutputJobs, OutputTarget } from '@lincyaw/kernel'
+import type { CompileJob, JobFile, JobSource, Logger, OutputJobs, OutputTarget } from '@lincyaw/kernel'
+import { RequestError } from './errors.ts'
+import { versionOf } from './source-editor.ts'
 
 /**
  * The documents' heavy outputs as jobs, one running at a time: the renderers' builds (the slides' site, the notebook, the
@@ -29,7 +31,7 @@ export interface JobsOptions {
   stateDir: string
   /** The service's address, which the job's files are below. */
   url(): string
-  compilation(document: string): Promise<Compilation>
+  compilation(document: string, fresh?: boolean): Promise<Compilation>
   revision(compilation: Compilation): string
   /** The workbench's origins, whose pages may read the files (a video's captions). */
   origins: string[]
@@ -67,6 +69,35 @@ class Cancelled extends Error {
 
 const now = () => new Date().toISOString()
 const newId = () => `${Date.now().toString(36)}${randomBytes(4).toString('hex')}`
+const sameSource = (a: JobSource | undefined, b: JobSource): boolean => a?.version === b.version && a.fingerprint === b.fingerprint
+const sourceOf = (compilation: Compilation): JobSource => {
+  const bytes = readFileSync(compilation.entry)
+  return { version: versionOf(bytes), fingerprint: fnv1a64(bytes.toString('utf8')) }
+}
+
+/** Files a renderer/exporter may read after compilation must remain the captured inputs until output completion. */
+async function inputVersion(file: string): Promise<string | undefined> {
+  try {
+    const hash = createHash('sha256')
+    // Media inputs can be large. Hash streams without blocking requests or retaining the whole file in memory.
+    for await (const chunk of createReadStream(file)) hash.update(chunk)
+    return hash.digest('hex')
+  } catch { return undefined }
+}
+
+async function inputVersions(files: Iterable<string>): Promise<Map<string, string | undefined>> {
+  const pending = [...new Set(files)], versions = new Map<string, string | undefined>()
+  await Promise.all(Array.from({ length: Math.min(4, pending.length) }, async () => {
+    let file: string | undefined
+    while ((file = pending.pop()) !== undefined) versions.set(file, await inputVersion(file))
+  }))
+  return versions
+}
+
+async function checkInputs(inputs: Map<string, string | undefined>): Promise<void> {
+  const actual = await inputVersions(inputs.keys())
+  for (const [file, expected] of inputs) if (actual.get(file) !== expected) throw new RequestError(409, 'job-inputs-changed')
+}
 
 /** A file of a job, its path relative to the job's directory, its media type by its extension (`mime-types`). */
 function jobFile(root: string, path: string): JobFile {
@@ -184,7 +215,7 @@ export function createJobs(options: JobsOptions): Jobs {
   }
 
   /** Runs the job once the ones before it have ended. */
-  const schedule = (entry: Running, compilation: Compilation) => {
+  const schedule = (entry: Running, compilation: Compilation, inputs: Map<string, string | undefined>) => {
     queue = queue.then(async () => {
       const { job, controller } = entry
       if (job.state !== 'queued') return
@@ -194,8 +225,12 @@ export function createJobs(options: JobsOptions): Jobs {
       options.log.info(`[job ${job.id}] document=${JSON.stringify(job.document || '.')} target=${job.target} state=running queuedMs=${started - Date.parse(job.createdAt)}`)
       changed(entry, true)
       try {
+        await checkInputs(inputs)
+        if (controller.signal.aborted) throw new Cancelled()
         mkdirSync(entry.dir, { recursive: true })
         await run(entry, compilation)
+        await checkInputs(inputs)
+        if (controller.signal.aborted) throw new Cancelled()
         job.state = 'done'
       } catch (error) {
         job.state = controller.signal.aborted ? 'cancelled' : 'failed'
@@ -223,21 +258,36 @@ export function createJobs(options: JobsOptions): Jobs {
       return job && present(job)
     },
     directory: job => (job.kind === 'render' ? join(root, job.id, job.target) : join(root, job.id)),
-    async start(document, target) {
+    async start(document, target, expected) {
       if (closed) throw new Error('the workspace service is closing')
-      const compilation = await options.compilation(document)
+      // The interactive preview may still hold an older successful compilation. An explicit output compiles afresh.
+      const compilation = await options.compilation(document, true)
+      const source = sourceOf(compilation)
+      const confirmed = () => {
+        if (closed) throw new Error('the workspace service is closing')
+        if (expected && !sameSource(expected, source) || !sameSource(sourceOf(compilation), source)) throw new RequestError(409, 'job-source-changed')
+        if (compilation.sourceFingerprints?.[compilation.entry] !== source.fingerprint) throw new RequestError(409, 'job-source-not-compiled')
+      }
+      confirmed()
       const revision = options.revision(compilation)
       const targets = await targetsOf(compilation)
+      // Locale sources are compiled by renderers later, so they are not part of the original's tracked input list.
+      const translations = await compileTranslations(compilation)
+      if (translations.findings.some(finding => finding.severity === 'error')) throw new RequestError(422, 'job-translations-invalid')
+      confirmed()
+      const inputs = await inputVersions([...compilation.inputs.files, ...translations.translations.flatMap(translation => translation.files)].filter(file => !compilation.sourceFiles.includes(file)))
+      confirmed()
+      const inputFingerprint = fnv1a64(JSON.stringify([...inputs].sort(([a], [b]) => a.localeCompare(b))))
       const known = targets.find(own => own.id === target)
       if (!known) throw new Error(`${document || '.'} cannot be made into ${target}: ${targets.map(own => own.id).join(', ') || 'nothing'}`)
       // The same target of the same revision, made or being made: not again.
-      const same = [...jobs.values()].reverse().find(job => job.document === document && job.target === target && job.revision === revision && ['queued', 'running', 'done'].includes(job.state))
+      const same = [...jobs.values()].reverse().find(job => job.document === document && job.target === target && job.revision === revision && sameSource(job.source, source) && job.inputFingerprint === inputFingerprint && ['queued', 'running', 'done'].includes(job.state))
       if (same) {
         options.log.info(`[job ${same.id}] document=${JSON.stringify(document || '.')} target=${target} reuse=${same.state}`)
         return present(same)
       }
       const id = newId()
-      const job: CompileJob = { id, sequence: 0, document, target, kind: known.kind, state: 'queued', revision, createdAt: now(), url: '', files: [], warnings: [], log: [] }
+      const job: CompileJob = { id, sequence: 0, document, target, kind: known.kind, state: 'queued', revision, source, inputFingerprint, createdAt: now(), url: '', files: [], warnings: [], log: [] }
       jobs.set(id, job)
       options.log.info(`[job ${id}] document=${JSON.stringify(document || '.')} target=${target} state=queued revision=${revision}`)
       let resolve!: (job: CompileJob) => void
@@ -257,7 +307,7 @@ export function createJobs(options: JobsOptions): Jobs {
       }
       running.set(id, entry)
       tell(job)
-      schedule(entry, compilation)
+      schedule(entry, compilation, inputs)
       return present(job)
     },
     async wait(id) {

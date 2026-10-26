@@ -124,6 +124,7 @@ export interface WorkbenchState {
   /** What the document can be made into, and its builds and exports (the author's and the AI's). */
   jobs?: JobsAnswer
   jobsFailure?: string
+  jobPreparing?: { target: string, canCancel: boolean }
 }
 
 export interface PreviewSink {
@@ -182,7 +183,7 @@ const DOCUMENT_RESET = {
   pointer: undefined, save: { kind: 'idle' },
   focus: [], isFocusPending: false, focusFailure: undefined,
   review: undefined, history: undefined, outside: undefined, historyFailure: undefined, isHistoryBusy: false, askFailure: undefined,
-  jobs: undefined, jobsFailure: undefined,
+  jobs: undefined, jobsFailure: undefined, jobPreparing: undefined,
 } satisfies Partial<WorkbenchState>
 
 /** A free directory for a new document called `title`, beside most of the existing ones. */
@@ -240,6 +241,7 @@ export class Workbench {
   #focusVersion = 0
   #focusWriting: Promise<void> = Promise.resolve()
   #documentScope = 0
+  #jobPreparation?: AbortController
   readonly #playback = new PreviewPlayback(() => ({ document: this.#state.document, scope: this.#documentScope, sinks: this.#previewSinks }))
   /** A place to show that no preview could take yet (none was attached, e.g. the chat covered the document). */
   #pendingReveal?: PreviewAnchor
@@ -786,9 +788,9 @@ export class Workbench {
       this.#unsubscribeDocumentSelection = () => { stopSelection(); element.removeEventListener('focusin', focus) }
     } else this.#unsubscribeDocumentSelection = undefined
   }
-  async flushPendingEdits(): Promise<void> {
+  async flushPendingEdits(signal?: AbortSignal): Promise<void> {
     if (isAgentChanging(this.#state)) throw new Error('save-locked')
-    await this.#documentSession.flush()
+    await this.#documentSession.flush(signal)
   }
   async #changeDocumentPage(change: (document: TeachingDocument) => void): Promise<boolean> {
     const source = this.#state.authoring, directory = this.#state.document
@@ -1092,7 +1094,40 @@ export class Workbench {
 
   /** Makes the document into `target` (a renderer, or an export of its plugins) as a job of the workspace server. */
   startJob(target: string): Promise<void> {
-    return this.#timed('job.start', { 'presmium.job.target': target }, async () => { const stop = this.observeJobs(); try { await this.#jobs.start(target) } finally { stop() } })
+    const document = this.#state.document, scope = this.#documentScope, identity = this.#state.authoring?.identity
+    if (document === undefined || !identity || this.#state.jobPreparing) return Promise.resolve()
+    const controller = this.#jobPreparation = new AbortController()
+    const current = () => document === this.#state.document && scope === this.#documentScope && identity === this.#state.authoring?.identity && !controller.signal.aborted
+    this.#set({ jobPreparing: { target, canCancel: true }, jobsFailure: undefined })
+    return this.#timed('job.start', { 'presmium.job.target': target }, async () => {
+      const stop = this.observeJobs()
+      try {
+        if (this.#state.hasDocumentTimingDrafts || this.#state.documentTimingDraftStorageFailure) throw new Error('job-timing-draft')
+        await this.flushPendingEdits(controller.signal)
+        if (!current()) return
+        const source = this.#state.authoring
+        if (!source?.version || !source.fingerprint || source.dirty || source.saving || source.composing || source.restored || source.error) throw new Error('job-save-required')
+        if (this.#state.hasDocumentTimingDrafts || this.#state.documentTimingDraftStorageFailure) throw new Error('job-timing-draft')
+        this.#set({ jobPreparing: { target, canCancel: false } })
+        await this.#jobs.start(document, target, { version: source.version, fingerprint: source.fingerprint })
+      } catch (error) {
+        if (current()) this.#set({ jobsFailure: errorMessage(error) })
+      } finally {
+        stop()
+        if (this.#jobPreparation === controller) {
+          this.#jobPreparation = undefined
+          if (current()) this.#set({ jobPreparing: undefined })
+        }
+      }
+    })
+  }
+
+  /** Cancels the pending export intent; a document save already sent retains its own acknowledgement. */
+  cancelJobPreparation(): void {
+    if (!this.#state.jobPreparing?.canCancel) return
+    this.#jobPreparation?.abort()
+    this.#jobPreparation = undefined
+    this.#set({ jobPreparing: undefined })
   }
 
   cancelJob(id: string): Promise<void> {
