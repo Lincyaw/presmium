@@ -108,7 +108,6 @@
       "children": [
         "three--embedding",
         "three--paragraph-1",
-        "three--paragraph-2",
         "three--paragraph-3"
       ],
       "stepOrder": [
@@ -489,23 +488,7 @@
           "children": [
             {
               "type": "text",
-              "text": "词向量一开始散在空间里。"
-            }
-          ]
-        }
-      ]
-    },
-    "three--paragraph-2": {
-      "id": "three--paragraph-2",
-      "type": "text",
-      "content": [
-        {
-          "id": "three--paragraph-2--text-0",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "训练之后，意思相近的词聚成了三团。"
+              "text": "词向量一开始散在空间里。 训练之后，意思相近的词聚成了三团。"
             }
           ]
         }
@@ -1100,10 +1083,6 @@
           "visible": false
         },
         {
-          "blockId": "three--paragraph-2",
-          "visible": false
-        },
-        {
           "blockId": "three--paragraph-3",
           "visible": false
         }
@@ -1126,10 +1105,6 @@
           "visible": false
         },
         {
-          "blockId": "three--paragraph-2",
-          "visible": false
-        },
-        {
           "blockId": "three--paragraph-3",
           "visible": false
         }
@@ -1149,10 +1124,6 @@
         },
         {
           "blockId": "three--paragraph-1",
-          "visible": false
-        },
-        {
-          "blockId": "three--paragraph-2",
           "visible": false
         },
         {
