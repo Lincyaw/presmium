@@ -1,4 +1,5 @@
 import { CommentsExtension, DefaultThreadStoreAuth, ThreadStore } from '@blocknote/core/comments'
+import { createUserStore } from '@blocknote/core'
 import type { CommentData, ThreadData } from '@blocknote/core/comments'
 import type { DocumentComment, DocumentThread, RichTextNode, TeachingDocument } from '@lincyaw/kernel'
 import { createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
@@ -119,5 +120,17 @@ export class DocumentThreadStore extends ThreadStore {
 }
 
 export function nativeComments(store: DocumentThreadStore, username: string) {
-  return CommentsExtension({ threadStore: store, schema: commentEditorSchema, resolveUsers: async ids => ids.map(id => ({ id, username: id === USER ? username : id, avatarUrl: '' })) })
+  const resolve = (ids: string[]) => ids.map(id => ({ id, username: id === USER ? username : id, avatarUrl: '' }))
+  const users = createUserStore(async ids => resolve(ids))
+  const identities = new Set([USER])
+  for (const thread of store.getThreads().values()) {
+    if (thread.resolvedBy) identities.add(thread.resolvedBy)
+    for (const comment of thread.comments) {
+      identities.add(comment.userId)
+      for (const reaction of comment.reactions) for (const id of reaction.userIds) identities.add(id)
+    }
+  }
+  // Resolved-thread summaries read their resolver during the first render.
+  users.setUser(resolve([...identities]))
+  return CommentsExtension({ threadStore: store, schema: commentEditorSchema, resolveUsers: users })
 }
