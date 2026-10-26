@@ -1,0 +1,568 @@
+{
+  "schemaVersion": 1,
+  "id": "document-db84e818a4cad3ee",
+  "metadata": {
+    "title": "插件扩展示例",
+    "lang": "zh-CN",
+    "plugins": [
+      "./plugin",
+      "./broken"
+    ],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "插件扩展示例",
+    "table",
+    "probe",
+    "notes"
+  ],
+  "sections": {
+    "插件扩展示例": {
+      "id": "插件扩展示例",
+      "title": "插件扩展示例",
+      "level": 1,
+      "children": [
+        "插件扩展示例--paragraph-1"
+      ],
+      "stepOrder": [
+        "插件扩展示例--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "table": {
+      "id": "table",
+      "title": "表格",
+      "level": 2,
+      "children": [
+        "table--paragraph-1",
+        "table--footnoteDefinition-1",
+        "table--code-1",
+        "table--paragraph-2",
+        "table--pm-swap-1"
+      ],
+      "stepOrder": [
+        "table--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "probe": {
+      "id": "probe",
+      "title": "探针",
+      "level": 2,
+      "children": [
+        "probe--pm-probe-1",
+        "probe--paragraph-1",
+        "probe--paragraph-2",
+        "probe--paragraph-3"
+      ],
+      "stepOrder": [
+        "probe--step-0",
+        "probe--step-1",
+        "probe--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "web": {
+            "accent": "teal"
+          }
+        }
+      }
+    },
+    "notes": {
+      "id": "notes",
+      "title": "附注",
+      "level": 2,
+      "children": [
+        "notes--paragraph-1"
+      ],
+      "stepOrder": [
+        "notes--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "插件扩展示例--paragraph-1": {
+      "id": "插件扩展示例--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "插件扩展示例--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "示例插件为 IR 运行时注册一个视图和两个渲染器。"
+            }
+          ]
+        }
+      ]
+    },
+    "table--paragraph-1": {
+      "id": "table--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "table--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "插件为 "
+            },
+            {
+              "type": "text",
+              "text": "csv",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 代码块注册了渲染器，代码块显示为表格"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "footnoteReference",
+                  "identifier": "csv",
+                  "label": "csv",
+                  "enumerator": "1"
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": "。"
+            }
+          ]
+        }
+      ]
+    },
+    "table--footnoteDefinition-1": {
+      "id": "table--footnoteDefinition-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "table--footnoteDefinition-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "footnoteDefinition",
+              "identifier": "csv",
+              "label": "csv",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "CSV 是逗号分隔的值。"
+                    }
+                  ]
+                }
+              ],
+              "enumerator": "1"
+            }
+          },
+          "fallback": [
+            {
+              "id": "table--footnoteDefinition-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "CSV 是逗号分隔的值。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "table--code-1": {
+      "id": "table--code-1",
+      "type": "code",
+      "language": "csv",
+      "value": "名称,数量\n苹果,3"
+    },
+    "table--paragraph-2": {
+      "id": "table--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "table--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "插件还为组件 PmSwap 注册了渲染器，替换组件本身。"
+            }
+          ]
+        }
+      ]
+    },
+    "table--pm-swap-1": {
+      "id": "table--pm-swap-1",
+      "type": "component",
+      "definitionId": "table--pm-swap-1--definition",
+      "parameters": {}
+    },
+    "probe--pm-probe-1": {
+      "id": "probe--pm-probe-1",
+      "type": "component",
+      "definitionId": "probe--pm-probe-1--definition",
+      "parameters": {}
+    },
+    "probe--paragraph-1": {
+      "id": "probe--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "probe--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第零步，探针只显示“丙”。"
+            }
+          ]
+        }
+      ]
+    },
+    "probe--paragraph-2": {
+      "id": "probe--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "probe--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一步，“甲”和“乙”出现。"
+            }
+          ]
+        }
+      ]
+    },
+    "probe--paragraph-3": {
+      "id": "probe--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "probe--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步，“丙”隐去。"
+            }
+          ]
+        }
+      ]
+    },
+    "notes--paragraph-1": {
+      "id": "notes--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "notes--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "附注在另一个文件中，是网页的另一页；脚注的定义被移到文稿末尾，也就在这一节。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "插件扩展示例--step-0": {
+      "id": "插件扩展示例--step-0",
+      "sectionId": "插件扩展示例",
+      "visuals": [
+        {
+          "blockId": "插件扩展示例--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "插件扩展示例--paragraph-1--narration"
+      ]
+    },
+    "table--step-0": {
+      "id": "table--step-0",
+      "sectionId": "table",
+      "visuals": [
+        {
+          "blockId": "table--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "table--footnoteDefinition-1",
+          "visible": false
+        },
+        {
+          "blockId": "table--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "table--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "table--pm-swap-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": [
+        "table--paragraph-1--narration",
+        "table--footnoteDefinition-1--narration",
+        "table--paragraph-2--narration"
+      ]
+    },
+    "probe--step-0": {
+      "id": "probe--step-0",
+      "sectionId": "probe",
+      "visuals": [
+        {
+          "blockId": "probe--pm-probe-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "probe--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "probe--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "probe--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "probe--paragraph-1--narration"
+      ]
+    },
+    "probe--step-1": {
+      "id": "probe--step-1",
+      "sectionId": "probe",
+      "visuals": [
+        {
+          "blockId": "probe--pm-probe-1",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "probe--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "probe--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "probe--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "probe--paragraph-2--narration"
+      ]
+    },
+    "probe--step-2": {
+      "id": "probe--step-2",
+      "sectionId": "probe",
+      "visuals": [
+        {
+          "blockId": "probe--pm-probe-1",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "probe--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "probe--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "probe--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "probe--paragraph-3--narration"
+      ]
+    },
+    "notes--step-0": {
+      "id": "notes--step-0",
+      "sectionId": "notes",
+      "visuals": [
+        {
+          "blockId": "notes--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "notes--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "插件扩展示例--paragraph-1--narration": {
+      "id": "插件扩展示例--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "示例插件为 IR 运行时注册一个视图和两个渲染器。"
+        }
+      ]
+    },
+    "table--paragraph-1--narration": {
+      "id": "table--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "插件为 csv 代码块注册了渲染器，代码块显示为表格。"
+        }
+      ]
+    },
+    "table--footnoteDefinition-1--narration": {
+      "id": "table--footnoteDefinition-1--narration",
+      "content": []
+    },
+    "table--paragraph-2--narration": {
+      "id": "table--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "插件还为组件 PmSwap 注册了渲染器，替换组件本身。"
+        }
+      ]
+    },
+    "probe--paragraph-1--narration": {
+      "id": "probe--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第零步，探针只显示“丙”。"
+        }
+      ]
+    },
+    "probe--paragraph-2--narration": {
+      "id": "probe--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第一步，“甲”和“乙”出现。"
+        }
+      ]
+    },
+    "probe--paragraph-3--narration": {
+      "id": "probe--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二步，“丙”隐去。"
+        }
+      ]
+    },
+    "notes--paragraph-1--narration": {
+      "id": "notes--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "附注在另一个文件中，是网页的另一页；脚注的定义被移到文稿末尾，也就在这一节。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "table--pm-swap-1--definition": {
+      "id": "table--pm-swap-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "./plugin",
+        "name": "PmSwap"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "./plugin",
+        "name": "PmSwap"
+      }
+    },
+    "probe--pm-probe-1--definition": {
+      "id": "probe--pm-probe-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "./plugin",
+        "name": "PmProbe"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "./plugin",
+        "name": "PmProbe"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

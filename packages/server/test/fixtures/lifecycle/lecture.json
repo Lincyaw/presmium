@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "id": "document-94fc3a51422cfeee",
+  "metadata": {
+    "title": "lecture",
+    "lang": "zh-CN",
+    "plugins": [
+      "./plugin"
+    ],
+    "presmium": {
+      "fixture.lifecycle": {
+        "value": "first configuration"
+      }
+    }
+  },
+  "sectionOrder": [
+    "server-lifecycle"
+  ],
+  "sections": {
+    "server-lifecycle": {
+      "id": "server-lifecycle",
+      "title": "Server lifecycle",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "server-lifecycle--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {},
+  "steps": {
+    "server-lifecycle--step-0": {
+      "id": "server-lifecycle--step-0",
+      "sectionId": "server-lifecycle",
+      "visuals": [],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "id": "document-8194c9d9a98738bc",
+  "metadata": {
+    "title": "Service Talk",
+    "lang": "en",
+    "plugins": [],
+    "renderers": {
+      "web": {},
+      "slides": {}
+    }
+  },
+  "sectionOrder": [
+    "service-talk",
+    "first",
+    "second"
+  ],
+  "sections": {
+    "service-talk": {
+      "id": "service-talk",
+      "title": "Service Talk",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "service-talk--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "first": {
+      "id": "first",
+      "title": "First",
+      "level": 2,
+      "children": [
+        "first--paragraph-1"
+      ],
+      "stepOrder": [
+        "first--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "second": {
+      "id": "second",
+      "title": "Second",
+      "level": 2,
+      "children": [
+        "second--paragraph-1"
+      ],
+      "stepOrder": [
+        "second--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "first--paragraph-1": {
+      "id": "first--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "first--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The first section of the talk."
+            }
+          ]
+        }
+      ]
+    },
+    "second--paragraph-1": {
+      "id": "second--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "second--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A renderer id spelled wrong: a warning of the compilation."
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slide"
+      ]
+    }
+  },
+  "steps": {
+    "service-talk--step-0": {
+      "id": "service-talk--step-0",
+      "sectionId": "service-talk",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "first--step-0": {
+      "id": "first--step-0",
+      "sectionId": "first",
+      "visuals": [
+        {
+          "blockId": "first--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "second--step-0": {
+      "id": "second--step-0",
+      "sectionId": "second",
+      "visuals": [
+        {
+          "blockId": "second--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

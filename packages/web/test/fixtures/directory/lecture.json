@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "id": "document-91f9d645bbc3a0bb",
+  "metadata": {
+    "title": "目录",
+    "lang": "zh-CN",
+    "renderers": {
+      "web": {
+        "package": "../../..",
+        "port": 5043
+      }
+    }
+  },
+  "sectionOrder": [
+    "目录",
+    "starter"
+  ],
+  "sections": {
+    "目录": {
+      "id": "目录",
+      "title": "目录",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "目录--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "starter": {
+      "id": "starter",
+      "title": "起始目录",
+      "level": 2,
+      "children": [
+        "starter--paragraph-1"
+      ],
+      "stepOrder": [
+        "starter--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "starter--paragraph-1": {
+      "id": "starter--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "starter--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "link",
+              "href": "starter",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "整个起始目录"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "可以下载。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "目录--step-0": {
+      "id": "目录--step-0",
+      "sectionId": "目录",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "starter--step-0": {
+      "id": "starter--step-0",
+      "sectionId": "starter",
+      "visuals": [
+        {
+          "blockId": "starter--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "starter--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "starter--paragraph-1--narration": {
+      "id": "starter--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "整个起始目录可以下载。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

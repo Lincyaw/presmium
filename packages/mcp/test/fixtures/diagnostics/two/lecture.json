@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "id": "document-a331afdd632986bb",
+  "metadata": {
+    "title": "Second document",
+    "lang": "zh-CN",
+    "plugins": [
+      "../plugin"
+    ],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "second-document"
+  ],
+  "sections": {
+    "second-document": {
+      "id": "second-document",
+      "title": "Second document",
+      "level": 1,
+      "children": [
+        "second-document--paragraph-1"
+      ],
+      "stepOrder": [
+        "second-document--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "second-document--paragraph-1": {
+      "id": "second-document--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "second-document--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A valid second document."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "second-document--step-0": {
+      "id": "second-document--step-0",
+      "sectionId": "second-document",
+      "visuals": [
+        {
+          "blockId": "second-document--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "second-document--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "second-document--paragraph-1--narration": {
+      "id": "second-document--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "A valid second document."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
