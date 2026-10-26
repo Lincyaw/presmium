@@ -7,12 +7,15 @@
     "description": "可编辑、可运行的 Presmium 功能导览。",
     "plugins": [
       "@lincyaw/addon-motion",
-      "@lincyaw/addon-guide"
+      "@lincyaw/addon-guide",
+      "@lincyaw/addon-lecture",
+      "@lincyaw/addon-speech"
     ],
     "renderers": {
       "web": {},
       "slides": {},
-      "notebook": {}
+      "notebook": {},
+      "lecture": {}
     }
   },
   "sectionOrder": [
