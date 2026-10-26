@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "id": "document-03125730511b38a2",
+  "metadata": {
+    "title": "甲文档",
+    "lang": "zh-CN",
+    "tags": [
+      "入门"
+    ],
+    "plugins": [
+      "../plugin"
+    ],
+    "presmium": {
+      "fixture.workspaceVite": {
+        "message": "alpha-vite"
+      }
+    }
+  },
+  "sectionOrder": [
+    "开始",
+    "继续"
+  ],
+  "sections": {
+    "开始": {
+      "id": "开始",
+      "title": "开始",
+      "level": 1,
+      "children": [
+        "开始--paragraph-1"
+      ],
+      "stepOrder": [
+        "开始--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "继续": {
+      "id": "继续",
+      "title": "继续",
+      "level": 1,
+      "children": [
+        "继续--paragraph-1"
+      ],
+      "stepOrder": [
+        "继续--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "开始--paragraph-1": {
+      "id": "开始--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "开始--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "甲文档的第一章，提到只在这里出现的词 zymurgy。"
+            }
+          ]
+        }
+      ]
+    },
+    "继续--paragraph-1": {
+      "id": "继续--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "继续--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "甲文档的第二章。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "开始--step-0": {
+      "id": "开始--step-0",
+      "sectionId": "开始",
+      "visuals": [
+        {
+          "blockId": "开始--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "开始--paragraph-1--narration"
+      ]
+    },
+    "继续--step-0": {
+      "id": "继续--step-0",
+      "sectionId": "继续",
+      "visuals": [
+        {
+          "blockId": "继续--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "继续--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "开始--paragraph-1--narration": {
+      "id": "开始--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "甲文档的第一章，提到只在这里出现的词 zymurgy。"
+        }
+      ]
+    },
+    "继续--paragraph-1--narration": {
+      "id": "继续--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "甲文档的第二章。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

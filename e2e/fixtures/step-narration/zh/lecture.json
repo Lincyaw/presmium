@@ -1,0 +1,553 @@
+{
+  "schemaVersion": 1,
+  "id": "document-7cba8789c3593110",
+  "metadata": {
+    "title": "步骤讲解",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-lecture",
+      "@lincyaw/addon-speech"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "lecture": {}
+    }
+  },
+  "sectionOrder": [
+    "intro",
+    "animation",
+    "empty"
+  ],
+  "sections": {
+    "intro": {
+      "id": "intro",
+      "title": "步骤讲解",
+      "level": 1,
+      "children": [
+        "intro--paragraph-1"
+      ],
+      "stepOrder": [
+        "intro--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "animation": {
+      "id": "animation",
+      "title": "三步动画",
+      "level": 2,
+      "children": [
+        "animation--narration-1",
+        "animation--scene",
+        "animation--paragraph-1",
+        "animation--paragraph-2",
+        "animation--paragraph-3",
+        "animation--reading"
+      ],
+      "stepOrder": [
+        "animation--step-0",
+        "animation--step-1",
+        "animation--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "empty": {
+      "id": "empty",
+      "title": "空讲解动画",
+      "level": 2,
+      "children": [
+        "empty--pm-scene-1"
+      ],
+      "stepOrder": [
+        "empty--step-0",
+        "empty--step-1",
+        "empty--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "intro--paragraph-1": {
+      "id": "intro--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "开场。"
+            }
+          ]
+        }
+      ]
+    },
+    "animation--narration-1": {
+      "id": "animation--narration-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "animation--narration-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第三步完成后讲。"
+            }
+          ]
+        }
+      ]
+    },
+    "animation--scene": {
+      "id": "animation--scene",
+      "type": "component",
+      "definitionId": "animation--scene--definition",
+      "parameters": {
+        "scene": "steps",
+        "alt": "三步动画。"
+      }
+    },
+    "animation--paragraph-1": {
+      "id": "animation--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "animation--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先讲"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "presmium.lecture",
+                  "name": "cue",
+                  "options": {
+                    "value": "pause 100ms"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": "第一步。"
+            }
+          ]
+        }
+      ]
+    },
+    "animation--paragraph-2": {
+      "id": "animation--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "animation--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "再讲第二步。"
+            }
+          ]
+        }
+      ]
+    },
+    "animation--paragraph-3": {
+      "id": "animation--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "animation--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第三步的补充讲解。"
+            }
+          ]
+        }
+      ]
+    },
+    "animation--reading": {
+      "id": "animation--reading",
+      "type": "text",
+      "content": [
+        {
+          "id": "animation--reading--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这段只供阅读。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "empty--pm-scene-1": {
+      "id": "empty--pm-scene-1",
+      "type": "component",
+      "definitionId": "empty--pm-scene-1--definition",
+      "parameters": {
+        "scene": "steps",
+        "alt": "还没有讲解。"
+      }
+    }
+  },
+  "steps": {
+    "intro--step-0": {
+      "id": "intro--step-0",
+      "sectionId": "intro",
+      "visuals": [
+        {
+          "blockId": "intro--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "intro--paragraph-1--narration"
+      ]
+    },
+    "animation--step-0": {
+      "id": "animation--step-0",
+      "sectionId": "animation",
+      "visuals": [
+        {
+          "blockId": "animation--narration-1",
+          "visible": false
+        },
+        {
+          "blockId": "animation--scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "animation--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "animation--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "animation--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "animation--reading",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "animation--paragraph-1--narration"
+      ]
+    },
+    "animation--step-1": {
+      "id": "animation--step-1",
+      "sectionId": "animation",
+      "visuals": [
+        {
+          "blockId": "animation--narration-1",
+          "visible": false
+        },
+        {
+          "blockId": "animation--scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "animation--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "animation--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "animation--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "animation--reading",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "animation--paragraph-2--narration"
+      ]
+    },
+    "animation--step-2": {
+      "id": "animation--step-2",
+      "sectionId": "animation",
+      "visuals": [
+        {
+          "blockId": "animation--narration-1",
+          "visible": false
+        },
+        {
+          "blockId": "animation--scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "animation--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "animation--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "animation--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "animation--reading",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "animation--narration-1--narration",
+        "animation--paragraph-3--narration"
+      ]
+    },
+    "empty--step-0": {
+      "id": "empty--step-0",
+      "sectionId": "empty",
+      "visuals": [
+        {
+          "blockId": "empty--pm-scene-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "empty--step-1": {
+      "id": "empty--step-1",
+      "sectionId": "empty",
+      "visuals": [
+        {
+          "blockId": "empty--pm-scene-1",
+          "visible": true,
+          "state": "legacy-1"
+        }
+      ],
+      "narrationIds": []
+    },
+    "empty--step-2": {
+      "id": "empty--step-2",
+      "sectionId": "empty",
+      "visuals": [
+        {
+          "blockId": "empty--pm-scene-1",
+          "visible": true,
+          "state": "legacy-2"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "intro--paragraph-1--narration": {
+      "id": "intro--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "开场。"
+        }
+      ]
+    },
+    "animation--narration-1--narration": {
+      "id": "animation--narration-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第三步完成后讲。"
+        }
+      ]
+    },
+    "animation--paragraph-1--narration": {
+      "id": "animation--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先讲"
+        },
+        {
+          "id": "cue-animation-1",
+          "type": "cue",
+          "action": "pause"
+        },
+        {
+          "type": "text",
+          "text": "第一步。"
+        }
+      ]
+    },
+    "animation--paragraph-2--narration": {
+      "id": "animation--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "再讲第二步。"
+        }
+      ]
+    },
+    "animation--paragraph-3--narration": {
+      "id": "animation--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第三步的补充讲解。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "animation--scene--definition": {
+      "id": "animation--scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/steps.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          800,
+          1200,
+          1000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "三步动画。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "empty--pm-scene-1--definition": {
+      "id": "empty--pm-scene-1--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/steps.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          800,
+          1200,
+          1000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "还没有讲解。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "trailingPauseMs": 0,
+      "voiceSource": {
+        "type": "tts",
+        "voice": {
+          "engine": "fake",
+          "voice": "alpha"
+        }
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": [],
+    "narrationOverrides": {
+      "animation--narration-1--narration": {
+        "narrationStart": "after-animation"
+      }
+    },
+    "cueTimings": {
+      "cue-animation-1": {
+        "pauseMs": 100
+      }
+    }
+  }
+}

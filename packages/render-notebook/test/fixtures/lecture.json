@@ -1,0 +1,1695 @@
+{
+  "schemaVersion": 1,
+  "id": "document-0a77d776e50cd1b9",
+  "metadata": {
+    "title": "笔记本示例",
+    "lang": "zh-CN",
+    "plugins": [
+      "./addons/python",
+      "./addons/widgets"
+    ],
+    "renderers": {
+      "notebook": {
+        "webUrl": "https://example.org/lecture/"
+      }
+    }
+  },
+  "sectionOrder": [
+    "笔记本示例",
+    "sum",
+    "组件",
+    "图",
+    "myst"
+  ],
+  "sections": {
+    "笔记本示例": {
+      "id": "笔记本示例",
+      "title": "笔记本示例",
+      "level": 1,
+      "children": [
+        "笔记本示例--paragraph-1",
+        "笔记本示例--paragraph-2"
+      ],
+      "stepOrder": [
+        "笔记本示例--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "sum": {
+      "id": "sum",
+      "title": "求和",
+      "level": 2,
+      "children": [
+        "sum--paragraph-1",
+        "sum--list-1",
+        "sum--code-1",
+        "sum--paragraph-2",
+        "sum--code-2",
+        "sum--paragraph-3",
+        "sum--code-3",
+        "sum--paragraph-4",
+        "sum--list-2",
+        "sum--paragraph-5"
+      ],
+      "stepOrder": [
+        "sum--step-0",
+        "sum--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "组件": {
+      "id": "组件",
+      "title": "组件",
+      "level": 2,
+      "children": [
+        "组件--fixture-quiz-1",
+        "组件--paragraph-1",
+        "组件--fixture-chart-1",
+        "组件--paragraph-2",
+        "组件--fixture-canvas-1",
+        "组件--paragraph-3"
+      ],
+      "stepOrder": [
+        "组件--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "图": {
+      "id": "图",
+      "title": "图",
+      "level": 2,
+      "children": [
+        "图--image-1",
+        "图--paragraph-1",
+        "图--fixture-clip-1"
+      ],
+      "stepOrder": [
+        "图--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "myst": {
+      "id": "myst",
+      "title": "MyST 内容",
+      "level": 2,
+      "children": [
+        "myst--note-1",
+        "myst--list-table-1",
+        "myst--dropdown-1",
+        "myst--energy",
+        "myst--figure-1",
+        "myst--paragraph-1",
+        "myst--paragraph-2",
+        "myst--table-1",
+        "myst--paragraph-3",
+        "myst--footnoteDefinition-1",
+        "myst--embed-1"
+      ],
+      "stepOrder": [
+        "myst--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "笔记本示例--paragraph-1": {
+      "id": "笔记本示例--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "笔记本示例--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "从 IR 生成 notebook"
+            }
+          ]
+        }
+      ]
+    },
+    "笔记本示例--paragraph-2": {
+      "id": "笔记本示例--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "笔记本示例--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本讲演示 notebook 渲染端：讲解成为 Markdown 单元格，代码成为可运行的单元格。"
+            }
+          ]
+        }
+      ]
+    },
+    "sum--paragraph-1": {
+      "id": "sum--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "sum--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先用 Python 求 1 到 10 的和，公式是 "
+            },
+            {
+              "type": "math",
+              "value": "n(n+1)/2"
+            },
+            {
+              "type": "text",
+              "text": "，参见 "
+            },
+            {
+              "type": "link",
+              "href": "https://example.org/gauss",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "高斯求和"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。"
+            }
+          ]
+        }
+      ]
+    },
+    "sum--list-1": {
+      "id": "sum--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "sum--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "sum--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "sum--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "写出求和代码"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "sum--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "sum--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "运行并核对结果"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "reveal": {
+        "type": "items",
+        "order": [
+          "sum--list-1--text-0-item-0",
+          "sum--list-1--text-0-item-1"
+        ]
+      }
+    },
+    "sum--code-1": {
+      "id": "sum--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "total = sum(range(1, 11))\nprint(\"合计\", total)",
+      "execution": {
+        "when": "compile"
+      }
+    },
+    "sum--paragraph-2": {
+      "id": "sum--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "sum--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一个单元格打印 "
+            },
+            {
+              "type": "text",
+              "text": "total",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 的值，应当是 "
+            },
+            {
+              "type": "text",
+              "text": "55",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。"
+            }
+          ]
+        }
+      ]
+    },
+    "sum--code-2": {
+      "id": "sum--code-2",
+      "type": "code",
+      "language": "python",
+      "value": "import sys\nsquares = [n * n for n in range(4)]\nprint(squares)\nprint(\"这一行写到标准错误\", file=sys.stderr)",
+      "execution": {
+        "when": "compile"
+      }
+    },
+    "sum--paragraph-3": {
+      "id": "sum--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "sum--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二个单元格同时写标准输出与标准错误。"
+            }
+          ]
+        }
+      ]
+    },
+    "sum--code-3": {
+      "id": "sum--code-3",
+      "type": "code",
+      "language": "bash",
+      "value": "echo 不是内核语言的代码"
+    },
+    "sum--paragraph-4": {
+      "id": "sum--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "sum--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲解也可以是列表："
+            }
+          ]
+        }
+      ]
+    },
+    "sum--list-2": {
+      "id": "sum--list-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "sum--list-2--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "sum--list-2--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "sum--list-2--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "第一条讲解"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "sum--list-2--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "sum--list-2--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "第二条讲解"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "sum--paragraph-5": {
+      "id": "sum--paragraph-5",
+      "type": "text",
+      "content": [
+        {
+          "id": "sum--paragraph-5--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "只在网页中出现的段落。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "组件--fixture-quiz-1": {
+      "id": "组件--fixture-quiz-1",
+      "type": "component",
+      "definitionId": "组件--fixture-quiz-1--definition",
+      "parameters": {
+        "question": "1 加到 10 等于多少？"
+      }
+    },
+    "组件--paragraph-1": {
+      "id": "组件--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "组件--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "测验由插件的 notebook 扩展渲染。"
+            }
+          ]
+        }
+      ]
+    },
+    "组件--fixture-chart-1": {
+      "id": "组件--fixture-chart-1",
+      "type": "component",
+      "definitionId": "组件--fixture-chart-1--definition",
+      "parameters": {},
+      "children": [
+        "组件--fixture-chart-1--preview"
+      ]
+    },
+    "组件--fixture-chart-1--preview": {
+      "id": "组件--fixture-chart-1--preview",
+      "type": "text",
+      "content": [
+        {
+          "id": "组件--fixture-chart-1--preview--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "image",
+                  "url": "figures/chart.svg",
+                  "alt": "预览"
+                }
+              },
+              "fallback": ""
+            }
+          ]
+        }
+      ]
+    },
+    "组件--paragraph-2": {
+      "id": "组件--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "组件--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "图表在 notebook 中降级为表格与数据的链接。"
+            }
+          ]
+        }
+      ]
+    },
+    "组件--fixture-canvas-1": {
+      "id": "组件--fixture-canvas-1",
+      "type": "component",
+      "definitionId": "组件--fixture-canvas-1--definition",
+      "parameters": {}
+    },
+    "组件--paragraph-3": {
+      "id": "组件--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "组件--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "画布没有 notebook 形式，构建报告会列出它。"
+            }
+          ]
+        }
+      ]
+    },
+    "图--image-1": {
+      "id": "图--image-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "图--image-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "image",
+              "url": "figures/dot.svg",
+              "alt": "点图"
+            }
+          },
+          "fallback": []
+        }
+      ]
+    },
+    "图--paragraph-1": {
+      "id": "图--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "图--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "图片的路径相对于本文件；notebook 把图片复制到自己旁边。文件名中的 "
+            },
+            {
+              "type": "text",
+              "text": "#",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 写作 "
+            },
+            {
+              "type": "text",
+              "text": "%23",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "："
+            },
+            {
+              "type": "link",
+              "href": "figures/raw%231.csv",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "原始数据"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "；转义不完整的地址原样保留："
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "image",
+                  "url": "%E0%A4.png",
+                  "alt": "坏图"
+                }
+              },
+              "fallback": ""
+            }
+          ]
+        }
+      ]
+    },
+    "图--fixture-clip-1": {
+      "id": "图--fixture-clip-1",
+      "type": "component",
+      "definitionId": "图--fixture-clip-1--definition",
+      "parameters": {
+        "src": "../figures/clip.webm"
+      }
+    },
+    "myst--note-1": {
+      "id": "myst--note-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "myst--note-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "admonition",
+              "kind": "note",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "提示写成带粗体标题的引用块。"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "myst--note-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "提示写成带粗体标题的引用块。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "myst--list-table-1": {
+      "id": "myst--list-table-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "myst--list-table-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "container",
+              "kind": "table",
+              "children": [
+                {
+                  "type": "caption",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "价格表"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "table",
+                  "children": [
+                    {
+                      "type": "tableRow",
+                      "children": [
+                        {
+                          "type": "tableCell",
+                          "header": true,
+                          "children": [
+                            {
+                              "type": "paragraph",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "value": "名称"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "tableCell",
+                          "header": true,
+                          "children": [
+                            {
+                              "type": "paragraph",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "value": "价格"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableRow",
+                      "children": [
+                        {
+                          "type": "tableCell",
+                          "children": [
+                            {
+                              "type": "paragraph",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "value": "苹果"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "tableCell",
+                          "children": [
+                            {
+                              "type": "paragraph",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "value": "3"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "enumerator": "1"
+            }
+          },
+          "fallback": [
+            {
+              "id": "myst--list-table-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "价格表名称价格苹果3"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "myst--dropdown-1": {
+      "id": "myst--dropdown-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "myst--dropdown-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "details",
+              "children": [
+                {
+                  "type": "summary",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "点开看答案"
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "答案是 42。"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "myst--dropdown-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "点开看答案答案是 42。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "myst--energy": {
+      "id": "myst--energy",
+      "type": "text",
+      "content": [
+        {
+          "id": "energy",
+          "type": "math",
+          "value": "E = mc^2"
+        }
+      ]
+    },
+    "myst--figure-1": {
+      "id": "myst--figure-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "myst--figure-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "container",
+              "kind": "figure",
+              "children": [
+                {
+                  "type": "image",
+                  "url": "https://example.org/sum.png",
+                  "alt": "求和示意"
+                },
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "求和的过程。"
+                    }
+                  ]
+                }
+              ],
+              "enumerator": "1"
+            }
+          },
+          "fallback": [
+            {
+              "id": "myst--figure-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "求和的过程。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "myst--paragraph-1": {
+      "id": "myst--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "myst--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "水的化学式是 H"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "subscript",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "2"
+                    }
+                  ]
+                }
+              },
+              "fallback": "2"
+            },
+            {
+              "type": "text",
+              "text": "O，保存用 "
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "keyboard",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Ctrl"
+                    }
+                  ]
+                }
+              },
+              "fallback": "Ctrl"
+            },
+            {
+              "type": "text",
+              "text": "。"
+            }
+          ]
+        }
+      ]
+    },
+    "myst--paragraph-2": {
+      "id": "myst--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "myst--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A coffee costs $5 and a cake $3, written with escaped dollars."
+            }
+          ]
+        }
+      ]
+    },
+    "myst--table-1": {
+      "id": "myst--table-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "myst--table-1--text-0",
+          "type": "table",
+          "headerRows": 1,
+          "children": [
+            {
+              "id": "myst--table-1--text-0-row-0",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "myst--table-1--text-0-cell-0-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "词"
+                    }
+                  ]
+                },
+                {
+                  "id": "myst--table-1--text-0-cell-0-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "切分"
+                    }
+                  ]
+                },
+                {
+                  "id": "myst--table-1--text-0-cell-0-2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "次数"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "myst--table-1--text-0-row-1",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "myst--table-1--text-0-cell-1-0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "lowest",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "myst--table-1--text-0-cell-1-1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "low",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " + "
+                    },
+                    {
+                      "type": "text",
+                      "text": "est",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "myst--table-1--text-0-cell-1-2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "260"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "myst--paragraph-3": {
+      "id": "myst--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "myst--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "最后一句有脚注"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "footnoteReference",
+                  "identifier": "note",
+                  "label": "note",
+                  "enumerator": "1"
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": "。"
+            }
+          ]
+        }
+      ]
+    },
+    "myst--footnoteDefinition-1": {
+      "id": "myst--footnoteDefinition-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "myst--footnoteDefinition-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "footnoteDefinition",
+              "identifier": "note",
+              "label": "note",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "脚注写成编号。"
+                    }
+                  ]
+                }
+              ],
+              "enumerator": "1"
+            }
+          },
+          "fallback": [
+            {
+              "id": "myst--footnoteDefinition-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "脚注写成编号。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "myst--embed-1": {
+      "id": "myst--embed-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "myst--embed-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "embed",
+              "source": {
+                "label": "energy"
+              }
+            }
+          },
+          "fallback": []
+        }
+      ]
+    }
+  },
+  "steps": {
+    "笔记本示例--step-0": {
+      "id": "笔记本示例--step-0",
+      "sectionId": "笔记本示例",
+      "visuals": [
+        {
+          "blockId": "笔记本示例--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "笔记本示例--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "笔记本示例--paragraph-2--narration"
+      ]
+    },
+    "sum--step-0": {
+      "id": "sum--step-0",
+      "sectionId": "sum",
+      "visuals": [
+        {
+          "blockId": "sum--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "sum--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 1
+          }
+        },
+        {
+          "blockId": "sum--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "sum--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "sum--code-2",
+          "visible": true
+        },
+        {
+          "blockId": "sum--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "sum--code-3",
+          "visible": true
+        },
+        {
+          "blockId": "sum--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "sum--list-2",
+          "visible": false
+        },
+        {
+          "blockId": "sum--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "sum--paragraph-1--narration",
+        "sum--paragraph-2--narration",
+        "sum--paragraph-3--narration",
+        "sum--paragraph-4--narration",
+        "sum--list-2--narration"
+      ]
+    },
+    "sum--step-1": {
+      "id": "sum--step-1",
+      "sectionId": "sum",
+      "visuals": [
+        {
+          "blockId": "sum--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "sum--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        },
+        {
+          "blockId": "sum--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "sum--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "sum--code-2",
+          "visible": true
+        },
+        {
+          "blockId": "sum--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "sum--code-3",
+          "visible": true
+        },
+        {
+          "blockId": "sum--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "sum--list-2",
+          "visible": false
+        },
+        {
+          "blockId": "sum--paragraph-5",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "组件--step-0": {
+      "id": "组件--step-0",
+      "sectionId": "组件",
+      "visuals": [
+        {
+          "blockId": "组件--fixture-quiz-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "组件--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "组件--fixture-chart-1--preview",
+          "visible": true
+        },
+        {
+          "blockId": "组件--fixture-chart-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "组件--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "组件--fixture-canvas-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "组件--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "组件--paragraph-1--narration",
+        "组件--paragraph-2--narration",
+        "组件--paragraph-3--narration"
+      ]
+    },
+    "图--step-0": {
+      "id": "图--step-0",
+      "sectionId": "图",
+      "visuals": [
+        {
+          "blockId": "图--image-1",
+          "visible": true
+        },
+        {
+          "blockId": "图--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "图--fixture-clip-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": [
+        "图--paragraph-1--narration"
+      ]
+    },
+    "myst--step-0": {
+      "id": "myst--step-0",
+      "sectionId": "myst",
+      "visuals": [
+        {
+          "blockId": "myst--note-1",
+          "visible": true
+        },
+        {
+          "blockId": "myst--list-table-1",
+          "visible": true
+        },
+        {
+          "blockId": "myst--dropdown-1",
+          "visible": true
+        },
+        {
+          "blockId": "myst--energy",
+          "visible": true
+        },
+        {
+          "blockId": "myst--figure-1",
+          "visible": true
+        },
+        {
+          "blockId": "myst--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "myst--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "myst--table-1",
+          "visible": true
+        },
+        {
+          "blockId": "myst--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "myst--footnoteDefinition-1",
+          "visible": false
+        },
+        {
+          "blockId": "myst--embed-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "myst--paragraph-1--narration",
+        "myst--paragraph-2--narration",
+        "myst--paragraph-3--narration",
+        "myst--footnoteDefinition-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "笔记本示例--paragraph-2--narration": {
+      "id": "笔记本示例--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "本讲演示 notebook 渲染端：讲解成为 Markdown 单元格，代码成为可运行的单元格。"
+        }
+      ]
+    },
+    "sum--paragraph-1--narration": {
+      "id": "sum--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先用 Python 求 1 到 10 的和，公式是 n(n+1)/2，参见 高斯求和。"
+        }
+      ]
+    },
+    "sum--paragraph-2--narration": {
+      "id": "sum--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第一个单元格打印 total 的值，应当是 55。"
+        }
+      ]
+    },
+    "sum--paragraph-3--narration": {
+      "id": "sum--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二个单元格同时写标准输出与标准错误。"
+        }
+      ]
+    },
+    "sum--paragraph-4--narration": {
+      "id": "sum--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "讲解也可以是列表："
+        }
+      ]
+    },
+    "sum--list-2--narration": {
+      "id": "sum--list-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第一条讲解\n\n第二条讲解"
+        }
+      ]
+    },
+    "组件--paragraph-1--narration": {
+      "id": "组件--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "测验由插件的 notebook 扩展渲染。"
+        }
+      ]
+    },
+    "组件--paragraph-2--narration": {
+      "id": "组件--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "图表在 notebook 中降级为表格与数据的链接。"
+        }
+      ]
+    },
+    "组件--paragraph-3--narration": {
+      "id": "组件--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "画布没有 notebook 形式，构建报告会列出它。"
+        }
+      ]
+    },
+    "图--paragraph-1--narration": {
+      "id": "图--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "图片的路径相对于本文件；notebook 把图片复制到自己旁边。文件名中的 # 写作 %23：原始数据；转义不完整的地址原样保留："
+        }
+      ]
+    },
+    "myst--paragraph-1--narration": {
+      "id": "myst--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "水的化学式是 H2O，保存用 Ctrl。"
+        }
+      ]
+    },
+    "myst--paragraph-2--narration": {
+      "id": "myst--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "A coffee costs $5 and a cake $3, written with escaped dollars."
+        }
+      ]
+    },
+    "myst--paragraph-3--narration": {
+      "id": "myst--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "最后一句有脚注。"
+        }
+      ]
+    },
+    "myst--footnoteDefinition-1--narration": {
+      "id": "myst--footnoteDefinition-1--narration",
+      "content": []
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "组件--fixture-quiz-1--definition": {
+      "id": "组件--fixture-quiz-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.widgets",
+        "name": "FixtureQuiz"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.widgets",
+        "name": "FixtureQuiz"
+      }
+    },
+    "组件--fixture-chart-1--definition": {
+      "id": "组件--fixture-chart-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.widgets",
+        "name": "FixtureChart"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.widgets",
+        "name": "FixtureChart",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "table",
+              "children": [
+                {
+                  "type": "tableRow",
+                  "children": [
+                    {
+                      "type": "tableCell",
+                      "header": true,
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "年份"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "header": true,
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "数量"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "children": [
+                    {
+                      "type": "tableCell",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "2024"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "3"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "link",
+                  "url": "figures/data.csv",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "下载数据"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "组件--fixture-canvas-1--definition": {
+      "id": "组件--fixture-canvas-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.widgets",
+        "name": "FixtureCanvas"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.widgets",
+        "name": "FixtureCanvas"
+      }
+    },
+    "图--fixture-clip-1--definition": {
+      "id": "图--fixture-clip-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.widgets",
+        "name": "FixtureClip"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.widgets",
+        "name": "FixtureClip",
+        "assets": {
+          "src": "figures/clip.webm"
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

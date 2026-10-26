@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "id": "document-b57c4982a97a5c48",
+  "metadata": {
+    "title": "乙文档",
+    "lang": "zh-CN",
+    "tags": [
+      "进阶"
+    ],
+    "plugins": [
+      "../plugin"
+    ],
+    "presmium": {
+      "fixture.workspaceVite": {
+        "message": "beta-vite"
+      }
+    }
+  },
+  "sectionOrder": [
+    "概览",
+    "更多"
+  ],
+  "sections": {
+    "概览": {
+      "id": "概览",
+      "title": "概览",
+      "level": 1,
+      "children": [
+        "概览--paragraph-1"
+      ],
+      "stepOrder": [
+        "概览--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "更多": {
+      "id": "更多",
+      "title": "更多",
+      "level": 1,
+      "children": [
+        "更多--paragraph-1"
+      ],
+      "stepOrder": [
+        "更多--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "概览--paragraph-1": {
+      "id": "概览--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "概览--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "乙文档讲 quokkaland，并且链接到"
+            },
+            {
+              "type": "link",
+              "href": "../alpha/lecture.json",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "甲文档"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。"
+            }
+          ]
+        }
+      ]
+    },
+    "更多--paragraph-1": {
+      "id": "更多--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "更多--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "乙文档的第二章。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "概览--step-0": {
+      "id": "概览--step-0",
+      "sectionId": "概览",
+      "visuals": [
+        {
+          "blockId": "概览--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "概览--paragraph-1--narration"
+      ]
+    },
+    "更多--step-0": {
+      "id": "更多--step-0",
+      "sectionId": "更多",
+      "visuals": [
+        {
+          "blockId": "更多--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "更多--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "概览--paragraph-1--narration": {
+      "id": "概览--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "乙文档讲 quokkaland，并且链接到甲文档。"
+        }
+      ]
+    },
+    "更多--paragraph-1--narration": {
+      "id": "更多--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "乙文档的第二章。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

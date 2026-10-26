@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "id": "document-fbf3620de7a2bd19",
+  "metadata": {
+    "title": "网页站点",
+    "lang": "zh-CN",
+    "plugins": [
+      "./plugin"
+    ],
+    "presmium": {
+      "fixture.site": {
+        "message": "来自文稿的配置"
+      }
+    },
+    "renderers": {
+      "web": {
+        "package": "../../.."
+      }
+    }
+  },
+  "sectionOrder": [
+    "网页站点",
+    "only"
+  ],
+  "sections": {
+    "网页站点": {
+      "id": "网页站点",
+      "title": "网页站点",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "网页站点--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "only": {
+      "id": "only",
+      "title": "唯一一节",
+      "level": 2,
+      "children": [
+        "only--paragraph-1",
+        "only--image-1",
+        "only--paragraph-2"
+      ],
+      "stepOrder": [
+        "only--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "only--paragraph-1": {
+      "id": "only--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "only--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "公式 "
+            },
+            {
+              "type": "math",
+              "value": "x^2 + y^2 = z^2"
+            },
+            {
+              "type": "text",
+              "text": " 在构建时渲染，图表随站点发布："
+            }
+          ]
+        }
+      ]
+    },
+    "only--image-1": {
+      "id": "only--image-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "only--image-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "image",
+              "url": "img/chart.svg",
+              "alt": "图表"
+            }
+          },
+          "fallback": []
+        }
+      ]
+    },
+    "only--paragraph-2": {
+      "id": "only--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "only--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本节的"
+            },
+            {
+              "type": "link",
+              "href": "docs/handout.pdf",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "讲义"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "与"
+            },
+            {
+              "type": "link",
+              "href": "notes.txt",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "笔记"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "随站点发布；"
+            },
+            {
+              "type": "link",
+              "href": "bad%E0%A4.pdf",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "写坏的链接"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "保持原样。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "网页站点--step-0": {
+      "id": "网页站点--step-0",
+      "sectionId": "网页站点",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "only--step-0": {
+      "id": "only--step-0",
+      "sectionId": "only",
+      "visuals": [
+        {
+          "blockId": "only--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "only--image-1",
+          "visible": true
+        },
+        {
+          "blockId": "only--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "only--paragraph-1--narration",
+        "only--paragraph-2--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "only--paragraph-1--narration": {
+      "id": "only--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "公式 x^2 + y^2 = z^2 在构建时渲染，图表随站点发布："
+        }
+      ]
+    },
+    "only--paragraph-2--narration": {
+      "id": "only--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "本节的讲义与笔记随站点发布；写坏的链接保持原样。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
