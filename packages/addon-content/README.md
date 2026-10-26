@@ -19,6 +19,15 @@ It is a Presmium plugin: its components work on the web page and in the slides. 
 - Mind maps, media with multilingual captions, and diagrams through component definitions.
 - Structured component data and readable static fallbacks, with files localized into `.presmium/assets/` when required.
 
+Native `PmMedia` video and audio keep the browser's controls and clock. Playback joins the runtime's
+shared playback lease: starting another player pauses the previous one, and a pending start cannot
+resume after navigation, cancellation or removal. Playback failures appear in the shared notice.
+
+The document editor's initial positioning pauses media; if it cancels autoplay, use the native Play
+control to start through the same authorization. Ordinary reading keeps native autoplay subject to
+browser policy. Pausing media stays paused across step navigation. This coordination applies to
+native video and audio; it does not control cross-origin YouTube players.
+
 ## Documentation
 
 - [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/locales/en/lecture.json) (Chinese: `site/guide/lecture.json`)
