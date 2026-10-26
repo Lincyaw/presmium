@@ -91,7 +91,6 @@ export function apply(ctx: DshClientContext): void {
         triggers[triggers.length - 1]?.click()
       }
       const disposePanelInfo = ctx.slots.provideRoot({ hooks: { panelInfo: layout.panelInfo } })
-      const disposeService = ctx.reflect.provide('layout', layout)
       const disposeRoot = ctx.slots.register({ name: 'root', locale: 'common', children: {
         ...ROOT_CHILDREN,
         ...(isBootEntryLoaded(UI_SIDEBAR) ? {} : { 'sidebar.panellist': { kind: 'list', scope: 'root' } as const }),
@@ -102,6 +101,7 @@ export function apply(ctx: DshClientContext): void {
         dshWorkspaces,
         globalPanels,
       }))
+      const disposeService = ctx.reflect.provide('layout', layout)
       const binding = { code: 'KeyB', modifiers: ['primary', 'alt'] }
       const disposeShortcut = ctx.shortcuts.register({
         id: 'sidebar.left.toggle',
@@ -125,9 +125,9 @@ export function apply(ctx: DshClientContext): void {
         disposeShortcut()
         layout.dispose()
         disposePanels()
+        disposeService()
         disposeRoot()
         disposePanelInfo()
-        disposeService()
       }
     }, 'presmium: the root layout and ctx.layout')
   }
