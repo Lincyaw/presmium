@@ -46,6 +46,7 @@ function traceLength(code: string, args: Record<string, string>, maxEvents: numb
 /** Warns when a step run declares another number of steps than the lines its code executes. */
 export const stepCountPass: IRPass = {
   name: 'presmium.exec.steps',
+  order: 20,
   async run(doc, ctx) {
     if (!pythonExecutor.supports('python')) return
     const { maxTraceEvents } = execConfig(ctx.config)
