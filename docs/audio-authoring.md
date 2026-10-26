@@ -4,6 +4,10 @@
 
 以下工作区路由均要求编辑者权限。参数 `document` 仍按既有工作区协议指定文稿目录，所有回执绑定该目录和保存版本。公开类型在 `packages/kernel/src/contracts/production-assets.ts`。
 
+浏览器通过 Studio 的 `api/presmium/document/audio` 与 `api/presmium/document/media-clip` 访问同一组路由。代理保留 multipart 的 Content-Type 边界和原始字节，不将文件转为 JSON。Workbench 先暂停、确认当前来源与保存状态，再发起写入；回执后重新读取原文稿的权威来源，不直接用旧回执替换当前输入。
+
+失败导入的显式重试使用同一个内存 File 和请求意图。意图只在通过最终来源屏障、实际发请求时创建；首次明确的 4xx 拒绝可重新发起，已经发送但结果不明的请求继续使用原 ID 与基线，避免重复导入。切换文稿后，旧请求不能改动新目标的输入或选择。
+
 ## 导入原始文件
 
 `POST document/audio` 使用 multipart 的两个字段：
