@@ -297,6 +297,7 @@
 }
 
 .pmw-document__aside {
+  box-sizing: border-box;
   display: flex;
   flex: 0 0 min(var(--pm-aside-width), 38%);
   flex-direction: column;

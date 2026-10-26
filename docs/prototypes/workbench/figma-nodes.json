@@ -701,7 +701,23 @@
     },
     "P08": {
       "nodeId": "9:10",
-      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-10"
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-10",
+      "narrationAside": {
+        "states": {
+          "Empty": "117:4093",
+          "Filled": "117:4164"
+        },
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=117-4093",
+        "implementation": "packages/workbench/src/panels/DocumentNarrationPanel.tsx",
+        "entry": "Document toolbar captions icon; source section and stable step stay in document editing.",
+        "reuses": [
+          "NarrationEditor",
+          "Timing",
+          "IconButtonCompact",
+          "FieldControlCompact"
+        ],
+        "asideWidthVariableId": "VariableID:117:4092"
+      }
     },
     "P09": {
       "nodeId": "9:11",

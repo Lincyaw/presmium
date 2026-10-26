@@ -6,6 +6,7 @@ import { isAgentChanging } from '../workbench.ts'
 import { NarrationEditor } from './NarrationEditor.tsx'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
 import { narrationFieldFocus } from './narration.ts'
+import type { NativeNarrationEditor } from './narration-schema.tsx'
 import { StepProductionEditor } from '../StepProductionEditor.tsx'
 
 /** Content ownership determines the page, even when the author is reading another page. */
@@ -23,27 +24,34 @@ export function narrationDisplay(content: readonly NarrationNode[]): string {
 }
 
 function NarrationField({ identity, reset, blockId, stepId, slot, narrationId, content, readOnly, onPause }: {
-  identity: string, reset: number, blockId: string, stepId: string, slot: number, narrationId?: string, content: NarrationNode[], readOnly: boolean, onPause(): void,
+  identity: string, reset: number, blockId?: string, stepId: string, slot: number, narrationId?: string, content: NarrationNode[], readOnly: boolean, onPause(): void,
 }) {
   const workbench = useWorkbench(), locale = useWorkbenchState(state => state.locale)
   // Reserving an identity does not create an entity. The first actual input commits it.
-  const [id] = useState(() => narrationId ?? workbench.pendingDocumentField(blockId, identity)?.narrationId ?? crypto.randomUUID())
+  const [reservedId] = useState(() => {
+    const pending = workbench.pendingDocumentField(blockId, identity)
+    return narrationId ?? (pending?.stepId === stepId ? pending.narrationId : undefined) ?? crypto.randomUUID()
+  })
+  const id = narrationId ?? reservedId
+  const target = () => narrationId ?? workbench.getDocument(identity)?.steps[stepId]?.narrationIds[slot] ?? id
   const registration = useRef<() => void>()
-  const owner = `narration:${identity}:${stepId}:${id}`
+  const fieldEditor = useRef<NativeNarrationEditor>()
+  const owner = `narration:${identity}:${reset}:${JSON.stringify(blockId ?? null)}:${stepId}:${slot}:${id}`
   return <NarrationEditor identity={identity} reset={reset} narrationId={id} content={content} locale={locale} readOnly={readOnly}
-    getContent={() => { const document = workbench.getDocument(identity); return document ? document.narrations[id]?.content ?? [] : undefined }}
+    getContent={() => { const document = workbench.getDocument(identity); return document ? document.narrations[target()]?.content ?? [] : undefined }}
     onReady={editor => {
       registration.current?.()
-      registration.current = editor ? workbench.registerDocumentField({ identity, reset, blockId, stepId, narrationId: id, slot, focus: narrationFieldFocus(editor) }) : undefined
+      fieldEditor.current = editor
+      registration.current = editor ? workbench.registerDocumentField({ identity, reset, blockId, stepId, narrationId: id, slot, focus: narrationFieldFocus(editor), editor }) : undefined
     }}
-    onFocus={() => { workbench.documentInteraction(); onPause() }} onChange={value => workbench.setDocumentNarration(stepId, id, value, identity)}
+    onFocus={() => { workbench.documentInteraction(); if (fieldEditor.current) workbench.activateDocumentHistory(fieldEditor.current); onPause() }} onChange={value => workbench.setDocumentNarration(stepId, target(), value, identity)}
     onComposition={composing => workbench.documentComposition(composing, owner, identity)}
     onError={error => workbench.documentError(error)} />
 }
 
 /** Captions are a view of the current step's canonical narration, including unsaved input. */
 export function DocumentStepNarration({ blockId, sectionId, stepId, expanded, panelId, onPause }: {
-  blockId: string, sectionId: string, stepId: string, expanded: boolean, panelId: string, onPause(): void,
+  blockId?: string, sectionId: string, stepId: string, expanded: boolean, panelId: string, onPause(): void,
 }) {
   const workbench = useWorkbench(), source = useWorkbenchState(state => state.authoring)
   const locale = useWorkbenchState(state => state.locale), t = DOCUMENT_EDITOR_MESSAGES[locale]
@@ -72,7 +80,7 @@ export function DocumentStepNarration({ blockId, sectionId, stepId, expanded, pa
       {(ids.length ? ids : [undefined]).map((id, slot) => <NarrationField key={`${source.identity}:${source.reset}:${stepId}:${slot}`}
         identity={source.identity!} reset={source.reset} blockId={blockId} stepId={stepId} slot={slot} narrationId={id}
         content={id ? document.narrations[id]?.content ?? [] : []} readOnly={readOnly} onPause={onPause} />)}
-      <p className="pm-ui-block-preview__narration-hint">{t.narrationHint}</p>
+      <span className="pm-ui-block-preview__narration-hint">{t.narrationHint}</span>
       <StepProductionEditor key={`${source.identity}:${source.reset}:${stepId}`} document={document} stepId={stepId} locale={locale} readOnly={readOnly}
         onPause={onPause} onInteraction={() => workbench.documentInteraction()}
         onChange={patch => workbench.setDocumentStepProduction(stepId, patch, source.identity)}

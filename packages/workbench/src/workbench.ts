@@ -6,7 +6,7 @@ import type { NarrationNode, TeachingDocument } from '@lincyaw/kernel'
 import type { NativeDocumentEditor } from './document-editor/schema.tsx'
 import { nativeTextPoint, nativeTextPosition } from './document-editor/selection.ts'
 import type { NativeTextPoint } from './document-editor/selection.ts'
-import type { DocumentFieldBookmark, DocumentFieldRegistration } from './document-editor/focus.ts'
+import type { DocumentFieldBookmark, DocumentFieldRegistration, DocumentHistoryEditor } from './document-editor/focus.ts'
 import { pageDeletion, removeDocumentPage } from './document-pages.ts'
 import { changeStepTiming } from './step-production.ts'
 import type { StepDurationDraft, StepDurationKey, StepTimingPatch } from './step-production.ts'
@@ -132,7 +132,7 @@ export interface PreviewSink {
   send(command: PreviewCommand): void
 }
 
-export interface EditorHistoryState { section: string, undo: boolean, redo: boolean }
+export interface EditorHistoryState { section: string, undo: boolean, redo: boolean, field?: boolean }
 
 type Listener = () => void
 
@@ -212,13 +212,14 @@ export class Workbench {
   readonly #removedCueTimings = new Map<string, { pauseMs: number }>()
   #cueTimingScope?: string
   #documentEditor?: NativeDocumentEditor
-  #unsubscribeEditor?: () => void
+  #activeDocumentHistory?: DocumentHistoryEditor
+  #unsubscribeDocumentHistory?: () => void
   #unsubscribeDocumentSelection?: () => void
   #documentSelectionGeneration = 0
   #pendingDocumentFocus?: { documentId: string, nodeId: string, generation: number }
   #pendingDocumentSelection?: { documentId: string, anchor: NativeTextPoint, head: NativeTextPoint, focused: boolean }
   readonly #documentFields = new Map<string, DocumentFieldRegistration>()
-  #pendingDocumentField?: { field: Omit<DocumentFieldRegistration, 'focus'>, bookmark: DocumentFieldBookmark, reset: number, generation: number }
+  #pendingDocumentField?: { field: Omit<DocumentFieldRegistration, 'focus' | 'editor'>, bookmark: DocumentFieldBookmark, reset: number, generation: number }
   #state: WorkbenchState
   readonly #listeners = new Set<Listener>()
   readonly #positionSeed = Array.from(crypto.getRandomValues(new Uint32Array(2)), value => value.toString(36)).join('-')
@@ -280,7 +281,9 @@ export class Workbench {
     this.#documentSession = new DocumentSession(this.client, authoring => {
       if (this.#state.document !== authoring.directory) return
       const pendingField = this.#pendingDocumentField
-      if (pendingField && (pendingField.field.identity !== authoring.identity || authoring.reset > pendingField.reset || !authoring.content?.blocks[pendingField.field.blockId])) this.#pendingDocumentField = undefined
+      if (pendingField && (pendingField.field.identity !== authoring.identity || authoring.reset > pendingField.reset
+        || pendingField.field.blockId !== undefined && !authoring.content?.blocks[pendingField.field.blockId]
+        || !authoring.content?.steps[pendingField.field.stepId])) this.#pendingDocumentField = undefined
       const cueTimingScope = JSON.stringify([authoring.identity, authoring.reset])
       if (this.#cueTimingScope !== cueTimingScope) { this.#removedCueTimings.clear(); this.#cueTimingScope = cueTimingScope }
       const previous = this.#state.authoring
@@ -725,7 +728,7 @@ export class Workbench {
   discardDocument(): Promise<void> { return this.#documentSession.discard() }
   documentError(error: Error): void { this.#set({ save: { kind: 'failed', message: error.message } }) }
   documentInteraction(): void { this.#documentSelectionGeneration++ }
-  pendingDocumentField(blockId: string, identity?: string): Pick<DocumentFieldRegistration, 'stepId' | 'narrationId' | 'slot'> | undefined {
+  pendingDocumentField(blockId: string | undefined, identity?: string): Pick<DocumentFieldRegistration, 'stepId' | 'narrationId' | 'slot'> | undefined {
     const pending = this.#pendingDocumentField, source = this.#state.authoring
     return pending && pending.generation === this.#documentSelectionGeneration && pending.field.blockId === blockId
       && pending.field.identity === (identity ?? source?.identity) && pending.reset === source?.reset ? pending.field : undefined
@@ -739,11 +742,26 @@ export class Workbench {
       this.#pendingDocumentField = undefined
       if (pending.generation === this.#documentSelectionGeneration && field.identity === this.#state.authoring?.identity && field.reset === this.#state.authoring.reset) field.focus.restore(pending.bookmark)
     }
-    return () => { if (this.#documentFields.get(key) === field) this.#documentFields.delete(key) }
+    return () => {
+      if (this.#documentFields.get(key) !== field) return
+      this.#documentFields.delete(key)
+      if (field.editor && this.#activeDocumentHistory === field.editor) this.activateDocumentHistory(this.#documentEditor)
+    }
+  }
+  /** Toolbar commands use the focused native editor's own history, without replacing the body editor. */
+  activateDocumentHistory(editor: DocumentHistoryEditor | undefined): void {
+    if (editor && editor !== this.#documentEditor && ![...this.#documentFields.values()].some(field => field.editor === editor && field.identity === this.#state.authoring?.identity)) return
+    if (editor === this.#activeDocumentHistory) return
+    this.#unsubscribeDocumentHistory?.()
+    this.#activeDocumentHistory = editor
+    const update = () => this.#set({ editorHistory: editor ? { section: this.#state.position?.section ?? '', undo: undoDepth(editor.prosemirrorState) > 0, redo: redoDepth(editor.prosemirrorState) > 0, field: editor !== this.#documentEditor } : undefined })
+    this.#unsubscribeDocumentHistory = editor?.onChange(update)
+    update()
   }
   attachDocumentEditor(editor: NativeDocumentEditor | undefined): void {
+    const wasBody = !this.#activeDocumentHistory || this.#activeDocumentHistory === this.#documentEditor
     if (editor !== this.#documentEditor) this.#documentSession.composition(false, 'body')
-    this.#unsubscribeEditor?.(); this.#unsubscribeDocumentSelection?.(); this.#documentEditor = editor
+    this.#unsubscribeDocumentSelection?.(); this.#documentEditor = editor
     if (editor) {
       const focus = this.#pendingDocumentFocus, selection = this.#pendingDocumentSelection
       this.#pendingDocumentFocus = undefined; this.#pendingDocumentSelection = undefined
@@ -757,9 +775,15 @@ export class Workbench {
         }
       }
     }
-    const update = () => this.#set({ editorHistory: editor ? { section: this.#state.position?.section ?? '', undo: undoDepth(editor.prosemirrorState) > 0, redo: redoDepth(editor.prosemirrorState) > 0 } : undefined })
-    this.#unsubscribeEditor = editor?.onChange(update); update()
-    this.#unsubscribeDocumentSelection = editor?.onSelectionChange(() => { this.#documentSelectionGeneration++ })
+    if (wasBody) this.activateDocumentHistory(editor)
+    if (editor) {
+      const focus = () => this.activateDocumentHistory(editor)
+      const element = editor.prosemirrorView.dom
+      element.addEventListener('focusin', focus)
+      if (editor.prosemirrorView.hasFocus()) focus()
+      const stopSelection = editor.onSelectionChange(() => { this.#documentSelectionGeneration++ })
+      this.#unsubscribeDocumentSelection = () => { stopSelection(); element.removeEventListener('focusin', focus) }
+    } else this.#unsubscribeDocumentSelection = undefined
   }
   async flushPendingEdits(): Promise<void> {
     if (isAgentChanging(this.#state)) throw new Error('save-locked')
@@ -778,10 +802,10 @@ export class Workbench {
       this.#pendingDocumentField = undefined
       const plannedFocus = this.#pendingDocumentFocus
       if (!plannedFocus || plannedFocus.generation !== this.#documentSelectionGeneration) for (const field of this.#documentFields.values()) {
-        if (field.identity !== source.identity || field.reset !== this.#state.authoring!.reset || !document.blocks[field.blockId] || !document.steps[field.stepId]) continue
+        if (field.identity !== source.identity || field.reset !== this.#state.authoring!.reset || field.blockId !== undefined && !document.blocks[field.blockId] || !document.steps[field.stepId]) continue
         const bookmark = field.focus.capture()
         if (bookmark) {
-          const { focus: _focus, ...target } = field
+          const { focus: _focus, editor: _editor, ...target } = field
           this.#pendingDocumentField = { field: target, bookmark, reset: this.#state.authoring!.reset + 1, generation: this.#documentSelectionGeneration }
           this.#pendingDocumentSelection = undefined
           break
@@ -1001,8 +1025,8 @@ export class Workbench {
     return true
   }
 
-  undo(): Promise<boolean> { if (this.#state.mode !== 'editing') return Promise.resolve(false); if (this.#documentEditor && this.#state.editorHistory?.undo) return Promise.resolve(this.#documentEditor.undo()); return this.#changeHistory('undo') }
-  redo(): Promise<boolean> { if (this.#state.mode !== 'editing') return Promise.resolve(false); if (this.#documentEditor && this.#state.editorHistory?.redo) return Promise.resolve(this.#documentEditor.redo()); return this.#changeHistory('redo') }
+  undo(): Promise<boolean> { if (this.#state.mode !== 'editing') return Promise.resolve(false); if (this.#activeDocumentHistory && (this.#state.editorHistory?.undo || this.#state.editorHistory?.field)) { this.#activeDocumentHistory.focus(); return Promise.resolve(this.#activeDocumentHistory.undo()) } return this.#changeHistory('undo') }
+  redo(): Promise<boolean> { if (this.#state.mode !== 'editing') return Promise.resolve(false); if (this.#activeDocumentHistory && (this.#state.editorHistory?.redo || this.#state.editorHistory?.field)) { this.#activeDocumentHistory.focus(); return Promise.resolve(this.#activeDocumentHistory.redo()) } return this.#changeHistory('redo') }
 
   async #changeHistory(action: 'undo' | 'redo' | 'revert', revision?: string): Promise<boolean> {
     if (this.#state.mode !== 'editing' || this.#state.isCreatingPage || this.#state.isEditingPage || this.#state.isHistoryBusy || this.#state.isHistoryPreparing) return false
@@ -1147,7 +1171,7 @@ export class Workbench {
   #stopSubscriptions(): void {
     this.#removedCueTimings.clear(); this.#cueTimingScope = undefined
     this.#documentSession.close()
-    this.#unsubscribeEditor?.(); this.#unsubscribeEditor = undefined; this.#documentEditor = undefined
+    this.#unsubscribeDocumentHistory?.(); this.#unsubscribeDocumentHistory = undefined; this.#activeDocumentHistory = undefined; this.#documentEditor = undefined
     this.#unsubscribeDocumentSelection?.(); this.#unsubscribeDocumentSelection = undefined
     this.#pendingDocumentFocus = undefined; this.#pendingDocumentSelection = undefined; this.#documentSelectionGeneration++
     this.#documentFields.clear(); this.#pendingDocumentField = undefined
