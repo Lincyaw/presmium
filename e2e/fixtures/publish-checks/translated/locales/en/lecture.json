@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 1,
+  "id": "document-acdc951767b737d1",
+  "metadata": {
+    "title": "Audiences and translations",
+    "lang": "en",
+    "plugins": [
+      "@lincyaw/addon-exec"
+    ],
+    "renderers": {
+      "web": {}
+    },
+    "translationOf": {
+      "entry": "../../lecture.json",
+      "digest": "0b7b6d238dd8600c65d4564af104e9da086288c98c9b09916efe44193da70c4f"
+    }
+  },
+  "sectionOrder": [
+    "audiences-and-translations",
+    "merge",
+    "guide",
+    "practice"
+  ],
+  "sections": {
+    "audiences-and-translations": {
+      "id": "audiences-and-translations",
+      "title": "Audiences and translations",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "audiences-and-translations--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "merge": {
+      "id": "merge",
+      "title": "Merge rules",
+      "level": 2,
+      "children": [
+        "merge--paragraph-1",
+        "merge--paragraph-2"
+      ],
+      "stepOrder": [
+        "merge--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "guide": {
+      "id": "guide",
+      "title": "Guide for teachers",
+      "level": 2,
+      "children": [
+        "guide--paragraph-1"
+      ],
+      "stepOrder": [
+        "guide--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      },
+      "audience": [
+        "teacher"
+      ]
+    },
+    "practice": {
+      "id": "practice",
+      "title": "Practice",
+      "level": 2,
+      "children": [
+        "practice--paragraph-1"
+      ],
+      "stepOrder": [
+        "practice--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "merge--paragraph-1": {
+      "id": "merge--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "When two branches change the same line, the merge conflicts; the student keyword is STUDENTEN."
+            }
+          ]
+        }
+      ]
+    },
+    "merge--paragraph-2": {
+      "id": "merge--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Note for teachers: unplug the network before the demo, password TEACHEREN41."
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ],
+      "audience": [
+        "teacher"
+      ]
+    },
+    "guide--paragraph-1": {
+      "id": "guide--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "guide--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This whole section is only for teachers, password GUIDEEN52."
+            }
+          ]
+        }
+      ]
+    },
+    "practice--paragraph-1": {
+      "id": "practice--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "practice--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Learners resolve a conflict on their own."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "audiences-and-translations--step-0": {
+      "id": "audiences-and-translations--step-0",
+      "sectionId": "audiences-and-translations",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "merge--step-0": {
+      "id": "merge--step-0",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "merge--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "merge--paragraph-1--narration"
+      ]
+    },
+    "guide--step-0": {
+      "id": "guide--step-0",
+      "sectionId": "guide",
+      "visuals": [
+        {
+          "blockId": "guide--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "guide--paragraph-1--narration"
+      ]
+    },
+    "practice--step-0": {
+      "id": "practice--step-0",
+      "sectionId": "practice",
+      "visuals": [
+        {
+          "blockId": "practice--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "practice--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "merge--paragraph-1--narration": {
+      "id": "merge--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "When two branches change the same line, the merge conflicts; the student keyword is STUDENTEN."
+        }
+      ]
+    },
+    "guide--paragraph-1--narration": {
+      "id": "guide--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "This whole section is only for teachers, password GUIDEEN52."
+        }
+      ]
+    },
+    "practice--paragraph-1--narration": {
+      "id": "practice--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Learners resolve a conflict on their own."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

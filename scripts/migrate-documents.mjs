@@ -12,6 +12,8 @@ const { values, positionals } = parseArgs({ allowPositionals: true, options: {
   output: { type: 'string', default: '.presmium/migrated-documents' },
   'local-code-root': { type: 'boolean', default: false },
   'allow-diagnostic': { type: 'string', multiple: true },
+  'value-map': { type: 'string' },
+  translation: { type: 'string' },
   continue: { type: 'boolean', default: false }, 'plugin-map': { type: 'string' },
   apply: { type: 'boolean', default: false }, workspace: { type: 'boolean', default: false }, help: { type: 'boolean', short: 'h' },
 } })
@@ -22,6 +24,9 @@ if (values.help || !values.legacy || !positionals.length) {
 if (values.continue && values.apply) throw new Error('--continue is only available for dry-run inventory; apply a validated group without it.')
 const pluginMap = values['plugin-map'] ? JSON.parse(values['plugin-map']) : {}
 if (!pluginMap || Array.isArray(pluginMap) || typeof pluginMap !== 'object' || Object.values(pluginMap).some(value => typeof value !== 'string')) throw new Error('--plugin-map expects an object of original plugin names to actual project paths.')
+const valueMap = values['value-map'] ? JSON.parse(values['value-map']) : {}
+if (!valueMap || Array.isArray(valueMap) || typeof valueMap !== 'object' || Object.values(valueMap).some(value => !['string', 'number', 'boolean'].includes(typeof value))) throw new Error('--value-map expects exact fixture placeholders mapped to actual scalar values.')
+const prepared = value => typeof value === 'string' ? Object.hasOwn(valueMap, value) ? valueMap[value] : value : Array.isArray(value) ? value.map(prepared) : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, prepared(item)])) : value
 const legacy = realpathSync(resolve(values.legacy)), destination = realpathSync(resolve(values.root))
 if (legacy === destination) throw new Error('Migration requires a separate legacy checkout with independently linked dependencies.')
 const sourceRoot = values.source ? realpathSync(resolve(values.source)) : legacy
@@ -38,6 +43,8 @@ const { BUILTIN_DIRECTIVES } = await jiti.import(join(legacy, 'packages/compiler
 const { mapHtmlUrls } = await jiti.import(fileURLToPath(new URL('../packages/kernel/src/html.ts', import.meta.url)))
 const { parseDuration } = await jiti.import(fileURLToPath(new URL('../packages/kernel/src/durations.ts', import.meta.url)))
 const { validateDocument, DOCUMENT_ENTRY } = await jiti.import(fileURLToPath(new URL('../packages/kernel/src/document.ts', import.meta.url)))
+const { documentDigest } = await jiti.import(fileURLToPath(new URL('../packages/compiler/src/translations.ts', import.meta.url)))
+if (values.translation && !/^[\w-]+$/.test(values.translation)) throw new Error('--translation expects a language tag without path segments.')
 const hash = text => createHash('sha256').update(text).digest('hex')
 const clone = value => JSON.parse(JSON.stringify(value))
 const json = value => JSON.stringify(value, null, 2) + '\n'
@@ -49,10 +56,13 @@ if (workspace) {
 }
 for (const name of positionals) {
   try {
-  const sourceDir = resolve(sourceRoot, name), targetDir = resolve(destination, name)
+  const sourceDir = resolve(sourceRoot, name), targetDir = resolve(destination, name, ...values.translation ? ['locales', values.translation] : [])
   if (relative(sourceRoot, sourceDir).startsWith('..') || relative(destination, targetDir).startsWith('..')) throw new Error(`Document lies outside migration roots: ${name}`)
-  const entry = join(sourceDir, 'lecture.md'), before = await readFile(entry, 'utf8')
   const parser = new Parser(BUILTIN_DIRECTIVES)
+  const original = values.translation ? await parser.read(join(sourceDir, 'lecture.md')) : undefined
+  const inputEntry = values.translation ? original?.frontmatter.translations?.[values.translation] : 'lecture.md'
+  if (typeof inputEntry !== 'string' || relative(sourceDir, resolve(sourceDir, inputEntry)).startsWith('..')) throw new Error(`${name}: translation is not declared inside the original document.`)
+  const entry = resolve(sourceDir, inputEntry), before = await readFile(entry, 'utf8')
   const parsed = await parser.read(entry)
   const start = performance.now()
   let workspaceRoot = await findWorkspaceRoot(sourceDir)
@@ -61,19 +71,30 @@ for (const name of positionals) {
     if (candidate === sourceRoot || candidate === dirname(candidate)) break
   }
   if (values['local-code-root']) workspaceRoot = sourceDir
-  const plugins = parsed.frontmatter.plugins?.map(name => pluginMap[name] ?? name)
-  const frontmatter = { ...parsed.frontmatter, ...plugins ? { plugins } : {} }
-  const compilation = await new Compiler(sourceDir, { workspaceRoot, bundled: join(legacy, 'packages/presmium'), ...plugins ? { headmatter: { plugins } } : {} }).compile({ signal: AbortSignal.timeout(30_000) })
+  const frontmatter = prepared({ ...values.translation ? Object.fromEntries(['plugins', 'presmium', 'renderers', 'execute', 'checks'].filter(key => original.frontmatter[key] !== undefined).map(key => [key, original.frontmatter[key]])) : {}, ...parsed.frontmatter })
+  if (frontmatter.plugins) frontmatter.plugins = frontmatter.plugins.map(name => pluginMap[name] ?? name)
+  const compilation = await new Compiler(entry, { deckDir: sourceDir, workspaceRoot, bundled: join(legacy, 'packages/presmium'), headmatter: frontmatter }).compile({ signal: AbortSignal.timeout(30_000) })
   const errors = compilation.doc.diagnostics.filter(d => d.severity === 'error')
   if (errors.some(error => !values['allow-diagnostic']?.includes(error.checkId))) throw new Error(`${name}: legacy compilation failed: ${json(errors)}`)
-  const migrated = convert(compilation.doc, frontmatter, sourceDir, name, values['local-code-root'] ? relative(await findWorkspaceRoot(targetDir), targetDir).split('\\').join('/') : undefined)
+  const outputName = relative(destination, targetDir).split('\\').join('/')
+  const migrated = convert(compilation.doc, frontmatter, values.translation ? join(sourceDir, 'locales', values.translation) : sourceDir, outputName, values['local-code-root'] ? relative(await findWorkspaceRoot(targetDir), targetDir).split('\\').join('/') : undefined)
+  if (values.translation) {
+    const fromOriginal = value => typeof value === 'string' && value.startsWith('.') ? relative(targetDir, resolve(destination, name, value)).split('\\').join('/') : value
+    if (migrated.metadata.plugins) migrated.metadata.plugins = migrated.metadata.plugins.map(fromOriginal)
+    for (const renderer of Object.values(migrated.metadata.renderers ?? {})) {
+      if (renderer.package) renderer.package = fromOriginal(renderer.package)
+      if (typeof renderer.head?.image === 'string' && !/^(?:[a-z][a-z0-9+.-]*:|\/|#)/i.test(renderer.head.image)) renderer.head.image = relative(targetDir, resolve(destination, name, renderer.head.image)).split('\\').join('/')
+    }
+    migrated.metadata.translationOf = { entry: '../../lecture.json', digest: documentDigest(JSON.parse(await readFile(resolve(destination, name, DOCUMENT_ENTRY), 'utf8'))) }
+    delete migrated.metadata.translations
+  }
   const validation = validateDocument(migrated)
   if (!validation.document) throw new Error(`${name}: normalized document is invalid: ${json(validation.issues)}`)
-  const targetText = json(migrated), dryDir = join(resolve(values.output), name)
+  const targetText = json(migrated), dryDir = join(resolve(values.output), outputName)
   await mkdir(dryDir, { recursive: true })
   await writeFile(join(dryDir, DOCUMENT_ENTRY), targetText)
   await writeFile(join(dryDir, 'legacy-runtime.json'), json(compilation.doc))
-  const record = { document: name, before: hash(before), after: hash(targetText), sections: migrated.sectionOrder.length, blocks: Object.keys(migrated.blocks).length, steps: Object.keys(migrated.steps).length, narrations: Object.keys(migrated.narrations).length, definitions: Object.keys(migrated.definitions).length, sourceFiles: compilation.sourceFiles.map(file => relative(sourceDir, file)), diagnostics: validation.issues, ...errors.length ? { legacyErrors: errors } : {}, ms: performance.now() - start, applied: false }
+  const record = { document: outputName, ...values.translation ? { inputDocument: name, sourceEntry: relative(destination, resolve(destination, name, inputEntry)), locale: values.translation } : {}, before: hash(before), after: hash(targetText), sections: migrated.sectionOrder.length, blocks: Object.keys(migrated.blocks).length, steps: Object.keys(migrated.steps).length, narrations: Object.keys(migrated.narrations).length, definitions: Object.keys(migrated.definitions).length, sourceFiles: compilation.sourceFiles.map(file => relative(sourceDir, file)), diagnostics: validation.issues, ...errors.length ? { legacyErrors: errors } : {}, ms: performance.now() - start, applied: false }
   const dependencyFiles = new Set(compilation.sourceFiles)
   const collect = block => {
     if (block.node.definition?.file) dependencyFiles.add(block.node.definition.file)
@@ -85,13 +106,14 @@ for (const name of positionals) {
   }
   for (const section of compilation.doc.sections) for (const block of section.blocks) collect(block)
   const dependencies = []
-  for (const file of dependencyFiles) {
+  for (const alias of dependencyFiles) {
+    const file = realpathSync(alias)
     const path = relative(sourceRoot, file)
     if (path.startsWith('..')) throw new Error(`${name}: dependency is outside the source snapshot: ${path}`)
     dependencies.push({ source: file, target: resolve(destination, path), fingerprint: hash(await readFile(file)) })
   }
   record.dependencies = dependencies.map(({ target, fingerprint }) => ({ file: relative(destination, target), fingerprint }))
-  plans.push({ name, targetDir, before, targetText, dependencies, record })
+  plans.push({ name, targetDir, targetEntry: resolve(destination, name, inputEntry), before, targetText, dependencies, record })
   records.push(record)
   } catch (error) {
     if (!values.continue) throw error
@@ -106,7 +128,8 @@ if (values.apply) {
     if (existsSync(join(plan.targetDir, DOCUMENT_ENTRY))) throw new Error(`${plan.name}: ${DOCUMENT_ENTRY} already exists; refusing overwrite.`)
   }
   for (const plan of plans) {
-    const targetEntry = join(plan.targetDir, 'lecture.md'), output = join(plan.targetDir, DOCUMENT_ENTRY)
+    const targetEntry = plan.targetEntry, output = join(plan.targetDir, DOCUMENT_ENTRY)
+    await mkdir(plan.targetDir, { recursive: true })
     const temporary = `${output}.migration-${process.pid}`
     if (await readFile(targetEntry, 'utf8') !== plan.before) throw new Error(`${plan.name}: entry changed during migration.`)
     await writeFile(temporary, plan.targetText, { flag: 'wx' })
@@ -142,11 +165,11 @@ function convert(runtime, frontmatter, sourceDir, name, codePrefix) {
     return value.replace(file, `${codePrefix}/${file}`)
   }
   const metadata = { title: String(frontmatter.title ?? runtime.meta.title), lang: String(frontmatter.lang ?? runtime.meta.lang ?? 'zh-CN') }
-  for (const key of ['tags', 'plugins', 'presmium', 'renderers', 'execute', 'checks', 'translations', 'translationOf']) if (frontmatter[key] !== undefined) metadata[key] = clone(frontmatter[key])
+  for (const key of ['description', 'tags', 'plugins', 'presmium', 'renderers', 'execute', 'checks', 'translations', 'translationOf']) if (frontmatter[key] !== undefined) metadata[key] = clone(frontmatter[key])
   if (metadata.plugins) metadata.plugins = listedPlugins(metadata.plugins)
-  if (metadata.translations) for (const key of Object.keys(metadata.translations)) metadata.translations[key] = metadata.translations[key].replace(/lecture\.md(?=$|[?#])/, 'lecture.json')
+  if (metadata.translations) for (const key of Object.keys(metadata.translations)) metadata.translations[key] = `locales/${encodeURIComponent(key)}/${DOCUMENT_ENTRY}`
   if (metadata.translationOf?.entry) metadata.translationOf.entry = metadata.translationOf.entry.replace(/lecture\.md(?=$|[?#])/, 'lecture.json')
-  const supported = new Set(['title','lang','tags','plugins','presmium','renderers','execute','checks','translations','translationOf','contentModel'])
+  const supported = new Set(['title','description','lang','tags','plugins','presmium','renderers','execute','checks','translations','translationOf','contentModel'])
   const unknown = Object.keys(frontmatter).filter(key => !supported.has(key))
   if (unknown.length) throw new Error(`${name}: unmapped metadata: ${unknown.join(', ')}`)
   const out = { schemaVersion: 1, id: `document-${hash(name).slice(0, 16)}`, metadata, sectionOrder: [], sections: {}, blocks: {}, steps: {}, narrations: {}, assets: {}, definitions: {}, production: { defaults: {}, stepOverrides: {}, mediaClips: [] } }
@@ -334,6 +357,7 @@ function plain(node) { return typeof node.value === 'string' && !node.children ?
 
 /** Source locations disappear at normalization, so authored resource URLs must retain their original base. */
 function relocate(node, sourceFile, documentDir) {
+  sourceFile = realpathSync(sourceFile)
   const next = clone(node)
   const url = value => {
     if (typeof value !== 'string' || /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i.test(value)) return value

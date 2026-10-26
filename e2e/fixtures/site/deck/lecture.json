@@ -31,7 +31,7 @@
       "slides": {}
     },
     "translations": {
-      "en": "lecture.en.md"
+      "en": "locales/en/lecture.json"
     }
   },
   "sectionOrder": [

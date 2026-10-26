@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "id": "document-79100da2fd9f0bc2",
+  "metadata": {
+    "title": "Week 2",
+    "lang": "en",
+    "translationOf": {
+      "entry": "../../lecture.json",
+      "digest": "ab1277666b10c745058f7a24568fa93dea6356f680dc3da8c3b43ebe79687d06"
+    }
+  },
+  "sectionOrder": [
+    "week-2",
+    "w2-shells"
+  ],
+  "sections": {
+    "week-2": {
+      "id": "week-2",
+      "title": "Week 2",
+      "level": 1,
+      "children": [
+        "week-2--paragraph-1"
+      ],
+      "stepOrder": [
+        "week-2--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "w2-shells": {
+      "id": "w2-shells",
+      "title": "The shell of the nautilus",
+      "level": 2,
+      "children": [
+        "w2-shells--paragraph-1"
+      ],
+      "stepOrder": [
+        "w2-shells--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "week-2--paragraph-1": {
+      "id": "week-2--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "week-2--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The cover of week 2."
+            }
+          ]
+        }
+      ]
+    },
+    "w2-shells--paragraph-1": {
+      "id": "w2-shells--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "w2-shells--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The shell of the nautilus is a logarithmic spiral."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "week-2--step-0": {
+      "id": "week-2--step-0",
+      "sectionId": "week-2",
+      "visuals": [
+        {
+          "blockId": "week-2--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "week-2--paragraph-1--narration"
+      ]
+    },
+    "w2-shells--step-0": {
+      "id": "w2-shells--step-0",
+      "sectionId": "w2-shells",
+      "visuals": [
+        {
+          "blockId": "w2-shells--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "w2-shells--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "week-2--paragraph-1--narration": {
+      "id": "week-2--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "The cover of week 2."
+        }
+      ]
+    },
+    "w2-shells--paragraph-1--narration": {
+      "id": "w2-shells--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "The shell of the nautilus is a logarithmic spiral."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
