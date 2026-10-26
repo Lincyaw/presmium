@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { PmBadge, PmButton, PmIconButton, PmMenu, PmNotice, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
-import { DocumentWordCounter, documentOutline } from '../outline.ts'
+import { DocumentOutline, DocumentWordCounter } from '../outline.ts'
 import { isAgentChanging } from '../workbench.ts'
 import { ExportPanel } from './ExportPanel.tsx'
 import { HistoryPanel } from './HistoryPanel.tsx'
@@ -181,7 +181,11 @@ function StepTimeline() {
 function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): void }) {
   const t = useMessages()
   const workbench = useWorkbench()
-  const source = useWorkbenchState(state => state.authoring), doc = source?.content
+  const outline = useMemo(() => new DocumentOutline(), [])
+  const items = useWorkbenchState(state => outline.read(state.authoring?.content, state.authoring?.identity))
+  const identity = useWorkbenchState(state => state.authoring?.identity)
+  const documentId = useWorkbenchState(state => state.authoring?.content?.id)
+  const reset = useWorkbenchState(state => state.authoring?.reset)
   const locale = useWorkbenchState(state => state.locale)
   const slides = useWorkbenchState(state => state.previewRenderer === 'slides' || state.webView !== 'document')
   const current = useWorkbenchState(state => state.position?.section)
@@ -198,7 +202,6 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
   const canCreate = useWorkbenchState(state => Boolean(state.authoring?.content) && !state.authoring?.loading && !state.authoring?.composing && !isAgentChanging(state))
   const reorderDisabled = useWorkbenchState(state => !state.authoring?.content || Boolean(state.authoring.loading || state.authoring.composing || state.authoring.restored || state.authoring.error || state.isCreatingPage || state.isEditingPage || state.isHistoryPreparing || state.isHistoryBusy) || isAgentChanging(state))
   const pages = editing || slides
-  const items = useMemo(() => documentOutline(doc), [doc])
   const top = Math.min(...items.map(item => Math.max(1, item.depth)))
   const pageActions = (item: typeof items[number], index: number) => {
     const capability = workbench.pageEditCapability(item.id), previousPeer = index > 0, nextPeer = index < items.length - 1
@@ -227,13 +230,13 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
       {failure && !renaming && !deleting && <PmNotice tone="danger">{failure}</PmNotice>}
       {items.length === 0
         ? <p className="pmw-muted pmw-navigation__empty">{t.noSections}</p>
-        : editing ? <PmSortableList label={t.pages} scopeKey={JSON.stringify([source?.identity, doc?.id, document])} resetKey={source?.reset} className="pmw-navigation__list" locale={locale}
+        : editing ? <PmSortableList label={t.pages} scopeKey={JSON.stringify([identity, documentId, document])} resetKey={reset} className="pmw-navigation__list" locale={locale}
           items={items.map((item, index) => ({ id: item.id, label: item.title, prefix: item.number, reorderDisabled: !workbench.pageEditCapability(item.id).move, actions: pageActions(item, index) }))}
           value={current} reorderDisabled={reorderDisabled} loading={pageBusy || creating}
           onSelect={id => { workbench.goToSection(id); onSelect() }}
           onMove={async (id, before) => {
             const state = workbench.getState()
-            if (state.document !== document || state.authoring?.identity !== source?.identity || state.authoring?.content?.id !== doc?.id) return
+            if (state.document !== document || state.authoring?.identity !== identity || state.authoring?.content?.id !== documentId) return
             if (!await workbench.movePage(id, before)) throw new Error('page-reorder-failed')
           }} /> : (
             <ol className="pmw-navigation__list" data-kind={pages ? 'slides' : 'headings'}>
