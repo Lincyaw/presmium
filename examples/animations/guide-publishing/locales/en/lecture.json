@@ -1,0 +1,769 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-guide-publishing",
+  "metadata": {
+    "title": "Feature guide 06: reading, collaboration and publishing",
+    "lang": "en",
+    "description": "Editable, runnable Presmium feature examples.",
+    "plugins": [
+      "@lincyaw/addon-publish",
+      "@lincyaw/addon-stage",
+      "@lincyaw/addon-assistant",
+      "../../plugin"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {}
+    },
+    "translationOf": {
+      "entry": "../../lecture.json",
+      "digest": "60045386d8dd37f836025bf5b221feea62c8b225459b34222d14c869140dc940"
+    }
+  },
+  "sectionOrder": [
+    "start",
+    "reading",
+    "views",
+    "collaboration",
+    "scope",
+    "extension",
+    "offline",
+    "translation",
+    "assistant",
+    "export"
+  ],
+  "sections": {
+    "start": {
+      "id": "start",
+      "title": "One document, several ways to deliver it",
+      "level": 1,
+      "children": [
+        "text-1"
+      ],
+      "stepOrder": [
+        "start-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "reading": {
+      "id": "reading",
+      "title": "Search, navigation, links and footnotes",
+      "level": 2,
+      "children": [
+        "text-7"
+      ],
+      "stepOrder": [
+        "reading-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "views": {
+      "id": "views",
+      "title": "Presentation, presenter view and teaching tools",
+      "level": 2,
+      "children": [
+        "text-8"
+      ],
+      "stepOrder": [
+        "views-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "collaboration": {
+      "id": "collaboration",
+      "title": "Native comments, undo, saving and recovery",
+      "level": 2,
+      "children": [
+        "text-11"
+      ],
+      "stepOrder": [
+        "collaboration-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "scope": {
+      "id": "scope",
+      "title": "Choose content for a medium and audience",
+      "level": 2,
+      "children": [
+        "web-only",
+        "notebook-only",
+        "teacher-only",
+        "text-18"
+      ],
+      "stepOrder": [
+        "scope-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "extension": {
+      "id": "extension",
+      "title": "Web Components and static fallbacks",
+      "level": 2,
+      "children": [
+        "text-20",
+        "text-23"
+      ],
+      "stepOrder": [
+        "extension-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "offline": {
+      "id": "offline",
+      "title": "High contrast and offline saving",
+      "level": 2,
+      "children": [
+        "contrast",
+        "text-24"
+      ],
+      "stepOrder": [
+        "offline-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "translation": {
+      "id": "translation",
+      "title": "Translated documents and language switching",
+      "level": 2,
+      "children": [
+        "text-27"
+      ],
+      "stepOrder": [
+        "translation-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "assistant": {
+      "id": "assistant",
+      "title": "Enable questions with a real model service",
+      "level": 2,
+      "children": [
+        "text-30"
+      ],
+      "stepOrder": [
+        "assistant-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "export": {
+      "id": "export",
+      "title": "PDF, images, PowerPoint, visual differences and notebooks",
+      "level": 2,
+      "children": [
+        "text-33",
+        "export-commands"
+      ],
+      "stepOrder": [
+        "export-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "text-1": {
+      "id": "text-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The website supports reading, search and interaction; slides support step-by-step teaching; notebooks retain code cells and static fallbacks. Doc edits still write only lecture.json."
+            }
+          ]
+        },
+        {
+          "id": "paragraph-3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Try search, the contents panel, appearance settings, fonts and narrow-screen navigation. The view menu opens presentation or presenter view without changing the authoritative content."
+            }
+          ]
+        }
+      ]
+    },
+    "text-7": {
+      "id": "text-7",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-4",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Search for this distinctive phrase: starlight notes."
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "footnoteReference",
+                  "identifier": "reading-footnote",
+                  "label": "reading-footnote"
+                }
+              },
+              "fallback": "[note]"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-5",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "link",
+              "href": "#collaboration",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Jump to collaboration"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "footnote-definition",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "footnoteDefinition",
+              "identifier": "reading-footnote",
+              "label": "reading-footnote",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Footnotes preserve explicit identities, pairing each reference with its definition."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "paragraph-6",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Note: footnotes preserve explicit identities, pairing each reference with its definition."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "text-8": {
+      "id": "text-8",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-9",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Presentation supports step navigation, scripts, drawing, a black screen and freezing the audience view. Presenter view shows the current and next scene and script; multiple windows require browser permission."
+            }
+          ]
+        },
+        {
+          "id": "paragraph-10",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Blackout and freeze are presentation states. Returning preserves the current position."
+            }
+          ]
+        }
+      ]
+    },
+    "text-11": {
+      "id": "text-11",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-12",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "In the workbench, select this text and add a comment with the native comment extension. One body editor handles multi-paragraph selections, insertion and undo."
+            }
+          ]
+        },
+        {
+          "id": "paragraph-13",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The latest body and script share one versioned save actor. An old save response cannot clear new input. Conflicting or interrupted composition drafts require explicit recovery or discard."
+            }
+          ]
+        },
+        {
+          "id": "paragraph-14",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "History displays and restores real saved versions. Renaming, moving and deleting pages preserve stable identities. Deletion checks references and dependencies before changing the source."
+            }
+          ]
+        }
+      ]
+    },
+    "web-only": {
+      "id": "web-only",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-15",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This paragraph is only for web reading."
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "notebook-only": {
+      "id": "notebook-only",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-16",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This paragraph only appears in notebook output."
+            }
+          ]
+        }
+      ],
+      "only": [
+        "notebook"
+      ]
+    },
+    "teacher-only": {
+      "id": "teacher-only",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-17",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Teacher-only phrase: ask students to explain independently before showing the answer."
+            }
+          ]
+        }
+      ],
+      "audience": [
+        "teacher"
+      ]
+    },
+    "text-18": {
+      "id": "text-18",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-19",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This public paragraph remains in student output. --audience student must remove teacher content from the output."
+            }
+          ]
+        }
+      ]
+    },
+    "text-20": {
+      "id": "text-20",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-21",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This real counter uses the browser Custom Elements API. Clicking increases its value; its button uses the shared design system. The local plugin registers it through the public browser entry."
+            }
+          ]
+        }
+      ]
+    },
+    "text-23": {
+      "id": "text-23",
+      "type": "text",
+      "content": [
+        {
+          "id": "web-component-node",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "html",
+              "value": "<presmium-feature-counter label=\"Web Component\" start=\"2\"></presmium-feature-counter>"
+            }
+          },
+          "fallback": [
+            {
+              "id": "paragraph-22",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Web Component counter: starts at 2 and increases when clicked."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "contrast": {
+      "id": "contrast",
+      "type": "component",
+      "definitionId": "contrast-definition",
+      "parameters": {}
+    },
+    "text-24": {
+      "id": "text-24",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-25",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "High contrast and light/dark appearance are separate settings. The publishing plugin can save a static website for offline use, after its resources have actually been cached."
+            }
+          ]
+        },
+        {
+          "id": "paragraph-26",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Offline support depends on browser capabilities, a secure context, storage limits and resource origins. Caching a page does not make an external player or service work offline."
+            }
+          ]
+        }
+      ]
+    },
+    "text-27": {
+      "id": "text-27",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-28",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This guide includes an English translation. The language menu switches between independent canonical JSON documents with stable section and block IDs."
+            }
+          ]
+        },
+        {
+          "id": "paragraph-29",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The original digest reflects normalized content; formatting changes do not make a translation stale. Content changes require the translation to be updated or marked stale."
+            }
+          ]
+        }
+      ]
+    },
+    "text-30": {
+      "id": "text-30",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-31",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The reading assistant uses a model service configured by the reader. Unavailable models, failed requests and cancellation must not be reported as success."
+            }
+          ]
+        },
+        {
+          "id": "paragraph-32",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A teacher reviews classroom AI answers before explicitly sharing them. The workbench assistant, IDE and MCP are separate entry points using the same document transactions."
+            }
+          ]
+        }
+      ]
+    },
+    "text-33": {
+      "id": "text-33",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-34",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Build the required medium, then use the actual export tool. PDF, PNG and PowerPoint need a working Chromium; video and burned-in subtitles also need encoding tools and prepared media capabilities."
+            }
+          ]
+        },
+        {
+          "id": "paragraph-35",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Visual differences compare actual rendered output. They complement content and interaction checks. Notebook controls become readable fallbacks or real code cells."
+            }
+          ]
+        }
+      ]
+    },
+    "export-commands": {
+      "id": "export-commands",
+      "type": "code",
+      "language": "shell",
+      "value": "presmium build guide-publishing --to web,notebook\npresmium build guide-publishing --to web --audience student\n# presmium-export --help lists the actual formats supported by your installed version."
+    }
+  },
+  "steps": {
+    "start-step": {
+      "id": "start-step",
+      "sectionId": "start",
+      "visuals": [
+        {
+          "blockId": "text-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "reading-step": {
+      "id": "reading-step",
+      "sectionId": "reading",
+      "visuals": [
+        {
+          "blockId": "text-7",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "views-step": {
+      "id": "views-step",
+      "sectionId": "views",
+      "visuals": [
+        {
+          "blockId": "text-8",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "collaboration-step": {
+      "id": "collaboration-step",
+      "sectionId": "collaboration",
+      "visuals": [
+        {
+          "blockId": "text-11",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "scope-step": {
+      "id": "scope-step",
+      "sectionId": "scope",
+      "visuals": [
+        {
+          "blockId": "web-only",
+          "visible": true
+        },
+        {
+          "blockId": "notebook-only",
+          "visible": true
+        },
+        {
+          "blockId": "teacher-only",
+          "visible": true
+        },
+        {
+          "blockId": "text-18",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "extension-step": {
+      "id": "extension-step",
+      "sectionId": "extension",
+      "visuals": [
+        {
+          "blockId": "text-20",
+          "visible": true
+        },
+        {
+          "blockId": "text-23",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "offline-step": {
+      "id": "offline-step",
+      "sectionId": "offline",
+      "visuals": [
+        {
+          "blockId": "contrast",
+          "visible": true
+        },
+        {
+          "blockId": "text-24",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "translation-step": {
+      "id": "translation-step",
+      "sectionId": "translation",
+      "visuals": [
+        {
+          "blockId": "text-27",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "assistant-step": {
+      "id": "assistant-step",
+      "sectionId": "assistant",
+      "visuals": [
+        {
+          "blockId": "text-30",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "export-step": {
+      "id": "export-step",
+      "sectionId": "export",
+      "visuals": [
+        {
+          "blockId": "text-33",
+          "visible": true
+        },
+        {
+          "blockId": "export-commands",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "contrast-definition": {
+      "id": "contrast-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.publish",
+        "name": "PmContrastToggle"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "The website supports high-contrast mode."
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

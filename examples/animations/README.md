@@ -9,6 +9,7 @@
 | [代码写成的动画](libraries/lecture.json) | GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节动画，再到讲到哪里点哪里与讲授视频 |
 | [功能导览：正文与富内容](guide-content/lecture.json) | 富文本、数学、列表、合并表格、分栏、选项卡、Mermaid、思维导图与本地音视频字幕 |
 | [功能导览：代码与运行](guide-code/lecture.json) | 项目引用、高亮与变体、JavaScript / Python、参数、逐行轨迹、会话、运行比较与错误反馈 |
+| [功能导览：发布与协作](guide-publishing/lecture.json) | 搜索、脚注、双语译文、原生 Web Component、高对比度、受众隔离、批注与导出指引 |
 | [功能导览：课堂互动](guide-classroom/lecture.json) | 单选、多选、先预测再揭晓、真实代码校验、锚定提问、理解度投票、笔记、学生跟随与受众输出 |
 
 功能与章节的对应关系见 [功能索引](features.json)。
