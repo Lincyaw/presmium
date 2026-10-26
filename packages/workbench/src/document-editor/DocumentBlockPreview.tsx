@@ -179,8 +179,12 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
         <PmIconButton small icon="refresh" label={state.status === 'failed' ? t.previewRetry : t.previewRefresh} hint={state.status === 'loading' ? t.previewLoading : state.status === 'failed' ? t.previewRetry : t.previewRefresh} loading={state.status === 'loading'} onClick={() => { pause(); if (!source?.fingerprint) void workbench.retryDocument(); setAttempt(value => value + 1) }} disabled={!enabled} />
       </span></header>
     {state.error && <p className="pm-ui-block-preview__failure" role="status">{state.error}</p>}
-    {enabled && src ? <iframe key={src} ref={mountFrame} className="pm-ui-block-preview__frame" src={src} title={t.previewTitle} sandbox="allow-scripts allow-same-origin" onFocus={() => { editingStep.current = undefined }} style={height === undefined ? undefined : { '--pm-block-content-height': `${height}px` } as CSSProperties} /> : fallback}
-    {enabled && !src && state.status === 'loading' && <p className="pm-ui-block-preview__pending" role="status">{t.previewLoading}</p>}
+    <div className="pm-ui-block-preview__viewport" role="region" aria-label={t.previewTitle} tabIndex={enabled && src ? -1 : 0}
+      style={height === undefined ? undefined : { '--pm-block-content-height': `${height}px` } as CSSProperties}
+      onKeyDownCapture={event => { if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) event.stopPropagation() }}>
+      {enabled && src ? <iframe key={src} ref={mountFrame} className="pm-ui-block-preview__frame" src={src} title={t.previewTitle} sandbox="allow-scripts allow-same-origin" onFocus={() => { editingStep.current = undefined }} /> : fallback}
+      {enabled && !src && state.status === 'loading' && <p className="pm-ui-block-preview__pending" role="status">{t.previewLoading}</p>}
+    </div>
     {sectionId && stepId && <DocumentStepNarration blockId={blockId} sectionId={sectionId} stepId={stepId} expanded={narrationOpen} panelId={narrationPanel} onPause={pause} />}
   </section>
 }

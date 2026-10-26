@@ -27,11 +27,18 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
     const element = container.current
     if (!element || !source?.content) return
     let frame: number | undefined
-    // A source structure reset can move headings without an author navigating.
-    let manual = false
+    const measure = () => ({ top: element.scrollTop, width: element.clientWidth, height: element.clientHeight, extent: element.scrollHeight })
+    type Viewport = ReturnType<typeof measure>
+    const sameGeometry = (a: Viewport, b: Viewport) => a.width === b.width && a.height === b.height && a.extent === b.extent
+    let baseline = measure(), reading: { generation: string, viewport: Viewport } | undefined
+    const cancel = () => { reading = undefined }
     const read = () => {
       frame = undefined
-      if (!manual || !element.clientHeight) return
+      const gesture = reading
+      cancel()
+      if (!gesture || !element.clientHeight) return
+      const viewport = measure()
+      if (gesture.generation !== workbench.getState().documentPositionToken || !sameGeometry(gesture.viewport, viewport) || gesture.viewport.top !== viewport.top) return
       const headings = [...element.querySelectorAll<HTMLElement>('[data-document-section]')]
       const band = element.getBoundingClientRect().top + element.clientHeight * 0.05
       let current = headings[0]
@@ -39,18 +46,46 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
       if (element.scrollTop > 0 && element.scrollTop + element.clientHeight >= element.scrollHeight - 1) current = headings.at(-1)
       if (current?.dataset.documentSection) workbench.observeDocumentSection(current.dataset.documentSection)
     }
-    const queue = () => { if (frame === undefined) frame = requestAnimationFrame(read) }
-    const interact = () => { manual = true; workbench.documentInteraction(); queue() }
-    const keys = (event: KeyboardEvent) => { if (['PageDown', 'PageUp', 'Home', 'End'].includes(event.key)) interact() }
-    element.addEventListener('scroll', queue, { passive: true })
+    const queue = (viewport: Viewport) => {
+      reading = { generation: workbench.getState().documentPositionToken, viewport }
+      if (frame === undefined) frame = requestAnimationFrame(read)
+    }
+    const scroll = (event: Event) => {
+      const viewport = measure(), previous = baseline
+      baseline = viewport
+      // Native scroll chaining from an iframe has no parent wheel event.
+      if (!event.isTrusted) return
+      if (!sameGeometry(previous, viewport)) { cancel(); return }
+      if (viewport.top === previous.top) return
+      workbench.documentInteraction()
+      queue(viewport)
+    }
+    const interact = (event: Event) => {
+      if (!event.isTrusted) return
+      workbench.documentInteraction()
+      baseline = measure()
+      queue(baseline)
+    }
+    const keys = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.isComposing || event.altKey || !['PageDown', 'PageUp', 'Home', 'End'].includes(event.key)) return
+      const target = event.target instanceof Element ? event.target : undefined
+      if (target?.closest('input, textarea, select, [data-narration-editor]')) return
+      if (['Home', 'End'].includes(event.key) && target instanceof HTMLElement && target.isContentEditable && !event.ctrlKey && !event.metaKey) return
+      interact(event)
+    }
+    const pointer = () => { cancel(); workbench.documentInteraction() }
+    element.addEventListener('scroll', scroll, { passive: true })
     element.addEventListener('wheel', interact, { passive: true })
     element.addEventListener('touchmove', interact, { passive: true })
-    element.addEventListener('pointerdown', interact, { passive: true })
+    element.addEventListener('pointerdown', pointer, true)
+    element.addEventListener('focusin', cancel, true)
     element.addEventListener('keydown', keys)
-    const resize = new ResizeObserver(queue); resize.observe(element); queue()
+    const resize = new ResizeObserver(() => { baseline = measure(); cancel() }); resize.observe(element)
+    const sheet = element.querySelector('.pmw-source-document__sheet')
+    if (sheet) resize.observe(sheet)
     return () => {
-      element.removeEventListener('scroll', queue); element.removeEventListener('wheel', interact); element.removeEventListener('touchmove', interact)
-      element.removeEventListener('pointerdown', interact); element.removeEventListener('keydown', keys)
+      element.removeEventListener('scroll', scroll); element.removeEventListener('wheel', interact); element.removeEventListener('touchmove', interact)
+      element.removeEventListener('pointerdown', pointer, true); element.removeEventListener('focusin', cancel, true); element.removeEventListener('keydown', keys)
       resize.disconnect(); if (frame !== undefined) cancelAnimationFrame(frame)
     }
   }, [workbench, navigation, source?.identity, source?.reset, Boolean(source?.content)])
