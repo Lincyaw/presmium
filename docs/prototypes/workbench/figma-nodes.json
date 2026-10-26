@@ -117,6 +117,20 @@
         "captionEditingNodeId": "102:1760",
         "captionEmptyNodeId": "102:1778"
       },
+      "Caption": {
+        "nodeId": "110:1847",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=110-1847",
+        "implementation": "packages/host/src/design/caption.ts",
+        "states": {
+          "Step": "110:1823",
+          "Multiple": "110:1827",
+          "Empty": "110:1832",
+          "Overflow": "110:1834"
+        },
+        "maxWidthVariableId": "VariableID:110:1822",
+        "overflowReferenceViewportHeight": 800,
+        "runtimeMaxHeight": "28vh"
+      },
       "NarrationEditor": {
         "nodeId": "107:1820",
         "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=107-1820",
