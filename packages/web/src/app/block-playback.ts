@@ -65,7 +65,7 @@ export function blockPlaybackGate(config: AppConfig, doc: IRDocument, viewer: Vi
     stopGate = next?.setGate(authorize) ?? (() => {})
   }
   return {
-    /** A validated parent control command opts this embedded reader into author playback focus. */
+    /** An authorised embedded surface always joins the parent's playback focus. */
     enable() {
       if (armed || disposed || !origin || window.parent === window) return
       armed = true
