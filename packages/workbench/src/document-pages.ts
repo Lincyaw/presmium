@@ -20,7 +20,7 @@ export function removeDocumentPage(source: TeachingDocument, section: string): T
   if (!page) throw new Error('document-section-missing')
   const removed = pageContents(document, section), steps = new Set(page.stepOrder)
   const candidates = new Set(page.stepOrder.flatMap(id => document.steps[id]!.narrationIds))
-  const identities = new Set<string>([section, ...removed])
+  const identities = new Set<string>([...(document.sectionOrder.length > 1 ? [`page:${section}`] : []), ...removed])
   const collect = (value: unknown): void => { if (Array.isArray(value)) value.forEach(collect); else if (value && typeof value === 'object') for (const [key, child] of Object.entries(value)) { if (key === 'id' && typeof child === 'string') identities.add(child); else collect(child) } }
   for (const id of removed) { collect(document.blocks[id]); delete document.blocks[id] }
   for (const id of steps) { delete document.steps[id]; delete document.production.stepOverrides[id] }

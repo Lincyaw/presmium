@@ -39,8 +39,12 @@ export function siteDocument(document: DocumentSummary, doc?: IRDocument, transl
 }
 
 export function refreshDocumentVitePlugins(site: SiteSpec, dir: string, compilation: Compilation): void {
-  const document = site.documents.find(document => document.dir === dir)
-  if (document) document.nodeVitePlugins = nodeVitePlugins(compilation)
+  let document = site.documents.find(document => document.dir === dir)
+  if (!document) {
+    document = { dir, title: compilation.doc.meta.title, lang: compilation.doc.meta.lang }
+    site.documents.push(document)
+  }
+  document.nodeVitePlugins = nodeVitePlugins(compilation)
 }
 
 export function siteSpec(config: WorkspaceConfig, documents: SiteDocument[]): SiteSpec {

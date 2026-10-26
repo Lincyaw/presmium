@@ -126,7 +126,7 @@ export class DocumentSession {
     slot.state = { ...slot.state, content: structuredClone(content), dirty: true }
     this.#persist(slot); this.#emit(slot)
     clearTimeout(slot.timer)
-    if (!slot.state.restored && !slot.state.error && !slot.state.composing) slot.timer = setTimeout(() => { void this.#save(slot) }, 500)
+    if (!slot.state.restored && !slot.state.error && !slot.state.composing) slot.timer = setTimeout(() => { void this.#save(slot) }, 600)
   }
 
   replace(content: TeachingDocument): void {
