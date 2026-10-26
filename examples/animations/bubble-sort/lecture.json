@@ -174,35 +174,7 @@
         {
           "id": "pass--paragraph-3--text-0",
           "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "5 比 2 大，"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "to": "sort-code",
-                    "lines": "3-4",
-                    "value": "spot"
-                  },
-                  "children": []
-                }
-              },
-              "fallback": ""
-            },
-            {
-              "type": "text",
-              "text": " 交换它"
-            }
-          ]
+          "children": []
         }
       ]
     },
