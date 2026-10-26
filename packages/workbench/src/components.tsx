@@ -7,7 +7,7 @@ import * as Tooltip from '@radix-ui/react-tooltip'
 import * as Toolbar from '@radix-ui/react-toolbar'
 import * as RadioGroup from '@radix-ui/react-radio-group'
 import { createElement, forwardRef, useEffect, useId, useMemo, useRef, useState } from 'react'
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
+import type { ButtonHTMLAttributes, CSSProperties, InputHTMLAttributes, ReactNode, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
 
 const cls = (...names: (string | false | undefined | null)[]) => names.filter(Boolean).join(' ')
 
@@ -289,4 +289,182 @@ export function PmEmpty({ title, icon, action, children }: { title?: string, ico
 
 export function PmNotice({ tone = 'neutral', children }: { tone?: 'neutral' | 'accent' | 'ok' | 'warn' | 'danger', children?: ReactNode }) {
   return <div className={cls('pm-ui-notice', tone !== 'neutral' && `pm-ui-notice--${tone}`)} role={tone === 'danger' ? 'alert' : 'status'}>{children}</div>
+}
+
+export interface RangeProps {
+  label: string
+  value: number
+  min?: number
+  max: number
+  step?: number
+  disabled?: boolean
+  density?: ControlDensity
+  valueText?(value: number): string
+  onValueCommit(value: number): void
+  onPreviewChange?(value: number | undefined): void
+}
+
+/** Native range owns pointer/keyboard mechanics; only a committed gesture requests adoption. */
+export function PmRange({ label, value, min = 0, max, step = 1, disabled, density = 'compact', valueText, onValueCommit, onPreviewChange }: RangeProps) {
+  const [draft, setDraft] = useState<number>()
+  const pointer = useRef<'active' | 'cancelled'>(), latest = useRef<number>(), preview = useRef(onPreviewChange)
+  preview.current = onPreviewChange
+  const blocked = Boolean(disabled || !Number.isFinite(min) || !Number.isFinite(max) || max <= min)
+  const minimum = Number.isFinite(min) ? min : 0, maximum = Number.isFinite(max) ? Math.max(minimum, max) : minimum
+  const bounded = (next: number) => Math.max(minimum, Math.min(maximum, Number.isFinite(next) ? next : minimum))
+  const current = bounded(draft ?? value), progress = max > min ? (current - min) / (max - min) * 100 : 0
+  const cancel = () => { if (pointer.current) pointer.current = 'cancelled'; latest.current = undefined; setDraft(undefined); preview.current?.(undefined) }
+  useEffect(() => { cancel() }, [blocked, min, max])
+  useEffect(() => () => { pointer.current = undefined; latest.current = undefined; preview.current?.(undefined) }, [])
+  return <input type="range" className="pm-ui-range" data-density={density} aria-label={label} aria-valuetext={valueText?.(current)} min={minimum} max={maximum} step={step} value={current} disabled={blocked}
+    style={{ '--pm-range-progress': `${progress}%` } as CSSProperties}
+    onPointerDown={() => { if (!blocked) pointer.current = 'active' }}
+    onPointerCancel={() => { cancel(); pointer.current = undefined }} onBlur={cancel}
+    onPointerUp={() => { const active = pointer.current === 'active', next = latest.current; cancel(); pointer.current = undefined; if (active && !blocked && next !== undefined) onValueCommit(next) }}
+    onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); cancel() } }}
+    onChange={event => {
+      if (blocked || pointer.current === 'cancelled') return
+      const next = bounded(event.currentTarget.valueAsNumber)
+      if (pointer.current === 'active') { latest.current = next; setDraft(next); preview.current?.(next) }
+      else onValueCommit(next)
+    }} />
+}
+
+export type TimelineTiming = 'confirmed' | 'estimated' | 'unknown'
+export interface TimelineSegment {
+  id: string
+  stepId?: string
+  label: string
+  startMs?: number
+  endMs?: number
+  timing: TimelineTiming
+  statusLabel?: string
+  disabled?: boolean
+  /** Real normalized peak amplitudes; absence never produces a decorative waveform. */
+  waveform?: readonly number[]
+}
+export interface TimelineTrack { id: 'visual' | 'voice' | 'caption', label: string, segments: readonly TimelineSegment[] }
+export interface TimelineLabels {
+  position: string
+  seconds: string
+  seek: string
+  zoomIn: string
+  zoomOut: string
+  fit: string
+  estimated: string
+  unknown: string
+  loading: string
+  empty: string
+  seekHint: string
+  invalidPosition: string
+}
+export interface TimelineProps {
+  label: string
+  tracks: readonly TimelineTrack[]
+  labels: TimelineLabels
+  durationMs?: number
+  durationStatus?: TimelineTiming
+  currentTimeMs?: number
+  selectedStepId?: string
+  zoom?: number
+  onZoomChange?(zoom: number): void
+  onSelectStep(stepId: string): void
+  /** Caller pauses and confirms its source/clock before updating controlled currentTimeMs. */
+  onSeek(timeMs: number): void
+  seekDisabled?: boolean
+  disabled?: boolean
+  loading?: boolean
+  seeking?: boolean
+  density?: ControlDensity
+}
+
+const timelineTime = (ms: number) => `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${(ms % 60000 / 1000).toFixed(3).padStart(6, '0')}`
+function waveformPath(samples: readonly number[] | undefined): string | undefined {
+  if (!samples?.length || !samples.every(value => Number.isFinite(value) && value >= 0 && value <= 1)) return undefined
+  const length = Math.min(160, samples.length)
+  return Array.from({ length }, (_, index) => {
+    let peak = 0
+    for (let at = Math.floor(index * samples.length / length); at < Math.floor((index + 1) * samples.length / length); at++) peak = Math.max(peak, samples[at]!)
+    return `M${(index + 0.5) / length * 160},${10 - peak * 10}V${10 + peak * 10}`
+  }).join(' ')
+}
+
+/** Data-only timeline; source, playback, seeking authority and all labels remain with its caller. */
+export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, currentTimeMs, selectedStepId, zoom, onZoomChange, onSelectStep, onSeek, seekDisabled, disabled, loading, seeking, density = 'compact' }: TimelineProps) {
+  const viewport = useRef<HTMLDivElement>(null), tick = useRef<HTMLSpanElement>(null), composing = useRef(false)
+  const [width, setWidth] = useState(0), [tickWidth, setTickWidth] = useState(1), [localZoom, setLocalZoom] = useState(1), [raw, setRaw] = useState<string>(), [previewTime, setPreviewTime] = useState<number>()
+  const span = Number.isFinite(durationMs) && durationMs! >= 0 ? durationMs : undefined
+  const timing = durationStatus ?? (span === undefined ? 'unknown' : 'confirmed')
+  const timed = span !== undefined && span > 0 && timing !== 'unknown'
+  const blocked = Boolean(disabled || loading), cannotSeek = Boolean(blocked || seeking || seekDisabled || !timed || timing !== 'confirmed')
+  const scale = Math.max(1, Math.min(16, Number.isFinite(zoom ?? localZoom) ? zoom ?? localZoom : 1))
+  const position = Number.isFinite(currentTimeMs) && currentTimeMs! >= 0 ? currentTimeMs : undefined
+  const shownPosition = previewTime ?? position
+  const zoomTo = (value: number) => { const next = Math.max(1, Math.min(16, value)); if (zoom === undefined) setLocalZoom(next); onZoomChange?.(next) }
+  useEffect(() => {
+    const element = viewport.current
+    if (!element) return
+    const update = () => {
+      const style = getComputedStyle(element)
+      setWidth(Math.max(0, element.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)))
+      if (tick.current) setTickWidth(tick.current.getBoundingClientRect().width)
+    }
+    const observer = new ResizeObserver(update); observer.observe(element); update()
+    return () => observer.disconnect()
+  }, [timed])
+  useEffect(() => { if (cannotSeek) { setPreviewTime(undefined); setRaw(undefined) } }, [cannotSeek, span])
+  const requestSeek = (next: number) => { if (!cannotSeek && span !== undefined && Number.isFinite(next)) onSeek(Math.max(0, Math.min(span, Math.round(next)))) }
+  const number = raw?.normalize('NFKC').trim(), milliseconds = number !== undefined && /^\d+(?:\.\d+)?$/.test(number) ? Number(number) * 1000 : NaN
+  const invalid = raw !== undefined && (!Number.isFinite(milliseconds) || milliseconds < 0 || span === undefined || milliseconds > span)
+  const commitPosition = () => { if (composing.current || raw === undefined || invalid || cannotSeek) return; setRaw(undefined); requestSeek(milliseconds) }
+  const rows = useMemo(() => tracks.map(track => ({ ...track, segments: track.segments.map(segment => ({ ...segment, wave: waveformPath(segment.waveform), positioned: timed && segment.timing !== 'unknown' && Number.isFinite(segment.startMs) && Number.isFinite(segment.endMs) && segment.startMs! >= 0 && segment.endMs! >= segment.startMs! && segment.endMs! <= span! })) })), [tracks, timed, span])
+  const steps = useMemo(() => {
+    const choices = new Map<string, TimelineSegment>()
+    for (const track of tracks) for (const segment of track.segments) if (segment.stepId && !choices.has(segment.stepId)) choices.set(segment.stepId, segment)
+    return [...choices.values()]
+  }, [tracks])
+  const ticks = useMemo(() => {
+    if (!timed || span === undefined) return []
+    const interval = span / Math.max(1, width * scale / tickWidth), power = 10 ** Math.floor(Math.log10(Math.max(1, interval)))
+    const unit = [1, 2, 5, 10].find(value => value * power >= interval)! * power
+    const marks = Array.from({ length: Math.min(200, Math.floor(span / unit) + 1) }, (_, index) => index * unit)
+    return [0, ...marks.filter(time => time > 0 && time < span && Math.min(time, span - time) / span * width * scale >= tickWidth), span]
+  }, [span, timed, width, scale, tickWidth])
+  return <section className="pm-ui-timeline" data-density={density} data-disabled={blocked || undefined} aria-label={label} aria-busy={loading || seeking || undefined}>
+    <div className="pm-ui-timeline__tools">
+      <PmInput label={`${labels.position} (${labels.seconds})`} width="time" density={density} inputMode="decimal" maxLength={32} value={raw ?? (position === undefined ? '' : (position / 1000).toFixed(3))} placeholder={labels.unknown} error={invalid ? labels.invalidPosition : undefined} disabled={cannotSeek}
+        onChange={event => setRaw(event.target.value)} onBlur={commitPosition}
+        onCompositionStart={() => { composing.current = true }} onCompositionEnd={() => { composing.current = false }}
+        onKeyDown={event => { if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return; if (event.key === 'Enter') { event.preventDefault(); commitPosition() } else if (event.key === 'Escape') setRaw(undefined) }} />
+      <div className="pm-ui-timeline__zoom">
+        <PmIconButton icon="minus" label={labels.zoomOut} density={density} disabled={blocked || scale <= 1} onClick={() => zoomTo(scale / 2)} />
+        <output className="pm-ui-timeline__scale">{Math.round(scale * 100)}%</output>
+        <PmIconButton icon="plus" label={labels.zoomIn} density={density} disabled={blocked || scale >= 16} onClick={() => zoomTo(scale * 2)} />
+        <PmIconButton icon="fit" label={labels.fit} density={density} disabled={blocked} onClick={() => { zoomTo(1); viewport.current?.scrollTo({ left: 0 }) }} />
+      </div>
+    </div>
+    <div className="pm-ui-timeline__status" role="status">{loading ? labels.loading : timing === 'unknown' || span === undefined ? labels.unknown : `${timing === 'estimated' ? `${labels.estimated} · ` : ''}${timelineTime(span)}`}</div>
+    <div className="pm-ui-timeline__tracks">
+      <div className="pm-ui-timeline__labels" aria-hidden="true">{timed && <><span /><span /></>}{tracks.map(track => <span key={track.id}>{track.label}</span>)}</div>
+      <div ref={viewport} className="pm-ui-timeline__viewport" tabIndex={0} aria-label={label}>
+        <div className="pm-ui-timeline__canvas" style={{ width: timed ? `${width * scale}px` : '100%' }}>
+          {timed && <><div className="pm-ui-timeline__ruler" aria-hidden="true" onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); requestSeek((event.clientX - rect.left) / rect.width * span!) }}>
+            {ticks.map((time, index) => <span key={time} ref={index === 0 ? tick : undefined} data-end={time === span || undefined} style={{ left: `${time / span! * 100}%` }}>{timelineTime(time).replace(/\.000$/, '')}</span>)}
+          </div><PmRange label={labels.seek} value={position ?? 0} max={span!} disabled={cannotSeek} density={density} valueText={timelineTime} onPreviewChange={setPreviewTime} onValueCommit={requestSeek} /></>}
+          {rows.map(track => <div key={track.id} className="pm-ui-timeline__track" role="group" aria-label={track.label}>
+            {track.segments.map(segment => {
+              const description = `${segment.label}${segment.statusLabel ? ` · ${segment.statusLabel}` : ''} · ${segment.positioned ? `${segment.timing === 'estimated' ? `${labels.estimated} · ` : ''}${timelineTime(segment.startMs!)}–${timelineTime(segment.endMs!)}` : labels.unknown}`
+              const content = <>{segment.wave && segment.positioned && <svg className="pm-ui-timeline__wave" viewBox="0 0 160 20" preserveAspectRatio="none" aria-hidden="true"><path d={segment.wave} /></svg>}<span>{segment.label}</span></>
+              return segment.positioned ? <button key={segment.id} type="button" className="pm-ui-timeline__segment" data-timing={segment.timing} aria-label={description} title={description} aria-pressed={segment.stepId ? segment.stepId === selectedStepId : undefined} disabled={blocked || segment.disabled || !segment.stepId} onClick={() => { if (segment.stepId) onSelectStep(segment.stepId) }} style={{ left: `${segment.startMs! / span! * 100}%`, width: `${(segment.endMs! - segment.startMs!) / span! * 100}%` }}>{content}</button>
+                : <span className="pm-ui-timeline__unknown" key={segment.id} title={description}>{segment.label} · {labels.unknown}</span>
+            })}
+          </div>)}
+          {timed && shownPosition !== undefined && <span className="pm-ui-timeline__cursor" data-preview={previewTime !== undefined || undefined} style={{ left: `${Math.max(0, Math.min(1, shownPosition / span!)) * 100}%` }} aria-hidden="true" />}
+        </div>
+      </div>
+    </div>
+    <div className="pm-ui-timeline__steps">{steps.map(segment => <PmButton key={segment.stepId} density={density} disabled={blocked || segment.disabled} aria-pressed={segment.stepId === selectedStepId} variant={segment.stepId === selectedStepId ? 'accent' : 'default'} onClick={() => onSelectStep(segment.stepId!)}>{segment.label}</PmButton>)}</div>
+    {!tracks.some(track => track.segments.length) && <PmNotice>{labels.empty}</PmNotice>}
+    <p className="pm-ui-timeline__hint">{labels.seekHint}</p>
+  </section>
 }

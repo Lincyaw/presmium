@@ -78,7 +78,11 @@
       },
       "Range": {
         "nodeId": "25:561",
-        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-561"
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-561",
+        "source": "packages/workbench/src/components.tsx / packages/design/src/components.css",
+        "publicComponent": "PmRange",
+        "interactionContract": "Controlled native range with value text, density and disabled/focus states. Pointer movement previews locally; release submits once. Escape, pointer cancellation, blur and unmount discard the gesture. Arrow/Home/End remain native.",
+        "responsiveFill": "Master Value uses SCALE width and a fixed-size thumb; timeline instances show 5s of 20s without a fixed-width progress override."
       },
       "Dialog": {
         "nodeId": "25:565",
@@ -155,6 +159,113 @@
           "Focus": "107:1795",
           "Readonly": "107:1805"
         }
+      },
+      "Timeline": {
+        "nodeId": "136:3258",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=136-3258",
+        "reviewNodeId": "137:2178",
+        "reviewUrl": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=137-2178",
+        "variantCount": 18,
+        "variants": {
+          "Compact": {
+            "Ready": "136:1815",
+            "Focus": "136:1899",
+            "Estimated": "136:1983",
+            "Unknown": "136:2067",
+            "Loading": "136:2128",
+            "Disabled": "136:2212"
+          },
+          "Regular": {
+            "Ready": "136:2296",
+            "Focus": "136:2380",
+            "Estimated": "136:2464",
+            "Unknown": "136:2548",
+            "Loading": "136:2609",
+            "Disabled": "136:2693"
+          },
+          "Touch": {
+            "Ready": "136:2777",
+            "Focus": "136:2861",
+            "Estimated": "136:2945",
+            "Unknown": "136:3029",
+            "Loading": "136:3090",
+            "Disabled": "136:3174"
+          }
+        },
+        "source": "packages/workbench/src/components.tsx / packages/design/src/components.css / packages/design/src/tokens.css",
+        "publicComponents": [
+          "PmTimeline",
+          "PmRange",
+          "PmInput",
+          "PmButton",
+          "PmIconButton"
+        ],
+        "properties": [
+          "Position label",
+          "Seek hint",
+          "Visual track",
+          "Voice track",
+          "Caption track"
+        ],
+        "geometry": {
+          "compact": {
+            "width": 760,
+            "height": 359,
+            "controlHeight": 30,
+            "textSize": 13
+          },
+          "regular": {
+            "width": 760,
+            "height": 395,
+            "controlHeight": 36
+          },
+          "touch": {
+            "width": 390,
+            "height": 448,
+            "controlHeight": 44,
+            "inputTextSize": 16
+          },
+          "axis": "Ruler, range and all three tracks share one label-column origin. Narrow label column reuses geometry/hitArea."
+        },
+        "slots": [
+          "exact seconds input",
+          "zoom out / percentage / zoom in / fit",
+          "confirmed / estimated / unknown / loading status",
+          "time ruler",
+          "native position range",
+          "visual track",
+          "voice track",
+          "caption track",
+          "stable step choices",
+          "keyboard and pointer guidance"
+        ],
+        "tokens": {
+          "labelWidth": {
+            "css": "--pm-timeline-label-width",
+            "variableId": "VariableID:136:1810",
+            "valuePx": 88
+          },
+          "tickWidth": {
+            "css": "--pm-timeline-tick-width",
+            "variableId": "VariableID:136:1812",
+            "valuePx": 80
+          },
+          "waveHeight": {
+            "css": "--pm-timeline-wave-height",
+            "variableId": "VariableID:136:1814",
+            "valuePx": 20
+          }
+        },
+        "interactionContract": [
+          "The caller supplies actual plan timing and stable step identities; the component does not compile, write Production, own a playback clock or claim readiness.",
+          "onSeek submits intent only; controlled currentTimeMs changes only after the caller confirms. seeking and seekDisabled block arbitrary time changes while preserving stable step choice.",
+          "Unknown or estimated duration disables arbitrary-time seeks. Unknown timing has no proportional clips/ruler/waveforms.",
+          "Pointer drag previews locally and submits once on release; Escape, cancellation, blur and unmount discard preview. Precise seconds and native Arrow/Home/End provide non-drag alternatives.",
+          "Zoom and fit affect only the viewport. Short timed segments have equivalent full-size step buttons; long tracks scroll horizontally.",
+          "Waveform SVG requires supplied finite normalized real samples. The Figma sample intentionally contains no invented waveform."
+        ],
+        "verification": "docs/benchmarks/public-timeline-2026-10-26.md",
+        "completionBoundary": "Formal public primitive design and standalone consumer acceptance; business production integration and host playback are separately verified."
       }
     },
     "variantCounts": {
