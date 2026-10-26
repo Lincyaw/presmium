@@ -1897,7 +1897,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 | D3（`d3`） | ISC | 动画场景：比例尺、坐标轴、布局与形状生成器建出的图形，按时刻插值画出（不用 D3 的过渡） | addon-motion |
 | simple-git | MIT | 代码引用读取 git 中的文件、本地环境的仓库；工作区审阅直接运行 git，以控制 git 目录、对象库与钩子设置（10.7 节） | addon-code、addon-exec-local |
 | React、React DOM | MIT | 工作台、预打包查看器、插件组件与 SSR；工作台由 dsh 外壳提供同一份 React，查看器通过 import map 共享 | host、viewer、web、workbench、dsh、各浏览器插件 |
-| BlockNote（`@blocknote/core`、`@blocknote/react`、`@blocknote/mantine`） | MPL-2.0 | 正文块编辑、类型转换与拖动；只在作者编辑画布时加载 | workbench |
+| BlockNote（`@blocknote/core`、`@blocknote/react`、`@blocknote/mantine`） | MPL-2.0 | 作者侧正文、字幕和讲稿编辑，原生选区、历史与批注 | workbench |
 | Radix Primitives（`@radix-ui/react-*`） | MIT | 弹窗、菜单、浮层、标签页、焦点范围 | host、viewer、workbench |
 | dnd kit（`@dnd-kit/react`、`@dnd-kit/dom`） | MIT | 页面列表的指针、触屏、键盘排序与读屏反馈，提交仍经过文稿保存边界 | workbench |
 | esbuild | MIT | 把 `@lincyaw/dsh` 的客户端部分构建为 dsh 的工厂格式 | dsh |
@@ -1912,6 +1912,8 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 
 随网页与幻灯片产物再分发的运行时带上许可证声明：WebAssembly 运行时为 `<base>wasi/LICENSES`；Pyodide 为 `<base>pyodide/LICENSES`（Pyodide 的 MPL-2.0 全文与源码地址、编译为 WebAssembly 的 CPython 的 PSF 许可证、`pyodide-lock.json` 中随运行时发布的包的许可证）；jax-js 为 `<base>presmium/jax-js/LICENSE`（取自 `@jax-js/jax` 包）。它们与运行时一同发出，开发服务器中也提供，并在离线缓存的范围内。
 
+本仓库根 `pnpm-workspace.yaml` 将 ProseMirror View 约束为 1.42.6，并让 BlockNote 与 Tiptap 共用同一份实例。在浏览器版本对照中，1.42.7／1.42.8 使 BlockNote 收缩的中文预编辑分成两段；版本分界与真实系统输入、正文及字幕保存验证见[输入法回归记录](benchmarks/document-ime-regression-2026-10-27.md)。没有修改依赖源码或替换原生输入机制。这是仓库根安装与构建的约束，发布包不会自动把根 overrides 传给外部消费者；独立安装的依赖约束与输入行为仍需单独验证。
+
 语音服务没有采用 SDK：火山引擎没有 npm SDK，OpenAI 音频接口形态的服务用 `fetch` 即可；语音插件的适配器直接调用 HTTP 与 WebSocket 接口。
 
 不采用：ffmpeg.wasm（核心为 GPL）、Motion Canvas（2024 年底起停止维护）、TensorFlow.js 的 WebGPU 后端与 webgpu-torch（停更）、Jupyter Kernel Gateway（停更，浏览器跨域有缺陷）、Daytona 等 AGPL 许可的沙箱平台、edge-tts（非官方接口）、在进程内 mock 语音或模型的测试库。
@@ -1920,7 +1922,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 
 设计与取舍在 `design-dsh.md`，概念对照与 `Focus` 在 `domain-model.md` 第 16 节。本节列出实现依赖的结构与契约。
 
-工作台的文档编辑、编译放映、视频制作是三个独立入口，分别负责正文与页面编辑、编译诊断与放映、配音字幕与视频产出。它们共用唯一的可编辑文稿 IR、文稿版本和工作区服务，界面状态与任务生命周期按入口管理。文档编辑使用 React 与 BlockNote，不嵌入讲稿、字幕或音色编辑；正文保存与页面操作不会自动进入放映。当前优先完成文档编辑验收，其余入口的目标与已实现范围见 [UI/UX RFC](rfc-workbench-uiux.md)。
+工作台的文档编辑、编译放映、视频制作是三个独立入口，分别负责正文与页面编辑、编译诊断与放映、配音字幕与视频产出。它们共用唯一的可编辑文稿 IR、文稿版本和工作区服务，界面状态与任务生命周期按入口管理。文档编辑使用 React 与 BlockNote，步骤编辑只提供字幕与配音开始；发音工具、音色、完整时机和媒体剪辑放在视频制作。正文保存与页面操作不会自动进入放映。当前优先完成文档编辑验收，其余入口的目标与已实现范围见 [UI/UX RFC](rfc-workbench-uiux.md)。
 
 ### 13.1 三层与进程
 
