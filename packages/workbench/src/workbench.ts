@@ -7,7 +7,7 @@ import type { NativeDocumentEditor } from './document-editor/schema.tsx'
 import { nativeTextPoint, nativeTextPosition } from './document-editor/selection.ts'
 import type { NativeTextPoint } from './document-editor/selection.ts'
 import type { DocumentFieldBookmark, DocumentFieldRegistration, DocumentHistoryEditor } from './document-editor/focus.ts'
-import { pageDeletion, removeDocumentPage } from './document-pages.ts'
+import { duplicateDocumentPage, pageDeletion, removeDocumentPage } from './document-pages.ts'
 import { changeStepTiming } from './step-production.ts'
 import type { StepDurationDraft, StepDurationKey, StepTimingPatch } from './step-production.ts'
 import { DocumentTimingDrafts } from './document-timing-drafts.ts'
@@ -216,7 +216,7 @@ export class Workbench {
   #unsubscribeDocumentHistory?: () => void
   #unsubscribeDocumentSelection?: () => void
   #documentSelectionGeneration = 0
-  #pendingDocumentFocus?: { documentId: string, nodeId: string, generation: number }
+  #pendingDocumentFocus?: { documentId: string, nodeId: string, generation: number, afterSave?: true }
   #pendingDocumentSelection?: { documentId: string, anchor: NativeTextPoint, head: NativeTextPoint, focused: boolean }
   readonly #documentFields = new Map<string, DocumentFieldRegistration>()
   #pendingDocumentField?: { field: Omit<DocumentFieldRegistration, 'focus' | 'editor'>, bookmark: DocumentFieldBookmark, reset: number, generation: number }
@@ -766,7 +766,8 @@ export class Workbench {
       const focus = this.#pendingDocumentFocus, selection = this.#pendingDocumentSelection
       this.#pendingDocumentFocus = undefined; this.#pendingDocumentSelection = undefined
       if (focus && focus.documentId === this.#state.authoring?.content?.id && focus.generation === this.#documentSelectionGeneration && editor.getBlock(focus.nodeId)) {
-        editor.setTextCursorPosition(focus.nodeId, 'start'); editor.focus()
+        // A deferred page operation adopts its selection only after the source write is acknowledged.
+        if (!focus.afterSave) { editor.setTextCursorPosition(focus.nodeId, 'start'); editor.focus() }
       } else if (!this.#pendingDocumentField && selection && selection.documentId === this.#state.authoring?.content?.id) {
         const anchor = nativeTextPosition(editor, selection.anchor), head = nativeTextPosition(editor, selection.head)
         if (anchor !== undefined && head !== undefined) {
@@ -823,6 +824,34 @@ export class Workbench {
   }
   renamePage(section: string, title: string): Promise<boolean> {
     return this.#changeDocumentPage(document => { if (!document.sections[section]) throw new Error('page-boundary'); document.sections[section]!.title = title.trim() })
+  }
+  async duplicatePage(section: string): Promise<boolean> {
+    if (this.#state.isEditingPage || this.#state.isCreatingPage || this.#state.isHistoryBusy) return false
+    const scope = this.#documentScope, identity = this.#state.authoring?.identity, generation = this.#documentSelectionGeneration, navigation = this.#state.documentNavigation?.request
+    let copied: string | undefined
+    const saved = await this.#changeDocumentPage(document => {
+      if (scope !== this.#documentScope || identity !== this.#state.authoring?.identity) throw new Error('page-context-changed')
+      const page = document.sections[section]
+      if (!page) throw new Error('page-boundary')
+      const copy = duplicateDocumentPage(document, section, this.#messages.pageCopyTitle(page.title))
+      copied = copy.section
+      Object.assign(document, copy.document)
+      if (generation === this.#documentSelectionGeneration) this.#pendingDocumentFocus = { documentId: document.id, nodeId: `page:${copied}`, generation, afterSave: true }
+    })
+    // Source confirmation owns editing. A later author selection takes precedence over this response.
+    if (!saved || !copied || scope !== this.#documentScope || generation !== this.#documentSelectionGeneration || navigation !== this.#state.documentNavigation?.request || !this.#state.authoring?.content?.sections[copied]) return saved
+    this.goToSection(copied)
+    const editor = this.#documentEditor
+    if (editor) {
+      const blocks = editor.document, start = blocks.findIndex(block => block.id === `page:${copied}`)
+      const first = (nodes: typeof blocks): string | undefined => {
+        for (const node of nodes) { if (node.type === 'presmiumPage') break; if (node.content !== undefined) return node.id; const child = first(node.children); if (child) return child }
+        return undefined
+      }
+      const target = start < 0 ? undefined : first(blocks.slice(start + 1)) ?? blocks[start]!.id
+      if (target) { editor.setTextCursorPosition(target, 'start'); editor.focus() }
+    }
+    return true
   }
   movePage(section: string, before: string | null): Promise<boolean> {
     return this.#changeDocumentPage(document => {

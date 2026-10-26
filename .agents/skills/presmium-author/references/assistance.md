@@ -6,6 +6,8 @@ Web and agents modify the same `lecture.json`. Read the current document version
 
 Keep page, block, step, narration, asset and definition IDs stable. Save acknowledgement must match document, request and input version. A delayed save or generation result cannot clear a newer draft or become the current snapshot.
 
+The page menu's Duplicate page action copies the canonical page with new owned entity IDs and remapped internal teaching bindings, including narration, cues and production settings. Definitions and assets remain shared; discussions stay anchored to the original content, and existing incoming references keep their original targets. Unknown plugin payloads are preserved without guessing references from strings. Editing and duplicating a page do not require a successful runtime compilation.
+
 Expand an animation card's step captions/script area to edit its playback intent alongside its canonical narration. Start timing uses horizontal choices; minimum hold and trailing pause are in milliseconds. The fields show their actual inherited source. An explicit step start overrides inherited narration settings only for that step; restoring inheritance keeps shared narration, voice, cue and media settings. Unaccepted numeric input remains a separate form draft across step navigation and refresh, with an error or review hint; it is never written into `lecture.json`. Resolve it or explicitly restore inheritance before presenting.
 
 Preview compilation is independent. When it fails, retain valid document content, show readable diagnostics and identify the previous snapshot's version. Do not fix a preview by writing generated IR or silently replacing the authoring file with editor-private state.
