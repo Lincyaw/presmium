@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "id": "document-205ebe6de453b3d3",
+  "metadata": {
+    "title": "另一份讲义",
+    "lang": "zh-CN"
+  },
+  "sectionOrder": [
+    "另一份讲义",
+    "later"
+  ],
+  "sections": {
+    "另一份讲义": {
+      "id": "另一份讲义",
+      "title": "另一份讲义",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "另一份讲义--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "later": {
+      "id": "later",
+      "title": "之后的内容",
+      "level": 2,
+      "children": [
+        "later--paragraph-1"
+      ],
+      "stepOrder": [
+        "later--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "later--paragraph-1": {
+      "id": "later--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "later--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "另一份讲义中的一节。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "另一份讲义--step-0": {
+      "id": "另一份讲义--step-0",
+      "sectionId": "另一份讲义",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "later--step-0": {
+      "id": "later--step-0",
+      "sectionId": "later",
+      "visuals": [
+        {
+          "blockId": "later--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "later--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "later--paragraph-1--narration": {
+      "id": "later--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "另一份讲义中的一节。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "id": "document-b1a2d46e2c0ff612",
+  "metadata": {
+    "title": "受众与译本",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec"
+    ],
+    "renderers": {
+      "web": {}
+    },
+    "translations": {
+      "en": "lecture.en.md"
+    }
+  },
+  "sectionOrder": [
+    "受众与译本",
+    "merge",
+    "guide",
+    "practice"
+  ],
+  "sections": {
+    "受众与译本": {
+      "id": "受众与译本",
+      "title": "受众与译本",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "受众与译本--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "merge": {
+      "id": "merge",
+      "title": "合并规则",
+      "level": 2,
+      "children": [
+        "merge--paragraph-1",
+        "merge--paragraph-2"
+      ],
+      "stepOrder": [
+        "merge--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "guide": {
+      "id": "guide",
+      "title": "教师指南",
+      "level": 2,
+      "children": [
+        "guide--paragraph-1"
+      ],
+      "stepOrder": [
+        "guide--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      },
+      "audience": [
+        "teacher"
+      ]
+    },
+    "practice": {
+      "id": "practice",
+      "title": "练习",
+      "level": 2,
+      "children": [
+        "practice--paragraph-1"
+      ],
+      "stepOrder": [
+        "practice--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "merge--paragraph-1": {
+      "id": "merge--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "两个分支改了同一行时，合并就会冲突，学生的关键词 STUDENTZH。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--paragraph-2": {
+      "id": "merge--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "教师的提示：演示之前先断开网络，口令 TEACHERZH41。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ],
+      "audience": [
+        "teacher"
+      ]
+    },
+    "guide--paragraph-1": {
+      "id": "guide--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "guide--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这一节整节只给教师，口令 GUIDEZH52。"
+            }
+          ]
+        }
+      ]
+    },
+    "practice--paragraph-1": {
+      "id": "practice--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "practice--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "学生自己动手解决一个冲突。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "受众与译本--step-0": {
+      "id": "受众与译本--step-0",
+      "sectionId": "受众与译本",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "merge--step-0": {
+      "id": "merge--step-0",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "merge--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "merge--paragraph-1--narration"
+      ]
+    },
+    "guide--step-0": {
+      "id": "guide--step-0",
+      "sectionId": "guide",
+      "visuals": [
+        {
+          "blockId": "guide--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "guide--paragraph-1--narration"
+      ]
+    },
+    "practice--step-0": {
+      "id": "practice--step-0",
+      "sectionId": "practice",
+      "visuals": [
+        {
+          "blockId": "practice--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "practice--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "merge--paragraph-1--narration": {
+      "id": "merge--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "两个分支改了同一行时，合并就会冲突，学生的关键词 STUDENTZH。"
+        }
+      ]
+    },
+    "guide--paragraph-1--narration": {
+      "id": "guide--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这一节整节只给教师，口令 GUIDEZH52。"
+        }
+      ]
+    },
+    "practice--paragraph-1--narration": {
+      "id": "practice--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "学生自己动手解决一个冲突。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

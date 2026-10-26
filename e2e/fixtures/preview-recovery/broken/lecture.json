@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "id": "document-5796775e7a368c1b",
+  "metadata": {
+    "title": "Recoverable preview",
+    "lang": "zh-CN",
+    "plugins": [],
+    "renderers": {
+      "web": {},
+      "slides": {
+        "package": "./slides-renderer"
+      }
+    }
+  },
+  "sectionOrder": [
+    "recoverable-preview"
+  ],
+  "sections": {
+    "recoverable-preview": {
+      "id": "recoverable-preview",
+      "title": "Recoverable preview",
+      "level": 1,
+      "children": [
+        "recoverable-preview--paragraph-1"
+      ],
+      "stepOrder": [
+        "recoverable-preview--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "recoverable-preview--paragraph-1": {
+      "id": "recoverable-preview--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "recoverable-preview--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The recovered slide."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "recoverable-preview--step-0": {
+      "id": "recoverable-preview--step-0",
+      "sectionId": "recoverable-preview",
+      "visuals": [
+        {
+          "blockId": "recoverable-preview--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

@@ -1,0 +1,254 @@
+{
+  "schemaVersion": 1,
+  "id": "document-c22b75e4004952de",
+  "metadata": {
+    "title": "发布核心验证",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-publish"
+    ],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "发布核心验证",
+    "reading",
+    "more"
+  ],
+  "sections": {
+    "发布核心验证": {
+      "id": "发布核心验证",
+      "title": "发布核心验证",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "发布核心验证--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "reading": {
+      "id": "reading",
+      "title": "阅读与对比度",
+      "level": 2,
+      "children": [
+        "reading--paragraph-1",
+        "reading--image-1",
+        "reading--pm-contrast-toggle-1",
+        "reading--paragraph-2"
+      ],
+      "stepOrder": [
+        "reading--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "more": {
+      "id": "more",
+      "title": "离线第二页",
+      "level": 1,
+      "children": [
+        "more--paragraph-1"
+      ],
+      "stepOrder": [
+        "more--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "reading--paragraph-1": {
+      "id": "reading--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "reading--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "构建后的讲义保留文字与图片，断网后仍可阅读。"
+            }
+          ]
+        }
+      ]
+    },
+    "reading--image-1": {
+      "id": "reading--image-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "reading--image-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "image",
+              "url": "__REMOTE_IMAGE__",
+              "alt": "远端示例图"
+            }
+          },
+          "fallback": []
+        }
+      ]
+    },
+    "reading--pm-contrast-toggle-1": {
+      "id": "reading--pm-contrast-toggle-1",
+      "type": "component",
+      "definitionId": "reading--pm-contrast-toggle-1--definition",
+      "parameters": {}
+    },
+    "reading--paragraph-2": {
+      "id": "reading--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "reading--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "link",
+              "href": "#more",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "继续阅读"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "more--paragraph-1": {
+      "id": "more--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "more--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这个页面也由同一次构建保存，可以在没有网络时打开。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "发布核心验证--step-0": {
+      "id": "发布核心验证--step-0",
+      "sectionId": "发布核心验证",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "reading--step-0": {
+      "id": "reading--step-0",
+      "sectionId": "reading",
+      "visuals": [
+        {
+          "blockId": "reading--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "reading--image-1",
+          "visible": true
+        },
+        {
+          "blockId": "reading--pm-contrast-toggle-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "reading--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "reading--paragraph-1--narration",
+        "reading--paragraph-2--narration"
+      ]
+    },
+    "more--step-0": {
+      "id": "more--step-0",
+      "sectionId": "more",
+      "visuals": [
+        {
+          "blockId": "more--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "more--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "reading--paragraph-1--narration": {
+      "id": "reading--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "构建后的讲义保留文字与图片，断网后仍可阅读。"
+        }
+      ]
+    },
+    "reading--paragraph-2--narration": {
+      "id": "reading--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "继续阅读"
+        }
+      ]
+    },
+    "more--paragraph-1--narration": {
+      "id": "more--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这个页面也由同一次构建保存，可以在没有网络时打开。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "reading--pm-contrast-toggle-1--definition": {
+      "id": "reading--pm-contrast-toggle-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.publish",
+        "name": "PmContrastToggle"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.publish",
+        "name": "PmContrastToggle"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "id": "document-4bf6ac018291365c",
+  "metadata": {
+    "title": "分词入门",
+    "lang": "zh-CN",
+    "plugins": [],
+    "renderers": {
+      "web": {},
+      "slides": {}
+    }
+  },
+  "sectionOrder": [
+    "分词入门",
+    "词元",
+    "合并"
+  ],
+  "sections": {
+    "分词入门": {
+      "id": "分词入门",
+      "title": "分词入门",
+      "level": 1,
+      "children": [
+        "分词入门--paragraph-1"
+      ],
+      "stepOrder": [
+        "分词入门--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "词元": {
+      "id": "词元",
+      "title": "词元",
+      "level": 2,
+      "children": [
+        "词元--paragraph-1"
+      ],
+      "stepOrder": [
+        "词元--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "合并": {
+      "id": "合并",
+      "title": "合并",
+      "level": 2,
+      "children": [
+        "合并--paragraph-1"
+      ],
+      "stepOrder": [
+        "合并--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "分词入门--paragraph-1": {
+      "id": "分词入门--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "分词入门--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一份用于验证预览切换的讲义。"
+            }
+          ]
+        }
+      ]
+    },
+    "词元--paragraph-1": {
+      "id": "词元--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "词元--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "把文字分成能处理的词元。"
+            }
+          ]
+        }
+      ]
+    },
+    "合并--paragraph-1": {
+      "id": "合并--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "合并--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "把常见的相邻词元合并。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "分词入门--step-0": {
+      "id": "分词入门--step-0",
+      "sectionId": "分词入门",
+      "visuals": [
+        {
+          "blockId": "分词入门--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "分词入门--paragraph-1--narration"
+      ]
+    },
+    "词元--step-0": {
+      "id": "词元--step-0",
+      "sectionId": "词元",
+      "visuals": [
+        {
+          "blockId": "词元--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "词元--paragraph-1--narration"
+      ]
+    },
+    "合并--step-0": {
+      "id": "合并--step-0",
+      "sectionId": "合并",
+      "visuals": [
+        {
+          "blockId": "合并--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "合并--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "分词入门--paragraph-1--narration": {
+      "id": "分词入门--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "一份用于验证预览切换的讲义。"
+        }
+      ]
+    },
+    "词元--paragraph-1--narration": {
+      "id": "词元--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "把文字分成能处理的词元。"
+        }
+      ]
+    },
+    "合并--paragraph-1--narration": {
+      "id": "合并--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "把常见的相邻词元合并。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

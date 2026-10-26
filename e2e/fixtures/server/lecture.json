@@ -1,0 +1,323 @@
+{
+  "schemaVersion": 1,
+  "id": "document-e72f26f9e3d4d506",
+  "metadata": {
+    "title": "服务端端到端测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "./plugin",
+      "./probe"
+    ],
+    "renderers": {
+      "web": {
+        "port": 4813
+      }
+    }
+  },
+  "sectionOrder": [
+    "服务端",
+    "步骤",
+    "结尾"
+  ],
+  "sections": {
+    "服务端": {
+      "id": "服务端",
+      "title": "服务端",
+      "level": 1,
+      "children": [
+        "服务端--paragraph-1",
+        "服务端--fixture-server-1"
+      ],
+      "stepOrder": [
+        "服务端--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "步骤": {
+      "id": "步骤",
+      "title": "步骤",
+      "level": 2,
+      "children": [
+        "步骤--paragraph-1",
+        "步骤--paragraph-2"
+      ],
+      "stepOrder": [
+        "步骤--step-0",
+        "步骤--step-1",
+        "步骤--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "结尾": {
+      "id": "结尾",
+      "title": "结尾",
+      "level": 2,
+      "children": [
+        "结尾--paragraph-1"
+      ],
+      "stepOrder": [
+        "结尾--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "服务端--paragraph-1": {
+      "id": "服务端--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "服务端--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲解："
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "fixture.probe",
+                  "name": "probe",
+                  "options": {
+                    "value": "hidden"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " 是提示标记的位置，"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "fixture.probe",
+                  "name": "probe",
+                  "options": {
+                    "value": "可见的角色"
+                  },
+                  "children": [
+                    {
+                      "type": "strong",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "可见的角色"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "fallback": "可见的角色"
+            },
+            {
+              "type": "text",
+              "text": " 照常显示。"
+            }
+          ]
+        }
+      ]
+    },
+    "服务端--fixture-server-1": {
+      "id": "服务端--fixture-server-1",
+      "type": "component",
+      "definitionId": "服务端--fixture-server-1--definition",
+      "parameters": {}
+    },
+    "步骤--paragraph-1": {
+      "id": "步骤--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "步骤--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一步"
+            }
+          ]
+        }
+      ]
+    },
+    "步骤--paragraph-2": {
+      "id": "步骤--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "步骤--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步"
+            }
+          ]
+        }
+      ]
+    },
+    "结尾--paragraph-1": {
+      "id": "结尾--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "结尾--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "最后一节。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "服务端--step-0": {
+      "id": "服务端--step-0",
+      "sectionId": "服务端",
+      "visuals": [
+        {
+          "blockId": "服务端--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "服务端--fixture-server-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": [
+        "服务端--paragraph-1--narration"
+      ]
+    },
+    "步骤--step-0": {
+      "id": "步骤--step-0",
+      "sectionId": "步骤",
+      "visuals": [
+        {
+          "blockId": "步骤--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "步骤--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "步骤--step-1": {
+      "id": "步骤--step-1",
+      "sectionId": "步骤",
+      "visuals": [
+        {
+          "blockId": "步骤--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "步骤--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "步骤--step-2": {
+      "id": "步骤--step-2",
+      "sectionId": "步骤",
+      "visuals": [
+        {
+          "blockId": "步骤--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "步骤--paragraph-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "结尾--step-0": {
+      "id": "结尾--step-0",
+      "sectionId": "结尾",
+      "visuals": [
+        {
+          "blockId": "结尾--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "结尾--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "服务端--paragraph-1--narration": {
+      "id": "服务端--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "讲解： 是提示标记的位置，可见的角色 照常显示。"
+        }
+      ]
+    },
+    "结尾--paragraph-1--narration": {
+      "id": "结尾--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "最后一节。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "服务端--fixture-server-1--definition": {
+      "id": "服务端--fixture-server-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "fixture.server",
+        "name": "FixtureServer"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "fixture.server",
+        "name": "FixtureServer"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
