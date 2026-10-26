@@ -1,0 +1,846 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-guide-classroom",
+  "metadata": {
+    "title": "功能导览 04：自测、预测与课堂互动",
+    "lang": "zh-CN",
+    "description": "可编辑、可运行的 Presmium 功能导览。",
+    "plugins": [
+      "@lincyaw/addon-classroom",
+      "@lincyaw/addon-session",
+      "@lincyaw/addon-exec",
+      "@lincyaw/addon-stage"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {}
+    }
+  },
+  "sectionOrder": [
+    "start",
+    "quiz",
+    "prediction",
+    "exercise",
+    "questions",
+    "notes",
+    "follow",
+    "teacher"
+  ],
+  "sections": {
+    "start": {
+      "id": "start",
+      "title": "先独立练习，再加入真实课堂",
+      "level": 1,
+      "children": [
+        "text-1"
+      ],
+      "stepOrder": [
+        "start-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "quiz": {
+      "id": "quiz",
+      "title": "单选、多选与即时自测",
+      "level": 2,
+      "children": [
+        "quiz-widget",
+        "multi-quiz",
+        "text-6"
+      ],
+      "stepOrder": [
+        "quiz-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "prediction": {
+      "id": "prediction",
+      "title": "先预测，再揭晓",
+      "level": 2,
+      "children": [
+        "prediction-widget",
+        "text-9"
+      ],
+      "stepOrder": [
+        "prediction-step",
+        "prediction-reveal"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "exercise": {
+      "id": "exercise",
+      "title": "代码练习与真实校验",
+      "level": 2,
+      "children": [
+        "exercise-widget",
+        "text-12"
+      ],
+      "stepOrder": [
+        "exercise-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "questions": {
+      "id": "questions",
+      "title": "锚定问题与理解度投票",
+      "level": 2,
+      "children": [
+        "question-target",
+        "questions-widget",
+        "pulse"
+      ],
+      "stepOrder": [
+        "questions-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "notes": {
+      "id": "notes",
+      "title": "阅读笔记与作者批注",
+      "level": 2,
+      "children": [
+        "text-16"
+      ],
+      "stepOrder": [
+        "notes-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "follow": {
+      "id": "follow",
+      "title": "跟随、独立浏览与重新加入",
+      "level": 2,
+      "children": [
+        "text-19"
+      ],
+      "stepOrder": [
+        "follow-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "teacher": {
+      "id": "teacher",
+      "title": "教师内容与学生输出",
+      "level": 2,
+      "children": [
+        "teacher-note",
+        "text-23"
+      ],
+      "stepOrder": [
+        "teacher-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "text-1": {
+      "id": "text-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "测验与预测可以在个人阅读时使用。提问、理解度汇总、学生跟随与课堂存档需要真实课堂会话。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "presmium dev/serve 的内置同步只用于作者本机排练。对学生发布时，构建 student 受众站点，配置独立 classroom-server，并先用另一台设备验证加入。"
+            }
+          ]
+        }
+      ]
+    },
+    "quiz-prompt": {
+      "id": "quiz-prompt",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-4",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "lecture.json 与网页运行快照之间，哪一个是可编辑权威内容？"
+            }
+          ]
+        }
+      ]
+    },
+    "quiz-widget": {
+      "id": "quiz-widget",
+      "type": "component",
+      "definitionId": "quiz-widget-definition",
+      "parameters": {
+        "options": [
+          "lecture.json",
+          "构建目录中的 ir.json",
+          "浏览器截图"
+        ],
+        "correct": [
+          0
+        ]
+      },
+      "children": [
+        "quiz-prompt"
+      ]
+    },
+    "multi-prompt": {
+      "id": "multi-prompt",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-5",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "哪些内容能直接保存在 canonical 文稿中？"
+            }
+          ]
+        }
+      ]
+    },
+    "multi-quiz": {
+      "id": "multi-quiz",
+      "type": "component",
+      "definitionId": "multi-quiz-definition",
+      "parameters": {
+        "options": [
+          "稳定步骤与画面参数",
+          "讲稿与发音标记",
+          "已经过期的音频被当作当前配音"
+        ],
+        "correct": [
+          0,
+          1
+        ]
+      },
+      "children": [
+        "multi-prompt"
+      ]
+    },
+    "text-6": {
+      "id": "text-6",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-7",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "个人阅读时提交后立即显示自测结果。加入课堂后，由主讲开启与结束作答；结束后再公开正确答案及统计。"
+            }
+          ]
+        }
+      ]
+    },
+    "prediction-answer": {
+      "id": "prediction-answer",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-8",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "结果是 6。循环分别累加 1、2、3；初值为 0，所以最终值为 6。"
+            }
+          ]
+        }
+      ]
+    },
+    "prediction-widget": {
+      "id": "prediction-widget",
+      "type": "component",
+      "definitionId": "prediction-widget-definition",
+      "parameters": {
+        "question": "total = 0，依次累加 1、2、3，最后是多少？",
+        "choices": [
+          "3",
+          "6",
+          "9"
+        ],
+        "reveal": [
+          "prediction-answer"
+        ]
+      },
+      "children": [
+        "prediction-answer"
+      ]
+    },
+    "text-9": {
+      "id": "text-9",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-10",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "阅读模式先保存预测再看答案。放映时按步骤揭晓；保存的是自己的预测，不能代替真实课堂提交状态。"
+            }
+          ]
+        }
+      ]
+    },
+    "exercise-prompt": {
+      "id": "exercise-prompt",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-11",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "实现 square(n)，返回 n 的平方。先运行错误起始代码，再修正为 return n * n。"
+            }
+          ]
+        }
+      ]
+    },
+    "exercise-widget": {
+      "id": "exercise-widget",
+      "type": "component",
+      "definitionId": "exercise-widget-definition",
+      "parameters": {
+        "lang": "python",
+        "starter": "def square(n):\n    return n",
+        "checks": "assert square(2) == 4, \"2 的平方应为 4\"\nassert square(-3) == 9, \"负数的平方也为正\""
+      },
+      "children": [
+        "exercise-prompt"
+      ]
+    },
+    "text-12": {
+      "id": "text-12",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-13",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "点击校验会调用真实执行器。首次加载 Pyodide 需要可访问其资源；缺少运行环境时应看到未运行或错误，不应宣称通过。"
+            }
+          ]
+        }
+      ]
+    },
+    "question-target": {
+      "id": "question-target",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-14",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "把你的问题关联到这一段：步骤决定画面状态，production 决定播放时机。"
+            }
+          ]
+        }
+      ]
+    },
+    "question-prompt": {
+      "id": "question-prompt",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-15",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "哪里还不清楚？加入课堂后，把问题发给主讲。"
+            }
+          ]
+        }
+      ]
+    },
+    "questions-widget": {
+      "id": "questions-widget",
+      "type": "component",
+      "definitionId": "questions-widget-definition",
+      "parameters": {
+        "target": "question-target"
+      },
+      "children": [
+        "question-prompt"
+      ]
+    },
+    "pulse": {
+      "id": "pulse",
+      "type": "component",
+      "definitionId": "pulse-definition",
+      "parameters": {
+        "question": "你能区分文稿、运行快照与讲授产物了吗？",
+        "levels": [
+          "可以解释给别人",
+          "还需要一个例子",
+          "需要帮助"
+        ]
+      }
+    },
+    "text-16": {
+      "id": "text-16",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-17",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "读者笔记与作者批注有不同归属。阅读页的笔记跟随稳定内容锚点；工作台中的正文批注使用原生编辑器扩展，随文稿保存。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-18",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在工作台选中本句添加批注，再继续输入、撤消或移动页面，检查锚点仍指向原来的内容。这个示例不会伪造已经存在的用户评论。"
+            }
+          ]
+        }
+      ]
+    },
+    "text-19": {
+      "id": "text-19",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-20",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "主讲创建课堂后，学生使用加入链接或二维码进入。学生默认跟随主讲，选择独立浏览后可自行阅读，再选择返回主讲恢复跟随。"
+            }
+          ]
+        },
+        {
+          "id": "paragraph-21",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "结束课堂后可归档，重启服务前应先完成归档。归档文件属于课堂服务，不写入示例 lecture.json。"
+            }
+          ]
+        }
+      ]
+    },
+    "teacher-note": {
+      "id": "teacher-note",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-22",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "教师提示：先让学生解释为什么运行快照不应被当成编辑源码，再展示具体保存版本。"
+            }
+          ]
+        }
+      ],
+      "audience": [
+        "teacher"
+      ]
+    },
+    "text-23": {
+      "id": "text-23",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-24",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这条公共说明会保留在学生版。构建 --audience student 应从产物中删除上面的教师提示，而不是仅用 CSS 隐藏。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "start-step": {
+      "id": "start-step",
+      "sectionId": "start",
+      "visuals": [
+        {
+          "blockId": "text-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "quiz-step": {
+      "id": "quiz-step",
+      "sectionId": "quiz",
+      "visuals": [
+        {
+          "blockId": "quiz-widget",
+          "visible": true
+        },
+        {
+          "blockId": "quiz-prompt",
+          "visible": true
+        },
+        {
+          "blockId": "multi-quiz",
+          "visible": true
+        },
+        {
+          "blockId": "multi-prompt",
+          "visible": true
+        },
+        {
+          "blockId": "text-6",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "prediction-step": {
+      "id": "prediction-step",
+      "sectionId": "prediction",
+      "visuals": [
+        {
+          "blockId": "prediction-widget",
+          "visible": true
+        },
+        {
+          "blockId": "prediction-answer",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "prediction-reveal": {
+      "id": "prediction-reveal",
+      "sectionId": "prediction",
+      "visuals": [
+        {
+          "blockId": "prediction-widget",
+          "visible": true
+        },
+        {
+          "blockId": "prediction-answer",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "exercise-step": {
+      "id": "exercise-step",
+      "sectionId": "exercise",
+      "visuals": [
+        {
+          "blockId": "exercise-widget",
+          "visible": true
+        },
+        {
+          "blockId": "exercise-prompt",
+          "visible": true
+        },
+        {
+          "blockId": "text-12",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "questions-step": {
+      "id": "questions-step",
+      "sectionId": "questions",
+      "visuals": [
+        {
+          "blockId": "question-target",
+          "visible": true
+        },
+        {
+          "blockId": "questions-widget",
+          "visible": true
+        },
+        {
+          "blockId": "question-prompt",
+          "visible": true
+        },
+        {
+          "blockId": "pulse",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "notes-step": {
+      "id": "notes-step",
+      "sectionId": "notes",
+      "visuals": [
+        {
+          "blockId": "text-16",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "follow-step": {
+      "id": "follow-step",
+      "sectionId": "follow",
+      "visuals": [
+        {
+          "blockId": "text-19",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "teacher-step": {
+      "id": "teacher-step",
+      "sectionId": "teacher",
+      "visuals": [
+        {
+          "blockId": "teacher-note",
+          "visible": true
+        },
+        {
+          "blockId": "text-23",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "quiz-widget-definition": {
+      "id": "quiz-widget-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmQuiz"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "答案：lecture.json 是唯一权威内容。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "multi-quiz-definition": {
+      "id": "multi-quiz-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmQuiz"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "正确：稳定步骤与画面参数、讲稿与发音标记。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "prediction-widget-definition": {
+      "id": "prediction-widget-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmPredict"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "先写下预测再揭晓：0+1+2+3=6。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "exercise-widget-definition": {
+      "id": "exercise-widget-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmExercise"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "参考实现：def square(n): return n * n。校验包含 square(2)==4 和 square(-3)==9。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "questions-widget-definition": {
+      "id": "questions-widget-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmQuestionBox"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "课堂提问，需要先加入真实课堂。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "pulse-definition": {
+      "id": "pulse-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmPulse"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "理解度投票：可以解释给别人 / 还需要一个例子 / 需要帮助。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

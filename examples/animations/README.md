@@ -1,13 +1,20 @@
 # Presmium 示例：用代码讲课
 
-本仓库的公开示例：两讲为 Presmium 写的中文讲义，演示用代码写动画，并把讲解、字幕、点击和光标编进同一条时间线。
+本仓库的中文公开示例，包括两讲完整课程和按主题组织的功能导览。
+每份文稿的唯一内容入口是 `lecture.json`；项目代码和媒体文件由文稿显式引用。
 
 | 讲义 | 内容 |
 |---|---|
 | [冒泡排序](bubble-sort/lecture.json) | 一趟冒泡排序：代码、GSAP 动画、讲解点击的计数组件与光标提示，最后合成为带字幕的讲授 |
 | [代码写成的动画](libraries/lecture.json) | GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节动画，再到讲到哪里点哪里与讲授视频 |
+| [功能导览：课堂互动](guide-classroom/lecture.json) | 单选、多选、先预测再揭晓、真实代码校验、锚定提问、理解度投票、笔记、学生跟随与受众输出 |
 
-每讲的 `scenes/` 是动画源码，一个场景一条时间线，由 `{scene}` 的 `:durations:` 切成放映的步骤；`components/` 是讲义自己的组件。讲解合成的语音存在各讲的 `.presmium/speech/`（合成缓存，随讲义提交），没有语音引擎也能构建和播放讲授；改过的句子要配置语音引擎才能重新合成。
+功能与章节的对应关系见 [功能索引](features.json)。
+课堂导览中的个人测验和预测不需要模型或课堂服务器；全班统计、提问与跟随需要真实课堂会话，文稿写明了启用条件。
+
+原有两讲的 `scenes/` 是动画源码，`definitions` 声明场景、状态和时长，`steps` 绑定画面；`components/` 保存讲义自己的组件。
+这两讲的既有讲解语音保存在各自的 `.presmium/speech/`，随文稿提交。
+没有语音引擎也能播放已匹配的缓存；修改讲稿后，旧音频不会自动成为当前配音，需要配置真实引擎并明确生成。
 
 ## 使用
 
@@ -20,5 +27,13 @@
 | `pnpm demo:build` | 构建网页站点，并把每讲的幻灯片与 notebook 放进站点：`dist/web/`，`<讲义>/slides/`、`<讲义>/notebook/` |
 | `pnpm demo:ir` | 输出两讲的 IR |
 | `presmium serve examples/animations` | 从示例源码启动工作区预览 |
+
+定向检查功能导览，避免运行整套示例：
+
+```sh
+presmium check examples/animations/guide-classroom --json
+presmium build examples/animations/guide-classroom --to web
+presmium dev examples/animations/guide-classroom
+```
 
 单讲预览用 `presmium dev bubble-sort --to web` 或 `--to slides`。讲授视频：`presmium build bubble-sort --to web,lecture` 之后运行 `presmium-lecture export bubble-sort --burn zh-CN`。

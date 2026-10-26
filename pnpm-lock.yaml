@@ -152,6 +152,33 @@ importers:
 
   examples/animations:
     dependencies:
+      '@lincyaw/addon-assistant':
+        specifier: workspace:*
+        version: link:../../packages/addon-assistant
+      '@lincyaw/addon-classroom':
+        specifier: workspace:*
+        version: link:../../packages/addon-classroom
+      '@lincyaw/addon-code':
+        specifier: workspace:*
+        version: link:../../packages/addon-code
+      '@lincyaw/addon-content':
+        specifier: workspace:*
+        version: link:../../packages/addon-content
+      '@lincyaw/addon-exec':
+        specifier: workspace:*
+        version: link:../../packages/addon-exec
+      '@lincyaw/addon-exec-jupyter':
+        specifier: workspace:*
+        version: link:../../packages/addon-exec-jupyter
+      '@lincyaw/addon-exec-local':
+        specifier: workspace:*
+        version: link:../../packages/addon-exec-local
+      '@lincyaw/addon-exec-wasi':
+        specifier: workspace:*
+        version: link:../../packages/addon-exec-wasi
+      '@lincyaw/addon-exec-webgpu':
+        specifier: workspace:*
+        version: link:../../packages/addon-exec-webgpu
       '@lincyaw/addon-guide':
         specifier: workspace:*
         version: link:../../packages/addon-guide
@@ -161,9 +188,18 @@ importers:
       '@lincyaw/addon-motion':
         specifier: workspace:*
         version: link:../../packages/addon-motion
+      '@lincyaw/addon-publish':
+        specifier: workspace:*
+        version: link:../../packages/addon-publish
+      '@lincyaw/addon-session':
+        specifier: workspace:*
+        version: link:../../packages/addon-session
       '@lincyaw/addon-speech':
         specifier: workspace:*
         version: link:../../packages/addon-speech
+      '@lincyaw/addon-stage':
+        specifier: workspace:*
+        version: link:../../packages/addon-stage
       '@lincyaw/cli':
         specifier: workspace:*
         version: link:../../packages/cli
