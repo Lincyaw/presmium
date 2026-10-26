@@ -2,6 +2,14 @@ import type { Locale } from '@lincyaw/kernel/contracts'
 
 export interface LectureMessages {
   view: string
+  production: {
+    missingSpeech: string
+    cacheMissing(text: string, section: string, reason: string): string
+    generateHint: string
+    incompleteCache: string
+    noVoice: string
+    noPreparedLecture: string
+  }
   recorder: {
     region: string
     record: string
@@ -80,6 +88,14 @@ export interface LectureMessages {
 export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
   'zh-CN': {
     view: '讲授',
+    production: {
+      missingSpeech: '读取配音缓存需要语音服务，请在 metadata.plugins 中启用 @lincyaw/addon-speech。',
+      cacheMissing: (text, section, reason) => `页面 ${section} 的讲稿「${text}」没有匹配当前文字与音色的配音缓存：${reason}`,
+      generateHint: '请先为当前讲稿和音色设置显式生成配音，再重新导出。检查和导出不会自动合成缺失音频。',
+      incompleteCache: '当前讲稿与音色设置缺少完整的配音缓存。请先显式生成配音，再导出。',
+      noVoice: '制作设置未指定 TTS 音色，当前文稿没有合成讲授轨。',
+      noPreparedLecture: '文稿还没有可用讲授轨。请提供录制轨，或选择 TTS 音色并显式生成配音。',
+    },
     recorder: {
       region: '讲授录制',
       record: '录制',
@@ -156,6 +172,14 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
   },
   'en': {
     view: 'Lecture',
+    production: {
+      missingSpeech: 'Production voiceover needs the speech service to read its exact audio cache; add @lincyaw/addon-speech to metadata.plugins.',
+      cacheMissing: (text, section, reason) => `The script "${text}" (section ${section}) has no voiceover cache matching its current text and voice: ${reason}`,
+      generateHint: 'Generate voiceover explicitly for the current script and voice settings, then export again. Checking and exporting never synthesize missing audio.',
+      incompleteCache: 'The current script and voice settings have no complete cached voiceover. Generate voiceover explicitly before exporting.',
+      noVoice: 'Production voiceSource names no TTS voice: the document has no synthesized lecture.',
+      noPreparedLecture: 'The document has no prepared lecture. Provide a recording, or choose a TTS voice and explicitly generate its voiceover first.',
+    },
     recorder: {
       region: 'Lecture recording',
       record: 'Record',

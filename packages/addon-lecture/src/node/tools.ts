@@ -1,7 +1,7 @@
 import { isAbsolute, relative, resolve } from 'node:path'
-import { defineService, DOCUMENT_FILES, SPEECH } from '@lincyaw/kernel'
+import { deckLocale, defineService, DOCUMENT_FILES, SPEECH } from '@lincyaw/kernel'
 import type { AgentTool, AgentToolContext, IRDocument, SourceRange, SpeechService } from '@lincyaw/kernel'
-import { LECTURES_DIR, narrationDraft, narrationSource, SCRIPT_TRACK, trackDuration, translationItems } from '../domain/index.ts'
+import { LECTURES_DIR, LECTURE_MESSAGES, narrationDraft, narrationSource, SCRIPT_TRACK, trackDuration, translationItems } from '../domain/index.ts'
 import type { LecturePlan, LectureTrack } from '../domain/index.ts'
 import { latestView } from './latest-ir.ts'
 import { deckPlan } from './plan.ts'
@@ -70,13 +70,13 @@ export const lecturePreview: AgentTool = {
 
 export const lectureSynthesize: AgentTool = {
   name: 'lecture_synthesize',
-  description: 'Says the deck\'s lecture plan with its voice (renderers.lecture.voice): the clips the synthesis cache (.presmium/speech/) lacks are synthesized by the speech engine, which costs money; the others come from the cache. Returns the synthesized lecture\'s length and parts; play it with ?view=lecture&track=script.',
+  description: 'Explicitly generates voiceover for the canonical narrations and Production voice sources: clips missing from the exact synthesis cache (.presmium/speech/) are synthesized by the speech engine, which costs money; matching clips come from cache. Returns the synthesized lecture\'s length and parts; play it with ?view=lecture&track=script.',
   input: { type: 'object', properties: {} },
   kind: 'spend',
   async run(_input, ctx) {
     const { deckDir, doc } = deckOf(ctx)
     const { deck, track, failures } = await synthesizeLecture(doc, deckDir, speechOf(ctx), ctx.signal)
-    if (!deck.voice) throw new Error('renderers.lecture.voice names no voice: the deck has no synthesized lecture')
+    if (!deck.voice) throw new Error(LECTURE_MESSAGES[deckLocale(doc.meta.lang)].production.noVoice)
     if (!track) throw new Error(failures.map(failure => synthesisFailureMessage(failure)).join('\n'))
     return {
       track: SCRIPT_TRACK,

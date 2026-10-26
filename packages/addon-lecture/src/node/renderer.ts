@@ -1,16 +1,16 @@
 import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { workspaceSettings } from '@lincyaw/compiler'
-import { errorMessage, SPEECH } from '@lincyaw/kernel'
+import { deckLocale, errorMessage, SPEECH } from '@lincyaw/kernel'
 import type { IRDocument, RenderContext, Renderer, SpeechService } from '@lincyaw/kernel'
-import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, dropChangedSections, eventsVtt, formatTrack, LECTURE_ID, LECTURE_RENDERER, SCRIPT_TRACK, trackDuration, trimToDeck, utteranceLine } from '../domain/index.ts'
+import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, dropChangedSections, eventsVtt, formatTrack, LECTURE_ID, LECTURE_RENDERER, LECTURE_MESSAGES, SCRIPT_TRACK, trackDuration, trimToDeck, utteranceLine } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 import { cachedClip, clipKeys } from './clips.ts'
 import { latestDoc } from './latest-ir.ts'
 import { deckPlan } from './plan.ts'
 import { mediaFile, mediaPolicy, publishedMedia, readTrack, TRACK_FILE, trackIds } from './store.ts'
 import type { MediaPolicy } from './store.ts'
-import { synthesisFailureMessage, synthesizeLecture } from './synthesize.ts'
+import { synthesizeLecture } from './synthesize.ts'
 
 const clipsOf = (track: LectureTrack) => new Set(track.utterances.flatMap(u => u.clip ?? []))
 
@@ -67,16 +67,16 @@ function publishTrack(track: LectureTrack, text: string, file: string, doc: IRDo
 }
 
 async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: unknown[], tracks: LectureTrack[]): Promise<boolean> {
-  const source = { file: doc.meta.entry, line: 1 }
+  const source = { file: doc.meta.entry, line: 1 }, t = LECTURE_MESSAGES[deckLocale(doc.meta.lang)].production
   const speech = ctx.service?.(SPEECH)
   if (!speech) {
-    ctx.report({ checkId: LECTURE_ID, severity: 'error', message: `renderers.lecture.voice: the lecture is said through the speech service, which no plugin provides; add @lincyaw/addon-speech to plugins`, source })
+    ctx.report({ checkId: LECTURE_ID, severity: 'error', message: t.missingSpeech, source })
     return false
   }
-  const synthesized = await synthesizeLecture(doc, ctx.deckDir, speech)
+  const synthesized = await synthesizeLecture(doc, ctx.deckDir, speech, undefined, { cacheOnly: true })
   synthesized.deck.findings.forEach(ctx.report)
   for (const failure of synthesized.failures) {
-    ctx.report({ checkId: LECTURE_ID, severity: 'error', message: synthesisFailureMessage(failure), source: failure.source ?? source, hint: 'define the engine of the voice (PRESMIUM_SPEECH_<ID>_URL and _PROVIDER), or build where the synthesis cache (.presmium/speech/) has the clips' })
+    ctx.report({ checkId: LECTURE_ID, severity: 'error', message: t.cacheMissing(failure.text.slice(0, 40), failure.section, failure.reason), source: failure.source ?? source, hint: t.generateHint })
   }
   for (const cut of synthesized.cuts) {
     ctx.report({ checkId: LECTURE_ID, severity: 'warning', message: `lecture ${SCRIPT_TRACK}: {cue}\`next\` moves on ${Math.round(cut.left)} ms before the animation of step ${cut.step} of section ${cut.section} has played`, source: cut.source ?? source, hint: 'say the cue later, or shorten the animation (:durations:)' })
@@ -129,6 +129,7 @@ export const lectureRenderer: Renderer = {
     const policy = mediaPolicy(workspaceSettings(ctx.workspaceRoot).settings[LECTURE_ID] ?? {})
     const published = publishedTrack(doc, ctx.deckDir)
     let complete = !synthesize || await publishSynthesized(doc, ctx, index, tracks)
+    if (!complete) throw new Error(LECTURE_MESSAGES[deckLocale(doc.meta.lang)].production.incompleteCache)
     for (const id of trackIds(ctx.deckDir)) {
       if (synthesize && id === SCRIPT_TRACK) {
         ctx.report({ checkId: LECTURE_ID, severity: 'warning', message: `lectures/${SCRIPT_TRACK} is not published: ${SCRIPT_TRACK} is the id of the synthesized lecture` })

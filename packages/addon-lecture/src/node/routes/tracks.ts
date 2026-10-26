@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs'
 import { relative } from 'node:path'
-import { errorMessage, jsonResponse, problemResponse } from '@lincyaw/kernel'
+import { deckLocale, errorMessage, jsonResponse, problemResponse } from '@lincyaw/kernel'
 import type { IRDocument, Route } from '@lincyaw/kernel'
-import { CLIPS_DIR, SCRIPT_TRACK, trackDuration } from '../../domain/index.ts'
+import { CLIPS_DIR, LECTURE_MESSAGES, SCRIPT_TRACK, trackDuration } from '../../domain/index.ts'
 import type { LectureTrack, MediaSegment } from '../../domain/index.ts'
 import { cachedClip } from '../clips.ts'
 import { latestDoc, latestView } from '../latest-ir.ts'
@@ -33,7 +33,7 @@ export function trackRoutes(served: ServedDeck): Record<string, Route> {
     // A sentence that could not be said plays silent, its caption shown: the lecture still plays on its timeline.
     const made = synthesizeLecture(doc, deckDir, served.speech(), undefined, { cacheOnly: true }).then(({ deck, preview: track, failures, clips }) => {
       for (const failure of failures) served.ctx.log.warn(`[lecture] section=${JSON.stringify(failure.section)} source=${JSON.stringify(failure.source)} ${synthesisFailureMessage(failure, true)}`)
-      if (!deck.voice) throw new RouteRefusal(404, `no lecture ${SCRIPT_TRACK}: renderers.lecture.voice names no voice`)
+      if (!deck.voice) throw new RouteRefusal(404, LECTURE_MESSAGES[deckLocale(doc.meta.lang)].production.noVoice)
       if (!track) throw new RouteRefusal(502, failures.map(failure => synthesisFailureMessage(failure, true)).join('\n'))
       served.ctx.log.info(`[lecture] document=${document} track=${SCRIPT_TRACK} state=${failures.length ? 'silent-fallback' : 'ready'} elapsedMs=${Date.now() - started} clips=${clips.size} unsaid=${failures.length}`)
       const names = [...new Set([...clips.values()].map(clip => clip.file))].sort()
