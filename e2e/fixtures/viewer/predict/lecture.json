@@ -1,0 +1,426 @@
+{
+  "schemaVersion": 1,
+  "id": "document-1d67a799f6ebbe00",
+  "metadata": {
+    "title": "预测与讲解",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-classroom"
+    ],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "预测与讲解",
+    "merge"
+  ],
+  "sections": {
+    "预测与讲解": {
+      "id": "预测与讲解",
+      "title": "预测与讲解",
+      "level": 1,
+      "children": [
+        "预测与讲解--paragraph-1"
+      ],
+      "stepOrder": [
+        "预测与讲解--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "merge": {
+      "id": "merge",
+      "title": "合并三轮",
+      "level": 2,
+      "children": [
+        "merge--paragraph-1",
+        "merge--paragraph-2",
+        "merge--pm-predict-1"
+      ],
+      "stepOrder": [
+        "merge--step-0",
+        "merge--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "预测与讲解--paragraph-1": {
+      "id": "预测与讲解--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "预测与讲解--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/viewer.spec.ts 的测试文稿：揭示一步的讲解移入 "
+            },
+            {
+              "type": "text",
+              "text": "PmPredict",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 之后，网页的演讲者视图仍在备注与预告中显示它。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--paragraph-1": {
+      "id": "merge--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "语料 "
+            },
+            {
+              "type": "text",
+              "text": "aaabdaaabac",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：BPE 每一轮把出现次数最多的相邻符号对合并成一个新符号。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--paragraph-2": {
+      "id": "merge--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "先请大家估计一下。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--pm-predict-1": {
+      "id": "merge--pm-predict-1",
+      "type": "component",
+      "definitionId": "merge--pm-predict-1--definition",
+      "parameters": {
+        "question": "合并三轮之后，词表中有几个新符号？",
+        "choices": [
+          "1",
+          "2",
+          "3"
+        ],
+        "reveal": [
+          "paragraph-3"
+        ],
+        "notes": [
+          "paragraph-4"
+        ],
+        "place": {
+          "section": "merge",
+          "block": "pm-predict-1",
+          "title": "合并三轮",
+          "index": 2
+        }
+      },
+      "children": [
+        "merge--pm-predict-1--paragraph-3",
+        "merge--pm-predict-1--paragraph-4"
+      ]
+    },
+    "merge--pm-predict-1--paragraph-3": {
+      "id": "merge--pm-predict-1--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--pm-predict-1--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "三个：每一轮新增一个符号。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--pm-predict-1--paragraph-4": {
+      "id": "merge--pm-predict-1--paragraph-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--pm-predict-1--paragraph-4--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每一轮只合并出现最多的那一对，所以三轮新增三个符号。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "预测与讲解--step-0": {
+      "id": "预测与讲解--step-0",
+      "sectionId": "预测与讲解",
+      "visuals": [
+        {
+          "blockId": "预测与讲解--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "预测与讲解--paragraph-1--narration"
+      ]
+    },
+    "merge--step-0": {
+      "id": "merge--step-0",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "merge--pm-predict-1--paragraph-3",
+          "visible": false
+        },
+        {
+          "blockId": "merge--pm-predict-1--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "merge--pm-predict-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": [
+        "merge--paragraph-2--narration"
+      ]
+    },
+    "merge--step-1": {
+      "id": "merge--step-1",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "merge--pm-predict-1--paragraph-3",
+          "visible": true
+        },
+        {
+          "blockId": "merge--pm-predict-1--paragraph-4",
+          "visible": false
+        },
+        {
+          "blockId": "merge--pm-predict-1",
+          "visible": true,
+          "state": "legacy-1"
+        }
+      ],
+      "narrationIds": [
+        "merge--pm-predict-1--paragraph-4--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "预测与讲解--paragraph-1--narration": {
+      "id": "预测与讲解--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "e2e/viewer.spec.ts 的测试文稿：揭示一步的讲解移入 PmPredict 之后，网页的演讲者视图仍在备注与预告中显示它。"
+        }
+      ]
+    },
+    "merge--paragraph-2--narration": {
+      "id": "merge--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先请大家估计一下。"
+        }
+      ]
+    },
+    "merge--pm-predict-1--paragraph-4--narration": {
+      "id": "merge--pm-predict-1--paragraph-4--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "每一轮只合并出现最多的那一对，所以三轮新增三个符号。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "merge--pm-predict-1--definition": {
+      "id": "merge--pm-predict-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmPredict"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        }
+      ],
+      "data": {
+        "plugin": "presmium.classroom",
+        "name": "PmPredict",
+        "ownsCode": false,
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "预测"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "：合并三轮之后，词表中有几个新符号？"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "ordered": true,
+              "spread": false,
+              "children": [
+                {
+                  "type": "listItem",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "1"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "2"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "3"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "html",
+              "value": "<details data-static=\"open\"><summary>写下预测后展开</summary>"
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "三个：每一轮新增一个符号。"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "每一轮只合并出现最多的那一对，所以三轮新增三个符号。"
+                }
+              ]
+            },
+            {
+              "type": "html",
+              "value": "</details>"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

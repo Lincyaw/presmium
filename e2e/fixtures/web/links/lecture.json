@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "id": "document-d5f5cd4d2cf28df1",
+  "metadata": {
+    "title": "卡片与按钮",
+    "lang": "zh-CN",
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "卡片与按钮",
+    "讲义"
+  ],
+  "sections": {
+    "卡片与按钮": {
+      "id": "卡片与按钮",
+      "title": "卡片与按钮",
+      "level": 1,
+      "children": [
+        "卡片与按钮--paragraph-1"
+      ],
+      "stepOrder": [
+        "卡片与按钮--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "讲义": {
+      "id": "讲义",
+      "title": "讲义",
+      "level": 2,
+      "children": [
+        "讲义--card-1",
+        "讲义--paragraph-1"
+      ],
+      "stepOrder": [
+        "讲义--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "卡片与按钮--paragraph-1": {
+      "id": "卡片与按钮--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "卡片与按钮--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/web.spec.ts 的测试文稿：卡片的 "
+            },
+            {
+              "type": "text",
+              "text": ":link:",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 指向本地文件时，网页发布这个文件并改写链接；没有目标的按钮仍是按钮的样子。"
+            }
+          ]
+        }
+      ]
+    },
+    "讲义--card-1": {
+      "id": "讲义--card-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "讲义--card-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "card",
+              "url": "handout.txt",
+              "children": [
+                {
+                  "type": "cardTitle",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "讲义"
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "本周的讲义。"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "讲义--card-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "讲义本周的讲义。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "讲义--paragraph-1": {
+      "id": "讲义--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "讲义--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "span",
+                  "class": "button",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "即将开放"
+                    }
+                  ]
+                }
+              },
+              "fallback": "即将开放"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "卡片与按钮--step-0": {
+      "id": "卡片与按钮--step-0",
+      "sectionId": "卡片与按钮",
+      "visuals": [
+        {
+          "blockId": "卡片与按钮--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "卡片与按钮--paragraph-1--narration"
+      ]
+    },
+    "讲义--step-0": {
+      "id": "讲义--step-0",
+      "sectionId": "讲义",
+      "visuals": [
+        {
+          "blockId": "讲义--card-1",
+          "visible": true
+        },
+        {
+          "blockId": "讲义--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "讲义--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "卡片与按钮--paragraph-1--narration": {
+      "id": "卡片与按钮--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "e2e/web.spec.ts 的测试文稿：卡片的 :link: 指向本地文件时，网页发布这个文件并改写链接；没有目标的按钮仍是按钮的样子。"
+        }
+      ]
+    },
+    "讲义--paragraph-1--narration": {
+      "id": "讲义--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "即将开放"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

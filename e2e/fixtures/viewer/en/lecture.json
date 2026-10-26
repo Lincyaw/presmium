@@ -1,0 +1,319 @@
+{
+  "schemaVersion": 1,
+  "id": "document-6b21f818af0fd3dc",
+  "metadata": {
+    "title": "An English Deck",
+    "lang": "en-US",
+    "plugins": [
+      "@lincyaw/addon-stage"
+    ],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "an-english-deck",
+    "steps",
+    "code"
+  ],
+  "sections": {
+    "an-english-deck": {
+      "id": "an-english-deck",
+      "title": "An English Deck",
+      "level": 1,
+      "children": [
+        "an-english-deck--paragraph-1"
+      ],
+      "stepOrder": [
+        "an-english-deck--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "steps": {
+      "id": "steps",
+      "title": "Steps",
+      "level": 2,
+      "children": [
+        "steps--list-1",
+        "steps--paragraph-1",
+        "steps--paragraph-2"
+      ],
+      "stepOrder": [
+        "steps--step-0",
+        "steps--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "code": {
+      "id": "code",
+      "title": "Code",
+      "level": 2,
+      "children": [
+        "code--code-1",
+        "code--paragraph-1"
+      ],
+      "stepOrder": [
+        "code--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "an-english-deck--paragraph-1": {
+      "id": "an-english-deck--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "an-english-deck--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A deck in English: the IR runtime and the stage speak its language."
+            }
+          ]
+        }
+      ]
+    },
+    "steps--list-1": {
+      "id": "steps--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "steps--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "steps--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "First point"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "steps--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "steps--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "Second point"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "reveal": {
+        "type": "items",
+        "order": [
+          "steps--list-1--text-0-item-0",
+          "steps--list-1--text-0-item-1"
+        ]
+      }
+    },
+    "steps--paragraph-1": {
+      "id": "steps--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The first point."
+            }
+          ]
+        }
+      ]
+    },
+    "steps--paragraph-2": {
+      "id": "steps--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The second point."
+            }
+          ]
+        }
+      ]
+    },
+    "code--code-1": {
+      "id": "code--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "print(\"hello\")",
+      "execution": {
+        "when": "live"
+      }
+    },
+    "code--paragraph-1": {
+      "id": "code--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "code--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The reader can run this code in the browser when an executor is available."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "an-english-deck--step-0": {
+      "id": "an-english-deck--step-0",
+      "sectionId": "an-english-deck",
+      "visuals": [
+        {
+          "blockId": "an-english-deck--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "an-english-deck--paragraph-1--narration"
+      ]
+    },
+    "steps--step-0": {
+      "id": "steps--step-0",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 1
+          }
+        },
+        {
+          "blockId": "steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "steps--paragraph-1--narration"
+      ]
+    },
+    "steps--step-1": {
+      "id": "steps--step-1",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        },
+        {
+          "blockId": "steps--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "steps--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "steps--paragraph-2--narration"
+      ]
+    },
+    "code--step-0": {
+      "id": "code--step-0",
+      "sectionId": "code",
+      "visuals": [
+        {
+          "blockId": "code--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "code--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "code--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "an-english-deck--paragraph-1--narration": {
+      "id": "an-english-deck--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "A deck in English: the IR runtime and the stage speak its language."
+        }
+      ]
+    },
+    "steps--paragraph-1--narration": {
+      "id": "steps--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "The first point."
+        }
+      ]
+    },
+    "steps--paragraph-2--narration": {
+      "id": "steps--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "The second point."
+        }
+      ]
+    },
+    "code--paragraph-1--narration": {
+      "id": "code--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "The reader can run this code in the browser when an executor is available."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

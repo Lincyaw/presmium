@@ -1,0 +1,963 @@
+{
+  "schemaVersion": 1,
+  "id": "document-38ad27c1d97e4829",
+  "metadata": {
+    "title": "实时预览测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec",
+      "./plugin"
+    ],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "实时预览测试文稿",
+    "web",
+    "scrolly",
+    "components",
+    "会改名的一节",
+    "slow"
+  ],
+  "sections": {
+    "实时预览测试文稿": {
+      "id": "实时预览测试文稿",
+      "title": "实时预览测试文稿",
+      "level": 1,
+      "children": [
+        "实时预览测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "实时预览测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "web": {
+      "id": "web",
+      "title": "网页形态",
+      "level": 2,
+      "children": [
+        "web--paragraph-1",
+        "web--list-1",
+        "web--paragraph-2"
+      ],
+      "stepOrder": [
+        "web--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "scrolly": {
+      "id": "scrolly",
+      "title": "滚动叙事",
+      "level": 2,
+      "children": [
+        "scrolly--list-1",
+        "scrolly--paragraph-1",
+        "scrolly--paragraph-2",
+        "scrolly--paragraph-3"
+      ],
+      "stepOrder": [
+        "scrolly--step-0",
+        "scrolly--step-1",
+        "scrolly--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          }
+        }
+      }
+    },
+    "components": {
+      "id": "components",
+      "title": "组件",
+      "level": 2,
+      "children": [
+        "components--paragraph-1",
+        "components--fixture-boom-1",
+        "components--paragraph-2",
+        "components--fixture-clicks-1"
+      ],
+      "stepOrder": [
+        "components--step-0",
+        "components--step-1",
+        "components--step-2",
+        "components--step-3",
+        "components--step-4"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "会改名的一节": {
+      "id": "会改名的一节",
+      "title": "会改名的一节",
+      "level": 2,
+      "children": [
+        "会改名的一节--list-1",
+        "会改名的一节--paragraph-1"
+      ],
+      "stepOrder": [
+        "会改名的一节--step-0",
+        "会改名的一节--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "slow": {
+      "id": "slow",
+      "title": "慢代码",
+      "level": 2,
+      "children": [
+        "slow--code-1",
+        "slow--paragraph-1"
+      ],
+      "stepOrder": [
+        "slow--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "实时预览测试文稿--paragraph-1": {
+      "id": "实时预览测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "实时预览测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "presmium dev",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 的测试文稿（e2e/viewer.spec.ts）：测试编辑 pages/web.md 与 pages/live.md，页面在不刷新的情况下更新。"
+            }
+          ]
+        }
+      ]
+    },
+    "web--paragraph-1": {
+      "id": "web--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "web--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "网页是主媒介：IR 运行时在浏览器中直接渲染每个章节，讲解段落按原顺序显示为正文。"
+            }
+          ]
+        }
+      ]
+    },
+    "web--list-1": {
+      "id": "web--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "web--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "web--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "web--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "侧边目录与页内大纲"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "web--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "web--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "全文搜索覆盖标题、讲解与代码"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "web--paragraph-2": {
+      "id": "web--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "web--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "搜索框支持中文分词，断网后也能检索。"
+            }
+          ]
+        }
+      ]
+    },
+    "scrolly--list-1": {
+      "id": "scrolly--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "scrolly--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "scrolly--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "编译：源码编译为 IR"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "scrolly--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "scrolly--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "渲染：IR 运行时按章节渲染"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "scrolly--list-1--text-0-item-2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "scrolly--list-1--text-0-2-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "发布：VitePress 外壳生成静态站点"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "reveal": {
+        "type": "items",
+        "order": [
+          "scrolly--list-1--text-0-item-0",
+          "scrolly--list-1--text-0-item-1",
+          "scrolly--list-1--text-0-item-2"
+        ]
+      }
+    },
+    "scrolly--paragraph-1": {
+      "id": "scrolly--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "滚动叙事式的章节：上屏内容固定在一侧，讲解在另一侧滚动。第一步，编译源码。"
+            }
+          ]
+        }
+      ]
+    },
+    "scrolly--paragraph-2": {
+      "id": "scrolly--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步，渲染章节。IR 运行时直接从 IR 渲染，不生成 Markdown。"
+            }
+          ]
+        }
+      ]
+    },
+    "scrolly--paragraph-3": {
+      "id": "scrolly--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "scrolly--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第三步，发布站点。搜索索引在构建时从 IR 文本生成。"
+            }
+          ]
+        }
+      ]
+    },
+    "components--paragraph-1": {
+      "id": "components--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "components--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "出错的组件在作者修好之后恢复，不需要刷新页面。"
+            }
+          ]
+        }
+      ]
+    },
+    "components--fixture-boom-1": {
+      "id": "components--fixture-boom-1",
+      "type": "component",
+      "definitionId": "components--fixture-boom-1--definition",
+      "parameters": {
+        "fail": true
+      }
+    },
+    "components--paragraph-2": {
+      "id": "components--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "components--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "逐个出现的词：每个词一步，最后一个字在它们之后。"
+            }
+          ]
+        }
+      ]
+    },
+    "components--fixture-clicks-1": {
+      "id": "components--fixture-clicks-1",
+      "type": "component",
+      "definitionId": "components--fixture-clicks-1--definition",
+      "parameters": {
+        "items": [
+          "甲",
+          "乙",
+          "丙"
+        ]
+      }
+    },
+    "会改名的一节--list-1": {
+      "id": "会改名的一节--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "会改名的一节--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "会改名的一节--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "会改名的一节--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "第一点"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "会改名的一节--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "会改名的一节--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "第二点"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "reveal": {
+        "type": "items",
+        "order": [
+          "会改名的一节--list-1--text-0-item-0",
+          "会改名的一节--list-1--text-0-item-1"
+        ]
+      }
+    },
+    "会改名的一节--paragraph-1": {
+      "id": "会改名的一节--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "会改名的一节--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这一节没有标签，它的 id 来自标题。"
+            }
+          ]
+        }
+      ]
+    },
+    "slow--code-1": {
+      "id": "slow--code-1",
+      "type": "code",
+      "language": "javascript",
+      "value": "const end = Date.now() + 4000\nwhile (Date.now() < end) {}\nconsole.log('旧代码的输出')",
+      "execution": {
+        "when": "live"
+      }
+    },
+    "slow--paragraph-1": {
+      "id": "slow--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "slow--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这段代码运行四秒。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "实时预览测试文稿--step-0": {
+      "id": "实时预览测试文稿--step-0",
+      "sectionId": "实时预览测试文稿",
+      "visuals": [
+        {
+          "blockId": "实时预览测试文稿--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "实时预览测试文稿--paragraph-1--narration"
+      ]
+    },
+    "web--step-0": {
+      "id": "web--step-0",
+      "sectionId": "web",
+      "visuals": [
+        {
+          "blockId": "web--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "web--list-1",
+          "visible": true
+        },
+        {
+          "blockId": "web--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "web--paragraph-1--narration",
+        "web--paragraph-2--narration"
+      ]
+    },
+    "scrolly--step-0": {
+      "id": "scrolly--step-0",
+      "sectionId": "scrolly",
+      "visuals": [
+        {
+          "blockId": "scrolly--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 1
+          }
+        },
+        {
+          "blockId": "scrolly--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "scrolly--paragraph-1--narration"
+      ]
+    },
+    "scrolly--step-1": {
+      "id": "scrolly--step-1",
+      "sectionId": "scrolly",
+      "visuals": [
+        {
+          "blockId": "scrolly--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        },
+        {
+          "blockId": "scrolly--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "scrolly--paragraph-2--narration"
+      ]
+    },
+    "scrolly--step-2": {
+      "id": "scrolly--step-2",
+      "sectionId": "scrolly",
+      "visuals": [
+        {
+          "blockId": "scrolly--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 3
+          }
+        },
+        {
+          "blockId": "scrolly--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "scrolly--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "scrolly--paragraph-3--narration"
+      ]
+    },
+    "components--step-0": {
+      "id": "components--step-0",
+      "sectionId": "components",
+      "visuals": [
+        {
+          "blockId": "components--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "components--fixture-boom-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "components--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "components--fixture-clicks-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": [
+        "components--paragraph-1--narration",
+        "components--paragraph-2--narration"
+      ]
+    },
+    "components--step-1": {
+      "id": "components--step-1",
+      "sectionId": "components",
+      "visuals": [
+        {
+          "blockId": "components--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "components--fixture-boom-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "components--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "components--fixture-clicks-1",
+          "visible": true,
+          "state": "legacy-1"
+        }
+      ],
+      "narrationIds": []
+    },
+    "components--step-2": {
+      "id": "components--step-2",
+      "sectionId": "components",
+      "visuals": [
+        {
+          "blockId": "components--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "components--fixture-boom-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "components--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "components--fixture-clicks-1",
+          "visible": true,
+          "state": "legacy-2"
+        }
+      ],
+      "narrationIds": []
+    },
+    "components--step-3": {
+      "id": "components--step-3",
+      "sectionId": "components",
+      "visuals": [
+        {
+          "blockId": "components--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "components--fixture-boom-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "components--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "components--fixture-clicks-1",
+          "visible": true,
+          "state": "legacy-3"
+        }
+      ],
+      "narrationIds": []
+    },
+    "components--step-4": {
+      "id": "components--step-4",
+      "sectionId": "components",
+      "visuals": [
+        {
+          "blockId": "components--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "components--fixture-boom-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "components--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "components--fixture-clicks-1",
+          "visible": true,
+          "state": "legacy-4"
+        }
+      ],
+      "narrationIds": []
+    },
+    "会改名的一节--step-0": {
+      "id": "会改名的一节--step-0",
+      "sectionId": "会改名的一节",
+      "visuals": [
+        {
+          "blockId": "会改名的一节--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 1
+          }
+        },
+        {
+          "blockId": "会改名的一节--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "会改名的一节--paragraph-1--narration"
+      ]
+    },
+    "会改名的一节--step-1": {
+      "id": "会改名的一节--step-1",
+      "sectionId": "会改名的一节",
+      "visuals": [
+        {
+          "blockId": "会改名的一节--list-1",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
+        },
+        {
+          "blockId": "会改名的一节--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "slow--step-0": {
+      "id": "slow--step-0",
+      "sectionId": "slow",
+      "visuals": [
+        {
+          "blockId": "slow--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "slow--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "slow--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "实时预览测试文稿--paragraph-1--narration": {
+      "id": "实时预览测试文稿--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "presmium dev 的测试文稿（e2e/viewer.spec.ts）：测试编辑 pages/web.md 与 pages/live.md，页面在不刷新的情况下更新。"
+        }
+      ]
+    },
+    "web--paragraph-1--narration": {
+      "id": "web--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "网页是主媒介：IR 运行时在浏览器中直接渲染每个章节，讲解段落按原顺序显示为正文。"
+        }
+      ]
+    },
+    "web--paragraph-2--narration": {
+      "id": "web--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "搜索框支持中文分词，断网后也能检索。"
+        }
+      ]
+    },
+    "scrolly--paragraph-1--narration": {
+      "id": "scrolly--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "滚动叙事式的章节：上屏内容固定在一侧，讲解在另一侧滚动。第一步，编译源码。"
+        }
+      ]
+    },
+    "scrolly--paragraph-2--narration": {
+      "id": "scrolly--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二步，渲染章节。IR 运行时直接从 IR 渲染，不生成 Markdown。"
+        }
+      ]
+    },
+    "scrolly--paragraph-3--narration": {
+      "id": "scrolly--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第三步，发布站点。搜索索引在构建时从 IR 文本生成。"
+        }
+      ]
+    },
+    "components--paragraph-1--narration": {
+      "id": "components--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "出错的组件在作者修好之后恢复，不需要刷新页面。"
+        }
+      ]
+    },
+    "components--paragraph-2--narration": {
+      "id": "components--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "逐个出现的词：每个词一步，最后一个字在它们之后。"
+        }
+      ]
+    },
+    "会改名的一节--paragraph-1--narration": {
+      "id": "会改名的一节--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这一节没有标签，它的 id 来自标题。"
+        }
+      ]
+    },
+    "slow--paragraph-1--narration": {
+      "id": "slow--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这段代码运行四秒。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "components--fixture-boom-1--definition": {
+      "id": "components--fixture-boom-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "./plugin",
+        "name": "FixtureBoom"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "./plugin",
+        "name": "FixtureBoom"
+      }
+    },
+    "components--fixture-clicks-1--definition": {
+      "id": "components--fixture-clicks-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "./plugin",
+        "name": "FixtureClicks"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        },
+        {
+          "id": "legacy-4",
+          "legacyIndex": 4
+        }
+      ],
+      "data": {
+        "plugin": "./plugin",
+        "name": "FixtureClicks"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
