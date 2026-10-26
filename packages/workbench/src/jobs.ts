@@ -24,6 +24,7 @@ export class DocumentJobs {
   }
 
   subscribe(dir: string): void {
+    this.#unsubscribe?.()
     const scope = ++this.#scope
     const current = () => scope === this.#scope && this.#store.state.document === dir
     this.#unsubscribe = this.#client.subscribeJobs(dir, (job) => {

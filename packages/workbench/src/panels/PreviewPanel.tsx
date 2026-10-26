@@ -4,7 +4,6 @@ import { createPreviewPool } from '../preview-pool.ts'
 import type { PreviewFrameStatus } from '../preview-pool.ts'
 import { PmButton, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
-import { PointerPopover } from '../parts/PointerPopover.tsx'
 import { slideAspect } from '../workbench.ts'
 
 /** The open document as its readers see it (the web form or the slides), with the tools for what the author points at. */
@@ -50,7 +49,6 @@ export function PreviewPanel({ active = true }: { active?: boolean }) {
       {renderer === 'slides' && preview && !preview.slides && <p className="pmw-muted pmw-preview__loading">{t.noSlides}</p>}
       <div className="pmw-preview__stage">
         <div ref={container} className="pmw-preview__frames" data-renderer={renderer} style={aspect === undefined ? undefined : { '--pmw-slide-aspect': aspect } as CSSProperties} />
-        {ready && <PointerPopover />}
       </div>
     </section>
   )

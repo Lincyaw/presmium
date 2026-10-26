@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { errorMessage } from '@lincyaw/kernel'
 import type { DocumentSummary } from '@lincyaw/kernel'
 import { PmButton, PmDialog, PmEmpty, PmInput, PmSelect, PmIcon, PmMenu, PmNotice } from '../components.tsx'
@@ -7,23 +7,6 @@ import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 type Editing =
   | { op: 'create' }
   | { op: 'rename' | 'delete', doc: DocumentSummary }
-
-// How long the mouse rests on a document, or the focus stays on it, before it is prepared for opening.
-const INTENT_MS = 150
-
-/** Handlers that call `prefetch` once the mouse rests on an item, or the keyboard focus reaches it, as when about to open it. */
-function usePrefetchIntent(prefetch: (dir: string) => void) {
-  const timer = useRef<ReturnType<typeof setTimeout>>()
-  useEffect(() => () => clearTimeout(timer.current), [])
-  return (dir: string) => {
-    const start = () => {
-      clearTimeout(timer.current)
-      timer.current = setTimeout(() => prefetch(dir), INTENT_MS)
-    }
-    const cancel = () => clearTimeout(timer.current)
-    return { onPointerEnter: start, onPointerLeave: cancel, onFocus: start, onBlur: cancel }
-  }
-}
 
 /** The documents of the workspace: open one, make a new one, rename, copy or delete one. */
 export function HomePanel() {
@@ -40,7 +23,6 @@ export function HomePanel() {
   useEffect(() => {
     void workbench.loadDocuments()
   }, [workbench])
-  const intent = usePrefetchIntent(dir => workbench.prefetchDocument(dir))
   const documents = answer?.documents ?? []
   const operable = Boolean(answer?.git) && !answer?.single
   const shown = documents.filter(doc => doc.title.toLowerCase().includes(query.trim().toLowerCase()))
@@ -82,7 +64,7 @@ export function HomePanel() {
               <ul className="pmw-home__cards" aria-label={t.allDocuments}>
                 {shown.map(doc => (
                   <li key={doc.dir} className="pmw-home__card" data-document={doc.dir}>
-                      <button type="button" className="pmw-home__open" onClick={() => void workbench.openDocument(doc.dir)} {...intent(doc.dir)}>
+                      <button type="button" className="pmw-home__open" onClick={() => void workbench.openDocument(doc.dir)}>
                         <span className="pmw-home__doc-icon" aria-hidden="true"><PmIcon name="document" size={18} /></span>
                         <span className="pmw-home__doc-title">{doc.title}</span>
                       </button>

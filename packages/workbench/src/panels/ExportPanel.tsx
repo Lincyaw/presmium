@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CompileJob, OutputTarget } from '@lincyaw/kernel'
 import type { IconName } from '@lincyaw/design'
 import { PmBadge, PmButton, PmDialog, PmEmpty, PmIcon, PmIconButton, PmNotice } from '../components.tsx'
@@ -26,6 +26,8 @@ function iconOf(target: string): IconName {
 export function ExportPanel({ documentOnly = false, onClose }: { documentOnly?: boolean, onClose(): void }) {
   const t = useMessages()
   const workbench = useWorkbench()
+  const document = useWorkbenchState(state => state.document)
+  useEffect(() => workbench.observeJobs(), [workbench, document])
   const answer = useWorkbenchState(state => state.jobs)
   const failure = useWorkbenchState(state => state.jobsFailure)
   const revision = useWorkbenchState(state => state.ir?.revision)
