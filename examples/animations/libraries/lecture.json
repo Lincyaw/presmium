@@ -90,7 +90,6 @@
       "children": [
         "motion--attention",
         "motion--paragraph-1",
-        "motion--paragraph-2",
         "motion--paragraph-3"
       ],
       "stepOrder": [
@@ -428,23 +427,7 @@
           "children": [
             {
               "type": "text",
-              "text": "查询词 cat 看向句子里的每个词，它自己的权重最大。"
-            }
-          ]
-        }
-      ]
-    },
-    "motion--paragraph-2": {
-      "id": "motion--paragraph-2",
-      "type": "text",
-      "content": [
-        {
-          "id": "motion--paragraph-2--text-0",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "查询换成 mat，同一组柱子换上新的权重。"
+              "text": "查询词 cat 看向句子里的每个词，它自己的权重最大。查询换成 mat，同一组柱子换上新的权重。"
             }
           ]
         }
@@ -1051,10 +1034,6 @@
           "visible": false
         },
         {
-          "blockId": "motion--paragraph-2",
-          "visible": false
-        },
-        {
           "blockId": "motion--paragraph-3",
           "visible": false
         }
@@ -1077,10 +1056,6 @@
           "visible": false
         },
         {
-          "blockId": "motion--paragraph-2",
-          "visible": false
-        },
-        {
           "blockId": "motion--paragraph-3",
           "visible": false
         }
@@ -1100,10 +1075,6 @@
         },
         {
           "blockId": "motion--paragraph-1",
-          "visible": false
-        },
-        {
-          "blockId": "motion--paragraph-2",
           "visible": false
         },
         {
