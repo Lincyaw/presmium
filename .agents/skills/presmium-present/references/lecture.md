@@ -18,6 +18,8 @@ TTS providers, credentials and endpoints are operator configuration. Check the s
 
 A cache-only preview can play existing exact-text/exact-voice audio; a missing cache entry is a missing capability until generated. Use the installed lecture/speech generation action or documented API to synthesize an explicit revision-bound scope. Show provider, count and target before a paid operation. Never synthesize merely by opening the document, editing text, auditioning another voice or refreshing preview.
 
+Checks, lecture builds and video exports read only exact cached voiceover. A configured engine does not make missing audio ready: generate it explicitly before exporting; these read/output actions never synthesize it.
+
 Completed audio belongs to the exact content and voice configuration that produced it. Old callbacks cannot clear new input or label old audio current. Cancellation stops remaining work and retains completed valid cache. Reuse cache only when the real synthesis key matches.
 
 ## Align and produce

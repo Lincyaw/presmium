@@ -1,8 +1,7 @@
-import { errorMessage, SPEECH } from '@lincyaw/kernel'
+import { deckLocale, errorMessage, SPEECH } from '@lincyaw/kernel'
 import type { Check, CheckContext, Finding, IRDocument, Severity } from '@lincyaw/kernel'
-import { blockOf, clockText, eventDrift, eventLine, LECTURE_ID, plannedUtterances, unchanged } from '../domain/index.ts'
+import { blockOf, clockText, eventDrift, eventLine, LECTURE_ID, LECTURE_MESSAGES, plannedUtterances, unchanged } from '../domain/index.ts'
 import type { EventDrift } from '../domain/index.ts'
-import { synthesisEngine } from './engines.ts'
 import { lectureView } from './latest-ir.ts'
 import { deckPlan } from './plan.ts'
 import { readTrack, trackIds } from './store.ts'
@@ -60,23 +59,23 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
   const findings = [...deck.findings]
   if (!deck.voice) return findings
   const speech = ctx.service?.(SPEECH)
-  const source = { file: ctx.ir.meta.entry, line: 1 }
+  const source = { file: ctx.ir.meta.entry, line: 1 }, t = LECTURE_MESSAGES[deckLocale(ctx.ir.meta.lang)].production
   if (!speech) {
-    findings.push({ checkId: LECTURE_ID, severity: 'error', message: 'renderers.lecture.voice: the lecture is said through the speech service, which no plugin provides; add @lincyaw/addon-speech to plugins', source })
+    findings.push({ checkId: LECTURE_ID, severity: 'error', message: t.missingSpeech, source })
     return findings
   }
-  if (await synthesisEngine(speech, view, deck.voice.engine).catch(() => undefined)) return findings
   for (const u of plannedUtterances(deck.plan)) {
     try {
-      await synthesizeClip(speech, u, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, alignByTranscription: false })
+      if (u.voiceIssue) throw new Error(u.voiceIssue)
+      await synthesizeClip(speech, u, { voice: u.voice ?? deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, cacheOnly: true })
     } catch (error) {
       const text = u.text.length > 40 ? `${u.text.slice(0, 40)}…` : u.text
       findings.push({
         checkId: LECTURE_ID,
         severity: 'error',
-        message: `the lecture's 「${text}」 (section ${u.section}) cannot be said from the synthesis cache, and no speech engine can synthesize it: ${errorMessage(error)}`,
+        message: t.cacheMissing(text, u.section, errorMessage(error)),
         source: u.source ? { file: u.source.file, line: u.source.line } : source,
-        hint: 'define the engine of the voice (PRESMIUM_SPEECH_<ID>_URL and _PROVIDER) and build once, then commit .presmium/speech/',
+        hint: t.generateHint,
       })
     }
   }
