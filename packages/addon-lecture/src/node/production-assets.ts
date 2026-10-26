@@ -1,13 +1,13 @@
 import { createHash } from 'node:crypto'
 import { closeSync, createReadStream, fstatSync } from 'node:fs'
 import { Input, ALL_FORMATS, BufferSource } from 'mediabunny'
+import { ProductionAudioRefusal } from '@lincyaw/kernel'
 import type { IRDocument, ProductionAssetInspection } from '@lincyaw/kernel'
 import { productionAssetFile } from '@lincyaw/kernel/node'
 import { openInDeck } from './store.ts'
 
-export class ProductionAssetRefusal extends Error {
-  readonly code: string
-  constructor(code: string) { super(code); this.code = code }
+export class ProductionAssetRefusal extends ProductionAudioRefusal {
+  constructor(code: string) { super(code === 'production.asset-changed' ? 409 : 422, code) }
 }
 export interface ProductionAssetFile { asset: ProductionAssetInspection, path: string, stamp: string, extension: string }
 const MAX_BYTES = 16 << 20
@@ -43,17 +43,11 @@ async function readAudioFile(deckDir: string, file: string, signal?: AbortSignal
   return { bytes, identity }
 }
 
-/** Reads only a canonical asset ID, through the same-document regular-file boundary. No authoring file is reopened. */
-export async function inspectProductionAsset(doc: IRDocument, deckDir: string, assetId: string, signal?: AbortSignal): Promise<ProductionAssetFile> {
+/** Uploads and already-declared files use the same actual-byte probe. No file is written here. */
+export async function inspectProductionAudioBytes(assetId: string, value: Uint8Array, signal?: AbortSignal): Promise<{ inspection: ProductionAssetInspection, extension: string }> {
   signal?.throwIfAborted()
-  const declared = doc.productionAssets?.[assetId]
-  if (!declared) throw new ProductionAssetRefusal('production.asset-missing')
-  if (declared.kind !== 'audio') throw new ProductionAssetRefusal('production.asset-kind')
-  const file = productionAssetFile(deckDir, declared.location)
-  if (!file) throw new ProductionAssetRefusal('production.asset-path')
-  const { bytes, identity } = await readAudioFile(deckDir, file, signal)
-  const sha256 = createHash('sha256').update(bytes).digest('hex')
-  if (declared.fingerprint && declared.fingerprint.replace(/^sha256:/, '').toLowerCase() !== sha256) throw new ProductionAssetRefusal('production.asset-fingerprint')
+  if (!value.byteLength || value.byteLength > MAX_BYTES) throw new ProductionAssetRefusal('production.asset-size')
+  const bytes = Buffer.from(value), sha256 = createHash('sha256').update(bytes).digest('hex')
   const input = new Input({ formats: ALL_FORMATS, source: new BufferSource(bytes) })
   const cancel = () => input.dispose()
   signal?.addEventListener('abort', cancel, { once: true })
@@ -66,12 +60,27 @@ export async function inspectProductionAsset(doc: IRDocument, deckDir: string, a
     const durationMs = Math.round(await input.computeDuration() * 1000)
     if (!Number.isFinite(durationMs) || durationMs <= 0 || durationMs > MAX_DURATION_MS) throw new ProductionAssetRefusal('production.asset-duration')
     signal?.throwIfAborted()
-    return { path: file, stamp: identity, extension, asset: { assetId, mediaId: createHash('sha256').update(JSON.stringify(['presmium.asset-audio', assetId, sha256])).digest('hex').slice(0, 32), kind: 'audio', sha256, durationMs, byteLength: bytes.length, mediaType, codec: audio[0]!.codec, sampleRate: audio[0]!.sampleRate, channels: audio[0]!.numberOfChannels } }
+    return { extension, inspection: { assetId, mediaId: createHash('sha256').update(JSON.stringify(['presmium.asset-audio', assetId, sha256])).digest('hex').slice(0, 32), kind: 'audio', sha256, durationMs, byteLength: bytes.length, mediaType, codec: audio[0]!.codec, sampleRate: audio[0]!.sampleRate, channels: audio[0]!.numberOfChannels } }
   } catch (error) {
     signal?.throwIfAborted()
     if (error instanceof ProductionAssetRefusal) throw error
     throw new ProductionAssetRefusal('production.asset-format')
   } finally { signal?.removeEventListener('abort', cancel); input.dispose() }
+}
+
+/** Reads only a declared asset ID, through the same-document regular-file boundary. */
+export async function inspectProductionAsset(doc: Pick<IRDocument, 'productionAssets'>, deckDir: string, assetId: string, signal?: AbortSignal): Promise<ProductionAssetFile> {
+  signal?.throwIfAborted()
+  const declared = doc.productionAssets?.[assetId]
+  if (!declared) throw new ProductionAssetRefusal('production.asset-missing')
+  if (declared.kind !== 'audio') throw new ProductionAssetRefusal('production.asset-kind')
+  const file = productionAssetFile(deckDir, declared.location)
+  if (!file) throw new ProductionAssetRefusal('production.asset-path')
+  const { bytes, identity } = await readAudioFile(deckDir, file, signal)
+  const sha256 = createHash('sha256').update(bytes).digest('hex')
+  if (declared.fingerprint && declared.fingerprint.replace(/^sha256:/, '').toLowerCase() !== sha256) throw new ProductionAssetRefusal('production.asset-fingerprint')
+  const probed = await inspectProductionAudioBytes(assetId, bytes, signal)
+  return { path: file, stamp: identity, extension: probed.extension, asset: probed.inspection }
 }
 
 /** Snapshot bytes are checked before a response or published copy can adopt them. */

@@ -3,6 +3,7 @@ import type { SpeechVoice } from './speech.ts'
 
 export const DOCUMENT_SCHEMA_VERSION = 1 as const
 export const DOCUMENT_ENTRY = 'lecture.json'
+export const ASSET_TITLE_MAX_LENGTH = 200
 
 export type JsonValue = null | boolean | number | string | JsonValue[] | JsonObject
 export interface JsonObject { [key: string]: JsonValue }
@@ -129,7 +130,7 @@ export type NarrationNode =
   | { id: string, type: 'cue', action: string, target?: { blockId: BlockId, element?: string }, parameters?: JsonObject }
 export interface Narration { id: NarrationId, content: NarrationNode[] }
 
-export interface Asset { id: AssetId, kind: 'image' | 'audio' | 'video' | 'file', location: string, fingerprint?: string, mediaType?: string }
+export interface Asset { id: AssetId, kind: 'image' | 'audio' | 'video' | 'file', location: string, title?: string, fingerprint?: string, mediaType?: string }
 export type ImplementationRef =
   | { type: 'file', path: string, exportName?: string, fingerprint?: string }
   | { type: 'module', specifier: string, exportName?: string }

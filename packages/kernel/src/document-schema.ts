@@ -1,5 +1,5 @@
 import type { Schema } from '@cfworker/json-schema'
-import { DOCUMENT_SCHEMA_VERSION } from './contracts/document.ts'
+import { ASSET_TITLE_MAX_LENGTH, DOCUMENT_SCHEMA_VERSION } from './contracts/document.ts'
 
 const ref = (name: string): Schema => ({ $ref: `#/$defs/${name}` })
 const string: Schema = { type: 'string' }
@@ -69,7 +69,7 @@ export const DOCUMENT_JSON_SCHEMA: Schema = {
     Step: object({ id, sectionId: id, title: string, visuals: list(ref('Visual')), narrationIds: ids, inherits: id }, ['id', 'sectionId', 'visuals', 'narrationIds']),
     NarrationNode: { oneOf: [object({ type: tag('text'), text: string }), object({ type: tag('pronunciation'), display: string, spoken: string }), object({ id, type: tag('cue'), action: { type: 'string', minLength: 1 }, target: object({ blockId: id, element: string }, ['blockId']), parameters: ref('JsonObject') }, ['id', 'type', 'action'])] },
     Narration: object({ id, content: list(ref('NarrationNode')) }),
-    Asset: object({ id, kind: { enum: ['image', 'audio', 'video', 'file'] }, location: { type: 'string', minLength: 1 }, fingerprint: string, mediaType: string }, ['id', 'kind', 'location']),
+    Asset: object({ id, kind: { enum: ['image', 'audio', 'video', 'file'] }, location: { type: 'string', minLength: 1 }, title: { type: 'string', minLength: 1, maxLength: ASSET_TITLE_MAX_LENGTH }, fingerprint: string, mediaType: string }, ['id', 'kind', 'location']),
     Implementation: { oneOf: [object({ type: tag('file'), path: { type: 'string', minLength: 1 }, exportName: string, fingerprint: string }, ['type', 'path']), object({ type: tag('module'), specifier: { type: 'string', minLength: 1 }, exportName: string }, ['type', 'specifier']), object({ type: tag('plugin'), plugin: id, name: id })] },
     State: object({ id, title: string, parameterSchema: ref('JsonSchema'), legacyIndex: integer }, ['id']),
     Definition: object({ id, kind: { type: 'string', minLength: 1 }, schemaVersion: { type: 'integer', minimum: 1 }, implementation: ref('Implementation'), parameterSchema: ref('JsonSchema'), states: list(ref('State')), data: ref('JsonObject') }, ['id', 'kind', 'schemaVersion', 'implementation', 'parameterSchema', 'states']),

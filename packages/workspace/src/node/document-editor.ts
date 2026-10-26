@@ -21,14 +21,16 @@ function decode(content: string): { document?: TeachingDocument, issues: Documen
   return validateDocument(value)
 }
 
+export function readAuthoringDocument(editor: SourceEditor, ctx: RequestContext) {
+  const source = editor.read(editor.scope(ctx.document), entryOf(ctx.document), ctx.member)
+  const checked = decode(source.content)
+  if (!checked.document || checked.issues.some(issue => issue.severity === 'error')) throw new RequestError(422, 'document-invalid', { issues: checked.issues })
+  return { source, content: checked.document, issues: checked.issues }
+}
+
 /** A document save validates author intent and never waits for a compiled preview. */
 export function documentEditorRoutes({ root, editor, revisions, workbench }: Options): Record<string, Route> {
-  const opened = (ctx: RequestContext) => {
-    const source = editor.read(editor.scope(ctx.document), entryOf(ctx.document), ctx.member)
-    const checked = decode(source.content)
-    if (!checked.document || checked.issues.some(issue => issue.severity === 'error')) throw new RequestError(422, 'document-invalid', { issues: checked.issues })
-    return { source, content: checked.document, issues: checked.issues }
-  }
+  const opened = (ctx: RequestContext) => readAuthoringDocument(editor, ctx)
   const receipts = new Map<string, { signature: string, version: string, files: DocumentChangeAnswer['files'], commit?: DocumentChangeAnswer['commit'] }>()
   return {
     document: {
