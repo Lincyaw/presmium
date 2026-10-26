@@ -2,7 +2,8 @@ import type { IRBlock, IRSection } from './ir.ts'
 
 export type StepKeys = string[][]
 
-export function stepKeys(section: Pick<IRSection, 'blocks' | 'steps'>, renderer?: string): StepKeys {
+export function stepKeys(section: Pick<IRSection, 'blocks' | 'steps' | 'stepIds'>, renderer?: string): StepKeys {
+  if (section.stepIds) return section.stepIds.map(id => [`step:${id}`])
   const keys: StepKeys = Array.from({ length: section.steps + 1 }, () => [])
   const add = (step: number, key: string) => step > 0 && keys[step]?.push(key)
   let left = false

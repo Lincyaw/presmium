@@ -1,7 +1,7 @@
 {
   "name": "@lincyaw/compiler",
   "version": "1.0.0-rc.0",
-  "description": "Presmium's compiler: MyST source to the IR, plugin loading, compile-time execution and its cache, checks and the renderers",
+  "description": "Presmium's compiler: structured JSON documents to runtime IR, plugin loading, compile-time execution and its cache, checks and the renderers",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -12,7 +12,7 @@
   "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": [
     "presmium",
-    "myst",
+    "json",
     "compiler"
   ],
   "type": "module",

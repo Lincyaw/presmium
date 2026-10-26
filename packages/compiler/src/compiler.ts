@@ -1,15 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { setImmediate } from 'node:timers/promises'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
-import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, isRecord } from '@lincyaw/kernel'
-import type { AnchorResolverRegistry, CodeNode, DirectiveOptionType, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceCapabilities, SourceReader } from '@lincyaw/kernel'
-import { defaultOptions } from 'myst-parser'
-import { audienceDocument, audienceMarks, AudienceParser, emptyReferences, filterForAudience, liftScopes, markBlocks, scanOutputs, withheld } from './audience.ts'
+import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, fnv1a64, isRecord, validateDocument } from '@lincyaw/kernel'
+import type { AnchorResolverRegistry, CodeNode, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceCapabilities, SourceReader, TeachingDocument } from '@lincyaw/kernel'
+import { audienceDocument, emptyReferences, filterForAudience, scanOutputs, withheld } from './audience.ts'
 import type { AudienceMark, Withheld } from './audience.ts'
-import { BUILTIN_DIRECTIVES, sectionBlocks } from './blocks.ts'
-import type { BlockContext, PluginDirective, PluginRole } from './blocks.ts'
 import { runAllChecks } from './compilation-actions.ts'
 import { enqueueCompile } from './compile-queue.ts'
 import { checkLanguages, checkRuns, checkSecrets, environmentExecutors, environmentProviders, toExecuteConfig } from './environments.ts'
@@ -22,17 +18,11 @@ import type { CommittedFiles, GitRead } from './inputs.ts'
 import { checkLinks } from './links.ts'
 import { pluginLogger } from './logging.ts'
 import { NodeServices } from './node-services.ts'
-import { parseFrontmatter, sourceOf, withoutBom } from './parser.ts'
-import type { Parser } from './parser.ts'
+import { lowerDocument } from './document-lowering.ts'
 import { DECK_ENTRY } from './paths.ts'
 import { currentPluginName, DECK_PLUGIN, directoryComponents, isRetiredPlugin, listedPlugins, loadOperatorPlugins, loadPlugins, pluginId } from './plugins.ts'
 import type { LoadedPlugin, PluginProblem, PluginSources } from './plugins.ts'
 import { resolveReferences } from './references.ts'
-import { hasPluginSyntax, moveSection, SectionCache } from './section-cache.ts'
-import { splitSections } from './sections.ts'
-import type { RawSection } from './sections.ts'
-import { frontmatterLine } from './source-lines.ts'
-import { scheduleSteps } from './steps.ts'
 import { applyTranslations, translationFields } from './translations.ts'
 import { validateIR } from './validate.ts'
 import { createSourceReader, findWorkspaceRoot } from './workspace.ts'
@@ -43,7 +33,6 @@ export { DECK_ENTRY }
 
 const BUILTIN_RENDERERS = ['web', 'slides', 'notebook']
 
-const MYST_ROLES = new Set((defaultOptions.roles as unknown as { name: string, alias?: string[] }[]).flatMap(role => [role.name, ...role.alias ?? []]))
 
 export interface CompilerOptions {
   priority?: 'interactive' | 'background'
@@ -76,9 +65,9 @@ export interface Compilation {
   doc: IRDocument
   sourceCapabilities?: SourceCapabilities
   options: CompilerOptions
-  /** The MyST files of the document: the entry and the files it includes. */
+  /** The canonical JSON authoring entry read by this compilation. */
   sourceFiles: string[]
-  /** Fingerprints of exact parsed MyST text, including BOM. Keys are absolute source paths. */
+  /** Fingerprints of exact authoring text, including BOM. Keys are absolute source paths. */
   sourceFingerprints?: Record<string, string>
   /** The other files the compilation read, and the files it read at a git ref. */
   inputs: { files: string[], gitReads: GitRead[] }
@@ -117,7 +106,9 @@ export interface CompileOptions {
 
 export function resolveEntry(deck: string): string {
   const path = resolve(deck)
-  return existsSync(path) && statSync(path).isDirectory() ? join(path, DECK_ENTRY) : path
+  const entry = existsSync(path) && statSync(path).isDirectory() ? join(path, DECK_ENTRY) : path
+  if (basename(entry) !== DECK_ENTRY) throw new Error(`The document entry is ${DECK_ENTRY}; migrate the old source before compiling.`)
+  return entry
 }
 
 interface Workspace {
@@ -142,8 +133,6 @@ type HeadmatterLine = (needle: string) => { file: string, line: number }
 
 /** What the plugins of one compilation contribute to it. */
 interface Contributions {
-  directives: Map<string, PluginDirective>
-  roles: Map<string, PluginRole>
   resolvers: AnchorResolverRegistry
   executors: Executor[]
   components: Map<string, string>
@@ -165,6 +154,8 @@ interface CompileRun {
   report: Report
   at: HeadmatterLine
   signal?: AbortSignal
+  document: TeachingDocument
+  rawSource: string
 }
 
 interface PassResults {
@@ -183,9 +174,7 @@ export class Compiler {
   #workspace?: Workspace
   readonly #committed: CommittedFiles = new Map()
   #plugins?: Plugins
-  #parser?: { key: string, parser: Parser }
   readonly #environments = new Map<string, Executor>()
-  readonly #sections = new SectionCache()
 
   constructor(deck: string, options: CompilerOptions = {}) {
     this.entry = resolveEntry(deck)
@@ -206,7 +195,7 @@ export class Compiler {
     const { title: _title, lang: _lang, plugins: _plugins, presmium, renderers, sectionDepth: _sectionDepth, execute: _execute, translations: _translations, translationOf: _translationOf, ...rest } = headmatter
     const doc: IRDocument = {
       ir: IR_VERSION,
-      meta: { ...rest, title: titleOf(headmatter, this.entry), lang: run.lang, entry: this.entry },
+      meta: { ...rest, title: titleOf(headmatter, this.entry), lang: run.lang, entry: this.entry, documentId: run.document.id },
       config: {
         plugins: listedPlugins(stringList(headmatter.plugins)),
         presmium: isRecord(presmium) ? presmium : {},
@@ -215,6 +204,7 @@ export class Compiler {
       },
       sections,
       diagnostics: [],
+      production: structuredClone(run.document.production),
     }
     applyTranslations(doc, translationFields(headmatter), report)
     let audience: AudienceCompilation | undefined
@@ -253,10 +243,18 @@ export class Compiler {
     const report = (finding: Finding) => findings.push(finding)
     const read = await readFile(this.entry, 'utf8').catch(() => undefined)
     if (read === undefined) throw new Error(`${this.entry} not found`)
-    const text = withoutBom(read)
+    const text = read.replace(/^\uFEFF/, '')
     if (workspace.problem) report({ checkId: 'presmium.workspace', severity: 'error', message: workspace.problem, source: { file: this.entry, line: 1 } })
     if (workspace.operatorProblem) report({ checkId: 'presmium.workspace', severity: 'error', message: workspace.operatorProblem, source: { file: this.entry, line: 1 } })
-    const headmatter = withHeadmatter(parseFrontmatter(text), this.options.headmatter)
+    let parsed: unknown
+    try { parsed = JSON.parse(text) } catch (error) { throw new Error(`Invalid ${DECK_ENTRY}: ${errorMessage(error)}`) }
+    const validated = validateDocument(parsed)
+    if (!validated.document) throw new Error(validated.issues.map(issue => `${issue.path || '/'}: ${issue.message}`).join('\n'))
+    const document = validated.document
+    const headmatter = withHeadmatter({ ...document.metadata }, this.options.headmatter)
+    const defaultVoice = document.production.defaults.voiceSource
+    const lecture = isRecord((headmatter.renderers as Record<string, unknown> | undefined)?.lecture) ? (headmatter.renderers as Record<string, Record<string, unknown>>).lecture : {}
+    if (defaultVoice?.type === 'tts' || document.production.defaults.trailingPauseMs !== undefined || Object.keys(lecture ?? {}).length) headmatter.renderers = { ...(isRecord(headmatter.renderers) ? headmatter.renderers : {}), lecture: { ...lecture, ...defaultVoice?.type === 'tts' ? { voice: defaultVoice.voice } : {}, ...document.production.defaults.trailingPauseMs !== undefined ? { gap: document.production.defaults.trailingPauseMs } : {} } }
     const lang = typeof headmatter.lang === 'string' && headmatter.lang.trim() ? headmatter.lang.trim() : DEFAULT_LANG
     const inputs = new CompileInputs(workspaceRoot, this.#committed)
     const presmium = isRecord(headmatter.presmium) ? headmatter.presmium : {}
@@ -282,7 +280,7 @@ export class Compiler {
       service: token => services.tryGet(token),
     }, problems)
     const service = <T>(token: ServiceToken<T>) => services.tryGet(token)
-    const at = (name: string) => ({ file: this.entry, line: frontmatterLine(text, name) })
+    const at = (_name: string) => ({ file: this.entry, line: 1, format: 'json' as const, pointer: '/metadata' })
     for (const p of problems) report({ checkId: 'presmium.plugins', severity: p.severity, message: p.message, source: at(p.name) })
     for (const name of listed) {
       if (isRetiredPlugin(name)) report({ checkId: 'presmium.plugins', severity: 'info', message: `plugin "${name}" is no longer needed: the viewer shows the slides itself; remove it from plugins`, source: at(name) })
@@ -290,14 +288,12 @@ export class Compiler {
     }
     const execute = toExecuteConfig(headmatter.execute, report, at)
     checkSecrets(headmatter, report, at)
-    return { workspace, headmatter, lang, plugins, configOf, service, execute, inputs, findings, report, at, signal: options.signal }
+    return { workspace, headmatter, lang, plugins, configOf, service, execute, inputs, findings, report, at, signal: options.signal, document, rawSource: read }
   }
 
   /** Registers each plugin's directives, roles, anchor resolvers, executors, environment providers and components. */
   async #collectContributions(run: CompileRun): Promise<Contributions> {
     const { plugins, configOf, execute, report, at } = run
-    const directives = new Map<string, PluginDirective>()
-    const roles = new Map<string, PluginRole>()
     const resolvers = createAnchorResolverRegistry()
     const executors: Executor[] = []
     const providers = new Map<string, EnvironmentProvider>()
@@ -310,20 +306,6 @@ export class Compiler {
       }
       const { plugin } = loaded
       if (!plugin) continue
-      for (const spec of plugin.directives ?? []) {
-        if (BUILTIN_DIRECTIVES.has(spec.name) || directives.has(spec.name)) {
-          report({ checkId: 'presmium.plugins', severity: 'error', message: `plugin ${plugin.id}: directive {${spec.name}} is already defined`, source: at(loaded.name) })
-        } else {
-          directives.set(spec.name, { plugin: plugin.id, config: configOf(loaded), spec })
-        }
-      }
-      for (const spec of plugin.roles ?? []) {
-        if (MYST_ROLES.has(spec.name) || roles.has(spec.name)) {
-          report({ checkId: 'presmium.plugins', severity: 'error', message: `plugin ${plugin.id}: role {${spec.name}} is already defined`, source: at(loaded.name) })
-        } else {
-          roles.set(spec.name, { plugin: plugin.id, config: configOf(loaded), spec })
-        }
-      }
       try {
         for (const resolver of plugin.resolvers ?? []) resolvers.register(resolver)
       } catch (error) {
@@ -337,84 +319,14 @@ export class Compiler {
     const environmentContext: EnvironmentContext = { deckDir: this.deckDir, workspaceRoot: run.workspace.root, secret, log: pluginLogger('presmium.execute') }
     const environments = environmentProviders(execute, providers, report, at)
     executors.push(...await environmentExecutors(execute, environments, environmentContext, this.#environments, report, at))
-    return { directives, roles, resolvers, executors, components, environments, environmentContext }
+    return { resolvers, executors, components, environments, environmentContext }
   }
 
-  /** Parses the source, splits it into sections and turns each into blocks and steps; unchanged sections come from the cache. */
-  async #compileSections(run: CompileRun, contributions: Contributions): Promise<{ sections: IRSection[], marks: AudienceMark[], sourceFiles: string[], sourceFingerprints: Record<string, string> }> {
-    const { headmatter, inputs, findings, report, signal } = run
-    const { directives, roles, components } = contributions
-    const parser = this.#parserFor(directives, roles)
-    parser.signal = signal
-    const source = await parser.expand(this.entry)
-    findings.push(...source.findings)
-    inputs.watch(...source.missing)
-    const depth = headmatter.sectionDepth
-    const sectionDepth = Number.isInteger(depth) && (depth as number) >= 1 ? depth as number : 2
-
-    const lifted = liftScopes(source.children, sectionDepth, (node, audience) => report({
-      checkId: 'presmium.audience',
-      severity: 'warning',
-      message: `this content follows an {include} with :audience: whose file opens a section, so it is part of that section, which is only for ${audience.join(', ')}`,
-      hint: 'start a section of its own with a heading after the {include}, or move it before the {include}',
-      source: sourceOf(node, this.entry),
-    }))
-    const marks = audienceMarks(lifted, this.entry)
-    const raw = splitSections(lifted, { entry: this.entry, title: titleOf(headmatter, this.entry), sectionDepth }, report)
-    const renderers = headmatter.renderers
-    const ctx: BlockContext = {
-      ...headmatter.contentModel === 'blocks' ? { contentModel: 'blocks' as const } : {},
-      entry: this.entry,
-      deckDir: this.deckDir,
-      workspaceRoot: run.workspace.root,
-      lang: run.lang,
-      renderers: new Set([...BUILTIN_RENDERERS, ...isRecord(renderers) ? Object.keys(renderers) : []]),
-      parser,
-      directives,
-      roles,
-      components,
-      execute: run.execute,
-      report,
-      watch: (...files) => inputs.watch(...files),
-    }
-    const prepared: IRSection[] = []
-    const cacheable: boolean[] = []
-    this.#sections.context(JSON.stringify({ headmatter, components: [...components], plugins: this.#plugins?.key }))
-    let yielded = performance.now()
-    const yieldSometimes = async () => {
-      if (performance.now() - yielded < 8) return
-      await setImmediate()
-      yielded = performance.now()
-    }
-    for (const [i, section] of raw.entries()) {
-      signal?.throwIfAborted()
-      const key = hasPluginSyntax(section.nodes, directives, roles) ? undefined : this.#sections.key(section)
-      cacheable.push(key !== undefined)
-      const known = key === undefined ? undefined : this.#sections.get(section.id, key, section.source)
-      if (known) {
-        prepared.push(known.section)
-        findings.push(...known.findings)
-        await yieldSometimes()
-        continue
-      }
-      const local: Finding[] = []
-      const compiled = await compileSection(section, i + 1, { ...ctx, report: (finding) => { report(finding); local.push(finding) } })
-      prepared.push(compiled)
-      if (key !== undefined) this.#sections.set(section.id, key, compiled, local)
-      await yieldSometimes()
-    }
-    this.#sections.prune(new Set(raw.map(section => section.id)))
-    // Clone cached blueprints together. Fresh plugin nodes must retain identity:
-    // directives can associate them with pass-local state in a WeakMap.
-    const sections = structuredClone(prepared.map((section, i) => cacheable[i] ? section : null))
-      .map((section, i) => section ?? prepared[i]!)
-    sections.forEach((section, i) => {
-      section.index = i + 1
-      moveSection(section, raw[i]!.source)
-    })
-
-    markBlocks(sections, marks)
-    return { sections, marks, sourceFiles: source.files, sourceFingerprints: source.fingerprints }
+  /** Validated JSON is the sole runtime source; compiler output remains a derived snapshot. */
+  async #compileSections(run: CompileRun, _contributions: Contributions): Promise<{ sections: IRSection[], marks: AudienceMark[], sourceFiles: string[], sourceFingerprints: Record<string, string> }> {
+    const sections = lowerDocument(run.document, this.entry, this.deckDir, run.report, (...files) => run.inputs.watch(...files))
+    run.inputs.watch(this.entry)
+    return { sections, marks: [], sourceFiles: [this.entry], sourceFingerprints: { [this.entry]: fnv1a64(run.rawSource) } }
   }
 
   /** Runs the plugins' passes, resolves references and runs the code at compile time, validating the IR in between. */
@@ -485,10 +397,10 @@ export class Compiler {
     const { executors } = contributions
     const { marks, audience, passes } = results
     const { runContext } = passes
-    const publish = { doc, entry: this.entry, deckDir: this.deckDir, workspaceRoot: workspace.root, renderers: publishedRenderers(doc, plugins) }
+    const publish = { doc, entry: this.entry, deckDir: this.deckDir, workspaceRoot: workspace.root, renderers: Object.keys(run.document.metadata.renderers ?? {}).length ? Object.keys(run.document.metadata.renderers!) : [...new Set([...BUILTIN_RENDERERS, ...plugins.flatMap(loaded => loaded.plugin?.renderer ? [loaded.plugin.renderer.id] : [])])] }
     const compilation: Compilation = {
       doc,
-      sourceCapabilities: this.#parser?.parser.sourceCapabilities,
+      sourceCapabilities: {},
       options: this.options,
       sourceFiles: results.sourceFiles,
       sourceFingerprints: results.sourceFingerprints,
@@ -585,34 +497,6 @@ export class Compiler {
     return this.#plugins
   }
 
-  #parserFor(directives: Map<string, PluginDirective>, roles: Map<string, PluginRole>): Parser {
-    const syntax = new Map([...BUILTIN_DIRECTIVES, ...[...directives.keys()].map(name => [name, false] as const)])
-    const options = new Map<string, Record<string, DirectiveOptionType> | undefined>([...roles].map(([name, { spec }]) => [name, spec.options]))
-    const key = JSON.stringify([[...syntax].sort(), [...options].sort()])
-    if (this.#parser?.key !== key) this.#parser = { key, parser: new AudienceParser(syntax, options) }
-    return this.#parser.parser
-  }
-}
-
-/** One section's blocks and steps, from its mdast. */
-async function compileSection(section: RawSection, index: number, ctx: BlockContext): Promise<IRSection> {
-  const { blocks: drafts, hints, config, audience } = await sectionBlocks(section.nodes, ctx)
-  const { blocks, steps } = scheduleSteps(drafts, ctx.report)
-  drafts.forEach((draft, j) => {
-    if (draft.audience) blocks[j]!.audience = draft.audience
-  })
-  return {
-    id: section.id,
-    index,
-    title: section.title,
-    depth: section.depth,
-    source: section.source,
-    steps,
-    hints,
-    ...Object.keys(config).length > 0 ? { config } : {},
-    blocks,
-    ...audience ? { audience } : {},
-  }
 }
 
 function addServices(services: NodeServices, loaded: LoadedPlugin, context: NodeServiceContext, problems: PluginProblem[]): void {

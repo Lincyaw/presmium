@@ -36,11 +36,22 @@ export function chapters(doc: IRDocument): Chapter[] {
 }
 
 export function blockVisible(block: IRBlock, step: number): boolean {
+  const state = blockStepState(block, step)
+  if (state) return state.visible
   return step >= block.at && (block.until === undefined || step < block.until)
 }
 
 export function blockState(block: IRBlock, step: number): number {
+  const state = blockStepState(block, step)
+  if (state) return state.localStep
   return Math.min(Math.max(step - block.at, 0), block.span ?? 0)
+}
+
+export function blockStepState(block: IRBlock, step: number): NonNullable<IRBlock['stepStates']>[number] | undefined {
+  const states = block.stepStates
+  if (!states?.length) return undefined
+  const index = step === Number.POSITIVE_INFINITY ? states.length - 1 : Number.isFinite(step) ? Math.max(0, Math.min(Math.trunc(step), states.length - 1)) : 0
+  return states[index]
 }
 
 export function narrationAt(section: IRSection, step: number): IRBlock[] {

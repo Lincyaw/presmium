@@ -26,6 +26,8 @@ export interface SourcePos {
   file: string
   line: number
   endLine?: number
+  format?: 'json'
+  pointer?: string
 }
 
 export interface IRDocument {
@@ -46,6 +48,7 @@ export interface IRDocument {
   }
   sections: IRSection[]
   diagnostics: Finding[]
+  production?: import('./contracts/document.ts').Production
 }
 
 export interface IRSection {
@@ -56,6 +59,7 @@ export interface IRSection {
   source: SourcePos
   steps: number
   stepMap?: number[]
+  stepIds?: string[]
   hints: Record<RendererId, Record<string, unknown>>
   config?: Record<string, Record<string, unknown>>
   blocks: IRBlock[]
@@ -74,6 +78,8 @@ export interface IRBlock {
   audience?: string[]
   source: SourcePos
   node: IRNode
+  /** Complete resolved state at every section step, derived from the authoring graph. */
+  stepStates?: { visible: boolean, state?: string, parameters?: Record<string, unknown>, localStep: number }[]
 }
 
 export type IRNode = MarkdownNode | CodeNode | ComponentNode
@@ -131,6 +137,8 @@ export interface CodeNode {
   outputs?: RecordedRun[]
   variants?: CodeVariant[]
   echo?: false
+  /** Structured source references for the resolver pass, independent of authoring syntax. */
+  reference?: { anchor: AnchorString, pin?: string, variants?: { anchor?: AnchorString, pin?: string, label: string, value?: string }[] }
 }
 
 export interface ComponentNode {

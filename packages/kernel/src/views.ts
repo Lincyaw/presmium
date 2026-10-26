@@ -6,6 +6,9 @@ import type { IRBlock, IRDocument, IRSection } from './ir.ts'
  * the new number of each old step, so positions in the whole document can be mapped to it.
  */
 export function compactSteps(section: IRSection, options: { stepMap?: boolean } = {}): IRSection {
+  // Explicit authoring steps can carry narration and production timing even
+  // when this renderer has no visual change. Keep their identities and states.
+  if (section.stepIds) return options.stepMap ? { ...section, stepMap: section.stepIds.map((_, index) => index) } : section
   const used = new Set([0])
   for (const block of irBlocks(section.blocks)) {
     if (block.role !== 'visual') continue

@@ -1,9 +1,9 @@
 import { isAbsolute, relative, sep } from 'node:path'
-import { irBlocks } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, irBlocks } from '@lincyaw/kernel'
 import type { IRDocument, SourcePos } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
 
-export const DECK_ENTRY = 'lecture.md'
+export const DECK_ENTRY = DOCUMENT_ENTRY
 
 /** The deck's directory of generated files: renderer work directories, staged files, caches. */
 export const WORK_DIR = '.presmium'
