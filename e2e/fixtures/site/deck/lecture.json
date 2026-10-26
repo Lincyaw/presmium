@@ -1,0 +1,575 @@
+{
+  "schemaVersion": 1,
+  "id": "document-6366436531b20be0",
+  "metadata": {
+    "title": "课程站点",
+    "lang": "zh-CN",
+    "renderers": {
+      "web": {
+        "nav": [
+          {
+            "text": "课程主页",
+            "link": "https://course.example.edu/"
+          },
+          {
+            "text": "第二章",
+            "link": "/chapter2.html"
+          }
+        ],
+        "footer": {
+          "message": "课程资料按 CC BY 4.0 发布",
+          "copyright": "2026 课程组"
+        },
+        "head": {
+          "description": "一门检查站点外壳的课程",
+          "image": "media/cover.png"
+        },
+        "sitemap": {
+          "hostname": "https://course.example.edu"
+        }
+      },
+      "slides": {}
+    },
+    "translations": {
+      "en": "lecture.en.md"
+    }
+  },
+  "sectionOrder": [
+    "课程站点",
+    "start",
+    "starter",
+    "practice",
+    "chapter2",
+    "deep"
+  ],
+  "sections": {
+    "课程站点": {
+      "id": "课程站点",
+      "title": "课程站点",
+      "level": 1,
+      "children": [
+        "课程站点--paragraph-1"
+      ],
+      "stepOrder": [
+        "课程站点--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "start": {
+      "id": "start",
+      "title": "第一章 起步",
+      "level": 1,
+      "children": [
+        "start--paragraph-1"
+      ],
+      "stepOrder": [
+        "start--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "starter": {
+      "id": "starter",
+      "title": "起始代码",
+      "level": 2,
+      "children": [
+        "starter--paragraph-1",
+        "starter--list-1",
+        "starter--paragraph-2"
+      ],
+      "stepOrder": [
+        "starter--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "practice": {
+      "id": "practice",
+      "title": "起步的练习",
+      "level": 2,
+      "children": [
+        "practice--paragraph-1",
+        "practice--paragraph-2",
+        "practice--html-1"
+      ],
+      "stepOrder": [
+        "practice--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "chapter2": {
+      "id": "chapter2",
+      "title": "第二章 深入",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "chapter2--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "deep": {
+      "id": "deep",
+      "title": "深入的内容",
+      "level": 2,
+      "children": [
+        "deep--paragraph-1"
+      ],
+      "stepOrder": [
+        "deep--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "课程站点--paragraph-1": {
+      "id": "课程站点--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "课程站点--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "封面的讲解。"
+            }
+          ]
+        }
+      ]
+    },
+    "start--paragraph-1": {
+      "id": "start--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "start--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "章首的讲解。"
+            }
+          ]
+        }
+      ]
+    },
+    "starter--paragraph-1": {
+      "id": "starter--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "starter--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本节的起始代码可以下载，整个起始目录也可以。"
+            }
+          ]
+        }
+      ]
+    },
+    "starter--list-1": {
+      "id": "starter--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "starter--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "starter--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "starter--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "link",
+                      "href": "starter/main.py",
+                      "children": [
+                        {
+                          "type": "text",
+                          "text": "起始代码"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "starter--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "starter--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "link",
+                      "href": "starter",
+                      "children": [
+                        {
+                          "type": "text",
+                          "text": "整个起始目录"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "starter--list-1--text-0-item-2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "starter--list-1--text-0-2-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "link",
+                      "href": "kit",
+                      "children": [
+                        {
+                          "type": "text",
+                          "text": "实验工具包"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "与其中的"
+                    },
+                    {
+                      "type": "link",
+                      "href": "kit/report.md",
+                      "children": [
+                        {
+                          "type": "text",
+                          "text": "报告模板"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "starter--paragraph-2": {
+      "id": "starter--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "starter--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "html",
+                  "value": "<video controls poster=\"media/cover.png\">"
+                }
+              },
+              "fallback": "<video controls poster=\"media/cover.png\">"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "html",
+                  "value": "<source src=\"media/clip.webm\" type=\"video/webm\">"
+                }
+              },
+              "fallback": "<source src=\"media/clip.webm\" type=\"video/webm\">"
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "html",
+                  "value": "</video>"
+                }
+              },
+              "fallback": "</video>"
+            }
+          ]
+        }
+      ]
+    },
+    "practice--paragraph-1": {
+      "id": "practice--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "practice--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "link",
+              "href": "handouts/missing.pdf",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "缺失的讲义"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "无法发布。"
+            }
+          ]
+        }
+      ]
+    },
+    "practice--paragraph-2": {
+      "id": "practice--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "practice--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "link",
+              "href": ".handouts",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "隐藏的目录"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "不发布。"
+            }
+          ]
+        }
+      ]
+    },
+    "practice--html-1": {
+      "id": "practice--html-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "practice--html-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "html",
+              "value": "<p>原始 HTML 中的文字 <code> href=not-a-file.txt</code> 不是属性。</p>"
+            }
+          },
+          "fallback": [
+            {
+              "id": "practice--html-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "<p>原始 HTML 中的文字 <code> href=not-a-file.txt</code> 不是属性。</p>"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "deep--paragraph-1": {
+      "id": "deep--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "deep--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二章讲鹦鹉螺。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "课程站点--step-0": {
+      "id": "课程站点--step-0",
+      "sectionId": "课程站点",
+      "visuals": [
+        {
+          "blockId": "课程站点--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "课程站点--paragraph-1--narration"
+      ]
+    },
+    "start--step-0": {
+      "id": "start--step-0",
+      "sectionId": "start",
+      "visuals": [
+        {
+          "blockId": "start--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "start--paragraph-1--narration"
+      ]
+    },
+    "starter--step-0": {
+      "id": "starter--step-0",
+      "sectionId": "starter",
+      "visuals": [
+        {
+          "blockId": "starter--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "starter--list-1",
+          "visible": true
+        },
+        {
+          "blockId": "starter--paragraph-2",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "starter--paragraph-1--narration"
+      ]
+    },
+    "practice--step-0": {
+      "id": "practice--step-0",
+      "sectionId": "practice",
+      "visuals": [
+        {
+          "blockId": "practice--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "practice--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "practice--html-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "practice--paragraph-1--narration",
+        "practice--paragraph-2--narration"
+      ]
+    },
+    "chapter2--step-0": {
+      "id": "chapter2--step-0",
+      "sectionId": "chapter2",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "deep--step-0": {
+      "id": "deep--step-0",
+      "sectionId": "deep",
+      "visuals": [
+        {
+          "blockId": "deep--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "deep--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "课程站点--paragraph-1--narration": {
+      "id": "课程站点--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "封面的讲解。"
+        }
+      ]
+    },
+    "start--paragraph-1--narration": {
+      "id": "start--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "章首的讲解。"
+        }
+      ]
+    },
+    "starter--paragraph-1--narration": {
+      "id": "starter--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "本节的起始代码可以下载，整个起始目录也可以。"
+        }
+      ]
+    },
+    "practice--paragraph-1--narration": {
+      "id": "practice--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "缺失的讲义无法发布。"
+        }
+      ]
+    },
+    "practice--paragraph-2--narration": {
+      "id": "practice--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "隐藏的目录不发布。"
+        }
+      ]
+    },
+    "deep--paragraph-1--narration": {
+      "id": "deep--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二章讲鹦鹉螺。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

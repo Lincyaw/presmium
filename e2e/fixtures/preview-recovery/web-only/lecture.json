@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "id": "document-95778c5459f4d214",
+  "metadata": {
+    "title": "Web preview",
+    "lang": "zh-CN",
+    "plugins": [],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "web-preview"
+  ],
+  "sections": {
+    "web-preview": {
+      "id": "web-preview",
+      "title": "Web preview",
+      "level": 1,
+      "children": [
+        "web-preview--paragraph-1"
+      ],
+      "stepOrder": [
+        "web-preview--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "web-preview--paragraph-1": {
+      "id": "web-preview--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "web-preview--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A working web preview."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "web-preview--step-0": {
+      "id": "web-preview--step-0",
+      "sectionId": "web-preview",
+      "visuals": [
+        {
+          "blockId": "web-preview--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

@@ -1,0 +1,892 @@
+{
+  "schemaVersion": 1,
+  "id": "document-b7f6288347a489c1",
+  "metadata": {
+    "title": "受众测试",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {
+        "theme": "default"
+      },
+      "notebook": {}
+    }
+  },
+  "sectionOrder": [
+    "受众测试",
+    "merge",
+    "助教手册",
+    "现场演示要点-demotips",
+    "练习"
+  ],
+  "sections": {
+    "受众测试": {
+      "id": "受众测试",
+      "title": "受众测试",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "受众测试--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "merge": {
+      "id": "merge",
+      "title": "合并规则",
+      "level": 2,
+      "children": [
+        "merge--paragraph-1",
+        "merge--paragraph-2",
+        "merge--list-1",
+        "merge--code-1",
+        "merge--tab-set-1",
+        "merge--note-1",
+        "merge--dropdown-1",
+        "merge--note-2",
+        "merge--grid-1",
+        "merge--list-2",
+        "merge--paragraph-3"
+      ],
+      "stepOrder": [
+        "merge--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "助教手册": {
+      "id": "助教手册",
+      "title": "助教手册",
+      "level": 2,
+      "children": [
+        "助教手册--paragraph-1"
+      ],
+      "stepOrder": [
+        "助教手册--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      },
+      "audience": [
+        "teacher"
+      ]
+    },
+    "现场演示要点-demotips": {
+      "id": "现场演示要点-demotips",
+      "title": "现场演示要点 DEMOTIPS",
+      "level": 2,
+      "children": [
+        "现场演示要点-demotips--paragraph-1"
+      ],
+      "stepOrder": [
+        "现场演示要点-demotips--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      },
+      "audience": [
+        "teacher"
+      ]
+    },
+    "练习": {
+      "id": "练习",
+      "title": "练习",
+      "level": 2,
+      "children": [
+        "练习--paragraph-1"
+      ],
+      "stepOrder": [
+        "练习--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "merge--paragraph-1": {
+      "id": "merge--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "两个分支改了同一行时，合并就会发生冲突，关键词 STUDENTVISIBLE。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--paragraph-2": {
+      "id": "merge--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这一段只给教师看：演示合并之前先断开网络，口令 TEACHERONLY42。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web",
+        "slides"
+      ],
+      "audience": [
+        "teacher"
+      ]
+    },
+    "merge--list-1": {
+      "id": "merge--list-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--list-1--text-0",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "merge--list-1--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "merge--list-1--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "先找出冲突的行"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "merge--list-1--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "merge--list-1--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "再选择保留哪一边"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "merge--code-1": {
+      "id": "merge--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "print('ANSWERKEY99: 冲突的行号是十二')",
+      "audience": [
+        "teacher"
+      ]
+    },
+    "merge--tab-set-1": {
+      "id": "merge--tab-set-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--tab-set-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "tabSet",
+              "children": [
+                {
+                  "type": "tabItem",
+                  "title": "学生",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "学生的选项卡：先读冲突标记。"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tabItem",
+                  "title": "教师",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "教师的选项卡：按三条标准评分 TABKEY31，见脚注"
+                        },
+                        {
+                          "type": "footnoteReference",
+                          "identifier": "tab",
+                          "label": "tab",
+                          "enumerator": "1"
+                        },
+                        {
+                          "type": "text",
+                          "value": "。"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "footnoteDefinition",
+                      "identifier": "tab",
+                      "label": "tab",
+                      "children": [
+                        {
+                          "type": "paragraph",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "选项卡的脚注写着评分细则 TABFOOT36。"
+                            }
+                          ]
+                        }
+                      ],
+                      "enumerator": "1"
+                    }
+                  ],
+                  "data": {
+                    "audience": [
+                      "teacher"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "merge--tab-set-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "学生的选项卡：先读冲突标记。教师的选项卡：按三条标准评分 TABKEY31，见脚注。选项卡的脚注写着评分细则 TABFOOT36。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "merge--note-1": {
+      "id": "merge--note-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--note-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "admonition",
+              "kind": "note",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "教师的提示：先演示一次失败的合并，见脚注"
+                    },
+                    {
+                      "type": "footnoteReference",
+                      "identifier": "note",
+                      "label": "note",
+                      "enumerator": "2"
+                    },
+                    {
+                      "type": "text",
+                      "value": "。"
+                    }
+                  ]
+                },
+                {
+                  "type": "footnoteDefinition",
+                  "identifier": "note",
+                  "label": "note",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "提示的脚注写着失败的原因 NOTEFOOT47。"
+                        }
+                      ]
+                    }
+                  ],
+                  "enumerator": "2"
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "merge--note-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "教师的提示：先演示一次失败的合并，见脚注。提示的脚注写着失败的原因 NOTEFOOT47。"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "audience": [
+        "teacher"
+      ]
+    },
+    "merge--dropdown-1": {
+      "id": "merge--dropdown-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--dropdown-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "details",
+              "children": [
+                {
+                  "type": "summary",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "教师的折叠"
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "折叠里是讲评的顺序，见脚注"
+                    },
+                    {
+                      "type": "footnoteReference",
+                      "identifier": "drop",
+                      "label": "drop",
+                      "enumerator": "3"
+                    },
+                    {
+                      "type": "text",
+                      "value": "。"
+                    }
+                  ]
+                },
+                {
+                  "type": "footnoteDefinition",
+                  "identifier": "drop",
+                  "label": "drop",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "折叠的脚注写着讲评的顺序 DROPFOOT53。"
+                        }
+                      ]
+                    }
+                  ],
+                  "enumerator": "3"
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "merge--dropdown-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "教师的折叠折叠里是讲评的顺序，见脚注。折叠的脚注写着讲评的顺序 DROPFOOT53。"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "audience": [
+        "teacher"
+      ]
+    },
+    "merge--note-2": {
+      "id": "merge--note-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--note-2--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "admonition",
+              "kind": "note",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "合并之前先拉取最新的提交。"
+                    }
+                  ]
+                },
+                {
+                  "type": "admonition",
+                  "kind": "tip",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "提醒学生留意行尾空白的差异 TIPKEY58。"
+                        }
+                      ]
+                    }
+                  ],
+                  "data": {
+                    "audience": [
+                      "teacher"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "merge--note-2--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "合并之前先拉取最新的提交。提醒学生留意行尾空白的差异 TIPKEY58。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "merge--grid-1": {
+      "id": "merge--grid-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--grid-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "grid",
+              "columns": [
+                2
+              ],
+              "children": [
+                {
+                  "type": "card",
+                  "children": [
+                    {
+                      "type": "cardTitle",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "冲突标记"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "两组尖括号之间就是冲突的内容。"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "card",
+                  "children": [
+                    {
+                      "type": "cardTitle",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "讲评"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "讲评时展示三个常见的错误 CARDKEY64。"
+                        }
+                      ]
+                    }
+                  ],
+                  "data": {
+                    "audience": [
+                      "teacher"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "merge--grid-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "冲突标记两组尖括号之间就是冲突的内容。讲评讲评时展示三个常见的错误 CARDKEY64。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "merge--list-2": {
+      "id": "merge--list-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--list-2--text-0",
+          "type": "list",
+          "ordered": true,
+          "start": 1,
+          "children": [
+            {
+              "id": "merge--list-2--text-0-item-0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "merge--list-2--text-0-0-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "运行 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "git status",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " 找出冲突的文件"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "merge--list-2--text-0-item-1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "merge--list-2--text-0-1-0",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "打开冲突的文件"
+                    }
+                  ]
+                },
+                {
+                  "id": "merge--list-2--text-0-1-1",
+                  "type": "code",
+                  "language": "python",
+                  "value": "print('LISTKEY72: 答案在第十二行')"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "merge--paragraph-3": {
+      "id": "merge--paragraph-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-3--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "助教先读这一段：今天的口令是 INCLUDEKEY85。"
+            }
+          ]
+        }
+      ],
+      "audience": [
+        "teacher"
+      ]
+    },
+    "助教手册--paragraph-1": {
+      "id": "助教手册--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "助教手册--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "批改作业时只看提交记录 HANDBOOK23。"
+            }
+          ]
+        }
+      ]
+    },
+    "现场演示要点-demotips--paragraph-1": {
+      "id": "现场演示要点-demotips--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "现场演示要点-demotips--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "教师指南：这一节整节只给教师，口令 GUIDEONLY17。"
+            }
+          ]
+        }
+      ]
+    },
+    "练习--paragraph-1": {
+      "id": "练习--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "练习--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "学生自己动手解决一个冲突。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "受众测试--step-0": {
+      "id": "受众测试--step-0",
+      "sectionId": "受众测试",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "merge--step-0": {
+      "id": "merge--step-0",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "merge--paragraph-2",
+          "visible": false
+        },
+        {
+          "blockId": "merge--list-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--tab-set-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--note-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--dropdown-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--note-2",
+          "visible": true
+        },
+        {
+          "blockId": "merge--grid-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--list-2",
+          "visible": false
+        },
+        {
+          "blockId": "merge--paragraph-3",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "merge--paragraph-1--narration",
+        "merge--list-2--narration",
+        "merge--paragraph-3--narration"
+      ]
+    },
+    "助教手册--step-0": {
+      "id": "助教手册--step-0",
+      "sectionId": "助教手册",
+      "visuals": [
+        {
+          "blockId": "助教手册--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "助教手册--paragraph-1--narration"
+      ]
+    },
+    "现场演示要点-demotips--step-0": {
+      "id": "现场演示要点-demotips--step-0",
+      "sectionId": "现场演示要点-demotips",
+      "visuals": [
+        {
+          "blockId": "现场演示要点-demotips--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "现场演示要点-demotips--paragraph-1--narration"
+      ]
+    },
+    "练习--step-0": {
+      "id": "练习--step-0",
+      "sectionId": "练习",
+      "visuals": [
+        {
+          "blockId": "练习--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "练习--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "merge--paragraph-1--narration": {
+      "id": "merge--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "两个分支改了同一行时，合并就会发生冲突，关键词 STUDENTVISIBLE。"
+        }
+      ]
+    },
+    "merge--list-2--narration": {
+      "id": "merge--list-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "运行 git status 找出冲突的文件\n\n打开冲突的文件\nprint('LISTKEY72: 答案在第十二行')"
+        }
+      ]
+    },
+    "merge--paragraph-3--narration": {
+      "id": "merge--paragraph-3--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "助教先读这一段：今天的口令是 INCLUDEKEY85。"
+        }
+      ]
+    },
+    "助教手册--paragraph-1--narration": {
+      "id": "助教手册--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "批改作业时只看提交记录 HANDBOOK23。"
+        }
+      ]
+    },
+    "现场演示要点-demotips--paragraph-1--narration": {
+      "id": "现场演示要点-demotips--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "教师指南：这一节整节只给教师，口令 GUIDEONLY17。"
+        }
+      ]
+    },
+    "练习--paragraph-1--narration": {
+      "id": "练习--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "学生自己动手解决一个冲突。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

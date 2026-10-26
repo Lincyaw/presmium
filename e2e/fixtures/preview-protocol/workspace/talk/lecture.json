@@ -1,0 +1,349 @@
+{
+  "schemaVersion": 1,
+  "id": "document-a2acbe88ddb35ddd",
+  "metadata": {
+    "title": "Preview Protocol",
+    "lang": "en",
+    "plugins": [
+      "./plugin"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {}
+    }
+  },
+  "sectionOrder": [
+    "preview-protocol",
+    "alpha",
+    "beta",
+    "gamma"
+  ],
+  "sections": {
+    "preview-protocol": {
+      "id": "preview-protocol",
+      "title": "Preview Protocol",
+      "level": 1,
+      "children": [
+        "preview-protocol--paragraph-1"
+      ],
+      "stepOrder": [
+        "preview-protocol--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "alpha": {
+      "id": "alpha",
+      "title": "Alpha",
+      "level": 2,
+      "children": [
+        "alpha--alpha-text",
+        "alpha--paragraph-1"
+      ],
+      "stepOrder": [
+        "alpha--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "beta": {
+      "id": "beta",
+      "title": "Beta",
+      "level": 2,
+      "children": [
+        "beta--beta-intro",
+        "beta--beta-web",
+        "beta--beta-step"
+      ],
+      "stepOrder": [
+        "beta--step-0",
+        "beta--step-1",
+        "beta--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "gamma": {
+      "id": "gamma",
+      "title": "Gamma",
+      "level": 2,
+      "children": [
+        "gamma--gamma-text"
+      ],
+      "stepOrder": [
+        "gamma--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "preview-protocol--paragraph-1": {
+      "id": "preview-protocol--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "preview-protocol--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The deck that e2e/preview-protocol.spec.ts drives through the preview protocol from a host page."
+            }
+          ]
+        }
+      ]
+    },
+    "alpha--alpha-text": {
+      "id": "alpha--alpha-text",
+      "type": "text",
+      "content": [
+        {
+          "id": "alpha--alpha-text--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The first block of alpha, with a mark "
+            },
+            {
+              "type": "extension",
+              "kind": "presmium.mdast",
+              "schemaVersion": 1,
+              "data": {
+                "node": {
+                  "type": "presmiumRole",
+                  "plugin": "fixture.preview",
+                  "name": "mark",
+                  "options": {
+                    "value": "here"
+                  },
+                  "children": []
+                }
+              },
+              "fallback": ""
+            },
+            {
+              "type": "text",
+              "text": " for the author."
+            }
+          ]
+        }
+      ]
+    },
+    "alpha--paragraph-1": {
+      "id": "alpha--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "alpha--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Alpha’s narration."
+            }
+          ]
+        }
+      ]
+    },
+    "beta--beta-intro": {
+      "id": "beta--beta-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "beta--beta-intro--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Beta starts with this block."
+            }
+          ]
+        }
+      ]
+    },
+    "beta--beta-web": {
+      "id": "beta--beta-web",
+      "type": "text",
+      "content": [
+        {
+          "id": "beta--beta-web--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The web shows this block at a step of its own, which the slides do not have."
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "beta--beta-step": {
+      "id": "beta--beta-step",
+      "type": "text",
+      "content": [
+        {
+          "id": "beta--beta-step--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Beta’s last step shows this block."
+            }
+          ]
+        }
+      ]
+    },
+    "gamma--gamma-text": {
+      "id": "gamma--gamma-text",
+      "type": "text",
+      "content": [
+        {
+          "id": "gamma--gamma-text--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Gamma closes the deck."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "preview-protocol--step-0": {
+      "id": "preview-protocol--step-0",
+      "sectionId": "preview-protocol",
+      "visuals": [
+        {
+          "blockId": "preview-protocol--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "preview-protocol--paragraph-1--narration"
+      ]
+    },
+    "alpha--step-0": {
+      "id": "alpha--step-0",
+      "sectionId": "alpha",
+      "visuals": [
+        {
+          "blockId": "alpha--alpha-text",
+          "visible": true
+        },
+        {
+          "blockId": "alpha--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "alpha--paragraph-1--narration"
+      ]
+    },
+    "beta--step-0": {
+      "id": "beta--step-0",
+      "sectionId": "beta",
+      "visuals": [
+        {
+          "blockId": "beta--beta-intro",
+          "visible": true
+        },
+        {
+          "blockId": "beta--beta-web",
+          "visible": false
+        },
+        {
+          "blockId": "beta--beta-step",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "beta--step-1": {
+      "id": "beta--step-1",
+      "sectionId": "beta",
+      "visuals": [
+        {
+          "blockId": "beta--beta-intro",
+          "visible": true
+        },
+        {
+          "blockId": "beta--beta-web",
+          "visible": true
+        },
+        {
+          "blockId": "beta--beta-step",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "beta--step-2": {
+      "id": "beta--step-2",
+      "sectionId": "beta",
+      "visuals": [
+        {
+          "blockId": "beta--beta-intro",
+          "visible": true
+        },
+        {
+          "blockId": "beta--beta-web",
+          "visible": true
+        },
+        {
+          "blockId": "beta--beta-step",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "gamma--step-0": {
+      "id": "gamma--step-0",
+      "sectionId": "gamma",
+      "visuals": [
+        {
+          "blockId": "gamma--gamma-text",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "preview-protocol--paragraph-1--narration": {
+      "id": "preview-protocol--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "The deck that e2e/preview-protocol.spec.ts drives through the preview protocol from a host page."
+        }
+      ]
+    },
+    "alpha--paragraph-1--narration": {
+      "id": "alpha--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Alpha’s narration."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
