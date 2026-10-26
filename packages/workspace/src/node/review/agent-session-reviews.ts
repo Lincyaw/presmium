@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { errorMessage, pushStream } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, errorMessage, pushStream } from '@lincyaw/kernel'
 import type { DocumentFiles, Logger, Member, ReviewEnd, ReviewSnapshot, ReviewUpdate } from '@lincyaw/kernel'
 import { trailers } from '../../domain/commit-message.ts'
 import type { WorkspaceConfig } from '../config.ts'
@@ -16,6 +16,7 @@ import type { GitReview } from './git-review.ts'
 import { readRecord } from './record.ts'
 import type { ReviewRecord } from './record.ts'
 import { rollBackLeftTaskReview } from './task-reviews.ts'
+import { validateDocumentSource } from '../source-editor.ts'
 
 export const AGENT_SESSION_TRAILER = 'Presmium-Session'
 export const TURN_TRAILER = 'Presmium-Turn'
@@ -234,6 +235,11 @@ export class AgentSessionReviews {
     const rejected = new Set(reject)
     for (const change of await open.review.diff()) if (isInGitDir(change.path)) rejected.add(change.path)
     const files = await open.review.prepareAccept([...rejected])
+    for (const path of files) {
+      if (path !== DOCUMENT_ENTRY && !path.endsWith(`/${DOCUMENT_ENTRY}`)) continue
+      const file = join(this.#options.config.root, path)
+      if (existsSync(file)) validateDocumentSource(path, readFileSync(file, 'utf8'))
+    }
     const lang = listDocuments(this.#options.config).find(doc => doc.dir === open.document)?.lang
     const steps = open.review.steps().map(step => `- ${step.label}`).slice(0, 20)
     const revision = await this.#options.revisions.commit({

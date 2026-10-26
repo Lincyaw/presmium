@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
-import { hasRole, isRecord, jsonResponse, problemResponse, pushStream, sseResponse } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, hasRole, isRecord, jsonResponse, problemResponse, pushStream, sseResponse } from '@lincyaw/kernel'
 import type { ChangesAnswer, CommitAnswer, CompileJob, DocumentOperation, DocumentsAnswer, JobsAnswer, Member, PresmiumNodePlugin, RequestContext, RevertResult, RevisionsAnswer, Route, SavedAnswer, ServerContribution, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
 import { hasBearerToken } from '@lincyaw/server'
 import { REVERT_TRAILER, saveSummary, trailers } from '../domain/commit-message.ts'
@@ -14,13 +14,12 @@ import type { DocumentLocks } from './locks.ts'
 import type { Revisions, UndoTargets } from './revisions.ts'
 import { reviewRoutes } from './review/routes.ts'
 import type { AgentSessionReviews } from './review/agent-session-reviews.ts'
-import { MAX_SOURCE, MAX_SOURCE_CHANGES } from './source-editor.ts'
+import { MAX_SOURCE, MAX_SOURCE_CHANGES, validateDocumentSource } from './source-editor.ts'
 import type { SourceEditor } from './source-editor.ts'
 import { listTemplates } from './templates.ts'
 import type { Jobs } from './jobs.ts'
 import type { WorkbenchApi } from './workbench-api.ts'
-import { voiceSettingsRoutes } from './voice-settings.ts'
-import { pageDeleteRoute } from './page-delete.ts'
+import { documentEditorRoutes } from './document-editor.ts'
 import { documentDirOf } from './writer.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
@@ -125,6 +124,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
     }),
   })
   const routes: Record<string, Route> = {
+    ...documentEditorRoutes({ root: config.root, editor, revisions }),
     documents: {
       role: 'reader',
       handle: (request, ctx) => catchRequestErrors(async () => {
@@ -226,12 +226,16 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       handle: (request, ctx) => catchRequestErrors(() => withChosenChanges(request, ctx, 'editor:commit', async (history, paths, member, body) => {
         const message = typeof body.message === 'string' ? body.message.trim().slice(0, 4000) : ''
         if (!message) return problemResponse(400, '{ message: what the change is, paths? }')
+        for (const path of paths) {
+          if (!path.endsWith(`/${DOCUMENT_ENTRY}`) && path !== DOCUMENT_ENTRY) continue
+          const source = editor.read(scopeOf(ctx), path, member)
+          validateDocumentSource(path, source.content)
+        }
         const revision = await history.commit({ files: paths, message, origin: { kind: 'editor', member } })
         return jsonResponse({ ...revision ? { revision } : {}, paths } satisfies CommitAnswer)
       })),
     },
     ...workbench ? workbenchRoutes(workbench) : {},
-    ...workbench ? { ...voiceSettingsRoutes({ editor, workbench, revisions }), 'pages/delete': pageDeleteRoute({ config, editor, workbench, locks, revisions }) } : {},
     ...options.jobs ? jobRoutes(options.jobs) : {},
     ...reviews ? reviewRoutes(reviews) : {},
     'changes/discard': {

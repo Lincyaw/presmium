@@ -1,4 +1,5 @@
 import type { IRDocument } from '../ir.ts'
+import type { TeachingDocument, DocumentEditOperation, DocumentIssue } from './document.ts'
 import type { Focus } from './agent.ts'
 import type { Finding } from './checks.ts'
 import type { Member } from './server.ts'
@@ -168,6 +169,31 @@ export interface SourceAnswer {
   content: string
   version: string
 }
+
+/** The editable authority, available without building a runtime preview. */
+export interface DocumentAnswer {
+  document: string
+  version: string
+  content: TeachingDocument
+  issues: DocumentIssue[]
+}
+
+/** Both author UIs and agents use this versioned submission boundary. */
+export interface DocumentChange {
+  id: string
+  baseDocumentVersion: string
+  replacement?: TeachingDocument
+  operations?: DocumentEditOperation[]
+  fileChanges?: SourceTransactionChange[]
+}
+
+export interface DocumentChangeAnswer extends DocumentAnswer {
+  changeId: string
+  files: { path: string, version: string }[]
+  commit?: Revision
+}
+
+export interface DocumentEvent { document: string, version: string, valid: boolean, issues: DocumentIssue[] }
 
 /** @experimental A saved source file; in a git workspace the save is a revision of its own. */
 export interface SavedAnswer {

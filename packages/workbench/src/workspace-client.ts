@@ -2,6 +2,7 @@ import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer
 import type { OperationBatch } from './telemetry.ts'
 import type { VoiceCatalogAnswer, VoiceoverJob, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest, VoiceSettingsAnswer, VoiceSettingsChange, VoiceSettingsUpdate } from '@lincyaw/kernel'
 import type { PageDeleteAnswer, PageDeletePlan, PageDeleteRequest } from '@lincyaw/kernel'
+import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, DocumentEvent } from '@lincyaw/kernel'
 
 const observedFailures = new WeakSet<object>()
 /** Whether the owned request observer already received this transport failure. */
@@ -39,6 +40,9 @@ export interface WorkspaceClient {
   /** Saves a small set of files in one document with one version and rollback boundary. */
   saveSourceTransaction(document: string, changes: SourceTransactionChange[], message?: string): Promise<SourceTransactionAnswer>
   readIr(document: string): Promise<IrAnswer>
+  readDocument(document: string): Promise<DocumentAnswer>
+  changeDocument(document: string, change: DocumentChange): Promise<DocumentChangeAnswer>
+  subscribeDocument(document: string, changed: (event: DocumentEvent) => void, failed?: () => void): () => void
   readPageDeletion(document: string, section: string): Promise<PageDeletePlan>
   deletePage(document: string, request: PageDeleteRequest): Promise<PageDeleteAnswer>
   readVoiceSettings(document: string, section?: string, step?: number, signal?: AbortSignal): Promise<VoiceSettingsAnswer>
@@ -221,6 +225,9 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     saveSource: (document, path, content, base, message) => post(url('source', document), { path, content, base, ...message ? { message } : {} }),
     saveSourceTransaction: (document, changes, message) => post(url('source/transaction', document), { changes, ...message ? { message } : {} }),
     readIr,
+    readDocument: document => call(url('document', document)),
+    changeDocument: (document, change) => post(url('document/change', document), change),
+    subscribeDocument: (document, changed, failed) => subscribe(url('document/events', document), 'document', changed, failed),
     readPageDeletion: (document, section) => call(url('pages/delete', document, { section })),
     deletePage: (document, request) => post(url('pages/delete', document), request),
     readVoiceSettings: (document, section, step, signal) => call(url('voice-settings', document, { ...section ? { section } : {}, ...step !== undefined ? { step: String(step) } : {} }), { signal }),

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
 import { WORKSPACE_CONFIG } from '@lincyaw/compiler'
+import { DOCUMENT_ENTRY, validateDocument } from '@lincyaw/kernel'
 import type { ConflictAnswer, DocumentFileChange, FilesAnswer, Member, Revision, SavedAnswer, SourceAnswer, SourceFile, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
 import { isWithin } from '../domain/paths.ts'
 import { listDocuments } from './config.ts'
@@ -17,6 +18,20 @@ export const MAX_SOURCE_CHANGES = 16
 const MAX_FILES = 2000
 const HIDDEN_FROM_EDITOR = new Set(['node_modules', 'dist', '.git', '.presmium'])
 const BINARY = /\.(?:png|jpe?g|gif|webp|avif|ico|bmp|pdf|wasm|zip|gz|tgz|bz2|xz|7z|woff2?|ttf|otf|eot|mp3|mp4|m4a|wav|ogg|oga|webm|mov|avi|mkv|bin|so|dylib|dll|exe|pyc|xlsx?|docx?|pptx?|parquet|npy|npz|pkl|db|sqlite)$/i
+
+export function validateDocumentSource(path: string, content: string, before?: Uint8Array): void {
+  if (path !== DOCUMENT_ENTRY && !path.endsWith(`/${DOCUMENT_ENTRY}`)) return
+  let value: unknown
+  try { value = JSON.parse(content) }
+  catch { throw new RequestError(422, 'document-invalid', { issues: [{ path: '', code: 'json-syntax', message: 'The document is not valid JSON.', severity: 'error' }] }) }
+  const checked = validateDocument(value)
+  if (!checked.document || checked.issues.some(issue => issue.severity === 'error')) throw new RequestError(422, 'document-invalid', { issues: checked.issues })
+  if (before) {
+    let previous: unknown
+    try { previous = JSON.parse(Buffer.from(before).toString('utf8')) } catch {}
+    if (previous && typeof previous === 'object' && 'id' in previous && typeof previous.id === 'string' && previous.id !== checked.document.id) throw new RequestError(422, 'document-identity-changed')
+  }
+}
 
 export function versionOf(bytes: Uint8Array | string): string {
   return createHash('sha256').update(bytes).digest('hex').slice(0, 20)
@@ -136,6 +151,7 @@ export class SourceEditor {
 
   async create(scope: Scope, path: string, member: Member): Promise<SourceAnswer> {
     this.#assertEditable(scope, path, member)
+    if (path === DOCUMENT_ENTRY || path.endsWith(`/${DOCUMENT_ENTRY}`)) throw new RequestError(422, 'create-a-document-with-valid-content')
     if (BINARY.test(path)) throw new RequestError(415, `${path} is not a text file`)
     const document = this.#documentHolding(path)?.dir
     const scopeDir = document ?? ''
@@ -197,6 +213,7 @@ export class SourceEditor {
         if (lstatSync(file, { throwIfNoEntry: false })) throw new RequestError(409, `${change.path} already exists`, { exists: true })
         return { path: change.path, before: undefined, written, executable: false }
       })
+      for (const snapshot of snapshots) validateDocumentSource(snapshot.path, snapshot.written.toString('utf8'), snapshot.before)
       const created: string[] = []
       const write = (next: DocumentFileChange[]) => this.#writer.write(next)
       try {
@@ -247,6 +264,7 @@ export class SourceEditor {
         throw new RequestError(409, `${path} changed since it was opened`, conflict)
       }
       const written = Buffer.from(content, 'utf8')
+      validateDocumentSource(path, content, bytes)
       if (written.byteLength > MAX_SOURCE) throw new RequestError(413, `the text is larger than the editor saves (${MAX_SOURCE} bytes)`)
       const change: DocumentFileChange = { path, content: written, ...(lstatSync(join(this.#config.root, path)).mode & 0o111) !== 0 ? { executable: true } : {} }
       const write = async (next: DocumentFileChange) => (outside ? writeChanges(this.#config, [next], true) : await this.#writer.write([next]))
