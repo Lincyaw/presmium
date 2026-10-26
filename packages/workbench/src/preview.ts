@@ -30,7 +30,7 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
   const origin = url.origin
   const latest = new Map<string, PreviewCommand>()
   const replies = new Set<PreviewCommand['type']>(['edit-result', 'blocks-result', 'source-result', 'source-saved', 'source-created', 'page-created', 'playback-granted'])
-  const transient = new Set<PreviewCommand['type']>(['page-insert', 'flush', 'pause-playback', 'playback-granted', 'document-history', 'document-history-reset', 'edit', 'edit-result', 'blocks-result', 'source-result', 'source-saved', 'source-created', 'page-created'])
+  const transient = new Set<PreviewCommand['type']>(['page-insert', 'flush', 'pause-playback', 'playback-granted', 'production-playback', 'document-history', 'document-history-reset', 'edit', 'edit-result', 'blocks-result', 'source-result', 'source-saved', 'source-created', 'page-created'])
   const oneShot = (command: PreviewCommand) => transient.has(command.type)
   let ready = false
   let generation = 0

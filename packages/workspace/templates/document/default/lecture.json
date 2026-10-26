@@ -4,10 +4,12 @@
   "metadata": {
     "title": "{{title}}",
     "lang": "zh-CN",
+    "plugins": ["@lincyaw/addon-lecture", "@lincyaw/addon-speech"],
     "renderers": {
       "web": {},
       "slides": {},
-      "notebook": {}
+      "notebook": {},
+      "lecture": {}
     }
   },
   "sectionOrder": [
@@ -146,7 +148,11 @@
   "definitions": {},
   "production": {
     "defaults": {},
-    "stepOverrides": {},
+    "stepOverrides": {
+      "intro-step": { "minimumHoldMs": 4000, "trailingPauseMs": 500 },
+      "points-step": { "minimumHoldMs": 4000, "trailingPauseMs": 500 },
+      "summary-step": { "minimumHoldMs": 4000, "trailingPauseMs": 500 }
+    },
     "mediaClips": []
   }
 }
