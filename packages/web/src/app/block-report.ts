@@ -1,16 +1,18 @@
 import { componentErrors, componentErrorRevision, presmiumService, STEP_CLOCK } from '@lincyaw/host'
-import { deckLocale, PREVIEW_REVISION } from '@lincyaw/kernel'
+import { deckLocale, irBlocks, PREVIEW_REVISION } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
+import type { Viewer } from '@lincyaw/viewer'
 import { WEB_MESSAGES } from '../domain/index.ts'
 import type { AppConfig } from '../domain/index.ts'
 
-/** A read-only widget reports only identity, snapshot status and geometry to its authorised parent. */
-export function blockPreviewReporter(config: AppConfig, doc: IRDocument): { ready(): Promise<void>, failed(): void } {
+/** A read-only widget reports snapshot status, geometry and discrete navigation to its authorised parent. */
+export function blockPreviewReporter(config: AppConfig, doc: IRDocument, viewer: Viewer): { ready(): Promise<void>, failed(): void } {
   let origin: string | undefined
   try { const referrer = new URL(document.referrer).origin; if (config.origins.includes(referrer)) origin = referrer } catch {}
   const root = document.getElementById('app')!
   let enabled = false, fatal = false, queued = false, disposed = false
   let lastReport: string | undefined
+  let stopPosition: (() => void) | undefined
   const failed = () => { fatal = true; send() }
   const send = () => {
     if (!enabled || !origin || window.parent === window || disposed) return
@@ -32,13 +34,24 @@ export function blockPreviewReporter(config: AppConfig, doc: IRDocument): { read
   const stopErrors = componentErrorRevision.subscribe(changed)
   window.addEventListener('error', failed)
   window.addEventListener('unhandledrejection', failed)
-  window.addEventListener('pagehide', () => { disposed = true; resize.disconnect(); mutations.disconnect(); stopErrors(); window.removeEventListener('error', failed); window.removeEventListener('unhandledrejection', failed) }, { once: true })
+  window.addEventListener('pagehide', () => { disposed = true; resize.disconnect(); mutations.disconnect(); stopErrors(); stopPosition?.(); window.removeEventListener('error', failed); window.removeEventListener('unhandledrejection', failed) }, { once: true })
   return {
     async ready() {
       await new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => done())))
       await presmiumService(STEP_CLOCK)?.settled()
+      if (disposed) return
       enabled = true
       send()
+      // The initial viewer position is only a loading default. Publish subsequent
+      // navigation, using the canonical step identity of this block's section.
+      stopPosition ??= viewer.position.subscribe(() => {
+        if (!origin || disposed || fatal || window.parent === window) return
+        const position = viewer.position.getSnapshot(), section = viewer.section(position.section)
+        if (!section || ![...irBlocks(section.blocks)].some(block => block.id === config.block)) return
+        const stepId = section.stepIds?.[position.step], revision = doc.meta[PREVIEW_REVISION]
+        if (typeof stepId !== 'string' || typeof revision !== 'string') return
+        window.parent.postMessage({ type: 'presmium:block-preview-position', document: config.document, blockId: config.block, revision, sectionId: section.id, stepId }, origin)
+      })
     },
     failed() { enabled = true; failed() },
   }
