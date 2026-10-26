@@ -120,7 +120,7 @@ export function PmTabs({ value, modelValue, tabs, label, children, onValueChange
       return iconOnly ? h(PmTooltip, { key: tab.value, label: tab.label, children: trigger }) : trigger
     })), children)
 }
-export function PmTabPanel({ value, children }: { value: string, children?: ReactNode }) { return h(Tabs.Content, { value, className: 'pm-ui-tab-panel' }, children) }
+export function PmTabPanel({ value, children, forceMount, hidden }: { value: string, children?: ReactNode, forceMount?: true, hidden?: boolean }) { return h(Tabs.Content, { value, forceMount, hidden, className: 'pm-ui-tab-panel' }, children) }
 export function PmSegmented({ value, modelValue, choices, items, label, onValueChange, density = 'compact', disabled }: { value?: string, modelValue?: string, choices?: Choice[], items?: Choice[], label: string, density?: ControlDensity, disabled?: boolean, onValueChange?(value: string): void }) {
   return h(RadioGroup.Root, { className: 'pm-ui-segmented', 'aria-label': label, value: value ?? modelValue, onValueChange, orientation: 'horizontal', ...{ 'data-density': density }, disabled },
     (choices ?? items ?? []).map(item => h(RadioGroup.Item, { key: item.value, value: item.value, className: 'pm-ui-segmented__option', disabled: item.disabled }, item.icon ? h(PmIcon, { name: item.icon }) : null, item.label)))

@@ -1,0 +1,18 @@
+/* Shared authored layouts, consumed by all runtime views. */
+.pm-layout-stack,
+.pm-layout-columns {
+  display: grid;
+  gap: var(--pm-space-4);
+  min-width: 0;
+}
+.pm-layout-stack { grid-template-columns: minmax(0, 1fr); }
+.pm-layout-columns { grid-template-columns: var(--pm-layout-columns, minmax(0, 1fr)); }
+.pm-layout__item { min-width: 0; }
+.pm-layout__title {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: var(--pm-text-title);
+}
+@media (max-width: 768px) {
+  .pm-layout-columns { grid-template-columns: minmax(0, 1fr); }
+}
