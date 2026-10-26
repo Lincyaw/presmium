@@ -46,7 +46,7 @@ export function voiceoverRoutes(served: ServedDeck): ServerContribution {
   const context = (): Context => {
     const doc = latestDoc(served.deckDir)
     if (!doc) throw new RouteRefusal(503, 'voice-document-unavailable')
-    const deck = deckPlan(lectureView(doc), served.deckDir)
+    const deck = deckPlan(lectureView(doc))
     return { doc, revision: irRevision(doc), units: plannedUtterances(deck.plan), lang: deck.lang, lexicon: deck.lexicon }
   }
   const same = (now: Context) => latestDoc(served.deckDir) === now.doc

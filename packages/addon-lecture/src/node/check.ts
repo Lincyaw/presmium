@@ -56,7 +56,7 @@ export function trackFindings(deckDir: string, id: string, doc: IRDocument): Fin
 
 async function planFindings(ctx: CheckContext): Promise<Finding[]> {
   const view = lectureView(ctx.ir)
-  const deck = deckPlan(view, ctx.deckDir)
+  const deck = deckPlan(view)
   const findings = [...deck.findings]
   if (!deck.voice) return findings
   const speech = ctx.service?.(SPEECH)

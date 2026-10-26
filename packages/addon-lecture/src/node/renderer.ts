@@ -125,7 +125,7 @@ export const lectureRenderer: Renderer = {
   async build(doc, ctx) {
     const index: unknown[] = []
     const tracks: LectureTrack[] = []
-    const synthesize = Boolean(deckPlan(doc, ctx.deckDir).voice)
+    const synthesize = Boolean(deckPlan(doc).voice)
     const policy = mediaPolicy(workspaceSettings(ctx.workspaceRoot).settings[LECTURE_ID] ?? {})
     const published = publishedTrack(doc, ctx.deckDir)
     let complete = !synthesize || await publishSynthesized(doc, ctx, index, tracks)

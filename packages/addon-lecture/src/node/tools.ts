@@ -52,12 +52,12 @@ function planView(plan: LecturePlan, section?: string) {
 
 export const lecturePreview: AgentTool = {
   name: 'lecture_preview',
-  description: 'The lecture plan of the deck: per section and step, the narration the synthesized lecture says (or the separate script\'s, renderers.lecture.script) and the {cue} marks in it with the operation each makes; the voice; and problems (unknown cues, missing blocks). Reads only; nothing is synthesized.',
+  description: 'The lecture plan of the deck: per section and step, the canonical lecture.json narration the synthesized lecture says and the {cue} marks in it with the operation each makes; the voice; and problems (unknown cues, missing blocks). Reads only; nothing is synthesized.',
   input: { type: 'object', properties: { section: { type: 'string', description: 'Only this section id' } } },
   kind: 'read',
   async run(input, ctx) {
-    const { deckDir, doc } = deckOf(ctx)
-    const deck = deckPlan(doc, deckDir)
+    const { doc } = deckOf(ctx)
+    const deck = deckPlan(doc)
     return {
       voice: deck.voice ?? null,
       gapMs: deck.gap,
@@ -120,7 +120,7 @@ export const trackNarration: AgentTool = {
     const { deckDir, doc } = deckOf(ctx)
     const track = storedTrack(deckDir, input)
     const draft = narrationDraft(track, typeof input.section === 'string' ? input.section : undefined)
-    const { plan } = deckPlan(doc, deckDir)
+    const { plan } = deckPlan(doc)
     const file = (range: SourceRange): SourceRange => ({ ...range, file: relative(deckDir, isAbsolute(range.file) ? range.file : resolve(deckDir, range.file)) })
     return {
       track: track.id,

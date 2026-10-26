@@ -45,6 +45,10 @@ export function readWorkspaceConfig(root: string): WorkspaceConfig {
   const singleDeck = declared.length === 0 && existsSync(join(dir, DOCUMENT_ENTRY))
   const approvals = isRecord(data.approvals) ? data.approvals : {}
   const settings = isRecord(data.settings) ? data.settings : {}
+  const renderers = isRecord(data.renderers) ? data.renderers : {}
+  for (const [path, value] of [['renderers.lecture', renderers.lecture], ['settings.presmium.lecture', settings['presmium.lecture']]] as const) {
+    if (isRecord(value) && Object.hasOwn(value, 'script')) throw new Error(`${file}: ${path}.script: External lecture scripts are not supported. Author narration in each document's lecture.json narrations.`)
+  }
   return {
     root: dir,
     title: typeof data.title === 'string' && data.title.trim() ? data.title.trim() : dir.split('/').at(-1) ?? 'Presmium',

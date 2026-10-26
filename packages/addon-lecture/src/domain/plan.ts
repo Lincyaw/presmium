@@ -1,5 +1,5 @@
-import { blockVisible, irBlocks, parseDuration } from '@lincyaw/kernel'
-import type { CodeNode, IRBlock, IRDocument, IRSection, MdastNode, RecordedRun, SourcePos, SpeechVoice, VoiceTarget, WordSpan } from '@lincyaw/kernel'
+import { irBlocks, parseDuration } from '@lincyaw/kernel'
+import type { CodeNode, IRBlock, IRDocument, IRSection, RecordedRun, SourcePos, SpeechVoice, VoiceTarget, WordSpan } from '@lincyaw/kernel'
 import { narrationVoice } from './config.ts'
 import { blockKey, codeLineCount, lastNamedLine } from './drift.ts'
 import type { CueCommand, CueMark, SpokenText } from './narration.ts'
@@ -35,7 +35,7 @@ export interface PlannedSection {
   id: string
   title: string
   steps: number
-  from: 'narration' | 'scriptFile'
+  from: 'narration'
   paragraphs: PlannedParagraph[]
   holds: number[]
   trailingPauseMs?: number[]
@@ -52,8 +52,6 @@ export interface LecturePlan {
   sections: PlannedSection[]
   problems: PlanProblem[]
 }
-
-export type ScriptFileSections = Map<string, { paragraphs: MdastNode[], source?: SourcePos }[]>
 
 function isSaid(block: IRBlock): boolean {
   return !block.only || block.only.includes(LECTURE_RENDERER)
@@ -116,7 +114,6 @@ interface Reader {
   section: IRSection
   target?: IRBlock
   source?: SourcePos
-  scriptFile?: boolean
   problems: PlanProblem[]
 }
 
@@ -126,7 +123,7 @@ function planCues(spoken: SpokenText, at: Reader): PlannedCue[] {
   for (const mark of spoken.cues) {
     const parsed = parseCue(mark.command)
     if ('problem' in parsed) {
-      problem(`{cue}\`${mark.command}\`: ${parsed.problem}`, !at.scriptFile)
+      problem(`{cue}\`${mark.command}\`: ${parsed.problem}`, true)
       continue
     }
     const { name, arg } = parsed
@@ -209,13 +206,6 @@ function narration(section: IRSection): { block: IRBlock, target?: IRBlock }[] {
   return list
 }
 
-function linesOf(node: MdastNode, section: SourcePos | undefined): SourcePos | undefined {
-  const position = node.position as { start?: { line?: unknown }, end?: { line?: unknown } } | undefined
-  const line = position?.start?.line
-  const end = position?.end?.line
-  return section && typeof line === 'number' ? { file: section.file, line, ...typeof end === 'number' ? { endLine: end } : {} } : section
-}
-
 /** The least time of each step (ms): the longest animation of a component shown in it (`ComponentNode.durations`). */
 function stepHolds(section: IRSection, doc: IRDocument): number[] {
   const holds = Array.from({ length: section.steps + 1 }, () => 0)
@@ -241,37 +231,21 @@ function stepHolds(section: IRSection, doc: IRDocument): number[] {
   return holds
 }
 
-function stepTarget(section: IRSection, step: number): IRBlock | undefined {
-  return section.blocks.filter(b => b.role === 'visual' && isShown(b) && blockVisible(b, step)).at(-1)
-}
-
-export function lecturePlan(doc: IRDocument, scriptFile?: ScriptFileSections): LecturePlan {
+export function lecturePlan(doc: IRDocument): LecturePlan {
   const problems: PlanProblem[] = []
   const sections: PlannedSection[] = doc.sections.map((section) => {
     const paragraphs: PlannedParagraph[] = []
-    const fromScriptFile = scriptFile?.get(section.id)
-    if (fromScriptFile) {
-      fromScriptFile.forEach(({ paragraphs: nodes, source: heading }) => nodes.forEach((node, k) => {
-        const step = Math.min(k, section.steps)
-        const spoken = spokenText(node)
-        const source = linesOf(node, heading)
-        const cues = planCues(spoken, { doc, section, target: stepTarget(section, step), source, scriptFile: true, problems })
-        const voice = narrationVoice(doc, section, undefined, step)
-        paragraphs.push({ step, pieces: pieces(spoken, cues), ...source ? { source } : {}, voice: voice.voice, voiceIssue: voice.issue, voiceTarget: voice.target })
-      }))
-    } else {
-      for (const { block, target } of narration(section)) {
-        if (block.node.type !== 'markdown') continue
-        const spoken = spokenText(block.node.mdast)
-        const cues = planCues(spoken, { doc, section, target, source: block.source, problems })
-        const voice = narrationVoice(doc, section, block.id, block.at)
-        paragraphs.push({ step: Math.min(block.at, section.steps), mode: block.node.narration?.mode, pieces: pieces(spoken, cues), source: block.source, voice: voice.voice, voiceIssue: voice.issue, voiceTarget: voice.target })
-      }
+    for (const { block, target } of narration(section)) {
+      if (block.node.type !== 'markdown') continue
+      const spoken = spokenText(block.node.mdast)
+      const cues = planCues(spoken, { doc, section, target, source: block.source, problems })
+      const voice = narrationVoice(doc, section, block.id, block.at)
+      paragraphs.push({ step: Math.min(block.at, section.steps), mode: block.node.narration?.mode, pieces: pieces(spoken, cues), source: block.source, voice: voice.voice, voiceIssue: voice.issue, voiceTarget: voice.target })
     }
     paragraphs.sort((a, b) => a.step - b.step)
     const settings = (section.stepIds ?? []).map(id => ({ ...doc.production?.defaults, ...doc.production?.sectionOverrides?.[section.id], ...doc.production?.stepOverrides[id] }))
     const trailingPauseMs = settings.some(value => value.trailingPauseMs !== undefined) ? settings.map(value => value.trailingPauseMs ?? 500) : undefined
-    return { id: section.id, title: section.title, steps: section.steps, from: fromScriptFile ? 'scriptFile' : 'narration', paragraphs, holds: stepHolds(section, doc), ...trailingPauseMs ? { trailingPauseMs } : {}, webStep: webSteps(section) }
+    return { id: section.id, title: section.title, steps: section.steps, from: 'narration', paragraphs, holds: stepHolds(section, doc), ...trailingPauseMs ? { trailingPauseMs } : {}, webStep: webSteps(section) }
   })
   let n = 0
   for (const section of sections) {

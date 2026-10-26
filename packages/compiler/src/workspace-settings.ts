@@ -21,6 +21,10 @@ export function workspaceSettings(root: string): { settings: OperatorSettings, p
     try {
       const data: unknown = parseYaml(readFileSync(file, 'utf8'))
       const settings = isRecord(data) && isRecord(data.settings) ? data.settings : {}
+      const renderers = isRecord(data) && isRecord(data.renderers) ? data.renderers : {}
+      for (const [path, value] of [['renderers.lecture', renderers.lecture], ['settings.presmium.lecture', settings['presmium.lecture']]] as const) {
+        if (isRecord(value) && Object.hasOwn(value, 'script')) throw new Error(`${path}.script: External lecture scripts are not supported. Author narration in each document's lecture.json narrations.`)
+      }
       result = { settings: Object.fromEntries(Object.entries(settings).map(([id, value]) => [id, isRecord(value) ? value : {}])) }
     } catch (error) {
       result = { settings: {}, problem: `${file}: ${errorMessage(error)}` }

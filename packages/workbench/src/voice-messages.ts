@@ -28,7 +28,7 @@ const zh = {
   replace: '已有覆盖', preserve: '保留独立设置', replaceAll: '替换独立设置',
   counts: (updated: number, preserved: number) => `将更新 ${updated} 个步骤，保留 ${preserved} 个独立设置。`,
   check: '检查应用范围', checking: '正在检查应用范围…', apply: '应用设置', saved: '音色设置已保存。', cachedPreview: '本次使用已有配音缓存。', clearDefault: '清除项目默认音色',
-  rate: '语速', rateInvalid: (min: number, max: number) => `请输入 ${min}–${max} 之间的数值。`, style: '朗读风格', styleDefault: '服务默认', scriptFile: '此讲稿来自独立文件，暂不支持按步骤设置音色。可设置页面或项目默认音色。',
+  rate: '语速', rateInvalid: (min: number, max: number) => `请输入 ${min}–${max} 之间的数值。`, style: '朗读风格', styleDefault: '服务默认',
   cueStep: '此讲稿包含跨步骤提示，暂不支持单独覆盖音色。可设置页面或项目默认音色。',
   disclosure: (provider: string, local: boolean) => local ? `本次在本机通过 ${provider} 合成。` : `本次将所示讲稿发送至 ${provider} 合成配音。`,
   confirmPreview: '确认并试听', sampleText: '标准示例文本', source: '声音来源', previewHint: '试听是显式合成操作；选择音色本身不会生成配音。',
@@ -67,7 +67,7 @@ const en: VoiceMessages = {
   replace: 'Existing overrides', preserve: 'Keep independent settings', replaceAll: 'Replace independent settings',
   counts: (updated, preserved) => `${updated} steps will update; ${preserved} independent settings will be kept.`,
   check: 'Check scope', checking: 'Checking scope…', apply: 'Apply settings', saved: 'Voice settings saved.', cachedPreview: 'This preview uses an existing voiceover cache.', clearDefault: 'Clear project default voice',
-  rate: 'Speaking rate', rateInvalid: (min, max) => `Enter a number between ${min} and ${max}.`, style: 'Reading style', styleDefault: 'Service default', scriptFile: 'This script is in a separate file. Step voice overrides are not supported yet; set a page or project default instead.',
+  rate: 'Speaking rate', rateInvalid: (min, max) => `Enter a number between ${min} and ${max}.`, style: 'Reading style', styleDefault: 'Service default',
   cueStep: 'This script has cues across steps. A step voice override is not supported yet; set a page or project default instead.',
   disclosure: (provider, local) => local ? `This request will synthesize on this device using ${provider}.` : `This request will send the shown script to ${provider} for voice synthesis.`,
   confirmPreview: 'Confirm and preview', sampleText: 'Standard sample text', source: 'Voice source', previewHint: 'A preview explicitly requests synthesis. Selecting a voice does not generate voiceover.',
@@ -86,7 +86,6 @@ export function voiceFailure(error: unknown, locale: Locale): string {
   if (message === 'not-configured' || message === 'voice-not-configured') return t.noService
   if (message === 'voice-unavailable') return t.voiceUnavailable
   if (message === 'voice-catalog-unavailable') return t.catalogUnsupported
-  if (message === 'voice-script-file') return t.scriptFile
   if (message === 'voice-cue-step') return t.cueStep
   if (message === 'voice-script-empty') return t.noScript
   if (message === 'voice-preview-too-long' || message === 'voice-preview-too-large') return t.previewTooLong

@@ -519,9 +519,6 @@ importers:
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
-      mdast-util-from-markdown:
-        specifier: 2.1.0
-        version: 2.1.0(supports-color@9.4.0)
       mediabunny:
         specifier: 1.61.3
         version: 1.61.3

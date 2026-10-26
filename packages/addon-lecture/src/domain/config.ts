@@ -36,11 +36,6 @@ export function narrationVoice(doc: IRDocument, section: IRSection, block?: stri
   const mapped = block && isRecord(configured) ? configured[block] : undefined
   if (isRecord(mapped)) return { ...speechVoice(mapped.voice) ? { voice: speechVoice(mapped.voice) } : {}, ...typeof mapped.issue === 'string' ? { issue: mapped.issue } : {}, ...isRecord(mapped.target) ? { target: mapped.target as unknown as VoiceTarget } : {} }
   const overrides = voiceOverrides(doc)
-  if (!block && typeof doc.config.renderers.lecture?.script === 'string' && doc.config.renderers.lecture.script) {
-    if (overrides.steps.some(entry => entry.section === section.id)) return { issue: 'script-file' }
-    const voice = overrides.pages[section.id] ?? documentVoice(doc)
-    return voice ? { voice } : { issue: 'voice-unset' }
-  }
   if (section.stepMap && overrides.steps.some(entry => entry.section === section.id)) return { issue: 'voice-step-binding-unavailable' }
   const resolved = resolvedVoice(doc, section, step)
   if (resolved.reason && overrides.steps.some(entry => entry.section === section.id)) return { issue: resolved.reason }

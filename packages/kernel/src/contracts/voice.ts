@@ -13,7 +13,7 @@ export interface ResolvedVoice {
   inheritedFrom: 'step' | 'page' | 'document' | 'unset'
   override?: SpeechVoice
   editable: boolean
-  reason?: 'script-file' | 'cue-step' | 'step-binding-stale' | 'recording-unavailable'
+  reason?: 'cue-step' | 'step-binding-stale' | 'recording-unavailable'
 }
 export interface VoiceSettingsAnswer {
   document: string
