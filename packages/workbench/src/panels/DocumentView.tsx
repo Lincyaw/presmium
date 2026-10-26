@@ -27,22 +27,44 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   const workbench = useWorkbench()
   const [aside, setAside] = useState<DocumentAside | null>(null)
   const [presenting, setPresenting] = useState(false)
+  const [changingView, setChangingView] = useState(false), [viewFailure, setViewFailure] = useState<string>()
+  const transition = useRef(0), exiting = useRef<Promise<void>>()
   const [commentsPortal, setCommentsPortal] = useState<HTMLDivElement | null>(null)
   const t = useMessages()
   const document = useWorkbenchState(state => state.document)
   const view = useWorkbenchState(state => state.webView)
+  const currentScope = useRef({ document, active })
+  currentScope.current = { document, active }
   const [navigation, setNavigation] = useState(() => typeof matchMedia === 'function' && matchMedia(ROOMY).matches)
-  const exitPresent = () => {
-    setPresenting(false)
-    workbench.setMode('editing')
-    workbench.setWebView('document')
+  const exitPresent = (): Promise<void> => {
+    if (exiting.current) return exiting.current
+    const generation = ++transition.current, identity = workbench.getState().authoring?.identity
+    setChangingView(true); setViewFailure(undefined)
+    const current = () => generation === transition.current && currentScope.current.active && currentScope.current.document === document && workbench.getState().authoring?.identity === identity
+    const work = Promise.resolve().then(async () => {
+      try {
+        // The child flushes its latest position before acknowledging this pause.
+        await workbench.pausePlayback()
+        if (!current()) return
+        setPresenting(false)
+        workbench.setMode('editing')
+        workbench.setWebView('document')
+      } catch { if (current()) setViewFailure(t.presentationReturnFailed) }
+      finally { if (current()) setChangingView(false); if (exiting.current === work) exiting.current = undefined }
+    })
+    exiting.current = work
+    return work
   }
   useEffect(() => {
+    transition.current++; exiting.current = undefined
     setPresenting(false)
+    setChangingView(false); setViewFailure(undefined)
     setAside(null)
   }, [document])
+  useEffect(() => { if (!active) { transition.current++; exiting.current = undefined; setChangingView(false) } }, [active])
+  useEffect(() => () => { transition.current++ }, [])
   useEffect(() => {
-    if (presenting && view === 'document') exitPresent()
+    if (presenting && view === 'document') void exitPresent()
   }, [view, presenting])
   useEffect(() => {
     if (!active) return
@@ -62,11 +84,15 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   }, [active, workbench])
   return (
     <div className="pmw-document" data-workspace={presenting ? 'presentation' : 'content'} data-presenting={presenting || undefined} data-aside={aside ?? undefined} data-navigation={navigation || undefined}>
-      {presenting ? <PmToolbar className="pmw-toolbar pmw-toolbar--present" label={t.presentationPreview}><PmToolbarButton asChild><PmIconButton small icon="close" label={t.exitPresentation} shortcut="Escape" onClick={exitPresent} /></PmToolbarButton></PmToolbar> : <DocumentToolbar framed={framed} aside={aside} navigation={navigation} onPresent={() => {
+      {presenting ? <PmToolbar className="pmw-toolbar pmw-toolbar--present" label={t.presentationPreview}><PmToolbarButton asChild><PmIconButton small icon="close" label={t.exitPresentation} shortcut="Escape" loading={changingView} onClick={() => void exitPresent()} /></PmToolbarButton></PmToolbar> : <DocumentToolbar framed={framed} aside={aside} navigation={navigation} onPresent={() => {
+        const source = workbench.getState().authoring
+        if (!source?.content || source.loading || source.dirty || source.saving || source.restored || source.error || source.composing || isAgentChanging(workbench.getState())) return
+        transition.current++; setViewFailure(undefined)
         workbench.setMode('viewing')
         workbench.setWebView('present')
         setPresenting(true)
       }} onNavigation={() => { setNavigation(shown => !shown); if (!navigation && matchMedia('(max-width: 1279px)').matches) setAside(null) }} onAside={next => { setAside(current => (current === next ? null : next)); if (matchMedia('(max-width: 1279px)').matches) setNavigation(false) }} />}
+      {viewFailure && <PmNotice tone="danger">{viewFailure}</PmNotice>}
       <DocumentNotices />
       <div className="pmw-document__body" role="region" aria-label={presenting ? t.presentationPreview : t.documentEditor}>
         {!presenting && navigation && <NavigationPane onClose={() => setNavigation(false)} onSelect={() => { if (matchMedia('(max-width: 1279px)').matches) setNavigation(false) }} />}
