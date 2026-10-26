@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "id": "document-fb380a09c07e846b",
+  "metadata": {
+    "title": "Assets fixture",
+    "lang": "zh-CN",
+    "plugins": [
+      "../../.."
+    ]
+  },
+  "sectionOrder": [
+    "images"
+  ],
+  "sections": {
+    "images": {
+      "id": "images",
+      "title": "Images",
+      "level": 2,
+      "children": [
+        "images--image-1",
+        "images--image-2",
+        "images--image-3",
+        "images--image-4",
+        "images--image-5"
+      ],
+      "stepOrder": [
+        "images--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "images--image-1": {
+      "id": "images--image-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "images--image-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "image",
+              "url": "REMOTE/1",
+              "alt": "one"
+            }
+          },
+          "fallback": []
+        }
+      ]
+    },
+    "images--image-2": {
+      "id": "images--image-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "images--image-2--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "image",
+              "url": "REMOTE/2",
+              "alt": "two"
+            }
+          },
+          "fallback": []
+        }
+      ]
+    },
+    "images--image-3": {
+      "id": "images--image-3",
+      "type": "text",
+      "content": [
+        {
+          "id": "images--image-3--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "image",
+              "url": "REMOTE/3",
+              "alt": "three"
+            }
+          },
+          "fallback": []
+        }
+      ]
+    },
+    "images--image-4": {
+      "id": "images--image-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "images--image-4--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "image",
+              "url": "REMOTE/4",
+              "alt": "four"
+            }
+          },
+          "fallback": []
+        }
+      ]
+    },
+    "images--image-5": {
+      "id": "images--image-5",
+      "type": "text",
+      "content": [
+        {
+          "id": "images--image-5--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "image",
+              "url": "REMOTE/missing",
+              "alt": "missing"
+            }
+          },
+          "fallback": []
+        }
+      ]
+    }
+  },
+  "steps": {
+    "images--step-0": {
+      "id": "images--step-0",
+      "sectionId": "images",
+      "visuals": [
+        {
+          "blockId": "images--image-1",
+          "visible": true
+        },
+        {
+          "blockId": "images--image-2",
+          "visible": true
+        },
+        {
+          "blockId": "images--image-3",
+          "visible": true
+        },
+        {
+          "blockId": "images--image-4",
+          "visible": true
+        },
+        {
+          "blockId": "images--image-5",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "id": "document-f90f72f27689c4c4",
+  "metadata": {
+    "title": "Web diff fixture",
+    "lang": "zh-CN",
+    "plugins": [
+      "../../.."
+    ],
+    "renderers": {
+      "web": {
+        "package": "../../../../web",
+        "base": "/talks/web-diff/"
+      }
+    }
+  },
+  "sectionOrder": [
+    "notes",
+    "steps"
+  ],
+  "sections": {
+    "notes": {
+      "id": "notes",
+      "title": "Notes",
+      "level": 2,
+      "children": [
+        "notes--paragraph-1",
+        "notes--paragraph-2"
+      ],
+      "stepOrder": [
+        "notes--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "steps": {
+      "id": "steps",
+      "title": "Steps",
+      "level": 2,
+      "children": [
+        "steps--paragraph-1",
+        "steps--paragraph-2"
+      ],
+      "stepOrder": [
+        "steps--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "notes--paragraph-1": {
+      "id": "notes--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "notes--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Shown in both forms."
+            }
+          ]
+        }
+      ]
+    },
+    "notes--paragraph-2": {
+      "id": "notes--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "notes--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Only on the web: the first version."
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "steps--paragraph-1": {
+      "id": "steps--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "On screen in the present view."
+            }
+          ]
+        }
+      ]
+    },
+    "steps--paragraph-2": {
+      "id": "steps--paragraph-2",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps--paragraph-2--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Said about it."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "notes--step-0": {
+      "id": "notes--step-0",
+      "sectionId": "notes",
+      "visuals": [
+        {
+          "blockId": "notes--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "notes--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "notes--paragraph-1--narration"
+      ]
+    },
+    "steps--step-0": {
+      "id": "steps--step-0",
+      "sectionId": "steps",
+      "visuals": [
+        {
+          "blockId": "steps--paragraph-1",
+          "visible": true
+        },
+        {
+          "blockId": "steps--paragraph-2",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "steps--paragraph-2--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "notes--paragraph-1--narration": {
+      "id": "notes--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Shown in both forms."
+        }
+      ]
+    },
+    "steps--paragraph-2--narration": {
+      "id": "steps--paragraph-2--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Said about it."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
