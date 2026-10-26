@@ -30,6 +30,6 @@ Node 的独立对照 `audio-plan-runtime-boundaries.json` 为 5/5：同源 query
 
 ## 同一运行窗格的实际结果
 
-新的隔离 Studio 采用同源 Node 与 viewer 协议，`audio-editor-probe.json` 完成浅色 1440 宽的一次 18/18 真实流程。保存片段后，原 iframe 节点仍保持连接；公开 `useDoc` 读取的 source.version、production.mediaClips、productionAssets 和 revision 与新保存版本及播放器绑定一致，自动准备没有自动开始播放。
+新的隔离 Studio 采用同源 Node 与 viewer 协议，`audio-editor-live-root-after.json` 完成浅色 1440 宽的一次 21/21 真实流程。保存片段后，原 iframe 节点仍保持连接；公开 `useDoc` 读取的 source.version、production.mediaClips、productionAssets 和 revision 与新保存版本及播放器绑定一致，自动准备没有自动开始播放。
 
 随后实际点击播放、暂停、第二步、第一步，公开播放器回执确认当前保存版本和稳定 Step ID。原始音频 SHA-256 与讲稿字幕保持不变，前端异常、HTTP 失败和生成请求均为零。此处引用这些根属性与播放结果，不将单次浅色桌面记录扩展成四种界面组合验收。
