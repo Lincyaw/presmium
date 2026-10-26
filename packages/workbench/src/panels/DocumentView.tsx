@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { PmBadge, PmButton, PmIcon, PmIconButton, PmMenu, PmNotice, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
+import { PmBadge, PmButton, PmIconButton, PmMenu, PmNotice, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
 import { DocumentWordCounter, documentOutline } from '../outline.ts'
@@ -267,7 +267,6 @@ function StatusBar() {
   const identity = useWorkbenchState(state => state.authoring?.identity)
   const slides = useWorkbenchState(state => state.previewRenderer === 'slides' || state.webView !== 'document')
   const section = useWorkbenchState(state => state.position?.section)
-  const mode = useWorkbenchState(state => state.mode)
   const counter = useMemo(() => new DocumentWordCounter(), [])
   const words = useMemo(() => counter.count(doc, identity), [counter, doc, identity])
   const total = doc?.sectionOrder.length ?? 0
@@ -276,9 +275,6 @@ function StatusBar() {
     <footer className="pmw-statusbar" aria-label={t.statusBar}>
       {at >= 0 && <span className="pmw-statusbar__item">{slides ? t.slideOf(at + 1, total) : t.sectionOf(at + 1, total)}</span>}
       {doc && <span className="pmw-statusbar__item">{t.words(words)}</span>}
-      <span className="pmw-spacer" />
-
-      <span className="pmw-statusbar__item pmw-statusbar__mode" data-mode={mode}><PmIcon name={mode === 'editing' ? 'edit' : 'eye'} />{mode === 'editing' ? t.editingStatus : t.viewingStatus}</span>
     </footer>
   )
 }
