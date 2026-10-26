@@ -67,7 +67,8 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
         try {
           const cursor = nativeEditingCursor(editor)
           if (!cursor || cursor.nativeBlockId !== current.nativeBlockId || cursor.position !== current.position) return
-          const point = editor.prosemirrorView.coordsAtPos(cursor.position), bounds = element.getBoundingClientRect()
+          const node = cursor.objectSelected ? editor.prosemirrorView.nodeDOM(cursor.position) : undefined
+          const point = node instanceof Element ? node.getBoundingClientRect() : editor.prosemirrorView.coordsAtPos(cursor.position), bounds = element.getBoundingClientRect()
           if (![point.left, point.right, point.top, point.bottom].every(Number.isFinite)) return
           if (point.bottom >= bounds.top && point.top <= bounds.bottom && point.right >= bounds.left && point.left <= bounds.right) {
             workbench.observeDocumentSection(current.sectionId)
