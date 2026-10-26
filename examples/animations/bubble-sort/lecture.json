@@ -44,8 +44,7 @@
       "children": [
         "pass--sort-code",
         "pass--stats",
-        "pass--bubble",
-        "pass--paragraph-1"
+        "pass--bubble"
       ],
       "stepOrder": [
         "pass--step-0",
@@ -111,17 +110,6 @@
         "alt": "5 2 4 1 3 的一趟冒泡：5 与右边的数逐个比较、交换，最后停在末尾。"
       }
     },
-    "pass--paragraph-1": {
-      "id": "pass--paragraph-1",
-      "type": "text",
-      "content": [
-        {
-          "id": "pass--paragraph-1--text-0",
-          "type": "paragraph",
-          "children": []
-        }
-      ]
-    },
     "summary--paragraph-1": {
       "id": "summary--paragraph-1",
       "type": "text",
@@ -170,10 +158,6 @@
           "blockId": "pass--bubble",
           "visible": true,
           "state": "legacy-0"
-        },
-        {
-          "blockId": "pass--paragraph-1",
-          "visible": false
         }
       ],
       "narrationIds": [
@@ -197,10 +181,6 @@
           "blockId": "pass--bubble",
           "visible": true,
           "state": "legacy-1"
-        },
-        {
-          "blockId": "pass--paragraph-1",
-          "visible": false
         }
       ],
       "narrationIds": [
@@ -224,10 +204,6 @@
           "blockId": "pass--bubble",
           "visible": true,
           "state": "legacy-2"
-        },
-        {
-          "blockId": "pass--paragraph-1",
-          "visible": false
         }
       ],
       "narrationIds": [
@@ -251,10 +227,6 @@
           "blockId": "pass--bubble",
           "visible": true,
           "state": "legacy-3"
-        },
-        {
-          "blockId": "pass--paragraph-1",
-          "visible": false
         }
       ],
       "narrationIds": [
@@ -278,10 +250,6 @@
           "blockId": "pass--bubble",
           "visible": true,
           "state": "legacy-4"
-        },
-        {
-          "blockId": "pass--paragraph-1",
-          "visible": false
         }
       ],
       "narrationIds": [
