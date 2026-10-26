@@ -23,6 +23,7 @@ export interface DocumentSessionState {
 interface Draft { content: TeachingDocument, baseVersion: string, baseHash: string, input: number, pendingHash?: string, composing?: boolean }
 interface Slot {
   state: DocumentSessionState
+  compositions: Set<string>
   input: number
   baseHash: string
   storage: string
@@ -52,6 +53,7 @@ export class DocumentSession {
   constructor(client: WorkspaceClient, changed: (state: DocumentSessionState) => void) { this.#client = client; this.#changed = changed }
 
   async open(directory: string): Promise<void> {
+    if (this.#active !== directory) this.interrupt()
     const opening = ++this.#opening
     this.#active = directory
     this.#unsubscribe?.()
@@ -62,7 +64,7 @@ export class DocumentSession {
       if (this.#active !== directory || opening !== this.#opening) return
       let slot = this.#slots.get(directory)
       if (!slot) {
-        slot = { input: 0, baseHash: await digest(answer.content), storage: `presmium.document.v1:${JSON.stringify([info.root, answer.content.id])}`, state: { directory, identity: JSON.stringify([info.root, answer.content.id]), content: answer.content, version: answer.version, fingerprint: answer.fingerprint, loading: false, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: answer.issues } }
+        slot = { input: 0, compositions: new Set(), baseHash: await digest(answer.content), storage: `presmium.document.v1:${JSON.stringify([info.root, answer.content.id])}`, state: { directory, identity: JSON.stringify([info.root, answer.content.id]), content: answer.content, version: answer.version, fingerprint: answer.fingerprint, loading: false, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: answer.issues } }
         this.#slots.set(directory, slot)
         await this.#restore(slot, answer)
       } else await this.#adopt(slot, answer)
@@ -147,16 +149,19 @@ export class DocumentSession {
     if (slot) { slot.state.reset++; this.#emit(slot) }
   }
 
-  composition(composing: boolean): void {
+  composition(composing: boolean, owner = 'body', identity?: string): void {
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
-    if (!slot) return
-    slot.state = { ...slot.state, composing }
+    if (!slot || identity !== undefined && identity !== slot.state.identity || slot.compositions.has(owner) === composing) return
+    if (composing) slot.compositions.add(owner)
+    else slot.compositions.delete(owner)
+    slot.state = { ...slot.state, composing: slot.compositions.size > 0 }
     this.#persist(slot); this.#emit(slot)
-    if (!composing && !slot.state.error && !slot.state.restored) void this.#save(slot)
+    if (!slot.state.composing && !slot.state.error && !slot.state.restored) void this.#save(slot)
   }
   interrupt(): void {
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
     if (!slot?.state.composing) return
+    slot.compositions.clear()
     slot.state = { ...slot.state, composing: false, restored: true, error: 'document-composition-interrupted' }
     this.#persist(slot); this.#emit(slot)
   }
@@ -206,6 +211,7 @@ export class DocumentSession {
       const answer = await this.#client.readDocument(slot.state.directory)
       slot.input++; slot.baseHash = await digest(answer.content)
       slot.pendingHash = undefined
+      slot.compositions.clear()
       slot.state = { ...slot.state, content: answer.content, version: answer.version, fingerprint: answer.fingerprint, dirty: false, restored: false, composing: false, reset: slot.state.reset + 1, error: undefined, issues: answer.issues }
       this.#persist(slot); this.#emit(slot)
     } catch (error) { slot.state = { ...slot.state, error: this.#error(error) }; this.#emit(slot) }

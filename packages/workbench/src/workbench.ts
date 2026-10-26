@@ -2,7 +2,7 @@ import { undoDepth, redoDepth } from '@tiptap/pm/history'
 import { TextSelection } from '@tiptap/pm/state'
 import { DocumentSession } from './document-session.ts'
 import type { DocumentSessionState } from './document-session.ts'
-import type { TeachingDocument } from '@lincyaw/kernel'
+import type { NarrationNode, TeachingDocument } from '@lincyaw/kernel'
 import type { NativeDocumentEditor } from './document-editor/schema.tsx'
 import { nativeTextPoint, nativeTextPosition } from './document-editor/selection.ts'
 import type { NativeTextPoint } from './document-editor/selection.ts'
@@ -609,13 +609,61 @@ export class Workbench {
 
   stopAuditions(): void { this.#playback.stopAuditions() }
 
+  /** The latest source actor value, scoped to the field/editor that captured its identity. */
+  getDocument(identity?: string): TeachingDocument | undefined {
+    const source = this.#state.authoring
+    if (!source || source.loading || source.directory !== this.#state.document || identity !== undefined && identity !== source.identity) return undefined
+    return source.content
+  }
+  /** Changes one stable narration target without replacing the body editor or derived captions. */
+  setDocumentNarration(stepId: string, narrationId: string | undefined, content: NarrationNode[], identity?: string): string | undefined {
+    const document = this.getDocument(identity)
+    if (!document || isAgentChanging(this.#state) || !Object.hasOwn(document.steps, stepId)) return undefined
+    const step = document.steps[stepId]!
+    if (!document.sections[step.sectionId]?.stepOrder.includes(stepId)) return undefined
+    if (!Array.isArray(content)) throw new Error('document-narration-content')
+    let meaningful = false
+    for (const node of content) {
+      if (!node || typeof node !== 'object') throw new Error('document-narration-content')
+      if (node.type === 'text' && typeof node.text === 'string') meaningful ||= Boolean(node.text.trim())
+      else if (node.type === 'pronunciation' && typeof node.display === 'string' && typeof node.spoken === 'string') meaningful ||= Boolean(node.display.trim() || node.spoken.trim())
+      else if (node.type === 'cue' && typeof node.id === 'string' && node.id && typeof node.action === 'string' && node.action) meaningful = true
+      else throw new Error('document-narration-content')
+    }
+    const target = narrationId ?? step.narrationIds[0]
+    const existing = target !== undefined && Object.hasOwn(document.narrations, target) ? document.narrations[target] : undefined
+    if (existing && !step.narrationIds.includes(existing.id)) throw new Error('document-narration-target')
+    if (!existing && !meaningful) return undefined
+    const id = target ?? crypto.randomUUID()
+    if (!id || id.length > 200 || /[\u0000-\u001f]/.test(id) || ['__proto__', 'constructor', 'prototype'].includes(id)) throw new Error('document-narration-target')
+    if (!existing && (document.id === id || [document.sections, document.blocks, document.steps, document.assets, document.definitions].some(map => Object.hasOwn(map, id)))) throw new Error('document-narration-target')
+    if (existing && JSON.stringify(existing.content) === JSON.stringify(content)) return id
+    const next: TeachingDocument = { ...document,
+      narrations: { ...document.narrations, [id]: { ...existing, id, content: structuredClone(content) } },
+      ...step.narrationIds.includes(id) ? {} : { steps: { ...document.steps, [stepId]: { ...step, narrationIds: [...step.narrationIds, id] } } },
+    }
+    if (existing && document.production.cueTimings) {
+      const cueIds = new Set(content.flatMap(node => node.type === 'cue' ? [node.id] : []))
+      const removed = existing.content.flatMap(node => node.type === 'cue' && !cueIds.has(node.id) ? [node.id] : [])
+        .filter(cue => Object.hasOwn(document.production.cueTimings!, cue) && !Object.values(next.narrations).some(narration => narration.content.some(node => node.type === 'cue' && node.id === cue)))
+      if (removed.length) {
+        const cueTimings = { ...document.production.cueTimings }
+        for (const cue of removed) delete cueTimings[cue]
+        next.production = { ...document.production, cueTimings }
+      }
+    }
+    this.stopAuditions()
+    this.#documentSession.record(next)
+    return id
+  }
   recordDocument(content: TeachingDocument): void { if (!isAgentChanging(this.#state)) this.#documentSession.record(content) }
-  documentComposition(composing: boolean): void { this.#documentSession.composition(composing) }
+  documentComposition(composing: boolean, owner = 'body', identity?: string): void { this.#documentSession.composition(composing, owner, identity) }
   retryDocument(): Promise<void> { return this.#documentSession.retry() }
   discardDocument(): Promise<void> { return this.#documentSession.discard() }
   documentError(error: Error): void { this.#set({ save: { kind: 'failed', message: error.message } }) }
   documentInteraction(): void { this.#documentSelectionGeneration++ }
   attachDocumentEditor(editor: NativeDocumentEditor | undefined): void {
+    if (editor !== this.#documentEditor) this.#documentSession.composition(false, 'body')
     this.#unsubscribeEditor?.(); this.#unsubscribeDocumentSelection?.(); this.#documentEditor = editor
     if (editor) {
       const focus = this.#pendingDocumentFocus, selection = this.#pendingDocumentSelection
