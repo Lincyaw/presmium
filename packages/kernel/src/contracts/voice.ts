@@ -73,6 +73,8 @@ export interface VoiceoverSnapshot {
 export type VoiceoverJobState = 'queued' | 'running' | 'cancelling' | 'cancelled' | 'done' | 'failed' | 'stale'
 export interface VoiceoverJob {
   id: string
+  /** Client-owned generation intent, available before the job response is delivered. */
+  intent: string
   revision: string
   source: CanonicalSource
   scope: VoiceScope
@@ -84,7 +86,9 @@ export interface VoiceoverJob {
   finishedAt?: string
   error?: string
 }
-export interface VoiceoverRequest { revision: string, source: CanonicalSource, scope: VoiceScope, confirmed: boolean }
+export interface VoiceoverRequest { intent: string, revision: string, source: CanonicalSource, scope: VoiceScope, confirmed: boolean }
+/** Cancellation can precede admission; a pre-admission refusal is not a fabricated job. */
+export interface VoiceoverCancellation { intent: string, state: VoiceoverJobState, job?: VoiceoverJob }
 export interface VoicePreviewRequest {
   revision: string
   source: CanonicalSource

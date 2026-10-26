@@ -1230,7 +1230,9 @@ export const OPERATIONS = defineService<Operations>('presmium.operations')
 
 试听与生成另有保存版本屏障。编译器在 `IRDocument.source` 写入 `CanonicalSource`（见 [IR 来源契约](ir.md#5-运行快照与渲染)）；`GET voice-preview` 的报价与 `GET voiceover` 的状态返回该来源，确认试听与生成 POST 必须原样携带 `source`。报价摘要同时绑定来源、运行 revision、实际文本、音色与提供方。Node 服务在读取报价、生成预检、每个片段调用前和结果采用前核对固定入口的实际内容与最新运行快照；已保存但尚未完成编译的文稿返回 `409 voice-source-changed`，缺少来源标记返回 `409 voice-source-unavailable`，不能继续使用旧 IR 的文本。历史任务携带自身 `source`，旧任务即使缓存仍有效，也不代表当前版本已生成。
 
-同一服务进程内，每个文稿目录共用一份生成占用，覆盖异步预检、逐片段生成和清理；重叠范围返回 `409 voice-job-busy`，不合并或替换原范围。同范围已在运行的任务可返回原任务。需要生成的新试听与 `lecture_synthesize` 也使用该占用；纯缓存试听不占用生成名额。取消保持 `cancelling`，直到正在进行的调用实际结束后释放占用，已完成的精确缓存不删除；来源变化使旧任务成为 `stale`，迟到结果不计入完成数。该占用不是多服务进程间的分布式锁。渲染、检查与导出继续只消费 IR 和精确缓存，不调用来源校验或隐式合成。
+同一服务进程内，每个文稿目录共用一份生成占用，覆盖异步预检、逐片段生成和清理；重叠范围返回 `409 voice-job-busy`，不合并或替换原范围。只有相同生成意图与相同来源、revision、范围的已入队请求可返回原任务，其他意图即使范围相同也不共享任务。需要生成的新试听与 `lecture_synthesize` 也使用该占用；纯缓存试听不占用生成名额。取消保持 `cancelling`，直到正在进行的调用实际结束后释放占用，已完成的精确缓存不删除；来源变化使旧任务成为 `stale`，迟到结果不计入完成数。该占用不是多服务进程间的分布式锁。渲染、检查与导出继续只消费 IR 和精确缓存，不调用来源校验或隐式合成。
+
+生成 POST 带客户端预分配的 `intent`，任务也返回该标识。`WorkspaceClient.startVoiceover` 默认通过 `getRandomValues` 分配标识，在取消或响应交付失败时用独立短请求按意图取消，不依赖尚未收到的任务 ID。`POST voiceover/cancel` 接受互斥的 `{ id }` 或 `{ intent }`；按意图取消返回 `VoiceoverCancellation { intent, state, job? }`，可先于生成请求到达，此时返回取消状态而不伪造任务。取消标识在该服务实例存续期间保留，迟到的生成请求不能重新入队；每文稿最多记录 1024 个意图，达到容量明确返回 503，不淘汰取消标识。已经完成的任务被迟到取消时仍如实返回完成状态。取消确认需要实际到达服务；网络失败由现有请求观察器报告，不承诺跨进程重启或网络断开期间的取消交付。
 
 转写回写的读法在讲授插件的 `src/domain/writeback.ts`：由事件写回提示标记（`cueFor`）、逐字稿拼成的讲解草稿（`narrationDraft`）、一步讲解在源码中的位置（`narrationPlace`，取自讲授计划，所以单独的讲授脚本中的段落同样找得到）、要翻译的语音段与摘要（`translationItems`）；agent 经 `track_narration`、`track_translations`（`src/node/tools.ts`）取得它们，写入在会话的审阅之中。
 
