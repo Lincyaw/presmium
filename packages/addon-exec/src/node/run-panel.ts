@@ -26,7 +26,7 @@ export const runPanelPass: IRPass = {
   name: 'presmium.exec.panels',
   order: 10,
   run(doc, ctx) {
-    for (const { section, block: { id, node, source } } of docBlocks(doc)) {
+    for (const { section, block: { id, node, source, stepStates } } of docBlocks(doc)) {
       if (node.type !== 'component' || node.plugin !== EXEC_ID || !['PmRunPanel', 'PmStepRun'].includes(node.name)) continue
       const code = componentCode(node)
       if (!code || node.children?.filter(child => child.node.type === 'code').length !== 1) {
@@ -35,6 +35,10 @@ export const runPanelPass: IRPass = {
       }
       node.props.code = code.value
       node.props.lang = code.lang
+      delete node.props.compiledOutput
+      for (const state of stepStates ?? []) if (state.parameters) {
+        for (const key of ['code', 'lang', 'place', 'executor', 'session', 'compiledOutput']) delete state.parameters[key]
+      }
       node.props.place = { section: section.id, block: id }
       const run = code.run
       if (run?.executor) node.props.executor = run.executor
