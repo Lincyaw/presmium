@@ -842,7 +842,7 @@
     },
     "stepOverrides": {
       "quiz-step": {
-        "narrationStart": "with-animation"
+        "narrationStart": "after-animation"
       }
     },
     "mediaClips": []
