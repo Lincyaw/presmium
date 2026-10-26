@@ -24,6 +24,8 @@
     "mindmap",
     "media",
     "images",
+    "semantic",
+    "cards",
     "next"
   ],
   "sections": {
@@ -170,6 +172,34 @@
       ],
       "stepOrder": [
         "next-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "semantic": {
+      "id": "semantic",
+      "title": "提示、折叠、术语与语义标记",
+      "level": 2,
+      "children": [
+        "semantic-body"
+      ],
+      "stepOrder": [
+        "semantic-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "cards": {
+      "id": "cards",
+      "title": "响应栅格、卡片与同步选项卡",
+      "level": 2,
+      "children": [
+        "cards-body"
+      ],
+      "stepOrder": [
+        "cards-step"
       ],
       "layout": {
         "type": "stack"
@@ -1096,6 +1126,722 @@
           ]
         }
       ]
+    },
+    "semantic-body": {
+      "id": "semantic-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "semantic-extension-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "扩展内容仍以结构化节点保存在 lecture.json。没有原生编辑控件的节点会保留身份与回退内容，不会转换成另一份源码。"
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "semantic-fallback-0",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "提示、折叠、术语与语义标记"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "semantic-extension-1",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "admonition",
+              "kind": "note",
+              "children": [
+                {
+                  "type": "admonitionTitle",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "补充说明"
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "这个说明与正文分开，便于回看。"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "semantic-fallback-1",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "结构化扩展内容：提示、折叠、术语与语义标记"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "semantic-extension-2",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "admonition",
+              "kind": "tip",
+              "children": [
+                {
+                  "type": "admonitionTitle",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "实践提示"
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "先在独立示例中验证，再用于自己的课程。"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "semantic-fallback-2",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "结构化扩展内容：提示、折叠、术语与语义标记"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "semantic-extension-3",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "admonition",
+              "kind": "warning",
+              "children": [
+                {
+                  "type": "admonitionTitle",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "注意条件"
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "依赖外部服务的内容要确认可用性。"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "semantic-fallback-3",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "结构化扩展内容：提示、折叠、术语与语义标记"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "semantic-extension-4",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "admonition",
+              "kind": "danger",
+              "children": [
+                {
+                  "type": "admonitionTitle",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "重要边界"
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "不要把未运行的代码或过期音频当成当前结果。"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "semantic-fallback-4",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "结构化扩展内容：提示、折叠、术语与语义标记"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "semantic-extension-5",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "details",
+              "open": false,
+              "children": [
+                {
+                  "type": "summary",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "展开查看练习思路"
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "先列出输入、观察过程，再用结果解释原因。再次点击可以收起。"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "semantic-fallback-5",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "结构化扩展内容：提示、折叠、术语与语义标记"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "semantic-extension-6",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "definitionList",
+              "children": [
+                {
+                  "type": "definitionTerm",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "稳定身份"
+                    }
+                  ]
+                },
+                {
+                  "type": "definitionDescription",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "页面、块和步骤移动之后，ID 保持不变。"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "definitionTerm",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "单一权威内容"
+                    }
+                  ]
+                },
+                {
+                  "type": "definitionDescription",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "正文、讲稿与制作参数一起保存在 lecture.json 中。"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "semantic-fallback-6",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "结构化扩展内容：提示、折叠、术语与语义标记"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "semantic-extension-7",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "键盘标记 "
+                },
+                {
+                  "type": "keyboard",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Ctrl + S"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "；下标 H"
+                },
+                {
+                  "type": "subscript",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "2"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "O；上标 x"
+                },
+                {
+                  "type": "superscript",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "2"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "；缩写 "
+                },
+                {
+                  "type": "abbreviation",
+                  "title": "Intermediate Representation",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "IR"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "。"
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "semantic-fallback-7",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "结构化扩展内容：提示、折叠、术语与语义标记"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "semantic-extension-8",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "语义交叉引用可以跳转到 "
+                },
+                {
+                  "type": "crossReference",
+                  "identifier": "tables",
+                  "label": "表格示例",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "表格示例"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "。"
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "semantic-fallback-8",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "结构化扩展内容：提示、折叠、术语与语义标记"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "cards-body": {
+      "id": "cards-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "cards-extension-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "grid",
+              "columns": [
+                1,
+                1,
+                2,
+                2
+              ],
+              "children": [
+                {
+                  "type": "card",
+                  "url": "#tables",
+                  "children": [
+                    {
+                      "type": "cardTitle",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "先看结构化表格"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "合并、对齐与列宽来自真实数据。"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "footer",
+                      "children": [
+                        {
+                          "type": "paragraph",
+                          "children": [
+                            {
+                              "type": "link",
+                              "url": "#tables",
+                              "class": "button",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "value": "前往表格"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "card",
+                  "children": [
+                    {
+                      "type": "header",
+                      "children": [
+                        {
+                          "type": "paragraph",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "阅读路线"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "cardTitle",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "再做代码实验"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "在“代码与运行”中修改参数，观察真实结果。"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "cards-fallback-0",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "响应栅格、卡片与同步选项卡"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "cards-extension-1",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "下面两组语言选项卡共享明确的同步键。在任意一组选择 JavaScript，另一组也应切换；这不修改文稿内容。"
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "cards-fallback-1",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "结构化扩展内容：响应栅格、卡片与同步选项卡"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "cards-extension-2",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "tabSet",
+              "children": [
+                {
+                  "type": "tabItem",
+                  "title": "Python",
+                  "sync": "feature-py",
+                  "selected": true,
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Python：print(\"hello\")"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tabItem",
+                  "title": "JavaScript",
+                  "sync": "feature-js",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "JavaScript：console.log(\"hello\")"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "cards-fallback-2",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "结构化扩展内容：响应栅格、卡片与同步选项卡"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "cards-extension-3",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "tabSet",
+              "children": [
+                {
+                  "type": "tabItem",
+                  "title": "Python",
+                  "sync": "feature-py",
+                  "selected": true,
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Python：print(\"hello\")"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tabItem",
+                  "title": "JavaScript",
+                  "sync": "feature-js",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "JavaScript：console.log(\"hello\")"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "cards-fallback-3",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "结构化扩展内容：响应栅格、卡片与同步选项卡"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   },
   "steps": {
@@ -1256,6 +2002,28 @@
       "visuals": [
         {
           "blockId": "text-74",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "semantic-step": {
+      "id": "semantic-step",
+      "sectionId": "semantic",
+      "visuals": [
+        {
+          "blockId": "semantic-body",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "cards-step": {
+      "id": "cards-step",
+      "sectionId": "cards",
+      "visuals": [
+        {
+          "blockId": "cards-body",
           "visible": true
         }
       ],

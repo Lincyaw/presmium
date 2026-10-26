@@ -436,6 +436,16 @@
               "text": "下面是使用浏览器 Custom Elements API 的真实计数器。点击后数值增加，按钮沿用公共设计系统。组件的注册通过本讲的本地插件公开入口完成。"
             }
           ]
+        },
+        {
+          "id": "module-implementation-limit",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "组件定义可引用项目文件或已注册插件。module 实现目前仍会被编译器明确拒绝；这里使用真实本地插件，没有把保留字段当成可运行能力。"
+            }
+          ]
         }
       ]
     },

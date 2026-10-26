@@ -18,7 +18,7 @@
     },
     "translationOf": {
       "entry": "../../lecture.json",
-      "digest": "60045386d8dd37f836025bf5b221feea62c8b225459b34222d14c869140dc940"
+      "digest": "4fcea8d83e1570e3a3495db360e348c18578c801a43deebf13157a18c92b3363"
     }
   },
   "sectionOrder": [
@@ -435,6 +435,16 @@
             {
               "type": "text",
               "text": "This real counter uses the browser Custom Elements API. Clicking increases its value; its button uses the shared design system. The local plugin registers it through the public browser entry."
+            }
+          ]
+        },
+        {
+          "id": "module-implementation-limit",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Component definitions can reference project files or registered plugins. The compiler currently rejects module implementations; this example uses a real local plugin."
             }
           ]
         }

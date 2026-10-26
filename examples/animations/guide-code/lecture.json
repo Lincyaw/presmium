@@ -80,7 +80,8 @@
       "children": [
         "text-8",
         "reference-region",
-        "reference-symbol"
+        "reference-symbol",
+        "reference-pattern"
       ],
       "stepOrder": [
         "references-step"
@@ -301,7 +302,10 @@
       "type": "code",
       "language": "typescript",
       "origin": {
-        "anchor": "region:examples/animations/guide-code/code/checkout.ts#checkout"
+        "anchor": "region:examples/animations/guide-code/code/checkout.ts#checkout",
+        "highlightRegions": {
+          "references-step": "accumulation"
+        }
       }
     },
     "reference-symbol": {
@@ -487,6 +491,14 @@
           ]
         }
       ]
+    },
+    "reference-pattern": {
+      "id": "reference-pattern",
+      "type": "code",
+      "language": "typescript",
+      "origin": {
+        "anchor": "pattern:examples/animations/guide-code/code/checkout.ts#$A.reduce($$$ARGS)"
+      }
     }
   },
   "steps": {
@@ -567,6 +579,10 @@
         },
         {
           "blockId": "reference-symbol",
+          "visible": true
+        },
+        {
+          "blockId": "reference-pattern",
           "visible": true
         }
       ],
