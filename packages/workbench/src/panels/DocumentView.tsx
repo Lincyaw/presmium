@@ -10,8 +10,9 @@ import { PreviewPanel } from './PreviewPanel.tsx'
 import { PageRenameDialog } from './PageRenameDialog.tsx'
 import { PageDeleteDialog } from './PageDeleteDialog.tsx'
 import { SourceDocumentPanel } from './SourceDocumentPanel.tsx'
+import { DocumentNarrationPanel } from './DocumentNarrationPanel.tsx'
 
-export type DocumentAside = 'comments' | 'history' | 'export'
+export type DocumentAside = 'comments' | 'history' | 'export' | 'narration'
 
 const isTyping = (target: EventTarget | null) => target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select, [contenteditable]') !== null)
 
@@ -98,8 +99,8 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
         {!presenting && navigation && <NavigationPane onClose={() => setNavigation(false)} onSelect={() => { if (matchMedia('(max-width: 1279px)').matches) setNavigation(false) }} />}
         <div className="pmw-document__main"><div className="pmw-document__source" hidden={presenting}><SourceDocumentPanel commentsPortal={commentsPortal} /></div>{presenting && <><PreviewPanel active={active} /><StepTimeline /></>}</div>
         {!presenting && aside && (
-          <aside className="pmw-document__aside pm-ui-block-editor" aria-label={aside}>
-            {aside === 'comments' ? <section className="pmw-pane"><header className="pmw-pane__header"><h2 className="pmw-pane__title">{t.comments}</h2><PmIconButton small icon="close" label={t.close} onClick={() => setAside(null)} /></header><div ref={setCommentsPortal} /></section> : aside === 'export' ? <ExportPanel documentOnly onClose={() => setAside(null)} /> : <HistoryPanel onClose={() => setAside(null)} />}
+          <aside className="pmw-document__aside pm-ui-block-editor" aria-label={aside === 'narration' ? t.documentNarration : aside}>
+            {aside === 'comments' ? <section className="pmw-pane"><header className="pmw-pane__header"><h2 className="pmw-pane__title">{t.comments}</h2><PmIconButton small icon="close" label={t.close} onClick={() => setAside(null)} /></header><div ref={setCommentsPortal} /></section> : aside === 'narration' ? <DocumentNarrationPanel onClose={() => setAside(null)} /> : aside === 'export' ? <ExportPanel documentOnly onClose={() => setAside(null)} /> : <HistoryPanel onClose={() => setAside(null)} />}
           </aside>
         )}
       </div>
@@ -240,6 +241,7 @@ function DocumentToolbar({ framed, aside, navigation, onPresent, onNavigation, o
   const timingDrafts = useWorkbenchState(state => state.hasDocumentTimingDrafts)
   const blocked = useWorkbenchState(state => Boolean(!state.authoring?.content || state.authoring.loading || state.authoring.dirty || state.authoring.saving || state.authoring.restored || state.authoring.error || state.authoring.composing || state.hasDocumentTimingDrafts || state.isEditingPage || state.isCreatingPage || isAgentChanging(state)))
   const openComments = useWorkbenchState(state => Object.values(state.authoring?.content?.comments ?? {}).filter(comment => !comment.resolved && !comment.deletedAt).length)
+  const hasStep = useWorkbenchState(state => !state.authoring?.loading && Boolean(state.authoring?.content?.sectionOrder.length))
   return (
     <PmToolbar className="pmw-toolbar" label={t.commands}>
       {!framed && <>
@@ -247,10 +249,11 @@ function DocumentToolbar({ framed, aside, navigation, onPresent, onNavigation, o
         <h1 className="pmw-toolbar__title" title={title}>{title}</h1>
       </>}
       <PmToolbarButton asChild><PmIconButton small icon="navigation" label={t.navigationPane} aria-pressed={navigation} onClick={onNavigation} /></PmToolbarButton>
-      <PmToolbarButton asChild><PmIconButton small icon="undo" label={t.undo} shortcut="⌘/Ctrl+Z" disabled={!editorHistory?.undo && !history?.undo && !dirty || busy} onClick={() => void workbench.undo()} /></PmToolbarButton>
-      <PmToolbarButton asChild><PmIconButton small icon="redo" label={t.redo} shortcut="⌘/Ctrl+Shift+Z" disabled={!editorHistory?.redo && (dirty || !history?.redo) || busy} onClick={() => void workbench.redo()} /></PmToolbarButton>
+      <PmToolbarButton asChild><PmIconButton small icon="undo" label={t.undo} shortcut="⌘/Ctrl+Z" disabled={!editorHistory?.undo && (editorHistory?.field || !history?.undo && !dirty) || busy} onClick={() => void workbench.undo()} /></PmToolbarButton>
+      <PmToolbarButton asChild><PmIconButton small icon="redo" label={t.redo} shortcut="⌘/Ctrl+Shift+Z" disabled={!editorHistory?.redo && (editorHistory?.field || dirty || !history?.redo) || busy} onClick={() => void workbench.redo()} /></PmToolbarButton>
       <SaveStatus />
       <span className="pmw-spacer" />
+      <PmToolbarButton asChild><PmIconButton small icon="captions" label={t.documentNarration} hint={t.documentNarrationHint} aria-pressed={aside === 'narration'} disabled={!hasStep} onClick={() => onAside('narration')} /></PmToolbarButton>
       <PmToolbarButton asChild><PmIconButton small icon="comment" label={openComments ? `${t.comments} (${openComments})` : t.comments} aria-pressed={aside === 'comments'} onClick={() => onAside('comments')} /></PmToolbarButton>
       <PmToolbarButton asChild><PmIconButton small icon="versions" label={t.versionHistory} aria-pressed={aside === 'history'} onClick={() => onAside('history')} /></PmToolbarButton>
       <span className="pmw-toolbar__divider" aria-hidden="true" />

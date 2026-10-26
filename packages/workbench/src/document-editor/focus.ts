@@ -8,6 +8,14 @@ interface NativeFieldEditor {
   focus(): void
 }
 export interface DocumentFieldBookmark { content: string, document: unknown, selection: SelectionBookmark }
+export interface DocumentHistoryEditor {
+  readonly prosemirrorState: EditorState
+  readonly prosemirrorView: EditorView
+  undo(): boolean
+  redo(): boolean
+  focus(): void
+  onChange(callback: () => void): () => void
+}
 export interface DocumentFieldFocus {
   capture(): DocumentFieldBookmark | undefined
   restore(bookmark: DocumentFieldBookmark): boolean
@@ -15,11 +23,12 @@ export interface DocumentFieldFocus {
 export interface DocumentFieldRegistration {
   identity: string
   reset: number
-  blockId: string
+  blockId?: string
   stepId: string
   narrationId: string
   slot: number
   focus: DocumentFieldFocus
+  editor?: DocumentHistoryEditor
 }
 
 /** Only transient native state is carried across a source structure reset, never persisted. */
