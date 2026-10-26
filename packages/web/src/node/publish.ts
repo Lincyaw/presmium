@@ -75,6 +75,7 @@ export class PublicationCache {
     for (const block of irBlocks(original.blocks)) {
       if (block.node.type === 'markdown' && local(block.node.mdast)) return
       if (block.node.type === 'component' && (Object.keys(block.node.assets ?? {}).length || (block.node.fallback && local(block.node.fallback)))) return
+      if (block.stepStates?.some(state => Object.keys(state.assets ?? {}).length)) return
     }
     const bytes = (key.length + JSON.stringify(section).length) * 2
     if (bytes > PUBLICATION_CACHE_BYTES) return
@@ -122,6 +123,17 @@ export function publishedDocument(doc: IRDocument, ctx: RenderContext, publicDir
     if (node.type === 'markdown') mdast(node.mdast, source)
     if (node.type === 'component') {
       if (node.fallback) mdast(node.fallback, source)
+      for (const state of b.stepStates ?? []) {
+        if (!state.parameters) continue
+        // Plugins can declare state-only resources. Other components inherit
+        // their declared asset paths, resolved against the current parameters.
+        const assets = state.assets ?? Object.fromEntries(Object.entries(node.assets ?? {}).flatMap(([path, original]) => {
+          const at = (props: Record<string, unknown>) => path.split('.').reduce<unknown>((current, key) => current && typeof current === 'object' ? (current as Record<string, unknown>)[key] : undefined, props)
+          const value = at(state.parameters!)
+          return typeof value === 'string' ? [[path, value !== at(node.props) ? value : original]] : []
+        }))
+        state.parameters = withPublishedAssets({ ...node, props: state.parameters, assets }, url => publish(url, source)).props
+      }
       node.props = withPublishedAssets(node, url => publish(url, source)).props
     }
   }

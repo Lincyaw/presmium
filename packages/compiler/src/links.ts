@@ -80,6 +80,7 @@ function blockUrls(block: IRBlock): string[] {
   if (node.type === 'component') {
     if (node.fallback) walk(node.fallback)
     for (const url of Object.values(node.assets ?? {})) urls.push(url)
+    for (const state of block.stepStates ?? []) for (const url of Object.values(state.assets ?? {})) urls.push(url)
   }
   return urls.map(url => url.trim()).filter(Boolean)
 }
