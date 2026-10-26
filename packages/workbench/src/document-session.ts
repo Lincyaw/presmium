@@ -171,8 +171,13 @@ export class DocumentSession {
     slot.input++
     slot.state = { ...slot.state, content: structuredClone(content), dirty: true }
     this.#persist(slot); this.#emit(slot)
+    this.#schedule(slot)
+  }
+
+  #schedule(slot: Slot): void {
     clearTimeout(slot.timer)
-    if (!slot.state.restored && !slot.state.error && !slot.state.composing) slot.timer = setTimeout(() => { void this.#save(slot) }, 600)
+    slot.timer = undefined
+    if (slot.state.dirty && !slot.state.restored && !slot.state.error && !slot.state.composing) slot.timer = setTimeout(() => { slot.timer = undefined; void this.#save(slot) }, 600)
   }
 
   replace(content: TeachingDocument): void {
@@ -188,7 +193,7 @@ export class DocumentSession {
     else slot.compositions.delete(owner)
     slot.state = { ...slot.state, composing: slot.compositions.size > 0 }
     this.#persist(slot); this.#emit(slot)
-    if (!slot.state.composing && !slot.state.error && !slot.state.restored) void this.#save(slot)
+    this.#schedule(slot)
   }
   interrupt(): void {
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
@@ -198,8 +203,9 @@ export class DocumentSession {
     this.#persist(slot); this.#emit(slot)
   }
 
-  async #save(slot: Slot): Promise<void> {
-    clearTimeout(slot.timer)
+  async #save(slot: Slot, immediate = false): Promise<void> {
+    if (immediate) { clearTimeout(slot.timer); slot.timer = undefined }
+    else if (slot.timer !== undefined) return
     if (slot.flight || !slot.state.dirty || slot.state.composing || slot.state.restored || slot.state.error || !slot.state.content || !slot.state.version) return
     slot.read++
     const flight = { id: crypto.randomUUID(), input: slot.input, content: structuredClone(slot.state.content), baseVersion: slot.state.version, hash: undefined as string | undefined }
@@ -235,7 +241,7 @@ export class DocumentSession {
     slot.state = { ...slot.state, restored: false, error: undefined }
     await this.refresh(slot.state.directory)
     if (slot.state.error) { if (!previousError) this.#emit(slot); return }
-    await this.#save(slot)
+    await this.#save(slot, true)
   }
   async discard(): Promise<void> {
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
@@ -259,7 +265,7 @@ export class DocumentSession {
       signal?.throwIfAborted()
       if (slot.state.error || slot.state.composing || slot.state.restored) throw new Error(slot.state.error ?? 'document-draft-unconfirmed')
       if (Date.now() - started > 30000) throw new Error('document-save-timeout')
-      await this.#save(slot)
+      await this.#save(slot, true)
       if (slot.flight) await new Promise(resolve => setTimeout(resolve, 20))
     }
   }
