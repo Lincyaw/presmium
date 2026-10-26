@@ -53,15 +53,20 @@ export function useLecturePlayback() {
   const releaseClock = useRef<() => void>(() => {})
   const releaseProduction = useRef<() => void>(() => {})
   const clear = () => { releaseProduction.current(); releaseProduction.current = () => {}; current.current?.dispose(); current.current = undefined; releaseClock.current(); releaseClock.current = () => {} }
-  const start = async (track: LectureTrack, source: LectureSource, ops: Operations, load: number, at = 0, plan?: ProductionPlan, signal?: AbortSignal) => {
+  const start = async (track: LectureTrack, source: LectureSource, ops: Operations, load: number, at = 0, plan?: ProductionPlan, signal?: AbortSignal, origin?: { section: string, step: number }) => {
     const clock = await createClock(track, source, signal)
     if (load !== generation.current || signal?.aborted) { clock.dispose(); signal?.throwIfAborted(); return }
     clear()
     const next = new LecturePlayer(track, doc, ops, clock, playback)
     current.current = next
     releaseClock.current = stepClock?.drive({ elapsed: next.stepTime, recording: exporting }) ?? (() => {})
-    if (plan) flushSync(() => next.seek(at))
-    else next.seek(at)
+    const seek = () => {
+      if (origin && next.seekStep(origin.section, origin.step)) return
+      if (origin && plan) { clear(); throw new Error('production-binding-stale') }
+      next.seek(at)
+    }
+    if (plan) flushSync(seek)
+    else seek()
     if (plan && production) {
       await settleProductionPlayback(stepClock, signal)
       if (load !== generation.current || signal?.aborted) { signal?.throwIfAborted(); return }
@@ -101,7 +106,7 @@ export function useLecturePlayback() {
       if (!binding && !exporting && track.id === SCRIPT_TRACK && track.utterances.length > 0 && track.utterances.every(utterance => Boolean(utterance.unsaid)) && audioSegments(track).length === 0) { play(undefined); return }
       const position = viewer.position.getSnapshot()
       const at = exporting ? 0 : timedEvents(track).find(event => event.type === 'go' && event.data.section === position.section && Number(event.data.step ?? 0) === position.step)?.t ?? 0
-      await start(track, source, operations, load, at, plan, signal); check()
+      await start(track, source, operations, load, at, plan, signal, exporting ? undefined : position); check()
     }
     let selecting = false
     const select = () => {

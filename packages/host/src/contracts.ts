@@ -128,7 +128,7 @@ export interface PlaybackControl {
 
 export const PLAYBACK_CONTROL = defineService<PlaybackControl>('presmium.playbackControl')
 
-/** Observes and controls the loaded lecture player's clock; author interfaces never synthesize time. */
+/** Observes the loaded player's clock and selects stable step boundaries; author interfaces never synthesize time. */
 export interface ProductionPlayback {
   readonly version: 1
   readonly state: Pick<Store<ProductionPlaybackState | undefined>, 'getSnapshot' | 'subscribe'>
