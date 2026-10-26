@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "id": "document-2fb02c07c0f3fb88",
+  "metadata": {
+    "title": "内容标记",
+    "lang": "zh-CN",
+    "renderers": {
+      "web": {},
+      "slides": {}
+    }
+  },
+  "sectionOrder": [
+    "内容标记"
+  ],
+  "sections": {
+    "内容标记": {
+      "id": "内容标记",
+      "title": "内容标记",
+      "level": 1,
+      "children": [
+        "内容标记--spoken",
+        "内容标记--screen",
+        "内容标记--reading",
+        "内容标记--code"
+      ],
+      "stepOrder": [
+        "内容标记--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "内容标记--spoken": {
+      "id": "内容标记--spoken",
+      "type": "text",
+      "content": [
+        {
+          "id": "内容标记--spoken--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这段是讲解，也会用来生成字幕。"
+            }
+          ]
+        }
+      ]
+    },
+    "内容标记--screen": {
+      "id": "内容标记--screen",
+      "type": "text",
+      "content": [
+        {
+          "id": "内容标记--screen--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这句话会出现在幻灯片上。"
+            }
+          ]
+        }
+      ]
+    },
+    "内容标记--reading": {
+      "id": "内容标记--reading",
+      "type": "text",
+      "content": [
+        {
+          "id": "内容标记--reading--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这段是补充说明，不参与朗读。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "内容标记--code": {
+      "id": "内容标记--code",
+      "type": "code",
+      "language": "python",
+      "value": "print(\"hello\")"
+    }
+  },
+  "steps": {
+    "内容标记--step-0": {
+      "id": "内容标记--step-0",
+      "sectionId": "内容标记",
+      "visuals": [
+        {
+          "blockId": "内容标记--spoken",
+          "visible": false
+        },
+        {
+          "blockId": "内容标记--screen",
+          "visible": true
+        },
+        {
+          "blockId": "内容标记--reading",
+          "visible": false
+        },
+        {
+          "blockId": "内容标记--code",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "内容标记--spoken--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "内容标记--spoken--narration": {
+      "id": "内容标记--spoken--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这段是讲解，也会用来生成字幕。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "id": "document-1b2dd2492e86da9b",
+  "metadata": {
+    "title": "查询结果与重置",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {
+        "theme": "default"
+      }
+    }
+  },
+  "sectionOrder": [
+    "query-results",
+    "reset-session"
+  ],
+  "sections": {
+    "query-results": {
+      "id": "query-results",
+      "title": "查询结果",
+      "level": 2,
+      "children": [
+        "query-results--pm-run-panel-1"
+      ],
+      "stepOrder": [
+        "query-results--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "reset-session": {
+      "id": "reset-session",
+      "title": "从头演示",
+      "level": 2,
+      "children": [
+        "reset-session--pm-run-panel-1"
+      ],
+      "stepOrder": [
+        "reset-session--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "query-results--pm-run-panel-1": {
+      "id": "query-results--pm-run-panel-1",
+      "type": "component",
+      "definitionId": "query-results--pm-run-panel-1--definition",
+      "parameters": {
+        "params": {
+          "age": 37
+        }
+      },
+      "children": [
+        "query-results--pm-run-panel-1--source"
+      ]
+    },
+    "query-results--pm-run-panel-1--source": {
+      "id": "query-results--pm-run-panel-1--source",
+      "type": "code",
+      "language": "python",
+      "value": "import sqlite3\nfrom IPython.display import HTML\ndb = sqlite3.connect(':memory:')\ndb.execute('create table teachers (name text, age integer)')\ndb.execute('insert into teachers values (?, ?)', ('Ada', age))\ndisplay(HTML('<table><tr><th>教师</th></tr><tr><td>Ada</td></tr></table>'))\ndb.execute('select name, age from teachers').fetchall()",
+      "execution": {
+        "when": "both",
+        "args": {
+          "age": "37"
+        }
+      }
+    },
+    "reset-session--pm-run-panel-1": {
+      "id": "reset-session--pm-run-panel-1",
+      "type": "component",
+      "definitionId": "reset-session--pm-run-panel-1--definition",
+      "parameters": {},
+      "children": [
+        "reset-session--pm-run-panel-1--source"
+      ]
+    },
+    "reset-session--pm-run-panel-1--source": {
+      "id": "reset-session--pm-run-panel-1--source",
+      "type": "code",
+      "language": "python",
+      "value": "count = globals().get('count', 0) + 1\ncount",
+      "execution": {
+        "when": "both",
+        "session": "database"
+      }
+    }
+  },
+  "steps": {
+    "query-results--step-0": {
+      "id": "query-results--step-0",
+      "sectionId": "query-results",
+      "visuals": [
+        {
+          "blockId": "query-results--pm-run-panel-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "query-results--pm-run-panel-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "reset-session--step-0": {
+      "id": "reset-session--step-0",
+      "sectionId": "reset-session",
+      "visuals": [
+        {
+          "blockId": "reset-session--pm-run-panel-1--source",
+          "visible": true
+        },
+        {
+          "blockId": "reset-session--pm-run-panel-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "query-results--pm-run-panel-1--definition": {
+      "id": "query-results--pm-run-panel-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      }
+    },
+    "reset-session--pm-run-panel-1--definition": {
+      "id": "reset-session--pm-run-panel-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

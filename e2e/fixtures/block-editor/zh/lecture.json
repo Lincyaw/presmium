@@ -1,0 +1,729 @@
+{
+  "schemaVersion": 1,
+  "id": "document-e3523d52dbf2256e",
+  "metadata": {
+    "title": "块编辑",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-motion"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {}
+    }
+  },
+  "sectionOrder": [
+    "intro",
+    "animation",
+    "empty",
+    "late"
+  ],
+  "sections": {
+    "intro": {
+      "id": "intro",
+      "title": "正文页面",
+      "level": 1,
+      "children": [
+        "intro--body",
+        "intro--narration-1"
+      ],
+      "stepOrder": [
+        "intro--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "animation": {
+      "id": "animation",
+      "title": "动画页面",
+      "level": 2,
+      "children": [
+        "animation--scene",
+        "animation--narration-1"
+      ],
+      "stepOrder": [
+        "animation--step-0",
+        "animation--step-1",
+        "animation--step-2"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "empty": {
+      "id": "empty",
+      "title": "空白页面",
+      "level": 2,
+      "children": [],
+      "stepOrder": [
+        "empty--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "late": {
+      "id": "late",
+      "title": "分步定位",
+      "level": 2,
+      "children": [
+        "late--late-first",
+        "late--late-second",
+        "late--late-third"
+      ],
+      "stepOrder": [
+        "late--step-0",
+        "late--step-1",
+        "late--step-2",
+        "late--step-3",
+        "late--step-4",
+        "late--step-5",
+        "late--step-6",
+        "late--step-7",
+        "late--step-8",
+        "late--step-9",
+        "late--step-10",
+        "late--step-11"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "intro--body": {
+      "id": "intro--body",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--body--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "可编辑的正文。"
+            }
+          ]
+        }
+      ]
+    },
+    "intro--narration-1": {
+      "id": "intro--narration-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--narration-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "独立的讲解文本。"
+            }
+          ]
+        }
+      ]
+    },
+    "animation--scene": {
+      "id": "animation--scene",
+      "type": "component",
+      "definitionId": "animation--scene--definition",
+      "parameters": {
+        "scene": "steps"
+      }
+    },
+    "animation--narration-1": {
+      "id": "animation--narration-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "animation--narration-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步的讲解。"
+            }
+          ]
+        }
+      ]
+    },
+    "late--late-first": {
+      "id": "late--late-first",
+      "type": "component",
+      "definitionId": "late--late-first--definition",
+      "parameters": {
+        "scene": "later",
+        "height": "40rem"
+      }
+    },
+    "late--late-second": {
+      "id": "late--late-second",
+      "type": "component",
+      "definitionId": "late--late-second--definition",
+      "parameters": {
+        "scene": "later",
+        "height": "40rem"
+      }
+    },
+    "late--late-third": {
+      "id": "late--late-third",
+      "type": "component",
+      "definitionId": "late--late-third--definition",
+      "parameters": {
+        "scene": "later",
+        "height": "40rem"
+      }
+    }
+  },
+  "steps": {
+    "intro--step-0": {
+      "id": "intro--step-0",
+      "sectionId": "intro",
+      "visuals": [
+        {
+          "blockId": "intro--body",
+          "visible": true
+        },
+        {
+          "blockId": "intro--narration-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "intro--narration-1--narration"
+      ]
+    },
+    "animation--step-0": {
+      "id": "animation--step-0",
+      "sectionId": "animation",
+      "visuals": [
+        {
+          "blockId": "animation--scene",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "animation--narration-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "animation--step-1": {
+      "id": "animation--step-1",
+      "sectionId": "animation",
+      "visuals": [
+        {
+          "blockId": "animation--scene",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "animation--narration-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "animation--narration-1--narration"
+      ]
+    },
+    "animation--step-2": {
+      "id": "animation--step-2",
+      "sectionId": "animation",
+      "visuals": [
+        {
+          "blockId": "animation--scene",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "animation--narration-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "empty--step-0": {
+      "id": "empty--step-0",
+      "sectionId": "empty",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "late--step-0": {
+      "id": "late--step-0",
+      "sectionId": "late",
+      "visuals": [
+        {
+          "blockId": "late--late-first",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "late--late-second",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "late--late-third",
+          "visible": false,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "late--step-1": {
+      "id": "late--step-1",
+      "sectionId": "late",
+      "visuals": [
+        {
+          "blockId": "late--late-first",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "late--late-second",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "late--late-third",
+          "visible": false,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "late--step-2": {
+      "id": "late--step-2",
+      "sectionId": "late",
+      "visuals": [
+        {
+          "blockId": "late--late-first",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "late--late-second",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "late--late-third",
+          "visible": false,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "late--step-3": {
+      "id": "late--step-3",
+      "sectionId": "late",
+      "visuals": [
+        {
+          "blockId": "late--late-first",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "late--late-second",
+          "visible": false,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "late--late-third",
+          "visible": false,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "late--step-4": {
+      "id": "late--step-4",
+      "sectionId": "late",
+      "visuals": [
+        {
+          "blockId": "late--late-first",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "late--late-second",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "late--late-third",
+          "visible": false,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "late--step-5": {
+      "id": "late--step-5",
+      "sectionId": "late",
+      "visuals": [
+        {
+          "blockId": "late--late-first",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "late--late-second",
+          "visible": true,
+          "state": "legacy-1"
+        },
+        {
+          "blockId": "late--late-third",
+          "visible": false,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "late--step-6": {
+      "id": "late--step-6",
+      "sectionId": "late",
+      "visuals": [
+        {
+          "blockId": "late--late-first",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "late--late-second",
+          "visible": true,
+          "state": "legacy-2"
+        },
+        {
+          "blockId": "late--late-third",
+          "visible": false,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "late--step-7": {
+      "id": "late--step-7",
+      "sectionId": "late",
+      "visuals": [
+        {
+          "blockId": "late--late-first",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "late--late-second",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "late--late-third",
+          "visible": false,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "late--step-8": {
+      "id": "late--step-8",
+      "sectionId": "late",
+      "visuals": [
+        {
+          "blockId": "late--late-first",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "late--late-second",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "late--late-third",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": []
+    },
+    "late--step-9": {
+      "id": "late--step-9",
+      "sectionId": "late",
+      "visuals": [
+        {
+          "blockId": "late--late-first",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "late--late-second",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "late--late-third",
+          "visible": true,
+          "state": "legacy-1"
+        }
+      ],
+      "narrationIds": []
+    },
+    "late--step-10": {
+      "id": "late--step-10",
+      "sectionId": "late",
+      "visuals": [
+        {
+          "blockId": "late--late-first",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "late--late-second",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "late--late-third",
+          "visible": true,
+          "state": "legacy-2"
+        }
+      ],
+      "narrationIds": []
+    },
+    "late--step-11": {
+      "id": "late--step-11",
+      "sectionId": "late",
+      "visuals": [
+        {
+          "blockId": "late--late-first",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "late--late-second",
+          "visible": true,
+          "state": "legacy-3"
+        },
+        {
+          "blockId": "late--late-third",
+          "visible": true,
+          "state": "legacy-3"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "intro--narration-1--narration": {
+      "id": "intro--narration-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "独立的讲解文本。"
+        }
+      ]
+    },
+    "animation--narration-1--narration": {
+      "id": "animation--narration-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二步的讲解。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "animation--scene--definition": {
+      "id": "animation--scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/steps.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          800,
+          1200,
+          1000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": []
+        },
+        "language": "typescript"
+      }
+    },
+    "late--late-first--definition": {
+      "id": "late--late-first--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/later.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1000,
+          1000,
+          1000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": []
+        },
+        "language": "typescript"
+      }
+    },
+    "late--late-second--definition": {
+      "id": "late--late-second--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/later.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1000,
+          1000,
+          1000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": []
+        },
+        "language": "typescript"
+      }
+    },
+    "late--late-third--definition": {
+      "id": "late--late-third--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/later.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        },
+        {
+          "id": "legacy-1",
+          "legacyIndex": 1
+        },
+        {
+          "id": "legacy-2",
+          "legacyIndex": 2
+        },
+        {
+          "id": "legacy-3",
+          "legacyIndex": 3
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1000,
+          1000,
+          1000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": []
+        },
+        "language": "typescript"
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": [],
+    "narrationOverrides": {
+      "intro--narration-1--narration": {
+        "narrationStart": "with-animation"
+      },
+      "animation--narration-1--narration": {
+        "narrationStart": "after-animation"
+      }
+    }
+  }
+}

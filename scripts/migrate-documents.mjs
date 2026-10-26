@@ -10,12 +10,16 @@ import { fileURLToPath } from 'node:url'
 const { values, positionals } = parseArgs({ allowPositionals: true, options: {
   legacy: { type: 'string' }, source: { type: 'string' }, root: { type: 'string', default: '.' },
   output: { type: 'string', default: '.presmium/migrated-documents' },
+  continue: { type: 'boolean', default: false }, 'plugin-map': { type: 'string' },
   apply: { type: 'boolean', default: false }, workspace: { type: 'boolean', default: false }, help: { type: 'boolean', short: 'h' },
 } })
 if (values.help || !values.legacy || !positionals.length) {
   console.log('Usage: node scripts/migrate-documents.mjs --legacy <isolated old checkout> [--source <snapshot root>] [--root <destination>] [--output <dry-run directory>] [--apply] [--workspace] <document directory>...\n\nDefault: compile old source, validate normalized lecture.json and write dry-run copies only.\n--apply atomically replaces unchanged lecture.md files after successful validation; never runs speech synthesis.')
   process.exit(values.help ? 0 : 2)
 }
+if (values.continue && values.apply) throw new Error('--continue is only available for dry-run inventory; apply a validated group without it.')
+const pluginMap = values['plugin-map'] ? JSON.parse(values['plugin-map']) : {}
+if (!pluginMap || Array.isArray(pluginMap) || typeof pluginMap !== 'object' || Object.values(pluginMap).some(value => typeof value !== 'string')) throw new Error('--plugin-map expects an object of original plugin names to actual project paths.')
 const legacy = realpathSync(resolve(values.legacy)), destination = realpathSync(resolve(values.root))
 if (legacy === destination) throw new Error('Migration requires a separate legacy checkout with independently linked dependencies.')
 const sourceRoot = values.source ? realpathSync(resolve(values.source)) : legacy
@@ -41,6 +45,7 @@ if (workspace) {
   workspace.after = workspace.before.replaceAll('lecture.md', DOCUMENT_ENTRY)
 }
 for (const name of positionals) {
+  try {
   const sourceDir = resolve(sourceRoot, name), targetDir = resolve(destination, name)
   if (relative(sourceRoot, sourceDir).startsWith('..') || relative(destination, targetDir).startsWith('..')) throw new Error(`Document lies outside migration roots: ${name}`)
   const entry = join(sourceDir, 'lecture.md'), before = await readFile(entry, 'utf8')
@@ -52,10 +57,12 @@ for (const name of positionals) {
     if (existsSync(join(candidate, 'presmium.workspace.yaml'))) { workspaceRoot = candidate; break }
     if (candidate === sourceRoot || candidate === dirname(candidate)) break
   }
-  const compilation = await new Compiler(sourceDir, { workspaceRoot, bundled: join(legacy, 'packages/presmium') }).compile()
+  const plugins = parsed.frontmatter.plugins?.map(name => pluginMap[name] ?? name)
+  const frontmatter = { ...parsed.frontmatter, ...plugins ? { plugins } : {} }
+  const compilation = await new Compiler(sourceDir, { workspaceRoot, bundled: join(legacy, 'packages/presmium'), ...plugins ? { headmatter: { plugins } } : {} }).compile({ signal: AbortSignal.timeout(30_000) })
   const errors = compilation.doc.diagnostics.filter(d => d.severity === 'error')
   if (errors.length) throw new Error(`${name}: legacy compilation failed: ${json(errors)}`)
-  const migrated = convert(compilation.doc, parsed.frontmatter, sourceDir, name)
+  const migrated = convert(compilation.doc, frontmatter, sourceDir, name)
   const validation = validateDocument(migrated)
   if (!validation.document) throw new Error(`${name}: normalized document is invalid: ${json(validation.issues)}`)
   const targetText = json(migrated), dryDir = join(resolve(values.output), name)
@@ -82,6 +89,10 @@ for (const name of positionals) {
   record.dependencies = dependencies.map(({ target, fingerprint }) => ({ file: relative(destination, target), fingerprint }))
   plans.push({ name, targetDir, before, targetText, dependencies, record })
   records.push(record)
+  } catch (error) {
+    if (!values.continue) throw error
+    records.push({ document: name, applied: false, error: error instanceof Error ? error.message : String(error) })
+  }
 }
 if (values.apply) {
   // Preflight every source before creating any new authority. A failure leaves all targets untouched.
@@ -121,14 +132,21 @@ await writeFile(join(resolve(values.output), 'migration-report.json'), json(reco
 
 function convert(runtime, frontmatter, sourceDir, name) {
   const metadata = { title: String(frontmatter.title ?? runtime.meta.title), lang: String(frontmatter.lang ?? runtime.meta.lang ?? 'zh-CN') }
-  for (const key of ['plugins', 'presmium', 'renderers', 'execute', 'checks', 'translations', 'translationOf']) if (frontmatter[key] !== undefined) metadata[key] = clone(frontmatter[key])
+  for (const key of ['tags', 'plugins', 'presmium', 'renderers', 'execute', 'checks', 'translations', 'translationOf']) if (frontmatter[key] !== undefined) metadata[key] = clone(frontmatter[key])
   if (metadata.plugins) metadata.plugins = listedPlugins(metadata.plugins)
   if (metadata.translations) for (const key of Object.keys(metadata.translations)) metadata.translations[key] = metadata.translations[key].replace(/lecture\.md(?=$|[?#])/, 'lecture.json')
   if (metadata.translationOf?.entry) metadata.translationOf.entry = metadata.translationOf.entry.replace(/lecture\.md(?=$|[?#])/, 'lecture.json')
-  const supported = new Set(['title','lang','plugins','presmium','renderers','execute','checks','translations','translationOf','contentModel'])
+  const supported = new Set(['title','lang','tags','plugins','presmium','renderers','execute','checks','translations','translationOf','contentModel'])
   const unknown = Object.keys(frontmatter).filter(key => !supported.has(key))
   if (unknown.length) throw new Error(`${name}: unmapped metadata: ${unknown.join(', ')}`)
   const out = { schemaVersion: 1, id: `document-${hash(name).slice(0, 16)}`, metadata, sectionOrder: [], sections: {}, blocks: {}, steps: {}, narrations: {}, assets: {}, definitions: {}, production: { defaults: {}, stepOverrides: {}, mediaClips: [] } }
+  const gap = metadata.renderers?.lecture?.gap
+  if (gap !== undefined) {
+    const milliseconds = typeof gap === 'number' ? gap : parseDuration(String(gap))
+    if (milliseconds === undefined || !Number.isFinite(milliseconds) || milliseconds < 0) throw new Error(`${name}: invalid narration gap`)
+    out.production.defaults.trailingPauseMs = milliseconds
+    delete metadata.renderers.lecture.gap
+  }
   const voice = metadata.renderers?.lecture?.voice
   if (voice) { out.production.defaults.voiceSource = { type: 'tts', voice }; delete metadata.renderers.lecture.voice }
   const globalIds = new Set([out.id])

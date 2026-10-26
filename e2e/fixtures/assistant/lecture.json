@@ -1,0 +1,394 @@
+{
+  "schemaVersion": 1,
+  "id": "document-704e846f220f980a",
+  "metadata": {
+    "title": "助手端到端测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-session",
+      "@lincyaw/addon-classroom",
+      "@lincyaw/addon-assistant"
+    ],
+    "renderers": {
+      "web": {
+        "port": 5363
+      }
+    }
+  },
+  "sectionOrder": [
+    "助手端到端测试文稿",
+    "code",
+    "merge",
+    "questions",
+    "later",
+    "later-section"
+  ],
+  "sections": {
+    "助手端到端测试文稿": {
+      "id": "助手端到端测试文稿",
+      "title": "助手端到端测试文稿",
+      "level": 1,
+      "children": [
+        "助手端到端测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "助手端到端测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "code": {
+      "id": "code",
+      "title": "代码",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "code--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "merge": {
+      "id": "merge",
+      "title": "合并规则",
+      "level": 2,
+      "children": [
+        "merge--paragraph-1",
+        "merge--code-1"
+      ],
+      "stepOrder": [
+        "merge--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "questions": {
+      "id": "questions",
+      "title": "课堂提问",
+      "level": 2,
+      "children": [
+        "questions--paragraph-1",
+        "questions--pm-question-box-1"
+      ],
+      "stepOrder": [
+        "questions--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "later": {
+      "id": "later",
+      "title": "进阶",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "later--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "later-section": {
+      "id": "later-section",
+      "title": "进阶内容",
+      "level": 2,
+      "children": [
+        "later-section--paragraph-1"
+      ],
+      "stepOrder": [
+        "later-section--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "助手端到端测试文稿--paragraph-1": {
+      "id": "助手端到端测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "助手端到端测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "封面。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--paragraph-1": {
+      "id": "merge--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每一轮合并出现次数最多的一对。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--code-1": {
+      "id": "merge--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "def merge(tokens, pair):\n    return [pair if t == pair else t for t in tokens]"
+    },
+    "questions--paragraph-1": {
+      "id": "questions--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "questions--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "合并之前先统计每一对出现的次数。"
+            }
+          ]
+        }
+      ]
+    },
+    "questions--pm-question-box-1": {
+      "id": "questions--pm-question-box-1",
+      "type": "component",
+      "definitionId": "questions--pm-question-box-1--definition",
+      "parameters": {
+        "place": {
+          "section": "questions",
+          "block": "pm-question-box-1",
+          "title": "课堂提问",
+          "index": 4
+        }
+      },
+      "children": [
+        "questions--pm-question-box-1--prompt"
+      ]
+    },
+    "questions--pm-question-box-1--prompt": {
+      "id": "questions--pm-question-box-1--prompt",
+      "type": "text",
+      "content": [
+        {
+          "id": "questions--pm-question-box-1--prompt--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "有疑问就在这里提出。"
+            }
+          ]
+        }
+      ]
+    },
+    "later-section--paragraph-1": {
+      "id": "later-section--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "later-section--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "合并次数决定词表的大小。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "助手端到端测试文稿--step-0": {
+      "id": "助手端到端测试文稿--step-0",
+      "sectionId": "助手端到端测试文稿",
+      "visuals": [
+        {
+          "blockId": "助手端到端测试文稿--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "助手端到端测试文稿--paragraph-1--narration"
+      ]
+    },
+    "code--step-0": {
+      "id": "code--step-0",
+      "sectionId": "code",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "merge--step-0": {
+      "id": "merge--step-0",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "merge--code-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "merge--paragraph-1--narration"
+      ]
+    },
+    "questions--step-0": {
+      "id": "questions--step-0",
+      "sectionId": "questions",
+      "visuals": [
+        {
+          "blockId": "questions--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "questions--pm-question-box-1--prompt",
+          "visible": true
+        },
+        {
+          "blockId": "questions--pm-question-box-1",
+          "visible": true,
+          "state": "legacy-0"
+        }
+      ],
+      "narrationIds": [
+        "questions--paragraph-1--narration"
+      ]
+    },
+    "later--step-0": {
+      "id": "later--step-0",
+      "sectionId": "later",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "later-section--step-0": {
+      "id": "later-section--step-0",
+      "sectionId": "later-section",
+      "visuals": [
+        {
+          "blockId": "later-section--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "later-section--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "助手端到端测试文稿--paragraph-1--narration": {
+      "id": "助手端到端测试文稿--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "封面。"
+        }
+      ]
+    },
+    "merge--paragraph-1--narration": {
+      "id": "merge--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "每一轮合并出现次数最多的一对。"
+        }
+      ]
+    },
+    "questions--paragraph-1--narration": {
+      "id": "questions--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "合并之前先统计每一对出现的次数。"
+        }
+      ]
+    },
+    "later-section--paragraph-1--narration": {
+      "id": "later-section--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "合并次数决定词表的大小。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "questions--pm-question-box-1--definition": {
+      "id": "questions--pm-question-box-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.classroom",
+        "name": "PmQuestionBox"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.classroom",
+        "name": "PmQuestionBox",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "有疑问就在这里提出。"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "strong",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "提问"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "：加入课堂后，在网页或幻灯片中向主讲提问。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

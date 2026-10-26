@@ -1,0 +1,488 @@
+{
+  "schemaVersion": 1,
+  "id": "document-429e442418c2e673",
+  "metadata": {
+    "title": "重的幻灯片",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-exec",
+      "@lincyaw/addon-content"
+    ],
+    "renderers": {
+      "slides": {
+        "theme": "default"
+      }
+    }
+  },
+  "sectionOrder": [
+    "heavy",
+    "heavy-runner",
+    "heavy-flow",
+    "heavy-map"
+  ],
+  "sections": {
+    "heavy": {
+      "id": "heavy",
+      "title": "重的幻灯片",
+      "level": 1,
+      "children": [
+        "heavy--paragraph-1"
+      ],
+      "stepOrder": [
+        "heavy--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "heavy-runner": {
+      "id": "heavy-runner",
+      "title": "现场运行",
+      "level": 2,
+      "children": [
+        "heavy-runner--code-1",
+        "heavy-runner--paragraph-1"
+      ],
+      "stepOrder": [
+        "heavy-runner--step-0",
+        "heavy-runner--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "heavy-flow": {
+      "id": "heavy-flow",
+      "title": "流程图",
+      "level": 2,
+      "children": [
+        "heavy-flow--code-1",
+        "heavy-flow--paragraph-1"
+      ],
+      "stepOrder": [
+        "heavy-flow--step-0",
+        "heavy-flow--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "heavy-map": {
+      "id": "heavy-map",
+      "title": "知识地图",
+      "level": 2,
+      "children": [
+        "heavy-map--pm-markmap-1",
+        "heavy-map--paragraph-1"
+      ],
+      "stepOrder": [
+        "heavy-map--step-0",
+        "heavy-map--step-1"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "heavy--paragraph-1": {
+      "id": "heavy--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "heavy--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/perf.spec.ts 的测试文稿：编辑器、流程图与思维导图的幻灯片上，按键到画面仍在 100 毫秒之内。"
+            }
+          ]
+        }
+      ]
+    },
+    "heavy-runner--code-1": {
+      "id": "heavy-runner--code-1",
+      "type": "code",
+      "language": "javascript",
+      "value": "const pairs = new Map()\nfor (const [a, b] of [['l', 'o'], ['o', 'w'], ['l', 'o']]) pairs.set(a + b, (pairs.get(a + b) ?? 0) + 1)\nconsole.log([...pairs].sort((x, y) => y[1] - x[1])[0])",
+      "execution": {
+        "when": "live"
+      }
+    },
+    "heavy-runner--paragraph-1": {
+      "id": "heavy-runner--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "heavy-runner--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "运行之后再看下一步。"
+            }
+          ]
+        }
+      ]
+    },
+    "heavy-flow--code-1": {
+      "id": "heavy-flow--code-1",
+      "type": "code",
+      "language": "mermaid",
+      "value": "flowchart LR\n  A[文本的字节] --> B[统计相邻的对]\n  B --> C[合并次数最多的一对]\n  C --> D{词表够大了吗}\n  D -- 还不够 --> B\n  D -- 够了 --> E[合并规则表]"
+    },
+    "heavy-flow--paragraph-1": {
+      "id": "heavy-flow--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "heavy-flow--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "循环直到词表够大。"
+            }
+          ]
+        }
+      ]
+    },
+    "heavy-map--pm-markmap-1": {
+      "id": "heavy-map--pm-markmap-1",
+      "type": "component",
+      "definitionId": "heavy-map--pm-markmap-1--definition",
+      "parameters": {
+        "data": "%7B%22root%22%3A%7B%22content%22%3A%22BPE%20%26%23x5206%3B%26%23x8bcd%3B%22%2C%22children%22%3A%5B%7B%22content%22%3A%22%26%23x8bad%3B%26%23x7ec3%3B%22%2C%22children%22%3A%5B%7B%22content%22%3A%22%26%23x7edf%3B%26%23x8ba1%3B%26%23x76f8%3B%26%23x90bb%3B%26%23x5bf9%3B%22%2C%22children%22%3A%5B%5D%2C%22payload%22%3A%7B%22tag%22%3A%22li%22%2C%22lines%22%3A%222%2C3%22%7D%7D%2C%7B%22content%22%3A%22%26%23x5408%3B%26%23x5e76%3B%26%23x6b21%3B%26%23x6570%3B%26%23x6700%3B%26%23x591a%3B%26%23x7684%3B%26%23x4e00%3B%26%23x5bf9%3B%22%2C%22children%22%3A%5B%5D%2C%22payload%22%3A%7B%22tag%22%3A%22li%22%2C%22lines%22%3A%223%2C4%22%7D%7D%5D%2C%22payload%22%3A%7B%22tag%22%3A%22h2%22%2C%22lines%22%3A%221%2C2%22%7D%7D%2C%7B%22content%22%3A%22%26%23x7f16%3B%26%23x7801%3B%22%2C%22children%22%3A%5B%7B%22content%22%3A%22%26%23x4ece%3B%26%23x5b57%3B%26%23x8282%3B%26%23x5f00%3B%26%23x59cb%3B%22%2C%22children%22%3A%5B%5D%2C%22payload%22%3A%7B%22tag%22%3A%22li%22%2C%22lines%22%3A%225%2C6%22%7D%7D%2C%7B%22content%22%3A%22%26%23x6309%3B%26%23x5b66%3B%26%23x5230%3B%26%23x7684%3B%26%23x5148%3B%26%23x540e%3B%26%23x5408%3B%26%23x5e76%3B%22%2C%22children%22%3A%5B%5D%2C%22payload%22%3A%7B%22tag%22%3A%22li%22%2C%22lines%22%3A%226%2C7%22%7D%7D%5D%2C%22payload%22%3A%7B%22tag%22%3A%22h2%22%2C%22lines%22%3A%224%2C5%22%7D%7D%2C%7B%22content%22%3A%22%26%23x89e3%3B%26%23x7801%3B%22%2C%22children%22%3A%5B%7B%22content%22%3A%22%26%23x67e5%3B%26%23x8868%3B%26%23x62fc%3B%26%23x63a5%3B%26%23x5b57%3B%26%23x8282%3B%22%2C%22children%22%3A%5B%5D%2C%22payload%22%3A%7B%22tag%22%3A%22li%22%2C%22lines%22%3A%228%2C9%22%7D%7D%5D%2C%22payload%22%3A%7B%22tag%22%3A%22h2%22%2C%22lines%22%3A%227%2C8%22%7D%7D%5D%2C%22payload%22%3A%7B%22tag%22%3A%22h1%22%2C%22lines%22%3A%220%2C1%22%7D%7D%7D"
+      }
+    },
+    "heavy-map--paragraph-1": {
+      "id": "heavy-map--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "heavy-map--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "三个阶段各有各的规则。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "heavy--step-0": {
+      "id": "heavy--step-0",
+      "sectionId": "heavy",
+      "visuals": [
+        {
+          "blockId": "heavy--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "heavy-runner--step-0": {
+      "id": "heavy-runner--step-0",
+      "sectionId": "heavy-runner",
+      "visuals": [
+        {
+          "blockId": "heavy-runner--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "heavy-runner--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "heavy-runner--step-1": {
+      "id": "heavy-runner--step-1",
+      "sectionId": "heavy-runner",
+      "visuals": [
+        {
+          "blockId": "heavy-runner--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "heavy-runner--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "heavy-flow--step-0": {
+      "id": "heavy-flow--step-0",
+      "sectionId": "heavy-flow",
+      "visuals": [
+        {
+          "blockId": "heavy-flow--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "heavy-flow--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "heavy-flow--step-1": {
+      "id": "heavy-flow--step-1",
+      "sectionId": "heavy-flow",
+      "visuals": [
+        {
+          "blockId": "heavy-flow--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "heavy-flow--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "heavy-map--step-0": {
+      "id": "heavy-map--step-0",
+      "sectionId": "heavy-map",
+      "visuals": [
+        {
+          "blockId": "heavy-map--pm-markmap-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "heavy-map--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "heavy-map--step-1": {
+      "id": "heavy-map--step-1",
+      "sectionId": "heavy-map",
+      "visuals": [
+        {
+          "blockId": "heavy-map--pm-markmap-1",
+          "visible": true,
+          "state": "legacy-0"
+        },
+        {
+          "blockId": "heavy-map--paragraph-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "heavy-map--pm-markmap-1--definition": {
+      "id": "heavy-map--pm-markmap-1--definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.content",
+        "name": "PmMarkmap"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "legacy-0",
+          "legacyIndex": 0
+        }
+      ],
+      "data": {
+        "plugin": "presmium.content",
+        "name": "PmMarkmap",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "list",
+              "ordered": false,
+              "spread": false,
+              "children": [
+                {
+                  "type": "listItem",
+                  "spread": false,
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "BPE 分词"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "list",
+                      "ordered": false,
+                      "spread": false,
+                      "children": [
+                        {
+                          "type": "listItem",
+                          "spread": false,
+                          "children": [
+                            {
+                              "type": "paragraph",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "value": "训练"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "list",
+                              "ordered": false,
+                              "spread": false,
+                              "children": [
+                                {
+                                  "type": "listItem",
+                                  "spread": false,
+                                  "children": [
+                                    {
+                                      "type": "paragraph",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "value": "统计相邻对"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "listItem",
+                                  "spread": false,
+                                  "children": [
+                                    {
+                                      "type": "paragraph",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "value": "合并次数最多的一对"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "spread": false,
+                          "children": [
+                            {
+                              "type": "paragraph",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "value": "编码"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "list",
+                              "ordered": false,
+                              "spread": false,
+                              "children": [
+                                {
+                                  "type": "listItem",
+                                  "spread": false,
+                                  "children": [
+                                    {
+                                      "type": "paragraph",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "value": "从字节开始"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "listItem",
+                                  "spread": false,
+                                  "children": [
+                                    {
+                                      "type": "paragraph",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "value": "按学到的先后合并"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "spread": false,
+                          "children": [
+                            {
+                              "type": "paragraph",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "value": "解码"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "list",
+                              "ordered": false,
+                              "spread": false,
+                              "children": [
+                                {
+                                  "type": "listItem",
+                                  "spread": false,
+                                  "children": [
+                                    {
+                                      "type": "paragraph",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "value": "查表拼接字节"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

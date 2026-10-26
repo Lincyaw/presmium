@@ -992,6 +992,22 @@
 /* BlockNote's public UI stays separate from document typography. */
 .pm-ui-block-editor { color: var(--pm-color-ink); }
 
+.pm-ui-block-editor .bn-block-content::before { color: inherit; }
+
+.pm-ui-block-editor .bn-block-content[data-content-type='codeBlock'] {
+  background: var(--pm-color-code);
+  color: var(--pm-color-ink);
+}
+
+.pm-ui-block-editor .bn-block-content[data-content-type='codeBlock'] code { color: inherit; }
+
+.pm-ui-block-editor .bn-comment-editor.bn-container {
+  --bn-colors-editor-text: var(--pm-color-ink);
+  --bn-colors-editor-background: var(--pm-color-surface);
+}
+
+.pm-ui-block-editor .bn-comment-editor .bn-inline-content { color: inherit; }
+
 .pm-ui-block-editor .bn-suggestion-menu p {
   margin: 0;
   line-height: var(--pm-leading-ui);

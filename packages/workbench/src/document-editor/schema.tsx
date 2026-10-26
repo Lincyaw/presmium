@@ -49,7 +49,7 @@ const inline = createReactInlineContentSpec({
     const views = useContext(DOCUMENT_NODE_VIEWS)
     const { entityId, kind, label } = inlineContent.props
     return <span className="pm-document-editor__inline" contentEditable={false}>
-      {views.renderInline?.(entityId, kind, label) ?? (label || kind)}
+      {views.renderInline?.(entityId, kind, label) ?? label}
     </span>
   },
 })

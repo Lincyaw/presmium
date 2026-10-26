@@ -1,0 +1,344 @@
+{
+  "schemaVersion": 1,
+  "id": "document-6302f83dbbb2442e",
+  "metadata": {
+    "title": "读者提问测试文稿",
+    "lang": "zh-CN",
+    "plugins": [
+      "@lincyaw/addon-assistant"
+    ],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "读者提问测试文稿",
+    "code",
+    "merge",
+    "teacher",
+    "later",
+    "later-section"
+  ],
+  "sections": {
+    "读者提问测试文稿": {
+      "id": "读者提问测试文稿",
+      "title": "读者提问测试文稿",
+      "level": 1,
+      "children": [
+        "读者提问测试文稿--paragraph-1"
+      ],
+      "stepOrder": [
+        "读者提问测试文稿--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "code": {
+      "id": "code",
+      "title": "代码",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "code--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "merge": {
+      "id": "merge",
+      "title": "合并规则",
+      "level": 2,
+      "children": [
+        "merge--paragraph-1",
+        "merge--code-1",
+        "merge--note-1"
+      ],
+      "stepOrder": [
+        "merge--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "teacher": {
+      "id": "teacher",
+      "title": "教学安排",
+      "level": 2,
+      "children": [
+        "teacher--paragraph-1"
+      ],
+      "stepOrder": [
+        "teacher--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      },
+      "audience": [
+        "teacher"
+      ]
+    },
+    "later": {
+      "id": "later",
+      "title": "进阶",
+      "level": 1,
+      "children": [],
+      "stepOrder": [
+        "later--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "later-section": {
+      "id": "later-section",
+      "title": "进阶内容",
+      "level": 2,
+      "children": [
+        "later-section--paragraph-1"
+      ],
+      "stepOrder": [
+        "later-section--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "读者提问测试文稿--paragraph-1": {
+      "id": "读者提问测试文稿--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "读者提问测试文稿--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "e2e/ask.spec.ts 的测试文稿：学生版站点中，读者用自己的模型服务提问。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--paragraph-1": {
+      "id": "merge--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每一轮合并出现次数最多的一对。"
+            }
+          ]
+        }
+      ]
+    },
+    "merge--code-1": {
+      "id": "merge--code-1",
+      "type": "code",
+      "language": "python",
+      "value": "def merge(tokens, pair):\n    return [pair if t == pair else t for t in tokens]"
+    },
+    "merge--note-1": {
+      "id": "merge--note-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "merge--note-1--text-0",
+          "type": "extension",
+          "kind": "presmium.mdast",
+          "schemaVersion": 1,
+          "data": {
+            "node": {
+              "type": "admonition",
+              "kind": "note",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "教师提示 TEACHER-HINT-42：先请学生猜下一次合并哪一对。"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "fallback": [
+            {
+              "id": "merge--note-1--text-0-fallback",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "教师提示 TEACHER-HINT-42：先请学生猜下一次合并哪一对。"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "audience": [
+        "teacher"
+      ]
+    },
+    "teacher--paragraph-1": {
+      "id": "teacher--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "teacher--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "教师专用的一节 TEACHER-SECTION-77：讲完合并规则再讲词表。"
+            }
+          ]
+        }
+      ]
+    },
+    "later-section--paragraph-1": {
+      "id": "later-section--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "later-section--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "合并次数决定词表的大小。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "读者提问测试文稿--step-0": {
+      "id": "读者提问测试文稿--step-0",
+      "sectionId": "读者提问测试文稿",
+      "visuals": [
+        {
+          "blockId": "读者提问测试文稿--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "读者提问测试文稿--paragraph-1--narration"
+      ]
+    },
+    "code--step-0": {
+      "id": "code--step-0",
+      "sectionId": "code",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "merge--step-0": {
+      "id": "merge--step-0",
+      "sectionId": "merge",
+      "visuals": [
+        {
+          "blockId": "merge--paragraph-1",
+          "visible": false
+        },
+        {
+          "blockId": "merge--code-1",
+          "visible": true
+        },
+        {
+          "blockId": "merge--note-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "merge--paragraph-1--narration"
+      ]
+    },
+    "teacher--step-0": {
+      "id": "teacher--step-0",
+      "sectionId": "teacher",
+      "visuals": [
+        {
+          "blockId": "teacher--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "teacher--paragraph-1--narration"
+      ]
+    },
+    "later--step-0": {
+      "id": "later--step-0",
+      "sectionId": "later",
+      "visuals": [],
+      "narrationIds": []
+    },
+    "later-section--step-0": {
+      "id": "later-section--step-0",
+      "sectionId": "later-section",
+      "visuals": [
+        {
+          "blockId": "later-section--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "later-section--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "读者提问测试文稿--paragraph-1--narration": {
+      "id": "读者提问测试文稿--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "e2e/ask.spec.ts 的测试文稿：学生版站点中，读者用自己的模型服务提问。"
+        }
+      ]
+    },
+    "merge--paragraph-1--narration": {
+      "id": "merge--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "每一轮合并出现次数最多的一对。"
+        }
+      ]
+    },
+    "teacher--paragraph-1--narration": {
+      "id": "teacher--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "教师专用的一节 TEACHER-SECTION-77：讲完合并规则再讲词表。"
+        }
+      ]
+    },
+    "later-section--paragraph-1--narration": {
+      "id": "later-section--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "合并次数决定词表的大小。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}
