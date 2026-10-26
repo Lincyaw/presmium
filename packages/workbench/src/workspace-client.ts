@@ -41,6 +41,8 @@ export interface WorkspaceClient {
   saveSourceTransaction(document: string, changes: SourceTransactionChange[], message?: string): Promise<SourceTransactionAnswer>
   readIr(document: string): Promise<IrAnswer>
   readDocument(document: string): Promise<DocumentAnswer>
+  /** A same-origin display URL; the canonical asset location remains untouched. */
+  documentAssetURL(document: string, assetId: string): string
   changeDocument(document: string, change: DocumentChange): Promise<DocumentChangeAnswer>
   subscribeDocument(document: string, changed: (event: DocumentEvent) => void, failed?: () => void): () => void
   readPageDeletion(document: string, section: string): Promise<PageDeletePlan>
@@ -226,6 +228,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     saveSourceTransaction: (document, changes, message) => post(url('source/transaction', document), { changes, ...message ? { message } : {} }),
     readIr,
     readDocument: document => call(url('document', document)),
+    documentAssetURL: (document, asset) => url('document/asset', document, { asset }),
     changeDocument: (document, change) => post(url('document/change', document), change),
     subscribeDocument: (document, changed, failed) => subscribe(url('document/events', document), 'document', changed, failed),
     readPageDeletion: (document, section) => call(url('pages/delete', document, { section })),

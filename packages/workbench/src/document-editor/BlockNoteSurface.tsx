@@ -34,6 +34,7 @@ export interface BlockNoteSurfaceProps {
   initialContent: DocumentEditorInput[]
   locale: Locale
   readOnly?: boolean
+  resolveAssetURL?(location: string): Promise<string>
   nodeViews?: DocumentNodeViews
   onChange(blocks: DocumentEditorBlock[], editor: NativeDocumentEditor): void
   onSelection?(selection: NativeDocumentSelection | undefined): void
@@ -76,6 +77,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
   const dictionary = props.locale === 'zh-CN' ? zh : en
   const t = DOCUMENT_EDITOR_MESSAGES[props.locale]
   const editor = useCreateBlockNote({ schema: documentEditorSchema, initialContent: props.initialContent,
+    resolveFileUrl: location => current.current.resolveAssetURL?.(location) ?? Promise.resolve(location),
     dictionary, tables: { splitCells: true, cellBackgroundColor: true, cellTextColor: true, headers: true },
     extensions: props.comments ? [nativeComments(props.comments, t.author)] : [],
     domAttributes: { block: { 'data-document-editor-block': '' } },

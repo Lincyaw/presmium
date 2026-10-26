@@ -5,7 +5,7 @@ export const name = 'presmium-routes'
 export const inject = ['presmium', 'connection']
 
 export const ROUTES: Record<string, string> = Object.fromEntries([
-  ...['documents', 'document', 'document/events', 'document/change', 'files', 'source', 'source/create', 'source/transaction', 'changes', 'changes/commit', 'changes/discard', 'revisions', 'revisions/revert', 'history/undo', 'history/redo',
+  ...['documents', 'document', 'document/asset', 'document/events', 'document/change', 'files', 'source', 'source/create', 'source/transaction', 'changes', 'changes/commit', 'changes/discard', 'revisions', 'revisions/revert', 'history/undo', 'history/redo',
     'ir', 'ir/events', 'preview', 'build', 'check', 'jobs', 'jobs/cancel', 'jobs/events', 'voice-catalog',
     'review', 'review/open', 'review/step', 'review/accept', 'review/reject', 'review/restore'].map(path => [path, `${WORKSPACE_ROUTES}${path}`]),
   ['focus', `${SERVER_ROUTES}focus`],
@@ -15,7 +15,7 @@ export const ROUTES: Record<string, string> = Object.fromEntries([
 ])
 
 const PASSED = ['accept', 'content-type', 'presmium-document', 'last-event-id', 'if-none-match']
-const RETURNED = ['content-type', 'cache-control', 'content-disposition', 'x-accel-buffering', 'etag']
+const RETURNED = ['content-type', 'cache-control', 'content-disposition', 'content-security-policy', 'x-content-type-options', 'cross-origin-resource-policy', 'x-accel-buffering', 'etag']
 
 export function apply(ctx: DshContext): void {
   for (const [path, target] of Object.entries(ROUTES)) {
