@@ -2,6 +2,102 @@
   "description": "功能导览索引。每项指向真实可编辑文稿；启用条件不等于已经配置了外部服务。",
   "features": [
     {
+      "id": "canonical-rich-text",
+      "title": "正文格式、换行、链接与行内公式",
+      "document": "guide-content",
+      "section": "rich-text",
+      "package": "@lincyaw/kernel",
+      "requires": []
+    },
+    {
+      "id": "display-math",
+      "title": "块级公式与代码正文",
+      "document": "guide-content",
+      "section": "rich-text",
+      "package": "@lincyaw/viewer",
+      "requires": []
+    },
+    {
+      "id": "nested-task-lists",
+      "title": "嵌套、有序与任务列表及引用",
+      "document": "guide-content",
+      "section": "lists",
+      "package": "@lincyaw/kernel",
+      "requires": []
+    },
+    {
+      "id": "merged-table",
+      "title": "跨行跨列表格、列宽、表头与对齐",
+      "document": "guide-content",
+      "section": "tables",
+      "package": "@lincyaw/kernel",
+      "requires": []
+    },
+    {
+      "id": "columns-stack-tabs",
+      "title": "分栏、堆叠与真实选项卡",
+      "document": "guide-content",
+      "section": "layout",
+      "package": "@lincyaw/host",
+      "requires": []
+    },
+    {
+      "id": "mermaid",
+      "title": "Mermaid 流程图与时序图",
+      "document": "guide-content",
+      "section": "diagrams",
+      "package": "@lincyaw/viewer",
+      "requires": []
+    },
+    {
+      "id": "markmap",
+      "title": "可缩放、可折叠的思维导图",
+      "document": "guide-content",
+      "section": "mindmap",
+      "package": "@lincyaw/addon-content",
+      "requires": []
+    },
+    {
+      "id": "local-video",
+      "title": "本地视频与原生播放控制",
+      "document": "guide-content",
+      "section": "media",
+      "package": "@lincyaw/addon-content",
+      "requires": []
+    },
+    {
+      "id": "caption-tracks",
+      "title": "中文与英文媒体字幕轨道",
+      "document": "guide-content",
+      "section": "media",
+      "package": "@lincyaw/addon-content",
+      "requires": []
+    },
+    {
+      "id": "local-audio",
+      "title": "本地音频与真实解码",
+      "document": "guide-content",
+      "section": "media",
+      "package": "@lincyaw/addon-content",
+      "requires": []
+    },
+    {
+      "id": "image-alt",
+      "title": "图片、替代文本与说明",
+      "document": "guide-content",
+      "section": "images",
+      "package": "@lincyaw/kernel",
+      "requires": []
+    },
+    {
+      "id": "animated-image",
+      "title": "动图与减少动态效果",
+      "document": "guide-content",
+      "section": "images",
+      "package": "@lincyaw/addon-content",
+      "requires": []
+    },
+    {
       "id": "quiz-single",
       "title": "单选自测",
       "document": "guide-classroom",
