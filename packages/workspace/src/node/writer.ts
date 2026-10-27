@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto'
-import { closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, renameSync, rmdirSync, rmSync, symlinkSync, writeFileSync, writeSync } from 'node:fs'
+import { closeSync, constants, cpSync, fstatSync, lstatSync, mkdirSync, mkdtempSync, openSync, readdirSync, readFileSync, readlinkSync, renameSync, rmdirSync, rmSync, symlinkSync, writeFileSync, writeSync } from 'node:fs'
 import type { Stats } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { DOCUMENT_ENTRY, validateDocument } from '@lincyaw/kernel'
 import type { DocumentFileChange, DocumentFiles } from '@lincyaw/kernel'
@@ -10,8 +11,22 @@ import type { WorkspaceConfig } from './config.ts'
 import { findTemplate } from './templates.ts'
 
 const NOT_COPIED = new Set(['node_modules', 'dist', '.git'])
+export const DOCUMENT_OPERATION_MAX_BACKUP_ENTRIES = 16_384
+export const DOCUMENT_OPERATION_MAX_BACKUP_BYTES = 512 << 20
 
 export class FilesError extends Error {}
+export class DocumentCheckpointRefusal extends FilesError {
+  readonly status: number
+  readonly detail?: Record<string, unknown>
+  constructor(status: number, code: string, detail?: Record<string, unknown>) { super(code); this.status = status; this.detail = detail }
+}
+
+export interface DocumentCheckpoint {
+  documents: string[]
+  readonly recovery: { directory: string }
+  restore(): Promise<void>
+  dispose(): void
+}
 
 export interface DocumentWriter extends DocumentFiles {
   create(path: string, content: Uint8Array, outside?: boolean): Promise<void>
@@ -19,6 +34,7 @@ export interface DocumentWriter extends DocumentFiles {
   copy(from: string, to: string): Promise<void>
   relink(from: string, to: string): Promise<string[]>
   empty(dir: string): Promise<void>
+  checkpoint(dirs: string[], relink?: { from: string, to: string }): Promise<DocumentCheckpoint>
 }
 
 function partsOf(path: unknown): string[] {
@@ -280,6 +296,80 @@ function emptyDocument(config: WorkspaceConfig, dir: string): void {
   for (const name of readdirSync(path)) rmSync(join(path, name), { recursive: true, force: true })
 }
 
+/** Temporary filesystem preimages belong to this writer, never to the canonical document or git index. */
+function checkpoint(config: WorkspaceConfig, dirs: string[], relink?: { from: string, to: string }): DocumentCheckpoint {
+  const inspect = (path: string): Stats | undefined => {
+    try { return lstatSync(path) } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined; throw error }
+  }
+  const targets = new Set(dirs)
+  const tooLarge = () => new DocumentCheckpointRefusal(413, 'project-backup-limit', { maxBackupEntries: DOCUMENT_OPERATION_MAX_BACKUP_ENTRIES, maxBackupBytes: DOCUMENT_OPERATION_MAX_BACKUP_BYTES })
+  for (const dir of dirs) {
+    try { partsOf(dir) } catch (error) { if (error instanceof FilesError) throw new DocumentCheckpointRefusal(400, 'project-directory-invalid'); throw error }
+    let parent = config.root
+    for (const part of dir.split('/')) {
+      parent = join(parent, part)
+      const found = inspect(parent)
+      if (!found) break
+      if (!found.isDirectory()) throw new DocumentCheckpointRefusal(409, 'project-directory-unavailable')
+      if (inspect(join(parent, '.git'))) throw new DocumentCheckpointRefusal(409, 'project-nested-repository')
+    }
+  }
+  // Preserve the existing legacy link writer's exact affected files on a failed rename.
+  if (relink) for (const doc of listDocuments(config)) {
+    if (!realDirectory(config.root, doc.dir)) continue
+    for (const entry of sourceEntries(join(config.root, doc.dir))) {
+      const path = doc.dir ? `${doc.dir}/${entry.path}` : entry.path
+      if (entry.link !== undefined || !path.endsWith('.md') || dirs.some(dir => isWithin(path, dir))) continue
+      if ((inspect(join(config.root, path))?.size ?? 0) > DOCUMENT_OPERATION_MAX_BACKUP_BYTES) throw tooLarge()
+      const text = readFileSync(join(config.root, path), 'utf8')
+      if (rewriteLinks(text, path, path, relink.from, relink.to) !== text) targets.add(path)
+    }
+  }
+  let files = 0, bytes = 0
+  const measure = (path: string) => {
+    const found = inspect(path)
+    if (!found) return
+    if (++files > DOCUMENT_OPERATION_MAX_BACKUP_ENTRIES || (bytes += found.isDirectory() ? 0 : found.size) > DOCUMENT_OPERATION_MAX_BACKUP_BYTES) throw tooLarge()
+    if (found.isDirectory()) for (const name of readdirSync(path)) {
+      if (name === '.git') throw new DocumentCheckpointRefusal(409, 'project-nested-repository')
+      measure(join(path, name))
+    }
+    else if (!found.isFile() && !found.isSymbolicLink()) throw new DocumentCheckpointRefusal(409, 'project-file-kind-unavailable')
+  }
+  for (const path of targets) measure(join(config.root, path))
+  const backup = mkdtempSync(join(tmpdir(), 'presmium-document-checkpoint-'))
+  const copy = (from: string, to: string) => cpSync(from, to, { recursive: true, dereference: false, verbatimSymlinks: true, preserveTimestamps: true, mode: constants.COPYFILE_FICLONE })
+  const entries: { path: string, saved?: string }[] = [], parents = new Set<string>()
+  try {
+    for (const path of targets) {
+      const parts = partsOf(path)
+      for (let i = 1; i < parts.length; i++) { const parent = parts.slice(0, i).join('/'); if (!inspect(join(config.root, parent))) parents.add(parent) }
+      const saved = inspect(join(config.root, path)) ? join(backup, String(entries.length)) : undefined
+      if (saved) copy(join(config.root, path), saved)
+      entries.push({ path, saved })
+    }
+    writeFileSync(join(backup, 'recovery.json'), JSON.stringify({ workspace: config.root, entries: entries.map(({ path, saved }) => ({ path, saved: saved ? saved.slice(backup.length + 1) : null })) }) + '\n', { mode: 0o600 })
+  } catch (error) { rmSync(backup, { recursive: true, force: true }); throw error }
+  let restoreFailed = false
+  return {
+    documents: [...new Set([...dirs, ...[...targets].filter(path => !dirs.includes(path)).flatMap(path => documentDirOf(config, path) ?? [])])],
+    recovery: { directory: backup },
+    async restore() {
+      try {
+        for (const { path } of entries) rmSync(join(config.root, path), { recursive: true, force: true })
+        for (const { path, saved } of entries) if (saved) {
+          madeParent(config.root, '', partsOf(path))
+          copy(saved, join(config.root, path))
+        }
+        for (const path of [...parents].sort((a, b) => b.split('/').length - a.split('/').length)) {
+          try { rmdirSync(join(config.root, path)) } catch { /* A concurrently added external file is never removed. */ }
+        }
+      } catch (error) { restoreFailed = true; throw error }
+    },
+    dispose() { if (!restoreFailed) rmSync(backup, { recursive: true, force: true }) },
+  }
+}
+
 export function localWriter(config: WorkspaceConfig): DocumentWriter {
   return {
     create: async (path, content, outside) => createFile(config, path, content, outside),
@@ -288,5 +378,6 @@ export function localWriter(config: WorkspaceConfig): DocumentWriter {
     copy: async (from, to) => copyDocument(config, from, to),
     relink: async (from, to) => relinkDocuments(config, from, to),
     empty: async dir => emptyDocument(config, dir),
+    checkpoint: async (dirs, relink) => checkpoint(config, dirs, relink),
   }
 }
