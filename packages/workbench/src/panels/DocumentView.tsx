@@ -199,7 +199,7 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
   const canDelete = useWorkbenchState(state => Boolean(state.authoring?.content))
   const menuTriggers = useRef(new Map<string, HTMLButtonElement>())
   useEffect(() => { setRenaming(undefined); setDeleting(undefined) }, [document])
-  const canCreate = useWorkbenchState(state => Boolean(state.authoring?.content) && !state.authoring?.loading && !state.authoring?.composing && !isAgentChanging(state))
+  const canCreate = useWorkbenchState(state => Boolean(state.authoring?.content) && !state.authoring?.loading && !state.authoring?.composing && !state.authoring?.restored && !state.authoring?.error && !isAgentChanging(state))
   const reorderDisabled = useWorkbenchState(state => !state.authoring?.content || Boolean(state.authoring.loading || state.authoring.composing || state.authoring.restored || state.authoring.error || state.isCreatingPage || state.isEditingPage || state.isHistoryPreparing || state.isHistoryBusy) || isAgentChanging(state))
   const pages = editing || slides
   const top = Math.min(...items.map(item => Math.max(1, item.depth)))
