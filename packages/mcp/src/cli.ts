@@ -93,6 +93,6 @@ export async function main(argv: string[]): Promise<number | undefined> {
     process.stderr.write(`presmium-mcp: ${errorMessage(error)}\n\n${USAGE}\n`)
     return 2
   }
-  serveMcpStdio(compilerMcpHost(deck, allow), { member: LOCAL_AUTHOR, mode: 'author' })
+  serveMcpStdio(compilerMcpHost(deck, allow), { member: LOCAL_AUTHOR, mode: 'author', document: '' })
   return undefined
 }

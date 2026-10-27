@@ -1,10 +1,9 @@
 import { createRequire } from 'node:module'
-import { join, sep } from 'node:path'
 import { createMcpHandler, fromJsonSchema, McpServer, ResourceTemplate, UriTemplate } from '@modelcontextprotocol/server'
 import type { AuthInfo, CallToolResult, JsonSchemaType, Variables } from '@modelcontextprotocol/server'
 import { serveStdio } from '@modelcontextprotocol/server/stdio'
-import { deckLocale, diagnosticOf, docBlocks, errorMessage, hasRole, isPresentingRole, isRecord, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
-import type { AgentTool, ApprovalKind, ApprovalScope, CodeNode, CompileJob, DiagnosticSnapshot, DocumentSummary, Finding, IRDocument } from '@lincyaw/kernel'
+import { deckLocale, docBlocks, errorMessage, hasRole, isPresentingRole, isRecord, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
+import type { AgentTool, ApprovalKind, ApprovalScope, CodeNode, CompileJob, DocumentSummary, Finding, IRDocument } from '@lincyaw/kernel'
 import { codeRef, deckInfo, diagnosticsOf, findBlock, findSection, locate, outputsOf, relativeToDeck, runInfo, search, sectionDetail, sectionSummary, stepDetail } from './deck.ts'
 import type { McpCaller, McpHost, McpProcess } from './host.ts'
 import { MCP_MESSAGES } from './messages.ts'
@@ -14,13 +13,12 @@ import { AUTHORING_TOOLS } from './authoring.ts'
 import { TRANSCRIPTION_TOOLS } from './transcription.ts'
 import { AUDIO_AUTHORING_TOOLS } from './audio-authoring.ts'
 import { VOICE_AUTHORING_TOOLS } from './voice-authoring.ts'
+import { DIAGNOSTIC_TOOLS, diagnosticSnapshot } from './diagnostics.ts'
 
 const MCP_VERSION: string = (createRequire(import.meta.url)('../package.json') as { version: string }).version
 const POSITION_URI = 'presmium://position'
 const FOCUS_URI = 'presmium://focus'
 export const DIAGNOSTICS_URI = 'presmium://diagnostics'
-
-const compilationSnapshots = new WeakMap<McpHost, Map<string, { signature: string, snapshot: DiagnosticSnapshot }>>()
 
 type Args = Record<string, unknown>
 
@@ -61,24 +59,6 @@ const int = (value: unknown) => (typeof value === 'number' && Number.isInteger(v
 function focus(call: Call, document?: string) {
   const found = call.host.focus?.(document)
   return found ? { document: found.document, focus: found.focus, reported: new Date(found.at).toISOString() } : { focus: null }
-}
-
-async function diagnostics(call: Call): Promise<DiagnosticSnapshot> {
-  const document = await call.document()
-  if (call.host.diagnostics) return call.host.diagnostics(document)
-  const { doc, diagnostics } = await call.compiled()
-  const current = diagnostics.map(finding => diagnosticOf(document, 'compile', {
-    ...finding,
-    ...finding.source ? { source: { ...finding.source, file: join(document, relativeToDeck(doc, { ...finding.source, line: finding.source.line ?? 1 }).file).split(sep).join('/') } } : {},
-  }))
-  const signature = JSON.stringify(current)
-  let documents = compilationSnapshots.get(call.host)
-  if (!documents) compilationSnapshots.set(call.host, documents = new Map())
-  const previous = documents.get(document)
-  if (previous?.signature === signature) return previous.snapshot
-  const snapshot = { version: (previous?.snapshot.version ?? 0) + 1, diagnostics: current }
-  documents.set(document, { signature, snapshot })
-  return snapshot
 }
 
 async function position(call: Call, document?: string) {
@@ -216,16 +196,7 @@ const TOOLS: ToolSpec[] = [
       return outputsOf(findSection(doc, str(call.args.section) ?? ''), str(call.args.block))
     },
   },
-  {
-    name: 'get_diagnostics',
-    description: 'The diagnostics of the compilation and the plugins\' checks, with their source positions.',
-    properties: { ...DOCUMENT },
-    kind: 'read',
-    run: async (call) => {
-      const { doc } = await call.compiled()
-      return { diagnostics: diagnosticsOf(doc, await call.host.check(await call.document())) }
-    },
-  },
+  ...DIAGNOSTIC_TOOLS,
   {
     name: 'locate_source',
     description: 'Where a section, the blocks of a step, a block, or the code blocks referencing an anchor are in the source: file (relative to the deck directory) and lines.',
@@ -531,7 +502,7 @@ function instructions(host: McpHost, caller: McpCaller, tools: { name: string, k
   return [
     `Presmium: ${title ? `the lecture deck "${title}"` : 'lecture decks'} as tools.`,
     `Read tools: ${reads.join(', ')}.`,
-    `The same data is offered as resources: presmium://documents, presmium://deck, presmium://sections, presmium://sections/{section}, presmium://sections/{section}/steps/{step}, presmium://sections/{section}/outputs, presmium://diagnostics (the current diagnostic snapshot; reading it does not run checks), presmium://ir (the compiled deck)${pages ? ', presmium://position (subscribe to it to hear when the presentation moves)' : ''}, presmium://focus (what the author points at in the workbench; subscribe to it to hear of a new one)${host.classroomStatus ? ', presmium://classroom' : ''}. With several documents, add ?document=<dir> to a deck's resource (presmium://sections?document=<dir>). Subscribe to presmium://diagnostics?document=<dir> to hear when that document's current problems change; get_diagnostics explicitly runs the full checks.`,
+    `The same data is offered as resources: presmium://documents, presmium://deck, presmium://sections, presmium://sections/{section}, presmium://sections/{section}/steps/{step}, presmium://sections/{section}/outputs, presmium://diagnostics (the current diagnostic snapshot; reading it does not run checks), presmium://ir (the compiled deck)${pages ? ', presmium://position (subscribe to it to hear when the presentation moves)' : ''}, presmium://focus (what the author points at in the workbench; subscribe to it to hear of a new one)${host.classroomStatus ? ', presmium://classroom' : ''}. With several documents, add ?document=<dir> to a deck's resource (presmium://sections?document=<dir>). Subscribe to presmium://diagnostics?document=<dir> to hear when that document's current problems change; get_diagnostics reads bounded, version-bound snapshot fragments without running checks; check_document explicitly runs compilation and plugin checks. An empty snapshot is not browser or current-source verification.`,
     'Sections are named by id (list_sections); steps count from 0. Source paths in diagnostic snapshots are relative to the workspace root; other document paths are relative to the deck directory.',
     !canOperate(caller)
       ? 'This token reads only.'
@@ -641,7 +612,7 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
   resource('documents', 'presmium://documents', read('list_documents'), false)
   resource('deck', 'presmium://deck', read('deck_info'))
   resource('sections', 'presmium://sections', read('list_sections'))
-  resource('diagnostics', DIAGNOSTICS_URI, diagnostics)
+  resource('diagnostics', DIAGNOSTICS_URI, diagnosticSnapshot)
   resource('runtime', 'presmium://runtime', read('get_runtime'))
   resource('ir', 'presmium://ir', async c => (await c.compiled()).doc)
   if (host.authoring) template('page-duplication-plan', 'presmium://page-duplication/{planId}/{digest}/{part}', async c => {

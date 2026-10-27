@@ -49,7 +49,7 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 配音生成、进度、取消 | `DocumentVoiceAuthoring` 与独立 Node owner；HTTP/MCP 同一任务实例，standalone 同工厂 | 已有 `get_voiceover_status/get_voiceover_jobs/get_voiceover_job/start_voiceover/cancel_voiceover`，保留 intent/source/revision/scope/sequence | 查询／取消不要求当前编译；配置 remount 保留任务；当前仅进程内发现与幂等，尚无跨重启恢复账本 |
 | 计划、波形、定位、播放、暂停、速率 | `ProductionPlan`、单一播放器、预览协议中的制作请求 | 已有真实 `read_production_plan`；`navigate` 仅定位放映窗口，`get_runtime` 只读报告 | 指定作者客户端的 `ProductionPlaybackCommand` 与真实应答 |
 | 编译、预览、导出、下载 | workspace `jobs` 需要明确 `JobSource`，支持状态、事件、取消、版本和文件 | `build/get_builds/cancel_build` 已保留 source、sequence、inputFingerprint、captions 与文件；取消不要求先编译 | 后续统一任务发现、持久意图账本与资源；当前反馈见[输出验证记录](benchmarks/mcp-output-feedback-2026-10-27.md) |
-| 诊断、失败详情、运行验证 | UI `readDiagnostics` 读诊断快照；编译／浏览器报告分来源 | `get_diagnostics` 走 compile+check；diagnostics resource 才走宿主快照；runtime 有报告但不证明最新源 | 统一诊断快照入口，保留阶段；新增带来源的验证请求和 observed／unobserved 结果 |
+| 诊断、失败详情、运行验证 | UI `readDiagnostics` 读诊断快照；编译／浏览器报告分来源 | `get_diagnostics` 有界读取同一快照，`check_document` 显式检查；完整协议见[诊断反馈](diagnostic-feedback.md)。runtime 有报告但不证明最新源 | 带完整来源绑定的验证请求及浏览器实际结果；检查计数和空快照不能替代当前源验证 |
 | 文稿草稿、外部变更、保存冲突 | `DocumentSession` 和制作 drafts 在浏览器按来源隔离；不能从服务看见未提交字节 | 无 | 客户端编辑状态探测与 flush／保留／恢复请求，未连接时声明未知 |
 | 审阅、逐文件拒绝、检查点恢复 | workspace `review/*` 与 `CHANGE_REVIEW`，持锁到结束 | 核心 MCP 无适配，dsh 自有桥接 | 同一 reviewId、范围、来源与修改 digest，绑定宿主授权决策 |
 | 历史、查看旧版本、撤消、重做、放弃未提交修改 | workspace `revisions`、`history/*`、`changes/*`；undo/redo 可带 expect | 无 | 显式目标版本与路径，冲突结果；不把查看历史变成恢复当前文稿 |
