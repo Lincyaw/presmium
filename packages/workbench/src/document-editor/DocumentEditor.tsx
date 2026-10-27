@@ -1,5 +1,6 @@
 import { useMemo, useRef } from 'react'
 import { closeHistory } from '@tiptap/pm/history'
+import { allocateDocumentPage } from '@lincyaw/kernel'
 import type { TeachingDocument } from '@lincyaw/kernel'
 import type { Locale } from '../messages.ts'
 import { BlockNoteSurface } from './BlockNoteSurface.tsx'
@@ -121,7 +122,9 @@ export function DocumentEditor(props: DocumentEditorProps) {
         const blocks = value.document, index = after ? blocks.findIndex(block => block.type === 'presmiumPage' && block.props.sectionId === after) : blocks.length - 1
         if (index < 0) throw new Error('page-boundary')
         const next = after ? blocks.slice(index + 1).find(block => block.type === 'presmiumPage') : undefined
-        const creation = { sectionId: crypto.randomUUID(), blockId: crypto.randomUUID(), nodeId: crypto.randomUUID(), stepId: crypto.randomUUID() }
+        const latest = current.current.getDocument ? current.current.getDocument() : current.current.document
+        if (!latest) throw new Error('page-context-changed')
+        const creation = allocateDocumentPage(latest, () => crypto.randomUUID())
         projection.createdPages.set(creation.sectionId, creation)
         try {
           value.transact(transaction => {

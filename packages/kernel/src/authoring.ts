@@ -3,8 +3,8 @@ import type { Schema } from '@cfworker/json-schema'
 import { DOCUMENT_JSON_SCHEMA } from './document-schema.ts'
 import type { DocumentChange } from './contracts/workspace.ts'
 import type { DocumentIssue } from './contracts/document.ts'
-import { DOCUMENT_PAGE_DUPLICATION_APPLY_SCHEMA, DOCUMENT_PAGE_DUPLICATION_SCHEMA } from './contracts/authoring.ts'
-import type { DocumentPageDuplicationReference, DocumentPageDuplicationRequest } from './contracts/authoring.ts'
+import { DOCUMENT_PAGE_CHANGE_APPLY_SCHEMA, DOCUMENT_PAGE_CHANGE_SCHEMA, DOCUMENT_PAGE_DUPLICATION_APPLY_SCHEMA, DOCUMENT_PAGE_DUPLICATION_SCHEMA } from './contracts/authoring.ts'
+import type { DocumentPageChangeReference, DocumentPageChangeRequest, DocumentPageDuplicationReference, DocumentPageDuplicationRequest } from './contracts/authoring.ts'
 
 const object = (properties: Record<string, Schema>, required = Object.keys(properties)): Schema => ({ type: 'object', properties, required, additionalProperties: false })
 const ref = (name: string): Schema => ({ $ref: `#/$defs/${name}` })
@@ -41,9 +41,13 @@ export const DOCUMENT_CHANGE_JSON_SCHEMA: Schema = {
 const validator = new Validator(structuredClone(DOCUMENT_CHANGE_JSON_SCHEMA), '2020-12', false)
 const duplication = new Validator(structuredClone(DOCUMENT_PAGE_DUPLICATION_SCHEMA) as unknown as Schema, '2020-12', false)
 const duplicationApply = new Validator(structuredClone(DOCUMENT_PAGE_DUPLICATION_APPLY_SCHEMA) as unknown as Schema, '2020-12', false)
+const pageChange = new Validator(structuredClone(DOCUMENT_PAGE_CHANGE_SCHEMA) as unknown as Schema, '2020-12', false)
+const pageChangeApply = new Validator(structuredClone(DOCUMENT_PAGE_CHANGE_APPLY_SCHEMA) as unknown as Schema, '2020-12', false)
 
 export function validateDocumentPageDuplication(value: unknown): value is DocumentPageDuplicationRequest { return duplication.validate(value).valid }
 export function validateDocumentPageDuplicationApply(value: unknown): value is DocumentPageDuplicationReference { return duplicationApply.validate(value).valid }
+export function validateDocumentPageChange(value: unknown): value is DocumentPageChangeRequest { return pageChange.validate(value).valid }
+export function validateDocumentPageChangeApply(value: unknown): value is DocumentPageChangeReference { return pageChangeApply.validate(value).valid }
 
 export function validateDocumentChange(value: unknown): { change?: DocumentChange, issues: DocumentIssue[] } {
   const checked = validator.validate(value)
