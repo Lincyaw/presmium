@@ -194,7 +194,9 @@ function SortableRow({ item, index, group, density, selected, disabled, loading,
   const wasDragging = useRef(false)
   useLayoutEffect(() => { if (wasDragging.current && !isDragSource) onSettled(); wasDragging.current = isDragSource }, [isDragSource, onSettled])
   return <li ref={ref} className="pm-ui-sortable-list__row" data-sortable-id={item.id} data-density={density} data-selected={selected || undefined} data-dragging={isDragSource || undefined}>
-    <PmIconButton ref={attachHandle} icon="grip" label={label} density={density} className="pm-ui-sortable-list__handle" disabled={disabled || item.disabled || item.reorderDisabled} loading={loading} tooltip={false} />
+    <PmIconButton ref={attachHandle} icon="grip" label={label} density={density} className="pm-ui-sortable-list__handle" disabled={disabled || item.disabled || item.reorderDisabled} loading={loading} tooltip={false} onPointerDownCapture={event => {
+      if (event.isPrimary && event.button === 0 && !event.currentTarget.disabled) event.currentTarget.focus({ preventScroll: true })
+    }} />
     <button type="button" className="pm-ui-sortable-list__select" disabled={item.disabled} aria-current={selected ? 'location' : undefined} onClick={() => onSelect(item.id)}>
       {item.prefix !== undefined && <span className="pm-ui-sortable-list__prefix">{item.prefix}</span>}<span className="pm-ui-sortable-list__label">{item.label}</span>
     </button>
