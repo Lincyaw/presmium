@@ -73,17 +73,18 @@ function defaultLocale(): 'zh-CN' | 'en' {
 
 /** A changed list identity owns a fresh gesture and cannot receive an earlier move's completion. */
 export function PmSortableList(props: SortableListProps) {
-  const gesture = useRef(false), focus = useRef<string>()
-  const order = JSON.stringify(props.items.map(item => item.id))
+  const gesture = useRef(false), movePending = useRef(false), focus = useRef<string>()
+  const order = JSON.stringify(props.items.map(item => item.id)), members = JSON.stringify(props.items.map(item => item.id).sort())
   const availability = JSON.stringify([props.reorderDisabled, props.loading, Boolean(props.onMove), props.items.map(item => [item.id, item.disabled, item.reorderDisabled])])
-  const previous = useRef({ scope: props.scopeKey, order, reset: props.resetKey, availability, generation: 0 })
+  const previous = useRef({ scope: props.scopeKey, order, members, reset: props.resetKey, availability, generation: 0 })
   if (previous.current.scope !== props.scopeKey) focus.current = undefined
-  if (gesture.current && (previous.current.scope !== props.scopeKey || previous.current.order !== order || previous.current.reset !== props.resetKey || previous.current.availability !== availability)) {
-    previous.current.generation++; gesture.current = false
+  if (gesture.current && (previous.current.scope !== props.scopeKey || previous.current.order !== order || previous.current.reset !== props.resetKey || previous.current.availability !== availability)
+    || movePending.current && previous.current.members !== members) {
+    previous.current.generation++; gesture.current = false; movePending.current = false
   }
-  previous.current = { scope: props.scopeKey, order, reset: props.resetKey, availability, generation: previous.current.generation }
-  const signature = JSON.stringify([props.scopeKey, props.items.map(item => item.id).sort(), previous.current.generation, props.locale ?? defaultLocale(), props.labels?.instructions])
-  return <SortableSession key={signature} {...props} gesture={gesture} focus={focus} />
+  previous.current = { scope: props.scopeKey, order, members, reset: props.resetKey, availability, generation: previous.current.generation }
+  const signature = JSON.stringify([props.scopeKey, previous.current.generation, props.locale ?? defaultLocale(), props.labels?.instructions])
+  return <SortableSession key={signature} {...props} gesture={gesture} movePending={movePending} focus={focus} />
 }
 
 type AccessibilityOptions = NonNullable<ConstructorParameters<typeof Accessibility>[1]>
@@ -100,16 +101,16 @@ function SortableGuard({ signature, revision, active, onReplace }: { signature: 
   return null
 }
 
-function SortableSession(props: SortableListProps & { gesture: MutableRefObject<boolean>, focus: MutableRefObject<string | undefined> }) {
+function SortableSession(props: SortableListProps & { gesture: MutableRefObject<boolean>, movePending: MutableRefObject<boolean>, focus: MutableRefObject<string | undefined> }) {
   const { items, onMove, density = 'compact', locale = defaultLocale() } = props
   const labels = useMemo(() => ({ ...MESSAGES[locale], ...props.labels }), [locale, props.labels])
   const [pending, setPending] = useState<{ id: string, order: string[] }>(), [announcement, setAnnouncement] = useState('')
-  const alive = useRef(true), active = props.gesture, focus = props.focus, request = useRef<object>(), current = useRef({ props, labels })
+  const alive = useRef(true), active = props.gesture, movePending = props.movePending, focus = props.focus, request = useRef<object>(), current = useRef({ props, labels })
   const list = useRef<HTMLOListElement>(null), handles = useRef(new Map<string, HTMLButtonElement>())
   const focusFrame = useRef<number>()
   const pendingOrder = useRef<string[]>()
   current.current = { props, labels }
-  useLayoutEffect(() => { alive.current = true; return () => { alive.current = false; request.current = undefined; active.current = false; if (focusFrame.current !== undefined) cancelAnimationFrame(focusFrame.current) } }, [])
+  useLayoutEffect(() => { alive.current = true; return () => { alive.current = false; request.current = undefined; active.current = false; movePending.current = false; if (focusFrame.current !== undefined) cancelAnimationFrame(focusFrame.current) } }, [])
   const group = useId(), disabled = Boolean(props.reorderDisabled || props.loading || pending || !onMove)
   const signature = JSON.stringify([props.reorderDisabled, props.loading, Boolean(onMove), items.map(item => [item.id, item.disabled, item.reorderDisabled])])
   const orderKey = JSON.stringify(items.map(item => item.id)), revision = JSON.stringify([orderKey, props.resetKey])
@@ -158,7 +159,7 @@ function SortableSession(props: SortableListProps & { gesture: MutableRefObject<
       const order = items.map(item => item.id)
       order.splice(source.initialIndex, 1); order.splice(source.index, 0, item.id)
       const before = order[source.index + 1] ?? null, owner = {}
-      request.current = owner; pendingOrder.current = order; setPending({ id: item.id, order }); setAnnouncement(labels.saving(item.label))
+      request.current = owner; movePending.current = true; pendingOrder.current = order; setPending({ id: item.id, order }); setAnnouncement(labels.saving(item.label))
       void (async () => {
         try {
           await onMove(item.id, before)
@@ -166,7 +167,7 @@ function SortableSession(props: SortableListProps & { gesture: MutableRefObject<
         } catch {
           if (alive.current && request.current === owner) setAnnouncement(current.current.labels.failed(item.label))
         } finally {
-          if (alive.current && request.current === owner) { request.current = undefined; pendingOrder.current = undefined; setPending(undefined) }
+          if (alive.current && request.current === owner) { request.current = undefined; movePending.current = false; pendingOrder.current = undefined; setPending(undefined) }
         }
       })()
     }}>
@@ -176,7 +177,7 @@ function SortableSession(props: SortableListProps & { gesture: MutableRefObject<
     <p role="status" className="pm-ui-sr-only">{announcement}</p>
     <SortableGuard signature={signature} revision={revision} active={active} onReplace={() => {
       if (pendingOrder.current && JSON.stringify(pendingOrder.current) === orderKey) return
-      request.current = undefined; pendingOrder.current = undefined; setPending(undefined); setAnnouncement('')
+      request.current = undefined; movePending.current = false; pendingOrder.current = undefined; setPending(undefined); setAnnouncement('')
     }} />
   </DragDropProvider>
 }
