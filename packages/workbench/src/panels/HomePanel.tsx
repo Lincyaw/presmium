@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { errorMessage } from '@lincyaw/kernel'
 import type { DocumentSummary } from '@lincyaw/kernel'
 import { PmButton, PmDialog, PmEmpty, PmInput, PmSelect, PmIcon, PmMenu, PmNotice } from '../components.tsx'
@@ -20,6 +20,7 @@ export function HomePanel() {
   const [done, setDone] = useState<string>()
   const [error, setError] = useState<string>()
   const [working, setWorking] = useState(false)
+  const handingOff = useRef(false)
   useEffect(() => {
     void workbench.loadDocuments()
   }, [workbench])
@@ -44,7 +45,7 @@ export function HomePanel() {
     <section className="pmw-home" aria-labelledby="pmw-home-title">
       <header className="pmw-home__bar">
         <h1 id="pmw-home-title" className="pmw-home__title">{answer?.title ?? t.documents}</h1>
-        {operable && <PmButton variant="primary" icon="plus" disabled={working} onClick={() => { setError(undefined); setEditing({ op: 'create' }) }}>{t.newDocument}</PmButton>}
+        {operable && <PmButton variant="primary" icon="plus" disabled={working} onClick={() => { handingOff.current = false; setError(undefined); setEditing({ op: 'create' }) }}>{t.newDocument}</PmButton>}
       </header>
       {failure && <PmNotice tone="danger">{bundleDisabled ? t.bundleDisabled : failure}</PmNotice>}
       {done && <PmNotice tone="ok">{done}</PmNotice>}
@@ -65,7 +66,7 @@ export function HomePanel() {
                 {shown.map(doc => (
                   <li key={doc.dir} className="pmw-home__card" data-document={doc.dir}>
                       <button type="button" className="pmw-home__open" onClick={() => void workbench.openDocument(doc.dir)}>
-                        <span className="pmw-home__doc-icon" aria-hidden="true"><PmIcon name="document" size={18} /></span>
+                        <span className="pmw-home__doc-icon" aria-hidden="true"><PmIcon name="document" /></span>
                         <span className="pmw-home__doc-title">{doc.title}</span>
                       </button>
                       {operable && (
@@ -97,9 +98,15 @@ export function HomePanel() {
             setEditing(undefined)
             setError(undefined)
           }}
+          onCloseAutoFocus={event => {
+            if (!handingOff.current) return
+            handingOff.current = false
+            event.preventDefault()
+          }}
           onCreate={(title, template) => void run(async () => {
             const dir = await workbench.createDocument(title, template)
-            void workbench.openDocument(dir)
+            handingOff.current = true
+            await workbench.openDocument(dir, { focus: 'body' })
             return t.created(title)
           })}
           onRename={(doc, title) => void run(async () => {
@@ -116,12 +123,13 @@ export function HomePanel() {
   )
 }
 
-function DocumentDialog({ editing, templates, error, working, onClose, onCreate, onRename, onDelete }: {
+function DocumentDialog({ editing, templates, error, working, onClose, onCloseAutoFocus, onCreate, onRename, onDelete }: {
   editing: Editing
   templates: string[]
   error?: string
   working: boolean
   onClose(): void
+  onCloseAutoFocus(event: Event): void
   onCreate(title: string, template?: string): void
   onRename(doc: DocumentSummary, title: string): void
   onDelete(doc: DocumentSummary): void
@@ -131,7 +139,7 @@ function DocumentDialog({ editing, templates, error, working, onClose, onCreate,
   const [template, setTemplate] = useState(templates.includes('default') ? 'default' : templates[0] ?? '')
   const label = editing.op === 'create' ? t.newDocument : editing.op === 'rename' ? t.rename : t.remove
   return (
-    <PmDialog open label={label} closeLabel={t.close} name="pmw-operation" busy={working} onClose={onClose}>
+    <PmDialog open label={label} closeLabel={t.close} name="pmw-operation" busy={working} onClose={onClose} onCloseAutoFocus={onCloseAutoFocus}>
       <form
         className="pmw-operation"
         onKeyDown={event => { if (event.key === 'Enter' && (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229)) event.preventDefault() }}

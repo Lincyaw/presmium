@@ -14,6 +14,7 @@ export interface AgentPlace {
 const zh = {
   voiceSaveUnconfirmed: '音色设置尚未确认保存，草稿已保留，请重试。',
   documentEditor: '文档编辑',
+  documentPositionRemoved: '上次位置已移除，请重新定位。',
   documentExport: '文档导出',
   documentNarration: '字幕',
   documentNarrationHint: '编辑字幕和配音开始时机。',
@@ -306,6 +307,7 @@ export type WorkbenchMessages = typeof zh
 const en: WorkbenchMessages = {
   voiceSaveUnconfirmed: 'Voice settings have not been confirmed as saved. Your draft is kept; try again.',
   documentEditor: 'Document editor',
+  documentPositionRemoved: 'Your previous location was removed. Choose a new location.',
   documentExport: 'Export document',
   documentNarration: 'Captions',
   documentNarrationHint: 'Edit captions and narration start.',

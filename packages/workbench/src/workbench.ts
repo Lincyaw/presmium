@@ -2,6 +2,8 @@ import { undoDepth, redoDepth } from '@tiptap/pm/history'
 import { TextSelection } from '@tiptap/pm/state'
 import { DocumentSession } from './document-session.ts'
 import type { DocumentSessionState } from './document-session.ts'
+import { DocumentReturnPoints, documentReturnStep, documentViewportOffset, restoreDocumentViewport } from './document-return-point.ts'
+import type { DocumentReturnPoint } from './document-return-point.ts'
 import type { DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentChangeAnswer, MediaClip, NarrationNode, TeachingDocument } from '@lincyaw/kernel'
 import type { NativeDocumentEditor } from './document-editor/schema.tsx'
 import type { DocumentEditorCommands } from './document-editor/DocumentEditor.tsx'
@@ -113,6 +115,7 @@ export interface WorkbenchState {
   documentPositionIntent: 'seek' | 'pause'
   /** An explicit source navigation request; scrolling updates position without issuing another request. */
   documentNavigation?: { section: string, request: string }
+  documentPositionFailure?: 'removed'
   isCreatingPage?: boolean
   isEditingPage?: boolean
   editorHistory?: EditorHistoryState
@@ -194,7 +197,7 @@ const DOCUMENT_RESET = {
   editorHistory: undefined,
   isHistoryPreparing: false,
   pageEditFailure: undefined,
-  ir: undefined, preview: undefined, previewFailure: undefined, previewIrRevision: undefined, position: undefined, documentNavigation: undefined,
+  ir: undefined, preview: undefined, previewFailure: undefined, previewIrRevision: undefined, position: undefined, documentNavigation: undefined, documentPositionFailure: undefined,
   diagnostics: undefined, isDiagnosticsUnavailable: false, isRepairingDiagnostics: false, diagnosticsRepairFailure: undefined,
   pointer: undefined, save: { kind: 'idle' },
   focus: [], isFocusPending: false, focusFailure: undefined,
@@ -231,6 +234,12 @@ export class Workbench {
   #cueTimingScope?: string
   #documentEditor?: NativeDocumentEditor
   #documentEditorCommands?: DocumentEditorCommands
+  #documentEditorBinding?: { identity: string, reset: number }
+  readonly #documentReturnPoints = new DocumentReturnPoints()
+  #documentViewport?: { element: HTMLElement, identity: string, stop(): void }
+  #stopDocumentReturnScroll?: () => void
+  #openingDocument?: { directory: string, scope: number, generation: number, focus?: 'body', initial?: boolean, stop(): void,
+    basis?: { identity: string, reset: number, version?: string, content: TeachingDocument }, point?: DocumentReturnPoint }
   #stopDocumentLayoutScroll?: () => void
   #activeDocumentHistory?: DocumentHistoryEditor
   #unsubscribeDocumentHistory?: () => void
@@ -317,11 +326,16 @@ export class Workbench {
       const selectedStep = selected ? authoring.content?.steps[selected] : undefined, selectedPage = selectedStep ? authoring.content?.sections[selectedStep.sectionId] : undefined
       const selectedIndex = selectedPage?.stepOrder.indexOf(selected!) ?? -1
       const moved = position && selectedStep && selectedIndex >= 0 && (position.section !== selectedStep.sectionId || position.step !== selectedIndex)
+      const removed = this.#state.webView === 'document' && position?.view !== 'present' && position && previous?.identity === authoring.identity
+        && (selected ? !selectedStep || selectedIndex < 0 : !authoring.content?.sectionOrder.includes(position.section))
+      if (removed && authoring.identity) this.#documentReturnPoints.forget(authoring.identity)
       this.#set({ authoring,
+        ...removed ? { position: undefined, documentNavigation: undefined, documentPositionFailure: 'removed' as const } : {},
         ...moved ? { position: { ...position, section: selectedStep.sectionId, step: selectedIndex, trail: [] } } : {},
         hasDocumentTimingDrafts: Boolean(authoring.identity && authoring.content && this.#documentTimingDrafts.has(authoring.identity, authoring.content)),
         documentTimingDraftStorageFailure: this.#documentTimingDrafts.failed,
         save: authoring.error ? { kind: 'failed', message: authoring.error } : authoring.saving ? { kind: 'saving' } : !authoring.dirty && previous?.dirty ? { kind: 'saved', at: new Date().toISOString() } : this.#state.save.kind === 'failed' ? { kind: 'idle' } : this.#state.save })
+      this.#finishOpeningDocument()
       if (this.#production.changed()) void this.pausePlayback().catch(() => {})
       if (!authoring.dirty && previous?.dirty) { void this.#history.read(authoring.directory); void this.loadDocuments() }
     })
@@ -381,7 +395,9 @@ export class Workbench {
   #nextDocumentPosition(): string { return `${this.#positionSeed}:${++this.#positionSequence}` }
 
   #set(patch: Partial<WorkbenchState>): void {
+    if (Object.hasOwn(patch, 'position')) { this.#cancelOpeningDocument(); this.#stopDocumentReturnScroll?.() }
     this.#state = { ...this.#state, ...patch, ...Object.hasOwn(patch, 'position') ? { documentPositionToken: this.#nextDocumentPosition(), documentPositionIntent: patch.documentPositionIntent ?? 'seek' } : {} }
+    if (Object.hasOwn(patch, 'position')) this.#saveDocumentReturnPoint()
     for (const listener of this.#listeners) listener()
   }
 
@@ -447,20 +463,143 @@ export class Workbench {
     })
   }
 
-  async openDocument(dir: string): Promise<void> {
-    if (this.#state.document === dir) return
+  #watchOpeningInteraction(cancel: () => void): () => void {
+    if (typeof document === 'undefined') return () => {}
+    const focused = document.activeElement, dialog = focused?.closest('[role="dialog"]')
+    const interact = (event: Event) => {
+      if (!event.isTrusted) return
+      if (event.type === 'focusin' && (!(event.target instanceof Element) || event.target === focused || dialog?.contains(event.target))) return
+      cancel()
+    }
+    const events = ['pointerdown', 'keydown', 'beforeinput', 'wheel', 'touchmove', 'focusin']
+    for (const event of events) document.addEventListener(event, interact, true)
+    return () => { for (const event of events) document.removeEventListener(event, interact, true) }
+  }
+
+  #cancelOpeningDocument(): void {
+    const pending = this.#openingDocument
+    this.#openingDocument = undefined
+    pending?.stop()
+  }
+
+  #beginOpeningDocument(directory: string, focus?: 'body'): void {
+    this.#cancelOpeningDocument()
+    this.#openingDocument = { directory, focus, scope: this.#documentScope, generation: this.#documentSelectionGeneration,
+      stop: this.#watchOpeningInteraction(() => this.#cancelOpeningDocument()) }
+  }
+
+  #saveDocumentReturnPoint(): void {
+    const source = this.#state.authoring, position = this.#state.position
+    if (!source?.identity || !source.content || source.loading || !position || !source.content.sectionOrder.includes(position.section)) return
+    const section = source.content.sections[position.section]
+    let stepId = section?.stepOrder[position.step]
+    if (this.#state.webView === 'present' || position.view === 'present') {
+      const snapshot = this.#state.presentationSnapshot, ir = this.#state.ir
+      if (!snapshot || !ir || source.dirty || source.saving || source.error || snapshot.version !== source.version || snapshot.fingerprint !== source.fingerprint
+        || snapshot.project !== (source.projectRevision ?? 0) || snapshot.revision !== ir.revision || snapshot.revision !== this.#state.previewIrRevision) return
+      const ids = ir.doc.sections.find(page => page.id === position.section)?.stepIds
+      if (!ids || ids.length && !ids[position.step]) return
+      stepId = ids[position.step]
+      if (stepId && (!section?.stepOrder.includes(stepId) || source.content.steps[stepId]?.sectionId !== position.section)) return
+    }
+    if (!section || !stepId && section.stepOrder.length) return
+    const viewport = this.#documentViewport, previous = this.#documentReturnPoints.read(source.identity)
+    const measured = this.#state.webView === 'document' && viewport?.identity === source.identity ? documentViewportOffset(viewport.element, section.id) : undefined
+    const offset = measured ?? (previous?.sectionId === section.id ? previous.offset : undefined)
+    this.#documentReturnPoints.write(source.identity, { sectionId: section.id, ...stepId ? { stepId } : {}, ...offset !== undefined ? { offset } : {} })
+  }
+
+  #finishOpeningDocument(): void {
+    const pending = this.#openingDocument, source = this.#state.authoring
+    if (!pending || source?.loading || !source?.identity || !source.content) return
+    if (source.error === 'document-identity-changed') { this.#cancelOpeningDocument(); return }
+    if (pending.scope !== this.#documentScope || pending.directory !== this.#state.document || pending.generation !== this.#documentSelectionGeneration) { this.#cancelOpeningDocument(); return }
+    if (!pending.basis) {
+      pending.basis = { identity: source.identity, reset: source.reset, version: source.version, content: source.content }
+      if (!pending.focus) {
+        pending.point = this.#documentReturnPoints.read(source.identity)
+        if (!pending.point) {
+          const section = source.content.sections[source.content.sectionOrder[0]!]
+          if (!section) { this.#cancelOpeningDocument(); return }
+          pending.point = { sectionId: section.id, ...section.stepOrder[0] ? { stepId: section.stepOrder[0] } : {} }
+          pending.initial = true
+        }
+        if (documentReturnStep(source.content, pending.point) === undefined) {
+          this.#documentReturnPoints.forget(source.identity); this.#cancelOpeningDocument()
+          this.#set({ documentPositionFailure: 'removed' }); return
+        }
+      }
+    }
+    const basis = pending.basis
+    if (source.identity !== basis.identity || source.reset !== basis.reset || source.version !== basis.version || source.content !== basis.content) { this.#cancelOpeningDocument(); return }
+    const editor = this.#documentEditor, binding = this.#documentEditorBinding, viewport = this.#documentViewport
+    if (!editor || editor.prosemirrorView.isDestroyed || binding?.identity !== source.identity || binding.reset !== source.reset || viewport?.identity !== source.identity) return
+    this.#cancelOpeningDocument()
+    if (pending.focus) {
+      const body = (blocks: typeof editor.document, sectionId?: string): { nodeId: string, sectionId: string } | undefined => {
+        for (const block of blocks) {
+          if (block.type === 'presmiumPage') sectionId = block.props.sectionId
+          else if (sectionId && editor.schema.blockSchema[block.type].content === 'inline') return { nodeId: block.id, sectionId }
+          const nested = body(block.children, sectionId)
+          if (nested) return nested
+        }
+      }
+      const target = body(editor.document)
+      if (target && source.content.sections[target.sectionId]) {
+        this.#set({ position: { section: target.sectionId, step: 0, trail: [], view: 'document' }, documentPositionFailure: undefined, documentNavigation: undefined })
+        this.#focusDocumentNode(editor, target.nodeId)
+      }
+      return
+    }
+    const point = pending.point!, step = documentReturnStep(source.content, point)
+    if (step === undefined) return
+    this.#selectedSteps.set(`${pending.directory}\0${point.sectionId}`, step)
+    this.#set({ position: { section: point.sectionId, step, trail: [], view: 'document' }, documentPositionFailure: undefined, documentNavigation: undefined })
+    if (pending.initial) return
+    const current = () => this.#state.document === pending.directory && this.#state.authoring?.identity === basis.identity
+      && this.#state.authoring.reset === basis.reset && this.#state.authoring.version === basis.version && this.#state.authoring.content === basis.content
+      && this.#documentViewport === viewport && this.#state.position?.section === point.sectionId && this.#state.position.step === step
+    const restore = () => { if (current()) restoreDocumentViewport(viewport.element, point); else stop() }
+    const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(restore)
+    let stopInteraction: () => void = () => {}
+    const stop = () => { observer?.disconnect(); stopInteraction(); if (this.#stopDocumentReturnScroll === stop) this.#stopDocumentReturnScroll = undefined }
+    this.#stopDocumentReturnScroll?.(); this.#stopDocumentReturnScroll = stop
+    stopInteraction = this.#watchOpeningInteraction(stop)
+    observer?.observe(viewport.element)
+    observer?.observe(editor.prosemirrorView.dom)
+    restore()
+  }
+
+  attachDocumentViewport(element: HTMLElement, identity: string): () => void {
+    this.#documentViewport?.stop()
+    const scroll = () => { if (!this.#openingDocument) this.#saveDocumentReturnPoint() }
+    const viewport = { element, identity, stop: () => element.removeEventListener('scroll', scroll) }
+    this.#documentViewport = viewport
+    element.addEventListener('scroll', scroll, { passive: true })
+    this.#finishOpeningDocument()
+    return () => { if (this.#documentViewport === viewport) { this.#saveDocumentReturnPoint(); this.#stopDocumentReturnScroll?.(); this.#documentViewport = undefined }; viewport.stop() }
+  }
+
+  async openDocument(dir: string, options: { focus?: 'body' } = {}): Promise<void> {
+    if (this.#state.document === dir) {
+      if (options.focus) { this.#beginOpeningDocument(dir, options.focus); this.#finishOpeningDocument() }
+      return
+    }
+    this.#saveDocumentReturnPoint()
     this.#documentScope++
     this.#stopSubscriptions()
     this.#history.subscribeReview(dir)
     this.#set({ ...DOCUMENT_RESET, document: dir, previewRenderer: 'web', webView: 'document' })
+    this.#beginOpeningDocument(dir, options.focus)
     this.#record('document.open')
     this.#diagnostics.subscribe(dir)
     // Authoring is ready from source JSON; compilation and preview are independent.
     await Promise.all([this.#documentSession.open(dir), this.#readFocus(dir), this.#history.read(dir)])
-
+    this.#finishOpeningDocument()
   }
 
   closeDocument(): void {
+    this.#saveDocumentReturnPoint()
     this.#documentScope++
     if (this.#state.document !== undefined) this.#record('document.close')
     this.#stopSubscriptions()
@@ -976,7 +1115,10 @@ export class Workbench {
   retryDocument(): Promise<void> { return this.#documentSession.retry() }
   discardDocument(): Promise<void> { return this.#documentSession.discard() }
   documentError(error: Error): void { this.#set({ save: { kind: 'failed', message: error.message } }) }
-  documentInteraction(): void { this.#documentSelectionGeneration++ }
+  documentInteraction(): void {
+    this.#documentSelectionGeneration++; this.#cancelOpeningDocument(); this.#stopDocumentReturnScroll?.()
+    if (this.#state.documentPositionFailure) this.#set({ documentPositionFailure: undefined })
+  }
   pendingDocumentField(blockId: string | undefined, identity?: string): Pick<DocumentFieldRegistration, 'stepId' | 'narrationId' | 'slot'> | undefined {
     const pending = this.#pendingDocumentField, source = this.#state.authoring
     return pending && pending.generation === this.#documentSelectionGeneration && pending.field.blockId === blockId
@@ -1021,11 +1163,12 @@ export class Workbench {
     this.#unsubscribeDocumentHistory = editor?.onChange(update)
     update()
   }
-  attachDocumentEditor(editor: NativeDocumentEditor | undefined, commands?: DocumentEditorCommands): void {
+  attachDocumentEditor(editor: NativeDocumentEditor | undefined, commands?: DocumentEditorCommands, binding?: { identity: string, reset: number }): void {
+    if (binding && (binding.identity !== this.#state.authoring?.identity || binding.reset !== this.#state.authoring.reset)) return
     const wasBody = !this.#activeDocumentHistory || this.#activeDocumentHistory === this.#documentEditor
     if (editor !== this.#documentEditor) this.#documentSession.composition(false, 'body')
     this.#unsubscribeDocumentSelection?.(); this.#stopDocumentLayoutScroll?.(); this.#stopDocumentLayoutScroll = undefined
-    this.#documentEditor = editor; this.#documentEditorCommands = commands
+    this.#documentEditor = editor; this.#documentEditorCommands = commands; this.#documentEditorBinding = editor ? binding : undefined
     if (editor) {
       const focus = this.#pendingDocumentFocus, selection = this.#pendingDocumentSelection
       this.#pendingDocumentFocus = undefined; this.#pendingDocumentSelection = undefined
@@ -1051,6 +1194,7 @@ export class Workbench {
       const stopSelection = editor.onSelectionChange(() => { this.#documentSelectionGeneration++ })
       this.#unsubscribeDocumentSelection = () => { this.#stopDocumentLayoutScroll?.(); stopSelection(); element.removeEventListener('focusin', focus) }
     } else this.#unsubscribeDocumentSelection = undefined
+    this.#finishOpeningDocument()
   }
   #focusDocumentNode(editor: NativeDocumentEditor, nodeId: string): void {
     this.#stopDocumentLayoutScroll?.(); this.#stopDocumentLayoutScroll = undefined
@@ -1183,18 +1327,19 @@ export class Workbench {
       this.#set({ position: { section: document.sectionOrder[0]!, step: 0, trail: [], view: 'document' }, documentNavigation: { section: document.sectionOrder[0]!, request: crypto.randomUUID() } })
     })
   }
-  createPage(after = this.#state.position?.section): void {
+  createPage(after = this.#state.position?.section): boolean {
     const source = this.#state.authoring, editor = this.#documentEditor, commands = this.#documentEditorCommands
     if (!source?.content || source.loading || source.composing || source.restored || source.error || !editor || !commands
       || editor.prosemirrorView.isDestroyed || isAgentChanging(this.#state) || this.#state.isEditingPage || this.#state.isCreatingPage
-      || this.#state.isHistoryBusy || this.#state.isHistoryPreparing) return
+      || this.#state.isHistoryBusy || this.#state.isHistoryPreparing) return false
     try {
       this.#set({ pageEditFailure: undefined })
       const created = commands.insertPage(after, this.#messages.newPage)
       this.#pendingDocumentField = undefined; this.#pendingDocumentSelection = undefined; this.#pendingDocumentFocus = undefined
       this.#set({ position: { section: created.sectionId, step: 0, trail: [], view: 'document' }, documentNavigation: { section: created.sectionId, request: crypto.randomUUID() } })
       this.#focusDocumentNode(editor, created.nodeId)
-    } catch (error) { this.#set({ pageEditFailure: this.#pageEditMessage(errorMessage(error)) }) }
+      return true
+    } catch (error) { this.#set({ pageEditFailure: this.#pageEditMessage(errorMessage(error)) }); return false }
   }
 
   /** Points at a block or a passage (none: stops pointing): the preview outlines it and the conversation is told. */
@@ -1294,13 +1439,15 @@ export class Workbench {
   /** Shows a section in the preview: from the navigation pane, the section to read or the slide to show. */
   goToSection(section: string): void {
     if (this.#state.webView === 'document' && this.#state.authoring?.content?.sections[section]) {
-      this.#set({ position: { section, step: 0, trail: [], view: 'document' }, documentNavigation: { section, request: crypto.randomUUID() } }); return
+      this.#set({ position: { section, step: 0, trail: [], view: 'document' }, documentPositionFailure: undefined, documentNavigation: { section, request: crypto.randomUUID() } }); return
     }
     this.goToStep(section, this.#selectedSteps.get(`${this.#state.document}\0${section}`) ?? 0)
   }
 
   observeDocumentSection(section: string): void {
-    if (this.#state.webView !== 'document' || !this.#state.authoring?.content?.sections[section] || this.#state.position?.section === section) return
+    if (this.#state.webView !== 'document' || !this.#state.authoring?.content?.sections[section]) return
+    if (this.#state.documentPositionFailure) this.#set({ documentPositionFailure: undefined })
+    if (this.#state.position?.section === section) return
     this.#set({ position: { section, step: this.#selectedSteps.get(`${this.#state.document}\0${section}`) ?? 0, trail: [], view: 'document' } })
   }
 
@@ -1340,6 +1487,7 @@ export class Workbench {
     if (this.#state.webView !== 'document' || !content?.sectionOrder.includes(sectionId) || !section) return
     const step = section.stepOrder.indexOf(stepId)
     if (step < 0 || content.steps[stepId]?.sectionId !== sectionId) return
+    if (this.#state.documentPositionFailure) this.#set({ documentPositionFailure: undefined })
     this.#selectedSteps.set(`${this.#state.document}\0${sectionId}`, step)
     const same = this.#state.position?.section === sectionId && this.#state.position.step === step
     if (same && !pause) return
@@ -1563,6 +1711,8 @@ export class Workbench {
   }
 
   #stopSubscriptions(): void {
+    this.#saveDocumentReturnPoint(); this.#cancelOpeningDocument(); this.#stopDocumentReturnScroll?.()
+    this.#documentViewport?.stop(); this.#documentViewport = undefined; this.#documentEditorBinding = undefined
     this.#presentationPreparation++
     this.#production.reset()
     this.#set({ isPreparingPresentation: false, presentationFailure: undefined, presentationSnapshot: undefined, productionPlan: undefined, productionFailure: undefined })
