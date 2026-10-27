@@ -1009,12 +1009,48 @@ export class Workbench {
     const wasBody = !this.#activeDocumentHistory || this.#activeDocumentHistory === this.#documentEditor
     if (editor !== this.#documentEditor) this.#documentSession.composition(false, 'body')
     this.#unsubscribeDocumentSelection?.(); this.#documentEditor = editor
+    let stopLayoutScroll: (() => void) | undefined
     if (editor) {
       const focus = this.#pendingDocumentFocus, selection = this.#pendingDocumentSelection
       this.#pendingDocumentFocus = undefined; this.#pendingDocumentSelection = undefined
       if (focus && focus.documentId === this.#state.authoring?.content?.id && focus.generation === this.#documentSelectionGeneration && editor.getBlock(focus.nodeId)) {
         // A deferred page operation adopts its selection only after the source write is acknowledged.
-        if (!focus.afterSave) { editor.setTextCursorPosition(focus.nodeId, 'start'); editor.focus() }
+        if (!focus.afterSave) {
+          editor.setTextCursorPosition(focus.nodeId, 'start')
+          editor.focus()
+          editor.prosemirrorView.dispatch(editor.prosemirrorState.tr.scrollIntoView())
+          // React node views can finish sizing after the native editor mounts.
+          // Keep only this untouched focus visible through those layout changes.
+          if (typeof ResizeObserver !== 'undefined') {
+            const view = editor.prosemirrorView, document = view.dom.ownerDocument
+            const source = this.#state.authoring!, identity = source.identity, reset = source.reset
+            const request = this.#state.documentNavigation?.request, selected = editor.prosemirrorState.selection
+            let size = view.dom.getBoundingClientRect(), active = true
+            const events = ['pointerdown', 'wheel', 'touchmove', 'keydown', 'beforeinput']
+            const cancel = () => {
+              if (!active) return
+              active = false; observer.disconnect(); stopFocus(); stopSelection()
+              for (const event of events) document.removeEventListener(event, interact, true)
+            }
+            const interact = (event: Event) => { if (event.isTrusted) cancel() }
+            const stopFocus = editor.onFocusChange((_, { focused }) => { if (!focused) cancel() })
+            const stopSelection = editor.onSelectionChange(cancel)
+            const observer = new ResizeObserver(() => {
+              if (!active) return
+              const current = this.#state.authoring
+              if (this.#documentEditor !== editor || view.isDestroyed || !current || current.identity !== identity || current.reset !== reset
+                || current?.content?.id !== focus.documentId || this.#state.documentNavigation?.request !== request
+                || !editor.isFocused() || !editor.prosemirrorState.selection.eq(selected) || editor.getTextCursorPosition().block.id !== focus.nodeId) { cancel(); return }
+              const next = view.dom.getBoundingClientRect()
+              if (next.width === size.width && next.height === size.height) return
+              size = next
+              view.dispatch(editor.prosemirrorState.tr.scrollIntoView())
+            })
+            for (const event of events) document.addEventListener(event, interact, true)
+            observer.observe(view.dom)
+            stopLayoutScroll = cancel
+          }
+        }
       } else if (!this.#pendingDocumentField && selection && selection.documentId === this.#state.authoring?.content?.id) {
         const anchor = nativeTextPosition(editor, selection.anchor), head = nativeTextPosition(editor, selection.head)
         if (anchor !== undefined && head !== undefined) {
@@ -1030,7 +1066,7 @@ export class Workbench {
       element.addEventListener('focusin', focus)
       if (editor.prosemirrorView.hasFocus()) focus()
       const stopSelection = editor.onSelectionChange(() => { this.#documentSelectionGeneration++ })
-      this.#unsubscribeDocumentSelection = () => { stopSelection(); element.removeEventListener('focusin', focus) }
+      this.#unsubscribeDocumentSelection = () => { stopLayoutScroll?.(); stopSelection(); element.removeEventListener('focusin', focus) }
     } else this.#unsubscribeDocumentSelection = undefined
   }
   async flushPendingEdits(signal?: AbortSignal): Promise<void> {
