@@ -6,6 +6,7 @@ import { leavesRoot } from '../domain/paths.ts'
 import { commitMessage, memberAddress, originOf } from '../domain/commit-message.ts'
 import type { CommitOrigin } from '../domain/commit-message.ts'
 import type { WorkspaceConfig } from './config.ts'
+import { isDocumentDir } from './config.ts'
 import { RequestError } from './errors.ts'
 import type { Git } from './git.ts'
 import { documentDirOf, isGeneratedPath, makeDocumentDir, writeChanges } from './writer.ts'
@@ -21,12 +22,16 @@ interface LogEntry {
   date: string
   message: string
   files: string[]
+  root?: true
 }
 
 function parseLog(output: string): LogEntry[] {
-  return output.split(RECORD).filter(Boolean).map((record) => {
-    const [id = '', author = '', date = '', message = '', rest = ''] = record.split(FIELD)
-    return { id, author, date, message: message.trim(), files: rest.split('\n').map(line => line.trim()).filter(Boolean) }
+  return output.split(RECORD).filter(Boolean).map(record => {
+    const [id = '', author = '', date = '', message = '', ...paths] = record.split(FIELD)
+    const first = paths.findIndex(path => path !== '')
+    // Git inserts one LF between the formatted header and its NUL-delimited paths.
+    if (first >= 0 && paths[first]!.startsWith('\n')) paths[first] = paths[first]!.slice(1)
+    return { id, author, date, message: message.trim(), files: paths.filter(Boolean) }
   })
 }
 
@@ -83,6 +88,7 @@ function undoTargets(entries: LogEntry[]): UndoTargets {
   for (const entry of [...entries].reverse()) {
     const origin = originOf(entry.message)
     if (!origin) continue
+    if (entry.root) { done.length = 0; undone.length = 0; continue }
     if (origin.operation) {
       done.length = 0
       undone.length = 0
@@ -115,7 +121,20 @@ function listed(entries: LogEntry[], filter: { task?: string, limit?: number }):
     const found = revision(entry, revertedBy.get(entry.id), isRedo(entry))
     return found && (!filter.task || found.origin.task === filter.task) ? [found] : []
   })
-  return filter.limit ? revisions.slice(0, filter.limit) : revisions
+  const roots = new Map<string, string>(), parity = new Map<string, boolean>()
+  const states = new Map<string, { undone: boolean, target: string }>()
+  for (const entry of [...revisions].reverse()) {
+    const root = entry.reverts ? roots.get(entry.reverts) : entry.id
+    if (!root) continue
+    const undone = entry.reverts ? !parity.get(entry.reverts) : false
+    roots.set(entry.id, root); parity.set(entry.id, undone)
+    states.set(root, { undone, target: undone ? entry.id : root })
+  }
+  const complete = revisions.map(entry => {
+    const state = !entry.reverts && states.get(entry.id)
+    return state && entry.revertible !== false ? { ...entry, undone: state.undone, revertTarget: state.target } : entry
+  })
+  return filter.limit ? complete.slice(0, filter.limit) : complete
 }
 
 function revision(entry: LogEntry, revertedBy?: string, redo = false): HistoryRevision | undefined {
@@ -133,6 +152,7 @@ function revision(entry: LogEntry, revertedBy?: string, redo = false): HistoryRe
     ...operation ? { operation } : {},
     ...revert ? { reverts: revert } : {},
     ...revert && redo ? { redo: true as const } : {},
+    ...entry.root ? { revertible: false as const } : {},
   }
 }
 
@@ -250,32 +270,131 @@ export class Revisions implements RevisionService {
     return this.#git.exclusive(async () => undoTargets(await this.#entries(document))[which])
   }
 
-  /** Reverts the commit; with `still`, only while it is the next undo or redo of that history (checked under the git lock). */
-  revert(id: string, member: Member, still?: { which: keyof UndoTargets, document?: string }): Promise<RevertResult> {
+  async head(): Promise<string | undefined> {
+    const result = await this.#git.tryOutput(['rev-parse', '--verify', 'HEAD'])
+    return result.ok ? result.output.trim() : undefined
+  }
+
+  /** Reads one regular historical text blob. The caller enforces document/path policy. */
+  async readFile(id: string, path: string, maxBytes: number, document?: string): Promise<Uint8Array> {
+    if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(id) || leavesRoot(path)) throw new RequestError(400, 'history-file-invalid')
+    if (!(await this.#git.tryOutput(['merge-base', '--is-ancestor', id, 'HEAD'])).ok) throw new RequestError(404, 'history-revision-not-found')
+    const topPath = relative(this.#git.top, resolve(this.#files.config.root, path)).split(sep).join('/')
+    const listed = await this.#git.output(['-C', this.#git.top, 'ls-tree', '-z', id, '--', topPath], { GIT_LITERAL_PATHSPECS: '1' })
+    const [meta = '', named] = (listed.split('\0')[0] ?? '').split('\t')
+    const [mode, type, oid] = meta.split(' ')
+    if (named !== topPath || !oid) throw new RequestError(404, 'history-file-not-found')
+    if (type !== 'blob' || !['100644', '100755'].includes(mode!)) throw new RequestError(422, 'history-file-not-regular-text')
+    if (document !== undefined && await this.ownerAt(id, path) !== document) throw new RequestError(403, 'history-file-outside-document')
+    const size = Number((await this.#git.output(['cat-file', '-s', oid])).trim())
+    if (!Number.isSafeInteger(size) || size > maxBytes) throw new RequestError(413, 'history-file-too-large')
+    const result = await this.#git.run(['cat-file', 'blob', oid])
+    if (result.code !== 0 || result.stdout.length !== size) throw new RequestError(409, 'history-file-read-failed')
+    return result.stdout
+  }
+
+  /** The historical canonical ancestor, shared by reads and history selection. */
+  async ownerAt(id: string, path: string): Promise<string | undefined> {
+    if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})(?:\^1)?$/.test(id) || leavesRoot(path)) throw new RequestError(400, 'history-file-invalid')
+    return (await this.#owners([{ id, path }]))[0]
+  }
+
+  async #owners(files: { id: string, path: string }[]): Promise<(string | undefined)[]> {
+    const maxTreeBytes = 4 << 20, queries = new Set<string>()
+    const candidates = files.map(({ id, path }) => {
+      const parts = path.split('/'), found: { directory: string, query: string }[] = []
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const directory = parts.slice(0, i).join('/')
+        if (!isDocumentDir(this.#files.config, directory)) continue
+        const topPath = relative(this.#git.top, resolve(this.#files.config.root, directory)).split(sep).join('/')
+        const query = topPath ? `${id}:${topPath}` : `${id}^{tree}`
+        found.push({ directory, query }); queries.add(query)
+      }
+      return found
+    })
+    const trees = new Map<string, { oid: string, bytes: number }>(), objects = new Map<string, number>(), all = [...queries]
+    for (let offset = 0; offset < all.length; offset += 512) {
+      const batch = all.slice(offset, offset + 512)
+      const result = await this.#git.run(['cat-file', '--batch-check=%(objectname) %(objecttype) %(objectsize)', '-Z'], {}, Buffer.from(batch.join('\0') + '\0'))
+      if (result.code !== 0) throw new RequestError(500, 'history-tree-read-failed')
+      const lines = result.stdout.toString('utf8').split('\0'); lines.pop()
+      if (lines.length !== batch.length) throw new RequestError(500, 'history-tree-read-failed')
+      batch.forEach((query, index) => {
+        const match = /^([a-f0-9]{40}|[a-f0-9]{64}) tree (\d+)$/.exec(lines[index]!)
+        if (!match) return
+        const bytes = Number(match[2])
+        if (!Number.isSafeInteger(bytes) || bytes > maxTreeBytes) throw new RequestError(413, 'history-tree-too-large')
+        trees.set(query, { oid: match[1]!, bytes }); objects.set(match[1]!, bytes)
+      })
+    }
+    const regular = new Map<string, boolean>(), pending = [...objects]
+    for (let offset = 0; offset < pending.length;) {
+      const batch: [string, number][] = []; let bytes = 0
+      while (offset < pending.length && batch.length < 512 && (!batch.length || bytes + pending[offset]![1] <= maxTreeBytes)) { const item = pending[offset++]!; batch.push(item); bytes += item[1] }
+      const result = await this.#git.run(['cat-file', '--batch', '-Z'], {}, Buffer.from(batch.map(([oid]) => oid).join('\0') + '\0'))
+      if (result.code !== 0) throw new RequestError(500, 'history-tree-read-failed')
+      let cursor = 0
+      for (const [oid, expectedBytes] of batch) {
+        const endHeader = result.stdout.indexOf(0, cursor)
+        if (endHeader < 0 || result.stdout.subarray(cursor, endHeader).toString('ascii') !== `${oid} tree ${expectedBytes}`) throw new RequestError(500, 'history-tree-read-failed')
+        const start = endHeader + 1, end = start + expectedBytes
+        if (result.stdout[end] !== 0) throw new RequestError(500, 'history-tree-read-failed')
+        const tree = result.stdout.subarray(start, end), oidBytes = oid.length / 2
+        let at = 0, found = false
+        while (at < tree.length) {
+          const space = tree.indexOf(32, at), zero = tree.indexOf(0, space + 1)
+          if (space < at || zero < space || zero + 1 + oidBytes > tree.length) throw new RequestError(500, 'history-tree-read-failed')
+          if (tree.subarray(space + 1, zero).toString('utf8') === 'lecture.json') found = ['100644', '100755'].includes(tree.subarray(at, space).toString('ascii'))
+          at = zero + 1 + oidBytes
+        }
+        regular.set(oid, found); cursor = end + 1
+      }
+      if (cursor !== result.stdout.length) throw new RequestError(500, 'history-tree-read-failed')
+    }
+    return candidates.map(found => found.find(item => { const tree = trees.get(item.query); return tree && regular.get(tree.oid) })?.directory)
+  }
+
+  /** Reverts the commit; guards and next-target checks run under the existing git queue. */
+  revert(id: string, member: Member, still?: { which: keyof UndoTargets, document?: string }, guard?: (paths: string[]) => Promise<void> | void, kind?: 'editor' | 'agent'): Promise<RevertResult> {
     return this.#git.exclusive(async () => {
       if (still && undoTargets(await this.#entries(still.document))[still.which] !== id) throw new RequestError(409, `the history changed: ${id} is not the next ${still.which} any more; read it again`)
       const verified = await this.#git.tryOutput(['rev-parse', '--verify', '--quiet', `${id}^{commit}`])
       if (!verified.ok) throw new Error(`no commit ${id}`)
       const target = (await this.#log(verified.output.trim()))!
+      if (!(await this.#git.tryOutput(['merge-base', '--is-ancestor', target.id, 'HEAD'])).ok) throw new RequestError(404, 'history-revision-not-found')
       const parent = await this.#git.tryOutput(['rev-parse', '--verify', '--quiet', `${target.id}^1`])
-      if (!parent.ok) throw new Error(`commit ${target.id} has no parent to go back to`)
+      if (!parent.ok) throw new RequestError(409, 'history-baseline-has-no-parent')
       const merged = await this.#git.run(['merge-tree', '--write-tree', '--no-messages', '--name-only', `--merge-base=${target.id}`, 'HEAD', parent.output.trim()])
       const lines = merged.stdout.toString('utf8').split('\n').map(line => line.trim()).filter(Boolean)
       if (merged.code === 1) return { ok: false, conflicts: [...new Set(lines.slice(1).map(this.#fromTop))] }
       if (merged.code !== 0 || !lines[0]) throw new Error(`git merge-tree failed: ${merged.stderr.trim()}`)
       const changes = await this.#changes('HEAD', lines[0])
-      if (changes.length === 0) throw new Error(`commit ${target.id} is undone already`)
+      if (changes.length === 0) throw new RequestError(409, 'history-change-already-undone')
       const outside = changes.filter(change => documentDirOf(this.#files.config, change.path) === undefined).map(change => change.path)
       if (outside.length > 0 && !member.roles.includes('owner')) throw new RequestError(403, `only an owner reverts a change of ${outside.join(', ')}, outside the documents`)
+      await guard?.(changes.map(change => change.path))
       const blocked = await this.#uncommitted(changes.map(change => change.path))
       if (blocked.length > 0) return { ok: false, conflicts: blocked }
+      const originalHead = await this.head()
+      const restore = await this.#changes(lines[0], 'HEAD')
+      const indexPath = resolve(this.#git.root, (await this.#git.output(['rev-parse', '--git-path', 'index'])).trim())
+      const oldIndex = existsSync(indexPath) ? readFileSync(indexPath) : undefined
+      try {
       await this.#write(changes)
       const subject = target.message.split('\n')[0] ?? target.id
       const undone = originOf(target.message)
-      const origin: CommitOrigin = { kind: undone?.kind ?? 'editor', member, ...undone?.operation ? { operation: undone.operation } : {} }
+      const origin: CommitOrigin = { kind: kind ?? undone?.kind ?? 'editor', member, ...undone?.operation ? { operation: undone.operation } : {} }
       const done = await this.commitWhileLocked({ paths: changes.map(change => change.path), summary: `Revert "${subject}"`, body: `This reverts commit ${target.id}.`, origin, revert: target.id })
       if (!done) throw new Error(`the revert of ${target.id} committed nothing`)
       return { ok: true, revision: done }
+      } catch (error) {
+        const afterHead = await this.head()
+        if (afterHead !== originalHead) throw new RequestError(409, 'history-readback-changed', { committed: true, snapshot: afterHead })
+        await this.#write(restore)
+        if (oldIndex) writeFileSync(indexPath, oldIndex)
+        else rmSync(indexPath, { force: true })
+        throw error
+      }
     })
   }
 
@@ -302,8 +421,21 @@ export class Revisions implements RevisionService {
   }
 
   async #entries(document?: string): Promise<LogEntry[]> {
-    const log = await this.#git.tryOutput(['log', FORMAT, '--name-only', '--no-renames', ...document ? ['--', document] : []], { GIT_LITERAL_PATHSPECS: '1' })
-    return log.ok ? parseLog(log.output) : []
+    const log = await this.#git.tryOutput(['log', FORMAT, '--name-only', '--no-renames', '-z'], { GIT_LITERAL_PATHSPECS: '1' })
+    const entries = log.ok ? parseLog(log.output).map(entry => ({ ...entry, files: entry.files.map(this.#fromTop) })) : []
+    if (entries.length) {
+      const rootIds = new Set((await this.#git.output(['rev-list', '--max-parents=0', 'HEAD'])).trim().split('\n'))
+      for (const entry of entries) if (rootIds.has(entry.id)) entry.root = true
+    }
+    if (document === undefined) return entries
+    const candidates = entries.flatMap((entry, index) => entry.files.filter(path => !leavesRoot(path) && (document === '' || path.startsWith(document + '/'))).map(path => ({ index, path, id: entry.id })))
+    const probes = candidates.flatMap(({ id, path }) => [{ id, path }, { id: `${id}^1`, path }])
+    const owners = await this.#owners(probes), accepted = new Set<number>()
+    candidates.forEach((item, index) => {
+      const deepest = [owners[index * 2], owners[index * 2 + 1]].filter((owner): owner is string => owner !== undefined).sort((a, b) => b.length - a.length)[0]
+      if (deepest === document) accepted.add(item.index)
+    })
+    return entries.filter((_, index) => accepted.has(index))
   }
 
   async #statusOf(paths: string[]): Promise<{ code: string, path: string }[]> {
@@ -333,7 +465,8 @@ export class Revisions implements RevisionService {
     const env = { GIT_INDEX_FILE: join(work, 'index'), GIT_LITERAL_PATHSPECS: '1' }
     try {
       await this.#git.output(['read-tree', 'HEAD'], env)
-      const blocked = new Set<string>()
+      const staged = await this.#git.output(['diff', '--cached', '--name-only', '-z', 'HEAD', '--', ...paths], { GIT_LITERAL_PATHSPECS: '1' })
+      const blocked = new Set<string>(staged.split('\0').filter(Boolean).map(this.#fromTop))
       for (const path of paths) {
         const tracked = (await this.#git.tryOutput(['ls-files', '--', path], env)).output.trim() !== ''
         let present = true
@@ -388,7 +521,8 @@ export class Revisions implements RevisionService {
   }
 
   async #log(id: string): Promise<LogEntry | undefined> {
-    return parseLog(await this.#git.output(['show', '--no-renames', '--name-only', FORMAT, id]))[0]
+    const entry = parseLog(await this.#git.output(['show', '--no-renames', '--name-only', '-z', FORMAT, id]))[0]
+    return entry && { ...entry, files: entry.files.map(this.#fromTop) }
   }
 
   async #revision(id: string): Promise<Revision | undefined> {

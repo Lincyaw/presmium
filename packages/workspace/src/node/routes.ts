@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, problemResponse, PRODUCTION_AUDIO_AUTHORING, pushStream, SPEECH, sseResponse } from '@lincyaw/kernel'
-import type { ChangesAnswer, CommitAnswer, CompileJob, DocumentOperation, DocumentsAnswer, JobsAnswer, Member, PresmiumNodePlugin, RequestContext, RevertResult, RevisionsAnswer, Route, SavedAnswer, ServerContribution, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
+import type { ChangesAnswer, CommitAnswer, CompileJob, DocumentOperation, DocumentsAnswer, JobsAnswer, Member, PresmiumNodePlugin, RequestContext, Route, SavedAnswer, ServerContribution, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
 import { hasBearerToken } from '@lincyaw/server'
-import { REVERT_TRAILER, saveSummary, trailers } from '../domain/commit-message.ts'
+import { saveSummary } from '../domain/commit-message.ts'
 import { documentSummaries, listDocuments } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
 import { documentsDiff } from './document-operations.ts'
@@ -11,7 +11,7 @@ import type { DocumentOperations, DocumentsChange } from './document-operations.
 import { catchRequestErrors, RequestError } from './errors.ts'
 import { lockedError } from './locks.ts'
 import type { DocumentLocks } from './locks.ts'
-import type { Revisions, UndoTargets } from './revisions.ts'
+import type { Revisions } from './revisions.ts'
 import { reviewRoutes } from './review/routes.ts'
 import type { AgentSessionReviews } from './review/agent-session-reviews.ts'
 import { MAX_SOURCE, MAX_SOURCE_CHANGES, validateDocumentSource } from './source-editor.ts'
@@ -26,6 +26,7 @@ import { documentImageRoutes } from './document-images.ts'
 import { createDocumentTranscriptions, documentTranscriptionRoutes } from './document-transcription.ts'
 import type { DocumentTranscriptions, ProductionAudioAuthoring, SpeechService } from '@lincyaw/kernel'
 import { documentDirOf } from './writer.ts'
+import { createDocumentHistory } from './document-history.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
@@ -56,6 +57,7 @@ export interface WorkspaceRoutesOptions {
   transcriptions?: DocumentTranscriptions
   transcriptionAdoptionRoutes?: Record<string, Route>
   audioAuthoringRoutes?: Record<string, Route>
+  historyRoutes?: Record<string, Route>
 }
 
 function toRendererIds(body: unknown): string[] | undefined {
@@ -88,7 +90,6 @@ function toSaveMessage(value: unknown): string {
   return typeof value === 'string' ? [...(value.trim().split(/\r?\n/)[0] ?? '').trim()].slice(0, 200).join('') : ''
 }
 
-const COMMIT = /^[0-9a-f]{4,64}$/i
 
 export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribution {
   const { config, editor, locks, revisions, operations, reviews, workbench } = options
@@ -109,38 +110,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       claimed.release()
     }
   }
-  const historyOf = (request: Request, ctx: RequestContext) => new URL(request.url).searchParams.get('document') ?? (ctx.document || (config.singleDeck ? '.' : undefined))
-  const revert = async (history: Revisions, id: string, member: Member, still?: { which: keyof UndoTargets, document?: string }) => {
-    const claimed = locks.claimAll((await history.filesOf(id)).map(path => documentDirOf(config, path) ?? ''), 'revision:revert')
-    if ('holder' in claimed) throw lockedError(claimed.document, claimed.holder)
-    try {
-      const before = listed()
-      const result = await history.revert(id, member, still)
-      if (result.ok) {
-        await options.documentsChanged(documentsDiff(before, listed()))
-        const undone = trailers(result.revision.message)[REVERT_TRAILER]?.[0] ?? id
-        void reviews?.reverted(undone, result.revision.id).catch(() => undefined)
-      }
-      return jsonResponse(result satisfies RevertResult, result.ok ? 200 : 409)
-    } finally {
-      claimed.release()
-    }
-  }
-  const undoRoute = (which: keyof UndoTargets): Route => ({
-    role: 'editor',
-    handle: (request, ctx) => catchRequestErrors(async () => {
-      if (request.method !== 'POST') return problemResponse(405, 'POST')
-      if (!revisions) return problemResponse(409, NO_GIT)
-      const body: unknown = await request.json().catch(() => ({}))
-      const expected = isRecord(body) ? body.expect : undefined
-      if (expected !== undefined && (typeof expected !== 'string' || !COMMIT.test(expected))) return problemResponse(400, '{ expect?: <commit> }')
-      const document = historyOf(request, ctx)
-      const id = await revisions.next(which, document)
-      if (!id) return problemResponse(409, `nothing to ${which}`)
-      if (expected !== undefined && !id.startsWith(expected.toLowerCase())) return problemResponse(409, `the next ${which} is ${id}, not ${expected}: read the history again`)
-      return await revert(revisions, id, ctx.member, { which, ...document ? { document } : {} })
-    }),
-  })
+  const ownedHistory = options.historyRoutes ? undefined : createDocumentHistory({ config, editor, locks, revisions, changed: (before, after) => options.documentsChanged(documentsDiff(before, after)), reverted: (target, revision) => reviews?.reverted(target, revision) })
   const ownedTranscriptions = options.transcriptions ? undefined : createDocumentTranscriptions({ root: config.root, editor, audio: options.audio, speech: options.speech })
   const transcriptions = options.transcriptions ?? ownedTranscriptions!
   const ownedAudio = options.audioAuthoringRoutes ? undefined : createDocumentAudioAuthoring({ root: config.root, editor, revisions, audio: options.audio, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
@@ -165,29 +135,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
         return jsonResponse(await operations.apply(operation, ctx.member))
       }),
     },
-    revisions: {
-      role: 'editor',
-      handle: (request, ctx) => catchRequestErrors(async () => {
-        if (request.method !== 'GET') return problemResponse(405, 'GET')
-        if (!revisions) return jsonResponse({ revisions: [] } satisfies RevisionsAnswer)
-        const params = new URL(request.url).searchParams
-        const limit = Number(params.get('limit'))
-        const document = historyOf(request, ctx)
-        return jsonResponse(await revisions.historyWithUndo({ ...document ? { document } : {}, ...params.get('task') ? { task: params.get('task')! } : {}, ...Number.isInteger(limit) && limit > 0 ? { limit } : {} }) satisfies RevisionsAnswer)
-      }),
-    },
-    'revisions/revert': {
-      role: 'editor',
-      handle: (request, ctx) => catchRequestErrors(async () => {
-        if (request.method !== 'POST') return problemResponse(405, 'POST')
-        if (!revisions) return problemResponse(409, NO_GIT)
-        const body: unknown = await request.json().catch(() => undefined)
-        if (!isRecord(body) || typeof body.id !== 'string' || !COMMIT.test(body.id)) return problemResponse(400, '{ id: <commit> }')
-        return await revert(revisions, body.id, ctx.member)
-      }),
-    },
-    'history/undo': undoRoute('undo'),
-    'history/redo': undoRoute('redo'),
+    ...(options.historyRoutes ?? ownedHistory!.routes),
     'files': {
       role: 'editor',
       handle: (request, ctx) => catchRequestErrors(async () => {
@@ -273,7 +221,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       })),
     },
   }
-  return { routes: authorizeWorkspaceRoutes(routes, options.launcherToken), close: async () => { await Promise.all([ownedTranscriptions?.close(), ownedAudio?.close()]) } }
+  return { routes: authorizeWorkspaceRoutes(routes, options.launcherToken), close: async () => { await Promise.all([ownedTranscriptions?.close(), ownedAudio?.close(), ownedHistory?.close()]) } }
 }
 
 function workbenchRoutes(workbench: WorkbenchApi): Record<string, Route> {

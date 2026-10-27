@@ -131,11 +131,19 @@ export interface HistoryRevision extends Revision {
   operation?: RevisionOperation
   reverts?: string
   redo?: true
+  /** Derived from the entire history, independent of the displayed page. */
+  undone?: boolean
+  revertible?: false
+  revertTarget?: string
 }
 
 /** @experimental The history of a document, newest first, and the revisions the next undo and redo take back. */
 export interface RevisionsAnswer {
   revisions: HistoryRevision[]
+  historyBinding?: import('./document-history.ts').DocumentHistoryBinding
+  nextOffset?: number
+  previousOffset?: number
+  loading?: boolean
   /** The revision `history/undo` reverts. */
   undo?: string
   /** The revision `history/redo` reverts: the latest undo. */
