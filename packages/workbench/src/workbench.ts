@@ -622,13 +622,14 @@ export class Workbench {
     return () => { if (this.#documentViewport === viewport) { this.#saveDocumentReturnPoint(); this.#stopDocumentReturnScroll?.(); this.#documentViewport = undefined }; viewport.stop() }
   }
 
-  async openDocument(dir: string, options: { focus?: 'body' } = {}): Promise<void> {
+  async openDocument(dir: string, options: { focus?: 'body', expectedIdentity?: string } = {}): Promise<void> {
     if (this.#state.document === dir) {
       if (options.focus) { this.#beginOpeningDocument(dir, options.focus); this.#finishOpeningDocument() }
       return
     }
     this.#saveDocumentReturnPoint()
     this.#documentScope++
+    const scope = this.#documentScope
     this.#stopSubscriptions()
     this.#history.subscribeReview(dir)
     this.#set({ ...DOCUMENT_RESET, document: dir, previewRenderer: 'web', webView: 'document' })
@@ -636,7 +637,8 @@ export class Workbench {
     this.#record('document.open')
     this.#diagnostics.subscribe(dir)
     // Authoring is ready from source JSON; compilation and preview are independent.
-    await Promise.all([this.#documentSession.open(dir), this.#readFocus(dir), this.#history.read(dir)])
+    const [opened] = await Promise.all([this.#documentSession.open(dir, options.expectedIdentity), this.#readFocus(dir), this.#history.read(dir)])
+    if (opened === 'identity-changed' && scope === this.#documentScope && this.#state.document === dir) { this.closeDocument(); return }
     this.#finishOpeningDocument()
   }
 

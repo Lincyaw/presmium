@@ -99,7 +99,7 @@ export class DocumentSession {
     this.#leaveTarget = target
   }
 
-  async open(directory: string): Promise<void> {
+  async open(directory: string, expectedIdentity?: string): Promise<'identity-changed' | void> {
     if (this.#active !== directory) this.interrupt()
     const opening = ++this.#opening
     this.#active = directory
@@ -110,6 +110,7 @@ export class DocumentSession {
     try {
       const [info, answer] = await Promise.all([this.#client.readWorkbenchInfo(), this.#client.readDocument(directory)])
       if (this.#active !== directory || opening !== this.#opening) return
+      if (expectedIdentity !== undefined && JSON.stringify([info.root, answer.content.id]) !== expectedIdentity) return 'identity-changed'
       let slot = this.#slots.get(directory)
       if (!slot) {
         const baseHash = await digest(answer.content)
