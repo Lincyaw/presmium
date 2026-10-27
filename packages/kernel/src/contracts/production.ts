@@ -55,7 +55,7 @@ export interface ProductionSegment extends ProductionRange {
   blockId?: string
   utteranceId?: string
   label: string
-  status?: 'cached' | 'silent' | 'missing' | 'blocked'
+  status?: 'cached' | 'recorded' | 'silent' | 'missing' | 'blocked'
   alignment?: 'words' | 'proportional' | 'none'
   audio?: ProductionAudio
   /** Imported media is distinct from a synthesized speech-cache entry. */

@@ -8,6 +8,7 @@ export interface DeckPlan {
   plan: LecturePlan
   voice?: LectureVoice
   silent: boolean
+  recorded: boolean
   lang: string
   lexicon?: Record<string, string>
   gap: number
@@ -29,5 +30,6 @@ export function deckPlan(doc: IRDocument): DeckPlan {
   const own = doc.config.presmium[LECTURE_ID]
   const voice = configuredLectureVoice(doc)
   const lexicon = lexiconOf(isRecord(own) ? own : undefined)
-  return { plan, silent, ...voice ? { voice } : {}, lang: doc.meta.lang ?? 'zh-CN', ...lexicon ? { lexicon } : {}, gap: lectureGap(config), findings }
+  const recorded = plan.sections.some(section => section.recordings?.length)
+  return { plan, silent, recorded, ...voice ? { voice } : {}, lang: doc.meta.lang ?? 'zh-CN', ...lexicon ? { lexicon } : {}, gap: lectureGap(config), findings }
 }

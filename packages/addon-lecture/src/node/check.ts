@@ -57,7 +57,7 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
   const view = lectureView(ctx.ir)
   const deck = deckPlan(view)
   const findings = [...deck.findings]
-  const prepared = view.production?.mediaClips.length ? await synthesizeLecture(view, ctx.deckDir, ctx.service?.(SPEECH), undefined, { cacheOnly: true }) : undefined
+  const prepared = view.production?.mediaClips.length || deck.recorded ? await synthesizeLecture(view, ctx.deckDir, ctx.service?.(SPEECH), undefined, { cacheOnly: true }) : undefined
   findings.push(...(prepared?.mediaDiagnostics ?? []).map(issue => ({ checkId: LECTURE_ID, severity: issue.severity, message: issue.message, source: { file: ctx.ir.meta.entry, line: 1 } })))
   if (!deck.voice) return findings
   const speech = ctx.service?.(SPEECH)
@@ -67,7 +67,7 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
     return findings
   }
   for (const u of plannedUtterances(deck.plan)) {
-    if (u.sourceKind === 'none') continue
+    if (u.sourceKind === 'none' || u.sourceKind === 'recording') continue
     try {
       if (u.voiceIssue) throw new Error(u.voiceIssue)
       if (prepared) { const failure = prepared.failures.find(failure => failure.id === u.id); if (failure) throw new Error(failure.reason) }

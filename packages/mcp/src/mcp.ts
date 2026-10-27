@@ -434,6 +434,7 @@ function hostSupports(host: McpHost, name: string): boolean {
     case 'quote_voice_preview':
     case 'preview_voice': return Boolean(host.voiceAuthoring)
     case 'get_voice_catalog': return Boolean(host.voiceAuthoring)
+    case 'adopt_recording':
     case 'inspect_document_audio':
     case 'inspect_workspace_audio':
     case 'read_production_plan':

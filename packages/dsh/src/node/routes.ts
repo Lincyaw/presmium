@@ -5,7 +5,7 @@ export const name = 'presmium-routes'
 export const inject = ['presmium', 'connection']
 
 export const ROUTES: Record<string, string> = Object.fromEntries([
-  ...['documents', 'document', 'document/asset', 'document/events', 'document/change', 'document/image', 'document/audio', 'document/media-clip', 'files', 'source', 'source/create', 'source/transaction', 'changes', 'changes/commit', 'changes/discard', 'revisions', 'revisions/revert', 'history/undo', 'history/redo',
+  ...['documents', 'document', 'document/asset', 'document/events', 'document/change', 'document/image', 'document/audio', 'document/recording/adopt', 'document/media-clip', 'files', 'source', 'source/create', 'source/transaction', 'changes', 'changes/commit', 'changes/discard', 'revisions', 'revisions/revert', 'history/undo', 'history/redo',
     'document/media-clip/validate', 'document/transcription/capabilities', 'document/transcription', 'document/transcription/result', 'document/transcription/cancel',
     'document/transcription/adoption/plan', 'document/transcription/adoption/apply',
     'ir', 'ir/events', 'preview', 'build', 'check', 'jobs', 'jobs/cancel', 'jobs/events', 'voice-catalog', 'voice-capabilities',

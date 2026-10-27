@@ -1,7 +1,7 @@
 export { copyPublished, productionAssetFile } from './assets.ts'
 export { DOCUMENT_CHANGE_JSON_SCHEMA, validateDocumentChange } from '../authoring.ts'
 export { validateDocumentTranscriptionRequest } from './transcription.ts'
-export { validateDocumentAudioInspect, validateDocumentWorkspaceAudioImport, validateDocumentWorkspaceAudioInspect, validateDocumentMediaClipValidation, validateDocumentMediaClipEdit, validateDocumentProductionPlanQuery } from './document-audio.ts'
+export { validateDocumentRecordingAdoption, validateDocumentAudioInspect, validateDocumentWorkspaceAudioImport, validateDocumentWorkspaceAudioInspect, validateDocumentMediaClipValidation, validateDocumentMediaClipEdit, validateDocumentProductionPlanQuery } from './document-audio.ts'
 export { validateDocumentVoiceCatalogQuery } from './document-voice.ts'
 export { createVoiceoverOwner, VoiceoverOperationError, validateVoiceoverStart, validateVoiceoverStatus, validateVoiceoverJobQuery, validateVoicePreviewCheck, validateVoicePreviewStart } from './voiceover.ts'
 export { createVoiceoverRoutes } from './voiceover-routes.ts'

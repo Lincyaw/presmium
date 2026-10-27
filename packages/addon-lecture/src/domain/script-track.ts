@@ -1,7 +1,7 @@
 import type { SourcePos, TrackEvent, WrittenWord } from '@lincyaw/kernel'
 import type { LecturePlan, PlannedCue } from './plan.ts'
 import { wordTime } from './timing.ts'
-import type { LectureTrack, TrackBlock, Utterance, Voice } from './track.ts'
+import type { LectureTrack, MediaSegment, TrackBlock, Utterance, Voice } from './track.ts'
 import { sortEvents, spokenDuration, TRACK_VERSION } from './track.ts'
 import { charOffset, trackWords, wordIndexAt } from './words.ts'
 
@@ -10,6 +10,14 @@ export interface Clip {
   duration: number
   words?: WrittenWord[]
   speech?: Voice
+}
+
+export interface RecordingClip {
+  assetId: string
+  clipId: string
+  src: string
+  sha256: string
+  durationMs: number
 }
 
 export interface ScriptHead {
@@ -43,10 +51,11 @@ function anchorAt(utterance: Utterance, words: readonly WrittenWord[] | undefine
  * The lecture of `plan` said with `clips`. `unsaid`: the sentences without a clip, by id, with the reason; each plays
  * silent for the time it would take to say, so that a preview keeps the lecture's timeline.
  */
-export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>, head: ScriptHead, blocks: (events: TrackEvent[]) => Record<string, TrackBlock>, unsaid: ReadonlyMap<string, string> = new Map(), silent: ReadonlySet<string> = new Set()): { track: LectureTrack, cuts: CutAnimation[] } {
+export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>, head: ScriptHead, blocks: (events: TrackEvent[]) => Record<string, TrackBlock>, unsaid: ReadonlyMap<string, string> = new Map(), silent: ReadonlySet<string> = new Set(), recordings: ReadonlyMap<string, RecordingClip> = new Map()): { track: LectureTrack, cuts: CutAnimation[] } {
   const cuts: CutAnimation[] = []
   const events: TrackEvent[] = []
   const utterances: Utterance[] = []
+  const audio: MediaSegment[] = []
   let t = 0
   let inked = false
   for (const section of plan.sections) {
@@ -71,7 +80,18 @@ export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>,
         since = t
       }
       const paragraphs = section.paragraphs.filter(p => p.step === step)
-      for (const paragraph of paragraphs) {
+      const recording = section.recordings?.find(recording => recording.step === step)
+      if (recording) {
+        const clip = recordings.get(recording.id)
+        if (clip && !recording.issue) {
+          if (recording.mode === 'after') hold()
+          audio.push({ section: section.id, role: 'recording', stepId: recording.stepId, narrationIds: recording.narrationIds, start: t / 1000, duration: clip.durationMs / 1000, src: clip.src, clipId: clip.clipId, assetId: clip.assetId, sha256: clip.sha256 })
+          if (recording.text) utterances.push({ id: recording.id, t, d: clip.durationMs, text: recording.text, section: section.id, step: section.webStep(step), narrationIds: recording.narrationIds, recording: true, voice: { kind: 'recorded' } })
+          for (const cue of recording.cues) { if (cue.name === 'ink') inked = true; events.push([t, cue.name, cue.data]) }
+          t += clip.durationMs
+        }
+        if (!section.trailingPauseMs && paragraphs.length) t += head.gap
+      } else for (const paragraph of paragraphs) {
         if (paragraph.mode === 'after') hold()
         for (const piece of paragraph.pieces) {
           const clip = piece.id ? clips.get(piece.id) : undefined
@@ -145,6 +165,7 @@ export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>,
     blocks: blocks(events),
     durationMs: t,
     utterances: combined,
+    ...audio.length ? { audio } : {},
     events: ordered,
   }
   return { track, cuts }

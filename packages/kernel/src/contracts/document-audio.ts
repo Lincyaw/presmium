@@ -16,7 +16,7 @@ export interface DocumentAudioCapabilities {
   reason?: 'audio-unavailable' | 'services-unavailable'
   verification: 'configuration-only'
   findings?: Finding[]
-  actions: { inspect: boolean, inspectWorkspace: boolean, importWorkspace: boolean, readProductionPlan: boolean, validateClipChange: boolean, changeClip: boolean }
+  actions: { inspect: boolean, inspectWorkspace: boolean, importWorkspace: boolean, readProductionPlan: boolean, validateClipChange: boolean, changeClip: boolean, adoptRecording: boolean }
   importUnavailableReason?: 'review-required' | 'operation-disabled'
   clipChangeUnavailableReason?: 'review-required' | 'operation-disabled'
   clips: { upsert: boolean, remove: true, upsertRequires: 'current-production-binding' }
@@ -26,6 +26,11 @@ export interface DocumentAudioCapabilities {
   review: 'required-unsupported' | 'locks-and-history' | 'locks-only'
 }
 export interface DocumentAudioInspect { source: CanonicalSource, assetId: string }
+/** Explicit whole-file narration adoption. Does not edit narration text, cues or media clips. */
+export interface DocumentRecordingAdoption { id: string, source: CanonicalSource, stepId: string, assetId: string, sha256: string }
+export interface VerifiedDocumentRecordingAdoption extends DocumentChangeAnswer {
+  verification: { saved: true, source: CanonicalSource, stepId: string, assetId: string, sha256: string, durationMs: number, compiled: 'not-requested', runtime: 'not-requested' }
+}
 /** Inspect an existing real snapshot; an expected revision is optional during discovery. */
 export type DocProductionPlanQuery = ProductionAudioPlanQuery
 export interface DocumentWorkspaceAudioInspect { source: CanonicalSource, path: string }
@@ -87,6 +92,7 @@ export interface DocumentAudioAuthoring {
   validateClipChange(document: string, request: DocumentMediaClipValidation, member: Member, signal?: AbortSignal): Promise<DocumentMediaClipValidationAnswer>
   /** Agent entry; the transaction rechecks source, real media and current production timing. */
   changeClip(document: string, request: DocumentMediaClipEdit, member: Member, signal?: AbortSignal): Promise<VerifiedDocumentMediaClipChange>
+  adoptRecording(document: string, request: DocumentRecordingAdoption, member: Member, signal?: AbortSignal): Promise<VerifiedDocumentRecordingAdoption>
 }
 
 const source = { type: 'object', additionalProperties: false, properties: { documentId: { type: 'string', minLength: 1, maxLength: 200 }, version: { type: 'string', pattern: '^[a-f\\d]{20}$' }, fingerprint: { type: 'string', pattern: '^[a-f\\d]{16}$' } }, required: ['documentId', 'version', 'fingerprint'] } as const
@@ -94,6 +100,11 @@ export const DOCUMENT_AUDIO_INSPECTION_SCHEMA = {
   type: 'object', additionalProperties: false,
   properties: { source, assetId: { type: 'string', minLength: 1, maxLength: 200 } },
   required: ['source', 'assetId'],
+} as const
+export const DOCUMENT_RECORDING_ADOPTION_SCHEMA = {
+  type: 'object', additionalProperties: false,
+  properties: { id: { type: 'string', minLength: 1, maxLength: 200 }, source, stepId: { type: 'string', minLength: 1, maxLength: 200 }, assetId: { type: 'string', minLength: 1, maxLength: 200 }, sha256: { type: 'string', pattern: '^[a-f\\d]{64}$' } },
+  required: ['id', 'source', 'stepId', 'assetId', 'sha256'],
 } as const
 export const DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA = {
   type: 'object', additionalProperties: false,

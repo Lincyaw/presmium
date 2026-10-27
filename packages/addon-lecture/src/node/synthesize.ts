@@ -2,7 +2,7 @@ import { basename, relative } from 'node:path'
 import { errorMessage, remapWords } from '@lincyaw/kernel'
 import type { IRDocument, ProductionDiagnostic, SpeechService, SynthesisRequest, WordSpan, WrittenWord } from '@lincyaw/kernel'
 import { irHash, plannedUtterances, referencedBlocks, SCRIPT_TRACK, scriptTrack, sectionHashes } from '../domain/index.ts'
-import type { Clip, CutAnimation, LecturePlan, LectureTrack, LectureVoice, Voice } from '../domain/index.ts'
+import type { Clip, CutAnimation, LecturePlan, LectureTrack, LectureVoice, RecordingClip, Voice } from '../domain/index.ts'
 import type { DeckPlan } from './plan.ts'
 import { deckPlan } from './plan.ts'
 import { projectProductionPlan } from '../domain/production.ts'
@@ -93,7 +93,7 @@ export async function synthesizePlan(speech: SpeechService, plan: LecturePlan, o
   const clips = new Map<string, SynthesizedClip>()
   const failures: SynthesisFailure[] = []
   await each(plannedUtterances(plan), async (u) => {
-    if (u.sourceKind === 'none') return
+    if (u.sourceKind === 'none' || u.sourceKind === 'recording') return
     await options.assertCurrent?.()
     if (options.assertCurrent) signal?.throwIfAborted()
     try {
@@ -134,24 +134,32 @@ export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech
   const clips = new Map<string, SynthesizedClip>()
   if (!options.cacheOnly && deck.findings.some(finding => finding.severity === 'error')) return { deck, clips, failures: [], cuts: [] }
   const units = plannedUtterances(deck.plan)
-  const synthesized = speech ? await synthesizePlan(speech, deck.plan, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, cacheOnly: options.cacheOnly, assertCurrent: options.assertCurrent }, signal) : { clips, failures: units.filter(unit => unit.sourceKind !== 'none').map(unit => ({ id: unit.id, section: unit.section, text: unit.text, reason: unit.voiceIssue ?? 'speech-unavailable' })) }
+  const synthesized = speech ? await synthesizePlan(speech, deck.plan, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, cacheOnly: options.cacheOnly, assertCurrent: options.assertCurrent }, signal) : { clips, failures: units.filter(unit => unit.sourceKind !== 'none' && unit.sourceKind !== 'recording').map(unit => ({ id: unit.id, section: unit.section, text: unit.text, reason: unit.voiceIssue ?? 'speech-unavailable' })) }
+  const assets = await inspectProductionAssets(doc, deckDir, signal)
+  const recordings = new Map<string, RecordingClip>(), recordingDiagnostics: ProductionDiagnostic[] = []
+  for (const section of deck.plan.sections) for (const recording of section.recordings ?? []) {
+    const file = assets.assets.get(recording.assetId)
+    if (!file) {
+      const code = assets.errors.get(recording.assetId) ?? 'production.asset-missing'
+      recordingDiagnostics.push({ code, severity: 'error', message: productionAudioMessage(doc, code), sectionId: section.id, stepId: recording.stepId, assetId: recording.assetId })
+    } else if (!recording.issue) recordings.set(recording.id, { assetId: recording.assetId, clipId: file.asset.mediaId, src: `audio/${file.asset.mediaId}.${file.extension}`, sha256: file.asset.sha256, durationMs: file.asset.durationMs })
+  }
   const unsaid = new Map(synthesized.failures.map(failure => [failure.id, failure.reason]))
   const { track, cuts } = scriptTrack(deck.plan, synthesized.clips, {
     id: SCRIPT_TRACK,
     doc: relative(deckDir, doc.meta.entry) || doc.meta.entry,
     lang: deck.lang,
     ir: { hash: irHash(doc), sections: sectionHashes(doc) },
-    voice: units.every(unit => unit.sourceKind === 'none') ? { kind: 'silent' } : clipVoice(units.flatMap(unit => synthesized.clips.get(unit.id) ?? []), deck.voice),
+    voice: recordings.size && !synthesized.clips.size ? { kind: 'recorded' } : units.every(unit => unit.sourceKind === 'none') ? { kind: 'silent' } : clipVoice(units.flatMap(unit => synthesized.clips.get(unit.id) ?? []), deck.voice),
     gap: deck.gap,
-  }, events => referencedBlocks(doc, events), unsaid, new Set(units.filter(unit => unit.sourceKind === 'none').map(unit => unit.id)))
-  const assets = await inspectProductionAssets(doc, deckDir, signal)
-  const base = projectProductionPlan(doc, deck.plan, track, new Map(), synthesized.failures)
+  }, events => referencedBlocks(doc, events), unsaid, new Set(units.filter(unit => unit.sourceKind === 'none').map(unit => unit.id)), recordings)
+  const base = projectProductionPlan(doc, deck.plan, track, new Map(), synthesized.failures, recordingDiagnostics)
   const media = placeProductionAudio(doc, base.pages, new Map([...assets.assets].map(([id, file]) => [id, file.asset])), assets.errors)
-  const mediaDiagnostics: ProductionDiagnostic[] = media.issues.map(issue => ({ ...issue, severity: 'error', message: productionAudioMessage(doc, issue.code) }))
-  if (media.clips.length) track.audio = media.clips.map(clip => {
+  const mediaDiagnostics: ProductionDiagnostic[] = [...recordingDiagnostics, ...media.issues.map(issue => ({ ...issue, severity: 'error' as const, message: productionAudioMessage(doc, issue.code) }))]
+  if (media.clips.length) track.audio = [...track.audio ?? [], ...media.clips.map(clip => {
     const file = assets.assets.get(clip.assetId)!
     return { section: clip.sectionId, start: clip.startMs / 1000, duration: (clip.endMs - clip.startMs) / 1000, src: `audio/${clip.mediaId}.${file.extension}`, clipId: clip.mediaId, assetId: clip.assetId, mediaClipId: clip.id, sourceStartMs: clip.sourceRange.startMs, volume: clip.volume, muted: clip.muted, sha256: file.asset.sha256 }
-  })
+  })]
   await options.assertCurrent?.()
   signal?.throwIfAborted()
   const common = { deck, preview: track, clips: synthesized.clips, failures: synthesized.failures, assets: assets.assets, mediaDiagnostics }

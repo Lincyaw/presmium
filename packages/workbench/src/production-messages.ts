@@ -31,6 +31,9 @@ const zh = {
   diagnosticFallback: '当前编排包含未支持或无效的绑定，请检查关联内容。',
   diagnostics: {
     'production.animation-duration-unknown': '动画未声明有效时长，暂不能按时间播放或导出。',
+    'production.recording-cue-unsupported': '原音频没有提示的确认时码，请移除跨步或内部暂停，并将提示放到本步起点。',
+    'production.recording-start-conflict': '同一步讲稿的播放起点不一致，请先统一后采用原音频。',
+    'production.recording-fingerprint-required': '请重新采用原音频以确认实际文件。',
     'production.recording-unsupported': '录音来源已保留，当前尚不能用于这份讲稿的播放计划。',
     'production.media-unsupported': '媒体片段已保留，当前尚不支持裁切和混音。',
     'production.silent-cue-unknown': '静音讲稿中的文字提示没有确认时码；请放到步骤起点或提供音频。',
@@ -41,7 +44,7 @@ const zh = {
   },
   timingDraft: '请先确认或修正尚未保存的播放时机。',
   tracks: { visual: '画面', voice: '配音', caption: '字幕' },
-  segmentStatus: { cached: '已有配音', silent: '静音', missing: '配音待生成', blocked: '暂不可用' },
+  segmentStatus: { recorded: '原音频', cached: '已有配音', silent: '静音', missing: '配音待生成', blocked: '暂不可用' },
   waveformLoading: '正在读取波形', waveformUnavailable: '波形不可用', stepNumber: (index: number) => `步骤 ${index + 1}`,
   timelineLabels: { position: '位置', seconds: '秒', seek: '播放头位置', zoomIn: '放大时间线', zoomOut: '缩小时间线', fit: '适配本页', estimated: '估计时长', unknown: '时长未知', loading: '正在读取时间线…', empty: '当前页暂无时间线片段', seekHint: '选择步骤，或用时间尺、方向键和精确时间定位；定位会先暂停播放。', invalidPosition: '请输入本页时长范围内的秒数。' },
   failures: {
@@ -89,6 +92,9 @@ export const PRODUCTION_MESSAGES: Record<Locale, typeof zh> = {
     issues: count => `Review ${count} production issues`, diagnosticFallback: 'The production contains an unsupported or invalid binding. Check the related content.',
     diagnostics: {
       'production.animation-duration-unknown': 'The animation has no valid declared duration. Timed playback and export are unavailable.',
+      'production.recording-cue-unsupported': 'The recording has no confirmed cue timing. Remove next-step cues and internal pauses, and place cues at the step start.',
+      'production.recording-start-conflict': 'Narrations in this step have different starts. Use one common start before adopting the recording.',
+      'production.recording-fingerprint-required': 'Adopt the recording again to confirm the actual file.',
       'production.recording-unsupported': 'The recording source is retained but is not supported by this script’s playback plan yet.',
       'production.media-unsupported': 'Media clips are retained. Trimming and mixing are unavailable yet.',
       'production.silent-cue-unknown': 'Text-anchored cues in silent scripts have no confirmed timing. Move them to the step start or provide audio.',
@@ -99,7 +105,7 @@ export const PRODUCTION_MESSAGES: Record<Locale, typeof zh> = {
     },
     timingDraft: 'Confirm or correct the unsaved playback timing first.',
     tracks: { visual: 'Visuals', voice: 'Voiceover', caption: 'Captions' },
-    segmentStatus: { cached: 'Voiceover cached', silent: 'Silent', missing: 'Voiceover needed', blocked: 'Unavailable' },
+    segmentStatus: { recorded: 'Original audio', cached: 'Voiceover cached', silent: 'Silent', missing: 'Voiceover needed', blocked: 'Unavailable' },
     waveformLoading: 'Reading waveform', waveformUnavailable: 'Waveform unavailable', stepNumber: index => `Step ${index + 1}`,
     timelineLabels: { position: 'Position', seconds: 'seconds', seek: 'Playhead position', zoomIn: 'Zoom in timeline', zoomOut: 'Zoom out timeline', fit: 'Fit page', estimated: 'Estimated duration', unknown: 'Unknown duration', loading: 'Reading the timeline…', empty: 'This page has no timeline segments', seekHint: 'Select a step, or use the ruler, arrow keys and exact position to seek. Seeking pauses playback first.', invalidPosition: 'Enter a time in seconds within this page’s duration.' },
     failures: {

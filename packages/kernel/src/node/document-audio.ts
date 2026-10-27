@@ -1,7 +1,7 @@
 import { Validator } from '@cfworker/json-schema'
 import type { Schema } from '@cfworker/json-schema'
-import { DOCUMENT_AUDIO_INSPECTION_SCHEMA, DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA, DOCUMENT_WORKSPACE_AUDIO_INSPECTION_SCHEMA, DOCUMENT_MEDIA_CLIP_VALIDATION_SCHEMA, DOCUMENT_MEDIA_CLIP_CHANGE_SCHEMA, DOCUMENT_PRODUCTION_PLAN_SCHEMA } from '../contracts/document-audio.ts'
-import type { DocumentAudioInspect, DocumentWorkspaceAudioImport, DocumentWorkspaceAudioInspect, DocumentMediaClipValidation, DocumentMediaClipEdit, DocProductionPlanQuery } from '../contracts/document-audio.ts'
+import { DOCUMENT_RECORDING_ADOPTION_SCHEMA, DOCUMENT_AUDIO_INSPECTION_SCHEMA, DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA, DOCUMENT_WORKSPACE_AUDIO_INSPECTION_SCHEMA, DOCUMENT_MEDIA_CLIP_VALIDATION_SCHEMA, DOCUMENT_MEDIA_CLIP_CHANGE_SCHEMA, DOCUMENT_PRODUCTION_PLAN_SCHEMA } from '../contracts/document-audio.ts'
+import type { DocumentRecordingAdoption, DocumentAudioInspect, DocumentWorkspaceAudioImport, DocumentWorkspaceAudioInspect, DocumentMediaClipValidation, DocumentMediaClipEdit, DocProductionPlanQuery } from '../contracts/document-audio.ts'
 
 const inspectValidator = new Validator(structuredClone(DOCUMENT_AUDIO_INSPECTION_SCHEMA) as unknown as Schema, '2020-12', false)
 const importValidator = new Validator(structuredClone(DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA) as unknown as Schema, '2020-12', false)
@@ -17,3 +17,6 @@ export const validateDocumentMediaClipValidation = (value: unknown): value is Do
 export const validateDocumentMediaClipEdit = (value: unknown): value is DocumentMediaClipEdit => clipChangeValidator.validate(value).valid
 const productionPlanValidator = new Validator(structuredClone(DOCUMENT_PRODUCTION_PLAN_SCHEMA) as unknown as Schema, '2020-12', false)
 export const validateDocumentProductionPlanQuery = (value: unknown): value is DocProductionPlanQuery => productionPlanValidator.validate(value).valid
+
+const recordingValidator = new Validator(structuredClone(DOCUMENT_RECORDING_ADOPTION_SCHEMA) as unknown as Schema, '2020-12', false)
+export const validateDocumentRecordingAdoption = (value: unknown): value is DocumentRecordingAdoption => recordingValidator.validate(value).valid

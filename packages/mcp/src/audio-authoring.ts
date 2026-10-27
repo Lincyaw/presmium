@@ -1,5 +1,5 @@
-import { DOCUMENT_AUDIO_INSPECTION_SCHEMA, DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA, DOCUMENT_WORKSPACE_AUDIO_INSPECTION_SCHEMA, DOCUMENT_MEDIA_CLIP_VALIDATION_SCHEMA, DOCUMENT_MEDIA_CLIP_CHANGE_SCHEMA, DOCUMENT_PRODUCTION_PLAN_SCHEMA } from '@lincyaw/kernel'
-import type { DocumentAudioAuthoring, DocumentAudioInspect, DocumentWorkspaceAudioImport, DocumentWorkspaceAudioInspect, DocumentMediaClipValidation, DocumentMediaClipEdit, DocProductionPlanQuery } from '@lincyaw/kernel'
+import { DOCUMENT_RECORDING_ADOPTION_SCHEMA, DOCUMENT_AUDIO_INSPECTION_SCHEMA, DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA, DOCUMENT_WORKSPACE_AUDIO_INSPECTION_SCHEMA, DOCUMENT_MEDIA_CLIP_VALIDATION_SCHEMA, DOCUMENT_MEDIA_CLIP_CHANGE_SCHEMA, DOCUMENT_PRODUCTION_PLAN_SCHEMA } from '@lincyaw/kernel'
+import type { DocumentRecordingAdoption, DocumentAudioAuthoring, DocumentAudioInspect, DocumentWorkspaceAudioImport, DocumentWorkspaceAudioInspect, DocumentMediaClipValidation, DocumentMediaClipEdit, DocProductionPlanQuery } from '@lincyaw/kernel'
 import type { Call, ToolSpec } from './mcp.ts'
 
 const document = { type: 'string', description: 'The served document directory; file paths remain workspace-relative within this selected document.' }
@@ -11,13 +11,26 @@ const service = (call: Call): DocumentAudioAuthoring => {
 
 export const AUDIO_AUTHORING_TOOLS: ToolSpec[] = [
   {
+    name: 'adopt_recording', kind: 'operate', structured: true,
+    description: 'Explicitly adopts one whole local audio asset as the narration source for one stable step. Requires exact saved source and original SHA-256; preserves all narration, pronunciation, cues and media clips. Uses the shared Web canonical CAS/history/receipt boundary and cannot bypass required review. Unsupported cue timing is refused; no compilation, recognition, synthesis or implicit playback occurs. Read the real production plan after explicitly preparing IR to verify playback.',
+    inputSchema: input({ request: structuredClone(DOCUMENT_RECORDING_ADOPTION_SCHEMA) }, ['request']),
+    run: async call => {
+      const selected = await call.document(), request = call.args.request as DocumentRecordingAdoption, authoring = call.host.authoring?.capabilities(selected, call.caller.member)
+      if (authoring && !authoring.actions.apply) throw Object.assign(new Error(authoring.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: authoring.applyUnavailableReason ? 409 : 403 })
+      const target = (await call.host.documents()).find(document => document.dir === selected)
+      await call.approve('operate', messages => messages.adoptRecording(request.stepId), { lang: target?.lang ?? '', detail: `${target?.title ?? selected}\n${request.stepId}\n${request.assetId}` })
+      call.signal.throwIfAborted()
+      return service(call).adoptRecording(selected, request, call.caller.member, call.signal)
+    },
+  },
+  {
     name: 'get_audio_authoring_capabilities', kind: 'read', structured: true,
     description: 'Reports real canonical audio authoring support, local file scope, size limits, review requirements and receipt lifetime. Does not compile scenes, read audio bytes or recognize speech. Compiler-only stdio reports this workspace service unavailable.',
     inputSchema: input({}, []),
     run: async call => {
-      if (!call.host.audioAuthoring) return { available: false, status: 'unavailable', reason: 'host-unavailable', actions: { inspect: false, inspectWorkspace: false, importWorkspace: false, readProductionPlan: false, validateClipChange: false, changeClip: false } }
+      if (!call.host.audioAuthoring) return { available: false, status: 'unavailable', reason: 'host-unavailable', actions: { inspect: false, inspectWorkspace: false, importWorkspace: false, readProductionPlan: false, validateClipChange: false, changeClip: false, adoptRecording: false } }
       const capability = await service(call).capabilities(await call.document(), call.caller.member)
-      return { ...capability, actions: { ...capability.actions, importWorkspace: capability.actions.importWorkspace && call.host.offers('operate'), changeClip: capability.actions.changeClip && call.host.offers('operate') },
+      return { ...capability, actions: { ...capability.actions, importWorkspace: capability.actions.importWorkspace && call.host.offers('operate'), changeClip: capability.actions.changeClip && call.host.offers('operate'), adoptRecording: capability.actions.adoptRecording && call.host.offers('operate') },
         ...capability.actions.importWorkspace && !call.host.offers('operate') ? { importUnavailableReason: 'operation-disabled' } : {},
         ...capability.actions.changeClip && !call.host.offers('operate') ? { clipChangeUnavailableReason: 'operation-disabled' } : {} }
     },

@@ -5,6 +5,7 @@ export interface McpMessages {
   run(section: string, block: string): string
   build(renderers: string): string
   cancelBuild(target: string): string
+  adoptRecording(step: string): string
   importAudio(file: string): string
   generateVoiceover(scope: string): string
   cancelVoiceover(target: string): string
@@ -23,6 +24,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     run: (section, block) => `运行「${section}」一节的 ${block}`,
     build: renderers => `构建文稿（${renderers}）`,
     cancelBuild: target => `取消构建（${target}）`,
+    adoptRecording: step => `采用录音为本步配音「${step}」`,
     importAudio: file => `导入音频「${file}」`,
     generateVoiceover: scope => `生成配音「${scope}」`,
     cancelVoiceover: target => `取消配音「${target}」`,
@@ -39,6 +41,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     run: (section, block) => `Run ${block} of "${section}"`,
     build: renderers => `Build the deck (${renderers})`,
     cancelBuild: target => `Cancel build (${target})`,
+    adoptRecording: step => `Use recording for step “${step}”`,
     importAudio: file => `Import audio “${file}”`,
     generateVoiceover: scope => `Generate voiceover “${scope}”`,
     cancelVoiceover: target => `Cancel voiceover “${target}”`,

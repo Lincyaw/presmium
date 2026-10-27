@@ -41,7 +41,7 @@ const zh = {
   generationScript: '本次范围的讲稿',
   generationBusy: '此文稿已有生成操作，请等待完成或取消后重试。', cacheReady: '配音已就绪。',
   unboundScript: '此页有关联到跨步骤提示的讲稿，请选择页面或文稿范围生成。',
-  recordingUnavailable: '录音来源已保留；当前生成链路尚不支持使用此录音。',
+  recordingUnavailable: '本步使用原音频，无需生成语音。',
   silentScope: (count: number) => `${count} 个步骤已明确设置为静音，设置保持不变。`,
   requestFailed: '操作未完成，设置和草稿已保留，请重试。', cancel: '取消', close: '关闭', cancelAndClose: '取消并关闭', retry: '重试',
 }
@@ -86,7 +86,7 @@ const en: VoiceMessages = {
   generationScript: 'Script in this scope',
   generationBusy: 'This document already has a generation operation. Wait or cancel it before retrying.', cacheReady: 'Voiceover is ready.',
   unboundScript: 'This page has script with cues across steps. Choose a page or document scope to generate it.',
-  recordingUnavailable: 'The recording source is kept. This generation path cannot use the recording yet.',
+  recordingUnavailable: 'This step uses original audio; speech generation is not applicable.',
   silentScope: count => `${count} steps are explicitly silent. Their settings are kept.`,
   requestFailed: 'The operation did not finish. Settings and drafts are kept; try again.', cancel: 'Cancel', close: 'Close', cancelAndClose: 'Cancel and close', retry: 'Retry',
 }

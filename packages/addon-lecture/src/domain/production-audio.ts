@@ -5,7 +5,7 @@ export interface ProductionAudioIssue { code: string, sectionId?: string, stepId
 
 const messages: Record<string, { 'zh-CN': string, en: string }> = {
   'production.asset-missing': { 'zh-CN': '找不到此音频资产声明。', en: 'This audio asset is not declared in the document.' },
-  'production.asset-kind': { 'zh-CN': '当前只支持本地音频；视频和录音采用尚未支持。', en: 'Only local audio is supported; video and recording adoption are unavailable.' },
+  'production.asset-kind': { 'zh-CN': '当前只支持本地音频；视频尚未支持。', en: 'Only local audio is supported; video is unavailable.' },
   'production.asset-path': { 'zh-CN': '音频须为同文稿的非隐藏本地文件；远程或跨文稿素材尚未支持。', en: 'Audio must be a non-hidden local file in this document; remote and shared assets are unsupported.' },
   'production.asset-file': { 'zh-CN': '音频文件不存在、不可读取或不是本地常规文件。', en: 'The audio is missing, unreadable or not a local regular file.' },
   'production.asset-size': { 'zh-CN': '音频文件须非空且不超过 16 MiB。', en: 'The audio file must be nonempty and at most 16 MiB.' },

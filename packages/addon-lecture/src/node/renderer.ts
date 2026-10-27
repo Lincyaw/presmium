@@ -80,7 +80,7 @@ async function publishTrack(track: LectureTrack, text: string, file: string, doc
 async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: unknown[], tracks: LectureTrack[]): Promise<boolean> {
   const source = { file: doc.meta.entry, line: 1 }, t = LECTURE_MESSAGES[deckLocale(doc.meta.lang)].production
   const speech = ctx.service?.(SPEECH)
-  if (!speech && plannedUtterances(deckPlan(doc).plan).some(unit => unit.sourceKind !== 'none')) {
+  if (!speech && plannedUtterances(deckPlan(doc).plan).some(unit => unit.sourceKind !== 'none' && unit.sourceKind !== 'recording')) {
     ctx.report({ checkId: LECTURE_ID, severity: 'error', message: t.missingSpeech, source })
     return false
   }
@@ -140,8 +140,8 @@ export const lectureRenderer: Renderer = {
     const plan = deckPlan(doc)
     plan.findings.forEach(ctx.report)
     if (plan.findings.some(finding => finding.severity === 'error')) throw new Error(plan.findings.find(finding => finding.severity === 'error')!.message)
-    if (!plan.voice && !plan.silent && plannedUtterances(plan.plan).length) throw new Error(productionMessages(doc).unset)
-    const synthesize = Boolean(plan.voice || plan.silent)
+    if (!plan.voice && !plan.silent && !plan.recorded && plannedUtterances(plan.plan).length) throw new Error(productionMessages(doc).unset)
+    const synthesize = Boolean(plan.voice || plan.silent || plan.recorded)
     const policy = mediaPolicy(workspaceSettings(ctx.workspaceRoot).settings[LECTURE_ID] ?? {})
     const published = publishedTrack(doc, ctx.deckDir)
     let complete = !synthesize || await publishSynthesized(doc, ctx, index, tracks)
