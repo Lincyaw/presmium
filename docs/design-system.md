@@ -222,6 +222,8 @@ Menu 打开后聚焦可用项，方向键、首尾导航、选择后关闭、外
 
 [第 03 页交互状态](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4645)将 12 组已确定规则落实为 30 个 UI 状态，分别展示保存、版本与冲突、页面及引用、步骤与时序、配音、字幕、agent 审阅、媒体、放映、导出、焦点和响应式。规则使用 I01–I12 稳定编号，与 [interactions.json](prototypes/workbench/interactions.json) 和 RFC 对齐；技术能力的实现门槛放在画板注释中，不伪装成已可用按钮。
 
+I01 的[正文与字幕草稿恢复组合](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=241-843)复用 `PmNotice`、`PmSelect` 和 `PmButton`，登记未选择、已选择与备份写入失败状态。候选不默认选中；恢复前保留当前输入并确认新副本已提交，丢弃只作用于所选快照。coarse 适配保留 compact 按钮字号并扩至 44 热区，输入使用 44/16；显式 Touch 变体不变。验证见[持久草稿记录](benchmarks/document-durable-drafts-2026-10-27.md)。
+
 | Figma 内容 | 对应代码 |
 |---|---|
 | 亮／暗变量、字体、间距、圆角、尺寸、动效 | `tokens.css` 与颜色 `tokens.ts`，使用同一语义名 |

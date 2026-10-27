@@ -1213,7 +1213,33 @@
             "41:222"
           ],
           "implementation": "packages/workbench/src/panels/SourceDocumentPanel.tsx",
-          "behavior": "Compact recovery, save and position notices remain reachable within the document viewport. Expandable diagnostics stay in the normal document flow. Ordinary reopening restores workspace/document-bound stable page and step IDs and the viewport; removed targets require explicit relocation. Retrying does not navigate to the beginning of the document."
+          "behavior": "Compact recovery, save and position notices remain reachable within the document viewport. Expandable diagnostics stay in the normal document flow. Ordinary reopening restores workspace/document-bound stable page and step IDs and the viewport; removed targets require explicit relocation. Retrying does not navigate to the beginning of the document.",
+          "durableDrafts": {
+            "nodeId": "241:843",
+            "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=241-843",
+            "states": {
+              "unselectedCompact": "241:847",
+              "unselectedCoarse": "241:873",
+              "selectedCompact": "241:897",
+              "selectedCoarse": "241:918",
+              "writeFailureCompact": "241:940",
+              "writeFailureCoarse": "241:961"
+            },
+            "implementation": [
+              "packages/workbench/src/document-draft-store.ts",
+              "packages/workbench/src/document-drafts.ts",
+              "packages/workbench/src/document-session.ts",
+              "packages/workbench/src/panels/SourceDocumentPanel.tsx"
+            ],
+            "publicControls": [
+              "PmNotice",
+              "PmSelect",
+              "PmButton"
+            ],
+            "behavior": "Strict IndexedDB backs up the canonical body and caption actor. Recovery requires an explicit snapshot selection and a committed new branch; it never writes the server automatically. Only the selected exact snapshot is discarded. Read failures and current backup write failures have separate short feedback. Legacy localStorage/sessionStorage copies are recovery material; sessionStorage is removed only after strict migration commits.",
+            "density": "Compact controls retain 30/13. On coarse pointers compact buttons retain 13px text with a 44px target; inputs use 44/16. Explicit Touch component masters remain 44/16.",
+            "verification": "docs/benchmarks/document-durable-drafts-2026-10-27.md"
+          }
         }
       },
       "I02": {

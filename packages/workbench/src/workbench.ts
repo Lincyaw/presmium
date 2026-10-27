@@ -6,6 +6,7 @@ import { disposeTranscriptionSessions } from './transcription-session.ts'
 import { documentRecordingActive, disposeDocumentRecordings } from './audio-recording.ts'
 import { DOCUMENT_AUDIO_MAX_BYTES } from '@lincyaw/kernel'
 import type { DocumentSessionState } from './document-session.ts'
+import type { DocumentDraftReference } from './document-drafts.ts'
 import { DocumentReturnPoints, documentReturnStep, documentViewportOffset, restoreDocumentViewport } from './document-return-point.ts'
 import type { DocumentReturnPoint } from './document-return-point.ts'
 import type { DocumentRecordingAdoption, VerifiedDocumentRecordingAdoption, DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentChangeAnswer, MediaClip, NarrationNode, TeachingDocument, DocumentTranscriptionRequest, TranscriptionTask, TranscriptionAdoptionDraft, TranscriptionAdoptionApply, TranscriptionAdoptionPlan, TranscriptionAdoptionAnswer } from '@lincyaw/kernel'
@@ -1253,6 +1254,12 @@ export class Workbench {
   documentComposition(composing: boolean, owner = 'body', identity?: string): void { this.#documentSession.composition(composing, owner, identity) }
   retryDocument(): Promise<void> { return this.#documentSession.retry() }
   discardDocument(): Promise<void> { return this.#documentSession.discard() }
+  recoverDocumentDraft(value: DocumentDraftReference, identity: string): Promise<void> {
+    return this.#state.authoring?.identity === identity && !isAgentChanging(this.#state) ? this.#documentSession.recoverDraft(value) : Promise.resolve()
+  }
+  forgetDocumentDraft(value: DocumentDraftReference, identity: string): void {
+    if (this.#state.authoring?.identity === identity && !isAgentChanging(this.#state)) void this.#documentSession.forgetDraft(value)
+  }
   documentError(error: Error): void { this.#set({ save: { kind: 'failed', message: error.message } }) }
   documentInteraction(): void {
     this.#documentSelectionGeneration++; this.#cancelOpeningDocument(); this.#stopDocumentReturnScroll?.()

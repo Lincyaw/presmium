@@ -108,6 +108,8 @@ their original target and version. Canonical Step IDs remain authoritative; runt
 trails and media maps are projections. Preserve stable IDs and validate the source/revision binding
 instead of treating array indexes as identity.
 
+Canonical body/caption backups use `DocumentDrafts` and strict IndexedDB transactions. An admitted snapshot is not yet durable: only the latest generation transaction completion may clear its pending/failure state. Check actual whole-browser termination, exact candidate tokens and put/clear ordering when changing this path; recovery must commit a new backup before replacing local input and must not automatically write the canonical source. See `docs/benchmarks/document-durable-drafts-2026-10-27.md`.
+
 Step-script drafts are keyed by document, section and step in `narration-drafts.ts`, with a workspace-scoped
 browser recovery record and a source baseline. Saving is serialized with body edits and confirms only its
 submitted source/edit version; preview compilation is separate. Follow RFC section 6 for debounce and composition

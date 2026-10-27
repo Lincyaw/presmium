@@ -282,6 +282,7 @@ function SaveStatus() {
   const t = useMessages()
   const save = useWorkbenchState(state => state.save)
   const dirty = useWorkbenchState(state => Boolean(state.authoring?.dirty))
+  const backupPending = useWorkbenchState(state => Boolean(state.authoring?.backupPending))
   const locale = useWorkbenchState(state => state.locale)
   const [, tick] = useState(0)
   useEffect(() => {
@@ -289,10 +290,10 @@ function SaveStatus() {
     const timer = setInterval(() => tick(n => n + 1), 30_000)
     return () => clearInterval(timer)
   }, [save, dirty])
-  const text = dirty ? t.unsaved : save.kind === 'saving'
+  const text = dirty ? backupPending ? t.documentDraftBackingUp : t.unsaved : save.kind === 'saving'
     ? t.saving
     : save.kind === 'saved' ? t.savedAt(timeAgo(save.at, locale)) : save.kind === 'idle' ? t.saved : ''
-  return <span className="pmw-toolbar__status" role="status" aria-live="polite" data-save={dirty ? 'dirty' : save.kind}>{text}</span>
+  return <span className="pmw-toolbar__status" role="status" aria-live="polite" data-save={dirty ? 'dirty' : save.kind} data-backup={dirty && backupPending ? 'pending' : undefined}>{text}</span>
 }
 
 /** What needs the author's attention: the AI's change, an edit to hand over, a failed save, content that did not display. */
