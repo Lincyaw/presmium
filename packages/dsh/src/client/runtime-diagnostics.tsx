@@ -2,7 +2,7 @@ import { Component, useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
 import { isObservedWorkspaceFailure, PmButton, PmNotice } from '@lincyaw/workbench'
 import type { Workbench, WorkspaceRequestEvent } from '@lincyaw/workbench'
-import type { Finding, PreviewDiagnostics } from '@lincyaw/kernel'
+import type { AuthoringDiagnostics, CanonicalSource } from '@lincyaw/kernel'
 import { createObservable } from './observable.ts'
 import { useClientMessages } from './messages.ts'
 
@@ -12,6 +12,7 @@ interface RuntimeIssue {
   checkId: string
   message: string
   feedbackOwner?: WorkspaceRequestEvent['feedbackOwner']
+  authoringSource?: CanonicalSource
 }
 interface RuntimeSnapshot { issues: readonly RuntimeIssue[], reportFailed: boolean }
 const instances = new WeakMap<Workbench, WorkbenchRuntimeDiagnostics>()
@@ -41,14 +42,13 @@ export class WorkbenchRuntimeDiagnostics {
   readonly #instance = `workbench:${globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`}`
   readonly #seen = new WeakSet<object>()
   readonly #attempted = new Map<string, string>()
-  readonly #requests = new Map<number, { document?: string, key: string, feedbackOwner?: WorkspaceRequestEvent['feedbackOwner'] }>()
+  readonly #requests = new Map<number, { document?: string, key: string, feedbackOwner?: WorkspaceRequestEvent['feedbackOwner'], authoringSource?: CanonicalSource }>()
   readonly #latestRequests = new Map<string, number>()
   #reports = Promise.resolve()
   #timer?: ReturnType<typeof setTimeout>
   #stop?: () => void
   #active = false
   #document?: string
-  #revision = ''
 
   constructor(workbench: Workbench) { this.#workbench = workbench }
 
@@ -78,7 +78,7 @@ export class WorkbenchRuntimeDiagnostics {
       unwatchWorkbench()
       this.#requests.clear()
       this.#latestRequests.clear()
-      if (this.#document !== undefined) this.#send(this.#document, this.#revision, [])
+      if (this.#document !== undefined) this.#send(this.#document, [])
       this.#stop = undefined
     }
     return this.#stop
@@ -92,14 +92,20 @@ export class WorkbenchRuntimeDiagnostics {
     }
     const document = this.#workbench.state.document
     const message = runtimeMessage(error)
-    this.#add({ key: JSON.stringify(['error', document, message]), document, checkId: 'presmium.workbench.error', message })
+    this.#add({ key: JSON.stringify(['error', document, message]), document, checkId: 'presmium.workbench.error', message, authoringSource: this.#source(document) })
+  }
+
+  #source(document: string | undefined): CanonicalSource | undefined {
+    const value = this.#workbench.state.authoring
+    if (document === undefined || value?.directory !== document || !value.content || !value.version || !value.fingerprint) return
+    return { documentId: value.content.id, version: value.version, fingerprint: value.fingerprint }
   }
 
   #request(event: WorkspaceRequestEvent): void {
     if (event.kind === 'start') {
       const document = event.document === '' ? this.#workbench.state.document : event.document
       const key = JSON.stringify(['request', document, event.method, event.path, event.feedbackOwner])
-      this.#requests.set(event.requestId, { document, key, feedbackOwner: event.feedbackOwner })
+      this.#requests.set(event.requestId, { document, key, feedbackOwner: event.feedbackOwner, authoringSource: this.#source(document) })
       this.#latestRequests.delete(key)
       this.#latestRequests.set(key, event.requestId)
       while (this.#requests.size > LIMIT * 8) this.#requests.delete(this.#requests.keys().next().value!)
@@ -109,21 +115,21 @@ export class WorkbenchRuntimeDiagnostics {
     const request = this.#requests.get(event.requestId)
     this.#requests.delete(event.requestId)
     if (!request || this.#latestRequests.get(request.key) !== event.requestId || event.kind === 'cancel') return
-    const { document, key, feedbackOwner } = request
+    const { document, key, feedbackOwner, authoringSource } = request
     if (event.kind === 'recovery') {
       const issues = this.state.getSnapshot().issues
       if (issues.some(issue => issue.key === key)) this.#replace(issues.filter(issue => issue.key !== key))
       return
     }
     const message = `${event.method} /api/presmium/${event.path}: ${event.status === undefined ? 'the workspace service could not be reached' : `HTTP ${event.status}`}`
-    this.#add({ key, document, checkId: 'presmium.workbench.request', message, ...event.status !== undefined && feedbackOwner ? { feedbackOwner } : {} })
+    this.#add({ key, document, checkId: 'presmium.workbench.request', message, authoringSource, ...event.status !== undefined && feedbackOwner ? { feedbackOwner } : {} })
   }
 
   #add(issue: RuntimeIssue): void {
     const issues = this.state.getSnapshot().issues
     const known = issues.find(known => known.key === issue.key)
     if (known) {
-      if (known.message !== issue.message || known.feedbackOwner !== issue.feedbackOwner) this.#replace(issues.map(value => value === known ? issue : value))
+      if (known.message !== issue.message || known.feedbackOwner !== issue.feedbackOwner || JSON.stringify(known.authoringSource) !== JSON.stringify(issue.authoringSource)) this.#replace(issues.map(value => value === known ? issue : value))
       return
     }
     this.#replace([...issues, issue].slice(-LIMIT))
@@ -152,24 +158,23 @@ export class WorkbenchRuntimeDiagnostics {
     if (!this.#active || this.#timer !== undefined) return
     this.#timer = setTimeout(() => {
       this.#timer = undefined
-      const { document, ir } = this.#workbench.state
-      if (this.#document !== undefined && this.#document !== document) this.#send(this.#document, this.#revision, [])
+      const { document } = this.#workbench.state
+      if (this.#document !== undefined && this.#document !== document) this.#send(this.#document, [])
       this.#document = document
-      this.#revision = ir?.revision ?? ''
-      if (document === undefined || !ir) return
-      const findings: Finding[] = this.state.getSnapshot().issues.filter(issue => issue.document === document).map(({ checkId, message }) => ({ checkId, message, severity: 'error' }))
-      this.#send(document, ir.revision, findings)
+      if (document === undefined) return
+      const findings: AuthoringDiagnostics['findings'] = this.state.getSnapshot().issues.filter(issue => issue.document === document).map(({ checkId, message, authoringSource }) => ({ checkId, message, severity: 'error', ...authoringSource ? { authoringSource } : {} }))
+      this.#send(document, findings)
     }, 100)
   }
 
-  #send(document: string, revision: string, findings: Finding[]): void {
-    const signature = JSON.stringify([revision, findings])
+  #send(document: string, findings: AuthoringDiagnostics['findings']): void {
+    const signature = JSON.stringify(findings)
     if (this.#attempted.get(document) === signature) return
     this.#attempted.delete(document)
     this.#attempted.set(document, signature)
     while (this.#attempted.size > LIMIT * 2) this.#attempted.delete(this.#attempted.keys().next().value!)
-    const report: PreviewDiagnostics = { document, revision, renderer: 'web', instance: this.#instance, findings }
-    const current = () => this.#active && this.#workbench.state.document === document && this.#workbench.state.ir?.revision === revision && this.#attempted.get(document) === signature
+    const report: AuthoringDiagnostics = { document, instance: this.#instance, findings }
+    const current = () => this.#active && this.#workbench.state.document === document && this.#attempted.get(document) === signature
     this.#reports = this.#reports.then(async () => {
       // A queued failure may belong to a document that was closed before delivery.
       // Empty reports still clear this instance's old contribution in queue order.
@@ -178,7 +183,7 @@ export class WorkbenchRuntimeDiagnostics {
         return
       }
       try {
-        const result = await this.#workbench.client.reportDiagnostics(report) as { accepted?: boolean }
+        const result = await this.#workbench.client.reportAuthoringDiagnostics(report) as { accepted?: boolean }
         const failed = result?.accepted !== true
         if (current()) this.state.set({ ...this.state.getSnapshot(), reportFailed: failed })
       } catch {
