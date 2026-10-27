@@ -23,6 +23,7 @@ export type PresentationAction = Extract<PreviewReport, { type: 'presentation-ac
 
 export interface PreviewFrameStatus {
   ready: boolean
+  canvasGate?: boolean
   mismatch?: boolean
   identityFailure?: boolean
   handshakeFailure?: boolean
@@ -49,8 +50,12 @@ interface Entry {
  * Keeps the iframes of the last previews (at most two) in `container`, shows the selected one and pauses the others
  * (or removes those that cannot pause). `switchDocument` opens another document when a preview navigates to it.
  */
-export function createPreviewPool(container: HTMLElement, workbench: Workbench, onStatus: (status: PreviewFrameStatus) => void, switchDocument: (document: string) => void, presentationAction?: (action: PresentationAction) => void) {
+export function createPreviewPool(container: HTMLElement, workbench: Workbench, onStatus: (status: PreviewFrameStatus) => void, switchDocument: (document: string) => void, presentationAction?: (action: PresentationAction) => void, options: { presentation?: boolean } = {}) {
   const entries = new Map<string, Entry>()
+  let confirmedRevision: string | undefined
+  const confirm = (entry: Entry) => {
+    if (options.presentation && selected(entry) && confirmedRevision && entry.irRevision === confirmedRevision && entry.connection.capabilities.includes('presentation-confirmed')) entry.connection.send({ type: 'presentation-confirmed', revision: confirmedRevision })
+  }
   let desired: PreviewTarget | undefined
   let signature = ''
   let generation = 0
@@ -105,7 +110,8 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     entry.frame.tabIndex = 0
     entry.detach ??= workbench.attachPreview(entry.connection)
     if (irRevision !== undefined) entry.irRevision = irRevision
-    onStatus({ ready: true })
+    confirm(entry)
+    onStatus({ ready: true, canvasGate: entry.connection.capabilities.includes('presentation-confirmed') })
     workbench.handlePreviewReport(entry.target.document, entry.target.renderer, { type: 'updated', revision: entry.irRevision }, entry.connection)
     publishRuntimeFindings(entry)
   }
@@ -209,7 +215,8 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     // A write posted just before deactivation still needs a request-scoped
     // answer; the workbench decides whether it may run or must be deferred.
     if (report.type === 'blocks-edited' || report.type === 'edited') return workbench.handlePreviewReport(entry.target.document, entry.target.renderer, report, entry.connection)
-    if (report.type === 'updated') entry.irRevision = report.revision
+    if (report.type === 'position' && options.presentation && entry.irRevision !== confirmedRevision) return
+    if (report.type === 'updated') { entry.irRevision = report.revision; confirm(entry) }
     if (report.type === 'report') {
       const key = JSON.stringify([report.level, report.plugin, report.message])
       if (report.resolved) entry.problems.delete(key)
@@ -234,7 +241,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
         if (selected(entry)) onStatus({ ready: false, mismatch: true })
         destroy(entry)
       },
-    }, { dark: workbench.state.isDark, subscribeEvents: workbench.client.subscribePreviewEvents })
+    }, { dark: workbench.state.isDark, presentation: options.presentation, subscribeEvents: workbench.client.subscribePreviewEvents })
     const entry: Entry = { key, target, frame, connection, ready: false, active: true, generation: 0, used: ++uses, problems: new Map() }
     entries.set(key, entry)
     hide(entry)
@@ -254,6 +261,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
   }
 
   return {
+    confirmPresentation(revision?: string) { confirmedRevision = revision; for (const entry of entries.values()) if (entry.active) confirm(entry) },
     select(target?: PreviewTarget) {
       if (disposed) return
       const key = target && keyOf(target)

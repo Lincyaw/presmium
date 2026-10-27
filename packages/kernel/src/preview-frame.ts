@@ -22,6 +22,7 @@ export interface PreviewTextHandle {
 export interface PreviewPage {
   renderer: 'web' | 'slides'
   events?: PreviewEvents
+  confirmPresentation?(revision: string): void
   document: string
   origins: readonly string[]
   revision(): string | undefined
@@ -825,8 +826,6 @@ function createPositionReport(page: PreviewPage, state: FrameState, post: (messa
   const send = () => {
     timer = undefined
     if (state.stopped) return
-    const position = page.position()
-    if (!position) return
     if (!ready) {
       ready = true
       revision = page.revision()
@@ -835,6 +834,8 @@ function createPositionReport(page: PreviewPage, state: FrameState, post: (messa
     }
     if (!state.active) return
     for (const problem of waiting.splice(0)) post(problem)
+    const position = page.position()
+    if (!position) return
     const key = JSON.stringify(position)
     if (key === sent) return
     sent = key
@@ -886,7 +887,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
   if (!nonce) return undefined
   const state: FrameState = { active: isPreviewActive(), stopped: false }
   const playbackSupported = Boolean(page.pausePlayback && page.setPlaybackGate)
-  const capabilities: PreviewCommandType[] = [...COMMANDS, ...page.nativeText ? ['edit-result' as const] : [], ...page.setActive ? ['activity' as const] : [], ...page.flush ? ['flush' as const] : [], ...page.documentHistory ? ['document-history' as const] : [], ...playbackSupported ? ['pause-playback' as const, 'playback-granted' as const] : [], ...page.productionPlayback && page.subscribeProductionPlayback ? ['production-playback' as const] : []]
+  const capabilities: PreviewCommandType[] = [...COMMANDS, ...page.confirmPresentation ? ['presentation-confirmed' as const] : [], ...page.nativeText ? ['edit-result' as const] : [], ...page.setActive ? ['activity' as const] : [], ...page.flush ? ['flush' as const] : [], ...page.documentHistory ? ['document-history' as const] : [], ...playbackSupported ? ['pause-playback' as const, 'playback-granted' as const] : [], ...page.productionPlayback && page.subscribeProductionPlayback ? ['production-playback' as const] : []]
   const nameWindow = (active: boolean) => {
     window.name = `${framePrefix()}${nonce}${active ? '' : PAUSED}`
   }
@@ -1089,6 +1090,9 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
     if (!command) return
     try {
       switch (command.type) {
+        case 'presentation-confirmed':
+          if (isLive(state) && command.revision === page.revision()) page.confirmPresentation?.(command.revision)
+          return
         case 'events-ready': case 'events-message': return page.events?.receive(command)
         case 'production-playback': return productionControl(command)
         case 'blocks-result': return void window.dispatchEvent(new CustomEvent('presmium:blocks-result', { detail: command }))
