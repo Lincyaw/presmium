@@ -1,7 +1,7 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, rmdirSync } from 'node:fs'
+import { existsSync, mkdirSync, renameSync, rmdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { ProjectOperation, DocumentFileChange, Member, OperationAnswer, RevisionOperation } from '@lincyaw/kernel'
-import { hasRole, validateDocument } from '@lincyaw/kernel'
+import type { DocumentOperation, DocumentFileChange, Member, OperationAnswer, RevisionOperation } from '@lincyaw/kernel'
+import { hasRole } from '@lincyaw/kernel'
 import type { CommitOrigin } from '../domain/commit-message.ts'
 import { invalidDocumentDir, isWithin } from '../domain/paths.ts'
 import { isDocumentDir, listDocuments } from './config.ts'
@@ -33,8 +33,8 @@ export interface DocumentOperationsOptions {
   locks?: DocumentLocks
 }
 
-function touched(operation: ProjectOperation): string[] {
-  return operation.op === 'create' || operation.op === 'delete' || operation.op === 'retitle' ? [operation.dir] : [operation.dir, operation.to]
+function touched(operation: DocumentOperation): string[] {
+  return operation.op === 'create' || operation.op === 'delete' ? [operation.dir] : [operation.dir, operation.to]
 }
 
 /** Creating, renaming, copying and deleting a document, each under the document locks and as one commit. */
@@ -53,10 +53,10 @@ export class DocumentOperations {
     this.#locks = options.locks
   }
 
-  async apply(operation: ProjectOperation, member: Member, prepared?: { documentId?: string, origin: 'editor' | 'agent', changes?: DocumentFileChange[], verify(): Promise<void> }): Promise<OperationAnswer> {
+  async apply(operation: DocumentOperation, member: Member, prepared?: { documentId?: string, origin: 'editor' | 'agent', changes?: DocumentFileChange[], verify(): Promise<void> }): Promise<OperationAnswer> {
     if (!hasRole(member, 'editor')) throw new RequestError(403, 'document operations need the role editor')
     if (this.#config.singleDeck) throw new RequestError(409, 'this workspace is a single deck: it has no document operations')
-    if (operation.op !== 'create' && operation.op !== 'retitle' && operation.dir === '') throw new RequestError(409, 'project-root-operation-unavailable')
+    if (operation.op !== 'create' && operation.dir === '') throw new RequestError(409, 'project-root-operation-unavailable')
     let release: (() => void) | undefined, committedError: RequestError | undefined, cleanupError: unknown
     try {
       const answer = await this.#revisions.transaction(async () => {
@@ -67,7 +67,7 @@ export class DocumentOperations {
         }
         await prepared?.verify()
         const head = await this.#revisions.head()
-        const before = await this.#writer.checkpoint(operation.op === 'retitle' ? [] : touched(operation), operation.op === 'rename' ? { from: operation.dir, to: operation.to } : undefined, operation.op === 'retitle' ? [operation.dir ? `${operation.dir}/lecture.json` : 'lecture.json'] : prepared?.changes?.map(change => change.path)).catch(error => {
+        const before = await this.#writer.checkpoint(touched(operation), operation.op === 'rename' ? { from: operation.dir, to: operation.to } : undefined, prepared?.changes?.map(change => change.path)).catch(error => {
           if (error instanceof DocumentCheckpointRefusal) throw new RequestError(error.status, error.message, error.detail)
           throw error
         })
@@ -130,7 +130,7 @@ export class DocumentOperations {
     }
   }
 
-  async #apply(operation: ProjectOperation, member: Member, beforeWrite: () => void, prepared?: { documentId?: string, origin: 'editor' | 'agent', changes?: DocumentFileChange[] }): Promise<OperationAnswer> {
+  async #apply(operation: DocumentOperation, member: Member, beforeWrite: () => void, prepared?: { documentId?: string, origin: 'editor' | 'agent', changes?: DocumentFileChange[] }): Promise<OperationAnswer> {
     const config = this.#config
     const origin = (done: RevisionOperation): CommitOrigin => ({ kind: prepared?.origin === 'agent' ? 'agent' : 'document', member, operation: done })
     const commit = (paths: string[], summary: string, body: string, done: RevisionOperation) => this.#revisions.commitWhileLocked({ paths, summary, body, origin: origin(done) })
@@ -149,16 +149,6 @@ export class DocumentOperations {
       return dir
     }
     switch (operation.op) {
-      case 'retitle': {
-        const dir = existing(operation.dir), path = dir ? `${dir}/lecture.json` : 'lecture.json'
-        const checked = validateDocument(JSON.parse(readFileSync(join(config.root, path), 'utf8')))
-        if (!checked.document) throw new RequestError(422, 'project-document-invalid')
-        checked.document.metadata.title = operation.title
-        beforeWrite()
-        await this.#writer.write([{ path, content: Buffer.from(JSON.stringify(checked.document, null, 2) + '\n') }])
-        const revision = await this.#revisions.commitWhileLocked({ paths: [path], summary: `Rename document ${dir || '.'}`, body: '', origin: { kind: prepared?.origin === 'agent' ? 'agent' : 'editor', member } })
-        return { revision, dir }
-      }
       case 'create': {
         const dir = fresh(operation.dir)
         const templates = listTemplates(config)
