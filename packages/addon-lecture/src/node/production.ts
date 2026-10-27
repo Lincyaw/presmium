@@ -42,7 +42,14 @@ export async function productionSnapshot(served: ServedDeck, query?: ProductionP
   const now = await current(served, query)
   if (query?.planId) {
     const found = recent.get(served)?.get(query.planId)
-    if (!found || found.plan.binding.irRevision !== now.revision) throw new RouteRefusal(409, 'production-plan-changed')
+    // A source-bound Node service and a route can borrow different ServedDecks.
+    // Re-derive only the current cache-only snapshot; never invent a past plan.
+    if (!found) {
+      const fresh = await productionSnapshot(served, { source: now.source, irRevision: now.revision }, signal)
+      if (fresh.plan.binding.planId !== query.planId) throw new RouteRefusal(409, 'production-plan-changed')
+      return fresh
+    }
+    if (found.plan.binding.irRevision !== now.revision) throw new RouteRefusal(409, 'production-plan-changed')
     await Promise.all([...found.clips.values()].map(async file => { if (file.asset) assertProductionAssetFile(file.asset, served.deckDir); else if (await fileStamp(file.path) !== file.stamp) throw new RouteRefusal(409, 'production-media-changed') }))
     await current(served, found.plan.binding)
     signal?.throwIfAborted()

@@ -33,12 +33,25 @@ export interface PlannedParagraph {
   voiceTarget?: VoiceTarget
 }
 
+export interface PlannedRecording {
+  id: string
+  step: number
+  stepId: string
+  assetId: string
+  mode: 'during' | 'after'
+  text: string
+  narrationIds: string[]
+  cues: PlannedCue[]
+  issue?: 'recording-cue-unsupported' | 'recording-start-conflict'
+}
+
 export interface PlannedSection {
   id: string
   title: string
   steps: number
   from: 'narration'
   paragraphs: PlannedParagraph[]
+  recordings?: PlannedRecording[]
   holds: number[]
   trailingPauseMs?: number[]
   webStep(step: number): number
@@ -259,7 +272,23 @@ export function lecturePlan(doc: IRDocument): LecturePlan {
     paragraphs.sort((a, b) => a.step - b.step)
     const settings = (section.stepIds ?? []).map(id => ({ ...doc.production?.defaults, ...doc.production?.sectionOverrides?.[section.id], ...doc.production?.stepOverrides[id] }))
     const trailingPauseMs = settings.some(value => value.trailingPauseMs !== undefined) ? settings.map(value => value.trailingPauseMs ?? 500) : undefined
-    return { id: section.id, title: section.title, steps: section.steps, from: 'narration', paragraphs, holds: stepHolds(section, doc), ...trailingPauseMs ? { trailingPauseMs } : {}, webStep: webSteps(section) }
+    const recordings: PlannedRecording[] = settings.flatMap((setting, step) => {
+      if (setting.voiceSource?.type !== 'recording') return []
+      const own = paragraphs.filter(paragraph => paragraph.step === step), cues: PlannedCue[] = []
+      let text = false, issue: PlannedRecording['issue']
+      const mode = own[0]?.mode ?? (setting.narrationStart === 'after-animation' ? 'after' : 'during')
+      for (const paragraph of own) {
+        if ((paragraph.mode ?? 'during') !== mode) issue = 'recording-start-conflict'
+        for (const piece of paragraph.pieces) {
+          if (piece.pause || piece.cues.some(cue => cue.name === 'next' || cue.name === 'pause' || cue.offset > 0 || text)) issue = 'recording-cue-unsupported'
+          cues.push(...piece.cues)
+          if (piece.text.trim()) text = true
+        }
+      }
+      const stepId = section.stepIds![step]!
+      return [{ id: `recording:${stepId}`, step, stepId, assetId: setting.voiceSource.assetId, mode, text: own.flatMap(paragraph => paragraph.pieces.map(piece => piece.text)).filter(Boolean).join('\n\n'), narrationIds: [...new Set(own.flatMap(paragraph => paragraph.narrationId ?? []))], cues, ...issue ? { issue } : {} }]
+    })
+    return { id: section.id, title: section.title, steps: section.steps, from: 'narration', paragraphs, recordings, holds: stepHolds(section, doc), ...trailingPauseMs ? { trailingPauseMs } : {}, webStep: webSteps(section) }
   })
   let n = 0
   for (const section of sections) {

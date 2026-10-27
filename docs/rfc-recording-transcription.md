@@ -22,7 +22,7 @@ Video 现已接入原生麦克风候选、明确保存、转写任务恢复与�
 | ASR | `SpeechService.transcribe` 支持取消；OpenAI 接口形态及火山引擎适配器已有实现 | 音频资产的来源校验、版本化候选、异步任务与重新尝试；真实结果须记录使用的引擎与模型信息 |
 | 旧轨转写 | `track_transcribe` 写讲授轨的 `utterances`；`track_narration` 只返回带 role 文本的草案与来源行 | 不能作为规范 `NarrationNode[]` 的原子采用接口 |
 | 讲稿与配音 | typed Narration 已有 text／pronunciation／cue；`VoiceoverRequest` 已有 source、revision、scope、intent、确认与取消链 | 采用转写后重新检查真实音色能力，明确生成缺失的精确请求缓存 |
-| 原录音跟稿播放 | `VoiceSource.recording` 有 schema，但当前 ProductionPlan 明确报告 `production.recording-unsupported` | 不伪称已支持。录制／导入→ASR→采用→TTS 的完整需求不以原录音同步播放为前置条件 |
+| 原录音跟稿播放 | 共享 HTTP／MCP 可显式采用原音为当前稳定步骤配音；实际全文件时长进入计划与单时钟播放，多讲稿只用一次原音、空讲稿不造字幕 | 本片未加 Studio 采用按钮，不支持裁切、跨步连续分配或无真实对齐的内部提示；见[零模型记录](benchmarks/recording-step-adoption-2026-10-27.md)。既有人声→ASR→讲稿→TTS 闭环不变 |
 | 字词对齐 | TTS 可携带真实 words；`alignWords` 能读取已有对齐，明确允许时也可能再次转写 | 录音转写时码不能移作新 TTS 时码；没有真实词时码时不得显示精确逐字对齐 |
 
 审计入口：

@@ -8,8 +8,9 @@ import type { LectureTrack } from './track.ts'
 const messages = {
   'zh-CN': {
     animation: '动画未声明有效时长，不能用于按时播放或导出。',
-    recording: '录音来源已保留，但尚未接入当前讲稿播放计划。',
-    media: '当前只支持同文稿本地音频；视频和录音采用尚未支持。',
+    recording: '录音内的提示位置或讲稿起点尚无确认时码；请采用无跨步、无内部暂停且起点一致的讲稿。',
+    fingerprint: '采用此原音前须确认实际 SHA-256。',
+    media: '当前只支持同文稿本地音频；视频尚未支持。',
     cue: '无配音讲稿中的文字位置提示没有确认时码；请移到步骤起点或提供音频。',
     next: '含跨步提示的同一段配音尚不能插入步骤结束停顿；请先拆为步骤绑定的讲稿。',
     cache: '当前讲稿与音色缺少精确配音缓存；显示的时长为估算，不能用于确认播放或导出。',
@@ -17,8 +18,9 @@ const messages = {
   },
   en: {
     animation: 'The animation has no valid declared duration; timed playback and export are unavailable.',
-    recording: 'The recording source is retained but is not supported by the current narration player.',
-    media: 'Only local audio from this document is supported; video and recording adoption are unavailable.',
+    recording: 'Recording cues or narration starts have no confirmed timing; use step-bound narration without internal pauses and with one common start.',
+    fingerprint: 'Confirm the actual SHA-256 before adopting this recording.',
+    media: 'Only local audio from this document is supported; video is unavailable.',
     cue: 'Text-anchored cues without audio have no confirmed timing; move them to the step start or provide audio.',
     next: 'A narration clip with a next-step cue cannot yet insert trailing step pauses; split it into step-bound narrations.',
     cache: 'Exact voiceover cache is missing for the current script and voice; displayed duration is estimated and cannot confirm playback or export.',
@@ -41,7 +43,11 @@ export function productionDiagnostics(doc: IRDocument, plan: LecturePlan): Produ
     if (own.trailingPauseMs && own.paragraphs.some(paragraph => paragraph.pieces.some(piece => piece.cues.some(cue => cue.name === 'next')))) result.push({ code: 'production.next-pause-unsupported', severity: 'error', message: text.next, sectionId: section.id })
     for (const [index, stepId] of (section.stepIds ?? []).entries()) {
       const source = doc.production?.stepOverrides[stepId]?.voiceSource ?? doc.production?.sectionOverrides?.[section.id]?.voiceSource ?? doc.production?.defaults.voiceSource
-      if (source?.type === 'recording') result.push({ code: 'production.recording-unsupported', severity: 'error', message: text.recording, sectionId: section.id, stepId })
+      if (source?.type === 'recording') {
+        const recording = own.recordings?.find(recording => recording.stepId === stepId), asset = doc.productionAssets?.[source.assetId]
+        if (recording?.issue) result.push({ code: `production.${recording.issue}`, severity: 'error', message: text.recording, sectionId: section.id, stepId, assetId: source.assetId })
+        if (!asset?.fingerprint || !/^(?:sha256:)?[a-f\d]{64}$/i.test(asset.fingerprint)) result.push({ code: 'production.recording-fingerprint-required', severity: 'error', message: text.fingerprint, sectionId: section.id, stepId, assetId: source.assetId })
+      }
       for (const paragraph of own.paragraphs.filter(paragraph => paragraph.step === index)) if (source?.type === 'none' && paragraph.pieces.some(piece => piece.cues.some(cue => cue.name !== 'pause' && cue.offset > 0))) result.push({ code: 'production.silent-cue-unknown', severity: 'error', message: text.cue, sectionId: section.id, stepId, narrationId: paragraph.narrationId })
     }
   }
@@ -90,13 +96,18 @@ export function projectProductionPlan(doc: IRDocument, plan: LecturePlan, track:
     const segment: ProductionSegment = {
       id: utterance.id, sectionId: section.id, stepId, stepIds: [...new Set([stepId, ...covered])], ...unit ? { sourceStepId: section.stepIds?.[unit.step] } : {},
       ...utterance.narrationIds ? { narrationIds: [...utterance.narrationIds] } : {}, utteranceId: utterance.id, label: utterance.text,
-      ...range(utterance.t, utterance.t + utterance.d), status: file ? 'cached' : utterance.silent ? 'silent' : unit?.sourceKind === 'recording' || unit?.sourceKind === 'unset' ? 'blocked' : 'missing',
-      alignment: utterance.silent ? 'none' : utterance.words?.length ? 'words' : 'proportional',
+      ...range(utterance.t, utterance.t + utterance.d), status: utterance.recording ? 'recorded' : file ? 'cached' : utterance.silent ? 'silent' : unit?.sourceKind === 'recording' || unit?.sourceKind === 'unset' ? 'blocked' : 'missing',
+      alignment: utterance.silent || utterance.recording ? 'none' : utterance.words?.length ? 'words' : 'proportional',
     }
-    voice.push({ ...segment, id: `voice:${utterance.id}`, ...file ? { audio: file } : {} })
+    if (!utterance.recording) voice.push({ ...segment, id: `voice:${utterance.id}`, ...file ? { audio: file } : {} })
     caption.push({ ...segment, id: `caption:${utterance.id}` })
   }
   for (const segment of track.audio ?? []) {
+    if (segment.role === 'recording' && segment.assetId && segment.stepId) {
+      const media = assets.get(segment.assetId)
+      if (media) voice.push({ id: `voice:recording:${segment.stepId}`, sectionId: segment.section, stepId: segment.stepId, stepIds: [segment.stepId], narrationIds: segment.narrationIds ?? [], sourceStepId: segment.stepId, assetId: segment.assetId, media, label: doc.productionAssets?.[segment.assetId]?.title || segment.assetId, status: 'recorded', alignment: 'none', sourceRange: { startMs: 0, endMs: media.durationMs }, ...range(segment.start * 1000, (segment.start + segment.duration) * 1000) })
+      continue
+    }
     if (!segment.assetId || !segment.mediaClipId) continue
     const clip = doc.production?.mediaClips.find(clip => clip.id === segment.mediaClipId), media = assets.get(segment.assetId)
     if (!clip || !media) continue

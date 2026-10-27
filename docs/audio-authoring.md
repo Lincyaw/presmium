@@ -31,7 +31,7 @@ Studio 的视频制作中使用“音频片段”：导入后选择素材，编�
 
 `GET document/audio?assetId=…&baseDocumentVersion=…` 返回 `DocumentAudioInspectionAnswer { document, version, fingerprint, inspection }`。路由直接读取当前权威资产声明，按工作区权限和同文稿常规文件规则探测，并在返回前再次核对源版本；不请求编译。
 
-这与运行端 `production-asset` 不同：编译器只将被 clip 引用的资产投影为 `productionAssets`。尚未引用的素材应使用此作者接口，不能根据运行快照中没有声明推断素材不存在。只读检查不接受任意文件路径，拒绝远程、跨文稿、隐藏路径、符号链接与路径穿越。
+这与运行端 `production-asset` 不同：编译器将被 clip 或可见步骤有效录音来源引用的资产投影为 `productionAssets`。尚未引用的素材应使用此作者接口，不能根据运行快照中没有声明推断素材不存在。只读检查不接受任意文件路径，拒绝远程、跨文稿、隐藏路径、符号链接与路径穿越。
 
 ## MCP 检查与导入工作区音频
 
@@ -77,3 +77,13 @@ Web 和 MCP 的片段操作由 `DocumentAudioAuthoring` 的同一实例执行。
 `read_production_plan` 只读实际已有快照；没有快照时返回 `production-document-unavailable`，不会为了取得 binding 自动编译。需要准备或刷新时，先显式读取 `presmium://ir?document=…`，再使用当前 source 读取计划；返回的 binding 才可用于片段提交。可选的 expected `irRevision` 不匹配时返回冲突。能力中的 upsert 支持和 configuration-only 不表示当前步骤已确认或计划可播放；删除仍可在无引擎、坏计划时清理引用。
 
 保存回执增加 `verification:{saved,source,production,binding?,compiled,runtime}`。`production` 是 `validated-before-save` 或删除的 `not-required`；compiled／runtime 均为 `not-requested`。事务已提交后若权威读回发生变化，返回 `media-clip-readback-changed` 和 `committed:true`；不能把它当作未提交重发。事务开始后的取消保留真实提交／回滚结果，不创建虚构的取消任务。MCP 对 503 使用共用 `tool-failed` 包装并保留实际领域 message；SDK 的输入 Schema 拒绝是 `isError` 文本，不伪造为 HTTP 400。
+
+## 采用原音为本步配音
+
+`DocumentAudioAuthoring.adoptRecording`、`POST document/recording/adopt` 与 MCP `adopt_recording` 使用同一个作者服务。输入 `DocumentRecordingAdoption` 固定意图 ID、完整 canonical source、稳定 Step ID、Asset ID 和原音 SHA-256。只读检查使用既有 `inspect_document_audio`；采用时重新检查同文稿真实音频，经过原文稿锁、CAS、审阅与历史事务，并再次读回。缺少 fingerprint 的旧素材在同一次事务中写入真实 SHA。原始音频、Narration、发音、cue 和媒体片段保持原内容，只有目标步骤的 `voiceSource` 明确改为 recording。Studio 录音卡当前仍只保存资产；本片没有新增采用按钮。
+
+一个步骤使用整个音频文件一次。多个 Narration 合成一段派生字幕，保留全部 Narration ID；没有 Narration 时仍播放音频且没有字幕。字幕来自当前规范讲稿的显示文字，不从音频猜测，`alignment=none`，不声称文字与声音内容已经核对或逐词对齐。非起点提示、内部暂停、跨步 next 和互相冲突的讲稿起点会拒绝采用或使播放计划不可确认。裁切和跨步连续录音尚未开放。
+
+现有文稿／页面／步骤继承规则继续生效：两个步骤继承同一录音时，各自完整播放一次，不把一个源文件自动切分到两步。编译与受众过滤只发布仍可见的有效素材。真实时长进入原有讲稿排程与单一 MediaClock，录音使用实际 `mediaId` 和 SHA，经完整 ProductionBinding 的媒体白名单读取；不会伪造语音合成缓存身份。原音和已有精确 TTS 缓存可以在同一计划中播放、发布，TTS 生成对录音步骤显示不适用。
+
+实际零模型范围、拒绝边界与未开放项见[本步录音采用记录](benchmarks/recording-step-adoption-2026-10-27.md)。

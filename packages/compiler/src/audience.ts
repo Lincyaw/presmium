@@ -1,6 +1,6 @@
 import { lstat, readdir, readFile } from 'node:fs/promises'
 import { basename, extname, join, relative } from 'node:path'
-import { irBlocks, isRecord, nodeMdast, propText } from '@lincyaw/kernel'
+import { irBlocks, isRecord, nodeMdast, productionAssetIds, propText } from '@lincyaw/kernel'
 import type { Finding, IRBlock, IRDocument, IRNode, IRSection, MdastNode, SourcePos } from '@lincyaw/kernel'
 import { resolveReferences } from './references.ts'
 import { Parser, sourceOf } from './parser.ts'
@@ -214,7 +214,7 @@ export function filterForAudience(doc: IRDocument, name: string, marks: Audience
       ...doc,
       sections: sections.map((section, i) => (section.index === i + 1 ? section : { ...section, index: i + 1 })),
       diagnostics: doc.diagnostics.filter(keeps),
-      ...production ? { production, productionAssets: Object.fromEntries([...new Set(production.mediaClips.map(clip => clip.assetId))].flatMap(id => doc.productionAssets?.[id] ? [[id, doc.productionAssets[id]!]] : [])) } : {},
+      ...production ? { production, productionAssets: Object.fromEntries(productionAssetIds(production, sections).flatMap(id => doc.productionAssets?.[id] ? [[id, doc.productionAssets[id]!]] : [])) } : {},
     },
     removed,
     keeps,

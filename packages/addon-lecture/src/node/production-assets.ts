@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { closeSync, createReadStream, fstatSync } from 'node:fs'
 import { Input, ALL_FORMATS, BufferSource } from 'mediabunny'
-import { ProductionAudioRefusal } from '@lincyaw/kernel'
+import { productionAssetIds, ProductionAudioRefusal } from '@lincyaw/kernel'
 import type { IRDocument, ProductionAssetInspection } from '@lincyaw/kernel'
 import { productionAssetFile } from '@lincyaw/kernel/node'
 import { openInDeck } from './store.ts'
@@ -99,7 +99,7 @@ export function assertProductionAssetFile(file: ProductionAssetFile, deckDir: st
 
 export async function inspectProductionAssets(doc: IRDocument, deckDir: string, signal?: AbortSignal): Promise<{ assets: Map<string, ProductionAssetFile>, errors: Map<string, string> }> {
   const assets = new Map<string, ProductionAssetFile>(), errors = new Map<string, string>()
-  const ids = [...new Set(doc.production?.mediaClips.map(clip => clip.assetId) ?? [])].sort()
+  const ids = productionAssetIds(doc.production, doc.sections).sort()
   if (ids.length > 32) { ids.forEach(id => errors.set(id, 'production.asset-count')); return { assets, errors } }
   for (let offset = 0; offset < ids.length; offset += 2) await Promise.all(ids.slice(offset, offset + 2).map(async id => {
     try { assets.set(id, await inspectProductionAsset(doc, deckDir, id, signal)) }

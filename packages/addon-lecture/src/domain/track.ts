@@ -31,6 +31,7 @@ export interface Utterance {
   clipId?: string
   narrationIds?: string[]
   /** Authored no-audio narration; its range comes from actual step boundaries, never reading-speed estimates. */
+  recording?: true
   silent?: true
   /** Exact provider/voice metadata of this sentence, when a scripted track uses multiple voices. */
   voice?: Voice
@@ -63,6 +64,9 @@ export function defaultTrack(ids: readonly string[]): string | undefined {
 }
 
 export interface MediaSegment {
+  role?: 'recording'
+  stepId?: string
+  narrationIds?: string[]
   section: string
   start: number
   src: string
@@ -138,6 +142,7 @@ function utterance(value: unknown, problems: string[], i: number): Utterance | u
     ...translations ? { translations } : {},
     ...typeof value.clipId === 'string' ? { clipId: value.clipId } : {},
     ...Array.isArray(value.narrationIds) && value.narrationIds.every(id => typeof id === 'string') ? { narrationIds: value.narrationIds as string[] } : {},
+    ...value.recording === true ? { recording: true as const } : {},
     ...value.silent === true ? { silent: true as const } : {},
     ...typeof value.clip === 'string' && CLIP_FILE.test(value.clip) ? { clip: value.clip } : {},
     ...isRecord(value.voice) ? { voice: voice(value.voice) } : {},
@@ -147,7 +152,7 @@ function utterance(value: unknown, problems: string[], i: number): Utterance | u
 
 function segment(value: unknown): MediaSegment | undefined {
   if (!isRecord(value) || typeof value.section !== 'string' || !isNumber(value.start) || typeof value.src !== 'string' || !isNumber(value.duration)) return undefined
-  return { section: value.section, start: value.start, src: value.src, duration: value.duration, ...typeof value.sha256 === 'string' ? { sha256: value.sha256 } : {}, ...typeof value.clipId === 'string' ? { clipId: value.clipId } : {}, ...typeof value.assetId === 'string' ? { assetId: value.assetId } : {}, ...typeof value.mediaClipId === 'string' ? { mediaClipId: value.mediaClipId } : {}, ...isNumber(value.sourceStartMs) && value.sourceStartMs >= 0 ? { sourceStartMs: value.sourceStartMs } : {}, ...isNumber(value.volume) && value.volume >= 0 && value.volume <= 1 ? { volume: value.volume } : {}, ...typeof value.muted === 'boolean' ? { muted: value.muted } : {} }
+  return { ...value.role === 'recording' ? { role: 'recording' as const } : {}, ...typeof value.stepId === 'string' ? { stepId: value.stepId } : {}, ...Array.isArray(value.narrationIds) && value.narrationIds.every(id => typeof id === 'string') ? { narrationIds: value.narrationIds as string[] } : {}, section: value.section, start: value.start, src: value.src, duration: value.duration, ...typeof value.sha256 === 'string' ? { sha256: value.sha256 } : {}, ...typeof value.clipId === 'string' ? { clipId: value.clipId } : {}, ...typeof value.assetId === 'string' ? { assetId: value.assetId } : {}, ...typeof value.mediaClipId === 'string' ? { mediaClipId: value.mediaClipId } : {}, ...isNumber(value.sourceStartMs) && value.sourceStartMs >= 0 ? { sourceStartMs: value.sourceStartMs } : {}, ...isNumber(value.volume) && value.volume >= 0 && value.volume <= 1 ? { volume: value.volume } : {}, ...typeof value.muted === 'boolean' ? { muted: value.muted } : {} }
 }
 
 function irOf(value: unknown): LectureTrack['ir'] {
@@ -271,6 +276,6 @@ export interface AudioSegment {
 }
 
 export function audioSegments(track: LectureTrack): AudioSegment[] {
-  const said = track.voice.kind === 'synthetic' ? track.utterances.filter(u => u.clip).map(u => ({ src: `${CLIPS_DIR}/${u.clip}`, start: u.t, duration: u.d, ...u.clipId ? { clipId: u.clipId } : {} })) : []
+  const said = track.utterances.filter(u => u.clip).map(u => ({ src: `${CLIPS_DIR}/${u.clip}`, start: u.t, duration: u.d, ...u.clipId ? { clipId: u.clipId } : {} }))
   return [...said, ...(track.audio ?? []).map(a => ({ src: a.src, start: a.start * 1000, duration: a.duration * 1000, ...a.clipId ? { clipId: a.clipId } : {}, ...a.sourceStartMs !== undefined ? { sourceStartMs: a.sourceStartMs } : {}, ...a.volume !== undefined ? { volume: a.volume } : {}, ...a.muted !== undefined ? { muted: a.muted } : {} }))]
 }

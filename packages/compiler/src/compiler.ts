@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
-import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, fnv1a64, isRecord, validateDocument } from '@lincyaw/kernel'
+import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, fnv1a64, isRecord, productionAssetIds, validateDocument } from '@lincyaw/kernel'
 import { productionAssetFile } from '@lincyaw/kernel/node'
 import type { AnchorResolverRegistry, CanonicalSource, CodeNode, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceCapabilities, SourceReader, TeachingDocument } from '@lincyaw/kernel'
 import { audienceDocument, emptyReferences, filterForAudience, scanOutputs, withheld } from './audience.ts'
@@ -225,7 +225,7 @@ export class Compiler {
       sections,
       diagnostics: [],
       production: structuredClone(run.document.production),
-      productionAssets: Object.fromEntries([...new Set(run.document.production.mediaClips.map(clip => clip.assetId))].map(id => [id, structuredClone(run.document.assets[id]!)])),
+      productionAssets: Object.fromEntries(productionAssetIds(run.document.production, run.document.sectionOrder.map(id => ({ id, stepIds: run.document.sections[id]!.stepOrder }))).map(id => [id, structuredClone(run.document.assets[id]!)])),
     }
     applyTranslations(doc, translationFields(headmatter), report)
     let audience: AudienceCompilation | undefined
@@ -351,7 +351,7 @@ export class Compiler {
   /** Validated JSON is the sole runtime source; compiler output remains a derived snapshot. */
   async #compileSections(run: CompileRun, _contributions: Contributions): Promise<{ sections: IRSection[], marks: AudienceMark[], sourceFiles: string[], sourceFingerprints: Record<string, string> }> {
     const sections = lowerDocument(run.document, this.entry, this.deckDir, run.report, (...files) => run.inputs.watch(...files))
-    for (const id of new Set(run.document.production.mediaClips.map(clip => clip.assetId))) {
+    for (const id of productionAssetIds(run.document.production, run.document.sectionOrder.map(id => ({ id, stepIds: run.document.sections[id]!.stepOrder })))) {
       const asset = run.document.assets[id], file = asset && productionAssetFile(this.deckDir, asset.location)
       if (file) run.inputs.watch(file)
     }

@@ -15,7 +15,7 @@ export type { LecturePlan, PlannedAnimation, PlannedCue, PlannedParagraph, Plann
 export { recordedTrack, sectionSpan, simplifyPath, spliceSection } from './recording.ts'
 export type { PathPoint, Recording, TrackHead } from './recording.ts'
 export { scriptTrack } from './script-track.ts'
-export type { Clip, CutAnimation, ScriptHead } from './script-track.ts'
+export type { Clip, CutAnimation, RecordingClip, ScriptHead } from './script-track.ts'
 export { anchorOf, lastIndexAt, stepStops, textPieces, timedEvents, trackChapters, utteranceAt, wordTime } from './timing.ts'
 export type { StepStop, TextPiece, TimedEvent, TrackChapter } from './timing.ts'
 export {

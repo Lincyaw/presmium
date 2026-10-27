@@ -2,9 +2,9 @@ import { createHash, randomUUID } from 'node:crypto'
 import { constants } from 'node:fs'
 import { lstat, open } from 'node:fs/promises'
 import { basename, join, relative } from 'node:path'
-import { ASSET_TITLE_MAX_LENGTH, DOCUMENT_AUDIO_MAX_BYTES, DOCUMENT_AUDIO_REQUEST_MAX_BYTES, fnv1a64, hasRole, isRecord, jsonResponse, ProductionAudioRefusal, validateDocument } from '@lincyaw/kernel'
-import type { Asset, CanonicalSource, DocumentAudioAuthoring, DocumentAudioCapabilities, DocumentAudioImport, DocumentAudioInspectionAnswer, DocumentChangeAnswer, DocumentMediaClipEdit, DocumentMediaClipValidation, DocumentMediaClipValidationAnswer, Finding, Member, ProductionAudioAuthoring, RequestContext, Route, TeachingDocument, VerifiedDocumentAudioImport, VerifiedDocumentMediaClipChange, WorkspaceAudioInspectionAnswer } from '@lincyaw/kernel'
-import { productionAssetFile, validateDocumentAudioInspect, validateDocumentWorkspaceAudioImport, validateDocumentWorkspaceAudioInspect, validateDocumentMediaClipValidation, validateDocumentMediaClipEdit, validateDocumentProductionPlanQuery } from '@lincyaw/kernel/node'
+import { ASSET_TITLE_MAX_LENGTH, DOCUMENT_AUDIO_MAX_BYTES, DOCUMENT_AUDIO_REQUEST_MAX_BYTES, fnv1a64, hasRole, isRecord, jsonResponse, ProductionAudioRefusal, recordingStepIssue, validateDocument } from '@lincyaw/kernel'
+import type { Asset, CanonicalSource, DocumentRecordingAdoption, VerifiedDocumentRecordingAdoption, DocumentAudioAuthoring, DocumentAudioCapabilities, DocumentAudioImport, DocumentAudioInspectionAnswer, DocumentChangeAnswer, DocumentMediaClipEdit, DocumentMediaClipValidation, DocumentMediaClipValidationAnswer, Finding, Member, ProductionAudioAuthoring, RequestContext, Route, TeachingDocument, VerifiedDocumentAudioImport, VerifiedDocumentMediaClipChange, WorkspaceAudioInspectionAnswer } from '@lincyaw/kernel'
+import { productionAssetFile, validateDocumentRecordingAdoption, validateDocumentAudioInspect, validateDocumentWorkspaceAudioImport, validateDocumentWorkspaceAudioInspect, validateDocumentMediaClipValidation, validateDocumentMediaClipEdit, validateDocumentProductionPlanQuery } from '@lincyaw/kernel/node'
 import { readAuthoringDocument } from './document-editor.ts'
 import { catchRequestErrors, RequestError } from './errors.ts'
 import type { Revisions } from './revisions.ts'
@@ -18,7 +18,7 @@ export interface DocumentAudioAuthoringOptions extends DocumentAudioServices {
   reviewRequired?: boolean
   services?(document: string, source: CanonicalSource): Promise<DocumentAudioServices>
 }
-interface Receipt { signature: string, source?: CanonicalSource, version: string, files: DocumentChangeAnswer['files'], commit?: DocumentChangeAnswer['commit'], assetId?: string, inspection?: VerifiedDocumentAudioImport['inspection'], clip?: Pick<VerifiedDocumentMediaClipChange['verification'], 'production' | 'binding'> }
+interface Receipt { signature: string, source?: CanonicalSource, version: string, files: DocumentChangeAnswer['files'], commit?: DocumentChangeAnswer['commit'], assetId?: string, inspection?: VerifiedDocumentAudioImport['inspection'], clip?: Pick<VerifiedDocumentMediaClipChange['verification'], 'production' | 'binding'>, recording?: { stepId: string, sha256: string, durationMs: number } }
 interface Operation { controller: AbortController, finished: Promise<unknown> }
 const MAX_RECEIPTS = 64, MAX_CONCURRENT = 4
 const header = (value: unknown): value is DocumentAudioImport => isRecord(value) && typeof value.id === 'string' && value.id.length > 0 && value.id.length <= 200 && typeof value.baseDocumentVersion === 'string' && /^[\da-f]{20}$/.test(value.baseDocumentVersion)
@@ -33,6 +33,7 @@ const stamp = (stat: Awaited<ReturnType<Awaited<ReturnType<typeof open>>['stat']
 export function createDocumentAudioAuthoring({ root, editor, revisions, audio, services, reviewRequired = false }: DocumentAudioAuthoringOptions): { service: DocumentAudioAuthoring, routes: Record<string, Route>, close(): Promise<void> } {
   const receipts = new Map<string, Receipt>(), imports = new Map<string, { signature: string, source: CanonicalSource, promise: Promise<VerifiedDocumentAudioImport> }>(), operations = new Set<Operation>()
   const clipChanges = new Map<string, { signature: string, promise: Promise<VerifiedDocumentMediaClipChange> }>()
+  const recordingChanges = new Map<string, { signature: string, promise: Promise<VerifiedDocumentRecordingAdoption> }>()
   let closed = false
   const authorize = (member: Member) => { if (!hasRole(member, 'editor')) throw new RequestError(403, 'audio-authoring-permission-denied') }
   const available = () => { if (closed) throw new RequestError(503, 'audio-authoring-closed') }
@@ -231,12 +232,68 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
     clipChanges.set(key, { signature, promise })
     return promise
   }
+  const recordingReadback = async (ctx: RequestContext, id: string, receipt: Receipt): Promise<VerifiedDocumentRecordingAdoption> => {
+    try {
+      const current = opened(ctx, receipt.version), recording = receipt.recording!, assetId = receipt.assetId!, asset = current.content.assets[assetId]
+      const source = current.content.production.stepOverrides[recording.stepId]?.voiceSource
+      if (source?.type !== 'recording' || source.assetId !== assetId || !asset || asset.fingerprint !== `sha256:${recording.sha256}`) throw new RequestError(409, 'recording-readback-changed')
+      const bytes = await reader(ctx, pathOf(ctx, asset))
+      if (hash(bytes) !== recording.sha256 || receipt.files.some(file => editor.read(scopeOf(ctx.document), file.path, ctx.member).version !== file.version)) throw new RequestError(409, 'recording-readback-changed')
+      const verified = opened(ctx, receipt.version)
+      return { document: ctx.document, version: verified.source.version, fingerprint: fnv1a64(verified.source.content), content: verified.content, issues: verified.issues, changeId: id, files: receipt.files, ...receipt.commit ? { commit: receipt.commit } : {}, verification: { saved: true, source: binding(verified), assetId, ...recording, compiled: 'not-requested', runtime: 'not-requested' } }
+    } catch (error) {
+      let currentSource: CanonicalSource | undefined
+      try { currentSource = binding(opened(ctx)) } catch { /* Preserve a committed receipt if the saved source is no longer readable. */ }
+      throw new RequestError(409, 'recording-readback-changed', { committed: true, changeId: id, version: receipt.version, ...currentSource ? { currentSource } : {}, reason: error instanceof Error ? error.message : 'readback-failed' })
+    }
+  }
+  const adoptRecording = (ctx: RequestContext, request: DocumentRecordingAdoption, origin: 'editor' | 'agent', signal: AbortSignal): Promise<VerifiedDocumentRecordingAdoption> => {
+    if (!validateDocumentRecordingAdoption(request)) throw new RequestError(400, 'document-recording-invalid')
+    if (Buffer.byteLength(JSON.stringify(request)) > DOCUMENT_AUDIO_REQUEST_MAX_BYTES) throw new RequestError(413, 'document-audio-request-size')
+    if (origin === 'agent' && reviewRequired) throw new RequestError(409, 'authoring-review-required')
+    const key = JSON.stringify(['recording', ctx.document, ctx.member.id, request.id]), signature = hash(JSON.stringify([request.id, request.source.documentId, request.source.version, request.source.fingerprint, request.stepId, request.assetId, request.sha256]))
+    const previous = receipts.get(key)
+    if (previous) {
+      if (previous.signature !== signature) throw new RequestError(409, 'document-change-id-reused')
+      opened(ctx, previous.version)
+      return recordingReadback(ctx, request.id, previous)
+    }
+    const pending = recordingChanges.get(key)
+    if (pending) { if (pending.signature !== signature) throw new RequestError(409, 'document-change-id-reused'); return pending.promise }
+    const promise = Promise.resolve().then(async () => {
+      check(signal)
+      const current = opened(ctx, request.source.version, request.source), step = current.content.steps[request.stepId], asset = current.content.assets[request.assetId]
+      if (!step) throw new RequestError(404, 'document-step-missing')
+      if (!asset) throw new RequestError(404, 'production.asset-missing')
+      const issue = recordingStepIssue(current.content, request.stepId)
+      if (issue) throw new RequestError(422, issue)
+      const inspection = await inspect(ctx, asset, request.source, signal)
+      if (inspection.sha256 !== request.sha256) throw new RequestError(409, 'production.asset-changed')
+      const candidate = structuredClone(current.content)
+      candidate.assets[asset.id]!.fingerprint = `sha256:${inspection.sha256}`
+      candidate.production.stepOverrides[step.id] = { ...candidate.production.stepOverrides[step.id], voiceSource: { type: 'recording', assetId: asset.id } }
+      const checked = validateDocument(candidate)
+      if (!checked.document || checked.issues.some(issue => issue.severity === 'error')) throw new RequestError(422, 'document-invalid', { issues: checked.issues })
+      const validate = async () => {
+        check(signal); opened(ctx, request.source.version, request.source)
+        const actual = await inspect(ctx, asset, request.source, signal)
+        if (actual.sha256 !== request.sha256) throw new RequestError(409, 'production.asset-changed')
+        check(signal)
+      }
+      const saved = await editor.transaction(scopeOf(ctx.document), [{ path: current.source.path, content: `${JSON.stringify(checked.document, null, 2)}\n`, base: request.source.version }], ctx.member, history(ctx, checked.document, origin, validate))
+      const receipt: Receipt = { signature, source: request.source, version: saved.versions[0]!.version, files: saved.versions, assetId: asset.id, recording: { stepId: step.id, sha256: inspection.sha256, durationMs: inspection.durationMs }, ...saved.revision ? { commit: saved.revision } : {} }
+      remember(key, receipt)
+      return recordingReadback(ctx, request.id, receipt)
+    }).finally(() => { if (recordingChanges.get(key)?.promise === promise) recordingChanges.delete(key) })
+    recordingChanges.set(key, { signature, promise })
+    return promise
+  }
   const service: DocumentAudioAuthoring = {
     capabilities: (document, member) => work(member, undefined, async signal => {
       const ctx = ctxOf(document, member), current = opened(ctx), source = binding(current), found = await resolved(document, source, signal)
       opened(ctx, source.version, source)
       const available = Boolean(found.audio), unknown = !available && Boolean(found.findings?.some(finding => finding.severity === 'error'))
-      return { source, available, status: available ? 'available' : unknown ? 'unknown' : 'unavailable', ...unknown ? { reason: 'services-unavailable' as const } : !available ? { reason: 'audio-unavailable' as const } : {}, verification: 'configuration-only', ...found.findings?.length ? { findings: found.findings } : {}, actions: { inspect: available, inspectWorkspace: available, importWorkspace: available && !reviewRequired, readProductionPlan: available, validateClipChange: true, changeClip: !reviewRequired }, ...reviewRequired ? { importUnavailableReason: 'review-required' as const, clipChangeUnavailableReason: 'review-required' as const } : {}, clips: { upsert: available, remove: true, upsertRequires: 'current-production-binding' }, limits: { audioBytes: DOCUMENT_AUDIO_MAX_BYTES, requestBytes: DOCUMENT_AUDIO_REQUEST_MAX_BYTES, receipts: MAX_RECEIPTS, concurrent: MAX_CONCURRENT }, workspaceFileScope: 'same-document', idempotency: 'process-current-source', review: reviewRequired ? 'required-unsupported' : revisions ? 'locks-and-history' : 'locks-only' } satisfies DocumentAudioCapabilities
+      return { source, available, status: available ? 'available' : unknown ? 'unknown' : 'unavailable', ...unknown ? { reason: 'services-unavailable' as const } : !available ? { reason: 'audio-unavailable' as const } : {}, verification: 'configuration-only', ...found.findings?.length ? { findings: found.findings } : {}, actions: { inspect: available, inspectWorkspace: available, importWorkspace: available && !reviewRequired, readProductionPlan: available, validateClipChange: true, changeClip: !reviewRequired, adoptRecording: available && !reviewRequired }, ...reviewRequired ? { importUnavailableReason: 'review-required' as const, clipChangeUnavailableReason: 'review-required' as const } : {}, clips: { upsert: available, remove: true, upsertRequires: 'current-production-binding' }, limits: { audioBytes: DOCUMENT_AUDIO_MAX_BYTES, requestBytes: DOCUMENT_AUDIO_REQUEST_MAX_BYTES, receipts: MAX_RECEIPTS, concurrent: MAX_CONCURRENT }, workspaceFileScope: 'same-document', idempotency: 'process-current-source', review: reviewRequired ? 'required-unsupported' : revisions ? 'locks-and-history' : 'locks-only' } satisfies DocumentAudioCapabilities
     }),
     inspect: (document, request, member, signal) => work(member, signal, async signal => {
       if (!validateDocumentAudioInspect(request)) throw new RequestError(400, 'document-audio-query-invalid')
@@ -292,9 +349,14 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
       return prepared.answer
     }),
     changeClip: (document, request, member, signal) => work(member, signal, signal => changeClip(ctxOf(document, member), request, 'agent', signal)),
+    adoptRecording: (document, request, member, signal) => work(member, signal, signal => adoptRecording(ctxOf(document, member), request, 'agent', signal)),
   }
   const guarded = (run: () => Promise<Response>) => catchRequestErrors(async () => { try { return await run() } catch (error) { if (error instanceof ProductionAudioRefusal) throw new RequestError(error.status, error.code); throw error } })
   const routes: Record<string, Route> = {
+    'document/recording/adopt': { role: 'editor', maxBody: DOCUMENT_AUDIO_REQUEST_MAX_BYTES, handle: (request, ctx) => guarded(() => work(ctx.member, request.signal, async signal => {
+      if (request.method !== 'POST') throw new RequestError(405, 'POST')
+      return jsonResponse(await adoptRecording(ctx, await request.json().catch(() => undefined), 'editor', signal))
+    })) },
     'document/audio': { role: 'editor', maxBody: 17 << 20, handle: (request, ctx) => guarded(() => work(ctx.member, request.signal, async signal => {
       if (request.method === 'GET') {
         const params = new URL(request.url).searchParams, version = params.get('baseDocumentVersion'), id = params.get('assetId')
