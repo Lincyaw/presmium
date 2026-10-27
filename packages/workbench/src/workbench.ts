@@ -15,8 +15,7 @@ import type { DocumentEditorCommands } from './document-editor/DocumentEditor.ts
 import { nativeTextPoint, nativeTextPosition } from './document-editor/selection.ts'
 import type { NativeTextPoint } from './document-editor/selection.ts'
 import type { DocumentFieldBookmark, DocumentFieldRegistration, DocumentHistoryEditor } from './document-editor/focus.ts'
-import { pageDeletion, removeDocumentPage } from './document-pages.ts'
-import { duplicateDocumentPage } from '@lincyaw/kernel'
+import { duplicateDocumentPage, moveDocumentPage, pageDeletion, removeDocumentPage, renameDocumentPage } from '@lincyaw/kernel'
 import { changeStepTiming } from './step-production.ts'
 import { changeDocumentVoice } from './document-voices.ts'
 import type { DocumentVoiceOptions, DocumentVoiceScope } from './document-voices.ts'
@@ -1418,7 +1417,7 @@ export class Workbench {
     finally { if (current()) this.#set({ isEditingPage: false }) }
   }
   renamePage(section: string, title: string): Promise<boolean> {
-    return this.#changeDocumentPage(document => { if (!document.sections[section]) throw new Error('page-boundary'); document.sections[section]!.title = title.trim() })
+    return this.#changeDocumentPage(document => { Object.assign(document, renameDocumentPage(document, section, title)) })
   }
   async duplicatePage(section: string): Promise<boolean> {
     if (this.#state.isEditingPage || this.#state.isCreatingPage || this.#state.isHistoryBusy) return false
@@ -1449,12 +1448,7 @@ export class Workbench {
     return true
   }
   movePage(section: string, before: string | null): Promise<boolean> {
-    return this.#changeDocumentPage(document => {
-      if (!document.sections[section] || before !== null && !document.sections[before]) throw new Error('page-boundary')
-      if (before === section) return
-      document.sectionOrder = document.sectionOrder.filter(id => id !== section)
-      document.sectionOrder.splice(before === null ? document.sectionOrder.length : document.sectionOrder.indexOf(before), 0, section)
-    })
+    return this.#changeDocumentPage(document => { Object.assign(document, moveDocumentPage(document, section, before)) })
   }
   pageDeleteMessage(reason: string): string { return this.#pageEditMessage(reason) }
   async preparePageDeletion(section: string): Promise<PageDeletePlan> {
@@ -1469,7 +1463,7 @@ export class Workbench {
       if (this.#state.authoring?.version !== plan.source.version) throw new Error('revision-conflict')
       const current = pageDeletion(document, plan.document, plan.source.version, plan.section)
       if (!current.allowed) throw new Error(current.reason)
-      Object.assign(document, removeDocumentPage(document, plan.section))
+      Object.assign(document, removeDocumentPage(document, plan.section, () => crypto.randomUUID()))
       this.#set({ position: { section: document.sectionOrder[0]!, step: 0, trail: [], view: 'document' }, documentNavigation: { section: document.sectionOrder[0]!, request: crypto.randomUUID() } })
     })
   }

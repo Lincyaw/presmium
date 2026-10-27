@@ -1,6 +1,6 @@
-import { AUTHORING_API_VERSION, DOCUMENT_OUTLINE_QUERY_SCHEMA, DOCUMENT_PART_QUERY_SCHEMA, DOCUMENT_READ_MAX_REQUEST_CHARS, DOCUMENT_PAGE_DUPLICATION_APPLY_SCHEMA, DOCUMENT_PAGE_DUPLICATION_SCHEMA, DOCUMENT_SCHEMA_VERSION } from '@lincyaw/kernel'
+import { AUTHORING_API_VERSION, DOCUMENT_OUTLINE_QUERY_SCHEMA, DOCUMENT_PART_QUERY_SCHEMA, DOCUMENT_READ_MAX_REQUEST_CHARS, DOCUMENT_READ_MAX_RESPONSE_CHARS, DOCUMENT_PAGE_CHANGE_SCHEMA, DOCUMENT_PAGE_CHANGE_APPLY_SCHEMA, DOCUMENT_PAGE_DUPLICATION_APPLY_SCHEMA, DOCUMENT_PAGE_DUPLICATION_SCHEMA, DOCUMENT_SCHEMA_VERSION } from '@lincyaw/kernel'
 import { DOCUMENT_CHANGE_JSON_SCHEMA } from '@lincyaw/kernel/node'
-import type { DocumentAuthoring, DocumentChange, DocumentOutlineQuery, DocumentPartQuery, DocumentPageDuplicationPlan, DocumentPageDuplicationReference, DocumentPageDuplicationRequest } from '@lincyaw/kernel'
+import type { DocumentAuthoring, DocumentChange, DocumentOutlineQuery, DocumentPartQuery, DocumentPageChangePlan, DocumentPageChangeReference, DocumentPageChangeRequest, DocumentPageDuplicationPlan, DocumentPageDuplicationReference, DocumentPageDuplicationRequest } from '@lincyaw/kernel'
 import type { Call, ToolSpec } from './mcp.ts'
 
 function service(call: Call): DocumentAuthoring {
@@ -30,15 +30,49 @@ function duplicationSummary(plan: DocumentPageDuplicationPlan, document: string)
     resources: { candidate: resource('candidate'), mapping: resource('mapping'), details: resource('details') } }
 }
 
+function pageSummary(plan: DocumentPageChangePlan, document: string) {
+  const resource = (part: string) => `presmium://page-change/${encodeURIComponent(plan.planId)}/${plan.digest}/${part}?document=${encodeURIComponent(document)}`
+  const title = plan.content.sections[plan.sectionId]?.title
+  const effect = plan.deletion
+  return { apiVersion: plan.apiVersion, action: plan.action.type, planId: plan.planId, changeId: plan.changeId, source: plan.source, digest: plan.digest, expiresAt: plan.expiresAt,
+    target: { sectionId: plan.sectionId, ...title !== undefined ? { title: { preview: title.slice(0, 80), complete: title.length <= 80, totalChars: title.length } } : {},
+      index: plan.content.sectionOrder.indexOf(plan.sectionId), present: Boolean(plan.content.sections[plan.sectionId]) },
+    ...plan.created ? { created: plan.created, defaultTiming: plan.content.production.stepOverrides[plan.created.stepId] } : {},
+    impact: Object.fromEntries(Object.entries(plan.impact).map(([field, value]) => [field, Array.isArray(value) ? value.length : value])),
+    ...effect ? { deletion: { retainedEmpty: effect.retainedEmpty, removedBlocks: effect.blocks.length, removedSteps: effect.steps.length, removedNarrations: effect.narrations.length, retainedNarrations: effect.retainedNarrations.length,
+      removedCues: effect.cues.length, removedClips: effect.clips.length, detachedCommentAnchors: effect.detachedComments.length, retainedCommentThreads: true, assetsAndDefinitionsPreserved: true, referenceCount: effect.references.length, confirmationRequired: true } } : {},
+    validation: { errors: plan.issues.filter(issue => issue.severity === 'error').length, warnings: plan.issues.filter(issue => issue.severity === 'warning').length,
+      sample: plan.issues.slice(0, 3).map(issue => ({ code: issue.code.slice(0, 64), path: issue.path.slice(0, 100), message: issue.message.slice(0, 120), severity: issue.severity })) },
+    resources: { candidate: resource('candidate'), details: resource('details') },
+    next: effect ? 'Review this fixed deletion impact, then apply the same reference with confirmDeletion:true. No assets or discussions are deleted.' : 'Apply this unchanged plan reference, then read the target with the returned saved source.' }
+}
+
+/** The page tools never ask the model to echo candidate content or lose JSON to result pruning. */
+async function pageCall(call: Call, work: () => Promise<unknown>) {
+  if (JSON.stringify(call.args).length > DOCUMENT_READ_MAX_REQUEST_CHARS) throw Object.assign(new Error('page-change-request-too-large'), { status: 413 })
+  try {
+    const result = await work()
+    if (JSON.stringify(result, null, 2).length > DOCUMENT_READ_MAX_RESPONSE_CHARS) throw Object.assign(new Error('page-change-response-too-large'), { status: 413 })
+    return result
+  } catch (error) {
+    const failure = error as { message?: string, status?: number, detail?: Record<string, unknown> }
+    if (JSON.stringify({ message: failure.message, detail: failure.detail }, null, 2).length <= 4096) throw error
+    throw Object.assign(new Error((failure.message ?? 'page-change-failed').slice(0, 120)), { status: failure.status ?? 500, detail: {
+      truncated: true, issueCount: failure.detail?.issueCount ?? (Array.isArray(failure.detail?.issues) ? failure.detail.issues.length : undefined), referenceCount: failure.detail?.referenceCount,
+      next: 'Inspect the canonical entities using source-bound read_document_part. Resolve the reported error and explicitly preflight again; no operation was automatically repeated.',
+    } })
+  }
+}
+
 export const AUTHORING_TOOLS: ToolSpec[] = [
   {
     name: 'get_authoring_capabilities', kind: 'read', structured: true,
     description: 'The actual canonical authoring operations, limits, review and retry scope of this host. Does not compile, synthesize, transcribe or write. A compiler-only stdio host reports authoring unavailable.',
     properties: { document: documentProperty },
     run: async call => {
-      if (!call.host.authoring) return { apiVersion: AUTHORING_API_VERSION, documentSchemaVersion: DOCUMENT_SCHEMA_VERSION, available: false, reason: 'host-unavailable', actions: { read: false, outline: false, readPart: false, plan: false, apply: false, planPageDuplication: false, applyPageDuplication: false }, operations: [], replacement: false, fileChanges: false, idempotency: 'unavailable', review: 'unavailable' }
+      if (!call.host.authoring) return { apiVersion: AUTHORING_API_VERSION, documentSchemaVersion: DOCUMENT_SCHEMA_VERSION, available: false, reason: 'host-unavailable', actions: { read: false, outline: false, readPart: false, plan: false, apply: false, planPageDuplication: false, applyPageDuplication: false, planPageChange: false, applyPageChange: false }, operations: [], replacement: false, fileChanges: false, idempotency: 'unavailable', review: 'unavailable' }
       const capability = service(call).capabilities(await call.document(), call.caller.member)
-      if (!call.host.offers('operate')) return { ...capability, actions: { ...capability.actions, apply: false, applyPageDuplication: false }, applyUnavailableReason: 'operation-disabled' }
+      if (!call.host.offers('operate')) return { ...capability, actions: { ...capability.actions, apply: false, applyPageDuplication: false, applyPageChange: false }, applyUnavailableReason: 'operation-disabled' }
       return capability
     },
   },
@@ -65,6 +99,25 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
     description: 'Preflights a versioned DocumentChange with canonical semantic operations or an explicit replacement and optional same-document text files. Validates candidate, identity, references, all file bases and transaction limits without saving or compiling. Returns planId, candidate, entity impact, source and predicted files. Existing-file bases are exact versions; null exclusively creates a new text file.',
     inputSchema: schema(),
     run: async call => service(call).plan(await call.document(), call.args.change as DocumentChange, call.caller.member),
+  },
+  {
+    name: 'plan_page_change', kind: 'read', structured: true,
+    description: 'Preflights one canonical page create, rename, move or delete through the same pure rules used by Web. Supply exact source and a unique id. Create fixes four IDs and the real 4000ms/500ms defaults; after:null appends. Move uses before:null to append. Delete reports owned content, retained/shared narrations, removed cues/clips and detached comment-anchor counts; all retained narration cue references, including unused narrations, block deletion. Last-page deletion keeps its title and an empty step. No opaque payload rewriting, asset deletion, compilation or model service. Returns a compact plan/source/digest/expiry/target/impact; full candidate/details are optional resources. Apply only that reference; never echo a document or silently replan after409. Replies fit7168 pretty-JSON UTF16 characters; inputs fit2048.',
+    inputSchema: { type: 'object', properties: { document: { ...documentProperty, maxLength: 200 }, request: DOCUMENT_PAGE_CHANGE_SCHEMA }, required: ['request'], additionalProperties: false },
+    run: call => pageCall(call, async () => { const document = await call.document(); return pageSummary(await service(call).planPageChange(document, call.args.request as DocumentPageChangeRequest, call.caller.member), document) }),
+  },
+  {
+    name: 'apply_page_change', kind: 'operate', structured: true,
+    description: 'Commits the exact page preflight using only planId/source/digest. Deletion additionally requires confirmDeletion:true, bound to this planned action and source; unresolved retained references are never silently removed. Reuses the original Web transaction, CAS, file/member scope, lock, history, agent review and bounded process-current-source receipts. Returns only compact saved-source/target/count/readback evidence. Retry the identical reference after a lost ACK; stale, expired, changed or unknown plans return409 and must not be silently regenerated. Saved is not compiled or played.',
+    inputSchema: { type: 'object', properties: { document: { ...documentProperty, maxLength: 200 }, request: DOCUMENT_PAGE_CHANGE_APPLY_SCHEMA }, required: ['request'], additionalProperties: false },
+    run: call => pageCall(call, async () => {
+      const document = await call.document(), own = service(call), capability = own.capabilities(document, call.caller.member)
+      if (!capability.actions.applyPageChange) throw Object.assign(new Error(capability.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: capability.applyUnavailableReason ? 409 : 403 })
+      const summary = (await call.host.documents()).find(item => item.dir === document)
+      await call.approve('operate', messages => messages.applyPagePlan, { lang: summary?.lang ?? '', detail: JSON.stringify({ document, request: call.args.request }) })
+      call.signal.throwIfAborted()
+      return own.applyPageChange(document, call.args.request as DocumentPageChangeReference, call.caller.member)
+    }),
   },
   {
     name: 'plan_page_duplication', kind: 'read', structured: true,

@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { applyDocumentOperations, AUTHORING_API_VERSION, DOCUMENT_ENTRY, DOCUMENT_OPERATION_TYPES, DOCUMENT_READ_MAX_REQUEST_CHARS, DOCUMENT_READ_MAX_RESPONSE_CHARS, DOCUMENT_SCHEMA_VERSION, documentOutline, documentPart, DocumentReadError, duplicateDocumentPage, fnv1a64, hasRole, validateDocument } from '@lincyaw/kernel'
-import { validateDocumentChange, validateDocumentPageDuplication, validateDocumentPageDuplicationApply, validateDocumentOutlineQuery, validateDocumentPartQuery } from '@lincyaw/kernel/node'
-import type { AppliedDocumentChange, ApplyDocumentChange, CanonicalSource, DocumentAnswer, DocumentAuthoring, DocumentChange, DocumentChangeAnswer, DocumentChangePlan, DocumentIssue, DocumentPageDuplicationPlan, Member, RequestContext, SourceTransactionChange, TeachingDocument } from '@lincyaw/kernel'
+import { applyDocumentOperations, AUTHORING_API_VERSION, createDocumentPage, DOCUMENT_ENTRY, DOCUMENT_OPERATION_TYPES, DOCUMENT_READ_MAX_REQUEST_CHARS, DOCUMENT_READ_MAX_RESPONSE_CHARS, DOCUMENT_SCHEMA_VERSION, documentOutline, documentPart, DocumentReadError, duplicateDocumentPage, fnv1a64, hasRole, moveDocumentPage, pageDeletionImpact, removeDocumentPage, renameDocumentPage, validateDocument } from '@lincyaw/kernel'
+import { validateDocumentChange, validateDocumentPageChange, validateDocumentPageChangeApply, validateDocumentPageDuplication, validateDocumentPageDuplicationApply, validateDocumentOutlineQuery, validateDocumentPartQuery } from '@lincyaw/kernel/node'
+import type { AppliedDocumentChange, ApplyDocumentChange, CanonicalSource, DocumentAnswer, DocumentAuthoring, DocumentChange, DocumentChangeAnswer, DocumentChangePlan, DocumentIssue, DocumentPageAction, DocumentPageChangePlan, DocumentPageDuplicationPlan, Member, RequestContext, SourceTransactionChange, TeachingDocument } from '@lincyaw/kernel'
 import { RequestError } from './errors.ts'
 import { MAX_SOURCE, MAX_SOURCE_CHANGES } from './source-editor.ts'
 import type { SourceEditor, SourceTransactionHistory } from './source-editor.ts'
@@ -36,7 +36,7 @@ export interface DocumentEditor extends DocumentAuthoring {
 
 export function createDocumentEditor({ editor, revisions, reviewRequired = false }: { editor: SourceEditor, revisions?: Revisions, reviewRequired?: boolean }): DocumentEditor {
   const receipts = new Map<string, { signature: string, version: string, files: DocumentChangeAnswer['files'], commit?: DocumentChangeAnswer['commit'] }>()
-  type Plan = { key: string, signature: string, expires: number, ready: boolean, duplication?: { signature: string, result: Promise<DocumentPageDuplicationPlan> } }
+  type Plan = { key: string, signature: string, expires: number, ready: boolean, duplication?: { signature: string, result: Promise<DocumentPageDuplicationPlan> }, page?: { signature: string, result: Promise<DocumentPageChangePlan> } }
   const plans = new Map<string, Plan>()
   const remember = <T>(table: Map<string, T>, key: string, value: T) => {
     table.set(key, value)
@@ -137,10 +137,19 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
     if (record.expires < Date.now() && !(replay && receipts.get(record.key)?.signature === digest)) throw new RequestError(409, 'document-plan-expired')
     return plan
   }
+  const pageOf = async (document: string, planId: string, digest: string, member: Member, replay = false): Promise<DocumentPageChangePlan> => {
+    if (!hasRole(member, 'editor')) throw new RequestError(403, 'authoring-permission-denied')
+    const record = plans.get(planId)
+    if (!record?.ready || !record.page) throw new RequestError(409, 'document-plan-changed')
+    const plan = await record.page.result
+    if (record.key !== keyOf(document, member, plan.changeId) || record.signature !== digest || plan.digest !== digest) throw new RequestError(409, 'document-plan-changed')
+    if (record.expires < Date.now() && !(replay && receipts.get(record.key)?.signature === digest)) throw new RequestError(409, 'document-plan-expired')
+    return plan
+  }
   const service: DocumentEditor = {
     capabilities(_document, member) {
       const allowed = hasRole(member, 'editor')
-      return { apiVersion: AUTHORING_API_VERSION, documentSchemaVersion: DOCUMENT_SCHEMA_VERSION, available: allowed, ...allowed ? {} : { reason: 'permission-denied' as const }, actions: { read: allowed, outline: allowed, readPart: allowed, plan: allowed, apply: allowed && !reviewRequired, planPageDuplication: allowed, applyPageDuplication: allowed && !reviewRequired }, readLimits: { maxRequestChars: DOCUMENT_READ_MAX_REQUEST_CHARS, maxResponseChars: DOCUMENT_READ_MAX_RESPONSE_CHARS, responseSerialization: 'JSON.stringify(value,null,2)', offsetUnit: 'utf16' }, ...reviewRequired ? { applyUnavailableReason: 'review-required' as const } : {}, operations: DOCUMENT_OPERATION_TYPES, replacement: true, fileChanges: true, limits: { maxFiles: MAX_SOURCE_CHANGES, maxTextBytes: MAX_SOURCE, maxOperations: 1000, planLifetimeMs: PLAN_LIFETIME_MS, maxPlans: MAX_RECEIPTS, maxReceipts: MAX_RECEIPTS }, idempotency: 'process-current-source', review: reviewRequired ? 'required-unsupported' : revisions ? 'locks-and-history' : 'locks-only' }
+      return { apiVersion: AUTHORING_API_VERSION, documentSchemaVersion: DOCUMENT_SCHEMA_VERSION, available: allowed, ...allowed ? {} : { reason: 'permission-denied' as const }, actions: { read: allowed, outline: allowed, readPart: allowed, plan: allowed, apply: allowed && !reviewRequired, planPageDuplication: allowed, applyPageDuplication: allowed && !reviewRequired, planPageChange: allowed, applyPageChange: allowed && !reviewRequired }, readLimits: { maxRequestChars: DOCUMENT_READ_MAX_REQUEST_CHARS, maxResponseChars: DOCUMENT_READ_MAX_RESPONSE_CHARS, responseSerialization: 'JSON.stringify(value,null,2)', offsetUnit: 'utf16' }, ...reviewRequired ? { applyUnavailableReason: 'review-required' as const } : {}, pageLimits: { maxRequestChars: DOCUMENT_READ_MAX_REQUEST_CHARS, maxResponseChars: DOCUMENT_READ_MAX_RESPONSE_CHARS, responseSerialization: 'JSON.stringify(value,null,2)' }, operations: DOCUMENT_OPERATION_TYPES, replacement: true, fileChanges: true, limits: { maxFiles: MAX_SOURCE_CHANGES, maxTextBytes: MAX_SOURCE, maxOperations: 1000, planLifetimeMs: PLAN_LIFETIME_MS, maxPlans: MAX_RECEIPTS, maxReceipts: MAX_RECEIPTS }, idempotency: 'process-current-source', review: reviewRequired ? 'required-unsupported' : revisions ? 'locks-and-history' : 'locks-only' }
     },
     read,
     async outline(document, query, member) {
@@ -197,6 +206,73 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
       return { ...receipt, planId: plan.planId, digest: plan.digest, section: plan.section,
         copied: { identities: Object.keys(plan.mapping).length, sections: plan.impact.sections.length, blocks: plan.impact.blocks.length, steps: plan.impact.steps.length, narrations: plan.impact.narrations.length },
         verification: { ...answer.verification, plannedVersion: expected, pagePresent: true } }
+    },
+    async planPageChange(document, raw, member) {
+      if (!validateDocumentPageChange(raw)) throw new RequestError(400, 'page-change-invalid')
+      if (JSON.stringify(raw).length > DOCUMENT_READ_MAX_REQUEST_CHARS) throw new RequestError(413, 'page-change-request-too-large')
+      const source = { documentId: raw.source.documentId, version: raw.source.version, fingerprint: raw.source.fingerprint }
+      const action: DocumentPageAction = raw.action.type === 'create' ? { type: 'create', title: raw.action.title.trim(), after: raw.action.after ?? null }
+        : raw.action.type === 'rename' ? { type: 'rename', sectionId: raw.action.sectionId, title: raw.action.title.trim() }
+          : raw.action.type === 'move' ? { type: 'move', sectionId: raw.action.sectionId, before: raw.action.before }
+            : { type: 'delete', sectionId: raw.action.sectionId }
+      const current = readSelection(document, source, member, content => content)
+      if (action.type !== 'create' && !current.sections[action.sectionId] || action.type === 'create' && action.after != null && !current.sections[action.after] || action.type === 'move' && action.before !== null && !current.sections[action.before]) throw new RequestError(404, 'document-page-missing')
+      const key = keyOf(document, member, raw.id), signature = createHash('sha256').update(JSON.stringify({ id: raw.id, source, action })).digest('hex'), receipt = receipts.get(key)
+      if (receipt) throw new RequestError(409, receipt.version === source.version ? 'document-change-id-reused' : 'document-version-changed')
+      for (const known of plans.values()) if (known.key === key) {
+        if (!known.page || known.page.signature !== signature) throw new RequestError(409, 'document-change-id-reused')
+        if (known.expires < Date.now()) throw new RequestError(409, 'document-plan-expired')
+        return structuredClone(await known.page.result)
+      }
+      const deletion = action.type === 'delete' ? pageDeletionImpact(current, action.sectionId) : undefined
+      if (deletion?.references.length) throw new RequestError(409, 'page-referenced', {
+        referenceCount: deletion.references.length, references: deletion.references.slice(0, 3), complete: deletion.references.length <= 3,
+        next: 'Resolve references in retained narrations or steps, then read the new source and explicitly preflight again. Use read_document_part for the named entities; no references were removed.',
+      })
+      const planId = randomUUID(), record: Plan = { key, signature: '', expires: Date.now() + PLAN_LIFETIME_MS, ready: false }
+      const result = (async (): Promise<DocumentPageChangePlan> => {
+        let candidate: TeachingDocument, sectionId: string, created
+        try {
+          if (action.type === 'create') { const next = createDocumentPage(current, action.after ?? null, action.title, randomUUID); candidate = next.document; created = next.ids; sectionId = next.ids.sectionId }
+          else {
+            sectionId = action.sectionId
+            candidate = action.type === 'rename' ? renameDocumentPage(current, sectionId, action.title)
+              : action.type === 'move' ? moveDocumentPage(current, sectionId, action.before) : removeDocumentPage(current, sectionId, randomUUID)
+          }
+        } catch (error) { throw new RequestError(422, 'page-change-invalid', { reason: error instanceof Error ? error.message : 'invalid-page' }) }
+        const change: DocumentChange = { id: raw.id, baseDocumentVersion: source.version, replacement: candidate }
+        record.signature = signatureOf(change)
+        const plan = await planChange(document, change, member, { id: planId, record })
+        return { ...plan, action, sectionId, ...created ? { created } : {}, ...deletion ? { deletion } : {}, change }
+      })()
+      record.page = { signature, result }; remember(plans, planId, record)
+      try { return structuredClone(await result) }
+      catch (error) { if (plans.get(planId) === record) plans.delete(planId); throw error }
+    },
+    async readPageChangePlan(document, reference, member) {
+      const plan = await pageOf(document, reference.planId, reference.digest, member)
+      const current = await read(document, member), currentSource = sourceOf(current), receipt = receipts.get(keyOf(document, member, plan.changeId))
+      const sameSource = plan.source.documentId === currentSource.documentId && plan.source.version === currentSource.version && plan.source.fingerprint === currentSource.fingerprint
+      return { plan: structuredClone(plan), currentSource, state: receipt ? receipt.signature === plan.digest && receipt.version === current.version ? 'applied' : 'old' : sameSource ? 'current' : 'old' }
+    },
+    async applyPageChange(document, reference, member) {
+      if (reviewRequired) throw new RequestError(409, 'authoring-review-required')
+      if (!validateDocumentPageChangeApply(reference)) throw new RequestError(400, 'page-change-reference-invalid')
+      const plan = await pageOf(document, reference.planId, reference.digest, member, true)
+      if (reference.source.documentId !== plan.source.documentId || reference.source.version !== plan.source.version || reference.source.fingerprint !== plan.source.fingerprint) throw new RequestError(409, 'document-plan-changed')
+      if (plan.action.type === 'delete' && reference.confirmDeletion !== true) throw new RequestError(409, 'page-deletion-confirmation-required', { planId: plan.planId, digest: plan.digest, next: 'Review this plan deletion impact and repeat the same reference with confirmDeletion:true.' })
+      if (plan.action.type !== 'delete' && reference.confirmDeletion) throw new RequestError(400, 'page-deletion-confirmation-unexpected')
+      const expected = plan.files.find(file => file.path === entryOf(document))!.version, receipt = receipts.get(keyOf(document, member, plan.changeId))
+      if (receipt && receipt.signature !== plan.digest) throw new RequestError(409, 'document-change-id-reused')
+      readSelection(document, receipt ? { documentId: plan.content.id, version: expected, fingerprint: fnv1a64(`${JSON.stringify(plan.content, null, 2)}\n`) } : plan.source, member, () => undefined)
+      const answer = await service.apply(document, { change: plan.change, planId: plan.planId }, member)
+      if (answer.version !== expected || JSON.stringify(answer.content) !== JSON.stringify(plan.content)) throw new RequestError(409, 'document-readback-changed', { committed: true, changeId: plan.changeId, version: answer.version })
+      const { content: _content, issues: _issues, commit, ...saved } = answer
+      return { ...saved, planId: plan.planId, digest: plan.digest, action: plan.action.type, sectionId: plan.sectionId, retainedEmpty: Boolean(plan.deletion?.retainedEmpty),
+        ...commit ? { commit: { id: commit.id, origin: commit.origin.kind } } : {},
+        changed: plan.impact.sectionOrder || Object.values(plan.impact).some(value => Array.isArray(value) ? value.length > 0 : value),
+        impact: Object.fromEntries(Object.entries(plan.impact).map(([key, value]) => [key, Array.isArray(value) ? value.length : value])) as Record<keyof DocumentChangePlan['impact'], number | boolean>,
+        verification: { ...answer.verification, plannedVersion: expected, pageStateVerified: true } }
     },
     async apply(document, request: ApplyDocumentChange, member): Promise<AppliedDocumentChange> {
       if (reviewRequired) throw new RequestError(409, 'authoring-review-required')
