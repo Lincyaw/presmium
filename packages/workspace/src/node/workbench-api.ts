@@ -1,9 +1,9 @@
 import { relative, sep } from 'node:path'
 import { relativeIR } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
-import { errorMessage, PREVIEW_REVISION, pushStream, SPEECH, speechEngineId, VOICEOVER } from '@lincyaw/kernel'
+import { errorMessage, PREVIEW_REVISION, pushStream } from '@lincyaw/kernel'
 import { irRevision } from '@lincyaw/kernel/node'
-import type { Finding, IrAnswer, IRDocument, IrEvent, Logger, PreviewAnswer, PreviewRenderer, VoiceCatalogAnswer } from '@lincyaw/kernel'
+import type { DocumentVoiceAuthoring, DocumentVoiceCapabilities, Finding, IrAnswer, IRDocument, IrEvent, Logger, Member, PreviewAnswer, PreviewRenderer, VoiceCatalogAnswer } from '@lincyaw/kernel'
 import type { DiagnosticStore, ServerHost } from '@lincyaw/server'
 import type { CompileSession } from './compile-session.ts'
 
@@ -21,8 +21,8 @@ export interface WorkbenchApi {
   ir(document: string): Promise<IrAnswer>
   /** Observe already-requested compilations without starting one for source editing. */
   onCompiled(document: string, listener: (event: IrEvent) => void): () => void
-  voiceCatalog(document: string, engine?: string, lang?: string, signal?: AbortSignal): Promise<VoiceCatalogAnswer>
-  voiceCapabilities(document: string): Promise<{ voiceover: boolean, preview: boolean, defaultEngine?: string }>
+  voiceCatalog(document: string, member: Member, engine?: string, lang?: string, signal?: AbortSignal): Promise<VoiceCatalogAnswer>
+  voiceCapabilities(document: string, member: Member, signal?: AbortSignal): Promise<DocumentVoiceCapabilities>
   events(document: string, signal: AbortSignal): AsyncIterable<{ event: string, data: IrEvent }>
   /**
    * The document's preview addresses: the viewer app's page of the document, and the same page showing its slides.
@@ -49,6 +49,7 @@ export interface WorkbenchBackendOptions {
   root: string
   compileSessionOf(dir: string): CompileSession
   serverHost: ServerHost
+  voices: DocumentVoiceAuthoring
   diagnostics?: DiagnosticStore
   url(): string
   preview?: { origins: string[] }
@@ -90,23 +91,8 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
       listeners.set(document, own); own.add(listener)
       return () => { own.delete(listener); if (!own.size) listeners.delete(document) }
     },
-    async voiceCapabilities(document) {
-      const compilation = await options.compileSessionOf(document).ready()
-      const capability = compilation.service(VOICEOVER)
-      const defaultEngine = await compilation.service(SPEECH)?.defaultSynthesisEngine?.()
-      return { voiceover: capability?.version === 1, preview: capability?.preview === true, ...defaultEngine ? { defaultEngine } : {} }
-    },
-    async voiceCatalog(document, engine, lang, signal) {
-      const compilation = await options.compileSessionOf(document).ready()
-      const speech = compilation.service(SPEECH)
-      if (!speech) return { engines: [], catalog: { status: 'unavailable', reason: 'not-configured', voices: [] } }
-      const engines = await speech.engines()
-      const preferred = engine ?? await speech.defaultSynthesisEngine?.()
-      const chosen = preferred ? engines.find(candidate => candidate.tts && candidate.id === speechEngineId(preferred)) : undefined
-      if (!chosen) return { engines, catalog: { status: 'unavailable', reason: 'not-configured', voices: [] } }
-      const catalog = await speech.voiceCatalog?.(chosen.id, lang ?? compilation.doc.meta.lang, signal) ?? { status: 'unavailable' as const, reason: 'unknown' as const, voices: [] }
-      return { engines, catalog, ...catalog.status === 'available' ? { engine: chosen.id } : {} }
-    },
+    voiceCapabilities: (document, member, signal) => options.voices.capabilities(document, member, signal),
+    voiceCatalog: (document, member, engine, lang, signal) => options.voices.catalog(document, { ...engine ? { engine } : {}, ...lang ? { lang } : {} }, member, signal),
     async ir(document) {
       const compilation = await options.compileSessionOf(document).ready()
       let doc = relativeDocs.get(compilation)

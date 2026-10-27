@@ -43,6 +43,9 @@ Studio 的视频制作中使用“音频片段”：导入后选择素材，编�
 | `inspect_workspace_audio` | `request:{source,path}` | 实际文件摘要、长度与媒体信息；`file:{path,sha256,byteLength}` 可原样用于导入，不分配 canonical Asset ID |
 | `import_workspace_audio` | `request:{id,source,file}` | `VerifiedDocumentAudioImport`，含原有资产／事务回执与保存后核验 |
 | `inspect_document_audio` | `request:{source,assetId}` | 同一个已保存资产的真实 `DocumentAudioInspectionAnswer` |
+| `read_production_plan` | `request:{source,irRevision?}` | 既有运行快照的真实 `ProductionPlan` 与完整 binding；不自动编译 |
+| `validate_media_clip_change` | `request:{source,binding,clip}` 或 `{source,removeClipId}` | 只读 before／after、操作、受影响步骤与素材、实际校验范围 |
+| `change_media_clip` | 在上述请求中增加 `id` | 同一片段事务的保存回执与读后核验；来源固定为 agent |
 
 `path` 相对工作区根目录，必须属于当前文稿既有 SourceEditor 范围内的普通文件。入口先执行共享路径权限校验，并排除音频的点号目录；已有回执也不能绕过范围规则。实际打开使用普通文件、句柄身份、读前后状态和有界字节检查。不能提供绝对路径、任意 URL、跨文稿或符号链接。
 
@@ -52,7 +55,7 @@ Web multipart 和 agent 工作区导入归入同一个音频意图：源、清�
 
 保存后读取权威文稿和新文件，核对 Asset、实际 SHA／长度、源版本与文件版本，返回 `verification.saved/source/asset`，并明确 `compiled/runtime='not-requested'`。若事务已提交而读回发现外部变化，错误含 `committed:true`、原意图、资产、已保存版本和可用的当前 source；不能把它当作尚未写入而重新导入。
 
-回执仅进程内保留最多 64 条，结果仍是当前源时才可复用；不承诺跨重启或更晚编辑后的幂等。服务关闭先阻止新工作，取消未提交的读取／探测，等待已经开始的事务与真实读回完成。媒体操作不创建讲稿或片段，不触发 ASR、TTS 或播放。完整上传句柄、剪辑和音色 MCP 动作仍见 [MCP RFC](rfc-mcp-authoring-actions.md)。
+导入和片段共享最多 64 条进程内回执、4 个在途操作，结果仍是当前源时才可复用；不承诺跨重启或更晚编辑后的幂等。服务关闭先阻止新工作，取消未提交的读取／探测，等待已经开始的事务与真实读回完成。导入不创建片段；片段修改不创建讲稿或触发 ASR、TTS、播放。完整上传句柄、音色配置和任务 MCP 对齐仍见 [MCP RFC](rfc-mcp-authoring-actions.md)。
 
 ## 显式应用或移除片段
 
@@ -68,3 +71,9 @@ Web multipart 和 agent 工作区导入归入同一个音频意图：源、清�
 `volume` 为 0..1，`muted` 独立保存。静音不把音量改为零，取消静音恢复所保存的音量。移除 clip 不删除声明或原文件，也不要求一个失效计划先恢复，因而可以清理无效引用。返回既有 `DocumentChangeAnswer`；保存成功不等于新计划已经就绪，调用方仍须读取权威文稿并准备对应版本。
 
 版本或计划变化返回 409；字段／引用无效、未确认步骤、非法范围与不支持的媒体返回可读的 422 错误。文件过大返回 413，媒体服务缺失返回 503。文稿锁沿用既有 `locked` 回执。真实验证范围见[音频作者接口记录](benchmarks/audio-authoring-2026-10-27.md)。
+
+Web 和 MCP 的片段操作由 `DocumentAudioAuthoring` 的同一实例执行。`POST document/media-clip/validate` 与 MCP 预检使用完整 source，返回 `operation/clipId/before/after/impact/issues/checked`；预检不分配或保存新的 planId，提交仍在原事务内重新校验。已存在的 HTTP 提交形态保持不变，由可信宿主选择 editor 路径；MCP 请求不接受 origin／confirmed，required review 下明确拒绝 agent 写入。
+
+`read_production_plan` 只读实际已有快照；没有快照时返回 `production-document-unavailable`，不会为了取得 binding 自动编译。需要准备或刷新时，先显式读取 `presmium://ir?document=…`，再使用当前 source 读取计划；返回的 binding 才可用于片段提交。可选的 expected `irRevision` 不匹配时返回冲突。能力中的 upsert 支持和 configuration-only 不表示当前步骤已确认或计划可播放；删除仍可在无引擎、坏计划时清理引用。
+
+保存回执增加 `verification:{saved,source,production,binding?,compiled,runtime}`。`production` 是 `validated-before-save` 或删除的 `not-required`；compiled／runtime 均为 `not-requested`。事务已提交后若权威读回发生变化，返回 `media-clip-readback-changed` 和 `committed:true`；不能把它当作未提交重发。事务开始后的取消保留真实提交／回滚结果，不创建虚构的取消任务。MCP 对 503 使用共用 `tool-failed` 包装并保留实际领域 message；SDK 的输入 Schema 拒绝是 `isError` 文本，不伪造为 HTTP 400。

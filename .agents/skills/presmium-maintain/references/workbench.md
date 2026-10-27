@@ -59,6 +59,10 @@ Transcription and adoption are workspace-owned shared instances, also exposed th
 
 Canonical audio authoring uses one `createDocumentAudioAuthoring` instance for host-level HTTP, compiled route mounts and MCP. Preserve its process-local receipts, source/file checks and atomic binary transaction; compiled remounts only borrow routes. Workspace-file preflight returns real digest/length/media metadata without assigning a canonical asset ID; import validates those bytes again, and saved-file readback explicitly leaves compilation and runtime unrequested. Use SourceEditor’s shared path policy before receipt lookup, plus the audio hidden-path restriction. Agent origin and required review are host-owned. Closing the workspace blocks new service discovery, aborts pending reads/probes and waits for transactions/readback; never duplicate the upload writer or speech queue in a tool adapter. The exact tools and limits are in `docs/audio-authoring.md`.
 
+The same audio owner now reads an existing production plan, preflights clip changes and commits them for Web/MCP. Plan reads never compile implicitly; an absent snapshot is unavailable, and actual returned bindings remain mandatory for upserts. Remove broken clip references without requiring a repaired plan, but retain their assets and bytes. Preflight retains no plan and apply checks source, real media and confirmed timing again inside the original transaction.
+
+Voice discovery uses one `createDocumentVoiceAuthoring` instance, also before compilation. Web and MCP catalogue reads bind the actual canonical source and retain unsupported/unknown states; configuration-only and the VOICEOVER marker are not generation success. Shared catalogue fetches have independent borrowers: aborting one reader must preserve its peers, and the last reader must release the actual request. Failed or aborted older entries cannot remove a newer cache entry; cancelled consent cannot poison catalogue capability. The exact boundary is in `docs/voice-authoring.md`.
+
 Page creation, renaming, moving and deletion operate on stable section IDs/order and explicit block ownership; no Markdown headings, source ranges, parsed fingerprints or syntax-preserving writer are authoring contracts. Preserve referenced steps/narrations and reject deletion that would leave dangling bindings. Code and assets remain project references.
 
 Keep native history responsive, including toolbar Undo immediately after typing. External projections and saved acknowledgements are baselines, not new undoable edits. Draft recovery is bound to workspace/document identity and version. A late acknowledgement, generation result or response after switching documents cannot clear newer input or be adopted by another document.
@@ -92,12 +96,13 @@ The RFC defines Content and Sequence as authoring workspaces, with Present and E
 them on the same web viewer and iframe (`docs/architecture.md` 1.1); runtime view IDs do not define extra
 workspace tabs. Use the RFC section 6 selection/draft table when changing navigation: an old draft stays
 bound to its old source while the inspector immediately follows the new selection, and save callbacks keep
-their original target and version. The IR has no stable Step ID; convert full-document and media-filtered
-steps through the existing trail/map instead of treating array indexes as identity.
+their original target and version. Canonical Step IDs remain authoritative; runtime numeric steps,
+trails and media maps are projections. Preserve stable IDs and validate the source/revision binding
+instead of treating array indexes as identity.
 
 Step-script drafts are keyed by document, section and step in `narration-drafts.ts`, with a workspace-scoped
-browser recovery record and a source baseline. Saving is serialized with body edits, waits for a newer IR
-revision, and confirms only its submitted edit version. Follow RFC section 6 for debounce and composition
+browser recovery record and a source baseline. Saving is serialized with body edits and confirms only its
+submitted source/edit version; preview compilation is separate. Follow RFC section 6 for debounce and composition
 behavior. Verify switching steps during a pending save, typing before its acknowledgement, closing the
 panel before completion and recovering a draft after reload; a changed step structure must be rejected.
 An interrupted composition remains a draft requiring review, including after reload; it must not leave a

@@ -1,6 +1,6 @@
 # RFC：Web 与 MCP 共用作者动作及验证反馈
 
-状态：作者事务首片与转写／采用适配已实施，其余分阶段推进。2026-10-27 根据作者要求设计：AI agent 经 MCP 能完成作者在 Web 中可完成的工作，包括人声录音转写、将文字采用为讲稿、再显式生成 AI 配音。第 12.1 节的共享作者事务见第 14 节；转写任务发现、启动、读取、取消与类型化采用见第 15 节。其余接口名和新增类型仍为提案。
+状态：作者事务、音频资产与片段、音色发现、转写／采用适配已实施，其余分阶段推进。2026-10-27 根据作者要求设计：AI agent 经 MCP 能完成作者在 Web 中可完成的工作，包括人声录音转写、将文字采用为讲稿、再显式生成 AI 配音。第 12.1 节的共享作者事务见第 14 节；转写任务发现、启动、读取、取消与类型化采用见第 15 节。下文未明确标为已实现的接口名和新增类型仍为提案。
 
 本文供工作区、工作台、MCP 和讲授插件的实现者拆分任务。交付结果是一套共用的作者动作、版本检查和反馈协议。文稿内容继续只写 `lecture.json`；规范实体定义以[文稿契约](../packages/kernel/src/contracts/document.ts)和[文稿 IR RFC](rfc-document-ir.md)为准，录制转写的候选与采用细节以[录制转写 RFC](rfc-recording-transcription.md)为准。
 
@@ -38,16 +38,16 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 批注新建、回复、编辑、反应、解决、重开、删除 | `DocumentThreadStore` 适配 BlockNote CommentsExtension，落 `TeachingDocument.comments` | 已可读取规范线程；专用批注动作仍缺，明确 replacement 不等于对齐完成 | 共用线程动作、稳定文本锚点和失锚状态；禁止写 BlockNote 私有 JSON |
 | 批量批注交给助手、接受／拒绝／继续修改 | workbench 与 dsh 的会话／审阅路由；材料生成流程仍未齐全 | 核心 MCP 不提供会话或审阅动作 | 显式任务范围、会话上下文与修改审阅，不能将发送成功当作内容修改完成 |
 | 导入与查看图片 | `document/image` 将原文件和资产声明原子保存；`document/asset` 按 Asset ID 读取 | 无 | 安全字节输入、回执与资源读取；沿用现有媒体检查限制 |
-| 导入／检查本地音频 | `document/audio`，`DocumentAudioImport/InspectionAnswer`；真实媒体探测及多文件事务 | 无 | `import_asset/inspect_asset` 复用这条链，不接受任意服务端路径 |
-| 音频区间、步内偏移、音量、静音、移除 | `document/media-clip`；`ProductionBinding` 与真实素材时长校验 | 无 | `mediaClip` 动作复用服务，删除 clip 不删除原始素材 |
+| 导入／检查本地音频 | `DocumentAudioAuthoring` 共用真实媒体探测及多文件事务 | 已有能力、workspace 预检／导入与 canonical inspection 四个工具 | 远程分块上传尚未实现；路径限当前文稿工作区，不接受任意服务端路径 |
+| 音频区间、步内偏移、音量、静音、移除 | 同一 `DocumentAudioAuthoring` 的预检／事务；`ProductionBinding` 与真实时长校验 | 已有 `read_production_plan/validate_media_clip_change/change_media_clip` | 保存后新计划仍需准备；删除保留原始素材，尚无跨重启持久回执 |
 | 录制、重录、试听、采用录音 | viewer 有讲授录制链；制作面板候选录音与采用仍未完整接入 | 无客户端录制控制 | 版本化录制候选与客户端语义请求；采用另走作者事务 |
 | 人声转写 | `DocumentTranscriptions` 保存版本化候选；HTTP 与 MCP 共用任务实例 | 已有能力、启动、清单、任务、exact result 和取消六个工具；旧 `track_transcribe` 仍独立写 track.json | 成功 ASR 与实际提供方取消需真实服务验收；不写讲稿 |
 | 查看差异并将转写采用为步骤讲稿 | `DocumentTranscriptionAdoption` 共用 typed Narration 差异与作者事务 | 已有 `plan_transcription_adoption/apply_transcription_adoption`，复用原 DocumentEditor planId | 页面 UI 及完整人声转 TTS 链按实际验收推进；保留受保护发音／cue 的显式处理 |
 | 采用转写后改用 AI 配音 | 可编辑 `VoiceSource`；录音来源播放仍受服务支持限制 | `lecture_synthesize` 为显式 spend 工具，整讲同步返回 | 显式选择 TTS 来源和作用域，再复用有 source 的配音任务；不能把 ASR 时间当作新音色时间 |
-| 音色目录、搜索筛选、继承与批量应用 | `voice-catalog`、`document-voices.ts`、规范 `Production`；批量默认保留覆盖 | 无专门目录／作者动作 | 目录能力及不可用原因；提升相同作用域与影响计算到共享层 |
+| 音色目录、搜索筛选、继承与批量应用 | `DocumentVoiceAuthoring` 读配置与目录，不依赖编译；`document-voices.ts` 处理继承，批量默认保留覆盖 | 已有 `get_voice_authoring_capabilities/get_voice_catalog`；继承／批量专门动作仍缺 | 提升相同作用域与影响计算到共享层；配置存在不代表合成成功 |
 | 音色样本／当前讲稿试听 | `voice-preview` 的 quote → 显式请求 → `VoicePreviewAnswer` | 无 | 保留 quote、提供方、cache 状态和明确 spend；返回可读取的音频资源 |
 | 配音生成、进度、取消 | `VoiceoverRequest/Job/Snapshot`；客户端先分配 intent，支持按 intent 取消 | `lecture_synthesize` 有来源屏障，但未暴露 Web 的任务／范围／取消链 | MCP 适配现有 voiceover 服务，保留 intent/source/revision/scope |
-| 计划、波形、定位、播放、暂停、速率 | `ProductionPlan`、单一播放器、预览协议中的制作请求 | `navigate` 仅定位放映窗口；`get_runtime` 只读运行报告 | 计划读取及指定作者客户端的 `ProductionPlaybackCommand` 与应答 |
+| 计划、波形、定位、播放、暂停、速率 | `ProductionPlan`、单一播放器、预览协议中的制作请求 | 已有真实 `read_production_plan`；`navigate` 仅定位放映窗口，`get_runtime` 只读报告 | 指定作者客户端的 `ProductionPlaybackCommand` 与真实应答 |
 | 编译、预览、导出、下载 | workspace `jobs` 需要明确 `JobSource`，支持状态、事件、取消、版本和文件 | `build/get_builds/cancel_build` 已保留 source、sequence、inputFingerprint、captions 与文件；取消不要求先编译 | 后续统一任务发现、持久意图账本与资源；当前反馈见[输出验证记录](benchmarks/mcp-output-feedback-2026-10-27.md) |
 | 诊断、失败详情、运行验证 | UI `readDiagnostics` 读诊断快照；编译／浏览器报告分来源 | `get_diagnostics` 走 compile+check；diagnostics resource 才走宿主快照；runtime 有报告但不证明最新源 | 统一诊断快照入口，保留阶段；新增带来源的验证请求和 observed／unobserved 结果 |
 | 文稿草稿、外部变更、保存冲突 | `DocumentSession` 和制作 drafts 在浏览器按来源隔离；不能从服务看见未提交字节 | 无 | 客户端编辑状态探测与 flush／保留／恢复请求，未连接时声明未知 |
@@ -141,7 +141,9 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 
 ## 7. 资源、录音和人声重新配音
 
-当前已实现工作区已有音频的共享检查／导入：`get_audio_authoring_capabilities`、`inspect_workspace_audio`、`import_workspace_audio`、`inspect_document_audio`。先以实际检查得到 SHA 与长度，再用同 source 导入，随后可将真实 Asset 交给已实现的转写工具；HTTP 和 MCP 共用事务、回执和保存后读回。路径严格限当前文稿的既有工作区范围，详见[音频作者接口](audio-authoring.md#mcp-检查与导入工作区音频)。该入口不要求场景先编译成功，也没有实现下文的远程分块上传、物理设备授权、剪辑动作或音色任务对齐。
+当前已实现工作区已有音频的共享检查／导入：`get_audio_authoring_capabilities`、`inspect_workspace_audio`、`import_workspace_audio`、`inspect_document_audio`。先以实际检查得到 SHA 与长度，再用同 source 导入，随后可将真实 Asset 交给已实现的转写工具；HTTP 和 MCP 共用事务、回执和保存后读回。路径严格限当前文稿的既有工作区范围，详见[音频作者接口](audio-authoring.md#mcp-检查与导入工作区音频)。该入口不要求场景先编译成功。
+
+片段已通过 `read_production_plan/validate_media_clip_change/change_media_clip` 共用实际计划、只读预检和原子事务。计划读取不自动编译：没有 IR 时明确 unavailable，调用方可先显式读取 IR resource；source 必须匹配，可选 expected IR revision 仍会核对。预检不持久化 plan；upsert 仍要求完整实际 binding 与已确认步骤，删除不要求计划先恢复。音色配置与真实目录已通过 `get_voice_authoring_capabilities/get_voice_catalog` 共用，不等待场景编译，详见[音色读取契约](voice-authoring.md)。这些切片尚未实现下文的远程分块上传、物理设备授权、继承动作、配音／试听任务与客户端播放对齐。
 
 媒体输入共用工作区有界上传服务。Web 仍用 multipart；MCP 通过 `begin_asset_upload/append_asset_upload/finish_asset_upload` 的有限大小字节块获得一次性上传句柄，或者使用服务已登记的资源 URI。必须由能力响应公开字节上限、块上限、支持格式和句柄期限。服务不从 agent 给出的绝对路径、`file://` 或任意 URL 读取文件。
 

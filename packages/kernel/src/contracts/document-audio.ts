@@ -1,8 +1,11 @@
 import type { CanonicalSource } from '../ir.ts'
 import type { Finding } from './checks.ts'
+import type { DocumentIssue, MediaClip } from './document.ts'
 import { DOCUMENT_AUDIO_MAX_BYTES } from './production-assets.ts'
-import type { DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, ProductionAssetInspection } from './production-assets.ts'
+import type { DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, ProductionAssetInspection, ProductionAudioPlanQuery } from './production-assets.ts'
+import type { ProductionBinding, ProductionPlan } from './production.ts'
 import type { Member } from './server.ts'
+import type { DocumentChangeAnswer } from './workspace.ts'
 
 export const DOCUMENT_AUDIO_REQUEST_MAX_BYTES = 16 << 10
 
@@ -13,14 +16,18 @@ export interface DocumentAudioCapabilities {
   reason?: 'audio-unavailable' | 'services-unavailable'
   verification: 'configuration-only'
   findings?: Finding[]
-  actions: { inspect: boolean, inspectWorkspace: boolean, importWorkspace: boolean }
+  actions: { inspect: boolean, inspectWorkspace: boolean, importWorkspace: boolean, readProductionPlan: boolean, validateClipChange: boolean, changeClip: boolean }
   importUnavailableReason?: 'review-required' | 'operation-disabled'
+  clipChangeUnavailableReason?: 'review-required' | 'operation-disabled'
+  clips: { upsert: boolean, remove: true, upsertRequires: 'current-production-binding' }
   limits: { audioBytes: number, requestBytes: number, receipts: number, concurrent: number }
   workspaceFileScope: 'same-document'
   idempotency: 'process-current-source'
   review: 'required-unsupported' | 'locks-and-history' | 'locks-only'
 }
 export interface DocumentAudioInspect { source: CanonicalSource, assetId: string }
+/** Inspect an existing real snapshot; an expected revision is optional during discovery. */
+export type DocProductionPlanQuery = ProductionAudioPlanQuery
 export interface DocumentWorkspaceAudioInspect { source: CanonicalSource, path: string }
 export interface WorkspaceAudioInspectionAnswer {
   document: string
@@ -43,13 +50,43 @@ export interface VerifiedDocumentAudioImport extends DocumentAudioImportAnswer {
     runtime: 'not-requested'
   }
 }
+/** A repeatable check against saved content; no plan or write intent is retained. */
+export type DocumentMediaClipValidation =
+  | { source: CanonicalSource, binding: ProductionBinding, clip: MediaClip }
+  | { source: CanonicalSource, removeClipId: string }
+export type DocumentMediaClipEdit = DocumentMediaClipValidation & { id: string }
+export interface DocumentMediaClipValidationAnswer {
+  document: string
+  source: CanonicalSource
+  operation: 'add' | 'update' | 'remove'
+  clipId: string
+  before?: MediaClip
+  after?: MediaClip
+  impact: { stepIds: string[], assetIds: string[] }
+  issues: DocumentIssue[]
+  checked: { canonical: true, production: 'validated' | 'not-required', binding?: ProductionBinding }
+}
+export interface VerifiedDocumentMediaClipChange extends DocumentChangeAnswer {
+  verification: {
+    saved: true
+    source: CanonicalSource
+    production: 'validated-before-save' | 'not-required'
+    binding?: ProductionBinding
+    compiled: 'not-requested'
+    runtime: 'not-requested'
+  }
+}
 /** Workspace authoring boundary, distinct from the plugin's low-level ProductionAudioAuthoring. */
 export interface DocumentAudioAuthoring {
   capabilities(document: string, member: Member): Promise<DocumentAudioCapabilities>
   inspect(document: string, request: DocumentAudioInspect, member: Member, signal?: AbortSignal): Promise<DocumentAudioInspectionAnswer>
   inspectWorkspace(document: string, request: DocumentWorkspaceAudioInspect, member: Member, signal?: AbortSignal): Promise<WorkspaceAudioInspectionAnswer>
+  readProductionPlan(document: string, request: DocProductionPlanQuery, member: Member, signal?: AbortSignal): Promise<ProductionPlan>
   /** Agent entry. Origin and required review come from the host, never from this request. */
   importWorkspace(document: string, request: DocumentWorkspaceAudioImport, member: Member, signal?: AbortSignal): Promise<VerifiedDocumentAudioImport>
+  validateClipChange(document: string, request: DocumentMediaClipValidation, member: Member, signal?: AbortSignal): Promise<DocumentMediaClipValidationAnswer>
+  /** Agent entry; the transaction rechecks source, real media and current production timing. */
+  changeClip(document: string, request: DocumentMediaClipEdit, member: Member, signal?: AbortSignal): Promise<VerifiedDocumentMediaClipChange>
 }
 
 const source = { type: 'object', additionalProperties: false, properties: { documentId: { type: 'string', minLength: 1, maxLength: 200 }, version: { type: 'string', pattern: '^[a-f\\d]{20}$' }, fingerprint: { type: 'string', pattern: '^[a-f\\d]{16}$' } }, required: ['documentId', 'version', 'fingerprint'] } as const
@@ -72,3 +109,25 @@ export const DOCUMENT_WORKSPACE_AUDIO_INSPECTION_SCHEMA = {
   properties: { source, path: { type: 'string', minLength: 1, maxLength: 1024 } },
   required: ['source', 'path'],
 } as const
+
+const clipId = { type: 'string', minLength: 1, maxLength: 200, pattern: '^[^\\u0000-\\u001f]+$', not: { enum: ['__proto__', 'constructor', 'prototype'] } } as const
+const clip = {
+  type: 'object', additionalProperties: false,
+  properties: {
+    id: clipId, assetId: clipId,
+    sourceRange: { type: 'object', additionalProperties: false, properties: { startMs: { type: 'number', minimum: 0 }, endMs: { type: 'number', minimum: 0 } }, required: ['startMs', 'endMs'] },
+    attachment: { type: 'object', additionalProperties: false, properties: { stepId: clipId, offsetMs: { type: 'number', minimum: 0 } }, required: ['stepId', 'offsetMs'] },
+    volume: { type: 'number', minimum: 0, maximum: 1 }, muted: { type: 'boolean' },
+  },
+  required: ['id', 'assetId', 'sourceRange', 'attachment', 'volume'],
+} as const
+const productionBinding = { type: 'object', additionalProperties: false, properties: { source, irRevision: { type: 'string', pattern: '^[a-f\\d]{16}$' }, planId: { type: 'string', pattern: '^[a-f\\d]{32}$' } }, required: ['source', 'irRevision', 'planId'] } as const
+export const DOCUMENT_PRODUCTION_PLAN_SCHEMA = { type: 'object', additionalProperties: false, properties: { source, irRevision: productionBinding.properties.irRevision }, required: ['source'] } as const
+const clipRequestSchema = (edit: boolean) => ({
+  oneOf: [
+    { type: 'object', additionalProperties: false, properties: { ...edit ? { id: clipId } : {}, source, binding: productionBinding, clip }, required: [...edit ? ['id'] : [], 'source', 'binding', 'clip'] },
+    { type: 'object', additionalProperties: false, properties: { ...edit ? { id: clipId } : {}, source, removeClipId: clipId }, required: [...edit ? ['id'] : [], 'source', 'removeClipId'] },
+  ],
+})
+export const DOCUMENT_MEDIA_CLIP_VALIDATION_SCHEMA = /* @__PURE__ */ clipRequestSchema(false)
+export const DOCUMENT_MEDIA_CLIP_CHANGE_SCHEMA = /* @__PURE__ */ clipRequestSchema(true)
