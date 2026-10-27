@@ -16,6 +16,12 @@ agent 已连接到当前工作区时，读取 `presmium://diagnostics?document=<
 
 已建立的 cookie 由 dsh 状态目录中的持久凭据签名，默认有效 30 天。沿用同一状态目录与地址时，重启不应被直接解释为所有 cookie 失效。排查时分别验证当前完整入口、旧入口与已登录浏览器里的普通地址，只记录状态与是否进入工作台，不输出令牌或 cookie。协议依据见本地 [dsh 认证说明](../vendor/docs/dsh/packages/client/connection/README.md#browser-authentication-and-request-trust)。
 
+## 多标签页请求不返回
+
+先核对是否只是浏览器尚未取得连接：记录每个标签页的活动 SSE、HTTP 协议、请求发送与响应头时刻，并用同 cookie 的独立 Node 请求作对照。不要从 DevTools 的 request 创建事件推断请求已经到达服务，也不要用重发、短超时或关闭其它页作为产品修复。
+
+正常 Studio 由共享事件 WebSocket 推送文稿及运行数据，并关闭 shell `client-hmr` 流。六标签页的实际因果记录见[传输验证](benchmarks/studio-multitab-transport-2026-10-27.md)。若自有 profile 重新启用 HMR，`/plugins/events` 会恢复每页一条 SSE；普通编辑无需该设置。客户端代码重建或外壳插件启停后，正常配置需重新加载页面；正式 profile 覆盖方法见[接入设计](design-dsh.md#23-请求的路径)。
+
 ## 用隔离副本复现
 
 共享源码检出中若工作台日志出现读取 `packages/dsh/build/dist/client.json` 或 `client.js` 的 `EACCES`，应先检查生成产物的权限。源码启动会重建不可读或损坏的构建清单，客户端及清单固定为可读权限，不受启动终端的私有 umask 影响。确认实际页面加载的新构建和目标 DOM 后才能判定修复生效；源码已修改或预览后端就绪不足以证明原工作台标签页已更新。
