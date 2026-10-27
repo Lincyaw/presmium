@@ -1,7 +1,7 @@
-import { existsSync, mkdirSync, renameSync, rmdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, rmdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { DocumentOperation, Member, OperationAnswer, RevisionOperation } from '@lincyaw/kernel'
-import { hasRole } from '@lincyaw/kernel'
+import type { ProjectOperation, DocumentFileChange, Member, OperationAnswer, RevisionOperation } from '@lincyaw/kernel'
+import { hasRole, validateDocument } from '@lincyaw/kernel'
 import type { CommitOrigin } from '../domain/commit-message.ts'
 import { invalidDocumentDir, isWithin } from '../domain/paths.ts'
 import { isDocumentDir, listDocuments } from './config.ts'
@@ -33,8 +33,8 @@ export interface DocumentOperationsOptions {
   locks?: DocumentLocks
 }
 
-function touched(operation: DocumentOperation): string[] {
-  return operation.op === 'create' || operation.op === 'delete' ? [operation.dir] : [operation.dir, operation.to]
+function touched(operation: ProjectOperation): string[] {
+  return operation.op === 'create' || operation.op === 'delete' || operation.op === 'retitle' ? [operation.dir] : [operation.dir, operation.to]
 }
 
 /** Creating, renaming, copying and deleting a document, each under the document locks and as one commit. */
@@ -53,26 +53,32 @@ export class DocumentOperations {
     this.#locks = options.locks
   }
 
-  async apply(operation: DocumentOperation, member: Member): Promise<OperationAnswer> {
+  async apply(operation: ProjectOperation, member: Member, prepared?: { documentId?: string, origin: 'editor' | 'agent', changes?: DocumentFileChange[], verify(): Promise<void> }): Promise<OperationAnswer> {
     if (!hasRole(member, 'editor')) throw new RequestError(403, 'document operations need the role editor')
     if (this.#config.singleDeck) throw new RequestError(409, 'this workspace is a single deck: it has no document operations')
-    if (operation.op !== 'create' && operation.dir === '') throw new RequestError(409, 'project-root-operation-unavailable')
+    if (operation.op !== 'create' && operation.op !== 'retitle' && operation.dir === '') throw new RequestError(409, 'project-root-operation-unavailable')
     let release: (() => void) | undefined, committedError: RequestError | undefined, cleanupError: unknown
     try {
       const answer = await this.#revisions.transaction(async () => {
+        if (prepared) {
+          const claimed = this.#locks?.claimAll([''], `document:${operation.op}`)
+          if (claimed && 'holder' in claimed) throw lockedError(claimed.document, claimed.holder)
+          release ??= claimed?.release
+        }
+        await prepared?.verify()
         const head = await this.#revisions.head()
-        const before = await this.#writer.checkpoint(touched(operation), operation.op === 'rename' ? { from: operation.dir, to: operation.to } : undefined).catch(error => {
+        const before = await this.#writer.checkpoint(operation.op === 'retitle' ? [] : touched(operation), operation.op === 'rename' ? { from: operation.dir, to: operation.to } : undefined, operation.op === 'retitle' ? [operation.dir ? `${operation.dir}/lecture.json` : 'lecture.json'] : prepared?.changes?.map(change => change.path)).catch(error => {
           if (error instanceof DocumentCheckpointRefusal) throw new RequestError(error.status, error.message, error.detail)
           throw error
         })
         let discardCheckpoint = true
         try {
-          const claimed = this.#locks?.claimAll(before.documents, `document:${operation.op}`)
+          const claimed = prepared ? undefined : this.#locks?.claimAll(before.documents, `document:${operation.op}`)
           if (claimed && 'holder' in claimed) throw lockedError(claimed.document, claimed.holder)
-          release = claimed?.release
+          release ??= claimed?.release
           let mutationStarted = false
           try {
-            const result = await this.#apply(operation, member, () => { mutationStarted = true; discardCheckpoint = false })
+            const result = await this.#apply(operation, member, () => { mutationStarted = true; discardCheckpoint = false }, prepared)
             discardCheckpoint = true
             return result
           }
@@ -124,9 +130,9 @@ export class DocumentOperations {
     }
   }
 
-  async #apply(operation: DocumentOperation, member: Member, beforeWrite: () => void): Promise<OperationAnswer> {
+  async #apply(operation: ProjectOperation, member: Member, beforeWrite: () => void, prepared?: { documentId?: string, origin: 'editor' | 'agent', changes?: DocumentFileChange[] }): Promise<OperationAnswer> {
     const config = this.#config
-    const origin = (done: RevisionOperation): CommitOrigin => ({ kind: 'document', member, operation: done })
+    const origin = (done: RevisionOperation): CommitOrigin => ({ kind: prepared?.origin === 'agent' ? 'agent' : 'document', member, operation: done })
     const commit = (paths: string[], summary: string, body: string, done: RevisionOperation) => this.#revisions.commitWhileLocked({ paths, summary, body, origin: origin(done) })
     const known = listDocuments(config).map(doc => doc.dir)
     const existing = (dir: string) => {
@@ -143,6 +149,16 @@ export class DocumentOperations {
       return dir
     }
     switch (operation.op) {
+      case 'retitle': {
+        const dir = existing(operation.dir), path = dir ? `${dir}/lecture.json` : 'lecture.json'
+        const checked = validateDocument(JSON.parse(readFileSync(join(config.root, path), 'utf8')))
+        if (!checked.document) throw new RequestError(422, 'project-document-invalid')
+        checked.document.metadata.title = operation.title
+        beforeWrite()
+        await this.#writer.write([{ path, content: Buffer.from(JSON.stringify(checked.document, null, 2) + '\n') }])
+        const revision = await this.#revisions.commitWhileLocked({ paths: [path], summary: `Rename document ${dir || '.'}`, body: '', origin: { kind: prepared?.origin === 'agent' ? 'agent' : 'editor', member } })
+        return { revision, dir }
+      }
       case 'create': {
         const dir = fresh(operation.dir)
         const templates = listTemplates(config)
@@ -150,7 +166,7 @@ export class DocumentOperations {
         if (!name || !templates.includes(name)) throw new RequestError(400, `no document template ${JSON.stringify(name ?? '')}`)
         const title = operation.title?.trim() || dir.split('/').at(-1)!
         beforeWrite()
-        await this.#fill(dir, () => this.#writer.template(dir, name, title))
+        await this.#fill(dir, async () => { await this.#writer.template(dir, name, title, prepared?.documentId); if (prepared?.changes) await this.#writer.write(prepared.changes) })
         const revision = await commit([dir], `Create document ${dir}`, `Title: ${title}\nTemplate: ${name}`, { op: 'create', dir })
         return { revision, dir }
       }
@@ -161,6 +177,7 @@ export class DocumentOperations {
         mkdirSync(dirname(join(config.root, to)), { recursive: true })
         renameSync(join(config.root, from), join(config.root, to))
         const rewritten = (await this.#writer.relink(from, to)).filter(path => !isWithin(path, to))
+        if (prepared?.changes) { await this.#writer.write(prepared.changes); rewritten.push(...prepared.changes.map(change => change.path)) }
         const revision = await commit([from, to, ...rewritten], `Rename document ${from} to ${to}`, rewritten.length ? `Links rewritten in: ${rewritten.join(', ')}` : '', { op: 'rename', dir: from, to })
         return { revision, dir: to }
       }
@@ -168,7 +185,7 @@ export class DocumentOperations {
         const from = existing(operation.dir)
         const to = fresh(operation.to)
         beforeWrite()
-        await this.#fill(to, () => this.#writer.copy(from, to))
+        await this.#fill(to, async () => { await this.#writer.copy(from, to, prepared?.documentId, operation.title); if (prepared?.changes) await this.#writer.write(prepared.changes) })
         const revision = await commit([to], `Copy document ${from} to ${to}`, '', { op: 'copy', dir: from, to })
         return { revision, dir: to }
       }
