@@ -1,5 +1,6 @@
 export { copyPublished, productionAssetFile } from './assets.ts'
 export { DOCUMENT_CHANGE_JSON_SCHEMA, validateDocumentChange, validateDocumentPageDuplication, validateDocumentPageDuplicationApply } from '../authoring.ts'
+export { validateDocumentOutlineQuery, validateDocumentPartQuery } from './document-reads.ts'
 export { validateDocumentTranscriptionRequest } from './transcription.ts'
 export { validateDocumentRecordingAdoption, validateDocumentAudioInspect, validateDocumentWorkspaceAudioImport, validateDocumentWorkspaceAudioInspect, validateDocumentMediaClipValidation, validateDocumentMediaClipEdit, validateDocumentProductionPlanQuery } from './document-audio.ts'
 export { validateDocumentVoiceCatalogQuery } from './document-voice.ts'

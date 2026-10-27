@@ -449,6 +449,8 @@ function hostSupports(host: McpHost, name: string): boolean {
     case 'plan_transcription_adoption': return Boolean(host.transcriptionAdoption)
     case 'apply_transcription_adoption': return Boolean(host.transcriptionAdoption && host.authoring)
     case 'get_document':
+    case 'get_document_outline':
+    case 'read_document_part':
     case 'plan_page_duplication':
     case 'apply_page_duplication':
     case 'plan_document_change':
@@ -540,7 +542,7 @@ function instructions(host: McpHost, caller: McpCaller, tools: { name: string, k
           : pages
             ? `Operate tools: ${operations.join(', ')}. Each may first wait for a person to allow it (in the page), and fails when refused.`
             : `Operate tools: ${operations.join(', ')}, allowed as presmium-mcp --allow says.`,
-    `${host.authoring ? 'Canonical authoring uses get_document, plan_document_change and apply_document_change with the shared Web transaction. Page duplication uses compact plan_page_duplication and apply_page_duplication references; its complete candidate and copied-ID mapping are optional resources, not model inputs to echo back. Read get_authoring_capabilities before editing; a saved result does not prove compilation or browser playback.' : 'This host has no canonical authoring service; get_authoring_capabilities reports the limitation.'} ${recompiles(host.process)} With several documents, name one with \`document\` (list_documents).`,
+    `${host.authoring ? 'Canonical authoring discovery starts with get_document_outline, then read_document_part for complete stable entities or fields. Keep the returned source on all continuation reads; source changes require starting again. Large values are explicit JSON-text fragments: concatenate text at nextOffset and JSON.parse the complete sequence. These bounded replies survive tool-result pruning; the legacy full get_document may exceed that budget. get_section/get_step are derived runtime data, never editable canonical content. Changes use plan_document_change and apply_document_change with the shared Web transaction; large generic write inputs/results are not yet bounded. Page duplication uses compact plan_page_duplication and apply_page_duplication references; its complete candidate and copied-ID mapping are optional resources, not model inputs to echo back. Read get_authoring_capabilities before editing; a saved result does not prove compilation or browser playback.' : 'This host has no canonical authoring service; get_authoring_capabilities reports the limitation.'} ${recompiles(host.process)} With several documents, name one with \`document\` (list_documents).`,
   ].join('\n')
 }
 

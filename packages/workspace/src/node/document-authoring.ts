@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { applyDocumentOperations, AUTHORING_API_VERSION, DOCUMENT_ENTRY, DOCUMENT_OPERATION_TYPES, DOCUMENT_SCHEMA_VERSION, duplicateDocumentPage, fnv1a64, hasRole, validateDocument } from '@lincyaw/kernel'
-import { validateDocumentChange, validateDocumentPageDuplication, validateDocumentPageDuplicationApply } from '@lincyaw/kernel/node'
-import type { AppliedDocumentChange, ApplyDocumentChange, DocumentAnswer, DocumentAuthoring, DocumentChange, DocumentChangeAnswer, DocumentChangePlan, DocumentIssue, DocumentPageDuplicationPlan, Member, RequestContext, SourceTransactionChange, TeachingDocument } from '@lincyaw/kernel'
+import { applyDocumentOperations, AUTHORING_API_VERSION, DOCUMENT_ENTRY, DOCUMENT_OPERATION_TYPES, DOCUMENT_READ_MAX_REQUEST_CHARS, DOCUMENT_READ_MAX_RESPONSE_CHARS, DOCUMENT_SCHEMA_VERSION, documentOutline, documentPart, DocumentReadError, duplicateDocumentPage, fnv1a64, hasRole, validateDocument } from '@lincyaw/kernel'
+import { validateDocumentChange, validateDocumentPageDuplication, validateDocumentPageDuplicationApply, validateDocumentOutlineQuery, validateDocumentPartQuery } from '@lincyaw/kernel/node'
+import type { AppliedDocumentChange, ApplyDocumentChange, CanonicalSource, DocumentAnswer, DocumentAuthoring, DocumentChange, DocumentChangeAnswer, DocumentChangePlan, DocumentIssue, DocumentPageDuplicationPlan, Member, RequestContext, SourceTransactionChange, TeachingDocument } from '@lincyaw/kernel'
 import { RequestError } from './errors.ts'
 import { MAX_SOURCE, MAX_SOURCE_CHANGES } from './source-editor.ts'
 import type { SourceEditor, SourceTransactionHistory } from './source-editor.ts'
@@ -45,6 +45,33 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
   const read = async (document: string, member: Member): Promise<DocumentAnswer> => {
     const { source, content, issues } = readAuthoringDocument(editor, { document, member })
     return { document, version: source.version, fingerprint: fnv1a64(source.content), content, issues }
+  }
+  const readSelection = <T>(document: string, expected: CanonicalSource | undefined, member: Member, select: (content: TeachingDocument, source: CanonicalSource) => T): T => {
+    if (!hasRole(member, 'editor')) throw new RequestError(403, 'authoring-permission-denied')
+    const scope = editor.scope(document), path = entryOf(document)
+    const readSource = () => {
+      try { return editor.read(scope, path, member) }
+      catch (error) {
+        if (expected && error instanceof RequestError && error.status === 413) throw new RequestError(409, 'document-version-changed')
+        throw error
+      }
+    }
+    const raw = readSource(), fingerprint = fnv1a64(raw.content)
+    // Compare raw bytes first: a changed source that has become invalid is still a stale read.
+    if (expected && (expected.version !== raw.version || expected.fingerprint !== fingerprint)) throw new RequestError(409, 'document-version-changed', { version: raw.version, fingerprint })
+    const checked = decodeAuthoringDocument(raw.content)
+    if (!checked.document || checked.issues.some(issue => issue.severity === 'error')) throw new RequestError(422, 'document-invalid', {
+      issueCount: checked.issues.length,
+      issues: checked.issues.slice(0, 3).map(issue => ({ code: issue.code.slice(0, 64), path: issue.path.slice(0, 100), message: issue.message.slice(0, 120), severity: issue.severity })),
+    })
+    const source: CanonicalSource = { documentId: checked.document.id, version: raw.version, fingerprint }
+    if (expected && expected.documentId !== source.documentId) throw new RequestError(409, 'document-version-changed', { source })
+    let answer: T
+    try { answer = select(checked.document, source) }
+    catch (error) { if (error instanceof DocumentReadError) throw new RequestError(error.status, error.message); throw error }
+    const after = readSource()
+    if (after.version !== raw.version || after.content !== raw.content) throw new RequestError(409, 'document-version-changed', { version: after.version, fingerprint: fnv1a64(after.content) })
+    return answer
   }
   const checkedChange = (raw: unknown): DocumentChange => {
     const checked = validateDocumentChange(raw)
@@ -113,9 +140,17 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
   const service: DocumentEditor = {
     capabilities(_document, member) {
       const allowed = hasRole(member, 'editor')
-      return { apiVersion: AUTHORING_API_VERSION, documentSchemaVersion: DOCUMENT_SCHEMA_VERSION, available: allowed, ...allowed ? {} : { reason: 'permission-denied' as const }, actions: { read: allowed, plan: allowed, apply: allowed && !reviewRequired, planPageDuplication: allowed, applyPageDuplication: allowed && !reviewRequired }, ...reviewRequired ? { applyUnavailableReason: 'review-required' as const } : {}, operations: DOCUMENT_OPERATION_TYPES, replacement: true, fileChanges: true, limits: { maxFiles: MAX_SOURCE_CHANGES, maxTextBytes: MAX_SOURCE, maxOperations: 1000, planLifetimeMs: PLAN_LIFETIME_MS, maxPlans: MAX_RECEIPTS, maxReceipts: MAX_RECEIPTS }, idempotency: 'process-current-source', review: reviewRequired ? 'required-unsupported' : revisions ? 'locks-and-history' : 'locks-only' }
+      return { apiVersion: AUTHORING_API_VERSION, documentSchemaVersion: DOCUMENT_SCHEMA_VERSION, available: allowed, ...allowed ? {} : { reason: 'permission-denied' as const }, actions: { read: allowed, outline: allowed, readPart: allowed, plan: allowed, apply: allowed && !reviewRequired, planPageDuplication: allowed, applyPageDuplication: allowed && !reviewRequired }, readLimits: { maxRequestChars: DOCUMENT_READ_MAX_REQUEST_CHARS, maxResponseChars: DOCUMENT_READ_MAX_RESPONSE_CHARS, responseSerialization: 'JSON.stringify(value,null,2)', offsetUnit: 'utf16' }, ...reviewRequired ? { applyUnavailableReason: 'review-required' as const } : {}, operations: DOCUMENT_OPERATION_TYPES, replacement: true, fileChanges: true, limits: { maxFiles: MAX_SOURCE_CHANGES, maxTextBytes: MAX_SOURCE, maxOperations: 1000, planLifetimeMs: PLAN_LIFETIME_MS, maxPlans: MAX_RECEIPTS, maxReceipts: MAX_RECEIPTS }, idempotency: 'process-current-source', review: reviewRequired ? 'required-unsupported' : revisions ? 'locks-and-history' : 'locks-only' }
     },
     read,
+    async outline(document, query, member) {
+      if (!validateDocumentOutlineQuery(query)) throw new RequestError(400, 'document-outline-query-invalid')
+      return readSelection(document, query.source, member, (content, source) => documentOutline(content, source, query))
+    },
+    async readPart(document, query, member) {
+      if (!validateDocumentPartQuery(query)) throw new RequestError(400, 'document-part-query-invalid')
+      return readSelection(document, query.source, member, (content, source) => documentPart(content, source, query))
+    },
     change: saveChange,
     plan: planChange,
     async planPageDuplication(document, raw, member) {

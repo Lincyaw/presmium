@@ -1,5 +1,6 @@
 export * from './contracts/agent.ts'
 export * from './contracts/authoring.ts'
+export * from './contracts/document-reads.ts'
 export * from './contracts/anchors.ts'
 export * from './contracts/checks.ts'
 export * from './contracts/classroom.ts'

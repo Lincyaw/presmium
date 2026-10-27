@@ -1,6 +1,7 @@
 export * from './contracts.ts'
 export { applyDocumentOperations } from './document-operations.ts'
 export { duplicateDocumentPage, pageContents } from './document-pages.ts'
+export { documentOutline, documentPart, DocumentReadError } from './document-reads.ts'
 export { prepareTranscriptionAdoption } from './transcription-adoption.ts'
 export { productionAssetIds, recordingStepIssue } from './recording.ts'
 export * from './ir.ts'
