@@ -5,6 +5,8 @@
         url: !!js process.env.PRESMIUM_SERVICE_URL
         token: !!js process.env.PRESMIUM_SERVICE_TOKEN
         root: !!js process.env.PRESMIUM_WORKSPACE || process.cwd()
+    - id: presmium-events
+      name: '@lincyaw/dsh/events'
     - id: presmium-tools
       name: '@lincyaw/dsh/tools'
     - id: presmium-policy

@@ -146,3 +146,8 @@
 - id: agent-preset-registry
   config:
     default: authoring
+
+# Static shell boot does not need one HTTP/1 event stream in every open Studio tab.
+# Source, diagnostics, review and jobs use Presmium's scoped event connection.
+- id: client-hmr
+  disabled: true
