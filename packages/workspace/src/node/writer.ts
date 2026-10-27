@@ -62,7 +62,7 @@ function realDirectory(root: string, dir: string): boolean {
   return stat(current)?.isDirectory() ?? false
 }
 
-export function documentDirOf(config: WorkspaceConfig, path: string): string | undefined {
+export function documentDirOf(config: WorkspaceConfig, path: string, entries?: ReadonlySet<string>): string | undefined {
   const parts = path.split('/'), parent = parts.slice(0, -1).join('/')
   // An explicit entry can create a new document before it owns ordinary files.
   if (parts.at(-1) === DOCUMENT_ENTRY && isDocumentDir(config, parent)) return parent
@@ -71,7 +71,7 @@ export function documentDirOf(config: WorkspaceConfig, path: string): string | u
     const dir = parts.slice(0, i).join('/')
     if (!isDocumentDir(config, dir)) continue
     prospective ??= dir
-    if (stat(join(config.root, dir, DOCUMENT_ENTRY))?.isFile()) return dir
+    if (entries?.has(dir) || stat(join(config.root, dir, DOCUMENT_ENTRY))?.isFile()) return dir
   }
   return prospective
 }
@@ -174,9 +174,10 @@ function writeAt(parent: string, target: string, content: Uint8Array, at: number
 }
 
 export function writeChanges(config: WorkspaceConfig, changes: DocumentFileChange[], outside = false): void {
-  const targets = changes.map((change) => {
-    const parts = partsOf(change.path)
-    const dir = documentDirOf(config, parts.join('/'))
+  const prepared = changes.map(change => ({ change, parts: partsOf(change.path) }))
+  const entries = new Set(prepared.filter(({ change, parts }) => 'content' in change && parts.at(-1) === DOCUMENT_ENTRY).map(({ parts }) => parts.slice(0, -1).join('/')))
+  const targets = prepared.map(({ change, parts }) => {
+    const dir = documentDirOf(config, parts.join('/'), entries)
     if (dir === undefined && !outside) throw new FilesError(`${change.path} is in no document directory`)
     if (!outside && dir !== undefined) assertDocumentDir(config, dir)
     return { change, base: outside ? '' : dir ?? '' }
