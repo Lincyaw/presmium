@@ -374,6 +374,88 @@
         ],
         "verification": "docs/benchmarks/audio-clip-editor-2026-10-27.md",
         "implementationBoundary": "Formal public composition; current source integration and real browser evidence are recorded separately in the linked benchmark."
+      },
+      "AudioRecording": {
+        "nodeId": "221:5101",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=221-5101",
+        "states": {
+          "Idle": "221:4935",
+          "Requesting": "221:4952",
+          "Recording": "221:4969",
+          "Ready": "221:4992",
+          "Importing": "221:5021",
+          "Failed": "221:5038",
+          "Unavailable": "221:5061",
+          "Imported": "221:5078"
+        },
+        "source": "packages/workbench/src/panels/ProductionRecording.tsx",
+        "behavior": "Video-only microphone candidate. Permission precedes recording, stop releases devices, audition is exclusive, and explicit Save uses canonical document/audio. Identity-bound in-memory candidates survive view/step changes and failed imports; they are not claimed durable. No automatic clip, narration, transcription, TTS or recording VoiceSource.",
+        "publicControls": [
+          "PmCard",
+          "PmButton",
+          "PmNotice",
+          "PmDialog"
+        ],
+        "status": "Implemented; controlled Chromium media chain, four width/theme views, coarse input, ownership and preview-reload boundaries validated. Physical microphone and device-permission verification remain explicit.",
+        "verification": "docs/benchmarks/video-microphone-recording-2026-10-27.md"
+      },
+      "TranscriptionAdoption": {
+        "nodeId": "232:5371",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=232-5371",
+        "states": {
+          "Ready": {
+            "Compact": "232:4963",
+            "Touch": "232:5167"
+          },
+          "Correcting": {
+            "Compact": "232:4983",
+            "Touch": "232:5187"
+          },
+          "Review": {
+            "Compact": "232:4996",
+            "Touch": "232:5200"
+          },
+          "ProtectedAtoms": {
+            "Compact": "232:5029",
+            "Touch": "232:5233"
+          },
+          "Conflict": {
+            "Compact": "232:5083",
+            "Touch": "232:5287"
+          },
+          "SourceChanged": {
+            "Compact": "232:5118",
+            "Touch": "232:5322"
+          },
+          "Saved": {
+            "Compact": "232:5153",
+            "Touch": "232:5357"
+          }
+        },
+        "reviewNodeId": "232:5372",
+        "interactionNodeId": "41:742",
+        "source": "packages/workbench/src/panels/TranscriptionAdoption.tsx",
+        "composition": "packages/workbench/src/panels/ProductionTranscription.tsx",
+        "publicControls": [
+          "PmSelect",
+          "NarrationEditor",
+          "PmButton",
+          "PmDialog",
+          "PmTextarea",
+          "PmNotice"
+        ],
+        "density": "Card actions compact 30/13; Dialog footer regular 36/14; touch controls 44/16. Field labels retain the shared 13px label style.",
+        "behavior": "Video-only candidate correction and explicit source-bound script adoption. Protected pronunciation/cue atoms require explicit preservation or removal; shared narration uses fork or confirmed shared impact. Conflict/source changes disable Apply. Review uses copyable current/proposed text and footer actions; desktop compares side by side, touch stacks. Saved shows only the existing short status. No automatic TTS, voice, clip or timing change.",
+        "foundations": {
+          "collection": "VariableCollectionId:21:4",
+          "warningSoft": "VariableID:230:12",
+          "sourceAliases": [
+            "VariableID:230:10",
+            "VariableID:230:11"
+          ]
+        },
+        "verification": "docs/benchmarks/video-transcription-adoption-2026-10-27.md",
+        "implementationBoundary": "Formal composition and state layouts read through Figma screenshots/design context, compared with four theme/width browser reviews and final 390px footer views. Browser candidates are protocol material, not successful ASR evidence."
       }
     },
     "variantCounts": {
@@ -1102,7 +1184,11 @@
         "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4646",
         "documentRecovery": {
           "retryStateId": "41:175",
-          "noteIds": ["41:209", "41:221", "41:222"],
+          "noteIds": [
+            "41:209",
+            "41:221",
+            "41:222"
+          ],
           "implementation": "packages/workbench/src/panels/SourceDocumentPanel.tsx",
           "behavior": "Compact recovery, save and position notices remain reachable within the document viewport. Expandable diagnostics stay in the normal document flow. Ordinary reopening restores workspace/document-bound stable page and step IDs and the viewport; removed targets require explicit relocation. Retrying does not navigate to the beginning of the document."
         }
