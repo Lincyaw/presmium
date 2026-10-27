@@ -15,6 +15,7 @@ import type { NativeDocumentSelection } from './selection.ts'
 import { DOCUMENT_EDITOR_MESSAGES, IMAGE_IMPORT_MESSAGES } from './messages.ts'
 import { imageFileInput } from './file-input.ts'
 import type { ImageImportFailure } from './file-input.ts'
+import { nativeTextClipboard } from './clipboard.ts'
 import { excludeCommentMarkHistory, nativeComments } from './comments.ts'
 import type { DocumentThreadStore } from './comments.ts'
 
@@ -114,10 +115,10 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         editor.getExtension(imageFileInput)?.insert(files)
         return true
       }
-      return defaultPasteHandler()
+      return defaultPasteHandler({ prioritizeMarkdownOverHTML: false })
     },
     dictionary, tables: { splitCells: true, cellBackgroundColor: true, cellTextColor: true, headers: true },
-    extensions: [imageFileInput({
+    extensions: [nativeTextClipboard, imageFileInput({
       onStart: () => { if (current.current.identity === props.identity) setFileErrors(undefined) },
       onFailure: failure => { if (current.current.identity === props.identity) setFileErrors(value => ({ identity: props.identity, failures: [...(value?.identity === props.identity ? value.failures : []), failure] })) },
     }), ...props.comments ? [nativeComments(props.comments, t.author)] : []],

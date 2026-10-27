@@ -1,7 +1,7 @@
 import { createContext, createElement, useContext } from 'react'
 import type { ReactNode } from 'react'
 import { BlockNoteSchema, defaultBlockSpecs, defaultInlineContentSpecs, defaultStyleSpecs } from '@blocknote/core'
-import type { Block, BlockNoteEditor, PartialBlock } from '@blocknote/core'
+import type { Block, BlockNoteEditor, PartialBlock, StyleConfig, StyleSpec } from '@blocknote/core'
 import { createReactBlockSpec, createReactInlineContentSpec } from '@blocknote/react'
 import { DOCUMENT_IMAGE_MEDIA_TYPES } from '@lincyaw/kernel'
 import { tableIdentityExtension } from './table-identities.ts'
@@ -78,6 +78,17 @@ const image: typeof defaultBlockSpecs.image = { ...defaultBlockSpecs.image, impl
   },
 } }
 
+function clipboardStyle<Config extends StyleConfig>(spec: StyleSpec<Config>): StyleSpec<Config> {
+  return { ...spec, implementation: { ...spec.implementation, mark: spec.implementation.mark.extend({ addPasteRules: () => [] }) } }
+}
+
+// HTML already carries formatting; its literal text must not run through inline Markdown paste rules again.
+const clipboardStyles = {
+  ...defaultStyleSpecs,
+  bold: clipboardStyle(defaultStyleSpecs.bold), italic: clipboardStyle(defaultStyleSpecs.italic),
+  strike: clipboardStyle(defaultStyleSpecs.strike), code: clipboardStyle(defaultStyleSpecs.code),
+}
+
 /** An editing projection. The product document schema remains owned by the kernel. */
 export const documentEditorSchema = BlockNoteSchema.create({
   blockSpecs: {
@@ -88,7 +99,7 @@ export const documentEditorSchema = BlockNoteSchema.create({
     presmiumPage: page, presmiumAtom: atom, presmiumContainer: container,
   },
   inlineContentSpecs: { ...defaultInlineContentSpecs, presmiumInline: inline },
-  styleSpecs: defaultStyleSpecs,
+  styleSpecs: clipboardStyles,
 })
 export const commentEditorSchema = BlockNoteSchema.create({
   blockSpecs: {
