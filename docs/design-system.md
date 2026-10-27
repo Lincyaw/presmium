@@ -29,7 +29,7 @@ BlockNote 的公共适配类为 `pm-ui-block-editor`，由工作台的全篇 `Bl
 适配使用 BlockNote 的公开 `.ProseMirror-selectednode`、`.bn-block-content` 选择器，仅在编辑器内有焦点时以 `accent-soft` 表面与 `accent` 描边表示当前块；伪元素保持透明，不遮住正文或动画。
 斜杠菜单使用公开 `.bn-suggestion-menu` 选择器隔离阅读正文的段落留白与行高，菜单文字恢复公共 `leading-ui`，避免正文排版把每条插入项撑高；菜单的布局、滚动与键盘行为仍由 BlockNote 提供。
 正文侧边的添加与拖拽按钮使用公开 `.bn-side-menu` 适配，沿用 compact 的 30px 与触屏的 44px 热区、公共图标和焦点令牌；窄屏或粗指针设备纵排，放在页边留白内，避免工具被视口裁掉。
-格式工具条使用公开 `.bn-formatting-toolbar` 适配，限制为视口内宽度并换行，按钮沿用同一 30px／44px 最小热区。正文批注使用 BlockNote 的 `CommentsExtension`、`AddCommentButton` 和原生表单，删除旧宿主 DOM 选区与批注浮层。跨代码选区下，BlockNote 默认隐藏格式工具条；工作台在编辑器内提供同一个原生批注按钮。`.bn-thread` 按钮沿用公共热区，触屏批注输入至少 16px。
+格式工具条使用公开 `.bn-formatting-toolbar` 适配，限制为视口内宽度并换行，按钮沿用同一 30px／44px 最小热区。正文批注使用 BlockNote 的 `CommentsExtension`、`AddCommentButton` 和原生表单，删除旧宿主 DOM 选区与批注浮层。跨代码选区下，BlockNote 默认隐藏格式工具条；工作台在编辑器内提供同一个原生批注按钮。`.bn-thread` 按钮沿用公共热区，触屏批注输入至少 16px。原生 reply／已有 comment edit 的备份恢复复用 I01 的 `PmNotice`、`PmSelect` 和 `PmButton`：先选精确稿，再恢复或丢弃；失去目标时仅原生只读取稿，不自动切换绑定或保存。见[批注草稿验证](benchmarks/native-comment-drafts-2026-10-28.md)。
 表格合并使用同一工具条内的公开 `TableCellMergeButton`，拆分使用原生单元格菜单，保留官方选区、可用条件、图标和回调。[NativeTable](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=199-4529) 登记紧凑与触屏密度的跨单元格选区、合并、拆分状态；样式沿用公共 BlockNote 适配，不增加业务按钮或表格浮层。
 原生图片面板使用 `.pm-ui-block-editor .bn-panel` 公共适配，保留 BlockNote FilePanel 的上传、嵌入、加载与失败行为。[NativeFilePanel](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=211-4825) 组合现有紧凑按钮与输入框，桌面 30／13、触屏 44／16，宽度受视口约束；不另造上传器或常驻说明。
 
