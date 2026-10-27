@@ -1,5 +1,5 @@
 import { validateDocument } from '@lincyaw/kernel'
-import type { DocumentAnswer, DocumentChangeAnswer, DocumentImageImportAnswer, DocumentIssue, TeachingDocument } from '@lincyaw/kernel'
+import type { DocumentAnswer, DocumentChangeAnswer, DocumentImageImportAnswer, DocumentIssue, Member, TeachingDocument } from '@lincyaw/kernel'
 import { WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 import { DocumentDrafts } from './document-drafts.ts'
@@ -7,6 +7,7 @@ import type { DocumentDraftChoice, DocumentDraftCommit, DocumentDraftReference, 
 
 export interface DocumentSessionState {
   directory: string
+  member?: Member
   identity?: string
   content?: TeachingDocument
   version?: string
@@ -52,15 +53,13 @@ interface Slot {
 }
 
 const serialize = (value: unknown) => JSON.stringify(value, (_, entry) => entry && typeof entry === 'object' && !Array.isArray(entry) ? Object.fromEntries(Object.entries(entry).sort(([a], [b]) => a.localeCompare(b))) : entry)
-/** Media clips and new unused assets do not replace any mounted editor's content or identity. */
+/** Non-body authoring changes keep native selection, comment drafts and body history. */
 function keepsEditorContent(before: TeachingDocument, after: TeachingDocument): boolean {
-  const editing = ({ assets: _assets, production, ...document }: TeachingDocument) => {
-    const { mediaClips: _clips, ...settings } = production
-    return { ...document, production: settings }
-  }
+  const editing = ({ assets: _assets, production: _production, comments: _comments, ...document }: TeachingDocument) => document
   return serialize(editing(before)) === serialize(editing(after))
     && Object.entries(before.assets).every(([id, asset]) => Object.hasOwn(after.assets, id) && serialize(asset) === serialize(after.assets[id]))
 }
+
 async function digest(value: TeachingDocument): Promise<string> {
   const text = serialize(value)
   if (!globalThis.crypto?.subtle) return `json:${text}`
@@ -115,10 +114,11 @@ export class DocumentSession {
         const baseHash = await digest(answer.content)
         if (this.#disposed || this.#active !== directory || opening !== this.#opening) return
         const drafts = new DocumentDrafts(() => { if (slot && !this.#disposed) void this.#readDrafts(slot) })
-        slot = { input: 0, read: 0, compositions: new Set(), drafts, baseHash, storage: `presmium.document.v1:${JSON.stringify([info.root, answer.content.id])}`, state: { directory, identity: JSON.stringify([info.root, answer.content.id]), content: answer.content, version: answer.version, fingerprint: answer.fingerprint, loading: true, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: answer.issues } }
+        slot = { input: 0, read: 0, compositions: new Set(), drafts, baseHash, storage: `presmium.document.v1:${JSON.stringify([info.root, answer.content.id])}`, state: { directory, member: info.member, identity: JSON.stringify([info.root, answer.content.id]), content: answer.content, version: answer.version, fingerprint: answer.fingerprint, loading: true, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: answer.issues } }
         this.#slots.set(directory, slot)
         await this.#restore(slot, answer)
       } else {
+        slot.state = { ...slot.state, member: info.member }
         await this.#adopt(slot, answer, () => this.#active === directory && opening === this.#opening)
         await this.#readDrafts(slot)
       }

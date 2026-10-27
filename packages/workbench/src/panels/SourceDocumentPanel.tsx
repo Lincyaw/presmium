@@ -160,7 +160,8 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
     </div>}
     {source?.issues.length ? <div className="pmw-source-document__diagnostics"><PmNotice tone="warn"><details><summary>{messages.diagnostics(source.issues.length)}</summary><ul>{source.issues.map((issue, index) => <li key={`${issue.path}:${index}`}><code>{issue.path}</code> {issue.message}</li>)}</ul></details></PmNotice></div> : null}
     {!source?.content || !source.identity ? <p className="pmw-muted">{source?.loading ? messages.loading : messages.unavailable}</p> : <div className="pmw-source-document__sheet">
-      <DocumentEditor identity={source.identity} document={source.content} getDocument={() => workbench.getDocument(source.identity)} reset={source.reset} locale={locale} readOnly={readOnly}
+      <DocumentEditor identity={source.identity} document={source.content} version={source.version} member={source.member} getDocument={() => workbench.getDocument(source.identity)}
+        getDocumentVersion={() => { const current = workbench.getState().authoring; return current && current.identity === source.identity && current.reset === source.reset ? current.version : undefined }} reset={source.reset} locale={locale} readOnly={readOnly}
         uploadImage={(file, signal) => workbench.importDocumentImage(file, source.identity!, signal)}
         getPositionToken={() => workbench.getState().documentPositionToken}
         resolveAssetURL={async location => {
