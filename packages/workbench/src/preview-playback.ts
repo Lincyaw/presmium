@@ -15,6 +15,7 @@ export class PreviewPlayback {
   readonly #context: () => PlaybackContext
   readonly #pauses = new Map<number, PendingPause>()
   readonly #auditions = new Set<() => void>()
+  readonly #captures = new Set<() => void>()
   readonly #documents = new Set<() => Promise<void>>()
   readonly #stoppingDocuments = new Set<Promise<void>>()
   #activation = 0
@@ -28,7 +29,19 @@ export class PreviewPlayback {
     return () => { this.#auditions.delete(stop) }
   }
 
+  registerAudioCapture(stop: () => void): () => void {
+    this.stopAuditions()
+    this.#captures.add(stop)
+    return () => { this.#captures.delete(stop) }
+  }
+
   stopAuditions(): void {
+    this.stopPreviewOutputs()
+    for (const stop of [...this.#captures]) stop()
+  }
+
+  /** A passive frame replacement invalidates output, without ending a newer microphone take. */
+  stopPreviewOutputs(): void {
     this.#activation++
     for (const stop of [...this.#auditions]) stop()
     void this.#stopDocuments().catch(() => {})
@@ -50,6 +63,7 @@ export class PreviewPlayback {
   async startDocumentPlayback(stop: () => Promise<void>): Promise<() => void> {
     const activation = ++this.#activation
     for (const audition of [...this.#auditions]) audition()
+    for (const capture of [...this.#captures]) capture()
     await this.#stopDocuments()
     if (activation !== this.#activation) throw new DOMException('Playback cancelled', 'AbortError')
     this.#documents.add(stop)
@@ -87,6 +101,7 @@ export class PreviewPlayback {
       // Stop and invalidate pending audition requests before granting the child's existing player.
       const activation = ++this.#activation, generation = sink.generation
       for (const audition of [...this.#auditions]) audition()
+      for (const capture of [...this.#captures]) capture()
       void this.#stopDocuments().then(() => {
         const current = this.#context()
         if (activation === this.#activation && current.document === context.document && current.scope === context.scope && current.sinks.has(sink) && sink.generation === generation)
@@ -94,13 +109,13 @@ export class PreviewPlayback {
       }).catch(() => {})
     } else if (report.type === 'ready') {
       for (const pause of this.#pauses.values()) if (pause.sink === sink && pause.generation !== sink.generation) pause.finish('preview-playback-changed')
-      this.stopAuditions()
+      this.stopPreviewOutputs()
     }
   }
 
   detach(sink: PreviewSink): void {
     for (const pause of this.#pauses.values()) if (pause.sink === sink) pause.finish('preview-playback-changed')
-    this.stopAuditions()
+    this.stopPreviewOutputs()
   }
 
   reset(): void {

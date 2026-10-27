@@ -2,6 +2,8 @@
 
 状态：部分实施，2026-10-27。共享 ASR 候选服务已验证 31 项无引擎边界与 8 项坏源取消边界，见[首片记录](benchmarks/transcription-candidate-2026-10-27.md)。第二片已提供共享采用预检与原子讲稿采用，使用明确标识的候选协议材料，实际 HTTP／CAS／git 主链通过 30 项，另有旧候选重新对照 5 项，见[采用记录](benchmarks/transcription-adoption-2026-10-27.md)。这些材料不证明 ASR 成功；未调用语音模型、读取凭据或验证运行中提供方取消。录音、完整 Video 操作与重新配音闭环仍按各片的实际记录验收。已有音频导入范围见[音频作者接口](audio-authoring.md)。
 
+Video 现已接入原生麦克风候选、明确保存、转写任务恢复与原生校对／对照采用。浅深色与桌面／触屏窄屏已实际操作；任务恢复、共享讲稿与旧回执的范围分别见[录音记录](benchmarks/video-microphone-recording-2026-10-27.md)和[校对记录](benchmarks/video-transcription-adoption-2026-10-27.md)。MCP 与 HTTP 共用任务实例和采用事务，见 [MCP 记录](benchmarks/mcp-transcription-actions-2026-10-27.md)。真实 ASR→采用→新 TTS 的成功播放、多目标批量界面和录音二进制崩溃恢复仍未完成。
+
 首片公开 `createDocumentTranscriptions` 与 [kernel 契约](../packages/kernel/src/contracts/transcription.ts)，HTTP 为 `GET document/transcription/capabilities`、`POST/GET document/transcription`、`GET document/transcription/result`、`POST document/transcription/cancel`。首次仅转写整份真实资产，任务不写 `Narration`，不自动编译或合成。持久取消意图重启后仍阻止迟到请求；已知任务 ID 的读取与取消只核文稿路径权限，不因当前 JSON 损坏或 UUID 替换而失去停止入口。MCP 薄适配的范围单独见 [MCP RFC](rfc-mcp-authoring-actions.md)，不能把路由或工具存在视为完整作者流程已交付。
 
 作者可以录下人声或导入已有音频，转写成候选文字，核对目标步骤与现有讲稿，明确采用后再选择真实音色重新配音。录音、转写、采用讲稿、生成配音是四个独立决定。打开文稿、收到转写结果或采用文字都不自动调用下一项付费服务。

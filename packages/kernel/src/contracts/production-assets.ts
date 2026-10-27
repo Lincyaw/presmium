@@ -20,6 +20,7 @@ export interface ProductionAssetQuery extends ProductionPlanQuery { assetId: str
 export interface ProductionAssetAnswer extends ProductionPlanQuery { asset: ProductionAssetInspection }
 
 /** Multipart fields are change (this JSON) and file (the original bytes). Import does not attach a clip. */
+export const DOCUMENT_AUDIO_MAX_BYTES = 16 << 20
 export interface DocumentAudioImport { id: string, baseDocumentVersion: string }
 export interface DocumentAudioImportAnswer extends DocumentChangeAnswer { assetId: string, inspection: ProductionAssetInspection }
 /** Reads a declared asset directly from the saved document, including assets not yet used by a clip. */

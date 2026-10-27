@@ -74,7 +74,7 @@ export function ProductionMediaClips({ identity, version, document, sectionId, s
     return { controller, expected: { identity, version }, revision: owner.current.revision, key: selected.current, draft: structuredClone(snapshot.current) }
   }
   const finish = (controller: AbortController) => { if (request.current === controller) { request.current = undefined; if (active()) setBusy(undefined) } }
-  const acknowledge = (answer: DocumentChangeAnswer, expectedVersion: string) => {
+  const acknowledge = (answer: Pick<DocumentChangeAnswer, 'version'>, expectedVersion: string) => {
     const entries = Object.fromEntries(Object.entries(latest.current.entries).map(([id, value]) => [id, value.version === expectedVersion ? { ...value, version: answer.version } : value]))
     return { ...latest.current, entries }
   }
@@ -84,12 +84,12 @@ export function ProductionMediaClips({ identity, version, document, sectionId, s
     if (!sent) return
     file.current = value; setRetryImport(false)
     try {
-      const answer = await workbench.importDocumentAudio(value, sent.expected, sent.controller.signal)
+      const answer = await workbench.ensureDocumentAudio(value, sent.expected, sent.controller.signal)
       if (!active() || sent.controller.signal.aborted) return
       const next = acknowledge(answer, sent.expected.version)
       if (owner.current.revision === sent.revision && selected.current === sent.key) {
         const full = newDraft(answer.version, stepId)
-        full.clip.assetId = answer.assetId; full.clip.sourceRange.endMs = answer.inspection.durationMs
+        full.clip.assetId = answer.inspection.assetId; full.clip.sourceRange.endMs = answer.inspection.durationMs
         next.selectedClipId = undefined; next.entries.new = full
         setInspection({ version: answer.version, value: answer.inspection })
       }
