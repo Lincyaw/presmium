@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { speechEngineId } from '@lincyaw/kernel'
-import type { TeachingDocument, VoiceoverJob, VoiceoverSnapshot, VoiceScope } from '@lincyaw/kernel'
+import type { TeachingDocument, VoiceoverJob, VoiceoverSnapshot } from '@lincyaw/kernel'
 import { PmButton, PmDialog, PmField, PmNotice } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { documentVoiceStepIds, resolveDocumentStepVoice } from '../document-voices.ts'
@@ -12,31 +12,30 @@ import { isAgentChanging } from '../workbench.ts'
 import { VoiceScopeField } from './VoiceScopeField.tsx'
 
 interface CheckedVoice { snapshot: VoiceSnapshot, document: TeachingDocument }
-interface OwnedJob { directory: string, cached: number }
+interface OwnedJob { directory: string }
+const NO_JOBS: VoiceoverJob[] = []
 const active = (job: VoiceoverJob) => ['queued', 'running', 'cancelling'].includes(job.state)
 const sameSource = (a: VoiceoverSnapshot['source'], b: VoiceoverSnapshot['source']) => a.documentId === b.documentId && a.version === b.version && a.fingerprint === b.fingerprint
-function cachedInScope(status: VoiceoverSnapshot, scope: VoiceScope): number {
-  const targets = scope.kind === 'step' ? [scope.target] : scope.kind === 'steps' ? scope.targets : undefined
-  const steps = status.steps.filter(step => scope.kind === 'document' || scope.kind === 'page' && step.target.section === scope.section || targets?.some(target => target.section === step.target.section && target.step === step.target.step && target.binding === step.target.binding))
-  const unbound = scope.kind === 'document' ? status.unboundByPage ?? [] : scope.kind === 'page' ? (status.unboundByPage ?? []).filter(page => page.section === scope.section) : []
-  return [...steps, ...unbound].reduce((sum, unit) => sum + unit.cached, 0)
-}
+const jobStamp = (jobs: VoiceoverJob[]) => jobs.map(job => `${job.id}:${job.sequence}`).join(',')
 
 /** Visible author jobs use acknowledged source versions; polling never starts generation. */
 export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose(): void }) {
   const workbench = useWorkbench(), locale = useWorkbenchState(state => state.locale), t = VOICE_MESSAGES[locale]
   const source = useWorkbenchState(state => state.authoring)
+  const jobs = useWorkbenchState(state => state.voiceoverJobs) ?? NO_JOBS
+  const jobsFailure = useWorkbenchState(state => state.voiceoverJobsFailure)
+  const cacheRefresh = useWorkbenchState(state => state.voiceoverCacheRefresh)
   const readOnly = useWorkbenchState(state => Boolean(state.authoring?.loading || state.authoring?.composing) || isAgentChanging(state))
   const [scope, setScope] = useState<DocumentVoiceScope>({ kind: 'step', stepId })
-  const [checked, setChecked] = useState<CheckedVoice>(), [status, setStatus] = useState<VoiceoverSnapshot>(), [jobs, setJobs] = useState<VoiceoverJob[]>([])
+  const [checked, setChecked] = useState<CheckedVoice>(), [status, setStatus] = useState<VoiceoverSnapshot>()
   const [loading, setLoading] = useState(true), [submitting, setSubmitting] = useState(false), [cancelling, setCancelling] = useState<string>()
   const [changed, setChanged] = useState(false), [error, setError] = useState<string>(), [attempt, setAttempt] = useState(0), [paused, setPaused] = useState(false)
   const life = useRef<AbortController>(), read = useRef<AbortController>(), mutation = useRef<AbortController>(), generation = useRef(0), starting = useRef(false)
-  const checkedRef = useRef<CheckedVoice>(), jobsRef = useRef<VoiceoverJob[]>([]), owned = useRef(new Map<string, OwnedJob>()), settled = useRef(new Set<string>()), closing = useRef(false), directoryRef = useRef(workbench.getState().document)
+  const checkedRef = useRef<CheckedVoice>(), statusJobs = useRef(''), owned = useRef(new Map<string, OwnedJob>()), closing = useRef(false), directoryRef = useRef(workbench.getState().document)
 
   const cancelOwned = () => {
     for (const [id, { directory }] of owned.current) {
-      const job = jobsRef.current.find(value => value.id === id)
+      const job = workbench.getState().voiceoverJobs?.find(value => value.id === id)
       if (!job || active(job)) void workbench.client.cancelVoiceover(directory, id, AbortSignal.timeout(5000)).catch(() => {})
     }
     owned.current.clear()
@@ -44,9 +43,10 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
   useEffect(() => {
     life.current = new AbortController(); closing.current = false
     directoryRef.current = workbench.getState().document
-    setScope({ kind: 'step', stepId }); setJobs([]); jobsRef.current = []
+    setScope({ kind: 'step', stepId })
     return () => { closing.current = true; generation.current++; life.current?.abort(); read.current?.abort(); mutation.current?.abort(); cancelOwned() }
-  }, [workbench, stepId])
+  }, [workbench, stepId, source?.identity])
+  useEffect(() => workbench.observeVoiceoverJobs(), [workbench, source?.identity])
 
   useEffect(() => {
     const controller = new AbortController(), version = ++generation.current
@@ -64,14 +64,14 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
         if (generation.current !== version || closing.current) return
         if (!voiceSnapshotCurrent(workbench, snapshot) || answer.revision !== snapshot.revision || !sameSource(answer.source, snapshot.source)) throw new Error('voice-context-changed')
         const value = { snapshot, document }
-        checkedRef.current = value; jobsRef.current = answer.jobs
-        setChecked(value); setStatus(answer); setJobs(answer.jobs); setChanged(false)
+        checkedRef.current = value; statusJobs.current = jobStamp(answer.jobs)
+        setChecked(value); setStatus(answer); setChanged(false)
       } catch (failure) {
         if (generation.current === version && !signal.aborted && !closing.current) setError(voiceFailure(failure, locale))
       } finally { if (generation.current === version && !signal.aborted && !closing.current) setLoading(false) }
     })()
     return () => controller.abort()
-  }, [workbench, stepId, attempt])
+  }, [workbench, stepId, attempt, source?.identity])
 
   useEffect(() => workbench.subscribe(() => {
     const value = checkedRef.current
@@ -79,37 +79,28 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
     mutation.current?.abort(); starting.current = false; setSubmitting(false); setChanged(true)
   }), [workbench])
 
-  const hasActive = jobs.some(active), directory = checked?.snapshot.directory
+  const hasActive = jobs.some(active)
   useEffect(() => {
-    if (!hasActive || directory === undefined) return
+    const value = checkedRef.current, stamp = jobStamp(jobs)
+    if (!value || !voiceSnapshotCurrent(workbench, value.snapshot) || stamp === statusJobs.current) return
     const controller = new AbortController(), signal = AbortSignal.any([controller.signal, life.current!.signal])
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const poll = async () => {
+    void (async () => {
       try {
-        const answer = await workbench.client.readVoiceover(directory, signal)
+        const answer = await workbench.client.readVoiceover(value.snapshot.directory, signal)
         signal.throwIfAborted()
-        if (closing.current) return
-        const value = checkedRef.current
-        const current = value && voiceSnapshotCurrent(workbench, value.snapshot) && answer.revision === value.snapshot.revision && sameSource(answer.source, value.snapshot.source)
-        const finished = answer.jobs.filter(job => owned.current.has(job.id) && !active(job) && !settled.current.has(job.id))
-        const refresh = current ? finished.filter(job => job.completed > 0 && sameSource(job.source, value.snapshot.source) && job.revision === value.snapshot.revision && cachedInScope(answer, job.scope) > owned.current.get(job.id)!.cached) : []
-        if (refresh.length && value) {
-          workbench.stopAuditions()
-          await workbench.pausePlayback(); signal.throwIfAborted()
-          if (closing.current || !voiceSnapshotCurrent(workbench, value.snapshot)) return
-          for (const job of refresh) workbench.refreshVoicePlayback(job.source, job.revision)
-          setPaused(true); setError(undefined)
+        if (closing.current || checkedRef.current !== value) return
+        if (voiceSnapshotCurrent(workbench, value.snapshot) && answer.revision === value.snapshot.revision && sameSource(answer.source, value.snapshot.source)) {
+          statusJobs.current = stamp; setStatus(answer)
         }
-        finished.forEach(job => settled.current.add(job.id))
-        jobsRef.current = answer.jobs; setJobs(answer.jobs)
-        if (current) setStatus(answer)
         else setChanged(true)
       } catch (failure) { if (!signal.aborted && !closing.current) setError(voiceFailure(failure, locale)) }
-      finally { if (!signal.aborted && !closing.current) timer = setTimeout(() => void poll(), 1000) }
-    }
-    timer = setTimeout(() => void poll(), 500)
-    return () => { clearTimeout(timer); controller.abort() }
-  }, [workbench, hasActive, directory])
+    })()
+    return () => controller.abort()
+  }, [workbench, jobs, checked])
+  useEffect(() => {
+    const snapshot = checkedRef.current?.snapshot
+    if (snapshot && cacheRefresh && sameSource(cacheRefresh.source, snapshot.source) && cacheRefresh.revision === snapshot.revision) setPaused(true)
+  }, [cacheRefresh])
 
   const selection = useMemo(() => {
     if (!checked || !status) return undefined
@@ -153,12 +144,12 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
       workbench.stopAuditions()
       await workbench.pausePlayback(); signal.throwIfAborted()
       if (!voiceSnapshotCurrent(workbench, value.snapshot)) throw new Error('voice-context-changed')
-      const runtimeScope = runtimeVoiceScope(value.snapshot, scope), cached = status ? cachedInScope(status, runtimeScope) : 0
+      const runtimeScope = runtimeVoiceScope(value.snapshot, scope)
       const job = await workbench.client.startVoiceover(value.snapshot.directory, { revision: value.snapshot.revision, source: value.snapshot.source, scope: runtimeScope, confirmed: true }, signal)
       if (closing.current || signal.aborted || generation.current !== version) { if (active(job)) void workbench.client.cancelVoiceover(value.snapshot.directory, job.id, AbortSignal.timeout(5000)).catch(() => {}); return }
       if (!sameSource(job.source, value.snapshot.source) || job.revision !== value.snapshot.revision || !voiceSnapshotCurrent(workbench, value.snapshot)) throw new Error('voice-context-changed')
-      owned.current.set(job.id, { directory: value.snapshot.directory, cached })
-      jobsRef.current = [...jobsRef.current.filter(previous => previous.id !== job.id), job]; setJobs(jobsRef.current)
+      owned.current.set(job.id, { directory: value.snapshot.directory })
+      workbench.rememberVoiceoverJob(value.snapshot.directory, job)
     } catch (failure) { if (!signal.aborted && !closing.current && generation.current === version) setError(voiceFailure(failure, locale)) }
     finally { if (mutation.current === controller) { starting.current = false; if (!closing.current) setSubmitting(false) } }
   }
@@ -171,7 +162,7 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
       const answer = await workbench.client.cancelVoiceover(directory, job.id, signal)
       signal.throwIfAborted()
       if (closing.current) return
-      jobsRef.current = jobsRef.current.map(previous => previous.id === answer.id ? answer : previous); setJobs(jobsRef.current)
+      workbench.rememberVoiceoverJob(directory, answer)
     } catch (failure) { if (!signal.aborted && !closing.current) setError(voiceFailure(failure, locale)) }
     finally { if (!signal.aborted && !closing.current) setCancelling(undefined) }
   }
@@ -185,7 +176,7 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
     {(source?.content || checked?.document) && <VoiceScopeField document={checked?.document ?? source!.content!} stepId={stepId} value={scope} disabled={loading || submitting || readOnly} onChange={chooseScope} />}
     {loading && <PmNotice>{t.refreshing}</PmNotice>}
     {changed && <PmNotice tone="warn">{t.changed}</PmNotice>}
-    {error && <PmNotice tone="danger">{error}</PmNotice>}
+    {(error || jobsFailure) && <PmNotice tone="danger">{error ?? voiceFailure(new Error(jobsFailure), locale)}</PmNotice>}
     {status && selection && <>
       <PmNotice>{t.generationSummary(selection.cached, selection.missing, selection.blocked)}</PmNotice>
       {unavailable && selection.voices.length > 0 && <PmNotice tone="warn">{status.capability.reason === 'speech-unavailable' || status.capability.reason === 'not-configured' ? t.noService : voiceFailure(new Error(status.capability.reason), locale)}</PmNotice>}

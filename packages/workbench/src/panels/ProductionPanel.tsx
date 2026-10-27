@@ -52,6 +52,7 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
   const live = plan && playback && sameProductionBinding(plan.binding, playback.binding) ? playback : undefined
   const canPlay = Boolean(playbackConnected && plan?.canPreview && live?.status === 'ready' && !timingDraft)
   const backgroundBody = !wide && tab === 'timeline', backgroundVisuals = !wide && tab !== 'preview' || tab === 'outputs'
+  useEffect(() => workbench.observeVoiceoverJobs(), [workbench, source?.identity])
   useEffect(() => {
     const media = matchMedia('(min-width: 1280px)'), update = () => setWide(media.matches)
     media.addEventListener('change', update)

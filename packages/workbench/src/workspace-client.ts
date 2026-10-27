@@ -1,6 +1,6 @@
 import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobSource, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, SourceTransactionAnswer, SourceTransactionChange, StartJobRequest, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
 import type { OperationBatch } from './telemetry.ts'
-import type { VoiceCatalogAnswer, VoiceoverCancellation, VoiceoverJob, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest } from '@lincyaw/kernel'
+import type { VoiceCatalogAnswer, VoiceoverCancellation, VoiceoverJob, VoiceoverJobsAnswer, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest } from '@lincyaw/kernel'
 import type { PageDeleteAnswer, PageDeletePlan, PageDeleteRequest } from '@lincyaw/kernel'
 import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, DocumentEvent } from '@lincyaw/kernel'
 import type { DocumentAudioImport, DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentMediaClipChange } from '@lincyaw/kernel'
@@ -67,6 +67,7 @@ export interface WorkspaceClient {
   deletePage(document: string, request: PageDeleteRequest): Promise<PageDeleteAnswer>
   readVoiceCatalog(document: string, engine?: string, lang?: string, signal?: AbortSignal): Promise<VoiceCatalogAnswer>
   readVoiceover(document: string, signal?: AbortSignal): Promise<VoiceoverSnapshot>
+  readVoiceoverJobs(document: string, signal?: AbortSignal): Promise<VoiceoverJobsAnswer>
   readProductionPlan(document: string, query: ProductionPlanQuery, signal?: AbortSignal): Promise<ProductionPlan>
   readProductionAsset(document: string, query: ProductionAssetQuery, signal?: AbortSignal): Promise<ProductionAssetAnswer>
   readProductionMedia(document: string, query: ProductionMediaQuery, signal?: AbortSignal): Promise<Blob>
@@ -295,6 +296,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     deletePage: (document, request) => post(url('pages/delete', document), request),
     readVoiceCatalog: (document, engine, lang, signal) => call(url('voice-catalog', document, { ...engine ? { engine } : {}, ...lang ? { lang } : {} }), { signal }),
     readVoiceover: (document, signal) => call(url('voiceover', document), { signal }),
+    readVoiceoverJobs: (document, signal) => call(url('voiceover/jobs', document), { signal }),
     readProductionPlan: (document, query, signal) => call(url('production-plan', document, { source: JSON.stringify(query.source), irRevision: query.irRevision }), { signal }),
     readProductionAsset: (document, query, signal) => call(url('production-asset', document, { source: JSON.stringify(query.source), irRevision: query.irRevision, assetId: query.assetId }), { signal }),
     async readProductionMedia(document, query, signal) {
