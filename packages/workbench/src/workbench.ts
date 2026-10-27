@@ -252,7 +252,7 @@ export class Workbench {
   #documentViewport?: { element: HTMLElement, identity: string, stop(): void }
   #stopDocumentReturnScroll?: () => void
   #openingDocument?: { directory: string, scope: number, generation: number, focus?: 'body', initial?: boolean, stop(): void,
-    basis?: { identity: string, reset: number, version?: string, content: TeachingDocument }, point?: DocumentReturnPoint }
+    basis?: { identity: string, reset: number, version?: string, content: TeachingDocument }, point?: DocumentReturnPoint, fallback?: DocumentReturnPoint }
   #stopDocumentLayoutScroll?: () => void
   #activeDocumentHistory?: DocumentHistoryEditor
   #unsubscribeDocumentHistory?: () => void
@@ -401,6 +401,9 @@ export class Workbench {
     return this.#state
   }
 
+  /** Page-lifetime document navigation only; not a canonical source or playback revision. */
+  get documentNavigationVersion(): number { return this.#documentScope }
+
   getState = (): WorkbenchState => this.#state
 
   subscribe = (listener: Listener): (() => void) => {
@@ -527,9 +530,9 @@ export class Workbench {
     pending?.stop()
   }
 
-  #beginOpeningDocument(directory: string, focus?: 'body'): void {
+  #beginOpeningDocument(directory: string, focus?: 'body', fallback?: DocumentReturnPoint): void {
     this.#cancelOpeningDocument()
-    this.#openingDocument = { directory, focus, scope: this.#documentScope, generation: this.#documentSelectionGeneration,
+    this.#openingDocument = { directory, focus, fallback: fallback && { ...fallback }, scope: this.#documentScope, generation: this.#documentSelectionGeneration,
       stop: this.#watchOpeningInteraction(() => this.#cancelOpeningDocument()) }
   }
 
@@ -562,7 +565,7 @@ export class Workbench {
     if (!pending.basis) {
       pending.basis = { identity: source.identity, reset: source.reset, version: source.version, content: source.content }
       if (!pending.focus) {
-        pending.point = this.#documentReturnPoints.read(source.identity)
+        pending.point = this.#documentReturnPoints.read(source.identity) ?? pending.fallback
         if (!pending.point) {
           const section = source.content.sections[source.content.sectionOrder[0]!]
           if (!section) { this.#cancelOpeningDocument(); return }
@@ -625,7 +628,7 @@ export class Workbench {
     return () => { if (this.#documentViewport === viewport) { this.#saveDocumentReturnPoint(); this.#stopDocumentReturnScroll?.(); this.#documentViewport = undefined }; viewport.stop() }
   }
 
-  async openDocument(dir: string, options: { focus?: 'body', expectedIdentity?: string } = {}): Promise<void> {
+  async openDocument(dir: string, options: { focus?: 'body', expectedIdentity?: string, fallbackReturnPoint?: DocumentReturnPoint } = {}): Promise<void> {
     if (this.#state.document === dir) {
       if (options.focus) { this.#beginOpeningDocument(dir, options.focus); this.#finishOpeningDocument() }
       return
@@ -636,7 +639,7 @@ export class Workbench {
     this.#stopSubscriptions()
     this.#history.subscribeReview(dir)
     this.#set({ ...DOCUMENT_RESET, document: dir, previewRenderer: 'web', webView: 'document' })
-    this.#beginOpeningDocument(dir, options.focus)
+    this.#beginOpeningDocument(dir, options.focus, options.fallbackReturnPoint)
     this.#record('document.open')
     this.#diagnostics.subscribe(dir)
     // Authoring is ready from source JSON; compilation and preview are independent.
