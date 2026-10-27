@@ -151,7 +151,7 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
     <div className="pmw-production__body" data-wide={wide || undefined} data-background={backgroundBody || undefined} aria-hidden={backgroundBody || undefined} {...backgroundBody ? { inert: '' } : {}}>
       {/* Hidden tabs retain a laid-out frame so its native animation clock can acknowledge preparation. */}
       <div className="pmw-production__visuals" data-background={backgroundVisuals || undefined} aria-hidden={backgroundVisuals || undefined} {...backgroundVisuals ? { inert: '' } : {}}>
-        <div className="pmw-production__frame" hidden={!previewVisible}><PreviewPanel active={previewVisible} /></div>
+        <div className="pmw-production__frame" hidden={!previewVisible}><PreviewPanel active={previewVisible} onPresentationAction={action => { if (action === 'refresh') void compile(); else onClose() }} /></div>
         {!previewVisible && <PmEmpty icon="slides" title={p.unavailable} action={<PmButton small loading={preparing} disabled={blocked || closing} onClick={() => void compile()}>{p.prepare}</PmButton>}>{p.previewHint}</PmEmpty>}
       </div>
       <div className="pmw-production__properties pm-ui-block-editor" hidden={!wide && tab !== 'script' || tab === 'outputs'}>

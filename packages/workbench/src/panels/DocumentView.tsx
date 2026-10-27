@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { PmBadge, PmButton, PmIconButton, PmMenu, PmNotice, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
+import { PmButton, PmIconButton, PmMenu, PmNotice, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
 import { DocumentOutline, DocumentWordCounter } from '../outline.ts'
@@ -38,12 +38,6 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   const document = useWorkbenchState(state => state.document)
   const view = useWorkbenchState(state => state.webView)
   const previousView = useRef({ document, workspace, view, active })
-  const preparing = useWorkbenchState(state => Boolean(state.isPreparingPresentation))
-  const presentationSourceCurrent = useWorkbenchState(state => Boolean(state.presentationSnapshot && state.authoring?.version === state.presentationSnapshot.version
-    && state.authoring.fingerprint === state.presentationSnapshot.fingerprint && (state.authoring.projectRevision ?? 0) === state.presentationSnapshot.project
-    && !state.authoring.dirty && !state.authoring.saving && !state.authoring.error))
-  const presentationFrameCurrent = useWorkbenchState(state => Boolean(state.presentationSnapshot && state.previewIrRevision === state.presentationSnapshot.revision))
-  const presentationCurrent = presentationSourceCurrent && presentationFrameCurrent
   const currentScope = useRef({ document, active })
   currentScope.current = { document, active }
   const [navigation, setNavigation] = useState(() => typeof matchMedia === 'function' && matchMedia(ROOMY).matches)
@@ -123,12 +117,7 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   }, [active, workbench])
   return (
     <div className="pmw-document" data-workspace={producing ? 'production' : presenting ? 'presentation' : 'content'} data-presenting={presenting || undefined} data-aside={aside ?? undefined} data-navigation={navigation || undefined}>
-      {producing ? null : presenting ? <PmToolbar className="pmw-toolbar pmw-toolbar--present" label={t.presentationPreview}>
-        <PmBadge tone={presentationCurrent ? 'ok' : presentationSourceCurrent || preparing ? 'accent' : 'warn'}>{presentationCurrent ? t.presentationCompiled : presentationSourceCurrent || preparing ? t.presentationPreparing : t.presentationOutdated}</PmBadge>
-        <span className="pmw-spacer" />
-        <PmToolbarButton asChild><PmIconButton small icon="refresh" label={t.presentationRecompile} hint={preparing ? t.presentationPreparing : t.presentationRecompile} loading={preparing} disabled={changingView} onClick={() => void compilePresentation()} /></PmToolbarButton>
-        <PmToolbarButton asChild><PmIconButton small icon="close" label={t.exitPresentation} shortcut="Escape" loading={changingView} onClick={() => void exitPresent()} /></PmToolbarButton>
-      </PmToolbar> : <DocumentToolbar framed={framed} aside={aside} navigation={navigation} changingView={changingView} onProduction={() => void openProduction()} onPresent={() => void compilePresentation(() => {
+      {!producing && !presenting && <DocumentToolbar framed={framed} aside={aside} navigation={navigation} changingView={changingView} onProduction={() => void openProduction()} onPresent={() => void compilePresentation(() => {
         workbench.setMode('viewing')
         workbench.setWebView('present')
         setWorkspace('presentation')
@@ -137,7 +126,7 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
       <DocumentNotices />
       <div className="pmw-document__body" role="region" aria-label={producing ? PRODUCTION_MESSAGES[workbench.getState().locale].title : presenting ? t.presentationPreview : t.documentEditor}>
         {!presenting && !producing && navigation && <NavigationPane onClose={() => setNavigation(false)} onSelect={() => { if (matchMedia('(max-width: 1279px)').matches) setNavigation(false) }} />}
-        <div className="pmw-document__main"><div className="pmw-document__source" hidden={presenting || producing}><SourceDocumentPanel commentsPortal={commentsPortal} /></div>{producing && <ProductionPanel closing={changingView} onClose={() => void exitPresent()} />}{presenting && <PreviewPanel active={active} />}</div>
+        <div className="pmw-document__main"><div className="pmw-document__source" hidden={presenting || producing}><SourceDocumentPanel commentsPortal={commentsPortal} /></div>{producing && <ProductionPanel closing={changingView} onClose={() => void exitPresent()} />}{presenting && <PreviewPanel active={active} onPresentationAction={action => { if (action === 'refresh') void compilePresentation(); else void exitPresent() }} />}</div>
         {!presenting && !producing && aside && (
           <aside className="pmw-document__aside pm-ui-block-editor" aria-label={aside === 'narration' ? t.documentNarration : aside}>
             {aside === 'comments' ? <section className="pmw-pane"><header className="pmw-pane__header"><h2 className="pmw-pane__title">{t.comments}</h2><PmIconButton small icon="close" label={t.close} onClick={() => setAside(null)} /></header><div ref={setCommentsPortal} /></section> : aside === 'narration' ? <DocumentNarrationPanel onClose={() => setAside(null)} /> : aside === 'export' ? <ExportPanel documentOnly onClose={() => setAside(null)} /> : <HistoryPanel onClose={() => setAside(null)} />}

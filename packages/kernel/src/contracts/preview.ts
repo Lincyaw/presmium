@@ -148,6 +148,7 @@ export type PreviewCommandType = PreviewCommand['type']
 export type PreviewShortcut = 'undo' | 'redo' | 'dismiss'
 
 export type PreviewReport =
+  | { type: 'presentation-action', action: 'refresh' | 'exit' }
   | { type: 'production-playback-state', state: ProductionPlaybackState }
   | { type: 'production-playback-result', request: number, binding: ProductionBinding, state?: ProductionPlaybackState, error?: string }
   | { type: 'document-history-state', section?: string, undo: boolean, redo: boolean }
@@ -305,6 +306,7 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
   if (!isPreviewEnvelope(data, nonce) || data.version !== PREVIEW_PROTOCOL) return undefined
   const m = data as Record<string, unknown>
   switch (m.type) {
+    case 'presentation-action': return m.action === 'refresh' || m.action === 'exit' ? { type: 'presentation-action', action: m.action } : undefined
     case 'production-playback-state': return productionState(m.state) ? { type: 'production-playback-state', state: m.state } : undefined
     case 'production-playback-result': return request(m.request) && productionBinding(m.binding) && optional(m.state, productionState) && optional(m.error, text)
       ? { type: 'production-playback-result', request: m.request, binding: m.binding, ...m.state ? { state: m.state as ProductionPlaybackState } : {}, ...m.error !== undefined ? { error: m.error as string } : {} } : undefined
