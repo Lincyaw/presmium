@@ -32,9 +32,9 @@ export const PmButton = forwardRef<HTMLButtonElement, ButtonProps & ControlProps
 export function PmTooltip({ label, shortcut, children }: { label: string, shortcut?: string, children: ReactNode }) {
   return (
     <Tooltip.Provider delayDuration={300} skipDelayDuration={0}>
-      <Tooltip.Root><Tooltip.Trigger asChild>{children}</Tooltip.Trigger><Tooltip.Portal><Tooltip.Content className="pm-ui-tooltip pm-ui" side="bottom" sideOffset={6} collisionPadding={8}>
+      <Tooltip.Root><Tooltip.Trigger asChild>{children}</Tooltip.Trigger><Tooltip.Portal><div className="pm-ui-tooltip-layer"><Tooltip.Content className="pm-ui-tooltip pm-ui" side="bottom" sideOffset={6} collisionPadding={8}>
         {label}{shortcut && <kbd className="pm-ui-shortcut">{shortcut}</kbd>}
-      </Tooltip.Content></Tooltip.Portal></Tooltip.Root>
+      </Tooltip.Content></div></Tooltip.Portal></Tooltip.Root>
     </Tooltip.Provider>
   )
 }
