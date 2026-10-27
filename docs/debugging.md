@@ -10,6 +10,8 @@ agent 已连接到当前工作区时，读取 `presmium://diagnostics?document=<
 
 ## 用隔离副本复现
 
+共享源码检出中若工作台日志出现读取 `packages/dsh/build/dist/client.json` 或 `client.js` 的 `EACCES`，应先检查生成产物的权限。源码启动会重建不可读或损坏的构建清单，客户端及清单固定为可读权限，不受启动终端的私有 umask 影响。确认实际页面加载的新构建和目标 DOM 后才能判定修复生效；源码已修改或预览后端就绪不足以证明原工作台标签页已更新。
+
 在仓库根目录运行：
 
 ```sh

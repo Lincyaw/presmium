@@ -25,6 +25,8 @@ request failure. Do not install a global fetch wrapper to collect unrelated Harn
 
 ## Collect evidence with `pnpm debug:studio`
 
+For a shared source checkout, an `EACCES` reading `packages/dsh/build/dist/client.json` or `client.js` means generated-client permissions, not a browser cache diagnosis. Source startup rebuilds unreadable or invalid metadata; generated client assets remain readable even with a private launcher umask. Verify the served bundle and the actual target DOM after restarting or reloading the workbench.
+
 For a stalling or broken front end, in this order:
 
 1. Read the current service log. Then, through an agent connected to the workspace (the studio's AI, or
