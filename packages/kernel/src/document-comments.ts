@@ -91,7 +91,6 @@ export function applyDocumentCommentAction(source: NonNullable<TeachingDocument[
         const comment = find(action.commentId); if (comment.userId !== member.id && !hasRole(member, 'owner')) fail(403, 'comment-author-required')
         commentId = comment.id; comment.content = content(action.content); comment.updatedAt = context.now
         if (action.metadata) comment.metadata = structuredClone(action.metadata)
-        else delete comment.metadata
         break
       }
       case 'comment.react': {

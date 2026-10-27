@@ -1,5 +1,6 @@
-import { CommentsExtension, DefaultThreadStoreAuth, ThreadStore, ThreadStoreAuth } from '@blocknote/core/comments'
+import { CommentEditorSubmitExtension, CommentsExtension, DefaultThreadStoreAuth, ThreadStore, ThreadStoreAuth } from '@blocknote/core/comments'
 import { createExtension, createUserStore } from '@blocknote/core'
+import type { BlockNoteEditor } from '@blocknote/core'
 import type { CommentData, ThreadData } from '@blocknote/core/comments'
 import { AddMarkStep, RemoveMarkStep } from '@tiptap/pm/transform'
 import { Plugin } from '@tiptap/pm/state'
@@ -17,6 +18,26 @@ type Threads = NonNullable<TeachingDocument['comments']>
 const date = (value: string) => new Date(value)
 const jsonObject = (value: unknown) => value && typeof value === 'object' && !Array.isArray(value) ? structuredClone(value) as DocumentThread['metadata'] : undefined
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
+
+type CommentEditor = BlockNoteEditor<any, any, any>
+type EditorFailure = 'changed' | 'unavailable'
+interface CommentEditing {
+  threadId?: string
+  commentId?: string
+  baseline?: string
+  body?: unknown
+  editable: boolean
+  closed: boolean
+  failure?: EditorFailure
+  listeners: Set<() => void>
+}
+export interface DocumentCommentEditorHandle {
+  setEditable(value: boolean): void
+  failure(): EditorFailure | undefined
+  subscribe(listener: () => void): () => void
+  close(): void
+}
+const commentBase = (comment: DocumentComment) => JSON.stringify({ userId: comment.userId, content: comment.content })
 
 /** Native visibility and the shared reducer enforce the same trusted member policy. */
 class DocumentThreadAuth extends ThreadStoreAuth {
@@ -45,6 +66,8 @@ export class DocumentThreadStore extends ThreadStore {
   #version?: string
   #document: TeachingDocument
   #synchronizing = false
+  readonly #edits = new Map<string, CommentEditing>()
+  #submitting?: CommentEditing
   readonly #listeners = new Set<(threads: Map<string, ThreadData>) => void>()
   readonly #rich: RichProjection = createRichProjection()
   readonly #anchors = new Map<string, DocumentThread['anchor']>()
@@ -57,7 +80,7 @@ export class DocumentThreadStore extends ThreadStore {
   getThreads = (): Map<string, ThreadData> => this.#threads
   subscribe = (listener: (threads: Map<string, ThreadData>) => void): (() => void) => { this.#listeners.add(listener); return () => this.#listeners.delete(listener) }
   #notify(): void { for (const listener of this.#listeners) listener(this.#threads) }
-  #replace(threads: Threads, nativeBody?: { id: string, body: unknown }): void {
+  #replace(threads: Threads, nativeBody?: { id: string, body: unknown }, keepEditing = false): void {
     const previous = this.#canonical
     this.#canonical = structuredClone(threads)
     this.#anchors.clear()
@@ -70,7 +93,9 @@ export class DocumentThreadStore extends ThreadStore {
         deletedAt: thread.deletedAt ? date(thread.deletedAt) : undefined,
         comments: thread.comments.map(comment => {
           const oldComment = old?.comments.find(value => value.id === comment.id), oldValue = previous[thread.id]?.comments.find(value => value.id === comment.id)
-          const body = comment.deletedAt ? undefined : nativeBody?.id === comment.id ? nativeBody.body
+          const editing = keepEditing ? this.#edits.get(comment.id) : undefined
+          if (editing && editing.baseline !== commentBase(comment)) this.#failEdit(editing, 'changed')
+          const body = comment.deletedAt ? undefined : editing ? editing.body : nativeBody?.id === comment.id ? nativeBody.body
             : oldComment && same(oldValue?.content, comment.content) ? oldComment.body : productRichTextToNative(comment.content ?? [], this.#rich)
           this.#initialBodies.set(comment.id, { body, content: structuredClone(comment.content ?? []) })
           return { ...comment, createdAt: date(comment.createdAt), updatedAt: date(comment.updatedAt), deletedAt: comment.deletedAt ? date(comment.deletedAt) : undefined,
@@ -79,6 +104,7 @@ export class DocumentThreadStore extends ThreadStore {
         }),
       } as ThreadData]
     }))
+    for (const editing of this.#edits.values()) if (keepEditing && (!editing.threadId || !threads[editing.threadId]?.comments.some(comment => comment.id === editing.commentId && !comment.deletedAt))) this.#failEdit(editing, 'unavailable')
     const live = new Set(Object.values(threads).flatMap(thread => thread.comments.map(comment => comment.id)))
     for (const id of this.#initialBodies.keys()) if (!live.has(id)) this.#initialBodies.delete(id)
   }
@@ -100,13 +126,87 @@ export class DocumentThreadStore extends ThreadStore {
     const effect = this.#act({ type: 'comment.reply', threadId, content: this.#content(comment), metadata: jsonObject(comment.metadata) }, comment.body)
     return this.getThread(threadId).comments.find(value => value.id === effect.commentId)!
   }
-  updateComment = async ({ threadId, commentId, comment }: { threadId: string, commentId: string, comment: NewComment }): Promise<void> => { this.#act({ type: 'comment.update', threadId, commentId, content: this.#content(comment), metadata: jsonObject(comment.metadata) }, comment.body) }
+  updateComment = async ({ threadId, commentId, comment }: { threadId: string, commentId: string, comment: NewComment }): Promise<void> => {
+    this.beforeAction?.()
+    const editing = this.#submitting
+    if (!editing || editing.threadId !== threadId || editing.commentId !== commentId || !this.#canSubmit(editing)) throw new Error('comment-editor-version-changed')
+    this.#act({ type: 'comment.update', threadId, commentId, content: this.#content(comment), metadata: jsonObject(comment.metadata) }, comment.body)
+  }
   deleteComment = async ({ threadId, commentId }: { threadId: string, commentId: string }): Promise<void> => { this.#act({ type: 'comment.delete', threadId, commentId }) }
   deleteThread = async ({ threadId }: { threadId: string }): Promise<void> => { this.#act({ type: 'comment.delete', threadId }) }
   resolveThread = async ({ threadId }: { threadId: string }): Promise<void> => { this.#act({ type: 'comment.resolve', threadId }) }
   unresolveThread = async ({ threadId }: { threadId: string }): Promise<void> => { this.#act({ type: 'comment.reopen', threadId }) }
   addReaction = async ({ threadId, commentId, emoji }: { threadId: string, commentId: string, emoji: string }): Promise<void> => { this.#act({ type: 'comment.react', threadId, commentId, emoji, active: true }) }
   deleteReaction = async ({ threadId, commentId, emoji }: { threadId: string, commentId: string, emoji: string }): Promise<void> => { this.#act({ type: 'comment.react', threadId, commentId, emoji, active: false }) }
+
+  #failEdit(editing: CommentEditing, failure: EditorFailure): void {
+    if (editing.failure === failure) return
+    editing.failure = failure
+    for (const listener of editing.listeners) listener()
+  }
+  #canSubmit(editing: CommentEditing): boolean {
+    if (editing.closed || !editing.editable || !editing.threadId || !editing.commentId || editing.failure) return false
+    const thread = this.#canonical[editing.threadId], comment = thread?.comments.find(value => value.id === editing.commentId)
+    if (!thread || thread.deletedAt || !comment || comment.deletedAt) { this.#failEdit(editing, 'unavailable'); return false }
+    if (editing.baseline !== commentBase(comment)) { this.#failEdit(editing, 'changed'); return false }
+    return true
+  }
+  #publishView(): void {
+    const synchronizing = this.#synchronizing
+    this.#synchronizing = true
+    try { this.#threads = new Map(this.#threads); this.#notify() } finally { this.#synchronizing = synchronizing }
+  }
+  /** Public comment-editor boundary: native callbacks carry no base revision themselves. */
+  bindEditor(editor: CommentEditor, editable: boolean): DocumentCommentEditorHandle {
+    const ids = new Set(editor.document.map(block => block.id))
+    const matches = Object.values(this.#canonical).flatMap(thread => thread.comments.flatMap(comment => {
+      const body = this.#initialBodies.get(comment.id)?.body
+      return Array.isArray(body) && body.some(block => ids.has(block.id)) ? [{ thread, comment, body }] : []
+    }))
+    // A reply/create editor starts editable and has no existing-comment binding.
+    const existing = !editable, target = matches.length === 1 ? matches[0] : undefined
+    const editing: CommentEditing = { threadId: target?.thread.id, commentId: target?.comment.id, baseline: target ? commentBase(target.comment) : undefined, body: target?.body, editable: false, closed: false, listeners: new Set() }
+    const original = existing ? editor.getExtension(CommentEditorSubmitExtension) : undefined
+    let guarded: typeof original
+    if (original) {
+      editor.replaceExtension(original, CommentEditorSubmitExtension({ onSubmit: async () => {
+        try { this.beforeAction?.() } catch { this.#failEdit(editing, 'unavailable'); return }
+        if (!this.#canSubmit(editing)) { if (!editing.failure) this.#failEdit(editing, 'unavailable'); return }
+        const previous = this.#submitting
+        let result: Promise<void>
+        try { this.#submitting = editing; result = original.submit() } finally { this.#submitting = previous }
+        await result
+      } }))
+      guarded = editor.getExtension(CommentEditorSubmitExtension)
+      // The parent Comment reads submit during render; publish a fresh view without a source edit.
+      this.#publishView()
+    }
+    const setEditable = (value: boolean) => {
+      if (!existing || editing.closed || value === editing.editable) return
+      editing.editable = value
+      if (value) {
+        if (editing.commentId) this.#edits.set(editing.commentId, editing)
+        if (!target) this.#failEdit(editing, 'unavailable')
+      } else {
+        if (editing.commentId && this.#edits.get(editing.commentId) === editing) this.#edits.delete(editing.commentId)
+        const comment = editing.threadId ? this.#canonical[editing.threadId]?.comments.find(value => value.id === editing.commentId) : undefined
+        if (comment && editing.failure) {
+          this.#replace(this.#canonical, { id: comment.id, body: productRichTextToNative(comment.content ?? [], this.#rich) }, true)
+          this.#publishView()
+        }
+      }
+    }
+    setEditable(editable)
+    return {
+      setEditable, failure: () => editing.failure,
+      subscribe: listener => { editing.listeners.add(listener); return () => editing.listeners.delete(listener) },
+      close: () => {
+        if (editing.closed) return
+        setEditable(false); editing.closed = true; editing.listeners.clear()
+        if (original && guarded && !editor.prosemirrorView.isDestroyed && editor.getExtension(CommentEditorSubmitExtension) === guarded) editor.replaceExtension(guarded, original)
+      },
+    }
+  }
 
   /** Source adoption is not another native edit; preserve selected thread and unchanged comment bodies. */
   synchronize(document: TeachingDocument, version: string | undefined, editor: NativeDocumentEditor, transaction?: Transaction): void {
@@ -117,7 +217,7 @@ export class DocumentThreadStore extends ThreadStore {
     if (same(threads ?? {}, this.#canonical)) return
     this.#synchronizing = true
     try {
-      this.#replace(threads ?? {})
+      this.#replace(threads ?? {}, undefined, true)
       this.restoreAnchors(editor, transaction)
       this.#notify()
       const extension = editor.getExtension(CommentsExtension)!, selected = extension.store.state.selectedThreadId

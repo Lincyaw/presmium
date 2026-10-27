@@ -1,6 +1,6 @@
 # RFC：Web 与 MCP 共用作者动作及验证反馈
 
-状态：作者事务、页面复制预检、常用页面动作、版本绑定局部读取、音频资产与片段、音色发现、转写／采用、共享配音任务与试听、被动诊断读取及显式检查已实施，其余分阶段推进。2026-10-27 根据作者要求设计：AI agent 经 MCP 能完成作者在 Web 中可完成的工作，包括人声录音转写、将文字采用为讲稿、再显式生成 AI 配音。第 12.1 节的共享作者事务见第 14 节；转写任务发现、启动、读取、取消与类型化采用见第 15 节；共享配音任务和音频资源见第 16 节；页面复制见第 17 节；局部读取见第 18 节；常用页面动作见第 19 节。下文未明确标为已实现的接口名和新增类型仍为提案。
+状态：作者事务、页面复制预检、常用页面动作、版本绑定局部读取、音频资产与片段、音色发现、转写／采用、共享配音任务与试听、被动诊断读取及显式检查、批注与音色语义计划已实施，其余分阶段推进。2026-10-27 根据作者要求设计：AI agent 经 MCP 能完成作者在 Web 中可完成的工作，包括人声录音转写、将文字采用为讲稿、再显式生成 AI 配音。第 12.1 节的共享作者事务见第 14 节；转写任务发现、启动、读取、取消与类型化采用见第 15 节；共享配音任务和音频资源见第 16 节；页面复制见第 17 节；局部读取见第 18 节；常用页面动作见第 19 节；批注与音色语义计划见第 20 节。下文未明确标为已实现的接口名和新增类型仍为提案。
 
 本文供工作区、工作台、MCP 和讲授插件的实现者拆分任务。交付结果是一套共用的作者动作、版本检查和反馈协议。文稿内容继续只写 `lecture.json`；规范实体定义以[文稿契约](../packages/kernel/src/contracts/document.ts)和[文稿 IR RFC](rfc-document-ir.md)为准，录制转写的候选与采用细节以[录制转写 RFC](rfc-recording-transcription.md)为准。
 
@@ -35,7 +35,7 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 步骤状态、显隐、继承、组件参数与身份 | IR 契约支持稳定 `StepId`、`setStepState`；Web 对复杂步骤操作仍有缺口 | plan/apply 已有 `setStepState`，运行读取／导航仍可使用 | 共用完整步骤动作；未实现的重排／删除规则先声明 unavailable |
 | 讲稿文字、发音替换、cue 与停顿 | `NarrationEditor/DocumentStepNarration` → 同一文稿；`setNarration/setTiming` 已有 | plan/apply 已接受 `NarrationNode[]`；`lecture_preview` 只读派生计划 | 共享讲稿 edit-shared／fork、cue 编辑的更细范围与影响 |
 | 定义、公开参数、共享素材修改和“另存” | 定义在文稿中，代码通过 `DocumentChange.fileChanges`；通用素材属性仍未完整接入 | 已能明确 replacement 加同文稿文本文件原子保存；无专用定义范围动作 | 定义 Schema、引用计数、单实例／全部实例／fork 三种明确范围 |
-| 批注新建、回复、编辑、反应、解决、重开、删除 | `DocumentThreadStore` 适配 BlockNote CommentsExtension，落 `TeachingDocument.comments` | 已可读取规范线程；专用批注动作仍缺，明确 replacement 不等于对齐完成 | 共用线程动作、稳定文本锚点和失锚状态；禁止写 BlockNote 私有 JSON |
+| 批注新建、回复、编辑、反应、解决、重开、删除 | `DocumentThreadStore` 与 kernel 共用纯动作，保原生 CommentsExtension／选区／即时保存；可信 member 与 owner 管理旧作者权限 | 已有紧凑 `plan_authoring_action/apply_authoring_action` 的七类 comment 动作，服务固定身份／时间／ID，见第 20 节 | 未提交 composer 的完整持久恢复／外部删除保稿仍待；禁止写 BlockNote 私有 JSON，不把 replacement 当语义对齐 |
 | 批量批注交给助手、接受／拒绝／继续修改 | workbench 与 dsh 的会话／审阅路由；材料生成流程仍未齐全 | 核心 MCP 不提供会话或审阅动作 | 显式任务范围、会话上下文与修改审阅，不能将发送成功当作内容修改完成 |
 | 导入与查看图片 | `document/image` 将原文件和资产声明原子保存；`document/asset` 按 Asset ID 读取 | 无 | 安全字节输入、回执与资源读取；沿用现有媒体检查限制 |
 | 导入／检查本地音频 | `DocumentAudioAuthoring` 共用真实媒体探测及多文件事务 | 已有能力、workspace 预检／导入与 canonical inspection 四个工具 | 远程分块上传尚未实现；路径限当前文稿工作区，不接受任意服务端路径 |
@@ -43,8 +43,8 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 录制、重录、试听、采用录音 | Video“原音频”卡保存 native 候选、选择既有资产并明确采用为当前稳定步骤；`DocumentAudioAuthoring` 共用 HTTP/MCP wholeStep 事务和播放计划 | 已有 `adopt_recording`；无 MCP 客户端录制控制 | 远程客户端录制、旁白裁切与跨步连续分配仍待；保存不采用、采用不 ASR/TTS，字幕未词对齐。共享服务见[录音采用记录](benchmarks/recording-step-adoption-2026-10-27.md)，Web 见[界面记录](benchmarks/recording-step-adoption-ui-2026-10-27.md) |
 | 人声转写 | `DocumentTranscriptions` 保存版本化候选；HTTP 与 MCP 共用任务实例。[英文文件](benchmarks/human-audio-to-voiceover-2026-10-27.md)及[单条中文真人原音](benchmarks/chinese-human-audio-to-voiceover-2026-10-28.md)已分别完成真实 ASR／明确采用／Web TTS；中文保留错字及显式校对，播放只在浅色桌面实操，四图不代表四种播放通过 | 已有能力、启动、清单、任务、exact result 和取消六个工具；旧 `track_transcribe` 仍独立写 track.json | 识别准确率、实际提供方运行中取消和物理录音完整链仍待验证，候选不自动写讲稿 |
 | 查看差异并将转写采用为步骤讲稿 | `DocumentTranscriptionAdoption` 共用 typed Narration 差异与作者事务；Video 有候选与明确采用入口 | 已有 `plan_transcription_adoption/apply_transcription_adoption`，复用原 DocumentEditor planId | 保留受保护发音／cue 的显式处理；ASR 词时不能充当新 TTS 词时，中文新配音实测仍为 proportional |
-| 采用转写后改用 AI 配音 | 可编辑 `VoiceSource`，人声转写／采用／新 TTS 已有独立真实闭环；整段 recording 支持 wholeStep，不等于自动转成 TTS | 已有共享 `start_voiceover` spend 任务与查询／取消；旧 `lecture_synthesize` 不再暴露 | 显式选择 TTS 来源和作用域；不能把 ASR 时间当作新音色时间；专门的音色继承修改接口仍待补 |
-| 音色目录、搜索筛选、继承与批量应用 | `DocumentVoiceAuthoring` 读配置与目录，不依赖编译；kernel `document-voices.ts` 与 Web 共用继承和影响预检，批量默认保留覆盖 | 已有 `get_voice_authoring_capabilities/get_voice_catalog`；继承／批量专门动作仍缺 | 将共享范围规则接入 MCP；配置存在不代表合成成功 |
+| 采用转写后改用 AI 配音 | 可编辑 `VoiceSource`，人声转写／采用／新 TTS 已有独立真实闭环；整段 recording 支持 wholeStep，不等于自动转成 TTS | 已有共享 `start_voiceover` spend 任务与查询／取消；旧 `lecture_synthesize` 不再暴露 | 显式选择 TTS 来源和作用域；不能把 ASR 时间当作新音色时间；继承修改已接第 20 节 `voice.set`；客户端是否播放仍须真实反馈 |
+| 音色目录、搜索筛选、继承与批量应用 | `DocumentVoiceAuthoring` 读配置与目录，不依赖编译；kernel `document-voices.ts` 与 Web 共用继承和影响预检，批量默认保留覆盖 | 已有目录读取与第 20 节 `voice.set` 的文稿／页／步骤／步骤集合范围、保留覆盖／明确清除和恢复继承 | 配置存在不代表合成成功；不允许此动作绕过真实录音采用 |
 | 音色样本／当前讲稿试听 | 同一 owner 的 quote → 显式请求 → 真实音频；HTTP 保留 `VoicePreviewAnswer` | 已有 `quote_voice_preview/preview_voice` 与限额内的二进制 MCP resource | quote 固定实际 execution、source、revision、提供方和缓存状态；生成成功不是客户端已试听 |
 | 配音生成、进度、取消 | `DocumentVoiceAuthoring` 与独立 Node owner；HTTP/MCP 同一任务实例，standalone 同工厂 | 已有 `get_voiceover_status/get_voiceover_jobs/get_voiceover_job/start_voiceover/cancel_voiceover`，保留 intent/source/revision/scope/sequence | 查询／取消不要求当前编译；配置 remount 保留任务；当前仅进程内发现与幂等，尚无跨重启恢复账本 |
 | 计划、波形、定位、播放、暂停、速率 | `ProductionPlan`、单一播放器、预览协议中的制作请求 | 已有真实 `read_production_plan`；`navigate` 仅定位放映窗口，`get_runtime` 只读报告 | 指定作者客户端的 `ProductionPlaybackCommand` 与真实应答 |
@@ -353,3 +353,33 @@ HTTP 的 `GET document/outline` 与 `GET document/part` 将同一 query JSON 放
 MCP 整体参数按实际 JSON.stringify 不超过 2048 个 UTF-16 字符，默认结果按实际 pretty JSON 不超过 7168；异常详情也保持有界。大字段明确省略或拒绝，不截断身份冒充完整值。能力中的 `actions.planPageChange/applyPageChange` 与 `pageLimits` 如实声明支持；required review、operate off 和 compiler-only stdio 不会冒称可提交。
 
 此片仍使用原五分钟／64 plans／64 receipts／process-current-source 边界，不增加队列、writer 或持久账本。丢 ACK 重试原 apply 引用；Undo ABA、旧源、变化／过期／遗忘计划不允许自动重建。共享 HTTP 的 `document/page/plan` 与 `document/page/apply` 连接同一实例；Web 人工编辑仍走原 actor 和可信编辑保存边界。本片不把通用大文写回、评论、历史或全部人机动作宣称已对齐。实际验证见[页面动作记录](benchmarks/mcp-page-actions-2026-10-28.md)。
+
+## 20. 已实现的批注与音色语义计划
+
+`plan_authoring_action({ document, request: { id, source, action } })` 与 `apply_authoring_action({ document, request: { planId, source, digest } })` 共用原 `DocumentEditor` 的计划、事务和回执实例。它们没有第三份 writer、队列或持久意图表。页面、复制、通用 change 与本动作计划按 family 隔离，不能把按需读取的完整候选借给另一个 apply 入口以绕过确认。保留五分钟、64 plans、64 receipts 和 `process-current-source` 边界；在途记录已被逐出时旧回调也返回 409，不会重新插入并覆盖较新计划。收到引用后重试原 apply；旧源、已知 Undo ABA、变化／过期／遗忘引用都不能静默重新预检。
+
+支持的 action 是严格对象：
+
+| type | 参数与实际语义 |
+| --- | --- |
+| `comment.create` | `content: RichTextNode[]`、明确 `anchor`（稳定范围或 null）；可选 thread `metadata` 与首条 `commentMetadata`。 |
+| `comment.reply` | `threadId/content`，可选新评论 `metadata`。 |
+| `comment.update` | `threadId/commentId/content`；缺省保留原 metadata，显式 object 替换它，`{}` 可清空其字段。 |
+| `comment.react` | `threadId/commentId/emoji/active`；只增加／移除真实调用成员，不重置其他成员。 |
+| `comment.resolve`、`comment.reopen` | `threadId`；更新真实解决者和时间。 |
+| `comment.delete` | `threadId`，可选 `commentId`。删末条评论时移除空线程；apply 必须另带 `confirmDeletion: true`，只确认该固定删除 action/source/digest。 |
+| `voice.set` | `scope` 为 document/page/step/steps，`source` 为 TTS、none 或 null，可选 `replaceOverrides`；null 只移除指定槽位，默认保留下层显式覆盖。 |
+
+MCP 的作者、日期、新线程／评论／富文本 ID 都由服务为该计划固定，模型不能提供身份或盖时间。Web 的 `DocumentThreadStore` 立即调用同一个纯批注 reducer，再由 BlockNote 用原生选区挂 mark，经原 `DocumentSession` 保存；它不等待网络 ACK 才返回线程，仍使用客户端即时 clock，不宣称全流服务盖时间。Workbench 的只读连接信息提供真实 member，未知成员不授编辑权。Owner 可管理旧作者评论，普通 editor 仅修改自己的评论；管理旧 `local-author` 线程仍保留原作者 ID，仅显示名本地化。
+
+`anchor` 的两端是 `{ blockId, offset }`，按原生可寻址编辑单位与 UTF-16 排列。段落、标题、显式 code 文本、列表项首段、quote 首段、稳定 table cell 和页标题使用其公开稳定身份；不透明扩展不猜内部 ID。非空 text/break 链接可展开，其余复杂链接／数学／扩展等行内值只占一个原子位置，此判据由 kernel 与原生投影共同使用。新范围的未知目标、倒置／空范围、越界和 surrogate 中点明确 422，不夹紧。操作已有线程时其非法范围明确脱锚并返回 `anchorDetached`，线程内容保留；它不是猜测文本重定位。
+
+预检默认返回 source/planId/digest/期限、动作名、真实 effect、影响计数、有限校验摘要、确认要求与 candidate/details 资源。comment effect 含实际线程／评论 ID、是否变更、锚定／移除状态及评论／反应计数；voice effect 沿原 `DocumentVoiceImpact`，另分别计保留／移除的 recording 配置槽位，不把它冒充受影响步骤数。MCP 请求整体按 JSON.stringify 不超过 4096 个 UTF-16 字符，默认结果按 pretty JSON 不超过 7168；完整候选只按需读资源，不要求模型回抄。SDK 在执行前拒绝 Schema 的错误仍是 SDK 自身文本协议。
+
+apply 通过原 operate、member/document/token、review、CAS、锁、历史和回滚，读回完整实际候选并核预测保存版本。回执带真实 source、commit id/origin、effect 和 `verification`；`compiled/runtime: not-requested` 不代表已验证播放。HTTP `document/action/plan`（POST 预检、GET 读取资源详情）与 `document/action/apply`（POST）使用同一服务，不能选可信 Web 的 editor 写入路径。required review 尚不支持该 agent 提交时准确拒绝；operate off 不暴露 apply，独立 compiler-only stdio 不伪造作者服务。
+
+TTS 设置不运行提供方，不表示可合成、生成成功或客户端已试听。新录音来源仍须经过 `adopt_recording` 的真实文件 SHA／时长／wholeStep 检查，不能直接设置 assetId；明确替换原 recording 只清其配置槽位，不删除原始字节。音色继承与提供方目录继续见[音色作者边界](voice-authoring.md)。
+
+原生编辑器对 clean、非 IME 的外部 comments／production 更新保留原实例、正文 history 和未提交回复；同步前读取最新 actor 版本，不能让旧线程 snapshot 写回新源。第二次源采用后立即原生输入，锚点沿公开 transaction 从原文档映射，不按新文本重夹位置。正文 Undo 沿最新 canonical 保留外部音色／批注。原生现有评论的编辑基线通过公开 `Comments.Editor` 与 submit 扩展固定；目标正文变更时保留视图草稿、阻止 Save／快捷键覆盖新正文，canonical snapshot 始终使用最新内容，明确取消后显示保存值。无关 reply/reaction 不触发正文冲突。这里没有完整持久评论 composer 协议：外部删除／soft-delete、关闭窗口、失去目标的未提交稿不在保留保证内；MCP 仍无法读取或恢复客户端未提交字节。
+
+分阶段真实证据、未完成观察器记录与源码谱系见[批注作者动作记录](benchmarks/comment-authoring-actions-2026-10-28.md)。本节没有实现客户端播放、麦克风控制、草稿恢复、审阅会话或全部人机操作。
