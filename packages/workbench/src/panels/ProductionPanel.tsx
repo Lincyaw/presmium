@@ -71,11 +71,11 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
   useEffect(() => {
     const controller = new AbortController()
     // Reading an unchanged cache plan must not cancel an in-flight load of the same immutable binding.
-    if (!plan || !playbackConnected || blocked || timingDraft) { setPlayerBusy(false); return }
+    if (!plan || !playbackConnected || preparing || blocked || timingDraft) { setPlayerBusy(false); return }
     setPlayerBusy(true)
     void workbench.controlProduction({ binding: plan.binding, action: 'load' }, controller.signal).catch(() => {}).finally(() => { if (!controller.signal.aborted) setPlayerBusy(false) })
     return () => controller.abort()
-  }, [workbench, plan?.binding.planId, playbackConnected, connection, blocked, timingDraft])
+  }, [workbench, plan?.binding.planId, playbackConnected, connection, preparing, blocked, timingDraft])
   const control = async (command: ProductionPlaybackCommand) => {
     if (!owner.current.active || !playbackConnected || blocked || closing || timingDraft) return
     controlRequest.current?.abort()
