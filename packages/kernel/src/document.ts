@@ -126,7 +126,7 @@ export function validateDocument(value: unknown): DocumentValidation {
       block.content.forEach((node, index) => rich(node, `${path}/content/${index}`, collected))
       for (const [index, item] of (block.reveal?.order ?? []).entries()) if (!collected.has(item)) issue(`${path}/reveal/order/${index}`, 'reveal.target', 'Reveal items must name rich-text nodes of this block.')
     } else if (block.type === 'image') {
-      if (reference(doc.assets, block.assetId, `${path}/assetId`, 'asset') && doc.assets[block.assetId]!.kind !== 'image') issue(`${path}/assetId`, 'asset.kind', 'An image block requires an image asset.')
+      if (block.assetId !== undefined && reference(doc.assets, block.assetId, `${path}/assetId`, 'asset') && doc.assets[block.assetId]!.kind !== 'image') issue(`${path}/assetId`, 'asset.kind', 'An image block requires an image asset.')
     } else if (block.type === 'component') {
       if (reference(doc.definitions, block.definitionId, `${path}/definitionId`, 'definition')) schema(doc.definitions[block.definitionId]!.parameterSchema, block.parameters, `${path}/parameters`)
     } else if (block.type === 'code') {

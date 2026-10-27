@@ -61,7 +61,7 @@ export const DOCUMENT_JSON_SCHEMA: Schema = {
     Block: { oneOf: [
       block('text', { content: list(ref('RichTextNode')), reveal: object({ type: tag('items'), order: ids }) }, ['content']),
       block('container', { layout: { enum: ['stack', 'columns', 'tabs'] }, children: ids, properties: object({ title: string, columnWidths: list(positive), tabTitles: list(string) }, []) }),
-      block('image', { assetId: id, alt: string, caption: list(ref('Inline')), width: positive, alignment: { enum: ['left', 'center', 'right', 'justify'] } }, ['assetId', 'alt']),
+      block('image', { assetId: id, alt: string, caption: list(ref('Inline')), width: positive, alignment: { enum: ['left', 'center', 'right', 'justify'] } }, ['alt']),
       { ...block('code', { language: string, value: string, origin: ref('CodeReference'), title: string, execution: ref('CodeExecution'), highlight: record(list({ type: 'integer', minimum: 1 })), variants: list(ref('CodeVariant')), echo: { type: 'boolean' } }, ['language']), oneOf: exclusiveCode },
       block('component', { definitionId: id, parameters: ref('JsonObject'), children: ids }, ['definitionId', 'parameters']),
     ] },

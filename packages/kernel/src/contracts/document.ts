@@ -95,7 +95,8 @@ export interface BlockScope { only?: string[], audience?: string[] }
 export interface TextBlock extends BlockScope { id: BlockId, type: 'text', content: RichTextNode[], reveal?: { type: 'items', order: string[] } }
 export interface ContainerProperties { title?: string, columnWidths?: number[], tabTitles?: string[] }
 export interface ContainerBlock extends BlockScope { id: BlockId, type: 'container', layout: 'stack' | 'columns' | 'tabs', children: BlockId[], properties: ContainerProperties }
-export interface ImageBlock extends BlockScope { id: BlockId, type: 'image', assetId: AssetId, alt: string, caption?: InlineNode[], width?: number, alignment?: TextAlignment }
+/** An image without an asset is an authored placeholder, not an asset with an empty location. */
+export interface ImageBlock extends BlockScope { id: BlockId, type: 'image', assetId?: AssetId, alt: string, caption?: InlineNode[], width?: number, alignment?: TextAlignment }
 export interface CodeReference { anchor: string, pin?: string, repo?: string, highlightRegions?: Record<StepId, string> }
 export interface CodeExecution { args?: Record<string, string>, stdin?: string, timeoutMs?: number, executor?: string, when: 'compile' | 'live' | 'both', session?: string }
 export interface CodeVariantSource { id: string, title: string, value?: string, origin?: Omit<CodeReference, 'highlightRegions'> }
