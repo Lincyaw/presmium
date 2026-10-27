@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, renameSync, rmdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { DocumentOperation, Member, OperationAnswer, RevisionOperation } from '@lincyaw/kernel'
+import { hasRole } from '@lincyaw/kernel'
 import type { CommitOrigin } from '../domain/commit-message.ts'
 import { invalidDocumentDir, isWithin } from '../domain/paths.ts'
 import { isDocumentDir, listDocuments } from './config.ts'
@@ -11,7 +12,7 @@ import { lockedError } from './locks.ts'
 import type { DocumentLocks } from './locks.ts'
 import type { Revisions } from './revisions.ts'
 import { DEFAULT_TEMPLATE, listTemplates } from './templates.ts'
-import { makeDocumentDir } from './writer.ts'
+import { DocumentCheckpointRefusal, makeDocumentDir } from './writer.ts'
 import type { DocumentWriter } from './writer.ts'
 
 export interface DocumentsChange {
@@ -39,7 +40,6 @@ function touched(operation: DocumentOperation): string[] {
 /** Creating, renaming, copying and deleting a document, each under the document locks and as one commit. */
 export class DocumentOperations {
   readonly #config: WorkspaceConfig
-  readonly #git: Git
   readonly #revisions: Revisions
   readonly #writer: DocumentWriter
   readonly #changed: (change: DocumentsChange) => void | Promise<void>
@@ -47,7 +47,6 @@ export class DocumentOperations {
 
   constructor(options: DocumentOperationsOptions) {
     this.#config = options.config
-    this.#git = options.git
     this.#revisions = options.revisions
     this.#writer = options.writer
     this.#changed = options.changed ?? (() => {})
@@ -55,17 +54,51 @@ export class DocumentOperations {
   }
 
   async apply(operation: DocumentOperation, member: Member): Promise<OperationAnswer> {
+    if (!hasRole(member, 'editor')) throw new RequestError(403, 'document operations need the role editor')
     if (this.#config.singleDeck) throw new RequestError(409, 'this workspace is a single deck: it has no document operations')
-    const claimed = this.#locks?.claimAll(touched(operation), `document:${operation.op}`)
-    if (claimed && 'holder' in claimed) throw lockedError(claimed.document, claimed.holder)
+    if (operation.op !== 'create' && operation.dir === '') throw new RequestError(409, 'project-root-operation-unavailable')
+    let release: (() => void) | undefined, committedError: RequestError | undefined, cleanupError: unknown
     try {
-      const answer = await this.#git.exclusive(() => this.#apply(operation, member))
+      const answer = await this.#revisions.transaction(async () => {
+        const head = await this.#revisions.head()
+        const before = await this.#writer.checkpoint(touched(operation), operation.op === 'rename' ? { from: operation.dir, to: operation.to } : undefined).catch(error => {
+          if (error instanceof DocumentCheckpointRefusal) throw new RequestError(error.status, error.message, error.detail)
+          throw error
+        })
+        let discardCheckpoint = true
+        try {
+          const claimed = this.#locks?.claimAll(before.documents, `document:${operation.op}`)
+          if (claimed && 'holder' in claimed) throw lockedError(claimed.document, claimed.holder)
+          release = claimed?.release
+          let mutationStarted = false
+          try {
+            const result = await this.#apply(operation, member, () => { mutationStarted = true; discardCheckpoint = false })
+            discardCheckpoint = true
+            return result
+          }
+          catch (error) {
+            if (!mutationStarted) throw error
+            let after: string | undefined
+            try { after = await this.#revisions.head() }
+            catch { throw new RequestError(500, 'project-commit-state-unavailable', { committed: 'unknown', recovery: before.recovery }) }
+            if (after === undefined) throw new RequestError(500, 'project-commit-state-unavailable', { committed: 'unknown', recovery: before.recovery })
+            if (after !== head) { discardCheckpoint = true; committedError = new RequestError(409, 'project-readback-changed', { committed: true, snapshot: after }); return undefined }
+            try { await before.restore() }
+            catch { throw new RequestError(500, 'project-rollback-failed', { committed: false, recovery: before.recovery }) }
+            discardCheckpoint = true
+            throw error
+          }
+        } finally { if (discardCheckpoint) try { before.dispose() } catch (error) { cleanupError = error } }
+      })
+      if (committedError) throw committedError
+      if (!answer) throw new RequestError(409, 'project-result-unavailable')
+      if (cleanupError) throw new RequestError(500, 'project-checkpoint-cleanup-failed', { committed: Boolean(answer.revision), snapshot: await this.#revisions.head() })
       const added = operation.op === 'delete' ? [] : [answer.dir!]
       const removed = operation.op === 'rename' || operation.op === 'delete' ? [operation.dir] : []
       await this.#changed({ removed, added })
       return answer
     } finally {
-      claimed?.release()
+      release?.()
     }
   }
 
@@ -91,7 +124,7 @@ export class DocumentOperations {
     }
   }
 
-  async #apply(operation: DocumentOperation, member: Member): Promise<OperationAnswer> {
+  async #apply(operation: DocumentOperation, member: Member, beforeWrite: () => void): Promise<OperationAnswer> {
     const config = this.#config
     const origin = (done: RevisionOperation): CommitOrigin => ({ kind: 'document', member, operation: done })
     const commit = (paths: string[], summary: string, body: string, done: RevisionOperation) => this.#revisions.commitWhileLocked({ paths, summary, body, origin: origin(done) })
@@ -116,6 +149,7 @@ export class DocumentOperations {
         const name = operation.template ?? (templates.includes(DEFAULT_TEMPLATE) ? DEFAULT_TEMPLATE : templates[0])
         if (!name || !templates.includes(name)) throw new RequestError(400, `no document template ${JSON.stringify(name ?? '')}`)
         const title = operation.title?.trim() || dir.split('/').at(-1)!
+        beforeWrite()
         await this.#fill(dir, () => this.#writer.template(dir, name, title))
         const revision = await commit([dir], `Create document ${dir}`, `Title: ${title}\nTemplate: ${name}`, { op: 'create', dir })
         return { revision, dir }
@@ -123,6 +157,7 @@ export class DocumentOperations {
       case 'rename': {
         const from = existing(operation.dir)
         const to = fresh(operation.to)
+        beforeWrite()
         mkdirSync(dirname(join(config.root, to)), { recursive: true })
         renameSync(join(config.root, from), join(config.root, to))
         const rewritten = (await this.#writer.relink(from, to)).filter(path => !isWithin(path, to))
@@ -132,12 +167,14 @@ export class DocumentOperations {
       case 'copy': {
         const from = existing(operation.dir)
         const to = fresh(operation.to)
+        beforeWrite()
         await this.#fill(to, () => this.#writer.copy(from, to))
         const revision = await commit([to], `Copy document ${from} to ${to}`, '', { op: 'copy', dir: from, to })
         return { revision, dir: to }
       }
       case 'delete': {
         const dir = existing(operation.dir)
+        beforeWrite()
         await this.#remove(dir)
         const revision = await commit([dir], `Delete document ${dir}`, '', { op: 'delete', dir })
         return { revision }
