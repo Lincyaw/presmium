@@ -23,7 +23,7 @@ import type { DocumentVoiceOptions, DocumentVoiceScope } from './document-voices
 import type { CanonicalSource, VoiceoverJob, VoiceSource } from '@lincyaw/kernel'
 import type { StepDurationDraft, StepDurationKey, StepTimingPatch } from './step-production.ts'
 import { DocumentTimingDrafts } from './document-timing-drafts.ts'
-import { compileDocumentPreview } from './document-preview.ts'
+import { compileDocumentPreview, waitForPreviewRequest } from './document-preview.ts'
 import { readDocumentSnapshot } from './document-preview.ts'
 import { errorMessage, sameProductionBinding, slideShape, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
 import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, JobsAnswer, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPoint, PreviewPosition, PreviewRect, PreviewRenderer, PreviewReport, ReviewChange, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
@@ -285,6 +285,7 @@ export class Workbench {
   readonly #jobObservers = new Set<symbol>()
   #previewReads = 0
   #presentationPreparation = 0
+  #presentationController?: AbortController
   #irReads = 0
   #focusVersion = 0
   #focusWriting: Promise<void> = Promise.resolve()
@@ -773,50 +774,82 @@ export class Workbench {
     if (document !== undefined) void this.#readPreview(document)
   }
 
-  /** An explicit presentation may adopt only a compiled snapshot of the confirmed source. */
-  async preparePresentation(): Promise<boolean> {
+  /** Only public modal semantics are inspected; no field values or editor selection are read. */
+  #previewModalOpen(): boolean {
+    return typeof document !== 'undefined' && [...document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]')]
+      .some(element => !element.closest('[hidden], [inert]') && element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden')
+  }
+
+  #canPreparePresentation(owned = false): boolean {
+    const state = this.#state, source = state.authoring
+    return Boolean(state.document !== undefined && source?.identity && source.version && source.fingerprint && source.content
+      && !source.loading && !source.dirty && !source.saving && !source.restored && !source.error && !source.composing && !source.recovering
+      && !state.hasDocumentTimingDrafts && !state.documentTimingDraftStorageFailure && !state.isCreatingPage && !state.isEditingPage
+      && !state.isHistoryBusy && !state.isHistoryPreparing && !state.jobPreparing && !state.isBundleDisabled && !isAgentChanging(state)
+      && (owned || !state.isPreparingPresentation) && !this.#previewModalOpen())
+  }
+
+  /** One explicit preparation owner; caller cancellation stops adoption without changing the current mode. */
+  async preparePresentation(signal?: AbortSignal, deadline?: number): Promise<boolean> {
     const directory = this.#state.document, source = this.#state.authoring
-    if (directory === undefined || !source?.identity || !source.version || !source.fingerprint || !source.content
-      || source.loading || source.dirty || source.saving || source.restored || source.error || source.composing
-      || this.#state.hasDocumentTimingDrafts || this.#state.isCreatingPage || this.#state.isEditingPage || isAgentChanging(this.#state)) {
+    if (!this.#canPreparePresentation() || directory === undefined || !source?.identity || !source.version || !source.fingerprint || !source.content) {
       this.#set({ presentationFailure: this.#state.hasDocumentTimingDrafts ? this.#messages.timingDraftPending : this.#messages.presentationPending })
       return false
     }
+    signal?.throwIfAborted()
+    this.#presentationController?.abort(new Error('presentation-superseded'))
     const request = ++this.#presentationPreparation, scope = this.#documentScope
+    const controller = this.#presentationController = new AbortController()
+    const cancel = () => controller.abort(signal?.reason)
+    signal?.addEventListener('abort', cancel, { once: true })
     const { identity, version, fingerprint } = source, project = source.projectRevision ?? 0
     const current = () => request === this.#presentationPreparation && scope === this.#documentScope && this.#state.document === directory && this.#state.authoring?.identity === identity
     const unchanged = () => {
       const latest = this.#state.authoring
-      return current() && latest?.version === version && latest.fingerprint === fingerprint && (latest.projectRevision ?? 0) === project
-        && !latest.loading && !latest.dirty && !latest.saving && !latest.error && !latest.restored && !latest.composing
-        && !this.#state.hasDocumentTimingDrafts && !this.#state.isCreatingPage && !this.#state.isEditingPage && !isAgentChanging(this.#state)
+      return current() && !controller.signal.aborted && (deadline === undefined || Date.now() < deadline) && this.#canPreparePresentation(true)
+        && latest?.version === version && latest.fingerprint === fingerprint && (latest.projectRevision ?? 0) === project
     }
     this.#set({ isPreparingPresentation: true, presentationFailure: undefined })
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(new DOMException('Presentation preparation timed out', 'TimeoutError')), 45_000)
+    const timeout = setTimeout(() => controller.abort(deadline === undefined ? new DOMException('Presentation preparation timed out', 'TimeoutError') : new Error('client-request-expired')), Math.max(0, Math.min(45_000, deadline === undefined ? 45_000 : deadline - Date.now())))
     const stop = this.subscribe(() => { if (!unchanged()) controller.abort(new Error('presentation-source-changed')) })
+    const input = () => controller.abort(new Error('client-preview-input'))
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') controller.abort(new Error('client-preview-cancelled')) }
+    const observer = typeof MutationObserver === 'undefined' ? undefined : new MutationObserver(() => { if (this.#previewModalOpen()) controller.abort(new Error('client-preview-modal-open')) })
+    if (typeof document !== 'undefined') {
+      document.addEventListener('beforeinput', input, true); document.addEventListener('compositionstart', input, true); document.addEventListener('keydown', escape, true)
+      observer?.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-modal', 'hidden', 'inert'] })
+    }
     try {
-      await this.pausePlayback()
-      if (!current()) return false
+      await waitForPreviewRequest(this.pausePlayback(), controller.signal)
+      if (!unchanged()) return false
       controller.signal.throwIfAborted()
       const snapshot = await compileDocumentPreview(this.client, { directory, version, fingerprint, project }, controller.signal)
+      controller.signal.throwIfAborted()
       const ir = snapshot.ir
       if (!current()) return false
       const entry = directory ? `${directory}/lecture.json` : 'lecture.json'
-      if (!unchanged() || ir.revision !== snapshot.revision || ir.sourceFingerprints?.[entry] !== fingerprint) throw new Error('presentation-source-changed')
+      if (!unchanged() || ir.revision !== snapshot.revision || ir.sourceFingerprints?.[entry] !== fingerprint
+        || ir.doc.source?.version !== version || ir.doc.source.fingerprint !== fingerprint) throw new Error('presentation-source-changed')
       if (ir.diagnostics.some(finding => finding.severity === 'error')) throw new Error('document-preview-compile-failed')
       this.#set({ ir, preview: snapshot.preview, previewRenderer: 'web', previewFailure: undefined, presentationSnapshot: { version, fingerprint, revision: ir.revision, project } })
       return true
     } catch (error) {
       // Editing supersedes this snapshot; the existing stale status owns its recovery action.
-      if (current()) this.#set({ presentationFailure: error instanceof Error && error.message === 'presentation-source-changed' ? undefined : this.#messages.presentationCompileFailed })
+      const cancelled = controller.signal.aborted && !(controller.signal.reason instanceof Error && controller.signal.reason.name === 'TimeoutError')
+      if (current()) this.#set({ presentationFailure: cancelled || error instanceof Error && error.message === 'presentation-source-changed' ? undefined : this.#messages.presentationCompileFailed })
       return false
-    } finally { clearTimeout(timeout); stop(); if (current()) this.#set({ isPreparingPresentation: false }) }
+    } finally {
+      clearTimeout(timeout); stop(); signal?.removeEventListener('abort', cancel); observer?.disconnect()
+      if (typeof document !== 'undefined') { document.removeEventListener('beforeinput', input, true); document.removeEventListener('compositionstart', input, true); document.removeEventListener('keydown', escape, true) }
+      if (this.#presentationController === controller) this.#presentationController = undefined
+      if (current()) this.#set({ isPreparingPresentation: false })
+    }
   }
 
   /** Closing an explicit preview cancels its pending adoption, while source saves retain their owner. */
   cancelPreviewPreparation(): void {
     if (!this.#state.isPreparingPresentation) return
+    this.#presentationController?.abort(new Error('client-preview-cancelled'))
     this.#presentationPreparation++
     this.#set({ isPreparingPresentation: false, presentationFailure: undefined })
   }
@@ -948,22 +981,40 @@ export class Workbench {
     const plan = state.productionPlan, playback = state.productionPlayback
     const ready = clean && plan?.canPreview && this.#productionReady() && playback?.status === 'ready' && sameProductionBinding(plan.binding, playback.binding)
     const position = state.position, page = position && content.sections[position.section]
+    const prepared = state.presentationSnapshot, actual = { documentId: content.id, version: source.version, fingerprint: source.fingerprint }
+    const preparedCurrent = clean && prepared && prepared.version === source.version && prepared.fingerprint === source.fingerprint && prepared.project === (source.projectRevision ?? 0)
+      && state.ir?.revision === prepared.revision && state.ir.doc.source?.version === source.version && state.ir.doc.source.fingerprint === source.fingerprint
     return { revision, source: { documentId: content.id, version: source.version, fingerprint: source.fingerprint }, view: state.webView, editing,
       interaction: state.documentPositionToken,
       ...page && position ? { position: { sectionId: page.id, ...page.stepOrder[position.step] ? { stepId: page.stepOrder[position.step] } : {} } } : {},
       ...plan ? { binding: plan.binding } : {}, ...playback ? { playback } : {},
+      preview: preparedCurrent ? { status: 'prepared', source: actual, irRevision: prepared.revision, projectRevision: prepared.project }
+        : { status: state.isPreparingPresentation ? 'preparing' : state.presentationFailure ? 'unavailable' : 'unprepared' },
       actions: ['state.read', 'playback.pause', ...safe ? ['source.flush' as const] : [],
+        ...this.#canPreparePresentation() ? ['preview.prepare' as const] : [],
         ...clean && (state.webView === 'document' || ready) ? ['position.step' as const] : [],
         ...ready ? ['playback.play' as const, 'playback.seek' as const, 'playback.rate' as const] : []], unsubmittedContent: 'not-inspected' }
   }
 
   /** Reuses the same source actor, mutual-audio gate and frame acknowledgements as the human controls. */
-  async executeAuthoringClientAction(action: AuthoringClientAction, expected: CanonicalSource, signal: AbortSignal): Promise<void> {
+  async executeAuthoringClientAction(action: AuthoringClientAction, expected: CanonicalSource, signal: AbortSignal, deadline?: number): Promise<void> {
     const scope = this.#documentScope, identity = this.#state.authoring?.identity, document = this.#state.document, interaction = this.#state.documentPositionToken
     const owned = () => { signal.throwIfAborted(); if (scope !== this.#documentScope || identity !== this.#state.authoring?.identity || document !== this.#state.document) throw new Error('client-document-changed') }
     const current = () => { owned(); const state = this.authoringClientSnapshot(0); if (!state || !sameSource(state.source, expected) || !state.actions.includes(action.type)) throw new Error('client-action-unavailable'); return state }
     current()
     if (action.type === 'state.read') return
+    if (action.type === 'preview.prepare') {
+      const view = this.#state.webView
+      const stop = this.subscribe(() => { if (interaction !== this.#state.documentPositionToken || view !== this.#state.webView) this.cancelPreviewPreparation() })
+      try {
+        const prepared = await this.preparePresentation(signal, deadline)
+        owned(); signal.throwIfAborted()
+        const result = this.authoringClientSnapshot(0)
+        if (!prepared || result?.preview?.status !== 'prepared' || !result.preview.source || !sameSource(result.preview.source, expected)
+          || result.view !== view || result.interaction !== interaction) throw new Error('client-preview-unavailable')
+      } finally { stop() }
+      return
+    }
     if (action.type === 'source.flush') {
       await this.flushPendingEdits(signal); owned()
       const source = this.#state.authoring
@@ -1975,6 +2026,7 @@ export class Workbench {
     this.#saveDocumentReturnPoint(); this.#cancelOpeningDocument(); this.#stopDocumentReturnScroll?.()
     this.#documentViewport?.stop(); this.#documentViewport = undefined; this.#documentEditorBinding = undefined
     this.#presentationPreparation++
+    this.#presentationController?.abort(new Error('client-document-changed'))
     this.#voiceover.stop()
     this.#production.reset()
     this.#set({ isPreparingPresentation: false, presentationFailure: undefined, presentationSnapshot: undefined, productionPlan: undefined, productionFailure: undefined })

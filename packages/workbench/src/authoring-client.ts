@@ -85,13 +85,15 @@ export function connectAuthoringClient(workbench: Workbench): () => void {
       return
     }
     active = task
+    const expiresAt = Date.parse(event.expiresAt)
+    const timeout = setTimeout(() => controller.abort(new Error('client-request-expired')), Math.max(0, expiresAt - Date.now()))
     try {
       // Only a confirmed executing acknowledgement grants this epoch permission to invoke a control.
       await send(owner, connectionId, value, { requestId: request.requestId, state: 'executing' })
       owned()
       const latest = snapshot()
       if (!latest || latest.revision !== request.expectedClientState.revision || !sameSource(latest.source, request.source)) throw new Error('client-state-changed')
-      await workbench.executeAuthoringClientAction(request.action, request.source, controller.signal)
+      await workbench.executeAuthoringClientAction(request.action, request.source, controller.signal, expiresAt)
       owned()
       const result = snapshot()
       if (!result) throw new Error('client-document-changed')
@@ -100,7 +102,7 @@ export function connectAuthoringClient(workbench: Workbench): () => void {
       const result = snapshot()
       const code = error instanceof Error && /^(client|production)-[a-z-]{1,100}$/.test(error.message) ? error.message : 'client-action-not-verified'
       if (!controller.signal.aborted && attached === owner && owner.connectionId === connectionId && result) await send(owner, connectionId, result, { requestId: request.requestId, state: 'failed', error: { code } }).catch(() => {})
-    } finally { if (active === task) active = undefined }
+    } finally { clearTimeout(timeout); if (active === task) active = undefined }
   }
   const changed = () => {
     const state = workbench.state, source = state.authoring

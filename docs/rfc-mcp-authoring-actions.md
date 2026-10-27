@@ -203,15 +203,21 @@ agent 对已保存源执行事务不依赖一个永远在线的浏览器。客�
 | `request_authoring_client` | operate | 指定 clientId、epoch、connectionId、客户端 revision、CanonicalSource 和 requestId；返回受理状态，不冒充完成 |
 | `get_authoring_client_request` | read | 返回 sent／executing／done／refused／failed／expired，以及真实浏览器观察、verification 和 current |
 
-已实现动作是 `state.read`、`source.flush`、`playback.pause`、`position.step`、`playback.play`、`playback.seek` 和 `playback.rate`。`source.flush` 只等待当前 canonical source actor 的保存；批注输入、数值表单、录制候选等未接入内容不能据此声称已保存。组词、恢复冲突或锁定时不开放 flush。Doc 中的 step 动作只按稳定 ID 定位，并先暂停；不切换模式、不编译。播放、seek、rate 只面向作者已准备好的精确 ProductionBinding 和有效计划，等待原生产播放器的真实帧回执，不能把 estimated／unknown 当作可播放。可选速率与人类控件共用内核常量。
+已实现动作是 `state.read`、`source.flush`、`preview.prepare`、`playback.pause`、`position.step`、`playback.play`、`playback.seek` 和 `playback.rate`。`source.flush` 只等待当前 canonical source actor 的保存；批注输入、数值表单、录制候选等未接入内容不能据此声称已保存。组词、恢复冲突或锁定时不开放 flush。Doc 中的 step 动作只按稳定 ID 定位，并先暂停；不切换模式、不编译。播放、seek、rate 只面向作者已准备好的精确 ProductionBinding 和有效计划，等待原生产播放器的真实帧回执，不能把 estimated／unknown 当作可播放。可选速率与人类控件共用内核常量。
+
+`preview.prepare` 是明确编译并准备当前已保存来源的动作，复用 `Workbench.preparePresentation` 和 `compileDocumentPreview`。先暂停，保持当前模式和稳定位置；Doc 不进入 Video／Present，也不合成或播放。`snapshot.preview` 区分 unprepared／preparing／prepared／unavailable；只有真实 IR 的 source、fingerprint 和项目代次仍当前时，prepared 才带 `source/irRevision/projectRevision`。没有浏览器就没有可执行动作；编译失败或不可用返回失败，不伪造准备完成。
+
+准备只在原 source／timing／page／history owner 干净、无恢复／组合／冲突／锁、没有另一个准备或可见公共模态框时开放。公共模态语义是 `[role="dialog"][aria-modal="true"]`；准备期间的原生 beforeinput／compositionstart、打开模态框、Esc、切文稿／位置、断线和截止时间会使原准备 owner 失效。该保护不读取字段内容或选区，不登记所有本地表单，也不代表它们已经 flush。状态是最后一次报告；本地 UI 已变化时请求可拒绝，先读回状态再决定后续动作。
+
+MCP 请求仍为 30 秒，不延长为人工准备的 45 秒。浏览器在原 `expiresAt` 主动中止，prepare owner 在采用前同步核截止时间和取消信号，服务端 ACK 也核截止时间。人工入口保留 45 秒真实超时反馈。取消会终止该 owner 的等待及预览 HTTP 请求；共享 IR 编译已经开始的工作可能继续形成服务端缓存，不能将缓存完成冒充浏览器采用。相同意图重读原回执，不自动重编译；回执丢失或过期先读客户端实际 prepared 状态，不能换 ID 盲目重试。
 
 客户端 revision 描述输入、来源、位置和交互状态，不等于来源版本。播放头时刻是最后观察值；被动报告忽略逐帧时刻变化，显式 `state.read` 取得实时样本，不启动服务端时钟。执行前必须由客户端报告 executing，且服务端确认该连接仍拥有此请求；断线、切文稿、来源变化、旧连接回执或超时不能授权后续执行。ACK 只存在于客户端通道，没有 agent 可调用的 ACK 工具。
 
 目前最多保留 16 个客户端和 64 条进程内请求回执，请求 30 秒过期。保留期内相同 epoch／requestId 的相同意图只读取原回执，不重新派发；更换参数拒绝。断线后不自动重播；丢失播放回执时先重读状态，不以新 requestId 重试播放。旧终态可读，但只有连接、客户端状态及已保存来源仍相符时 current 才为 true。请求最多 4096 个 JSON 字符，回复最多 7168 个 pretty JSON UTF-16 字符，客户端清单分页。
 
-录制、草稿 inspect／read／keep／restore／discard、审阅、打开文稿和编译尚未接入此通道，清单明确列为 unavailable。本节之前的完整客户端协议仍是后续目标。
+录制、草稿 inspect／read／keep／restore／discard、审阅和打开文稿尚未接入此通道，清单明确列为 unavailable。本节之前的完整客户端协议仍是后续目标。
 
-实际 Studio／MCP／浏览器旅程、冻结范围和清理见[客户端闭环验证记录](benchmarks/mcp-authoring-client-2026-10-28.md)。
+实际 Studio／MCP／浏览器旅程、冻结范围和清理见[客户端闭环验证记录](benchmarks/mcp-authoring-client-2026-10-28.md)与[显式准备记录](benchmarks/mcp-preview-prepare-2026-10-28.md)。
 
 ## 10. 审阅、历史与权限
 
