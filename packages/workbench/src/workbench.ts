@@ -805,6 +805,19 @@ export class Workbench {
     if (!source || source.loading || source.directory !== this.#state.document || identity !== undefined && identity !== source.identity) return undefined
     return source.content
   }
+  /** Native image uploads commit the original file without interrupting later text input. */
+  async importDocumentImage(file: File, identity: string, signal?: AbortSignal): Promise<string> {
+    if (!this.getDocument(identity) || isAgentChanging(this.#state)) throw new Error('document-identity-changed')
+    this.stopAuditions()
+    await this.pausePlayback()
+    await this.flushPendingEdits(signal)
+    if (!this.getDocument(identity) || isAgentChanging(this.#state)) throw new Error('document-identity-changed')
+    const answer = await this.#documentSession.importImage(file, identity, signal)
+    signal?.throwIfAborted()
+    const asset = this.getDocument(identity)?.assets[answer.assetId]
+    if (!asset || asset.kind !== 'image' || asset.location !== answer.content.assets[answer.assetId]?.location) throw new Error('document-identity-changed')
+    return asset.location
+  }
   #mediaSource(expected: { identity: string, version: string }): DocumentSessionState {
     const source = this.#state.authoring
     if (!source || !this.getDocument(expected.identity) || source.version !== expected.version || !source.fingerprint

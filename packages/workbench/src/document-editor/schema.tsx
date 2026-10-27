@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { BlockNoteSchema, defaultBlockSpecs, defaultInlineContentSpecs, defaultStyleSpecs } from '@blocknote/core'
 import type { Block, BlockNoteEditor, PartialBlock } from '@blocknote/core'
 import { createReactBlockSpec, createReactInlineContentSpec } from '@blocknote/react'
+import { DOCUMENT_IMAGE_MEDIA_TYPES } from '@lincyaw/kernel'
 import { tableIdentityExtension } from './table-identities.ts'
 
 export interface DocumentNodeViews {
@@ -55,6 +56,27 @@ const inline = createReactInlineContentSpec({
 })
 
 const table = { ...defaultBlockSpecs.table, extensions: [...defaultBlockSpecs.table.extensions ?? [], tableIdentityExtension] }
+const image: typeof defaultBlockSpecs.image = { ...defaultBlockSpecs.image, implementation: { ...defaultBlockSpecs.image.implementation,
+  meta: { ...defaultBlockSpecs.image.implementation.meta, fileBlockAccept: [...DOCUMENT_IMAGE_MEDIA_TYPES] },
+  render(block, editor) {
+    const nativeRender = defaultBlockSpecs.image.implementation.render!
+    if (block.props.url) return nativeRender.call(this, block, editor)
+    const host = document.createElement('div')
+    let rendered = nativeRender.call(this, block, editor)
+    host.appendChild(rendered.dom)
+    // The native empty-image view starts a loader but does not restore its
+    // picker after failure. Own this render boundary, retaining native controls.
+    const stopUpload = editor.onUploadEnd(blockId => {
+      if (blockId !== block.id) return
+      const current = editor.getBlock(block.id)
+      if (!current || current.type !== 'image' || current.props.url) return
+      rendered.destroy?.()
+      rendered = nativeRender.call(this, { ...block, props: current.props }, editor)
+      host.replaceChildren(rendered.dom)
+    })
+    return { dom: host, destroy: () => { stopUpload(); rendered.destroy?.() } }
+  },
+} }
 
 /** An editing projection. The product document schema remains owned by the kernel. */
 export const documentEditorSchema = BlockNoteSchema.create({
@@ -62,7 +84,7 @@ export const documentEditorSchema = BlockNoteSchema.create({
     paragraph: defaultBlockSpecs.paragraph, heading: defaultBlockSpecs.heading,
     bulletListItem: defaultBlockSpecs.bulletListItem, numberedListItem: defaultBlockSpecs.numberedListItem,
     checkListItem: defaultBlockSpecs.checkListItem, quote: defaultBlockSpecs.quote,
-    codeBlock: defaultBlockSpecs.codeBlock, table, image: defaultBlockSpecs.image,
+    codeBlock: defaultBlockSpecs.codeBlock, table, image,
     presmiumPage: page, presmiumAtom: atom, presmiumContainer: container,
   },
   inlineContentSpecs: { ...defaultInlineContentSpecs, presmiumInline: inline },

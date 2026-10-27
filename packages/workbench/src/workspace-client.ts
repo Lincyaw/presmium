@@ -4,6 +4,7 @@ import type { VoiceCatalogAnswer, VoiceoverCancellation, VoiceoverJob, Voiceover
 import type { PageDeleteAnswer, PageDeletePlan, PageDeleteRequest } from '@lincyaw/kernel'
 import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, DocumentEvent } from '@lincyaw/kernel'
 import type { DocumentAudioImport, DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentMediaClipChange } from '@lincyaw/kernel'
+import type { DocumentImageImport, DocumentImageImportAnswer } from '@lincyaw/kernel'
 import type { ProductionAssetAnswer, ProductionAssetQuery, ProductionMediaQuery, ProductionPlan, ProductionPlanQuery } from '@lincyaw/kernel'
 
 const observedFailures = new WeakSet<object>()
@@ -48,6 +49,7 @@ export interface WorkspaceClient {
   /** A same-origin display URL; the canonical asset location remains untouched. */
   documentAssetURL(document: string, assetId: string): string
   changeDocument(document: string, change: DocumentChange): Promise<DocumentChangeAnswer>
+  importDocumentImage(document: string, file: File, change: DocumentImageImport, signal?: AbortSignal): Promise<DocumentImageImportAnswer>
   readDocumentAudio(document: string, assetId: string, baseDocumentVersion: string, signal?: AbortSignal): Promise<DocumentAudioInspectionAnswer>
   importDocumentAudio(document: string, file: File, change: DocumentAudioImport, signal?: AbortSignal): Promise<DocumentAudioImportAnswer>
   changeDocumentMediaClip(document: string, change: DocumentMediaClipChange, signal?: AbortSignal): Promise<DocumentChangeAnswer>
@@ -259,6 +261,11 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     readDocument: document => call(url('document', document)),
     documentAssetURL: (document, asset) => url('document/asset', document, { asset }),
     changeDocument: (document, change) => post(url('document/change', document), change),
+    importDocumentImage: (document, file, change, signal) => {
+      const body = new FormData()
+      body.set('change', JSON.stringify(change)); body.set('file', file)
+      return call(url('document/image', document), { method: 'POST', body, signal })
+    },
     readDocumentAudio: (document, assetId, baseDocumentVersion, signal) => call(url('document/audio', document, { assetId, baseDocumentVersion }), { signal }),
     importDocumentAudio: (document, file, change, signal) => {
       const body = new FormData()
