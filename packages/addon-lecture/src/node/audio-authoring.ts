@@ -16,6 +16,20 @@ export function productionAudioAuthoring(ctx: NodeServiceContext): ProductionAud
     async inspectAsset(asset, signal) {
       return (await inspectProductionAsset({ productionAssets: { [asset.id]: asset } }, ctx.deckDir, asset.id, signal)).asset
     },
+    async readPlan(query, signal) {
+      try {
+        const doc = latestDoc(ctx.deckDir)
+        if (!doc) throw new ProductionAudioRefusal(503, 'production-document-unavailable')
+        const revision = irRevision(doc)
+        if (query.irRevision !== undefined && query.irRevision !== revision) throw new ProductionAudioRefusal(409, 'production-revision-changed')
+        return (await productionSnapshot(served, { source: query.source, irRevision: revision }, signal)).plan
+      }
+      catch (error) {
+        if (error instanceof RouteRefusal) throw new ProductionAudioRefusal(error.status, error.message)
+        if (error instanceof VoiceSourceRefusal) throw new ProductionAudioRefusal(409, error.message)
+        throw error
+      }
+    },
     async validateClips(binding, clips, assets, signal) {
       try {
         const snapshot = await productionSnapshot(served, { source: binding.source, irRevision: binding.irRevision }, signal)

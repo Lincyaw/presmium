@@ -4,7 +4,7 @@ import { homedir, tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 import { Compiler, pluginLogger, runBlock, workspacePlugins } from '@lincyaw/compiler'
 import type { Compilation, CompilerOptions } from '@lincyaw/compiler'
-import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, PRODUCTION_AUDIO_AUTHORING, REVISIONS, SPEECH } from '@lincyaw/kernel'
+import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, PRODUCTION_AUDIO_AUTHORING, REVISIONS, SPEECH, VOICEOVER } from '@lincyaw/kernel'
 import { irRevision } from '@lincyaw/kernel/node'
 import type { CanonicalSource, ChangeReviewService, Finding, IRDocument, Logger, ProductionAudioAuthoring, ServiceToken, SiteSpec, SpeechService } from '@lincyaw/kernel'
 import { serverConfigKey, servedDocument, startServer } from '@lincyaw/server'
@@ -28,6 +28,8 @@ import type { DocumentEditor } from './document-editor.ts'
 import { createDocumentTranscriptions } from './document-transcription.ts'
 import { createTranscriptionAdoption } from './document-transcription-adoption.ts'
 import { createDocumentAudioAuthoring } from './document-audio.ts'
+import { createDocumentVoiceAuthoring } from './document-voice.ts'
+import type { DocumentVoiceServices } from './document-voice.ts'
 import { createWorkbenchBackend } from './workbench-api.ts'
 import type { WorkbenchBackend } from './workbench-api.ts'
 import { localWriter } from './writer.ts'
@@ -60,7 +62,7 @@ interface WorkspaceHistory {
   taskReviews: ChangeReviewService
 }
 
-interface AuthoringServices { audio?: ProductionAudioAuthoring, speech?: SpeechService, findings?: Finding[] }
+interface AuthoringServices extends DocumentVoiceServices { audio?: ProductionAudioAuthoring }
 interface NodeServiceLoad { key: string, promise: Promise<AuthoringServices>, controller: AbortController }
 
 const DISK_LOOK_MS = 1000
@@ -98,6 +100,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   let transcriptions: ReturnType<typeof createDocumentTranscriptions> | undefined
   let transcriptionAdoption: ReturnType<typeof createTranscriptionAdoption> | undefined
   let audioAuthoring: ReturnType<typeof createDocumentAudioAuthoring> | undefined
+  let voiceAuthoring: ReturnType<typeof createDocumentVoiceAuthoring> | undefined
   let workspaceRoutesOwner: ReturnType<typeof workspaceRoutes> | undefined
   let routesPlugin: ServedPlugin | undefined
   // The builds and exports, as jobs the workbench and the AI start and follow.
@@ -161,7 +164,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     const controller = new AbortController()
     const promise: Promise<AuthoringServices> = new Compiler(join(root, selected.entry), compilerOptions()).nodeServices({ signal: controller.signal }).then(loaded => {
       if (loaded.source.documentId !== source.documentId || loaded.source.version !== source.version || loaded.source.fingerprint !== source.fingerprint) throw new RequestError(409, 'document-version-changed')
-      return { audio: loaded.service(PRODUCTION_AUDIO_AUTHORING), speech: loaded.service(SPEECH), findings: loaded.findings }
+      return { audio: loaded.service(PRODUCTION_AUDIO_AUTHORING), speech: loaded.service(SPEECH), voiceover: loaded.service(VOICEOVER), findings: loaded.findings }
     }).finally(() => { if (nodeServiceLoads.get(document) === load) nodeServiceLoads.delete(document); nodeServicePending.delete(load) })
     const load: NodeServiceLoad = { key, promise, controller }
     nodeServiceLoads.set(document, load)
@@ -172,7 +175,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     authoringServicesClosed = true
     transcriptionAdoption?.close()
     for (const load of nodeServicePending) load.controller.abort()
-    await Promise.all([transcriptions?.close(), audioAuthoring?.close(), workspaceRoutesOwner?.close?.()])
+    await Promise.all([transcriptions?.close(), audioAuthoring?.close(), voiceAuthoring?.close(), workspaceRoutesOwner?.close?.()])
     await Promise.allSettled([...nodeServicePending].map(load => load.promise))
     nodeServiceLoads.clear()
   }
@@ -238,6 +241,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     workspaceRoot: root,
     get authoring() { return documentEditor },
     get audioAuthoring() { return audioAuthoring?.service },
+    get voiceAuthoring() { return voiceAuthoring?.service },
     get transcriptions() { return transcriptions },
     get transcriptionAdoption() { return transcriptionAdoption?.service },
     get routes() { return workspaceRoutesOwner?.routes ? { [WORKSPACE_ID]: workspaceRoutesOwner.routes } : undefined },
@@ -345,7 +349,8 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   })
   const running = server
   serverServices = running.services
-  workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, diagnostics: running.diagnostics, url: () => running.url, preview, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
+  voiceAuthoring = createDocumentVoiceAuthoring({ editor, services: authoringServices })
+  workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, voices: voiceAuthoring.service, diagnostics: running.diagnostics, url: () => running.url, preview, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
   history = openHistory()
   documentEditor = createDocumentEditor({ editor, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   transcriptions = createDocumentTranscriptions({ root, editor, services: authoringServices })

@@ -28,6 +28,13 @@ export interface SpeechCore extends SpeechBackend {
   registerConsent(engine: string, voice: string, record: unknown): string
 }
 
+interface CatalogLoad {
+  promise: Promise<VoiceCatalog>
+  controller: AbortController
+  borrowers: number
+  settled: boolean
+}
+
 export function speechCore(options: CoreOptions): SpeechCore {
   let defined: ReturnType<typeof operatorEngines> | undefined
   const engines = () => defined ??= operatorEngines(options.names(), options.secret)
@@ -37,25 +44,54 @@ export function speechCore(options: CoreOptions): SpeechCore {
     if (!found) adapters.set(engine.id, found = engineAdapter(engine))
     return found
   }
-  const lists = new Map<string, Promise<VoiceCatalog>>()
+  const lists = new Map<string, CatalogLoad>()
   const known = new Map<string, VoiceInfo[]>()
   const unlisted = new Set<string>()
-  const allCatalog = (engine: EngineDefinition) => {
+  const allCatalog = (engine: EngineDefinition, signal?: AbortSignal): Promise<VoiceCatalog> => {
+    signal?.throwIfAborted()
     let list = lists.get(engine.id)
     if (!list) {
-      const own = adapter(engine)
-      list = own.voiceCatalog(undefined, AbortSignal.timeout(30_000)).then((catalog) => {
-        known.set(engine.id, catalog.voices)
-        return catalog
-      }, (error: unknown) => {
-        lists.delete(engine.id)
-        throw new SpeechError(502, `the voices of speech engine "${engine.id}" are not known, so a cloned voice cannot be told: ${error instanceof Error ? error.message : String(error)}`)
-      })
-      lists.set(engine.id, list)
+      const own = adapter(engine), controller = new AbortController(), requestSignal = AbortSignal.any([controller.signal, AbortSignal.timeout(30_000)])
+      const created: CatalogLoad = { controller, borrowers: 0, settled: false, promise: Promise.resolve().then(async () => {
+        try {
+          const catalog = await own.voiceCatalog(undefined, requestSignal)
+          requestSignal.throwIfAborted()
+          known.set(engine.id, catalog.voices)
+          return catalog
+        } catch (error) {
+          if (lists.get(engine.id) === created) lists.delete(engine.id)
+          if (controller.signal.aborted) throw controller.signal.reason
+          throw new SpeechError(502, `the voices of speech engine "${engine.id}" are not known, so a cloned voice cannot be told: ${error instanceof Error ? error.message : String(error)}`)
+        } finally { created.settled = true }
+      }) }
+      lists.set(engine.id, list = created)
     }
-    return list
+    const borrowed = list
+    borrowed.borrowers++
+    return new Promise((resolve, reject) => {
+      let finished = false
+      const release = () => {
+        if (finished) return false
+        finished = true
+        signal?.removeEventListener('abort', abort)
+        borrowed.borrowers--
+        if (!borrowed.borrowers && !borrowed.settled) {
+          if (lists.get(engine.id) === borrowed) lists.delete(engine.id)
+          borrowed.controller.abort()
+        }
+        return true
+      }
+      const abort = () => { if (release()) reject(signal!.reason) }
+      signal?.addEventListener('abort', abort, { once: true })
+      borrowed.promise.then(catalog => { if (release()) resolve(catalog) }, error => { if (release()) reject(error) })
+      if (signal?.aborted) abort()
+    })
   }
-  const allVoices = async (engine: EngineDefinition) => (await allCatalog(engine)).voices
+  const allVoices = async (engine: EngineDefinition, signal?: AbortSignal) => {
+    const catalog = await allCatalog(engine, signal)
+    signal?.throwIfAborted()
+    return catalog.voices
+  }
 
   // Without a name, the first engine that does the use: an engine only for saying text is not asked to transcribe.
   const pick = (id: string | undefined, use: EngineUse): EngineDefinition => {
@@ -83,22 +119,22 @@ export function speechCore(options: CoreOptions): SpeechCore {
       return engines().engines.find(engine => engine.synthesizes)?.id
     },
 
-    async voices(id, lang) {
-      return (await allVoices(pick(id, 'synthesize'))).filter(voice => speaks(voice, lang))
+    async voices(id, lang, signal) {
+      return (await allVoices(pick(id, 'synthesize'), signal)).filter(voice => speaks(voice, lang))
     },
 
     async voiceCatalog(id, lang, signal) {
       signal?.throwIfAborted()
       const engine = id ? pick(id, 'synthesize') : engines().engines.find(engine => engine.synthesizes)
       if (!engine) return { status: 'unavailable', reason: 'not-configured', voices: [] }
-      const catalog = await allCatalog(engine)
+      const catalog = await allCatalog(engine, signal)
       signal?.throwIfAborted()
       return { ...catalog, voices: catalog.voices.filter(voice => speaks(voice, lang)) }
     },
 
     async synthesize(request: SynthesisRequest, signal): Promise<SynthesisResult> {
       const engine = pick(request.engine, 'synthesize')
-      const listed = (await allVoices(engine)).find(voice => voice.id === request.voice)
+      const listed = (await allVoices(engine, signal)).find(voice => voice.id === request.voice)
       const cloned = listed?.cloned === true || adapter(engine).cloned?.(request.voice) === true
       if (cloned) checkConsent(options.operatorDir, options.settings, engine.id, request.voice)
       const spoken = applyLexiconWithSpans(request.text, request.lexicon)
@@ -130,14 +166,16 @@ export function speechCore(options: CoreOptions): SpeechCore {
       return adapter(engine).transcribe({ audio, mime: audioMime(audio, request.audio.type), lang: request.lang, hints: request.hints }, signal)
     },
 
-    async consent(engine, voice, recorded) {
+    async consent(engine, voice, recorded, signal) {
+      signal?.throwIfAborted()
       if (!recorded) {
         const defined = engines().engines.find(own => own.id === speechEngineId(engine))
         if (!defined) return
         if (adapter(defined).cloned?.(voice) !== true) {
           const voices = known.get(defined.id) ?? (unlisted.has(defined.id)
             ? []
-            : await allVoices(defined).catch(() => {
+            : await allVoices(defined, signal).catch(() => {
+              signal?.throwIfAborted()
               unlisted.add(defined.id)
               return []
             }))

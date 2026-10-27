@@ -13,6 +13,7 @@ import { TOOL_APPROVAL_META, TOOL_KIND_META } from './tool-meta.ts'
 import { AUTHORING_TOOLS } from './authoring.ts'
 import { TRANSCRIPTION_TOOLS } from './transcription.ts'
 import { AUDIO_AUTHORING_TOOLS } from './audio-authoring.ts'
+import { VOICE_AUTHORING_TOOLS } from './voice-authoring.ts'
 
 const MCP_VERSION: string = (createRequire(import.meta.url)('../package.json') as { version: string }).version
 const POSITION_URI = 'presmium://position'
@@ -138,6 +139,7 @@ function jobSummary(job: CompileJob, logLines = 0) {
 const TOOLS: ToolSpec[] = [
   ...AUTHORING_TOOLS,
   ...AUDIO_AUTHORING_TOOLS,
+  ...VOICE_AUTHORING_TOOLS,
   ...TRANSCRIPTION_TOOLS,
   {
     name: 'list_documents',
@@ -424,8 +426,12 @@ function runPlan(doc: IRDocument, node: CodeNode): string {
 
 function hostSupports(host: McpHost, name: string): boolean {
   switch (name) {
+    case 'get_voice_catalog': return Boolean(host.voiceAuthoring)
     case 'inspect_document_audio':
     case 'inspect_workspace_audio':
+    case 'read_production_plan':
+    case 'validate_media_clip_change':
+    case 'change_media_clip':
     case 'import_workspace_audio': return Boolean(host.audioAuthoring)
     case 'start_transcription':
     case 'get_transcriptions':

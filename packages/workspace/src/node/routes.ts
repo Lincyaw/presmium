@@ -278,12 +278,19 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
 
 function workbenchRoutes(workbench: WorkbenchApi): Record<string, Route> {
   return {
+    'voice-capabilities': {
+      role: 'editor',
+      handle: (request, ctx) => catchRequestErrors(async () => {
+        if (request.method !== 'GET') return problemResponse(405, 'GET')
+        return jsonResponse(await workbench.voiceCapabilities(ctx.document, ctx.member, request.signal))
+      }),
+    },
     'voice-catalog': {
       role: 'editor',
       handle: (request, ctx) => catchRequestErrors(async () => {
         if (request.method !== 'GET') return problemResponse(405, 'GET')
         const params = new URL(request.url).searchParams
-        return jsonResponse(await workbench.voiceCatalog(ctx.document, params.get('engine') || undefined, params.get('lang') || undefined, request.signal))
+        return jsonResponse(await workbench.voiceCatalog(ctx.document, ctx.member, params.get('engine') || undefined, params.get('lang') || undefined, request.signal))
       }),
     },
     'ir': {

@@ -1,5 +1,6 @@
 import type { Asset, MediaClip, TimeRange } from './document.ts'
-import type { ProductionBinding, ProductionPlanQuery } from './production.ts'
+import type { ProductionBinding, ProductionPlan, ProductionPlanQuery } from './production.ts'
+import type { CanonicalSource } from '../ir.ts'
 import type { DocumentChangeAnswer } from './workspace.ts'
 import { defineService } from './service.ts'
 
@@ -35,9 +36,12 @@ export class ProductionAudioRefusal extends Error {
   constructor(status: number, code: string) { super(code); this.status = status; this.code = code }
 }
 /** Node-only media capabilities. Workspace authoring owns the transaction; the plugin owns real media inspection. */
+export interface ProductionAudioPlanQuery { source: CanonicalSource, irRevision?: string }
 export interface ProductionAudioAuthoring {
   inspectBytes(assetId: string, bytes: Uint8Array, signal?: AbortSignal): Promise<{ inspection: ProductionAssetInspection, extension: string }>
   inspectAsset(asset: Asset, signal?: AbortSignal): Promise<ProductionAssetInspection>
+  /** Cache-only projection of an existing real IR; this never compiles or synthesizes. */
+  readPlan(query: ProductionAudioPlanQuery, signal?: AbortSignal): Promise<ProductionPlan>
   validateClips(binding: ProductionBinding, clips: MediaClip[], assets: Record<string, Asset>, signal?: AbortSignal): Promise<void>
 }
 export const PRODUCTION_AUDIO_AUTHORING = defineService<ProductionAudioAuthoring>('presmium.productionAudioAuthoring')
