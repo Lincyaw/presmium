@@ -1,6 +1,6 @@
 # 作者接口与草稿保护的运行部署
 
-2026-10-27，公共 Studio 4320 已采用固定提交 `43f2efd6f09a0bd8a15061660b668a73c44e3cd0`。这批包含三个独立提交：
+2026-10-27，公共 Studio 4320 首批采用固定提交 `43f2efd6f09a0bd8a15061660b668a73c44e3cd0`，随后更新到下文的 `44cec97b`。首批包含三个独立提交：
 
 - `5dbd7685`：丢弃草稿的迟到读取不能清除后续输入。
 - `3cef1d47`：共享 HTTP／MCP 可明确采用整段原音为步骤配音，并进入实际播放及讲授产物；尚无 Studio 采用按钮。
@@ -27,3 +27,13 @@ localhost 与 127.0.0.1 两组已有 cookie 在重启后均能通过普通根地
 私有原始证据位于 `.presmium/ui-evidence/`：`committed-client-43f2efd6.json`、`live-shared-voice-deployment-43f2efd6.json`、`live-authoring-health-43f2efd6.json` 与 `auth-transition-recording-page-copy-20261027/result.json`；初始失败及对应消费者同样单独保留。
 
 未运行测试套件、全量示例构建或新的 WebM 导出。关闭／崩溃后的持久草稿恢复、Studio 原音采用入口、完整 MCP 作者操作和精确字幕对齐仍需各自实现及验收。页面创建约 100 多毫秒的实测水平已按作者意见接受，本批没有继续进行延迟专项优化。
+
+## 原音采用界面更新
+
+同日公共 4320 更新至 `44cec97b5e4e26a98c804b90458c45700694451f`，包括 `d7ca0095` 的通用外部事务桥及 Video 原音采用界面。保存素材、采用为本步配音与 ASR／TTS 保持独立；迟回执保留新输入和新麦克风，新的有效步骤选择作废旧 `pendingGo`。正常录音来源不再显示路径和常驻裁切说明。功能、四组合显示与分阶段竞争验证见[界面记录](recording-step-adoption-ui-2026-10-27.md)。
+
+固定提交构建仍使用原构建器，归档 9 包、523 份源码，190 个输入。客户端为 2,927,124 字节，SHA-256 `4129ab450b144e83c115e0ae1e78f6d2908e1eba3103b5fd36da72ba68053948`；在实际 10,239,898 字节 DSH 组合响应的偏移 7,202,458 处唯一完整匹配。部署后同一 9 项只读健康检查通过，普通 Doc 的 7 页／单原生编辑器及 11 份文稿字节均保持正确；没有公开内容写入、生成、浏览器错误或失败请求。
+
+两种 host 的既有 cookie 重启后仍可访问，当前启动网址可建立新会话；验证用的登录快照已清理。此次原始记录为 `committed-client-44cec97b.json`、`live-shared-voice-deployment-44cec97b.json`、`live-authoring-health-44cec97b.json` 和 `auth-transition-original-audio-ui-20261027/result.json`。没有重复全量功能消费者或操作实体麦克风。
+
+此运行版本尚不包含正在独立验证的持久草稿备份。localStorage 崩溃反例见[存储边界记录](document-draft-crash-storage-2026-10-27.md)，不能用正常关闭的结果代替真实进程退出验证。
