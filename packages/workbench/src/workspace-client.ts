@@ -1,4 +1,5 @@
 import type { PreviewEventSubscription } from '@lincyaw/kernel'
+import type { AuthoringDiagnostics } from '@lincyaw/kernel'
 import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobSource, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, SourceTransactionAnswer, SourceTransactionChange, StartJobRequest, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
 import type { OperationBatch } from './telemetry.ts'
 import type { VoiceCatalogAnswer, VoiceoverCancellation, VoiceoverJob, VoiceoverJobsAnswer, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest } from '@lincyaw/kernel'
@@ -84,6 +85,7 @@ export interface WorkspaceClient {
   readDiagnostics(document: string): Promise<DiagnosticSnapshot>
   subscribeDiagnostics(document: string, snapshot: (event: DiagnosticSnapshot) => void, failed: () => void): () => void
   reportDiagnostics(report: PreviewDiagnostics): Promise<unknown>
+  reportAuthoringDiagnostics(report: AuthoringDiagnostics): Promise<unknown>
   readPreview(document: string, renderer?: PreviewRenderer, signal?: AbortSignal, feedbackOwner?: WorkspaceRequestEvent['feedbackOwner']): Promise<PreviewAnswer>
   /** Asks the service to prepare a form of the document ahead of the author, when the machine has room. */
   prefetchPreview(document: string, renderer: PreviewRenderer): Promise<PreviewAnswer>
@@ -128,7 +130,7 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     const prefix = new URL(base, globalThis.document.baseURI).pathname
     const path = target.pathname.slice(prefix.length)
     const method = (init?.method ?? 'GET').toUpperCase()
-    if (path === 'telemetry' || path === 'diagnostics' && method === 'POST') return fetch(address, { credentials: 'same-origin', ...init })
+    if (path === 'telemetry' || (path === 'diagnostics' || path === 'diagnostics/authoring') && method === 'POST') return fetch(address, { credentials: 'same-origin', ...init })
     const document = target.searchParams.get('document') ?? undefined
     const requestId = ++requestSequence
     const emit = (kind: WorkspaceRequestEvent['kind'], status?: number) => {
@@ -328,6 +330,7 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     readDiagnostics: document => call(url('diagnostics', document)),
     subscribeDiagnostics: (document, snapshot, failed) => subscribe(url('diagnostics/events', document), 'diagnostics', snapshot, failed),
     reportDiagnostics: report => post(url('diagnostics'), report),
+    reportAuthoringDiagnostics: report => post(url('diagnostics/authoring'), report),
     readPreview: (document, renderer, signal, feedbackOwner) => call(url('preview', document, renderer ? { view: renderer } : {}), { signal }, feedbackOwner),
     prefetchPreview: (document, renderer) => call(url('preview', document, { view: renderer, prefetch: '1' })),
     readWorkbenchInfo: () => {

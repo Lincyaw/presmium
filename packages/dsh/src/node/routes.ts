@@ -13,6 +13,7 @@ export const ROUTES: Record<string, string> = Object.fromEntries([
   ['focus', `${SERVER_ROUTES}focus`],
   ['diagnostics', `${SERVER_ROUTES}diagnostics`],
   ['diagnostics/events', `${SERVER_ROUTES}diagnostics/events`],
+  ['diagnostics/authoring', `${SERVER_ROUTES}diagnostics/authoring`],
   ...['voiceover', 'voiceover/jobs', 'voiceover/job', 'voiceover/cancel', 'voice-preview', 'voice-preview/media', 'production-plan', 'production-media', 'production-asset'].map(path => [path, `/__presmium/presmium.lecture/${path}`]),
 ])
 
