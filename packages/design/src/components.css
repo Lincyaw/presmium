@@ -211,6 +211,10 @@
   cursor: not-allowed;
 }
 
+.pm-ui-tooltip-layer {
+  pointer-events: none;
+}
+
 .pm-ui-tooltip {
   z-index: var(--pm-z-tooltip);
   display: flex;
