@@ -47,12 +47,17 @@ function realDirectory(root: string, dir: string): boolean {
 }
 
 export function documentDirOf(config: WorkspaceConfig, path: string): string | undefined {
-  const parts = path.split('/')
+  const parts = path.split('/'), parent = parts.slice(0, -1).join('/')
+  // An explicit entry can create a new document before it owns ordinary files.
+  if (parts.at(-1) === DOCUMENT_ENTRY && isDocumentDir(config, parent)) return parent
+  let prospective: string | undefined
   for (let i = parts.length - 1; i >= 0; i--) {
     const dir = parts.slice(0, i).join('/')
-    if (isDocumentDir(config, dir)) return dir
+    if (!isDocumentDir(config, dir)) continue
+    prospective ??= dir
+    if (stat(join(config.root, dir, DOCUMENT_ENTRY))?.isFile()) return dir
   }
-  return undefined
+  return prospective
 }
 
 function assertDocumentDir(config: WorkspaceConfig, dir: string): void {
