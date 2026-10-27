@@ -1,3 +1,4 @@
+import type { ProjectOperation, ProjectPlan, ProjectPlanRequest, ProjectApply, ProjectApplied } from '@lincyaw/kernel'
 import type { PreviewEventSubscription } from '@lincyaw/kernel'
 import type { AuthoringDiagnostics } from '@lincyaw/kernel'
 import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobSource, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, SourceTransactionAnswer, SourceTransactionChange, StartJobRequest, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
@@ -43,7 +44,8 @@ export interface WorkspaceClient {
   openAuthoringClient?: AuthoringClientSubscription
   subscribeRequests?(listener: (event: WorkspaceRequestEvent) => void): () => void
   readDocuments(document?: string): Promise<DocumentsAnswer>
-  operateDocument(operation: DocumentOperation): Promise<OperationAnswer>
+  planProjectChange(request: ProjectPlanRequest): Promise<ProjectPlan>
+  operateDocument(operation: ProjectOperation, planned?: ProjectPlan): Promise<OperationAnswer>
   readSource(document: string, path: string): Promise<SourceAnswer>
   /** Saves the file; in a git workspace the save is committed at once, `message` its summary. */
   saveSource(document: string, path: string, content: string, base: string, message?: string): Promise<SavedAnswer>
@@ -278,6 +280,7 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     if (ready) source.addEventListener('open', ready)
     return () => source.close()
   }
+  const projectIntents = new Map<string, { id: string, plan?: ProjectPlan }>()
   return {
     ...subscription?.openAuthoringClient ? { openAuthoringClient: subscription.openAuthoringClient } : {},
     ...subscription ? { subscribePreviewEvents: ((target, received) => {
@@ -287,7 +290,24 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     }) satisfies PreviewEventSubscription } : {},
     subscribeRequests: listener => { requestListeners.add(listener); return () => { requestListeners.delete(listener) } },
     readDocuments: document => call(url('documents', document)),
-    operateDocument: operation => post(url('documents'), operation),
+    planProjectChange: request => post(url('project/plan'), request),
+    async operateDocument(operation, planned) {
+      if (operation.op === 'delete' && (!planned || JSON.stringify(planned.operation) !== JSON.stringify(operation))) throw new Error('project-deletion-plan-required')
+      const key = JSON.stringify(operation)
+      let intent = projectIntents.get(key)
+      if (!intent) { intent = { id: crypto.randomUUID() }; projectIntents.set(key, intent) }
+      while (projectIntents.size > 64) projectIntents.delete(projectIntents.keys().next().value!)
+      try {
+        intent.plan ??= planned
+        intent.plan ??= await post<ProjectPlan>(url('project/plan'), { id: intent.id, operation })
+        const answer = await post<OperationAnswer>(url('project/apply'), { planId: intent.plan.planId, digest: intent.plan.digest, ...operation.op === 'delete' ? { confirmDeletion: true } : {} })
+        projectIntents.delete(key)
+        return answer
+      } catch (error) {
+        if (error instanceof WorkspaceServerError && error.status < 500) projectIntents.delete(key)
+        throw error
+      }
+    },
     readSource: (document, path) => call(url('source', document, { path })),
     saveSource: (document, path, content, base, message) => post(url('source', document), { path, content, base, ...message ? { message } : {} }),
     saveSourceTransaction: (document, changes, message) => post(url('source/transaction', document), { changes, ...message ? { message } : {} }),

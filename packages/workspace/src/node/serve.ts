@@ -1,3 +1,4 @@
+import { createProjectAuthoring } from './projects.ts'
 import { createDocumentHistory } from './document-history.ts'
 import { createAuthoringClients } from './authoring-clients.ts'
 import { createHash } from 'node:crypto'
@@ -58,6 +59,7 @@ export interface WorkspaceServer {
 
 /** What the workspace keeps when it is a git repository: its revisions, the document operations and the reviews. */
 interface WorkspaceHistory {
+  git: Git
   revisions: Revisions
   operations: DocumentOperations
   agentSessionReviews: AgentSessionReviews
@@ -100,6 +102,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   let history: WorkspaceHistory | undefined
   let documentEditor: DocumentEditor | undefined
   let documentHistory: ReturnType<typeof createDocumentHistory> | undefined
+  let projectAuthoring: ReturnType<typeof createProjectAuthoring> | undefined
   let authoringClients: ReturnType<typeof createAuthoringClients> | undefined
   let transcriptions: ReturnType<typeof createDocumentTranscriptions> | undefined
   let transcriptionAdoption: ReturnType<typeof createTranscriptionAdoption> | undefined
@@ -179,7 +182,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     authoringServicesClosed = true
     transcriptionAdoption?.close()
     for (const load of nodeServicePending) load.controller.abort()
-    await Promise.all([transcriptions?.close(), audioAuthoring?.close(), voiceAuthoring?.close(), documentHistory?.close(), authoringClients?.close(), workspaceRoutesOwner?.close?.()])
+    await Promise.all([projectAuthoring?.close(), transcriptions?.close(), audioAuthoring?.close(), voiceAuthoring?.close(), documentHistory?.close(), authoringClients?.close(), workspaceRoutesOwner?.close?.()])
     await Promise.allSettled([...nodeServicePending].map(load => load.promise))
     nodeServiceLoads.clear()
   }
@@ -233,6 +236,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     return {
       revisions,
       operations: new DocumentOperations({ config, git, revisions, writer, changed: documentsChanged, locks }),
+      git,
       agentSessionReviews: new AgentSessionReviews({ config, revisions, locks, files: writer, log }),
       taskReviews: createTaskReviewService({ config, locks, files: writer, log }),
     }
@@ -245,6 +249,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     workspaceRoot: root,
     get authoring() { return documentEditor },
     get documentHistory() { return documentHistory?.service },
+    get projectAuthoring() { return projectAuthoring?.service },
     get authoringClients() { return authoringClients?.service },
     get audioAuthoring() { return audioAuthoring?.service },
     get voiceAuthoring() { return voiceAuthoring?.service },
@@ -359,6 +364,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, voices: voiceAuthoring.service, diagnostics: running.diagnostics, url: () => running.url, preview, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
   history = openHistory()
   documentEditor = createDocumentEditor({ editor, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
+  projectAuthoring = createProjectAuthoring({ config, operations: history?.operations, revisions: history?.revisions, git: history?.git })
   authoringClients = createAuthoringClients(editor)
   documentHistory = createDocumentHistory({ config, editor, locks, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required', changed: (before, after) => documentsChanged(documentsDiff(before, after)), reverted: (target, revision) => history?.agentSessionReviews.reverted(target, revision) })
   transcriptions = createDocumentTranscriptions({ root, editor, services: authoringServices })
@@ -373,6 +379,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       audioAuthoringRoutes: audioAuthoring.routes,
       historyRoutes: documentHistory.routes,
       authoringClientRoutes: authoringClients.routes,
+      projectRoutes: projectAuthoring.routes,
       locks,
       ...history ? { revisions: history.revisions, operations: history.operations, reviews: history.agentSessionReviews } : {},
       documentsChanged,

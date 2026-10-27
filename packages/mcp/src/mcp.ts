@@ -1,3 +1,4 @@
+import { PROJECT_TOOLS } from './projects.ts'
 import { createRequire } from 'node:module'
 import { createMcpHandler, fromJsonSchema, McpServer, ResourceTemplate, UriTemplate } from '@modelcontextprotocol/server'
 import type { AuthInfo, CallToolResult, JsonSchemaType, Variables } from '@modelcontextprotocol/server'
@@ -123,6 +124,7 @@ const TOOLS: ToolSpec[] = [
   ...AUTHORING_TOOLS,
   ...AUTHORING_ACTION_TOOLS,
   ...HISTORY_TOOLS,
+  ...PROJECT_TOOLS,
   ...AUTHORING_CLIENT_TOOLS,
   ...AUDIO_AUTHORING_TOOLS,
   ...VOICE_AUTHORING_TOOLS,
@@ -402,6 +404,7 @@ function runPlan(doc: IRDocument, node: CodeNode): string {
 }
 
 function hostSupports(host: McpHost, name: string): boolean {
+  if (PROJECT_TOOLS.some(tool => tool.name === name)) return Boolean(host.projectAuthoring)
   switch (name) {
     case 'get_authoring_clients':
     case 'request_authoring_client':

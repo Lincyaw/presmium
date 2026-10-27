@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, problemResponse, PRODUCTION_AUDIO_AUTHORING, pushStream, SPEECH, sseResponse } from '@lincyaw/kernel'
-import type { ChangesAnswer, CommitAnswer, CompileJob, DocumentOperation, DocumentsAnswer, JobsAnswer, Member, PresmiumNodePlugin, RequestContext, Route, SavedAnswer, ServerContribution, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
+import type { ChangesAnswer, CommitAnswer, CompileJob, DocumentsAnswer, JobsAnswer, Member, PresmiumNodePlugin, RequestContext, Route, SavedAnswer, ServerContribution, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
 import { hasBearerToken } from '@lincyaw/server'
 import { saveSummary } from '../domain/commit-message.ts'
 import { documentSummaries, listDocuments } from './config.ts'
@@ -59,6 +59,7 @@ export interface WorkspaceRoutesOptions {
   audioAuthoringRoutes?: Record<string, Route>
   historyRoutes?: Record<string, Route>
   authoringClientRoutes?: Record<string, Route>
+  projectRoutes?: Record<string, Route>
 }
 
 function toRendererIds(body: unknown): string[] | undefined {
@@ -69,18 +70,6 @@ function toRendererIds(body: unknown): string[] | undefined {
 
 const NO_GIT = 'the workspace is not a git repository: run git init in it to use the document operations and the history'
 
-function toDocumentOperation(body: unknown): DocumentOperation | undefined {
-  if (!isRecord(body) || typeof body.dir !== 'string') return undefined
-  const text = (value: unknown) => (typeof value === 'string' ? value.trim() : undefined)
-  const dir = body.dir.trim().replace(/^\/+|\/+$/g, '')
-  switch (body.op) {
-    case 'create': return { op: 'create', dir, ...text(body.title) ? { title: text(body.title) } : {}, ...text(body.template) ? { template: text(body.template) } : {} }
-    case 'rename':
-    case 'copy': return typeof body.to === 'string' ? { op: body.op, dir, to: body.to.trim().replace(/^\/+|\/+$/g, '') } : undefined
-    case 'delete': return { op: 'delete', dir }
-    default: return undefined
-  }
-}
 
 function toChosenPaths(body: unknown, uncommitted: string[]): string[] {
   const asked = isRecord(body) && Array.isArray(body.paths) ? body.paths.filter((path): path is string => typeof path === 'string') : undefined
@@ -129,15 +118,12 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
           return jsonResponse({ title: config.title, documents: documentSummaries(config), templates: listTemplates(config), git: Boolean(revisions), ...status, single: config.singleDeck } satisfies DocumentsAnswer)
         }
         if (request.method !== 'POST') return problemResponse(405, 'GET or POST')
-        if (!hasRole(ctx.member, 'editor')) return problemResponse(403, 'document operations need the role editor')
-        if (!operations) return problemResponse(409, NO_GIT)
-        const operation = toDocumentOperation(await request.json().catch(() => undefined))
-        if (!operation) return problemResponse(400, '{ op: create | rename | copy | delete, dir, to?, title?, template? }')
-        return jsonResponse(await operations.apply(operation, ctx.member))
+        return problemResponse(409, 'project-plan-required')
       }),
     },
     ...(options.historyRoutes ?? ownedHistory!.routes),
     ...options.authoringClientRoutes,
+    ...options.projectRoutes,
     'files': {
       role: 'editor',
       handle: (request, ctx) => catchRequestErrors(async () => {
