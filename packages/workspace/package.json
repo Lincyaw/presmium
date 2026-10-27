@@ -33,6 +33,7 @@
     "@lincyaw/compiler": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/server": "workspace:*",
+    "image-size": "2.0.4",
     "mime-types": "3.0.2",
     "yaml": "^2.9.1"
   },
