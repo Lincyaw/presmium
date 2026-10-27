@@ -13,6 +13,7 @@ export interface McpMessages {
   changeMediaClip(action: 'add' | 'update' | 'remove', clipId: string): string
   historyChange(which: 'undo' | 'redo' | 'revert', revision: string): string
   authoringClientAction(action: string): string
+  projectChange: string
   duplicatePage: string
   applyPagePlan: string
   applyAuthoringAction: string
@@ -37,6 +38,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     changeMediaClip: (action, clipId) => `${{ add: '添加', update: '调整', remove: '删除' }[action]}音频片段「${clipId}」`,
     historyChange: (which, revision) => `${which === 'redo' ? '重做' : which === 'revert' ? '撤消指定' : '撤消'}文稿修改 ${revision}`,
     authoringClientAction: action => `请求编辑器动作 ${action}`,
+    projectChange: '提交项目变更',
     duplicatePage: '复制页面',
     applyPagePlan: '采用页面预检',
     applyAuthoringAction: '采用文稿动作预检',
@@ -59,6 +61,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     changeMediaClip: (action, clipId) => `${{ add: 'Add', update: 'Update', remove: 'Remove' }[action]} audio clip “${clipId}”`,
     historyChange: (which, revision) => `${which === 'undo' ? 'Undo' : which === 'redo' ? 'Redo' : 'Revert'} document change ${revision}`,
     authoringClientAction: action => `Request editor action ${action}`,
+    projectChange: 'Apply project change',
     duplicatePage: 'Duplicate page',
     applyPagePlan: 'Apply page plan',
     applyAuthoringAction: 'Apply authoring action plan',

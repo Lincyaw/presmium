@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { errorMessage } from '@lincyaw/kernel'
-import type { DocumentSummary } from '@lincyaw/kernel'
+import type { DocumentSummary, ProjectPlan } from '@lincyaw/kernel'
 import { PmButton, PmDialog, PmEmpty, PmInput, PmSelect, PmIcon, PmMenu, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 
@@ -72,7 +72,7 @@ export function HomePanel() {
                       {operable && (
                         <PmMenu
                           label={t.more(doc.title)}
-                          items={[{ id: 'rename', label: t.rename, icon: 'edit', disabled: working }, { id: 'copy', label: t.makeCopy, icon: 'copy', disabled: working }, { id: 'delete', label: t.remove, icon: 'trash', danger: true, disabled: working }]}
+                          items={[{ id: 'rename', label: t.rename, icon: 'edit', disabled: working }, { id: 'copy', label: t.makeCopy, icon: 'copy', disabled: working || doc.dir === '' }, { id: 'delete', label: t.remove, icon: 'trash', danger: true, disabled: working || doc.dir === '' }]}
                           onSelect={(id) => {
                             if (id === 'copy') {
                               const title = t.copyTitle(doc.title)
@@ -113,8 +113,8 @@ export function HomePanel() {
             await workbench.retitleDocument(doc.dir, title)
             return t.renamed(title)
           })}
-          onDelete={doc => void run(async () => {
-            await workbench.operateDocument({ op: 'delete', dir: doc.dir })
+          onDelete={(doc, plan) => void run(async () => {
+            await workbench.operateDocument({ op: 'delete', dir: doc.dir }, plan)
             return t.removed(doc.title)
           })}
         />
@@ -132,9 +132,18 @@ function DocumentDialog({ editing, templates, error, working, onClose, onCloseAu
   onCloseAutoFocus(event: Event): void
   onCreate(title: string, template?: string): void
   onRename(doc: DocumentSummary, title: string): void
-  onDelete(doc: DocumentSummary): void
+  onDelete(doc: DocumentSummary, plan: ProjectPlan): void
 }) {
   const t = useMessages()
+  const workbench = useWorkbench()
+  const [plan, setPlan] = useState<ProjectPlan>()
+  const [planFailure, setPlanFailure] = useState<string>()
+  useEffect(() => {
+    if (editing.op !== 'delete') return
+    let active = true
+    void workbench.planDocumentOperation({ op: 'delete', dir: editing.doc.dir }).then(value => { if (active) setPlan(value) }, error => { if (active) setPlanFailure(errorMessage(error)) })
+    return () => { active = false }
+  }, [workbench, editing])
   const [title, setTitle] = useState(editing.op === 'rename' ? editing.doc.title : '')
   const [template, setTemplate] = useState(templates.includes('default') ? 'default' : templates[0] ?? '')
   const label = editing.op === 'create' ? t.newDocument : editing.op === 'rename' ? t.rename : t.remove
@@ -148,11 +157,11 @@ function DocumentDialog({ editing, templates, error, working, onClose, onCloseAu
           if (working) return
           if (editing.op === 'create') onCreate(title.trim(), template || undefined)
           else if (editing.op === 'rename') onRename(editing.doc, title.trim())
-          else onDelete(editing.doc)
+          else if (plan) onDelete(editing.doc, plan)
         }}
       >
         {editing.op === 'delete'
-          ? <><p>{t.confirmRemove(editing.doc.title)}</p><p className="pmw-muted">{t.removeHint}</p></>
+          ? <><p>{t.confirmRemove(editing.doc.title)}</p><p className="pmw-muted">{plan ? t.removeImpact(plan.impact.files) : planFailure ?? t.projectInspecting}</p></>
           : (
               <PmInput label={t.title} density="regular" value={title} required autoFocus readOnly={working} placeholder={t.titlePlaceholder} onChange={event => setTitle(event.target.value)} />
             )}
@@ -164,7 +173,7 @@ function DocumentDialog({ editing, templates, error, working, onClose, onCloseAu
         {error && <PmNotice tone="danger">{error}</PmNotice>}
         <div className="pmw-operation__actions">
           <PmButton disabled={working} onClick={onClose}>{t.cancel}</PmButton>
-          <PmButton type="submit" variant={editing.op === 'delete' ? 'danger' : 'primary'} loading={working} disabled={editing.op !== 'delete' && !title.trim()}>
+          <PmButton type="submit" variant={editing.op === 'delete' ? 'danger' : 'primary'} loading={working} disabled={editing.op === 'delete' ? !plan : !title.trim()}>
             {editing.op === 'create' ? t.create : editing.op === 'rename' ? t.save : t.remove}
           </PmButton>
         </div>

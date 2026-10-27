@@ -110,7 +110,7 @@ export interface DocumentsAnswer {
 export type DocumentOperation =
   | { op: 'create', dir: string, title?: string, template?: string }
   | { op: 'rename', dir: string, to: string }
-  | { op: 'copy', dir: string, to: string }
+  | { op: 'copy', dir: string, to: string, title?: string }
   | { op: 'delete', dir: string }
 
 /** @experimental A document operation as its commit records it. */

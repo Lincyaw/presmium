@@ -1,4 +1,4 @@
-import type { AuthoringClients, DocumentHistory } from '@lincyaw/kernel'
+import type { ProjectAuthoring, AuthoringClients, DocumentHistory } from '@lincyaw/kernel'
 import type {
   AgentMode,
   AgentTool,
@@ -63,6 +63,7 @@ export interface McpRuntimeWindow {
 }
 
 export interface McpHost {
+  projectAuthoring?: ProjectAuthoring
   authoring?: DocumentAuthoring
   documentHistory?: DocumentHistory
   authoringClients?: AuthoringClients

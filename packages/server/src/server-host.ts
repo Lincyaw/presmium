@@ -1,4 +1,4 @@
-import type { DocumentHistory } from '@lincyaw/kernel'
+import type { ProjectAuthoring, DocumentHistory } from '@lincyaw/kernel'
 import type { Compilation } from '@lincyaw/compiler'
 import { pluginId } from '@lincyaw/compiler'
 import type { DocumentSummary, Finding, IRDocument, Member, OutputJobs, PresmiumNodePlugin, RunResult, ServiceToken } from '@lincyaw/kernel'
@@ -48,6 +48,7 @@ export function servedDocument(compilation: Compilation): ServedDocument {
 }
 
 export interface ServerHost {
+  projectAuthoring?: ProjectAuthoring
   authoring?: DocumentAuthoring
   documentHistory?: DocumentHistory
   authoringClients?: AuthoringClients
