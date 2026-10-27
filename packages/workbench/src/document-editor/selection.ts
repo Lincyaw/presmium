@@ -1,5 +1,6 @@
 import { getBlockInfoFromNode, getBlockInfoNearPos, getNodeId } from '@blocknote/core'
 import { NodeSelection } from '@tiptap/pm/state'
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import type { NativeDocumentEditor } from './schema.tsx'
 import { TABLE_ENTITY_ATTRIBUTE } from './table-identities.ts'
 
@@ -32,13 +33,36 @@ export function nativeEditingCursor(editor: NativeDocumentEditor): NativeEditing
   return { nativeBlockId: getNodeId(info.block.node, state.doc), position, objectSelected }
 }
 
+// Native cells contain paragraphs; the product flattens their boundaries to one break.
+function cellTextOffset(cell: ProseMirrorNode, position: number): number {
+  let offset = 0, before = 0
+  for (let index = 0; index < cell.childCount; index++) {
+    const paragraph = cell.child(index), start = before + 1
+    if (position <= start + paragraph.content.size) return offset + Math.max(0, position - start)
+    offset += paragraph.content.size + 1
+    before += paragraph.nodeSize
+  }
+  return Math.max(0, offset - 1)
+}
+
+function cellTextPosition(cell: ProseMirrorNode, offset: number): number {
+  let remaining = Math.max(0, offset), before = 0, end = 1
+  for (let index = 0; index < cell.childCount; index++) {
+    const paragraph = cell.child(index), start = before + 1
+    end = start + paragraph.content.size
+    if (remaining <= paragraph.content.size) return start + remaining
+    remaining -= paragraph.content.size + 1
+    before += paragraph.nodeSize
+  }
+  return end
+}
+
 export function nativeTextPoint(editor: NativeDocumentEditor, position: number): NativeTextPoint | undefined {
   const state = editor.prosemirrorState, resolved = state.doc.resolve(position)
   for (let depth = resolved.depth; depth > 0; depth--) {
     const node = resolved.node(depth)
     if ((node.type.name === 'tableCell' || node.type.name === 'tableHeader') && typeof node.attrs[TABLE_ENTITY_ATTRIBUTE] === 'string') {
-      const start = resolved.start(depth) + 1
-      return { blockId: node.attrs[TABLE_ENTITY_ATTRIBUTE] as string, offset: Math.max(0, Math.min(position - start, node.firstChild?.content.size ?? 0)), contentKind: 'table' }
+      return { blockId: node.attrs[TABLE_ENTITY_ATTRIBUTE] as string, offset: cellTextOffset(node, position - resolved.start(depth)), contentKind: 'table' }
     }
   }
   const info = getBlockInfoNearPos(state, position)
@@ -50,7 +74,7 @@ export function nativeTextPosition(editor: NativeDocumentEditor, point: { blockI
   let position: number | undefined
   editor.prosemirrorState.doc.descendants((node, beforePos) => {
     if ((node.type.name === 'tableCell' || node.type.name === 'tableHeader') && node.attrs[TABLE_ENTITY_ATTRIBUTE] === point.blockId) {
-      position = beforePos + 2 + Math.max(0, Math.min(point.offset, node.firstChild?.content.size ?? 0))
+      position = beforePos + 1 + cellTextPosition(node, point.offset)
       return false
     }
     if (node.attrs.id !== point.blockId) return

@@ -1053,6 +1053,10 @@
   line-height: var(--pm-leading-ui);
 }
 
+.pm-ui-block-editor .bn-menu-dropdown.bn-table-handle-menu [role='menuitem'] {
+  font-size: var(--pm-text-sm);
+}
+
 .pm-ui-block-editor .bn-thread button {
   min-width: var(--pm-size-tool);
   min-height: var(--pm-size-tool);
@@ -1125,6 +1129,10 @@
 }
 
 @media (pointer: coarse) {
+  .pm-ui-block-editor .bn-menu-dropdown.bn-table-handle-menu [role='menuitem'] {
+    min-height: var(--pm-control-hit-area);
+    font-size: var(--pm-text-lg);
+  }
   .pm-ui-block-editor .bn-formatting-toolbar button {
     min-width: var(--pm-control-hit-area);
     min-height: var(--pm-control-hit-area);
