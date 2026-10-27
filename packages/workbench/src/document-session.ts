@@ -321,15 +321,25 @@ export class DocumentSession {
   }
   async discard(): Promise<void> {
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
-    if (!slot || slot.flight || slot.assetFlight) return
+    if (!slot || slot.flight || slot.assetFlight || slot.state.composing) return
+    const directory = slot.state.directory, identity = slot.state.identity, documentId = slot.state.content?.id, input = slot.input, read = ++slot.read
+    const current = () => !this.#disposed && this.#slots.get(directory) === slot && slot.read === read && slot.input === input
+      && slot.state.identity === identity && !slot.state.composing && !slot.flight && !slot.assetFlight
     try {
-      const answer = await this.#client.readDocument(slot.state.directory)
-      slot.input++; slot.baseHash = await digest(answer.content)
+      const answer = await this.#client.readDocument(directory)
+      if (!current()) return
+      if (answer.document !== directory || answer.content.id !== documentId) {
+        slot.state = { ...slot.state, error: 'document-identity-changed' }; this.#emit(slot)
+        return
+      }
+      const baseHash = await digest(answer.content)
+      if (!current()) return
+      slot.input++; slot.baseHash = baseHash
       slot.pendingHash = undefined
       slot.compositions.clear()
       slot.state = { ...slot.state, content: answer.content, version: answer.version, fingerprint: answer.fingerprint, dirty: false, restored: false, composing: false, reset: slot.state.reset + 1, error: undefined, issues: answer.issues }
       this.#persist(slot); this.#emit(slot)
-    } catch (error) { slot.state = { ...slot.state, error: this.#error(error) }; this.#emit(slot) }
+    } catch (error) { if (current()) { slot.state = { ...slot.state, error: this.#error(error) }; this.#emit(slot) } }
   }
   async flush(signal?: AbortSignal): Promise<void> {
     signal?.throwIfAborted()
