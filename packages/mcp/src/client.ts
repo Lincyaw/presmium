@@ -19,6 +19,7 @@ export interface CalledTool {
 
 export interface PresmiumMcpClient {
   tools(): Promise<ListedTool[]>
+  subscribeTools(changed: () => void): Promise<() => Promise<void>>
   call(name: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<CalledTool>
   read(uri: string): Promise<unknown>
   subscribe(uri: string, changed: () => void): Promise<() => Promise<void>>
@@ -33,16 +34,19 @@ export async function connectPresmiumMcp(url: string, token: string, name = 'pre
   await client.connect(new StreamableHTTPClientTransport(new URL(url), { requestInit: { headers: { Authorization: `Bearer ${token}` } } }))
   type Subscription = Awaited<ReturnType<Client['listen']>>
   interface SubscriptionEntry {
-    uri: string
+    key: string | symbol
+    label: string
+    filter: Parameters<Client['listen']>[0]
     listeners: Set<() => void>
     controller: AbortController
     subscription?: Subscription
     opening?: Promise<void>
     queued: boolean
   }
-  const subscriptions = new Map<string, SubscriptionEntry>()
+  const toolsKey = Symbol('tools')
+  const subscriptions = new Map<string | symbol, SubscriptionEntry>()
   let closed = false
-  const active = (entry: SubscriptionEntry) => !closed && subscriptions.get(entry.uri) === entry && entry.listeners.size > 0
+  const active = (entry: SubscriptionEntry) => !closed && subscriptions.get(entry.key) === entry && entry.listeners.size > 0
   const changed = (entry: SubscriptionEntry) => {
     if (!active(entry) || entry.queued) return
     entry.queued = true
@@ -54,7 +58,7 @@ export async function connectPresmiumMcp(url: string, token: string, name = 'pre
   const open = (entry: SubscriptionEntry): Promise<void> => {
     if (entry.subscription) return Promise.resolve()
     if (entry.opening) return entry.opening
-    const opening = client.listen({ resourceSubscriptions: [entry.uri] }, { signal: entry.controller.signal }).then(async (subscription) => {
+    const opening = client.listen(entry.filter, { signal: entry.controller.signal }).then(async (subscription) => {
       if (!active(entry)) {
         await subscription.close()
         return
@@ -73,7 +77,7 @@ export async function connectPresmiumMcp(url: string, token: string, name = 'pre
           changed(entry)
         } catch (error) {
           if (!active(entry)) return
-          console.error(`[presmium] the resource subscription to ${entry.uri} did not reconnect: ${errorMessage(error)}`)
+          console.error(`[presmium] the subscription to ${entry.label} did not reconnect: ${errorMessage(error)}`)
           changed(entry)
         }
       })
@@ -87,13 +91,41 @@ export async function connectPresmiumMcp(url: string, token: string, name = 'pre
     const entry = subscriptions.get(notification.params.uri)
     if (entry) changed(entry)
   })
+  client.setNotificationHandler('notifications/tools/list_changed', () => {
+    const entry = subscriptions.get(toolsKey)
+    if (entry) changed(entry)
+  })
   client.onclose = () => { for (const entry of subscriptions.values()) changed(entry) }
+  const subscribe = async (key: string | symbol, label: string, filter: SubscriptionEntry['filter'], onChanged: () => void) => {
+    let entry = subscriptions.get(key)
+    if (!entry) {
+      entry = { key, label, filter, listeners: new Set(), controller: new AbortController(), queued: false }
+      subscriptions.set(key, entry)
+    }
+    const own = entry
+    const listener = () => onChanged()
+    own.listeners.add(listener)
+    const stop = async () => {
+      own.listeners.delete(listener)
+      if (own.listeners.size > 0 || subscriptions.get(key) !== own) return
+      subscriptions.delete(key)
+      own.controller.abort()
+      await own.subscription?.close()
+    }
+    try {
+      await open(own)
+    } catch (error) {
+      await stop()
+      throw error
+    }
+    return stop
+  }
   return {
     async tools() {
       const listed: ListedTool[] = []
       let cursor: string | undefined
       do {
-        const page = await client.listTools(cursor ? { cursor } : undefined)
+        const page = await client.listTools(cursor ? { cursor } : undefined, { cacheMode: 'refresh' })
         for (const tool of page.tools) {
           const meta = isRecord(tool._meta) ? tool._meta : {}
           const kind = typeof meta[TOOL_KIND_META] === 'string' && KINDS.has(meta[TOOL_KIND_META]) ? meta[TOOL_KIND_META] as ListedTool['kind'] : (tool.annotations?.readOnlyHint ? 'read' : 'operate')
@@ -103,6 +135,12 @@ export async function connectPresmiumMcp(url: string, token: string, name = 'pre
         cursor = page.nextCursor
       } while (cursor)
       return listed
+    },
+    async subscribeTools(onChanged) {
+      if (closed) throw new Error('the MCP client is closed')
+      if (client.getProtocolEra() !== 'modern') throw new Error('live tool subscriptions need MCP 2026-07-28 or later')
+      if (!client.getServerCapabilities()?.tools?.listChanged) throw new Error('this MCP server does not offer tool-list subscriptions')
+      return subscribe(toolsKey, 'tools', { toolsListChanged: true }, onChanged)
     },
     async call(tool, args, signal) {
       const result = await client.callTool({ name: tool, arguments: args }, { signal, timeout: CALL_TIMEOUT_MS })
@@ -122,28 +160,7 @@ export async function connectPresmiumMcp(url: string, token: string, name = 'pre
       if (closed) throw new Error('the MCP client is closed')
       if (client.getProtocolEra() !== 'modern') throw new Error('live resource subscriptions need MCP 2026-07-28 or later')
       if (!client.getServerCapabilities()?.resources?.subscribe) throw new Error('this MCP server does not offer resource subscriptions')
-      let entry = subscriptions.get(uri)
-      if (!entry) {
-        entry = { uri, listeners: new Set(), controller: new AbortController(), queued: false }
-        subscriptions.set(uri, entry)
-      }
-      const own = entry
-      const listener = () => onChanged()
-      own.listeners.add(listener)
-      const stop = async () => {
-        own.listeners.delete(listener)
-        if (own.listeners.size > 0 || subscriptions.get(uri) !== own) return
-        subscriptions.delete(uri)
-        own.controller.abort()
-        await own.subscription?.close()
-      }
-      try {
-        await open(own)
-      } catch (error) {
-        await stop()
-        throw error
-      }
-      return stop
+      return subscribe(uri, uri, { resourceSubscriptions: [uri] }, onChanged)
     },
     async close() {
       closed = true

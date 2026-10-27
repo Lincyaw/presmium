@@ -1,4 +1,5 @@
 export { copyPublished, productionAssetFile } from './assets.ts'
+export { DOCUMENT_CHANGE_JSON_SCHEMA, validateDocumentChange } from '../authoring.ts'
 export { FONT_LICENSE, fontLicense } from './fonts.ts'
 export { findPackageBin, importSpecifier, literalGlob, packageOf, playwrightChromium, TYPESCRIPT_IMPORT } from './packages.ts'
 export { bracketIPv6, lanAddresses } from './network.ts'

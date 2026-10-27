@@ -4,6 +4,7 @@ import type {
   ApprovalKind,
   ApprovalRequest,
   DiagnosticSnapshot,
+  DocumentAuthoring,
   DocumentSummary,
   Finding,
   Focus,
@@ -57,6 +58,7 @@ export interface McpRuntimeWindow {
 }
 
 export interface McpHost {
+  authoring?: DocumentAuthoring
   process?: McpProcess
   documents(): Promise<DocumentSummary[]>
   compile(document: string): Promise<{ doc: IRDocument, diagnostics: Finding[] }>
@@ -71,6 +73,8 @@ export interface McpHost {
   offers(kind: ApprovalKind): boolean
   approval?(kind: ApprovalKind): 'off' | 'ask' | 'allow'
   tools?(document?: string): Promise<McpPluginTools>
+  readyTools?(document?: string): McpPluginTools
+  watchTools?(listener: (document: string) => void): () => void
   positions?(document: string | undefined, member: Member): McpPosition[]
   watchPositions?(listener: () => void): () => void
   focus?(document?: string): McpFocus | undefined

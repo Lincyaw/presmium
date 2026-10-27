@@ -1,6 +1,7 @@
 import type { Compilation } from '@lincyaw/compiler'
 import { pluginId } from '@lincyaw/compiler'
 import type { DocumentSummary, Finding, IRDocument, Member, OutputJobs, PresmiumNodePlugin, RunResult, ServiceToken } from '@lincyaw/kernel'
+import type { AgentTool, DocumentAuthoring, Route } from '@lincyaw/kernel'
 
 export interface ServedPlugin {
   id: string
@@ -46,6 +47,12 @@ export function servedDocument(compilation: Compilation): ServedDocument {
 }
 
 export interface ServerHost {
+  authoring?: DocumentAuthoring
+  /** Host-owned routes are available before a document's compiled plugin contributions. */
+  routes?: Record<string, Record<string, Route>>
+  /** Only already compiled plugin tools. This snapshot must never start or wait for compilation. */
+  agentTools?(document?: string): { tools: AgentTool[], service<T>(token: ServiceToken<T>): T | undefined }
+  watchAgentTools?(listener: (document: string) => void): () => void
   readSource?(path: string, member: Member): Promise<{ content: string }>
   workspaceRoot?: string
   documents(): Promise<DocumentSummary[]>

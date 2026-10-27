@@ -447,11 +447,11 @@
 
 ## 13. 智能体
 
-Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状态，也能操作它；agent 的修改落在源码上，每个 turn 结束时成为可撤销的提交（运营者设置 `review: required` 时经作者审阅后提交）。工作台中的 agent 是 DeepSeek Harness 的会话，它经 bundle 使用与 MCP 相同的工具表；别的 agent（Claude Code、Codex 等）经 MCP 接入。工作区、会话与当前文稿的映射统一见 `design-dsh.md` 6.2 节，与 dsh 的概念对照见第 16 节。
+Presmium 是 agent 的环境：agent 经 MCP 读取文稿的内容与状态，并通过规范作者动作修改同一份 `lecture.json`。工作区宿主已提供读取、预检、原子提交及读后核验，提交共用 Web 的锁、版本和历史；完整作者能力对齐见 [MCP 作者动作 RFC](rfc-mcp-authoring-actions.md)。工作台中的 agent 是 DeepSeek Harness 的会话，它经 bundle 使用与 MCP 相同的工具表；别的 agent（Claude Code、Codex 等）经 MCP 接入。原生文件工具的 dsh turn 仍使用既有审阅流程，required review 尚未接通的 MCP 作者提交明确拒绝，不绕过审阅。工作区、会话与当前文稿的映射统一见 `design-dsh.md` 6.2 节，与 dsh 的概念对照见第 16 节。
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
-| agent 环境 | `@lincyaw/mcp` 的 `createPresmiumMcp` | MCP 服务：以工具与只读资源暴露工作区、文稿与放映状态；运行在 `presmium dev` 与 `presmium serve` 的进程中（`/mcp`），`presmium-mcp` 以 stdio 提供同样的工具 |
+| agent 环境 | `@lincyaw/mcp` 的 `createPresmiumMcp` | MCP 服务：以工具与只读资源暴露工作区、文稿与放映状态；实际工具取决于宿主能力，`presmium serve` 的工作区宿主提供规范作者事务，独立 stdio 编译宿主明确报告作者服务不可用 |
 | agent 工具 | MCP 工具；插件贡献的 `AgentTool` | 读取类（`read`）、操作类（`operate`，需要确认）、计费类（`spend`，需要确认）；插件可以贡献工具，如讲授插件的 `lecture_preview` |
 | agent 资源 | `presmium://…` | 与读取类工具对应的只读资源；放映位置与焦点的资源可以订阅更新 |
 | 令牌模式 | `AgentMode`（`MCP_ENDPOINT.issue(member, mode)`） | 只有 `author`：作者的 agent，可以写源码；每个令牌都读完整的文稿 |
@@ -473,7 +473,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 - **先审阅后提交**：`review: required` 时作者逐个文件查看差异后接受、拒绝或拒绝某些文件；被拒绝的文件恢复为快照中的内容，新建的删除。审阅待决时，范围内的保存、文档操作与撤销被锁拒绝。
 - **接受即提交**：接受的修改由工作区提交为一个提交（`REVISIONS`，git 的钩子关闭），成功后结束审阅并释放锁；提交失败时保留审阅，作者可以重试或拒绝。尾注带 `Presmium-Session`、`Presmium-Turn` 与作者；接受之后的撤销是 `git revert`，会话收到一条标明来源的消息。
 - **学习者不接触 agent**：读者的提问在他的浏览器中发往他自己填写的服务，回答只是文字与跳转的链接；读者的密钥只保存在他的浏览器中。
-- **MCP 不提供写文件的工具**：agent 用自己的文件工具修改源码，服务随即重新编译并推送。
+- **MCP 与 Web 共用作者事务**：`get_document` 读取权威源，`plan_document_change` 预检现有 `DocumentEditOperation` 或明确 replacement 加同文稿工程文本文件，`apply_document_change` 原子保存并重读。source、CAS 与运行快照版本分别核对；未完成的录制、审阅或跨重启幂等不能声明为可用。
 - 回答中的引用位置必须对应 IR 中的章节、步骤或块；无法解析的引用不显示为链接。
 - 读者问答的上下文取自读者页面中的 IR；学生版站点的 IR 没有只给教师的内容，所以回答不会引用它（第 10 节）。
 - agent 经 MCP 能做什么由服务端签发给它的令牌决定（成员的角色），会话结束令牌即作废；本机作者的外部 agent 用进程的令牌，它只在 0600 的状态文件中（4A 节）。

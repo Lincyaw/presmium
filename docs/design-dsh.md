@@ -606,12 +606,14 @@ export interface Focus {
 ## 9. MCP 与 dsh 的工具一致
 
 - **一张工具表**：`@lincyaw/mcp` 导出内置工具的表（名字、说明、JSON Schema、种类 `read` 或确认的种类），以及按文档列出工具的函数：内置工具按种类的策略筛选（`off` 不列出），加上插件贡献的 `AgentTool`。
+- **规范作者事务**：工作区宿主的 `get_authoring_capabilities/get_document/plan_document_change/apply_document_change` 复用 Web 的 `DocumentEditor`、CAS、文件事务和历史，作者读取与保存不依赖编译。只读预检不执行代码或调用模型；提交后重读已保存源，编译与浏览器验证单独报告。独立 stdio 编译宿主没有作者事务，能力响应明确 unavailable；完整目标和首片限制见 [MCP 作者动作 RFC](rfc-mcp-authoring-actions.md)。
+- **插件工具按真实就绪状态发布**：作者宿主初始化只读已完成编译的工具快照，不为列工具等待或启动编译。显式编译完成后发送 MCP 工具清单变更通知，客户端重读并保留原文稿归属；没有就绪实现时不能提前伪造插件工具。
 - **适配器一：MCP**。`/mcp`（`presmium dev`、`presmium serve`）与 `presmium-mcp`（stdio）。
 - **适配器二：dsh 工具**（bundle 的 `presmium-tools`）。bundle 作为 MCP 客户端（`@lincyaw/mcp` 导出的客户端一侧）连接工作区服务的回环 `/mcp`，用会话令牌列出工具，把每个工具连同原样的 JSON Schema 登记为 `presmium__<名字>`，调用时转成 `tools/call`。种类决定 6.3 节的映射。编译只在服务中进行一次，预览与 agent 看到的是同一次编译，文稿代码也不进 dsh 宿主。回环的开销很小：本机一份小文稿上，第一次签发会话令牌约 0.4 s（含服务就绪），连接约 50 ms，`tools/list` 约 15 ms，读取类调用的中位数约 6 ms。
 - **时限**：dsh 对登记的工具没有默认时限（`timeoutMs` 省略时不限，`dsh-tool-call-timeout-policy` 只执行工具自己声明的时限）；bundle 的 MCP 客户端把单次调用的时限从 MCP SDK 默认的 60 s 放宽到 10 分钟，构建与运行代码不会被它截断。
 - **多份文档**：`agent/created` 是串行事件，dsh 等它的监听者结束才处理输入，监听者经 `agent.ctx.tools.register` 登记的工具只属于那个 agent。bundle 因此为每个会话登记它所属文档的工具，不登记各文档工具的并集：两份文档的两个会话，有某个插件的一份得到这个插件的工具，另一份没有。`off` 的种类不登记。
 - **一致性用例**：同一份文档、同一组设置下，MCP `tools/list` 的名字与输入 schema，等于 headless 会话中提供给模型的 `presmium__*` 工具（去掉前缀），含一个插件的 `AgentTool`；`off` 的种类两边都不列出；`get_focus` 与会话快照中的焦点相同。新增工具时这个用例保证两边都有。
-- **外部 agent 是一等入口**：工作台中的 agent 只用 dsh；Claude Code、Codex 等经 MCP 连接工作区服务，工具与 dsh 中相同，修改落在源码上，工作台的预览与编辑器经 `ir/events` 跟上。它们写的修改不经 Presmium 的审阅（它们没有 Presmium 的会话），作者在“未提交的修改”中提交或放弃，与在自己的编辑器中改一样。
+- **外部 agent 是一等入口**：工作台中的 agent 只用 dsh；Claude Code、Codex 等经 MCP 连接工作区服务，工具与 dsh 中相同。规范作者提交形成文稿历史，来源为 agent，工作台从权威源变化跟上，运行快照另按版本更新。首片的 required review 适配尚未实现，能力响应关闭 apply，不能以会话已确认代替审阅；直接文件工具产生的未提交修改仍由作者提交或放弃。
 - **外部 agent 只经 MCP**：工作台中的 agent 是 dsh；别的 agent（Claude Code、Codex 等）经 MCP 接入，不另有驱动 agent 的协议。经别的协议时 Presmium 的确认种类与说明会丢失，两套传输与确认语义要一起维护。
 
 ## 10. 没有模型与没有 dsh 时

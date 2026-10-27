@@ -20,9 +20,11 @@ import { DocumentLocks } from './locks.ts'
 import { AgentSessionReviews } from './review/agent-session-reviews.ts'
 import { createTaskReviewService } from './review/task-reviews.ts'
 import { Revisions } from './revisions.ts'
-import { WORKSPACE_ID, workspaceRoutesPlugin } from './routes.ts'
+import { authorizeWorkspaceRoutes, WORKSPACE_ID, workspaceRoutesPlugin } from './routes.ts'
 import { refreshDocumentVitePlugins, siteContext, siteDocument, siteDocumentIR, siteSpec, untranslatedFindings, webRenderer } from './site.ts'
 import { SourceEditor } from './source-editor.ts'
+import { createDocumentEditor, documentEditorRoutes } from './document-editor.ts'
+import type { DocumentEditor } from './document-editor.ts'
 import { createWorkbenchBackend } from './workbench-api.ts'
 import type { WorkbenchBackend } from './workbench-api.ts'
 import { localWriter } from './writer.ts'
@@ -72,6 +74,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   const stateDir = makeStateDir(root, env)
   const docs = () => listDocuments(config)
   const compileSessions = new Map<string, CompileSession>()
+  const agentToolListeners = new Set<(document: string) => void>()
   const locks = new DocumentLocks()
   const writer = localWriter(config)
   const editor = new SourceEditor({ config, writer, locks })
@@ -85,6 +88,8 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   let server: PresmiumServer | undefined
   let workbench: WorkbenchBackend | undefined
   let history: WorkspaceHistory | undefined
+  let documentEditor: DocumentEditor | undefined
+  let authoringRoutes: ReturnType<typeof documentEditorRoutes> | undefined
   let routesPlugin: ServedPlugin | undefined
   // The builds and exports, as jobs the workbench and the AI start and follow.
   const jobs = createJobs({
@@ -116,6 +121,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     session.onCompile((compilation, changed) => {
       server?.diagnostics.compiled(dir, compilation.doc, root, irRevision(compilation.doc))
       workbench?.compiled(dir, compilation, changed)
+      for (const listener of agentToolListeners) listener(dir)
       void site?.update(dir, compilation).catch((error: unknown) => log.warn(`the site did not take ${dir}: ${errorMessage(error)}`))
     })
     session.onFailure(error => server?.diagnostics.failed(dir, errorMessage(error), { file: relative(root, session.compiler.entry).replace(/\\/g, '/') }))
@@ -155,6 +161,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       server?.diagnostics.forget(dir)
       compileSessions.get(dir)?.close()
       compileSessions.delete(dir)
+      for (const listener of agentToolListeners) listener(dir)
     }
     const listed = refreshSpec()
     const removed = [...new Set([...change.removed, ...listed.removed])]
@@ -190,6 +197,14 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
 
   const serverHost: ServerHost = {
     workspaceRoot: root,
+    get authoring() { return documentEditor },
+    get routes() { return authoringRoutes ? { [WORKSPACE_ID]: authoringRoutes } : undefined },
+    agentTools(document) {
+      const compiled = (document === undefined ? [...compileSessions.values()] : [compileSessions.get(document)]).flatMap(session => session?.latest ? [session.latest] : [])
+      const tools = new Map(compiled.flatMap(compilation => compilation.plugins.flatMap(loaded => loaded.plugin?.tools ?? [])).map(tool => [tool.name, tool]))
+      return { tools: [...tools.values()], service: <T>(token: ServiceToken<T>) => compiled[0]?.service(token) }
+    },
+    watchAgentTools(listener) { agentToolListeners.add(listener); return () => { agentToolListeners.delete(listener) } },
     async readSource(path, member) {
       await ready
       return editor.read(editor.scope(''), path, member)
@@ -290,11 +305,14 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   serverServices = running.services
   workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, diagnostics: running.diagnostics, url: () => running.url, preview, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
   history = openHistory()
+  documentEditor = createDocumentEditor({ editor, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
+  authoringRoutes = authorizeWorkspaceRoutes(documentEditorRoutes({ root, editor, documentEditor, workbench }), launcherToken)
   routesPlugin = {
     id: WORKSPACE_ID,
     plugin: workspaceRoutesPlugin({
       config,
       editor,
+      documentEditor,
       locks,
       ...history ? { revisions: history.revisions, operations: history.operations, reviews: history.agentSessionReviews } : {},
       documentsChanged,

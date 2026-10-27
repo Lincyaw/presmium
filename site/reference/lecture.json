@@ -340,7 +340,7 @@
           "children": [
             {
               "type": "text",
-              "text": "validateDocument、DOCUMENT_JSON_SCHEMA 与 TeachingDocument 是 Web、agent、直接文件编辑和编译器共用的作者契约。工作区更改携带 baseDocumentVersion；冲突保留输入，不静默覆盖另一个版本。"
+              "text": "validateDocument、DOCUMENT_JSON_SCHEMA 与 TeachingDocument 是 Web、agent、直接文件编辑和编译器共用的作者契约。工作区更改携带 baseDocumentVersion；冲突保留输入，不静默覆盖另一个版本。工作区 MCP 先用 get_authoring_capabilities 探测，再通过 get_document、plan_document_change、apply_document_change 读取、预检与提交；回执区分已保存和未请求的编译／运行验证。"
             }
           ]
         }
