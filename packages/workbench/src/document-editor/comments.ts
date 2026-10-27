@@ -11,6 +11,8 @@ import type { RichProjection } from './rich-text.ts'
 import type { Transaction } from '@tiptap/pm/state'
 import type { DocumentEditorBlock, NativeDocumentEditor } from './schema.tsx'
 import { commentEditorSchema } from './schema.tsx'
+import { CommentDrafts, commentDraftBaseline } from './comment-drafts.ts'
+import type { CommentDraftTarget } from './comment-drafts.ts'
 import { nativeTextPoint, nativeTextPosition, nativeTextPositionInDocument } from './selection.ts'
 
 type NewComment = { body: unknown, metadata?: unknown }
@@ -36,6 +38,8 @@ export interface DocumentCommentEditorHandle {
   failure(): EditorFailure | undefined
   subscribe(listener: () => void): () => void
   close(): void
+  target?: CommentDraftTarget
+  restoreBaseline(baseline: string | undefined): void
 }
 const commentBase = (comment: DocumentComment) => JSON.stringify({ userId: comment.userId, content: comment.content })
 
@@ -61,6 +65,8 @@ export class DocumentThreadStore extends ThreadStore {
   addThreadToDocument: ThreadStore['addThreadToDocument'] = undefined
   beforeAction?: () => void
   readonly member?: Member
+  readonly drafts?: CommentDrafts
+  readonly #ownsDrafts: boolean
   #threads = new Map<string, ThreadData>()
   #canonical: Threads = {}
   #version?: string
@@ -72,9 +78,20 @@ export class DocumentThreadStore extends ThreadStore {
   readonly #rich: RichProjection = createRichProjection()
   readonly #anchors = new Map<string, DocumentThread['anchor']>()
   readonly #initialBodies = new Map<string, { body: unknown, content: RichTextNode[] }>()
-  constructor(document: TeachingDocument, member?: Member, version?: string) {
+  constructor(document: TeachingDocument, member?: Member, version?: string, identity?: string, drafts?: CommentDrafts) {
     super(new DocumentThreadAuth(member)); this.member = member; this.#version = version; this.#document = document; this.#replace(document.comments ?? {})
+    this.#ownsDrafts = !drafts
+    if (drafts || identity && member?.id) { this.drafts = drafts ?? new CommentDrafts(identity!, member!.id) }
   }
+  get version(): string | undefined { return this.#version }
+  threadSnapshot(threadId: string): DocumentThread | undefined { return this.#canonical[threadId] }
+  refreshEditorCallbacks(): void { this.#publishView() }
+  draftTargetState(target: CommentDraftTarget): 'current' | 'changed' | 'unavailable' {
+    const thread = this.#canonical[target.threadId], comment = thread?.comments.find(value => value.id === target.commentId)
+    if (!thread || thread.deletedAt || thread.createdAt !== target.threadCreatedAt || target.commentId && (!comment || comment.deletedAt || comment.createdAt !== target.commentCreatedAt)) return 'unavailable'
+    return comment && target.baseline !== commentDraftBaseline(comment) ? 'changed' : 'current'
+  }
+  close(): void { if (this.#ownsDrafts) this.drafts?.close() }
   get synchronizing(): boolean { return this.#synchronizing }
   getThread = (threadId: string): ThreadData => { const thread = this.#threads.get(threadId); if (!thread) throw new Error('document-thread-missing'); return thread }
   getThreads = (): Map<string, ThreadData> => this.#threads
@@ -157,9 +174,9 @@ export class DocumentThreadStore extends ThreadStore {
     try { this.#threads = new Map(this.#threads); this.#notify() } finally { this.#synchronizing = synchronizing }
   }
   /** Public comment-editor boundary: native callbacks carry no base revision themselves. */
-  bindEditor(editor: CommentEditor, editable: boolean): DocumentCommentEditorHandle {
+  bindEditor(editor: CommentEditor, editable: boolean, threadId?: string): DocumentCommentEditorHandle {
     const ids = new Set(editor.document.map(block => block.id))
-    const matches = Object.values(this.#canonical).flatMap(thread => thread.comments.flatMap(comment => {
+    const matches = Object.values(this.#canonical).filter(thread => thread.id === threadId).flatMap(thread => thread.comments.flatMap(comment => {
       const body = this.#initialBodies.get(comment.id)?.body
       return Array.isArray(body) && body.some(block => ids.has(block.id)) ? [{ thread, comment, body }] : []
     }))
@@ -197,7 +214,11 @@ export class DocumentThreadStore extends ThreadStore {
       }
     }
     setEditable(editable)
+    const thread = threadId ? this.#canonical[threadId] : undefined
+    const draftTarget: CommentDraftTarget | undefined = thread && (!existing || target) ? { threadId: thread.id, threadCreatedAt: thread.createdAt, ...existing && target ? { commentId: target.comment.id, commentCreatedAt: target.comment.createdAt, baseline: commentBase(target.comment) } : {} } : undefined
     return {
+      target: draftTarget,
+      restoreBaseline: baseline => { if (existing && editing.editable && !editing.closed) { editing.baseline = baseline; if (!this.#canSubmit(editing) && !editing.failure) this.#failEdit(editing, 'unavailable') } },
       setEditable, failure: () => editing.failure,
       subscribe: listener => { editing.listeners.add(listener); return () => editing.listeners.delete(listener) },
       close: () => {
@@ -213,6 +234,7 @@ export class DocumentThreadStore extends ThreadStore {
     if (version === undefined || version === this.#version || this.#synchronizing) return
     this.#version = version
     this.#document = document
+    this.drafts?.synchronize(document, version)
     const threads = document.comments
     if (same(threads ?? {}, this.#canonical)) return
     this.#synchronizing = true
