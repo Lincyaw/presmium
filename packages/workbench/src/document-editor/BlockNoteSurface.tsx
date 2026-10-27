@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef } from 'react'
+import { forwardRef, useEffect, useMemo, useRef, useState } from 'react'
 import type { ForwardRefExoticComponent, ReactNode, RefAttributes } from 'react'
 import { filterSuggestionItems } from '@blocknote/core'
 import { en, zh } from '@blocknote/core/locales'
@@ -7,11 +7,14 @@ import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeS
 import type { ComponentProps, FormattingToolbarProps } from '@blocknote/react'
 import { useMediaQuery } from '@mantine/hooks'
 import type { Locale } from '../messages.ts'
+import { PmIconButton, PmNotice } from '../components.tsx'
 import { DOCUMENT_NODE_VIEWS, documentEditorSchema } from './schema.tsx'
 import type { DocumentEditorBlock, DocumentEditorInput, DocumentNodeViews, NativeDocumentEditor } from './schema.tsx'
 import { documentSelection } from './selection.ts'
 import type { NativeDocumentSelection } from './selection.ts'
-import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
+import { DOCUMENT_EDITOR_MESSAGES, IMAGE_IMPORT_MESSAGES } from './messages.ts'
+import { imageFileInput } from './file-input.ts'
+import type { ImageImportFailure } from './file-input.ts'
 import { excludeCommentMarkHistory, nativeComments } from './comments.ts'
 import type { DocumentThreadStore } from './comments.ts'
 
@@ -84,35 +87,58 @@ function PlainContentComments({ editor }: { editor: NativeDocumentEditor }) {
 /** One native editor owns selection, transactions and history across the complete document. */
 export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
   const current = useRef(props)
-  const uploads = useRef(new Set<AbortController>())
+  const uploads = useMemo(() => ({ controllers: new Set<AbortController>(), pending: Promise.resolve() }), [props.identity, props.reset ?? 0])
+  const [fileErrors, setFileErrors] = useState<{ identity: string, failures: ImageImportFailure[] }>()
   current.current = props
   const dictionary = props.locale === 'zh-CN' ? zh : en
   const t = DOCUMENT_EDITOR_MESSAGES[props.locale]
+  const fileMessages = IMAGE_IMPORT_MESSAGES[props.locale]
   const editor = useCreateBlockNote({ schema: documentEditorSchema, initialContent: props.initialContent,
     resolveFileUrl: location => current.current.resolveAssetURL?.(location) ?? Promise.resolve(location),
-    uploadFile: props.uploadImage ? async file => {
+    uploadFile: props.uploadImage ? file => {
       const controller = new AbortController()
-      uploads.current.add(controller)
-      try { return await current.current.uploadImage!(file, controller.signal) }
-      finally { uploads.current.delete(controller) }
+      const uploadImage = current.current.uploadImage!
+      uploads.controllers.add(controller)
+      const request = uploads.pending.then(async () => {
+        controller.signal.throwIfAborted()
+        if (current.current.identity !== props.identity) throw new DOMException('Document changed', 'AbortError')
+        return uploadImage(file, controller.signal)
+      })
+      uploads.pending = request.then(() => {}, () => {})
+      return request.finally(() => { uploads.controllers.delete(controller) })
     } : undefined,
+    disableExtensions: ['dropFile'],
+    pasteHandler: ({ event, editor, defaultPasteHandler }) => {
+      const files = [...event.clipboardData?.files ?? []]
+      if (files.length && !event.clipboardData?.getData('text/html')) {
+        editor.getExtension(imageFileInput)?.insert(files)
+        return true
+      }
+      return defaultPasteHandler()
+    },
     dictionary, tables: { splitCells: true, cellBackgroundColor: true, cellTextColor: true, headers: true },
-    extensions: props.comments ? [nativeComments(props.comments, t.author)] : [],
+    extensions: [imageFileInput({
+      onStart: () => { if (current.current.identity === props.identity) setFileErrors(undefined) },
+      onFailure: failure => { if (current.current.identity === props.identity) setFileErrors(value => ({ identity: props.identity, failures: [...(value?.identity === props.identity ? value.failures : []), failure] })) },
+    }), ...props.comments ? [nativeComments(props.comments, t.author)] : []],
     domAttributes: { block: { 'data-document-editor-block': '' } },
   }, [props.identity, props.reset ?? 0])
   useEffect(() => {
     const stopCommentHistory = current.current.comments ? excludeCommentMarkHistory(editor) : undefined
     current.current.onReady?.(editor)
     return () => {
-      for (const controller of uploads.current) controller.abort()
-      uploads.current.clear()
+      for (const controller of uploads.controllers) controller.abort()
+      uploads.controllers.clear()
       stopCommentHistory?.(); current.current.onReady?.(undefined)
     }
   }, [editor])
   return <DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}>
     <div className="pm-document-editor pm-ui-block-editor pm-ui" data-document-editor={props.identity}
+      onDragEnter={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
+      onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
       onCompositionStart={() => current.current.onComposition?.(true)}
       onCompositionEnd={() => queueMicrotask(() => current.current.onComposition?.(false))}>
+      {fileErrors?.identity === props.identity && <PmNotice tone="danger"><div className="pm-document-editor__file-errors"><ul>{fileErrors.failures.map((failure, index) => <li key={index}>{failure.name} · {fileMessages[failure.kind]}</li>)}</ul><PmIconButton small icon="close" label={fileMessages.dismiss} onClick={() => setFileErrors(undefined)} /></div></PmNotice>}
       <BlockNoteView editor={editor} editable={!props.readOnly} theme={DOCUMENT_EDITOR_THEME} formattingToolbar={false} slashMenu={false} renderEditor={false} comments={props.commentsPortal ? false : undefined}
         onChange={() => current.current.onChange(editor.document, editor)}
         onSelectionChange={() => current.current.onSelection?.(documentSelection(editor))}>
