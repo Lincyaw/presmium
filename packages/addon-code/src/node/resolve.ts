@@ -61,9 +61,9 @@ async function lostMessage(anchor: AnchorString, message: string | undefined, tr
   const root = relative(ctx.deckDir, ctx.workspaceRoot).split(sep).join('/') || '.'
   const fromDeck = relative(ctx.workspaceRoot, join(ctx.deckDir, file)).split(sep).join('/')
   const hint = existsSync(join(ctx.deckDir, file)) && !fromDeck.startsWith('..')
-    ? `${file} is a file of the deck's directory; from the repository root it is ${fromDeck}: write ${anchor.replace(file, fromDeck)}`
-    : 'write the path of the file from the repository root'
-  return [`anchor ${anchor} is lost: ${file} not found under the repository root (${root}); anchor paths are relative to the repository root`, hint]
+    ? `${file} is a file of the deck's directory; from the workspace root it is ${fromDeck}: write ${anchor.replace(file, fromDeck)}`
+    : 'write the path of the file from the workspace root'
+  return [`anchor ${anchor} is lost: ${file} not found under the workspace root (${root}); anchor paths are relative to the workspace root`, hint]
 }
 
 async function resolveCodeRef(node: CodeNode, spec: CodeRefSpec, configuredRepo: string | undefined, tree: GitTree, ctx: PassContext, report: Report): Promise<void> {

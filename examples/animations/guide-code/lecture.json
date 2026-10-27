@@ -302,7 +302,7 @@
       "type": "code",
       "language": "typescript",
       "origin": {
-        "anchor": "region:examples/animations/guide-code/code/checkout.ts#checkout",
+        "anchor": "region:guide-code/code/checkout.ts#checkout",
         "highlightRegions": {
           "references-step": "accumulation"
         }
@@ -313,7 +313,7 @@
       "type": "code",
       "language": "typescript",
       "origin": {
-        "anchor": "symbol:examples/animations/guide-code/code/checkout.ts#total"
+        "anchor": "symbol:guide-code/code/checkout.ts#total"
       }
     },
     "js-source": {
@@ -497,7 +497,7 @@
       "type": "code",
       "language": "typescript",
       "origin": {
-        "anchor": "pattern:examples/animations/guide-code/code/checkout.ts#$A.reduce($$$ARGS)"
+        "anchor": "pattern:guide-code/code/checkout.ts#$A.reduce($$$ARGS)"
       }
     }
   },

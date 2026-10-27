@@ -56,6 +56,11 @@ for studio debugging `docs/debugging.md`. The docs are in Chinese and cited here
 What 1.x keeps stable for users and the rules for package versions, `IR_VERSION` and `KERNEL_VERSION`
 are in `site/reference/lecture.json` (the page "接口与版本").
 
+The compiler honors an explicit `workspaceRoot`; otherwise it finds the nearest ancestor
+`presmium.workspace.yaml` without crossing the git root, then falls back to the git root or document
+directory. Anchor paths use this logical workspace root. A nested workspace's pinned git reads and
+permanent links must translate to actual repository paths without widening ordinary file reads.
+
 The source is the contract: `packages/kernel/src/contracts/` (re-exported together by
 `packages/kernel/src/contracts.ts`, the package's `./contracts` entry) for plugins and services,
 `packages/kernel/src/ir.ts` for documents and rendering, `packages/host/src/contracts.ts` for the browser
