@@ -52,7 +52,7 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 诊断、失败详情、运行验证 | UI `readDiagnostics` 读诊断快照；编译／浏览器／作者窗口分来源。已选 Doc 无 IR 也能报告请求失败和异常，authoringSource 只表示已知保存基线 | `get_diagnostics` 有界读取同一快照且不编译，`check_document` 才显式检查；协议与[未编译窗口](diagnostic-feedback.md#未编译的作者窗口)保留来源和独立实例。runtime 有报告但不证明最新源 | 带完整来源绑定的验证请求及浏览器实际结果；检查计数、空快照和作者保存基线不能替代当前源验证；未关联文稿故障与窗口在线状态仍待 |
 | 文稿草稿、外部变更、保存冲突 | `DocumentSession` 和制作 drafts 在浏览器按来源隔离；不能从服务看见未提交字节 | 无 | 客户端编辑状态探测与 flush／保留／恢复请求，未连接时声明未知 |
 | 审阅、逐文件拒绝、检查点恢复 | workspace `review/*` 与 `CHANGE_REVIEW`，持锁到结束 | 核心 MCP 无适配，dsh 自有桥接 | 同一 reviewId、范围、来源与修改 digest，绑定宿主授权决策 |
-| 历史、查看旧版本、撤消、重做、放弃未提交修改 | workspace `revisions`、`history/*`、`changes/*`；undo/redo 可带 expect | 无 | 显式目标版本与路径，冲突结果；不把查看历史变成恢复当前文稿 |
+| 历史、查看旧版本、撤消、重做、放弃未提交修改 | Web 与 MCP 共用 `DocumentHistory`／Revisions，历史按原修改分页，完整链状态不依赖局部页；原生编辑历史独立 | 已有 `get_document_history/read_history_file/undo_document_change/redo_document_change/revert_document_change`，绑定 raw source、HEAD 与完整目标；见第 21 节 | 未保存的客户端历史、外部修改提交、项目恢复与通用 discard 仍不开放；已知回执仅进程内且结果仍当前 |
 
 核心入口证据是 [MCP 工具表](../packages/mcp/src/mcp.ts)、[McpHost](../packages/mcp/src/host.ts)、[WorkbenchClient](../packages/workbench/src/workspace-client.ts)、[workspace 路由](../packages/workspace/src/node/routes.ts)、[作者事务](../packages/workspace/src/node/document-editor.ts)与[讲授插件工具](../packages/addon-lecture/src/node/tools.ts)。本地音频的已实现事务与媒体限制继续以[音频作者契约](audio-authoring.md)为准。
 
@@ -353,3 +353,11 @@ HTTP 的 `GET document/outline` 与 `GET document/part` 将同一 query JSON 放
 MCP 整体参数按实际 JSON.stringify 不超过 2048 个 UTF-16 字符，默认结果按实际 pretty JSON 不超过 7168；异常详情也保持有界。大字段明确省略或拒绝，不截断身份冒充完整值。能力中的 `actions.planPageChange/applyPageChange` 与 `pageLimits` 如实声明支持；required review、operate off 和 compiler-only stdio 不会冒称可提交。
 
 此片仍使用原五分钟／64 plans／64 receipts／process-current-source 边界，不增加队列、writer 或持久账本。丢 ACK 重试原 apply 引用；Undo ABA、旧源、变化／过期／遗忘计划不允许自动重建。共享 HTTP 的 `document/page/plan` 与 `document/page/apply` 连接同一实例；Web 人工编辑仍走原 actor 和可信编辑保存边界。本片不把通用大文写回、评论、历史或全部人机动作宣称已对齐。实际验证见[页面动作记录](benchmarks/mcp-page-actions-2026-10-28.md)。
+
+## 21. 已实现的文稿历史与明确撤消
+
+Web 历史面板与五个 MCP 工具借同一个工作区 owner，复用 Revisions、文稿锁、权限及原子失败恢复；不新增 writer。接口、预算、raw source／HEAD／expect 绑定和进程内回执以[文稿历史协议](document-history.md)为准。当前 JSON 损坏仍可读取历史；查看旧文件不恢复当前文稿。
+
+根文稿空字符串不再落入全工作区历史。列表按原修改有界分页，状态由完整撤消链派生；Web 明确翻页并拒绝旧读取，确认新保存源时刷新。普通 undo／redo 只作用于读取确认的下一目标，逐条 revert 只作用于明确选择的可达提交；三者均保留 source／HEAD、同文稿全文件范围、实际暂存区与工作区检查。实际范围和保留的候选／观察器失败见[历史验证记录](benchmarks/mcp-document-history-2026-10-28.md)。
+
+这些工具不控制浏览器原生 Undo、未保存输入或草稿，不开放任意 checkout／discard，不代替项目恢复与审阅。compiler-only stdio 没有这个 workspace owner，不新增本地写入回退；没有 git、没有父基线或 required review 未满足时如实拒绝。

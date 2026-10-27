@@ -362,7 +362,10 @@ export class Workbench {
       }
       this.#finishOpeningDocument()
       if (this.#production.changed()) void this.pausePlayback().catch(() => {})
-      if (!authoring.dirty && previous?.dirty) { void this.#history.read(authoring.directory); void this.loadDocuments() }
+      const acknowledgedSourceChanged = !authoring.dirty && !authoring.loading && !authoring.error && !previous?.loading
+        && previous?.identity === authoring.identity && Boolean(previous?.version && authoring.version)
+        && (previous?.version !== authoring.version || previous?.fingerprint !== authoring.fingerprint)
+      if (!authoring.dirty && previous?.dirty || acknowledgedSourceChanged) { void this.#history.read(authoring.directory); void this.loadDocuments() }
     })
     this.#diagnostics = new DocumentDiagnostics(this.client, store)
     this.#jobs = new DocumentJobs(this.client, store)
@@ -1704,7 +1707,7 @@ export class Workbench {
     this.#set({ isHistoryPreparing: true, historyFailure: undefined })
     try {
       if (!current()) return false
-        await this.flushPendingEdits()
+      await this.flushPendingEdits()
       if (!current()) return false
       await this.#history.read(document)
       if (!current()) return false
@@ -1716,6 +1719,8 @@ export class Workbench {
       return false
     } finally { if (current()) this.#set({ isHistoryPreparing: false }) }
   }
+
+  readHistoryPage(offset: number): Promise<void> { return this.#history.page(offset) }
 
   revertRevision(id: string): Promise<boolean> {
     return this.#changeHistory('revert', id)

@@ -1,3 +1,4 @@
+import type { DocumentHistory } from '@lincyaw/kernel'
 import type {
   AgentMode,
   AgentTool,
@@ -63,6 +64,7 @@ export interface McpRuntimeWindow {
 
 export interface McpHost {
   authoring?: DocumentAuthoring
+  documentHistory?: DocumentHistory
   audioAuthoring?: DocumentAudioAuthoring
   voiceAuthoring?: DocumentVoiceAuthoring
   transcriptions?: DocumentTranscriptions
