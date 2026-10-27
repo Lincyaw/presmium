@@ -1,10 +1,13 @@
 import { undoDepth, redoDepth } from '@tiptap/pm/history'
 import { TextSelection } from '@tiptap/pm/state'
 import { DocumentSession } from './document-session.ts'
+import { disposeTranscriptionSessions } from './transcription-session.ts'
+import { disposeDocumentRecordings } from './audio-recording.ts'
+import { DOCUMENT_AUDIO_MAX_BYTES } from '@lincyaw/kernel'
 import type { DocumentSessionState } from './document-session.ts'
 import { DocumentReturnPoints, documentReturnStep, documentViewportOffset, restoreDocumentViewport } from './document-return-point.ts'
 import type { DocumentReturnPoint } from './document-return-point.ts'
-import type { DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentChangeAnswer, MediaClip, NarrationNode, TeachingDocument } from '@lincyaw/kernel'
+import type { DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentChangeAnswer, MediaClip, NarrationNode, TeachingDocument, DocumentTranscriptionRequest, TranscriptionTask, TranscriptionAdoptionDraft, TranscriptionAdoptionApply, TranscriptionAdoptionPlan, TranscriptionAdoptionAnswer } from '@lincyaw/kernel'
 import type { NativeDocumentEditor } from './document-editor/schema.tsx'
 import type { DocumentEditorCommands } from './document-editor/DocumentEditor.tsx'
 import { nativeTextPoint, nativeTextPosition } from './document-editor/selection.ts'
@@ -229,6 +232,7 @@ export class Workbench {
   readonly client: WorkspaceClient
   readonly #documentSession: DocumentSession
   readonly #audioImports = new WeakMap<File, { identity: string, version: string, id: string }>()
+  readonly #audioFingerprints = new WeakMap<File, Promise<string>>()
   readonly #documentTimingDrafts = new DocumentTimingDrafts()
   readonly #removedCueTimings = new Map<string, { pauseMs: number }>()
   #cueTimingScope?: string
@@ -845,8 +849,9 @@ export class Workbench {
     const scope = this.#documentScope
     this.#set({ productionFailure: undefined })
     try {
-      if (control.action === 'play' || control.action === 'load') {
-        this.stopAuditions()
+      if (control.action === 'play' || control.action === 'load' || control.action === 'seek' || control.action === 'step') {
+        if (control.action === 'load') this.#playback.stopPreviewOutputs()
+        else this.stopAuditions()
         await this.pausePlayback()
         signal?.throwIfAborted()
       }
@@ -935,6 +940,7 @@ export class Workbench {
 
   /** The owner must invalidate pending audio responses as well as stop its current audio element. */
   registerAudition(stop: () => void): () => void { return this.#playback.registerAudition(stop) }
+  registerAudioCapture(stop: () => void): () => void { return this.#playback.registerAudioCapture(stop) }
 
   /** Inline runtimes join the same exclusive playback group as author auditions. */
   startDocumentPlayback(stop: () => Promise<void>): Promise<() => void> { return this.#playback.startDocumentPlayback(stop) }
@@ -975,6 +981,36 @@ export class Workbench {
     this.#mediaSource(expected)
     return answer
   }
+  /** Recognition keeps its captured source even if subsequent author input moves to a newer version. */
+  async startDocumentTranscription(request: Omit<DocumentTranscriptionRequest, 'source'>, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<TranscriptionTask> {
+    const source = this.#mediaSource(expected)
+    if (!source.content || !source.fingerprint) throw new Error('production-source-changed')
+    const sent: DocumentTranscriptionRequest = { ...structuredClone(request), source: { documentId: source.content.id, version: expected.version, fingerprint: source.fingerprint } }
+    const answer = await this.client.startTranscription(source.directory, sent, signal)
+    signal?.throwIfAborted()
+    if (answer.document !== source.directory || answer.intent !== sent.intent || answer.source.documentId !== sent.source.documentId
+      || answer.source.version !== sent.source.version || answer.source.fingerprint !== sent.source.fingerprint || answer.audio.assetId !== sent.assetId || answer.audio.sha256 !== sent.audioSha256) throw new Error('transcription-response-changed')
+    return answer
+  }
+  async planDocumentTranscription(draft: TranscriptionAdoptionDraft, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<TranscriptionAdoptionPlan> {
+    const source = this.#mediaSource(expected), sent = structuredClone(draft)
+    if (sent.source.documentId !== source.content?.id || sent.source.version !== expected.version || sent.source.fingerprint !== source.fingerprint) throw new Error('production-source-changed')
+    const answer = await this.client.planTranscriptionAdoption(source.directory, sent, signal)
+    signal?.throwIfAborted()
+    this.#mediaSource(expected)
+    if (answer.document !== source.directory || answer.changeId !== sent.id || answer.source.documentId !== sent.source.documentId
+      || answer.source.version !== sent.source.version || answer.source.fingerprint !== sent.source.fingerprint || answer.candidate.id !== sent.candidate.id
+      || answer.candidate.revision !== sent.candidate.revision || answer.draftRevision !== sent.draftRevision) throw new Error('transcription-response-changed')
+    return answer
+  }
+  async adoptDocumentTranscription(request: TranscriptionAdoptionApply, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<TranscriptionAdoptionAnswer> {
+    const source = this.#mediaSource(expected), sent = structuredClone(request)
+    if (sent.source.documentId !== source.content?.id || sent.source.version !== expected.version || sent.source.fingerprint !== source.fingerprint) throw new Error('production-source-changed')
+    const answer = await this.#writeDocumentMedia(expected, directory => this.client.applyTranscriptionAdoption(directory, sent, signal), signal)
+    if (answer.adoption.planId !== sent.planId || answer.adoption.candidate.id !== sent.candidate.id || answer.adoption.candidate.revision !== sent.candidate.revision
+      || answer.adoption.draftRevision !== sent.draftRevision) throw new Error('transcription-response-changed')
+    return answer
+  }
   async #writeDocumentMedia<T extends DocumentChangeAnswer>(expected: { identity: string, version: string }, write: (directory: string) => Promise<T>, signal?: AbortSignal): Promise<T> {
     const scope = this.#documentScope, source = this.#mediaSource(expected)
     this.stopAuditions()
@@ -1005,7 +1041,42 @@ export class Workbench {
       }
     }, signal)
     if (answer.changeId !== request?.id || answer.inspection.assetId !== answer.assetId || !answer.content.assets[answer.assetId]) throw new Error('production-source-changed')
+    if (this.#audioImports.get(file) === request) this.#audioImports.delete(file)
     return answer
+  }
+  /** Reconcile an ambiguous save against real asset bytes before admitting a new source-bound import. */
+  async ensureDocumentAudio(file: File, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<DocumentAudioInspectionAnswer> {
+    const source = this.#mediaSource(expected)
+    if (!file.size || file.size > DOCUMENT_AUDIO_MAX_BYTES) throw new Error('production.asset-size')
+    let pending = this.#audioFingerprints.get(file)
+    if (!pending) {
+      pending = file.arrayBuffer().then(bytes => crypto.subtle.digest('SHA-256', bytes)).then(bytes => [...new Uint8Array(bytes)].map(value => value.toString(16).padStart(2, '0')).join(''))
+      this.#audioFingerprints.set(file, pending)
+    }
+    const hash = await pending
+    signal?.throwIfAborted(); this.#mediaSource(expected)
+    for (const asset of Object.values(source.content?.assets ?? {})) {
+      if (asset.kind !== 'audio' || asset.fingerprint !== `sha256:${hash}`) continue
+      try {
+        const answer = await this.inspectDocumentAudio(asset.id, expected, signal)
+        if (answer.inspection.sha256 === hash) return answer
+      } catch (error) {
+        if (!(error instanceof WorkspaceServerError) || ![404, 413, 422].includes(error.status)) throw error
+      }
+    }
+    signal?.throwIfAborted(); this.#mediaSource(expected)
+    const previous = this.#audioImports.get(file)
+    if (previous?.identity === expected.identity && previous.version !== expected.version) this.#audioImports.delete(file)
+    let imported: DocumentAudioImportAnswer
+    try { imported = await this.importDocumentAudio(file, expected, signal) }
+    catch (error) {
+      if (!previous || this.#audioImports.get(file) !== previous || !(error instanceof WorkspaceServerError)
+        || error.status !== 409 || error.message !== 'document-version-changed') throw error
+      signal?.throwIfAborted(); this.#mediaSource(expected)
+      this.#audioImports.delete(file)
+      imported = await this.importDocumentAudio(file, expected, signal)
+    }
+    return { document: imported.document, version: imported.version, fingerprint: imported.fingerprint, inspection: imported.inspection }
   }
   async applyDocumentMediaClip(clip: MediaClip, expected: { identity: string, version: string, binding: ProductionBinding }, signal?: AbortSignal): Promise<DocumentChangeAnswer> {
     this.#mediaSource(expected)
@@ -1644,7 +1715,7 @@ export class Workbench {
     switch (report.type) {
       case 'ready':
       case 'updated':
-        if (report.revision !== this.#state.previewIrRevision) this.#playback.stopAuditions()
+        if (report.revision !== this.#state.previewIrRevision) this.#playback.stopPreviewOutputs()
         this.#set({ previewIrRevision: report.revision })
         this.#flashChanges()
         if (report.type === 'ready' && renderer === 'web' && this.#state.webView !== 'document') this.#showWebView()
@@ -1742,5 +1813,7 @@ export class Workbench {
     this.#stopSubscriptions()
     this.#diagnostics.dispose()
     this.#documentSession.dispose()
+    disposeTranscriptionSessions(this.client)
+    disposeDocumentRecordings(this)
   }
 }

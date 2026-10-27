@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { join, relative } from 'node:path'
-import { ASSET_TITLE_MAX_LENGTH, fnv1a64, isRecord, jsonResponse, ProductionAudioRefusal, validateDocument } from '@lincyaw/kernel'
+import { ASSET_TITLE_MAX_LENGTH, DOCUMENT_AUDIO_MAX_BYTES, fnv1a64, isRecord, jsonResponse, ProductionAudioRefusal, validateDocument } from '@lincyaw/kernel'
 import type { Asset, DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentChangeAnswer, DocumentMediaClipChange, ProductionAudioAuthoring, RequestContext, Route, TeachingDocument } from '@lincyaw/kernel'
 import { productionAssetFile } from '@lincyaw/kernel/node'
 import { readAuthoringDocument } from './document-editor.ts'
@@ -9,7 +9,7 @@ import type { Revisions } from './revisions.ts'
 import type { SourceEditor, SourceTransactionHistory } from './source-editor.ts'
 
 interface Options { root: string, editor: SourceEditor, revisions?: Revisions, audio?: ProductionAudioAuthoring }
-const MAX_AUDIO = 16 << 20
+const MAX_AUDIO = DOCUMENT_AUDIO_MAX_BYTES
 const header = (value: unknown): value is { id: string, baseDocumentVersion: string } => isRecord(value) && typeof value.id === 'string' && value.id.length > 0 && value.id.length <= 200 && typeof value.baseDocumentVersion === 'string' && /^[\da-f]{20}$/.test(value.baseDocumentVersion)
 const digest = (value: string) => createHash('sha256').update(value).digest('hex')
 

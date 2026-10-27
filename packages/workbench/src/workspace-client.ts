@@ -6,6 +6,7 @@ import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, DocumentEven
 import type { DocumentAudioImport, DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentMediaClipChange } from '@lincyaw/kernel'
 import type { DocumentImageImport, DocumentImageImportAnswer } from '@lincyaw/kernel'
 import type { ProductionAssetAnswer, ProductionAssetQuery, ProductionMediaQuery, ProductionPlan, ProductionPlanQuery } from '@lincyaw/kernel'
+import type { DocumentTranscriptionRequest, TranscriptionCapabilities, TranscriptionTask, TranscriptionListAnswer, TranscriptionRevision, TranscriptionCancellation, TranscriptionAdoptionDraft, TranscriptionAdoptionPlan, TranscriptionAdoptionApply, TranscriptionAdoptionAnswer } from '@lincyaw/kernel'
 
 const observedFailures = new WeakSet<object>()
 /** Whether the owned request observer already received this transport failure. */
@@ -53,6 +54,14 @@ export interface WorkspaceClient {
   readDocumentAudio(document: string, assetId: string, baseDocumentVersion: string, signal?: AbortSignal): Promise<DocumentAudioInspectionAnswer>
   importDocumentAudio(document: string, file: File, change: DocumentAudioImport, signal?: AbortSignal): Promise<DocumentAudioImportAnswer>
   changeDocumentMediaClip(document: string, change: DocumentMediaClipChange, signal?: AbortSignal): Promise<DocumentChangeAnswer>
+  readTranscriptionCapabilities(document: string, signal?: AbortSignal): Promise<TranscriptionCapabilities>
+  readTranscriptions(document: string, signal?: AbortSignal): Promise<TranscriptionListAnswer>
+  startTranscription(document: string, request: DocumentTranscriptionRequest, signal?: AbortSignal): Promise<TranscriptionTask>
+  readTranscription(document: string, query: { id: string } | { intent: string }, signal?: AbortSignal): Promise<TranscriptionTask>
+  readTranscriptionResult(document: string, id: string, revision: string, signal?: AbortSignal): Promise<TranscriptionRevision>
+  cancelTranscription(document: string, query: { id: string } | { intent: string }, signal?: AbortSignal): Promise<TranscriptionCancellation>
+  planTranscriptionAdoption(document: string, draft: TranscriptionAdoptionDraft, signal?: AbortSignal): Promise<TranscriptionAdoptionPlan>
+  applyTranscriptionAdoption(document: string, request: TranscriptionAdoptionApply, signal?: AbortSignal): Promise<TranscriptionAdoptionAnswer>
   subscribeDocument(document: string, changed: (event: DocumentEvent) => void, failed?: () => void): () => void
   readPageDeletion(document: string, section: string): Promise<PageDeletePlan>
   deletePage(document: string, request: PageDeleteRequest): Promise<PageDeleteAnswer>
@@ -273,6 +282,14 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
       return call(url('document/audio', document), { method: 'POST', body, signal })
     },
     changeDocumentMediaClip: (document, change, signal) => post(url('document/media-clip', document), change, signal),
+    readTranscriptionCapabilities: (document, signal) => call(url('document/transcription/capabilities', document), { signal }),
+    readTranscriptions: (document, signal) => call(url('document/transcription', document), { signal }),
+    startTranscription: (document, request, signal) => post(url('document/transcription', document), request, signal),
+    readTranscription: (document, query, signal) => call(url('document/transcription', document, query), { signal }),
+    readTranscriptionResult: (document, id, revision, signal) => call(url('document/transcription/result', document, { id, revision }), { signal }),
+    cancelTranscription: (document, query, signal) => post(url('document/transcription/cancel', document), query, signal),
+    planTranscriptionAdoption: (document, draft, signal) => post(url('document/transcription/adoption/plan', document), draft, signal),
+    applyTranscriptionAdoption: (document, request, signal) => post(url('document/transcription/adoption/apply', document), request, signal),
     subscribeDocument: (document, changed, failed) => subscribe(url('document/events', document), 'document', changed, failed),
     readPageDeletion: (document, section) => call(url('pages/delete', document, { section })),
     deletePage: (document, request) => post(url('pages/delete', document), request),
