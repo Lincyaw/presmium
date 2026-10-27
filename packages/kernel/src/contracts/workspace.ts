@@ -399,7 +399,9 @@ export interface JobsAnswer {
 }
 
 /** @experimental */
+/** Trusted author of this workspace connection; absence grants no native comment rights. */
 export interface WorkbenchAnswer {
+  member?: Member
   mcp: string
   root?: string
 }

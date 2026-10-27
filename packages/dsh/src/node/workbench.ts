@@ -1,3 +1,4 @@
+import { LOCAL_AUTHOR } from '@lincyaw/kernel'
 import type { DshContext, DshOtelScalar } from './dsh-types.ts'
 import type { OperationClient, OperationRecord, PresmiumTelemetry } from './telemetry.ts'
 
@@ -81,7 +82,7 @@ export function apply(ctx: DshContext & { webServer: WebServer, presmiumTelemetr
     requestBody: 'buffered',
     async fetch() {
       const { url, root } = await ctx.presmium.server.ready
-      return new Response(JSON.stringify({ mcp: `${url}/mcp`, root }), { headers: { 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({ mcp: `${url}/mcp`, root, member: LOCAL_AUTHOR }), { headers: { 'Content-Type': 'application/json' } })
     },
   })
 }
