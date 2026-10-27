@@ -1441,6 +1441,9 @@ importers:
       '@tiptap/core':
         specifier: 3.32.0
         version: 3.32.0(@tiptap/pm@3.32.0)
+      '@tiptap/extension-file-handler':
+        specifier: 3.32.0
+        version: 3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/extension-text-style@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0)))(@tiptap/pm@3.32.0)
       '@tiptap/pm':
         specifier: 3.32.0
         version: 3.32.0
@@ -6181,6 +6184,13 @@ packages:
     peerDependencies:
       '@tiptap/core': 3.32.0
 
+  '@tiptap/extension-file-handler@3.32.0':
+    resolution: {integrity: sha512-qjXCPOWfUPedHHVzDBfSP0uOOsevTI5KWjqdHNLJDkUl8O7ADMHDpoUZESxQSmInfyaQCTkKbYVz+qCS49D9fA==}
+    peerDependencies:
+      '@tiptap/core': 3.32.0
+      '@tiptap/extension-text-style': 3.32.0
+      '@tiptap/pm': 3.32.0
+
   '@tiptap/extension-floating-menu@3.32.0':
     resolution: {integrity: sha512-AzKCWceL+4Q1pTc8Whw1kPqN/aYGPQ70/jXPsblWl501t/pXi6Kz0Pi/NggKkuu73VGjykh68YYf/dcOJ/mPZQ==}
     peerDependencies:
@@ -6195,6 +6205,11 @@ packages:
 
   '@tiptap/extension-strike@3.32.0':
     resolution: {integrity: sha512-J9Vw6wmh/wV6SxSsN9RhurvAGcXSY5J3p4EQrROD5PARBl0VOnDFi7/UVoz1RkSdqOKPgAiqDZpaLRgtdBO9Rg==}
+    peerDependencies:
+      '@tiptap/core': 3.32.0
+
+  '@tiptap/extension-text-style@3.32.0':
+    resolution: {integrity: sha512-+U8FkrNAU45+fHgo4DYfndS/WuhhyttZ+zTyObF1W4VJ8wDiAYqXkl71nQcmMJyyK47yeNUY9CfjUomIaEHhpA==}
     peerDependencies:
       '@tiptap/core': 3.32.0
 
@@ -15381,6 +15396,12 @@ snapshots:
     dependencies:
       '@tiptap/core': 3.32.0(@tiptap/pm@3.32.0)
 
+  '@tiptap/extension-file-handler@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/extension-text-style@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0)))(@tiptap/pm@3.32.0)':
+    dependencies:
+      '@tiptap/core': 3.32.0(@tiptap/pm@3.32.0)
+      '@tiptap/extension-text-style': 3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))
+      '@tiptap/pm': 3.32.0
+
   '@tiptap/extension-floating-menu@3.32.0(@floating-ui/dom@1.8.0)(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0)':
     dependencies:
       '@floating-ui/dom': 1.8.0
@@ -15393,6 +15414,10 @@ snapshots:
       '@tiptap/core': 3.32.0(@tiptap/pm@3.32.0)
 
   '@tiptap/extension-strike@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))':
+    dependencies:
+      '@tiptap/core': 3.32.0(@tiptap/pm@3.32.0)
+
+  '@tiptap/extension-text-style@3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))':
     dependencies:
       '@tiptap/core': 3.32.0(@tiptap/pm@3.32.0)
 
