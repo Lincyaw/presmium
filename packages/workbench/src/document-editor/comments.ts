@@ -1,7 +1,8 @@
 import { CommentsExtension, DefaultThreadStoreAuth, ThreadStore } from '@blocknote/core/comments'
-import { createUserStore } from '@blocknote/core'
+import { createExtension, createUserStore } from '@blocknote/core'
 import type { CommentData, ThreadData } from '@blocknote/core/comments'
 import { AddMarkStep, RemoveMarkStep } from '@tiptap/pm/transform'
+import { Plugin } from '@tiptap/pm/state'
 import type { DocumentComment, DocumentThread, RichTextNode, TeachingDocument } from '@lincyaw/kernel'
 import { createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
 import type { RichProjection } from './rich-text.ts'
@@ -135,6 +136,42 @@ export function nativeComments(store: DocumentThreadStore, username: string) {
   users.setUser(resolve([...identities]))
   return CommentsExtension({ threadStore: store, schema: commentEditorSchema, resolveUsers: users })
 }
+
+/** Select the thread before the browser places its native mouse caret. */
+export const nativeCommentSelection = createExtension(({ editor }: { editor: NativeDocumentEditor }) => {
+  let pressed: string | undefined
+  const cancel = () => { pressed = undefined; return false }
+  return {
+    key: 'presmium-native-comment-selection',
+    runsBefore: ['comments'],
+    mount: () => { cancel(); return () => { cancel() } },
+    prosemirrorPlugins: [new Plugin({ props: {
+      handleDOMEvents: {
+        mousedown(view, event) {
+          cancel()
+          const comments = editor.getExtension(CommentsExtension)
+          if (event.button !== 0 || event.defaultPrevented || !view.editable || view.composing || !comments || comments.store.state.pendingComment) return false
+          const mark = event.target instanceof Element ? event.target.closest('[data-bn-thread-id]') : null
+          if (!mark || !view.dom.contains(mark) || mark.hasAttribute('data-orphan')) return false
+          const id = mark.getAttribute('data-bn-thread-id'), thread = id ? comments.threadStore.getThreads().get(id) : undefined
+          if (id && thread && !thread.resolved && !thread.deletedAt && comments.store.state.threadPositions.has(id) && comments.store.state.selectedThreadId !== id) {
+            pressed = id
+            comments.selectThread(id, false)
+          }
+          return false
+        },
+        pointercancel: cancel, dragstart: cancel, blur: cancel, keydown: cancel,
+      },
+      handleClick(view, position, event) {
+        const id = pressed, comments = editor.getExtension(CommentsExtension)
+        cancel()
+        // Native comments consumes the first thread click before following links.
+        return Boolean(id && comments?.store.state.selectedThreadId === id && event.button === 0 && !event.defaultPrevented && view.editable && !view.composing
+          && view.state.doc.nodeAt(position)?.marks.some(mark => mark.type.name === comments.tiptapExtensions[0].name && mark.attrs.threadId === id && mark.attrs.orphan !== true))
+      },
+    } })],
+  }
+})
 
 /** Thread entities own their state; pure comment marks must not consume body undo. */
 export function excludeCommentMarkHistory(editor: NativeDocumentEditor): () => void {
