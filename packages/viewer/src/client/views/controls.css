@@ -11,10 +11,16 @@
 }
 
 .pm-content-marks { display: none; }
-.pm-present__caption {
-  align-self: center;
-  max-width: calc(100% - var(--pm-space-4) * 2);
-  min-height: 0;
-  flex: 0 0 auto;
-  margin: var(--pm-space-2) var(--pm-space-4);
+.pm-present__captions {
+  position: absolute;
+  box-sizing: border-box;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--pm-space-4) var(--pm-space-4) var(--pm-caption-safe-bottom);
+  pointer-events: none;
+}
+.pm-present__captions > * {
+  pointer-events: auto;
 }

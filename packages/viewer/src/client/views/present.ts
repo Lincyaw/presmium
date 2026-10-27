@@ -1,5 +1,5 @@
 import { FocusScope } from '@radix-ui/react-focus-scope'
-import { PmApprovals, PmCaption, PmIcon, PmMenu, TIMED_CAPTIONS, useService } from '@lincyaw/host'
+import { PmApprovals, PmCaption, PmCaptionProvider, PmIcon, PmMenu, TIMED_CAPTIONS, useService } from '@lincyaw/host'
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@lincyaw/host'
 import { h } from '../element.ts'
@@ -32,6 +32,7 @@ export function PresentView() {
     const { section, step } = useCurrentSection(viewer, 'present')
     const root = useRef<HTMLDivElement>(null)
     const bar = useRef<HTMLDivElement>(null)
+    const [captionContainer, setCaptionContainer] = useState<HTMLDivElement | null>(null)
     const { shape } = useSlides()
     useOverlayBar(bar)
     const ownsFullscreen = useRef(false)
@@ -85,7 +86,7 @@ export function PresentView() {
       const stepId = current.stepIds?.[step]
       const narration = stepId ? current.stepNarrations?.[stepId] ?? [] : []
       const hasNarration = sections.some(section => Object.values(section.stepNarrations ?? {}).some(lines => lines.some(line => line.text.trim())))
-      return h(FocusScope, { trapped: !viewer.options.embedded, loop: !viewer.options.embedded, asChild: true,
+      return h(PmCaptionProvider, { container: captionContainer }, h(FocusScope, { trapped: !viewer.options.embedded, loop: !viewer.options.embedded, asChild: true,
         onMountAutoFocus: (event: Event) => { if (viewer.options.embedded) event.preventDefault() },
         onUnmountAutoFocus: (event: Event) => { if (viewer.options.embedded) event.preventDefault() },
       }, h('div', null, [h('div', {
@@ -98,7 +99,7 @@ export function PresentView() {
         'data-step': step,
       }, [
         h('div', { class: 'pm-present__slide' }, [
-          h(SlideFit, { shape: shape }, h(SlideFace, { key: current.id, section: current, step: step })),
+          h(SlideFit, { shape: shape, overlay: h('div', { ref: setCaptionContainer, className: 'pm-present__captions' }) }, h(SlideFace, { key: current.id, section: current, step: step })),
           overview
             ? h('div', { 'class': 'pm-overview', 'role': 'dialog', 'aria-label': t.present.overview }, h('ol', { class: 'pm-overview__grid' }, sections.map(s => h('li', { key: s.id }, h('button', {
                 'type': 'button',
@@ -109,7 +110,7 @@ export function PresentView() {
               }, [h('span', { class: 'pm-overview__index' }, String(s.index)), h('span', { class: 'pm-overview__title' }, s.title)])))))
             : null,
         ]),
-        captions && hasNarration && !timedCaptions ? h('div', { className: 'pm-present__caption', 'data-caption-section': current.id, 'data-caption-step': stepId }, h(PmCaption, { label: t.present.captions, lines: narration.map(item => item.text).filter(text => text.trim()), hint: narration.some(item => item.text.trim()) ? t.present.captionsHint : t.present.noCaptions, lang: doc.meta.lang })) : null,
+        captions && !timedCaptions && narration.some(item => item.text.trim()) ? h(PmCaption, { overlay: true, label: t.present.captions, lines: narration.map(item => item.text).filter(text => text.trim()), lang: doc.meta.lang }) : null,
         h('div', { ref: bar, class: 'pm-present__bar' }, [
           h('span', { 'class': 'pm-present__counter', 'title': t.present.counter(current.index, sections.length, step, current.steps) }, `${current.index} / ${sections.length}${current.steps > 0 ? ` · ${step + 1} / ${current.steps + 1}` : ''}`),
           button(t.present.prev, () => viewer.prev(), 'chevron-left', 'ArrowLeft'),
@@ -124,5 +125,5 @@ export function PresentView() {
           h(PmApprovals, { placement: 'above' }),
         ]),
         ...layers('present', 'view'),
-      ]), ...layers('present', 'viewport')]))
+      ]), ...layers('present', 'viewport')])))
 }

@@ -1,3 +1,8 @@
 .pm-slide--cover .pm-slide__body {
   flex: 0 1 auto;
 }
+
+.pm-slide-fit__overlay {
+  position: absolute;
+  pointer-events: none;
+}

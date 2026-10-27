@@ -14,7 +14,7 @@ A scene file default-exports one call to a function from `@lincyaw/addon-motion/
 | `at(k)` | The millisecond at which step k starts on the scene's timeline: `at(0)` is 0, `at(k)` is the sum of the first k declared scene durations |
 | `durations` | Definition scene durations in milliseconds, one per step |
 | `total` | Their sum, the length of the timeline in milliseconds |
-| `width`, `height` | The size of `root` in CSS pixels when the scene is built |
+| `width`, `height` | The layout size of `root` in CSS pixels before ancestor transforms (including slide scaling) when the scene is built |
 | `color(name)` | A design-system color as `rgb()`/`rgba()`, such as `color('accent')` (names in `SKILL.md`, "Rules every scene follows") |
 | the library | `gsap` and `plugins`; `anime`; `motion`; `d3`; `THREE`, `renderer` and `addons`; `React` and `remotion` |
 

@@ -41,9 +41,6 @@ export interface LectureMessages {
     chapters: string
     sideTabs: string
     language: string
-    tryIt: string
-    back: string
-    trying: string
     close: string
     synthetic: string
     silent: string
@@ -124,13 +121,10 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       time: (now, total) => `${now} / ${total}`,
       rate: '倍速',
       captions: '字幕',
-      transcript: '逐字稿',
+      transcript: '字幕列表',
       chapters: '章节',
-      sideTabs: '逐字稿与章节',
+      sideTabs: '字幕列表与章节',
       language: '字幕语言',
-      tryIt: '我来试试',
-      back: '回到讲授',
-      trying: '你正在自行操作，讲授已暂停',
       close: '关闭讲授',
       synthetic: 'AI 合成语音',
       silent: '静音计划',
@@ -209,13 +203,10 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       time: (now, total) => `${now} / ${total}`,
       rate: 'Speed',
       captions: 'Captions',
-      transcript: 'Transcript',
+      transcript: 'Caption list',
       chapters: 'Chapters',
-      sideTabs: 'Transcript and chapters',
+      sideTabs: 'Captions and chapters',
       language: 'Caption language',
-      tryIt: 'Try it',
-      back: 'Back to the lecture',
-      trying: 'You are trying it yourself; the lecture is paused',
       close: 'Close the lecture',
       synthetic: 'AI-generated voice',
       silent: 'Silent plan',

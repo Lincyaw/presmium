@@ -50,6 +50,8 @@
   --pm-text-lg: 1rem;
   --pm-caption-max-width: 48rem;
   --pm-caption-max-height: 28vh;
+  --pm-caption-safe-bottom: 3rem;
+  --pm-caption-overlay-max-height: 35%;
   --pm-text-reading: 1.0625rem;
   --pm-text-title: 1.25rem;
   --pm-text-display: 2rem;

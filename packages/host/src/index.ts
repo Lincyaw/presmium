@@ -30,7 +30,7 @@ export {
 } from './design/components.ts'
 export type { ButtonVariant, Choice, ControlDensity, MenuItem, PopoverPlacement, Tone } from './design/components.ts'
 export { PmColumns, PmStack, PmTabGroup } from './design/layout.ts'
-export { PmCaption } from './design/caption.ts'
+export { PmCaption, PmCaptionProvider } from './design/caption.ts'
 export type { CaptionProps } from './design/caption.ts'
 export type { ContentLayoutProps, ColumnsLayoutProps, TabLayoutEntry } from './design/layout.ts'
 export { iconMarkup, ICONS } from '@lincyaw/design'

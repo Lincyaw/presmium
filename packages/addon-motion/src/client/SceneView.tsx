@@ -12,6 +12,7 @@ import {
   useStepTime,
   useStaticRender,
   useStore,
+  useViewRole,
 } from '@lincyaw/host'
 import type { PlaybackLease } from '@lincyaw/host'
 import { errorMessage } from '@lincyaw/kernel'
@@ -35,6 +36,7 @@ export default function SceneView(props: SceneProps) {
   const scope = useStepScope()
   const hostStep = useStep()
   const cursor = useCursor()
+  const viewRole = useViewRole()
   const navigation = useService(NAVIGATION)
   const navigated = useStore(navigation?.position, undefined)
   const clock = useService(STEP_CLOCK)
@@ -212,7 +214,7 @@ export default function SceneView(props: SceneProps) {
       }
       instance.current?.dispose?.()
       root.replaceChildren()
-      const box = root.getBoundingClientRect()
+      const box = { width: root.clientWidth, height: root.clientHeight }
       dimensions = { width: box.width, height: box.height }
       let swatch: CanvasRenderingContext2D | null | undefined
       const made = await definition.create({
@@ -255,12 +257,13 @@ export default function SceneView(props: SceneProps) {
     }
     preloadScenes()
     rebuild()
-    observer = new ResizeObserver(() => {
-      const box = root.getBoundingClientRect()
+    observer = new ResizeObserver(([entry]) => {
+      const box = entry!.contentRect
       if (!instance.current || !box.width || !box.height) return
       if (instance.current.resize) {
         instance.current.resize(box.width, box.height)
         instance.current.seek(shownNow.current)
+        dimensions = { width: box.width, height: box.height }
       } else if (
         Math.abs(box.width - dimensions.width) > 1 ||
         Math.abs(box.height - dimensions.height) > 1
@@ -295,6 +298,7 @@ export default function SceneView(props: SceneProps) {
       data-scene={props.scene}
       data-status={status}
       data-height={props.height ? '' : undefined}
+      data-presentation={viewRole !== 'reader' ? '' : undefined}
       data-position={Math.round(shown)}
     >
       <div

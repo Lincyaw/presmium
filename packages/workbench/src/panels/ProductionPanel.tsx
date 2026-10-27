@@ -4,10 +4,9 @@ import type { ProductionPlaybackCommand } from '@lincyaw/kernel'
 import { PmBadge, PmButton, PmCard, PmEmpty, PmField, PmIconButton, PmNotice, PmSelect, PmSegmented, PmToolbar, PmToolbarButton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { DocumentStepNarration } from '../document-editor/DocumentStepNarration.tsx'
-import { resolveDocumentStepVoice } from '../document-voices.ts'
 import { PRODUCTION_MESSAGES, productionFailure } from '../production-messages.ts'
 import { isAgentChanging } from '../workbench.ts'
-import { DocumentVoiceDialog } from './DocumentVoiceDialog.tsx'
+import { DocumentVoiceField } from './DocumentVoiceField.tsx'
 import { ExportPanel } from './ExportPanel.tsx'
 import { PreviewPanel } from './PreviewPanel.tsx'
 import { VoiceoverDialog } from './VoiceoverDialog.tsx'
@@ -32,7 +31,7 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
   const frameCurrent = useWorkbenchState(state => Boolean(state.presentationSnapshot && state.previewIrRevision === state.presentationSnapshot.revision))
   const blocked = useWorkbenchState(state => Boolean(state.authoring?.loading || state.authoring?.composing) || isAgentChanging(state))
   const [wide, setWide] = useState(() => matchMedia('(min-width: 1280px)').matches), [tab, setTab] = useState('script')
-  const [voiceStep, setVoiceStep] = useState<string>(), [generateStep, setGenerateStep] = useState<string>(), [failure, setFailure] = useState<string>()
+  const [generateStep, setGenerateStep] = useState<string>(), [failure, setFailure] = useState<string>()
   const [planBusy, setPlanBusy] = useState(false), [planFailure, setPlanFailure] = useState<string>(), [planReload, setPlanReload] = useState(0)
   const [playerBusy, setPlayerBusy] = useState(false), [seeking, setSeeking] = useState(false), controlRequest = useRef<AbortController>()
   const [enabling, setEnabling] = useState(false)
@@ -117,8 +116,6 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
     finally { if (owner.current.active) setEnabling(false) }
   }
   if (!source?.identity || !document || !section || !sectionId || !stepId) return <PmEmpty icon="video">{t.noSections}</PmEmpty>
-  const voice = resolveDocumentStepVoice(document, stepId)
-  const voiceLabel = voice.value?.type === 'tts' ? voice.value.voice.voice : voice.value?.type === 'none' ? p.none : voice.value?.type === 'recording' ? document.assets[voice.value.assetId]?.location ?? voice.value.assetId : p.unset
   return <section className="pmw-production" aria-label={p.title}>
     <PmToolbar label={p.title} className="pmw-toolbar">
       <PmToolbarButton asChild>{wide ? <PmButton small icon="document" loading={closing} onClick={onClose}>{p.back}</PmButton> : <PmIconButton small icon="document" label={p.back} loading={closing} onClick={onClose} />}</PmToolbarButton>
@@ -159,10 +156,8 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
       </div>
       <div className="pmw-production__properties pm-ui-block-editor" hidden={!wide && tab !== 'script' || tab === 'outputs'}>
         <DocumentStepNarration sectionId={sectionId} stepId={stepId} expanded advanced panelId="production-step-fields" onPause={() => select(sectionId, stepId)} />
-        <PmCard><h2 className="pm-ui-card__title">{p.voice}</h2><PmField label={p.choose} hint={p.inherited[voice.inheritedFrom]}><span>{voiceLabel}</span></PmField>
-          {voice.value?.type === 'recording' && <PmNotice tone="warn">{p.recordingLimit}</PmNotice>}
-          <div className="pmw-voice__actions"><PmButton small icon="audio" disabled={blocked || closing} onClick={() => { workbench.stopAuditions(); setVoiceStep(stepId) }}>{p.choose}</PmButton><PmButton small icon="refresh" disabled={blocked || closing} onClick={() => { workbench.stopAuditions(); setGenerateStep(stepId) }}>{p.generate}</PmButton></div>
-        </PmCard>
+        <PmCard><DocumentVoiceField key={`${source.identity}:${stepId}`} stepId={stepId} disabled={blocked || closing}
+          onGenerate={() => { workbench.stopAuditions(); setGenerateStep(stepId) }} /></PmCard>
         <ProductionMediaClips key={`${source.identity}:${stepId}`} identity={source.identity} version={source.version ?? ''} document={document} sectionId={sectionId} stepId={stepId}
           binding={planCurrent ? plan?.binding : undefined} stepDurationMs={(() => { const step = planCurrent ? plan?.pages.find(page => page.sectionId === sectionId)?.steps.find(step => step.stepId === stepId) : undefined; return step?.timing === 'confirmed' && step.startMs !== undefined && step.endMs !== undefined ? step.endMs - step.startMs : undefined })()}
           disabled={blocked || closing || !declared || !source.version || Boolean(source.dirty || source.saving || source.restored || source.error)} onChanged={() => setMediaRefresh(true)} />
@@ -174,7 +169,6 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
         loading={planBusy && !planCurrent} seeking={seeking} disabled={blocked || closing} onSelectStep={id => { const step = document.steps[id]; if (step) select(step.sectionId, id) }}
         onSeek={timeMs => { if (plan) void control({ binding: plan.binding, action: 'seek', timeMs }) }} />
     </div>
-    {voiceStep && <DocumentVoiceDialog key={`${source.identity}:${voiceStep}`} stepId={voiceStep} onClose={() => setVoiceStep(undefined)} />}
     {generateStep && <VoiceoverDialog key={`${source.identity}:${generateStep}`} stepId={generateStep} onClose={() => setGenerateStep(undefined)} />}
   </section>
 }

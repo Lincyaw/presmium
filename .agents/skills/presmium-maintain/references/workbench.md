@@ -61,6 +61,10 @@ Comments use native rich-text ranges with stable editing-unit IDs, offsets and d
 
 Generated content is changed through explicit parameters, definition scope, chat or comments. Unknown versioned plugin data remains intact with readable capability diagnostics. Real authoring checks cover complete final-page content, ordinary Enter/list/formatting behavior, comments, arbitrary step jumps in preview, immediate Undo, save failure/recovery, document switching and actual light/dark desktop/narrow combinations.
 
+Presentation playback uses ordinary Play/Pause controls. Direct interaction pauses automatically; Play resumes from the current position and restores the timeline internally when needed. Do not expose separate try/return modes or require the viewer to manage playback ownership. Read-only text is labeled as a caption list, not a second authoring document. Presentation captions use the shared host caption overlay inside the slide bounds, keep readable screen-sized type, and never resize or move the slide when they appear or disappear.
+
+The document caption sidebar exposes the current voice and a clearly labeled Choose voice action through the same `DocumentVoiceField` and `DocumentVoiceDialog` as video production. Selecting a voice never starts synthesis; scopes and inheritance still write only canonical Production settings.
+
 ## Undo, redo and versions
 
 Every save is a commit. Undo and redo go through the workspace service's routes `history/undo` and
