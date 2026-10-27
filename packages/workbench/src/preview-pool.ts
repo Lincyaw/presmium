@@ -34,14 +34,15 @@ interface Entry {
   frame: HTMLIFrameElement
   connection: PreviewConnection
   ready: boolean
-  active: boolean
+  active: boolean | undefined
+  generation: number
   used: number
   irRevision?: string
   problems: Map<string, Finding>
   detach?: () => void
   loading?: ReturnType<typeof setInterval>
   expiry?: ReturnType<typeof setTimeout>
-  pending?: { request: number, active: boolean, timer: ReturnType<typeof setTimeout>, resolve(): void, reject(error: Error): void }
+  pending?: { request: number, generation: number, active: boolean, timer: ReturnType<typeof setTimeout>, resolve(): void, reject(error: Error): void }
 }
 
 /**
@@ -93,7 +94,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     publishRuntimeFindings(entry)
   }
   const show = (entry: Entry, irRevision?: string) => {
-    if (!selected(entry)) return
+    if (!selected(entry) || entries.get(entry.key) !== entry || !entry.active) return
     if (entry.detach && !entry.frame.hidden && entry.frame.dataset.active === 'true' && (irRevision === undefined || irRevision === entry.irRevision)) return
     clearTimeout(entry.expiry)
     entry.used = ++uses
@@ -110,26 +111,30 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
   }
   /** Asks the page to run (`active`) or to pause its runtime; settles with its `activity` report. */
   const requestActivity = (entry: Entry, active: boolean): Promise<void> => new Promise((resolve, reject) => {
-    const request = ++requests
+    const request = ++requests, generation = entry.generation
     const timer = setTimeout(() => {
+      if (entry.pending?.request !== request || entry.generation !== generation) return
       entry.pending = undefined
       reject(new Error('Preview activity timed out'))
     }, ACTIVITY_MS)
-    entry.pending = { request, active, timer, resolve, reject }
+    entry.pending = { request, generation, active, timer, resolve, reject }
     entry.connection.send({ type: 'activity', active, request })
   })
   const pause = async (entry: Entry) => {
+    if (entries.get(entry.key) !== entry) return
+    const generation = entry.generation
     hide(entry)
     if (!entry.ready || !entry.connection.capabilities.includes('activity')) return destroy(entry)
-    if (entry.active) {
+    if (entry.active !== false) {
       publishRuntimeFindings(entry, true)
       try {
         await requestActivity(entry, false)
       } catch {
-        return destroy(entry)
+        if (generation === entry.generation && entries.get(entry.key) === entry) destroy(entry)
+        return
       }
     }
-    if (entries.get(entry.key) === entry) {
+    if (entries.get(entry.key) === entry && generation === entry.generation) {
       clearTimeout(entry.expiry)
       entry.expiry = setTimeout(() => { if (!entry.active) destroy(entry) }, IDLE_MS)
     }
@@ -140,7 +145,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
 
   const handleActivity = (entry: Entry, report: Extract<PreviewReport, { type: 'activity' }>) => {
     const pending = entry.pending
-    if (!pending || pending.request !== report.request) return
+    if (!pending || pending.request !== report.request || pending.generation !== entry.generation) return
     clearTimeout(pending.timer)
     entry.pending = undefined
     entry.active = report.active
@@ -162,9 +167,18 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
       return
     }
     const reloaded = entry.ready
-    if (reloaded) { entry.detach?.(); entry.detach = undefined }
+    entry.generation++
+    if (reloaded) {
+      hide(entry)
+      if (entry.pending) {
+        const pending = entry.pending
+        clearTimeout(pending.timer); entry.pending = undefined
+        pending.reject(new DOMException('Preview reloaded', 'AbortError'))
+      }
+    }
     entry.ready = true
-    if (!reloaded) entry.active = true
+    // A new window has not acknowledged an old window's running state.
+    entry.active = reloaded && entry.connection.capabilities.includes('activity') ? undefined : true
     entry.irRevision = report.revision
     entry.problems.clear()
     publishRuntimeFindings(entry, true)
@@ -174,9 +188,12 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
       show(entry, report.revision)
       workbench.handlePreviewReport(target.document, target.renderer, report, entry.connection)
     } else if (!entry.pending) {
+      const generation = entry.generation
       enqueue(async () => {
-        if (!selected(entry)) return
-        try { await requestActivity(entry, true) } catch { destroy(entry) }
+        if (!selected(entry) || entry.active || generation !== entry.generation || entries.get(entry.key) !== entry) return
+        try { await requestActivity(entry, true) } catch {
+          if (generation === entry.generation && entries.get(entry.key) === entry) destroy(entry)
+        }
       })
     }
   }
@@ -218,7 +235,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
         destroy(entry)
       },
     }, { dark: workbench.state.isDark })
-    const entry: Entry = { key, target, frame, connection, ready: false, active: true, used: ++uses, problems: new Map() }
+    const entry: Entry = { key, target, frame, connection, ready: false, active: true, generation: 0, used: ++uses, problems: new Map() }
     entries.set(key, entry)
     hide(entry)
     // Keep the selected loading frame discoverable without exposing another document.
@@ -270,12 +287,14 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
         if (own !== generation || disposed || !target) return
         if (wanted && entries.get(wanted.key) !== wanted) wanted = undefined
         if (wanted?.ready) {
+          const readyGeneration = wanted.generation
           clearTimeout(wanted.expiry)
           try {
             if (!wanted.active) await requestActivity(wanted, true)
-            if (own === generation) show(wanted)
+            if (own === generation && readyGeneration === wanted.generation) show(wanted)
             return
           } catch {
+            if (readyGeneration !== wanted.generation || entries.get(wanted.key) !== wanted) return
             destroy(wanted)
           }
         } else if (wanted) return
