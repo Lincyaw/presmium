@@ -12,7 +12,49 @@ const MESSAGES = { 'zh-CN': { steps: (at: number, of: number) => `第 ${at} 步�
 const LAYOUTS = new Set(['default', 'cover', 'center', 'full'])
 function slideOptions(section: IRSection, cover: boolean) { const hints = section.hints.slides ?? {}; const zoom = Number(hints.zoom); return { layout: typeof hints.layout === 'string' && LAYOUTS.has(hints.layout) ? hints.layout : cover ? 'cover' : 'default', className: typeof hints.class === 'string' ? hints.class : undefined, zoom: Number.isFinite(zoom) && zoom > 0 ? zoom : undefined } }
 export function useSlides() { const viewer = useViewer(); const doc = useStore(viewer.doc); return { viewer, shape: slideShape(doc), chapters: slideChapters(doc) } }
-export function SlideFit({ shape, scale: fixed, children }: { shape: SlideShape, scale?: number, children?: ReactNode }) { const box = useRef<HTMLDivElement>(null); const [size, setSize] = useState<{ width: number, height: number }>(); useEffect(() => { const observer = new ResizeObserver(([entry]) => setSize({ width: entry!.contentRect.width, height: entry!.contentRect.height })); if (box.current) observer.observe(box.current); return () => observer.disconnect() }, []); const { width, height } = shape; const scale = fixed ?? (size ? Math.min(size.width / width, size.height / height) : 1); const left = size && fixed === undefined ? (size.width - width * scale) / 2 : 0; const top = size && fixed === undefined ? (size.height - height * scale) / 2 : 0; return h('div', { ref: box, className: 'pm-slide-fit' }, h('div', { className: 'pm-slide-fit__canvas', style: { width: `${width}px`, height: `${height}px`, transform: `translate(${left}px, ${top}px) scale(${scale})` } }, children)) }
-function SlideBody({ zoom, children }: { zoom?: number, children?: ReactNode }) { const frame = useRef<HTMLDivElement>(null); const content = useRef<HTMLDivElement>(null); const [fitted, setFitted] = useState(1); useEffect(() => { let pending = 0; const fit = () => { const outer = frame.current, inner = content.current; if (!outer || !inner) return; const next = Math.min(1, outer.clientHeight / Math.max(1, inner.scrollHeight), outer.clientWidth / Math.max(1, inner.scrollWidth)); setFitted(value => Math.abs(next - value) > 0.005 ? next : value) }; const observer = new ResizeObserver(() => { cancelAnimationFrame(pending); pending = requestAnimationFrame(fit) }); if (frame.current) observer.observe(frame.current); if (content.current) observer.observe(content.current); fit(); return () => { observer.disconnect(); cancelAnimationFrame(pending) } }, []); return h('div', { ref: frame, className: 'pm-slide__body' }, h('div', { ref: content, className: 'pm-slide__content', style: { ...(zoom ? { zoom } : {}), ...(fitted < 1 ? { transform: `scale(${fitted})` } : {}) } }, children)) }
+export function SlideFit({ shape, scale: fixed, children, overlay }: { shape: SlideShape, scale?: number, children?: ReactNode, overlay?: ReactNode }) {
+  const box = useRef<HTMLDivElement>(null)
+  const [size, setSize] = useState<{ width: number, height: number }>()
+  useEffect(() => {
+    const observer = new ResizeObserver(([entry]) => setSize({ width: entry!.contentRect.width, height: entry!.contentRect.height }))
+    if (box.current) observer.observe(box.current)
+    return () => observer.disconnect()
+  }, [])
+  const { width, height } = shape
+  const scale = fixed ?? (size ? Math.min(size.width / width, size.height / height) : 1)
+  const left = size && fixed === undefined ? (size.width - width * scale) / 2 : 0
+  const top = size && fixed === undefined ? (size.height - height * scale) / 2 : 0
+  return h('div', { ref: box, className: 'pm-slide-fit' }, [
+    h('div', { className: 'pm-slide-fit__canvas', style: { width: `${width}px`, height: `${height}px`, transform: `translate(${left}px, ${top}px) scale(${scale})` } }, children),
+    // Captions follow the canvas bounds without shrinking their text with the slide.
+    overlay ? h('div', { className: 'pm-slide-fit__overlay', style: { left, top, width: width * scale, height: height * scale } }, overlay) : null,
+  ])
+}
+
+function SlideBody({ zoom, children }: { zoom?: number, children?: ReactNode }) {
+  const frame = useRef<HTMLDivElement>(null)
+  const content = useRef<HTMLDivElement>(null)
+  const [fit, setFit] = useState({ scale: 1, left: 0 })
+  useEffect(() => {
+    let pending = 0
+    const measure = () => {
+      const outer = frame.current, inner = content.current
+      if (!outer || !inner) return
+      const scale = Math.min(1, outer.clientHeight / Math.max(1, inner.scrollHeight), outer.clientWidth / Math.max(1, inner.scrollWidth))
+      const left = Math.max(0, (outer.clientWidth - inner.offsetWidth * scale) / 2)
+      setFit(value => Math.abs(scale - value.scale) > 0.005 || Math.abs(left - value.left) > 0.5 ? { scale, left } : value)
+    }
+    const observer = new ResizeObserver(() => { cancelAnimationFrame(pending); pending = requestAnimationFrame(measure) })
+    if (frame.current) observer.observe(frame.current)
+    if (content.current) observer.observe(content.current)
+    measure()
+    return () => { observer.disconnect(); cancelAnimationFrame(pending) }
+  }, [])
+  return h('div', { ref: frame, className: 'pm-slide__body' }, h('div', { ref: content, className: 'pm-slide__content', style: {
+    ...(zoom ? { zoom } : {}),
+    ...(fit.scale < 1 ? { transform: `translateX(${fit.left}px) scale(${fit.scale})` } : {}),
+  } }, children))
+}
+
 export function SlideFace({ section, step, view = 'present' }: { section: IRSection, step: number, view?: string }) { const { viewer, chapters } = useSlides(); const doc = useStore(viewer.doc); const t = useMessages(MESSAGES); const { sections } = doc; const options = slideOptions(section, section.index === 1 && sections.length > 1); const chapter = options.layout === 'cover' ? undefined : chapters.get(section.id); const done = Math.min(step, section.steps); return h(SECTION_CONTEXT.Provider, { value: { section, step, view } }, h('div', { class: ['pm-slide', `pm-slide--${options.layout}`, options.className], 'data-section': section.id, 'data-slide': section.index, 'data-step': step }, [chapter ? h('p', { className: 'pm-slide__chapter' }, chapter) : null, h(SlideBody, { key: section.id, zoom: options.zoom }, [h(options.layout === 'cover' ? 'h1' : 'h2', { className: 'pm-slide__title' }, section.title), ...visuals(section, step)]), options.layout === 'full' ? null : h('footer', { className: 'pm-slide__footer' }, [options.layout === 'cover' ? null : h('span', { className: 'pm-slide__deck' }, doc.meta.title), section.steps > 0 ? h('span', { className: 'pm-slide__steps', role: 'img', 'aria-label': t.steps(done, section.steps), style: { '--pm-slide-steps': section.steps } }, Array.from({ length: section.steps }, (_, i) => h('span', { key: i, 'data-done': i < done ? '' : undefined }))) : null, h('span', { className: 'pm-slide__page' }, `${section.index} / ${sections.length}`)]), h('div', { className: 'pm-slide__layers' }, layers(view, 'slide', { section: section.id, step }))])) }
 export function SlidesPrint({ steps = false, slides }: { steps?: boolean, slides?: readonly number[] }) { const { viewer, shape } = useSlides(); const doc = useStore(viewer.doc); useEffect(() => { let disposed = false; void (async () => { await document.fonts.ready; await Promise.all([...document.images].map(image => image.complete ? undefined : new Promise<void>(done => { image.addEventListener('load', () => done(), { once: true }); image.addEventListener('error', () => done(), { once: true }) }))); if (!disposed) document.documentElement.setAttribute('data-presmium-printed', '') })(); return () => { disposed = true; document.documentElement.removeAttribute('data-presmium-printed') } }, []); const chosen = slides && new Set(slides); const pages = doc.sections.filter(section => !chosen || chosen.has(section.index)).flatMap(section => steps ? Array.from({ length: section.steps + 1 }, (_, step) => ({ section, step })) : [{ section, step: section.steps }]); return h('div', { className: 'pm-slides-print', style: { '--pm-slide-width': `${shape.width}px`, '--pm-slide-height': `${shape.height}px` } }, pages.map(({ section, step }) => h('div', { key: `${section.id}@${step}`, className: 'pm-slides-print__page', style: { width: `${shape.width}px`, height: `${shape.height}px` } }, h(SlideFace, { section, step, view: 'print' })))) }

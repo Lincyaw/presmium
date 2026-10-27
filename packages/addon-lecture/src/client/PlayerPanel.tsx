@@ -1,4 +1,4 @@
-import { PmIcon, PmTabs, PRODUCTION_PLAYBACK, TIMED_CAPTIONS, useMessages, useServer, useService, useStore } from '@lincyaw/host'
+import { PmCaption, PmIcon, PmTabs, PRODUCTION_PLAYBACK, TIMED_CAPTIONS, useMessages, useServer, useService, useStore } from '@lincyaw/host'
 import { isPreviewEmbedded } from '@lincyaw/kernel'
 import { useEffect, useState } from 'react'
 import {
@@ -42,7 +42,6 @@ export default function PlayerPanel(_props: { view?: string }) {
   const controlled = useStore(production instanceof ProductionPlaybackController ? production.engaged : undefined, false)
   useEffect(() => player && status === 'ready' ? timedCaptions?.claim() : undefined, [player, status, timedCaptions])
   const time = useStore(player?.time, 0),
-    trying = useStore(player?.trying, false),
     clockPlaying = useStore(player?.clock.playing, false),
     rate = useStore(player?.clock.rate, 1)
   const cursor = useStore(player?.cursor), positionMode = useStore(player?.positionMode, 'time')
@@ -74,11 +73,9 @@ export default function PlayerPanel(_props: { view?: string }) {
   }, [server.available, available, doc, production])
   const state = !player
     ? undefined
-    : trying
-      ? 'trying'
-      : clockPlaying
-        ? 'playing'
-        : 'paused'
+    : clockPlaying
+      ? 'playing'
+      : 'paused'
   const titles = new Map(
     doc.sections.map((section) => [section.id, section.title]),
   )
@@ -116,7 +113,7 @@ export default function PlayerPanel(_props: { view?: string }) {
       ? player.track.utterances.filter((u) => isStale(u, lang)).map((u) => u.id)
       : [],
   )
-  if (controlled) return player && current ? <div className="pm-lecture-layer"><div className="pm-lecture-dock"><p className="pm-lecture-caption" lang={lang} aria-live="polite">{caption}</p></div></div> : null
+  if (controlled) return player && current && caption ? <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang} /> : null
   if (!id) return null
   return (
     <div className="pm-lecture-layer">
@@ -194,25 +191,10 @@ export default function PlayerPanel(_props: { view?: string }) {
             </aside>
           )}
           <div className="pm-lecture-dock">
-            {(captions || current?.unsaid) && current && (
-              <p
-                className="pm-lecture-caption"
-                lang={lang}
-                aria-live="polite"
+            {(captions || current?.unsaid) && current && caption && (
+              <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang}
                 data-stale={stale.has(current.id) ? 'true' : undefined}
-              >
-                {caption}
-                {stale.has(current.id) && (
-                  <span
-                    className="pm-lecture-stale"
-                    role="img"
-                    title={t.player.stale}
-                    aria-label={t.player.stale}
-                  >
-                    <PmIcon name="warning" />
-                  </span>
-                )}
-              </p>
+                hint={stale.has(current.id) ? t.player.stale : undefined} />
             )}
             <div
               className="pm-lecture-player"
@@ -235,9 +217,6 @@ export default function PlayerPanel(_props: { view?: string }) {
                 >
                   {t.player.unsaid(unsaid.length)}
                 </p>
-              )}
-              {trying && (
-                <p className="pm-lecture-player__notice">{t.player.trying}</p>
               )}
               <div className="pm-lecture-player__row">
                 <button
@@ -331,23 +310,6 @@ export default function PlayerPanel(_props: { view?: string }) {
                 >
                   {t.player.chapters}
                 </button>
-                {trying ? (
-                  <button
-                    type="button"
-                    className={`${cls} pm-lecture-player__back`}
-                    onClick={() => player.back()}
-                  >
-                    {t.player.back}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className={`${cls} pm-lecture-player__try`}
-                    onClick={() => player.tryIt()}
-                  >
-                    {t.player.tryIt}
-                  </button>
-                )}
                 {voice?.kind === 'synthetic' && (
                   <span className="pm-lecture-player__ai pm-ui-badge pm-ui-badge--accent pm-ui-badge--pill">
                     {synthetic}

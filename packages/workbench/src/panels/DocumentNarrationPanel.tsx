@@ -2,6 +2,7 @@ import { useEffect, useId } from 'react'
 import { PmEmpty, PmIconButton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { DocumentStepNarration } from '../document-editor/DocumentStepNarration.tsx'
+import { DocumentVoiceField } from './DocumentVoiceField.tsx'
 
 /** The same step-bound fields are available even when a page has no runtime block. */
 export function DocumentNarrationPanel({ onClose }: { onClose(): void }) {
@@ -22,6 +23,7 @@ export function DocumentNarrationPanel({ onClose }: { onClose(): void }) {
     {section && sectionId && stepId ? <>
       <p className="pmw-pane__footer">{section.title}</p>
       <DocumentStepNarration sectionId={sectionId} stepId={stepId} expanded showLabel={false} panelId={`${panelId}-fields`} onPause={pause} />
+      <div className="pmw-pane__footer"><DocumentVoiceField key={`${source?.identity}:${stepId}`} stepId={stepId} /></div>
     </> : <PmEmpty icon="captions">{t.noSections}</PmEmpty>}
   </section>
 }

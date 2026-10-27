@@ -3,7 +3,8 @@
   width: 100%;
   max-width: var(--pm-scene-max-width);
 }
-.pm-scene[data-height] {
+.pm-scene[data-height],
+.pm-scene[data-presentation] {
   max-width: none;
 }
 .pm-scene__frame {

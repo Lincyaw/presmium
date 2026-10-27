@@ -137,7 +137,7 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
       <DocumentNotices />
       <div className="pmw-document__body" role="region" aria-label={producing ? PRODUCTION_MESSAGES[workbench.getState().locale].title : presenting ? t.presentationPreview : t.documentEditor}>
         {!presenting && !producing && navigation && <NavigationPane onClose={() => setNavigation(false)} onSelect={() => { if (matchMedia('(max-width: 1279px)').matches) setNavigation(false) }} />}
-        <div className="pmw-document__main"><div className="pmw-document__source" hidden={presenting || producing}><SourceDocumentPanel commentsPortal={commentsPortal} /></div>{producing && <ProductionPanel closing={changingView} onClose={() => void exitPresent()} />}{presenting && <><PreviewPanel active={active} />{presentationCurrent && <StepTimeline />}</>}</div>
+        <div className="pmw-document__main"><div className="pmw-document__source" hidden={presenting || producing}><SourceDocumentPanel commentsPortal={commentsPortal} /></div>{producing && <ProductionPanel closing={changingView} onClose={() => void exitPresent()} />}{presenting && <PreviewPanel active={active} />}</div>
         {!presenting && !producing && aside && (
           <aside className="pmw-document__aside pm-ui-block-editor" aria-label={aside === 'narration' ? t.documentNarration : aside}>
             {aside === 'comments' ? <section className="pmw-pane"><header className="pmw-pane__header"><h2 className="pmw-pane__title">{t.comments}</h2><PmIconButton small icon="close" label={t.close} onClick={() => setAside(null)} /></header><div ref={setCommentsPortal} /></section> : aside === 'narration' ? <DocumentNarrationPanel onClose={() => setAside(null)} /> : aside === 'export' ? <ExportPanel documentOnly onClose={() => setAside(null)} /> : <HistoryPanel onClose={() => setAside(null)} />}
@@ -147,34 +147,6 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
       {!presenting && !producing && <StatusBar />}
     </div>
   )
-}
-
-/** All states remain reachable, including initial state and the final steps of long animations. */
-function StepTimeline() {
-  const t = useMessages()
-  const workbench = useWorkbench()
-  const doc = useWorkbenchState(state => state.ir?.doc)
-  const position = useWorkbenchState(state => state.position)
-  const index = Math.max(0, doc?.sections.findIndex(section => section.id === position?.section) ?? 0)
-  const section = doc?.sections[index]
-  if (!section || !doc) return null
-  const step = Math.min(position?.step ?? 0, section.steps)
-  const previous = () => {
-    if (step > 0) workbench.goToStep(section.id, step - 1)
-    else if (index > 0) { const previous = doc.sections[index - 1]!; workbench.goToStep(previous.id, previous.steps) }
-  }
-  const next = () => {
-    if (step < section.steps) workbench.goToStep(section.id, step + 1)
-    else if (index < doc.sections.length - 1) workbench.goToStep(doc.sections[index + 1]!.id, 0)
-  }
-  return <section className="pmw-step-timeline" aria-label={t.stepTimeline}>
-    <div className="pmw-step-timeline__heading"><span>{section.title}</span><span>{t.stepLabel(step + 1, section.steps + 1)}</span></div>
-    <PmToolbar className="pmw-step-timeline__steps" label={t.stepTimeline}>
-      <PmToolbarButton asChild><PmIconButton small icon="chevron-left" label={t.previousStep} disabled={index === 0 && step === 0} onClick={previous} /></PmToolbarButton>
-      {Array.from({ length: section.steps + 1 }, (_, value) => <PmToolbarButton key={value} asChild><PmButton small aria-label={t.narrationStep(index + 1, value + 1)} aria-pressed={value === step} onClick={() => workbench.goToStep(section.id, value)}>{value + 1}</PmButton></PmToolbarButton>)}
-      <PmToolbarButton asChild><PmIconButton small icon="chevron-right" label={t.nextStep} disabled={index === doc.sections.length - 1 && step === section.steps} onClick={next} /></PmToolbarButton>
-    </PmToolbar>
-  </section>
 }
 
 /** The document's sections, or its slides: where the preview is, and a click to go to another. */

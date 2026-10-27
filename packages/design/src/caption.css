@@ -15,6 +15,9 @@
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
+.pm-ui-caption[data-overlay] {
+  max-height: min(var(--pm-caption-max-height), var(--pm-caption-overlay-max-height));
+}
 .pm-ui-caption .pm-ui-caption__line,
 .pm-ui-caption .pm-ui-caption__hint { margin: 0; }
 .pm-ui-caption .pm-ui-caption__line + .pm-ui-caption__line { margin-top: var(--pm-space-1); }

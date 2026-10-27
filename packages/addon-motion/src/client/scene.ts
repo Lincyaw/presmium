@@ -19,7 +19,7 @@ export interface SceneContext {
   at(step: number): number
   /** The length of the timeline (ms). */
   total: number
-  /** The size of `root` when the scene is created (CSS pixels). */
+  /** The layout size of `root` in CSS pixels, before any ancestor's presentation scaling. */
   width: number
   height: number
   /** A color of the design system as the page shows it now, as `rgb()` or `rgba()`: `color('accent')` is `--pm-color-accent`. */
