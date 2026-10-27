@@ -41,6 +41,8 @@ import type { ProductionBinding, ProductionPlan, ProductionPlaybackCommand, Prod
 import { workspaceClient, WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 import type { PageDeletePlan } from '@lincyaw/kernel'
+import type { AuthoringClientAction, AuthoringClientSnapshot } from '@lincyaw/kernel'
+import { PRODUCTION_PLAYBACK_RATES } from '@lincyaw/kernel'
 
 /** `editing`: the canonical document is edited in the parent; `viewing`: a derived snapshot is presented. */
 export type WorkbenchMode = 'editing' | 'viewing'
@@ -909,6 +911,64 @@ export class Workbench {
       && !state.hasDocumentTimingDrafts && !state.documentTimingDraftStorageFailure)
   }
 
+  /** Bounded observations, without reading or publishing any unsubmitted editor content. */
+  authoringClientSnapshot(revision: number): AuthoringClientSnapshot | undefined {
+    const state = this.#state, source = state.authoring, content = source?.content
+    if (state.document === undefined || !content || !source?.identity || !source.version || !source.fingerprint) return undefined
+    const locked = isAgentChanging(state), conflicted = Boolean(source.error || source.restored || source.recovering)
+    const editing = { dirty: source.dirty, saving: source.saving, composing: source.composing, conflicted, locked, loading: source.loading }
+    const safe = !source.loading && !source.composing && !conflicted && !locked && !state.isCreatingPage && !state.isEditingPage
+    const clean = safe && !source.dirty && !source.saving && !state.hasDocumentTimingDrafts
+    const plan = state.productionPlan, playback = state.productionPlayback
+    const ready = clean && plan?.canPreview && this.#productionReady() && playback?.status === 'ready' && sameProductionBinding(plan.binding, playback.binding)
+    const position = state.position, page = position && content.sections[position.section]
+    return { revision, source: { documentId: content.id, version: source.version, fingerprint: source.fingerprint }, view: state.webView, editing,
+      interaction: state.documentPositionToken,
+      ...page && position ? { position: { sectionId: page.id, ...page.stepOrder[position.step] ? { stepId: page.stepOrder[position.step] } : {} } } : {},
+      ...plan ? { binding: plan.binding } : {}, ...playback ? { playback } : {},
+      actions: ['state.read', 'playback.pause', ...safe ? ['source.flush' as const] : [],
+        ...clean && (state.webView === 'document' || ready) ? ['position.step' as const] : [],
+        ...ready ? ['playback.play' as const, 'playback.seek' as const, 'playback.rate' as const] : []], unsubmittedContent: 'not-inspected' }
+  }
+
+  /** Reuses the same source actor, mutual-audio gate and frame acknowledgements as the human controls. */
+  async executeAuthoringClientAction(action: AuthoringClientAction, expected: CanonicalSource, signal: AbortSignal): Promise<void> {
+    const scope = this.#documentScope, identity = this.#state.authoring?.identity, document = this.#state.document, interaction = this.#state.documentPositionToken
+    const owned = () => { signal.throwIfAborted(); if (scope !== this.#documentScope || identity !== this.#state.authoring?.identity || document !== this.#state.document) throw new Error('client-document-changed') }
+    const current = () => { owned(); const state = this.authoringClientSnapshot(0); if (!state || !sameSource(state.source, expected) || !state.actions.includes(action.type)) throw new Error('client-action-unavailable'); return state }
+    current()
+    if (action.type === 'state.read') return
+    if (action.type === 'source.flush') {
+      await this.flushPendingEdits(signal); owned()
+      const source = this.#state.authoring
+      if (!source || source.dirty || source.saving || source.composing || source.error || source.restored) throw new Error('client-source-not-saved')
+      return
+    }
+    if (action.type === 'playback.pause') { await this.pausePlayback(); owned(); return }
+    if (action.type === 'position.step') {
+      const content = this.#state.authoring?.content, section = content?.sections[action.sectionId]
+      if (!section?.stepOrder.includes(action.stepId) || content?.steps[action.stepId]?.sectionId !== action.sectionId) throw new Error('client-step-not-found')
+      await this.pausePlayback(); current()
+      if (interaction !== this.#state.documentPositionToken) throw new Error('client-position-changed')
+      const present = this.#state.webView === 'present'
+      const result = await this.selectDocumentStep(action.sectionId, action.stepId)
+      owned()
+      const state = this.authoringClientSnapshot(0)
+      if (!state || !sameSource(state.source, expected) || state.position?.sectionId !== action.sectionId || state.position.stepId !== action.stepId
+        || present && (!result || result.status !== 'ready' || result.position?.sectionId !== action.sectionId || result.position.stepId !== action.stepId || result.position.playing)) throw new Error('client-step-unverified')
+      return
+    }
+    const plan = this.#state.productionPlan
+    if (!plan || !sameProductionBinding(plan.binding, action.binding)) throw new Error('client-playback-binding-changed')
+    if (action.type === 'playback.seek' && (plan.durationMs === undefined || action.timeMs > plan.durationMs)) throw new Error('client-seek-out-of-range')
+    if (action.type === 'playback.rate' && !(PRODUCTION_PLAYBACK_RATES as readonly number[]).includes(action.rate)) throw new Error('client-rate-unavailable')
+    const control: ProductionPlaybackCommand = action.type === 'playback.play' ? { action: 'play', binding: action.binding }
+      : action.type === 'playback.seek' ? { action: 'seek', binding: action.binding, timeMs: action.timeMs } : { action: 'rate', binding: action.binding, rate: action.rate }
+    const result = await this.controlProduction(control, signal); owned()
+    if (result.status !== 'ready' || !result.position || action.type === 'playback.play' && !result.position.playing
+      || action.type === 'playback.rate' && result.position.rate !== action.rate) throw new Error('client-playback-unverified')
+  }
+
   /** Reads the actual derived plan without building the visuals or synthesizing speech. */
   async prepareProductionPlan(signal: AbortSignal): Promise<ProductionPlan> {
     const initial = this.#state, source = initial.authoring, identity = source?.identity, directory = initial.document, scope = this.#documentScope
@@ -1635,7 +1695,7 @@ export class Workbench {
   }
 
   /** A canonical step remains selectable while its next runtime snapshot is still compiling. */
-  selectDocumentStep(sectionId: string, stepId: string): void {
+  selectDocumentStep(sectionId: string, stepId: string): Promise<ProductionPlaybackState | undefined> | void {
     const source = this.#state.authoring, section = source?.content?.sections[sectionId]
     const step = section?.stepOrder.indexOf(stepId) ?? -1
     if (!section || step < 0) return
@@ -1647,8 +1707,7 @@ export class Workbench {
       if (this.#production.selecting(sectionId, stepId)) return
       this.#selectedSteps.set(`${this.#state.document}\0${sectionId}`, step)
       this.#set({ position: { section: sectionId, step, trail: [], view: 'present' } })
-      void this.controlProduction({ binding: plan.binding, action: 'step', sectionId, stepId }).catch(() => {})
-      return
+      return this.controlProduction({ binding: plan.binding, action: 'step', sectionId, stepId }).catch(() => undefined)
     }
     const snapshot = this.#state.presentationSnapshot
     const compiled = this.#state.ir?.doc.sections.find(page => page.id === sectionId)?.stepIds?.indexOf(stepId) ?? -1

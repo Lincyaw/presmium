@@ -193,6 +193,26 @@ agent 对已保存源执行事务不依赖一个永远在线的浏览器。客�
 
 主题、字幕可见性、缩放、面板、选区和播放头属于客户端设置。需要对齐这些人类操作时使用同一客户端语义入口，并在 capability 中说明只影响指定客户端；不为它们新增另一份可编辑文稿或时间线文件。
 
+### 9.1 已接入的客户端动作
+
+工作区的 `AuthoringClients` 是进程内、有界的在线登记与请求回执服务；不持有文稿 writer、编译器或永久任务队列。Studio 使用已有 owner admission 和共享 WebSocket 的 `authoring-client` 逻辑通道，后端 nonce 留在 DSH 宿主闭包中，不进入 MCP、浏览器消息、URL 或文稿。单独的编译宿主没有此服务，不提供这三个工具。
+
+| 工具 | 权限 | 实际边界 |
+| --- | --- | --- |
+| `get_authoring_clients` | read | 只返回最后报告的来源、客户端 revision、连接、位置、编辑状态及当前 actions；不读取未提交内容 |
+| `request_authoring_client` | operate | 指定 clientId、epoch、connectionId、客户端 revision、CanonicalSource 和 requestId；返回受理状态，不冒充完成 |
+| `get_authoring_client_request` | read | 返回 sent／executing／done／refused／failed／expired，以及真实浏览器观察、verification 和 current |
+
+已实现动作是 `state.read`、`source.flush`、`playback.pause`、`position.step`、`playback.play`、`playback.seek` 和 `playback.rate`。`source.flush` 只等待当前 canonical source actor 的保存；批注输入、数值表单、录制候选等未接入内容不能据此声称已保存。组词、恢复冲突或锁定时不开放 flush。Doc 中的 step 动作只按稳定 ID 定位，并先暂停；不切换模式、不编译。播放、seek、rate 只面向作者已准备好的精确 ProductionBinding 和有效计划，等待原生产播放器的真实帧回执，不能把 estimated／unknown 当作可播放。可选速率与人类控件共用内核常量。
+
+客户端 revision 描述输入、来源、位置和交互状态，不等于来源版本。播放头时刻是最后观察值；被动报告忽略逐帧时刻变化，显式 `state.read` 取得实时样本，不启动服务端时钟。执行前必须由客户端报告 executing，且服务端确认该连接仍拥有此请求；断线、切文稿、来源变化、旧连接回执或超时不能授权后续执行。ACK 只存在于客户端通道，没有 agent 可调用的 ACK 工具。
+
+目前最多保留 16 个客户端和 64 条进程内请求回执，请求 30 秒过期。保留期内相同 epoch／requestId 的相同意图只读取原回执，不重新派发；更换参数拒绝。断线后不自动重播；丢失播放回执时先重读状态，不以新 requestId 重试播放。旧终态可读，但只有连接、客户端状态及已保存来源仍相符时 current 才为 true。请求最多 4096 个 JSON 字符，回复最多 7168 个 pretty JSON UTF-16 字符，客户端清单分页。
+
+录制、草稿 inspect／read／keep／restore／discard、审阅、打开文稿和编译尚未接入此通道，清单明确列为 unavailable。本节之前的完整客户端协议仍是后续目标。
+
+实际 Studio／MCP／浏览器旅程、冻结范围和清理见[客户端闭环验证记录](benchmarks/mcp-authoring-client-2026-10-28.md)。
+
 ## 10. 审阅、历史与权限
 
 新增 `get_review/plan_review_action/apply_review_action` 和 `get_history/get_revision/plan_history_action/apply_history_action`。适配现有 review、revisions、undo、redo 和 changes 服务，带 reviewId、检查点、预期 changes digest、原 revisionId、明确路径及 source。接受、逐文件拒绝和检查点恢复都要拒绝已变化的计划，不能对“现在任意待审阅内容”执行旧确认。

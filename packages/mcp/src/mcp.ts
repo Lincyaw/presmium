@@ -12,6 +12,7 @@ import { TOOL_APPROVAL_META, TOOL_KIND_META } from './tool-meta.ts'
 import { AUTHORING_TOOLS } from './authoring.ts'
 import { AUTHORING_ACTION_TOOLS } from './authoring-actions.ts'
 import { HISTORY_TOOLS } from './history.ts'
+import { AUTHORING_CLIENT_TOOLS } from './authoring-clients.ts'
 import { TRANSCRIPTION_TOOLS } from './transcription.ts'
 import { AUDIO_AUTHORING_TOOLS } from './audio-authoring.ts'
 import { VOICE_AUTHORING_TOOLS } from './voice-authoring.ts'
@@ -122,6 +123,7 @@ const TOOLS: ToolSpec[] = [
   ...AUTHORING_TOOLS,
   ...AUTHORING_ACTION_TOOLS,
   ...HISTORY_TOOLS,
+  ...AUTHORING_CLIENT_TOOLS,
   ...AUDIO_AUTHORING_TOOLS,
   ...VOICE_AUTHORING_TOOLS,
   ...TRANSCRIPTION_TOOLS,
@@ -401,6 +403,9 @@ function runPlan(doc: IRDocument, node: CodeNode): string {
 
 function hostSupports(host: McpHost, name: string): boolean {
   switch (name) {
+    case 'get_authoring_clients':
+    case 'request_authoring_client':
+    case 'get_authoring_client_request': return Boolean(host.authoringClients)
     case 'get_document_history':
     case 'read_history_file':
     case 'undo_document_change':
