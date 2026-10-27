@@ -41,7 +41,7 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 导入／检查本地音频 | `DocumentAudioAuthoring` 共用真实媒体探测及多文件事务 | 已有能力、workspace 预检／导入与 canonical inspection 四个工具 | 远程分块上传尚未实现；路径限当前文稿工作区，不接受任意服务端路径 |
 | 音频区间、步内偏移、音量、静音、移除 | 同一 `DocumentAudioAuthoring` 的预检／事务；`ProductionBinding` 与真实时长校验 | 已有 `read_production_plan/validate_media_clip_change/change_media_clip` | 保存后新计划仍需准备；删除保留原始素材，尚无跨重启持久回执 |
 | 录制、重录、试听、采用录音 | viewer 有讲授录制链；制作面板候选录音与采用仍未完整接入 | 无客户端录制控制 | 版本化录制候选与客户端语义请求；采用另走作者事务 |
-| 人声转写 | `DocumentTranscriptions` 保存版本化候选；HTTP 与 MCP 共用任务实例 | 已有能力、启动、清单、任务、exact result 和取消六个工具；旧 `track_transcribe` 仍独立写 track.json | 成功 ASR 与实际提供方取消需真实服务验收；不写讲稿 |
+| 人声转写 | `DocumentTranscriptions` 保存版本化候选；HTTP 与 MCP 共用任务实例 | 已有能力、启动、清单、任务、exact result 和取消六个工具；旧 `track_transcribe` 仍独立写 track.json | 英文文件的真实 ASR／采用／Web TTS 已单独验收；实际提供方取消和录音完整链仍待验证，候选不自动写讲稿 |
 | 查看差异并将转写采用为步骤讲稿 | `DocumentTranscriptionAdoption` 共用 typed Narration 差异与作者事务 | 已有 `plan_transcription_adoption/apply_transcription_adoption`，复用原 DocumentEditor planId | 页面 UI 及完整人声转 TTS 链按实际验收推进；保留受保护发音／cue 的显式处理 |
 | 采用转写后改用 AI 配音 | 可编辑 `VoiceSource`；录音来源播放仍受服务支持限制 | `lecture_synthesize` 为显式 spend 工具，整讲同步返回 | 显式选择 TTS 来源和作用域，再复用有 source 的配音任务；不能把 ASR 时间当作新音色时间 |
 | 音色目录、搜索筛选、继承与批量应用 | `DocumentVoiceAuthoring` 读配置与目录，不依赖编译；`document-voices.ts` 处理继承，批量默认保留覆盖 | 已有 `get_voice_authoring_capabilities/get_voice_catalog`；继承／批量专门动作仍缺 | 提升相同作用域与影响计算到共享层；配置存在不代表合成成功 |
@@ -274,6 +274,8 @@ M1 中复杂步骤／定义操作按实际共享规则逐项开放，不能为�
 本片没有调用外部模型、ASR 或 TTS，没有操作公共 Studio 或作者文稿，没有运行测试套件；作者 API 成功保存不代表完整 UI 或音频链已验收。
 
 ## 15. 转写任务与采用的 MCP 接入
+
+真实本地 CPU 的单个英文文件已通过 MCP 导入、ASR、exact result 和明确采用，再经 Web 选择实际音色、完成新配音任务并播放／暂停，见[实际人声闭环](benchmarks/human-audio-to-voiceover-2026-10-27.md)。这项跨 Web／MCP 结果不代表共享 TTS start／list／cancel、客户端录制／播放控制或完整能力对齐已实施。
 
 工作区现在创建单个 `DocumentTranscriptions`，通过 `ServerHost.transcriptions` 与 `McpHost.transcriptions` 注入，同时提供宿主级 HTTP 路由。编译后 workspace 路由借用此实例；页面、编译和插件重挂载不关闭任务服务。只有 workspace 关闭时取消并等待其任务。`DocumentTranscriptionAdoption` 同样只有一份，复用 `DocumentEditor` 的计划和事务，没有适配器自建队列或另一种 planId。
 
