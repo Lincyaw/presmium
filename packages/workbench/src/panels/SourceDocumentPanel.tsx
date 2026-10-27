@@ -149,10 +149,10 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
           const fallback = <DocumentBlockFallback block={block} document={source.content} locale={locale} />
           return block.type === 'component' ? <DocumentBlockPreview blockId={id} fallback={fallback} /> : fallback
         } }}
-        commentsPortal={commentsPortal} onChange={document => workbench.recordDocument(document)} onReady={editor => {
+        commentsPortal={commentsPortal} onChange={document => workbench.recordDocument(document)} onReady={(editor, commands) => {
           bodyEditor.current = editor
           editingPosition.current = undefined
-          workbench.attachDocumentEditor(editor)
+          workbench.attachDocumentEditor(editor, commands)
         }}
         onEditingPosition={(position, editor) => {
           const state = workbench.getState(), current = state.authoring

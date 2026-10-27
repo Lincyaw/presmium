@@ -12,7 +12,9 @@ export interface DocumentProjection extends RichProjection {
   content: DocumentEditorInput[]
   structure?: string
   structures: Map<string, Pick<DocumentProjection, 'document' | 'rich' | 'owners' | 'pages' | 'baseline'>>
+  createdPages: Map<string, NativePageCreation>
 }
+export interface NativePageCreation { sectionId: string, blockId: string, nodeId: string, stepId: string }
 const newId = () => crypto.randomUUID()
 const pageId = (sectionId: string) => `page:${sectionId}`
 function plain(nodes: readonly { type: string, text?: string, children?: readonly unknown[] }[]): string {
@@ -39,7 +41,7 @@ function productBlock(blockId: string, context: DocumentProjection, sectionId: s
 }
 
 export function createDocumentProjection(document: TeachingDocument): DocumentProjection {
-  const context: DocumentProjection = { ...createRichProjection(), owners: new Map(), pages: new Map(), blockSections: new Map(), structures: new Map(), document: structuredClone(document), content: [] }
+  const context: DocumentProjection = { ...createRichProjection(), owners: new Map(), pages: new Map(), blockSections: new Map(), structures: new Map(), createdPages: new Map(), document: structuredClone(document), content: [] }
   context.content = document.sectionOrder.flatMap(sectionId => {
     const section = document.sections[sectionId]!
     context.pages.set(pageId(sectionId), sectionId)
@@ -203,6 +205,19 @@ export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], 
   context.document = snapshot ? structuredClone({ ...latest,
     blocks: { ...snapshot.blocks, ...latest.blocks }, sections: { ...snapshot.sections, ...latest.sections },
   }) : structuredClone(latest)
+  // Creation identities accompany native history, while all edited values stay in the document.
+  for (const block of blocks) if (block.type === 'presmiumPage') {
+    const created = context.createdPages.get(block.props.sectionId)
+    if (!created) continue
+    const { sectionId, blockId, nodeId, stepId } = created
+    context.owners.set(nodeId, blockId)
+    context.pages.set(block.id, sectionId)
+    if (latest.sections[sectionId]) continue
+    context.document.sections[sectionId] ??= { id: sectionId, title: nativePlain(block), children: [blockId], stepOrder: [stepId], layout: { type: 'stack' } }
+    context.document.blocks[blockId] ??= { id: blockId, type: 'text', content: [{ id: nodeId, type: 'paragraph', children: [] }] }
+    context.document.steps[stepId] ??= createdPageStep(created)
+    context.document.production.stepOverrides[stepId] ??= { minimumHoldMs: 4000, trailingPauseMs: 500 }
+  }
   if (snapshot) for (const id of snapshot.sectionOrder) {
     if (latest.sections[id]) continue
     const returned = context.document.sections[id]!
@@ -237,6 +252,12 @@ export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], 
   for (const sectionId of context.document.sectionOrder) {
     if (next.sections[sectionId]) { destination = sectionId; continue }
     const removed = context.document.sections[sectionId]!
+    const created = context.createdPages.get(sectionId)
+    if (created && snapshot && !snapshot.sections[sectionId] && untouchedPageCreation(context.document, created)) {
+      delete next.steps[created.stepId]
+      delete next.production.stepOverrides[created.stepId]
+      continue
+    }
     for (const stepId of removed.stepOrder) {
       if (!next.steps[stepId]) continue
       next.steps[stepId]!.sectionId = destination
@@ -305,6 +326,23 @@ export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], 
   context.baseline.clear(); captureRichBaseline(blocks, context)
   rememberDocumentStructure(blocks, context)
   return next
+}
+
+function createdPageStep({ sectionId, blockId, stepId }: NativePageCreation) {
+  return { id: stepId, sectionId, visuals: [{ blockId, visible: true }], narrationIds: [] }
+}
+
+/** Only an untouched, unreferenced creation default is removed with its native insertion. */
+function untouchedPageCreation(document: TeachingDocument, created: NativePageCreation): boolean {
+  const { sectionId, blockId, stepId } = created, section = document.sections[sectionId]
+  if (section?.stepOrder.length !== 1 || section.stepOrder[0] !== stepId
+    || JSON.stringify(document.steps[stepId]) !== JSON.stringify(createdPageStep(created))
+    || JSON.stringify(document.production.stepOverrides[stepId]) !== JSON.stringify({ minimumHoldMs: 4000, trailingPauseMs: 500 })
+    || document.production.sectionOverrides?.[sectionId]
+    || document.production.mediaClips.some(clip => clip.attachment.stepId === stepId)
+    || Object.values(document.steps).some(step => step.inherits === stepId || step.id !== stepId && step.visuals.some(visual => visual.blockId === blockId))
+    || Object.values(document.narrations).some(narration => narration.content.some(node => node.type === 'cue' && node.target?.blockId === blockId))) return false
+  return true
 }
 
 /** A restored cue keeps its written offset without replacing later narration text. */
