@@ -40,6 +40,7 @@ export interface WorkspaceRequestEvent {
 /** The workbench's client of the workspace server's routes; each `subscribe*` returns its unsubscribe. */
 export interface WorkspaceClient {
   subscribePreviewEvents?: PreviewEventSubscription
+  openAuthoringClient?: AuthoringClientSubscription
   subscribeRequests?(listener: (event: WorkspaceRequestEvent) => void): () => void
   readDocuments(document?: string): Promise<DocumentsAnswer>
   operateDocument(operation: DocumentOperation): Promise<OperationAnswer>
@@ -121,7 +122,16 @@ export interface WorkspaceClient {
 }
 
 /** A host may carry these event subscriptions over its authenticated shared connection. */
-export type WorkspaceSubscription = (address: string, event: string, received: (data: string, event?: string) => void, failed?: () => void, ready?: () => void) => () => void
+export interface AuthoringClientChannel {
+  publish(connectionId: string, report: import('@lincyaw/kernel').AuthoringClientReport): Promise<void>
+  acknowledge(connectionId: string, report: import('@lincyaw/kernel').AuthoringClientAcknowledgement): Promise<void>
+  close(): void
+}
+export type AuthoringClientSubscription = (document: string, open: import('@lincyaw/kernel').AuthoringClientOpen, received: (event: import('@lincyaw/kernel').AuthoringClientEvent) => void, failed: () => void) => AuthoringClientChannel
+export interface WorkspaceSubscription {
+  (address: string, event: string, received: (data: string, event?: string) => void, failed?: () => void, ready?: () => void): () => void
+  openAuthoringClient?: AuthoringClientSubscription
+}
 
 export function workspaceClient(base = 'api/presmium/', subscription?: WorkspaceSubscription): WorkspaceClient {
   const requestListeners = new Set<(event: WorkspaceRequestEvent) => void>()
@@ -269,6 +279,7 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     return () => source.close()
   }
   return {
+    ...subscription?.openAuthoringClient ? { openAuthoringClient: subscription.openAuthoringClient } : {},
     ...subscription ? { subscribePreviewEvents: ((target, received) => {
       const address = new URL(base, globalThis.document.baseURI)
       for (const [key, value] of Object.entries(target)) if (key !== 'topic') address.searchParams.set(key, value)

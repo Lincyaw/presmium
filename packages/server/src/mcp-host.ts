@@ -42,6 +42,7 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
     process: { command: options.command },
     get authoring() { return options.serverHost?.authoring },
     get documentHistory() { return options.serverHost?.documentHistory },
+    get authoringClients() { return options.serverHost?.authoringClients },
     get audioAuthoring() { return options.serverHost?.audioAuthoring },
     get voiceAuthoring() { return options.serverHost?.voiceAuthoring },
     get transcriptions() { return options.serverHost?.transcriptions },

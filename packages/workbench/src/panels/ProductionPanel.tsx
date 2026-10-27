@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { sameProductionBinding } from '@lincyaw/kernel'
+import { PRODUCTION_PLAYBACK_RATES, sameProductionBinding } from '@lincyaw/kernel'
 import type { ProductionPlaybackCommand } from '@lincyaw/kernel'
 import { PmBadge, PmButton, PmCard, PmEmpty, PmField, PmIconButton, PmNotice, PmSelect, PmSegmented, PmToolbar, PmToolbarButton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
@@ -140,7 +140,7 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
       <PmToolbarButton asChild><PmButton small icon={live?.position?.playing ? 'pause' : 'play'} loading={playerBusy} disabled={!canPlay || planBusy || preparing || blocked || closing || seeking} onClick={() => { if (plan) void control({ binding: plan.binding, action: live?.position?.playing ? 'pause' : 'play' }) }}>{live?.position?.playing ? p.pause : p.play}</PmButton></PmToolbarButton>
       <output aria-label={p.timelineLabels.position}>{clockTime(live?.position?.timeMs)} / {clockTime(planCurrent ? plan?.durationMs : undefined)}</output>
       <PmSelect label={p.rate} value={live?.position?.rate === undefined ? '' : String(live.position.rate)} disabled={!canPlay || playerBusy || planBusy || preparing || blocked || closing || seeking} onChange={event => { if (plan) void control({ binding: plan.binding, action: 'rate', rate: Number(event.target.value) }) }}>
-        {live?.position?.rate === undefined && <option value="">{p.timelineLabels.unknown}</option>}{[0.5, 0.75, 1, 1.25, 1.5, 2].map(value => <option key={value} value={value}>{value}×</option>)}
+        {live?.position?.rate === undefined && <option value="">{p.timelineLabels.unknown}</option>}{PRODUCTION_PLAYBACK_RATES.map(value => <option key={value} value={value}>{value}×</option>)}
       </PmSelect>
       {(planFailure || playbackFailure) && <PmToolbarButton asChild><PmButton small icon="refresh" onClick={() => setPlanReload(value => value + 1)}>{p.planRetry}</PmButton></PmToolbarButton>}
     </PmToolbar>

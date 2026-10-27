@@ -1,11 +1,11 @@
 import { createStore } from '@lincyaw/host'
-import { sameProductionBinding } from '@lincyaw/kernel'
+import { PRODUCTION_PLAYBACK_RATES as PLAYBACK_RATES, sameProductionBinding } from '@lincyaw/kernel'
 import { flushSync } from 'react-dom'
 import type { ProductionPlayback, StepClock } from '@lincyaw/host'
 import type { ProductionBinding, ProductionPlan, ProductionPlaybackCommand, ProductionPlaybackState } from '@lincyaw/kernel'
 import type { LecturePlayer } from './player.ts'
 
-export const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const
+export { PLAYBACK_RATES }
 interface Loader { load(binding: ProductionBinding, signal: AbortSignal): Promise<void>, current(binding: ProductionBinding): boolean }
 interface Driver { plan: ProductionPlan, player: LecturePlayer, clock?: StepClock }
 
