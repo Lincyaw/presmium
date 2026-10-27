@@ -13,12 +13,18 @@ export interface SynthesisResult {
   provider: string
   cloned: boolean
   key: string
+  requestKey?: string
+  profile?: string
   AIGC: AigcLabel
 }
+
+export type CacheProfile = { status: 'configured', profile: string, model: string, provider: string } | { status: 'absent' | 'unavailable' }
 
 export interface SpeechBackend {
   listEngines(lang?: string): Promise<EnginesResponseBody>
   defaultSynthesisEngine(): Promise<string | undefined>
+  /** Configuration identity only: never contacts a provider and never includes credentials. */
+  cacheProfile(engine: string | undefined, use: 'synthesize' | 'transcribe', lang?: string): Promise<CacheProfile>
   voices(engine: string | undefined, lang?: string, signal?: AbortSignal): Promise<VoiceInfo[]>
   voiceCatalog?(engine: string | undefined, lang?: string, signal?: AbortSignal): Promise<VoiceCatalog>
   synthesize(request: SynthesisRequest, signal?: AbortSignal): Promise<SynthesisResult>

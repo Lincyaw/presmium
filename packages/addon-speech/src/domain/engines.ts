@@ -58,7 +58,7 @@ export function engineIds(names: Iterable<string>): string[] {
   const ids = new Set<string>()
   for (const name of names) {
     const match = VARIABLE.exec(name)
-    if (match && match[2] !== 'MODEL' && match[2] !== 'TRANSCRIBE_MODEL') ids.add(speechEngineId(match[1]!))
+    if (match) ids.add(speechEngineId(match[1]!))
   }
   return [...ids].sort()
 }
@@ -87,12 +87,13 @@ export function operatorEngines(names: Iterable<string>, secret: (name: string) 
       unavailable.push({ id, reason: `${missing.join(' and ')} ${missing.length > 1 ? 'are' : 'is'} not set; an engine needs its address and the name of its provider` })
       continue
     }
-    const url = value('URL')!.replace(/\/+$/, '')
+    let url: string
     try {
-      const protocol = new URL(url).protocol
-      if (protocol !== 'http:' && protocol !== 'https:') throw new Error(protocol)
+      const parsed = new URL(value('URL')!)
+      if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash) throw new Error('address')
+      url = parsed.href.replace(/\/+$/, '')
     } catch {
-      unavailable.push({ id, reason: `${engineVariable(id, 'URL')} is not an http(s) address` })
+      unavailable.push({ id, reason: `${engineVariable(id, 'URL')} must be an http(s) address without credentials, query or fragment` })
       continue
     }
     const fake = id === FAKE

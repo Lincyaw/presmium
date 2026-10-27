@@ -3,7 +3,7 @@ import type { NodeServiceContext, SpeechWord, SynthesisRequest, TranscriptionReq
 import type { DeckSpeechConfig } from '../domain/index.ts'
 import { applyLexicon, deckSpeechConfig } from '../domain/index.ts'
 import type { SpeechBackend, SynthesisResult } from './backend.ts'
-import { cacheKey, SynthesisCache } from './cache.ts'
+import { cacheKey, profileCacheKey, SynthesisCache } from './cache.ts'
 import type { SpeechCore } from './core.ts'
 import { speechCore } from './core.ts'
 
@@ -26,10 +26,33 @@ export class CachedSpeech implements SpeechBackend {
     return this.#defaults.engine ?? this.#inner.defaultSynthesisEngine()
   }
 
+  cacheProfile(engine: string | undefined, use: 'synthesize' | 'transcribe', lang?: string) {
+    return this.#inner.cacheProfile(engine, use, lang)
+  }
+
   /** Resolves the cache identity locally, including document defaults, without generating audio. */
   async synthesisKey(request: SynthesisRequest): Promise<string | undefined> {
     const engine = request.engine ?? await this.defaultSynthesisEngine()
-    return engine ? cacheKey({ ...request, engine: speechEngineId(engine) }, applyLexicon(request.text, request.lexicon)) : undefined
+    if (!engine) return undefined
+    const requestKey = cacheKey({ ...request, engine: speechEngineId(engine) }, applyLexicon(request.text, request.lexicon))
+    const profile = await this.cacheProfile(engine, 'synthesize')
+    return profile.status === 'configured' ? profileCacheKey(requestKey, profile.profile) : profile.status === 'absent' ? this.cache.resolveRequest(requestKey) : undefined
+  }
+
+  /** Every consumer, including direct clip playback and alignment, uses this identity/SHA gate. */
+  async cached(key: string) {
+    const hit = await this.cache.find(key)
+    if (!hit) return undefined
+    const current = await this.cacheProfile(hit.record.engine, 'synthesize', hit.record.lang)
+    if (current.status === 'configured') return hit.record.profile === current.profile && hit.record.model === current.model && hit.record.provider === current.provider ? hit : undefined
+    return current.status === 'absent' && this.cache.locked(hit.record) ? hit : undefined
+  }
+
+  async lookup(request: SynthesisRequest) {
+    const engine = request.engine ?? await this.defaultSynthesisEngine()
+    const key = await this.synthesisKey({ ...request, engine })
+    const hit = key ? await this.cached(key) : undefined
+    return hit && hit.record.engine === speechEngineId(engine!) && hit.record.text === request.text && hit.record.lang === request.lang && hit.record.voice === request.voice ? hit : undefined
   }
 
   /** The engine that transcribes without one named: the deck's transcription engine, else its default engine when that one transcribes. */
@@ -52,8 +75,7 @@ export class CachedSpeech implements SpeechBackend {
   async synthesizeThroughCache(request: SynthesisRequest, signal?: AbortSignal): Promise<{ result: SynthesisResult, file: string }> {
     const engine = request.engine ?? await this.defaultSynthesisEngine()
     if (!engine) return this.#write(await this.#inner.synthesize(request, signal), request)
-    const key = cacheKey({ ...request, engine }, applyLexicon(request.text, request.lexicon))
-    const hit = await this.cache.find(key)
+    const hit = await this.lookup({ ...request, engine })
     if (hit) {
       const { record, file, audio } = hit
       await this.#inner.consent(record.engine, record.voice, record.cloned === true, signal)
@@ -68,7 +90,8 @@ export class CachedSpeech implements SpeechBackend {
         voice: record.voice,
         provider: record.provider,
         cloned: record.cloned,
-        key,
+        key: record.key,
+        ...record.profile ? { profile: record.profile, requestKey: record.requestKey } : {},
         AIGC: record.AIGC,
       }
       return { result, file }
@@ -85,16 +108,18 @@ export class CachedSpeech implements SpeechBackend {
   }
 
   async alignWords(key: string, options: { lang: string, transcribe?: boolean }, signal?: AbortSignal): Promise<SpeechWord[] | undefined> {
-    const kept = this.cache.readAlignment(key)
-    if (kept) return kept
-    if (options.transcribe === false) return undefined
-    const hit = await this.cache.find(key)
+    const hit = await this.cached(key)
     if (!hit) return undefined
+    const engine = await this.#transcriptionEngine()
+    const transcriber = await this.cacheProfile(engine, 'transcribe')
+    const kept = this.cache.readAlignment(hit.record, options.lang, transcriber)
+    if (kept) return kept
+    if (options.transcribe === false || transcriber.status !== 'configured') return undefined
     try {
-      const transcript = await this.transcribe({ audio: new Blob([new Uint8Array(hit.audio)], { type: hit.record.mime }), lang: options.lang }, signal)
+      const transcript = await this.#inner.transcribe({ audio: new Blob([new Uint8Array(hit.audio)], { type: hit.record.mime }), lang: options.lang, engine }, signal)
       const words = transcript.segments.flatMap(segment => segment.words)
       if (words.length === 0) return undefined
-      await this.cache.writeAlignment(key, words)
+      await this.cache.writeAlignment(hit.record, options.lang, transcriber.profile, words)
       return words
     } catch {
       return undefined

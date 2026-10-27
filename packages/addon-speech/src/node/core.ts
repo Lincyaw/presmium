@@ -1,10 +1,11 @@
+import { createHash } from 'node:crypto'
 import { aigcLabel, remapWords, speechEngineId } from '@lincyaw/kernel'
 import type { Logger, SpeechWord, SynthesisRequest, TranscriptionRequest, VoiceCatalog, VoiceInfo } from '@lincyaw/kernel'
 import type { EngineDefinition, EngineUse, LexiconText } from '../domain/index.ts'
 import { applyLexiconWithSpans, whyEngineCannot, engineDoes, engineInfo, howToDefine, operatorEngines, providerName } from '../domain/index.ts'
 import { audioMime, labelAudio } from './audio/label.ts'
 import type { SpeechBackend, SynthesisResult } from './backend.ts'
-import { cacheKey } from './cache.ts'
+import { cacheKey, profileCacheKey } from './cache.ts'
 import { checkConsent, writeConsent } from './consent.ts'
 import { engineAdapter } from './engines/index.ts'
 import type { EngineAdapter } from './engines/index.ts'
@@ -38,6 +39,10 @@ interface CatalogLoad {
 export function speechCore(options: CoreOptions): SpeechCore {
   let defined: ReturnType<typeof operatorEngines> | undefined
   const engines = () => defined ??= operatorEngines(options.names(), options.secret)
+  const profileOf = (engine: EngineDefinition, use: EngineUse) => createHash('sha256').update(JSON.stringify([
+    'presmium.speech-profile/1', engine.id, engine.kind, engine.url, engine.provider, use,
+    use === 'synthesize' ? engine.model : engine.transcribeModel,
+  ])).digest('hex')
   const adapters = new Map<string, EngineAdapter>()
   const adapter = (engine: EngineDefinition) => {
     let found = adapters.get(engine.id)
@@ -119,6 +124,13 @@ export function speechCore(options: CoreOptions): SpeechCore {
       return engines().engines.find(engine => engine.synthesizes)?.id
     },
 
+    async cacheProfile(id, use, lang) {
+      const { engines: list, unavailable } = engines()
+      const engine = id ? list.find(own => own.id === speechEngineId(id)) : list.find(own => engineDoes(own, use))
+      if (engine) return engineDoes(engine, use) ? { status: 'configured', profile: profileOf(engine, use), model: use === 'synthesize' ? engine.model : engine.transcribeModel, provider: providerName(engine, lang) } : { status: 'unavailable' }
+      return { status: (id ? unavailable.some(own => own.id === speechEngineId(id)) : unavailable.length > 0) ? 'unavailable' : 'absent' }
+    },
+
     async voices(id, lang, signal) {
       return (await allVoices(pick(id, 'synthesize'), signal)).filter(voice => speaks(voice, lang))
     },
@@ -138,7 +150,9 @@ export function speechCore(options: CoreOptions): SpeechCore {
       const cloned = listed?.cloned === true || adapter(engine).cloned?.(request.voice) === true
       if (cloned) checkConsent(options.operatorDir, options.settings, engine.id, request.voice)
       const spoken = applyLexiconWithSpans(request.text, request.lexicon)
-      const key = cacheKey({ ...request, engine: engine.id }, spoken.text)
+      const requestKey = cacheKey({ ...request, engine: engine.id }, spoken.text)
+      const profile = profileOf(engine, 'synthesize')
+      const key = profileCacheKey(requestKey, profile)
       const produced = await adapter(engine).synthesize({ voice: request.voice, text: spoken.text, lang: request.lang, rate: request.rate, style: request.style }, signal)
       const provider = providerName(engine, request.lang)
       const label = aigcLabel(provider, key)
@@ -156,6 +170,8 @@ export function speechCore(options: CoreOptions): SpeechCore {
         provider,
         cloned,
         key,
+        requestKey,
+        profile,
         AIGC: label,
       }
     },
