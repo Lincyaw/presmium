@@ -149,6 +149,8 @@ Build/export requests first flush the active canonical document actor and bind i
 Diagnostics are the workspace service's current snapshot (5.4); the workbench and MCP subscribe to the same
 source.
 
+Authoring-window errors use `diagnostics/authoring` without waiting for an IR. Keep the request-start saved baseline in `authoringSource` when known; unknown is not a fabricated runtime revision. Reports clear only their member/instance contribution and must not recursively observe their own failures. The preview's revision-bound runtime producer remains separate. See `docs/diagnostic-feedback.md`.
+
 - A new warning is verified for appearing, clearing on recovery and isolation between documents; reading the
   diagnostics resource does not run a full check.
 - dsh injects the concrete diagnostics before a model step; a failed subscription is reported as
