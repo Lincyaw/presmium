@@ -281,7 +281,7 @@
           "children": [
             {
               "type": "text",
-              "text": "代码引用按仓库根目录寻找文件。本仓库中的路径以 examples/animations/ 开始；首次复制到工作台的新示例会重基这些引用，已有用户副本不会被改写。"
+              "text": "这三段代码引用同一份项目文件：guide-code/code/checkout.ts。"
             }
           ]
         },
