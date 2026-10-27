@@ -16,7 +16,7 @@ import { DOCUMENT_EDITOR_MESSAGES, IMAGE_IMPORT_MESSAGES } from './messages.ts'
 import { imageFileInput } from './file-input.ts'
 import type { ImageImportFailure } from './file-input.ts'
 import { nativeTextClipboard } from './clipboard.ts'
-import { excludeCommentMarkHistory, nativeComments } from './comments.ts'
+import { excludeCommentMarkHistory, nativeComments, nativeCommentSelection } from './comments.ts'
 import type { DocumentThreadStore } from './comments.ts'
 
 export const DOCUMENT_EDITOR_THEME = {
@@ -121,7 +121,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
     extensions: [nativeTextClipboard, imageFileInput({
       onStart: () => { if (current.current.identity === props.identity) setFileErrors(undefined) },
       onFailure: failure => { if (current.current.identity === props.identity) setFileErrors(value => ({ identity: props.identity, failures: [...(value?.identity === props.identity ? value.failures : []), failure] })) },
-    }), ...props.comments ? [nativeComments(props.comments, t.author)] : []],
+    }), ...props.comments ? [nativeCommentSelection(), nativeComments(props.comments, t.author)] : []],
     domAttributes: { block: { 'data-document-editor-block': '' } },
   }, [props.identity, props.reset ?? 0])
   useEffect(() => {
