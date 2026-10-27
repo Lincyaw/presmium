@@ -196,6 +196,10 @@ export function validateDocument(value: unknown): DocumentValidation {
     }
   }
   const cues = new Set<string>()
+  for (const [id, narration] of Object.entries(doc.narrations)) if (narration.provenance) {
+    const path = at('/narrations', id) + '/provenance/assetId'
+    if (reference(doc.assets, narration.provenance.assetId, path, 'asset') && doc.assets[narration.provenance.assetId]!.kind !== 'audio') issue(path, 'asset.kind', 'Transcription provenance requires the original audio asset.')
+  }
   for (const [id, narration] of Object.entries(doc.narrations)) for (const [index, node] of narration.content.entries()) if (node.type === 'cue') {
     const path = at('/narrations', id) + `/content/${index}`
     identify(node.id, `${path}/id`); cues.add(node.id)

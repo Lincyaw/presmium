@@ -607,6 +607,7 @@ export interface Focus {
 
 - **一张工具表**：`@lincyaw/mcp` 导出内置工具的表（名字、说明、JSON Schema、种类 `read` 或确认的种类），以及按文档列出工具的函数：内置工具按种类的策略筛选（`off` 不列出），加上插件贡献的 `AgentTool`。
 - **规范作者事务**：工作区宿主的 `get_authoring_capabilities/get_document/plan_document_change/apply_document_change` 复用 Web 的 `DocumentEditor`、CAS、文件事务和历史，作者读取与保存不依赖编译。只读预检不执行代码或调用模型；提交后重读已保存源，编译与浏览器验证单独报告。独立 stdio 编译宿主没有作者事务，能力响应明确 unavailable；完整目标和首片限制见 [MCP 作者动作 RFC](rfc-mcp-authoring-actions.md)。
+- **转写与采用**：MCP 的能力、启动、清单、查询、结果、取消与采用工具共用 workspace 的同一服务实例；Studio 代理同一组 `document/transcription/*` 路由。任务不跟着预览插件重挂载而关闭，清单来自真实 journal，不在浏览器另造历史。能力装配使用 `Compiler.nodeServices()`，不执行场景或编译 pass，声明为 configuration-only；读取任务和取消不装配语音服务。启动属于 spend，取消和采用属于 operate，确认和写入来源由宿主决定。实际工具与验证边界见 [MCP RFC 第 15 节](rfc-mcp-authoring-actions.md#15-转写任务与采用的-mcp-接入)。
 - **插件工具按真实就绪状态发布**：作者宿主初始化只读已完成编译的工具快照，不为列工具等待或启动编译。显式编译完成后发送 MCP 工具清单变更通知，客户端重读并保留原文稿归属；没有就绪实现时不能提前伪造插件工具。
 - **适配器一：MCP**。`/mcp`（`presmium dev`、`presmium serve`）与 `presmium-mcp`（stdio）。
 - **适配器二：dsh 工具**（bundle 的 `presmium-tools`）。bundle 作为 MCP 客户端（`@lincyaw/mcp` 导出的客户端一侧）连接工作区服务的回环 `/mcp`，用会话令牌列出工具，把每个工具连同原样的 JSON Schema 登记为 `presmium__<名字>`，调用时转成 `tools/call`。种类决定 6.3 节的映射。编译只在服务中进行一次，预览与 agent 看到的是同一次编译，文稿代码也不进 dsh 宿主。回环的开销很小：本机一份小文稿上，第一次签发会话令牌约 0.4 s（含服务就绪），连接约 50 ms，`tools/list` 约 15 ms，读取类调用的中位数约 6 ms。

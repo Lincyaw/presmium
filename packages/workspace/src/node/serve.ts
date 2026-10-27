@@ -4,9 +4,9 @@ import { homedir, tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 import { Compiler, pluginLogger, runBlock, workspacePlugins } from '@lincyaw/compiler'
 import type { Compilation, CompilerOptions } from '@lincyaw/compiler'
-import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, REVISIONS } from '@lincyaw/kernel'
+import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, PRODUCTION_AUDIO_AUTHORING, REVISIONS, SPEECH } from '@lincyaw/kernel'
 import { irRevision } from '@lincyaw/kernel/node'
-import type { ChangeReviewService, Finding, IRDocument, Logger, ServiceToken, SiteSpec } from '@lincyaw/kernel'
+import type { CanonicalSource, ChangeReviewService, Finding, IRDocument, Logger, ServiceToken, SiteSpec } from '@lincyaw/kernel'
 import { serverConfigKey, servedDocument, startServer } from '@lincyaw/server'
 import type { DiagnosticStore, PresmiumServer, ServedDocument, ServedPlugin, ServerHost } from '@lincyaw/server'
 import { CompileSession } from './compile-session.ts'
@@ -25,6 +25,9 @@ import { refreshDocumentVitePlugins, siteContext, siteDocument, siteDocumentIR, 
 import { SourceEditor } from './source-editor.ts'
 import { createDocumentEditor, documentEditorRoutes } from './document-editor.ts'
 import type { DocumentEditor } from './document-editor.ts'
+import { createDocumentTranscriptions, documentTranscriptionRoutes } from './document-transcription.ts'
+import type { TranscriptionServices } from './document-transcription.ts'
+import { createTranscriptionAdoption } from './document-transcription-adoption.ts'
 import { createWorkbenchBackend } from './workbench-api.ts'
 import type { WorkbenchBackend } from './workbench-api.ts'
 import { localWriter } from './writer.ts'
@@ -56,6 +59,8 @@ interface WorkspaceHistory {
   agentSessionReviews: AgentSessionReviews
   taskReviews: ChangeReviewService
 }
+
+interface NodeServiceLoad { key: string, promise: Promise<TranscriptionServices>, controller: AbortController }
 
 const DISK_LOOK_MS = 1000
 
@@ -89,6 +94,8 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   let workbench: WorkbenchBackend | undefined
   let history: WorkspaceHistory | undefined
   let documentEditor: DocumentEditor | undefined
+  let transcriptions: ReturnType<typeof createDocumentTranscriptions> | undefined
+  let transcriptionAdoption: ReturnType<typeof createTranscriptionAdoption> | undefined
   let authoringRoutes: ReturnType<typeof documentEditorRoutes> | undefined
   let routesPlugin: ServedPlugin | undefined
   // The builds and exports, as jobs the workbench and the AI start and follow.
@@ -137,6 +144,36 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     ...options.operatorDir ? { operatorDir: options.operatorDir } : {},
     secret: name => env[name],
   })
+
+  // Coalesce only in-flight discovery. A later read reassembles actual services and problems;
+  // source edits or a repaired plugin cannot be hidden behind a retained capability cache.
+  const nodeServiceLoads = new Map<string, NodeServiceLoad>()
+  const nodeServicePending = new Set<NodeServiceLoad>()
+  let transcriptionServicesClosed = false
+  const transcriptionServices = (document: string, source: CanonicalSource): Promise<TranscriptionServices> => {
+    if (transcriptionServicesClosed) throw new RequestError(503, 'transcription-services-unavailable')
+    const key = JSON.stringify(source), known = nodeServiceLoads.get(document)
+    if (known?.key === key) return known.promise
+    const selected = docs().find(doc => doc.dir === document)
+    if (!selected) throw new RequestError(404, 'transcription-document-missing')
+    const controller = new AbortController()
+    const promise: Promise<TranscriptionServices> = new Compiler(join(root, selected.entry), compilerOptions()).nodeServices({ signal: controller.signal }).then(loaded => {
+      if (loaded.source.documentId !== source.documentId || loaded.source.version !== source.version || loaded.source.fingerprint !== source.fingerprint) throw new RequestError(409, 'document-version-changed')
+      return { audio: loaded.service(PRODUCTION_AUDIO_AUTHORING), speech: loaded.service(SPEECH), findings: loaded.findings }
+    }).finally(() => { if (nodeServiceLoads.get(document) === load) nodeServiceLoads.delete(document); nodeServicePending.delete(load) })
+    const load: NodeServiceLoad = { key, promise, controller }
+    nodeServiceLoads.set(document, load)
+    nodeServicePending.add(load)
+    return promise
+  }
+  const closeTranscriptions = async () => {
+    transcriptionServicesClosed = true
+    transcriptionAdoption?.close()
+    for (const load of nodeServicePending) load.controller.abort()
+    await transcriptions?.close()
+    await Promise.allSettled([...nodeServicePending].map(load => load.promise))
+    nodeServiceLoads.clear()
+  }
 
   const spec: SiteSpec = siteSpec(config, docs().map(doc => siteDocument(doc)))
   const refreshSpec = (): DocumentsChange => {
@@ -198,6 +235,8 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   const serverHost: ServerHost = {
     workspaceRoot: root,
     get authoring() { return documentEditor },
+    get transcriptions() { return transcriptions },
+    get transcriptionAdoption() { return transcriptionAdoption?.service },
     get routes() { return authoringRoutes ? { [WORKSPACE_ID]: authoringRoutes } : undefined },
     agentTools(document) {
       const compiled = (document === undefined ? [...compileSessions.values()] : [compileSessions.get(document)]).flatMap(session => session?.latest ? [session.latest] : [])
@@ -306,13 +345,17 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, diagnostics: running.diagnostics, url: () => running.url, preview, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
   history = openHistory()
   documentEditor = createDocumentEditor({ editor, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
-  authoringRoutes = authorizeWorkspaceRoutes(documentEditorRoutes({ root, editor, documentEditor, workbench }), launcherToken)
+  transcriptions = createDocumentTranscriptions({ root, editor, services: transcriptionServices })
+  transcriptionAdoption = createTranscriptionAdoption({ documentEditor, transcriptions })
+  authoringRoutes = authorizeWorkspaceRoutes({ ...documentEditorRoutes({ root, editor, documentEditor, workbench }), ...documentTranscriptionRoutes(transcriptions), ...transcriptionAdoption.routes }, launcherToken)
   routesPlugin = {
     id: WORKSPACE_ID,
     plugin: workspaceRoutesPlugin({
       config,
       editor,
       documentEditor,
+      transcriptions,
+      transcriptionAdoptionRoutes: transcriptionAdoption.routes,
       locks,
       ...history ? { revisions: history.revisions, operations: history.operations, reviews: history.agentSessionReviews } : {},
       documentsChanged,
@@ -331,6 +374,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     await history?.agentSessionReviews.recover(docs().map(doc => doc.dir))
   } catch (error) {
     history?.agentSessionReviews.close()
+    await closeTranscriptions()
     await workbench.close()
     await running.close()
     throw error
@@ -346,6 +390,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   try {
     site = await startWorkspaceSite({ root, spec, bundled: options.bundled, stateDir, compile: compileForSite, stampPreviewRevision: (compilation, doc) => workbench!.stampPreviewRevision(compilation, doc), diagnostics: running.diagnostics, preview, log })
   } catch (error) {
+    await closeTranscriptions()
     await workbench.close()
     await running.close()
     if (home) rmSync(home, { recursive: true, force: true })
@@ -358,6 +403,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     mcp: { url: `${running.url}/mcp`, stateFile },
     async close() {
       history?.agentSessionReviews.close()
+      await closeTranscriptions()
       for (const session of compileSessions.values()) session.close()
       await jobs.close()
       await workbench?.close()

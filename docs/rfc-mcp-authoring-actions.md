@@ -1,6 +1,6 @@
 # RFC：Web 与 MCP 共用作者动作及验证反馈
 
-状态：首片已实施，其余分阶段推进。2026-10-27 根据作者要求设计：AI agent 经 MCP 能完成作者在 Web 中可完成的工作，包括人声录音转写、将文字采用为讲稿、再显式生成 AI 配音。第 12.1 节的共享作者读取、预检、提交与读后核验已接入；真实范围见第 14 节。其它接口名和新增类型仍为提案。
+状态：作者事务首片与转写／采用适配已实施，其余分阶段推进。2026-10-27 根据作者要求设计：AI agent 经 MCP 能完成作者在 Web 中可完成的工作，包括人声录音转写、将文字采用为讲稿、再显式生成 AI 配音。第 12.1 节的共享作者事务见第 14 节；转写任务发现、启动、读取、取消与类型化采用见第 15 节。其余接口名和新增类型仍为提案。
 
 本文供工作区、工作台、MCP 和讲授插件的实现者拆分任务。交付结果是一套共用的作者动作、版本检查和反馈协议。文稿内容继续只写 `lecture.json`；规范实体定义以[文稿契约](../packages/kernel/src/contracts/document.ts)和[文稿 IR RFC](rfc-document-ir.md)为准，录制转写的候选与采用细节以[录制转写 RFC](rfc-recording-transcription.md)为准。
 
@@ -41,14 +41,14 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 导入／检查本地音频 | `document/audio`，`DocumentAudioImport/InspectionAnswer`；真实媒体探测及多文件事务 | 无 | `import_asset/inspect_asset` 复用这条链，不接受任意服务端路径 |
 | 音频区间、步内偏移、音量、静音、移除 | `document/media-clip`；`ProductionBinding` 与真实素材时长校验 | 无 | `mediaClip` 动作复用服务，删除 clip 不删除原始素材 |
 | 录制、重录、试听、采用录音 | viewer 有讲授录制链；制作面板候选录音与采用仍未完整接入 | 无客户端录制控制 | 版本化录制候选与客户端语义请求；采用另走作者事务 |
-| 人声转写 | `SpeechService.transcribe` 已有；旧讲授轨路径可转写 | 插件 `track_transcribe` 写 `lectures/<track>/track.json` | 新增按保存资产／候选范围启动的 ASR 任务，不写讲稿 |
-| 查看差异并将转写采用为步骤讲稿 | 制作面板未接入 | `track_narration` 只读文本草案和源位置，不是规范讲稿采用 | 类型化 `Narration` 候选、逐步骤差异、基线核对、原子采用 |
+| 人声转写 | `DocumentTranscriptions` 保存版本化候选；HTTP 与 MCP 共用任务实例 | 已有能力、启动、清单、任务、exact result 和取消六个工具；旧 `track_transcribe` 仍独立写 track.json | 成功 ASR 与实际提供方取消需真实服务验收；不写讲稿 |
+| 查看差异并将转写采用为步骤讲稿 | `DocumentTranscriptionAdoption` 共用 typed Narration 差异与作者事务 | 已有 `plan_transcription_adoption/apply_transcription_adoption`，复用原 DocumentEditor planId | 页面 UI 及完整人声转 TTS 链按实际验收推进；保留受保护发音／cue 的显式处理 |
 | 采用转写后改用 AI 配音 | 可编辑 `VoiceSource`；录音来源播放仍受服务支持限制 | `lecture_synthesize` 为显式 spend 工具，整讲同步返回 | 显式选择 TTS 来源和作用域，再复用有 source 的配音任务；不能把 ASR 时间当作新音色时间 |
 | 音色目录、搜索筛选、继承与批量应用 | `voice-catalog`、`document-voices.ts`、规范 `Production`；批量默认保留覆盖 | 无专门目录／作者动作 | 目录能力及不可用原因；提升相同作用域与影响计算到共享层 |
 | 音色样本／当前讲稿试听 | `voice-preview` 的 quote → 显式请求 → `VoicePreviewAnswer` | 无 | 保留 quote、提供方、cache 状态和明确 spend；返回可读取的音频资源 |
 | 配音生成、进度、取消 | `VoiceoverRequest/Job/Snapshot`；客户端先分配 intent，支持按 intent 取消 | `lecture_synthesize` 有来源屏障，但未暴露 Web 的任务／范围／取消链 | MCP 适配现有 voiceover 服务，保留 intent/source/revision/scope |
 | 计划、波形、定位、播放、暂停、速率 | `ProductionPlan`、单一播放器、预览协议中的制作请求 | `navigate` 仅定位放映窗口；`get_runtime` 只读运行报告 | 计划读取及指定作者客户端的 `ProductionPlaybackCommand` 与应答 |
-| 编译、预览、导出、下载 | workspace `jobs` 需要明确 `JobSource`，支持状态、事件、取消、版本和文件 | `build/get_builds`；MCP `build` 未传 source，摘要丢失 sequence/source，无取消工具 | 同一已确认源的启动、完整任务读取、取消与产物资源 |
+| 编译、预览、导出、下载 | workspace `jobs` 需要明确 `JobSource`，支持状态、事件、取消、版本和文件 | `build/get_builds/cancel_build` 已保留 source、sequence、inputFingerprint、captions 与文件；取消不要求先编译 | 后续统一任务发现、持久意图账本与资源；当前反馈见[输出验证记录](benchmarks/mcp-output-feedback-2026-10-27.md) |
 | 诊断、失败详情、运行验证 | UI `readDiagnostics` 读诊断快照；编译／浏览器报告分来源 | `get_diagnostics` 走 compile+check；diagnostics resource 才走宿主快照；runtime 有报告但不证明最新源 | 统一诊断快照入口，保留阶段；新增带来源的验证请求和 observed／unobserved 结果 |
 | 文稿草稿、外部变更、保存冲突 | `DocumentSession` 和制作 drafts 在浏览器按来源隔离；不能从服务看见未提交字节 | 无 | 客户端编辑状态探测与 flush／保留／恢复请求，未连接时声明未知 |
 | 审阅、逐文件拒绝、检查点恢复 | workspace `review/*` 与 `CHANGE_REVIEW`，持锁到结束 | 核心 MCP 无适配，dsh 自有桥接 | 同一 reviewId、范围、来源与修改 digest，绑定宿主授权决策 |
@@ -150,9 +150,9 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 人声转为 AI 配音必须形成如下可观察链：
 
 1. 录制或上传音频，读取真实媒体检查结果。明确选择音频范围、目标页面／步骤和转写提供方。
-2. `transcribe_audio` 显式启动真实 ASR，返回 intent 和任务；结果是版本化候选，保留源音频 SHA-256、范围、引擎、语言、实际 segments／word times 和目标基线。没有逐字时间就返回缺失。
-3. `get_transcription` 读取候选；`plan_transcription_adoption` 返回逐步骤差异、替换范围、发音与 cue 处理、失效时码和配音数量。内容不自动写入讲稿。
-4. `adopt_transcription` 在当前源基线下原子写入类型化 `NarrationNode[]` 和所选步骤绑定。未经确认的步骤映射、猜测的 cue 和缺失对齐不自动采用。规则由[录制转写 RFC](rfc-recording-transcription.md)定义。
+2. `start_transcription` 显式启动真实 ASR，返回 intent 和任务；结果是版本化候选，保留源音频 SHA-256、范围、引擎、语言、实际 segments／word times 和目标基线。没有逐字时间就返回缺失。
+3. `get_transcription` 读取任务，`get_transcription_result` 按 exact id／revision 读取候选；`plan_transcription_adoption` 返回逐步骤差异、替换范围和发音／cue 冲突。内容不自动写入讲稿。
+4. `apply_transcription_adoption` 在当前源基线下原子写入类型化 `NarrationNode[]` 和所选步骤绑定。未经确认的步骤映射、猜测的 cue 和缺失对齐不自动采用。规则由[录制转写 RFC](rfc-recording-transcription.md)定义。
 5. agent 可使用相同 `narration.set` 修订转写文字，再通过 `production.voice` 显式选择 TTS 音色和范围。ASR 采用不隐式替换仍为 recording 的 `VoiceSource`。
 6. `start_voiceover` 只对调用方明确选择且 source 匹配的步骤启动，默认缺失／过期片段。生成使用修订后的讲稿、发音和真实音色服务，生成后重新获得当前 `ProductionBinding`。
 7. 检查实际配音片段、字幕对齐和播放计划，随后显式试听／播放／导出。原录音 ASR 的时间码不能冒充新 TTS 的字幕时间；不能确认的字幕标为待对齐。
@@ -173,7 +173,7 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 
 取消分为已记录取消意图、取消中和终止确认。构建 renderer 当前没有中断契约，允许说明“当前阶段结束后取消”；导出器与 ASR／TTS 按实际 AbortSignal 退出。取消后晚到结果保留为记录或可验证缓存，不能自动采用；已经完成的有效片段不被假装撤销。
 
-第一项必须修补的适配是 `build({ source, to, wait: false, intent })`：将 source 送到已有 `OutputJobs.start`，完整保留 sequence、source、inputFingerprint、captions 和文件信息，并提供取消工具。不能继续以只含 IR revision 的 `jobSummary` 证明新源已导出。长任务默认立即返回可查询句柄；显式等待也需要有界时间，超时不重启原任务。
+已完成的输出适配将确认的 source 送到已有 `OutputJobs.start`，完整保留 sequence、source、inputFingerprint、captions 和文件信息，并提供 `cancel_build`；未接入 jobs 的独立编译宿主仍不声明这些能力。该修补没有引入统一任务或持久意图账本，也没有改变现有 build 的等待默认值。后续长任务入口应返回可查询句柄；显式等待需要有界时间，超时不重启原任务。
 
 ## 9. 播放、录制与本地草稿的客户端协议
 
@@ -263,8 +263,37 @@ M1 中复杂步骤／定义操作按实际共享规则逐项开放，不能为�
 
 作者 HTTP 路由由宿主直接提供，仍保留原来的 launcher token、成员角色和请求体限制；不先挂载编译后插件。作者 MCP 初始化只读取已完成编译的插件工具快照，诊断首读返回当前快照，不为初始化启动编译。编译完成后通过公开 MCP 工具清单变更通知发布真实插件工具。
 
-独立 stdio 编译宿主明确返回作者服务 unavailable；operate 关闭时能力响应关闭 apply；required review 尚未接通时拒绝 apply，不因确认会话而绕过。计划和回执各最多保留 64 条，计划有效期为五分钟，幂等仅限当前进程、已保留回执且结果仍为当前源；没有跨重启账本。未实现的语义页面／批注动作、媒体导入 MCP、客户端草稿和播放控制、ASR 采用与重新配音不计入此片完成范围。
+独立 stdio 编译宿主明确返回作者服务 unavailable；operate 关闭时能力响应关闭 apply；required review 尚未接通时拒绝 apply，不因确认会话而绕过。计划和回执各最多保留 64 条，计划有效期为五分钟，幂等仅限当前进程、已保留回执且结果仍为当前源；没有跨重启账本。语义页面／批注动作、媒体导入 MCP、客户端草稿和播放控制、人声重新配音不计入此片完成范围。转写与采用是后续单独接入，见第 15 节。
 
 正式 MCP stdio／HTTP 客户端和真实 workspace 服务在隔离小文稿中完成 9 组原子／权限／恢复场景及 5 组慢编译／策略场景。包含无 token 的 401、HTTP 与 MCP 共用幂等回执、旧源与工程文件 CAS、实际 git 提交失败的多文件回滚、非法引用、坏编译下读取／修复，以及 required review 拒绝。真实四秒编译进行中，另一个 MCP 客户端初始化、读取、预检及 HTTP 读取合计 68.53 ms；没有等待该编译。完整证据和边界见[首片验证记录](benchmarks/mcp-canonical-authoring-2026-10-27.md)。
 
 本片没有调用外部模型、ASR 或 TTS，没有操作公共 Studio 或作者文稿，没有运行测试套件；作者 API 成功保存不代表完整 UI 或音频链已验收。
+
+## 15. 转写任务与采用的 MCP 接入
+
+工作区现在创建单个 `DocumentTranscriptions`，通过 `ServerHost.transcriptions` 与 `McpHost.transcriptions` 注入，同时提供宿主级 HTTP 路由。编译后 workspace 路由借用此实例；页面、编译和插件重挂载不关闭任务服务。只有 workspace 关闭时取消并等待其任务。`DocumentTranscriptionAdoption` 同样只有一份，复用 `DocumentEditor` 的计划和事务，没有适配器自建队列或另一种 planId。
+
+| 工具 | 权限 | 实际结果 |
+| --- | --- | --- |
+| `get_transcription_capabilities` | read | exact source、配置能力、限额、诊断与可执行动作 |
+| `start_transcription` | spend | 原有服务接收的真实任务／取消意图；不会直接写讲稿 |
+| `get_transcriptions` | read | 持久 journal 与 active 状态中的任务清单、损坏记录 issues 和 truncated |
+| `get_transcription` | read | 按 id 或 intent 查询实际任务 |
+| `get_transcription_result` | read | 按 id／revision 读取不可变候选与其 exact source；当前性另查任务 |
+| `cancel_transcription` | operate | 原服务取消回执；可先于接收记录取消意图 |
+| `plan_transcription_adoption` | read | 明确 Step 范围、typed Narration 差异、受保护原子 conflicts 及原 DocumentEditor planId |
+| `apply_transcription_adoption` | operate | 核对 source、candidate、draftRevision 与同一 planId 后的原子保存和读后回执 |
+
+HTTP 共用 `document/transcription/capabilities`、`document/transcription`、`document/transcription/result`、`document/transcription/cancel`、`document/transcription/adoption/plan` 和 `document/transcription/adoption/apply`；这些路径已进入 Studio 通用代理白名单，保留原授权和转发方式。无 id／intent 的 GET `document/transcription` 返回清单。宿主路由保留 launcher token、成员角色及请求体限制，不依赖 compiled routes 挂载。
+
+目标文稿通过公开 `Compiler.nodeServices()` 装配真实 `SPEECH` 和 `PRODUCTION_AUDIO_AUTHORING`。该边界读取 canonical 配置与插件，不 collect contributions、不运行 IR pass／动画场景，也不请求 ASR／TTS。适配器核对装配同次返回的 exact source，只合并同源进行中的请求，不用旧缓存掩盖配置错误。能力的 `verification: configuration-only` 明确不证明提供方鉴权；缺服务为 unavailable，实际装配出错且能力未解析为 unknown 并保留 findings。
+
+模型输入与服务输入复用严格 Schema 和 32 KiB 请求预算，只有可信宿主完成 spend 授权后才注入 `confirmed:true`。模型不能提交 confirmed 或 origin。MCP 采用固定为 agent，HTTP 作者采用由私有闭包固定 editor；required review 未满足时仍拒绝 agent apply。独立 compiler stdio 没有这些服务，能力返回 unavailable，不构造另一套本地任务执行器。
+
+清单最多扫描 1025 个目录项、读取 1024 项，四路并发；任务、issues 和 framing 的完整 JSON 不超过 2 MiB，截断时显式返回 truncated。旧文稿 UUID、损坏 JSON、原音变更和损坏 journal 不得冒充当前任务。坏 JSON 下清单、任务、结果与取消仍可用，不装配语音服务。读取拒绝符号链接与非普通文件，不等待 FIFO 写入者。
+
+提供方返回非空 text、空 segments 时，producer 在不可变 revision 产生前生成稳定 ID 的单个文本 segment，保留原 text，不生成 start／end／words，timing 为 none 并附警告。采用服务可选这个真实文本候选；UI 不发明另一份 candidate。空 text 不产生片段，原录音时间也不冒充重新配音时间。
+
+正式 MCP 客户端和实际 workspace 完成 25 组隔离消费者检查，3587.70 ms、提供方请求为 0、15 个关键源码运行前后 SHA 一致。覆盖服务来源、权限、预取消、跨客户端共享、坏源／旧 UUID／损坏存储、请求和清单预算、原子采用、agent 历史来源、required review、插件重挂载与重启恢复。候选使用明确标注未识别的协议材料，原音仍经真实媒体探测；text-only 分支只验证 producer 纯标准化。范围与原始证据见[转写接入记录](benchmarks/mcp-transcription-actions-2026-10-27.md)。
+
+这片未验证成功 ASR、运行中提供方取消、真实 TTS 或完整浏览器录音链。MCP 的音频上传／导入、音色目录与范围配音任务、播放器／草稿客户端协议仍是后续工作；不能因八个新工具已接入便将整条人声重新配音链标为完成。
