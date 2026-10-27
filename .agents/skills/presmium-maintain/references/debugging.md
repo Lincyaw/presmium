@@ -29,7 +29,7 @@ request failure. Do not install a global fetch wrapper to collect unrelated Harn
 
 ## Multiple tabs with pending requests
 
-Normal Studio has no shell HMR EventSource: client rebuilds and shell plugin changes require a page reload, while workspace events use the scoped event WebSocket. A private profile that re-enables the documented `client-hmr` row restores its per-tab HTTP/1 SSE cost. Configuration and dependency ownership are in `docs/design-dsh.md` 2.3.
+Normal Studio has no shell HMR EventSource: actual client rebuilds leave the editing page running, while workspace events use the scoped event WebSocket. Keep `client-hmr` disabled for Presmium. A later private profile patch can re-enable the framework mechanism, but root replacement has actually lost unconfirmed session-only comment material; it is not an accepted editing configuration. Diagnose with the real public builder, a changed private artifact, observed `rebuilt` frame, new code execution and actual navigation. An armed return-point storage value alone is not HMR evidence. The default-off and explicit-on contrast, scope limits and cleanup are in `docs/benchmarks/comment-draft-root-hmr-2026-10-28.md`; configuration and dependencies are in `docs/design-dsh.md` 2.3.
 
 For a queued request, compare active streams, protocol and actual send/header timing with an independent same-cookie Node request. A browser request-created event alone does not prove the server received it. Preserve a release probe of the same request, rather than treating a new retry as success; never weaken the source actor guards. See `docs/benchmarks/studio-multitab-transport-2026-10-27.md`.
 
