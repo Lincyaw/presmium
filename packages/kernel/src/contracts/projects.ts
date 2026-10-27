@@ -1,4 +1,5 @@
 import type { DocumentOperation, OperationAnswer } from './workspace.ts'
+import type { CanonicalSource } from '../ir.ts'
 import type { Member } from './server.ts'
 
 export const PROJECT_MAX_REQUEST_CHARS = 4096
@@ -10,6 +11,7 @@ export interface ProjectCaller { member: Member, origin: 'editor' | 'agent', bou
 export interface ProjectObservation { snapshot?: string, configuration: string }
 export interface ProjectCapabilities {
   available: boolean
+  actions: Record<ProjectOperation['op'], { available: boolean, reasons: string[] }>
   reasons: string[]
   observation: ProjectObservation
   verification: 'configuration-only'
@@ -23,7 +25,8 @@ export interface ProjectPlan {
   digest: string
   operation: ProjectOperation
   observation: ProjectObservation
-  tree: string
+  tree?: string
+  source?: CanonicalSource
   documentId?: string
   expiresAt: string
   impact: { added: string[], removed: string[], files: number, bytes: number, referenceDocuments: string[], referencePolicy: 'preserve-or-refuse' }
@@ -32,14 +35,15 @@ export interface ProjectApply { planId: string, digest: string, confirmDeletion?
 export interface ProjectApplied extends OperationAnswer {
   id: string
   planId: string
-  snapshot: string
-  tree: string
+  snapshot?: string
+  tree?: string
+  source?: CanonicalSource
   documentId?: string
   revisionTruncated?: true
   fileCount?: number
   verification: { saved: true, readback: 'verified', compiled: 'not-requested' }
 }
-/** Workspace management borrows the same directory writer, git queue and locks as Web. */
+/** Directory management borrows the Web writer; metadata retitle borrows canonical document CAS. */
 export interface ProjectAuthoring {
   capabilities(caller: ProjectCaller): Promise<ProjectCapabilities>
   plan(request: ProjectPlanRequest, caller: ProjectCaller): Promise<ProjectPlan>

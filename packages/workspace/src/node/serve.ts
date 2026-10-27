@@ -364,7 +364,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, voices: voiceAuthoring.service, diagnostics: running.diagnostics, url: () => running.url, preview, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
   history = openHistory()
   documentEditor = createDocumentEditor({ editor, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
-  projectAuthoring = createProjectAuthoring({ config, operations: history?.operations, revisions: history?.revisions, git: history?.git })
+  projectAuthoring = createProjectAuthoring({ config, documentEditor, operations: history?.operations, revisions: history?.revisions, git: history?.git })
   authoringClients = createAuthoringClients(editor)
   documentHistory = createDocumentHistory({ config, editor, locks, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required', changed: (before, after) => documentsChanged(documentsDiff(before, after)), reverted: (target, revision) => history?.agentSessionReviews.reverted(target, revision) })
   transcriptions = createDocumentTranscriptions({ root, editor, services: authoringServices })

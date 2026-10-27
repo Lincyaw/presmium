@@ -4,11 +4,11 @@
 
 ## 行为与范围
 
-普通文稿的新建、复制、目录移动、删除，以及首页的标题重命名，共用 `ProjectAuthoring` 的 capabilities → plan → apply，真正写入仍由原 `DocumentOperations`／`DocumentWriter`／`Revisions.transaction` 和文稿锁负责。项目预检不读 IR、不编译、不播放。原 `POST documents` 裸操作返回 `409 project-plan-required`，Web 也不能绕过计划。
+普通文稿的新建、复制、目录移动、删除，以及首页的标题重命名，共用 `ProjectAuthoring` 的 capabilities → plan → apply。目录写入由原 `DocumentOperations`／`DocumentWriter`／`Revisions.transaction` 和文稿锁负责；后续[标题 CAS 增量](project-retitle-canonical-cas-2026-10-28.md)已把 retitle 交回原 DocumentEditor 的 canonical 事务。项目预检不读 IR、不编译、不播放。原 `POST documents` 裸操作返回 `409 project-plan-required`，Web 也不能绕过计划。
 
-能力只观察实际 HEAD 和工作区配置，`verification: configuration-only` 不代表文件树验证。无 Git、无可确认 HEAD、单文稿工作区、非 editor、文稿绑定令牌或 agent 的 operate／required-review 门槛均如实拒绝；根文稿 `''` 是合法身份，但复制／目录移动／删除仍不可用，其工作区控制文件范围尚未定义。本片不宣称全部项目管理 parity 完成。
+能力只观察实际 HEAD 和工作区配置，`verification: configuration-only` 不代表文件树验证。目录操作对无 Git、无可确认 HEAD、单文稿工作区、非 editor、文稿绑定令牌或 agent 的 operate／required-review 门槛如实拒绝；标题动作按后续增量单独报告能力，单文稿／无 Git 可编辑标题，文稿绑定令牌只可修改本目标；根文稿 `''` 是合法身份，但复制／目录移动／删除仍不可用，其工作区控制文件范围尚未定义。本片不宣称全部项目管理 parity 完成。
 
-计划绑定实际 HEAD、原始配置字节和已加载配置、受影响目录的真实文件树、所有 served canonical 引用、既有 Markdown relink 输入及真实模板。新建／复制在预检时固定新文稿 UUID，内部 Block／Section／Step 等合法 ID 保留。标题重命名保留文稿 UUID；复制标题在同一提交内写入。写前在原 Git 队列与工作区锁内复核，避免外层再次拿同一队列而自锁。
+计划绑定实际 HEAD、原始配置字节和已加载配置、受影响目录的真实文件树、所有 served canonical 引用、既有 Markdown relink 输入及真实模板。新建／复制在预检时固定新文稿 UUID，内部 Block／Section／Step 等合法 ID 保留。标题重命名保留文稿 UUID（现由 canonical source CAS 绑定，不依赖目录 HEAD）；复制标题在同一提交内写入。写前在原 Git 队列与工作区锁内复核，避免外层再次拿同一队列而自锁。
 
 计划和回执按成员及可信 origin 隔离，模型不能提交 origin 或伪造 workspace grant。MCP 的 `caller.document` 是绑定令牌范围，即使是 `''` 也不能冒充工作区授权；普通工具参数没有替代这一授权的 document 字段。HTTP 作者入口由闭包固定 editor，MCP 固定 agent，保留 launcher token、角色、operate 和 required-review 边界。
 
