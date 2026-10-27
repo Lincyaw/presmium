@@ -13,6 +13,7 @@ import { isAgentChanging } from '../workbench.ts'
 export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLElement | null }) {
   const workbench = useWorkbench(), t = useMessages()
   const source = useWorkbenchState(state => state.authoring)
+  const positionFailure = useWorkbenchState(state => state.documentPositionFailure)
   const locale = useWorkbenchState(state => state.locale), messages = DOCUMENT_EDITOR_MESSAGES[locale]
   const navigation = useWorkbenchState(state => state.documentNavigation)
   const readOnly = useWorkbenchState(state => Boolean(state.authoring?.loading) || isAgentChanging(state))
@@ -21,6 +22,10 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
   const bodyEditor = useRef<NativeDocumentEditor>()
   const editingPosition = useRef<{ nativeBlockId: string, sectionId: string, position: number, editor: NativeDocumentEditor, identity: string, reset: number | undefined }>()
   const cancelReading = useRef<() => void>()
+  useEffect(() => {
+    const element = container.current
+    if (element && source?.identity && source.content) return workbench.attachDocumentViewport(element, source.identity)
+  }, [workbench, source?.identity, Boolean(source?.content)])
   useEffect(() => {
     if (!navigation) return
     const request = JSON.stringify([source?.identity, navigation.request])
@@ -130,10 +135,13 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
   const error = source?.error === 'document-version-changed' || source?.error === 'document-identity-changed' ? messages.conflict
     : source?.error ? messages.saveFailure : undefined
   return <section ref={container} className="pmw-source-document" aria-label={t.documentEditor} aria-busy={source?.loading || undefined}>
-    {source?.storageFailure && <PmNotice tone="warn">{t.narrationRecoveryUnavailable}</PmNotice>}
-    {source?.restored && !error && <PmNotice tone="accent"><span>{messages.restored}</span><span className="pmw-notice__actions"><PmButton small onClick={() => void workbench.retryDocument()}>{t.retry}</PmButton><PmButton small onClick={() => void workbench.discardDocument()}>{t.narrationDiscard}</PmButton></span></PmNotice>}
-    {error && <PmNotice tone="danger"><span>{error}</span><span className="pmw-notice__actions"><PmButton small onClick={() => void workbench.retryDocument()}>{t.retry}</PmButton>{source?.dirty && <PmButton small onClick={() => void workbench.discardDocument()}>{t.narrationDiscard}</PmButton>}</span></PmNotice>}
-    {source?.issues.length ? <PmNotice tone="warn"><details><summary>{messages.diagnostics(source.issues.length)}</summary><ul>{source.issues.map((issue, index) => <li key={`${issue.path}:${index}`}><code>{issue.path}</code> {issue.message}</li>)}</ul></details></PmNotice> : null}
+    {Boolean(positionFailure || source?.storageFailure || source?.restored || error) && <div className="pmw-source-document__notices">
+      {positionFailure && <PmNotice tone="warn">{t.documentPositionRemoved}</PmNotice>}
+      {source?.storageFailure && <PmNotice tone="warn">{t.narrationRecoveryUnavailable}</PmNotice>}
+      {source?.restored && !error && <PmNotice tone="accent"><span>{messages.restored}</span><span className="pmw-notice__actions"><PmButton small onClick={() => void workbench.retryDocument()}>{t.retry}</PmButton><PmButton small onClick={() => void workbench.discardDocument()}>{t.narrationDiscard}</PmButton></span></PmNotice>}
+      {error && <PmNotice tone="danger"><span>{error}</span><span className="pmw-notice__actions"><PmButton small onClick={() => void workbench.retryDocument()}>{t.retry}</PmButton>{source?.dirty && <PmButton small onClick={() => void workbench.discardDocument()}>{t.narrationDiscard}</PmButton>}</span></PmNotice>}
+    </div>}
+    {source?.issues.length ? <div className="pmw-source-document__diagnostics"><PmNotice tone="warn"><details><summary>{messages.diagnostics(source.issues.length)}</summary><ul>{source.issues.map((issue, index) => <li key={`${issue.path}:${index}`}><code>{issue.path}</code> {issue.message}</li>)}</ul></details></PmNotice></div> : null}
     {!source?.content || !source.identity ? <p className="pmw-muted">{source?.loading ? messages.loading : messages.unavailable}</p> : <div className="pmw-source-document__sheet">
       <DocumentEditor identity={source.identity} document={source.content} getDocument={() => workbench.getDocument(source.identity)} reset={source.reset} locale={locale} readOnly={readOnly}
         uploadImage={(file, signal) => workbench.importDocumentImage(file, source.identity!, signal)}
@@ -152,7 +160,7 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
         commentsPortal={commentsPortal} onChange={document => workbench.recordDocument(document)} onReady={(editor, commands) => {
           bodyEditor.current = editor
           editingPosition.current = undefined
-          workbench.attachDocumentEditor(editor, commands)
+          workbench.attachDocumentEditor(editor, commands, { identity: source.identity!, reset: source.reset })
         }}
         onEditingPosition={(position, editor) => {
           const state = workbench.getState(), current = state.authoring

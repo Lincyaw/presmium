@@ -185,7 +185,7 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
     <nav className="pmw-navigation" aria-label={t.navigation}>
       <header className="pmw-pane__header">
         <h2 className="pmw-pane__title">{editing ? t.pages : slides ? t.renderers.slides : t.navigation}</h2>
-        {editing && <PmIconButton icon="plus" label={t.newPage} small loading={creating} disabled={!canCreate || pageBusy || !items.length} onClick={() => workbench.createPage()} />}
+        {editing && <PmIconButton icon="plus" label={t.newPage} small loading={creating} disabled={!canCreate || pageBusy || !items.length} onClick={() => { if (workbench.createPage()) onSelect() }} />}
         <PmIconButton icon="close" label={t.closeNavigation} small onClick={onClose} />
       </header>
       {failure && !renaming && !deleting && <PmNotice tone="danger">{failure}</PmNotice>}

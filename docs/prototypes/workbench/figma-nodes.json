@@ -1099,7 +1099,13 @@
       },
       "I01": {
         "nodeId": "40:4646",
-        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4646"
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4646",
+        "documentRecovery": {
+          "retryStateId": "41:175",
+          "noteIds": ["41:209", "41:221", "41:222"],
+          "implementation": "packages/workbench/src/panels/SourceDocumentPanel.tsx",
+          "behavior": "Compact recovery, save and position notices remain reachable within the document viewport. Expandable diagnostics stay in the normal document flow. Ordinary reopening restores workspace/document-bound stable page and step IDs and the viewport; removed targets require explicit relocation. Retrying does not navigate to the beginning of the document."
+        }
       },
       "I02": {
         "nodeId": "40:4647",
