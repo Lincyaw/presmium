@@ -312,4 +312,4 @@ HTTP 共用 `document/transcription/capabilities`、`document/transcription`、`
 
 `quote_voice_preview/preview_voice` 使用实际 quote、提供方、缓存和真实音频。MCP 返回限额内音频 resource 的 URI、字节数、SHA 与时长，resource 内容是 MIME/blob；Web 仍使用原响应格式。音频生成和资源可读不等同客户端已经试听，物理播放及录制仍需实际客户端应答。同步 `lecture_synthesize` 插件工具已撤下，既有 export CLI 未改动。
 
-真实范围见[任务 owner 验证记录](benchmarks/voiceover-task-owner-2026-10-27.md)：进程内任务、真实 CPU TTS、取消、remount 与音频资源已独立验证。没有新增持久任务账本、播放控制或声音继承写入接口，也不把原缓存 profile 边界掩盖成已解决。
+真实范围见[任务 owner 验证记录](benchmarks/voiceover-task-owner-2026-10-27.md)：进程内任务、真实 CPU TTS、取消、remount 与音频资源已独立验证。没有新增持久任务账本、播放控制或音色继承写入接口。缓存随后通过[独立切片](benchmarks/speech-cache-profile-2026-10-27.md)绑定实际模型／提供方 profile；原错误命中的反例与后续真实双生成晚回验证分别保留，不把缓存修复归入原 owner 那轮证据。
