@@ -24,3 +24,17 @@
 .pm-present__captions > * {
   pointer-events: auto;
 }
+
+.pm-present .pm-present__bar {
+  position: relative;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+@media (max-width: 479px) {
+  .pm-present__bar:has(.pm-lecture-player) .pm-present__previous,
+  .pm-present__bar:has(.pm-lecture-player) .pm-present__next,
+  .pm-present__bar:has(.pm-lecture-player) .pm-present__presenter,
+  .pm-present__bar:has(.pm-lecture-player) .pm-present__overview {
+    display: none;
+  }
+}
