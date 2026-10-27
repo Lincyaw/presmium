@@ -1,13 +1,15 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { createPreviewPool } from '../preview-pool.ts'
-import type { PreviewFrameStatus } from '../preview-pool.ts'
+import type { PresentationAction, PreviewFrameStatus } from '../preview-pool.ts'
 import { PmButton, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { slideAspect } from '../workbench.ts'
 
 /** The open document as its readers see it (the web form or the slides), with the tools for what the author points at. */
-export function PreviewPanel({ active = true }: { active?: boolean }) {
+export function PreviewPanel({ active = true, onPresentationAction }: { active?: boolean, onPresentationAction?(action: PresentationAction): void }) {
+  const presentationAction = useRef(onPresentationAction)
+  presentationAction.current = onPresentationAction
   const t = useMessages()
   const workbench = useWorkbench()
   const document = useWorkbenchState(state => state.document)
@@ -30,7 +32,7 @@ export function PreviewPanel({ active = true }: { active?: boolean }) {
     const current = createPreviewPool(container.current, workbench, setStatus, document => {
       setLoads(n => n + 1)
       void workbench.openDocument(document)
-    })
+    }, action => presentationAction.current?.(action))
     pool.current = current
     return () => { current.dispose(); pool.current = undefined }
   }, [workbench])

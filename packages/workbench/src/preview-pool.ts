@@ -19,6 +19,8 @@ export interface PreviewTarget {
 }
 
 /** The state of the selected preview's iframe. */
+export type PresentationAction = Extract<PreviewReport, { type: 'presentation-action' }>['action']
+
 export interface PreviewFrameStatus {
   ready: boolean
   mismatch?: boolean
@@ -46,7 +48,7 @@ interface Entry {
  * Keeps the iframes of the last previews (at most two) in `container`, shows the selected one and pauses the others
  * (or removes those that cannot pause). `switchDocument` opens another document when a preview navigates to it.
  */
-export function createPreviewPool(container: HTMLElement, workbench: Workbench, onStatus: (status: PreviewFrameStatus) => void, switchDocument: (document: string) => void) {
+export function createPreviewPool(container: HTMLElement, workbench: Workbench, onStatus: (status: PreviewFrameStatus) => void, switchDocument: (document: string) => void, presentationAction?: (action: PresentationAction) => void) {
   const entries = new Map<string, Entry>()
   let desired: PreviewTarget | undefined
   let signature = ''
@@ -181,6 +183,10 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
 
   const handleReport = (entry: Entry, report: PreviewReport) => {
     if (entries.get(entry.key) !== entry) return
+    if (report.type === 'presentation-action') {
+      if (entry.active && selected(entry)) presentationAction?.(report.action)
+      return
+    }
     if (report.type === 'activity') return handleActivity(entry, report)
     if (report.type === 'ready') return handleReady(entry, report)
     // A write posted just before deactivation still needs a request-scoped

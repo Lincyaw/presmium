@@ -6,7 +6,7 @@ import type { IRDocument, IRSection, SourcePos } from '@lincyaw/kernel'
 import { applyUpdate, clampPosition, footnoteSections, keepPosition, nextPosition, prevPosition } from '../domain/index.ts'
 import type { LiveUpdate, Position } from '../domain/index.ts'
 import { findView } from './registry.ts'
-export interface ViewerOptions { renderer?: string, embedded?: boolean, documentIdentity?: string, editingActive?: Store<boolean>, slidesOnly?: boolean, pageLink?(position: Position): { href: string, label: string } | undefined, sectionHref?(id: string): string, sectionHeading?(section: IRSection, step: number): ReactNode, diagnostics?: boolean, navigate?(position: Position): void, openPresenter?(position: Position): void, openSource?(source: SourcePos): void }
+export interface ViewerOptions { renderer?: string, embedded?: boolean, documentIdentity?: string, editingActive?: Store<boolean>, slidesOnly?: boolean, pageLink?(position: Position): { href: string, label: string } | undefined, sectionHref?(id: string): string, sectionHeading?(section: IRSection, step: number): ReactNode, diagnostics?: boolean, navigate?(position: Position): void, openPresenter?(position: Position): void, openSource?(source: SourcePos): void, refreshPresentation?(): void, exitPresentation?(): void }
 export interface Viewer {
   doc: Store<IRDocument>, view: Store<string>, pageView: Store<string>, position: Store<Position>, restoring: Store<boolean>, options: ViewerOptions & { renderer: string },
   section(id: string): IRSection | undefined, footnoteHref(identifier: string): string,
