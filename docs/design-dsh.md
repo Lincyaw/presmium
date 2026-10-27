@@ -160,6 +160,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 - 代理启动后先发 `ready`。工作台收到 `ready` 之后才发别的消息。信封的版本不同时，工作台提示“预览的版本与工作台不符，请重新启动”。
 - 工作台把连接绑定到建立它的文档与形态；位置、点选与选区只提交给当前握手确认的文稿。已发出的正文写入仍须向原连接明确回复，不能转入新文稿状态。预览内的跨文稿导航由 `ready.document` 驱动工作台切换文档，沿用未保存修改的确认流程；取消时恢复原文档的预览。
 - 每次 `ready` 都开启该 iframe 的新一代连接；待确认请求还须匹配原连接实例与代次。插页、保存边界与正文历史命令，以及正文、素材源码的请求回复，均只发送一次：首次握手前可以排队，发送后不因重载再次执行。
+- 显式 Present 可选择画面级版本门禁（`presmium-presentation=confirmed`、`presentation-confirmed` 能力）。父页面只发送既有已准备 snapshot 的 revision，子页面核对自身真实 revision 后才开放画面；新 IR 同次渲染关闭画面、字幕和插件交互，原底栏仍可重新编译或退出。未确认位置不报告或回写作者选择。页面 ready 与排队诊断不依赖可报告位置，不生成默认位置；不支持该能力的 iframe 仍保留整框门禁。Standalone 与 Video 不启用此选项。
 - 完整查看器共享订阅为可选能力：父页面有 `subscribePreviewEvents` 时才在 iframe 地址声明 `presmium-events=shared`。子页面 `ready.eventConnection` 固定本代次，父页面确认后才开始订阅；仅允许当前 iframe 绑定文稿的 site/control 各一条，带原 app、语言、形态或 window。消息、取消与回调均检查本代次和 reader ID，重载／退出释放旧订阅，park 后不派发迟到消息。旧五种 WS topic 的数据帧形状不变；命名事件字段只用于两个新通道。契约类型见 `PreviewEventTarget`、`PreviewEventMessage`。单块预览不启用此能力。
 - 未知类型的消息一律忽略。消息只是数据：代理不执行收到的代码，也不打开收到的链接。
 

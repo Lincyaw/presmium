@@ -3,7 +3,7 @@
 @import './document-editor/style.css';
 @import './step-production.css';
 
-.pmw-preview__frames[data-pending-snapshot] { visibility: hidden; }
+.pmw-preview__frames[data-pending-snapshot]:not([data-presentation-gated]) { visibility: hidden; }
 
 .pmw-muted {
   color: var(--pm-color-muted);
