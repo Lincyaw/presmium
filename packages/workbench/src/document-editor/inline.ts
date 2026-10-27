@@ -1,3 +1,4 @@
+import { isDocumentTextLink } from '@lincyaw/kernel'
 import type { InlineContent, StyledText, Styles } from '@blocknote/core'
 import type { InlineNode, TextAlignment, TextMark, TextStyle } from '@lincyaw/kernel'
 import type { documentEditorSchema } from './schema.tsx'
@@ -59,7 +60,7 @@ function nativeText(node: Extract<InlineNode, { type: 'text' | 'break' }>): Nati
 export function productInlineToNative(nodes: readonly InlineNode[], context: InlineProjectionContext): NativeInline[] {
   return nodes.map(node => {
     if (node.type === 'text' || node.type === 'break') return nativeText(node)
-    if (node.type === 'link' && node.children.length && node.children.every(child => child.type === 'text' || child.type === 'break')) {
+    if (isDocumentTextLink(node)) {
       return { type: 'link', href: node.href, content: node.children.map(child => nativeText(child as Extract<InlineNode, { type: 'text' | 'break' }>)) }
     }
     return opaque(node, context)

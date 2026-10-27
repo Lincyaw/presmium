@@ -9,6 +9,7 @@ import type { WorkbenchApi } from './workbench-api.ts'
 import { documentAssetResponse } from './document-assets.ts'
 import { decodeAuthoringDocument as decode, readAuthoringDocument } from './document-authoring.ts'
 import type { DocumentEditor } from './document-authoring.ts'
+import type { DocumentAuthoringActionRequest, DocumentAuthoringActionReference } from '@lincyaw/kernel'
 
 export { createDocumentEditor, readAuthoringDocument } from './document-authoring.ts'
 export type { DocumentEditor } from './document-authoring.ts'
@@ -92,6 +93,24 @@ export function documentEditorRoutes({ root, editor, documentEditor, workbench }
           return () => { clearTimeout(timer); watcher.close(); stopProject?.() }
         }, { signal: request.signal, latestOnly: true })
         return sseResponse(stream, request.signal)
+      }),
+    },
+    'document/action/plan': {
+      role: 'editor', maxBody: 16 << 10,
+      handle: (request, ctx) => catchRequestErrors(async () => {
+        if (request.method === 'GET') {
+          const query = new URL(request.url).searchParams
+          return jsonResponse(await documentEditor.readActionPlan(ctx.document, { planId: query.get('planId') ?? '', digest: query.get('digest') ?? '' }, ctx.member))
+        }
+        if (request.method !== 'POST') throw new RequestError(405, 'POST or GET')
+        return jsonResponse(await documentEditor.planAction(ctx.document, await request.json().catch(() => undefined) as DocumentAuthoringActionRequest, ctx.member))
+      }),
+    },
+    'document/action/apply': {
+      role: 'editor', maxBody: 16 << 10,
+      handle: (request, ctx) => catchRequestErrors(async () => {
+        if (request.method !== 'POST') throw new RequestError(405, 'POST')
+        return jsonResponse(await documentEditor.applyAction(ctx.document, await request.json().catch(() => undefined) as DocumentAuthoringActionReference, ctx.member))
       }),
     },
     'document/page/plan': {

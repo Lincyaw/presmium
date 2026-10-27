@@ -70,9 +70,9 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
     description: 'The actual canonical authoring operations, limits, review and retry scope of this host. Does not compile, synthesize, transcribe or write. A compiler-only stdio host reports authoring unavailable.',
     properties: { document: documentProperty },
     run: async call => {
-      if (!call.host.authoring) return { apiVersion: AUTHORING_API_VERSION, documentSchemaVersion: DOCUMENT_SCHEMA_VERSION, available: false, reason: 'host-unavailable', actions: { read: false, outline: false, readPart: false, plan: false, apply: false, planPageDuplication: false, applyPageDuplication: false, planPageChange: false, applyPageChange: false }, operations: [], replacement: false, fileChanges: false, idempotency: 'unavailable', review: 'unavailable' }
+      if (!call.host.authoring) return { apiVersion: AUTHORING_API_VERSION, documentSchemaVersion: DOCUMENT_SCHEMA_VERSION, available: false, reason: 'host-unavailable', actions: { read: false, outline: false, readPart: false, plan: false, apply: false, planPageDuplication: false, applyPageDuplication: false, planPageChange: false, applyPageChange: false, planAction: false, applyAction: false }, operations: [], replacement: false, fileChanges: false, idempotency: 'unavailable', review: 'unavailable' }
       const capability = service(call).capabilities(await call.document(), call.caller.member)
-      if (!call.host.offers('operate')) return { ...capability, actions: { ...capability.actions, apply: false, applyPageDuplication: false, applyPageChange: false }, applyUnavailableReason: 'operation-disabled' }
+      if (!call.host.offers('operate')) return { ...capability, actions: { ...capability.actions, apply: false, applyPageDuplication: false, applyPageChange: false, applyAction: false }, applyUnavailableReason: 'operation-disabled' }
       return capability
     },
   },

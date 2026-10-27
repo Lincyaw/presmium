@@ -3,6 +3,7 @@ import type { DocumentEditOperation, DocumentIssue, TeachingDocument } from './d
 import type { Member } from './server.ts'
 import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, RevisionOrigin } from './workspace.ts'
 import type { DocumentOutlineAnswer, DocumentOutlineQuery, DocumentPartAnswer, DocumentPartQuery } from './document-reads.ts'
+import type { AppliedDocumentAuthoringAction, DocumentAuthoringActionInspection, DocumentAuthoringActionPlan, DocumentAuthoringActionRead, DocumentAuthoringActionReference, DocumentAuthoringActionRequest, DocumentAuthoringAction } from './authoring-actions.ts'
 
 export const AUTHORING_API_VERSION = 1 as const
 export const DOCUMENT_OPERATION_TYPES = ['insertBlock', 'moveBlock', 'deleteBlock', 'updateText', 'updateSection', 'setStepState', 'setNarration', 'setTiming', 'replaceAsset'] as const satisfies readonly DocumentEditOperation['type'][]
@@ -12,10 +13,12 @@ export interface AuthoringCapabilities {
   documentSchemaVersion: number
   available: boolean
   reason?: 'host-unavailable' | 'permission-denied'
-  actions: { read: boolean, outline: boolean, readPart: boolean, plan: boolean, apply: boolean, planPageDuplication: boolean, applyPageDuplication: boolean, planPageChange: boolean, applyPageChange: boolean }
+  actions: { read: boolean, outline: boolean, readPart: boolean, plan: boolean, apply: boolean, planPageDuplication: boolean, applyPageDuplication: boolean, planPageChange: boolean, applyPageChange: boolean, planAction: boolean, applyAction: boolean }
   applyUnavailableReason?: 'review-required' | 'operation-disabled'
   readLimits?: { maxRequestChars: number, maxResponseChars: number, responseSerialization: 'JSON.stringify(value,null,2)', offsetUnit: 'utf16' }
   pageLimits?: { maxRequestChars: number, maxResponseChars: number, responseSerialization: 'JSON.stringify(value,null,2)' }
+  actionLimits?: { maxRequestChars: number, maxResponseChars: number, responseSerialization: 'JSON.stringify(value,null,2)' }
+  semanticActions?: readonly DocumentAuthoringAction['type'][]
   operations: readonly DocumentEditOperation['type'][]
   replacement: boolean
   fileChanges: boolean
@@ -152,6 +155,9 @@ export interface DocumentAuthoring {
   planPageChange(document: string, request: DocumentPageChangeRequest, member: Member): Promise<DocumentPageChangePlan>
   readPageChangePlan(document: string, reference: DocumentPageDuplicationRead, member: Member): Promise<DocumentPageChangeInspection>
   applyPageChange(document: string, reference: DocumentPageChangeReference, member: Member): Promise<AppliedDocumentPageChange>
+  planAction(document: string, request: DocumentAuthoringActionRequest, member: Member): Promise<DocumentAuthoringActionPlan>
+  readActionPlan(document: string, reference: DocumentAuthoringActionRead, member: Member): Promise<DocumentAuthoringActionInspection>
+  applyAction(document: string, reference: DocumentAuthoringActionReference, member: Member): Promise<AppliedDocumentAuthoringAction>
   apply(document: string, request: ApplyDocumentChange, member: Member): Promise<AppliedDocumentChange>
 }
 
