@@ -2,6 +2,8 @@ import { validateDocument } from '@lincyaw/kernel'
 import type { DocumentAnswer, DocumentChangeAnswer, DocumentImageImportAnswer, DocumentIssue, TeachingDocument } from '@lincyaw/kernel'
 import { WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
+import { DocumentDrafts } from './document-drafts.ts'
+import type { DocumentDraftChoice, DocumentDraftCommit, DocumentDraftReference, StoredDocumentDraft } from './document-drafts.ts'
 
 export interface DocumentSessionState {
   directory: string
@@ -16,12 +18,15 @@ export interface DocumentSessionState {
   restored: boolean
   composing: boolean
   storageFailure: boolean
+  backupPending?: boolean
+  recoveryReadFailure?: boolean
   reset: number
   error?: string
   issues: DocumentIssue[]
   recovering?: boolean
+  recoveryDrafts?: DocumentDraftChoice[]
+  recoveryChanged?: boolean
 }
-interface Draft { content: TeachingDocument, baseVersion: string, baseHash: string, input: number, pendingHash?: string, composing?: boolean }
 interface Slot {
   state: DocumentSessionState
   read: number
@@ -29,6 +34,15 @@ interface Slot {
   input: number
   baseHash: string
   storage: string
+  drafts: DocumentDrafts
+  backup?: DocumentDraftCommit
+  draft?: StoredDocumentDraft
+  draftOrigins?: DocumentDraftReference[]
+  draftRead?: number
+  draftFailure?: boolean
+  legacyFailure?: 'read' | 'write'
+  persistFailure?: boolean
+  recoveryOperation?: number
   flight?: { id: string, input: number, content: TeachingDocument, baseVersion: string, hash?: string }
   assetFlight?: Promise<DocumentChangeAnswer>
   timer?: ReturnType<typeof setTimeout>
@@ -65,8 +79,16 @@ export class DocumentSession {
   #unsubscribe?: () => void
   #disposed = false
   #leaveTarget?: Window
+  readonly #storageChanged = (event: StorageEvent) => {
+    if (this.#disposed) return
+    for (const slot of this.#slots.values()) if (slot.state.identity && slot.drafts.matches(slot.state.identity, event.key)) void this.#readDrafts(slot)
+  }
+  readonly #draftFocus = () => { const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active); if (slot && !this.#disposed) void this.#readDrafts(slot) }
   readonly #beforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
-  constructor(client: WorkspaceClient, changed: (state: DocumentSessionState) => void) { this.#client = client; this.#changed = changed }
+  constructor(client: WorkspaceClient, changed: (state: DocumentSessionState) => void) {
+    this.#client = client; this.#changed = changed
+    if (typeof window !== 'undefined') { window.addEventListener('storage', this.#storageChanged); window.addEventListener('focus', this.#draftFocus) }
+  }
 
   #syncLeaveProtection(): void {
     const pending = !this.#disposed && [...this.#slots.values()].some(slot => slot.state.dirty || slot.state.composing || slot.flight || slot.assetFlight)
@@ -90,10 +112,16 @@ export class DocumentSession {
       if (this.#active !== directory || opening !== this.#opening) return
       let slot = this.#slots.get(directory)
       if (!slot) {
-        slot = { input: 0, read: 0, compositions: new Set(), baseHash: await digest(answer.content), storage: `presmium.document.v1:${JSON.stringify([info.root, answer.content.id])}`, state: { directory, identity: JSON.stringify([info.root, answer.content.id]), content: answer.content, version: answer.version, fingerprint: answer.fingerprint, loading: false, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: answer.issues } }
+        const baseHash = await digest(answer.content)
+        if (this.#disposed || this.#active !== directory || opening !== this.#opening) return
+        const drafts = new DocumentDrafts(() => { if (slot && !this.#disposed) void this.#readDrafts(slot) })
+        slot = { input: 0, read: 0, compositions: new Set(), drafts, baseHash, storage: `presmium.document.v1:${JSON.stringify([info.root, answer.content.id])}`, state: { directory, identity: JSON.stringify([info.root, answer.content.id]), content: answer.content, version: answer.version, fingerprint: answer.fingerprint, loading: true, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: answer.issues } }
         this.#slots.set(directory, slot)
         await this.#restore(slot, answer)
-      } else await this.#adopt(slot, answer, () => this.#active === directory && opening === this.#opening)
+      } else {
+        await this.#adopt(slot, answer, () => this.#active === directory && opening === this.#opening)
+        await this.#readDrafts(slot)
+      }
       this.#syncLeaveProtection()
       if (this.#active !== directory || opening !== this.#opening) return
       // A fresh observation invalidates idle project references before the editor becomes ready.
@@ -128,6 +156,7 @@ export class DocumentSession {
       if (this.#slots.size <= 8) return
       if (directory === this.#active || slot.flight || slot.assetFlight || slot.state.dirty || slot.state.composing) continue
       clearTimeout(slot.timer)
+      slot.drafts.close()
       this.#slots.delete(directory)
     }
   }
@@ -146,7 +175,7 @@ export class DocumentSession {
       if (!current()) return
       if (slot.flight || slot.assetFlight) { slot.refreshed = true; return }
       await this.#adopt(slot, answer, current)
-      if (current()) { this.#persist(slot); this.#emit(slot) }
+      if (current()) { this.#persist(slot); this.#emit(slot); void this.#readDrafts(slot) }
     } catch (error) {
       if (current()) { slot.state = { ...slot.state, error: this.#error(error), issues: this.#issues(error) }; this.#emit(slot) }
     }
@@ -239,6 +268,7 @@ export class DocumentSession {
     } finally {
       if (slot.flight === flight) slot.flight = undefined
       this.#persist(slot); this.#emit(slot)
+      void this.#readDrafts(slot)
       if (slot.refreshed) { slot.refreshed = false; await this.refresh(slot.state.directory) }
       if (!slot.state.error) void this.#save(slot)
     }
@@ -370,6 +400,7 @@ export class DocumentSession {
       if (slot.assetFlight === work) slot.assetFlight = undefined
       slot.state = { ...slot.state, saving: false }
       this.#persist(slot); this.#emit(slot)
+      void this.#readDrafts(slot)
       if (slot.refreshed) { slot.refreshed = false; await this.refresh(slot.state.directory) }
       if (!slot.state.error) void this.#save(slot)
     }
@@ -404,6 +435,7 @@ export class DocumentSession {
       slot.compositions.clear()
       slot.state = { ...slot.state, content: answer.content, version: answer.version, fingerprint: answer.fingerprint, dirty: false, restored: false, composing: false, reset: slot.state.reset + 1, error: undefined, issues: answer.issues }
       this.#persist(slot); this.#emit(slot)
+      void this.#readDrafts(slot)
     } catch (error) { if (current()) { slot.state = { ...slot.state, error: this.#error(error) }; this.#emit(slot) } }
   }
   async flush(signal?: AbortSignal): Promise<void> {
@@ -421,29 +453,171 @@ export class DocumentSession {
     }
   }
 
-  #persist(slot: Slot): void {
-    try {
-      if (!slot.state.dirty && !slot.state.composing && !slot.flight) sessionStorage.removeItem(slot.storage)
-      else sessionStorage.setItem(slot.storage, JSON.stringify({ content: slot.state.content!, baseVersion: slot.state.version!, baseHash: slot.baseHash, input: slot.input, pendingHash: slot.flight?.hash ?? slot.pendingHash, composing: slot.state.composing } satisfies Draft))
-      slot.state.storageFailure = false
-    } catch { slot.state.storageFailure = true }
+  #persist(slot: Slot): boolean {
+    const identity = slot.state.identity
+    if (!identity || !slot.state.content || !slot.state.version) return false
+    let commit: DocumentDraftCommit | undefined
+    if (!slot.state.dirty && !slot.state.composing && !slot.flight) {
+      if (!slot.draft) {
+        slot.persistFailure = false; slot.state.backupPending = false
+        slot.state.storageFailure = slot.legacyFailure === 'write'
+        return true
+      }
+      commit = slot.drafts.remove(identity, slot.draft, slot.draftOrigins ?? [])
+    } else {
+      commit = slot.drafts.write(identity, { content: slot.state.content, baseVersion: slot.state.version, baseHash: slot.baseHash, input: slot.input,
+        pendingHash: slot.flight?.hash ?? slot.pendingHash, composing: slot.state.composing, origins: slot.draftOrigins }, slot.draft)
+    }
+    slot.persistFailure = !commit
+    slot.state.backupPending = Boolean(commit && !commit.clearing)
+    slot.backup = commit
+    if (commit) {
+      const previous = slot.draft?.id, input = slot.input
+      if (!commit.clearing) slot.draft = commit.record
+      const ticket = commit
+      void ticket.done.then(result => {
+        if (this.#disposed || this.#slots.get(slot.state.directory) !== slot || slot.state.identity !== identity || slot.backup !== ticket) return
+        if (result === 'superseded') return
+        slot.persistFailure = result === 'failed'
+        slot.state = { ...slot.state, backupPending: false, storageFailure: Boolean(slot.persistFailure || slot.legacyFailure === 'write') }
+        if (result === 'committed' && ticket.clearing && slot.input === input && !slot.state.dirty && !slot.state.composing) {
+          slot.draft = undefined; slot.draftOrigins = undefined; slot.backup = undefined
+        }
+        this.#emit(slot)
+        if (ticket.clearing || previous !== ticket.record.id) void this.#readDrafts(slot)
+      })
+    }
+    slot.state.storageFailure = Boolean(slot.persistFailure || slot.legacyFailure === 'write')
+    slot.state.recoveryReadFailure = Boolean(slot.draftFailure || slot.legacyFailure === 'read')
+    return Boolean(commit)
   }
+
   async #restore(slot: Slot, answer: DocumentAnswer): Promise<void> {
-    try {
-      const value: unknown = JSON.parse(sessionStorage.getItem(slot.storage) ?? 'null')
-      if (!value || typeof value !== 'object') return
-      const draft = value as Draft, checked = validateDocument(draft.content)
-      if (!checked.document || checked.document.id !== answer.content.id || checked.issues.some(issue => issue.severity === 'error') || typeof draft.baseVersion !== 'string' || typeof draft.baseHash !== 'string') return
-      const localHash = await digest(checked.document), remoteHash = await digest(answer.content)
-      if (localHash === remoteHash && !draft.composing) { sessionStorage.removeItem(slot.storage); return }
-      const conflict = answer.version !== draft.baseVersion && remoteHash !== draft.baseHash && remoteHash !== draft.pendingHash
-      slot.input = Number.isSafeInteger(draft.input) ? draft.input : 1
-      slot.state = { ...slot.state, content: checked.document, dirty: true, restored: true, error: conflict ? 'document-version-changed' : draft.composing ? 'document-composition-interrupted' : undefined }
-      if (remoteHash === draft.pendingHash || remoteHash === draft.baseHash) slot.state.version = answer.version
-      else slot.state.version = draft.baseVersion
-      slot.baseHash = remoteHash === draft.pendingHash ? remoteHash : draft.baseHash
-      slot.pendingHash = draft.pendingHash
-    } catch { slot.state.storageFailure = true }
+    const identity = slot.state.identity!, read = slot.read, input = slot.input
+    const migrated = await slot.drafts.migrate(identity, answer.content.id, slot.storage)
+    if (this.#disposed || this.#slots.get(slot.state.directory) !== slot || slot.state.identity !== identity || slot.read !== read || slot.input !== input) return
+    slot.legacyFailure = migrated
+    await this.#readDrafts(slot)
   }
-  dispose(): void { this.#disposed = true; this.#syncLeaveProtection(); this.close(); for (const slot of this.#slots.values()) { clearTimeout(slot.timer); this.#persist(slot) } }
+
+  async #readDrafts(slot: Slot): Promise<void> {
+    const identity = slot.state.identity, documentId = slot.state.content?.id
+    if (!identity || !documentId || this.#disposed) return
+    const read = slot.draftRead = (slot.draftRead ?? 0) + 1, sourceRead = slot.read, input = slot.input, baseHash = slot.baseHash, own = slot.draft?.id
+    const current = () => !this.#disposed && this.#slots.get(slot.state.directory) === slot && slot.state.identity === identity && slot.draftRead === read && slot.read === sourceRead && slot.input === input && slot.baseHash === baseHash && slot.draft?.id === own
+    try {
+      if (slot.legacyFailure) {
+        const migrated = await slot.drafts.migrate(identity, documentId, slot.storage)
+        if (!current()) return
+        slot.legacyFailure = migrated
+      }
+      const { records, failed } = await slot.drafts.read(identity, documentId), choices: DocumentDraftChoice[] = []
+      if (!current()) return
+      for (const record of records) {
+        if (record.id === own && record.owned || slot.draftOrigins?.some(value => value.id === record.id && value.revision === record.revision && value.token === record.token)) continue
+        if (!record.composing && await digest(record.content) === baseHash) continue
+        if (!current()) return
+        choices.push({ id: record.id, revision: record.revision, token: record.token, updatedAt: record.updatedAt, baseVersion: record.baseVersion, source: record.source })
+      }
+      if (!current()) return
+      slot.draftFailure = failed
+      slot.state = { ...slot.state, recoveryDrafts: choices.sort((a, b) => b.updatedAt - a.updatedAt || a.id.localeCompare(b.id)),
+        storageFailure: Boolean(slot.persistFailure || slot.legacyFailure === 'write'), recoveryReadFailure: Boolean(failed || slot.legacyFailure === 'read') }
+      this.#emit(slot)
+    } catch {
+      if (current()) { slot.draftFailure = true; slot.state = { ...slot.state, recoveryReadFailure: true }; this.#emit(slot) }
+    }
+  }
+
+  /** Selecting a candidate never writes the source or replaces this tab's only snapshot. */
+  async recoverDraft(value: DocumentDraftReference): Promise<void> {
+    const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
+    if (!slot?.state.identity || !slot.state.content || slot.state.loading || slot.flight || slot.assetFlight || slot.state.composing || this.#disposed) return
+    const identity = slot.state.identity, documentId = slot.state.content.id, input = slot.input, read = ++slot.read
+    const operation = slot.recoveryOperation = (slot.recoveryOperation ?? 0) + 1
+    const pendingSave = slot.timer !== undefined
+    clearTimeout(slot.timer); slot.timer = undefined
+    let adopted = false
+    let protectedRecord: { id?: string, revision?: number } | undefined
+    const current = () => !this.#disposed && this.#active === slot.state.directory && this.#slots.get(slot.state.directory) === slot && slot.state.identity === identity && slot.read === read && slot.input === input && slot.recoveryOperation === operation
+      && !slot.state.composing && !slot.flight && !slot.assetFlight && (!protectedRecord || slot.draft?.id === protectedRecord.id && slot.draft?.revision === protectedRecord.revision)
+    slot.state = { ...slot.state, recovering: true, recoveryChanged: false }; this.#emit(slot)
+    try {
+      if (!this.#persist(slot)) { this.#emit(slot); return }
+      const backup = slot.backup
+      if (backup && await backup.done !== 'committed') return
+      if (!current()) return
+      protectedRecord = { id: slot.draft?.id, revision: slot.draft?.revision }
+      const candidate = (await slot.drafts.read(identity, documentId)).records.find(record => record.id === value.id && record.revision === value.revision && record.token === value.token)
+      if (!current()) return
+      if (!candidate) { slot.state = { ...slot.state, recoveryChanged: true }; return }
+      const answer = await this.#client.readDocument(slot.state.directory)
+      if (!current()) return
+      if (answer.document !== slot.state.directory || answer.content.id !== documentId) { slot.state = { ...slot.state, error: 'document-identity-changed' }; return }
+      const [localHash, remoteHash] = await Promise.all([digest(candidate.content), digest(answer.content)])
+      if (!current()) return
+      const origins = [...new Map([...(candidate.origins ?? []), { id: candidate.id, revision: candidate.revision, token: candidate.token }].map(value => [JSON.stringify([value.id, value.revision, value.token]), value])).values()]
+      if (localHash === remoteHash && !candidate.composing) {
+        const settled = await slot.drafts.settle(identity, origins)
+        if (!current()) return
+        slot.persistFailure = !settled
+        return
+      }
+      const conflict = answer.version !== candidate.baseVersion && remoteHash !== candidate.baseHash && remoteHash !== candidate.pendingHash
+      const version = remoteHash === candidate.pendingHash || remoteHash === candidate.baseHash ? answer.version : candidate.baseVersion
+      const baseHash = remoteHash === candidate.pendingHash ? remoteHash : candidate.baseHash
+      const record = await slot.drafts.fork(identity, { content: candidate.content, baseVersion: version, baseHash, input: input + 1,
+        pendingHash: candidate.pendingHash, composing: Boolean(candidate.composing), origins })
+      if (!current()) { if (record) slot.drafts.archive(record); return }
+      if (!record) { slot.persistFailure = true; slot.state = { ...slot.state, storageFailure: true }; return }
+      clearTimeout(slot.timer); slot.timer = undefined
+      if (slot.draft) slot.drafts.archive(slot.draft)
+      slot.input = input + 1; slot.baseHash = baseHash; slot.pendingHash = candidate.pendingHash; slot.draft = record; slot.draftOrigins = origins
+      slot.backup = undefined; slot.persistFailure = false
+      adopted = true
+      slot.compositions.clear()
+      slot.state = { ...slot.state, content: candidate.content, version, fingerprint: answer.fingerprint, dirty: true, restored: true, composing: false,
+        backupPending: false, storageFailure: slot.legacyFailure === 'write', reset: slot.state.reset + 1,
+        error: conflict ? 'document-version-changed' : candidate.composing ? 'document-composition-interrupted' : undefined, issues: answer.issues }
+    } catch (error) {
+      if (current()) slot.state = { ...slot.state, error: this.#error(error), issues: this.#issues(error) }
+    } finally {
+      if (!this.#disposed && this.#slots.get(slot.state.directory) === slot && slot.state.identity === identity && slot.recoveryOperation === operation) {
+        if (!adopted && slot.input === input && pendingSave && slot.timer === undefined) this.#schedule(slot)
+        slot.state = { ...slot.state, recovering: false }; this.#emit(slot); void this.#readDrafts(slot)
+      }
+    }
+  }
+
+  async forgetDraft(value: DocumentDraftReference): Promise<void> {
+    const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
+    if (!slot?.state.identity || !slot.state.content || slot.state.recovering || slot.flight || slot.assetFlight || slot.state.composing || this.#disposed) return
+    const identity = slot.state.identity, documentId = slot.state.content.id, input = slot.input, read = slot.read
+    const operation = slot.recoveryOperation = (slot.recoveryOperation ?? 0) + 1
+    const current = () => !this.#disposed && this.#active === slot.state.directory && this.#slots.get(slot.state.directory) === slot && slot.state.identity === identity && slot.input === input && slot.read === read && slot.recoveryOperation === operation && !slot.state.composing && !slot.flight && !slot.assetFlight
+    slot.state = { ...slot.state, recovering: true }; this.#emit(slot)
+    try {
+      const candidate = (await slot.drafts.read(identity, documentId)).records.find(record => record.id === value.id && record.revision === value.revision && record.token === value.token)
+      if (!current()) return
+      if (candidate?.owned && candidate.id === slot.draft?.id) return
+      if (!candidate) slot.state = { ...slot.state, recoveryChanged: true }
+      else {
+        const settled = await slot.drafts.settle(identity, [value])
+        if (!current()) return
+        slot.persistFailure = !settled
+        slot.state = { ...slot.state, recoveryChanged: false, storageFailure: Boolean(slot.persistFailure || slot.legacyFailure === 'write') }
+      }
+    } catch { if (current()) { slot.persistFailure = true; slot.state = { ...slot.state, storageFailure: true } } }
+    finally {
+      if (!this.#disposed && this.#slots.get(slot.state.directory) === slot && slot.state.identity === identity && slot.recoveryOperation === operation) {
+        slot.state = { ...slot.state, recovering: false }; this.#emit(slot); void this.#readDrafts(slot)
+      }
+    }
+  }
+
+  dispose(): void {
+    this.#disposed = true; this.#syncLeaveProtection(); this.close()
+    if (typeof window !== 'undefined') { window.removeEventListener('storage', this.#storageChanged); window.removeEventListener('focus', this.#draftFocus) }
+    for (const slot of this.#slots.values()) { clearTimeout(slot.timer); this.#persist(slot); slot.drafts.close() }
+  }
 }
