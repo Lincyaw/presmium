@@ -1,8 +1,8 @@
 # 人声录制、转写与讲稿采用
 
-状态：部分实施，2026-10-27。首片已增加共享 ASR 候选服务与 HTTP 入口；真实无引擎边界通过 31 项，坏源取消边界通过 8 项，见[实施记录](benchmarks/transcription-candidate-2026-10-27.md)。未调用语音模型、读取凭据或验证成功识别／运行中提供方取消；录音入口、差异预览、讲稿采用及 MCP 适配仍为设计提案。已有音频导入的真实范围见[音频作者接口](audio-authoring.md)。
+状态：部分实施，2026-10-27。共享 ASR 候选服务已验证 31 项无引擎边界与 8 项坏源取消边界，见[首片记录](benchmarks/transcription-candidate-2026-10-27.md)。第二片已提供共享采用预检与原子讲稿采用，使用明确标识的候选协议材料，实际 HTTP／CAS／git 主链通过 30 项，另有旧候选重新对照 5 项，见[采用记录](benchmarks/transcription-adoption-2026-10-27.md)。这些材料不证明 ASR 成功；未调用语音模型、读取凭据或验证运行中提供方取消。录音、完整 Video 操作与重新配音闭环仍按各片的实际记录验收。已有音频导入范围见[音频作者接口](audio-authoring.md)。
 
-首片公开 `createDocumentTranscriptions` 与 [kernel 契约](../packages/kernel/src/contracts/transcription.ts)，HTTP 为 `GET document/transcription/capabilities`、`POST/GET document/transcription`、`GET document/transcription/result`、`POST document/transcription/cancel`。首次仅转写整份真实资产，任务不写 `Narration`，不自动编译或合成。持久取消意图重启后仍阻止迟到请求；已知任务 ID 的读取与取消只核文稿路径权限，不因当前 JSON 损坏或 UUID 替换而失去停止入口。尚未提供 Video 控件、Studio 代理或 MCP 转写工具，不能把路由存在视为完整作者流程已交付。
+首片公开 `createDocumentTranscriptions` 与 [kernel 契约](../packages/kernel/src/contracts/transcription.ts)，HTTP 为 `GET document/transcription/capabilities`、`POST/GET document/transcription`、`GET document/transcription/result`、`POST document/transcription/cancel`。首次仅转写整份真实资产，任务不写 `Narration`，不自动编译或合成。持久取消意图重启后仍阻止迟到请求；已知任务 ID 的读取与取消只核文稿路径权限，不因当前 JSON 损坏或 UUID 替换而失去停止入口。MCP 薄适配的范围单独见 [MCP RFC](rfc-mcp-authoring-actions.md)，不能把路由或工具存在视为完整作者流程已交付。
 
 作者可以录下人声或导入已有音频，转写成候选文字，核对目标步骤与现有讲稿，明确采用后再选择真实音色重新配音。录音、转写、采用讲稿、生成配音是四个独立决定。打开文稿、收到转写结果或采用文字都不自动调用下一项付费服务。
 
@@ -130,6 +130,16 @@ interface TranscriptionRevision {
 取消尽力中止 `SpeechService.transcribe` 的 AbortSignal；提供方可能已收费，界面不承诺退费。取消确认后即使旧响应到达，也不自动采用、启动 TTS 或恢复播放。已完成的合法候选和原音保留。每文稿先限制一个 ASR 工作，避免双击重复付费；与既有 TTS 的任务门禁分别适配，不从 UI 搭第二个私有任务队列。
 
 ## 4. 差异预览与原子采用
+
+共享接口为 `createTranscriptionAdoption({documentEditor, transcriptions})`，具体类型和 JSON Schema 在 [transcription-adoption 契约](../packages/kernel/src/contracts/transcription-adoption.ts)。`POST document/transcription/adoption/plan` 接收 `TranscriptionAdoptionDraft`；`POST document/transcription/adoption/apply` 接收 `TranscriptionAdoptionApply`。预检有未解决冲突时返回 `conflicts`，不创建 `planId`；无冲突时沿用 `DocumentEditor.plan` 的同一个 `planId`，没有第二套写入／历史。
+
+每个 target 固定 `sectionId`、`stepId`、可选 `narrationId` 与 `segmentIds`。`content` 由普通 text 和 `{type:'preserve', key}` 组成，原子 key 与原 payload 来自预检的 `targets[].atoms`。文字变化后，未明确处理的原子阻止采用；`discardAtoms` 是明确删除决定，删除有关 cue 暂停还需 `removeCueTimings`。没有提供 `content` 时使用所选段落的原顺序文字，不解析 Markdown 或 cue role。
+
+`draft.id` 是文稿修改意图，未采用期间递增 `draftRevision` 可重新预检；更高修订使旧 quote 失效。同修订的不同内容被拒绝。一次成功采用后的下一次修改使用新意图 ID；重试旧请求沿原意图读取确认，不另写一遍。apply 回执带发送时的 `draftRevision`，调用方仍须与当前输入比较，不能清掉后续校对。
+
+候选的 ASR source 保留原版本；采用 draft 则固定当前保存 source。允许同 UUID、同原音的旧候选重新对照当前讲稿，不因仅修改正文或时机而强制重新识别。新 UUID、原音字节摘要或真实时长失配会拒绝采用，旧 plan 不能直接套用新保存来源。
+
+共享服务 `apply` 固定使用 agent 路径，复用 `DocumentEditor.apply` 的 review-required 门禁。受信 HTTP editor 路径由工厂私有 closure 固定调用 `DocumentEditor.change`，请求 schema 不接受 `origin`，MCP 不能通过 payload 自报 editor。人机两条路径都经过相同的候选／原音校验与原子事务。
 
 ### 4.1 固定目标
 

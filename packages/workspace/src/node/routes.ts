@@ -24,7 +24,7 @@ import type { DocumentEditor } from './document-editor.ts'
 import { documentAudioRoutes } from './document-audio.ts'
 import { documentImageRoutes } from './document-images.ts'
 import { createDocumentTranscriptions, documentTranscriptionRoutes } from './document-transcription.ts'
-import type { ProductionAudioAuthoring, SpeechService } from '@lincyaw/kernel'
+import type { DocumentTranscriptions, ProductionAudioAuthoring, SpeechService } from '@lincyaw/kernel'
 import { documentDirOf } from './writer.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
@@ -52,6 +52,9 @@ export interface WorkspaceRoutesOptions {
   launcherToken?: string
   audio?: ProductionAudioAuthoring
   speech?: SpeechService
+  /** Supplied by a workspace host so remounting contributions does not replace or cancel tasks. */
+  transcriptions?: DocumentTranscriptions
+  transcriptionAdoptionRoutes?: Record<string, Route>
 }
 
 function toRendererIds(body: unknown): string[] | undefined {
@@ -137,12 +140,14 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       return await revert(revisions, id, ctx.member, { which, ...document ? { document } : {} })
     }),
   })
-  const transcriptions = createDocumentTranscriptions({ root: config.root, editor, audio: options.audio, speech: options.speech })
+  const ownedTranscriptions = options.transcriptions ? undefined : createDocumentTranscriptions({ root: config.root, editor, audio: options.audio, speech: options.speech })
+  const transcriptions = options.transcriptions ?? ownedTranscriptions!
   const routes: Record<string, Route> = {
     ...documentEditorRoutes({ root: config.root, editor, documentEditor: options.documentEditor, workbench }),
     ...documentAudioRoutes({ root: config.root, editor, revisions, audio: options.audio }),
     ...documentImageRoutes({ root: config.root, editor, revisions }),
     ...documentTranscriptionRoutes(transcriptions),
+    ...options.transcriptionAdoptionRoutes,
     documents: {
       role: 'reader',
       handle: (request, ctx) => catchRequestErrors(async () => {
@@ -266,7 +271,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       })),
     },
   }
-  return { routes: authorizeWorkspaceRoutes(routes, options.launcherToken), close: () => transcriptions.close() }
+  return { routes: authorizeWorkspaceRoutes(routes, options.launcherToken), close: () => ownedTranscriptions?.close() ?? Promise.resolve() }
 }
 
 function workbenchRoutes(workbench: WorkbenchApi): Record<string, Route> {

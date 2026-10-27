@@ -2,13 +2,21 @@ import type { CanonicalSource } from '../ir.ts'
 import type { TimeRange } from './document.ts'
 import type { Member } from './server.ts'
 import type { SpeechEngineInfo } from './speech.ts'
+import type { Finding } from './checks.ts'
+
+export const TRANSCRIPTION_REQUEST_MAX_BYTES = 32 << 10
 
 export interface TranscriptionCapabilities {
+  source: CanonicalSource
   available: boolean
-  reason?: 'speech-unavailable' | 'engine-unavailable' | 'audio-unavailable'
+  status: 'available' | 'unavailable' | 'unknown'
+  reason?: 'speech-unavailable' | 'engine-unavailable' | 'audio-unavailable' | 'services-unavailable'
+  /** Provider declaration and local configuration are known; authentication/recognition is not verified. */
+  verification: 'configuration-only'
+  findings?: Finding[]
   engines: SpeechEngineInfo[]
   range: 'whole-asset'
-  limits: { audioBytes: number, durationMs: number }
+  limits: { audioBytes: number, durationMs: number, tasks: number, requestBytes: number }
 }
 
 /** A confirmed recognition request; no script, clip or voice selection is changed. */
@@ -22,6 +30,27 @@ export interface DocumentTranscriptionRequest {
   hints?: string[]
   confirmed: true
 }
+
+/** Agent input excludes host confirmation; HTTP and Node validate the confirmed form below. */
+export const DOCUMENT_TRANSCRIPTION_INPUT_SCHEMA = {
+  type: 'object', additionalProperties: false,
+  properties: {
+    intent: { type: 'string', pattern: '^[A-Za-z\\d_-]{16,128}$' },
+    source: { type: 'object', additionalProperties: false, properties: { documentId: { type: 'string', minLength: 1, maxLength: 200 }, version: { type: 'string', pattern: '^[a-f\\d]{20}$' }, fingerprint: { type: 'string', pattern: '^[a-f\\d]{16}$' } }, required: ['documentId', 'version', 'fingerprint'] },
+    assetId: { type: 'string', minLength: 1, maxLength: 200 },
+    audioSha256: { type: 'string', pattern: '^[a-f\\d]{64}$' },
+    engine: { type: 'string', minLength: 1, maxLength: 128 },
+    lang: { type: 'string', minLength: 1, maxLength: 64 },
+    hints: { type: 'array', maxItems: 100, items: { type: 'string', maxLength: 200 } },
+  },
+  required: ['intent', 'source', 'assetId', 'audioSha256', 'engine'],
+} as const
+
+export const DOCUMENT_TRANSCRIPTION_REQUEST_SCHEMA = {
+  ...DOCUMENT_TRANSCRIPTION_INPUT_SCHEMA,
+  properties: { ...DOCUMENT_TRANSCRIPTION_INPUT_SCHEMA.properties, confirmed: { const: true } },
+  required: [...DOCUMENT_TRANSCRIPTION_INPUT_SCHEMA.required, 'confirmed'],
+} as const
 
 export interface TranscriptionRevision {
   transcriptionId: string
@@ -60,12 +89,20 @@ export interface TranscriptionTask {
 }
 
 export interface TranscriptionCancellation { intent: string, state: TranscriptionTaskState, task?: TranscriptionTask }
+export interface TranscriptionListAnswer {
+  tasks: TranscriptionTask[]
+  issues: { id: string, code: string }[]
+  truncated?: true
+}
 
 /** Workspace-owned authoring capability, shared by HTTP and agent adapters. */
 export interface DocumentTranscriptions {
   capabilities(document: string, member: Member): Promise<TranscriptionCapabilities>
   start(document: string, request: DocumentTranscriptionRequest, member: Member, signal?: AbortSignal): Promise<TranscriptionTask>
+  list(document: string, member: Member): Promise<TranscriptionListAnswer>
   get(document: string, query: { id: string } | { intent: string }, member: Member): Promise<TranscriptionTask>
   readResult(document: string, id: string, revision: string, member: Member): Promise<TranscriptionRevision>
+  /** Rechecks current canonical source and the exact original audio, without recognizing it again. */
+  verifyResult(document: string, id: string, revision: string, source: CanonicalSource, member: Member): Promise<TranscriptionRevision>
   cancel(document: string, query: { id: string } | { intent: string }, member: Member): Promise<TranscriptionCancellation>
 }

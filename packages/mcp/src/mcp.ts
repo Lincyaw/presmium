@@ -11,6 +11,7 @@ import { MCP_MESSAGES } from './messages.ts'
 import type { McpMessages } from './messages.ts'
 import { TOOL_APPROVAL_META, TOOL_KIND_META } from './tool-meta.ts'
 import { AUTHORING_TOOLS } from './authoring.ts'
+import { TRANSCRIPTION_TOOLS } from './transcription.ts'
 
 const MCP_VERSION: string = (createRequire(import.meta.url)('../package.json') as { version: string }).version
 const POSITION_URI = 'presmium://position'
@@ -135,6 +136,7 @@ function jobSummary(job: CompileJob, logLines = 0) {
 
 const TOOLS: ToolSpec[] = [
   ...AUTHORING_TOOLS,
+  ...TRANSCRIPTION_TOOLS,
   {
     name: 'list_documents',
     description: 'The documents (decks) this host serves: directory, title, language, tags.',
@@ -420,6 +422,13 @@ function runPlan(doc: IRDocument, node: CodeNode): string {
 
 function hostSupports(host: McpHost, name: string): boolean {
   switch (name) {
+    case 'start_transcription':
+    case 'get_transcriptions':
+    case 'get_transcription':
+    case 'get_transcription_result':
+    case 'cancel_transcription': return Boolean(host.transcriptions)
+    case 'plan_transcription_adoption': return Boolean(host.transcriptionAdoption)
+    case 'apply_transcription_adoption': return Boolean(host.transcriptionAdoption && host.authoring)
     case 'get_document':
     case 'plan_document_change':
     case 'apply_document_change': return Boolean(host.authoring)
@@ -635,16 +644,16 @@ async function pluginTool(call: Call, tool: AgentTool): Promise<unknown> {
 
 async function resolveDocument(host: McpHost, named: string | undefined, bound?: string): Promise<string> {
   if (bound !== undefined) {
-    if (named !== undefined && named !== bound) throw new Error(`this token is for the document ${JSON.stringify(bound)}, not ${JSON.stringify(named)}`)
+    if (named !== undefined && named !== bound) throw Object.assign(new Error(`this token is for the document ${JSON.stringify(bound)}, not ${JSON.stringify(named)}`), { status: 403 })
     return bound
   }
   const documents = await host.documents()
   if (named !== undefined) {
-    if (!documents.some(d => d.dir === named)) throw new Error(`no document ${JSON.stringify(named)}; list_documents names them`)
+    if (!documents.some(d => d.dir === named)) throw Object.assign(new Error(`no document ${JSON.stringify(named)}; list_documents names them`), { status: 404 })
     return named
   }
   if (documents.length === 1) return documents[0]!.dir
-  throw new Error(documents.length === 0 ? 'no document yet (the deck may still be compiling)' : 'several documents: name one with `document` (list_documents), or a resource\'s with ?document=<dir>')
+  throw Object.assign(new Error(documents.length === 0 ? 'no document yet (the deck may still be compiling)' : 'several documents: name one with `document` (list_documents), or a resource\'s with ?document=<dir>'), { status: documents.length === 0 ? 409 : 400 })
 }
 
 export interface PresmiumMcp {

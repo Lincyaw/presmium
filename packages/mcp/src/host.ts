@@ -5,6 +5,8 @@ import type {
   ApprovalRequest,
   DiagnosticSnapshot,
   DocumentAuthoring,
+  DocumentTranscriptions,
+  DocumentTranscriptionAdoption,
   DocumentSummary,
   Finding,
   Focus,
@@ -59,6 +61,8 @@ export interface McpRuntimeWindow {
 
 export interface McpHost {
   authoring?: DocumentAuthoring
+  transcriptions?: DocumentTranscriptions
+  transcriptionAdoption?: DocumentTranscriptionAdoption
   process?: McpProcess
   documents(): Promise<DocumentSummary[]>
   compile(document: string): Promise<{ doc: IRDocument, diagnostics: Finding[] }>

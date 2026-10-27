@@ -1,16 +1,22 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { constants } from 'node:fs'
-import { lstat, mkdir, open, readdir, realpath, rename, unlink } from 'node:fs/promises'
+import { lstat, mkdir, open, opendir, realpath, rename, unlink } from 'node:fs/promises'
 import { dirname, join, relative } from 'node:path'
 import { setImmediate } from 'node:timers/promises'
-import { DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, ProductionAudioRefusal } from '@lincyaw/kernel'
-import { productionAssetFile } from '@lincyaw/kernel/node'
-import type { CanonicalSource, DocumentTranscriptions, Member, ProductionAudioAuthoring, RequestContext, Route, SpeechEngineInfo, SpeechService, Transcript, DocumentTranscriptionRequest, TranscriptionRevision, TranscriptionTask } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, ProductionAudioRefusal, TRANSCRIPTION_REQUEST_MAX_BYTES } from '@lincyaw/kernel'
+import { productionAssetFile, validateDocumentTranscriptionRequest } from '@lincyaw/kernel/node'
+import type { CanonicalSource, DocumentTranscriptions, Finding, Member, ProductionAudioAuthoring, RequestContext, Route, SpeechEngineInfo, SpeechService, Transcript, DocumentTranscriptionRequest, TranscriptionListAnswer, TranscriptionRevision, TranscriptionTask } from '@lincyaw/kernel'
 import { readAuthoringDocument } from './document-editor.ts'
 import { catchRequestErrors, RequestError } from './errors.ts'
 import type { SourceEditor } from './source-editor.ts'
 
-interface Options { root: string, editor: SourceEditor, audio?: ProductionAudioAuthoring, speech?: SpeechService }
+export interface TranscriptionServices { audio?: ProductionAudioAuthoring, speech?: SpeechService, findings?: Finding[] }
+interface Options extends TranscriptionServices {
+  root: string
+  editor: SourceEditor
+  /** Assemble Node services for this exact source without compiling scenes or executing passes. */
+  services?(document: string, source: CanonicalSource): Promise<TranscriptionServices>
+}
 interface RecordEntry { format: 1, document: string, documentId: string, member: string, intent: string, payload?: string, cancelled?: true, task?: TranscriptionTask }
 interface Active { record: RecordEntry, directory: string, controller: AbortController, saving: Promise<void>, finished?: Promise<void> }
 const MAX_AUDIO = 16 << 20, MAX_RESULT = 2 << 20, MAX_TASKS = 1024
@@ -20,26 +26,16 @@ const intentValid = (value: unknown): value is string => typeof value === 'strin
 const sameSource = (a: CanonicalSource, b: CanonicalSource) => a.documentId === b.documentId && a.version === b.version && a.fingerprint === b.fingerprint
 const now = () => new Date().toISOString()
 const ctxOf = (document: string, member: Member): RequestContext => ({ document, member, rest: '' })
-const requestValid = (value: unknown): value is DocumentTranscriptionRequest => isRecord(value)
-  && Object.keys(value).every(key => ['intent', 'source', 'assetId', 'audioSha256', 'engine', 'lang', 'hints', 'confirmed'].includes(key))
-  && intentValid(value.intent) && value.confirmed === true && isRecord(value.source)
-  && Object.keys(value.source).every(key => ['documentId', 'version', 'fingerprint'].includes(key))
-  && typeof value.source.documentId === 'string' && value.source.documentId.length > 0 && value.source.documentId.length <= 200
-  && typeof value.source.version === 'string' && /^[a-f\d]{20}$/.test(value.source.version)
-  && typeof value.source.fingerprint === 'string' && /^[a-f\d]{16}$/.test(value.source.fingerprint)
-  && typeof value.assetId === 'string' && value.assetId.length > 0 && value.assetId.length <= 200 && idValid(value.audioSha256)
-  && typeof value.engine === 'string' && value.engine.length > 0 && value.engine.length <= 128
-  && (value.lang === undefined || typeof value.lang === 'string' && value.lang.length > 0 && value.lang.length <= 64)
-  && (value.hints === undefined || Array.isArray(value.hints) && value.hints.length <= 100 && value.hints.every(hint => typeof hint === 'string' && hint.length <= 200))
 
 async function readBounded(file: string, limit: number): Promise<Uint8Array> {
-  const handle = await open(file, constants.O_RDONLY | constants.O_NOFOLLOW).catch(error => {
+  const handle = await open(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK).catch(error => {
     if (error.code === 'ELOOP') throw new RequestError(403, 'transcription-storage-path')
     throw error
   })
   try {
     const stat = await handle.stat()
-    if (!stat.isFile() || stat.size > limit) throw new RequestError(413, 'transcription-file-size')
+    if (!stat.isFile()) throw new RequestError(403, 'transcription-storage-path')
+    if (stat.size > limit) throw new RequestError(413, 'transcription-file-size')
     const bytes = new Uint8Array(stat.size + 1)
     let length = 0
     while (length < bytes.length) {
@@ -58,6 +54,12 @@ async function directory(path: string, create: boolean): Promise<void> {
   if (!stat.isDirectory() || stat.isSymbolicLink() || await realpath(path) !== path) throw new RequestError(403, 'transcription-storage-path')
 }
 
+async function taskNames(path: string, limit: number): Promise<string[]> {
+  const names: string[] = []
+  for await (const entry of await opendir(path)) { names.push(entry.name); if (names.length >= limit) break }
+  return names
+}
+
 async function writeJson(path: string, value: unknown, exclusive = false): Promise<void> {
   const text = JSON.stringify(value)
   if (Buffer.byteLength(text) > MAX_RESULT) throw new RequestError(413, 'transcription-result-size')
@@ -73,7 +75,7 @@ async function writeJson(path: string, value: unknown, exclusive = false): Promi
 }
 
 /** Recognition is an immutable candidate. Only a later, separate authoring action may adopt it. */
-export function createDocumentTranscriptions({ root, editor, audio, speech }: Options): DocumentTranscriptions & { close(): Promise<void> } {
+export function createDocumentTranscriptions({ root, editor, audio, speech, services }: Options): DocumentTranscriptions & { close(): Promise<void> } {
   const active = new Map<string, Active>()
   const admitting = new Map<string, { document: string, documentId: string, member: string, intent: string, controller: AbortController, finished: Promise<void> }>()
   let closed = false
@@ -88,13 +90,20 @@ export function createDocumentTranscriptions({ root, editor, audio, speech }: Op
     const current = readAuthoringDocument(editor, ctxOf(document, member))
     return { ...current, binding: { documentId: current.content.id, version: current.source.version, fingerprint: fnv1a64(current.source.content) } }
   }
+  const servicesOf = (document: string, source: CanonicalSource) => services ? services(document, source) : Promise.resolve({ audio, speech })
+  const capabilityOf = async (source: CanonicalSource, resolved: TranscriptionServices) => {
+    const engines = resolved.speech ? (await resolved.speech.engines()).filter(engine => engine.stt) : []
+    const available = Boolean(resolved.audio && engines.length)
+    const unknown = !available && resolved.findings?.some(finding => finding.severity === 'error')
+    return { source, available, status: available ? 'available' as const : unknown ? 'unknown' as const : 'unavailable' as const, ...unknown ? { reason: 'services-unavailable' as const } : !resolved.audio ? { reason: 'audio-unavailable' as const } : !resolved.speech ? { reason: 'speech-unavailable' as const } : !engines.length ? { reason: 'engine-unavailable' as const } : {}, verification: 'configuration-only' as const, ...resolved.findings?.length ? { findings: resolved.findings } : {}, engines, range: 'whole-asset' as const, limits: { audioBytes: MAX_AUDIO, durationMs: 600_000, tasks: MAX_TASKS, requestBytes: TRANSCRIPTION_REQUEST_MAX_BYTES } }
+  }
   const taskId = (document: string, documentId: string, member: Member, intent: string) => hash(JSON.stringify([document, documentId, member.id, intent]))
   const storage = async (document: string, member: Member, id: string, create = false) => {
     if (!idValid(id)) throw new RequestError(400, 'transcription-id-invalid')
     const path = join(dirname(authorize(document, member)), 'transcriptions')
     await directory(path, create)
     const target = join(path, id)
-    if (create && !(await lstat(target).catch(() => undefined)) && (await readdir(path)).length >= MAX_TASKS) throw new RequestError(503, 'transcription-intent-capacity')
+    if (create && !(await lstat(target).catch(() => undefined)) && (await taskNames(path, MAX_TASKS)).length >= MAX_TASKS) throw new RequestError(503, 'transcription-intent-capacity')
     await directory(target, create)
     return target
   }
@@ -106,9 +115,12 @@ export function createDocumentTranscriptions({ root, editor, audio, speech }: Op
       try { record = JSON.parse(text) } catch { throw new RequestError(409, 'transcription-record-invalid') }
       if (!isRecord(record) || record.format !== 1 || record.document !== document || typeof record.documentId !== 'string' || typeof record.member !== 'string' || !intentValid(record.intent)
         || hash(JSON.stringify([record.document, record.documentId, record.member, record.intent])) !== id
-        || record.task && (!isRecord(record.task) || record.task.id !== id || !isRecord(record.task.source) || record.task.source.documentId !== record.documentId || typeof record.task.source.version !== 'string' || typeof record.task.source.fingerprint !== 'string'
-          || !isRecord(record.task.audio) || typeof record.task.audio.assetId !== 'string' || !idValid(record.task.audio.sha256) || !Number.isSafeInteger(record.task.sequence)
-          || !['queued', 'running', 'cancelling', 'cancelled', 'done', 'failed'].includes(record.task.state) || !isRecord(record.task.progress))) throw new RequestError(409, 'transcription-record-invalid')
+        || record.task && (!isRecord(record.task) || record.task.kind !== 'transcription' || record.task.id !== id || record.task.document !== document || record.task.intent !== record.intent || typeof record.task.createdAt !== 'string'
+          || !isRecord(record.task.source) || record.task.source.documentId !== record.documentId || typeof record.task.source.version !== 'string' || !/^[a-f\d]{20}$/.test(record.task.source.version) || typeof record.task.source.fingerprint !== 'string' || !/^[a-f\d]{16}$/.test(record.task.source.fingerprint)
+          || !isRecord(record.task.audio) || typeof record.task.audio.assetId !== 'string' || !idValid(record.task.audio.sha256) || !Number.isSafeInteger(record.task.sequence) || record.task.sequence < 0
+          || !['queued', 'running', 'cancelling', 'cancelled', 'done', 'failed'].includes(record.task.state) || !isRecord(record.task.progress) || !['queued', 'recognizing', 'saving', 'finished'].includes(record.task.progress.phase)
+          || record.task.state === 'done' && !isRecord(record.task.result)
+          || record.task.result !== undefined && (!isRecord(record.task.result) || record.task.result.transcriptionId !== id || !idValid(record.task.result.revision)))) throw new RequestError(409, 'transcription-record-invalid')
       return { record, directory: target }
     } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined; throw error }
   }
@@ -118,22 +130,36 @@ export function createDocumentTranscriptions({ root, editor, audio, speech }: Op
     return entry.saving
   }
   const change = (entry: Active) => { entry.record.task!.sequence++; return persist(entry) }
-  const present = async (document: string, member: Member, task: TranscriptionTask): Promise<TranscriptionTask> => {
+  type Observation = { current?: ReturnType<typeof opened>, audio: Map<string, Promise<boolean>> }
+  const observe = (document: string, member: Member): Observation => {
+    try { return { current: opened(document, member), audio: new Map() } }
+    catch (error) { if (error instanceof RequestError && error.status === 422) return { audio: new Map() }; throw error }
+  }
+  const present = async (document: string, member: Member, task: TranscriptionTask, observation?: Observation): Promise<TranscriptionTask> => {
     authorize(document, member)
     const shown = structuredClone(task)
     // A journal from an interrupted owner is not permission to repeat a spending request.
     if (!active.has(task.id) && ['queued', 'running', 'cancelling'].includes(shown.state)) { shown.state = 'failed'; shown.error = 'transcription-interrupted' }
     try {
-      const current = opened(document, member)
+      const current = observation ? observation.current : opened(document, member)
+      if (!current) { shown.current = false; shown.staleReason = 'document-unavailable'; return shown }
       shown.current = sameSource(current.binding, shown.source)
       if (!shown.current) shown.staleReason = 'document-changed'
-      else try {
-        const asset = current.content.assets[shown.audio.assetId]
-        const path = asset?.kind === 'audio' && productionAssetFile(join(root, document), asset.location)
-        const file = path && editor.readableFile(editor.scope(document), relative(root, path).split('\\').join('/'), member)
-        if (!file || hash(await readBounded(file, MAX_AUDIO)) !== shown.audio.sha256) throw new Error('changed')
-      } catch { shown.current = false; shown.staleReason = 'audio-changed' }
-      if (!sameSource(opened(document, member).binding, shown.source)) { shown.current = false; shown.staleReason = 'document-changed' }
+      else {
+        const key = JSON.stringify([shown.audio.assetId, shown.audio.sha256])
+        let checked = observation?.audio.get(key)
+        if (!checked) {
+          checked = (async () => {
+            const asset = current.content.assets[shown.audio.assetId]
+            const path = asset?.kind === 'audio' && productionAssetFile(join(root, document), asset.location)
+            const file = path && editor.readableFile(editor.scope(document), relative(root, path).split('\\').join('/'), member)
+            return Boolean(file && hash(await readBounded(file, MAX_AUDIO)) === shown.audio.sha256)
+          })().catch(() => false)
+          observation?.audio.set(key, checked)
+        }
+        if (!await checked) { shown.current = false; shown.staleReason = 'audio-changed' }
+      }
+      if (!observation && !sameSource(opened(document, member).binding, shown.source)) { shown.current = false; shown.staleReason = 'document-changed' }
     } catch (error) {
       if (!(error instanceof RequestError) || error.status !== 422) throw error
       shown.current = false; shown.staleReason = 'document-unavailable'
@@ -168,18 +194,20 @@ export function createDocumentTranscriptions({ root, editor, audio, speech }: Op
     const file = editor.readableFile(editor.scope(document), relative(root, path).split('\\').join('/'), member)
     const bytes = await readBounded(file, MAX_AUDIO)
     if (!bytes.length || hash(bytes) !== request.audioSha256 || asset.fingerprint !== undefined && asset.fingerprint !== `sha256:${request.audioSha256}`) throw new RequestError(409, 'transcription-audio-changed')
-    if (!audio) throw new RequestError(503, 'transcription-audio-unavailable')
-    const { inspection } = await audio.inspectBytes(asset.id, bytes, signal)
+    const resolved = await servicesOf(document, current.binding)
+    if (!resolved.audio) throw new RequestError(503, 'transcription-audio-unavailable')
+    const { inspection } = await resolved.audio.inspectBytes(asset.id, bytes, signal)
     signal?.throwIfAborted()
     if (inspection.sha256 !== request.audioSha256) throw new RequestError(409, 'transcription-audio-changed')
     if (!Number.isFinite(inspection.durationMs) || inspection.durationMs <= 0 || inspection.durationMs > 600_000) throw new RequestError(422, 'production.asset-duration')
     if (!sameSource(opened(document, member).binding, request.source)) throw new RequestError(409, 'document-version-changed')
-    return { bytes, inspection }
+    return { bytes, inspection, services: resolved }
   }
   const capabilities: DocumentTranscriptions['capabilities'] = async (document, member) => {
-    opened(document, member)
-    const engines = speech ? (await speech.engines()).filter(engine => engine.stt) : []
-    return { available: Boolean(audio && engines.length), ...!audio ? { reason: 'audio-unavailable' as const } : !speech ? { reason: 'speech-unavailable' as const } : !engines.length ? { reason: 'engine-unavailable' as const } : {}, engines, range: 'whole-asset', limits: { audioBytes: MAX_AUDIO, durationMs: 600_000 } }
+    const current = opened(document, member)
+    const capability = await capabilityOf(current.binding, await servicesOf(document, current.binding))
+    if (!sameSource(opened(document, member).binding, current.binding)) throw new RequestError(409, 'document-version-changed')
+    return capability
   }
   const run = async (entry: Active, request: DocumentTranscriptionRequest, engine: SpeechEngineInfo, input: Awaited<ReturnType<typeof inspect>>) => {
     const task = entry.record.task!, signal = entry.controller.signal
@@ -188,7 +216,7 @@ export function createDocumentTranscriptions({ root, editor, audio, speech }: Op
       signal.throwIfAborted()
       task.state = 'running'; task.startedAt = now(); task.progress.phase = 'recognizing'; await change(entry)
       signal.throwIfAborted()
-      const transcript = await speech!.transcribe({ engine: engine.id, audio: new Blob([new Uint8Array(input.bytes)], { type: input.inspection.mediaType }), lang: request.lang, hints: request.hints }, signal)
+      const transcript = await input.services.speech!.transcribe({ engine: engine.id, audio: new Blob([new Uint8Array(input.bytes)], { type: input.inspection.mediaType }), lang: request.lang, hints: request.hints }, signal)
       signal.throwIfAborted()
       const result = normalizeTranscript(transcript, input.inspection.durationMs, task.id)
       task.progress.phase = 'saving'; await change(entry)
@@ -211,8 +239,52 @@ export function createDocumentTranscriptions({ root, editor, audio, speech }: Op
   }
   return {
     capabilities,
+    async list(document, member): Promise<TranscriptionListAnswer> {
+      const path = join(dirname(authorize(document, member)), 'transcriptions'), observation = observe(document, member)
+      let stored: string[] = []
+      try { await directory(path, false); stored = await taskNames(path, MAX_TASKS + 1) }
+      catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
+      const all = [...new Set([...active.values()].filter(entry => entry.record.document === document).map(entry => entry.record.task!.id).concat(stored.sort()))]
+      const ids = all.slice(0, MAX_TASKS), answer: TranscriptionListAnswer = { tasks: [], issues: [], ...all.length > MAX_TASKS ? { truncated: true } : {} }
+      let index = 0, bytes = 0
+      await Promise.all(Array.from({ length: Math.min(4, ids.length) }, async () => {
+        while (index < ids.length) {
+          const id = ids[index++]!
+          if (!idValid(id)) { answer.issues.push({ id, code: 'transcription-storage-entry-invalid' }); continue }
+          try {
+            const entry = active.get(id) ?? await load(document, member, id)
+            if (!entry) { if (admitting.get(id)?.document !== document) answer.issues.push({ id, code: 'transcription-record-missing' }); continue }
+            if (!entry.record.task) { if (!entry.record.cancelled) answer.issues.push({ id, code: 'transcription-record-invalid' }); continue }
+            const task = await present(document, member, entry.record.task, observation), size = Buffer.byteLength(JSON.stringify(task))
+            if (bytes + size > MAX_RESULT) { answer.truncated = true; answer.issues.push({ id, code: 'transcription-list-size' }); continue }
+            bytes += size; answer.tasks.push(task)
+          } catch (error) {
+            if (!(error instanceof RequestError)) throw error
+            answer.issues.push({ id, code: error.message })
+          }
+        }
+      }))
+      const latest = observe(document, member)
+      if (!latest.current || !observation.current || !sameSource(latest.current.binding, observation.current.binding)) for (const task of answer.tasks) {
+        task.current = false; task.staleReason = latest.current ? 'document-changed' : 'document-unavailable'
+      }
+      answer.tasks.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id))
+      answer.issues.sort((a, b) => a.id.localeCompare(b.id))
+      // Account for issues and JSON framing too, without repeatedly serializing the whole list.
+      let size = Buffer.byteLength(JSON.stringify(answer))
+      if (size > MAX_RESULT) {
+        answer.truncated = true; size = Buffer.byteLength(JSON.stringify(answer))
+        while (size > MAX_RESULT && (answer.tasks.length || answer.issues.length)) {
+          const items = answer.tasks.length ? answer.tasks : answer.issues
+          const removed = items.pop()!
+          size -= Buffer.byteLength(JSON.stringify(removed)) + (items.length ? 1 : 0)
+        }
+      }
+      return answer
+    },
     async start(document, request, member, signal) {
-      if (!requestValid(request)) throw new RequestError(400, 'transcription-request-invalid')
+      if (!validateDocumentTranscriptionRequest(request)) throw new RequestError(400, 'transcription-request-invalid')
+      if (Buffer.byteLength(JSON.stringify(request)) > TRANSCRIPTION_REQUEST_MAX_BYTES) throw new RequestError(413, 'transcription-request-size')
       const current = opened(document, member), id = taskId(document, current.content.id, member, request.intent), payload = hash(JSON.stringify([request.source.documentId, request.source.version, request.source.fingerprint, request.assetId, request.audioSha256, request.engine, request.lang ?? null, request.hints ?? []]))
       const previous = active.get(id) ?? await load(document, member, id)
       if (previous) {
@@ -222,7 +294,7 @@ export function createDocumentTranscriptions({ root, editor, audio, speech }: Op
         return present(document, member, previous.record.task)
       }
       const input = await inspect(document, member, request, signal)
-      const capability = await capabilities(document, member)
+      const capability = await capabilityOf(request.source, input.services)
       const engine = capability.engines.find(engine => engine.id === request.engine)
       if (!capability.available || !engine) throw new RequestError(503, 'transcription-engine-unavailable')
       signal?.throwIfAborted()
@@ -268,6 +340,17 @@ export function createDocumentTranscriptions({ root, editor, audio, speech }: Op
       if (candidate.transcriptionId !== id || recorded !== revision || hash(JSON.stringify(content)) !== revision) throw new RequestError(409, 'transcription-result-changed')
       return candidate
     },
+    async verifyResult(document, id, revision, source, member) {
+      const candidate = await this.readResult(document, id, revision, member)
+      if (!isRecord(candidate.source) || candidate.source.documentId !== source.documentId || !isRecord(candidate.audio) || typeof candidate.audio.assetId !== 'string' || !idValid(candidate.audio.sha256)
+        || !isRecord(candidate.audio.sourceRange) || !isRecord(candidate.result) || typeof candidate.result.text !== 'string' || !Array.isArray(candidate.result.segments)
+        || !candidate.result.segments.length || candidate.result.segments.length > 10_000
+        || candidate.result.segments.some(segment => !isRecord(segment) || typeof segment.id !== 'string' || !segment.id || segment.id.length > 200 || typeof segment.text !== 'string')
+        || new Set(candidate.result.segments.map(segment => segment.id)).size !== candidate.result.segments.length) throw new RequestError(422, 'transcription-result-invalid')
+      const { inspection } = await inspect(document, member, { intent: 'result-verification', source, assetId: candidate.audio.assetId, audioSha256: candidate.audio.sha256, engine: '', confirmed: true })
+      if (candidate.audio.sourceRange.startMs !== 0 || candidate.audio.sourceRange.endMs !== inspection.durationMs) throw new RequestError(409, 'transcription-audio-changed')
+      return candidate
+    },
     async cancel(document, query, member) {
       const id = resolveId(document, member, query)
       const pending = admitting.get(id)
@@ -304,8 +387,9 @@ export function createDocumentTranscriptions({ root, editor, audio, speech }: Op
   }
 }
 
-function normalizeTranscript(transcript: Transcript, durationMs: number, id: string): Pick<TranscriptionRevision, 'result' | 'timing' | 'warnings'> {
+export function normalizeTranscript(transcript: Transcript, durationMs: number, id: string): Pick<TranscriptionRevision, 'result' | 'timing' | 'warnings'> {
   if (!isRecord(transcript) || typeof transcript.text !== 'string' || typeof transcript.lang !== 'string' || !Array.isArray(transcript.segments) || transcript.segments.length > 10_000 || Buffer.byteLength(JSON.stringify(transcript)) > MAX_RESULT) throw new RequestError(422, 'transcription-result-invalid')
+  if (!transcript.segments.length && transcript.text.length) return { result: { lang: transcript.lang, text: transcript.text, segments: [{ id: `${id}:1`, text: transcript.text }] }, timing: 'none', warnings: ['transcription-timing-unavailable'] }
   const warnings = new Set<string>()
   const range = (start: unknown, end: unknown) => typeof start === 'number' && typeof end === 'number' && Number.isFinite(start) && Number.isFinite(end) && start >= 0 && Math.round(end * 1000) > Math.round(start * 1000) && Math.round(end * 1000) <= durationMs ? { startMs: Math.round(start * 1000), endMs: Math.round(end * 1000) } : undefined
   let previousStart = 0
@@ -344,8 +428,8 @@ export function documentTranscriptionRoutes(service: DocumentTranscriptions): Re
       if (request.method !== 'GET') throw new RequestError(405, 'GET')
       return service.capabilities(ctx.document, ctx.member)
     }) },
-    'document/transcription': { role: 'editor', maxBody: 32 << 10, handle: (request, ctx) => guarded(async () => {
-      if (request.method === 'GET') { const params = new URL(request.url).searchParams; params.delete('document'); return service.get(ctx.document, query(Object.fromEntries(params)), ctx.member) }
+    'document/transcription': { role: 'editor', maxBody: TRANSCRIPTION_REQUEST_MAX_BYTES, handle: (request, ctx) => guarded(async () => {
+      if (request.method === 'GET') { const params = new URL(request.url).searchParams; params.delete('document'); return params.size ? service.get(ctx.document, query(Object.fromEntries(params)), ctx.member) : service.list(ctx.document, ctx.member) }
       if (request.method !== 'POST') throw new RequestError(405, 'GET or POST')
       return service.start(ctx.document, await request.json().catch(() => undefined), ctx.member, request.signal)
     }) },

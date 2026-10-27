@@ -1,5 +1,6 @@
 export * from './contracts.ts'
 export { applyDocumentOperations } from './document-operations.ts'
+export { prepareTranscriptionAdoption } from './transcription-adoption.ts'
 export * from './ir.ts'
 export { createAnchorResolverRegistry, isRenderable, parseAnchor } from './anchors.ts'
 export type { ParsedAnchor } from './anchors.ts'

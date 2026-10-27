@@ -474,6 +474,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的内容与状态，�
 - **接受即提交**：接受的修改由工作区提交为一个提交（`REVISIONS`，git 的钩子关闭），成功后结束审阅并释放锁；提交失败时保留审阅，作者可以重试或拒绝。尾注带 `Presmium-Session`、`Presmium-Turn` 与作者；接受之后的撤销是 `git revert`，会话收到一条标明来源的消息。
 - **学习者不接触 agent**：读者的提问在他的浏览器中发往他自己填写的服务，回答只是文字与跳转的链接；读者的密钥只保存在他的浏览器中。
 - **MCP 与 Web 共用作者事务**：`get_document` 读取权威源，`plan_document_change` 预检现有 `DocumentEditOperation` 或明确 replacement 加同文稿工程文本文件，`apply_document_change` 原子保存并重读。source、CAS 与运行快照版本分别核对；未完成的录制、审阅或跨重启幂等不能声明为可用。
+- **MCP 与 Web 共用转写任务和采用计划**：ASR 服务按文稿装配真实 Node 能力，不要求场景先编译成功；任务、不可变候选与 canonical 讲稿保持分离。任务清单读取实际 journal，采用使用相同 `DocumentEditor` planId、源基线及受保护发音／cue 决策；agent 不能用 payload 自认 editor 或确认付费。configuration-only 不代表服务鉴权或识别已验证。
 - 回答中的引用位置必须对应 IR 中的章节、步骤或块；无法解析的引用不显示为链接。
 - 读者问答的上下文取自读者页面中的 IR；学生版站点的 IR 没有只给教师的内容，所以回答不会引用它（第 10 节）。
 - agent 经 MCP 能做什么由服务端签发给它的令牌决定（成员的角色），会话结束令牌即作废；本机作者的外部 agent 用进程的令牌，它只在 0600 的状态文件中（4A 节）。

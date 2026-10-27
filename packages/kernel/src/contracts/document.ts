@@ -129,7 +129,12 @@ export type NarrationNode =
   | { type: 'text', text: string }
   | { type: 'pronunciation', display: string, spoken: string }
   | { id: string, type: 'cue', action: string, target?: { blockId: BlockId, element?: string }, parameters?: JsonObject }
-export interface Narration { id: NarrationId, content: NarrationNode[] }
+export interface Narration {
+  id: NarrationId
+  content: NarrationNode[]
+  /** Attribution of an explicit adoption; never a second caption or spoken-text source. */
+  provenance?: { type: 'transcription', transcriptionId: string, revision: string, assetId: AssetId, audioSha256: string, segmentIds: string[] }
+}
 
 export interface Asset { id: AssetId, kind: 'image' | 'audio' | 'video' | 'file', location: string, title?: string, fingerprint?: string, mediaType?: string }
 export type ImplementationRef =
