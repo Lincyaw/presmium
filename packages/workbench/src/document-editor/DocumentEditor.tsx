@@ -32,6 +32,9 @@ export interface DocumentEditorProps {
   commentDrafts?: CommentDrafts
   /** The latest actor version, including before the next React render. */
   getDocumentVersion?(): string | undefined
+  /** Only a clean source snapshot confirms a submitted comment backup. */
+  acknowledged?: boolean
+  getDocumentAcknowledged?(): boolean
   /** Read sibling field edits before their React render has committed. */
   getDocument?(): TeachingDocument | undefined
   /** Ownership of a deferred native focus notification. */
@@ -56,7 +59,15 @@ export interface DocumentEditorProps {
 export function DocumentEditor(props: DocumentEditorProps) {
   const projection = useMemo(() => createDocumentProjection(props.document), [props.identity, props.reset])
   const comments = useMemo(() => new DocumentThreadStore(props.document, props.member, props.version, props.identity, props.commentDrafts), [props.identity, props.reset])
-  useEffect(() => { comments.drafts?.synchronize(props.document, props.version); comments.drafts?.start(); return () => comments.close() }, [comments])
+  useEffect(() => {
+    const latest = current.current, document = latest.getDocument ? latest.getDocument() : latest.document
+    const version = latest.getDocumentVersion ? latest.getDocumentVersion() : latest.version
+    if (document && version !== undefined) {
+      comments.drafts?.synchronize(document, version, latest.getDocumentAcknowledged ? latest.getDocumentAcknowledged() : latest.acknowledged ?? false)
+      comments.drafts?.start()
+    }
+    return () => comments.close()
+  }, [comments])
   const current = useRef(props), editor = useRef<NativeDocumentEditor>(), unsubscribe = useRef<() => void>()
   const projectedDocument = useRef<NativeDocumentEditor['prosemirrorState']['doc']>()
   const pendingTransaction = useRef<Transaction>()
@@ -83,11 +94,11 @@ export function DocumentEditor(props: DocumentEditorProps) {
     const version = current.current.getDocumentVersion ? current.current.getDocumentVersion() : current.current.version
     if (!value || !latest || binding.current !== projection || active.current !== projection || value.prosemirrorView.isDestroyed) return
     const transaction = pendingTransaction.current
-    comments.synchronize(latest, version, value, transaction?.doc === value.prosemirrorState.doc && transaction.before === projectedDocument.current ? transaction : undefined)
+    comments.synchronize(latest, version, value, transaction?.doc === value.prosemirrorState.doc && transaction.before === projectedDocument.current ? transaction : undefined, current.current.getDocumentAcknowledged ? current.current.getDocumentAcknowledged() : current.current.acknowledged ?? false)
     projectedDocument.current = value.prosemirrorState.doc
   }
   comments.beforeAction = () => { if (current.current.getDocumentVersion && current.current.getDocumentVersion() === undefined) throw new Error('document-context-changed'); syncComments() }
-  useEffect(syncComments, [props.version, props.document.comments, comments])
+  useEffect(syncComments, [props.version, props.document.comments, props.acknowledged, comments])
   const emit = () => {
     if (!editor.current || binding.current !== projection || comments.synchronizing) return
     try {
