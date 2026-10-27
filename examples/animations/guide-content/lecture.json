@@ -612,7 +612,7 @@
         {
           "id": "table-37",
           "type": "table",
-          "headerRows": 1,
+          "headerRows": 3,
           "headerColumns": 1,
           "columnWidths": [
             180,
@@ -621,11 +621,11 @@
           ],
           "children": [
             {
-              "id": "row-41",
+              "id": "9befe3ac-be22-437b-bc93-8195423c0c55",
               "type": "tableRow",
               "children": [
                 {
-                  "id": "cell-38",
+                  "id": "12b44be3-14d2-4103-b9fe-3dfe42366bbf",
                   "type": "tableCell",
                   "children": [
                     {
@@ -635,7 +635,7 @@
                   ]
                 },
                 {
-                  "id": "cell-39",
+                  "id": "c12fa6ac-ecfc-47d2-9626-ae162cfac998",
                   "type": "tableCell",
                   "children": [
                     {
@@ -645,7 +645,7 @@
                   ]
                 },
                 {
-                  "id": "cell-40",
+                  "id": "8546804f-bc6a-422c-9197-1484f5e58ebc",
                   "type": "tableCell",
                   "children": [
                     {
@@ -657,11 +657,11 @@
               ]
             },
             {
-              "id": "row-45",
+              "id": "b8c65d88-85a2-4054-bcf8-4162f23f467e",
               "type": "tableRow",
               "children": [
                 {
-                  "id": "cell-42",
+                  "id": "5aebb749-85a6-4b64-beee-3e84608bc11b",
                   "type": "tableCell",
                   "children": [
                     {
@@ -671,7 +671,7 @@
                   ]
                 },
                 {
-                  "id": "cell-43",
+                  "id": "7f5e0bfc-3ba8-4f96-be52-bced34351c16",
                   "type": "tableCell",
                   "children": [
                     {
@@ -684,7 +684,7 @@
                   }
                 },
                 {
-                  "id": "cell-44",
+                  "id": "7cca0efa-bcb7-4255-afd8-a9b3f42084a4",
                   "type": "tableCell",
                   "children": [
                     {
@@ -696,11 +696,11 @@
               ]
             },
             {
-              "id": "row-49",
+              "id": "b4bead5e-907d-4a0d-bc89-12df81854544",
               "type": "tableRow",
               "children": [
                 {
-                  "id": "cell-46",
+                  "id": "bb4b20eb-0737-46a6-aa74-874de5c82148",
                   "type": "tableCell",
                   "children": [
                     {
@@ -710,7 +710,7 @@
                   ]
                 },
                 {
-                  "id": "cell-47",
+                  "id": "9ea52ef7-98cd-4f80-acc0-351b4495d6bd",
                   "type": "tableCell",
                   "children": [
                     {
@@ -723,7 +723,7 @@
                   }
                 },
                 {
-                  "id": "cell-48",
+                  "id": "decf7298-46e7-4c53-ae80-4f92778908c0",
                   "type": "tableCell",
                   "children": [
                     {
@@ -735,11 +735,11 @@
               ]
             },
             {
-              "id": "row-53",
+              "id": "cf1b77e6-31ac-48f2-8a01-97fbf7c4d3eb",
               "type": "tableRow",
               "children": [
                 {
-                  "id": "cell-50",
+                  "id": "699694ac-be2e-4138-af97-e68e67c2aaed",
                   "type": "tableCell",
                   "children": [
                     {
@@ -750,7 +750,7 @@
                   "rowspan": 2
                 },
                 {
-                  "id": "cell-51",
+                  "id": "4033b797-9670-46cd-bc3e-2e077bb05c7d",
                   "type": "tableCell",
                   "children": [
                     {
@@ -760,7 +760,7 @@
                   ]
                 },
                 {
-                  "id": "cell-52",
+                  "id": "a942b5ca-73d7-4745-9e06-d18da07b6871",
                   "type": "tableCell",
                   "children": [
                     {
@@ -772,11 +772,11 @@
               ]
             },
             {
-              "id": "row-56",
+              "id": "73d8a1c4-063e-490c-98c9-288e6f9b8804",
               "type": "tableRow",
               "children": [
                 {
-                  "id": "cell-54",
+                  "id": "c7bee6a7-62ec-4a9d-9f2e-f94f2bd7533b",
                   "type": "tableCell",
                   "children": [
                     {
@@ -786,7 +786,7 @@
                   ]
                 },
                 {
-                  "id": "cell-55",
+                  "id": "3943fc84-2c76-431b-9ce7-5def326dcfcc",
                   "type": "tableCell",
                   "children": [
                     {
@@ -798,11 +798,11 @@
               ]
             },
             {
-              "id": "row-58",
+              "id": "2dc29428-fee6-4290-a30c-d01307abfa72",
               "type": "tableRow",
               "children": [
                 {
-                  "id": "cell-57",
+                  "id": "3685d869-8e25-4305-baca-1a10bbc8d6d5",
                   "type": "tableCell",
                   "children": [
                     {
@@ -810,10 +810,31 @@
                       "text": "同一份文稿，按需要选择输出。"
                     }
                   ],
-                  "colspan": 3,
                   "style": {
                     "background": "var(--pm-color-surface-sunk)"
-                  }
+                  },
+                  "colspan": 3
+                }
+              ]
+            },
+            {
+              "id": "efcc9776-fdc7-4087-8588-85443626d8a0",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "b0020cdb-0d2c-478b-bd38-d6a40bc82e19",
+                  "type": "tableCell",
+                  "children": []
+                },
+                {
+                  "id": "94345dba-38cd-46fc-bab7-ac50a5c037d2",
+                  "type": "tableCell",
+                  "children": []
+                },
+                {
+                  "id": "2f3e2151-1e76-48ab-ac9c-2eb43cfc6f0d",
+                  "type": "tableCell",
+                  "children": []
                 }
               ]
             }
