@@ -12,7 +12,7 @@
 
 计划和回执按成员及可信 origin 隔离，模型不能提交 origin 或伪造 workspace grant。MCP 的 `caller.document` 是绑定令牌范围，即使是 `''` 也不能冒充工作区授权；普通工具参数没有替代这一授权的 document 字段。HTTP 作者入口由闭包固定 editor，MCP 固定 agent，保留 launcher token、角色、operate 和 required-review 边界。
 
-素材 location、definition 的 file implementation、正文／图片说明／批注中的 typed href 及翻译入口按文稿相对路径处理；官方 region／symbol／pattern 代码锚点按逻辑 workspace 根处理，带外部 repo 的锚点不改。只修改这些字段，不递归替换任意字符串或插件 data。目录重命名的已知跨文稿引用一起更新并备份；删除有 incoming 引用时拒绝。未知锚点等不能安全处理的情况返回明确拒绝，不承诺任意插件私有路径语义或通用 Markdown 兼容。内部 symlink 保留原链接字节，外部链接、目录 symlink、嵌套 Git 与不支持的文件种类拒绝。
+素材 location、definition 的 file implementation、正文／图片说明／批注中的 typed href 及翻译入口按文稿相对路径处理；官方 region／symbol／pattern 代码锚点按逻辑 workspace 根处理，带外部 repo 的锚点不改。只修改这些字段，不递归替换任意字符串或插件 data。目录重命名的已知跨文稿引用一起更新并备份；删除有 incoming 引用时拒绝。copy 保留本地 pinned 代码锚点与变体的原 anchor／pin 组合，继续读取旧提交的真实原路径；rename 触及本地 pinned 路径时返回 `project-pinned-anchor-rename-unavailable`，不会改 pin 或强行生成新 HEAD。普通 unpinned 锚点仍重写。操作自身的未知本地代码锚点在复制／目录移动时明确拒绝；这不是任意私有路径检测器。URL 中的远程地址、根绝对路径、hash／query 原样保留。opaque／component parameters、definition.data、插件 metadata、JS／TS 场景代码及其中的外部 relative imports 不解析、不改写，也不据此拒绝，仍随原文件字节复制／移动；它们在新位置的依赖语义不在本片保证范围。不能把这种原样保留说成私有引用已安全改写或相关项目被禁止。既有 Markdown relink 也不等于通用 Markdown 兼容。内部 symlink 保留原链接字节，外部链接、目录 symlink、嵌套 Git 与不支持的文件种类拒绝。
 
 `impact.files/bytes` 是操作根的文件／链接数量和原字节数，不是全部扫描输入、输出字节或跨文稿改写总数；`referenceDocuments` 单列实际会改写的其它 canonical 文稿。删除弹窗打开后先只读预检，显示将删除的真实文件／链接数，原删除按钮只提交这份 planId／digest。源发生变化不能借一次旧确认删除新状态。
 
@@ -39,3 +39,9 @@
 Figma 以已选 cyaw／lincyaw 文件读过 P01 项目列表与 I01 公共状态，沿用正式 PmDialog／PmMenu／PmButton，没有新增视觉控件或业务 CSS。四图已实际查看，弹窗与数量可读；背景首页列表原有左侧裁切在截图可见，本片不称整个首页布局无问题。未把 390 宽度等同真实触屏输入验收。
 
 类型、分层、令牌、技能、包结构和 diff 轻检按 manifest 记录。所有私有服务、浏览器、临时工作区与任务凭据均清理。未验证外部多进程 Git 并发、断电恢复、全部文件系统元数据、跨工作区根目录语义、实际等待五分钟过期或任意插件私有引用；完整文件树上限也不是大型工程性能验收。
+
+## pinned 锚点窄增量
+
+root 复核后另有一个已支持 typed 字段的真实反例，不能归入插件私有范围：`references-1793140069394/result.json` 中旧提交 P 真实含 one/implementation.ts，copy 后错误重写 anchor 至 copied/implementation.ts 却保留 P，Git 读取旧路径成功而新路径不存在（counterexample 完成不代表产品通过）。修复只在本地已识别路径受到操作影响时处理 pin：copy 保留整组 tuple；rename 明确拒绝；delete 的 incoming-ref 拒绝保持原样。
+
+`references-1793140461964/result.json` 独立 4/4：真实 copy 后主锚点／变体 tuple 完整不变、旧提交原路径可读；rename 拒绝且文件／HEAD／index 未写；普通 unpinned copy 仍重写到实际副本。最后以公开 presmium check 检查仅该 copied 文稿，真正装入 addon-code，退出 0。没有整示例构建、服务、模型或新 tracked tests，私有临时根全清。此增量不重称原 Studio14 已在新字节运行。

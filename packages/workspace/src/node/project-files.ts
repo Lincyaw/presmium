@@ -143,6 +143,10 @@ export function projectMaterial(config: WorkspaceConfig, operation: ProjectOpera
         if (!parsed || !['region', 'symbol', 'pattern'].includes(parsed.scheme) || at === undefined || at < 1) { if (own && moving) refused(`/blocks/${id}/origin`); continue }
         const path = parsed.target.slice(0, at)
         if (deleting && isWithin(path, operation.dir)) throw new RequestError(409, 'project-referenced', { document: dir, pointer: `/blocks/${id}/origin` })
+        if (moving && isWithin(path, operation.dir) && origin.pin) {
+          if (operation.op === 'rename') throw new RequestError(409, 'project-pinned-anchor-rename-unavailable', { document: dir, pointer: `/blocks/${id}/origin` })
+          continue
+        }
         if (moving && isWithin(path, operation.dir)) origin.anchor = `${parsed.scheme}:${operation.to}${path.slice(operation.dir.length)}${parsed.target.slice(at)}`
       }
     }
