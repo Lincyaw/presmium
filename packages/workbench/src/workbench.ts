@@ -1,13 +1,14 @@
 import { undoDepth, redoDepth } from '@tiptap/pm/history'
 import { TextSelection } from '@tiptap/pm/state'
 import { DocumentSession } from './document-session.ts'
+import { reconcileRecordingAdoption } from './recording-adoption.ts'
 import { disposeTranscriptionSessions } from './transcription-session.ts'
 import { documentRecordingActive, disposeDocumentRecordings } from './audio-recording.ts'
 import { DOCUMENT_AUDIO_MAX_BYTES } from '@lincyaw/kernel'
 import type { DocumentSessionState } from './document-session.ts'
 import { DocumentReturnPoints, documentReturnStep, documentViewportOffset, restoreDocumentViewport } from './document-return-point.ts'
 import type { DocumentReturnPoint } from './document-return-point.ts'
-import type { DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentChangeAnswer, MediaClip, NarrationNode, TeachingDocument, DocumentTranscriptionRequest, TranscriptionTask, TranscriptionAdoptionDraft, TranscriptionAdoptionApply, TranscriptionAdoptionPlan, TranscriptionAdoptionAnswer } from '@lincyaw/kernel'
+import type { DocumentRecordingAdoption, VerifiedDocumentRecordingAdoption, DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentChangeAnswer, MediaClip, NarrationNode, TeachingDocument, DocumentTranscriptionRequest, TranscriptionTask, TranscriptionAdoptionDraft, TranscriptionAdoptionApply, TranscriptionAdoptionPlan, TranscriptionAdoptionAnswer } from '@lincyaw/kernel'
 import type { NativeDocumentEditor } from './document-editor/schema.tsx'
 import type { DocumentEditorCommands } from './document-editor/DocumentEditor.tsx'
 import { nativeTextPoint, nativeTextPosition } from './document-editor/selection.ts'
@@ -1125,6 +1126,26 @@ export class Workbench {
     }
     return { document: imported.document, version: imported.version, fingerprint: imported.fingerprint, inspection: imported.inspection }
   }
+  /** The source actor owns this external transaction; capture is independent from preview output. */
+  async adoptDocumentRecording(request: DocumentRecordingAdoption, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<VerifiedDocumentRecordingAdoption> {
+    const scope = this.#documentScope, source = this.#mediaSource(expected), sent = structuredClone(request)
+    if (sent.source.documentId !== source.content?.id || sent.source.version !== source.version || sent.source.fingerprint !== source.fingerprint
+      || !source.content.steps[sent.stepId] || !source.content.assets[sent.assetId]) throw new Error('production-source-changed')
+    this.#playback.stopPreviewOutputs()
+    await this.pausePlayback()
+    await this.flushPendingEdits(signal)
+    signal?.throwIfAborted()
+    if (scope !== this.#documentScope) throw new Error('production-source-changed')
+    this.#mediaSource(expected)
+    const answer = await this.#documentSession.commitExternal(expected, async (_before, ownedSignal) => {
+      const saved = await this.client.adoptRecording(source.directory, sent, ownedSignal)
+      if (saved.changeId !== sent.id || saved.verification.stepId !== sent.stepId || saved.verification.assetId !== sent.assetId || saved.verification.sha256 !== sent.sha256) throw new Error('document-confirmation')
+      return saved
+    }, (before, remote, current) => reconcileRecordingAdoption(sent, before, remote, current), signal)
+    signal?.throwIfAborted()
+    if (scope !== this.#documentScope || this.#state.authoring?.identity !== expected.identity) throw new Error('production-source-changed')
+    return answer
+  }
   async applyDocumentMediaClip(clip: MediaClip, expected: { identity: string, version: string, binding: ProductionBinding }, signal?: AbortSignal): Promise<DocumentChangeAnswer> {
     this.#mediaSource(expected)
     if (!this.#state.productionPlan || !sameProductionBinding(this.#state.productionPlan.binding, expected.binding) || !this.#productionSourceCurrent(expected.binding)) throw new Error('production-source-changed')
@@ -1584,6 +1605,7 @@ export class Workbench {
     const source = this.#state.authoring, section = source?.content?.sections[sectionId]
     const step = section?.stepOrder.indexOf(stepId) ?? -1
     if (!section || step < 0) return
+    this.#pendingGo = undefined
     if (this.#state.webView === 'document') { this.pauseDocumentStep(sectionId, stepId); return }
     const plan = this.#state.productionPlan, range = plan?.pages.find(page => page.sectionId === sectionId)?.steps.find(step => step.stepId === stepId)
     if (plan?.canPreview && this.#productionReady() && range?.timing === 'confirmed' && range.startMs !== undefined) {

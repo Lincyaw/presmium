@@ -40,7 +40,7 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 导入与查看图片 | `document/image` 将原文件和资产声明原子保存；`document/asset` 按 Asset ID 读取 | 无 | 安全字节输入、回执与资源读取；沿用现有媒体检查限制 |
 | 导入／检查本地音频 | `DocumentAudioAuthoring` 共用真实媒体探测及多文件事务 | 已有能力、workspace 预检／导入与 canonical inspection 四个工具 | 远程分块上传尚未实现；路径限当前文稿工作区，不接受任意服务端路径 |
 | 音频区间、步内偏移、音量、静音、移除 | 同一 `DocumentAudioAuthoring` 的预检／事务；`ProductionBinding` 与真实时长校验 | 已有 `read_production_plan/validate_media_clip_change/change_media_clip` | 保存后新计划仍需准备；删除保留原始素材，尚无跨重启持久回执 |
-| 录制、重录、试听、采用录音 | Studio 已有 native 原音候选和保存；`DocumentAudioAuthoring` 共用 HTTP/MCP 整段采用当前步骤，wholeStep 播放已接通 | 已有 `adopt_recording`；无 MCP 客户端录制控制 | Studio 采用按钮、远程客户端录制语义请求仍待；实际边界见[录音采用记录](benchmarks/recording-step-adoption-2026-10-27.md) |
+| 录制、重录、试听、采用录音 | Video“原音频”卡保存 native 候选、选择既有资产并明确采用为当前稳定步骤；`DocumentAudioAuthoring` 共用 HTTP/MCP wholeStep 事务和播放计划 | 已有 `adopt_recording`；无 MCP 客户端录制控制 | 远程客户端录制、旁白裁切与跨步连续分配仍待；保存不采用、采用不 ASR/TTS，字幕未词对齐。共享服务见[录音采用记录](benchmarks/recording-step-adoption-2026-10-27.md)，Web 见[界面记录](benchmarks/recording-step-adoption-ui-2026-10-27.md) |
 | 人声转写 | `DocumentTranscriptions` 保存版本化候选；HTTP 与 MCP 共用任务实例 | 已有能力、启动、清单、任务、exact result 和取消六个工具；旧 `track_transcribe` 仍独立写 track.json | 英文文件的真实 ASR／采用／Web TTS 已单独验收；实际提供方取消和录音完整链仍待验证，候选不自动写讲稿 |
 | 查看差异并将转写采用为步骤讲稿 | `DocumentTranscriptionAdoption` 共用 typed Narration 差异与作者事务 | 已有 `plan_transcription_adoption/apply_transcription_adoption`，复用原 DocumentEditor planId | 页面 UI 及完整人声转 TTS 链按实际验收推进；保留受保护发音／cue 的显式处理 |
 | 采用转写后改用 AI 配音 | 可编辑 `VoiceSource`，人声转写／采用／新 TTS 已有独立真实闭环；整段 recording 支持 wholeStep，不等于自动转成 TTS | 已有共享 `start_voiceover` spend 任务与查询／取消；旧 `lecture_synthesize` 不再暴露 | 显式选择 TTS 来源和作用域；不能把 ASR 时间当作新音色时间；专门的音色继承修改接口仍待补 |

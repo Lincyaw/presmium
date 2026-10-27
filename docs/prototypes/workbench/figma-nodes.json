@@ -456,6 +456,29 @@
         },
         "verification": "docs/benchmarks/video-transcription-adoption-2026-10-27.md",
         "implementationBoundary": "Formal composition and state layouts read through Figma screenshots/design context, compared with four theme/width browser reviews and final 390px footer views. Browser candidates are protocol material, not successful ASR evidence."
+      },
+      "OriginalAudioAdoption": {
+        "nodeId": "245:5322",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=245-5322",
+        "reviewNodeId": "245:5323",
+        "states": {
+          "Existing": "245:5191",
+          "Imported": "245:5210",
+          "Adopting": "245:5231",
+          "Adopted": "245:5257",
+          "Failed": "245:5278",
+          "SourceChanged": "245:5300"
+        },
+        "source": "packages/workbench/src/panels/ProductionRecording.tsx",
+        "behavior": "Video-only original-audio composition. One saved-bank selector plus explicit whole-step adoption, separate from Save, background media clips, ASR and TTS. Candidate and selection survive failure/source changes; source/StepID/asset/SHA bind the request. Late acknowledgement never retargets a new step, overwrites later input or stops a newer microphone capture. No extra confirmation dialog. Current-recording summaries and the existing voice dialog show real asset titles or the localized recording-source fallback, without raw paths, opaque IDs or permanent trim/alignment warnings. Actual errors remain visible.",
+        "publicControls": [
+          "PmCard",
+          "PmSelect",
+          "PmButton",
+          "PmNotice"
+        ],
+        "status": "Implemented; four actual theme/width settings, English, controlled native capture/save/adoption/play/seek and targeted acknowledgement/source/selection races verified. Physical microphone and crash durability are not claimed.",
+        "verification": "docs/benchmarks/recording-step-adoption-ui-2026-10-27.md"
       }
     },
     "variantCounts": {

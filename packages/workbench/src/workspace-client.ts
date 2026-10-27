@@ -3,7 +3,7 @@ import type { OperationBatch } from './telemetry.ts'
 import type { VoiceCatalogAnswer, VoiceoverCancellation, VoiceoverJob, VoiceoverJobsAnswer, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest } from '@lincyaw/kernel'
 import type { PageDeleteAnswer, PageDeletePlan, PageDeleteRequest } from '@lincyaw/kernel'
 import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, DocumentEvent } from '@lincyaw/kernel'
-import type { DocumentAudioImport, DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentMediaClipChange } from '@lincyaw/kernel'
+import type { DocumentRecordingAdoption, VerifiedDocumentRecordingAdoption, DocumentAudioImport, DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentMediaClipChange } from '@lincyaw/kernel'
 import type { DocumentImageImport, DocumentImageImportAnswer } from '@lincyaw/kernel'
 import type { ProductionAssetAnswer, ProductionAssetQuery, ProductionMediaQuery, ProductionPlan, ProductionPlanQuery } from '@lincyaw/kernel'
 import type { DocumentTranscriptionRequest, TranscriptionCapabilities, TranscriptionTask, TranscriptionListAnswer, TranscriptionRevision, TranscriptionCancellation, TranscriptionAdoptionDraft, TranscriptionAdoptionPlan, TranscriptionAdoptionApply, TranscriptionAdoptionAnswer } from '@lincyaw/kernel'
@@ -53,6 +53,7 @@ export interface WorkspaceClient {
   importDocumentImage(document: string, file: File, change: DocumentImageImport, signal?: AbortSignal): Promise<DocumentImageImportAnswer>
   readDocumentAudio(document: string, assetId: string, baseDocumentVersion: string, signal?: AbortSignal): Promise<DocumentAudioInspectionAnswer>
   importDocumentAudio(document: string, file: File, change: DocumentAudioImport, signal?: AbortSignal): Promise<DocumentAudioImportAnswer>
+  adoptRecording(document: string, request: DocumentRecordingAdoption, signal?: AbortSignal): Promise<VerifiedDocumentRecordingAdoption>
   changeDocumentMediaClip(document: string, change: DocumentMediaClipChange, signal?: AbortSignal): Promise<DocumentChangeAnswer>
   readTranscriptionCapabilities(document: string, signal?: AbortSignal): Promise<TranscriptionCapabilities>
   readTranscriptions(document: string, signal?: AbortSignal): Promise<TranscriptionListAnswer>
@@ -282,6 +283,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
       body.set('change', JSON.stringify(change)); body.set('file', file)
       return call(url('document/audio', document), { method: 'POST', body, signal })
     },
+    adoptRecording: (document, request, signal) => post(url('document/recording/adopt', document), request, signal),
     changeDocumentMediaClip: (document, change, signal) => post(url('document/media-clip', document), change, signal),
     readTranscriptionCapabilities: (document, signal) => call(url('document/transcription/capabilities', document), { signal }),
     readTranscriptions: (document, signal) => call(url('document/transcription', document), { signal }),

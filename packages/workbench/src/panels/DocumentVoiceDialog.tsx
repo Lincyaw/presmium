@@ -119,7 +119,7 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
           else if (value === 'inherit') edit({ ...draft, source: null, rateInput: undefined, replaceOverrides: draft.scope.kind === 'steps' ? true : draft.replaceOverrides })
           else if (value === 'tts') edit({ ...draft, source: { type: 'tts', voice: { ...engineId ? { engine: engineId } : {}, voice: '' } }, rateInput: undefined })
         }} /></PmField>
-        {draft.source?.type === 'recording' && <PmNotice>{p.recordingLimit} {document.assets[draft.source.assetId]?.location ?? draft.source.assetId}</PmNotice>}
+        {draft.source?.type === 'recording' && <span>{document.assets[draft.source.assetId]?.title || p.recording}</span>}
         {draft.source?.type === 'tts' && <>
           <PmSelect label={t.provider} value={engineId ?? ''} disabled={!engines.length || busy || blocked} onChange={event => { setEngineFilter(event.target.value); setLanguage(''); setQuery('') }}>
             {!engines.length && <option value={engineId ?? ''}>{engineId ? `${engineId} · ${t.savedEngineUnavailable}` : t.noServiceOption}</option>}
@@ -158,7 +158,7 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
     </PmDialog>
     <PmDialog open={Boolean(review)} label={review?.draft.source === null ? p.restoreTitle : p.applyTitle} closeLabel={t.close} onClose={() => setReview(undefined)} busy={busy} description={review?.draft.source === null ? p.restoreHint : p.applyHint} footer={<><PmButton disabled={busy} onClick={() => setReview(undefined)}>{t.cancel}</PmButton><PmButton loading={busy} disabled={!reviewCurrent} variant={review?.draft.replaceOverrides && review.impact.overrides.pages + review.impact.overrides.steps > 0 ? 'danger' : 'primary'} onClick={() => void apply()}>{review?.draft.replaceOverrides && review.impact.overrides.pages + review.impact.overrides.steps > 0 ? p.replaceCount(review.impact.overrides.pages + review.impact.overrides.steps) : t.apply}</PmButton></>}>
       {review && <div className="pmw-voice__form">
-        <PmField label={t.source}><span>{review.draft.source === null ? t.inherit : review.draft.source.type === 'none' ? p.none : review.draft.source.type === 'recording' ? `${p.recording} · ${document.assets[review.draft.source.assetId]?.location ?? review.draft.source.assetId}` : `${review.draft.source.voice.voice}${review.draft.source.voice.engine ? ` · ${review.draft.source.voice.engine}` : ''}`}</span></PmField>
+        <PmField label={t.source}><span>{review.draft.source === null ? t.inherit : review.draft.source.type === 'none' ? p.none : review.draft.source.type === 'recording' ? document.assets[review.draft.source.assetId]?.title || p.recording : `${review.draft.source.voice.voice}${review.draft.source.voice.engine ? ` · ${review.draft.source.voice.engine}` : ''}`}</span></PmField>
         {review.draft.source?.type === 'tts' && <>
           {review.draft.source.voice.rate !== undefined && <PmField label={t.rate}><span>{review.draft.source.voice.rate}</span></PmField>}
           {review.draft.source.voice.style && <PmField label={t.style}><span>{review.draft.source.voice.style}</span></PmField>}

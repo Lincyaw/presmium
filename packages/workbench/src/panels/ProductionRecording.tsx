@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useRecordingAdoption } from '../use-recording-adoption.ts'
+import { PRODUCTION_MESSAGES } from '../production-messages.ts'
 import { Audition } from '../audition.ts'
 import type { AuditionState } from '../audition.ts'
 import { documentRecording, recordingUnavailable } from '../audio-recording.ts'
 import { AUDIO_RECORDING_MESSAGES } from '../audio-recording-messages.ts'
-import { PmButton, PmCard, PmDialog, PmNotice } from '../components.tsx'
+import { PmButton, PmCard, PmDialog, PmNotice, PmSelect } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { mediaFailure } from '../media-messages.ts'
 
-interface Props { identity: string, sectionId: string, stepId: string, active: boolean, disabled: boolean, onImported(assetId: string): void }
+interface Props { identity: string, sectionId: string, stepId: string, active: boolean, disabled: boolean, onImported(assetId: string): void, onAdopted(): void }
 const elapsed = (ms: number) => `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`
 
 /** Video-only microphone material. The document actor and existing binary transaction still own every save. */
-export function ProductionRecording({ identity, sectionId, stepId, active, disabled, onImported }: Props) {
+export function ProductionRecording({ identity, sectionId, stepId, active, disabled, onImported, onAdopted }: Props) {
   const workbench = useWorkbench(), locale = useWorkbenchState(state => state.locale), t = AUDIO_RECORDING_MESSAGES[locale]
   const source = useWorkbenchState(state => state.authoring)
   const [recording] = useState(() => documentRecording(workbench, identity))
@@ -20,13 +22,15 @@ export function ProductionRecording({ identity, sectionId, stepId, active, disab
   const [listening, setListening] = useState<AuditionState>({ status: 'idle' }), [saving, setSaving] = useState(false), [failure, setFailure] = useState<string>(), [discard, setDiscard] = useState(false)
   const [unavailable] = useState(recordingUnavailable)
   const current = () => mounted.current && workbench.getState().authoring?.identity === identity
-  const candidate = state.candidate, capturing = ['requesting', 'recording', 'stopping'].includes(state.phase)
+  const candidate = state.candidate
+  const adoption = useRecordingAdoption({ identity, sectionId, stepId, active, disabled, candidateAssetId: candidate?.assetId, onAdopted })
+  const capturing = ['requesting', 'recording', 'stopping'].includes(state.phase)
   const status = state.phase === 'requesting' ? t.requesting : state.phase === 'recording' ? t.recording : state.phase === 'stopping' ? t.stopping : candidate ? candidate.assetId ? t.imported : t.ready : undefined
   useEffect(() => {
     mounted.current = true
     return () => { mounted.current = false; request.current?.abort(); audition.current?.dispose(); audition.current = undefined; recording.stop() }
   }, [recording])
-  useEffect(() => () => { recording.stop(); audition.current?.stop() }, [recording, sectionId, stepId, source?.version, active])
+  useEffect(() => () => { recording.stop(); audition.current?.stop() }, [recording, sectionId, stepId, active])
   useEffect(() => {
     if (!active) { recording.stop(); audition.current?.stop() }
     if (candidate?.assetId && source?.identity === identity && source.content && !source.content.assets[candidate.assetId]) recording.forgetImport(candidate.assetId)
@@ -51,7 +55,7 @@ export function ProductionRecording({ identity, sectionId, stepId, active, disab
   }
   const save = async () => {
     if (!candidate || saving || !current()) return
-    const file = candidate.file, controller = new AbortController()
+    const file = candidate.file, selection = adoption.revision(), controller = new AbortController()
     request.current = controller; setSaving(true); setFailure(undefined)
     const owns = () => current() && !controller.signal.aborted && request.current === controller && recording.snapshot().candidate?.file === file
     try {
@@ -61,7 +65,7 @@ export function ProductionRecording({ identity, sectionId, stepId, active, disab
       if (!currentSource?.version || currentSource.identity !== identity || currentSource.dirty || currentSource.saving || currentSource.composing || currentSource.restored || currentSource.error) throw new Error('production-source-changed')
       const answer = await workbench.ensureDocumentAudio(file, { identity, version: currentSource.version }, controller.signal)
       if (!owns()) return
-      recording.imported(file, answer.inspection.assetId); onImported(answer.inspection.assetId)
+      recording.imported(file, answer.inspection.assetId); adoption.imported(answer.inspection.assetId, selection); onImported(answer.inspection.assetId)
     } catch (error) {
       if (owns()) setFailure(`${t.saveFailed} ${mediaFailure(error, locale)}`)
     } finally {
@@ -70,7 +74,7 @@ export function ProductionRecording({ identity, sectionId, stepId, active, disab
   }
   return <PmCard className="pmw-audio-recording" data-recording={state.phase}>
     <strong>{t.title}</strong>
-    {status && <span className="pm-ui-hint"><span role="status">{saving ? t.saving : status}</span>{state.phase === 'recording' && <span aria-hidden="true"> · {elapsed(state.elapsedMs)}</span>}</span>}
+    {status && !(status === t.imported && adoption.adopted && candidate?.assetId === adoption.selected) && <span className="pm-ui-hint"><span role="status">{saving ? t.saving : status}</span>{state.phase === 'recording' && <span aria-hidden="true"> · {elapsed(state.elapsedMs)}</span>}</span>}
     {(state.error || unavailable) && <PmNotice tone="warn">{t.failures[state.error ?? unavailable!] ?? t.failures['recording-failed']}</PmNotice>}
     {failure && <PmNotice tone="danger">{failure}</PmNotice>}
     {listening.status === 'failed' && <PmNotice tone="warn">{t.failures[listening.error ?? 'audition-request'] ?? t.failures['audition-request']}</PmNotice>}
@@ -84,6 +88,18 @@ export function ProductionRecording({ identity, sectionId, stepId, active, disab
       {saving && <PmButton small onClick={() => { request.current?.abort(); setSaving(false) }}>{t.cancelSave}</PmButton>}
       {candidate && !capturing && !saving && <PmButton small onClick={() => setDiscard(true)}>{t.discard}</PmButton>}
     </div>
+    {(adoption.assets.length > 0 || adoption.selected) && <>
+      <PmSelect label={t.source} value={adoption.selected} disabled={disabled || !active || saving} onChange={event => adoption.choose(event.target.value)}>
+        <option value="">{t.choose}</option>{adoption.selected && !adoption.assets.some(asset => asset.id === adoption.selected) && <option value={adoption.selected} disabled>{t.removedAudio}</option>}{adoption.assets.map(asset => <option key={asset.id} value={asset.id}>{asset.title || asset.location.split('/').at(-1) || asset.id}</option>)}
+      </PmSelect>
+      <div className="pmw-voice__actions">
+        <PmButton small variant="primary" disabled={disabled || !active || saving || capturing || !adoption.assets.some(asset => asset.id === adoption.selected) || adoption.adopted} loading={adoption.busy} onClick={() => void adoption.adopt()}>{adoption.adopted ? t.adopted : adoption.failure ? t.retryAdoption : t.adopt}</PmButton>
+        {adoption.busy && <PmButton small onClick={adoption.cancel}>{t.cancelAdoption}</PmButton>}
+      </div>
+      {adoption.failure && <PmNotice tone="danger">{['production-source-changed', 'document-version-changed'].includes(adoption.failure) ? t.adoptionSourceChanged
+        : adoption.failure === 'recording-cue-unsupported' || adoption.failure === 'recording-start-conflict' ? (PRODUCTION_MESSAGES[locale].diagnostics as Record<string, string>)[`production.${adoption.failure}`]
+        : adoption.failure.startsWith('production.asset-') || adoption.failure === 'production-audio-unavailable' ? mediaFailure(adoption.failure, locale) : t.adoptionFailed}</PmNotice>}
+    </>}
     {discard && <PmDialog open label={t.discardTitle} closeLabel={t.cancel} description={t.discardHint} onClose={() => setDiscard(false)} actions={<><PmButton onClick={() => setDiscard(false)}>{t.keep}</PmButton><PmButton variant="danger" onClick={() => { audition.current?.stop(); recording.discard(); setFailure(undefined); setDiscard(false) }}>{t.discard}</PmButton></>} />}
   </PmCard>
 }

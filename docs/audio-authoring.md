@@ -80,10 +80,10 @@ Web 和 MCP 的片段操作由 `DocumentAudioAuthoring` 的同一实例执行。
 
 ## 采用原音为本步配音
 
-`DocumentAudioAuthoring.adoptRecording`、`POST document/recording/adopt` 与 MCP `adopt_recording` 使用同一个作者服务。输入 `DocumentRecordingAdoption` 固定意图 ID、完整 canonical source、稳定 Step ID、Asset ID 和原音 SHA-256。只读检查使用既有 `inspect_document_audio`；采用时重新检查同文稿真实音频，经过原文稿锁、CAS、审阅与历史事务，并再次读回。缺少 fingerprint 的旧素材在同一次事务中写入真实 SHA。原始音频、Narration、发音、cue 和媒体片段保持原内容，只有目标步骤的 `voiceSource` 明确改为 recording。Studio 录音卡当前仍只保存资产；本片没有新增采用按钮。
+`DocumentAudioAuthoring.adoptRecording`、`POST document/recording/adopt` 与 MCP `adopt_recording` 使用同一个作者服务。输入 `DocumentRecordingAdoption` 固定意图 ID、完整 canonical source、稳定 Step ID、Asset ID 和原音 SHA-256。只读检查使用既有 `inspect_document_audio`；采用时重新检查同文稿真实音频，经过原文稿锁、CAS、审阅与历史事务，并再次读回。缺少 fingerprint 的旧素材在同一次事务中写入真实 SHA。原始音频、Narration、发音、cue 和媒体片段保持原内容，只有目标步骤的 `voiceSource` 明确改为 recording。Studio 的 Video“原音频”卡可以录音并明确保存为素材，再点击“采用为本步配音”；也可从同一个选择器挑选既有已保存音频。保存不隐式采用，采用不启动 ASR、TTS 或播放。成功后准备当前版本并保持暂停，后来输入和新录音不因旧回执丢失。
 
 一个步骤使用整个音频文件一次。多个 Narration 合成一段派生字幕，保留全部 Narration ID；没有 Narration 时仍播放音频且没有字幕。字幕来自当前规范讲稿的显示文字，不从音频猜测，`alignment=none`，不声称文字与声音内容已经核对或逐词对齐。非起点提示、内部暂停、跨步 next 和互相冲突的讲稿起点会拒绝采用或使播放计划不可确认。裁切和跨步连续录音尚未开放。
 
 现有文稿／页面／步骤继承规则继续生效：两个步骤继承同一录音时，各自完整播放一次，不把一个源文件自动切分到两步。编译与受众过滤只发布仍可见的有效素材。真实时长进入原有讲稿排程与单一 MediaClock，录音使用实际 `mediaId` 和 SHA，经完整 ProductionBinding 的媒体白名单读取；不会伪造语音合成缓存身份。原音和已有精确 TTS 缓存可以在同一计划中播放、发布，TTS 生成对录音步骤显示不适用。
 
-实际零模型范围、拒绝边界与未开放项见[本步录音采用记录](benchmarks/recording-step-adoption-2026-10-27.md)。
+共享服务的零模型范围、拒绝边界与未开放项见[本步录音采用记录](benchmarks/recording-step-adoption-2026-10-27.md)；Video 录音候选／既有资产、明确采用、播放和回执竞争的实际范围见[界面记录](benchmarks/recording-step-adoption-ui-2026-10-27.md)。受控浏览器设备不等于物理麦克风验证，MCP 客户端录制控制仍未接入。
