@@ -46,6 +46,8 @@ in VS Code's native editor; the extension provides preview, diagnostic navigatio
 
 ## Workspaces, sessions and the current document
 
+The root shell retains the open document address per browser tab for normal reloads. Page, stable step and reading offset remain owned by Workbench's existing return points; do not duplicate drafts or resume Present/Video automatically. Recovery must check both the actual workspace and the stable document identity before the source actor adopts the opening response, including a replacement between the preflight and final source reads. A later explicit document selection wins. See `docs/benchmarks/document-browser-reload-2026-10-28.md` for actual scope and the early repeated-reload limitation.
+
 The mapping of workspace, session and current document is defined in 6.2: one dsh workspace (the
 workspace root), sessions fixed to it, the current document passed by `POST /api/presmium/context`. When you
 change how the agent writes, verify that code and other documents in the workspace go into the same review,

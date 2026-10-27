@@ -12,7 +12,7 @@ import { createObservable } from './observable.ts'
 import { isSamePath } from './paths.ts'
 import { registerAgentRequests } from './agent-requests.ts'
 import { rootLayoutFor } from './RootLayout.tsx'
-import { beginRootReload, restoreRootReturnPoint, saveRootReturnPoint } from './root-reload.ts'
+import { beginRootReload, restoreRootReturnPoint, retainOpenDocument, saveRootReturnPoint } from './root-reload.ts'
 import { registerSourceLinks } from './source-links.tsx'
 import { runtimeDiagnostics } from './runtime-diagnostics.tsx'
 import { DSH_THEME_TOKENS, syncDarkClass, ThemePresenter } from './theme.ts'
@@ -141,5 +141,6 @@ export function apply(ctx: DshClientContext): void {
   registerBrand(ctx, workbench)
   if (!nativeLayout) {
     ctx.effect(() => restoreRootReturnPoint(workbench, reload.point), 'presmium: restore root return point')
+    ctx.effect(() => retainOpenDocument(workbench), 'presmium: retain the open document')
   }
 }
