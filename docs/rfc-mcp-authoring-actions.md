@@ -28,7 +28,7 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 
 | 作者操作 | 当前 Web／共享边界 | 当前 MCP | 应补齐的边界 |
 | --- | --- | --- | --- |
-| 列文稿、新建、复制、重命名、删除项目 | `WorkspaceClient.operateDocument` → workspace `documents`；管理操作与历史需要 git | 只有 `list_documents` | 项目操作预检、版本和引用影响，调用同一个 `DocumentOperations` |
+| 列文稿、新建、复制、重命名、删除项目 | Web 与 MCP 共用固定项目 plan／apply，原目录 writer／Git 事务执行 | `get_project_capabilities/plan_project_change/apply_project_change`，见第 22 节 | 根目录复制／移动／删除仍不可用；不保证任意插件私有引用、持久幂等或未保存客户端内容 |
 | 读取可编辑文稿 | `GET document` 保留全量；`document/outline`、`document/part` 共用版本绑定的紧凑读取，无需先编译 | 已有 `get_document_outline/read_document_part`；`get_document` 仍全量；`deck_info/get_section/get_step` 仍读取运行快照 | Schema 资源与后续大文通用写回；局部读取边界见第 18 节 |
 | 正文结构、格式、表格、图片占位、块移动 | 原生 BlockNote 投影回 `TeachingDocument`，`DocumentSession` → `document/change` | 已有 plan/apply 的 `updateText/insertBlock/moveBlock/deleteBlock` 与共享校验 | 更细的富文本身份和编辑范围语义 |
 | 页面新建、重命名、复制、排序、删除 | kernel 共享页面纯规则；Web 保持原 actor、创建的原生 Undo／focus 和删除确认；删除核所有保留讲稿 cue | 紧凑 `plan_page_change/apply_page_change` 覆盖新建／重命名／移动／删除；复制沿用其两专用工具，删除按计划与 source 明确确认影响，见第 19 节 | 通用大文写回仍未有界；不包含项目管理、批注或完整历史操作 |
@@ -411,3 +411,13 @@ Web 历史面板与五个 MCP 工具借同一个工作区 owner，复用 Revisio
 根文稿空字符串不再落入全工作区历史。列表按原修改有界分页，状态由完整撤消链派生；Web 明确翻页并拒绝旧读取，确认新保存源时刷新。普通 undo／redo 只作用于读取确认的下一目标，逐条 revert 只作用于明确选择的可达提交；三者均保留 source／HEAD、同文稿全文件范围、实际暂存区与工作区检查。实际范围和保留的候选／观察器失败见[历史验证记录](benchmarks/mcp-document-history-2026-10-28.md)。
 
 这些工具不控制浏览器原生 Undo、未保存输入或草稿，不开放任意 checkout／discard，不代替项目恢复与审阅。compiler-only stdio 没有这个 workspace owner，不新增本地写入回退；没有 git、没有父基线或 required review 未满足时如实拒绝。
+
+## 22. 已实现的普通文稿项目计划
+
+`get_project_capabilities` 只观察 HEAD／配置并返回真实 gate 与限额，不编译或验证整个文件树。`plan_project_change` 绑定实际 HEAD、配置、目录树、模板及 canonical 引用，固定新建／复制的 Doc UUID，返回紧凑影响、planId／digest 和过期时间。`apply_project_change` 在原 DocumentOperations 的事务与共享锁内复核后写入，读回核验再给保存回执；不新增 writer。HTTP 对应 `project/capabilities`、`project/plan`、`project/apply`，旧裸 `POST documents` 不再写入。
+
+首页沿用原创建、复制、重命名与删除表单；标题 rename 使用 retitle，目录 rename 是独立明确操作。复制的标题和新身份同一次提交。删除先预检并显示真实文件／链接数量，再明确提交这份计划。`impact.files/bytes` 指操作根的文件和原字节，跨文稿 canonical 改写另列 referenceDocuments。已知素材／实现文件／href 与官方代码锚点按各自路径契约处理，literal 和插件任意 data 不递归改写；删除 incoming 引用或不能安全处理的操作明确拒绝。
+
+请求／回复最多 4,096／7,168 UTF-16 字符，64 条进程内计划、五分钟 TTL；回执仅结果 HEAD／tree 仍当前可重放，Undo ABA 不再次执行。成员／origin、operate、required review 与可信文稿绑定令牌重新检查。没有 workspace grant 的文稿 token 不因额外 document 参数获得项目权限。根文稿空字符串身份仍合法，但根目录复制／移动／删除的工作区控制范围未定义，因此准确 unavailable。无 Git 或没有可确认 HEAD 也不假造提交能力。
+
+真实运行与未验证门槛见[项目计划记录](benchmarks/project-authoring-plans-2026-10-28.md)；这不包含原生 Undo、客户端草稿同步、任意 checkout／discard、任意插件路径改写或全部项目管理目标。

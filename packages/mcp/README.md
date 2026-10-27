@@ -57,3 +57,5 @@ Workspace MCP shares Web's voiceover task owner. Read `get_voiceover_status` for
 ## License
 
 Apache-2.0
+
+Workspace project management uses `get_project_capabilities`, `plan_project_change` and `apply_project_change`. Read the fixed plan before applying; deletion requires `confirmDeletion:true`. Web uses the same owner. The service binds actual HEAD, configuration, file/template trees and classified references, with bounded replies and process-local retries. Document-bound tokens have no workspace-management grant. Root-directory copy/move/delete, no-Git management and arbitrary plugin-private reference rewriting are unavailable; capability discovery does not compile or validate a file tree.

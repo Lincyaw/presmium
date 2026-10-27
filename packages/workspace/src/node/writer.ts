@@ -30,11 +30,11 @@ export interface DocumentCheckpoint {
 
 export interface DocumentWriter extends DocumentFiles {
   create(path: string, content: Uint8Array, outside?: boolean): Promise<void>
-  template(dir: string, template: string, title: string): Promise<void>
-  copy(from: string, to: string): Promise<void>
+  template(dir: string, template: string, title: string, documentId?: string): Promise<void>
+  copy(from: string, to: string, documentId?: string, title?: string): Promise<void>
   relink(from: string, to: string): Promise<string[]>
   empty(dir: string): Promise<void>
-  checkpoint(dirs: string[], relink?: { from: string, to: string }): Promise<DocumentCheckpoint>
+  checkpoint(dirs: string[], relink?: { from: string, to: string }, files?: string[]): Promise<DocumentCheckpoint>
 }
 
 function partsOf(path: unknown): string[] {
@@ -209,7 +209,7 @@ export function isGeneratedPath(path: string): boolean {
   return at >= 0 && !DECK_CONTENT.has(parts[at + 1] ?? '')
 }
 
-function sourceEntries(dir: string): { path: string, link?: string, executable?: boolean }[] {
+export function documentSourceEntries(dir: string, onEntry?: () => void): { path: string, link?: string, executable?: boolean }[] {
   const out: { path: string, link?: string, executable?: boolean }[] = []
   const walk = (current: string, rel: string) => {
     for (const name of readdirSync(current).sort()) {
@@ -217,6 +217,7 @@ function sourceEntries(dir: string): { path: string, link?: string, executable?:
       if (rel === '.presmium' && !DECK_CONTENT.has(name)) continue
       const path = join(current, name)
       const entry = rel ? `${rel}/${name}` : name
+      onEntry?.()
       const found = stat(path)
       if (!found) continue
       if (found.isSymbolicLink()) out.push({ path: entry, link: readlinkSync(path) })
@@ -228,27 +229,27 @@ function sourceEntries(dir: string): { path: string, link?: string, executable?:
   return out
 }
 
-function writeTemplate(config: WorkspaceConfig, dir: string, template: string, title: string): void {
+function writeTemplate(config: WorkspaceConfig, dir: string, template: string, title: string, documentId?: string): void {
   assertDocumentDir(config, dir)
   const source = findTemplate(config, template)
   if (!source) throw new FilesError(`no document template ${JSON.stringify(template)}`)
-  const entries = sourceEntries(source).filter(entry => entry.link === undefined)
+  const entries = documentSourceEntries(source).filter(entry => entry.link === undefined)
   if (!entries.some(entry => entry.path === DOCUMENT_ENTRY)) throw new FilesError(`The document template must contain ${DOCUMENT_ENTRY}.`)
   writeChanges(config, entries.map(({ path, executable }) => {
     const content = readFileSync(join(source, path))
-    return { path: `${dir}/${path}`, content: path === DOCUMENT_ENTRY ? freshDocument(content, title) : content, ...executable ? { executable } : {} }
+    return { path: `${dir}/${path}`, content: path === DOCUMENT_ENTRY ? freshDocument(content, title, documentId) : content, ...executable ? { executable } : {} }
   }))
 }
 
 /** A copy is a new document; block/section identities remain inside its new namespace. */
-function freshDocument(content: Uint8Array, title?: string): Buffer {
+function freshDocument(content: Uint8Array, title?: string, documentId?: string): Buffer {
   let value: unknown
   try { value = JSON.parse(Buffer.from(content).toString('utf8')) }
   catch { throw new FilesError(`Invalid ${DOCUMENT_ENTRY}: expected a JSON teaching document.`) }
   const validated = validateDocument(value)
   if (!validated.document) throw new FilesError(`Invalid ${DOCUMENT_ENTRY}: ${validated.issues[0]?.message ?? 'document validation failed'}`)
   const document = validated.document
-  document.id = randomUUID()
+  document.id = documentId ?? randomUUID()
   if (title !== undefined) {
     document.metadata.title = title
     for (const section of Object.values(document.sections)) if (section.title === '{{title}}') section.title = title
@@ -256,10 +257,10 @@ function freshDocument(content: Uint8Array, title?: string): Buffer {
   return Buffer.from(`${JSON.stringify(document, null, 2)}\n`)
 }
 
-function copyDocument(config: WorkspaceConfig, from: string, to: string): void {
+function copyDocument(config: WorkspaceConfig, from: string, to: string, documentId?: string, title?: string): void {
   assertDocumentDir(config, from)
   assertDocumentDir(config, to)
-  const entries = sourceEntries(join(config.root, from))
+  const entries = documentSourceEntries(join(config.root, from))
   if (!entries.some(entry => entry.path === DOCUMENT_ENTRY)) throw new FilesError(`The copied document must contain ${DOCUMENT_ENTRY}.`)
   writeChanges(config, entries.map(({ path, link, executable }): DocumentFileChange => {
     if (link !== undefined) {
@@ -267,7 +268,7 @@ function copyDocument(config: WorkspaceConfig, from: string, to: string): void {
       return { path: `${to}/${path}`, link }
     }
     const content = readFileSync(join(config.root, from, path))
-    if (path === DOCUMENT_ENTRY) return { path: `${to}/${path}`, content: freshDocument(content) }
+    if (path === DOCUMENT_ENTRY) return { path: `${to}/${path}`, content: freshDocument(content, title, documentId) }
     if (path.endsWith('.md')) return { path: `${to}/${path}`, content: Buffer.from(rewriteLinks(content.toString('utf8'), `${to}/${path}`, `${from}/${path}`, from, to)) }
     return { path: `${to}/${path}`, content, ...executable ? { executable } : {} }
   }))
@@ -277,7 +278,7 @@ function relinkDocuments(config: WorkspaceConfig, from: string, to: string): str
   const changes: DocumentFileChange[] = []
   for (const doc of listDocuments(config)) {
     if (!realDirectory(config.root, doc.dir)) continue
-    for (const entry of sourceEntries(join(config.root, doc.dir))) {
+    for (const entry of documentSourceEntries(join(config.root, doc.dir))) {
       if (entry.link !== undefined || !entry.path.endsWith('.md')) continue
       const path = doc.dir ? `${doc.dir}/${entry.path}` : entry.path
       const was = isWithin(path, to) ? `${from}${path.slice(to.length)}` : path
@@ -297,11 +298,11 @@ function emptyDocument(config: WorkspaceConfig, dir: string): void {
 }
 
 /** Temporary filesystem preimages belong to this writer, never to the canonical document or git index. */
-function checkpoint(config: WorkspaceConfig, dirs: string[], relink?: { from: string, to: string }): DocumentCheckpoint {
+function checkpoint(config: WorkspaceConfig, dirs: string[], relink?: { from: string, to: string }, extraFiles: string[] = []): DocumentCheckpoint {
   const inspect = (path: string): Stats | undefined => {
     try { return lstatSync(path) } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined; throw error }
   }
-  const targets = new Set(dirs)
+  const targets = new Set([...dirs, ...extraFiles])
   const tooLarge = () => new DocumentCheckpointRefusal(413, 'project-backup-limit', { maxBackupEntries: DOCUMENT_OPERATION_MAX_BACKUP_ENTRIES, maxBackupBytes: DOCUMENT_OPERATION_MAX_BACKUP_BYTES })
   for (const dir of dirs) {
     try { partsOf(dir) } catch (error) { if (error instanceof FilesError) throw new DocumentCheckpointRefusal(400, 'project-directory-invalid'); throw error }
@@ -314,10 +315,14 @@ function checkpoint(config: WorkspaceConfig, dirs: string[], relink?: { from: st
       if (inspect(join(parent, '.git'))) throw new DocumentCheckpointRefusal(409, 'project-nested-repository')
     }
   }
+  for (const file of extraFiles) {
+    const parts = partsOf(file); let parent = config.root
+    for (const part of parts.slice(0, -1)) { parent = join(parent, part); const found = inspect(parent); if (!found) break; if (!found.isDirectory()) throw new DocumentCheckpointRefusal(409, 'project-directory-unavailable'); if (inspect(join(parent, '.git'))) throw new DocumentCheckpointRefusal(409, 'project-nested-repository') }
+  }
   // Preserve the existing legacy link writer's exact affected files on a failed rename.
   if (relink) for (const doc of listDocuments(config)) {
     if (!realDirectory(config.root, doc.dir)) continue
-    for (const entry of sourceEntries(join(config.root, doc.dir))) {
+    for (const entry of documentSourceEntries(join(config.root, doc.dir))) {
       const path = doc.dir ? `${doc.dir}/${entry.path}` : entry.path
       if (entry.link !== undefined || !path.endsWith('.md') || dirs.some(dir => isWithin(path, dir))) continue
       if ((inspect(join(config.root, path))?.size ?? 0) > DOCUMENT_OPERATION_MAX_BACKUP_BYTES) throw tooLarge()
@@ -374,10 +379,10 @@ export function localWriter(config: WorkspaceConfig): DocumentWriter {
   return {
     create: async (path, content, outside) => createFile(config, path, content, outside),
     write: async changes => writeChanges(config, changes),
-    template: async (dir, template, title) => writeTemplate(config, dir, template, title),
-    copy: async (from, to) => copyDocument(config, from, to),
+    template: async (dir, template, title, documentId) => writeTemplate(config, dir, template, title, documentId),
+    copy: async (from, to, documentId, title) => copyDocument(config, from, to, documentId, title),
     relink: async (from, to) => relinkDocuments(config, from, to),
     empty: async dir => emptyDocument(config, dir),
-    checkpoint: async (dirs, relink) => checkpoint(config, dirs, relink),
+    checkpoint: async (dirs, relink, files) => checkpoint(config, dirs, relink, files),
   }
 }

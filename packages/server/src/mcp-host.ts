@@ -40,6 +40,7 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
   }
   return {
     process: { command: options.command },
+    get projectAuthoring() { return options.serverHost?.projectAuthoring },
     get authoring() { return options.serverHost?.authoring },
     get documentHistory() { return options.serverHost?.documentHistory },
     get authoringClients() { return options.serverHost?.authoringClients },

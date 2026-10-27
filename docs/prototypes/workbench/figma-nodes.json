@@ -1014,7 +1014,19 @@
     },
     "P01": {
       "nodeId": "9:3",
-      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-3"
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-3",
+      "projectPlans": {
+        "publicComponents": [
+          "PmDialog",
+          "PmMenu",
+          "PmButton"
+        ],
+        "dialogNodeId": "25:565",
+        "menuNodeId": "25:524",
+        "behavior": "Deletion opens a read-only fixed project plan, shows the actual file/link count and enables the existing Delete button only when that plan is ready. Submit uses exactly its planId/digest. Source changes refuse the old plan; Cancel never applies it. Root directory copy/delete remain disabled. No second confirmation dialog or business control styling.",
+        "implementation": "packages/workbench/src/panels/HomePanel.tsx",
+        "verification": "docs/benchmarks/project-authoring-plans-2026-10-28.md"
+      }
     },
     "P02": {
       "nodeId": "9:4",

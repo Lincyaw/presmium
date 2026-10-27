@@ -1,3 +1,4 @@
+import type { ProjectOperation, ProjectPlan } from '@lincyaw/kernel'
 import { undoDepth, redoDepth } from '@tiptap/pm/history'
 import { TextSelection } from '@tiptap/pm/state'
 import { DocumentSession } from './document-session.ts'
@@ -476,11 +477,17 @@ export class Workbench {
     }
   }
 
-  operateDocument(operation: DocumentOperation): Promise<OperationAnswer> {
+  planDocumentOperation(operation: ProjectOperation): Promise<ProjectPlan> {
+    return this.client.planProjectChange({ id: crypto.randomUUID(), operation })
+  }
+
+  operateDocument(operation: ProjectOperation, planned?: ProjectPlan): Promise<OperationAnswer> {
     const attributes = Object.fromEntries(Object.entries(operation).filter(([, value]) => typeof value === 'string').map(([key, value]) => [`presmium.op.${key}`, value as string]))
     return this.#timed(`document.${operation.op}`, attributes, async () => {
-      const answer = await this.client.operateDocument(operation)
-      if (operation.op !== 'create' && operation.op !== 'copy' && this.#state.document === operation.dir) this.closeDocument()
+      const scope = this.#documentScope
+      if (this.#state.document === operation.dir) await this.flushPendingEdits()
+      const answer = await this.client.operateDocument(operation, planned)
+      if ((operation.op === 'rename' || operation.op === 'delete') && scope === this.#documentScope && this.#state.document === operation.dir) this.closeDocument()
       await this.loadDocuments()
       return answer
     })
@@ -498,19 +505,13 @@ export class Workbench {
     const taken = this.#state.documents?.documents.map(doc => doc.dir) ?? []
     let to = `${dir}-copy`
     for (let n = 2; taken.includes(to); n++) to = `${dir}-copy-${n}`
-    const answer = await this.operateDocument({ op: 'copy', dir, to })
-    await this.retitleDocument(answer.dir ?? to, title)
+    const answer = await this.operateDocument({ op: 'copy', dir, to, title })
     return answer.dir ?? to
   }
 
-  /** Changes canonical document metadata through the same versioned transaction as the editor. */
-  retitleDocument(dir: string, title: string): Promise<void> {
-    return this.#timed('document.retitle', { 'presmium.op.dir': dir, 'presmium.title': title }, async () => {
-      const source = await this.client.readDocument(dir)
-      await this.client.changeDocument(dir, { id: crypto.randomUUID(), baseDocumentVersion: source.version, replacement: { ...source.content, metadata: { ...source.content.metadata, title } } })
-      await this.loadDocuments()
-      if (this.#state.document === dir) void this.#history.read(dir)
-    })
+  /** Title changes use the same fixed project plan as directory management. */
+  async retitleDocument(dir: string, title: string): Promise<void> {
+    await this.operateDocument({ op: 'retitle', dir, title })
   }
 
   #watchOpeningInteraction(cancel: () => void): () => void {
