@@ -1,15 +1,15 @@
 import { WebSocket } from 'partysocket'
 import type { WorkspaceSubscription } from '@lincyaw/workbench'
 import { WORKSPACE_EVENTS_PATH, workspaceEventMessage } from '../workspace-events.ts'
-import type { WorkspaceEventTopic } from '../workspace-events.ts'
+import type { WorkspaceEventTopic, WorkspaceEventCommand } from '../workspace-events.ts'
 
 const TOPICS: Readonly<Record<string, WorkspaceEventTopic>> = {
-  document: 'document', diagnostics: 'diagnostics', review: 'review', revision: 'ir', job: 'jobs',
+  document: 'document', diagnostics: 'diagnostics', review: 'review', revision: 'ir', job: 'jobs', 'viewer-site': 'viewer-site', 'viewer-control': 'viewer-control',
 }
 
 /** Each live reader owns one logical subscription; the library owns physical reconnect timing. */
 export function workspaceSubscriptions(ctx: Pick<DshClientContext, 'effect'>): WorkspaceSubscription {
-  type Subscription = { id?: string, topic: WorkspaceEventTopic, document: string, received(data: string): void, failed?(): void, ready?(): void }
+  type Subscription = { id?: string, request: Extract<WorkspaceEventCommand, { type: 'subscribe' }>, received(data: string, event?: string): void, failed?(): void, ready?(): void }
   const readers = new Set<Subscription>()
   const ids = new Map<string, Subscription>()
   const url = new URL(WORKSPACE_EVENTS_PATH.slice(1), document.baseURI)
@@ -21,7 +21,7 @@ export function workspaceSubscriptions(ctx: Pick<DshClientContext, 'effect'>): W
     const id = String(++serial)
     reader.id = id
     ids.set(id, reader)
-    socket.send(JSON.stringify({ type: 'subscribe', id, topic: reader.topic, document: reader.document }))
+    socket.send(JSON.stringify({ ...reader.request, id }))
   }
   const opened = () => {
     if (closed) return
@@ -42,7 +42,12 @@ export function workspaceSubscriptions(ctx: Pick<DshClientContext, 'effect'>): W
     if (!reader || !readers.has(reader)) return
     if (value.type === 'ready') reader.ready?.()
     else if (value.type === 'error') reader.failed?.()
-    else reader.received(value.data)
+    else {
+      const topic = reader.request.topic
+      const named = topic === 'viewer-site' ? ['ir', 'reload'] : topic === 'viewer-control' ? ['ready', 'approval', 'settled', 'go', 'session'] : undefined
+      if (named && (!value.event || !named.includes(value.event))) return
+      reader.received(value.data, value.event)
+    }
   }
   socket.addEventListener('open', opened)
   socket.addEventListener('close', disconnected)
@@ -57,9 +62,14 @@ export function workspaceSubscriptions(ctx: Pick<DshClientContext, 'effect'>): W
   }, 'presmium: workspace subscriptions')
   return (address, name, received, failed, ready) => {
     const topic = TOPICS[name]
-    const document = new URL(address).searchParams.get('document')
+    const query = new URL(address).searchParams
+    const document = query.get('document')
     if (!topic || document === null) throw new Error('Invalid workspace event subscription.')
-    const reader: Subscription = { topic, document, received, failed, ready }
+    const request: Subscription['request'] = topic === 'viewer-site'
+      ? { type: 'subscribe', id: '', topic, document, app: query.get('app') ?? '', lang: query.get('lang') ?? '', form: query.get('form') === 'slides' ? 'slides' : 'web' }
+      : topic === 'viewer-control' ? { type: 'subscribe', id: '', topic, document, window: query.get('window') ?? '' }
+        : { type: 'subscribe', id: '', topic, document }
+    const reader: Subscription = { request, received, failed, ready }
     if (!closed) {
       readers.add(reader)
       if (socket.readyState === WebSocket.OPEN) subscribe(reader)

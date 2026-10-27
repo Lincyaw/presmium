@@ -1,3 +1,4 @@
+import type { PreviewEvents } from './preview-events.ts'
 import { AUTHOR_MARKS_CLASS, PREVIEW_APPEARANCE_PARAM, PREVIEW_NAME, PREVIEW_PARAM, previewEnvelope, toPreviewCommand } from './contracts/preview.ts'
 import type { PreviewAnchor, PreviewCommand, PreviewCommandType, PreviewPin, PreviewPoint, PreviewPosition, PreviewRect, PreviewReport } from './contracts/preview.ts'
 import { errorMessage } from './errors.ts'
@@ -20,6 +21,7 @@ export interface PreviewTextHandle {
 /** What a web or slides page gives the preview frame: its position, navigation and DOM. */
 export interface PreviewPage {
   renderer: 'web' | 'slides'
+  events?: PreviewEvents
   document: string
   origins: readonly string[]
   revision(): string | undefined
@@ -104,7 +106,7 @@ const frameStyle = () => `
 [data-presmium-editor-block][${PIN_LABELS}]::after { content: attr(${PIN_LABELS}); position: absolute; top: var(--pm-space-1); right: var(--pm-space-1); z-index: var(--pm-z-site-header); min-width: var(--pm-size-icon-lg); max-width: var(--pm-size-row); min-height: var(--pm-size-icon-lg); padding-inline: var(--pm-space-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-sizing: border-box; border-radius: var(--pm-radius-control); background: var(--pm-color-accent); color: var(--pm-color-on-accent); font-family: var(--pm-font-sans); font-size: var(--pm-text-xs); font-weight: var(--pm-weight-semibold); line-height: var(--pm-size-icon-lg); text-align: center; pointer-events: none; }
 `
 
-function previewNonce(): string | undefined {
+export function previewNonce(): string | undefined {
   if (typeof window === 'undefined') return undefined
   const given = new URL(window.location.href).searchParams.get(PREVIEW_PARAM)
   if (given) return given
@@ -828,7 +830,7 @@ function createPositionReport(page: PreviewPage, state: FrameState, post: (messa
     if (!ready) {
       ready = true
       revision = page.revision()
-      post({ type: 'ready', renderer: page.renderer, document: page.document, ...revision ? { revision } : {}, capabilities })
+      post({ type: 'ready', renderer: page.renderer, document: page.document, ...revision ? { revision } : {}, capabilities, ...page.events ? { eventConnection: page.events.connection } : {} })
       page.activityChanged?.(state.active)
     }
     if (!state.active) return
@@ -1087,6 +1089,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
     if (!command) return
     try {
       switch (command.type) {
+        case 'events-ready': case 'events-message': return page.events?.receive(command)
         case 'production-playback': return productionControl(command)
         case 'blocks-result': return void window.dispatchEvent(new CustomEvent('presmium:blocks-result', { detail: command }))
         case 'edit-result': return void window.dispatchEvent(new CustomEvent('presmium:edit-result', { detail: command }))
@@ -1146,6 +1149,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
       position.report(problem)
     },
     stop() {
+      page.events?.stop()
       cancelProduction(); stopProduction?.()
       cancelPlayback()
       stopPlaybackGate?.()

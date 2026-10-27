@@ -116,7 +116,27 @@ export interface PreviewSource {
   shared: number
 }
 
+/** Fixed live-viewer channels; no arbitrary upstream URL crosses the preview boundary. */
+export const PREVIEW_EVENTS_PARAM = 'presmium-events'
+export type PreviewEventTarget =
+  | { topic: 'viewer-site', document: string, app: string, lang: string, form: 'web' | 'slides' }
+  | { topic: 'viewer-control', document: string, window: string }
+export type PreviewEventMessage = { type: 'open' | 'error' } | { type: 'event', event: string, data: string }
+export type PreviewEventSubscription = (target: PreviewEventTarget, received: (message: PreviewEventMessage) => void) => () => void
+
+export function isPreviewEventTarget(value: unknown): value is PreviewEventTarget {
+  if (!isRecord(value) || !(typeof value.document === 'string' && value.document.length <= 1024)) return false
+  if (value.topic === 'viewer-site') return Object.keys(value).every(key => ['topic', 'document', 'app', 'lang', 'form'].includes(key))
+    && bounded(value.app, 200) && (typeof value.lang === 'string' && value.lang.length <= 80) && (value.form === 'web' || value.form === 'slides')
+  return value.topic === 'viewer-control' && Object.keys(value).every(key => ['topic', 'document', 'window'].includes(key))
+    && typeof value.window === 'string' && /^[a-zA-Z0-9-]{1,80}$/.test(value.window)
+}
+const eventMessage = (value: unknown): value is PreviewEventMessage => isRecord(value) && (value.type === 'open' || value.type === 'error'
+  || value.type === 'event' && bounded(value.event, 40) && (typeof value.data === 'string' && value.data.length <= (2 << 20)))
+
 export type PreviewCommand =
+  | { type: 'events-ready', connection: string }
+  | { type: 'events-message', connection: string, id: string, message: PreviewEventMessage }
   | { type: 'production-playback', request: number, control: ProductionPlaybackCommand }
   | { type: 'document-history', action: 'undo' | 'redo', request: number }
   | { type: 'document-history-reset' }
@@ -148,6 +168,8 @@ export type PreviewCommandType = PreviewCommand['type']
 export type PreviewShortcut = 'undo' | 'redo' | 'dismiss'
 
 export type PreviewReport =
+  | { type: 'events-subscribe', connection: string, id: string, target: PreviewEventTarget }
+  | { type: 'events-unsubscribe', connection: string, id: string }
   | { type: 'presentation-action', action: 'refresh' | 'exit' }
   | { type: 'production-playback-state', state: ProductionPlaybackState }
   | { type: 'production-playback-result', request: number, binding: ProductionBinding, state?: ProductionPlaybackState, error?: string }
@@ -168,7 +190,7 @@ export type PreviewReport =
   | { type: 'page-create', section: string, id: string, request: number, revision: string }
   | { type: 'page-create-error', request: number, error: string }
   | { type: 'narrate', section: string, step: number, navigate?: boolean }
-  | { type: 'ready', renderer: 'web' | 'slides', document: string, revision?: string, capabilities: PreviewCommandType[] }
+  | { type: 'ready', renderer: 'web' | 'slides', document: string, revision?: string, capabilities: PreviewCommandType[], eventConnection?: string }
   | ({ type: 'position' } & PreviewPosition)
   | { type: 'picked', section: string, block?: string, step?: number, trail?: string[], rect?: PreviewRect, point?: PreviewPoint, clicks?: number }
   | { type: 'selection', selection: (PreviewAnchor & { text: string, rect?: PreviewRect, obstacles?: PreviewRect[] }) | null }
@@ -274,6 +296,8 @@ export function toPreviewCommand(data: unknown, nonce: string): PreviewCommand |
   if (!isPreviewEnvelope(data, nonce) || data.version !== PREVIEW_PROTOCOL) return undefined
   const m = data as Record<string, unknown>
   switch (m.type) {
+    case 'events-ready': return productionId(m.connection) ? { type: 'events-ready', connection: m.connection } : undefined
+    case 'events-message': return productionId(m.connection) && productionId(m.id) && eventMessage(m.message) ? { type: 'events-message', connection: m.connection, id: m.id, message: m.message } : undefined
     case 'production-playback': return request(m.request) && productionCommand(m.control) ? { type: 'production-playback', request: m.request, control: m.control } : undefined
     case 'document-history': return request(m.request) && (m.action === 'undo' || m.action === 'redo') ? { type: 'document-history', request: m.request, action: m.action } : undefined
     case 'document-history-reset': return { type: 'document-history-reset' }
@@ -306,6 +330,8 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
   if (!isPreviewEnvelope(data, nonce) || data.version !== PREVIEW_PROTOCOL) return undefined
   const m = data as Record<string, unknown>
   switch (m.type) {
+    case 'events-subscribe': return productionId(m.connection) && productionId(m.id) && isPreviewEventTarget(m.target) ? { type: 'events-subscribe', connection: m.connection, id: m.id, target: m.target } : undefined
+    case 'events-unsubscribe': return productionId(m.connection) && productionId(m.id) ? { type: 'events-unsubscribe', connection: m.connection, id: m.id } : undefined
     case 'presentation-action': return m.action === 'refresh' || m.action === 'exit' ? { type: 'presentation-action', action: m.action } : undefined
     case 'production-playback-state': return productionState(m.state) ? { type: 'production-playback-state', state: m.state } : undefined
     case 'production-playback-result': return request(m.request) && productionBinding(m.binding) && optional(m.state, productionState) && optional(m.error, text)
@@ -325,7 +351,7 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
     case 'page-create': return bounded(m.section, 200) && pageId(m.id) && request(m.request) && bounded(m.revision, 200) ? { type: 'page-create', section: m.section, id: m.id, request: m.request, revision: m.revision } : undefined
     case 'page-create-error': return request(m.request) && bounded(m.error, 4000) ? { type: 'page-create-error', request: m.request, error: m.error } : undefined
     case 'narrate': return text(m.section) && step(m.step) && optional(m.navigate, (value): value is boolean => typeof value === 'boolean') ? { type: 'narrate', section: m.section, step: m.step, ...m.navigate === undefined ? {} : { navigate: m.navigate as boolean } } : undefined
-    case 'ready': return (m.renderer === 'web' || m.renderer === 'slides') && text(m.document) && optional(m.revision, text) && strings(m.capabilities) ? { type: 'ready', renderer: m.renderer, document: m.document, ...m.revision ? { revision: m.revision as string } : {}, capabilities: m.capabilities as PreviewCommandType[] } : undefined
+    case 'ready': return (m.renderer === 'web' || m.renderer === 'slides') && text(m.document) && optional(m.revision, text) && strings(m.capabilities) && optional(m.eventConnection, productionId) ? { type: 'ready', renderer: m.renderer, document: m.document, ...m.revision ? { revision: m.revision as string } : {}, capabilities: m.capabilities as PreviewCommandType[], ...m.eventConnection ? { eventConnection: m.eventConnection as string } : {} } : undefined
     case 'position': return text(m.section) && step(m.step) && strings(m.trail) && optional(m.view, text) ? { type: 'position', section: m.section, step: m.step, trail: m.trail, ...m.view ? { view: m.view as string } : {} } : undefined
     case 'picked': return text(m.section) && optional(m.block, text) && optional(m.step, step) && optional(m.trail, strings) && optional(m.rect, rect) && optional(m.point, point) && optional(m.clicks, clicks)
       ? { type: 'picked', section: m.section, ...m.block ? { block: m.block as string } : {}, ...m.step === undefined ? {} : { step: m.step as number }, ...m.trail ? { trail: m.trail as string[] } : {}, ...m.rect ? { rect: toRect(m.rect as PreviewRect) } : {}, ...m.point ? { point: toPoint(m.point as PreviewPoint) } : {}, ...m.clicks === undefined ? {} : { clicks: m.clicks as number } }
