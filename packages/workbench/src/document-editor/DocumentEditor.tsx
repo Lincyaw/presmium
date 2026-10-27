@@ -95,6 +95,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
     if (!value || !latest || binding.current !== projection || active.current !== projection || value.prosemirrorView.isDestroyed) return
     const transaction = pendingTransaction.current
     comments.synchronize(latest, version, value, transaction?.doc === value.prosemirrorState.doc && transaction.before === projectedDocument.current ? transaction : undefined, current.current.getDocumentAcknowledged ? current.current.getDocumentAcknowledged() : current.current.acknowledged ?? false)
+    if (version !== undefined) comments.drafts?.start()
     projectedDocument.current = value.prosemirrorState.doc
   }
   comments.beforeAction = () => { if (current.current.getDocumentVersion && current.current.getDocumentVersion() === undefined) throw new Error('document-context-changed'); syncComments() }
