@@ -236,7 +236,7 @@ VS Code 扩展的安装包包含语言服务、编译器与网页渲染运行时
 - `@lincyaw/kernel` 还导出插件共用的纯函数：`irBlocks`、`docBlocks`（遍历块，含组件的子块）、`nodeMdast`、`errorMessage`、`isRecord`、`failedRun`、`languageId`（`py`、`python3`、`ipython*` 归为 `python`，`js`、`mjs` 归为 `javascript`，`ts` 归为 `typescript`）、`lowerMyst`（MyST 降为标准 Markdown；卡片、栅格与选项卡按选项 `cards` 保留结构或降为小标题，`ir.md`）与 `deckLocale`。各包共用这些实现。
 - 指令与编译步骤的上下文提供 `watch(...files)`：声明 `ctx.src`、`ctx.resolvers` 之外读取的文件，`presmium dev` 在它们变化时重新编译（`ir.md`）。
 - 组件转换函数为 `(node, block, ctx)`，`ctx` 是所服务渲染端的 `RenderContext`；插件据此得到输出目录与工作目录（例如 notebook 渲染端的输出目录），不为此依赖渲染端的包。
-- `RenderContext.workspaceRoot` 与指令、编译步骤上下文中的同名字段相同：文稿所在 git 仓库的根目录，不在仓库中时为文稿目录。渲染端发布插件配置（全局的 `presmium` 与各章节的 `{config}`）时按它改写路径：位于仓库内的绝对路径（例如编译步骤解析出的工作区目录）改为相对于文稿目录的路径，两种形态相同；仓库外的路径与其他字符串（例如站点路径 `/web`）保持原样。产物因此不随检出位置变化。
+- `RenderContext.workspaceRoot` 与指令、编译步骤上下文中的同名字段相同。宿主可通过 `CompilerOptions.workspaceRoot` 显式指定；否则从文稿目录向上查找最近的 `presmium.workspace.yaml`，不越过所在 git 仓库的根目录；没有配置时取 git 根目录，不在仓库中时取文稿目录。代码锚点相对于这个逻辑工作区根目录，读取范围不因工作区位于 git 子目录而扩大；锁定提交的读取与永久链接另换算成实际 git 仓库内的路径。渲染端发布插件配置（全局的 `presmium` 与各章节的 `{config}`）时按工作区根目录改写路径：位于工作区内的绝对路径（例如编译步骤解析出的目录）改为相对于文稿目录的路径，两种形态相同；工作区外的路径与其他字符串（例如站点路径 `/web`）保持原样。产物因此不随检出位置变化。
 - 检查项的 `CheckContext` 带有编译好的 IR（`ir`），另有 Node 端服务 `service(token)`（4.6 节；例如讲授的检查经 `SPEECH` 判断合成所需的引擎是否可用）。
 
 ### 4.3 锚点与检查

@@ -27,13 +27,14 @@ function relativeInside(root: string, file: string): string | undefined {
   return rel.split(sep).join('/')
 }
 
-function openRepository(treeRoot: string, prefix: string): Repository {
+async function openRepository(treeRoot: string, prefix: string): Promise<Repository> {
   const root = join(treeRoot, prefix)
   const git = simpleGit(root)
+  const gitPrefix = await git.revparse(['--show-prefix']).then(value => value.trimEnd(), () => '')
   const commit = (rev: string) => rev.startsWith('-')
     ? Promise.resolve(undefined)
     : git.revparse(['--verify', '--quiet', `${rev}^{commit}`]).then(hash => hash.trim() || undefined, () => undefined)
-  const path = (file: string) => (prefix ? file.slice(prefix.length + 1) : file)
+  const path = (file: string) => gitPrefix + (prefix ? file.slice(prefix.length + 1) : file)
   return {
     prefix,
     path,
@@ -56,10 +57,13 @@ export function openGitTree(root: string): GitTree {
   let tree = trees.get(root)
   if (tree) return tree
   const own = openRepository(root, '')
-  const submodules = simpleGit(root)
-    .raw(['config', '--file', '.gitmodules', '--get-regexp', String.raw`^submodule\..*\.path$`])
-    .then(out => out.split('\n').filter(Boolean).map(line => line.slice(line.indexOf(' ') + 1).replace(/\/+$/, '')), () => [])
-    .then(paths => paths.map(path => openRepository(root, path)))
+  const git = simpleGit(root)
+  const submodules = git.revparse(['--show-toplevel'])
+    .then(repository => git.raw(['config', '--file', join(repository.trim(), '.gitmodules'), '--get-regexp', String.raw`^submodule\..*\.path$`])
+      .then(out => out.split('\n').filter(Boolean).map(line => line.slice(line.indexOf(' ') + 1).replace(/\/+$/, ''))
+        .map(path => relativeInside(root, join(repository.trim(), path))).filter((path): path is string => path !== undefined)))
+    .catch(() => [])
+    .then(paths => Promise.all(paths.map(path => openRepository(root, path))))
   const repository = async (file: string) => {
     const rel = relativeInside(root, file) ?? file
     return (await submodules).find(sub => rel.startsWith(`${sub.prefix}/`)) ?? own
