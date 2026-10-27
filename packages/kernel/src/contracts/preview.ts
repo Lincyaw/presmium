@@ -117,6 +117,7 @@ export interface PreviewSource {
 }
 
 /** Fixed live-viewer channels; no arbitrary upstream URL crosses the preview boundary. */
+export const PREVIEW_PRESENTATION_PARAM = 'presmium-presentation'
 export const PREVIEW_EVENTS_PARAM = 'presmium-events'
 export type PreviewEventTarget =
   | { topic: 'viewer-site', document: string, app: string, lang: string, form: 'web' | 'slides' }
@@ -135,6 +136,7 @@ const eventMessage = (value: unknown): value is PreviewEventMessage => isRecord(
   || value.type === 'event' && bounded(value.event, 40) && (typeof value.data === 'string' && value.data.length <= (2 << 20)))
 
 export type PreviewCommand =
+  | { type: 'presentation-confirmed', revision: string }
   | { type: 'events-ready', connection: string }
   | { type: 'events-message', connection: string, id: string, message: PreviewEventMessage }
   | { type: 'production-playback', request: number, control: ProductionPlaybackCommand }
@@ -296,6 +298,7 @@ export function toPreviewCommand(data: unknown, nonce: string): PreviewCommand |
   if (!isPreviewEnvelope(data, nonce) || data.version !== PREVIEW_PROTOCOL) return undefined
   const m = data as Record<string, unknown>
   switch (m.type) {
+    case 'presentation-confirmed': return productionId(m.revision) ? { type: 'presentation-confirmed', revision: m.revision } : undefined
     case 'events-ready': return productionId(m.connection) ? { type: 'events-ready', connection: m.connection } : undefined
     case 'events-message': return productionId(m.connection) && productionId(m.id) && eventMessage(m.message) ? { type: 'events-message', connection: m.connection, id: m.id, message: m.message } : undefined
     case 'production-playback': return request(m.request) && productionCommand(m.control) ? { type: 'production-playback', request: m.request, control: m.control } : undefined
