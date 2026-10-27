@@ -5,6 +5,7 @@ export interface McpMessages {
   run(section: string, block: string): string
   build(renderers: string): string
   cancelBuild(target: string): string
+  importAudio(file: string): string
   allRenderers: string
   classroomStart(name: string): string
   classroomEnd: string
@@ -18,6 +19,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     run: (section, block) => `运行「${section}」一节的 ${block}`,
     build: renderers => `构建文稿（${renderers}）`,
     cancelBuild: target => `取消构建（${target}）`,
+    importAudio: file => `导入音频「${file}」`,
     allRenderers: '全部渲染端',
     classroomStart: name => `开始课堂${name ? `「${name}」` : ''}`,
     classroomEnd: '结束课堂',
@@ -29,6 +31,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     run: (section, block) => `Run ${block} of "${section}"`,
     build: renderers => `Build the deck (${renderers})`,
     cancelBuild: target => `Cancel build (${target})`,
+    importAudio: file => `Import audio “${file}”`,
     allRenderers: 'all renderers',
     classroomStart: name => `Start the classroom${name ? ` "${name}"` : ''}`,
     classroomEnd: 'End the classroom',

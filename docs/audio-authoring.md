@@ -8,7 +8,7 @@ Studio 的视频制作中使用“音频片段”：导入后选择素材，编�
 
 浏览器通过 Studio 的 `api/presmium/document/audio` 与 `api/presmium/document/media-clip` 访问同一组路由。代理保留 multipart 的 Content-Type 边界和原始字节，不将文件转为 JSON。Workbench 先暂停、确认当前来源与保存状态，再发起写入；回执后重新读取原文稿的权威来源，不直接用旧回执替换当前输入。
 
-失败导入的显式重试使用同一个内存 File 和请求意图。意图只在通过最终来源屏障、实际发请求时创建；首次明确的 4xx 拒绝可重新发起，已经发送但结果不明的请求继续使用原 ID 与基线，避免重复导入。切换文稿后，旧请求不能改动新目标的输入或选择。
+失败导入的显式重试保留同一个内存 File。共享入口先计算摘要并检查已声明素材的实际字节；确认已经保存时复用真实素材，没有保存且作者已确认新源时才使用新意图。已发送但结果不明的请求先使用原 ID 对账；撤消到相同基线使旧回执明确冲突时，仅在当前来源仍相同且干净的条件下，用同一基线建立一次新意图。切换文稿后，旧请求不能改动新目标的输入或选择。
 
 ## 导入原始文件
 
@@ -32,6 +32,27 @@ Studio 的视频制作中使用“音频片段”：导入后选择素材，编�
 `GET document/audio?assetId=…&baseDocumentVersion=…` 返回 `DocumentAudioInspectionAnswer { document, version, fingerprint, inspection }`。路由直接读取当前权威资产声明，按工作区权限和同文稿常规文件规则探测，并在返回前再次核对源版本；不请求编译。
 
 这与运行端 `production-asset` 不同：编译器只将被 clip 引用的资产投影为 `productionAssets`。尚未引用的素材应使用此作者接口，不能根据运行快照中没有声明推断素材不存在。只读检查不接受任意文件路径，拒绝远程、跨文稿、隐藏路径、符号链接与路径穿越。
+
+## MCP 检查与导入工作区音频
+
+`createDocumentAudioAuthoring` 是工作区的共享作者服务，公开契约在 `packages/kernel/src/contracts/document-audio.ts`。主服务持有一个实例，HTTP、MCP 和编译贡献借用同一组事务与回执；编译贡献重挂载不会重新创建回执表。底层 `ProductionAudioAuthoring` 仍由插件负责真实探测和片段验证。
+
+| 工具 | 输入 | 回执 |
+| --- | --- | --- |
+| `get_audio_authoring_capabilities` | 文稿目录 | 当前 source、实际服务状态、操作支持、同文稿文件范围、16 MiB 上限、并发／回执限额与审阅限制 |
+| `inspect_workspace_audio` | `request:{source,path}` | 实际文件摘要、长度与媒体信息；`file:{path,sha256,byteLength}` 可原样用于导入，不分配 canonical Asset ID |
+| `import_workspace_audio` | `request:{id,source,file}` | `VerifiedDocumentAudioImport`，含原有资产／事务回执与保存后核验 |
+| `inspect_document_audio` | `request:{source,assetId}` | 同一个已保存资产的真实 `DocumentAudioInspectionAnswer` |
+
+`path` 相对工作区根目录，必须属于当前文稿既有 SourceEditor 范围内的普通文件。入口先执行共享路径权限校验，并排除音频的点号目录；已有回执也不能绕过范围规则。实际打开使用普通文件、句柄身份、读前后状态和有界字节检查。不能提供绝对路径、任意 URL、跨文稿或符号链接。
+
+文件检查和导入都核对完整 `CanonicalSource`。检查结果只是一份观察，导入仍重新读取原文件并核对所确认的 SHA 和长度。文件检查与服务装配可以并行，但最终探测、保存和读回依赖实际结果。作者能力通过目标文稿的 `Compiler.nodeServices()` 获取，不等待动画或场景编译成功。
+
+Web multipart 和 agent 工作区导入归入同一个音频意图：源、清洗标题、原始字节摘要与长度决定规范化输入。MCP 的写入来源由宿主固定为 agent，payload 不接受 origin／confirmed；required review 尚不能自动完成时明确拒绝 agent 导入，HTTP 人类编辑路径仍由宿主私有闭包选择。
+
+保存后读取权威文稿和新文件，核对 Asset、实际 SHA／长度、源版本与文件版本，返回 `verification.saved/source/asset`，并明确 `compiled/runtime='not-requested'`。若事务已提交而读回发现外部变化，错误含 `committed:true`、原意图、资产、已保存版本和可用的当前 source；不能把它当作尚未写入而重新导入。
+
+回执仅进程内保留最多 64 条，结果仍是当前源时才可复用；不承诺跨重启或更晚编辑后的幂等。服务关闭先阻止新工作，取消未提交的读取／探测，等待已经开始的事务与真实读回完成。媒体操作不创建讲稿或片段，不触发 ASR、TTS 或播放。完整上传句柄、剪辑和音色 MCP 动作仍见 [MCP RFC](rfc-mcp-authoring-actions.md)。
 
 ## 显式应用或移除片段
 

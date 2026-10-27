@@ -1,7 +1,7 @@
 import type { Compilation } from '@lincyaw/compiler'
 import { pluginId } from '@lincyaw/compiler'
 import type { DocumentSummary, Finding, IRDocument, Member, OutputJobs, PresmiumNodePlugin, RunResult, ServiceToken } from '@lincyaw/kernel'
-import type { AgentTool, DocumentAuthoring, DocumentTranscriptionAdoption, DocumentTranscriptions, Route } from '@lincyaw/kernel'
+import type { AgentTool, DocumentAuthoring, DocumentAudioAuthoring, DocumentTranscriptionAdoption, DocumentTranscriptions, Route } from '@lincyaw/kernel'
 
 export interface ServedPlugin {
   id: string
@@ -48,6 +48,7 @@ export function servedDocument(compilation: Compilation): ServedDocument {
 
 export interface ServerHost {
   authoring?: DocumentAuthoring
+  audioAuthoring?: DocumentAudioAuthoring
   transcriptions?: DocumentTranscriptions
   transcriptionAdoption?: DocumentTranscriptionAdoption
   /** Host-owned routes are available before a document's compiled plugin contributions. */

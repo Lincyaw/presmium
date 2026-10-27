@@ -118,14 +118,15 @@ export class SourceEditor {
     return listDocuments(this.#config).sort((a, b) => b.dir.length - a.dir.length).find(doc => isWithin(path, doc.dir))
   }
 
-  #assertEditable(scope: Scope, path: string, member: Member): void {
+  /** Checks path and document policy without requiring a file to exist. */
+  assertEditable(scope: Scope, path: string, member: Member): void {
     if (typeof path !== 'string' || !path || path.startsWith('/') || path.includes('\\') || path.includes('\0') || path.split('/').some(part => part === '' || part === '.' || part === '..' || HIDDEN_FROM_EDITOR.has(part))) throw new RequestError(400, `not a source path: ${JSON.stringify(path)}`)
     if (!this.canEdit(scope, path, member)) throw new RequestError(403, `${path} is not a file this page edits`)
   }
 
   /** A regular file under the same path and document policy as source editing. */
   readableFile(scope: Scope, path: string, member: Member): string {
-    this.#assertEditable(scope, path, member)
+    this.assertEditable(scope, path, member)
     const file = join(this.#config.root, path)
     let real: string
     try {
@@ -157,7 +158,7 @@ export class SourceEditor {
   }
 
   async create(scope: Scope, path: string, member: Member): Promise<SourceAnswer> {
-    this.#assertEditable(scope, path, member)
+    this.assertEditable(scope, path, member)
     if (path === DOCUMENT_ENTRY || path.endsWith(`/${DOCUMENT_ENTRY}`)) throw new RequestError(422, 'create-a-document-with-valid-content')
     if (BINARY.test(path)) throw new RequestError(415, `${path} is not a text file`)
     const document = this.#documentHolding(path)?.dir
@@ -198,7 +199,7 @@ export class SourceEditor {
     const paths = new Set<string>()
     let bytes = 0
     const documents = changes.map(change => {
-      this.#assertEditable(scope, change.path, member)
+      this.assertEditable(scope, change.path, member)
       if (paths.has(change.path)) throw new RequestError(400, `a source path occurs twice: ${change.path}`)
       paths.add(change.path)
       if (change.path !== binaryPath) {

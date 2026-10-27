@@ -141,6 +141,8 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 
 ## 7. 资源、录音和人声重新配音
 
+当前已实现工作区已有音频的共享检查／导入：`get_audio_authoring_capabilities`、`inspect_workspace_audio`、`import_workspace_audio`、`inspect_document_audio`。先以实际检查得到 SHA 与长度，再用同 source 导入，随后可将真实 Asset 交给已实现的转写工具；HTTP 和 MCP 共用事务、回执和保存后读回。路径严格限当前文稿的既有工作区范围，详见[音频作者接口](audio-authoring.md#mcp-检查与导入工作区音频)。该入口不要求场景先编译成功，也没有实现下文的远程分块上传、物理设备授权、剪辑动作或音色任务对齐。
+
 媒体输入共用工作区有界上传服务。Web 仍用 multipart；MCP 通过 `begin_asset_upload/append_asset_upload/finish_asset_upload` 的有限大小字节块获得一次性上传句柄，或者使用服务已登记的资源 URI。必须由能力响应公开字节上限、块上限、支持格式和句柄期限。服务不从 agent 给出的绝对路径、`file://` 或任意 URL 读取文件。
 
 上传句柄在当前成员和文稿下临时保存精确字节、长度及 SHA-256；完成上传只形成候选，`import_asset({ id, source, upload })` 才调用现有图片／音频导入事务。句柄过期可清理，写入成功的声明与文件不受临时句柄清理影响。若共享服务已支持直接流上传，MCP 宿主适配可复用它，不另设媒体探测实现。尚未被 clip 使用的音频通过 `inspect_asset` 的作者源读取，不能只查运行 `productionAssets`。
