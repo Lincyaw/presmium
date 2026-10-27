@@ -101,6 +101,7 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
     const scroll = (event: Event) => {
       const viewport = measure(), previous = baseline
       baseline = viewport
+      if (workbench.consumeDocumentReturnScroll(element)) { cancel(); return }
       // Native scroll chaining from an iframe has no parent wheel event.
       if (!event.isTrusted) return
       if (!sameGeometry(previous, viewport)) { cancel(); return }

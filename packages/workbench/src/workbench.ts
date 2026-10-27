@@ -252,7 +252,7 @@ export class Workbench {
   #documentEditorCommands?: DocumentEditorCommands
   #documentEditorBinding?: { identity: string, reset: number }
   readonly #documentReturnPoints = new DocumentReturnPoints()
-  #documentViewport?: { element: HTMLElement, identity: string, stop(): void }
+  #documentViewport?: { element: HTMLElement, identity: string, returnScrollTop?: number, stop(): void }
   #stopDocumentReturnScroll?: () => void
   #openingDocument?: { directory: string, scope: number, generation: number, focus?: 'body', initial?: boolean, stop(): void,
     basis?: { identity: string, reset: number, version?: string, content: TeachingDocument }, point?: DocumentReturnPoint, fallback?: DocumentReturnPoint }
@@ -365,6 +365,9 @@ export class Workbench {
           ...selected ? { stepId: selected } : {}, version: previous.version, fingerprint: previous.fingerprint, scope, generation, token: this.#state.documentPositionToken }
       }
       this.#finishOpeningDocument()
+      // Native insertion can select a page before the source actor receives that new entity.
+      if (position && previous && previous.identity === authoring.identity && !previous.content?.sections[position.section]
+        && authoring.content?.sections[position.section]) this.#saveDocumentReturnPoint()
       if (this.#production.changed()) void this.pausePlayback().catch(() => {})
       const acknowledgedSourceChanged = !authoring.dirty && !authoring.loading && !authoring.error && !previous?.loading
         && previous?.identity === authoring.identity && Boolean(previous?.version && authoring.version)
@@ -616,15 +619,28 @@ export class Workbench {
     const current = () => this.#state.document === pending.directory && this.#state.authoring?.identity === basis.identity
       && this.#state.authoring.reset === basis.reset && this.#state.authoring.version === basis.version && this.#state.authoring.content === basis.content
       && this.#documentViewport === viewport && this.#state.position?.section === point.sectionId && this.#state.position.step === step
-    const restore = () => { if (current()) restoreDocumentViewport(viewport.element, point); else stop() }
+    const restore = () => {
+      if (!current()) { stop(); return }
+      const top = viewport.element.scrollTop
+      restoreDocumentViewport(viewport.element, point)
+      if (viewport.element.scrollTop !== top) viewport.returnScrollTop = viewport.element.scrollTop
+    }
     const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(restore)
     let stopInteraction: () => void = () => {}
-    const stop = () => { observer?.disconnect(); stopInteraction(); if (this.#stopDocumentReturnScroll === stop) this.#stopDocumentReturnScroll = undefined }
+    const stop = () => { observer?.disconnect(); stopInteraction(); viewport.returnScrollTop = undefined; if (this.#stopDocumentReturnScroll === stop) this.#stopDocumentReturnScroll = undefined }
     this.#stopDocumentReturnScroll?.(); this.#stopDocumentReturnScroll = stop
     stopInteraction = this.#watchOpeningInteraction(stop)
     observer?.observe(viewport.element)
     observer?.observe(editor.prosemirrorView.dom)
     restore()
+  }
+
+  /** Consume only this viewport owner's actual programmatic destination; user gestures retire it. */
+  consumeDocumentReturnScroll(element: HTMLElement): boolean {
+    const viewport = this.#documentViewport, top = viewport?.returnScrollTop
+    if (viewport?.element !== element || top === undefined) return false
+    viewport.returnScrollTop = undefined
+    return element.scrollTop === top
   }
 
   attachDocumentViewport(element: HTMLElement, identity: string): () => void {
