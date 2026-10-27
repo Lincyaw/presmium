@@ -1,7 +1,8 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
+import type { Transaction } from '@tiptap/pm/state'
 import { closeHistory } from '@tiptap/pm/history'
 import { allocateDocumentPage } from '@lincyaw/kernel'
-import type { TeachingDocument } from '@lincyaw/kernel'
+import type { Member, TeachingDocument } from '@lincyaw/kernel'
 import type { Locale } from '../messages.ts'
 import { BlockNoteSurface } from './BlockNoteSurface.tsx'
 import { DocumentThreadStore } from './comments.ts'
@@ -25,6 +26,10 @@ export interface DocumentEditorCommands {
 export interface DocumentEditorProps {
   identity: string
   document: TeachingDocument
+  version?: string
+  member?: Member
+  /** The latest actor version, including before the next React render. */
+  getDocumentVersion?(): string | undefined
   /** Read sibling field edits before their React render has committed. */
   getDocument?(): TeachingDocument | undefined
   /** Ownership of a deferred native focus notification. */
@@ -48,9 +53,10 @@ export interface DocumentEditorProps {
 /** A source version reset replaces the editor; its own save receipts never replace it. */
 export function DocumentEditor(props: DocumentEditorProps) {
   const projection = useMemo(() => createDocumentProjection(props.document), [props.identity, props.reset])
-  const comments = useMemo(() => new DocumentThreadStore(props.document.comments), [props.identity, props.reset])
+  const comments = useMemo(() => new DocumentThreadStore(props.document, props.member, props.version), [props.identity, props.reset])
   const current = useRef(props), editor = useRef<NativeDocumentEditor>(), unsubscribe = useRef<() => void>()
   const projectedDocument = useRef<NativeDocumentEditor['prosemirrorState']['doc']>()
+  const pendingTransaction = useRef<Transaction>()
   const focusFrame = useRef<number>()
   const binding = useRef(projection)
   const active = useRef(projection)
@@ -69,19 +75,31 @@ export function DocumentEditor(props: DocumentEditorProps) {
       if (sectionId && latest?.sections[sectionId]) current.current.onEditingPosition({ ...cursor, sectionId }, value)
     } catch (error) { current.current.onError?.(error instanceof Error ? error : new Error(String(error))) }
   }
+  const syncComments = () => {
+    const value = editor.current, latest = current.current.getDocument ? current.current.getDocument() : current.current.document
+    const version = current.current.getDocumentVersion ? current.current.getDocumentVersion() : current.current.version
+    if (!value || !latest || binding.current !== projection || active.current !== projection || value.prosemirrorView.isDestroyed) return
+    const transaction = pendingTransaction.current
+    comments.synchronize(latest, version, value, transaction?.doc === value.prosemirrorState.doc && transaction.before === projectedDocument.current ? transaction : undefined)
+    projectedDocument.current = value.prosemirrorState.doc
+  }
+  comments.beforeAction = () => { if (current.current.getDocumentVersion && current.current.getDocumentVersion() === undefined) throw new Error('document-context-changed'); syncComments() }
+  useEffect(syncComments, [props.version, props.document.comments, comments])
   const emit = () => {
-    if (!editor.current || binding.current !== projection) return
+    if (!editor.current || binding.current !== projection || comments.synchronizing) return
     try {
       captureTableIdentities(editor.current, projection)
       if (projection !== active.current) return
       const latest = current.current.getDocument ? current.current.getDocument() : current.current.document
-      if (!latest) return
+      if (!latest || current.current.getDocumentVersion && current.current.getDocumentVersion() === undefined) return
+      syncComments()
       const document = nativeDocumentToProduct(editor.current.document, projection, latest)
       const threads = comments.snapshot(editor.current)
       if (Object.keys(threads).length) document.comments = threads
       else delete document.comments
       current.current.onChange(document)
       projectedDocument.current = editor.current.prosemirrorState.doc
+      pendingTransaction.current = undefined
       cancelFocus()
       reportPosition()
     } catch (error) { current.current.onError?.(error instanceof Error ? error : new Error(String(error))) }
@@ -95,6 +113,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
       cancelFocus()
       editor.current = undefined
       projectedDocument.current = undefined
+      pendingTransaction.current = undefined
       if (value) {
         seedTableIdentities(value, projection)
         captureTableIdentities(value, projection)
@@ -104,6 +123,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
         binding.current = projection
         editor.current = value
         projectedDocument.current = value.prosemirrorState.doc
+        const stopBefore = value.onBeforeChange(({ tr }) => { if (!comments.synchronizing && tr.docChanged) pendingTransaction.current = tr })
         const stopComments = comments.subscribe(emit)
         const stopSelection = value.onSelectionChange(() => { cancelFocus(); reportPosition() })
         const stopFocus = value.onFocusChange((_, { focused }) => {
@@ -115,7 +135,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
             if (token === current.current.getPositionToken?.()) reportPosition()
           })
         })
-        unsubscribe.current = () => { stopComments(); stopSelection(); stopFocus(); cancelFocus() }
+        unsubscribe.current = () => { stopBefore(); stopComments(); stopSelection(); stopFocus(); cancelFocus() }
       }
       const commands: DocumentEditorCommands | undefined = value ? { insertPage: (after, title) => {
         if (current.current.readOnly || editor.current !== value || active.current !== projection || binding.current !== projection || value.prosemirrorView.isDestroyed) throw new Error('page-context-changed')

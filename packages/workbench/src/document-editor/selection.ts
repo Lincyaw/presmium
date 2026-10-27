@@ -71,8 +71,13 @@ export function nativeTextPoint(editor: NativeDocumentEditor, position: number):
 }
 
 export function nativeTextPosition(editor: NativeDocumentEditor, point: { blockId: string, offset: number }): number | undefined {
+  return nativeTextPositionInDocument(editor.prosemirrorState.doc, point)
+}
+
+/** Stable anchor lookup against a captured native transaction’s input document. */
+export function nativeTextPositionInDocument(document: ProseMirrorNode, point: { blockId: string, offset: number }): number | undefined {
   let position: number | undefined
-  editor.prosemirrorState.doc.descendants((node, beforePos) => {
+  document.descendants((node, beforePos) => {
     if ((node.type.name === 'tableCell' || node.type.name === 'tableHeader') && node.attrs[TABLE_ENTITY_ATTRIBUTE] === point.blockId) {
       position = beforePos + 1 + cellTextPosition(node, point.offset)
       return false
