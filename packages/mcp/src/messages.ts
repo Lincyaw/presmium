@@ -6,6 +6,9 @@ export interface McpMessages {
   build(renderers: string): string
   cancelBuild(target: string): string
   importAudio(file: string): string
+  generateVoiceover(scope: string): string
+  cancelVoiceover(target: string): string
+  previewVoice(voice: string): string
   changeMediaClip(action: 'add' | 'update' | 'remove', clipId: string): string
   allRenderers: string
   classroomStart(name: string): string
@@ -21,6 +24,9 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     build: renderers => `构建文稿（${renderers}）`,
     cancelBuild: target => `取消构建（${target}）`,
     importAudio: file => `导入音频「${file}」`,
+    generateVoiceover: scope => `生成配音「${scope}」`,
+    cancelVoiceover: target => `取消配音「${target}」`,
+    previewVoice: voice => `试听音色「${voice}」`,
     changeMediaClip: (action, clipId) => `${{ add: '添加', update: '调整', remove: '删除' }[action]}音频片段「${clipId}」`,
     allRenderers: '全部渲染端',
     classroomStart: name => `开始课堂${name ? `「${name}」` : ''}`,
@@ -34,6 +40,9 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     build: renderers => `Build the deck (${renderers})`,
     cancelBuild: target => `Cancel build (${target})`,
     importAudio: file => `Import audio “${file}”`,
+    generateVoiceover: scope => `Generate voiceover “${scope}”`,
+    cancelVoiceover: target => `Cancel voiceover “${target}”`,
+    previewVoice: voice => `Preview voice “${voice}”`,
     changeMediaClip: (action, clipId) => `${{ add: 'Add', update: 'Update', remove: 'Remove' }[action]} audio clip “${clipId}”`,
     allRenderers: 'all renderers',
     classroomStart: name => `Start the classroom${name ? ` "${name}"` : ''}`,

@@ -3,6 +3,7 @@ import type { Finding } from './checks.ts'
 import type { Member } from './server.ts'
 import type { SpeechEngineInfo } from './speech.ts'
 import type { VoiceCatalogAnswer } from './voice.ts'
+import type { DocumentVoiceTasks } from './voiceover-execution.ts'
 
 export interface DocumentVoiceCapabilities {
   document: string
@@ -15,13 +16,15 @@ export interface DocumentVoiceCapabilities {
   preview: boolean
   engines: SpeechEngineInfo[]
   defaultEngine?: string
+  actions: { status: boolean, list: true, get: true, start: boolean, cancel: true, quotePreview: boolean, preview: boolean, readPreview: true }
+  tasks: { idempotency: 'process', limits: { intents: number, recentJobs: number, concurrent: number, quotes: number, quoteLifetimeMs: number, previewBytes: number, previewResources: number, retainedPreviewBytes: number } }
   findings?: Finding[]
 }
 export interface DocumentVoiceCatalogQuery { source?: CanonicalSource, engine?: string, lang?: string }
 export interface DocumentVoiceCatalogAnswer extends VoiceCatalogAnswer { document: string, source: CanonicalSource, findings?: Finding[] }
 
-/** Actual voice discovery shared by Web and MCP; it never compiles scenes or synthesizes speech. */
-export interface DocumentVoiceAuthoring {
+/** Shared voice discovery and explicitly authorized tasks; discovery never compiles or synthesizes. */
+export interface DocumentVoiceAuthoring extends DocumentVoiceTasks {
   capabilities(document: string, member: Member, signal?: AbortSignal): Promise<DocumentVoiceCapabilities>
   catalog(document: string, query: DocumentVoiceCatalogQuery, member: Member, signal?: AbortSignal): Promise<DocumentVoiceCatalogAnswer>
 }

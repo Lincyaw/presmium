@@ -426,6 +426,13 @@ function runPlan(doc: IRDocument, node: CodeNode): string {
 
 function hostSupports(host: McpHost, name: string): boolean {
   switch (name) {
+    case 'get_voiceover_status':
+    case 'get_voiceover_jobs':
+    case 'get_voiceover_job':
+    case 'start_voiceover':
+    case 'cancel_voiceover':
+    case 'quote_voice_preview':
+    case 'preview_voice': return Boolean(host.voiceAuthoring)
     case 'get_voice_catalog': return Boolean(host.voiceAuthoring)
     case 'inspect_document_audio':
     case 'inspect_workspace_audio':
@@ -632,6 +639,11 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
   resource('diagnostics', DIAGNOSTICS_URI, diagnostics)
   resource('runtime', 'presmium://runtime', read('get_runtime'))
   resource('ir', 'presmium://ir', async c => (await c.compiled()).doc)
+  if (host.voiceAuthoring) server.registerResource('voice-preview-audio', new ResourceTemplate(new DocumentTemplate('presmium://voice-preview/{id}'), { list: undefined }), {}, async (url, variables, ctx) => {
+    const current = call(argsOf(variables), ctx.mcpReq.signal)
+    const value = await host.voiceAuthoring!.readPreview(await current.document(), String(current.args.id), caller.member)
+    return { contents: [{ uri: url.href, mimeType: value.resource.mediaType, blob: Buffer.from(value.bytes).toString('base64') }] }
+  })
   if (host.positions) resource('position', POSITION_URI, c => position(c), false)
   resource('focus', FOCUS_URI, async c => focus(c, c.caller.document), false)
   if (host.classroomStatus) resource('classroom', 'presmium://classroom', read('get_classroom'))

@@ -3,6 +3,8 @@ export { DOCUMENT_CHANGE_JSON_SCHEMA, validateDocumentChange } from '../authorin
 export { validateDocumentTranscriptionRequest } from './transcription.ts'
 export { validateDocumentAudioInspect, validateDocumentWorkspaceAudioImport, validateDocumentWorkspaceAudioInspect, validateDocumentMediaClipValidation, validateDocumentMediaClipEdit, validateDocumentProductionPlanQuery } from './document-audio.ts'
 export { validateDocumentVoiceCatalogQuery } from './document-voice.ts'
+export { createVoiceoverOwner, VoiceoverOperationError, validateVoiceoverStart, validateVoiceoverStatus, validateVoiceoverJobQuery, validateVoicePreviewCheck, validateVoicePreviewStart } from './voiceover.ts'
+export { createVoiceoverRoutes } from './voiceover-routes.ts'
 export { validateTranscriptionAdoptionDraft, validateTranscriptionAdoptionApply } from './transcription-adoption.ts'
 export { FONT_LICENSE, fontLicense } from './fonts.ts'
 export { findPackageBin, importSpecifier, literalGlob, packageOf, playwrightChromium, TYPESCRIPT_IMPORT } from './packages.ts'

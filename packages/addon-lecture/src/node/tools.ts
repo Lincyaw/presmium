@@ -166,4 +166,5 @@ export const trackTranslations: AgentTool = {
   },
 }
 
-export const lectureTools: AgentTool[] = [lecturePreview, lectureSynthesize, trackTranscribe, trackNarration, trackTranslations]
+// Generation uses shared host start_voiceover tasks; the existing export CLI is unchanged.
+export const lectureTools: AgentTool[] = [lecturePreview, trackTranscribe, trackNarration, trackTranslations]
