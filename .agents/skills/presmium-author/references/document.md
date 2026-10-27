@@ -8,6 +8,8 @@ Sections contain a title, ordered child block IDs, ordered step IDs and a layout
 
 Text blocks contain structured `paragraph`, `heading`, `list`, `blockquote`, `code`, `math` and `table` nodes. Actual editing units and list/table children retain IDs. Inline content is `text` with marks, `link`, `math` or `break`; rich text is adapted through BlockNote's public API. Do not put Markdown source in a string field to imitate this model.
 
+Authored IDs must not equal `page:<Section ID>` for an existing section: that exact ID is reserved for the section title's comment anchor. Referencing it in a comment `blockId` remains valid. Other `page:` IDs are ordinary IDs; do not rename them merely because of the prefix.
+
 A step belongs to one section and has `visuals` and `narrationIds`; optional `inherits` refers to an earlier authored state. Omitted blocks are invisible. `visuals` explicitly name block visibility, a declared component state and optional state parameters. Arbitrary step selection must reconstruct the same state without playing earlier steps.
 
 Narrations are structured `text`, `pronunciation { display, spoken }` and `cue { id, action, target?, parameters? }` nodes. The target uses stable `blockId` and optional component element. Captions, spoken text and cue alignment derive from this one structure.
