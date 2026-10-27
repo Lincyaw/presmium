@@ -859,6 +859,7 @@ export class Workbench {
     } catch (error) {
       const code = errorMessage(error), current = this.#state.productionPlan?.binding
       if (scope === this.#documentScope && !signal?.aborted && current && sameProductionBinding(current, control.binding) && this.#productionReady()
+        && !(control.action === 'load' && code === 'production-playback-cancelled')
         && !['production-source-changed', 'production-request-superseded', 'production-request-cancelled'].includes(code)) this.#set({ productionFailure: code })
       throw error
     }
