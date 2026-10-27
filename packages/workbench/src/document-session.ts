@@ -19,6 +19,7 @@ export interface DocumentSessionState {
   reset: number
   error?: string
   issues: DocumentIssue[]
+  recovering?: boolean
 }
 interface Draft { content: TeachingDocument, baseVersion: string, baseHash: string, input: number, pendingHash?: string, composing?: boolean }
 interface Slot {
@@ -29,7 +30,7 @@ interface Slot {
   baseHash: string
   storage: string
   flight?: { id: string, input: number, content: TeachingDocument, baseVersion: string, hash?: string }
-  assetFlight?: Promise<DocumentImageImportAnswer>
+  assetFlight?: Promise<DocumentChangeAnswer>
   timer?: ReturnType<typeof setTimeout>
   refreshed?: boolean
   pendingHash?: string
@@ -264,6 +265,70 @@ export class DocumentSession {
     slot.baseHash = baseHash
     slot.state = { ...slot.state, content, version: answer.version, fingerprint: answer.fingerprint, dirty: !same, error: undefined, issues: answer.issues }
     return true
+  }
+
+  async #adoptExternal(slot: Slot, before: TeachingDocument, input: number, answer: DocumentAnswer, owns: () => boolean, reconcile: (before: TeachingDocument, answer: DocumentAnswer, current: TeachingDocument) => TeachingDocument | undefined): Promise<boolean> {
+    if (!owns() || answer.document !== slot.state.directory || answer.content.id !== before.id || !slot.state.content) return false
+    if (!reconcile(before, answer, slot.state.content)) return false
+    const baseHash = await digest(answer.content)
+    if (!owns()) return false
+    const content = reconcile(before, answer, slot.state.content!)
+    if (!content || content.id !== before.id) return false
+    const checked = validateDocument(content)
+    if (!checked.document || checked.issues.some(issue => issue.severity === 'error')) return false
+    slot.baseHash = baseHash
+    slot.pendingHash = undefined
+    slot.state = { ...slot.state, content: structuredClone(checked.document), version: answer.version, fingerprint: answer.fingerprint,
+      dirty: slot.input !== input || slot.state.composing || serialize(content) !== serialize(answer.content), error: undefined, issues: answer.issues }
+    return true
+  }
+
+  /** Reconcile an external source transaction without replacing later native input. */
+  async commitExternal<T extends DocumentChangeAnswer>(expected: { identity: string, version: string }, submit: (before: TeachingDocument, signal?: AbortSignal) => Promise<T>, reconcile: (before: TeachingDocument, answer: DocumentAnswer, current: TeachingDocument) => TeachingDocument | undefined, signal?: AbortSignal): Promise<T> {
+    signal?.throwIfAborted()
+    const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
+    if (!slot?.state.content || this.#disposed || slot.state.identity !== expected.identity || slot.state.version !== expected.version
+      || slot.state.loading || slot.state.dirty || slot.state.saving || slot.state.composing || slot.state.restored || slot.state.recovering || slot.state.error || slot.flight || slot.assetFlight) throw new Error('document-identity-changed')
+    const before = structuredClone(slot.state.content), input = slot.input, read = ++slot.read, directory = slot.state.directory, baseHash = slot.baseHash, fingerprint = slot.state.fingerprint, { identity, version } = expected
+    const owns = () => !this.#disposed && this.#slots.get(directory) === slot && slot.state.identity === identity && slot.read === read && slot.state.version === version
+    let refreshClean = false
+    const work = Promise.resolve().then(async () => {
+      signal?.throwIfAborted()
+      if (this.#active !== directory || !owns()) throw new Error('document-identity-changed')
+      const answer = await submit(structuredClone(before), signal)
+      if (!answer.changeId || !await this.#adoptExternal(slot, before, input, answer, owns, reconcile)) throw new Error('document-version-changed')
+      return answer
+    })
+    slot.assetFlight = work
+    slot.state = { ...slot.state, saving: true }; this.#emit(slot)
+    try { return await work }
+    catch (error) {
+      if (owns()) {
+        try {
+          // The write may have committed before cancellation or a lost response.
+          // Reconciliation reads remain independent of the submit signal.
+          slot.refreshed = false
+          const answer = await this.#client.readDocument(directory)
+          const unchanged = answer.document === directory && answer.content.id === before.id && answer.version === version && answer.fingerprint === fingerprint && await digest(answer.content) === baseHash
+          if (owns() && !unchanged && !await this.#adoptExternal(slot, before, input, answer, owns, reconcile) && owns()) {
+            refreshClean = error instanceof WorkspaceServerError && error.status === 409 && slot.input === input && !slot.state.composing
+            if (!refreshClean) slot.state = { ...slot.state, error: 'document-version-changed' }
+          }
+        } catch { if (owns()) slot.state = { ...slot.state, error: this.#error(error) } }
+      }
+      throw error
+    } finally {
+      if (slot.assetFlight === work) {
+        slot.assetFlight = undefined
+        slot.state = { ...slot.state, saving: false }
+        this.#persist(slot); this.#emit(slot)
+        if (!this.#disposed && this.#active === directory) {
+          if (refreshClean && owns() && slot.input === input && !slot.state.composing) await this.refresh(directory)
+          else if (slot.refreshed) { slot.refreshed = false; await this.refresh(directory) }
+          if (!slot.state.error) void this.#save(slot)
+        }
+      }
+    }
   }
 
   /** The file and its asset declaration share the actor's write boundary. */
