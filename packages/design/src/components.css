@@ -1164,6 +1164,26 @@
   --loader-size: var(--pm-size-icon);
 }
 
+/* Native floating cards and sidebar threads share bounded, wrappable content. */
+.pm-ui-block-editor .bn-thread {
+  width: min(var(--pm-comment-width), calc(100vw - var(--pm-space-8)));
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+
+.pm-ui-block-editor .bn-comment-editor {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pm-ui-block-editor .bn-comment-editor .bn-editor {
+  max-height: min(var(--pm-comment-editor-max-height), 45vh);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+
 .pm-ui-block-editor .bn-thread button {
   min-width: var(--pm-size-tool);
   min-height: var(--pm-size-tool);

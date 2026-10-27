@@ -109,6 +109,8 @@
   --pm-drawer-width: 25rem;
   --pm-popover-min-width: 18rem;
   --pm-popover-max-width: 32rem;
+  --pm-comment-width: 22rem;
+  --pm-comment-editor-max-height: 18rem;
   --pm-menu-min-width: 12rem;
   --pm-search-list-max-height: 18rem;
   --pm-timeline-label-width: 5.5rem;
