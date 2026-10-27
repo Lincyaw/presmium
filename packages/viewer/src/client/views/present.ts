@@ -1,5 +1,5 @@
 import { FocusScope } from '@radix-ui/react-focus-scope'
-import { PmApprovals, PmCaption, PmCaptionProvider, PmIcon, PmMenu, TIMED_CAPTIONS, useService } from '@lincyaw/host'
+import { PmApprovals, PmCaption, PmCaptionProvider, PmIcon, TIMED_CAPTIONS, useService } from '@lincyaw/host'
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@lincyaw/host'
 import { h } from '../element.ts'
@@ -115,7 +115,6 @@ export function PresentView() {
           h('span', { 'class': 'pm-present__counter', 'title': t.present.counter(current.index, sections.length, step, current.steps) }, `${current.index} / ${sections.length}${current.steps > 0 ? ` · ${step + 1} / ${current.steps + 1}` : ''}`),
           button(t.present.prev, () => viewer.prev(), 'chevron-left', 'ArrowLeft'),
           button(t.present.next, () => viewer.next(), 'chevron-right', 'ArrowRight'),
-          current.steps > 0 ? h(PmMenu, { label: t.present.jumpStep, icon: 'steps', placement: 'above-start', items: Array.from({ length: current.steps + 1 }, (_, k) => ({ id: String(k), label: t.present.step(k + 1), icon: k === step ? 'check' as const : undefined })), onSelect: (id: string) => viewer.go({ section: current.id, step: Number(id) }) }) : null,
           hasNarration && !timedCaptions ? button(t.present.captions, () => setCaptions(value => !value), 'captions', undefined, { 'aria-pressed': captions }) : null,
           button(t.present.overview, () => overviewOpen.set(!overview), 'overview', 'o', { 'aria-pressed': overview }),
           viewer.options.openPresenter ? button(t.present.presenter, () => viewer.options.openPresenter!(position), 'slides', 'p') : null,
