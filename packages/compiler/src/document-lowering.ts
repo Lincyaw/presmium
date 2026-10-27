@@ -41,7 +41,14 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
     const lowerBlock = (block: DocumentBlock, where: SourcePos, stepIds: string[], child: (id: string) => IRBlock): IRBlock['node'] => {
       switch (block.type) {
         case 'text': return { type: 'markdown', mdast: root(block.content.map(richText)), ...block.reveal ? { reveal: 'items' } : {} }
-        case 'image': return { type: 'markdown', mdast: root([{ type: 'paragraph', children: [{ type: 'image', url: doc.assets[block.assetId]!.location, alt: block.alt, ...block.width ? { width: block.width } : {} }] }, ...block.caption ? [{ type: 'paragraph', children: inlineText(block.caption) }] : []]) }
+        case 'image': {
+          if (!block.assetId) {
+            const message = doc.metadata.lang.startsWith('en') ? 'No image selected.' : '未选择图片。'
+            report({ checkId: 'presmium.document.image', severity: 'warning', message, source: where })
+            return { type: 'markdown', mdast: root([{ type: 'paragraph', children: [{ type: 'text', value: message }] }]) }
+          }
+          return { type: 'markdown', mdast: root([{ type: 'paragraph', children: [{ type: 'image', url: doc.assets[block.assetId]!.location, alt: block.alt, ...block.width ? { width: block.width } : {} }] }, ...block.caption ? [{ type: 'paragraph', children: inlineText(block.caption) }] : []]) }
+        }
         case 'code': {
           const node: CodeNode = { type: 'code', lang: block.language, value: block.value ?? '', ...block.title ? { title: block.title } : {}, ...block.execution ? { run: { lang: block.language, ...block.execution } } : {}, ...block.echo === false ? { echo: false } : {} }
           if (block.origin) {

@@ -33,7 +33,7 @@ function productBlock(blockId: string, context: DocumentProjection, sectionId: s
   }
   context.owners.set(block.id, block.id)
   if (block.type === 'container') return [{ id: block.id, type: 'presmiumContainer', props: { entityId: block.id, layout: block.layout, title: block.properties.title ?? '' }, children: block.children.flatMap(child => productBlock(child, context, sectionId)) }]
-  if (block.type === 'image') return [{ id: block.id, type: 'image', props: { url: document.assets[block.assetId]?.location ?? '', caption: plain(block.caption ?? []), name: block.alt, textAlignment: block.alignment ?? 'left', ...block.width !== undefined ? { previewWidth: block.width } : {} } }]
+  if (block.type === 'image') return [{ id: block.id, type: 'image', props: { url: block.assetId ? document.assets[block.assetId]?.location ?? '' : '', caption: plain(block.caption ?? []), name: block.alt, textAlignment: block.alignment ?? 'left', ...block.width !== undefined ? { previewWidth: block.width } : {} } }]
   if (block.type === 'code' && block.value !== undefined) return [{ id: block.id, type: 'codeBlock', props: { language: block.language }, content: block.value }]
   return [{ id: block.id, type: 'presmiumAtom', props: { entityId: block.id, kind: block.type, label: block.type === 'code' ? block.title ?? block.origin?.anchor ?? block.language : document.definitions[block.definitionId]?.kind ?? block.definitionId }, ...block.type === 'component' && block.children ? { children: block.children.flatMap(child => productBlock(child, context, sectionId)) } : {} }]
 }
@@ -133,13 +133,16 @@ function nativeChildren(native: readonly DocumentEditorBlock[], context: Documen
     }
     else if (block.type === 'image') {
       if (original?.type === 'image' && context.baseline.get(block.id) === JSON.stringify(block)) { next.blocks[block.id] = structuredClone(original); children.push(block.id); continue }
-      const assetId = original?.type === 'image' ? original.assetId : newId()
-      const asset = { ...next.assets[assetId], id: assetId, kind: 'image' as const, location: block.props.url }
-      if (next.assets[assetId]?.location !== asset.location) delete asset.fingerprint
-      next.assets[assetId] = asset
+      // Native pickers create an empty image first. Persist that intent without
+      // inventing an invalid asset. Replacements change this instance's binding.
+      const prior = original?.type === 'image' ? original.assetId : undefined
+      const assetId = !block.props.url ? undefined : prior && next.assets[prior]?.location === block.props.url ? prior
+        : Object.values(next.assets).find(asset => asset.kind === 'image' && asset.location === block.props.url)?.id ?? newId()
+      if (assetId && !next.assets[assetId]) next.assets[assetId] = { id: assetId, kind: 'image', location: block.props.url }
       const previousCaption = original?.type === 'image' ? original.caption : undefined
       const caption = plain(previousCaption ?? []) === block.props.caption ? previousCaption : block.props.caption ? [{ type: 'text' as const, text: block.props.caption }] : undefined
-      product = { ...original?.type === 'image' ? structuredClone(original) : {}, id: block.id, type: 'image', assetId, alt: block.props.name, ...caption ? { caption } : {}, width: block.props.previewWidth, alignment: block.props.textAlignment }
+      product = { ...original?.type === 'image' ? structuredClone(original) : {}, id: block.id, type: 'image', ...assetId ? { assetId } : {}, alt: block.props.name, ...caption ? { caption } : {}, width: block.props.previewWidth, alignment: block.props.textAlignment }
+      if (!assetId) delete product.assetId
       if (!caption) delete product.caption
     } else if (block.type === 'codeBlock') product = { ...original?.type === 'code' ? structuredClone(original) : {}, id: block.id, type: 'code', language: block.props.language, value: nativePlain(block) }
     else {
