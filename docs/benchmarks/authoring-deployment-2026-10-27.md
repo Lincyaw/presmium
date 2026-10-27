@@ -37,3 +37,5 @@ localhost 与 127.0.0.1 两组已有 cookie 在重启后均能通过普通根地
 两种 host 的既有 cookie 重启后仍可访问，当前启动网址可建立新会话；验证用的登录快照已清理。此次原始记录为 `committed-client-44cec97b.json`、`live-shared-voice-deployment-44cec97b.json`、`live-authoring-health-44cec97b.json` 和 `auth-transition-original-audio-ui-20261027/result.json`。没有重复全量功能消费者或操作实体麦克风。
 
 此运行版本尚不包含正在独立验证的持久草稿备份。localStorage 崩溃反例见[存储边界记录](document-draft-crash-storage-2026-10-27.md)，不能用正常关闭的结果代替真实进程退出验证。
+
+2026-10-28 的后续运行版本已采用持久草稿、共享事件连接、批注点击和 Doc 字幕范围调整，固定版本与实际部署验证见[编辑可靠性更新](editing-reliability-deployment-2026-10-28.md)。
