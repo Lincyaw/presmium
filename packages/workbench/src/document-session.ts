@@ -62,7 +62,19 @@ export class DocumentSession {
   #active?: string
   #opening = 0
   #unsubscribe?: () => void
+  #disposed = false
+  #leaveTarget?: Window
+  readonly #beforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
   constructor(client: WorkspaceClient, changed: (state: DocumentSessionState) => void) { this.#client = client; this.#changed = changed }
+
+  #syncLeaveProtection(): void {
+    const pending = !this.#disposed && [...this.#slots.values()].some(slot => slot.state.dirty || slot.state.composing || slot.flight || slot.assetFlight)
+    const target = pending && typeof window !== 'undefined' ? window : undefined
+    if (target === this.#leaveTarget) return
+    this.#leaveTarget?.removeEventListener('beforeunload', this.#beforeUnload)
+    target?.addEventListener('beforeunload', this.#beforeUnload)
+    this.#leaveTarget = target
+  }
 
   async open(directory: string): Promise<void> {
     if (this.#active !== directory) this.interrupt()
@@ -81,6 +93,7 @@ export class DocumentSession {
         this.#slots.set(directory, slot)
         await this.#restore(slot, answer)
       } else await this.#adopt(slot, answer, () => this.#active === directory && opening === this.#opening)
+      this.#syncLeaveProtection()
       if (this.#active !== directory || opening !== this.#opening) return
       // A fresh observation invalidates idle project references before the editor becomes ready.
       slot.projectObservation = undefined
@@ -117,7 +130,7 @@ export class DocumentSession {
       this.#slots.delete(directory)
     }
   }
-  #emit(slot: Slot): void { if (this.#active === slot.state.directory && this.#slots.get(slot.state.directory) === slot) this.#changed({ ...slot.state }) }
+  #emit(slot: Slot): void { this.#syncLeaveProtection(); if (this.#active === slot.state.directory && this.#slots.get(slot.state.directory) === slot) this.#changed({ ...slot.state }) }
   #error(error: unknown): string { return error instanceof WorkspaceServerError ? error.answer.error ?? 'document-request-failed' : 'document-disconnected' }
   #issues(error: unknown): DocumentIssue[] { const value = error instanceof WorkspaceServerError ? (error.answer as { issues?: DocumentIssue[] }).issues : undefined; return Array.isArray(value) ? value : [] }
 
@@ -274,6 +287,7 @@ export class DocumentSession {
       return answer
     })()
     slot.assetFlight = work
+    this.#syncLeaveProtection()
     try { return await work }
     catch (error) {
       // A lost reply may still have committed the file. Reconcile only a proven
@@ -356,5 +370,5 @@ export class DocumentSession {
       slot.pendingHash = draft.pendingHash
     } catch { slot.state.storageFailure = true }
   }
-  dispose(): void { this.close(); for (const slot of this.#slots.values()) { clearTimeout(slot.timer); this.#persist(slot) } }
+  dispose(): void { this.#disposed = true; this.#syncLeaveProtection(); this.close(); for (const slot of this.#slots.values()) { clearTimeout(slot.timer); this.#persist(slot) } }
 }
