@@ -2,7 +2,7 @@ import { undoDepth, redoDepth } from '@tiptap/pm/history'
 import { TextSelection } from '@tiptap/pm/state'
 import { DocumentSession } from './document-session.ts'
 import { disposeTranscriptionSessions } from './transcription-session.ts'
-import { disposeDocumentRecordings } from './audio-recording.ts'
+import { documentRecordingActive, disposeDocumentRecordings } from './audio-recording.ts'
 import { DOCUMENT_AUDIO_MAX_BYTES } from '@lincyaw/kernel'
 import type { DocumentSessionState } from './document-session.ts'
 import { DocumentReturnPoints, documentReturnStep, documentViewportOffset, restoreDocumentViewport } from './document-return-point.ts'
@@ -17,7 +17,7 @@ import { duplicateDocumentPage, pageDeletion, removeDocumentPage } from './docum
 import { changeStepTiming } from './step-production.ts'
 import { changeDocumentVoice } from './document-voices.ts'
 import type { DocumentVoiceOptions, DocumentVoiceScope } from './document-voices.ts'
-import type { CanonicalSource, VoiceSource } from '@lincyaw/kernel'
+import type { CanonicalSource, VoiceoverJob, VoiceSource } from '@lincyaw/kernel'
 import type { StepDurationDraft, StepDurationKey, StepTimingPatch } from './step-production.ts'
 import { DocumentTimingDrafts } from './document-timing-drafts.ts'
 import { compileDocumentPreview } from './document-preview.ts'
@@ -27,6 +27,7 @@ import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer
 import { DocumentDiagnostics } from './diagnostics.ts'
 import { DocumentHistory } from './history.ts'
 import { DocumentJobs } from './jobs.ts'
+import { VoiceoverJobs } from './voiceover-jobs.ts'
 import { localeOf, MESSAGES } from './messages.ts'
 import type { AgentPlace, Locale } from './messages.ts'
 import { changedPlaces, findPlaceAtLine, findPlaceSource } from './places.ts'
@@ -109,6 +110,10 @@ export interface WorkbenchState {
   productionPlan?: ProductionPlan
   productionPlayback?: ProductionPlaybackState
   productionFailure?: string
+  voiceoverJobs?: VoiceoverJob[]
+  voiceoverJobsFailure?: string
+  /** A cache refresh that actually changed the current production binding; it never starts playback. */
+  voiceoverCacheRefresh?: { source: CanonicalSource, revision: string, sequence: number }
   /** Changes when an acknowledged preview connection is attached or detached, including same-revision reloads. */
   previewConnection: number
   /** Where the preview is: the section the author reads, or the slide and its step. */
@@ -158,6 +163,7 @@ export interface PreviewSink {
 export interface EditorHistoryState { section: string, undo: boolean, redo: boolean, field?: boolean }
 
 type Listener = () => void
+const sameSource = (a: CanonicalSource, b: CanonicalSource) => a.documentId === b.documentId && a.version === b.version && a.fingerprint === b.fingerprint
 
 /** The workbench's state as its parts read and change it. */
 export interface WorkbenchStore {
@@ -206,6 +212,7 @@ const DOCUMENT_RESET = {
   focus: [], isFocusPending: false, focusFailure: undefined,
   review: undefined, history: undefined, outside: undefined, historyFailure: undefined, isHistoryBusy: false, askFailure: undefined,
   jobs: undefined, jobsFailure: undefined, jobPreparing: undefined,
+  voiceoverJobs: undefined, voiceoverJobsFailure: undefined, voiceoverCacheRefresh: undefined,
 } satisfies Partial<WorkbenchState>
 
 /** A free directory for a new document called `title`, beside most of the existing ones. */
@@ -262,6 +269,7 @@ export class Workbench {
   readonly #diagnostics: DocumentDiagnostics
   readonly #history: DocumentHistory
   readonly #jobs: DocumentJobs
+  readonly #voiceover: VoiceoverJobs
   readonly #askers = new Set<(request: AgentRequest) => Promise<AgentAnswer | void>>()
   readonly #previewSinks = new Set<PreviewSink>()
   #unsubscribeIr?: () => void
@@ -345,6 +353,7 @@ export class Workbench {
     })
     this.#diagnostics = new DocumentDiagnostics(this.client, store)
     this.#jobs = new DocumentJobs(this.client, store)
+    this.#voiceover = new VoiceoverJobs(this.client, store, (job, signal) => this.#refreshVoiceover(job, signal))
     this.#history = new DocumentHistory(this.client, store, (changes) => {
       this.#record('ai.change', { 'presmium.files': changes.map(change => change.path).join('\n'), 'presmium.added': changes.reduce((n, c) => n + c.added, 0), 'presmium.removed': changes.reduce((n, c) => n + c.removed, 0) })
       this.#pendingFlash = changes
@@ -788,6 +797,42 @@ export class Workbench {
     this.#syncRuntimeStreams()
     if (this.#state.document !== undefined) void this.#readIr(this.#state.document)
     return () => { if (this.#jobObservers.delete(token)) this.#syncRuntimeStreams() }
+  }
+
+  /** Video and its dialogs borrow one owner; its idle reads never prepare a snapshot or stop media. */
+  observeVoiceoverJobs(): () => void {
+    return this.#state.document === undefined ? () => {} : this.#voiceover.observe(this.#state.document)
+  }
+
+  rememberVoiceoverJob(document: string, job: VoiceoverJob): void { this.#voiceover.remember(document, job) }
+
+  #voiceoverPlaybackCurrent(job: VoiceoverJob): boolean {
+    const state = this.#state, snapshot = state.presentationSnapshot, binding = state.productionPlan?.binding
+    return Boolean(binding && this.#productionSourceCurrent(binding) && sameSource(binding.source, job.source) && binding.irRevision === job.revision
+      && snapshot?.version === job.source.version && snapshot.fingerprint === job.source.fingerprint && snapshot.revision === job.revision
+      && snapshot.project === (state.authoring?.projectRevision ?? 0) && state.previewIrRevision === job.revision
+      && state.webView === 'present' && state.previewRenderer === 'web' && state.preview?.web && !state.isPreparingPresentation
+      && !state.hasDocumentTimingDrafts && !state.documentTimingDraftStorageFailure && !documentRecordingActive(this))
+  }
+
+  async #refreshVoiceover(job: VoiceoverJob, signal: AbortSignal): Promise<boolean> {
+    if (!this.#voiceoverPlaybackCurrent(job)) return false
+    const document = this.#state.document!, scope = this.#documentScope, identity = this.#state.authoring?.identity, initialBinding = this.#state.productionPlan!.binding
+    // This is the existing cache-only plan read: no compile, discovery, generation or draft flush.
+    const plan = await this.client.readProductionPlan(document, { source: job.source, irRevision: job.revision }, signal)
+    signal.throwIfAborted()
+    const current = () => scope === this.#documentScope && identity === this.#state.authoring?.identity && this.#voiceoverPlaybackCurrent(job)
+      && Boolean(this.#state.productionPlan && sameProductionBinding(initialBinding, this.#state.productionPlan.binding))
+    if (!current()) return false
+    if (!sameSource(plan.binding.source, job.source) || plan.binding.irRevision !== job.revision) throw new Error('voice-context-changed')
+    if (sameProductionBinding(plan.binding, this.#state.productionPlan!.binding)) return true
+    this.#playback.stopPreviewOutputs()
+    await this.pausePlayback()
+    signal.throwIfAborted()
+    if (!current()) return false
+    this.#production.reset()
+    this.#set({ productionPlan: plan, voiceoverCacheRefresh: { source: job.source, revision: job.revision, sequence: (this.#state.voiceoverCacheRefresh?.sequence ?? 0) + 1 } })
+    return this.refreshVoicePlayback(job.source, job.revision)
   }
 
   #showWebView(sinks: Iterable<PreviewSink> = this.#previewSinks): void {
@@ -1786,6 +1831,7 @@ export class Workbench {
     this.#saveDocumentReturnPoint(); this.#cancelOpeningDocument(); this.#stopDocumentReturnScroll?.()
     this.#documentViewport?.stop(); this.#documentViewport = undefined; this.#documentEditorBinding = undefined
     this.#presentationPreparation++
+    this.#voiceover.stop()
     this.#production.reset()
     this.#set({ isPreparingPresentation: false, presentationFailure: undefined, presentationSnapshot: undefined, productionPlan: undefined, productionFailure: undefined })
     this.#removedCueTimings.clear(); this.#cueTimingScope = undefined

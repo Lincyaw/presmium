@@ -170,6 +170,11 @@ export class AudioRecording {
 }
 
 const recordings = new WeakMap<object, Map<string, AudioRecording>>()
+/** Includes preparation and recorder finalization, when a playback lease alone cannot describe the take. */
+export function documentRecordingActive(owner: object): boolean {
+  return [...recordings.get(owner)?.values() ?? []].some(recording => ['requesting', 'recording', 'stopping'].includes(recording.snapshot().phase))
+}
+
 /** Volatile UI material, isolated by the real workspace/document identity; never a persisted source model. */
 export function documentRecording(owner: object, identity: string): AudioRecording {
   let documents = recordings.get(owner)
