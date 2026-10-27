@@ -1,6 +1,6 @@
 # RFC：Web 与 MCP 共用作者动作及验证反馈
 
-状态：作者事务、页面复制预检、版本绑定局部读取、音频资产与片段、音色发现、转写／采用、共享配音任务与试听适配已实施，其余分阶段推进。2026-10-27 根据作者要求设计：AI agent 经 MCP 能完成作者在 Web 中可完成的工作，包括人声录音转写、将文字采用为讲稿、再显式生成 AI 配音。第 12.1 节的共享作者事务见第 14 节；转写任务发现、启动、读取、取消与类型化采用见第 15 节；共享配音任务和音频资源见第 16 节；页面复制见第 17 节；局部读取见第 18 节。下文未明确标为已实现的接口名和新增类型仍为提案。
+状态：作者事务、页面复制预检、常用页面动作、版本绑定局部读取、音频资产与片段、音色发现、转写／采用、共享配音任务与试听适配已实施，其余分阶段推进。2026-10-27 根据作者要求设计：AI agent 经 MCP 能完成作者在 Web 中可完成的工作，包括人声录音转写、将文字采用为讲稿、再显式生成 AI 配音。第 12.1 节的共享作者事务见第 14 节；转写任务发现、启动、读取、取消与类型化采用见第 15 节；共享配音任务和音频资源见第 16 节；页面复制见第 17 节；局部读取见第 18 节；常用页面动作见第 19 节。下文未明确标为已实现的接口名和新增类型仍为提案。
 
 本文供工作区、工作台、MCP 和讲授插件的实现者拆分任务。交付结果是一套共用的作者动作、版本检查和反馈协议。文稿内容继续只写 `lecture.json`；规范实体定义以[文稿契约](../packages/kernel/src/contracts/document.ts)和[文稿 IR RFC](rfc-document-ir.md)为准，录制转写的候选与采用细节以[录制转写 RFC](rfc-recording-transcription.md)为准。
 
@@ -31,7 +31,7 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 列文稿、新建、复制、重命名、删除项目 | `WorkspaceClient.operateDocument` → workspace `documents`；管理操作与历史需要 git | 只有 `list_documents` | 项目操作预检、版本和引用影响，调用同一个 `DocumentOperations` |
 | 读取可编辑文稿 | `GET document` 保留全量；`document/outline`、`document/part` 共用版本绑定的紧凑读取，无需先编译 | 已有 `get_document_outline/read_document_part`；`get_document` 仍全量；`deck_info/get_section/get_step` 仍读取运行快照 | Schema 资源与后续大文通用写回；局部读取边界见第 18 节 |
 | 正文结构、格式、表格、图片占位、块移动 | 原生 BlockNote 投影回 `TeachingDocument`，`DocumentSession` → `document/change` | 已有 plan/apply 的 `updateText/insertBlock/moveBlock/deleteBlock` 与共享校验 | 更细的富文本身份和编辑范围语义 |
-| 页面新建、重命名、复制、排序、删除 | 页面复制已共用 kernel `duplicateDocumentPage`；Web 保持原 actor、focus 和 Undo；删除仍在 workbench | 已有 `updateSection`；复制新增紧凑 `plan_page_duplication/apply_page_duplication`，完整候选与映射按需读资源 | 其它页面动作继续拆分；复制真实范围与有界重试见第 17 节 |
+| 页面新建、重命名、复制、排序、删除 | kernel 共享页面纯规则；Web 保持原 actor、创建的原生 Undo／focus 和删除确认 | 紧凑 `plan_page_change/apply_page_change` 覆盖新建／重命名／移动／删除；复制沿用其两专用工具 | 删除核所有保留讲稿 cue，按计划与 source 明确确认影响；通用大文写回仍未有界 |
 | 步骤状态、显隐、继承、组件参数与身份 | IR 契约支持稳定 `StepId`、`setStepState`；Web 对复杂步骤操作仍有缺口 | plan/apply 已有 `setStepState`，运行读取／导航仍可使用 | 共用完整步骤动作；未实现的重排／删除规则先声明 unavailable |
 | 讲稿文字、发音替换、cue 与停顿 | `NarrationEditor/DocumentStepNarration` → 同一文稿；`setNarration/setTiming` 已有 | plan/apply 已接受 `NarrationNode[]`；`lecture_preview` 只读派生计划 | 共享讲稿 edit-shared／fork、cue 编辑的更细范围与影响 |
 | 定义、公开参数、共享素材修改和“另存” | 定义在文稿中，代码通过 `DocumentChange.fileChanges`；通用素材属性仍未完整接入 | 已能明确 replacement 加同文稿文本文件原子保存；无专用定义范围动作 | 定义 Schema、引用计数、单实例／全部实例／fork 三种明确范围 |
@@ -339,3 +339,17 @@ Agent 先用 `get_document_outline({ document?, source?, collection?, offset? })
 HTTP 的 `GET document/outline` 与 `GET document/part` 将同一 query JSON 放在 `query` 查询参数，调用 HTTP/MCP 共用的 `DocumentAuthoring.outline/readPart`。每次读取当前 canonical 文件，先比 raw version/fingerprint，再验证文稿 ID，格式化后复核 raw；源改变、包括中途变成坏 JSON，续页返回 409，调用方必须丢弃该次拼接并重新发现。已有 source 而源文件变成超出既有 2 MiB 读取上限时也返回 409，不伪造 currentSource；没有 source 的首次超限仍是 413，formatter 自身的 413 和其它 I/O／权限错误不转换。没有源前置条件的首次坏源为 422，保留校验问题数量及最多三条有界摘要。SDK 在执行前拒绝违反输入 Schema 的参数时，仍遵循 MCP SDK 自身的文本错误格式，不冒称共享服务 JSON 回执。
 
 读取沿原 member／document／token 和 editor 角色边界；不读任意文件、不编译、不装配 Node 服务、不使用模型，也没有快照 Map 或持久 cursor。独立 compiler-only stdio 不暴露两工具并如实报告 unavailable。全量 `get_document` 的默认返回保持不变，供 SDK 使用；它及大文通用 plan/apply 输入／结果仍可能超过 agent 预算，本片不将完整写回或全部作者操作宣称已对齐。真实大文重建、DSH wrapper／pruner、版本与权限边界见[局部读取验证记录](benchmarks/mcp-canonical-reads-2026-10-27.md)。
+
+## 19. 已实现的常用页面动作
+
+`plan_page_change({ document, request: { id, source, action } })` 是只读预检。`action` 是严格对象：`create` 使用 `title` 和可选 `after`；`rename` 使用 `sectionId/title`；`move` 使用 `sectionId/before`；`delete` 使用 `sectionId`。`after: null` 与 `before: null` 都表示放到末尾。未知字段、页面和位置明确拒绝，源变化返回 409；预检不编译或装配 Node 服务。
+
+新页由服务端固定页面、内容块、空段落和步骤四个身份，并使用真实默认最短停留 4000 ms、结束停顿 500 ms。Web 的原生 `insertBlocks`、创建光标和原生 Undo 保留，只共用身份／默认实体生成；重命名、移动及删除共用同一 kernel 纯规则。移动不重分配身份。
+
+默认预检只返回 source、planId、digest、期限、目标位置、身份与影响计数、有限问题摘要和下一步。完整 candidate/details 通过对应资源按需读取，受同 member／document／digest／TTL 检查，报告 current/applied/old；它们不是要求模型回传的大文稿。`apply_page_change({ document, request: { planId, source, digest } })` 从既有 plans 取回 exact replacement，进入原 apply／事务／receipt，再核真实保存版本及完整规范候选。短回执中的 commit 仅含真实 id 与 origin，完整历史仍归原历史服务。
+
+删除还要求 `confirmDeletion: true`，只接受该计划中实际的删除动作及 source／digest。预检检查所有保留讲稿，未引用讲稿中的 cue 也不能变成悬空引用；阻挡时返回 `page-referenced`、引用总数、有界样本及读取／修复下一步，不自动删除引用。合法删除清除归属块、步骤、独占讲稿及其 cue 时机、对应制作覆盖和片段；保留共享讲稿、所有素材与定义、评论线程。只有锚点实际命中声明的已删文本身份才失锚，不递归解释 opaque payload 的 `id`。最后一页保留原标题及空内容，生成一个稳定新步骤，沿用上述默认时机。
+
+MCP 整体参数按实际 JSON.stringify 不超过 2048 个 UTF-16 字符，默认结果按实际 pretty JSON 不超过 7168；异常详情也保持有界。大字段明确省略或拒绝，不截断身份冒充完整值。能力中的 `actions.planPageChange/applyPageChange` 与 `pageLimits` 如实声明支持；required review、operate off 和 compiler-only stdio 不会冒称可提交。
+
+此片仍使用原五分钟／64 plans／64 receipts／process-current-source 边界，不增加队列、writer 或持久账本。丢 ACK 重试原 apply 引用；Undo ABA、旧源、变化／过期／遗忘计划不允许自动重建。共享 HTTP 的 `document/page/plan` 与 `document/page/apply` 连接同一实例；Web 人工编辑仍走原 actor 和可信编辑保存边界。本片不把通用大文写回、评论、历史或全部人机动作宣称已对齐。实际验证见[页面动作记录](benchmarks/mcp-page-actions-2026-10-28.md)。

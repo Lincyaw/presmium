@@ -1,4 +1,5 @@
-import type { DocumentBlock, NarrationNode, RichTextNode, Section, TeachingDocument, TextBlock } from '@lincyaw/kernel'
+import { documentPageDefaults, DOCUMENT_PAGE_DEFAULT_TIMING } from '@lincyaw/kernel'
+import type { DocumentBlock, DocumentPageIds, NarrationNode, RichTextNode, Section, TeachingDocument, TextBlock } from '@lincyaw/kernel'
 import { productInlineToNative } from './inline.ts'
 import { captureRichBaseline, createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
 import type { RichProjection } from './rich-text.ts'
@@ -14,7 +15,7 @@ export interface DocumentProjection extends RichProjection {
   structures: Map<string, Pick<DocumentProjection, 'document' | 'rich' | 'owners' | 'pages' | 'baseline'>>
   createdPages: Map<string, NativePageCreation>
 }
-export interface NativePageCreation { sectionId: string, blockId: string, nodeId: string, stepId: string }
+export type NativePageCreation = DocumentPageIds
 const newId = () => crypto.randomUUID()
 const pageId = (sectionId: string) => `page:${sectionId}`
 function plain(nodes: readonly { type: string, text?: string, children?: readonly unknown[] }[]): string {
@@ -213,10 +214,11 @@ export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], 
     context.owners.set(nodeId, blockId)
     context.pages.set(block.id, sectionId)
     if (latest.sections[sectionId]) continue
-    context.document.sections[sectionId] ??= { id: sectionId, title: nativePlain(block), children: [blockId], stepOrder: [stepId], layout: { type: 'stack' } }
-    context.document.blocks[blockId] ??= { id: blockId, type: 'text', content: [{ id: nodeId, type: 'paragraph', children: [] }] }
-    context.document.steps[stepId] ??= createdPageStep(created)
-    context.document.production.stepOverrides[stepId] ??= { minimumHoldMs: 4000, trailingPauseMs: 500 }
+    const defaults = documentPageDefaults(created, nativePlain(block))
+    context.document.sections[sectionId] ??= defaults.section
+    context.document.blocks[blockId] ??= defaults.block
+    context.document.steps[stepId] ??= defaults.step
+    context.document.production.stepOverrides[stepId] ??= defaults.timing
   }
   if (snapshot) for (const id of snapshot.sectionOrder) {
     if (latest.sections[id]) continue
@@ -328,16 +330,12 @@ export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], 
   return next
 }
 
-function createdPageStep({ sectionId, blockId, stepId }: NativePageCreation) {
-  return { id: stepId, sectionId, visuals: [{ blockId, visible: true }], narrationIds: [] }
-}
-
 /** Only an untouched, unreferenced creation default is removed with its native insertion. */
 function untouchedPageCreation(document: TeachingDocument, created: NativePageCreation): boolean {
   const { sectionId, blockId, stepId } = created, section = document.sections[sectionId]
   if (section?.stepOrder.length !== 1 || section.stepOrder[0] !== stepId
-    || JSON.stringify(document.steps[stepId]) !== JSON.stringify(createdPageStep(created))
-    || JSON.stringify(document.production.stepOverrides[stepId]) !== JSON.stringify({ minimumHoldMs: 4000, trailingPauseMs: 500 })
+    || JSON.stringify(document.steps[stepId]) !== JSON.stringify(documentPageDefaults(created, '').step)
+    || JSON.stringify(document.production.stepOverrides[stepId]) !== JSON.stringify(DOCUMENT_PAGE_DEFAULT_TIMING)
     || document.production.sectionOverrides?.[sectionId]
     || document.production.mediaClips.some(clip => clip.attachment.stepId === stepId)
     || Object.values(document.steps).some(step => step.inherits === stepId || step.id !== stepId && step.visuals.some(visual => visual.blockId === blockId))

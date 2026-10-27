@@ -1,7 +1,7 @@
 import type { CanonicalSource } from '../ir.ts'
 import type { DocumentEditOperation, DocumentIssue, TeachingDocument } from './document.ts'
 import type { Member } from './server.ts'
-import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer } from './workspace.ts'
+import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, RevisionOrigin } from './workspace.ts'
 import type { DocumentOutlineAnswer, DocumentOutlineQuery, DocumentPartAnswer, DocumentPartQuery } from './document-reads.ts'
 
 export const AUTHORING_API_VERSION = 1 as const
@@ -12,9 +12,10 @@ export interface AuthoringCapabilities {
   documentSchemaVersion: number
   available: boolean
   reason?: 'host-unavailable' | 'permission-denied'
-  actions: { read: boolean, outline: boolean, readPart: boolean, plan: boolean, apply: boolean, planPageDuplication: boolean, applyPageDuplication: boolean }
+  actions: { read: boolean, outline: boolean, readPart: boolean, plan: boolean, apply: boolean, planPageDuplication: boolean, applyPageDuplication: boolean, planPageChange: boolean, applyPageChange: boolean }
   applyUnavailableReason?: 'review-required' | 'operation-disabled'
   readLimits?: { maxRequestChars: number, maxResponseChars: number, responseSerialization: 'JSON.stringify(value,null,2)', offsetUnit: 'utf16' }
+  pageLimits?: { maxRequestChars: number, maxResponseChars: number, responseSerialization: 'JSON.stringify(value,null,2)' }
   operations: readonly DocumentEditOperation['type'][]
   replacement: boolean
   fileChanges: boolean
@@ -40,6 +41,45 @@ export interface DocumentChangePlan {
 
 export interface ApplyDocumentChange { change: DocumentChange, planId: string }
 export interface DocumentPageDuplicationRequest { id: string, source: CanonicalSource, sectionId: string, title: string }
+export type DocumentPageAction =
+  | { type: 'create', title: string, after?: string | null }
+  | { type: 'rename', sectionId: string, title: string }
+  | { type: 'move', sectionId: string, before: string | null }
+  | { type: 'delete', sectionId: string }
+export interface DocumentPageIds { sectionId: string, blockId: string, nodeId: string, stepId: string }
+export interface DocumentPageDeletionImpact {
+  sectionId: string
+  retainedEmpty: boolean
+  blocks: string[]
+  steps: string[]
+  narrations: string[]
+  retainedNarrations: string[]
+  cues: string[]
+  clips: string[]
+  detachedComments: string[]
+  references: ({ type: 'cue', narrationId: string, cueId: string, blockId: string, stepIds: string[] } | { type: 'inheritance', stepId: string, inheritedStepId: string })[]
+}
+export interface DocumentPageChangeRequest { id: string, source: CanonicalSource, action: DocumentPageAction }
+export interface DocumentPageChangePlan extends DocumentChangePlan {
+  action: DocumentPageAction
+  sectionId: string
+  created?: DocumentPageIds
+  deletion?: DocumentPageDeletionImpact
+  change: DocumentChange
+}
+export interface DocumentPageChangeReference extends DocumentPageDuplicationReference { confirmDeletion?: true }
+export interface DocumentPageChangeInspection { plan: DocumentPageChangePlan, currentSource: CanonicalSource, state: 'current' | 'applied' | 'old' }
+export interface AppliedDocumentPageChange extends Omit<AppliedDocumentChange, 'content' | 'issues' | 'verification' | 'commit'> {
+  commit?: { id: string, origin: RevisionOrigin['kind'] }
+  planId: string
+  digest: string
+  action: DocumentPageAction['type']
+  sectionId: string
+  retainedEmpty: boolean
+  changed: boolean
+  impact: Record<keyof DocumentChangePlan['impact'], number | boolean>
+  verification: AppliedDocumentChange['verification'] & { plannedVersion: string, pageStateVerified: true }
+}
 export interface DocumentPageDuplicationPlan extends DocumentChangePlan {
   action: 'duplicatePage'
   section: { from: string, to: string }
@@ -79,6 +119,22 @@ export const DOCUMENT_PAGE_DUPLICATION_APPLY_SCHEMA = {
     digest: { type: 'string', pattern: '^[a-f0-9]{64}$' },
   },
 } as const
+export const DOCUMENT_PAGE_CHANGE_SCHEMA = {
+  type: 'object', additionalProperties: false, required: ['id', 'source', 'action'], properties: {
+    id: DOCUMENT_PAGE_DUPLICATION_SCHEMA.properties.id,
+    source: DOCUMENT_PAGE_DUPLICATION_SCHEMA.properties.source,
+    action: { oneOf: [
+      { type: 'object', additionalProperties: false, required: ['type', 'title'], properties: { type: { const: 'create' }, title: DOCUMENT_PAGE_DUPLICATION_SCHEMA.properties.title, after: { type: ['string', 'null'], minLength: 1, maxLength: 200 } } },
+      { type: 'object', additionalProperties: false, required: ['type', 'sectionId', 'title'], properties: { type: { const: 'rename' }, sectionId: DOCUMENT_PAGE_DUPLICATION_SCHEMA.properties.sectionId, title: DOCUMENT_PAGE_DUPLICATION_SCHEMA.properties.title } },
+      { type: 'object', additionalProperties: false, required: ['type', 'sectionId', 'before'], properties: { type: { const: 'move' }, sectionId: DOCUMENT_PAGE_DUPLICATION_SCHEMA.properties.sectionId, before: { type: ['string', 'null'], minLength: 1, maxLength: 200 } } },
+      { type: 'object', additionalProperties: false, required: ['type', 'sectionId'], properties: { type: { const: 'delete' }, sectionId: DOCUMENT_PAGE_DUPLICATION_SCHEMA.properties.sectionId } },
+    ] },
+  },
+} as const
+export const DOCUMENT_PAGE_CHANGE_APPLY_SCHEMA = {
+  ...DOCUMENT_PAGE_DUPLICATION_APPLY_SCHEMA,
+  properties: { ...DOCUMENT_PAGE_DUPLICATION_APPLY_SCHEMA.properties, confirmDeletion: { const: true } },
+} as const
 export interface AppliedDocumentChange extends DocumentChangeAnswer {
   verification: { saved: true, source: CanonicalSource, compiled: 'not-requested', runtime: 'not-requested' }
 }
@@ -93,6 +149,9 @@ export interface DocumentAuthoring {
   planPageDuplication(document: string, request: DocumentPageDuplicationRequest, member: Member): Promise<DocumentPageDuplicationPlan>
   readPageDuplicationPlan(document: string, reference: DocumentPageDuplicationRead, member: Member): Promise<DocumentPageDuplicationInspection>
   applyPageDuplication(document: string, reference: DocumentPageDuplicationReference, member: Member): Promise<AppliedDocumentPageDuplication>
+  planPageChange(document: string, request: DocumentPageChangeRequest, member: Member): Promise<DocumentPageChangePlan>
+  readPageChangePlan(document: string, reference: DocumentPageDuplicationRead, member: Member): Promise<DocumentPageChangeInspection>
+  applyPageChange(document: string, reference: DocumentPageChangeReference, member: Member): Promise<AppliedDocumentPageChange>
   apply(document: string, request: ApplyDocumentChange, member: Member): Promise<AppliedDocumentChange>
 }
 

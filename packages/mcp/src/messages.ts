@@ -12,6 +12,7 @@ export interface McpMessages {
   previewVoice(voice: string): string
   changeMediaClip(action: 'add' | 'update' | 'remove', clipId: string): string
   duplicatePage: string
+  applyPagePlan: string
   allRenderers: string
   classroomStart(name: string): string
   classroomEnd: string
@@ -32,6 +33,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     previewVoice: voice => `试听音色「${voice}」`,
     changeMediaClip: (action, clipId) => `${{ add: '添加', update: '调整', remove: '删除' }[action]}音频片段「${clipId}」`,
     duplicatePage: '复制页面',
+    applyPagePlan: '采用页面预检',
     allRenderers: '全部渲染端',
     classroomStart: name => `开始课堂${name ? `「${name}」` : ''}`,
     classroomEnd: '结束课堂',
@@ -50,6 +52,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     previewVoice: voice => `Preview voice “${voice}”`,
     changeMediaClip: (action, clipId) => `${{ add: 'Add', update: 'Update', remove: 'Remove' }[action]} audio clip “${clipId}”`,
     duplicatePage: 'Duplicate page',
+    applyPagePlan: 'Apply page plan',
     allRenderers: 'all renderers',
     classroomStart: name => `Start the classroom${name ? ` "${name}"` : ''}`,
     classroomEnd: 'End the classroom',
