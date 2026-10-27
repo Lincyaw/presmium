@@ -8,6 +8,14 @@
 
 agent 已连接到当前工作区时，读取 `presmium://diagnostics?document=<文稿目录>` 获取当前诊断，调用 `get_runtime` 获取实际预览窗口反馈，调用 `get_outputs` 查看构建结果。没有窗口反馈只说明尚未观察到浏览器；不能推断页面健康。`get_diagnostics` 会运行检查，不用它代替浏览器观测。
 
+## 打开时要求 dsh 认证
+
+看到 `dsh web authentication required; reopen the URL printed by dsh web.` 时，先看主页面的 HTTP 状态。401 表示浏览器没有当前地址可用的登录凭据；Host 或 Origin 检查拒绝请求时返回 403，不能把两者都当作跨域问题。
+
+从正在运行的 `pnpm studio` 终端重新打开完整启动网址，使用原先相同的主机名与端口。`localhost:4320` 和 `127.0.0.1:4320` 的登录状态各自独立。启动网址中的令牌属于本次进程，服务重启后旧启动链接不能重新登录；成功登录后地址栏会移除令牌。
+
+已建立的 cookie 由 dsh 状态目录中的持久凭据签名，默认有效 30 天。沿用同一状态目录与地址时，重启不应被直接解释为所有 cookie 失效。排查时分别验证当前完整入口、旧入口与已登录浏览器里的普通地址，只记录状态与是否进入工作台，不输出令牌或 cookie。协议依据见本地 [dsh 认证说明](../vendor/docs/dsh/packages/client/connection/README.md#browser-authentication-and-request-trust)。
+
 ## 用隔离副本复现
 
 共享源码检出中若工作台日志出现读取 `packages/dsh/build/dist/client.json` 或 `client.js` 的 `EACCES`，应先检查生成产物的权限。源码启动会重建不可读或损坏的构建清单，客户端及清单固定为可读权限，不受启动终端的私有 umask 影响。确认实际页面加载的新构建和目标 DOM 后才能判定修复生效；源码已修改或预览后端就绪不足以证明原工作台标签页已更新。

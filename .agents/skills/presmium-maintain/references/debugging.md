@@ -15,6 +15,10 @@ and duration by the preview request number (`[preview N]`) or the job ID (`[job]
   resources or in the handshake. Do not claim the page works from it.
 - dsh's output is only in the log file. It contains the login token in the launch address; never copy it
   into a report.
+- For the `dsh web authentication required` page, distinguish authentication (401) from Host/Origin
+  rejection (403). Use the current full launch URL with the original hostname and port; a restart changes
+  the launch token, while existing cookies can survive through the persisted credentials. Follow
+  `docs/debugging.md`, "打开时要求 dsh 认证", and record no token or cookie values.
 
 The studio also collects root-window exceptions and its workspace client's failed requests. Look for
 `presmium.workbench.error` and `presmium.workbench.request` in the existing diagnostic snapshot; their
