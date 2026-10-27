@@ -2,6 +2,7 @@ import type { CanonicalSource } from '../ir.ts'
 import type { DocumentEditOperation, DocumentIssue, TeachingDocument } from './document.ts'
 import type { Member } from './server.ts'
 import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer } from './workspace.ts'
+import type { DocumentOutlineAnswer, DocumentOutlineQuery, DocumentPartAnswer, DocumentPartQuery } from './document-reads.ts'
 
 export const AUTHORING_API_VERSION = 1 as const
 export const DOCUMENT_OPERATION_TYPES = ['insertBlock', 'moveBlock', 'deleteBlock', 'updateText', 'updateSection', 'setStepState', 'setNarration', 'setTiming', 'replaceAsset'] as const satisfies readonly DocumentEditOperation['type'][]
@@ -11,8 +12,9 @@ export interface AuthoringCapabilities {
   documentSchemaVersion: number
   available: boolean
   reason?: 'host-unavailable' | 'permission-denied'
-  actions: { read: boolean, plan: boolean, apply: boolean, planPageDuplication: boolean, applyPageDuplication: boolean }
+  actions: { read: boolean, outline: boolean, readPart: boolean, plan: boolean, apply: boolean, planPageDuplication: boolean, applyPageDuplication: boolean }
   applyUnavailableReason?: 'review-required' | 'operation-disabled'
+  readLimits?: { maxRequestChars: number, maxResponseChars: number, responseSerialization: 'JSON.stringify(value,null,2)', offsetUnit: 'utf16' }
   operations: readonly DocumentEditOperation['type'][]
   replacement: boolean
   fileChanges: boolean
@@ -85,6 +87,8 @@ export interface AppliedDocumentChange extends DocumentChangeAnswer {
 export interface DocumentAuthoring {
   capabilities(document: string, member: Member): AuthoringCapabilities
   read(document: string, member: Member): Promise<DocumentAnswer>
+  outline(document: string, query: DocumentOutlineQuery, member: Member): Promise<DocumentOutlineAnswer>
+  readPart(document: string, query: DocumentPartQuery, member: Member): Promise<DocumentPartAnswer>
   plan(document: string, change: DocumentChange, member: Member): Promise<DocumentChangePlan>
   planPageDuplication(document: string, request: DocumentPageDuplicationRequest, member: Member): Promise<DocumentPageDuplicationPlan>
   readPageDuplicationPlan(document: string, reference: DocumentPageDuplicationRead, member: Member): Promise<DocumentPageDuplicationInspection>

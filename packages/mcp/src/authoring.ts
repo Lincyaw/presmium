@@ -1,6 +1,6 @@
-import { AUTHORING_API_VERSION, DOCUMENT_PAGE_DUPLICATION_APPLY_SCHEMA, DOCUMENT_PAGE_DUPLICATION_SCHEMA, DOCUMENT_SCHEMA_VERSION } from '@lincyaw/kernel'
+import { AUTHORING_API_VERSION, DOCUMENT_OUTLINE_QUERY_SCHEMA, DOCUMENT_PART_QUERY_SCHEMA, DOCUMENT_READ_MAX_REQUEST_CHARS, DOCUMENT_PAGE_DUPLICATION_APPLY_SCHEMA, DOCUMENT_PAGE_DUPLICATION_SCHEMA, DOCUMENT_SCHEMA_VERSION } from '@lincyaw/kernel'
 import { DOCUMENT_CHANGE_JSON_SCHEMA } from '@lincyaw/kernel/node'
-import type { DocumentAuthoring, DocumentChange, DocumentPageDuplicationPlan, DocumentPageDuplicationReference, DocumentPageDuplicationRequest } from '@lincyaw/kernel'
+import type { DocumentAuthoring, DocumentChange, DocumentOutlineQuery, DocumentPartQuery, DocumentPageDuplicationPlan, DocumentPageDuplicationReference, DocumentPageDuplicationRequest } from '@lincyaw/kernel'
 import type { Call, ToolSpec } from './mcp.ts'
 
 function service(call: Call): DocumentAuthoring {
@@ -9,6 +9,11 @@ function service(call: Call): DocumentAuthoring {
 }
 
 const documentProperty = { type: 'string', description: 'The served document directory. Omit only for one document or a document-bound token.' }
+function readQuery(call: Call) {
+  if (JSON.stringify(call.args).length > DOCUMENT_READ_MAX_REQUEST_CHARS) throw Object.assign(new Error('document-read-request-too-large'), { status: 413 })
+  const { document: _document, ...query } = call.args
+  return query
+}
 const schema = (apply = false): Record<string, unknown> => {
   const { $defs } = structuredClone(DOCUMENT_CHANGE_JSON_SCHEMA) as { $defs: Record<string, unknown> }
   return { type: 'object', properties: { document: documentProperty, change: { $ref: '#/$defs/DocumentChange' }, ...apply ? { planId: { type: 'string', minLength: 1 } } : {} }, required: apply ? ['change', 'planId'] : ['change'], additionalProperties: false, $defs }
@@ -31,7 +36,7 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
     description: 'The actual canonical authoring operations, limits, review and retry scope of this host. Does not compile, synthesize, transcribe or write. A compiler-only stdio host reports authoring unavailable.',
     properties: { document: documentProperty },
     run: async call => {
-      if (!call.host.authoring) return { apiVersion: AUTHORING_API_VERSION, documentSchemaVersion: DOCUMENT_SCHEMA_VERSION, available: false, reason: 'host-unavailable', actions: { read: false, plan: false, apply: false, planPageDuplication: false, applyPageDuplication: false }, operations: [], replacement: false, fileChanges: false, idempotency: 'unavailable', review: 'unavailable' }
+      if (!call.host.authoring) return { apiVersion: AUTHORING_API_VERSION, documentSchemaVersion: DOCUMENT_SCHEMA_VERSION, available: false, reason: 'host-unavailable', actions: { read: false, outline: false, readPart: false, plan: false, apply: false, planPageDuplication: false, applyPageDuplication: false }, operations: [], replacement: false, fileChanges: false, idempotency: 'unavailable', review: 'unavailable' }
       const capability = service(call).capabilities(await call.document(), call.caller.member)
       if (!call.host.offers('operate')) return { ...capability, actions: { ...capability.actions, apply: false, applyPageDuplication: false }, applyUnavailableReason: 'operation-disabled' }
       return capability
@@ -42,6 +47,18 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
     description: 'The canonical saved lecture.json: stable entities, exact source version and fingerprint, content and validation issues. Independent of runtime compilation. Use this source for authoring; get_section/get_step read derived runtime data.',
     properties: { document: documentProperty },
     run: async call => service(call).read(await call.document(), call.caller.member),
+  },
+  {
+    name: 'get_document_outline', kind: 'read', structured: true,
+    description: 'Compact canonical authoring discovery, independent of compilation. Defaults to pages in sectionOrder; other collections include unused entities. Titles are explicitly marked previews, never complete content when shortened. Each pretty-JSON reply is at most 7168 UTF-16 characters. Retain the returned source; offset > 0 requires it and any source change refuses the page. Use read_document_part for complete fields/entities; get_section/get_step are derived runtime data.',
+    inputSchema: { ...DOCUMENT_OUTLINE_QUERY_SCHEMA, properties: { ...DOCUMENT_OUTLINE_QUERY_SCHEMA.properties, document: { ...documentProperty, maxLength: 200 } } },
+    run: async call => service(call).outline(await call.document(), readQuery(call) as DocumentOutlineQuery, call.caller.member),
+  },
+  {
+    name: 'read_document_part', kind: 'read', structured: true,
+    description: 'Reads an exact selected value of saved canonical authoring content, with required source on every request. Select a stable entity collection/id or a root field, then optional own JSON fields or canonical array indices. Unknown entities/fields return 404; no filesystem paths or prototype traversal. Small values use encoding:value. Large values use json-text-fragment: concatenate decoded text in offset order, then JSON.parse once; valueDigest is fnv1a64 of JSON.stringify(selected value). UTF-16 nextOffset never splits a valid surrogate pair; mid-pair offsets are rejected. Every reply is at most 7168 pretty-JSON UTF-16 characters. Source changes, including invalid JSON, return 409; no server snapshot ledger. Partial content is not a whole-document replacement.',
+    inputSchema: { ...DOCUMENT_PART_QUERY_SCHEMA, properties: { ...DOCUMENT_PART_QUERY_SCHEMA.properties, document: { ...documentProperty, maxLength: 200 } } },
+    run: async call => service(call).readPart(await call.document(), readQuery(call) as unknown as DocumentPartQuery, call.caller.member),
   },
   {
     name: 'plan_document_change', kind: 'read', structured: true,

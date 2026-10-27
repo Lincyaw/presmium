@@ -1,8 +1,8 @@
-import { DOCUMENT_ENTRY, jsonResponse, pushStream, sseResponse } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, DOCUMENT_READ_MAX_REQUEST_CHARS, jsonResponse, pushStream, sseResponse } from '@lincyaw/kernel'
 import { randomUUID } from 'node:crypto'
 import { watch } from 'node:fs'
 import { join } from 'node:path'
-import type { DocumentChange, DocumentEvent, RequestContext, Route } from '@lincyaw/kernel'
+import type { DocumentChange, DocumentEvent, DocumentOutlineQuery, DocumentPartQuery, RequestContext, Route } from '@lincyaw/kernel'
 import { catchRequestErrors, RequestError } from './errors.ts'
 import type { SourceEditor } from './source-editor.ts'
 import type { WorkbenchApi } from './workbench-api.ts'
@@ -19,12 +19,31 @@ const entryOf = (directory: string): string => directory ? `${directory}/${DOCUM
 /** A document save validates author intent and never waits for a compiled preview. */
 export function documentEditorRoutes({ root, editor, documentEditor, workbench }: Options): Record<string, Route> {
   const opened = (ctx: RequestContext) => readAuthoringDocument(editor, ctx)
+  const queryOf = (request: Request): unknown => {
+    const query = new URL(request.url).searchParams.get('query') ?? '{}'
+    if (query.length > DOCUMENT_READ_MAX_REQUEST_CHARS) throw new RequestError(413, 'document-read-request-too-large')
+    try { return JSON.parse(query) } catch { throw new RequestError(400, 'document-read-query-invalid') }
+  }
   return {
     document: {
       role: 'editor',
       handle: (request, ctx) => catchRequestErrors(async () => {
         if (request.method !== 'GET') throw new RequestError(405, 'GET')
         return jsonResponse(await documentEditor.read(ctx.document, ctx.member))
+      }),
+    },
+    'document/outline': {
+      role: 'editor',
+      handle: (request, ctx) => catchRequestErrors(async () => {
+        if (request.method !== 'GET') throw new RequestError(405, 'GET')
+        return jsonResponse(await documentEditor.outline(ctx.document, queryOf(request) as DocumentOutlineQuery, ctx.member))
+      }),
+    },
+    'document/part': {
+      role: 'editor',
+      handle: (request, ctx) => catchRequestErrors(async () => {
+        if (request.method !== 'GET') throw new RequestError(405, 'GET')
+        return jsonResponse(await documentEditor.readPart(ctx.document, queryOf(request) as DocumentPartQuery, ctx.member))
       }),
     },
     'document/asset': {

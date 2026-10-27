@@ -1,6 +1,6 @@
 # RFC：Web 与 MCP 共用作者动作及验证反馈
 
-状态：作者事务、页面复制预检、音频资产与片段、音色发现、转写／采用、共享配音任务与试听适配已实施，其余分阶段推进。2026-10-27 根据作者要求设计：AI agent 经 MCP 能完成作者在 Web 中可完成的工作，包括人声录音转写、将文字采用为讲稿、再显式生成 AI 配音。第 12.1 节的共享作者事务见第 14 节；转写任务发现、启动、读取、取消与类型化采用见第 15 节；共享配音任务和音频资源见第 16 节；页面复制见第 17 节。下文未明确标为已实现的接口名和新增类型仍为提案。
+状态：作者事务、页面复制预检、版本绑定局部读取、音频资产与片段、音色发现、转写／采用、共享配音任务与试听适配已实施，其余分阶段推进。2026-10-27 根据作者要求设计：AI agent 经 MCP 能完成作者在 Web 中可完成的工作，包括人声录音转写、将文字采用为讲稿、再显式生成 AI 配音。第 12.1 节的共享作者事务见第 14 节；转写任务发现、启动、读取、取消与类型化采用见第 15 节；共享配音任务和音频资源见第 16 节；页面复制见第 17 节；局部读取见第 18 节。下文未明确标为已实现的接口名和新增类型仍为提案。
 
 本文供工作区、工作台、MCP 和讲授插件的实现者拆分任务。交付结果是一套共用的作者动作、版本检查和反馈协议。文稿内容继续只写 `lecture.json`；规范实体定义以[文稿契约](../packages/kernel/src/contracts/document.ts)和[文稿 IR RFC](rfc-document-ir.md)为准，录制转写的候选与采用细节以[录制转写 RFC](rfc-recording-transcription.md)为准。
 
@@ -29,7 +29,7 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 作者操作 | 当前 Web／共享边界 | 当前 MCP | 应补齐的边界 |
 | --- | --- | --- | --- |
 | 列文稿、新建、复制、重命名、删除项目 | `WorkspaceClient.operateDocument` → workspace `documents`；管理操作与历史需要 git | 只有 `list_documents` | 项目操作预检、版本和引用影响，调用同一个 `DocumentOperations` |
-| 读取可编辑文稿 | `GET document`，无需先编译 | 已有 `get_document`；`deck_info/get_section/get_step` 仍读取运行快照 | 精确的局部实体读取与 Schema 资源 |
+| 读取可编辑文稿 | `GET document` 保留全量；`document/outline`、`document/part` 共用版本绑定的紧凑读取，无需先编译 | 已有 `get_document_outline/read_document_part`；`get_document` 仍全量；`deck_info/get_section/get_step` 仍读取运行快照 | Schema 资源与后续大文通用写回；局部读取边界见第 18 节 |
 | 正文结构、格式、表格、图片占位、块移动 | 原生 BlockNote 投影回 `TeachingDocument`，`DocumentSession` → `document/change` | 已有 plan/apply 的 `updateText/insertBlock/moveBlock/deleteBlock` 与共享校验 | 更细的富文本身份和编辑范围语义 |
 | 页面新建、重命名、复制、排序、删除 | 页面复制已共用 kernel `duplicateDocumentPage`；Web 保持原 actor、focus 和 Undo；删除仍在 workbench | 已有 `updateSection`；复制新增紧凑 `plan_page_duplication/apply_page_duplication`，完整候选与映射按需读资源 | 其它页面动作继续拆分；复制真实范围与有界重试见第 17 节 |
 | 步骤状态、显隐、继承、组件参数与身份 | IR 契约支持稳定 `StepId`、`setStepState`；Web 对复杂步骤操作仍有缺口 | plan/apply 已有 `setStepState`，运行读取／导航仍可使用 | 共用完整步骤动作；未实现的重排／删除规则先声明 unavailable |
@@ -84,7 +84,7 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 
 能力按工作区／文稿／连接客户端计算。最小维度包括：文稿编辑、项目管理、git/history/review、图片／音频／视频读写、录音候选、ASR、TTS、音色目录、语速／风格、真实字词对齐、播放控制、预览形态和实际导出目标。未接入的视频、客户端录制控制和字幕对齐必须准确返回 unavailable；已有整段录音采用当前步骤的共享服务，不能据此推定远程客户端录制已接通。
 
-新增 `get_document({ document, select?, ifVersion? })`。基本结果直接使用 `DocumentAnswer`，按需选择页面、块、步骤、讲稿、资产、定义和批注；局部返回仍带完整作者源标识，不得把局部内容误当整份 replacement。源无效时给问题及修复入口，不隐式回退到运行快照。
+局部选择与版本前置条件已通过独立的 `get_document_outline/read_document_part` 实施，具体形状见第 18 节。原 `get_document({ document? })` 保留完整 `DocumentAnswer`，未增加 `select/ifVersion` 参数。局部返回带完整作者源标识，不得把局部内容误当整份 replacement。源无效时给有界问题摘要，不隐式回退到运行快照。
 
 四类版本各司其职：
 
@@ -316,7 +316,7 @@ HTTP 共用 `document/transcription/capabilities`、`document/transcription`、`
 
 ## 17. 已实现的页面复制预检
 
-`plan_page_duplication` 是 read 动作，请求为 `{ document, request: { id, source, sectionId, title } }`。`source` 必须是 `get_document` 返回的完整 `CanonicalSource`。Workspace 的 `DocumentAuthoring.planPageDuplication` 调用 Web 共用的 kernel 纯函数，服务端一次固定新 ID，然后使用既有 `DocumentChange.replacement` 和 DocumentEditor plan；不编译、不装配 Node 服务或场景、不请求模型。
+`plan_page_duplication` 是 read 动作，请求为 `{ document, request: { id, source, sectionId, title } }`。`source` 可直接取 `get_document_outline` 的完整 `CanonicalSource`，也可从全量 `get_document` 的文稿 ID、version、fingerprint 取得。Workspace 的 `DocumentAuthoring.planPageDuplication` 调用 Web 共用的 kernel 纯函数，服务端一次固定新 ID，然后使用既有 `DocumentChange.replacement` 和 DocumentEditor plan；不编译、不装配 Node 服务或场景、不请求模型。
 
 MCP 默认回复是紧凑的 `planId/changeId/source/digest/expiresAt`、`action: 'duplicatePage'`、`section: { from, to }`、标题、复制身份总数、影响计数和验证摘要。影响不回传全部 ID 数组；警告保留总数和最多三条有界摘要。完整候选、复制身份映射和原计划详情分别通过返回的 candidate/mapping/details 资源 URI 按需读取，不作为模型要回抄的提交数据。资源按 member/document/digest/TTL 检查，报告计划 source、实际 currentSource 与 current/applied/old；未知或过期引用被拒绝，不隐式编译。
 
@@ -325,3 +325,17 @@ MCP 默认回复是紧凑的 `planId/changeId/source/digest/expiresAt`、`action
 内部完整候选仍通过既有 `DocumentChange.replacement` 计划；映射只覆盖复制的规范实体、富文本、代码变体、cue 和媒体片段身份，不是整个文稿。共享资产与定义保留引用，插件不透明载荷原样保存，原评论及锚点留在原页。字符串看起来像 ID 不代表它是可重写的规范引用。Web 只换共享纯函数与 UUID 分配器，保留 actor、焦点、正文原生 Undo 和既有页面历史撤消路径。
 
 能力中的 `actions.planPageDuplication/applyPageDuplication` 分别反映预检与执行；compiler-only stdio 为 unavailable。`limits` 明示五分钟期限、64 条 plans 和 64 条 receipts，幂等范围仍为 `process-current-source`。保留期内同请求稳定复用原预检；已知提交后的 Undo ABA 拒绝旧请求，旧 apply 缺 plan 返回 409。拿到 plan 后应重试原引用；两个有界表都遗忘一个请求后不承诺无限记忆，不能将 409 当作自动 replan 的许可。50 页／400 段的实际默认预检 1,419 字符、提交回执 1,314 字符，均经当前 8,192 字符的真实 DSH pruner 消费而未裁剪；具体运行来源与范围见[页面复制记录](benchmarks/page-duplication-mcp-2026-10-27.md)。
+
+## 18. 已实现的版本绑定局部读取
+
+Agent 先用 `get_document_outline({ document?, source?, collection?, offset? })` 发现规范实体。默认集合为 `sections`，按 `sectionOrder` 分页；其它集合为 `blocks/steps/narrations/assets/definitions/comments`，包含未引用的实体。响应带完整 `CanonicalSource`、Schema 版本、各集合计数、当前集合是否存在的 `present`、当前页实体和 `nextOffset`。实体只含稳定 ID、类型、所属步骤页及局部计数，不返回整个 children／stepOrder。标题用 `{ preview, complete, totalChars }` 明示是否完整，超长标题仍可通过字段读取取全。`offset > 0` 必须携带首读的 source。
+
+`read_document_part({ document?, source, target, offset? })` 每次都要求 source。`target` 选择实体集合及稳定 `id`，或 `schemaVersion/id/metadata/sectionOrder/production` 根字段；可再提供 `path: string[]` 逐层选择 own JSON 字段或数组索引。数组索引只接受 `0` 或无前导零的非负整数字符串。它不是文件路径，也不沿 prototype 查属性；opaque payload 中实际存在的字段原样可读，不猜测其中的引用。不存在的实体／字段为 404；可用整实体分片读取含超长字段名的未知插件数据。
+
+小值返回 `encoding: 'value'` 和完整 `value`。放不下时返回 `encoding: 'json-text-fragment'`、`text/offset/nextOffset/totalChars/complete`；调用方按返回的 `nextOffset` 连续请求、拼接已解码的 text，待 complete 后只执行一次 JSON.parse。offset 单位是 UTF-16，不切有效 surrogate pair；落在 pair 中间或越界的 offset 为 400。每页的 `valueDigest` 明示 `algorithm: 'fnv1a64'` 和 `serialization: 'JSON.stringify'`，输入是所选规范值无缩进 JSON.stringify 结果的 UTF-8 字节。这是序列一致性标识，不是密码学证明。精确恢复指与现有 `authoring.read.content` 中所选 JSON 值相同，不保留源文件空白或声称返回 compiled IR。
+
+共享契约将请求的 JSON.stringify 长度限制在 2,048 个 UTF-16 字符；MCP 还核对含 document 的整体参数。响应按实际 `JSON.stringify(value, null, 2)` 计量，不超过 7,168 个 UTF-16 字符，包含 JSON 转义、元数据和缩进。outline 逐项装箱，part 计算能放入的实际分片；必须前进或明确返回有界 413，不静默删正文。该上限保守低于当前 DSH pruner 的 8,192 Unicode 字符阈值。能力响应通过 `actions.outline/readPart` 和 `readLimits` 公布接口与预算。
+
+HTTP 的 `GET document/outline` 与 `GET document/part` 将同一 query JSON 放在 `query` 查询参数，调用 HTTP/MCP 共用的 `DocumentAuthoring.outline/readPart`。每次读取当前 canonical 文件，先比 raw version/fingerprint，再验证文稿 ID，格式化后复核 raw；源改变、包括中途变成坏 JSON，续页返回 409，调用方必须丢弃该次拼接并重新发现。已有 source 而源文件变成超出既有 2 MiB 读取上限时也返回 409，不伪造 currentSource；没有 source 的首次超限仍是 413，formatter 自身的 413 和其它 I/O／权限错误不转换。没有源前置条件的首次坏源为 422，保留校验问题数量及最多三条有界摘要。SDK 在执行前拒绝违反输入 Schema 的参数时，仍遵循 MCP SDK 自身的文本错误格式，不冒称共享服务 JSON 回执。
+
+读取沿原 member／document／token 和 editor 角色边界；不读任意文件、不编译、不装配 Node 服务、不使用模型，也没有快照 Map 或持久 cursor。独立 compiler-only stdio 不暴露两工具并如实报告 unavailable。全量 `get_document` 的默认返回保持不变，供 SDK 使用；它及大文通用 plan/apply 输入／结果仍可能超过 agent 预算，本片不将完整写回或全部作者操作宣称已对齐。真实大文重建、DSH wrapper／pruner、版本与权限边界见[局部读取验证记录](benchmarks/mcp-canonical-reads-2026-10-27.md)。
