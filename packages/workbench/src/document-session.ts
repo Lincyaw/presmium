@@ -1,5 +1,5 @@
 import { validateDocument } from '@lincyaw/kernel'
-import type { DocumentAnswer, DocumentChangeAnswer, DocumentIssue, TeachingDocument } from '@lincyaw/kernel'
+import type { DocumentAnswer, DocumentChangeAnswer, DocumentImageImportAnswer, DocumentIssue, TeachingDocument } from '@lincyaw/kernel'
 import { WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 
@@ -29,6 +29,7 @@ interface Slot {
   baseHash: string
   storage: string
   flight?: { id: string, input: number, content: TeachingDocument, baseVersion: string, hash?: string }
+  assetFlight?: Promise<DocumentImageImportAnswer>
   timer?: ReturnType<typeof setTimeout>
   refreshed?: boolean
   pendingHash?: string
@@ -57,6 +58,7 @@ export class DocumentSession {
   readonly #client: WorkspaceClient
   readonly #changed: (state: DocumentSessionState) => void
   readonly #slots = new Map<string, Slot>()
+  readonly #imageImports = new WeakMap<File, { identity: string, version: string, id: string }>()
   #active?: string
   #opening = 0
   #unsubscribe?: () => void
@@ -94,7 +96,7 @@ export class DocumentSession {
           if (projectChanged) { current.state = { ...current.state, projectRevision: (current.state.projectRevision ?? 0) + 1 }; this.#emit(current) }
           return
         }
-        if (current.flight) { current.refreshed = true; return }
+        if (current.flight || current.assetFlight) { current.refreshed = true; return }
         void this.refresh(directory)
       }, () => {})
     } catch (error) {
@@ -110,7 +112,7 @@ export class DocumentSession {
   #prune(): void {
     for (const [directory, slot] of this.#slots) {
       if (this.#slots.size <= 8) return
-      if (directory === this.#active || slot.flight || slot.state.dirty || slot.state.composing) continue
+      if (directory === this.#active || slot.flight || slot.assetFlight || slot.state.dirty || slot.state.composing) continue
       clearTimeout(slot.timer)
       this.#slots.delete(directory)
     }
@@ -123,12 +125,12 @@ export class DocumentSession {
     if (directory === undefined) return
     const slot = this.#slots.get(directory)
     if (!slot) { if (directory === this.#active) await this.open(directory); return }
-    if (slot.flight) { slot.refreshed = true; return }
+    if (slot.flight || slot.assetFlight) { slot.refreshed = true; return }
     const read = ++slot.read, current = () => slot.read === read && this.#slots.get(directory) === slot
     try {
       const answer = await this.#client.readDocument(directory)
       if (!current()) return
-      if (slot.flight) { slot.refreshed = true; return }
+      if (slot.flight || slot.assetFlight) { slot.refreshed = true; return }
       await this.#adopt(slot, answer, current)
       if (current()) { this.#persist(slot); this.#emit(slot) }
     } catch (error) {
@@ -206,7 +208,7 @@ export class DocumentSession {
   async #save(slot: Slot, immediate = false): Promise<void> {
     if (immediate) { clearTimeout(slot.timer); slot.timer = undefined }
     else if (slot.timer !== undefined) return
-    if (slot.flight || !slot.state.dirty || slot.state.composing || slot.state.restored || slot.state.error || !slot.state.content || !slot.state.version) return
+    if (slot.flight || slot.assetFlight || !slot.state.dirty || slot.state.composing || slot.state.restored || slot.state.error || !slot.state.content || !slot.state.version) return
     slot.read++
     const flight = { id: crypto.randomUUID(), input: slot.input, content: structuredClone(slot.state.content), baseVersion: slot.state.version, hash: undefined as string | undefined }
     slot.flight = flight
@@ -234,9 +236,69 @@ export class DocumentSession {
     slot.state = { ...slot.state, version: answer.version, fingerprint: answer.fingerprint, ...(same ? { content: answer.content } : {}), dirty: !same, saving: false, error: undefined, issues: answer.issues }
   }
 
+  /** Adopt a verified asset-only transaction without replacing later native text. */
+  async #adoptImportedAssets(slot: Slot, before: TeachingDocument, input: number, answer: DocumentAnswer, owns: () => boolean): Promise<boolean> {
+    const withoutAssets = ({ assets: _assets, ...content }: TeachingDocument) => serialize(content)
+    if (!owns() || answer.document !== slot.state.directory || withoutAssets(before) !== withoutAssets(answer.content)
+      || !Object.entries(before.assets).every(([id, asset]) => serialize(asset) === serialize(answer.content.assets[id]))) return false
+    const baseHash = await digest(answer.content)
+    if (!owns()) return false
+    const current = slot.state.content!
+    const added = Object.entries(answer.content.assets).filter(([id]) => !Object.hasOwn(before.assets, id))
+    if (added.some(([id, asset]) => Object.hasOwn(current.assets, id) && serialize(current.assets[id]) !== serialize(asset))) return false
+    const same = slot.input === input, content = same ? answer.content : structuredClone(current)
+    if (!same) for (const [id, asset] of added) content.assets[id] = structuredClone(asset)
+    slot.baseHash = baseHash
+    slot.state = { ...slot.state, content, version: answer.version, fingerprint: answer.fingerprint, dirty: !same, error: undefined, issues: answer.issues }
+    return true
+  }
+
+  /** The file and its asset declaration share the actor's write boundary. */
+  async importImage(file: File, identity: string, signal?: AbortSignal): Promise<DocumentImageImportAnswer> {
+    await this.flush(signal)
+    const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
+    if (!slot?.state.content || !slot.state.version || slot.state.identity !== identity || slot.state.dirty || slot.state.saving || slot.state.composing || slot.state.error) throw new Error('document-identity-changed')
+    const before = structuredClone(slot.state.content), input = slot.input, version = slot.state.version
+    let request = this.#imageImports.get(file)
+    if (!request || request.identity !== identity || request.version !== version) {
+      request = { identity, version, id: crypto.randomUUID() }
+      this.#imageImports.set(file, request)
+    }
+    const read = ++slot.read
+    const owns = () => this.#slots.get(slot.state.directory) === slot && slot.read === read && slot.state.version === version
+    slot.state = { ...slot.state, saving: true }; this.#emit(slot)
+    const work = (async () => {
+      const answer = await this.#client.importDocumentImage(slot.state.directory, file, { id: request!.id, baseDocumentVersion: request!.version }, signal)
+      if (answer.changeId !== request!.id || answer.content.id !== before.id || answer.content.assets[answer.assetId]?.kind !== 'image') throw new Error('document-confirmation')
+      if (!await this.#adoptImportedAssets(slot, before, input, answer, owns)) throw new Error('document-version-changed')
+      return answer
+    })()
+    slot.assetFlight = work
+    try { return await work }
+    catch (error) {
+      // A lost reply may still have committed the file. Reconcile only a proven
+      // asset addition; an unrelated external edit remains a source conflict.
+      if (owns()) {
+        try {
+          slot.refreshed = false
+          const answer = await this.#client.readDocument(slot.state.directory)
+          if (!await this.#adoptImportedAssets(slot, before, input, answer, owns) && owns()) slot.state = { ...slot.state, error: 'document-version-changed' }
+        } catch { /* The native upload error and the pending source draft remain. */ }
+      }
+      if (error instanceof WorkspaceServerError && error.status >= 400 && error.status < 500 && this.#imageImports.get(file) === request) this.#imageImports.delete(file)
+      throw error
+    } finally {
+      if (slot.assetFlight === work) slot.assetFlight = undefined
+      slot.state = { ...slot.state, saving: false }
+      this.#persist(slot); this.#emit(slot)
+      if (slot.refreshed) { slot.refreshed = false; await this.refresh(slot.state.directory) }
+      if (!slot.state.error) void this.#save(slot)
+    }
+  }
+
   async retry(): Promise<void> {
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
-    if (!slot || slot.flight || slot.state.composing) return
+    if (!slot || slot.flight || slot.assetFlight || slot.state.composing) return
     const previousError = slot.state.error
     slot.state = { ...slot.state, restored: false, error: undefined }
     await this.refresh(slot.state.directory)
@@ -245,7 +307,7 @@ export class DocumentSession {
   }
   async discard(): Promise<void> {
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
-    if (!slot || slot.flight) return
+    if (!slot || slot.flight || slot.assetFlight) return
     try {
       const answer = await this.#client.readDocument(slot.state.directory)
       slot.input++; slot.baseHash = await digest(answer.content)
@@ -261,12 +323,12 @@ export class DocumentSession {
     if (!slot) return
     if (slot.state.composing || slot.state.restored || slot.state.error) throw new Error(slot.state.error ?? 'document-draft-unconfirmed')
     const started = Date.now()
-    while (slot.state.dirty || slot.flight) {
+    while (slot.state.dirty || slot.flight || slot.assetFlight) {
       signal?.throwIfAborted()
       if (slot.state.error || slot.state.composing || slot.state.restored) throw new Error(slot.state.error ?? 'document-draft-unconfirmed')
       if (Date.now() - started > 30000) throw new Error('document-save-timeout')
       await this.#save(slot, true)
-      if (slot.flight) await new Promise(resolve => setTimeout(resolve, 20))
+      if (slot.flight || slot.assetFlight) await new Promise(resolve => setTimeout(resolve, 20))
     }
   }
 

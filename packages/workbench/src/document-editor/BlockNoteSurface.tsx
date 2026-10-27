@@ -44,6 +44,7 @@ export interface BlockNoteSurfaceProps {
   locale: Locale
   readOnly?: boolean
   resolveAssetURL?(location: string): Promise<string>
+  uploadImage?(file: File, signal: AbortSignal): Promise<string>
   nodeViews?: DocumentNodeViews
   onChange(blocks: DocumentEditorBlock[], editor: NativeDocumentEditor): void
   onSelection?(selection: NativeDocumentSelection | undefined): void
@@ -83,11 +84,18 @@ function PlainContentComments({ editor }: { editor: NativeDocumentEditor }) {
 /** One native editor owns selection, transactions and history across the complete document. */
 export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
   const current = useRef(props)
+  const uploads = useRef(new Set<AbortController>())
   current.current = props
   const dictionary = props.locale === 'zh-CN' ? zh : en
   const t = DOCUMENT_EDITOR_MESSAGES[props.locale]
   const editor = useCreateBlockNote({ schema: documentEditorSchema, initialContent: props.initialContent,
     resolveFileUrl: location => current.current.resolveAssetURL?.(location) ?? Promise.resolve(location),
+    uploadFile: props.uploadImage ? async file => {
+      const controller = new AbortController()
+      uploads.current.add(controller)
+      try { return await current.current.uploadImage!(file, controller.signal) }
+      finally { uploads.current.delete(controller) }
+    } : undefined,
     dictionary, tables: { splitCells: true, cellBackgroundColor: true, cellTextColor: true, headers: true },
     extensions: props.comments ? [nativeComments(props.comments, t.author)] : [],
     domAttributes: { block: { 'data-document-editor-block': '' } },
@@ -95,7 +103,11 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
   useEffect(() => {
     const stopCommentHistory = current.current.comments ? excludeCommentMarkHistory(editor) : undefined
     current.current.onReady?.(editor)
-    return () => { stopCommentHistory?.(); current.current.onReady?.(undefined) }
+    return () => {
+      for (const controller of uploads.current) controller.abort()
+      uploads.current.clear()
+      stopCommentHistory?.(); current.current.onReady?.(undefined)
+    }
   }, [editor])
   return <DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}>
     <div className="pm-document-editor pm-ui-block-editor pm-ui" data-document-editor={props.identity}
