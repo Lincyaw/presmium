@@ -47,3 +47,5 @@ Chromium IME 使用真实 `Input.imeSetComposition`/`Input.insertText` 协议，
 - `resolve-matrix-1793137145440`：实际 resolve 保稿首项通过；后续假设零计数按钮名为 `Comments (0)`，未定位到实际控件。修正匹配后才完成最终 resolve/四组合。
 
 上述失败原 raw 与图片不改写。未新增 tracked tests，未跑 suite；最终类型、分层、技能、发布检查与精确 SHA/进程清理清单在 ignored final manifest 中另列。
+
+后续安全收口见[批注 canonical 确认门禁](comment-draft-canonical-ack-2026-10-28.md)：真实 A 晚 ACK/B 事务 413 反例表明，合并了后来 dirty 内容的 actor 版本不能确认整个批注快照。该独立修复要求 clean source，并保留本记录各轮原始谱系。
