@@ -1,3 +1,4 @@
+import type { PreviewEventSubscription } from '@lincyaw/kernel/contracts'
 import type { Member } from '@lincyaw/kernel/contracts'
 import { currentLocale } from './locale.ts'
 import type { ServerClient } from './contracts.ts'
@@ -6,12 +7,14 @@ export const SERVER_PATH = '/__presmium/presmium.server'
 const UNAVAILABLE: ServerClient = { available: false, member: createStore<Member | undefined>(undefined), fetch: () => Promise.reject(new Error('no Presmium server serves this page')), events() { throw new Error('no Presmium server serves this page') } }
 const current = createStore<ServerClient>(UNAVAILABLE)
 const documents = new WeakMap<ServerClient, string>()
+const subscriptions = new WeakMap<ServerClient, PreviewEventSubscription>()
+export function clientEventSubscription(client: ServerClient): PreviewEventSubscription | undefined { return subscriptions.get(client) }
 export function clientDocument(client: ServerClient): string { return documents.get(client) ?? '' }
 export function serverClient(): ServerClient { return current.getSnapshot() }
 export function useServer(): ServerClient { return useStore(current) }
 export function provideServer(client: ServerClient | undefined): void { current.set(client ?? UNAVAILABLE) }
 export function documentHeader(document: string): string { return encodeURIComponent(document) }
-export function createServerClient(options: { document?: string } = {}): ServerClient {
+export function createServerClient(options: { document?: string, subscribeEvents?: PreviewEventSubscription } = {}): ServerClient {
   const document = options.document ?? ''
   const member = createStore<Member | undefined>(undefined)
   const url = (plugin: string, path: string) => `/__presmium/${plugin}/${path.replace(/^\//, '')}`
@@ -22,5 +25,6 @@ export function createServerClient(options: { document?: string } = {}): ServerC
   }
   void fetch(`${SERVER_PATH}/hello`, { headers: { 'Presmium-Document': documentHeader(document) } }).then(response => response.ok ? response.json() : undefined).then((hello: { member?: Member } | undefined) => member.set(hello?.member)).catch(() => undefined)
   documents.set(client, document)
+  if (options.subscribeEvents) subscriptions.set(client, options.subscribeEvents)
   return client
 }

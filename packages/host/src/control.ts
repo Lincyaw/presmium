@@ -3,7 +3,7 @@ import type { ApprovalRequest, ServiceToken, Unsubscribe } from '@lincyaw/kernel
 import { createStore } from './store.ts'
 import type { Store } from './store.ts'
 import type { Navigation, NavigationPosition, ServerClient, StatusRegistry, ViewRole } from './contracts.ts'
-import { clientDocument, documentHeader, SERVER_PATH } from './server.ts'
+import { clientDocument, clientEventSubscription, documentHeader, SERVER_PATH } from './server.ts'
 
 export interface PendingApproval {
   id: string
@@ -48,14 +48,20 @@ export function connectControl(client: ServerClient, host: {
     if (!response.ok) throw new Error(`the server did not take the answer (${response.status})`)
     pending.set(pending.getSnapshot().filter(p => p.id !== approval))
   }
-  const source = new EventSource(`${SERVER_PATH}/control?window=${id}&document=${documentHeader(document)}`)
-  const on = <T>(event: string, handle: (data: T) => void) => source.addEventListener(event, (message) => {
-    try {
-      handle(JSON.parse((message as MessageEvent<string>).data) as T)
-    } catch (error) {
-      console.error(`[presmium] control channel: bad ${event} message`, error)
+  const subscribe = clientEventSubscription(client)
+  const source = subscribe ? undefined : new EventSource(`${SERVER_PATH}/control?window=${id}&document=${documentHeader(document)}`)
+  const handlers = new Map<string, (data: string) => void>()
+  const on = <T>(event: string, handle: (data: T) => void) => {
+    const receive = (data: string) => {
+      try {
+        handle(JSON.parse(data) as T)
+      } catch (error) {
+        console.error(`[presmium] control channel: bad ${event} message`, error)
+      }
     }
-  })
+    handlers.set(event, receive)
+    source?.addEventListener(event, message => receive((message as MessageEvent<string>).data))
+  }
   on<PendingApproval>('approval', (approval) => {
     if (!pending.getSnapshot().some(p => p.id === approval.id)) pending.set([...pending.getSnapshot(), approval])
   })
@@ -86,9 +92,11 @@ export function connectControl(client: ServerClient, host: {
     reported = body
     void post({ type: 'report', ...JSON.parse(body) as Record<string, unknown> }).catch(() => undefined)
   }
-  source.addEventListener('open', () => {
-    reported = ''
-    report()
+  const opened = () => { reported = ''; report() }
+  source?.addEventListener('open', opened)
+  const stopEvents = subscribe?.({ topic: 'viewer-control', document, window: id }, message => {
+    if (message.type === 'open') opened()
+    else if (message.type === 'event') handlers.get(message.event)?.(message.data)
   })
   let soon: ReturnType<typeof setTimeout> | undefined
   const stopWatch = navigation.position.subscribe(() => {
@@ -102,7 +110,7 @@ export function connectControl(client: ServerClient, host: {
     stopWatch()
     clearTimeout(soon)
     clearInterval(timer)
-    source.close()
+    stopEvents?.(); source?.close()
     pending.set([])
   }
 }

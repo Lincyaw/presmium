@@ -234,7 +234,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
         if (selected(entry)) onStatus({ ready: false, mismatch: true })
         destroy(entry)
       },
-    }, { dark: workbench.state.isDark })
+    }, { dark: workbench.state.isDark, subscribeEvents: workbench.client.subscribePreviewEvents })
     const entry: Entry = { key, target, frame, connection, ready: false, active: true, generation: 0, used: ++uses, problems: new Map() }
     entries.set(key, entry)
     hide(entry)
