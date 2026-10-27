@@ -1,5 +1,7 @@
 import { WebSocket } from 'partysocket'
 import type { WorkspaceSubscription } from '@lincyaw/workbench'
+import type { AuthoringClientAcknowledgement, AuthoringClientEvent, AuthoringClientReport } from '@lincyaw/kernel'
+import { AUTHORING_CLIENT_REQUEST_TIMEOUT_MS } from '@lincyaw/kernel'
 import { WORKSPACE_EVENTS_PATH, workspaceEventMessage } from '../workspace-events.ts'
 import type { WorkspaceEventTopic, WorkspaceEventCommand } from '../workspace-events.ts'
 
@@ -9,7 +11,7 @@ const TOPICS: Readonly<Record<string, WorkspaceEventTopic>> = {
 
 /** Each live reader owns one logical subscription; the library owns physical reconnect timing. */
 export function workspaceSubscriptions(ctx: Pick<DshClientContext, 'effect'>): WorkspaceSubscription {
-  type Subscription = { id?: string, request: Extract<WorkspaceEventCommand, { type: 'subscribe' }>, received(data: string, event?: string): void, failed?(): void, ready?(): void }
+  type Subscription = { id?: string, request: Extract<WorkspaceEventCommand, { type: 'subscribe' }>, received(data: string, event?: string): void, failed?(): void, ready?(): void, pending?: Map<number, { resolve(): void, reject(error: Error): void, timer: ReturnType<typeof setTimeout> }> }
   const readers = new Set<Subscription>()
   const ids = new Map<string, Subscription>()
   const url = new URL(WORKSPACE_EVENTS_PATH.slice(1), document.baseURI)
@@ -30,8 +32,9 @@ export function workspaceSubscriptions(ctx: Pick<DshClientContext, 'effect'>): W
   }
   const disconnected = () => {
     ids.clear()
-    for (const reader of readers) { reader.id = undefined; reader.failed?.() }
+    for (const reader of readers) { reader.id = undefined; rejectPublications(reader); reader.failed?.() }
   }
+  const rejectPublications = (reader: Subscription) => { for (const pending of reader.pending?.values() ?? []) { clearTimeout(pending.timer); pending.reject(new Error('client-transport-disconnected')) }; reader.pending?.clear() }
   const message = (event: MessageEvent) => {
     let raw: unknown
     try { raw = JSON.parse(event.data) } catch { return }
@@ -40,8 +43,13 @@ export function workspaceSubscriptions(ctx: Pick<DshClientContext, 'effect'>): W
     const value = parsed.data
     const reader = ids.get(value.id)
     if (!reader || !readers.has(reader)) return
-    if (value.type === 'ready') reader.ready?.()
-    else if (value.type === 'error') reader.failed?.()
+    if (value.type === 'published') {
+      const pending = reader.pending?.get(value.sequence)
+      reader.pending?.delete(value.sequence)
+      if (pending) clearTimeout(pending.timer)
+      if (value.ok) pending?.resolve(); else pending?.reject(new Error('client-publication-refused'))
+    } else if (value.type === 'ready') reader.ready?.()
+    else if (value.type === 'error') { rejectPublications(reader); reader.failed?.() }
     else {
       const topic = reader.request.topic
       const named = topic === 'viewer-site' ? ['ir', 'reload'] : topic === 'viewer-control' ? ['ready', 'approval', 'settled', 'go', 'session'] : undefined
@@ -54,22 +62,14 @@ export function workspaceSubscriptions(ctx: Pick<DshClientContext, 'effect'>): W
   socket.addEventListener('message', message)
   ctx.effect(() => () => {
     closed = true
+    for (const reader of readers) rejectPublications(reader)
     readers.clear(); ids.clear()
     socket.removeEventListener('open', opened)
     socket.removeEventListener('close', disconnected)
     socket.removeEventListener('message', message)
     socket.close()
   }, 'presmium: workspace subscriptions')
-  return (address, name, received, failed, ready) => {
-    const topic = TOPICS[name]
-    const query = new URL(address).searchParams
-    const document = query.get('document')
-    if (!topic || document === null) throw new Error('Invalid workspace event subscription.')
-    const request: Subscription['request'] = topic === 'viewer-site'
-      ? { type: 'subscribe', id: '', topic, document, app: query.get('app') ?? '', lang: query.get('lang') ?? '', form: query.get('form') === 'slides' ? 'slides' : 'web' }
-      : topic === 'viewer-control' ? { type: 'subscribe', id: '', topic, document, window: query.get('window') ?? '' }
-        : { type: 'subscribe', id: '', topic, document }
-    const reader: Subscription = { request, received, failed, ready }
+  const add = (reader: Subscription) => {
     if (!closed) {
       readers.add(reader)
       if (socket.readyState === WebSocket.OPEN) subscribe(reader)
@@ -77,6 +77,7 @@ export function workspaceSubscriptions(ctx: Pick<DshClientContext, 'effect'>): W
     }
     return () => {
       if (!readers.delete(reader)) return
+      rejectPublications(reader)
       if (reader.id) {
         ids.delete(reader.id)
         if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'unsubscribe', id: reader.id }))
@@ -84,4 +85,30 @@ export function workspaceSubscriptions(ctx: Pick<DshClientContext, 'effect'>): W
       if (readers.size === 0) socket.close()
     }
   }
+  const subscription: WorkspaceSubscription = (address, name, received, failed, ready) => {
+    const topic = TOPICS[name]
+    const query = new URL(address).searchParams
+    const document = query.get('document')
+    if (!topic || topic === 'authoring-client' || document === null) throw new Error('Invalid workspace event subscription.')
+    const request: Subscription['request'] = topic === 'viewer-site'
+      ? { type: 'subscribe', id: '', topic, document, app: query.get('app') ?? '', lang: query.get('lang') ?? '', form: query.get('form') === 'slides' ? 'slides' : 'web' }
+      : topic === 'viewer-control' ? { type: 'subscribe', id: '', topic, document, window: query.get('window') ?? '' }
+        : { type: 'subscribe', id: '', topic, document }
+    const reader: Subscription = { request, received, failed, ready }
+    return add(reader)
+  }
+  subscription.openAuthoringClient = (document, open, received, failed) => {
+    const reader: Subscription = { request: { type: 'subscribe', id: '', topic: 'authoring-client', document, ...open }, pending: new Map(), failed,
+      received(raw) { let event: AuthoringClientEvent; try { event = JSON.parse(raw) } catch { return }; if (event.type === 'connected') rejectPublications(reader); received(event) } }
+    const close = add(reader)
+    const publish = (kind: 'state' | 'ack', connectionId: string, report: AuthoringClientReport | AuthoringClientAcknowledgement) => new Promise<void>((resolve, reject) => {
+      if (closed || !readers.has(reader) || !reader.id || socket.readyState !== WebSocket.OPEN || reader.pending!.has(report.sequence)) { reject(new Error('client-transport-disconnected')); return }
+      // A lost publication receipt must release the queue without authorizing a repeated action.
+      const timer = setTimeout(() => { reader.pending!.delete(report.sequence); reject(new Error('client-publication-timeout')) }, AUTHORING_CLIENT_REQUEST_TIMEOUT_MS / 2)
+      reader.pending!.set(report.sequence, { resolve, reject, timer })
+      socket.send(JSON.stringify({ type: 'authoring-client-publish', id: reader.id, connectionId, sequence: report.sequence, kind, value: report }))
+    })
+    return { close, publish: (connectionId, report) => publish('state', connectionId, report), acknowledge: (connectionId, report) => publish('ack', connectionId, report) }
+  }
+  return subscription
 }

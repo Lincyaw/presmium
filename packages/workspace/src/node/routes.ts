@@ -58,6 +58,7 @@ export interface WorkspaceRoutesOptions {
   transcriptionAdoptionRoutes?: Record<string, Route>
   audioAuthoringRoutes?: Record<string, Route>
   historyRoutes?: Record<string, Route>
+  authoringClientRoutes?: Record<string, Route>
 }
 
 function toRendererIds(body: unknown): string[] | undefined {
@@ -136,6 +137,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       }),
     },
     ...(options.historyRoutes ?? ownedHistory!.routes),
+    ...options.authoringClientRoutes,
     'files': {
       role: 'editor',
       handle: (request, ctx) => catchRequestErrors(async () => {
