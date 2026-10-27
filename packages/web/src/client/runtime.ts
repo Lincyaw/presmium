@@ -83,7 +83,7 @@ export interface RuntimeLifecycleInput {
   /** Whether the page shows its content; a paused page unmounts it. */
   active: Store<boolean>
   /** The server client of the document, when the page has a server. */
-  server?: { document?: string }
+  server?: Parameters<typeof createServerClient>[0]
   /** Fetches the current IR; `force` fails when it cannot. */
   refresh(force?: boolean): Promise<void>
   /** Called once the viewer plugins are loaded (their views may be asked for). */

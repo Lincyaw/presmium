@@ -64,3 +64,6 @@ export { documentVoice, resolvedVoice, speechVoice, stepVoiceReason, voiceOverri
 export { isCjk } from './speech-words.ts'
 export { componentCode } from './component-code.ts'
 export { jupyterKernelLanguage } from './jupyter-kernel.ts'
+
+export { createPreviewEvents } from './preview-events.ts'
+export type { PreviewEvents } from './preview-events.ts'

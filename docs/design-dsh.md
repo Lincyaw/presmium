@@ -77,7 +77,7 @@
 ### 2.3 请求的路径
 
 1. **工作台的数据**：浏览器 → dsh 宿主的 `/api/presmium/*`（经 dsh 的 cookie 与 `Host`、`Origin` 栅栏）→ bundle → 工作区服务（回环，带服务令牌，5.3 节）。普通读取与修改继续使用 `connection.fetch` 精确路由。文稿、诊断、审阅、IR 和任务事件由每页一个 `/api/presmium/events` WebSocket 承载，经公开 `webServer.registerUpgrade` 与 `connection.admit` 核对 cookie、Host、Origin 和 owner 身份，再转发原工作区 SSE；取消只释放对应逻辑订阅，不接管共享 Peer。`workspaceClient()` 的独立使用者仍默认使用 EventSource。
-2. **预览**：浏览器中的 iframe → 工作区服务的源：产物页面与它的 `/__presmium/` 路由。
+2. **预览**：浏览器中的 iframe → 工作区服务的源：产物页面与它的 `/__presmium/` 路由。在具备注入订阅能力的 Studio 中，完整查看器的 site 更新与课堂 control 也复用工作台的事件 WS，经原预览桥转发；普通读取、控制报告与素材请求仍直接访问工作区服务。独立查看器保留原 SSE。
 3. **agent 的工具**：dsh 宿主 → bundle → 工作区服务的 `/mcp`（回环，每个会话一个会话令牌，5.3 节）。
 4. **外部 agent**：Claude Code、Codex → `presmium-mcp`（stdio），或工作区服务的 `/mcp`（令牌在 0600 的状态文件中）。
 
@@ -99,7 +99,7 @@
 | `partysocket` 1.3.0 | 通用 `WebSocket`、`startClosed`、`reconnect/close`；离线消息队列关闭 | MIT |
 | `zod` 4.4.3 | 共享严格命令与事件 schema，拒绝额外字段 | MIT |
 
-连接只接受五种固定 topic，每个连接至多 16 个逻辑订阅、输入帧至多 8 KiB、待发送数据至多 2 MiB。重连仅恢复当前订阅，新代次不接受旧 ID；文稿版本、事务与保存队列仍由原 actor 持有。
+连接只接受文稿、诊断、审阅、IR、任务与完整查看器 site/control 七种固定 topic，每个连接至多 16 个逻辑订阅、输入帧至多 8 KiB、待发送数据至多 2 MiB。重连仅恢复当前订阅，新代次不接受旧 ID；文稿版本、事务与保存队列仍由原 actor 持有。
 
 ### 2.4 接缝
 
@@ -160,6 +160,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 - 代理启动后先发 `ready`。工作台收到 `ready` 之后才发别的消息。信封的版本不同时，工作台提示“预览的版本与工作台不符，请重新启动”。
 - 工作台把连接绑定到建立它的文档与形态；位置、点选与选区只提交给当前握手确认的文稿。已发出的正文写入仍须向原连接明确回复，不能转入新文稿状态。预览内的跨文稿导航由 `ready.document` 驱动工作台切换文档，沿用未保存修改的确认流程；取消时恢复原文档的预览。
 - 每次 `ready` 都开启该 iframe 的新一代连接；待确认请求还须匹配原连接实例与代次。插页、保存边界与正文历史命令，以及正文、素材源码的请求回复，均只发送一次：首次握手前可以排队，发送后不因重载再次执行。
+- 完整查看器共享订阅为可选能力：父页面有 `subscribePreviewEvents` 时才在 iframe 地址声明 `presmium-events=shared`。子页面 `ready.eventConnection` 固定本代次，父页面确认后才开始订阅；仅允许当前 iframe 绑定文稿的 site/control 各一条，带原 app、语言、形态或 window。消息、取消与回调均检查本代次和 reader ID，重载／退出释放旧订阅，park 后不派发迟到消息。旧五种 WS topic 的数据帧形状不变；命名事件字段只用于两个新通道。契约类型见 `PreviewEventTarget`、`PreviewEventMessage`。单块预览不启用此能力。
 - 未知类型的消息一律忽略。消息只是数据：代理不执行收到的代码，也不打开收到的链接。
 
 Doc 中的单块只读预览使用独立消息，不建立 v1 编辑握手或 SSE。`presmium:block-preview` 报告文稿、块、运行修订、状态与自然高度；同一状态和高度不重复报告。就绪后的实际步骤导航另外发送 `presmium:block-preview-position`，字段为 `document`、`blockId`、`revision`、`sectionId`、`stepId`、`navigation`，仅报告包含该块的章节。初次加载不报告默认位置。父工作台核对 iframe 窗口、来源、修订和当前源码版本，再按权威文稿的稳定步骤 ID 更新当前位置；不滚动正文、不写 JSON，也不创建另一套播放时钟。正式放映从这个位置开始。

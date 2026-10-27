@@ -5,7 +5,11 @@ export const WORKSPACE_EVENTS_PATH = '/api/presmium/events'
 export const WORKSPACE_EVENT_TOPICS = ['document', 'diagnostics', 'review', 'ir', 'jobs'] as const
 const subscriptionId = z.string().min(1).max(80)
 
-export const workspaceEventCommand = z.discriminatedUnion('type', [
+const viewerSite = z.strictObject({ type: z.literal('subscribe'), id: subscriptionId, topic: z.literal('viewer-site'), document: z.string().max(1024), app: z.string().max(200), lang: z.string().max(80), form: z.enum(['web', 'slides']) })
+const viewerControl = z.strictObject({ type: z.literal('subscribe'), id: subscriptionId, topic: z.literal('viewer-control'), document: z.string().max(1024), window: z.string().regex(/^[a-zA-Z0-9-]{1,80}$/) })
+
+export const workspaceEventCommand = z.union([
+  viewerSite, viewerControl,
   z.strictObject({ type: z.literal('subscribe'), id: subscriptionId, topic: z.enum(WORKSPACE_EVENT_TOPICS), document: z.string().max(1024) }),
   z.strictObject({ type: z.literal('unsubscribe'), id: subscriptionId }),
 ])
@@ -14,9 +18,9 @@ export const workspaceEventCommand = z.discriminatedUnion('type', [
 export const workspaceEventMessage = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('ready'), id: subscriptionId }),
   z.strictObject({ type: z.literal('error'), id: subscriptionId }),
-  z.strictObject({ type: z.literal('event'), id: subscriptionId, data: z.string() }),
+  z.strictObject({ type: z.literal('event'), id: subscriptionId, event: z.string().max(40).optional(), data: z.string() }),
 ])
 
-export type WorkspaceEventTopic = typeof WORKSPACE_EVENT_TOPICS[number]
+export type WorkspaceEventTopic = typeof WORKSPACE_EVENT_TOPICS[number] | 'viewer-site' | 'viewer-control'
 export type WorkspaceEventCommand = z.infer<typeof workspaceEventCommand>
 export type WorkspaceEventMessage = z.infer<typeof workspaceEventMessage>
