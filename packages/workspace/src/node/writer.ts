@@ -228,7 +228,10 @@ function freshDocument(content: Uint8Array, title?: string): Buffer {
   if (!validated.document) throw new FilesError(`Invalid ${DOCUMENT_ENTRY}: ${validated.issues[0]?.message ?? 'document validation failed'}`)
   const document = validated.document
   document.id = randomUUID()
-  if (title !== undefined) document.metadata.title = title
+  if (title !== undefined) {
+    document.metadata.title = title
+    for (const section of Object.values(document.sections)) if (section.title === '{{title}}') section.title = title
+  }
   return Buffer.from(`${JSON.stringify(document, null, 2)}\n`)
 }
 

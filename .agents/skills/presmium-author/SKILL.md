@@ -32,6 +32,8 @@ A **workspace** has `presmium.workspace.yaml`; its `documents` patterns name JSO
 
 ## Commands
 
+The default document starts with one empty page named from the supplied title.
+
 ```sh
 presmium new lesson --type lecture --title 'Lesson'
 presmium dev lesson

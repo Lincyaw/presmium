@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { DOCUMENT_ENTRY } from '@lincyaw/kernel'
+import type { TeachingDocument } from '@lincyaw/kernel'
 import { spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
@@ -65,9 +66,10 @@ export function createProject(options: ProjectOptions): void {
   const document = (to: string, documentTitle: string) => {
     copyTemplate('document/default', to, (path, text) => {
       if (path !== DOCUMENT_ENTRY) return text
-      const value = JSON.parse(text)
+      const value = JSON.parse(text) as TeachingDocument
       value.id = randomUUID()
       value.metadata.title = documentTitle
+      for (const section of Object.values(value.sections)) if (section.title === '{{title}}') section.title = documentTitle
       return `${JSON.stringify(value, null, 2)}\n`
     })
   }
