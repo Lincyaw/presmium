@@ -58,6 +58,7 @@ export class CommentDrafts {
   #read = 0
   #document?: TeachingDocument
   #version?: string
+  #acknowledged = false
   #readFailure = false
   #admissionFailure = false
   constructor(identity: string, memberId: string) {
@@ -118,13 +119,13 @@ export class CommentDrafts {
     }
   }
   #isCommitted(record: CommentDraftRecord): boolean {
-    if (!record.pending || !this.#document || !this.#version || record.version === this.#version) return false
+    if (!this.#acknowledged || !record.pending || !this.#document || !this.#version || record.version === this.#version) return false
     const thread = this.#document.comments?.[record.target.threadId]
     const comment = thread?.comments.find(value => value.id === record.pending!.commentId)
     return thread?.createdAt === record.target.threadCreatedAt && Boolean(comment && !comment.deletedAt && committedValue(comment) === record.pending.value)
   }
-  synchronize(document: TeachingDocument, version: string | undefined): void {
-    this.#document = document; this.#version = version
+  synchronize(document: TeachingDocument, version: string | undefined, acknowledged = false): void {
+    this.#document = document; this.#version = version; this.#acknowledged = acknowledged
     for (const value of this.#writing.values()) if (this.#isCommitted(value.record)) void this.clearOwn(value.record)
     if (this.#started) void this.refresh()
   }

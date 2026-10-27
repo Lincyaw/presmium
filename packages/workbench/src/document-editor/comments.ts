@@ -230,11 +230,12 @@ export class DocumentThreadStore extends ThreadStore {
   }
 
   /** Source adoption is not another native edit; preserve selected thread and unchanged comment bodies. */
-  synchronize(document: TeachingDocument, version: string | undefined, editor: NativeDocumentEditor, transaction?: Transaction): void {
+  synchronize(document: TeachingDocument, version: string | undefined, editor: NativeDocumentEditor, transaction?: Transaction, acknowledged = false): void {
+    if (this.#synchronizing) return
+    this.drafts?.synchronize(document, version, acknowledged)
     if (version === undefined || version === this.#version || this.#synchronizing) return
     this.#version = version
     this.#document = document
-    this.drafts?.synchronize(document, version)
     const threads = document.comments
     if (same(threads ?? {}, this.#canonical)) return
     this.#synchronizing = true
