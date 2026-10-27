@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { renameSync, mkdirSync, writeFileSync } from 'node:fs'
+import { chmodSync, renameSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { SHELL_MODULES } from '../src/client/contract.ts'
@@ -20,6 +20,9 @@ const noWoffFallback = {
 function writeWhole(file, text) {
   const temporary = `${file}.${process.pid}.${Date.now()}.tmp`
   writeFileSync(temporary, text)
+  // Build outputs are public client assets shared by local source-checkout users.
+  // A private launcher umask must not make the bundle or its input manifest unreadable.
+  chmodSync(temporary, 0o644)
   renameSync(temporary, file)
 }
 
