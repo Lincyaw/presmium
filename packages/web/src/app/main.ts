@@ -131,7 +131,7 @@ async function bootDocument(): Promise<void> {
     }
   }
   let viewersReady: Promise<unknown> = Promise.resolve()
-  const lifecycle = createRuntimeLifecycle({ modules: { plugins, viewers, restartable }, doc, viewer: viewer!, shared, original, active, ...!config.block && config.events ? { server: { document: config.document } } : {}, refresh, onViewers: (ready) => {
+  const lifecycle = createRuntimeLifecycle({ modules: { plugins, viewers, restartable }, doc, viewer: viewer!, shared, original, active, ...!config.block && config.events ? { server: { document: config.document, subscribeEvents: preview?.events } } : {}, refresh, onViewers: (ready) => {
     viewersReady = ready
   } })
   let stopOperations: (() => void) | undefined
@@ -143,20 +143,31 @@ async function bootDocument(): Promise<void> {
 
   // The dev server's changes: the sections that changed when the page has the revision they change, else the whole IR.
   if (!config.block && config.events) {
-    const events = new EventSource(config.events)
-    events.addEventListener(UPDATE_EVENT, (message: MessageEvent<string>) => {
+    const updated = (data: string) => {
       if (config.search) forgetIndex(config.search)
       if (!lifecycle.isRequested()) return
-      const change = JSON.parse(message.data) as DevUpdateEvent<LiveUpdate>
+      const change = JSON.parse(data) as DevUpdateEvent<LiveUpdate>
       if (change.update && change.base === revision) {
         revision = change.revision
         etag = `"${change.revision}"`
         viewer!.update(change.update)
         original.set(viewer!.doc.getSnapshot())
       } else void refresh()
-    })
-    events.addEventListener('reload', () => location.reload())
-    events.addEventListener('open', () => void (lifecycle.isRequested() && refresh()))
+    }
+    const opened = () => void (lifecycle.isRequested() && refresh())
+    if (preview?.events) {
+      const address = new URL(config.events, location.href)
+      preview.events({ topic: 'viewer-site', document: config.document ?? '', app: address.searchParams.get('app') ?? '', lang: address.searchParams.get('lang') ?? '', form: address.searchParams.get('form') === 'slides' ? 'slides' : 'web' }, message => {
+        if (message.type === 'open') opened()
+        else if (message.type === 'event' && message.event === UPDATE_EVENT) updated(message.data)
+        else if (message.type === 'event' && message.event === 'reload') location.reload()
+      })
+    } else {
+      const events = new EventSource(config.events)
+      events.addEventListener(UPDATE_EVENT, (message: MessageEvent<string>) => updated(message.data))
+      events.addEventListener('reload', () => location.reload())
+      events.addEventListener('open', opened)
+    }
   }
   if (config.block) {
     const reporter = blockPreviewReporter(config, doc, viewer!)

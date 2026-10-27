@@ -1,5 +1,5 @@
-import { isPreviewEnvelope, PREVIEW_APPEARANCE_PARAM, PREVIEW_PARAM, PREVIEW_PROTOCOL, previewEnvelope, toPreviewReport } from '@lincyaw/kernel'
-import type { PreviewCommand, PreviewCommandType, PreviewReport } from '@lincyaw/kernel'
+import { isPreviewEnvelope, PREVIEW_EVENTS_PARAM, PREVIEW_APPEARANCE_PARAM, PREVIEW_PARAM, PREVIEW_PROTOCOL, previewEnvelope, toPreviewReport } from '@lincyaw/kernel'
+import type { PreviewCommand, PreviewCommandType, PreviewReport, PreviewEventSubscription } from '@lincyaw/kernel'
 
 export interface PreviewHandlers {
   report(report: PreviewReport): void
@@ -22,15 +22,20 @@ function nonce(): string {
 }
 
 /** `dark`: the workbench's appearance as the page loads, which its first paint takes (the `appearance` command follows it). */
-export function connectPreview(frame: () => HTMLIFrameElement | null, address: string, handlers: PreviewHandlers, options: { dark?: boolean } = {}): PreviewConnection {
+export function connectPreview(frame: () => HTMLIFrameElement | null, address: string, handlers: PreviewHandlers, options: { dark?: boolean, subscribeEvents?: PreviewEventSubscription } = {}): PreviewConnection {
   const url = new URL(address)
   const own = nonce()
   url.searchParams.set(PREVIEW_PARAM, own)
   if (options.dark !== undefined) url.searchParams.set(PREVIEW_APPEARANCE_PARAM, options.dark ? 'dark' : 'light')
+  if (options.subscribeEvents) url.searchParams.set(PREVIEW_EVENTS_PARAM, 'shared')
+  const boundDocument = url.searchParams.get('document') ?? ''
+  const readers = new Map<string, { topic: string, stop(): void }>()
+  let eventConnection: string | undefined
+  const stopEvents = () => { for (const reader of readers.values()) reader.stop(); readers.clear() }
   const origin = url.origin
   const latest = new Map<string, PreviewCommand>()
   const replies = new Set<PreviewCommand['type']>(['edit-result', 'blocks-result', 'source-result', 'source-saved', 'source-created', 'page-created', 'playback-granted'])
-  const transient = new Set<PreviewCommand['type']>(['page-insert', 'flush', 'pause-playback', 'playback-granted', 'production-playback', 'document-history', 'document-history-reset', 'edit', 'edit-result', 'blocks-result', 'source-result', 'source-saved', 'source-created', 'page-created'])
+  const transient = new Set<PreviewCommand['type']>(['page-insert', 'flush', 'pause-playback', 'playback-granted', 'production-playback', 'document-history', 'document-history-reset', 'events-message', 'events-ready', 'edit', 'edit-result', 'blocks-result', 'source-result', 'source-saved', 'source-created', 'page-created'])
   const oneShot = (command: PreviewCommand) => transient.has(command.type)
   let ready = false
   let generation = 0
@@ -46,6 +51,9 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
     const report = toPreviewReport(event.data, own)
     if (!report) return
     if (report.type === 'ready') {
+      stopEvents()
+      eventConnection = report.document === boundDocument ? report.eventConnection : undefined
+      if (options.subscribeEvents && eventConnection) post({ type: 'events-ready', connection: eventConnection })
       generation++
       ready = true
       capabilities = Object.freeze([...report.capabilities])
@@ -53,6 +61,19 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
         post(command)
         if (oneShot(command)) latest.delete(command.type)
       }
+    }
+    if (report.type === 'events-subscribe') {
+      if (!options.subscribeEvents || report.connection !== eventConnection || report.target.document !== boundDocument || readers.has(report.id) || readers.size >= 2 || [...readers.values()].some(reader => reader.topic === report.target.topic)) return
+      const entry = { topic: report.target.topic, stop: () => {} }
+      readers.set(report.id, entry)
+      entry.stop = options.subscribeEvents(report.target, message => {
+        if (eventConnection === report.connection && readers.get(report.id) === entry) post({ type: 'events-message', connection: report.connection, id: report.id, message })
+      })
+      return
+    }
+    if (report.type === 'events-unsubscribe') {
+      if (report.connection === eventConnection) { readers.get(report.id)?.stop(); readers.delete(report.id) }
+      return
     }
     handlers.report(report)
   }
@@ -74,6 +95,7 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
       if (ready) post(command)
     },
     dispose() {
+      stopEvents(); eventConnection = undefined
       ready = false
       generation++
       latest.clear()

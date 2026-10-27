@@ -1,3 +1,4 @@
+import type { PreviewEventSubscription } from '@lincyaw/kernel'
 import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobSource, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, SourceTransactionAnswer, SourceTransactionChange, StartJobRequest, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
 import type { OperationBatch } from './telemetry.ts'
 import type { VoiceCatalogAnswer, VoiceoverCancellation, VoiceoverJob, VoiceoverJobsAnswer, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest } from '@lincyaw/kernel'
@@ -37,6 +38,7 @@ export interface WorkspaceRequestEvent {
 
 /** The workbench's client of the workspace server's routes; each `subscribe*` returns its unsubscribe. */
 export interface WorkspaceClient {
+  subscribePreviewEvents?: PreviewEventSubscription
   subscribeRequests?(listener: (event: WorkspaceRequestEvent) => void): () => void
   readDocuments(document?: string): Promise<DocumentsAnswer>
   operateDocument(operation: DocumentOperation): Promise<OperationAnswer>
@@ -116,7 +118,7 @@ export interface WorkspaceClient {
 }
 
 /** A host may carry these event subscriptions over its authenticated shared connection. */
-export type WorkspaceSubscription = (address: string, event: string, received: (data: string) => void, failed?: () => void, ready?: () => void) => () => void
+export type WorkspaceSubscription = (address: string, event: string, received: (data: string, event?: string) => void, failed?: () => void, ready?: () => void) => () => void
 
 export function workspaceClient(base = 'api/presmium/', subscription?: WorkspaceSubscription): WorkspaceClient {
   const requestListeners = new Set<(event: WorkspaceRequestEvent) => void>()
@@ -264,6 +266,11 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     return () => source.close()
   }
   return {
+    ...subscription ? { subscribePreviewEvents: ((target, received) => {
+      const address = new URL(base, globalThis.document.baseURI)
+      for (const [key, value] of Object.entries(target)) if (key !== 'topic') address.searchParams.set(key, value)
+      return subscription(address.href, target.topic, (data, event) => received({ type: 'event', event: event ?? '', data }), () => received({ type: 'error' }), () => received({ type: 'open' }))
+    }) satisfies PreviewEventSubscription } : {},
     subscribeRequests: listener => { requestListeners.add(listener); return () => { requestListeners.delete(listener) } },
     readDocuments: document => call(url('documents', document)),
     operateDocument: operation => post(url('documents'), operation),

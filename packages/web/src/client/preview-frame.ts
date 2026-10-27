@@ -1,7 +1,7 @@
 import { componentErrors, componentErrorRevision, presmiumReport, presmiumService, PLAYBACK_CONTROL, PRODUCTION_PLAYBACK, createStore, observe, runtimeRevision } from '@lincyaw/host'
 import type { NavigationPosition, PlaybackControl } from '@lincyaw/host'
-import { connectPreviewFrame, irBlocks, isPreviewActive, isPreviewEmbedded, PREVIEW_REVISION, stepKeys, stepTrail } from '@lincyaw/kernel'
-import type { FollowAnchor, PreviewFrame } from '@lincyaw/kernel'
+import { connectPreviewFrame, createPreviewEvents, irBlocks, isPreviewActive, isPreviewEmbedded, PREVIEW_REVISION, stepKeys, stepTrail } from '@lincyaw/kernel'
+import type { FollowAnchor, PreviewFrame, PreviewEventSubscription, PreviewEvents } from '@lincyaw/kernel'
 import type { Viewer } from '@lincyaw/viewer'
 import { findView, registryRevision } from '@lincyaw/viewer'
 import type { Store } from '@lincyaw/host'
@@ -26,14 +26,16 @@ export interface WebPreview {
   active: boolean
   /** The page is in a workbench: it shows the document as a page, without the site's navigation. */
   embedded: boolean
+  events?: PreviewEventSubscription
   connect(page: WebPreviewPage): void
 }
 
 export function webPreview(options: WebPreviewOptions): WebPreview {
-  return { active: isPreviewActive(), embedded: isPreviewEmbedded(), connect: page => connectWebPreviewFrame(page, options) }
+  const events = createPreviewEvents(options.origins, options.document)
+  return { active: isPreviewActive(), embedded: isPreviewEmbedded(), ...events ? { events: events.subscribe } : {}, connect: page => connectWebPreviewFrame(page, options, events) }
 }
 
-function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions): void {
+function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions, events?: PreviewEvents): void {
   const { viewer, dark } = page
   const navigation = createViewerNavigation(viewer)
   const pendingGo = createStore<Parameters<typeof navigation.go>[0] | undefined>(undefined)
@@ -59,6 +61,7 @@ function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions
   }
   const frame: PreviewFrame | undefined = connectPreviewFrame({
     renderer: options.renderer ?? 'web',
+    events,
     document: options.document,
     origins: options.origins,
     revision,
