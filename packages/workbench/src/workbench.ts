@@ -13,7 +13,8 @@ import type { DocumentEditorCommands } from './document-editor/DocumentEditor.ts
 import { nativeTextPoint, nativeTextPosition } from './document-editor/selection.ts'
 import type { NativeTextPoint } from './document-editor/selection.ts'
 import type { DocumentFieldBookmark, DocumentFieldRegistration, DocumentHistoryEditor } from './document-editor/focus.ts'
-import { duplicateDocumentPage, pageDeletion, removeDocumentPage } from './document-pages.ts'
+import { pageDeletion, removeDocumentPage } from './document-pages.ts'
+import { duplicateDocumentPage } from '@lincyaw/kernel'
 import { changeStepTiming } from './step-production.ts'
 import { changeDocumentVoice } from './document-voices.ts'
 import type { DocumentVoiceOptions, DocumentVoiceScope } from './document-voices.ts'
@@ -1399,7 +1400,7 @@ export class Workbench {
       if (scope !== this.#documentScope || identity !== this.#state.authoring?.identity) throw new Error('page-context-changed')
       const page = document.sections[section]
       if (!page) throw new Error('page-boundary')
-      const copy = duplicateDocumentPage(document, section, this.#messages.pageCopyTitle(page.title))
+      const copy = duplicateDocumentPage(document, section, this.#messages.pageCopyTitle(page.title), () => crypto.randomUUID())
       copied = copy.section
       Object.assign(document, copy.document)
       if (generation === this.#documentSelectionGeneration) this.#pendingDocumentFocus = { documentId: document.id, nodeId: `page:${copied}`, generation, afterSave: true }
