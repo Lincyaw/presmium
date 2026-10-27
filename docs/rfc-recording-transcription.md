@@ -4,7 +4,7 @@
 
 后续已单独完成一个英文文件的真实人声 ASR→审阅采用→Web 新配音→播放／暂停链，使用本地 CPU 提供方、正式 MCP 与真实浏览器，见[实际闭环记录](benchmarks/human-audio-to-voiceover-2026-10-27.md)。原音词时未冒充新配音词时，新配音字幕明确为比例对齐。该结果不覆盖真人设备权限、录音来源完整链、多步骤 cue、所有四组合或运行中提供方合成取消；总体状态仍为部分实施。
 
-Video 现已接入原生麦克风候选、明确保存、转写任务恢复与原生校对／对照采用。浅深色与桌面／触屏窄屏已实际操作；任务恢复、共享讲稿与旧回执的范围分别见[录音记录](benchmarks/video-microphone-recording-2026-10-27.md)和[校对记录](benchmarks/video-transcription-adoption-2026-10-27.md)。MCP 与 HTTP 共用任务实例和采用事务，见 [MCP 记录](benchmarks/mcp-transcription-actions-2026-10-27.md)。多目标批量界面和录音二进制崩溃恢复仍未完成。
+Video 现已接入原生麦克风候选、明确保存、原音整段采用为本步配音、转写任务恢复与原生校对／对照采用。浅深色与桌面／触屏窄屏已实际操作；任务恢复、共享讲稿与旧回执的范围分别见[录音记录](benchmarks/video-microphone-recording-2026-10-27.md)和[校对记录](benchmarks/video-transcription-adoption-2026-10-27.md)。MCP 与 HTTP 共用任务实例和采用事务，见 [MCP 记录](benchmarks/mcp-transcription-actions-2026-10-27.md)。“原音频”卡复用一个已保存音频选择器，候选保存后或选择既有资产，再明确“采用为本步配音”；四组合、英文、真实播放及迟回执边界见[界面记录](benchmarks/recording-step-adoption-ui-2026-10-27.md)。采用不修改讲稿或启动 ASR/TTS；wholeStep 每步完整播放一次，不是跨步骤连续分配，字幕没有词对齐。多目标批量界面、MCP 客户端录制和录音二进制崩溃恢复仍未完成。
 
 首片公开 `createDocumentTranscriptions` 与 [kernel 契约](../packages/kernel/src/contracts/transcription.ts)，HTTP 为 `GET document/transcription/capabilities`、`POST/GET document/transcription`、`GET document/transcription/result`、`POST document/transcription/cancel`。首次仅转写整份真实资产，任务不写 `Narration`，不自动编译或合成。持久取消意图重启后仍阻止迟到请求；已知任务 ID 的读取与取消只核文稿路径权限，不因当前 JSON 损坏或 UUID 替换而失去停止入口。MCP 薄适配的范围单独见 [MCP RFC](rfc-mcp-authoring-actions.md)，不能把路由或工具存在视为完整作者流程已交付。
 
@@ -18,11 +18,11 @@ Video 现已接入原生麦克风候选、明确保存、转写任务恢复与�
 | --- | --- | --- |
 | 本地音频 | `document/audio` 按真实字节探测，原文件与 Asset 声明一次 CAS 提交；未被 clip 使用的资产也能检查 | 在同一导入事务中记录可区分的文件／麦克风来源，不自动附到步骤 |
 | 音频片段 | Video 的 `ProductionMediaClips` 使用真实时长编辑入出点、偏移、音量、静音；区间必须处于已确认步骤 | 录音试听与转写材料可复用资产，但不能把“音频片段已保存”等同于“讲稿已采用” |
-| 麦克风 | `addon-lecture` 的 `LectureRecorder` 已有设备申请、编码、分块上传、停止与释放；保存的是 `lectures/<track>/track.json` | Video 内独立的讲稿录音入口，保存为 canonical 音频资产，并接后续转写；不能直接复用旧轨文件作为文稿来源 |
+| 麦克风 | Video 原生 MediaRecorder 形成文稿身份内的原音候选，明确保存为 canonical 音频资产；旧 `LectureRecorder` 轨文件仍是另一条保存路径 | 物理麦克风与更多设备权限；MCP 客户端录制控制、候选二进制崩溃恢复。不能把旧轨文件自动当文稿来源 |
 | ASR | `SpeechService.transcribe` 支持取消；OpenAI 接口形态及火山引擎适配器已有实现 | 音频资产的来源校验、版本化候选、异步任务与重新尝试；真实结果须记录使用的引擎与模型信息 |
 | 旧轨转写 | `track_transcribe` 写讲授轨的 `utterances`；`track_narration` 只返回带 role 文本的草案与来源行 | 不能作为规范 `NarrationNode[]` 的原子采用接口 |
 | 讲稿与配音 | typed Narration 已有 text／pronunciation／cue；`VoiceoverRequest` 已有 source、revision、scope、intent、确认与取消链 | 采用转写后重新检查真实音色能力，明确生成缺失的精确请求缓存 |
-| 原录音跟稿播放 | 共享 HTTP／MCP 可显式采用原音为当前稳定步骤配音；实际全文件时长进入计划与单时钟播放，多讲稿只用一次原音、空讲稿不造字幕 | 本片未加 Studio 采用按钮，不支持裁切、跨步连续分配或无真实对齐的内部提示；见[零模型记录](benchmarks/recording-step-adoption-2026-10-27.md)。既有人声→ASR→讲稿→TTS 闭环不变 |
+| 原录音跟稿播放 | 共享 HTTP／MCP 可显式采用原音为当前稳定步骤配音；实际全文件时长进入计划与单时钟播放，多讲稿只用一次原音、空讲稿不造字幕 | Video 已有保存候选／既有音频的明确采用按钮；不支持旁白裁切、跨步连续分配或无真实对齐的内部提示。共享服务见[零模型记录](benchmarks/recording-step-adoption-2026-10-27.md)，界面见[采用记录](benchmarks/recording-step-adoption-ui-2026-10-27.md)；既有人声→ASR→讲稿→TTS 闭环不变 |
 | 字词对齐 | TTS 可携带真实 words；`alignWords` 能读取已有对齐，明确允许时也可能再次转写 | 录音转写时码不能移作新 TTS 时码；没有真实词时码时不得显示精确逐字对齐 |
 
 审计入口：

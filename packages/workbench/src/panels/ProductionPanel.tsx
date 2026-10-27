@@ -163,7 +163,7 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
         <PmCard><DocumentVoiceField key={`${source.identity}:${stepId}`} stepId={stepId} disabled={blocked || closing}
           onGenerate={() => { workbench.stopAuditions(); setGenerateStep(stepId) }} /></PmCard>
         <ProductionRecording key={source.identity} identity={source.identity} sectionId={sectionId} stepId={stepId} active={tab !== 'outputs' && (wide || tab === 'script')} disabled={blocked || closing}
-          onImported={assetId => { setMediaRefresh(true); setTranscriptionAsset({ identity: source.identity!, id: assetId }) }} />
+          onImported={assetId => { setMediaRefresh(true); setTranscriptionAsset({ identity: source.identity!, id: assetId }) }} onAdopted={() => setMediaRefresh(true)} />
         <ProductionTranscription key={source.identity} identity={source.identity} directory={source.directory} document={document} sectionId={sectionId} stepId={stepId}
           active={tab !== 'outputs' && (wide || tab === 'script')} disabled={blocked || closing} selectedAssetId={transcriptionAsset?.identity === source.identity ? transcriptionAsset.id : undefined} />
         <ProductionMediaClips key={`${source.identity}:${stepId}`} identity={source.identity} version={source.version ?? ''} document={document} sectionId={sectionId} stepId={stepId}

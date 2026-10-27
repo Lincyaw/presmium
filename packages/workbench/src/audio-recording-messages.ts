@@ -1,7 +1,7 @@
 import type { Locale } from './messages.ts'
 
 const zh = {
-  title: '录音', start: '开始录音', stop: '停止录音', cancel: '取消', cancelTake: '放弃本次录制', rerecord: '重新录制',
+  title: '原音频', source: '本步原音', choose: '选择已保存音频', removedAudio: '原音频已移除', adopt: '采用为本步配音', adopted: '已采用', retryAdoption: '重试采用', cancelAdoption: '取消采用', adoptionSourceChanged: '文稿已更新，请重试。', adoptionFailed: '采用未完成，请重试。', start: '开始录音', stop: '停止录音', cancel: '取消', cancelTake: '放弃本次录制', rerecord: '重新录制',
   audition: '试听', stopAudition: '停止试听', save: '保存为音频素材', saving: '正在保存原音…', retry: '重试保存', discard: '放弃候选',
   ready: '原音候选 · 尚未保存', imported: '已保存为音频素材', requesting: '正在等待麦克风许可', recording: '录音中', stopping: '正在完成录音…',
   cancelSave: '取消保存', currentSource: '文稿尚未保存，请先完成当前输入。', saveFailed: '原音仍已保留，保存失败，请重试。',
@@ -21,7 +21,7 @@ const zh = {
 }
 type Messages = typeof zh
 const en: Messages = {
-  title: 'Recording', start: 'Start recording', stop: 'Stop recording', cancel: 'Cancel', cancelTake: 'Discard this take', rerecord: 'Record again',
+  title: 'Original audio', source: 'Original audio for this step', choose: 'Choose saved audio', removedAudio: 'Original audio was removed', adopt: 'Use as step voiceover', adopted: 'Applied', retryAdoption: 'Retry adoption', cancelAdoption: 'Cancel adoption', adoptionSourceChanged: 'The document changed. Retry.', adoptionFailed: 'Adoption did not complete. Retry.', start: 'Start recording', stop: 'Stop recording', cancel: 'Cancel', cancelTake: 'Discard this take', rerecord: 'Record again',
   audition: 'Listen', stopAudition: 'Stop listening', save: 'Save as audio asset', saving: 'Saving original audio…', retry: 'Retry save', discard: 'Discard candidate',
   ready: 'Original audio candidate · Not saved', imported: 'Saved as an audio asset', requesting: 'Waiting for microphone permission', recording: 'Recording', stopping: 'Finishing recording…',
   cancelSave: 'Cancel save', currentSource: 'Finish and save the current document input first.', saveFailed: 'The original audio is retained. Saving failed; retry.',

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { PmButton, PmField, PmNotice } from '../components.tsx'
+import { PmButton, PmField } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { resolveDocumentStepVoice } from '../document-voices.ts'
 import { PRODUCTION_MESSAGES } from '../production-messages.ts'
@@ -17,13 +17,13 @@ export function DocumentVoiceField({ stepId, disabled = false, onGenerate }: { s
   const document = source?.content, step = document?.steps[stepId], p = PRODUCTION_MESSAGES[locale]
   if (!document || !step || !source?.identity) return null
   const voice = resolveDocumentStepVoice(document, stepId)
+  const recording = voice.value?.type === 'recording' ? document.assets[voice.value.assetId] : undefined
   const label = voice.value?.type === 'tts' ? voice.value.voice.voice
     : voice.value?.type === 'none' ? p.none
-      : voice.value?.type === 'recording' ? document.assets[voice.value.assetId]?.location ?? voice.value.assetId : p.unset
+      : voice.value?.type === 'recording' ? recording?.title || p.recording : p.unset
   return <>
     <PmField group label={p.voice} hint={p.inherited[voice.inheritedFrom]}>
       <span>{label}</span>
-      {voice.value?.type === 'recording' && <PmNotice tone="warn">{p.recordingLimit}</PmNotice>}
       <div className="pmw-voice__actions">
         <PmButton small icon="audio" disabled={disabled || blocked} onClick={() => { workbench.pauseDocumentStep(step.sectionId, stepId); workbench.stopAuditions(); setOpen(true) }}>{p.choose}</PmButton>
         {onGenerate && <PmButton small icon="refresh" disabled={disabled || blocked} onClick={onGenerate}>{p.generate}</PmButton>}
