@@ -180,7 +180,7 @@ export function PmDialog({ open, label, closeLabel, name, actions, description, 
     <Dialog.Root open={open} modal onOpenChange={next => { if (!next && !busy) onClose() }}>
       <Dialog.Portal>
         <Dialog.Overlay className="pm-ui-dialog-overlay" />
-        <Dialog.Content className={cls('pm-ui-dialog', 'pm-ui', name && `${name}__panel`)} data-pm-dialog={id} data-density="regular" aria-busy={busy || undefined} {...description ? {} : { 'aria-describedby': undefined }} onInteractOutside={event => event.preventDefault()} onEscapeKeyDown={event => { event.stopPropagation(); if (busy) event.preventDefault() }} onOpenAutoFocus={event => {
+        <Dialog.Content className={cls('pm-ui-dialog', 'pm-ui', name && `${name}__panel`)} data-pm-dialog={id} data-density="regular" aria-modal="true" aria-busy={busy || undefined} {...description ? {} : { 'aria-describedby': undefined }} onInteractOutside={event => event.preventDefault()} onEscapeKeyDown={event => { event.stopPropagation(); if (busy) event.preventDefault() }} onOpenAutoFocus={event => {
           onOpenAutoFocus?.(event)
           if (event.defaultPrevented || !(event.target instanceof HTMLElement)) return
           const panel = event.target

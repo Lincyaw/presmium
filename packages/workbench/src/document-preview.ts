@@ -6,7 +6,7 @@ export interface CompiledDocumentPreview extends DocumentPreview { ir: IrAnswer 
 interface PreviewSource { directory: string, version: string, fingerprint: string, project: number }
 const prepared = new WeakMap<WorkspaceClient, Map<string, Promise<DocumentPreview>>>()
 
-function wait<T>(work: Promise<T>, signal?: AbortSignal): Promise<T> {
+export function waitForPreviewRequest<T>(work: Promise<T>, signal?: AbortSignal): Promise<T> {
   if (!signal) return work
   return new Promise<T>((resolve, reject) => {
     const cancel = () => { signal.removeEventListener('abort', cancel); reject(signal.reason) }
@@ -21,10 +21,10 @@ export async function readDocumentSnapshot(client: WorkspaceClient, source: Pick
   const entry = source.directory ? `${source.directory}/lecture.json` : 'lecture.json', started = Date.now()
   for (;;) {
     signal?.throwIfAborted()
-    const ir = await wait(client.readIr(source.directory), signal)
+    const ir = await waitForPreviewRequest(client.readIr(source.directory), signal)
     if (ir.sourceFingerprints?.[entry] === source.fingerprint && ir.doc.source?.version === source.version && ir.doc.source.fingerprint === source.fingerprint) return ir
     if (Date.now() - started > 15_000) throw new Error('voice-source-pending')
-    await wait(new Promise<void>(resolve => setTimeout(resolve, 150)), signal)
+    await waitForPreviewRequest(new Promise<void>(resolve => setTimeout(resolve, 150)), signal)
   }
 }
 
@@ -34,21 +34,21 @@ export async function compileDocumentPreview(client: WorkspaceClient, source: Pr
   const started = Date.now()
   for (;;) {
     signal?.throwIfAborted()
-    const ir = await wait(client.readIr(directory), signal)
-    if (ir.sourceFingerprints?.[entry] === fingerprint) {
+    const ir = await waitForPreviewRequest(client.readIr(directory), signal)
+    if (ir.sourceFingerprints?.[entry] === fingerprint && ir.doc.source?.version === source.version && ir.doc.source.fingerprint === fingerprint) {
       const request = new AbortController(), timeout = setTimeout(() => request.abort(new DOMException('Preview preparation timed out', 'TimeoutError')), 45_000)
       const cancel = () => request.abort(signal?.reason)
       signal?.addEventListener('abort', cancel, { once: true })
       try {
         signal?.throwIfAborted()
         const preview = await client.readPreview(directory, 'web', request.signal, feedbackOwner)
-        const confirmed = await wait(client.readIr(directory), signal)
-        if (confirmed.sourceFingerprints?.[entry] !== fingerprint) throw new Error('presentation-source-changed')
+        const confirmed = await waitForPreviewRequest(client.readIr(directory), signal)
+        if (confirmed.sourceFingerprints?.[entry] !== fingerprint || confirmed.doc.source?.version !== source.version || confirmed.doc.source.fingerprint !== fingerprint) throw new Error('presentation-source-changed')
         if (confirmed.revision === ir.revision) return { address: preview.web, revision: confirmed.revision, preview, ir: confirmed }
       } finally { clearTimeout(timeout); signal?.removeEventListener('abort', cancel) }
     }
     if (Date.now() - started > 15_000) throw new Error('document-preview-source-pending')
-    await wait(new Promise<void>(resolve => setTimeout(resolve, 150)), signal)
+    await waitForPreviewRequest(new Promise<void>(resolve => setTimeout(resolve, 150)), signal)
   }
 }
 
