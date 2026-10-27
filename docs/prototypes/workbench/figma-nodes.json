@@ -1207,7 +1207,21 @@
       },
       "I05": {
         "nodeId": "40:4650",
-        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4650"
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4650",
+        "generationDialog": {
+          "publicComponent": "PmDialog",
+          "componentNodeId": "25:565",
+          "componentUrl": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-565",
+          "source": "packages/workbench/src/panels/VoiceoverDialog.tsx",
+          "presentation": {
+            "content": "Scope, voice, script, real progress, necessary errors and provider disclosure. Omit permanent implementation explanations and the optional Dialog description.",
+            "completion": "One completion state. An active task, or a done task with completed units, must match the current source, IR and scope to replace the short ready state; failed/cancelled history cannot hide actual readiness.",
+            "close": "Cancel and close only for this dialog's pending or active tasks; external tasks retain Close. Existing owned-intent cancellation remains responsible for the operation."
+          },
+          "textDiscipline": "docs/design-system.md#2-tokens公共控件与业务布局",
+          "verification": "docs/benchmarks/voiceover-dialog-copy-2026-10-27.md",
+          "implementationBoundary": "Reuses the existing I05 composition and formal Dialog component; no new Figma node, primitive, token, CSS or asset."
+        }
       },
       "I06": {
         "nodeId": "40:4651",

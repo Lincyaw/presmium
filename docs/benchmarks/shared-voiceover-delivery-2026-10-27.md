@@ -19,6 +19,6 @@
 
 组合证据在隔离 worktree 的 `.presmium/voice-mcp-web-feedback-1793097419059/`：`core20-frozen.json`、`play-500ms-counter.json`、`final-manifest.json` 和 `root-final-verification.json`。root 实际核对 20 份运行源码、三份结果 SHA、七份保存材料的字节／权限、canonical 校验和原音 SHA，均吻合。保存材料包括旧、新两份真实缓存及未裁剪的原锁，不复制认证数据。首次消费者的 Chromium 导入错误发生在零提供方调用阶段，失败与清理记录保留；root 只读核验脚本的依赖解析错误也另存，不属于产品故障。
 
-公开证据为 `.presmium/ui-evidence/live-shared-voice-deployment-029bdf32.json`、`live-owner-profile-readonly-smoke-029bdf32.json` 与 `auth-transition-shared-voice-feedback-20261027/result.json`。组合消费者的 11 个记录进程、前后端端口、私有认证和临时目录均已核实退出或删除；真实缓存与冻结结果 SHA 保持不变。CPU 提供方容器仍由 root 保留供后续验证，不在公开环境启用。
+公开证据为 `.presmium/ui-evidence/live-shared-voice-deployment-029bdf32.json`、`live-owner-profile-readonly-smoke-029bdf32.json` 与 `auth-transition-shared-voice-feedback-20261027/result.json`。组合消费者的 11 个记录进程、前后端端口、私有认证和临时目录均已核实退出或删除；真实缓存与冻结结果 SHA 保持不变。CPU 容器随后只供弹窗文案验收读取真实目录，没有新增模型调用；验收后 root 核对任务标签并停止、删除两只自有容器，见 `.presmium/ui-evidence/cpu-speech-owned-cleanup-20261027.json`。固定镜像和模型缓存保留供明确复用，公开环境未启用这些提供方。
 
 类型检查 1223 文件、layering、skills、tokens 与 diff 检查通过。没有新增 tracked tests，没有运行测试套件、全量示例构建或完整 e2e。字幕仍为 proportional，新 TTS 没有借用原人声的 ASR 词时。远端鉴权、物理设备、精确词对齐、完整视频导出及 MCP 全部作者动作仍需分别完成。
