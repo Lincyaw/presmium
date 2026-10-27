@@ -780,7 +780,8 @@ export class Workbench {
       this.#set({ ir, preview: snapshot.preview, previewRenderer: 'web', previewFailure: undefined, presentationSnapshot: { version, fingerprint, revision: ir.revision, project } })
       return true
     } catch (error) {
-      if (current()) this.#set({ presentationFailure: error instanceof Error && error.message === 'presentation-source-changed' ? this.#messages.presentationSourceChanged : this.#messages.presentationCompileFailed })
+      // Editing supersedes this snapshot; the existing stale status owns its recovery action.
+      if (current()) this.#set({ presentationFailure: error instanceof Error && error.message === 'presentation-source-changed' ? undefined : this.#messages.presentationCompileFailed })
       return false
     } finally { clearTimeout(timeout); stop(); if (current()) this.#set({ isPreparingPresentation: false }) }
   }
