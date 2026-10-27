@@ -94,6 +94,15 @@ When a new capability is needed:
   through the versioned preview protocol (`docs/design-dsh.md` section 4). DeepSeek Harness interfaces appear
   only in `packages/dsh` and the launcher `packages/studio`.
 
+Studio's browser-only MCP actions use the existing shared workspace WebSocket and the ephemeral
+`AuthoringClients` owner (`docs/rfc-mcp-authoring-actions.md` 9.1). Read client state, request an explicit
+action, then read its receipt; admission is not completion. Exact source, client epoch, connection and
+input revision are required. Only the browser channel may acknowledge, and it waits for executing
+admission before invoking the existing source/playback control. Never add an MCP ACK tool, a per-tab
+browser SSE, automatic compile/mode switch, estimated playing state or replay after disconnect.
+`source.flush` covers the canonical source actor only; recording and local form draft capabilities
+remain unavailable until their real owners are wired.
+
 No dependency internals, no forks or patches. No package uses `vitepress` or `@slidev/*`: the web page and
 the slides are both pages of Presmium's own prebuilt viewer (`docs/architecture.md` 1.1).
 `scripts/check-layering.mjs` enforces this and the layers of `docs/architecture.md` section 3.

@@ -50,6 +50,7 @@ export function servedDocument(compilation: Compilation): ServedDocument {
 export interface ServerHost {
   authoring?: DocumentAuthoring
   documentHistory?: DocumentHistory
+  authoringClients?: AuthoringClients
   audioAuthoring?: DocumentAudioAuthoring
   voiceAuthoring?: DocumentVoiceAuthoring
   transcriptions?: DocumentTranscriptions
@@ -69,3 +70,4 @@ export interface ServerHost {
   /** The documents' builds and exports as jobs, where the host runs them so (the workspace service). */
   jobs?: OutputJobs
 }
+import type { AuthoringClients } from '@lincyaw/kernel'

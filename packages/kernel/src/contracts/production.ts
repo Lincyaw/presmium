@@ -3,6 +3,9 @@ import type { TrackEvent } from './operations.ts'
 import type { TimeRange } from './document.ts'
 import type { ProductionAssetInspection } from './production-assets.ts'
 
+/** The same supported rates are used by the author controls and the actual production driver. */
+export const PRODUCTION_PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const
+
 /** One immutable derived plan; a cache change can change planId without changing the saved document. */
 export interface ProductionBinding { source: CanonicalSource, irRevision: string, planId: string }
 export function sameProductionBinding(a: ProductionBinding, b: ProductionBinding): boolean {
