@@ -1210,6 +1210,22 @@
       "authority": "TeachingDocument.sectionOrder",
       "commit": "Existing movePage(sectionId,beforeId|null) flushes pending text and captions, checks the version and preserves selection; menus remain available."
     },
+    "filePanel": {
+      "componentId": "211:4825",
+      "reviewNodeId": "211:4826",
+      "variants": {
+        "CompactUpload": "211:4643",
+        "CompactEmbed": "211:4663",
+        "CompactLoading": "211:4689",
+        "CompactFailure": "211:4713",
+        "TouchUpload": "211:4734",
+        "TouchEmbed": "211:4754",
+        "TouchLoading": "211:4780",
+        "TouchFailure": "211:4804"
+      },
+      "source": "packages/design/src/components.css",
+      "mechanism": "Public BlockNote FilePanel and Mantine panel classes retain native upload, Embed form submission, loading and localized failure. Shared controls use Compact30/13 and Touch44/16 with viewport-bounded width; no extra uploader or permanent capability text."
+    },
     "tableAuthoring": {
       "componentId": "199:4529",
       "reviewNodeId": "199:4530",

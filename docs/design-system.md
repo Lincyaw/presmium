@@ -31,6 +31,7 @@ BlockNote 的公共适配类为 `pm-ui-block-editor`，由工作台的全篇 `Bl
 正文侧边的添加与拖拽按钮使用公开 `.bn-side-menu` 适配，沿用 compact 的 30px 与触屏的 44px 热区、公共图标和焦点令牌；窄屏或粗指针设备纵排，放在页边留白内，避免工具被视口裁掉。
 格式工具条使用公开 `.bn-formatting-toolbar` 适配，限制为视口内宽度并换行，按钮沿用同一 30px／44px 最小热区。正文批注使用 BlockNote 的 `CommentsExtension`、`AddCommentButton` 和原生表单，删除旧宿主 DOM 选区与批注浮层。跨代码选区下，BlockNote 默认隐藏格式工具条；工作台在编辑器内提供同一个原生批注按钮。`.bn-thread` 按钮沿用公共热区，触屏批注输入至少 16px。
 表格合并使用同一工具条内的公开 `TableCellMergeButton`，拆分使用原生单元格菜单，保留官方选区、可用条件、图标和回调。[NativeTable](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=199-4529) 登记紧凑与触屏密度的跨单元格选区、合并、拆分状态；样式沿用公共 BlockNote 适配，不增加业务按钮或表格浮层。
+原生图片面板使用 `.pm-ui-block-editor .bn-panel` 公共适配，保留 BlockNote FilePanel 的上传、嵌入、加载与失败行为。[NativeFilePanel](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=211-4825) 组合现有紧凑按钮与输入框，桌面 30／13、触屏 44／16，宽度受视口约束；不另造上传器或常驻说明。
 
 ## 2. Tokens、公共控件与业务布局
 
