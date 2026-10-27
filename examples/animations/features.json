@@ -502,7 +502,7 @@
       "package": "@lincyaw/addon-speech",
       "requires": [
         "真实已配置的语音 provider",
-        "视频制作已有讲稿、音色范围、缓存试听和配音状态入口；目录与新合成需真实服务，三轨时间线与共享播放头已提供，真实 provider 正向合成到播放仍待验收"
+        "Video 已有音色、试听、生成和实际播放入口；目录、转写与新配音需当前真实服务。已有独立英文文件链验证，不代表所有语言或服务均已验收"
       ],
       "mode": "conditional"
     },
@@ -514,7 +514,7 @@
       "package": "@lincyaw/addon-speech",
       "requires": [
         "真实语音 provider；修改讲稿后需重新明确生成",
-        "视频制作已有讲稿、音色范围、缓存试听和配音状态入口；目录与新合成需真实服务，三轨时间线与共享播放头已提供，真实 provider 正向合成到播放仍待验收"
+        "Video 已有音色、试听、生成和实际播放入口；目录、转写与新配音需当前真实服务。已有独立英文文件链验证，不代表所有语言或服务均已验收"
       ],
       "mode": "conditional"
     },
@@ -526,42 +526,53 @@
       "package": "@lincyaw/host",
       "requires": [
         "已有精确试听缓存，或真实服务支持所选音色；用户明确确认后播放",
-        "视频制作已有讲稿、音色范围、缓存试听和配音状态入口；目录与新合成需真实服务，三轨时间线与共享播放头已提供，真实 provider 正向合成到播放仍待验收"
+        "Video 已有音色、试听、生成和实际播放入口；目录、转写与新配音需当前真实服务。已有独立英文文件链验证，不代表所有语言或服务均已验收"
       ],
       "mode": "instructions"
     },
     {
       "id": "recording-permissions",
-      "title": "浏览器录音与录屏的实际权限边界",
+      "title": "浏览器原音录制与权限边界",
       "document": "guide-production",
       "section": "recording",
       "package": "@lincyaw/addon-lecture",
       "requires": [
-        "已启用讲授插件的真实 Presmium 服务运行页、安全上下文、支持的浏览器及用户授权；制作区尚无录音采用与混音界面"
+        "Video 原音频卡；安全连接、支持的浏览器、真实麦克风与用户授权。无设备时可导入同文稿音频，保存与采用分开"
       ],
       "mode": "conditional"
     },
     {
+      "id": "recording-whole-step-adoption",
+      "title": "原音候选保存、选材与整段本步采用",
+      "document": "guide-production",
+      "section": "recording",
+      "package": "@lincyaw/workbench",
+      "requires": [
+        "真实录音候选或已保存本地音频；明确保存、采用和播放，不触发 ASR/TTS；旁白裁切、跨步连续分配与逐词对齐不在本片范围"
+      ],
+      "mode": "instructions"
+    },
+    {
       "id": "aligned-subtitles",
-      "title": "转写与词级字幕对齐",
+      "title": "转写、讲稿采用与词级对齐边界",
       "document": "guide-production",
       "section": "recording",
       "package": "@lincyaw/addon-lecture",
       "requires": [
-        "provider 必须真实支持所需精度；估计时间不算词级对齐"
+        "转写和新配音需真实服务；整段原音字幕来自当前讲稿且未词对齐，ASR 时间不得充当新 TTS 词时"
       ],
       "mode": "conditional"
     },
     {
       "id": "media-editing-gate",
-      "title": "媒体裁切和混音当前门槛",
+      "title": "本地音频片段裁切、混音与范围门槛",
       "document": "guide-production",
       "section": "media-editing",
       "package": "@lincyaw/kernel",
       "requires": [
-        "片段结构已保留；当前讲授运行时尚不能裁切和混音"
+        "同文稿真实本地音频及已确认步骤时段；越界须明确调整，视频和跨步片段拆分仍不支持"
       ],
-      "mode": "gate"
+      "mode": "instructions"
     },
     {
       "id": "lecture-export",
@@ -1385,18 +1396,18 @@
         "reason": "hub 认证仍保留但未实现；示例不提供成功连接按钮。"
       },
       {
-        "feature": "media clip trimming and mixing",
-        "status": "unavailable",
+        "feature": "Audio clip scope and unsupported video",
+        "status": "conditional",
         "document": "guide-production",
         "section": "media-editing",
-        "reason": "production 片段能保存；当前讲授运行时拒绝裁切和混音。"
+        "reason": "同文稿本地音频片段已可裁切、调整偏移／音量／静音并与旁白混音；须完全落入已确认步骤时段。视频与跨步片段拆分不在当前范围。"
       },
       {
-        "feature": "Advanced production media editing and provider synthesis acceptance",
+        "feature": "Recording cue alignment and continuous allocation",
         "status": "pending",
         "document": "guide-production",
         "section": "silent",
-        "reason": "三轨时间线、精确定位、共享播放器、真实缓存波形及简单静音计划已接入；裁切混音、录音采用与精确词级对齐仍有门槛。真实 provider 缺缓存到 UI 合成完成并播放的正向流程尚未完成验收。"
+        "reason": "整段原音可明确采用为当前步骤；各有效步骤完整播放一次，不自动跨步骤分段。旁白裁切、内部暂停和非起点 cue 的录音时码仍未支持。真实服务已有独立英文文件链，不表示本环境已配置服务或所有语言均可用。"
       },
       {
         "feature": "Generic component properties and shared-asset version management UI",
@@ -1510,6 +1521,12 @@
         "document": "guide-production",
         "section": "silent",
         "integration": "one source-bound production plan and the existing lecture player"
+      },
+      {
+        "id": "recording-whole-step-adoption",
+        "document": "guide-production",
+        "section": "recording",
+        "integration": "explicit whole-step recording adoption through the shared document audio service"
       }
     ],
     "verification": {
@@ -1524,7 +1541,11 @@
       "rule": "A located example is coverage; a conditional requirement or instruction is not proof that its external service, device or paid provider was exercised.",
       "productionPlaybackSupplement": {
         "record": "docs/benchmarks/feature-guides-2026-10-26.md",
-        "scope": "Guide-production timeline/silent instructions and index mapping. Public host/iframe 24 checks and actual Studio 14 checks are recorded separately; conditional provider synthesis, mixing and text-anchored silent cues remain gated."
+        "scope": "Historical timeline/silent instruction checkpoint. Its public host/iframe 24 checks and Studio 14 checks are recorded separately. Later audio-clip mixing, provider synthesis and original-recording adoption have their own evidence; this historical record does not exercise those later capabilities."
+      },
+      "originalAudioSupplement": {
+        "record": "docs/benchmarks/recording-step-adoption-ui-2026-10-27.md",
+        "scope": "Video recording/save/select/explicit wholeStep adoption/playback and acknowledgement races are verified separately. This guide provides instructions without seeded audio or provider configuration; its own targeted web/readability result is not a recording, ASR or TTS execution."
       }
     }
   }
