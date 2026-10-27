@@ -36,6 +36,11 @@
     "./routes": "./entries/routes.mjs",
     "./turns": "./entries/turns.mjs",
     "./telemetry": "./entries/telemetry.mjs",
+    "./events": {
+      "types": "./src/node/workspace-events.ts",
+      "default": "./entries/events.mjs"
+    },
+    "./workspace-events": "./src/workspace-events.ts",
     "./launch": "./src/node/launch.ts",
     "./testing": "./src/node/fake-model.ts",
     "./package.json": "./package.json"
@@ -83,7 +88,10 @@
     "@lincyaw/cli": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/mcp": "workspace:*",
-    "jiti": "^2.7.0"
+    "eventsource": "3.0.7",
+    "jiti": "^2.7.0",
+    "ws": "8.22.0",
+    "zod": "4.4.3"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh": "0.2.1-alpha.4"
@@ -95,7 +103,9 @@
     "@lincyaw/workbench": "workspace:*",
     "@types/react": "18.3.28",
     "@types/react-dom": "18.3.7",
+    "@types/ws": "^8.18.2",
     "esbuild": "0.25.12",
+    "partysocket": "1.3.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-resizable-panels": "^4.14.5"

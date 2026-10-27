@@ -108,14 +108,17 @@ export interface WorkspaceClient {
   startJob(document: string, target: string, source: JobSource): Promise<CompileJob>
   cancelJob(document: string, id: string): Promise<CompileJob>
   /** Each change of the document's jobs, as it happens. */
-  subscribeJobs(document: string, changed: (job: CompileJob) => void, failed?: () => void): () => void
+  subscribeJobs(document: string, changed: (job: CompileJob) => void, failed?: () => void, ready?: () => void): () => void
   /** Whether the host collects the workbench's operations for its operator. */
   readTelemetry(): Promise<{ enabled: boolean }>
   /** Sends a batch of operations; `beacon` hands it to the browser to deliver while the page goes away. */
   sendTelemetry(batch: OperationBatch, beacon?: boolean): Promise<void>
 }
 
-export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
+/** A host may carry these event subscriptions over its authenticated shared connection. */
+export type WorkspaceSubscription = (address: string, event: string, received: (data: string) => void, failed?: () => void, ready?: () => void) => () => void
+
+export function workspaceClient(base = 'api/presmium/', subscription?: WorkspaceSubscription): WorkspaceClient {
   const requestListeners = new Set<(event: WorkspaceRequestEvent) => void>()
   let requestSequence = 0
   const observedFetch = async (address: string, init?: RequestInit, feedbackOwner?: WorkspaceRequestEvent['feedbackOwner']): Promise<Response> => {
@@ -249,16 +252,15 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     irPending.set(document, request)
     return request
   }
-  const subscribe = <T>(address: string, name: string, on: (data: T) => void, failed?: () => void) => {
+  const subscribe = <T>(address: string, name: string, on: (data: T) => void, failed?: () => void, ready?: () => void) => {
+    const received = (data: string) => {
+      try { on(JSON.parse(data) as T) } catch { failed?.() }
+    }
+    if (subscription) return subscription(address, name, received, failed, ready)
     const source = new EventSource(address)
-    source.addEventListener(name, (event) => {
-      try {
-        on(JSON.parse((event as MessageEvent<string>).data) as T)
-      } catch {
-        failed?.()
-      }
-    })
+    source.addEventListener(name, event => received((event as MessageEvent<string>).data))
     if (failed) source.addEventListener('error', failed)
+    if (ready) source.addEventListener('open', ready)
     return () => source.close()
   }
   return {
@@ -340,7 +342,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     readJobs: document => call(url('jobs', document)),
     startJob: (document, target, source) => post(url('jobs', document), { target, source } satisfies StartJobRequest),
     cancelJob: (document, id) => post(url('jobs/cancel', document), { id }),
-    subscribeJobs: (document, changed, failed) => subscribe(url('jobs/events', document), 'job', changed, failed),
+    subscribeJobs: (document, changed, failed, ready) => subscribe(url('jobs/events', document), 'job', changed, failed, ready),
     readRevisions: document => call(url('revisions', document, { limit: '50' })),
     revertRevision: (document, id) => post(url('revisions/revert', document), { id }),
     undo: (document, expect) => post(url('history/undo', document), expect ? { expect } : {}),

@@ -17,7 +17,7 @@ export type { AgentAnswer, AgentRequest, Pointer, PreviewSink, SaveState, WebVie
 export { OperationLog } from './telemetry.ts'
 export type { OperationBatch, OperationValue } from './telemetry.ts'
 export { isObservedWorkspaceFailure, workspaceClient, WorkspaceServerError } from './workspace-client.ts'
-export type { WorkspaceClient, WorkspaceRequestEvent } from './workspace-client.ts'
+export type { WorkspaceClient, WorkspaceRequestEvent, WorkspaceSubscription } from './workspace-client.ts'
 export { DocumentView } from './panels/DocumentView.tsx'
 export type { DocumentAside } from './panels/DocumentView.tsx'
 export { HistoryPanel } from './panels/HistoryPanel.tsx'

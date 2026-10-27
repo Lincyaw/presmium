@@ -30,7 +30,10 @@ export class DocumentJobs {
     this.#unsubscribe = this.#client.subscribeJobs(dir, (job) => {
       if (current()) this.#merge(job)
     }, () => {
-      // Reconnected: what changed meanwhile is read again.
+      // A failed carrier may have missed changes.
+      if (current()) void this.#read(dir, current)
+    }, () => {
+      // Subscribe before reading: the first list and a reconnect can race a job.
       if (current()) void this.#read(dir, current)
     })
     void this.#read(dir, current)
