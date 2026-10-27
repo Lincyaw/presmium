@@ -26,7 +26,8 @@
 | `native-image-late.json` | 18/18。后端实际采用后，通过 CDP 暂停响应：真实 Ctrl+Z 删除空图片后不重建；同 ID 替换既有 URL 后不覆盖；双图首张暂停期间真实切文稿，后续旧文件不发起，新文稿自身仍可导入。替换 URL 与同一编辑器 readOnly／重新 mount 是公开 API 辅助，未冒充鼠标替换控件。此记录早于随后两个拖放冒泡处理器及并行富文本样式配置；不将它描述为重跑后的全部链路。 |
 | `native-image-input-visual-review-before.json` | DOM 尺寸检查通过，人工查看四张截图却发现 DSH 提示遮挡，判为未通过；保留原图 `native-image-input-appearance-*-overlay-before.png`。 |
 | `native-image-input-appearance.json` | 14/14。实际浅／深色 × 1440 桌面／390 粗指针：长文件名换行、不横向溢出、30／44 控件；关闭不改文稿；先从应用栏进入再拖入正文也能移除 AI 提示。四张最终截图均已实际查看。系统剪贴板真实 PNG 粘贴一次，实际保存并解码，无浏览器／HTTP／生成错误。 |
+| `document-to-assistant-drop.json` | 6/6。真实 UI 打开空 Session，可信拖放从正文移入 AI：官方上传接口返回 200，原文件名与 PDF 51B 卡片进入 ready；文稿 JSON 不变，没有正文导入、消息发送或生成。已查看截图。该方向移动时 AI 邀请遮罩不显示，附件接收和最终遮罩释放正常；不将其描述为完整拖入邀请视觉验收。 |
 
 初次四视图消费者使用重复的 `data-id` 定位，尚未操作便触发 strict locator 错误；原记录保留为 `native-image-input-appearance-oracle-before.json`。随后 PNG 剪贴板夹具未通过浏览器解码，保留为 `native-image-input-appearance-clipboard-fixture-before.json`，改为浏览器生成有效 PNG 后才运行成功。晚回调消费者初次以 `route.fetch` 重放原生 multipart，得到空文件 413；保留为独立初始记录，改用 CDP 响应阶段暂停原始请求，没有把它当成产品失败或通过结果。
 
-轻量检查：类型、令牌、分层与 `git diff --check`。未运行单元测试、集成测试套件、完整 E2E 或示例全量构建。本次不宣称快速键盘选区同步、富文本剪贴板保真或完整编辑体验已全部验收。
+轻量检查：类型、令牌、分层、包发布结构、技能与 `git diff --check`。未运行单元测试、集成测试套件、完整 E2E 或示例全量构建。本次不宣称快速键盘选区同步、富文本剪贴板保真或完整编辑体验已全部验收。
