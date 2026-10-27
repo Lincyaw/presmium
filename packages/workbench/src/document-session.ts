@@ -407,8 +407,10 @@ export class DocumentSession {
   }
 
   async retry(): Promise<void> {
-    const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
-    if (!slot || slot.flight || slot.assetFlight || slot.state.composing) return
+    if (this.#disposed || this.#active === undefined) return
+    const slot = this.#slots.get(this.#active)
+    if (!slot) { await this.open(this.#active); return }
+    if (slot.flight || slot.assetFlight || slot.state.composing) return
     const previousError = slot.state.error
     slot.state = { ...slot.state, restored: false, error: undefined }
     await this.refresh(slot.state.directory)
