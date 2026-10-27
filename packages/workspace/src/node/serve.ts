@@ -6,7 +6,7 @@ import { Compiler, pluginLogger, runBlock, workspacePlugins } from '@lincyaw/com
 import type { Compilation, CompilerOptions } from '@lincyaw/compiler'
 import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, PRODUCTION_AUDIO_AUTHORING, REVISIONS, SPEECH } from '@lincyaw/kernel'
 import { irRevision } from '@lincyaw/kernel/node'
-import type { CanonicalSource, ChangeReviewService, Finding, IRDocument, Logger, ServiceToken, SiteSpec } from '@lincyaw/kernel'
+import type { CanonicalSource, ChangeReviewService, Finding, IRDocument, Logger, ProductionAudioAuthoring, ServiceToken, SiteSpec, SpeechService } from '@lincyaw/kernel'
 import { serverConfigKey, servedDocument, startServer } from '@lincyaw/server'
 import type { DiagnosticStore, PresmiumServer, ServedDocument, ServedPlugin, ServerHost } from '@lincyaw/server'
 import { CompileSession } from './compile-session.ts'
@@ -20,14 +20,14 @@ import { DocumentLocks } from './locks.ts'
 import { AgentSessionReviews } from './review/agent-session-reviews.ts'
 import { createTaskReviewService } from './review/task-reviews.ts'
 import { Revisions } from './revisions.ts'
-import { authorizeWorkspaceRoutes, WORKSPACE_ID, workspaceRoutesPlugin } from './routes.ts'
+import { WORKSPACE_ID, workspaceRoutes, workspaceRoutesPlugin } from './routes.ts'
 import { refreshDocumentVitePlugins, siteContext, siteDocument, siteDocumentIR, siteSpec, untranslatedFindings, webRenderer } from './site.ts'
 import { SourceEditor } from './source-editor.ts'
-import { createDocumentEditor, documentEditorRoutes } from './document-editor.ts'
+import { createDocumentEditor } from './document-editor.ts'
 import type { DocumentEditor } from './document-editor.ts'
-import { createDocumentTranscriptions, documentTranscriptionRoutes } from './document-transcription.ts'
-import type { TranscriptionServices } from './document-transcription.ts'
+import { createDocumentTranscriptions } from './document-transcription.ts'
 import { createTranscriptionAdoption } from './document-transcription-adoption.ts'
+import { createDocumentAudioAuthoring } from './document-audio.ts'
 import { createWorkbenchBackend } from './workbench-api.ts'
 import type { WorkbenchBackend } from './workbench-api.ts'
 import { localWriter } from './writer.ts'
@@ -60,7 +60,8 @@ interface WorkspaceHistory {
   taskReviews: ChangeReviewService
 }
 
-interface NodeServiceLoad { key: string, promise: Promise<TranscriptionServices>, controller: AbortController }
+interface AuthoringServices { audio?: ProductionAudioAuthoring, speech?: SpeechService, findings?: Finding[] }
+interface NodeServiceLoad { key: string, promise: Promise<AuthoringServices>, controller: AbortController }
 
 const DISK_LOOK_MS = 1000
 
@@ -96,7 +97,8 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   let documentEditor: DocumentEditor | undefined
   let transcriptions: ReturnType<typeof createDocumentTranscriptions> | undefined
   let transcriptionAdoption: ReturnType<typeof createTranscriptionAdoption> | undefined
-  let authoringRoutes: ReturnType<typeof documentEditorRoutes> | undefined
+  let audioAuthoring: ReturnType<typeof createDocumentAudioAuthoring> | undefined
+  let workspaceRoutesOwner: ReturnType<typeof workspaceRoutes> | undefined
   let routesPlugin: ServedPlugin | undefined
   // The builds and exports, as jobs the workbench and the AI start and follow.
   const jobs = createJobs({
@@ -149,15 +151,15 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   // source edits or a repaired plugin cannot be hidden behind a retained capability cache.
   const nodeServiceLoads = new Map<string, NodeServiceLoad>()
   const nodeServicePending = new Set<NodeServiceLoad>()
-  let transcriptionServicesClosed = false
-  const transcriptionServices = (document: string, source: CanonicalSource): Promise<TranscriptionServices> => {
-    if (transcriptionServicesClosed) throw new RequestError(503, 'transcription-services-unavailable')
+  let authoringServicesClosed = false
+  const authoringServices = (document: string, source: CanonicalSource): Promise<AuthoringServices> => {
+    if (authoringServicesClosed) throw new RequestError(503, 'document-services-unavailable')
     const key = JSON.stringify(source), known = nodeServiceLoads.get(document)
     if (known?.key === key) return known.promise
     const selected = docs().find(doc => doc.dir === document)
-    if (!selected) throw new RequestError(404, 'transcription-document-missing')
+    if (!selected) throw new RequestError(404, 'authoring-document-missing')
     const controller = new AbortController()
-    const promise: Promise<TranscriptionServices> = new Compiler(join(root, selected.entry), compilerOptions()).nodeServices({ signal: controller.signal }).then(loaded => {
+    const promise: Promise<AuthoringServices> = new Compiler(join(root, selected.entry), compilerOptions()).nodeServices({ signal: controller.signal }).then(loaded => {
       if (loaded.source.documentId !== source.documentId || loaded.source.version !== source.version || loaded.source.fingerprint !== source.fingerprint) throw new RequestError(409, 'document-version-changed')
       return { audio: loaded.service(PRODUCTION_AUDIO_AUTHORING), speech: loaded.service(SPEECH), findings: loaded.findings }
     }).finally(() => { if (nodeServiceLoads.get(document) === load) nodeServiceLoads.delete(document); nodeServicePending.delete(load) })
@@ -166,11 +168,11 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     nodeServicePending.add(load)
     return promise
   }
-  const closeTranscriptions = async () => {
-    transcriptionServicesClosed = true
+  const closeAuthoring = async () => {
+    authoringServicesClosed = true
     transcriptionAdoption?.close()
     for (const load of nodeServicePending) load.controller.abort()
-    await transcriptions?.close()
+    await Promise.all([transcriptions?.close(), audioAuthoring?.close(), workspaceRoutesOwner?.close?.()])
     await Promise.allSettled([...nodeServicePending].map(load => load.promise))
     nodeServiceLoads.clear()
   }
@@ -235,9 +237,10 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   const serverHost: ServerHost = {
     workspaceRoot: root,
     get authoring() { return documentEditor },
+    get audioAuthoring() { return audioAuthoring?.service },
     get transcriptions() { return transcriptions },
     get transcriptionAdoption() { return transcriptionAdoption?.service },
-    get routes() { return authoringRoutes ? { [WORKSPACE_ID]: authoringRoutes } : undefined },
+    get routes() { return workspaceRoutesOwner?.routes ? { [WORKSPACE_ID]: workspaceRoutesOwner.routes } : undefined },
     agentTools(document) {
       const compiled = (document === undefined ? [...compileSessions.values()] : [compileSessions.get(document)]).flatMap(session => session?.latest ? [session.latest] : [])
       const tools = new Map(compiled.flatMap(compilation => compilation.plugins.flatMap(loaded => loaded.plugin?.tools ?? [])).map(tool => [tool.name, tool]))
@@ -345,26 +348,25 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, diagnostics: running.diagnostics, url: () => running.url, preview, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
   history = openHistory()
   documentEditor = createDocumentEditor({ editor, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
-  transcriptions = createDocumentTranscriptions({ root, editor, services: transcriptionServices })
+  transcriptions = createDocumentTranscriptions({ root, editor, services: authoringServices })
   transcriptionAdoption = createTranscriptionAdoption({ documentEditor, transcriptions })
-  authoringRoutes = authorizeWorkspaceRoutes({ ...documentEditorRoutes({ root, editor, documentEditor, workbench }), ...documentTranscriptionRoutes(transcriptions), ...transcriptionAdoption.routes }, launcherToken)
-  routesPlugin = {
-    id: WORKSPACE_ID,
-    plugin: workspaceRoutesPlugin({
+  audioAuthoring = createDocumentAudioAuthoring({ root, editor, revisions: history?.revisions, services: authoringServices, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
+  const routeOptions = {
       config,
       editor,
       documentEditor,
       transcriptions,
       transcriptionAdoptionRoutes: transcriptionAdoption.routes,
+      audioAuthoringRoutes: audioAuthoring.routes,
       locks,
       ...history ? { revisions: history.revisions, operations: history.operations, reviews: history.agentSessionReviews } : {},
       documentsChanged,
       workbench,
       jobs,
       ...launcherToken ? { launcherToken } : {},
-    }),
-    config: {},
   }
+  workspaceRoutesOwner = workspaceRoutes(routeOptions)
+  routesPlugin = { id: WORKSPACE_ID, plugin: workspaceRoutesPlugin(routeOptions, workspaceRoutesOwner.routes), config: {} }
   workspaceServices = [
     ...history ? [[REVISIONS, history.revisions] as [ServiceToken<unknown>, unknown]] : [],
     [DOCUMENT_FILES, writer],
@@ -374,7 +376,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     await history?.agentSessionReviews.recover(docs().map(doc => doc.dir))
   } catch (error) {
     history?.agentSessionReviews.close()
-    await closeTranscriptions()
+    await closeAuthoring()
     await workbench.close()
     await running.close()
     throw error
@@ -390,7 +392,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   try {
     site = await startWorkspaceSite({ root, spec, bundled: options.bundled, stateDir, compile: compileForSite, stampPreviewRevision: (compilation, doc) => workbench!.stampPreviewRevision(compilation, doc), diagnostics: running.diagnostics, preview, log })
   } catch (error) {
-    await closeTranscriptions()
+    await closeAuthoring()
     await workbench.close()
     await running.close()
     if (home) rmSync(home, { recursive: true, force: true })
@@ -403,7 +405,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     mcp: { url: `${running.url}/mcp`, stateFile },
     async close() {
       history?.agentSessionReviews.close()
-      await closeTranscriptions()
+      await closeAuthoring()
       for (const session of compileSessions.values()) session.close()
       await jobs.close()
       await workbench?.close()

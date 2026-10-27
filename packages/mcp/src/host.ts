@@ -5,6 +5,7 @@ import type {
   ApprovalRequest,
   DiagnosticSnapshot,
   DocumentAuthoring,
+  DocumentAudioAuthoring,
   DocumentTranscriptions,
   DocumentTranscriptionAdoption,
   DocumentSummary,
@@ -61,6 +62,7 @@ export interface McpRuntimeWindow {
 
 export interface McpHost {
   authoring?: DocumentAuthoring
+  audioAuthoring?: DocumentAudioAuthoring
   transcriptions?: DocumentTranscriptions
   transcriptionAdoption?: DocumentTranscriptionAdoption
   process?: McpProcess

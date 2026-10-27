@@ -21,7 +21,7 @@ import type { Jobs } from './jobs.ts'
 import type { WorkbenchApi } from './workbench-api.ts'
 import { documentEditorRoutes } from './document-editor.ts'
 import type { DocumentEditor } from './document-editor.ts'
-import { documentAudioRoutes } from './document-audio.ts'
+import { createDocumentAudioAuthoring } from './document-audio.ts'
 import { documentImageRoutes } from './document-images.ts'
 import { createDocumentTranscriptions, documentTranscriptionRoutes } from './document-transcription.ts'
 import type { DocumentTranscriptions, ProductionAudioAuthoring, SpeechService } from '@lincyaw/kernel'
@@ -55,6 +55,7 @@ export interface WorkspaceRoutesOptions {
   /** Supplied by a workspace host so remounting contributions does not replace or cancel tasks. */
   transcriptions?: DocumentTranscriptions
   transcriptionAdoptionRoutes?: Record<string, Route>
+  audioAuthoringRoutes?: Record<string, Route>
 }
 
 function toRendererIds(body: unknown): string[] | undefined {
@@ -142,9 +143,10 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
   })
   const ownedTranscriptions = options.transcriptions ? undefined : createDocumentTranscriptions({ root: config.root, editor, audio: options.audio, speech: options.speech })
   const transcriptions = options.transcriptions ?? ownedTranscriptions!
+  const ownedAudio = options.audioAuthoringRoutes ? undefined : createDocumentAudioAuthoring({ root: config.root, editor, revisions, audio: options.audio, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   const routes: Record<string, Route> = {
     ...documentEditorRoutes({ root: config.root, editor, documentEditor: options.documentEditor, workbench }),
-    ...documentAudioRoutes({ root: config.root, editor, revisions, audio: options.audio }),
+    ...(options.audioAuthoringRoutes ?? ownedAudio!.routes),
     ...documentImageRoutes({ root: config.root, editor, revisions }),
     ...documentTranscriptionRoutes(transcriptions),
     ...options.transcriptionAdoptionRoutes,
@@ -271,7 +273,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       })),
     },
   }
-  return { routes: authorizeWorkspaceRoutes(routes, options.launcherToken), close: () => ownedTranscriptions?.close() ?? Promise.resolve() }
+  return { routes: authorizeWorkspaceRoutes(routes, options.launcherToken), close: async () => { await Promise.all([ownedTranscriptions?.close(), ownedAudio?.close()]) } }
 }
 
 function workbenchRoutes(workbench: WorkbenchApi): Record<string, Route> {
@@ -371,11 +373,11 @@ function jobRoutes(jobs: Jobs, editor: SourceEditor): Record<string, Route> {
   }
 }
 
-export function workspaceRoutesPlugin(options: WorkspaceRoutesOptions): PresmiumNodePlugin {
+export function workspaceRoutesPlugin(options: WorkspaceRoutesOptions, borrowedRoutes?: Record<string, Route>): PresmiumNodePlugin {
   return {
     id: WORKSPACE_ID,
     version,
     kernel: '^1.0.0',
-    server: ctx => workspaceRoutes({ ...options, audio: ctx.service(PRODUCTION_AUDIO_AUTHORING), speech: ctx.service(SPEECH) }),
+    server: ctx => borrowedRoutes ? { routes: borrowedRoutes } : workspaceRoutes({ ...options, audio: ctx.service(PRODUCTION_AUDIO_AUTHORING), speech: ctx.service(SPEECH) }),
   }
 }

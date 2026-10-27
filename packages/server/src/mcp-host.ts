@@ -41,6 +41,7 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
   return {
     process: { command: options.command },
     get authoring() { return options.serverHost?.authoring },
+    get audioAuthoring() { return options.serverHost?.audioAuthoring },
     get transcriptions() { return options.serverHost?.transcriptions },
     get transcriptionAdoption() { return options.serverHost?.transcriptionAdoption },
     readyTools: document => options.serverHost?.agentTools?.(document) ?? { tools: [], service: options.service },
