@@ -27,6 +27,12 @@ reach the service, and Dismiss clears only that instance. Request context contai
 document and status, without query parameters, payloads or credentials; an intentional Abort is not a
 request failure. Do not install a global fetch wrapper to collect unrelated Harness traffic.
 
+## Multiple tabs with pending requests
+
+Normal Studio has no shell HMR EventSource: client rebuilds and shell plugin changes require a page reload, while workspace events use the scoped event WebSocket. A private profile that re-enables the documented `client-hmr` row restores its per-tab HTTP/1 SSE cost. Configuration and dependency ownership are in `docs/design-dsh.md` 2.3.
+
+For a queued request, compare active streams, protocol and actual send/header timing with an independent same-cookie Node request. A browser request-created event alone does not prove the server received it. Preserve a release probe of the same request, rather than treating a new retry as success; never weaken the source actor guards. See `docs/benchmarks/studio-multitab-transport-2026-10-27.md`.
+
 ## Collect evidence with `pnpm debug:studio`
 
 For a shared source checkout, an `EACCES` reading `packages/dsh/build/dist/client.json` or `client.js` means generated-client permissions, not a browser cache diagnosis. Source startup rebuilds unreadable or invalid metadata; generated client assets remain readable even with a private launcher umask. Verify the served bundle and the actual target DOM after restarting or reloading the workbench.
@@ -113,8 +119,7 @@ full example or run test suites.
   `presmium.preview.restartable: true` in the package's `package.json` and `PluginDefinition.restartable:
   true` on a kernel plugin (`docs/architecture.md` 1.1). When the owner asks for tests, the targeted one is
   `e2e/preview-cache.spec.ts`.
-- Tests and scripts snapshot the isolated workbench client so parallel rebuilds do not trigger Harness hot
-  replacement; parallel sessions running targeted Playwright pass `--output <own directory>` to avoid
+- Tests and scripts snapshot the isolated workbench client so parallel builds cannot change its served bytes; parallel sessions running targeted Playwright pass `--output <own directory>` to avoid
   colliding artifacts.
 - Earlier measurements: `docs/benchmarks/workbench-preview-2026-10-21.md` (first investigation) and
   `docs/benchmarks/preview-cache-2026-10-21.md` (cache lifecycle, real-course measurements, remaining

@@ -76,18 +76,36 @@
 
 ### 2.3 请求的路径
 
-1. **工作台的数据**：浏览器 → dsh 宿主的 `/api/presmium/*`（经 dsh 的 cookie 与 `Host`、`Origin` 栅栏）→ bundle → 工作区服务（回环，带服务令牌，5.3 节）。`connection.fetch` 的精确路由可以流式回答（dsh 宿主对回答做 gzip 压缩，但不缓冲），`ir/events` 的 SSE 因此经它推送到页面。
+1. **工作台的数据**：浏览器 → dsh 宿主的 `/api/presmium/*`（经 dsh 的 cookie 与 `Host`、`Origin` 栅栏）→ bundle → 工作区服务（回环，带服务令牌，5.3 节）。普通读取与修改继续使用 `connection.fetch` 精确路由。文稿、诊断、审阅、IR 和任务事件由每页一个 `/api/presmium/events` WebSocket 承载，经公开 `webServer.registerUpgrade` 与 `connection.admit` 核对 cookie、Host、Origin 和 owner 身份，再转发原工作区 SSE；取消只释放对应逻辑订阅，不接管共享 Peer。`workspaceClient()` 的独立使用者仍默认使用 EventSource。
 2. **预览**：浏览器中的 iframe → 工作区服务的源：产物页面与它的 `/__presmium/` 路由。
 3. **agent 的工具**：dsh 宿主 → bundle → 工作区服务的 `/mcp`（回环，每个会话一个会话令牌，5.3 节）。
 4. **外部 agent**：Claude Code、Codex → `presmium-mcp`（stdio），或工作区服务的 `/mcp`（令牌在 0600 的状态文件中）。
 
 浏览器与这些服务之间没有替浏览器持有 cookie 的代理：注入 cookie 并改写 `Origin` 的代理会拆掉 dsh 的栅栏，让外来源的页面读出会话记录。
 
+正常 Studio 的 Web 补丁禁用正式 `client-hmr` 行，避免 `/plugins/events` 继续占用每页一条 HTTP/1.1 连接。静态启动图保留，文稿及运行数据仍实时更新；外壳插件启停或客户端代码重建后，作者需重新加载页面。维护自有 dsh profile、确需外壳热更时，可在 Presmium Web 补丁后应用以下正式补丁并重启自有宿主：
+
+```yaml
+- id: client-hmr
+  disabled: false
+```
+
+重新启用会恢复每页一条 shell SSE，HTTP/1 多标签页上限也随之恢复；不要把它作为普通编辑所需设置。实际六标签页结果与限制见[传输记录](benchmarks/studio-multitab-transport-2026-10-27.md)。
+
+| 事件连接依赖 | 公开接口与用途 | 许可证 |
+|---|---|---|
+| `ws` 8.22.0 | `WebSocketServer({noServer:true})`、`handleUpgrade`；只借框架监听器 | MIT |
+| `eventsource` 3.0.7 | `EventSource({fetch})`；带服务令牌读取原 SSE，保留其重连行为 | MIT |
+| `partysocket` 1.3.0 | 通用 `WebSocket`、`startClosed`、`reconnect/close`；离线消息队列关闭 | MIT |
+| `zod` 4.4.3 | 共享严格命令与事件 schema，拒绝额外字段 | MIT |
+
+连接只接受五种固定 topic，每个连接至多 16 个逻辑订阅、输入帧至多 8 KiB、待发送数据至多 2 MiB。重连仅恢复当前订阅，新代次不接受旧 ID；文稿版本、事务与保存队列仍由原 actor 持有。
+
 ### 2.4 接缝
 
 | 接缝 | 两侧 | 用到的接口 | 稳定性 |
 |---|---|---|---|
-| S1 | bundle 与 dsh 宿主 | `ctx.tools.register`、`agent/created` 与 `agent.ctx.tools.register`、`defineTool`；`tools/pre-execute`、`tools/execute`；`ctx.tools.guard`；`approval/request`；`ctx.systemPrompt.section`、`context`、`agent/pre-step`；`ctx.skills.register` 与 skill-filesystem 的配置；`ctx.workspaceRegistry`；`ctx.connection.fetch.register`（精确路径，必须在 `/api` 下）与 `admit()`；`ctx.webServer.tapIndex`；turn 与 `workspace/changes` 事件；`Agent.inject`；bundle 的格式（`dsh.bundle`、行 ID、`!!js`） | README 有文档，alpha |
+| S1 | bundle 与 dsh 宿主 | `ctx.tools.register`、`agent/created` 与 `agent.ctx.tools.register`、`defineTool`；`tools/pre-execute`、`tools/execute`；`ctx.tools.guard`；`approval/request`；`ctx.systemPrompt.section`、`context`、`agent/pre-step`；`ctx.skills.register` 与 skill-filesystem 的配置；`ctx.workspaceRegistry`；`ctx.connection.fetch.register`（精确路径，必须在 `/api` 下）与 `admit()`；`ctx.webServer.registerUpgrade`；`ctx.webServer.tapIndex`；turn 与 `workspace/changes` 事件；`Agent.inject`；bundle 的格式（`dsh.bundle`、行 ID、`!!js`） | README 有文档，alpha |
 | S2 | 工作台的客户端插件与 dsh 客户端运行时 | `dsh.client` 声明与 `dsh.client.external`（有文档）；包的工厂格式 `__ModuleLoader__.load`（无文档）；外壳的模块表（React 18.3.1 等）；槽位接口；`root` 的 6 个子槽位与 `ctx.layout`（README 描述了行为）；`ctx.theme`；`ctx.locale`；`ctx.sidebarRightTabs`；品牌槽位与 `settings.onboarding` | 最不稳定；只出现在 `@lincyaw/dsh` 的客户端部分 |
 | S3 | 工作台的面板与 dsh 的会话 | 面板自己发起的会话与提示（起草、讲授回写、批注）：Host API 的 `session/create`、`session/prompt`（schema 严格校验），或客户端运行时的会话服务 | 中 |
 | S4 | bundle 与工作区服务 | Presmium 自己的回环 HTTP 接口、`/mcp`、服务令牌、进程监管 | Presmium 自有 |

@@ -17,6 +17,8 @@ export class DocumentJobs {
   readonly #store: WorkbenchStore
   #unsubscribe?: () => void
   #scope = 0
+  #readTicket = 0
+  #baselineChanged = false
 
   constructor(client: WorkspaceClient, store: WorkbenchStore) {
     this.#client = client
@@ -26,9 +28,13 @@ export class DocumentJobs {
   subscribe(dir: string): void {
     this.#unsubscribe?.()
     const scope = ++this.#scope
+    this.#baselineChanged = false
     const current = () => scope === this.#scope && this.#store.state.document === dir
     this.#unsubscribe = this.#client.subscribeJobs(dir, (job) => {
-      if (current()) this.#merge(job)
+      if (current()) {
+        if (!this.#store.state.jobs) this.#baselineChanged = true
+        this.#merge(job)
+      }
     }, () => {
       // A failed carrier may have missed changes.
       if (current()) void this.#read(dir, current)
@@ -40,18 +46,25 @@ export class DocumentJobs {
   }
 
   async #read(dir: string, current: () => boolean): Promise<void> {
+    const ticket = ++this.#readTicket
+    const startedWith = new Map((this.#store.state.jobs?.jobs ?? []).map(job => [job.id, job.sequence]))
+    const owns = () => current() && ticket === this.#readTicket
     try {
       const answer = await this.#client.readJobs(dir)
-      if (!current()) return
+      if (!owns()) return
       // The events that arrived meanwhile may be newer than the list read.
       const known = new Map((this.#store.state.jobs?.jobs ?? []).map(job => [job.id, job]))
       const read = new Set(answer.jobs.map(job => job.id))
-      // A job started after the list was read is still running, and not in it.
-      const started = [...known.values()].filter(job => !read.has(job.id) && (job.state === 'queued' || job.state === 'running'))
-      const jobs = [...started, ...answer.jobs.map(job => newer(known.get(job.id), job))]
+      // Keep only observations made after this read began, including a job that already finished.
+      const observed = [...known.values()].filter(job => !read.has(job.id) && (!startedWith.has(job.id) || job.sequence > startedWith.get(job.id)!))
+      const jobs = [...observed, ...answer.jobs.map(job => newer(known.get(job.id), job))]
       this.#store.set({ jobs: { ...answer, jobs }, jobsFailure: undefined })
+      if (this.#baselineChanged && owns()) {
+        this.#baselineChanged = false
+        void this.#read(dir, current)
+      }
     } catch (error) {
-      if (current()) this.#store.set({ jobsFailure: errorMessage(error) })
+      if (owns()) this.#store.set({ jobsFailure: errorMessage(error) })
     }
   }
 
@@ -91,6 +104,7 @@ export class DocumentJobs {
 
   stop(): void {
     this.#scope++
+    this.#baselineChanged = false
     this.#unsubscribe?.()
     this.#unsubscribe = undefined
   }

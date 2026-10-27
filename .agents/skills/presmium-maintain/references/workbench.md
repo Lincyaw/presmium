@@ -16,6 +16,12 @@ enabled, identified by an ID such as `ui-layout` (terms table at the top of `doc
 changes to the tree are `packages/dsh/cordis.patch.yml` (host side) and `packages/dsh/web.patch.yml` (web
 client).
 
+## Studio event transport
+
+Normal Studio disables the documented `client-hmr` row in its Web patch. Its static boot manifest still loads the shell; source, diagnostics, review, IR and jobs update through the authenticated Presmium event WebSocket. Shell plugin changes and rebuilt client code require a page reload. A private dsh profile can explicitly re-enable that row after the Presmium patch and restart its own host; doing so restores a per-tab SSE and its HTTP/1 connection cost. See `docs/design-dsh.md` 2.3 for the configuration, dependencies and budgets.
+
+Keep the framework-independent `WorkspaceClient` subscription injection optional: standalone callers retain EventSource. Do not introduce an actor retry or fixed delay to work around browser connection starvation. The real six-tab before/after record is `docs/benchmarks/studio-multitab-transport-2026-10-27.md`.
+
 ## Who it is for
 
 The workbench serves teachers who are not technical (7.3). Keep the simple loop first: point at a problem on
