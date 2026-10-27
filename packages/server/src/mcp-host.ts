@@ -1,5 +1,5 @@
 import { dirname } from 'node:path'
-import { errorMessage, isPresentingRole } from '@lincyaw/kernel'
+import { isPresentingRole } from '@lincyaw/kernel'
 import type { AgentTool, Member, ServiceToken } from '@lincyaw/kernel'
 import type { McpHost, McpPluginTools, McpPosition } from '@lincyaw/mcp'
 import type { ControlChannel } from './control.ts'
@@ -81,14 +81,6 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
     focus: document => options.focus.find(document),
     watchFocus: listener => options.focus.watch(listener),
     async diagnostics(document) {
-      if (!options.diagnostics.isObserved(document) && !options.serverHost?.authoring) {
-        try {
-          const { doc } = await host().compile(document)
-          if (!options.diagnostics.isObserved(document)) options.diagnostics.compiled(document, doc, host().workspaceRoot ?? dirname(doc.meta.entry))
-        } catch (error) {
-          if (!options.diagnostics.isObserved(document)) options.diagnostics.failed(document, errorMessage(error))
-        }
-      }
       return options.diagnostics.snapshot(document)
     },
     watchDiagnostics: listener => options.diagnostics.watch(listener),

@@ -152,7 +152,7 @@ source.
 - The workbench only says "some content could not be shown correctly"; the raw text is under "Details".
   "Let AI fix it" and comments go to the current session through
   `packages/dsh/src/client/agent-requests.ts` and keep the input draft. Chat requests retain the selected focus.
-- When judging the agent's environment feedback, tell apart the tools `get_diagnostics` (source and checks),
+- When judging the agent's environment feedback, tell apart the tools `get_diagnostics` (reported snapshot), `check_document` (explicit compilation and checks),
   `get_outputs` (compiled recordings) and `get_runtime` (plugin and component failures, live execution and
   session resets that the author's browser actually reported); in dsh they carry the prefix `presmium__`
   (`presmium__get_runtime`). The browser reports through the existing `STATUS` service of `@lincyaw/host`

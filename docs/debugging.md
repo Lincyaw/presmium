@@ -6,7 +6,7 @@
 
 `pnpm studio` 在终端实时显示工作区服务日志，启动时打印持久日志路径。默认文件是 `~/.local/state/presmium/studio/presmium-studio.log`；设置了 `XDG_STATE_HOME` 时跟随该目录。按文稿、预览请求编号或导出任务 ID 查看阶段与耗时。日志文件含 dsh 的启动网址，不要原样复制到报告。
 
-agent 已连接到当前工作区时，读取 `presmium://diagnostics?document=<文稿目录>` 获取当前诊断，调用 `get_runtime` 获取实际预览窗口反馈，调用 `get_outputs` 查看构建结果。没有窗口反馈只说明尚未观察到浏览器；不能推断页面健康。`get_diagnostics` 会运行检查，不用它代替浏览器观测。
+agent 已连接到当前工作区时，读取 `presmium://diagnostics?document=<文稿目录>` 获取当前诊断，调用 `get_runtime` 获取实际预览窗口反馈，调用 `get_outputs` 查看构建结果。没有窗口反馈只说明尚未观察到浏览器；不能推断页面健康。`get_diagnostics` 分片读取同一诊断快照，不触发编译或检查；显式执行检查用 `check_document`。空快照不证明当前源或浏览器健康。
 
 ## 打开时要求 dsh 认证
 

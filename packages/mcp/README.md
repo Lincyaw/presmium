@@ -12,7 +12,9 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonica
 pnpm exec presmium-mcp <document directory>
 ```
 
-The reading tools (`list_sections`, `get_section`, `get_step`, `search`, `get_code_ref`, `get_outputs`, `get_diagnostics`, `locate_source` and others) are always there; `--allow operate` also provides `run_code` and `build`.
+The reading tools (`list_sections`, `get_section`, `get_step`, `search`, `get_code_ref`, `get_outputs`, `get_diagnostics`, `check_document`, `locate_source` and others) are always there; `--allow operate` also provides `run_code` and `build`.
+
+`get_diagnostics` reads version-bound diagnostic snapshot fragments without compiling or checking. Keep both version and digest on continuation reads, join decoded `text` at `nextOffset`, and parse once after `complete`. `check_document` explicitly runs compilation and plugin checks; its counts do not verify the current source or browser. The full protocol and compiler-only stdio boundary are in [diagnostic feedback](../../docs/diagnostic-feedback.md).
 
 The workspace host behind `presmium serve` also provides canonical authoring. Start with `get_authoring_capabilities` and `get_document_outline`, then read complete saved entities or fields through `read_document_part`. Keep the returned source on every continuation; a source change returns 409. The legacy `get_document` still returns the full document for SDK consumers and can exceed an agent's tool-result budget. `get_section/get_step` read derived runtime data, not editable authoring content.
 

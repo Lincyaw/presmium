@@ -44,7 +44,7 @@ For a stalling or broken front end, in this order:
    `presmium://diagnostics?document=<document directory>` (the current diagnostics), call `get_runtime` (what
    the preview windows actually reported) and `get_outputs` (the build results); in dsh the tools are named
    `presmium__get_runtime` and so on. No window feedback only means no browser has been observed, not that
-   the page is healthy. `get_diagnostics` runs the checks; it does not replace observing the browser.
+   the page is healthy. `get_diagnostics` reads the reported snapshot without compiling; `check_document` explicitly runs compilation and plugin checks. Neither replaces observing the browser.
 2. Reproduce in an isolated copy, from the repository root: `pnpm debug:studio [<workspace>] --document
    <document directory>` (without a workspace it uses a fresh copy of `examples/animations`). It copies
    the workspace and runs its own state directory, service ports and Chromium; the original files and running
