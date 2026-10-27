@@ -1435,10 +1435,31 @@
       "draftRecovery": {
         "nodeId": "241:843",
         "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=241-843",
-        "publicControls": ["PmNotice", "PmSelect", "PmButton", "BlockNote Thread", "BlockNote Comments.Editor"],
+        "publicControls": [
+          "PmNotice",
+          "PmSelect",
+          "PmButton",
+          "BlockNote Thread",
+          "BlockNote Comments.Editor"
+        ],
         "source": "packages/workbench/src/document-editor/DocumentComments.tsx / comment-drafts.ts",
         "behavior": "Reply and existing-comment edit drafts require explicit exact selection. Strictly preserve current input before recovery; removed targets provide native read-only retrieval and discard without rebinding. New-thread composers are not covered.",
         "verification": "docs/benchmarks/native-comment-drafts-2026-10-28.md"
+      },
+      "longText": {
+        "componentSetId": "269:5405",
+        "variants": {
+          "Compact": "269:5385",
+          "Touch": "269:5395"
+        },
+        "reviewFrameId": "269:5406",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=269-5405",
+        "tokens": {
+          "--pm-comment-width": "VariableID:269:5382",
+          "--pm-comment-editor-max-height": "VariableID:269:5384"
+        },
+        "source": "packages/design/src/components.css / tokens.css",
+        "behavior": "Public native Card/Editor classes bound floating and sidebar widths; unspaced URLs, identifiers and mixed CJK wrap unchanged. The native editor scrolls independently so Save stays reachable. No selection, callback, draft or canonical changes."
       }
     }
   },
