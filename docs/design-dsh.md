@@ -83,14 +83,9 @@
 
 浏览器与这些服务之间没有替浏览器持有 cookie 的代理：注入 cookie 并改写 `Origin` 的代理会拆掉 dsh 的栅栏，让外来源的页面读出会话记录。
 
-正常 Studio 的 Web 补丁禁用正式 `client-hmr` 行，避免 `/plugins/events` 继续占用每页一条 HTTP/1.1 连接。静态启动图保留，文稿及运行数据仍实时更新；外壳插件启停或客户端代码重建后，作者需重新加载页面。维护自有 dsh profile、确需外壳热更时，可在 Presmium Web 补丁后应用以下正式补丁并重启自有宿主：
+正常 Studio 的 Web 补丁固定 `client-hmr.disabled: true`，官方启动器在 profile 层之后应用该补丁。静态启动图保留，文稿及运行数据仍实时更新；客户端代码重建不会替换正在编辑的根客户端，作者在确认保存或取回未持久草稿后再重新加载页面。该设置也避免 `/plugins/events` 占用每页一条 HTTP/1.1 连接，六标签页结果见[传输记录](benchmarks/studio-multitab-transport-2026-10-27.md)。
 
-```yaml
-- id: client-hmr
-  disabled: false
-```
-
-重新启用会恢复每页一条 shell SSE，HTTP/1 多标签页上限也随之恢复；不要把它作为普通编辑所需设置。实际六标签页结果与限制见[传输记录](benchmarks/studio-multitab-transport-2026-10-27.md)。
+自有 profile 能在更后的补丁中重新启用 DSH 的正式 `client-hmr` 机制，但 Presmium 根客户端尚不支持带未确认批注稿的热替换。私有真实 Studio 已确认：会话内稿在根 fiber 卸载后的自动整页恢复中丢失，且原离开保护已被清理；默认关闭时，同样的真实代码重建保留原页面与输入。此前的根重载记录只证明已进入恢复存储的内容能恢复。上游尚未提供公开的卸载前阻止或持有者交接契约，不能把返回点 checkpoint 或临时内存当作持久备份。保持官方设置，具体证据和未验证范围见[批注稿与根热更新](benchmarks/comment-draft-root-hmr-2026-10-28.md)。
 
 | 事件连接依赖 | 公开接口与用途 | 许可证 |
 |---|---|---|
