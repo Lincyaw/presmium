@@ -20,12 +20,12 @@ function isReturnPoint(point: unknown): point is ReturnPoint {
     && (!('sectionId' in point) || typeof point.sectionId === 'string') && (!('stepId' in point) || typeof point.stepId === 'string'))
 }
 
-function takeOpenDocument(): ReturnPoint | undefined {
+function readOpenDocument(): ReturnPoint | undefined {
   try {
     const point: unknown = JSON.parse(sessionStorage.getItem(DOCUMENT_KEY) ?? 'null')
-    sessionStorage.removeItem(DOCUMENT_KEY)
-    return isReturnPoint(point) ? point : undefined
-  } catch { return }
+    if (isReturnPoint(point)) return point
+  } catch { /* Invalid or unavailable storage cannot authorize navigation. */ }
+  try { sessionStorage.removeItem(DOCUMENT_KEY) } catch { /* Editing remains available. */ }
 }
 
 declare global {
@@ -61,7 +61,7 @@ export function beginRootReload(): { reloading: boolean, point?: ReturnPoint } {
     return { reloading: true }
   }
   window.__presmiumRootReload = CODE
-  const opened = takeOpenDocument()
+  const opened = readOpenDocument()
   try {
     const saved = checkpoint()
     sessionStorage.removeItem(KEY)
@@ -72,10 +72,31 @@ export function beginRootReload(): { reloading: boolean, point?: ReturnPoint } {
   }
 }
 
-/** Keep the tab's explicit document address; page/step/scroll recovery stays with Workbench. */
-export function retainOpenDocument(workbench: Workbench): () => void {
+/** Keep a pending address through another reload; only explicit navigation or settlement retires it. */
+function retainOpenDocument(workbench: Workbench, returning?: ReturnPoint): { open<T>(start: () => T): T, settle(): void, close(): void } {
   let previous: string | undefined
+  let pending = Boolean(returning)
+  let opening = false, closed = false
+  const navigation = workbench.documentNavigationVersion
+  let remembered: ReturnPoint | undefined
+  const write = (point: ReturnPoint | undefined) => {
+    const next = point ? JSON.stringify(point) : ''
+    if (next === previous) return
+    try {
+      if (point) sessionStorage.setItem(DOCUMENT_KEY, next)
+      else sessionStorage.removeItem(DOCUMENT_KEY)
+      previous = next
+      remembered = point
+    } catch {
+      // Do not keep an earlier address after a later explicit choice could not be stored.
+      try { sessionStorage.removeItem(DOCUMENT_KEY) } catch { /* Editing does not depend on address storage. */ }
+      previous = undefined
+      remembered = undefined
+    }
+  }
+  if (returning) write({ workspace: returning.workspace, directory: returning.directory, documentId: returning.documentId })
   const retain = () => {
+    if (closed || opening) return
     const { document, authoring } = workbench.state
     let point: ReturnPoint | undefined
     if (document !== undefined && authoring?.directory === document && authoring.identity && authoring.content) {
@@ -86,17 +107,19 @@ export function retainOpenDocument(workbench: Workbench): () => void {
         }
       } catch { /* An unknown identity cannot authorize opening another document. */ }
     }
-    const next = point ? JSON.stringify(point) : ''
-    if (next === previous) return
-    try {
-      if (point) sessionStorage.setItem(DOCUMENT_KEY, next)
-      else sessionStorage.removeItem(DOCUMENT_KEY)
-      previous = next
-    } catch { /* Document editing does not depend on return-address storage. */ }
+    if (point) write(point)
+    else if (document === undefined) {
+      if (!pending || workbench.documentNavigationVersion !== navigation) write(undefined)
+    } else if (remembered?.directory !== document) write(undefined)
   }
   const stop = workbench.subscribe(retain)
   retain()
-  return stop
+  return {
+    // Opening synchronously emits an intermediate Home while retiring the previous subscriptions.
+    open<T>(start: () => T): T { opening = true; try { return start() } finally { opening = false; retain() } },
+    settle() { if (!closed) { pending = false; retain() } },
+    close() { closed = true; stop() },
+  }
 }
 
 /** Store only a return address; document drafts keep their existing persistence and review rules. */
@@ -120,25 +143,21 @@ export function saveRootReturnPoint(workbench: Workbench): void {
   }
 }
 
-/** Consume a one-shot return point only against the same actual workspace and source identity. */
+/** Restore only within this navigation; final source adoption checks the expected workspace and identity. */
 export function restoreRootReturnPoint(workbench: Workbench, point: ReturnPoint | undefined): () => void {
   let active = true
-  const stop = workbench.subscribe(() => { if (workbench.state.document !== undefined) active = false })
+  const retaining = retainOpenDocument(workbench, point), navigation = workbench.documentNavigationVersion
+  const stop = workbench.subscribe(() => { if (workbench.documentNavigationVersion !== navigation) active = false })
   const restore = async () => {
     if (!point) return
     const info = await workbench.client.readWorkbenchInfo()
     if (!active || info.root !== point.workspace || workbench.state.document !== undefined) return
-    const source = await workbench.client.readDocument(point.directory)
-    if (!active || source.content.id !== point.documentId || workbench.state.document !== undefined) return
     stop()
-    await workbench.openDocument(point.directory, { expectedIdentity: JSON.stringify([point.workspace, point.documentId]) })
-    const current = workbench.state.authoring
-    if (!active || current?.identity !== JSON.stringify([point.workspace, point.documentId])) return
-    const section = point.sectionId && current.content?.sections[point.sectionId]
-    if (!section) return
-    workbench.goToSection(section.id)
-    if (point.stepId && section.stepOrder.includes(point.stepId)) workbench.selectDocumentStep(section.id, point.stepId)
+    await retaining.open(() => workbench.openDocument(point.directory, {
+      expectedIdentity: JSON.stringify([point.workspace, point.documentId]),
+      ...point.sectionId ? { fallbackReturnPoint: { sectionId: point.sectionId, ...point.stepId ? { stepId: point.stepId } : {} } } : {},
+    }))
   }
-  void restore().catch(() => { /* The normal home remains available when the return address no longer exists. */ }).finally(stop)
-  return () => { active = false; stop() }
+  void restore().catch(() => { /* The normal home remains available when the return address no longer exists. */ }).finally(() => { stop(); retaining.settle() })
+  return () => { active = false; stop(); retaining.close() }
 }
