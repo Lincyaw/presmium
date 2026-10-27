@@ -41,8 +41,11 @@ export function validateDocument(value: unknown): DocumentValidation {
   const doc = value as TeachingDocument
   const lectureRenderer = doc.metadata.renderers?.lecture
   if (isRecord(lectureRenderer) && own(lectureRenderer, 'script')) issue('/metadata/renderers/lecture/script', 'narration.external-source', 'External lecture scripts are not supported. Author narration in lecture.json narrations and bind it through each step narrationIds.')
+  const titleTargets = new Map(Object.keys(doc.sections).map(id => [`page:${id}`, id]))
   const ids = new Map<string, string>()
   const identify = (id: string, path: string) => {
+    const section = titleTargets.get(id)
+    if (section !== undefined) issue(path, 'id.reserved', `ID ${id} is reserved for the title of section ${section}.`)
     const prior = ids.get(id)
     if (prior !== undefined) issue(path, 'id.duplicate', `ID ${id} is already used at ${prior}.`)
     else ids.set(id, path)

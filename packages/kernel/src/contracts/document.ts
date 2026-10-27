@@ -187,6 +187,7 @@ export interface Production {
   mediaClips: MediaClip[]
 }
 
+/** A stable rich-text/code ID, or `page:${sectionId}` reserved for an existing section title. */
 export interface DocumentTextPoint { blockId: string, offset: number }
 export interface DocumentComment {
   id: string
