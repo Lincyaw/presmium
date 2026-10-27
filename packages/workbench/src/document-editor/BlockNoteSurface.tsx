@@ -3,7 +3,7 @@ import type { ForwardRefExoticComponent, ReactNode, RefAttributes } from 'react'
 import { filterSuggestionItems } from '@blocknote/core'
 import { en, zh } from '@blocknote/core/locales'
 import { BlockNoteView, components } from '@blocknote/mantine'
-import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ColorStyleButton, ComponentsContext, CreateLinkButton, FloatingComposerController, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, NestBlockButton, RenderInPortalElement, SuggestionMenuController, TextAlignButton, ThreadsSidebar, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
+import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ColorStyleButton, ComponentsContext, CreateLinkButton, FloatingComposerController, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, NestBlockButton, RenderInPortalElement, SuggestionMenuController, TableCellMergeButton, TextAlignButton, ThreadsSidebar, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
 import type { ComponentProps, FormattingToolbarProps } from '@blocknote/react'
 import { useMediaQuery } from '@mantine/hooks'
 import type { Locale } from '../messages.ts'
@@ -64,6 +64,7 @@ function EditorToolbar(props: FormattingToolbarProps) {
     <BasicTextStyleButton basicTextStyle="underline" /><BasicTextStyleButton basicTextStyle="strike" /><BasicTextStyleButton basicTextStyle="code" />
     <TextAlignButton textAlignment="left" /><TextAlignButton textAlignment="center" /><TextAlignButton textAlignment="right" />
     <ColorStyleButton /><NestBlockButton /><UnnestBlockButton /><CreateLinkButton />
+    <TableCellMergeButton />
     <AddCommentButton />
   </FormattingToolbar>
 }

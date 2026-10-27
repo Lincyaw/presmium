@@ -111,7 +111,7 @@ export function nativeRichTextToProduct(blocks: readonly DocumentEditorBlock[], 
       const table: TableNode = {
         id: block.id, type: 'table', ...block.content.headerRows ? { headerRows: block.content.headerRows } : {},
         ...block.content.headerCols ? { headerColumns: block.content.headerCols } : {},
-        ...block.content.columnWidths.length && block.content.columnWidths.every(width => width !== undefined) ? { columnWidths: block.content.columnWidths as number[] } : {},
+        ...block.content.columnWidths.length && block.content.columnWidths.every(width => typeof width === 'number' && Number.isFinite(width) && width > 0) ? { columnWidths: block.content.columnWidths as number[] } : {},
         children: block.content.rows.map((row, rowIndex) => ({
           id: context.tables.get(block.id)?.[rowIndex]?.id ?? original?.children[rowIndex]?.id ?? id(), type: 'tableRow', children: row.cells.map((cell, cellIndex) => {
             const props: Partial<TableCellProps> = Array.isArray(cell) ? {} : cell.props, style = nativeTextStyleToProduct(props)

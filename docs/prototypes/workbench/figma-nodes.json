@@ -1210,6 +1210,21 @@
       "authority": "TeachingDocument.sectionOrder",
       "commit": "Existing movePage(sectionId,beforeId|null) flushes pending text and captions, checks the version and preserves selection; menus remain available."
     },
+    "tableAuthoring": {
+      "componentId": "199:4529",
+      "reviewNodeId": "199:4530",
+      "variants": {
+        "CompactCellRange": "199:4397",
+        "CompactMerged": "199:4418",
+        "CompactSplit": "199:4442",
+        "TouchCellRange": "199:4463",
+        "TouchMerged": "199:4484",
+        "TouchSplit": "199:4508"
+      },
+      "source": "packages/workbench/src/document-editor/BlockNoteSurface.tsx",
+      "mechanism": "Public TableCellMergeButton in the native formatting toolbar and native SplitButton in the cell menu; original callbacks, selection, icons and shared 30/44 density are retained. Surviving row/cell IDs stay canonical; split creates new cells and native Undo/Redo restores structural history.",
+      "verification": "docs/benchmarks/document-table-authoring-2026-10-27.md"
+    },
     "comments": {
       "frameId": "9:15",
       "annotationNodeId": "12:3317",
