@@ -100,12 +100,13 @@ export interface WorkspaceClient {
   readChanges(document: string): Promise<{ files: UncommittedFile[] }>
   commitChanges(document: string, message: string, paths?: string[]): Promise<unknown>
   discardChanges(document: string, paths?: string[]): Promise<unknown>
-  readRevisions(document: string): Promise<RevisionsAnswer>
-  revertRevision(document: string, id: string): Promise<RevertResult>
+  readRevisions(document: string, query?: import('@lincyaw/kernel').DocumentHistoryQuery): Promise<RevisionsAnswer>
+  readHistoryFile(document: string, query: import('@lincyaw/kernel').DocumentHistoryRead): Promise<import('@lincyaw/kernel').DocumentHistoryFile>
+  revertRevision(document: string, request: import('@lincyaw/kernel').DocumentHistoryChange): Promise<import('@lincyaw/kernel').DocumentHistoryChanged>
   /** Takes back the document's latest change; `expect` is the `undo` of the history read, refused when it is not the latest any more. */
-  undo(document: string, expect?: string): Promise<RevertResult>
+  undo(document: string, request: import('@lincyaw/kernel').DocumentHistoryChange): Promise<import('@lincyaw/kernel').DocumentHistoryChanged>
   /** Puts back the change the latest undo took back. */
-  redo(document: string, expect?: string): Promise<RevertResult>
+  redo(document: string, request: import('@lincyaw/kernel').DocumentHistoryChange): Promise<import('@lincyaw/kernel').DocumentHistoryChanged>
   /** What the document can be made into, and its builds and exports. */
   readJobs(document: string): Promise<JobsAnswer>
   /** Starts a build or an export of the document (or answers the one already made from this revision). */
@@ -353,10 +354,11 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     startJob: (document, target, source) => post(url('jobs', document), { target, source } satisfies StartJobRequest),
     cancelJob: (document, id) => post(url('jobs/cancel', document), { id }),
     subscribeJobs: (document, changed, failed, ready) => subscribe(url('jobs/events', document), 'job', changed, failed, ready),
-    readRevisions: document => call(url('revisions', document, { limit: '50' })),
-    revertRevision: (document, id) => post(url('revisions/revert', document), { id }),
-    undo: (document, expect) => post(url('history/undo', document), expect ? { expect } : {}),
-    redo: (document, expect) => post(url('history/redo', document), expect ? { expect } : {}),
+    readRevisions: (document, query = {}) => call(url('revisions', document, { query: JSON.stringify(query) })),
+    readHistoryFile: (document, query) => call(url('history/file', document, { query: JSON.stringify(query) })),
+    revertRevision: (document, request) => post(url('revisions/revert', document), request),
+    undo: (document, request) => post(url('history/undo', document), request),
+    redo: (document, request) => post(url('history/redo', document), request),
     readTelemetry: () => call(url('telemetry')),
     sendTelemetry: async (batch, beacon) => {
       const body = JSON.stringify(batch)

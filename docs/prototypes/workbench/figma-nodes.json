@@ -1086,7 +1086,23 @@
     },
     "P15": {
       "nodeId": "9:17",
-      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-17"
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-17",
+      "historyPagination": {
+        "nodeId": "263:4136",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=263-4136",
+        "buttons": [
+          "263:4137",
+          "263:4146"
+        ],
+        "publicComponent": "PmButton",
+        "componentNodeId": "22:56",
+        "behavior": "Explicit newer/older page actions read one bounded page of original changes under the same history snapshot. Each row uses server-derived complete undo/redo-chain state. Changed source or snapshot rejects a stale page; a fresh first read replaces it. Reading never restores files. Loading retains labels and blocks duplicate actions.",
+        "implementation": [
+          "packages/workbench/src/panels/HistoryPanel.tsx",
+          "packages/workbench/src/history.ts"
+        ],
+        "ruleNodeId": "12:4163"
+      }
     },
     "P16": {
       "nodeId": "9:18",

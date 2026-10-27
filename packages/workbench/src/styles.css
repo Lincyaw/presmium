@@ -978,3 +978,10 @@
 .pmw-transcription__actions > span { min-width: 0; overflow-wrap: anywhere; }
 .pmw-transcription__review { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--pm-space-3); }
 @media (max-width: 767px) { .pmw-transcription__review { grid-template-columns: minmax(0, 1fr); } }
+
+.pmw-history-pages {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--pm-space-2);
+  margin: 0 var(--pm-space-3);
+}

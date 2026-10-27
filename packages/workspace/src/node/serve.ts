@@ -1,3 +1,4 @@
+import { createDocumentHistory } from './document-history.ts'
 import { createHash } from 'node:crypto'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
@@ -97,6 +98,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   let workbench: WorkbenchBackend | undefined
   let history: WorkspaceHistory | undefined
   let documentEditor: DocumentEditor | undefined
+  let documentHistory: ReturnType<typeof createDocumentHistory> | undefined
   let transcriptions: ReturnType<typeof createDocumentTranscriptions> | undefined
   let transcriptionAdoption: ReturnType<typeof createTranscriptionAdoption> | undefined
   let audioAuthoring: ReturnType<typeof createDocumentAudioAuthoring> | undefined
@@ -175,7 +177,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     authoringServicesClosed = true
     transcriptionAdoption?.close()
     for (const load of nodeServicePending) load.controller.abort()
-    await Promise.all([transcriptions?.close(), audioAuthoring?.close(), voiceAuthoring?.close(), workspaceRoutesOwner?.close?.()])
+    await Promise.all([transcriptions?.close(), audioAuthoring?.close(), voiceAuthoring?.close(), documentHistory?.close(), workspaceRoutesOwner?.close?.()])
     await Promise.allSettled([...nodeServicePending].map(load => load.promise))
     nodeServiceLoads.clear()
   }
@@ -240,6 +242,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   const serverHost: ServerHost = {
     workspaceRoot: root,
     get authoring() { return documentEditor },
+    get documentHistory() { return documentHistory?.service },
     get audioAuthoring() { return audioAuthoring?.service },
     get voiceAuthoring() { return voiceAuthoring?.service },
     get transcriptions() { return transcriptions },
@@ -353,6 +356,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, voices: voiceAuthoring.service, diagnostics: running.diagnostics, url: () => running.url, preview, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
   history = openHistory()
   documentEditor = createDocumentEditor({ editor, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
+  documentHistory = createDocumentHistory({ config, editor, locks, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required', changed: (before, after) => documentsChanged(documentsDiff(before, after)), reverted: (target, revision) => history?.agentSessionReviews.reverted(target, revision) })
   transcriptions = createDocumentTranscriptions({ root, editor, services: authoringServices })
   transcriptionAdoption = createTranscriptionAdoption({ documentEditor, transcriptions })
   audioAuthoring = createDocumentAudioAuthoring({ root, editor, revisions: history?.revisions, services: authoringServices, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
@@ -363,6 +367,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       transcriptions,
       transcriptionAdoptionRoutes: transcriptionAdoption.routes,
       audioAuthoringRoutes: audioAuthoring.routes,
+      historyRoutes: documentHistory.routes,
       locks,
       ...history ? { revisions: history.revisions, operations: history.operations, reviews: history.agentSessionReviews } : {},
       documentsChanged,
