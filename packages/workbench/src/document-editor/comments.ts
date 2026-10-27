@@ -11,8 +11,8 @@ import type { RichProjection } from './rich-text.ts'
 import type { Transaction } from '@tiptap/pm/state'
 import type { DocumentEditorBlock, NativeDocumentEditor } from './schema.tsx'
 import { commentEditorSchema } from './schema.tsx'
-import { CommentDrafts, commentDraftBaseline } from './comment-drafts.ts'
-import type { CommentDraftTarget } from './comment-drafts.ts'
+import { CommentDrafts, commentDraftBaseline, isNewCommentDraft, newCommentDraftSignature } from './comment-drafts.ts'
+import type { CommentComposerTarget, CommentDraftTarget, NewCommentDraftTarget } from './comment-drafts.ts'
 import { nativeTextPoint, nativeTextPosition, nativeTextPositionInDocument } from './selection.ts'
 
 type NewComment = { body: unknown, metadata?: unknown }
@@ -86,10 +86,44 @@ export class DocumentThreadStore extends ThreadStore {
   get version(): string | undefined { return this.#version }
   threadSnapshot(threadId: string): DocumentThread | undefined { return this.#canonical[threadId] }
   refreshEditorCallbacks(): void { this.#publishView() }
-  draftTargetState(target: CommentDraftTarget): 'current' | 'changed' | 'unavailable' {
+  draftTargetState(target: CommentComposerTarget): 'current' | 'changed' | 'unavailable' {
+    if (isNewCommentDraft(target)) {
+      if (target.documentId !== this.#document.id || !target.anchor || !target.signature) return 'unavailable'
+      const signature = newCommentDraftSignature(this.#document, target.anchor)
+      return signature === undefined ? 'unavailable' : signature === target.signature ? 'current' : 'changed'
+    }
     const thread = this.#canonical[target.threadId], comment = thread?.comments.find(value => value.id === target.commentId)
     if (!thread || thread.deletedAt || thread.createdAt !== target.threadCreatedAt || target.commentId && (!comment || comment.deletedAt || comment.createdAt !== target.commentCreatedAt)) return 'unavailable'
     return comment && target.baseline !== commentDraftBaseline(comment) ? 'changed' : 'current'
+  }
+  newDraftTarget(editor: NativeDocumentEditor, intentId = crypto.randomUUID()): NewCommentDraftTarget {
+    this.beforeAction?.()
+    const target: NewCommentDraftTarget = { kind: 'create', intentId, documentId: this.#document.id }
+    const selection = editor.prosemirrorState.selection
+    if (selection.empty) return target
+    const from = nativeTextPoint(editor, selection.from), to = nativeTextPoint(editor, selection.to)
+    if (!from || !to) return target
+    const anchor = { from: { blockId: from.blockId, offset: from.offset }, to: { blockId: to.blockId, offset: to.offset } }
+    const signature = newCommentDraftSignature(this.#document, anchor)
+    return signature ? { ...target, anchor, signature } : target
+  }
+  /** Verify both the canonical range and the actual native projection before a selection command. */
+  newDraftPositions(target: NewCommentDraftTarget, editor: NativeDocumentEditor): { from: number, to: number } | undefined {
+    if (editor.prosemirrorView.isDestroyed || this.draftTargetState(target) !== 'current' || !target.anchor || !target.signature) return
+    const positions = (point: { blockId: string, offset: number }) => {
+      const value = nativeTextPosition(editor, point)
+      if (value === undefined) return
+      const actual = nativeTextPoint(editor, value)
+      return actual?.blockId === point.blockId && actual.offset === point.offset ? value : undefined
+    }
+    const from = positions(target.anchor.from), to = positions(target.anchor.to)
+    if (from === undefined || to === undefined || from >= to) return
+    const entities: { id: string, text: string }[] = JSON.parse(target.signature)
+    for (const entity of entities) {
+      const start = positions({ blockId: entity.id, offset: 0 }), end = positions({ blockId: entity.id, offset: entity.text.length })
+      if (start === undefined || end === undefined || editor.prosemirrorState.doc.textBetween(start, end, '\n', '\uFFFC') !== entity.text) return
+    }
+    return { from, to }
   }
   close(): void { if (this.#ownsDrafts) this.drafts?.close() }
   get synchronizing(): boolean { return this.#synchronizing }
@@ -232,10 +266,10 @@ export class DocumentThreadStore extends ThreadStore {
   /** Source adoption is not another native edit; preserve selected thread and unchanged comment bodies. */
   synchronize(document: TeachingDocument, version: string | undefined, editor: NativeDocumentEditor, transaction?: Transaction, acknowledged = false): void {
     if (this.#synchronizing) return
-    this.drafts?.synchronize(document, version, acknowledged)
-    if (version === undefined || version === this.#version || this.#synchronizing) return
-    this.#version = version
     this.#document = document
+    this.drafts?.synchronize(document, version, acknowledged)
+    if (version === undefined || version === this.#version) return
+    this.#version = version
     const threads = document.comments
     if (same(threads ?? {}, this.#canonical)) return
     this.#synchronizing = true

@@ -1,9 +1,20 @@
-import { isRecord, validateDocument } from '@lincyaw/kernel'
-import type { DocumentComment, RichTextNode, TeachingDocument } from '@lincyaw/kernel'
+import { documentCommentTargets, isRecord, validateDocument, validateDocumentCommentAnchor } from '@lincyaw/kernel'
+import type { DocumentComment, DocumentThread, RichTextNode, TeachingDocument } from '@lincyaw/kernel'
 import { DocumentDraftStore } from '../document-draft-store.ts'
 import type { DraftStoreResult } from '../document-draft-store.ts'
 
 export interface CommentDraftTarget { threadId: string, commentId?: string, threadCreatedAt: string, commentCreatedAt?: string, baseline?: string }
+export interface NewCommentDraftTarget { kind: 'create', intentId: string, documentId: string, anchor?: DocumentThread['anchor'], signature?: string }
+export type CommentComposerTarget = CommentDraftTarget | NewCommentDraftTarget
+export const isNewCommentDraft = (target: CommentComposerTarget): target is NewCommentDraftTarget => 'kind' in target && target.kind === 'create'
+export function newCommentDraftSignature(document: TeachingDocument, anchor: DocumentThread['anchor']): string | undefined {
+  if (!anchor) return
+  try {
+    validateDocumentCommentAnchor(document, anchor)
+    const targets = documentCommentTargets(document), from = targets.get(anchor.from.blockId)!, to = targets.get(anchor.to.blockId)!
+    return JSON.stringify([...targets].filter(([, value]) => value.order >= from.order && value.order <= to.order).map(([id, value]) => ({ id, text: value.text })))
+  } catch { return }
+}
 export interface CommentDraftReference { id: string, revision: number, token: string }
 export interface CommentDraftRecord {
   format: 1
@@ -12,11 +23,11 @@ export interface CommentDraftRecord {
   owner: string
   revision: number
   updatedAt: number
-  target: CommentDraftTarget
+  target: CommentComposerTarget
   version: string
   content: RichTextNode[]
   composing: boolean
-  pending?: { commentId: string, value: string }
+  pending?: { commentId: string, value: string, threadId?: string, threadCreatedAt?: string }
 }
 export interface CommentDraftCandidate extends CommentDraftRecord { token: string, storage: 'durable' | 'session' }
 export interface CommentDraftState { candidates: readonly CommentDraftCandidate[], pending: boolean, failed: boolean, reading: boolean }
@@ -30,19 +41,29 @@ const keyOf = (scope: string, id: string) => `${prefix(scope)}${id}`
 const markerOf = (scope: string, value: CommentDraftReference) => `${SETTLED}${JSON.stringify([scope, value.id, value.revision, value.token])}`
 export const commentDraftBaseline = (comment: DocumentComment) => JSON.stringify({ userId: comment.userId, content: comment.content })
 const committedValue = (comment: DocumentComment) => JSON.stringify({ id: comment.id, userId: comment.userId, createdAt: comment.createdAt, updatedAt: comment.updatedAt, content: comment.content })
-export const sameCommentDraftTarget = (a: CommentDraftTarget, b: CommentDraftTarget) => a.threadId === b.threadId && a.commentId === b.commentId && a.threadCreatedAt === b.threadCreatedAt && a.commentCreatedAt === b.commentCreatedAt
+export const sameCommentDraftTarget = (a: CommentComposerTarget, b: CommentComposerTarget) => isNewCommentDraft(a) || isNewCommentDraft(b)
+  ? isNewCommentDraft(a) && isNewCommentDraft(b) && a.documentId === b.documentId && a.signature === b.signature && JSON.stringify(a.anchor) === JSON.stringify(b.anchor)
+  : a.threadId === b.threadId && a.commentId === b.commentId && a.threadCreatedAt === b.threadCreatedAt && a.commentCreatedAt === b.commentCreatedAt
 async function tokenOf(raw: string): Promise<string> {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw))
   return [...new Uint8Array(bytes)].map(value => value.toString(16).padStart(2, '0')).join('')
+}
+const point = (value: unknown): boolean => isRecord(value) && typeof value.blockId === 'string' && value.blockId.length > 0 && value.blockId.length <= 205 && Number.isSafeInteger(value.offset) && Number(value.offset) >= 0
+function targetShape(value: unknown): boolean {
+  if (!isRecord(value)) return false
+  if (value.kind === 'create') return typeof value.intentId === 'string' && value.intentId.length > 0 && value.intentId.length <= 200
+    && typeof value.documentId === 'string' && value.documentId.length > 0 && value.documentId.length <= 200
+    && (value.anchor === undefined && value.signature === undefined || isRecord(value.anchor) && point(value.anchor.from) && point(value.anchor.to) && typeof value.signature === 'string')
+  return typeof value.threadId === 'string' && typeof value.threadCreatedAt === 'string'
+    && (value.commentId === undefined || typeof value.commentId === 'string' && typeof value.commentCreatedAt === 'string' && typeof value.baseline === 'string')
 }
 function valid(value: unknown, scope: string): value is CommentDraftRecord {
   return isRecord(value) && value.format === 1 && value.scope === scope && typeof value.id === 'string' && value.id.length > 0 && value.id.length <= 200
     && typeof value.owner === 'string' && value.owner.length > 0 && value.owner.length <= 200 && Number.isSafeInteger(value.revision) && Number(value.revision) > 0
     && Number.isSafeInteger(value.updatedAt) && Number(value.updatedAt) >= 0 && typeof value.version === 'string' && value.version.length > 0 && value.version.length <= 200
-    && isRecord(value.target) && typeof value.target.threadId === 'string' && typeof value.target.threadCreatedAt === 'string'
-    && (value.target.commentId === undefined || typeof value.target.commentId === 'string' && typeof value.target.commentCreatedAt === 'string' && typeof value.target.baseline === 'string')
-    && Array.isArray(value.content) && value.content.length > 0 && value.content.every(node => isRecord(node) && typeof node.id === 'string' && typeof node.type === 'string')
-    && typeof value.composing === 'boolean' && (value.pending === undefined || isRecord(value.pending) && typeof value.pending.commentId === 'string' && typeof value.pending.value === 'string')
+    && targetShape(value.target) && Array.isArray(value.content) && value.content.length > 0 && value.content.every(node => isRecord(node) && typeof node.id === 'string' && typeof node.type === 'string')
+    && typeof value.composing === 'boolean' && (value.pending === undefined || isRecord(value.pending) && typeof value.pending.commentId === 'string' && typeof value.pending.value === 'string'
+      && (value.pending.threadId === undefined || typeof value.pending.threadId === 'string' && typeof value.pending.threadCreatedAt === 'string'))
 }
 
 /** Native composer backups use the document backup owner's strict transactions, never the source writer. */
@@ -82,7 +103,8 @@ export class CommentDrafts {
   #pending(): void { this.#emit({ pending: [...this.#writing.values()].some(value => value.pending), failed: this.#readFailure || this.#admissionFailure || [...this.#writing.values()].some(value => value.failed) }) }
   #validContent(value: CommentDraftRecord): boolean {
     if (!this.#document) return false
-    const document = { ...this.#document, comments: { [value.target.threadId]: { id: value.target.threadId, type: 'thread' as const, createdAt: value.target.threadCreatedAt, updatedAt: value.target.threadCreatedAt, resolved: false, comments: [{ id: value.id, type: 'comment' as const, userId: value.owner, createdAt: value.target.threadCreatedAt, updatedAt: value.target.threadCreatedAt, content: value.content, reactions: [] }] } } }
+    const target = value.target, id = isNewCommentDraft(target) ? `validation:${value.id}` : target.threadId, time = isNewCommentDraft(target) ? new Date(value.updatedAt).toISOString() : target.threadCreatedAt
+    const document = { ...this.#document, comments: { [id]: { id, type: 'thread' as const, createdAt: time, updatedAt: time, resolved: false, comments: [{ id: value.id, type: 'comment' as const, userId: value.owner, createdAt: time, updatedAt: time, content: value.content, reactions: [] }] } } }
     const result = validateDocument(document)
     return Boolean(result.document && !result.issues.some(issue => issue.severity === 'error'))
   }
@@ -120,16 +142,18 @@ export class CommentDrafts {
   }
   #isCommitted(record: CommentDraftRecord): boolean {
     if (!this.#acknowledged || !record.pending || !this.#document || !this.#version || record.version === this.#version) return false
-    const thread = this.#document.comments?.[record.target.threadId]
+    const target = record.target, created = isNewCommentDraft(target)
+    const thread = this.#document.comments?.[created ? record.pending.threadId ?? '' : target.threadId]
     const comment = thread?.comments.find(value => value.id === record.pending!.commentId)
-    return thread?.createdAt === record.target.threadCreatedAt && Boolean(comment && !comment.deletedAt && committedValue(comment) === record.pending.value)
+    return Boolean(thread && !thread.deletedAt && thread.createdAt === (created ? record.pending.threadCreatedAt : target.threadCreatedAt)
+      && (!created || JSON.stringify(thread.anchor) === JSON.stringify(target.anchor)) && comment && !comment.deletedAt && committedValue(comment) === record.pending.value)
   }
   synchronize(document: TeachingDocument, version: string | undefined, acknowledged = false): void {
     this.#document = document; this.#version = version; this.#acknowledged = acknowledged
     for (const value of this.#writing.values()) if (this.#isCommitted(value.record)) void this.clearOwn(value.record)
     if (this.#started) void this.refresh()
   }
-  write(target: CommentDraftTarget, version: string, content: RichTextNode[], composing: boolean, previous?: CommentDraftRecord): CommentDraftRecord | undefined {
+  write(target: CommentComposerTarget, version: string, content: RichTextNode[], composing: boolean, previous?: CommentDraftRecord): CommentDraftRecord | undefined {
     if (this.#closed) return
     const known = previous && this.#writing.get(previous.id)
     if (previous && (known && known.record.revision !== previous.revision || previous.owner !== this.#owner)) return
@@ -157,11 +181,11 @@ export class CommentDrafts {
     })
     return record
   }
-  submitted(record: CommentDraftRecord | undefined, comment: DocumentComment | undefined): void {
+  submitted(record: CommentDraftRecord | undefined, comment: DocumentComment | undefined, thread?: DocumentThread): void {
     if (!record || !comment || this.#closed) return
     const value = this.#writing.get(record.id)
     if (!value || value.record.revision !== record.revision) return
-    this.#put({ ...record, revision: record.revision + 1, pending: { commentId: comment.id, value: committedValue(comment) } }, value)
+    this.#put({ ...record, revision: record.revision + 1, pending: { commentId: comment.id, value: committedValue(comment), ...thread ? { threadId: thread.id, threadCreatedAt: thread.createdAt } : {} } }, value)
   }
   async clearOwn(record: CommentDraftRecord): Promise<boolean> {
     const value = this.#writing.get(record.id)
@@ -194,7 +218,7 @@ export class CommentDrafts {
     return committed
     } catch { this.#readFailure = true; this.#pending(); return false }
   }
-  async recover(reference: CommentDraftReference, target: CommentDraftTarget, version: string): Promise<CommentDraftRecord | undefined> {
+  async recover(reference: CommentDraftReference, target: CommentComposerTarget, version: string): Promise<CommentDraftRecord | undefined> {
     try {
     if (this.#closed || !this.#reader) return
     const values = await this.#reader.read([prefix(this.#scope)]), writing = this.#writing.get(reference.id)
@@ -202,7 +226,7 @@ export class CommentDrafts {
     if (this.#closed || typeof raw !== 'string' || await tokenOf(raw) !== reference.token) return
     const value: unknown = JSON.parse(raw)
     if (!valid(value, this.#scope) || value.revision !== reference.revision || !sameCommentDraftTarget(value.target, target) || !this.#validContent(value) || this.#closed) return
-    const record: CommentDraftRecord = { ...value, id: crypto.randomUUID(), owner: this.#owner, revision: 1, updatedAt: Date.now(), version, composing: false, pending: undefined }
+    const record: CommentDraftRecord = { ...value, target: isNewCommentDraft(target) ? structuredClone(target) : value.target, id: crypto.randomUUID(), owner: this.#owner, revision: 1, updatedAt: Date.now(), version, composing: false, pending: undefined }
     const store = new DocumentDraftStore(this.#scope), next = JSON.stringify(record)
     if (next.length > MAX_CHARS || !await store.create(keyOf(this.#scope, record.id), next) || this.#closed) { store.close(); if (!this.#closed) { this.#admissionFailure = true; this.#pending() }; return }
     this.#writing.set(record.id, { record, raw: next, store, generation: 0, pending: false, failed: false, done: Promise.resolve('committed') })

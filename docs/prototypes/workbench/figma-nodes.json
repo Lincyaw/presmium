@@ -1437,8 +1437,10 @@
         "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=241-843",
         "publicControls": ["PmNotice", "PmSelect", "PmButton", "BlockNote Thread", "BlockNote Comments.Editor"],
         "source": "packages/workbench/src/document-editor/DocumentComments.tsx / comment-drafts.ts",
-        "behavior": "Reply and existing-comment edit drafts require explicit exact selection. Strictly preserve current input before recovery; removed targets provide native read-only retrieval and discard without rebinding. New-thread composers are not covered.",
-        "verification": "docs/benchmarks/native-comment-drafts-2026-10-28.md"
+        "behavior": "Reply, existing-comment edit and new-thread drafts require explicit exact selection. Strictly preserve current input before recovery; removed or changed creation ranges provide native read-only retrieval and discard without rebinding. New-thread recovery restores its verified range through one public native command, then closes only the comments aside and displays the original FloatingComposer editor.",
+        "verification": "docs/benchmarks/native-comment-drafts-2026-10-28.md",
+        "newThreadVerification": "docs/benchmarks/native-new-comment-drafts-2026-10-28.md",
+        "newThreadDesignRead": { "skill": "figma-design-to-code", "session": "093bd690-c36c-482b-b45c-e9dd164a7cb9", "nodeId": "241:843", "existingNode": true }
       }
     }
   },

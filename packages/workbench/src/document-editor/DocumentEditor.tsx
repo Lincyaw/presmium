@@ -53,6 +53,7 @@ export interface DocumentEditorProps {
   onComposition?(composing: boolean): void
   onError?(error: Error): void
   commentsPortal?: HTMLElement | null
+  onCommentDraftRestore?(): void
 }
 
 /** A source version reset replaces the editor; its own save receipts never replace it. */
@@ -121,7 +122,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
   }
   return <BlockNoteSurface identity={props.identity} reset={props.reset} initialContent={projection.content} locale={props.locale} readOnly={props.readOnly}
     resolveAssetURL={props.resolveAssetURL} uploadImage={props.uploadImage}
-    comments={comments} commentsPortal={props.commentsPortal} nodeViews={props.nodeViews} onComposition={props.onComposition} onSelection={props.onSelection}
+    comments={comments} commentsPortal={props.commentsPortal} onCommentDraftRestore={() => current.current.onCommentDraftRestore?.()} nodeViews={props.nodeViews} onComposition={props.onComposition} onSelection={props.onSelection}
     onChange={emit} onReady={value => {
       if (projection !== active.current) return
       unsubscribe.current?.(); unsubscribe.current = undefined
@@ -176,5 +177,5 @@ export function DocumentEditor(props: DocumentEditorProps) {
       } } : undefined
       current.current.onReady?.(value, commands)
       if (value) reportPosition()
-    }} />
+    }} getPositionToken={() => current.current.getPositionToken?.()} />
 }

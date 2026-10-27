@@ -10,7 +10,7 @@ import type { NativeDocumentEditor } from '../document-editor/schema.tsx'
 import { isAgentChanging } from '../workbench.ts'
 
 /** Source editing is available before the first successful runtime compilation. */
-export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLElement | null }) {
+export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore }: { commentsPortal?: HTMLElement | null, onCommentDraftRestore?(): void }) {
   const workbench = useWorkbench(), t = useMessages()
   const source = useWorkbenchState(state => state.authoring)
   const sourceAcknowledged = () => {
@@ -166,7 +166,7 @@ export function SourceDocumentPanel({ commentsPortal }: { commentsPortal?: HTMLE
     </div>}
     {source?.issues.length ? <div className="pmw-source-document__diagnostics"><PmNotice tone="warn"><details><summary>{messages.diagnostics(source.issues.length)}</summary><ul>{source.issues.map((issue, index) => <li key={`${issue.path}:${index}`}><code>{issue.path}</code> {issue.message}</li>)}</ul></details></PmNotice></div> : null}
     {!source?.content || !source.identity ? <p className="pmw-muted">{source?.loading ? messages.loading : messages.unavailable}</p> : <div className="pmw-source-document__sheet">
-      <DocumentEditor acknowledged={sourceAcknowledged()} getDocumentAcknowledged={sourceAcknowledged} commentDrafts={workbench.documentCommentDrafts(source.identity)} identity={source.identity} document={source.content} version={source.version} member={source.member} getDocument={() => workbench.getDocument(source.identity)}
+      <DocumentEditor acknowledged={sourceAcknowledged()} getDocumentAcknowledged={sourceAcknowledged} onCommentDraftRestore={onCommentDraftRestore} commentDrafts={workbench.documentCommentDrafts(source.identity)} identity={source.identity} document={source.content} version={source.version} member={source.member} getDocument={() => workbench.getDocument(source.identity)}
         getDocumentVersion={() => { const current = workbench.getState().authoring; return current && current.identity === source.identity && current.reset === source.reset ? current.version : undefined }} reset={source.reset} locale={locale} readOnly={readOnly}
         uploadImage={(file, signal) => workbench.importDocumentImage(file, source.identity!, signal)}
         getPositionToken={() => workbench.getState().documentPositionToken}

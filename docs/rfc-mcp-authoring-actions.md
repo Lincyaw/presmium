@@ -35,7 +35,7 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 步骤状态、显隐、继承、组件参数与身份 | IR 契约支持稳定 `StepId`、`setStepState`；Web 对复杂步骤操作仍有缺口 | plan/apply 已有 `setStepState`，运行读取／导航仍可使用 | 共用完整步骤动作；未实现的重排／删除规则先声明 unavailable |
 | 讲稿文字、发音替换、cue 与停顿 | `NarrationEditor/DocumentStepNarration` → 同一文稿；`setNarration/setTiming` 已有 | plan/apply 已接受 `NarrationNode[]`；`lecture_preview` 只读派生计划 | 共享讲稿 edit-shared／fork、cue 编辑的更细范围与影响 |
 | 定义、公开参数、共享素材修改和“另存” | 定义在文稿中，代码通过 `DocumentChange.fileChanges`；通用素材属性仍未完整接入 | 已能明确 replacement 加同文稿文本文件原子保存；无专用定义范围动作 | 定义 Schema、引用计数、单实例／全部实例／fork 三种明确范围 |
-| 批注新建、回复、编辑、反应、解决、重开、删除 | `DocumentThreadStore` 与 kernel 共用纯动作，保原生 CommentsExtension／选区／即时保存；可信 member 与 owner 管理旧作者权限 | 已有紧凑 `plan_authoring_action/apply_authoring_action` 的七类 comment 动作，服务固定身份／时间／ID，见第 20 节 | reply／已有 comment edit 已有 strict 浏览器备份与显式恢复，删除目标仍可取稿；新建 thread composer 与 MCP 客户端草稿桥仍待；禁止写 BlockNote 私有 JSON，不把 replacement 当语义对齐 |
+| 批注新建、回复、编辑、反应、解决、重开、删除 | `DocumentThreadStore` 与 kernel 共用纯动作，保原生 CommentsExtension／选区／即时保存；可信 member 与 owner 管理旧作者权限 | 已有紧凑 `plan_authoring_action/apply_authoring_action` 的七类 comment 动作，服务固定身份／时间／ID，见第 20 节 | 新建／reply／已有 comment edit 已有 strict 浏览器备份与显式恢复，失效目标仍可取稿；MCP 客户端草稿字节桥仍待；禁止写 BlockNote 私有 JSON，不把 replacement 当语义对齐 |
 | 批量批注交给助手、接受／拒绝／继续修改 | workbench 与 dsh 的会话／审阅路由；材料生成流程仍未齐全 | 核心 MCP 不提供会话或审阅动作 | 显式任务范围、会话上下文与修改审阅，不能将发送成功当作内容修改完成 |
 | 导入与查看图片 | `document/image` 将原文件和资产声明原子保存；`document/asset` 按 Asset ID 读取 | 无 | 安全字节输入、回执与资源读取；沿用现有媒体检查限制 |
 | 导入／检查本地音频 | `DocumentAudioAuthoring` 共用真实媒体探测及多文件事务 | 已有能力、workspace 预检／导入与 canonical inspection 四个工具 | 远程分块上传尚未实现；路径限当前文稿工作区，不接受任意服务端路径 |
@@ -406,9 +406,9 @@ apply 通过原 operate、member/document/token、review、CAS、锁、历史和
 
 TTS 设置不运行提供方，不表示可合成、生成成功或客户端已试听。新录音来源仍须经过 `adopt_recording` 的真实文件 SHA／时长／wholeStep 检查，不能直接设置 assetId；明确替换原 recording 只清其配置槽位，不删除原始字节。音色继承与提供方目录继续见[音色作者边界](voice-authoring.md)。
 
-原生编辑器对 clean、非 IME 的外部 comments／production 更新保留原实例、正文 history 和未提交回复；同步前读取最新 actor 版本，不能让旧线程 snapshot 写回新源。第二次源采用后立即原生输入，锚点沿公开 transaction 从原文档映射，不按新文本重夹位置。正文 Undo 沿最新 canonical 保留外部音色／批注。原生现有评论的编辑基线通过公开 `Comments.Editor` 与 submit 扩展固定；目标正文变更时保留视图草稿、阻止 Save／快捷键覆盖新正文，canonical snapshot 始终使用最新内容，明确取消后显示保存值。无关 reply/reaction 不触发正文冲突。reply 与已有 comment edit 另有 workspace/member/稳定目标绑定的 strict IndexedDB 备份及显式恢复，关闭侧栏、切文稿、刷新后可取回；正文基线变化阻止旧 Save，删除目标只提供取稿和精确丢弃，不重新绑定。实际 pending ACK 不清后输入。尚无 thread ID 的新建 composer 未覆盖，MCP 在本片仍不能读取或恢复客户端未提交字节。见[原生批注草稿记录](benchmarks/native-comment-drafts-2026-10-28.md)。
+原生编辑器对 clean、非 IME 的外部 comments／production 更新保留原实例、正文 history 和未提交回复；同步前读取最新 actor 版本，不能让旧线程 snapshot 写回新源。第二次源采用后立即原生输入，锚点沿公开 transaction 从原文档映射，不按新文本重夹位置。正文 Undo 沿最新 canonical 保留外部音色／批注。原生现有评论的编辑基线通过公开 `Comments.Editor` 与 submit 扩展固定；目标正文变更时保留视图草稿、阻止 Save／快捷键覆盖新正文，canonical snapshot 始终使用最新内容，明确取消后显示保存值。无关 reply/reaction 不触发正文冲突。reply 与已有 comment edit 另有 workspace/member/稳定目标绑定的 strict IndexedDB 备份及显式恢复，关闭侧栏、切文稿、刷新后可取回；正文基线变化阻止旧 Save，删除目标只提供取稿和精确丢弃，不重新绑定。实际 pending ACK 不清后输入。尚无 thread ID 的新建 composer 也按创建意图、可信 member、源版本、稳定范围与内容签名备份；没有伪造线程 ID。明确恢复先 strict 保留当前稿并 fork，再经公开 `editor.transact`／`TextSelection` 一次恢复原范围。目标改变或消失只取稿，晚输入／位置改变／IME 优先；只有实际 clean canonical 的新线程／评论身份、原 anchor、正文与时间一致才退休提交稿。MCP 在本片仍不能读取或恢复客户端未提交字节。见[原生批注草稿记录](benchmarks/native-comment-drafts-2026-10-28.md)与[新建稿记录](benchmarks/native-new-comment-drafts-2026-10-28.md)。
 
-分阶段真实证据、未完成观察器记录与源码谱系见[批注作者动作记录](benchmarks/comment-authoring-actions-2026-10-28.md)。本节没有实现客户端播放、麦克风控制、草稿恢复、审阅会话或全部人机操作。
+分阶段真实证据、未完成观察器记录与源码谱系见[批注作者动作记录](benchmarks/comment-authoring-actions-2026-10-28.md)。本节没有实现客户端播放、麦克风控制、MCP 客户端草稿读取／恢复、审阅会话或全部人机操作。
 
 ## 21. 已实现的文稿历史与明确撤消
 
