@@ -416,7 +416,7 @@ Web 历史面板与五个 MCP 工具借同一个工作区 owner，复用 Revisio
 
 `get_project_capabilities` 只观察 HEAD／配置并返回真实 gate 与限额，不编译或验证整个文件树。`plan_project_change` 绑定实际 HEAD、配置、目录树、模板及 canonical 引用，固定新建／复制的 Doc UUID，返回紧凑影响、planId／digest 和过期时间。`apply_project_change` 在原 DocumentOperations 的事务与共享锁内复核后写入，读回核验再给保存回执；不新增 writer。HTTP 对应 `project/capabilities`、`project/plan`、`project/apply`，旧裸 `POST documents` 不再写入。
 
-首页沿用原创建、复制、重命名与删除表单；标题 rename 使用 retitle，目录 rename 是独立明确操作。复制的标题和新身份同一次提交。删除先预检并显示真实文件／链接数量，再明确提交这份计划。`impact.files/bytes` 指操作根的文件和原字节，跨文稿 canonical 改写另列 referenceDocuments。已知素材／实现文件／href 与官方代码锚点按各自路径契约处理，literal 和插件任意 data 不递归改写；删除 incoming 引用或不能安全处理的操作明确拒绝。
+首页沿用原创建、复制、重命名与删除表单；标题 rename 使用 retitle，目录 rename 是独立明确操作。复制的标题和新身份同一次提交。删除先预检并显示真实文件／链接数量，再明确提交这份计划。`impact.files/bytes` 指操作根的文件和原字节，跨文稿 canonical 改写另列 referenceDocuments。已知素材／实现文件／href 中的相对 URL 与官方代码锚点按各自路径契约处理，删除这些已识别的 incoming 引用时拒绝；本地 pinned 锚点／变体复制时保留原历史路径与 pin；目录移动触及其路径时明确拒绝，不改变历史 pin。操作自身的未知本地代码锚点在复制／目录移动时拒绝。literal、opaque／插件参数与 data、场景源码和外部 relative imports 不解析或改写，也不据此拒绝，随文件原字节保留；其搬移后的私有依赖语义不在保证范围。远程／根绝对／hash／query URL 也原样保留，不宣称站点路由链接已迁移。
 
 请求／回复最多 4,096／7,168 UTF-16 字符，64 条进程内计划、五分钟 TTL；回执仅结果 HEAD／tree 仍当前可重放，Undo ABA 不再次执行。成员／origin、operate、required review 与可信文稿绑定令牌重新检查。没有 workspace grant 的文稿 token 不因额外 document 参数获得项目权限。根文稿空字符串身份仍合法，但根目录复制／移动／删除的工作区控制范围未定义，因此准确 unavailable。无 Git 或没有可确认 HEAD 也不假造提交能力。
 
