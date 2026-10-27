@@ -1,6 +1,6 @@
 # RFC：Web 与 MCP 共用作者动作及验证反馈
 
-状态：作者事务、页面复制预检、常用页面动作、版本绑定局部读取、音频资产与片段、音色发现、转写／采用、共享配音任务与试听适配已实施，其余分阶段推进。2026-10-27 根据作者要求设计：AI agent 经 MCP 能完成作者在 Web 中可完成的工作，包括人声录音转写、将文字采用为讲稿、再显式生成 AI 配音。第 12.1 节的共享作者事务见第 14 节；转写任务发现、启动、读取、取消与类型化采用见第 15 节；共享配音任务和音频资源见第 16 节；页面复制见第 17 节；局部读取见第 18 节；常用页面动作见第 19 节。下文未明确标为已实现的接口名和新增类型仍为提案。
+状态：作者事务、页面复制预检、常用页面动作、版本绑定局部读取、音频资产与片段、音色发现、转写／采用、共享配音任务与试听、被动诊断读取及显式检查已实施，其余分阶段推进。2026-10-27 根据作者要求设计：AI agent 经 MCP 能完成作者在 Web 中可完成的工作，包括人声录音转写、将文字采用为讲稿、再显式生成 AI 配音。第 12.1 节的共享作者事务见第 14 节；转写任务发现、启动、读取、取消与类型化采用见第 15 节；共享配音任务和音频资源见第 16 节；页面复制见第 17 节；局部读取见第 18 节；常用页面动作见第 19 节。下文未明确标为已实现的接口名和新增类型仍为提案。
 
 本文供工作区、工作台、MCP 和讲授插件的实现者拆分任务。交付结果是一套共用的作者动作、版本检查和反馈协议。文稿内容继续只写 `lecture.json`；规范实体定义以[文稿契约](../packages/kernel/src/contracts/document.ts)和[文稿 IR RFC](rfc-document-ir.md)为准，录制转写的候选与采用细节以[录制转写 RFC](rfc-recording-transcription.md)为准。
 
@@ -24,14 +24,14 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 
 ## 2. 实际操作到服务的核对
 
-以下是 2026-10-27 的源码核对，包含首片接入后的范围。表中“已有”只表示列出的实现存在，不替代真实设备、服务和浏览器验收。
+以下是截至 2026-10-28 的源码核对，包含各片接入后的范围。表中“已有”只表示列出的实现存在，不替代真实设备、服务和浏览器验收。
 
 | 作者操作 | 当前 Web／共享边界 | 当前 MCP | 应补齐的边界 |
 | --- | --- | --- | --- |
 | 列文稿、新建、复制、重命名、删除项目 | `WorkspaceClient.operateDocument` → workspace `documents`；管理操作与历史需要 git | 只有 `list_documents` | 项目操作预检、版本和引用影响，调用同一个 `DocumentOperations` |
 | 读取可编辑文稿 | `GET document` 保留全量；`document/outline`、`document/part` 共用版本绑定的紧凑读取，无需先编译 | 已有 `get_document_outline/read_document_part`；`get_document` 仍全量；`deck_info/get_section/get_step` 仍读取运行快照 | Schema 资源与后续大文通用写回；局部读取边界见第 18 节 |
 | 正文结构、格式、表格、图片占位、块移动 | 原生 BlockNote 投影回 `TeachingDocument`，`DocumentSession` → `document/change` | 已有 plan/apply 的 `updateText/insertBlock/moveBlock/deleteBlock` 与共享校验 | 更细的富文本身份和编辑范围语义 |
-| 页面新建、重命名、复制、排序、删除 | kernel 共享页面纯规则；Web 保持原 actor、创建的原生 Undo／focus 和删除确认 | 紧凑 `plan_page_change/apply_page_change` 覆盖新建／重命名／移动／删除；复制沿用其两专用工具 | 删除核所有保留讲稿 cue，按计划与 source 明确确认影响；通用大文写回仍未有界 |
+| 页面新建、重命名、复制、排序、删除 | kernel 共享页面纯规则；Web 保持原 actor、创建的原生 Undo／focus 和删除确认；删除核所有保留讲稿 cue | 紧凑 `plan_page_change/apply_page_change` 覆盖新建／重命名／移动／删除；复制沿用其两专用工具，删除按计划与 source 明确确认影响，见第 19 节 | 通用大文写回仍未有界；不包含项目管理、批注或完整历史操作 |
 | 步骤状态、显隐、继承、组件参数与身份 | IR 契约支持稳定 `StepId`、`setStepState`；Web 对复杂步骤操作仍有缺口 | plan/apply 已有 `setStepState`，运行读取／导航仍可使用 | 共用完整步骤动作；未实现的重排／删除规则先声明 unavailable |
 | 讲稿文字、发音替换、cue 与停顿 | `NarrationEditor/DocumentStepNarration` → 同一文稿；`setNarration/setTiming` 已有 | plan/apply 已接受 `NarrationNode[]`；`lecture_preview` 只读派生计划 | 共享讲稿 edit-shared／fork、cue 编辑的更细范围与影响 |
 | 定义、公开参数、共享素材修改和“另存” | 定义在文稿中，代码通过 `DocumentChange.fileChanges`；通用素材属性仍未完整接入 | 已能明确 replacement 加同文稿文本文件原子保存；无专用定义范围动作 | 定义 Schema、引用计数、单实例／全部实例／fork 三种明确范围 |
@@ -41,15 +41,15 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 导入／检查本地音频 | `DocumentAudioAuthoring` 共用真实媒体探测及多文件事务 | 已有能力、workspace 预检／导入与 canonical inspection 四个工具 | 远程分块上传尚未实现；路径限当前文稿工作区，不接受任意服务端路径 |
 | 音频区间、步内偏移、音量、静音、移除 | 同一 `DocumentAudioAuthoring` 的预检／事务；`ProductionBinding` 与真实时长校验 | 已有 `read_production_plan/validate_media_clip_change/change_media_clip` | 保存后新计划仍需准备；删除保留原始素材，尚无跨重启持久回执 |
 | 录制、重录、试听、采用录音 | Video“原音频”卡保存 native 候选、选择既有资产并明确采用为当前稳定步骤；`DocumentAudioAuthoring` 共用 HTTP/MCP wholeStep 事务和播放计划 | 已有 `adopt_recording`；无 MCP 客户端录制控制 | 远程客户端录制、旁白裁切与跨步连续分配仍待；保存不采用、采用不 ASR/TTS，字幕未词对齐。共享服务见[录音采用记录](benchmarks/recording-step-adoption-2026-10-27.md)，Web 见[界面记录](benchmarks/recording-step-adoption-ui-2026-10-27.md) |
-| 人声转写 | `DocumentTranscriptions` 保存版本化候选；HTTP 与 MCP 共用任务实例 | 已有能力、启动、清单、任务、exact result 和取消六个工具；旧 `track_transcribe` 仍独立写 track.json | 英文文件的真实 ASR／采用／Web TTS 已单独验收；实际提供方取消和录音完整链仍待验证，候选不自动写讲稿 |
-| 查看差异并将转写采用为步骤讲稿 | `DocumentTranscriptionAdoption` 共用 typed Narration 差异与作者事务 | 已有 `plan_transcription_adoption/apply_transcription_adoption`，复用原 DocumentEditor planId | 页面 UI 及完整人声转 TTS 链按实际验收推进；保留受保护发音／cue 的显式处理 |
+| 人声转写 | `DocumentTranscriptions` 保存版本化候选；HTTP 与 MCP 共用任务实例。[英文文件](benchmarks/human-audio-to-voiceover-2026-10-27.md)及[单条中文真人原音](benchmarks/chinese-human-audio-to-voiceover-2026-10-28.md)已分别完成真实 ASR／明确采用／Web TTS；中文保留错字及显式校对，播放只在浅色桌面实操，四图不代表四种播放通过 | 已有能力、启动、清单、任务、exact result 和取消六个工具；旧 `track_transcribe` 仍独立写 track.json | 识别准确率、实际提供方运行中取消和物理录音完整链仍待验证，候选不自动写讲稿 |
+| 查看差异并将转写采用为步骤讲稿 | `DocumentTranscriptionAdoption` 共用 typed Narration 差异与作者事务；Video 有候选与明确采用入口 | 已有 `plan_transcription_adoption/apply_transcription_adoption`，复用原 DocumentEditor planId | 保留受保护发音／cue 的显式处理；ASR 词时不能充当新 TTS 词时，中文新配音实测仍为 proportional |
 | 采用转写后改用 AI 配音 | 可编辑 `VoiceSource`，人声转写／采用／新 TTS 已有独立真实闭环；整段 recording 支持 wholeStep，不等于自动转成 TTS | 已有共享 `start_voiceover` spend 任务与查询／取消；旧 `lecture_synthesize` 不再暴露 | 显式选择 TTS 来源和作用域；不能把 ASR 时间当作新音色时间；专门的音色继承修改接口仍待补 |
 | 音色目录、搜索筛选、继承与批量应用 | `DocumentVoiceAuthoring` 读配置与目录，不依赖编译；`document-voices.ts` 处理继承，批量默认保留覆盖 | 已有 `get_voice_authoring_capabilities/get_voice_catalog`；继承／批量专门动作仍缺 | 提升相同作用域与影响计算到共享层；配置存在不代表合成成功 |
 | 音色样本／当前讲稿试听 | 同一 owner 的 quote → 显式请求 → 真实音频；HTTP 保留 `VoicePreviewAnswer` | 已有 `quote_voice_preview/preview_voice` 与限额内的二进制 MCP resource | quote 固定实际 execution、source、revision、提供方和缓存状态；生成成功不是客户端已试听 |
 | 配音生成、进度、取消 | `DocumentVoiceAuthoring` 与独立 Node owner；HTTP/MCP 同一任务实例，standalone 同工厂 | 已有 `get_voiceover_status/get_voiceover_jobs/get_voiceover_job/start_voiceover/cancel_voiceover`，保留 intent/source/revision/scope/sequence | 查询／取消不要求当前编译；配置 remount 保留任务；当前仅进程内发现与幂等，尚无跨重启恢复账本 |
 | 计划、波形、定位、播放、暂停、速率 | `ProductionPlan`、单一播放器、预览协议中的制作请求 | 已有真实 `read_production_plan`；`navigate` 仅定位放映窗口，`get_runtime` 只读报告 | 指定作者客户端的 `ProductionPlaybackCommand` 与真实应答 |
 | 编译、预览、导出、下载 | workspace `jobs` 需要明确 `JobSource`，支持状态、事件、取消、版本和文件 | `build/get_builds/cancel_build` 已保留 source、sequence、inputFingerprint、captions 与文件；取消不要求先编译 | 后续统一任务发现、持久意图账本与资源；当前反馈见[输出验证记录](benchmarks/mcp-output-feedback-2026-10-27.md) |
-| 诊断、失败详情、运行验证 | UI `readDiagnostics` 读诊断快照；编译／浏览器报告分来源 | `get_diagnostics` 有界读取同一快照，`check_document` 显式检查；完整协议见[诊断反馈](diagnostic-feedback.md)。runtime 有报告但不证明最新源 | 带完整来源绑定的验证请求及浏览器实际结果；检查计数和空快照不能替代当前源验证 |
+| 诊断、失败详情、运行验证 | UI `readDiagnostics` 读诊断快照；编译／浏览器／作者窗口分来源。已选 Doc 无 IR 也能报告请求失败和异常，authoringSource 只表示已知保存基线 | `get_diagnostics` 有界读取同一快照且不编译，`check_document` 才显式检查；协议与[未编译窗口](diagnostic-feedback.md#未编译的作者窗口)保留来源和独立实例。runtime 有报告但不证明最新源 | 带完整来源绑定的验证请求及浏览器实际结果；检查计数、空快照和作者保存基线不能替代当前源验证；未关联文稿故障与窗口在线状态仍待 |
 | 文稿草稿、外部变更、保存冲突 | `DocumentSession` 和制作 drafts 在浏览器按来源隔离；不能从服务看见未提交字节 | 无 | 客户端编辑状态探测与 flush／保留／恢复请求，未连接时声明未知 |
 | 审阅、逐文件拒绝、检查点恢复 | workspace `review/*` 与 `CHANGE_REVIEW`，持锁到结束 | 核心 MCP 无适配，dsh 自有桥接 | 同一 reviewId、范围、来源与修改 digest，绑定宿主授权决策 |
 | 历史、查看旧版本、撤消、重做、放弃未提交修改 | workspace `revisions`、`history/*`、`changes/*`；undo/redo 可带 expect | 无 | 显式目标版本与路径，冲突结果；不把查看历史变成恢复当前文稿 |
@@ -217,7 +217,7 @@ agent 对已保存源执行事务不依赖一个永远在线的浏览器。客�
 4. 浏览器核验：向指定客户端发带 requestId 的验证动作，收到该 source／revision 的位置、插件启动、组件错误、媒体加载和实际播放状态。旧的 `get_runtime` 报告不能证明新源成功；没有客户端返回 unavailable。
 5. 产物核验：检查任务所用 source 与额外输入指纹、文件存在及媒体类型、主文件、字幕和导出诊断。下载链接可用与视频实际同步是不同验证项。
 
-`get_diagnostics` 应改为与工作台共用当前 `DiagnosticSnapshot`，显式 compile/check 作为可选主动检查或独立工具。保留编译、检查、浏览器、请求、音频和任务的来源，不能修好一个请求就清除另一来源错误。结构化输出使用 MCP outputSchema／structuredContent，同时提供简短可读文本；大日志、候选音频和文件给受权限约束的 resource URI，不把二进制或凭据塞入提示。
+`get_diagnostics` 已与工作台共用 `DiagnosticSnapshot`，有界被动读取；`check_document` 才显式编译和检查。真实 HTTP／DSH 分片及 compiler-only stdio 范围见[诊断读取记录](benchmarks/mcp-diagnostic-feedback-2026-10-28.md)，无 IR 的作者异常与请求失败见[作者窗口记录](benchmarks/authoring-window-diagnostics-2026-10-28.md)。读取不验证当前源或浏览器，也不把已知保存基线当作编译修订。保留各生产者来源，不能修好一个请求就清除另一来源错误。完整协议与结果预算见[诊断反馈](diagnostic-feedback.md)；候选音频和文件使用受权限约束的 resource URI，不把二进制或凭据塞入提示。
 
 agent 的正常闭环为：探测 → 读源 → 计划 → 提交／开始任务 → 订阅或轮询 → 验证 → 根据具体诊断修订。若验证失败，引用原结果和稳定目标开启下一次动作；失败不能被新的成功摘要覆盖。只在用户明确要求的范围内发起收费服务和播放，不为满足验证自动播放整讲或重新合成。
 
