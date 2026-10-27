@@ -3,6 +3,7 @@ import { createStore } from '@lincyaw/host'
 import { listActions } from '../registry.ts'
 import type { ViewerAction } from '../registry.ts'
 import type { Viewer } from '../viewer-state.ts'
+import { presentationConfirmed } from '../viewer-state.ts'
 
 /** Whether the present view shows its overview of the sections. */
 export const overviewOpen = createStore(false)
@@ -32,7 +33,9 @@ export function useActions(viewer: Viewer, view: string, extra: readonly ViewerA
     if (event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || typing(event.target)) return
     if (event.key === ' ' && (event.target as Element | null)?.closest?.('button, a[href]')) return
     for (const action of [...extra, ...listActions(view)]) {
-      if (!action.keys.includes(event.key) || action.run(viewer) === false) continue
+      if (!action.keys.includes(event.key)) continue
+      if (!presentationConfirmed(viewer) && action.id !== 'exit') return
+      if (action.run(viewer) === false) continue
       event.preventDefault()
       return
     }

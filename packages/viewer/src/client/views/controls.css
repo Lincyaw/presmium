@@ -38,3 +38,6 @@
     display: none;
   }
 }
+
+/* Keep recovery controls in the existing bar while unconfirmed content stays unavailable. */
+.pm-present[data-pending-confirmation] .pm-present__slide { visibility: hidden; }

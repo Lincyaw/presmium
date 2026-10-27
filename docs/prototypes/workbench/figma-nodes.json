@@ -1430,7 +1430,7 @@
       "PmBadge ok/accent/warn",
       "PmNotice"
     ],
-    "behavior": "Compile and confirm the saved source before entering presentation. Later author input or document switches cancel the transition. Unconfirmed runtime revisions remain hidden until explicit recompile. This is not an immutable project-files snapshot.",
+    "behavior": "Compile and confirm the saved source before entering presentation. Later author input or document switches cancel the transition. Hide unconfirmed canvas, captions and plugin interactions while keeping the existing bottom recompile and exit actions usable; do not create a second toolbar. This is not an immutable project-files snapshot.",
     "implementation": "packages/workbench/src/document-preview.ts",
     "verification": "docs/benchmarks/presentation-source-confirmation-2026-10-26.md"
   },

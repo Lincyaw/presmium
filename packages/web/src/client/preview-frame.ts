@@ -62,10 +62,12 @@ function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreviewOptions
   const frame: PreviewFrame | undefined = connectPreviewFrame({
     renderer: options.renderer ?? 'web',
     events,
+    ...viewer.options.confirmedRevision ? { confirmPresentation: (revision: string) => { viewer.options.confirmedRevision!.set(revision); frame?.moved() } } : {},
     document: options.document,
     origins: options.origins,
     revision,
     position() {
+      if (viewer.options.confirmedRevision && viewer.options.confirmedRevision.getSnapshot() !== revision()) return
       const { section, step, trail, view } = navigation.position.getSnapshot() as NavigationPosition & FollowAnchor
       return section === undefined ? undefined : { section, step, trail: trail ?? [], ...view ? { view } : {} }
     },
