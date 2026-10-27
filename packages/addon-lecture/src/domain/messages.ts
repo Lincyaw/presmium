@@ -36,6 +36,10 @@ export interface LectureMessages {
     seek: string
     time: (now: string, total: string) => string
     rate: string
+    more: string
+    presenter: string
+    previous: string
+    next: string
     captions: string
     transcript: string
     chapters: string
@@ -120,6 +124,10 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       seek: '进度',
       time: (now, total) => `${now} / ${total}`,
       rate: '倍速',
+      more: '更多播放选项',
+      presenter: '演讲者窗口',
+      previous: '上一步',
+      next: '下一步',
       captions: '字幕',
       transcript: '字幕列表',
       chapters: '章节',
@@ -202,6 +210,10 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       seek: 'Position',
       time: (now, total) => `${now} / ${total}`,
       rate: 'Speed',
+      more: 'More playback options',
+      presenter: 'Presenter view',
+      previous: 'Previous step',
+      next: 'Next step',
       captions: 'Captions',
       transcript: 'Caption list',
       chapters: 'Chapters',

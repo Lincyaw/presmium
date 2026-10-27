@@ -1405,12 +1405,12 @@
 .pm-ui-range::-webkit-slider-runnable-track {
   height: var(--pm-space-1);
   border-radius: var(--pm-radius-pill);
-  background: linear-gradient(to right, var(--pm-color-accent) var(--pm-range-progress), var(--pm-color-line-strong) var(--pm-range-progress));
+  background: linear-gradient(to right, var(--pm-color-accent) var(--pm-range-progress, 0%), var(--pm-color-line-strong) var(--pm-range-progress, 0%));
 }
 .pm-ui-range::-moz-range-track {
   height: var(--pm-space-1);
   border-radius: var(--pm-radius-pill);
-  background: linear-gradient(to right, var(--pm-color-accent) var(--pm-range-progress), var(--pm-color-line-strong) var(--pm-range-progress));
+  background: linear-gradient(to right, var(--pm-color-accent) var(--pm-range-progress, 0%), var(--pm-color-line-strong) var(--pm-range-progress, 0%));
 }
 .pm-ui-range::-webkit-slider-thumb {
   appearance: none;

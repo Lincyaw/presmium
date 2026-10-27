@@ -48,6 +48,8 @@ BlockNote 的公共适配类为 `pm-ui-block-editor`，由工作台的全篇 `Bl
 放映字幕复用 host 的 `PmCaption`：`label` 提供可访问名称，`lines` 保留当前字幕段落顺序，`hint` 只补充作者可理解的状态。外观由 `packages/design/src/caption.css` 与 `--pm-caption-max-width`、`--pm-caption-max-height` 令牌定义；超长文本在安全区内滚动，业务层只安排它与画面、控制栏的位置。放映字幕通过 host 的 `PmCaptionProvider` 与 `PmCaption overlay` 进入幻灯片画布内的共享浮层，底部避让页脚；显示、隐藏与换行不参与画布外布局，不改变幻灯片的位置或缩放。按步骤字幕与真实时序字幕通过宿主显示权协调，不能叠加两套字幕。
 Figma 公共 `Presmium/Caption` 对应单段、多段、空讲稿和超长滚动四种状态，节点登记在 `figma-nodes.json`。其颜色、间距、边框、圆角与最大宽度绑定公共变量，正文和提示复用已有 16px／12px 文字样式。滚动示例以 800px 高视口呈现 `28vh` 的 224px 上限，运行时继续按实际视口计算。
 
+放映导航与讲授播放组合在同一底栏，播放／暂停和字幕复用 host `PmIconButton`，进度复用 `pm-ui-range`，次要选项复用 `PmMenu`，只读字幕／章节复用 `PmDrawer`。业务样式只安排伸缩和排列，不另加播放器背景、边框或控件外观。
+
 时间输入、播放头、音色项和素材选择等领域控件也需作为 workbench 内可复用组件规定状态与外观，不因它们具有业务名称就豁免公共设计。波形和时间片段的内容可由领域数据绘制，其控件边界、选择、焦点和热区仍遵循本规范。
 
 ## 3. 已有令牌与正式取用规则

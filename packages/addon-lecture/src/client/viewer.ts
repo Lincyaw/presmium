@@ -21,7 +21,7 @@ const plugin: ViewerPlugin = (ctx) => {
     // Kept for lecture links and choosing a recorded track; playback is part of the presentation's controls.
     hidden: true,
   })
-  ctx.registerLayer({ id: 'presmium.lecture.player', component: PlayerPanel, views: ['present'], scope: 'view' })
+  ctx.registerLayer({ id: 'presmium.lecture.player', component: PlayerPanel, views: ['present'], scope: exporting ? 'view' : 'bar' })
   ctx.registerLayer({ id: 'presmium.lecture.play', component: PlayLectureButton, views: ['present'], scope: 'bar' })
   ctx.registerLayer({ id: 'presmium.lecture.recorder', component: RecorderPanel, views: ['present'], scope: 'view' })
 }

@@ -1,6 +1,8 @@
-import { PmCaption, PmIcon, PmTabs, PRODUCTION_PLAYBACK, TIMED_CAPTIONS, useMessages, useServer, useService, useStore } from '@lincyaw/host'
+import { PmCaption, PmDrawer, PmIconButton, PmMenu, PmTabs, PRODUCTION_PLAYBACK, TIMED_CAPTIONS, useMessages, useServer, useService, useStore } from '@lincyaw/host'
+import type { MenuItem } from '@lincyaw/host'
 import { isPreviewEmbedded } from '@lincyaw/kernel'
 import { useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
 import {
   captionLanguages,
   captionText,
@@ -27,7 +29,6 @@ import {
 } from './state.ts'
 import TranscriptList from './TranscriptList.tsx'
 import './PlayerPanel.css'
-const cls = 'pm-lecture-button pm-ui-button pm-ui-button--small'
 export default function PlayerPanel(_props: { view?: string }) {
   const t = useMessages(LECTURE_MESSAGES),
     viewer = useViewer(),
@@ -45,6 +46,13 @@ export default function PlayerPanel(_props: { view?: string }) {
     clockPlaying = useStore(player?.clock.playing, false),
     rate = useStore(player?.clock.rate, 1)
   const cursor = useStore(player?.cursor), positionMode = useStore(player?.positionMode, 'time')
+  const [compact, setCompact] = useState(() => matchMedia('(max-width: 479px)').matches)
+  useEffect(() => {
+    const media = matchMedia('(max-width: 479px)')
+    const changed = () => setCompact(media.matches)
+    media.addEventListener('change', changed)
+    return () => media.removeEventListener('change', changed)
+  }, [])
   const [captions, setCaptions] = useState(false),
     [panel, setPanel] = useState<'transcript' | 'chapters'>()
   useEffect(() => {
@@ -82,7 +90,6 @@ export default function PlayerPanel(_props: { view?: string }) {
   const chapters = player
     ? trackChapters(player.events, (key) => titles.get(key))
     : []
-  const chapter = chapters.filter((item) => item.t <= time).at(-1)
   const languages = player ? captionLanguages(player.track) : []
   const timed = player ? utteranceAt(player.track, time) : undefined
   const boundary = player && cursor ? player.events.findIndex(event => event.type === 'go' && event.data.section === cursor.sectionId && Number(event.data.step ?? 0) === cursor.step) : -1
@@ -115,220 +122,54 @@ export default function PlayerPanel(_props: { view?: string }) {
   )
   if (controlled) return player && current && caption ? <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang} /> : null
   if (!id) return null
-  return (
-    <div className="pm-lecture-layer">
-      {status === 'loading' ? (
-        <p className="pm-lecture-player__status">{t.player.loading}</p>
-      ) : failure ? (
-        <p className="pm-lecture-player__status" role="alert">
-          {t.player.failed(failure)}
-          <button type="button" className={cls} onClick={() => play(undefined)}>
-            {t.player.close}
-          </button>
-        </p>
-      ) : status === 'missing' ? (
-        <p className="pm-lecture-player__status" role="alert">
-          {t.player.missing(id)}
-          <button type="button" className={cls} onClick={() => play(undefined)}>
-            {t.player.close}
-          </button>
-        </p>
-      ) : player && exporting ? (
-        <>
-          <div
-            className="pm-lecture-export"
-            data-time={Math.round(time)}
-            data-clip={current?.clip}
-          >
-            {voice?.kind === 'synthetic' && (
-              <span className="pm-lecture-player__ai pm-ui-badge pm-ui-badge--accent pm-ui-badge--pill">
-                {synthetic}
-              </span>
-            )}
-          </div>
-          {burned && (
-            <p className="pm-lecture-caption" lang={burnedCaptions}>
-              {burned}
-            </p>
-          )}
-        </>
-      ) : player ? (
-        <>
-          {panel && (
-            <aside
-              className="pm-lecture-side"
-              aria-label={
-                panel === 'transcript' ? t.player.transcript : t.player.chapters
-              }
-            >
-              <PmTabs
-                value={panel}
-                onValueChange={(value) =>
-                  setPanel(value as 'transcript' | 'chapters')
-                }
-                tabs={[
-                  { value: 'transcript', label: t.player.transcript },
-                  { value: 'chapters', label: t.player.chapters },
-                ]}
-                label={t.player.sideTabs}
-              />
-              {panel === 'transcript' ? (
-                <TranscriptList
-                  track={player.track}
-                  language={lang}
-                  current={current?.id}
-                  stale={stale}
-                  onSeek={(at) => player.seek(at)}
-                />
-              ) : (
-                <ChapterList
-                  chapters={chapters}
-                  events={player.events}
-                  time={time}
-                  onSeek={(at) => player.seek(at)}
-                />
-              )}
-            </aside>
-          )}
-          <div className="pm-lecture-dock">
-            {(captions || current?.unsaid) && current && caption && (
-              <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang}
-                data-stale={stale.has(current.id) ? 'true' : undefined}
-                hint={stale.has(current.id) ? t.player.stale : undefined} />
-            )}
-            <div
-              className="pm-lecture-player"
-              role="region"
-              aria-label={t.player.region}
-              data-state={state}
-              data-time={Math.round(time)}
-              data-clip={current?.clip}
-            >
-              {player.dropped > 0 && (
-                <p className="pm-lecture-player__notice">
-                  {t.player.dropped(player.dropped)}
-                </p>
-              )}
-              {unsaid.length > 0 && (
-                <p
-                  className="pm-lecture-player__notice"
-                  data-unsaid
-                  title={unsaid[0]!.unsaid}
-                >
-                  {t.player.unsaid(unsaid.length)}
-                </p>
-              )}
-              <div className="pm-lecture-player__row">
-                <button
-                  type="button"
-                  className={`${cls} pm-lecture-player__play`}
-                  onClick={() =>
-                    player.playing ? player.pause() : player.play()
-                  }
-                >
-                  {state === 'playing' ? t.player.pause : t.player.play}
-                </button>
-                <span className="pm-lecture-player__time">
-                  {t.player.time(clockText(time), clockText(player.duration))}
-                </span>
-                <input
-                  className="pm-lecture-player__seek pm-ui-checkbox"
-                  type="range"
-                  min="0"
-                  max={player.duration}
-                  step="100"
-                  value={Math.round(time)}
-                  aria-label={t.player.seek}
-                  onChange={(event) => player.seek(Number(event.target.value))}
-                />
-                {chapter && (
-                  <span className="pm-lecture-player__chapter">
-                    {chapter.title}
-                  </span>
-                )}
-                <label className="pm-lecture-player__field">
-                  {t.player.rate}
-                  <select
-                    className="pm-ui-select"
-                    value={rate}
-                    onChange={(event) =>
-                      player.setRate(Number(event.target.value))
-                    }
-                  >
-                    {PLAYBACK_RATES.map((value) => (
-                      <option key={value} value={value}>
-                        {value}×
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  className={cls}
-                  aria-pressed={captions}
-                  onClick={() => setCaptions((value) => !value)}
-                >
-                  {t.player.captions}
-                </button>
-                {languages.length > 1 && (
-                  <label className="pm-lecture-player__field">
-                    {t.player.language}
-                    <select
-                      value={lang}
-                      className="pm-ui-select"
-                      onChange={(e) => setLanguage(e.target.value)}
-                    >
-                      {languages.map((value) => (
-                        <option key={value} value={value}>
-                          {value}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                )}
-                <button
-                  type="button"
-                  className={cls}
-                  aria-pressed={panel === 'transcript'}
-                  onClick={() =>
-                    setPanel((value) =>
-                      value === 'transcript' ? undefined : 'transcript',
-                    )
-                  }
-                >
-                  {t.player.transcript}
-                </button>
-                <button
-                  type="button"
-                  className={cls}
-                  aria-pressed={panel === 'chapters'}
-                  onClick={() =>
-                    setPanel((value) =>
-                      value === 'chapters' ? undefined : 'chapters',
-                    )
-                  }
-                >
-                  {t.player.chapters}
-                </button>
-                {voice?.kind === 'synthetic' && (
-                  <span className="pm-lecture-player__ai pm-ui-badge pm-ui-badge--accent pm-ui-badge--pill">
-                    {synthetic}
-                  </span>
-                )}
-                {voice?.kind === 'silent' && <span className="pm-ui-badge">{t.player.silent}</span>}
-                <button
-                  type="button"
-                  className={cls}
-                  aria-label={t.player.close}
-                  onClick={() => play(undefined)}
-                >
-                  <PmIcon name="close" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      ) : null}
+  if (exporting) return player ? <div className="pm-lecture-layer">
+    <div className="pm-lecture-export" data-time={Math.round(time)} data-clip={current?.clip}>
+      {voice?.kind === 'synthetic' && <span className="pm-lecture-player__ai pm-ui-badge pm-ui-badge--accent pm-ui-badge--pill">{synthetic}</span>}
     </div>
-  )
+    {burned && <p className="pm-lecture-caption" lang={burnedCaptions}>{burned}</p>}
+  </div> : null
+  const problem = failure ? t.player.failed(failure) : status === 'missing' ? t.player.missing(id) : undefined
+  if (!player || problem) return <div className="pm-lecture-player__status" role={problem ? 'alert' : 'status'}>
+    <span>{problem ?? t.player.loading}</span>
+    {problem && <PmIconButton small icon="close" label={t.player.close} onClick={() => play(undefined)} />}
+  </div>
+  const options: MenuItem[] = [
+    ...(compact ? [{ id: 'previous', label: t.player.previous, icon: 'chevron-left' as const }, { id: 'next', label: t.player.next, icon: 'chevron-right' as const }] : []),
+    ...(compact && viewer.options.openPresenter ? [{ id: 'presenter', label: t.player.presenter, icon: 'slides' as const }] : []),
+    { id: 'transcript', label: t.player.transcript, icon: 'document', checked: panel === 'transcript' },
+    { id: 'chapters', label: t.player.chapters, icon: 'overview', checked: panel === 'chapters' },
+    ...PLAYBACK_RATES.map((value, index) => ({ id: `rate:${value}`, label: `${t.player.rate} · ${value}×`, checked: rate === value, separator: index === 0 })),
+    ...(languages.length > 1 ? languages.map((value, index) => ({ id: `language:${value}`, label: `${t.player.language} · ${value}`, checked: lang === value, separator: index === 0 })) : []),
+    ...(player.dropped ? [{ id: 'dropped', label: t.player.dropped(player.dropped), disabled: true, separator: true }] : []),
+    ...(unsaid.length ? [{ id: 'unsaid', label: t.player.unsaid(unsaid.length), disabled: true, separator: true }] : []),
+    { id: 'close', label: t.player.close, icon: 'close', separator: true },
+  ]
+  const selectOption = (option: string) => {
+    if (option === 'transcript' || option === 'chapters') setPanel(value => value === option ? undefined : option)
+    else if (option === 'previous') viewer.prev()
+    else if (option === 'next') viewer.next()
+    else if (option === 'presenter') viewer.options.openPresenter?.(viewer.position.getSnapshot())
+    else if (option.startsWith('rate:')) player.setRate(Number(option.slice(5)))
+    else if (option.startsWith('language:')) setLanguage(option.slice(9))
+    else if (option === 'close') play(undefined)
+  }
+  return <>
+    {(captions || current?.unsaid) && current && caption && <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang}
+      data-stale={stale.has(current.id) ? 'true' : undefined} hint={stale.has(current.id) ? t.player.stale : undefined} />}
+    {panel && <PmDrawer open label={panel === 'transcript' ? t.player.transcript : t.player.chapters} onClose={() => setPanel(undefined)}>
+      <PmTabs value={panel} onValueChange={value => setPanel(value as 'transcript' | 'chapters')}
+        tabs={[{ value: 'transcript', label: t.player.transcript }, { value: 'chapters', label: t.player.chapters }]} label={t.player.sideTabs} />
+      {panel === 'transcript' ? <TranscriptList track={player.track} language={lang} current={current?.id} stale={stale} onSeek={at => player.seek(at)} />
+        : <ChapterList chapters={chapters} events={player.events} time={time} onSeek={at => player.seek(at)} />}
+    </PmDrawer>}
+    <div className="pm-lecture-player" role="region" aria-label={t.player.region} data-state={state} data-time={Math.round(time)} data-clip={current?.clip} data-unsaid={unsaid.length || undefined}>
+      <PmIconButton small className="pm-lecture-player__play" icon={clockPlaying ? 'pause' : 'play'} label={clockPlaying ? t.player.pause : t.player.play}
+        onClick={() => player.playing ? player.pause() : void player.play()} />
+      <span className="pm-lecture-player__time" title={t.player.time(clockText(time), clockText(player.duration))}>{clockText(time)}<span className="pm-lecture-player__time-total"> / {clockText(player.duration)}</span></span>
+      <input className="pm-lecture-player__seek pm-ui-range" style={{ '--pm-range-progress': `${player.duration ? Math.max(0, Math.min(100, time / player.duration * 100)) : 0}%` } as CSSProperties} type="range" min="0" max={player.duration} step="100" value={Math.round(time)}
+        aria-label={t.player.seek} aria-valuetext={t.player.time(clockText(time), clockText(player.duration))} onChange={event => player.seek(Number(event.target.value))} />
+      <PmIconButton small icon="captions" label={t.player.captions} aria-pressed={captions} onClick={() => setCaptions(value => !value)} />
+      <PmMenu label={t.player.more} items={options} placement="above-end" onSelect={selectOption} />
+    </div>
+  </>
 }
