@@ -195,6 +195,12 @@ export interface DocumentChangeAnswer extends DocumentAnswer {
   commit?: Revision
 }
 
+export const DOCUMENT_IMAGE_MAX_BYTES = 8 << 20
+export const DOCUMENT_IMAGE_MEDIA_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml', 'image/bmp'] as const
+/** Multipart image import: this header and the original file share one source transaction. */
+export interface DocumentImageImport { id: string, baseDocumentVersion: string }
+export interface DocumentImageImportAnswer extends DocumentChangeAnswer { assetId: string, dimensions: { width: number, height: number } }
+
 export interface DocumentEvent { document: string, version: string, valid: boolean, issues: DocumentIssue[], projectRevision?: string }
 
 /** @experimental A saved source file; in a git workspace the save is a revision of its own. */

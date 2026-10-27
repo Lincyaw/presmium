@@ -21,6 +21,7 @@ import type { Jobs } from './jobs.ts'
 import type { WorkbenchApi } from './workbench-api.ts'
 import { documentEditorRoutes } from './document-editor.ts'
 import { documentAudioRoutes } from './document-audio.ts'
+import { documentImageRoutes } from './document-images.ts'
 import type { ProductionAudioAuthoring } from '@lincyaw/kernel'
 import { documentDirOf } from './writer.ts'
 
@@ -129,6 +130,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
   const routes: Record<string, Route> = {
     ...documentEditorRoutes({ root: config.root, editor, revisions, workbench }),
     ...documentAudioRoutes({ root: config.root, editor, revisions, audio: options.audio }),
+    ...documentImageRoutes({ root: config.root, editor, revisions }),
     documents: {
       role: 'reader',
       handle: (request, ctx) => catchRequestErrors(async () => {

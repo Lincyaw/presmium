@@ -48,6 +48,8 @@ lecture.json + 引用的代码与媒体
 
 回执绑定文稿、提交请求与输入版本。旧回执不能清除新草稿；版本冲突和保存失败保留输入。运行快照标识不作为文稿提交版本。工程文件的 SourceEditor 事务保留权限、路径与文件版本校验，不再承担 MyST 行范围写回。
 
+`POST document/image` 用 multipart 提交 `DocumentImageImport` 与原图，原始文件和新增图片素材在同一次事务保存。支持 PNG、JPEG、GIF、WebP、SVG、BMP，限制及实际字节、版本和回滚验证见[图片导入记录](benchmarks/document-image-import-2026-10-27.md)。该接口检查格式头和尺寸，不承诺完整解码；正文块的绑定仍通过原生编辑器进入同一文稿保存边界。
+
 ## 4. 原生编辑
 
 工作台在父 React 页面挂载一个全篇 BlockNote 编辑器，页面与正文属于同一原生选区和历史。通过公开 API 在 Presmium 富文本与编辑器模型间适配。批注使用原生 CommentsExtension，依据文稿 JSON 中的讨论实体与稳定正文锚点重建原生标记和位置。
