@@ -3,7 +3,7 @@ import type { ForwardRefExoticComponent, ReactNode, RefAttributes } from 'react'
 import { filterSuggestionItems } from '@blocknote/core'
 import { en, zh } from '@blocknote/core/locales'
 import { BlockNoteView, components } from '@blocknote/mantine'
-import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ColorStyleButton, ComponentsContext, CreateLinkButton, FloatingComposerController, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, NestBlockButton, RenderInPortalElement, SuggestionMenuController, TableCellMergeButton, TextAlignButton, FloatingThreadController, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
+import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ColorStyleButton, ComponentsContext, CreateLinkButton, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, NestBlockButton, RenderInPortalElement, SuggestionMenuController, TableCellMergeButton, TextAlignButton, FloatingThreadController, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
 import type { ComponentProps, FormattingToolbarProps } from '@blocknote/react'
 import { useMediaQuery } from '@mantine/hooks'
 import type { Locale } from '../messages.ts'
@@ -19,6 +19,7 @@ import { nativeTextClipboard } from './clipboard.ts'
 import { excludeCommentMarkHistory, nativeComments, nativeCommentSelection } from './comments.ts'
 import type { DocumentThreadStore } from './comments.ts'
 import { COMMENT_EDITOR_CONTEXT, DocumentCommentEditor, DocumentCommentThread, DocumentThreadsSidebar } from './DocumentComments.tsx'
+import { DocumentNewCommentController, DocumentNewCommentRecovery, NewCommentDraftProvider } from './NewCommentDrafts.tsx'
 
 export const DOCUMENT_EDITOR_THEME = {
   colors: {
@@ -64,6 +65,8 @@ export interface BlockNoteSurfaceProps {
   onSelection?(selection: NativeDocumentSelection | undefined): void
   comments?: DocumentThreadStore
   commentsPortal?: HTMLElement | null
+  getPositionToken?(): string | undefined
+  onCommentDraftRestore?(): void
   onReady?(editor: NativeDocumentEditor | undefined): void
   onComposition?(composing: boolean): void
   children?: ReactNode
@@ -143,7 +146,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
       stopCommentHistory?.(); current.current.onReady?.(undefined)
     }
   }, [editor])
-  return <DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}><COMMENT_EDITOR_CONTEXT.Provider value={props.comments ? { store: props.comments, locale: props.locale, sidebar: Boolean(props.commentsPortal) } : undefined}>
+  return <DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}><COMMENT_EDITOR_CONTEXT.Provider value={props.comments ? { store: props.comments, locale: props.locale, sidebar: Boolean(props.commentsPortal), getPositionToken: () => current.current.getPositionToken?.(), onDraftRestore: () => current.current.onCommentDraftRestore?.() } : undefined}>
     <div className="pm-document-editor pm-ui-block-editor pm-ui" data-document-editor={props.identity}
       onDragEnter={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
       onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
@@ -155,15 +158,15 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         onSelectionChange={() => current.current.onSelection?.(documentSelection(editor))}>
         <ComponentsContext.Provider value={DOCUMENT_EDITOR_COMPONENTS}>
         <PlainContentComments editor={editor} />
-        <BlockNoteViewEditor>
-        <FloatingComposerController />{!props.commentsPortal && <FloatingThreadController floatingThread={DocumentCommentThread} />}{props.commentsPortal && <><RenderInPortalElement target={props.commentsPortal}><DocumentThreadsSidebar /></RenderInPortalElement></>}
+        <BlockNoteViewEditor><NewCommentDraftProvider>
+        <DocumentNewCommentController />{!props.commentsPortal && <FloatingThreadController floatingThread={DocumentCommentThread} />}{props.commentsPortal && <><RenderInPortalElement target={props.commentsPortal}><DocumentThreadsSidebar><DocumentNewCommentRecovery /></DocumentThreadsSidebar></RenderInPortalElement></>}
         <FormattingToolbarController formattingToolbar={EditorToolbar} />
         <SuggestionMenuController triggerCharacter="/" getItems={async query => editor.getTextCursorPosition().block.type === 'presmiumPage' ? [] : filterSuggestionItems([...getDefaultReactSlashMenuItems(editor), {
           title: t.page, aliases: ['page', 'section', '页面', '章节'], group: t.document,
           onItemClick: () => { const current = editor.getTextCursorPosition().block; editor.insertBlocks([{ type: 'presmiumPage', props: { sectionId: crypto.randomUUID() }, content: t.untitledPage }], current, 'after') },
         }], query)} />
         {props.children}
-        </BlockNoteViewEditor>
+        </NewCommentDraftProvider></BlockNoteViewEditor>
         </ComponentsContext.Provider>
       </BlockNoteView>
     </div>

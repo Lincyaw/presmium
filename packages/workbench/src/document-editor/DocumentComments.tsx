@@ -1,5 +1,5 @@
 import { createContext, useContext, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import type { FocusEvent } from 'react'
+import type { FocusEvent, ReactNode } from 'react'
 import { CommentEditorSubmitExtension, CommentsExtension } from '@blocknote/core/comments'
 import { components } from '@blocknote/mantine'
 import { getReferenceText, Thread, useBlockNoteEditor, useCreateBlockNote, useExtension, useExtensionState, useThreads } from '@blocknote/react'
@@ -8,13 +8,13 @@ import type { Locale } from '../messages.ts'
 import { PmButton, PmNotice, PmSelect } from '../components.tsx'
 import type { DocumentCommentEditorHandle, DocumentThreadStore } from './comments.ts'
 import type { CommentDrafts, CommentDraftCandidate, CommentDraftRecord, CommentDraftReference } from './comment-drafts.ts'
-import { sameCommentDraftTarget } from './comment-drafts.ts'
+import { isNewCommentDraft, sameCommentDraftTarget } from './comment-drafts.ts'
 import { createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
 import { commentEditorSchema } from './schema.tsx'
 import type { DocumentEditorBlock } from './schema.tsx'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
 
-export const COMMENT_EDITOR_CONTEXT = createContext<{ store: DocumentThreadStore, locale: Locale, sidebar: boolean } | undefined>(undefined)
+export const COMMENT_EDITOR_CONTEXT = createContext<{ store: DocumentThreadStore, locale: Locale, sidebar: boolean, getPositionToken?(): string | undefined, onDraftRestore?(): void } | undefined>(undefined)
 const THREAD_CONTEXT = createContext<string | undefined>(undefined)
 const emptySubscribe = () => () => {}
 const emptyState = { candidates: [], pending: false, failed: false, reading: false } as const
@@ -29,7 +29,7 @@ export function DocumentCommentThread(props: ThreadProps) {
 }
 
 /** Native Thread composition, with the same public focus/blur and position ordering as the sidebar. */
-export function DocumentThreadsSidebar() {
+export function DocumentThreadsSidebar({ children }: { children?: ReactNode }) {
   const editor = useBlockNoteEditor(), comments = useExtension(CommentsExtension), threads = useThreads()
   const { selectedThreadId, threadPositions } = useExtensionState(CommentsExtension)
   const ordered = [...threads.values()].sort((a, b) => (threadPositions.get(a.id)?.from ?? Number.MAX_VALUE) - (threadPositions.get(b.id)?.from ?? Number.MAX_VALUE))
@@ -40,7 +40,7 @@ export function DocumentThreadsSidebar() {
     const parent = next.closest('.bn-thread')
     if (!parent || !(event.target instanceof Node) || !parent.contains(event.target)) comments.selectThread(undefined)
   }
-  return <div className="bn-threads-sidebar"><CommentDraftRetrieval />{ordered.map(thread => <DocumentCommentThread key={thread.id} thread={thread}
+  return <div className="bn-threads-sidebar">{children}<CommentDraftRetrieval />{ordered.map(thread => <DocumentCommentThread key={thread.id} thread={thread}
     selected={selectedThreadId === thread.id} orphaned={!threadPositions.has(thread.id)} referenceText={getReferenceText(editor, threadPositions.get(thread.id))}
     onFocus={event => focus(thread.id, event)} onBlur={blur} tabIndex={0} />)}</div>
 }
@@ -51,9 +51,9 @@ function DraftPreview({ candidate }: { candidate: CommentDraftCandidate }) {
   return <MantineCommentEditor editor={editor} editable={false} autoFocus={false} />
 }
 
-function DraftChoices({ candidates, disabled, onRecover, onDiscard, preview = false }: {
+export function DraftChoices({ candidates, disabled, onRecover, onDiscard, preview = false, canRecover, unavailableMessage }: {
   candidates: readonly CommentDraftCandidate[], disabled?: boolean, onRecover?(candidate: CommentDraftCandidate): Promise<void>,
-  onDiscard(candidate: CommentDraftCandidate): Promise<void>, preview?: boolean,
+  onDiscard(candidate: CommentDraftCandidate): Promise<void>, preview?: boolean, canRecover?(candidate: CommentDraftCandidate): boolean, unavailableMessage?: string,
 }) {
   const context = useContext(COMMENT_EDITOR_CONTEXT), t = DOCUMENT_EDITOR_MESSAGES[context?.locale ?? 'en']
   const [selected, setSelected] = useState(''), [busy, setBusy] = useState(false)
@@ -65,9 +65,10 @@ function DraftChoices({ candidates, disabled, onRecover, onDiscard, preview = fa
   }
   if (!candidates.length) return null
   return <PmNotice tone="accent"><PmSelect label={t.commentDrafts} value={candidate ? selected : ''} disabled={disabled || busy} onChange={event => setSelected(event.target.value)}>
-    <option value="">{t.commentChooseDraft}</option>{candidates.map(value => <option key={referenceKey(value)} value={referenceKey(value)}>{new Date(value.updatedAt).toLocaleString(context?.locale)} · {value.target.commentId ? t.commentEditDraft : t.commentReplyDraft}{value.storage === 'session' ? ` · ${t.commentSessionOnly}` : ''}</option>)}
+    <option value="">{t.commentChooseDraft}</option>{candidates.map(value => <option key={referenceKey(value)} value={referenceKey(value)}>{new Date(value.updatedAt).toLocaleString(context?.locale)} · {isNewCommentDraft(value.target) ? t.commentNewDraft : value.target.commentId ? t.commentEditDraft : t.commentReplyDraft}{value.storage === 'session' ? ` · ${t.commentSessionOnly}` : ''}</option>)}
   </PmSelect>{candidate && preview && <DraftPreview candidate={candidate} />}
-    <span className="pmw-notice__actions">{onRecover && <PmButton small variant="primary" disabled={!candidate || disabled || busy || candidate.storage === 'session'} loading={busy} onClick={() => void act(onRecover)}>{t.commentRecover}</PmButton>}
+    {candidate && unavailableMessage && canRecover && !canRecover(candidate) && <PmNotice tone="warn">{unavailableMessage}</PmNotice>}
+    <span className="pmw-notice__actions">{onRecover && <PmButton small variant="primary" disabled={!candidate || disabled || busy || candidate.storage === 'session' || canRecover && !canRecover(candidate)} loading={busy} onClick={() => void act(onRecover)}>{t.commentRecover}</PmButton>}
     <PmButton small disabled={!candidate || disabled || busy} onClick={() => void act(onDiscard)}>{t.commentDiscard}</PmButton></span>
   </PmNotice>
 }
@@ -75,7 +76,7 @@ function DraftChoices({ candidates, disabled, onRecover, onDiscard, preview = fa
 function CommentDraftRetrieval() {
   const context = useContext(COMMENT_EDITOR_CONTEXT), drafts = context?.store.drafts
   const state = useSyncExternalStore(drafts?.subscribe ?? emptySubscribe, drafts?.snapshot ?? (() => emptyState))
-  const candidates = state.candidates.filter(value => value.storage === 'session' || context?.store.draftTargetState(value.target) === 'unavailable')
+  const candidates = state.candidates.filter(value => !isNewCommentDraft(value.target) && (value.storage === 'session' || context?.store.draftTargetState(value.target) === 'unavailable'))
   if (!drafts) return null
   return <>{state.failed && <PmNotice tone="warn">{DOCUMENT_EDITOR_MESSAGES[context?.locale ?? 'en'].commentBackupFailed}</PmNotice>}<DraftChoices candidates={candidates} preview onDiscard={async candidate => { await drafts.discard(candidate) }} /></>
 }
@@ -151,7 +152,7 @@ export function DocumentCommentEditor(props: ComponentProps['Comments']['Editor'
     const value = await drafts.recover(candidate, target, version)
     if (!value || !active.current || input.current !== before || context.store.version !== version || composing.current || !current.current.editable) return
     suppress.current = true
-    try { props.editor.replaceBlocks(props.editor.document, productRichTextToNative(value.content, rich.current)); record.current = value; handle?.restoreBaseline(candidate.target.baseline); ++input.current; setRevision(value => value + 1) }
+    try { props.editor.replaceBlocks(props.editor.document, productRichTextToNative(value.content, rich.current)); record.current = value; handle?.restoreBaseline(!isNewCommentDraft(candidate.target) ? candidate.target.baseline : undefined); ++input.current; setRevision(value => value + 1) }
     finally { suppress.current = false }
     await drafts.discard(candidate)
   }
