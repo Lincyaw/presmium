@@ -25,6 +25,7 @@ export interface VoiceoverCapability {
 }
 export interface VoiceoverStepStatus {
   target: VoiceTarget
+  stepId?: string
   state: 'ready' | 'missing' | 'blocked' | 'empty'
   utterances: number
   cached: number
@@ -42,6 +43,7 @@ export interface VoiceoverSnapshot {
 export type VoiceoverJobState = 'queued' | 'running' | 'cancelling' | 'cancelled' | 'done' | 'failed' | 'stale'
 export interface VoiceoverJob {
   id: string
+  sequence: number
   /** Client-owned generation intent, available before the job response is delivered. */
   intent: string
   revision: string
@@ -52,6 +54,7 @@ export interface VoiceoverJob {
   completed: number
   failed: number
   createdAt: string
+  startedAt?: string
   finishedAt?: string
   error?: string
 }

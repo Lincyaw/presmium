@@ -4,7 +4,7 @@ import { homedir, tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 import { Compiler, pluginLogger, runBlock, workspacePlugins } from '@lincyaw/compiler'
 import type { Compilation, CompilerOptions } from '@lincyaw/compiler'
-import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, PRODUCTION_AUDIO_AUTHORING, REVISIONS, SPEECH, VOICEOVER } from '@lincyaw/kernel'
+import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, DOCUMENT_VOICE_TASKS, errorMessage, PRODUCTION_AUDIO_AUTHORING, REVISIONS, SPEECH, VOICEOVER, VOICEOVER_EXECUTION } from '@lincyaw/kernel'
 import { irRevision } from '@lincyaw/kernel/node'
 import type { CanonicalSource, ChangeReviewService, Finding, IRDocument, Logger, ProductionAudioAuthoring, ServiceToken, SiteSpec, SpeechService } from '@lincyaw/kernel'
 import { serverConfigKey, servedDocument, startServer } from '@lincyaw/server'
@@ -20,7 +20,7 @@ import { DocumentLocks } from './locks.ts'
 import { AgentSessionReviews } from './review/agent-session-reviews.ts'
 import { createTaskReviewService } from './review/task-reviews.ts'
 import { Revisions } from './revisions.ts'
-import { WORKSPACE_ID, workspaceRoutes, workspaceRoutesPlugin } from './routes.ts'
+import { WORKSPACE_ID, authorizeWorkspaceRoutes, workspaceRoutes, workspaceRoutesPlugin } from './routes.ts'
 import { refreshDocumentVitePlugins, siteContext, siteDocument, siteDocumentIR, siteSpec, untranslatedFindings, webRenderer } from './site.ts'
 import { SourceEditor } from './source-editor.ts'
 import { createDocumentEditor } from './document-editor.ts'
@@ -164,7 +164,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     const controller = new AbortController()
     const promise: Promise<AuthoringServices> = new Compiler(join(root, selected.entry), compilerOptions()).nodeServices({ signal: controller.signal }).then(loaded => {
       if (loaded.source.documentId !== source.documentId || loaded.source.version !== source.version || loaded.source.fingerprint !== source.fingerprint) throw new RequestError(409, 'document-version-changed')
-      return { audio: loaded.service(PRODUCTION_AUDIO_AUTHORING), speech: loaded.service(SPEECH), voiceover: loaded.service(VOICEOVER), findings: loaded.findings }
+      return { audio: loaded.service(PRODUCTION_AUDIO_AUTHORING), speech: loaded.service(SPEECH), voiceover: loaded.service(VOICEOVER), voiceoverExecution: loaded.service(VOICEOVER_EXECUTION), findings: loaded.findings }
     }).finally(() => { if (nodeServiceLoads.get(document) === load) nodeServiceLoads.delete(document); nodeServicePending.delete(load) })
     const load: NodeServiceLoad = { key, promise, controller }
     nodeServiceLoads.set(document, load)
@@ -244,7 +244,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     get voiceAuthoring() { return voiceAuthoring?.service },
     get transcriptions() { return transcriptions },
     get transcriptionAdoption() { return transcriptionAdoption?.service },
-    get routes() { return workspaceRoutesOwner?.routes ? { [WORKSPACE_ID]: workspaceRoutesOwner.routes } : undefined },
+    get routes() { return workspaceRoutesOwner?.routes ? { [WORKSPACE_ID]: workspaceRoutesOwner.routes, ...voiceAuthoring ? { 'presmium.lecture': authorizeWorkspaceRoutes(voiceAuthoring.routes, launcherToken) } : {} } : undefined },
     agentTools(document) {
       const compiled = (document === undefined ? [...compileSessions.values()] : [compileSessions.get(document)]).flatMap(session => session?.latest ? [session.latest] : [])
       const tools = new Map(compiled.flatMap(compilation => compilation.plugins.flatMap(loaded => loaded.plugin?.tools ?? [])).map(tool => [tool.name, tool]))
@@ -349,7 +349,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   })
   const running = server
   serverServices = running.services
-  voiceAuthoring = createDocumentVoiceAuthoring({ editor, services: authoringServices })
+  voiceAuthoring = createDocumentVoiceAuthoring({ editor, services: authoringServices, revision: document => { const latest = compileSessions.get(document)?.latest; return latest ? irRevision(latest.doc) : undefined } })
   workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, voices: voiceAuthoring.service, diagnostics: running.diagnostics, url: () => running.url, preview, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
   history = openHistory()
   documentEditor = createDocumentEditor({ editor, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
@@ -376,6 +376,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     ...history ? [[REVISIONS, history.revisions] as [ServiceToken<unknown>, unknown]] : [],
     [DOCUMENT_FILES, writer],
     [DOCUMENT_LOCKS, locks],
+    [DOCUMENT_VOICE_TASKS, voiceAuthoring.service],
   ]
   try {
     await history?.agentSessionReviews.recover(docs().map(doc => doc.dir))
