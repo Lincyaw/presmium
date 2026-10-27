@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ForwardRefExoticComponent, ReactNode, RefAttributes } from 'react'
 import { filterSuggestionItems } from '@blocknote/core'
 import { en, zh } from '@blocknote/core/locales'
@@ -7,7 +7,7 @@ import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeS
 import type { ComponentProps, FormattingToolbarProps } from '@blocknote/react'
 import { useMediaQuery } from '@mantine/hooks'
 import type { Locale } from '../messages.ts'
-import { PmIconButton, PmNotice } from '../components.tsx'
+import { PmIconButton, PmNotice, PmTooltip } from '../components.tsx'
 import { DOCUMENT_NODE_VIEWS, documentEditorSchema } from './schema.tsx'
 import type { DocumentEditorBlock, DocumentEditorInput, DocumentNodeViews, NativeDocumentEditor } from './schema.tsx'
 import { documentSelection } from './selection.ts'
@@ -17,7 +17,7 @@ import { imageFileInput } from './file-input.ts'
 import type { ImageImportFailure } from './file-input.ts'
 import { nativeTextClipboard } from './clipboard.ts'
 import { excludeCommentMarkHistory, nativeComments, nativeCommentSelection } from './comments.ts'
-import type { DocumentThreadStore } from './comments.ts'
+import type { DocumentCommentEditorHandle, DocumentThreadStore } from './comments.ts'
 
 export const DOCUMENT_EDITOR_THEME = {
   colors: {
@@ -38,7 +38,32 @@ const DocumentComment = forwardRef<HTMLDivElement, ComponentProps['Comments']['C
   const className = [props.className, props.actions ? 'pm-ui-comment-actions-row' : undefined].filter(Boolean).join(' ')
   return <MantineComment {...props} ref={ref} className={className} showActions={coarse && props.showActions === 'hover' ? true : props.showActions} />
 })
-const DOCUMENT_EDITOR_COMPONENTS = { ...components, Comments: { ...components.Comments, Comment: DocumentComment } }
+const COMMENT_EDITOR_CONTEXT = createContext<{ store: DocumentThreadStore, locale: Locale } | undefined>(undefined)
+const MantineCommentEditor = components.Comments.Editor
+const emptySubscribe = () => () => {}
+function DocumentCommentEditor(props: ComponentProps['Comments']['Editor']) {
+  const context = useContext(COMMENT_EDITOR_CONTEXT), [handle, setHandle] = useState<DocumentCommentEditorHandle>()
+  useLayoutEffect(() => {
+    if (!context) return
+    const value = context.store.bindEditor(props.editor, props.editable)
+    setHandle(value)
+    return () => { value.close() }
+  }, [context?.store, props.editor])
+  useLayoutEffect(() => { handle?.setEditable(props.editable) }, [handle, props.editable])
+  const failure = useSyncExternalStore(handle?.subscribe ?? emptySubscribe, handle?.failure ?? (() => undefined))
+  const t = DOCUMENT_EDITOR_MESSAGES[context?.locale ?? 'en']
+  return <><MantineCommentEditor {...props} />{failure && <PmNotice tone="danger">{failure === 'changed' ? t.commentChanged : t.commentUnavailable}</PmNotice>}</>
+}
+const MantineBadge = components.Generic.Badge.Root as ForwardRefExoticComponent<ComponentProps['Generic']['Badge']['Root'] & RefAttributes<HTMLInputElement>>
+const DocumentReactionBadge = forwardRef<HTMLInputElement, ComponentProps['Generic']['Badge']['Root']>(function DocumentReactionBadge(props, ref) {
+  if (!props.className?.split(/\s+/).includes('bn-comment-reaction')) return <MantineBadge {...props} ref={ref} />
+  const label = [props.mainTooltip, props.secondaryTooltip?.replace(/\s+/g, ' ')].filter(Boolean).join(' · ')
+  // Keep the input mounted while tooltip visibility changes; let its label own activation and focus.
+  return <PmTooltip label={label}><span><MantineBadge {...props} mainTooltip={undefined} secondaryTooltip={undefined} ref={ref}
+    onClick={event => { if (event.target instanceof HTMLInputElement) props.onClick?.(event) }} /></span></PmTooltip>
+})
+
+const DOCUMENT_EDITOR_COMPONENTS = { ...components, Generic: { ...components.Generic, Badge: { ...components.Generic.Badge, Root: DocumentReactionBadge } }, Comments: { ...components.Comments, Comment: DocumentComment, Editor: DocumentCommentEditor } }
 
 export interface BlockNoteSurfaceProps {
   identity: string
@@ -133,7 +158,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
       stopCommentHistory?.(); current.current.onReady?.(undefined)
     }
   }, [editor])
-  return <DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}>
+  return <DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}><COMMENT_EDITOR_CONTEXT.Provider value={props.comments ? { store: props.comments, locale: props.locale } : undefined}>
     <div className="pm-document-editor pm-ui-block-editor pm-ui" data-document-editor={props.identity}
       onDragEnter={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
       onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
@@ -157,5 +182,5 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         </ComponentsContext.Provider>
       </BlockNoteView>
     </div>
-  </DOCUMENT_NODE_VIEWS.Provider>
+  </COMMENT_EDITOR_CONTEXT.Provider></DOCUMENT_NODE_VIEWS.Provider>
 }
