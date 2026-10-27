@@ -1,6 +1,6 @@
 import { isAbsolute, relative } from 'node:path'
 import { diagnosticOf, pushStream } from '@lincyaw/kernel'
-import type { Diagnostic, DiagnosticOrigin, DiagnosticSnapshot, Finding, IRDocument, PreviewDiagnostics } from '@lincyaw/kernel'
+import type { AuthoringDiagnostics, Diagnostic, DiagnosticOrigin, DiagnosticSnapshot, Finding, IRDocument, PreviewDiagnostics } from '@lincyaw/kernel'
 
 export interface DiagnosticSource {
   document: string
@@ -44,7 +44,7 @@ export class DiagnosticStore {
     }
     return {
       version: this.#version,
-      diagnostics: [...diagnostics.values()].map(diagnostic => ({ ...diagnostic, ...diagnostic.source ? { source: { ...diagnostic.source } } : {} })),
+      diagnostics: [...diagnostics.values()].map(diagnostic => ({ ...diagnostic, ...diagnostic.source ? { source: { ...diagnostic.source } } : {}, ...diagnostic.authoringSource ? { authoringSource: { ...diagnostic.authoringSource } } : {} })),
     }
   }
 
@@ -83,6 +83,11 @@ export class DiagnosticStore {
     if (!this.#irRevisions.has(report.document) || this.#irRevisions.get(report.document) !== report.revision) return false
     this.replace(source, report.findings, { irRevision: report.revision })
     return true
+  }
+
+  /** This producer describes authoring-window failures, independently of runtime compilation. */
+  reportAuthoring(report: AuthoringDiagnostics, member: string): void {
+    this.replace({ document: report.document, origin: 'authoring', instance: JSON.stringify([member, report.instance]) }, report.findings)
   }
 
   forget(document: string): void {

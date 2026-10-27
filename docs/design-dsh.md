@@ -305,6 +305,8 @@ Doc 中的单块只读预览使用独立消息，不建立 v1 编辑握手或 SS
 
 网页工作台订阅 `diagnostics/events?document=<目录>`：连接和重连先收到当前快照，此后在诊断变化时接收新的完整快照。预览的 `POST diagnostics` 带 `document`、`renderer`、`instance`、`revision` 与 `findings`；空集合清除该实例的问题。设置服务令牌时，诊断的读取、订阅和写入都要求服务令牌，经 dsh 的现有代理访问。
 
+作者根窗口另经 `POST diagnostics/authoring` 报告工作台异常和 5xx／网络失败，使用独立 `authoring` 来源，无须先生成 IR。每条错误可带请求开始或异常发生时的保存基线 `authoringSource`，未知时省略，不冒充运行修订或当前源验证。服务按受信 member 与窗口 instance 隔离替换和清空；编译不清除该来源。报告正文严格限额，不含草稿正文，完整权限与恢复边界见[诊断反馈](diagnostic-feedback.md#未编译的作者窗口)。
+
 MCP 的 `presmium://diagnostics` 与 `?document=<目录>` 读取同一快照；资源更新通过 MCP 通知送达订阅者，并遵守会话令牌的文稿范围。读取资源不运行完整检查；`get_diagnostics` 在实际响应预算内分片读取相同快照，`check_document` 才显式运行编译与插件检查。compiler-only stdio 没有浏览器生产者，旧诊断资源仍可编译当前文稿；被观察前的工具读取报告 unavailable，显式检查后的完整结果可按版本读取。空快照不代表当前源或浏览器通过验证，完整契约见[诊断反馈](diagnostic-feedback.md)。
 
 dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达性。当前上下文包含至多 20 条具体诊断及剩余数量，每次替换；文稿切换解除旧订阅，读取失败明确标为不可用。工作台的问题列表消费同一快照，预览模式也显示错误摘要；“让 AI 处理”由作者明确点击后提交给当前会话。通知本身不启动模型任务。整个工作区服务不可用时，由启动器与 dsh 宿主报告服务故障。

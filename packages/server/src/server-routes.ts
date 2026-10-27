@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { IncomingMessage } from 'node:http'
 import { errorMessage, hasRole, isRecord, jsonResponse, MAX_BODY, problemResponse, sseResponse } from '@lincyaw/kernel'
-import type { Finding, Member, PreviewDiagnostics } from '@lincyaw/kernel'
+import type { AuthoringDiagnostics, CanonicalSource, Finding, Member, PreviewDiagnostics } from '@lincyaw/kernel'
 import type { McpHost } from '@lincyaw/mcp'
 import type { ControlChannel, WindowPosition } from './control.ts'
 import type { DiagnosticStore } from './diagnostics.ts'
@@ -137,9 +137,44 @@ export function createServerRouteHandler(options: ServerRoutesOptions): (request
     if (route === 'control') return await controlRoute(request, ctx)
     if (route === 'tokens') return await tokensRoute(request)
     if (route === 'focus') return await focusRoute(request, ctx.member)
+    if (route === 'diagnostics/authoring') {
+      if (launcherToken && !isFromLauncher(request)) return problemResponse(401, 'authoring diagnostics need the service token')
+      if (!hasRole(ctx.member, 'editor')) return problemResponse(403, 'authoring diagnostics need the role editor')
+      if (request.method !== 'POST') return problemResponse(405, 'POST')
+      if (!options.serverHost?.authoring) return problemResponse(409, 'authoring diagnostics are unavailable')
+      const limited = await limitBody(request, 64 << 10)
+      if (limited instanceof Response) return limited
+      const report = toAuthoringDiagnostics(await limited.json().catch(() => undefined))
+      if (typeof report === 'string') return problemResponse(400, report)
+      if (!(await hasDocument(options.serverHost, report.document))) return problemResponse(404, 'no such authoring document')
+      diagnostics.reportAuthoring(report, ctx.member.id)
+      return jsonResponse({ accepted: true })
+    }
     if (route === 'diagnostics' || route === 'diagnostics/events') return await diagnosticsRoute(request, route === 'diagnostics/events', ctx.req)
     return problemResponse(404, 'not found')
   }
+}
+
+function toAuthoringDiagnostics(body: unknown): AuthoringDiagnostics | string {
+  if (!isRecord(body) || Object.keys(body).some(key => !['document', 'instance', 'findings'].includes(key))
+    || typeof body.document !== 'string' || body.document.length > 1024 || typeof body.instance !== 'string' || !/^workbench:[a-zA-Z0-9.-]{1,80}$/.test(body.instance)
+    || !Array.isArray(body.findings) || body.findings.length > 20) return 'authoring diagnostics need document, workbench instance and at most 20 findings'
+  const findings: AuthoringDiagnostics['findings'] = []
+  for (const item of body.findings) {
+    if (!isRecord(item) || Object.keys(item).some(key => !['checkId', 'severity', 'message', 'authoringSource'].includes(key))
+      || typeof item.checkId !== 'string' || !item.checkId.startsWith('presmium.workbench.') || item.checkId.length > 100
+      || item.severity !== 'error' || typeof item.message !== 'string' || item.message.length > 600) return 'invalid authoring diagnostic'
+    let source: CanonicalSource | undefined
+    if (item.authoringSource !== undefined) {
+      const value = item.authoringSource
+      if (!isRecord(value) || Object.keys(value).some(key => !['documentId', 'version', 'fingerprint'].includes(key))
+        || !['documentId', 'version'].every(key => typeof value[key] === 'string' && (value[key] as string).length > 0 && (value[key] as string).length <= 200)
+        || typeof value.fingerprint !== 'string' || !/^[a-f\d]{16}$/.test(value.fingerprint)) return 'invalid authoring diagnostic source'
+      source = { documentId: value.documentId as string, version: value.version as string, fingerprint: value.fingerprint }
+    }
+    findings.push({ checkId: item.checkId, severity: 'error', message: item.message, ...source ? { authoringSource: source } : {} })
+  }
+  return { document: body.document, instance: body.instance, findings }
 }
 
 function toPreviewDiagnostics(body: unknown): PreviewDiagnostics | string {

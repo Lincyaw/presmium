@@ -1967,7 +1967,7 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 | 契约或接口 | 位置 |
 |---|---|
 | 预览协议：`PREVIEW_PROTOCOL = 1` 与消息类型 | `packages/kernel/src/contracts/preview.ts`（`design-dsh.md` 第 4 节） |
-| 当前诊断：`Diagnostic`、`DiagnosticSnapshot`、`PreviewDiagnostics`；SSE 与 MCP 资源订阅；工作台与 agent 读取同一快照 | `packages/kernel/src/contracts/diagnostics.ts`、`packages/server/src/diagnostics.ts`（`design-dsh.md` 5.4 节） |
+| 当前诊断：`Diagnostic`、`DiagnosticSnapshot`、`PreviewDiagnostics`、无 IR 前置的 `AuthoringDiagnostics`；SSE 与 MCP 资源订阅；工作台与 agent 读取同一快照 | `packages/kernel/src/contracts/diagnostics.ts`、`packages/server/src/diagnostics.ts`（`design-dsh.md` 5.4 节） |
 | `RenderContext.preview?: { origins: string[] }`：站点服务的页面带预览代理与允许的父页面来源 | `packages/kernel/src/ir.ts`（只增加可选字段） |
 | 工作区服务的新路由：`ir`、`ir/events`、`preview`、`build`、`check`；`presmium serve --preview-origin <源>`；服务令牌 `PRESMIUM_SERVICE_TOKEN` | `packages/workspace/src/node/`、`packages/cli/src/cli.ts`（`design-dsh.md` 第 5 节） |
 | 审阅的路由：`review`（SSE 时为页面跟随）、`review/open`、`review/step`、`review/accept`、`review/reject`、`review/restore`、`review/events`（bundle 的 SSE）；`CHANGE_REVIEW` 的 git 实现由工作区服务提供；会话的提交另带尾注 `Presmium-Session`、`Presmium-Turn` | `packages/workspace/src/node/review/`、`packages/dsh/src/node/turns.ts` |
