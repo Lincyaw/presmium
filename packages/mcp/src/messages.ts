@@ -11,6 +11,7 @@ export interface McpMessages {
   cancelVoiceover(target: string): string
   previewVoice(voice: string): string
   changeMediaClip(action: 'add' | 'update' | 'remove', clipId: string): string
+  historyChange(which: 'undo' | 'redo' | 'revert', revision: string): string
   duplicatePage: string
   applyPagePlan: string
   applyAuthoringAction: string
@@ -33,6 +34,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     cancelVoiceover: target => `取消配音「${target}」`,
     previewVoice: voice => `试听音色「${voice}」`,
     changeMediaClip: (action, clipId) => `${{ add: '添加', update: '调整', remove: '删除' }[action]}音频片段「${clipId}」`,
+    historyChange: (which, revision) => `${which === 'redo' ? '重做' : which === 'revert' ? '撤消指定' : '撤消'}文稿修改 ${revision}`,
     duplicatePage: '复制页面',
     applyPagePlan: '采用页面预检',
     applyAuthoringAction: '采用文稿动作预检',
@@ -53,6 +55,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     cancelVoiceover: target => `Cancel voiceover “${target}”`,
     previewVoice: voice => `Preview voice “${voice}”`,
     changeMediaClip: (action, clipId) => `${{ add: 'Add', update: 'Update', remove: 'Remove' }[action]} audio clip “${clipId}”`,
+    historyChange: (which, revision) => `${which === 'undo' ? 'Undo' : which === 'redo' ? 'Redo' : 'Revert'} document change ${revision}`,
     duplicatePage: 'Duplicate page',
     applyPagePlan: 'Apply page plan',
     applyAuthoringAction: 'Apply authoring action plan',

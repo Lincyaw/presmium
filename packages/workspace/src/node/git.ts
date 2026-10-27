@@ -26,17 +26,24 @@ export class Git {
     }
   }
 
-  run(command: string[], env: Record<string, string> = {}): Promise<GitResult> {
+  run(command: string[], env: Record<string, string> = {}, input?: Uint8Array): Promise<GitResult> {
     return new Promise((done) => {
-      execFile('git', [...gitConfigArgs(), ...command], {
+      let inputError: Error | undefined
+      const child = execFile('git', [...gitConfigArgs(), ...command], {
         cwd: this.root,
         encoding: 'buffer',
         maxBuffer: 1 << 30,
         env: { ...gitEnvironment(process.env), ...env },
       }, (error, stdout, stderr) => {
-        const code = !error ? 0 : typeof error.code === 'number' ? error.code : 1
-        done({ code, stdout, stderr: stderr.toString('utf8') })
+        const code = inputError ? 1 : !error ? 0 : typeof error.code === 'number' ? error.code : 1
+        done({ code, stdout, stderr: stderr.toString('utf8') + (inputError?.message ?? '') })
       })
+      if (input !== undefined) {
+        if (child.stdin) {
+          child.stdin.on('error', error => { inputError = error; child.kill() })
+          child.stdin.end(input)
+        } else { inputError = new Error('git stdin is unavailable'); child.kill() }
+      }
     })
   }
 

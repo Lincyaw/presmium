@@ -1,6 +1,7 @@
 import { errorMessage } from '@lincyaw/kernel'
 import type { RevertResult, ReviewChange, ReviewSnapshot, ReviewUpdate } from '@lincyaw/kernel'
 import type { WorkbenchStore } from './workbench.ts'
+import { WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 
 /**
@@ -14,6 +15,9 @@ export class DocumentHistory {
   readonly #store: WorkbenchStore
   readonly #changed: (changes: ReviewChange[]) => void
   #reads = 0
+  #offsets = [0]
+  #page = 0
+  #readFailure?: string
   #scope = 0
   #unsubscribeReview?: () => void
   #review?: ReviewSnapshot
@@ -32,17 +36,52 @@ export class DocumentHistory {
 
   stop(): void {
     this.#scope++
+    this.#readFailure = undefined
     this.#unsubscribeReview?.()
     this.#unsubscribeReview = undefined
     this.#review = undefined
   }
 
   async read(dir: string): Promise<void> {
-    const read = ++this.#reads
+    this.#offsets = [0]
+    this.#page = 0
+    const read = ++this.#reads, scope = this.#scope
+    const current = () => this.#store.state.document === dir && read === this.#reads && scope === this.#scope
     try {
       const [history, { files }] = await Promise.all([this.#client.readRevisions(dir), this.#client.readChanges(dir)])
-      if (this.#store.state.document === dir && read === this.#reads) this.#store.set({ history, outside: files })
-    } catch {
+      if (current()) {
+        const historyFailure = this.#store.state.historyFailure
+        this.#store.set({ history, outside: files, ...this.#readFailure === historyFailure ? { historyFailure: undefined } : {} })
+        this.#readFailure = undefined
+      }
+    } catch (error) {
+      if (current()) {
+        this.#readFailure = errorMessage(error)
+        const history = this.#store.state.history
+        this.#store.set({ ...history ? { history: { ...history, loading: false } } : {}, historyFailure: this.#readFailure })
+      }
+    }
+  }
+
+  async page(offset: number): Promise<void> {
+    const dir = this.#store.state.document, before = this.#store.state.history
+    if (dir === undefined || !before?.historyBinding || before.loading || this.#store.state.isHistoryBusy || ![before.nextOffset, before.previousOffset].includes(offset)) return
+    const read = ++this.#reads, scope = this.#scope
+    const current = () => read === this.#reads && scope === this.#scope && this.#store.state.document === dir
+    this.#store.set({ history: { ...before, loading: true } })
+    try {
+      const history = await this.#client.readRevisions(dir, { snapshot: before.historyBinding.snapshot, offset })
+      if (!current()) return
+      let index = this.#offsets.indexOf(offset)
+      if (index < 0) { this.#offsets = [...this.#offsets.slice(0, this.#page + 1), offset]; index = this.#offsets.length - 1 }
+      this.#page = index
+      this.#readFailure = undefined
+      this.#store.set({ history: { ...history, ...index > 0 ? { previousOffset: this.#offsets[index - 1] } : {} }, historyFailure: undefined })
+    } catch (error) {
+      if (!current()) return
+      if (error instanceof WorkspaceServerError && error.status === 409) { await this.read(dir); return }
+      this.#readFailure = errorMessage(error)
+      this.#store.set({ history: { ...before, loading: false }, historyFailure: this.#readFailure })
     }
   }
 
@@ -68,6 +107,7 @@ export class DocumentHistory {
     if (dir === undefined || this.#store.state.isHistoryBusy) return false
     const scope = this.#scope
     const current = () => scope === this.#scope && dir === this.#store.state.document
+    this.#readFailure = undefined
     this.#store.set({ isHistoryBusy: true })
     try {
       const answer = await work(dir)
@@ -86,19 +126,26 @@ export class DocumentHistory {
     }
   }
 
+  #change(which: 'undo' | 'redo' | 'revertRevision', expect: string | undefined): Promise<boolean> {
+    const binding = this.#store.state.history?.historyBinding
+    if (!binding || !expect) return Promise.resolve(false)
+    const request = { id: crypto.randomUUID(), ...binding, expect }
+    return this.#run(dir => this.#client[which](dir, request))
+  }
+
   undo(): Promise<boolean> {
     const expect = this.#store.state.history?.undo
-    return this.#run(dir => this.#client.undo(dir, expect))
+    return this.#change('undo', expect)
   }
 
   redo(): Promise<boolean> {
     const expect = this.#store.state.history?.redo
-    return this.#run(dir => this.#client.redo(dir, expect))
+    return this.#change('redo', expect)
   }
 
   /** Takes back one revision of the history, whether or not it is the latest. */
   revert(id: string): Promise<boolean> {
-    return this.#run(dir => this.#client.revertRevision(dir, id))
+    return this.#change('revertRevision', id)
   }
 
   acceptReview(): Promise<boolean> {

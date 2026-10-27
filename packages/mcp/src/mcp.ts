@@ -11,6 +11,7 @@ import type { McpMessages } from './messages.ts'
 import { TOOL_APPROVAL_META, TOOL_KIND_META } from './tool-meta.ts'
 import { AUTHORING_TOOLS } from './authoring.ts'
 import { AUTHORING_ACTION_TOOLS } from './authoring-actions.ts'
+import { HISTORY_TOOLS } from './history.ts'
 import { TRANSCRIPTION_TOOLS } from './transcription.ts'
 import { AUDIO_AUTHORING_TOOLS } from './audio-authoring.ts'
 import { VOICE_AUTHORING_TOOLS } from './voice-authoring.ts'
@@ -120,6 +121,7 @@ function jobSummary(job: CompileJob, logLines = 0) {
 const TOOLS: ToolSpec[] = [
   ...AUTHORING_TOOLS,
   ...AUTHORING_ACTION_TOOLS,
+  ...HISTORY_TOOLS,
   ...AUDIO_AUTHORING_TOOLS,
   ...VOICE_AUTHORING_TOOLS,
   ...TRANSCRIPTION_TOOLS,
@@ -399,6 +401,11 @@ function runPlan(doc: IRDocument, node: CodeNode): string {
 
 function hostSupports(host: McpHost, name: string): boolean {
   switch (name) {
+    case 'get_document_history':
+    case 'read_history_file':
+    case 'undo_document_change':
+    case 'redo_document_change':
+    case 'revert_document_change': return Boolean(host.documentHistory)
     case 'get_voiceover_status':
     case 'get_voiceover_jobs':
     case 'get_voiceover_job':
