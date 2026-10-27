@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, fnv1a64, isRecord, validateDocument } from '@lincyaw/kernel'
 import { productionAssetFile } from '@lincyaw/kernel/node'
-import type { AnchorResolverRegistry, CodeNode, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceCapabilities, SourceReader, TeachingDocument } from '@lincyaw/kernel'
+import type { AnchorResolverRegistry, CanonicalSource, CodeNode, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceCapabilities, SourceReader, TeachingDocument } from '@lincyaw/kernel'
 import { audienceDocument, emptyReferences, filterForAudience, scanOutputs, withheld } from './audience.ts'
 import type { AudienceMark, Withheld } from './audience.ts'
 import { runAllChecks } from './compilation-actions.ts'
@@ -105,6 +105,13 @@ export interface CompileOptions {
   signal?: AbortSignal
 }
 
+/** Plugin services assembled from the exact authoring source, without running compilation passes. */
+export interface DocumentNodeServices {
+  source: CanonicalSource
+  findings: Finding[]
+  service<T>(token: ServiceToken<T>): T | undefined
+}
+
 export function resolveEntry(deck: string): string {
   const path = resolve(deck)
   const entry = existsSync(path) && statSync(path).isDirectory() ? join(path, DECK_ENTRY) : path
@@ -185,6 +192,17 @@ export class Compiler {
 
   compile(options: CompileOptions = {}): Promise<Compilation> {
     return enqueueCompile(() => this.#compile(options), this.options.priority === 'interactive')
+  }
+
+  /** Authoring services must also work when a scene or a compilation pass cannot be built. */
+  async nodeServices(options: Pick<CompileOptions, 'signal'> = {}): Promise<DocumentNodeServices> {
+    const run = await this.#start(options)
+    options.signal?.throwIfAborted()
+    return {
+      source: { documentId: run.document.id, version: createHash('sha256').update(run.rawSource).digest('hex').slice(0, 20), fingerprint: fnv1a64(run.rawSource) },
+      findings: [...run.findings],
+      service: run.service,
+    }
   }
 
   async #compile(options: CompileOptions): Promise<Compilation> {
