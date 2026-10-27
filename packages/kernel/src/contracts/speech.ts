@@ -89,8 +89,9 @@ export interface SpeechService {
   /** Lists registered voices without synthesis. Absence means catalogue availability is unknown. */
   voiceCatalog?(engine?: string, lang?: string, signal?: AbortSignal): Promise<VoiceCatalog>
   synthesize(request: SynthesisRequest, signal?: AbortSignal): Promise<Synthesis>
-  /** Exact request lookup only. A miss never calls synthesis or transcription providers. */
+  /** Exact request/configuration lookup with verified audio bytes. Offline reuse requires an unambiguous lock. A miss never calls synthesis or transcription providers. */
   lookup?(request: SynthesisRequest, signal?: AbortSignal): Promise<Synthesis | undefined>
+  /** Verifies the current configuration profile, or an explicit offline lock, and the actual audio SHA. */
   cached?(key: string, signal?: AbortSignal): Promise<Synthesis | undefined>
   alignWords?(key: string, options: { lang: string, transcribe?: boolean }, signal?: AbortSignal): Promise<SpeechWord[] | undefined>
   pruneLock?(keep: ReadonlySet<string>): Promise<number>

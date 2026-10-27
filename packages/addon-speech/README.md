@@ -23,6 +23,8 @@ It is a Presmium plugin: its components work on the web page and in the slides. 
 
 The operator defines engines in environment variables: `PRESMIUM_SPEECH_<ID>_URL`, `_PROVIDER` and, optionally, `_KEY`. Documents name the engine's id only, for example `presmium: { presmium.speech: { engine: volcengine } }`.
 
+Engine URLs must be HTTP(S) addresses without user information, a query or a fragment; credentials belong in `_KEY`. New cache keys include the normalized address, provider, adapter kind and model identity, excluding credentials. Changing a model or provider under the same engine ID requires explicit generation; reads never generate missing audio. Commit the matching cache and `speech.lock.json` for offline builds. An incomplete definition, including a model-only setting, is unavailable rather than an offline fallback. With no definition at all, request lookup accepts one locked result; multiple profiles for that request are ambiguous. Legacy locked audio remains readable offline, but cannot establish the identity of a configured provider. Every cache read verifies the audio SHA; alignment also verifies its audio and transcription profile.
+
 ## Documentation
 
 - [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/locales/en/lecture.json) (Chinese: `site/guide/lecture.json`)

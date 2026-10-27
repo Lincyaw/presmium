@@ -4,15 +4,14 @@ import { createDeckSpeech } from './cached-speech.ts'
 
 export function nodeSpeech(ctx: NodeServiceContext): SpeechService {
   const { speech } = createDeckSpeech(ctx)
-  const cached = async (key: string, signal?: AbortSignal): Promise<Synthesis | undefined> => {
-    const hit = await speech.cache.find(key)
+  const synthesisOf = async (hit: Awaited<ReturnType<typeof speech.cached>>, signal?: AbortSignal): Promise<Synthesis | undefined> => {
     if (!hit) return undefined
     const { record, file } = hit
     await speech.consent(record.engine, record.voice, record.cloned === true, signal)
     return {
       audio: file, mime: record.mime, duration: record.duration,
       ...record.words ? { words: record.words } : {},
-      key, engine: record.engine, model: record.model, voice: record.voice, provider: record.provider, synthetic: true,
+      key: record.key, engine: record.engine, model: record.model, voice: record.voice, provider: record.provider, synthetic: true,
     }
   }
   return {
@@ -40,10 +39,9 @@ export function nodeSpeech(ctx: NodeServiceContext): SpeechService {
         synthetic: true,
       }
     },
-    cached,
+    cached: async (key, signal) => synthesisOf(await speech.cached(key), signal),
     async lookup(request, signal) {
-      const key = await speech.synthesisKey(request)
-      return key ? cached(key, signal) : undefined
+      return synthesisOf(await speech.lookup(request), signal)
     },
     alignWords: (key, options, signal) => speech.alignWords(key, options, signal),
     pruneLock: keep => speech.cache.pruneLock(keep),
