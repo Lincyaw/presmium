@@ -10,11 +10,12 @@ export const AUTHORING_CLIENT_MAX_RESPONSE_CHARS = 7168
 export const AUTHORING_CLIENT_MAX_CLIENTS = 16
 export const AUTHORING_CLIENT_MAX_REQUESTS = 64
 export const AUTHORING_CLIENT_REQUEST_TIMEOUT_MS = 30000
-export const AUTHORING_CLIENT_ACTIONS = ['state.read', 'source.flush', 'playback.pause', 'position.step', 'playback.play', 'playback.seek', 'playback.rate'] as const
+export const AUTHORING_CLIENT_ACTIONS = ['state.read', 'source.flush', 'preview.prepare', 'playback.pause', 'position.step', 'playback.play', 'playback.seek', 'playback.rate'] as const
 export type AuthoringClientActionType = typeof AUTHORING_CLIENT_ACTIONS[number]
 export type AuthoringClientAction =
   | { type: 'state.read' }
   | { type: 'source.flush' }
+  | { type: 'preview.prepare' }
   | { type: 'playback.pause' }
   | { type: 'position.step', sectionId: string, stepId: string }
   | { type: 'playback.play', binding: ProductionBinding }
@@ -30,6 +31,7 @@ export interface AuthoringClientSnapshot {
   interaction: string
   position?: { sectionId: string, stepId?: string }
   binding?: ProductionBinding
+  preview?: { status: 'unprepared' | 'preparing' | 'prepared' | 'unavailable', source?: CanonicalSource, irRevision?: string, projectRevision?: number }
   playback?: ProductionPlaybackState
   actions: AuthoringClientActionType[]
   unsubmittedContent: 'not-inspected'
@@ -98,11 +100,12 @@ const playback = object({ binding, status: { enum: ['loading', 'ready', 'estimat
 export const AUTHORING_CLIENT_SNAPSHOT_SCHEMA: Schema = object({
   revision: integer, source, view: { enum: ['document', 'present'] }, editing: object({ dirty: bool, saving: bool, composing: bool, conflicted: bool, locked: bool, loading: bool }),
   interaction: { type: 'string', maxLength: 200 }, position: object({ sectionId: entity, stepId: entity }, ['sectionId']), binding, playback,
+  preview: { oneOf: [object({ status: { enum: ['unprepared', 'preparing', 'unavailable'] } }), object({ status: { const: 'prepared' }, source, irRevision: entity, projectRevision: integer })] },
   actions: { type: 'array', items: { enum: [...AUTHORING_CLIENT_ACTIONS] }, maxItems: AUTHORING_CLIENT_ACTIONS.length, uniqueItems: true }, unsubmittedContent: { const: 'not-inspected' },
 }, ['revision', 'source', 'view', 'editing', 'interaction', 'actions', 'unsubmittedContent'])
 const action = (type: string, properties: Record<string, Schema> = {}): Schema => object({ type: { const: type }, ...properties })
 export const AUTHORING_CLIENT_ACTION_SCHEMA: Schema = { oneOf: [
-  action('state.read'), action('source.flush'), action('playback.pause'), action('position.step', { sectionId: entity, stepId: entity }),
+  action('state.read'), action('source.flush'), action('preview.prepare'), action('playback.pause'), action('position.step', { sectionId: entity, stepId: entity }),
   action('playback.play', { binding }), action('playback.seek', { binding, timeMs: number }), action('playback.rate', { binding, rate: { enum: [...PRODUCTION_PLAYBACK_RATES] } }),
 ] }
 export const AUTHORING_CLIENT_REQUEST_SCHEMA: Schema = object({ clientId: id, epoch: id, requestId: id, source, expectedClientState: object({ connectionId: id, revision: integer }), action: AUTHORING_CLIENT_ACTION_SCHEMA })

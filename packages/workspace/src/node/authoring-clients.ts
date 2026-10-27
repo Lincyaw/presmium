@@ -68,7 +68,7 @@ export function createAuthoringClients(editor: SourceEditor) {
       if (!validateAuthoringClientQuery(query)) throw new RequestError(400, 'client-query-invalid')
       const all = [...clients.values()].filter(client => client.member === member.id && client.value.document === document && (!query.clientId || client.value.clientId === query.clientId)
         && (!query.after || client.value.clientId > query.after)).sort((a, b) => a.value.clientId.localeCompare(b.value.clientId))
-      const answer = { document, clients: [] as AuthoringClientDescriptor[], unavailable: ['recording', 'draft-content', 'review', 'open-document', 'compile'] }
+      const answer = { document, clients: [] as AuthoringClientDescriptor[], unavailable: ['recording', 'draft-content', 'review', 'open-document'] }
       for (const client of all) {
         const row = structuredClone(client.value)
         if (size({ ...answer, clients: [...answer.clients, row], nextAfter: row.clientId }) > AUTHORING_CLIENT_MAX_RESPONSE_CHARS) break
@@ -144,6 +144,7 @@ export function createAuthoringClients(editor: SourceEditor) {
   }
   const acknowledge = (document: string, lease: AuthoringClientLease, ack: AuthoringClientAcknowledgement, member: Member) => {
     const client = connection(document, lease, member), pending = requests.get(requestKey(member.id, document, { ...lease, requestId: ack.requestId }))
+    if (pending && Date.now() >= Date.parse(pending.value.expiresAt)) finish(pending, 'expired', 'client-request-timeout')
     if (!pending || terminal(pending) || pending.request.expectedClientState.connectionId !== lease.connectionId) throw new RequestError(409, 'client-request-expired')
     if (ack.state === 'executing' && pending.value.state !== 'sent' || ack.state === 'done' && pending.value.state !== 'executing') throw new RequestError(409, 'client-ack-state-invalid')
     if ((ack.state === 'executing' || ack.state === 'done') && !sameSource(ack.snapshot.source, pending.request.source) && !(ack.state === 'done' && pending.request.action.type === 'source.flush' && ack.snapshot.source.documentId === pending.request.source.documentId)) throw new RequestError(409, 'client-source-changed')
