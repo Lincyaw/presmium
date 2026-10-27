@@ -1,9 +1,9 @@
-import { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { forwardRef, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ForwardRefExoticComponent, ReactNode, RefAttributes } from 'react'
 import { filterSuggestionItems } from '@blocknote/core'
 import { en, zh } from '@blocknote/core/locales'
 import { BlockNoteView, components } from '@blocknote/mantine'
-import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ColorStyleButton, ComponentsContext, CreateLinkButton, FloatingComposerController, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, NestBlockButton, RenderInPortalElement, SuggestionMenuController, TableCellMergeButton, TextAlignButton, ThreadsSidebar, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
+import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ColorStyleButton, ComponentsContext, CreateLinkButton, FloatingComposerController, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, NestBlockButton, RenderInPortalElement, SuggestionMenuController, TableCellMergeButton, TextAlignButton, FloatingThreadController, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
 import type { ComponentProps, FormattingToolbarProps } from '@blocknote/react'
 import { useMediaQuery } from '@mantine/hooks'
 import type { Locale } from '../messages.ts'
@@ -17,7 +17,8 @@ import { imageFileInput } from './file-input.ts'
 import type { ImageImportFailure } from './file-input.ts'
 import { nativeTextClipboard } from './clipboard.ts'
 import { excludeCommentMarkHistory, nativeComments, nativeCommentSelection } from './comments.ts'
-import type { DocumentCommentEditorHandle, DocumentThreadStore } from './comments.ts'
+import type { DocumentThreadStore } from './comments.ts'
+import { COMMENT_EDITOR_CONTEXT, DocumentCommentEditor, DocumentCommentThread, DocumentThreadsSidebar } from './DocumentComments.tsx'
 
 export const DOCUMENT_EDITOR_THEME = {
   colors: {
@@ -38,22 +39,6 @@ const DocumentComment = forwardRef<HTMLDivElement, ComponentProps['Comments']['C
   const className = [props.className, props.actions ? 'pm-ui-comment-actions-row' : undefined].filter(Boolean).join(' ')
   return <MantineComment {...props} ref={ref} className={className} showActions={coarse && props.showActions === 'hover' ? true : props.showActions} />
 })
-const COMMENT_EDITOR_CONTEXT = createContext<{ store: DocumentThreadStore, locale: Locale } | undefined>(undefined)
-const MantineCommentEditor = components.Comments.Editor
-const emptySubscribe = () => () => {}
-function DocumentCommentEditor(props: ComponentProps['Comments']['Editor']) {
-  const context = useContext(COMMENT_EDITOR_CONTEXT), [handle, setHandle] = useState<DocumentCommentEditorHandle>()
-  useLayoutEffect(() => {
-    if (!context) return
-    const value = context.store.bindEditor(props.editor, props.editable)
-    setHandle(value)
-    return () => { value.close() }
-  }, [context?.store, props.editor])
-  useLayoutEffect(() => { handle?.setEditable(props.editable) }, [handle, props.editable])
-  const failure = useSyncExternalStore(handle?.subscribe ?? emptySubscribe, handle?.failure ?? (() => undefined))
-  const t = DOCUMENT_EDITOR_MESSAGES[context?.locale ?? 'en']
-  return <><MantineCommentEditor {...props} />{failure && <PmNotice tone="danger">{failure === 'changed' ? t.commentChanged : t.commentUnavailable}</PmNotice>}</>
-}
 const MantineBadge = components.Generic.Badge.Root as ForwardRefExoticComponent<ComponentProps['Generic']['Badge']['Root'] & RefAttributes<HTMLInputElement>>
 const DocumentReactionBadge = forwardRef<HTMLInputElement, ComponentProps['Generic']['Badge']['Root']>(function DocumentReactionBadge(props, ref) {
   if (!props.className?.split(/\s+/).includes('bn-comment-reaction')) return <MantineBadge {...props} ref={ref} />
@@ -158,20 +143,20 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
       stopCommentHistory?.(); current.current.onReady?.(undefined)
     }
   }, [editor])
-  return <DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}><COMMENT_EDITOR_CONTEXT.Provider value={props.comments ? { store: props.comments, locale: props.locale } : undefined}>
+  return <DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}><COMMENT_EDITOR_CONTEXT.Provider value={props.comments ? { store: props.comments, locale: props.locale, sidebar: Boolean(props.commentsPortal) } : undefined}>
     <div className="pm-document-editor pm-ui-block-editor pm-ui" data-document-editor={props.identity}
       onDragEnter={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
       onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
       onCompositionStart={() => current.current.onComposition?.(true)}
       onCompositionEnd={() => queueMicrotask(() => current.current.onComposition?.(false))}>
       {fileErrors?.identity === props.identity && <PmNotice tone="danger"><div className="pm-document-editor__file-errors"><ul>{fileErrors.failures.map((failure, index) => <li key={index}>{failure.name} · {fileMessages[failure.kind]}</li>)}</ul><PmIconButton small icon="close" label={fileMessages.dismiss} onClick={() => setFileErrors(undefined)} /></div></PmNotice>}
-      <BlockNoteView editor={editor} editable={!props.readOnly} theme={DOCUMENT_EDITOR_THEME} formattingToolbar={false} slashMenu={false} renderEditor={false} comments={props.commentsPortal ? false : undefined}
+      <BlockNoteView editor={editor} editable={!props.readOnly} theme={DOCUMENT_EDITOR_THEME} formattingToolbar={false} slashMenu={false} renderEditor={false} comments={false}
         onChange={() => current.current.onChange(editor.document, editor)}
         onSelectionChange={() => current.current.onSelection?.(documentSelection(editor))}>
         <ComponentsContext.Provider value={DOCUMENT_EDITOR_COMPONENTS}>
         <PlainContentComments editor={editor} />
         <BlockNoteViewEditor>
-        {props.commentsPortal && <><FloatingComposerController /><RenderInPortalElement target={props.commentsPortal}><ThreadsSidebar filter="all" /></RenderInPortalElement></>}
+        <FloatingComposerController />{!props.commentsPortal && <FloatingThreadController floatingThread={DocumentCommentThread} />}{props.commentsPortal && <><RenderInPortalElement target={props.commentsPortal}><DocumentThreadsSidebar /></RenderInPortalElement></>}
         <FormattingToolbarController formattingToolbar={EditorToolbar} />
         <SuggestionMenuController triggerCharacter="/" getItems={async query => editor.getTextCursorPosition().block.type === 'presmiumPage' ? [] : filterSuggestionItems([...getDefaultReactSlashMenuItems(editor), {
           title: t.page, aliases: ['page', 'section', '页面', '章节'], group: t.document,
