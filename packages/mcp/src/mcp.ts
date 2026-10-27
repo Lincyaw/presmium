@@ -424,6 +424,8 @@ function hostSupports(host: McpHost, name: string): boolean {
     case 'read_document_part':
     case 'plan_page_duplication':
     case 'apply_page_duplication':
+    case 'plan_page_change':
+    case 'apply_page_change':
     case 'plan_document_change':
     case 'apply_document_change': return Boolean(host.authoring)
     case 'get_position': return Boolean(host.positions)
@@ -513,7 +515,7 @@ function instructions(host: McpHost, caller: McpCaller, tools: { name: string, k
           : pages
             ? `Operate tools: ${operations.join(', ')}. Each may first wait for a person to allow it (in the page), and fails when refused.`
             : `Operate tools: ${operations.join(', ')}, allowed as presmium-mcp --allow says.`,
-    `${host.authoring ? 'Canonical authoring discovery starts with get_document_outline, then read_document_part for complete stable entities or fields. Keep the returned source on all continuation reads; source changes require starting again. Large values are explicit JSON-text fragments: concatenate text at nextOffset and JSON.parse the complete sequence. These bounded replies survive tool-result pruning; the legacy full get_document may exceed that budget. get_section/get_step are derived runtime data, never editable canonical content. Changes use plan_document_change and apply_document_change with the shared Web transaction; large generic write inputs/results are not yet bounded. Page duplication uses compact plan_page_duplication and apply_page_duplication references; its complete candidate and copied-ID mapping are optional resources, not model inputs to echo back. Read get_authoring_capabilities before editing; a saved result does not prove compilation or browser playback.' : 'This host has no canonical authoring service; get_authoring_capabilities reports the limitation.'} ${recompiles(host.process)} With several documents, name one with \`document\` (list_documents).`,
+    `${host.authoring ? 'Canonical authoring discovery starts with get_document_outline, then read_document_part for complete stable entities or fields. Keep the returned source on all continuation reads; source changes require starting again. Large values are explicit JSON-text fragments: concatenate text at nextOffset and JSON.parse the complete sequence. These bounded replies survive tool-result pruning; the legacy full get_document may exceed that budget. get_section/get_step are derived runtime data, never editable canonical content. Changes use plan_document_change and apply_document_change with the shared Web transaction; large generic write inputs/results are not yet bounded. Page create/rename/move/delete use compact plan_page_change and apply_page_change references; delete requires reviewing the planned impact and confirmDeletion:true. Page duplication uses compact plan_page_duplication and apply_page_duplication references; its complete candidate and copied-ID mapping are optional resources, not model inputs to echo back. Read get_authoring_capabilities before editing; a saved result does not prove compilation or browser playback.' : 'This host has no canonical authoring service; get_authoring_capabilities reports the limitation.'} ${recompiles(host.process)} With several documents, name one with \`document\` (list_documents).`,
   ].join('\n')
 }
 
@@ -622,6 +624,13 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
     const { plan, ...state } = result
     return { ...state, planId: plan.planId, source: plan.source, digest: plan.digest, expiresAt: plan.expiresAt,
       value: part === 'candidate' ? plan.content : part === 'mapping' ? plan.mapping : plan }
+  })
+  if (host.authoring) template('page-change-plan', 'presmium://page-change/{planId}/{digest}/{part}', async c => {
+    const part = String(c.args.part)
+    if (!['candidate', 'details'].includes(part)) throw Object.assign(new Error('page-change-resource-part-invalid'), { status: 400 })
+    const result = await host.authoring!.readPageChangePlan(await c.document(), { planId: String(c.args.planId), digest: String(c.args.digest) }, caller.member)
+    const { plan, ...state } = result
+    return { ...state, planId: plan.planId, source: plan.source, digest: plan.digest, expiresAt: plan.expiresAt, value: part === 'candidate' ? plan.content : plan }
   })
   if (host.voiceAuthoring) server.registerResource('voice-preview-audio', new ResourceTemplate(new DocumentTemplate('presmium://voice-preview/{id}'), { list: undefined }), {}, async (url, variables, ctx) => {
     const current = call(argsOf(variables), ctx.mcpReq.signal)

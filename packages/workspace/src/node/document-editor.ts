@@ -2,7 +2,7 @@ import { DOCUMENT_ENTRY, DOCUMENT_READ_MAX_REQUEST_CHARS, jsonResponse, pushStre
 import { randomUUID } from 'node:crypto'
 import { watch } from 'node:fs'
 import { join } from 'node:path'
-import type { DocumentChange, DocumentEvent, DocumentOutlineQuery, DocumentPartQuery, RequestContext, Route } from '@lincyaw/kernel'
+import type { DocumentChange, DocumentEvent, DocumentOutlineQuery, DocumentPartQuery, DocumentPageChangeRequest, DocumentPageChangeReference, RequestContext, Route } from '@lincyaw/kernel'
 import { catchRequestErrors, RequestError } from './errors.ts'
 import type { SourceEditor } from './source-editor.ts'
 import type { WorkbenchApi } from './workbench-api.ts'
@@ -92,6 +92,24 @@ export function documentEditorRoutes({ root, editor, documentEditor, workbench }
           return () => { clearTimeout(timer); watcher.close(); stopProject?.() }
         }, { signal: request.signal, latestOnly: true })
         return sseResponse(stream, request.signal)
+      }),
+    },
+    'document/page/plan': {
+      role: 'editor', maxBody: 16 << 10,
+      handle: (request, ctx) => catchRequestErrors(async () => {
+        if (request.method === 'GET') {
+          const query = new URL(request.url).searchParams
+          return jsonResponse(await documentEditor.readPageChangePlan(ctx.document, { planId: query.get('planId') ?? '', digest: query.get('digest') ?? '' }, ctx.member))
+        }
+        if (request.method !== 'POST') throw new RequestError(405, 'POST or GET')
+        return jsonResponse(await documentEditor.planPageChange(ctx.document, await request.json().catch(() => undefined) as DocumentPageChangeRequest, ctx.member))
+      }),
+    },
+    'document/page/apply': {
+      role: 'editor', maxBody: 16 << 10,
+      handle: (request, ctx) => catchRequestErrors(async () => {
+        if (request.method !== 'POST') throw new RequestError(405, 'POST')
+        return jsonResponse(await documentEditor.applyPageChange(ctx.document, await request.json().catch(() => undefined) as DocumentPageChangeReference, ctx.member))
       }),
     },
     'document/change': {
