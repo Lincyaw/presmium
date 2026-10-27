@@ -1,6 +1,6 @@
 # RFC：Web 与 MCP 共用作者动作及验证反馈
 
-状态：作者事务、音频资产与片段、音色发现、转写／采用、共享配音任务与试听适配已实施，其余分阶段推进。2026-10-27 根据作者要求设计：AI agent 经 MCP 能完成作者在 Web 中可完成的工作，包括人声录音转写、将文字采用为讲稿、再显式生成 AI 配音。第 12.1 节的共享作者事务见第 14 节；转写任务发现、启动、读取、取消与类型化采用见第 15 节；共享配音任务和音频资源见第 16 节。下文未明确标为已实现的接口名和新增类型仍为提案。
+状态：作者事务、页面复制预检、音频资产与片段、音色发现、转写／采用、共享配音任务与试听适配已实施，其余分阶段推进。2026-10-27 根据作者要求设计：AI agent 经 MCP 能完成作者在 Web 中可完成的工作，包括人声录音转写、将文字采用为讲稿、再显式生成 AI 配音。第 12.1 节的共享作者事务见第 14 节；转写任务发现、启动、读取、取消与类型化采用见第 15 节；共享配音任务和音频资源见第 16 节；页面复制见第 17 节。下文未明确标为已实现的接口名和新增类型仍为提案。
 
 本文供工作区、工作台、MCP 和讲授插件的实现者拆分任务。交付结果是一套共用的作者动作、版本检查和反馈协议。文稿内容继续只写 `lecture.json`；规范实体定义以[文稿契约](../packages/kernel/src/contracts/document.ts)和[文稿 IR RFC](rfc-document-ir.md)为准，录制转写的候选与采用细节以[录制转写 RFC](rfc-recording-transcription.md)为准。
 
@@ -31,7 +31,7 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 列文稿、新建、复制、重命名、删除项目 | `WorkspaceClient.operateDocument` → workspace `documents`；管理操作与历史需要 git | 只有 `list_documents` | 项目操作预检、版本和引用影响，调用同一个 `DocumentOperations` |
 | 读取可编辑文稿 | `GET document`，无需先编译 | 已有 `get_document`；`deck_info/get_section/get_step` 仍读取运行快照 | 精确的局部实体读取与 Schema 资源 |
 | 正文结构、格式、表格、图片占位、块移动 | 原生 BlockNote 投影回 `TeachingDocument`，`DocumentSession` → `document/change` | 已有 plan/apply 的 `updateText/insertBlock/moveBlock/deleteBlock` 与共享校验 | 更细的富文本身份和编辑范围语义 |
-| 页面新建、重命名、复制、排序、删除 | `document-pages.ts`、原生插页、整份 replacement；复制与删除纯函数仍在 workbench | 已有 `updateSection`；其它结构可显式 replacement，未有专用页面动作 | 移至共享纯领域层；页内绑定重映射、最后一页和外部引用同一语义 |
+| 页面新建、重命名、复制、排序、删除 | 页面复制已共用 kernel `duplicateDocumentPage`；Web 保持原 actor、focus 和 Undo；删除仍在 workbench | 已有 `updateSection`；复制新增紧凑 `plan_page_duplication/apply_page_duplication`，完整候选与映射按需读资源 | 其它页面动作继续拆分；复制真实范围与有界重试见第 17 节 |
 | 步骤状态、显隐、继承、组件参数与身份 | IR 契约支持稳定 `StepId`、`setStepState`；Web 对复杂步骤操作仍有缺口 | plan/apply 已有 `setStepState`，运行读取／导航仍可使用 | 共用完整步骤动作；未实现的重排／删除规则先声明 unavailable |
 | 讲稿文字、发音替换、cue 与停顿 | `NarrationEditor/DocumentStepNarration` → 同一文稿；`setNarration/setTiming` 已有 | plan/apply 已接受 `NarrationNode[]`；`lecture_preview` 只读派生计划 | 共享讲稿 edit-shared／fork、cue 编辑的更细范围与影响 |
 | 定义、公开参数、共享素材修改和“另存” | 定义在文稿中，代码通过 `DocumentChange.fileChanges`；通用素材属性仍未完整接入 | 已能明确 replacement 加同文稿文本文件原子保存；无专用定义范围动作 | 定义 Schema、引用计数、单实例／全部实例／fork 三种明确范围 |
@@ -40,10 +40,10 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 导入与查看图片 | `document/image` 将原文件和资产声明原子保存；`document/asset` 按 Asset ID 读取 | 无 | 安全字节输入、回执与资源读取；沿用现有媒体检查限制 |
 | 导入／检查本地音频 | `DocumentAudioAuthoring` 共用真实媒体探测及多文件事务 | 已有能力、workspace 预检／导入与 canonical inspection 四个工具 | 远程分块上传尚未实现；路径限当前文稿工作区，不接受任意服务端路径 |
 | 音频区间、步内偏移、音量、静音、移除 | 同一 `DocumentAudioAuthoring` 的预检／事务；`ProductionBinding` 与真实时长校验 | 已有 `read_production_plan/validate_media_clip_change/change_media_clip` | 保存后新计划仍需准备；删除保留原始素材，尚无跨重启持久回执 |
-| 录制、重录、试听、采用录音 | viewer 有讲授录制链；制作面板候选录音与采用仍未完整接入 | 无客户端录制控制 | 版本化录制候选与客户端语义请求；采用另走作者事务 |
+| 录制、重录、试听、采用录音 | Studio 已有 native 原音候选和保存；`DocumentAudioAuthoring` 共用 HTTP/MCP 整段采用当前步骤，wholeStep 播放已接通 | 已有 `adopt_recording`；无 MCP 客户端录制控制 | Studio 采用按钮、远程客户端录制语义请求仍待；实际边界见[录音采用记录](benchmarks/recording-step-adoption-2026-10-27.md) |
 | 人声转写 | `DocumentTranscriptions` 保存版本化候选；HTTP 与 MCP 共用任务实例 | 已有能力、启动、清单、任务、exact result 和取消六个工具；旧 `track_transcribe` 仍独立写 track.json | 英文文件的真实 ASR／采用／Web TTS 已单独验收；实际提供方取消和录音完整链仍待验证，候选不自动写讲稿 |
 | 查看差异并将转写采用为步骤讲稿 | `DocumentTranscriptionAdoption` 共用 typed Narration 差异与作者事务 | 已有 `plan_transcription_adoption/apply_transcription_adoption`，复用原 DocumentEditor planId | 页面 UI 及完整人声转 TTS 链按实际验收推进；保留受保护发音／cue 的显式处理 |
-| 采用转写后改用 AI 配音 | 可编辑 `VoiceSource`；录音来源播放仍受服务支持限制 | 已有共享 `start_voiceover` spend 任务与查询／取消；旧 `lecture_synthesize` 不再暴露 | 显式选择 TTS 来源和作用域；不能把 ASR 时间当作新音色时间；专门的音色继承修改接口仍待补 |
+| 采用转写后改用 AI 配音 | 可编辑 `VoiceSource`，人声转写／采用／新 TTS 已有独立真实闭环；整段 recording 支持 wholeStep，不等于自动转成 TTS | 已有共享 `start_voiceover` spend 任务与查询／取消；旧 `lecture_synthesize` 不再暴露 | 显式选择 TTS 来源和作用域；不能把 ASR 时间当作新音色时间；专门的音色继承修改接口仍待补 |
 | 音色目录、搜索筛选、继承与批量应用 | `DocumentVoiceAuthoring` 读配置与目录，不依赖编译；`document-voices.ts` 处理继承，批量默认保留覆盖 | 已有 `get_voice_authoring_capabilities/get_voice_catalog`；继承／批量专门动作仍缺 | 提升相同作用域与影响计算到共享层；配置存在不代表合成成功 |
 | 音色样本／当前讲稿试听 | 同一 owner 的 quote → 显式请求 → 真实音频；HTTP 保留 `VoicePreviewAnswer` | 已有 `quote_voice_preview/preview_voice` 与限额内的二进制 MCP resource | quote 固定实际 execution、source、revision、提供方和缓存状态；生成成功不是客户端已试听 |
 | 配音生成、进度、取消 | `DocumentVoiceAuthoring` 与独立 Node owner；HTTP/MCP 同一任务实例，standalone 同工厂 | 已有 `get_voiceover_status/get_voiceover_jobs/get_voiceover_job/start_voiceover/cancel_voiceover`，保留 intent/source/revision/scope/sequence | 查询／取消不要求当前编译；配置 remount 保留任务；当前仅进程内发现与幂等，尚无跨重启恢复账本 |
@@ -82,7 +82,7 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 
 能力状态区分 `available`、`unavailable` 与 `unknown`；可用还应区分能否预检、执行和实际验证。配置了插件名不等于服务已经注册，配置了服务也不等于鉴权与实际合成已验证。响应只给提供方、功能、限额和公开参数，不给凭据、凭据环境变量值或运营者目录。
 
-能力按工作区／文稿／连接客户端计算。最小维度包括：文稿编辑、项目管理、git/history/review、图片／音频／视频读写、录音候选、ASR、TTS、音色目录、语速／风格、真实字词对齐、播放控制、预览形态和实际导出目标。未接入的视频、录制采用和字幕对齐必须准确返回 unavailable。
+能力按工作区／文稿／连接客户端计算。最小维度包括：文稿编辑、项目管理、git/history/review、图片／音频／视频读写、录音候选、ASR、TTS、音色目录、语速／风格、真实字词对齐、播放控制、预览形态和实际导出目标。未接入的视频、客户端录制控制和字幕对齐必须准确返回 unavailable；已有整段录音采用当前步骤的共享服务，不能据此推定远程客户端录制已接通。
 
 新增 `get_document({ document, select?, ifVersion? })`。基本结果直接使用 `DocumentAnswer`，按需选择页面、块、步骤、讲稿、资产、定义和批注；局部返回仍带完整作者源标识，不得把局部内容误当整份 replacement。源无效时给问题及修复入口，不隐式回退到运行快照。
 
@@ -313,3 +313,15 @@ HTTP 共用 `document/transcription/capabilities`、`document/transcription`、`
 `quote_voice_preview/preview_voice` 使用实际 quote、提供方、缓存和真实音频。MCP 返回限额内音频 resource 的 URI、字节数、SHA 与时长，resource 内容是 MIME/blob；Web 仍使用原响应格式。音频生成和资源可读不等同客户端已经试听，物理播放及录制仍需实际客户端应答。同步 `lecture_synthesize` 插件工具已撤下，既有 export CLI 未改动。
 
 真实范围见[任务 owner 验证记录](benchmarks/voiceover-task-owner-2026-10-27.md)：进程内任务、真实 CPU TTS、取消、remount 与音频资源已独立验证。没有新增持久任务账本、播放控制或音色继承写入接口。缓存随后通过[独立切片](benchmarks/speech-cache-profile-2026-10-27.md)绑定实际模型／提供方 profile；原错误命中的反例与后续真实双生成晚回验证分别保留，不把缓存修复归入原 owner 那轮证据。
+
+## 17. 已实现的页面复制预检
+
+`plan_page_duplication` 是 read 动作，请求为 `{ document, request: { id, source, sectionId, title } }`。`source` 必须是 `get_document` 返回的完整 `CanonicalSource`。Workspace 的 `DocumentAuthoring.planPageDuplication` 调用 Web 共用的 kernel 纯函数，服务端一次固定新 ID，然后使用既有 `DocumentChange.replacement` 和 DocumentEditor plan；不编译、不装配 Node 服务或场景、不请求模型。
+
+MCP 默认回复是紧凑的 `planId/changeId/source/digest/expiresAt`、`action: 'duplicatePage'`、`section: { from, to }`、标题、复制身份总数、影响计数和验证摘要。影响不回传全部 ID 数组；警告保留总数和最多三条有界摘要。完整候选、复制身份映射和原计划详情分别通过返回的 candidate/mapping/details 资源 URI 按需读取，不作为模型要回抄的提交数据。资源按 member/document/digest/TTL 检查，报告计划 source、实际 currentSource 与 current/applied/old；未知或过期引用被拒绝，不隐式编译。
+
+调用方使用 `apply_page_duplication({ document, request: { planId, source, digest } })`。服务从同一个 plans 表取回 exact change，再调用原 apply/事务/receipt，不重新生成 ID 或另建写入器。短回执带新页、真实保存 source、计数、commit 和 verification；实际保存版本还必须等于预检预测文件版本，并确认新页存在。同一作者事务继续检查 CAS、角色、操作授权、review-required、锁、回滚与历史；已知成功的同引用重放仍按原 receipt/current-source 规则处理。旧 `apply_document_change` 继续供通用文稿编辑使用，复制不要求模型组装完整 replacement。
+
+内部完整候选仍通过既有 `DocumentChange.replacement` 计划；映射只覆盖复制的规范实体、富文本、代码变体、cue 和媒体片段身份，不是整个文稿。共享资产与定义保留引用，插件不透明载荷原样保存，原评论及锚点留在原页。字符串看起来像 ID 不代表它是可重写的规范引用。Web 只换共享纯函数与 UUID 分配器，保留 actor、焦点、正文原生 Undo 和既有页面历史撤消路径。
+
+能力中的 `actions.planPageDuplication/applyPageDuplication` 分别反映预检与执行；compiler-only stdio 为 unavailable。`limits` 明示五分钟期限、64 条 plans 和 64 条 receipts，幂等范围仍为 `process-current-source`。保留期内同请求稳定复用原预检；已知提交后的 Undo ABA 拒绝旧请求，旧 apply 缺 plan 返回 409。拿到 plan 后应重试原引用；两个有界表都遗忘一个请求后不承诺无限记忆，不能将 409 当作自动 replan 的许可。50 页／400 段的实际默认预检 1,419 字符、提交回执 1,314 字符，均经当前 8,192 字符的真实 DSH pruner 消费而未裁剪；具体运行来源与范围见[页面复制记录](benchmarks/page-duplication-mcp-2026-10-27.md)。
