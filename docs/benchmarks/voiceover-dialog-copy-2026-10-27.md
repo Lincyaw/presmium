@@ -18,4 +18,8 @@
 
 这两句文案另做独立补验：`.presmium/voice-dialog-noservice-1793099103941/unavailable8-frozen.json` 通过 20/20 项，覆盖 unavailable 的 en/zh-CN、亮/暗色、1440/390 宽度共 8 种状态，SHA-256 为 `c4a583d66721648650b2da4d4bc4c44a8e64c0aff4bee337fef9dd9ab157884f`。短句、去重和无溢出均通过，8 张截图已查看；目录及所有提供方请求、TTS、ASR、浏览器异常、HTTP 错误均为 0。新两源在补验前后 SHA 一致，原 62 项冻结 raw 的 `3cef5f41…` SHA 未变；没有把旧 62 项计作新 messages 版本重跑。
 
-两轮的 `cleanup-final.json` 均记录消费者实际退出码为 0，私有浏览器、客户端、服务、进程、端口和临时目录已清理。补验前消费者曾因 manifest 输入路径错误而退出，保留 `bootstrap-error.json`，该次没有启动服务。两份冻结 raw 保持原 SHA；本任务的两个 CPU 提供方容器已停止并移除，镜像与模型缓存保留。本片没有操作公共部署、修改后端或新建 tracked tests，也没有运行测试套件。
+两轮的 `cleanup-final.json` 均记录消费者实际退出码为 0，私有浏览器、客户端、服务、进程、端口和临时目录已清理。补验前消费者曾因 manifest 输入路径错误而退出，保留 `bootstrap-error.json`，该次没有启动服务。两份冻结 raw 保持原 SHA；本任务的两个 CPU 提供方容器已停止并移除，镜像与模型缓存保留。实施和私有验收阶段没有操作公共部署、修改后端或新建 tracked tests，也没有运行测试套件。
+
+随后将已提交的 `257280ad` 部署至公开 4320，记录为 `.presmium/ui-evidence/live-shared-voice-deployment-257280ad.json`。最小只读浏览器旅程显示首页 11 份文稿、guide-authoring 七页及一个原生编辑器，未进入制作区、建立预览 iframe 或请求 IR；写入、生成、外网、浏览器及 HTTP 错误均为 0，11 份权威 JSON 字节不变。重启前后的两种主机名登录状态均保留，新入口正常，临时浏览器状态已删除。
+
+`live-copy-257280ad-smoke.json` 保留一次错误的版本核验 oracle：它要求整个脚本响应 SHA 等于单份 client.js，但 DSH 按[公开 combo 协议](../../vendor/docs/dsh/packages/client/modules/README.md#incremental-composition)组合多个 entry。后续只读 GET 的 `live-copy-257280ad-script-proof.json` 实核：2,914,026 字节的完整提交产物在 10,226,800 字节响应中连续、唯一出现，偏移 7,202,458，截取 SHA 为 `4b96a9ba174f72d98715589f2b191e25b10f171cb0d7fa4b8d9d6d68256470e9`。没有裁剪或改写 entry 字节，没有用文案字符串命中代替完整产物核验。原失败 raw 不改写为通过；其余只读观测与独立精确 entry 证明分别保留，浏览器及 GET 进程均已退出。
