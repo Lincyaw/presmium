@@ -73,7 +73,9 @@
       },
       "Tooltip": {
         "nodeId": "25:558",
-        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-558"
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=25-558",
+        "source": "packages/workbench/src/base-controls.tsx / packages/design/src/components.css",
+        "interactionContract": "Non-interactive content and its positioning layer do not intercept pointer input. React PmTooltip owns a pointer-transparent portal layer; neighboring controls remain clickable under a visible tooltip."
       },
       "Range": {
         "nodeId": "25:561",
