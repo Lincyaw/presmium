@@ -5,6 +5,7 @@ import { allocateDocumentPage } from '@lincyaw/kernel'
 import type { Member, TeachingDocument } from '@lincyaw/kernel'
 import type { Locale } from '../messages.ts'
 import { BlockNoteSurface } from './BlockNoteSurface.tsx'
+import type { CommentDrafts } from './comment-drafts.ts'
 import { DocumentThreadStore } from './comments.ts'
 import { createDocumentProjection, nativeDocumentToProduct, nativePage, rememberDocumentStructure } from './projection.ts'
 import type { NativePageCreation } from './projection.ts'
@@ -28,6 +29,7 @@ export interface DocumentEditorProps {
   document: TeachingDocument
   version?: string
   member?: Member
+  commentDrafts?: CommentDrafts
   /** The latest actor version, including before the next React render. */
   getDocumentVersion?(): string | undefined
   /** Read sibling field edits before their React render has committed. */
@@ -53,7 +55,8 @@ export interface DocumentEditorProps {
 /** A source version reset replaces the editor; its own save receipts never replace it. */
 export function DocumentEditor(props: DocumentEditorProps) {
   const projection = useMemo(() => createDocumentProjection(props.document), [props.identity, props.reset])
-  const comments = useMemo(() => new DocumentThreadStore(props.document, props.member, props.version), [props.identity, props.reset])
+  const comments = useMemo(() => new DocumentThreadStore(props.document, props.member, props.version, props.identity, props.commentDrafts), [props.identity, props.reset])
+  useEffect(() => { comments.drafts?.synchronize(props.document, props.version); comments.drafts?.start(); return () => comments.close() }, [comments])
   const current = useRef(props), editor = useRef<NativeDocumentEditor>(), unsubscribe = useRef<() => void>()
   const projectedDocument = useRef<NativeDocumentEditor['prosemirrorState']['doc']>()
   const pendingTransaction = useRef<Transaction>()

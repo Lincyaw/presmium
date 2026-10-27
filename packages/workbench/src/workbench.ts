@@ -1,5 +1,6 @@
 import { undoDepth, redoDepth } from '@tiptap/pm/history'
 import { TextSelection } from '@tiptap/pm/state'
+import { CommentDraftBank } from './document-editor/comment-drafts.ts'
 import { DocumentSession } from './document-session.ts'
 import { reconcileRecordingAdoption } from './recording-adoption.ts'
 import { disposeTranscriptionSessions } from './transcription-session.ts'
@@ -265,6 +266,7 @@ export class Workbench {
   #pendingDocumentField?: { field: Omit<DocumentFieldRegistration, 'focus' | 'editor'>, bookmark: DocumentFieldBookmark, reset: number, generation: number }
   #state: WorkbenchState
   readonly #listeners = new Set<Listener>()
+  readonly #commentDrafts = new CommentDraftBank()
   readonly #positionSeed = Array.from(crypto.getRandomValues(new Uint32Array(2)), value => value.toString(36)).join('-')
   #positionSequence = 0
   readonly #selectedSteps = new Map<string, number>()
@@ -399,6 +401,11 @@ export class Workbench {
 
   get state(): WorkbenchState {
     return this.#state
+  }
+
+  documentCommentDrafts(identity: string) {
+    const source = this.#state.authoring
+    return source?.identity === identity && source.member?.id ? this.#commentDrafts.get(identity, source.member.id) : undefined
   }
 
   getState = (): WorkbenchState => this.#state
@@ -1919,6 +1926,7 @@ export class Workbench {
     this.#stopSubscriptions()
     this.#diagnostics.dispose()
     this.#documentSession.dispose()
+    this.#commentDrafts.close()
     disposeTranscriptionSessions(this.client)
     disposeDocumentRecordings(this)
   }
