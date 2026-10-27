@@ -159,6 +159,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     if (isMcp(path)) return { kind: 'fetch' }
     if (target) {
       if (target.plugin === 'presmium.server') return { kind: 'fetch' }
+      if (findRoute(options.serverHost?.routes?.[target.plugin], target.path)) return { kind: 'fetch' }
       const proxy = await proxyOf(target, requestedDocument(req.headers, url), member, url.search)
       return proxy ?? { kind: 'fetch' }
     }
@@ -199,9 +200,12 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   }
 
   const pluginRoute = async (request: Request, target: { plugin: string, path: string }, member: Member, document: string): Promise<Response> => {
-    const known = await mounts.mount(document)
-    if (!known) return problemResponse(404, `no document ${JSON.stringify(document)}`)
-    const found = findRoute(known.contributions.get(target.plugin)?.routes, target.path)
+    let found = findRoute(options.serverHost?.routes?.[target.plugin], target.path)
+    if (!found) {
+      const known = await mounts.mount(document)
+      if (!known) return problemResponse(404, `no document ${JSON.stringify(document)}`)
+      found = findRoute(known.contributions.get(target.plugin)?.routes, target.path)
+    }
     if (!found) return problemResponse(404, 'not found')
     const role = found.route.role ?? 'editor'
     if (!hasRole(member, role)) return problemResponse(403, `this route needs the role ${role}`)

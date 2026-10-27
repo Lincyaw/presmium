@@ -1,6 +1,8 @@
 # 人声录制、转写与讲稿采用
 
-状态：设计提案，2026-10-27。本文依据当前契约和实现作静态审计，未调用语音模型、读取凭据或验证新的录制能力。下文新增类型、路由和界面均为待实现内容。已有音频导入的真实范围见[音频作者接口](audio-authoring.md)。
+状态：部分实施，2026-10-27。首片已增加共享 ASR 候选服务与 HTTP 入口；真实无引擎边界通过 31 项，坏源取消边界通过 8 项，见[实施记录](benchmarks/transcription-candidate-2026-10-27.md)。未调用语音模型、读取凭据或验证成功识别／运行中提供方取消；录音入口、差异预览、讲稿采用及 MCP 适配仍为设计提案。已有音频导入的真实范围见[音频作者接口](audio-authoring.md)。
+
+首片公开 `createDocumentTranscriptions` 与 [kernel 契约](../packages/kernel/src/contracts/transcription.ts)，HTTP 为 `GET document/transcription/capabilities`、`POST/GET document/transcription`、`GET document/transcription/result`、`POST document/transcription/cancel`。首次仅转写整份真实资产，任务不写 `Narration`，不自动编译或合成。持久取消意图重启后仍阻止迟到请求；已知任务 ID 的读取与取消只核文稿路径权限，不因当前 JSON 损坏或 UUID 替换而失去停止入口。尚未提供 Video 控件、Studio 代理或 MCP 转写工具，不能把路由存在视为完整作者流程已交付。
 
 作者可以录下人声或导入已有音频，转写成候选文字，核对目标步骤与现有讲稿，明确采用后再选择真实音色重新配音。录音、转写、采用讲稿、生成配音是四个独立决定。打开文稿、收到转写结果或采用文字都不自动调用下一项付费服务。
 

@@ -181,6 +181,11 @@ export class SourceEditor {
     return this.#transaction(scope, changes, member, history)
   }
 
+  /** Checks the same scope, size, CAS and candidate rules without writing or committing. */
+  async planTransaction(scope: Scope, changes: SourceTransactionChange[], member: Member): Promise<SourceTransactionAnswer> {
+    return this.#transaction(scope, changes, member, undefined, undefined, true)
+  }
+
   /** A validated authoring document and one new original attachment share CAS, rollback and history. */
   async transactionWithBinary(scope: Scope, document: SourceTransactionChange, attachment: { path: string, content: Uint8Array }, member: Member, history?: SourceTransactionHistory): Promise<SourceTransactionAnswer> {
     if (document.path !== DOCUMENT_ENTRY && !document.path.endsWith(`/${DOCUMENT_ENTRY}`) || document.base === null) throw new RequestError(400, 'document-transaction-required')
@@ -188,7 +193,7 @@ export class SourceEditor {
     return this.#transaction(scope, [document, { ...attachment, content: new Uint8Array(attachment.content), base: null }], member, history, attachment.path)
   }
 
-  async #transaction(scope: Scope, changes: TransactionFile[], member: Member, history?: SourceTransactionHistory, binaryPath?: string): Promise<SourceTransactionAnswer> {
+  async #transaction(scope: Scope, changes: TransactionFile[], member: Member, history?: SourceTransactionHistory, binaryPath?: string, dryRun = false): Promise<SourceTransactionAnswer> {
     if (changes.length === 0 || changes.length > MAX_SOURCE_CHANGES) throw new RequestError(400, `a source transaction takes 1 to ${MAX_SOURCE_CHANGES} files`)
     const paths = new Set<string>()
     let bytes = 0
@@ -234,6 +239,7 @@ export class SourceEditor {
         return { path: change.path, before: undefined, written, executable: false }
       })
       for (const snapshot of snapshots) if (snapshot.path !== binaryPath) validateDocumentSource(snapshot.path, snapshot.written.toString('utf8'), snapshot.before)
+      if (dryRun) return { versions: snapshots.map(snapshot => ({ path: snapshot.path, version: versionOf(snapshot.written) })) }
       const created: string[] = []
       const write = (next: DocumentFileChange[]) => this.#writer.write(next)
       try {

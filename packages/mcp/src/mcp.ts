@@ -10,6 +10,7 @@ import type { McpCaller, McpHost, McpProcess } from './host.ts'
 import { MCP_MESSAGES } from './messages.ts'
 import type { McpMessages } from './messages.ts'
 import { TOOL_APPROVAL_META, TOOL_KIND_META } from './tool-meta.ts'
+import { AUTHORING_TOOLS } from './authoring.ts'
 
 const MCP_VERSION: string = (createRequire(import.meta.url)('../package.json') as { version: string }).version
 const POSITION_URI = 'presmium://position'
@@ -20,21 +21,23 @@ const compilationSnapshots = new WeakMap<McpHost, Map<string, { signature: strin
 
 type Args = Record<string, unknown>
 
-interface Call {
+export interface Call {
   host: McpHost
   caller: McpCaller
   args: Args
   signal: AbortSignal
   document(): Promise<string>
   compiled(): Promise<{ doc: IRDocument, diagnostics: Finding[] }>
-  approve(kind: ApprovalKind, title: (messages: McpMessages) => string, options?: { scope?: ApprovalScope, detail?: string }): Promise<void>
+  approve(kind: ApprovalKind, title: (messages: McpMessages) => string, options?: { scope?: ApprovalScope, detail?: string, lang?: string }): Promise<void>
 }
 
-interface ToolSpec {
+export interface ToolSpec {
   name: string
   description: string
   properties?: Record<string, unknown>
   required?: string[]
+  inputSchema?: Record<string, unknown>
+  structured?: boolean
   kind: 'read' | ApprovalKind
   run(call: Call): Promise<unknown>
 }
@@ -105,21 +108,33 @@ const LISTED_FILES = 20
 function jobSummary(job: CompileJob, logLines = 0) {
   return {
     id: job.id,
+    sequence: job.sequence,
+    document: job.document,
+    kind: job.kind,
     target: job.target,
     state: job.state,
     revision: job.revision,
+    ...job.source ? { source: job.source } : {},
+    ...job.inputFingerprint ? { inputFingerprint: job.inputFingerprint } : {},
+    ...job.cached !== undefined ? { cached: job.cached } : {},
+    createdAt: job.createdAt,
+    ...job.startedAt ? { startedAt: job.startedAt } : {},
+    ...job.finishedAt ? { finishedAt: job.finishedAt } : {},
     ...job.progress ? { progress: job.progress } : {},
     ...job.error ? { error: job.error } : {},
     ...job.warnings.length ? { warnings: job.warnings } : {},
     url: job.url,
     ...job.main ? { main: `${job.url}${job.main}` } : {},
+    ...job.captions ? { captions: Object.fromEntries(Object.entries(job.captions).map(([lang, path]) => [lang, `${job.url}${path}`])) } : {},
     files: job.files.slice(0, LISTED_FILES).map(file => file.path),
+    fileDetails: job.files.slice(0, LISTED_FILES).map(file => ({ ...file, url: `${job.url}${file.path}` })),
     ...job.files.length > LISTED_FILES ? { moreFiles: job.files.length - LISTED_FILES } : {},
     ...logLines > 0 && job.log.length ? { log: job.log.slice(-logLines) } : {},
   }
 }
 
 const TOOLS: ToolSpec[] = [
+  ...AUTHORING_TOOLS,
   {
     name: 'list_documents',
     description: 'The documents (decks) this host serves: directory, title, language, tags.',
@@ -280,21 +295,27 @@ const TOOLS: ToolSpec[] = [
   },
   {
     name: 'build',
-    description: 'Builds or exports the deck once a person allows it: its renderers (e.g. web, slides, notebook, lecture) and the exports its plugins offer (e.g. pdf, pptx, video; get_builds lists them). Where the host runs them as jobs, the workbench shows them and keeps their files; wait: false returns at once (get_builds follows them). Returns each job\'s state, files and address, else the output directories and the findings.',
+    structured: true,
+    description: 'Builds or exports the deck once allowed. A workspace host requires source {version, fingerprint} from get_document and checks that exact saved source. wait: false returns jobs immediately; follow their source, sequence and terminal state with get_builds. The compiler-only stdio host builds synchronously and cannot confirm a requested source or cancel a build.',
     properties: {
       ...DOCUMENT,
       to: { type: 'array', items: { type: 'string' }, description: 'What to make, e.g. ["slides", "pdf"]; default: the deck\'s renderers.' },
+      source: { type: 'object', properties: { version: { type: 'string', minLength: 1, maxLength: 128 }, fingerprint: { type: 'string', minLength: 1, maxLength: 128 } }, required: ['version', 'fingerprint'], additionalProperties: false, description: 'Required for workspace jobs: the exact saved document source returned by get_document.' },
       wait: { type: 'boolean', description: 'Wait for the jobs to end (default true).' },
     },
     kind: 'operate',
     run: async (call) => {
       const document = await call.document()
       const to = Array.isArray(call.args.to) ? call.args.to.filter((id): id is string => typeof id === 'string') : undefined
-      await call.approve('operate', m => m.build(to?.join(', ') || m.allRenderers))
       const { jobs } = call.host
+      const source = call.args.source
+      if (jobs && (!isRecord(source) || typeof source.version !== 'string' || !source.version || source.version.length > 128 || typeof source.fingerprint !== 'string' || !source.fingerprint || source.fingerprint.length > 128)) throw Object.assign(new Error('job-source-required'), { status: 400 })
+      if (!jobs && source !== undefined) throw Object.assign(new Error('job-source-unavailable'), { status: 409 })
+      await call.approve('operate', m => m.build(to?.join(', ') || m.allRenderers))
       if (jobs) {
         const targets = to?.length ? to : (await jobs.targets(document)).filter(target => target.kind === 'render').map(target => target.id)
-        const started = await Promise.all(targets.map(target => jobs.start(document, target)))
+        const expected = source as { version: string, fingerprint: string }
+        const started = await Promise.all(targets.map(target => jobs.start(document, target, expected)))
         const ended = call.args.wait === false ? started : await Promise.all(started.map(job => jobs.wait(job.id)))
         return { jobs: ended.map(job => jobSummary(job)) }
       }
@@ -308,16 +329,49 @@ const TOOLS: ToolSpec[] = [
   },
   {
     name: 'get_builds',
-    description: 'What the deck can be made into (renderers and exports) and its latest builds and exports: state, progress, the end of the log, the error, the files and their address.',
-    properties: { ...DOCUMENT },
+    structured: true,
+    description: 'Reads the latest builds or one job by jobId within this document, including sequence, saved source, progress, errors, output files and caption addresses. Job reading remains available when current output-target discovery fails.',
+    properties: { ...DOCUMENT, jobId: { type: 'string', minLength: 1, description: 'Read this job even when it is outside the ten most recent jobs.' } },
     kind: 'read',
     run: async (call) => {
       const jobs = call.host.jobs!
       const document = await call.document()
+      const jobId = str(call.args.jobId)
+      if (jobId) {
+        const job = jobs.list(document).find(job => job.id === jobId)
+        if (!job) throw Object.assign(new Error('job-not-found'), { status: 404 })
+        return { jobs: [jobSummary(job, LOG_TAIL)] }
+      }
+      let targets: { id: string, kind: string, label: unknown }[] = [], targetFailure: string | undefined
+      try { targets = (await jobs.targets(document)).map(target => ({ id: target.id, kind: target.kind, label: target.label })) }
+      catch (error) { targetFailure = errorMessage(error) }
       return {
-        targets: (await jobs.targets(document)).map(target => ({ id: target.id, kind: target.kind, label: target.label })),
+        targets,
+        ...targetFailure ? { targetFailure } : {},
         jobs: jobs.list(document).slice(0, RECENT_JOBS).map(job => jobSummary(job, LOG_TAIL)),
       }
+    },
+  },
+  {
+    name: 'cancel_build',
+    structured: true,
+    description: 'Requests cancellation of this document\'s build or export job. A running renderer may finish its current stage first. Follow get_builds until a terminal state; an accepted request is not a claim that the job has stopped.',
+    properties: { ...DOCUMENT, jobId: { type: 'string', minLength: 1 } },
+    required: ['jobId'],
+    kind: 'operate',
+    run: async call => {
+      const document = await call.document(), jobs = call.host.jobs!, id = str(call.args.jobId)
+      const own = () => jobs.list(document).find(job => job.id === id)
+      const before = own()
+      if (!before) throw Object.assign(new Error('job-not-found'), { status: 404 })
+      const lang = (await call.host.documents()).find(info => info.dir === document)?.lang ?? ''
+      await call.approve('operate', m => m.cancelBuild(before.target), { lang })
+      const current = own()
+      if (!current) throw Object.assign(new Error('job-not-found'), { status: 404 })
+      const active = current.state === 'queued' || current.state === 'running'
+      const job = active ? jobs.cancel(current.id) : current
+      if (!job || job.document !== document) throw Object.assign(new Error('job-not-found'), { status: 404 })
+      return { cancellation: active ? job.state === 'cancelled' ? 'cancelled' : 'requested' : 'already-finished', job: jobSummary(job, LOG_TAIL) }
     },
   },
   {
@@ -366,9 +420,13 @@ function runPlan(doc: IRDocument, node: CodeNode): string {
 
 function hostSupports(host: McpHost, name: string): boolean {
   switch (name) {
+    case 'get_document':
+    case 'plan_document_change':
+    case 'apply_document_change': return Boolean(host.authoring)
     case 'get_position': return Boolean(host.positions)
     case 'get_classroom': return Boolean(host.classroomStatus)
-    case 'get_builds': return Boolean(host.jobs)
+    case 'get_builds':
+    case 'cancel_build': return Boolean(host.jobs)
     case 'navigate': return Boolean(host.positions && host.navigate)
     case 'classroom_start':
     case 'classroom_end': return Boolean(host.positions && host.setClassroom)
@@ -380,10 +438,16 @@ function toText(data: unknown): string {
   return typeof data === 'string' ? data : JSON.stringify(data, null, 2)
 }
 
-async function toolResult(run: () => Promise<unknown>): Promise<CallToolResult> {
+async function toolResult(run: () => Promise<unknown>, structured = false): Promise<CallToolResult> {
   try {
-    return { content: [{ type: 'text', text: toText(await run()) }] }
+    const result = await run()
+    return { content: [{ type: 'text', text: toText(result) }], ...structured && isRecord(result) ? { structuredContent: result } : {} }
   } catch (error) {
+    if (structured) {
+      const status = isRecord(error) && typeof error.status === 'number' ? error.status : 500
+      const failure = { error: { code: status < 500 ? errorMessage(error) : 'tool-failed', message: errorMessage(error), status, retryable: status >= 500, ...isRecord(error) && isRecord(error.detail) ? { detail: error.detail } : {} } }
+      return { isError: true, structuredContent: failure, content: [{ type: 'text', text: toText(failure) }] }
+    }
     return { isError: true, content: [{ type: 'text', text: errorMessage(error) }] }
   }
 }
@@ -410,7 +474,8 @@ async function offer(host: McpHost, caller: McpCaller): Promise<Offered> {
   const builtIn = TOOLS.filter(tool => offered(tool.kind) && hostSupports(host, tool.name))
   const plugins: AgentTool[] = []
   const names = new Set(TOOLS.map(tool => tool.name))
-  for (const tool of (await host.tools?.(only).catch(() => undefined))?.tools ?? []) {
+  const own = host.authoring ? host.readyTools?.(only) : await host.tools?.(only).catch(() => undefined)
+  for (const tool of own?.tools ?? []) {
     if (names.has(tool.name) || !offered(tool.kind)) continue
     names.add(tool.name)
     plugins.push(tool)
@@ -445,7 +510,7 @@ function instructions(host: McpHost, caller: McpCaller, tools: { name: string, k
           : pages
             ? `Operate tools: ${operations.join(', ')}. Each may first wait for a person to allow it (in the page), and fails when refused.`
             : `Operate tools: ${operations.join(', ')}, allowed as presmium-mcp --allow says.`,
-    `No tool writes files: edit the deck's source with your own file tools; ${recompiles(host.process)} With several documents, name one with \`document\` (list_documents).`,
+    `${host.authoring ? 'Canonical authoring uses get_document, plan_document_change and apply_document_change with the shared Web transaction. Read get_authoring_capabilities before editing; a saved result does not prove compilation or browser playback.' : 'This host has no canonical authoring service; get_authoring_capabilities reports the limitation.'} ${recompiles(host.process)} With several documents, name one with \`document\` (list_documents).`,
   ].join('\n')
 }
 
@@ -498,8 +563,8 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
       compiled: () => compiled ??= self.document().then(dir => host.compile(dir)),
       async approve(kind, title, options = {}) {
         if (caller.confirmed) return
-        const { doc } = await self.compiled()
-        const messages = MCP_MESSAGES[deckLocale(doc.meta.lang)]
+        const lang = options.lang ?? (await self.compiled()).doc.meta.lang
+        const messages = MCP_MESSAGES[deckLocale(lang)]
         const allowed = await host.approve({
           kind,
           scope: options.scope ?? 'content',
@@ -517,10 +582,10 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
   for (const tool of builtIn) {
     server.registerTool(tool.name, {
       description: tool.description,
-      inputSchema: fromJsonSchema<Args>(schemaOf(tool.properties, tool.required) as JsonSchemaType),
+      inputSchema: fromJsonSchema<Args>((tool.inputSchema ?? schemaOf(tool.properties, tool.required)) as JsonSchemaType),
       annotations: { readOnlyHint: tool.kind === 'read' },
       _meta: meta(tool.kind),
-    }, (args, ctx) => toolResult(() => tool.run(call(args, ctx.mcpReq.signal))))
+    }, (args, ctx) => toolResult(() => tool.run(call(args, ctx.mcpReq.signal)), tool.structured))
   }
   for (const tool of plugins) {
     server.registerTool(tool.name, {
@@ -599,6 +664,9 @@ export function createPresmiumMcp(host: McpHost): PresmiumMcp {
     return handler
   }
   const stops = [
+    host.watchTools?.((document) => {
+      for (const [bound, handler] of handlers) if (bound === undefined || bound === document) handler.notify.toolsChanged()
+    }),
     host.watchPositions?.(() => { for (const handler of handlers.values()) handler.notify.resourceUpdated(POSITION_URI) }),
     host.watchFocus?.(() => { for (const handler of handlers.values()) handler.notify.resourceUpdated(FOCUS_URI) }),
     host.watchDiagnostics?.((document) => {

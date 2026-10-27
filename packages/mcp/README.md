@@ -14,6 +14,10 @@ pnpm exec presmium-mcp <document directory>
 
 The reading tools (`list_sections`, `get_section`, `get_step`, `search`, `get_code_ref`, `get_outputs`, `get_diagnostics`, `locate_source` and others) are always there; `--allow operate` also provides `run_code` and `build`.
 
+The workspace host behind `presmium serve` also provides canonical authoring. Start with `get_authoring_capabilities`, read saved `lecture.json` through `get_document`, preflight a `DocumentChange` with `plan_document_change`, then submit the identical change and its `planId` to `apply_document_change`. Web and MCP share CAS, same-document text-file transactions, locking, rollback and history. The result confirms saved source and files; compilation and playback remain separate. Existing semantic operations are advertised in capabilities, and a complete replacement is available for explicit structural changes.
+
+Authoring initialization and reads do not wait for compilation. Plugin tools appear after their actual compilation is ready; clients should follow tool-list change notifications. Compiler-only stdio reports authoring unavailable. Required agent review is not integrated with canonical apply yet, so that configuration rejects apply; retry receipts are limited to the current process and saved result. See the [authoring actions RFC](../../docs/rfc-mcp-authoring-actions.md) for the remaining capability and feedback work.
+
 `get_runtime` (also `presmium://runtime`) reads the author's open browser reports: timestamps, section and step, plugin/component failures and live execution status. It differs from the compiled recordings returned by `get_outputs`. Only editor/owner windows of the selected document contribute; closing a window removes its feedback. An empty list means no observed browser state, and earlier results do not verify a new source revision.
 
 ## Documentation

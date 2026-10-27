@@ -1,6 +1,6 @@
 # RFC：Web 与 MCP 共用作者动作及验证反馈
 
-状态：待实施。2026-10-27 根据作者要求设计：AI agent 经 MCP 能完成作者在 Web 中可完成的工作，包括人声录音转写、将文字采用为讲稿、再显式生成 AI 配音。本文的接口名和新增类型均为提案；现有能力逐项标在第 2 节。
+状态：首片已实施，其余分阶段推进。2026-10-27 根据作者要求设计：AI agent 经 MCP 能完成作者在 Web 中可完成的工作，包括人声录音转写、将文字采用为讲稿、再显式生成 AI 配音。第 12.1 节的共享作者读取、预检、提交与读后核验已接入；真实范围见第 14 节。其它接口名和新增类型仍为提案。
 
 本文供工作区、工作台、MCP 和讲授插件的实现者拆分任务。交付结果是一套共用的作者动作、版本检查和反馈协议。文稿内容继续只写 `lecture.json`；规范实体定义以[文稿契约](../packages/kernel/src/contracts/document.ts)和[文稿 IR RFC](rfc-document-ir.md)为准，录制转写的候选与采用细节以[录制转写 RFC](rfc-recording-transcription.md)为准。
 
@@ -24,18 +24,18 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 
 ## 2. 实际操作到服务的核对
 
-以下是 2026-10-27 的源码核对。表中“已有”只表示列出的实现存在，不表示拟议 MCP 已实现，也不替代真实设备、服务和浏览器验收。
+以下是 2026-10-27 的源码核对，包含首片接入后的范围。表中“已有”只表示列出的实现存在，不替代真实设备、服务和浏览器验收。
 
 | 作者操作 | 当前 Web／共享边界 | 当前 MCP | 应补齐的边界 |
 | --- | --- | --- | --- |
 | 列文稿、新建、复制、重命名、删除项目 | `WorkspaceClient.operateDocument` → workspace `documents`；管理操作与历史需要 git | 只有 `list_documents` | 项目操作预检、版本和引用影响，调用同一个 `DocumentOperations` |
-| 读取可编辑文稿 | `GET document`，无需先编译 | `deck_info/get_section/get_step` 读取运行快照，没有作者文稿入口 | `get_document` 返回 `DocumentAnswer`、稳定实体与源 Schema |
-| 正文结构、格式、表格、图片占位、块移动 | 原生 BlockNote 投影回 `TeachingDocument`，`DocumentSession` → `document/change` | 无作者动作 | 提升富文本／块动作及身份规则；复用相同校验 |
-| 页面新建、重命名、复制、排序、删除 | `document-pages.ts`、原生插页、整份 replacement；复制与删除纯函数仍在 workbench | 无 | 移至共享纯领域层；页内绑定重映射、最后一页和外部引用同一语义 |
-| 步骤状态、显隐、继承、组件参数与身份 | IR 契约支持稳定 `StepId`、`setStepState`；Web 对复杂步骤操作仍有缺口 | 只有数字步骤读取／导航 | 共用稳定步骤动作；未实现的重排／删除规则先声明 unavailable |
-| 讲稿文字、发音替换、cue 与停顿 | `NarrationEditor/DocumentStepNarration` → 同一文稿；`setNarration/setTiming` 已有 | `lecture_preview` 只读派生计划 | 接受原生 `NarrationNode[]`；精确目标、共享讲稿影响与 cue 校验 |
-| 定义、公开参数、共享素材修改和“另存” | 定义在文稿中，代码通过 `DocumentChange.fileChanges`；通用素材属性仍未完整接入 | 代码引用只读工具，不是作者动作 | 定义 Schema、引用计数、单实例／全部实例／fork 三种明确范围 |
-| 批注新建、回复、编辑、反应、解决、重开、删除 | `DocumentThreadStore` 适配 BlockNote CommentsExtension，落 `TeachingDocument.comments` | `get_focus` 不等于批注接口 | 共用线程动作、稳定文本锚点和失锚状态；禁止写 BlockNote 私有 JSON |
+| 读取可编辑文稿 | `GET document`，无需先编译 | 已有 `get_document`；`deck_info/get_section/get_step` 仍读取运行快照 | 精确的局部实体读取与 Schema 资源 |
+| 正文结构、格式、表格、图片占位、块移动 | 原生 BlockNote 投影回 `TeachingDocument`，`DocumentSession` → `document/change` | 已有 plan/apply 的 `updateText/insertBlock/moveBlock/deleteBlock` 与共享校验 | 更细的富文本身份和编辑范围语义 |
+| 页面新建、重命名、复制、排序、删除 | `document-pages.ts`、原生插页、整份 replacement；复制与删除纯函数仍在 workbench | 已有 `updateSection`；其它结构可显式 replacement，未有专用页面动作 | 移至共享纯领域层；页内绑定重映射、最后一页和外部引用同一语义 |
+| 步骤状态、显隐、继承、组件参数与身份 | IR 契约支持稳定 `StepId`、`setStepState`；Web 对复杂步骤操作仍有缺口 | plan/apply 已有 `setStepState`，运行读取／导航仍可使用 | 共用完整步骤动作；未实现的重排／删除规则先声明 unavailable |
+| 讲稿文字、发音替换、cue 与停顿 | `NarrationEditor/DocumentStepNarration` → 同一文稿；`setNarration/setTiming` 已有 | plan/apply 已接受 `NarrationNode[]`；`lecture_preview` 只读派生计划 | 共享讲稿 edit-shared／fork、cue 编辑的更细范围与影响 |
+| 定义、公开参数、共享素材修改和“另存” | 定义在文稿中，代码通过 `DocumentChange.fileChanges`；通用素材属性仍未完整接入 | 已能明确 replacement 加同文稿文本文件原子保存；无专用定义范围动作 | 定义 Schema、引用计数、单实例／全部实例／fork 三种明确范围 |
+| 批注新建、回复、编辑、反应、解决、重开、删除 | `DocumentThreadStore` 适配 BlockNote CommentsExtension，落 `TeachingDocument.comments` | 已可读取规范线程；专用批注动作仍缺，明确 replacement 不等于对齐完成 | 共用线程动作、稳定文本锚点和失锚状态；禁止写 BlockNote 私有 JSON |
 | 批量批注交给助手、接受／拒绝／继续修改 | workbench 与 dsh 的会话／审阅路由；材料生成流程仍未齐全 | 核心 MCP 不提供会话或审阅动作 | 显式任务范围、会话上下文与修改审阅，不能将发送成功当作内容修改完成 |
 | 导入与查看图片 | `document/image` 将原文件和资产声明原子保存；`document/asset` 按 Asset ID 读取 | 无 | 安全字节输入、回执与资源读取；沿用现有媒体检查限制 |
 | 导入／检查本地音频 | `document/audio`，`DocumentAudioImport/InspectionAnswer`；真实媒体探测及多文件事务 | 无 | `import_asset/inspect_asset` 复用这条链，不接受任意服务端路径 |
@@ -255,4 +255,16 @@ M1 中复杂步骤／定义操作按实际共享规则逐项开放，不能为�
 
 已用正式 `packages/mcp/bin/presmium-mcp.mjs` 在临时最小文稿上执行无 `--allow` 的 stdio 链：tools/list → list_documents → list_sections → get_step → 读取 `presmium://diagnostics` → get_runtime。返回 1 份文稿、1 页、步骤 intro、诊断 version 1 且为空、runtime windows 为空；没有可编辑文稿工具，也没有 jobs 工具。独立临时目录在结束后删除。
 
-该运行只证明现有只读工具和诊断资源可以被正式 MCP 客户端消费；空 runtime 表示没有观察到浏览器，不能证明页面成功渲染。本次没有连接公共 Studio、修改作者文稿、请求语音／材料服务、运行测试套件，拟议作者动作与任务协议尚未实现或验收。
+该初始运行只证明只读工具和诊断资源可以被正式 MCP 客户端消费；空 runtime 表示没有观察到浏览器，不能证明页面成功渲染。后续首片的实际范围见第 14 节，完整任务协议仍未实现。
+
+## 14. 首片实际接入范围
+
+工作区已提供 `createDocumentEditor`，HTTP 与 MCP 共用 read／plan／change 服务和进程内回执。MCP 的四个入口已经接入，接受严格的共享 `DocumentChange` Schema、九类现有操作及同文稿文本文件。plan 返回完整候选、source、有效期、文件版本与实体影响，apply 核对相同请求和计划后原子保存，再重读文稿与全部文件。MCP 历史来源为 agent，普通 HTTP 作者保存仍为 editor。
+
+作者 HTTP 路由由宿主直接提供，仍保留原来的 launcher token、成员角色和请求体限制；不先挂载编译后插件。作者 MCP 初始化只读取已完成编译的插件工具快照，诊断首读返回当前快照，不为初始化启动编译。编译完成后通过公开 MCP 工具清单变更通知发布真实插件工具。
+
+独立 stdio 编译宿主明确返回作者服务 unavailable；operate 关闭时能力响应关闭 apply；required review 尚未接通时拒绝 apply，不因确认会话而绕过。计划和回执各最多保留 64 条，计划有效期为五分钟，幂等仅限当前进程、已保留回执且结果仍为当前源；没有跨重启账本。未实现的语义页面／批注动作、媒体导入 MCP、客户端草稿和播放控制、ASR 采用与重新配音不计入此片完成范围。
+
+正式 MCP stdio／HTTP 客户端和真实 workspace 服务在隔离小文稿中完成 9 组原子／权限／恢复场景及 5 组慢编译／策略场景。包含无 token 的 401、HTTP 与 MCP 共用幂等回执、旧源与工程文件 CAS、实际 git 提交失败的多文件回滚、非法引用、坏编译下读取／修复，以及 required review 拒绝。真实四秒编译进行中，另一个 MCP 客户端初始化、读取、预检及 HTTP 读取合计 68.53 ms；没有等待该编译。完整证据和边界见[首片验证记录](benchmarks/mcp-canonical-authoring-2026-10-27.md)。
+
+本片没有调用外部模型、ASR 或 TTS，没有操作公共 Studio 或作者文稿，没有运行测试套件；作者 API 成功保存不代表完整 UI 或音频链已验收。

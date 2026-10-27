@@ -14,13 +14,84 @@ export interface DocumentBinding {
   document: DocumentSummary
   dir: string
   client: PresmiumMcpClient
-  tools: ListedTool[]
+  readonly tools: ListedTool[]
+  toolChanges: BindingTools
   diagnostics: BindingDiagnostics
 }
 
 interface SelectionListener {
   before(): Promise<void>
   after(): Promise<void>
+}
+
+/** Refreshes the tool list on MCP invalidations without replacing its document-bound client. */
+export class BindingTools {
+  snapshot: ListedTool[] = []
+  error: string | undefined
+  readonly #client: PresmiumMcpClient
+  readonly #log: DshLogger
+  readonly #listeners = new Set<() => void>()
+  #signature = ''
+  #unsubscribe: (() => Promise<void>) | undefined
+  #pending: Promise<void> | undefined
+  #dirty = false
+  #closed = false
+
+  constructor(client: PresmiumMcpClient, log: DshLogger) {
+    this.#client = client
+    this.#log = log
+  }
+
+  async start(): Promise<void> {
+    this.#unsubscribe = await this.#client.subscribeTools(() => { void this.refresh() })
+    await this.refresh()
+    if (this.error) throw new Error(this.error)
+  }
+
+  watch(listener: () => void): () => void {
+    this.#listeners.add(listener)
+    return () => { this.#listeners.delete(listener) }
+  }
+
+  refresh(): Promise<void> {
+    if (this.#closed) return Promise.resolve()
+    this.#dirty = true
+    if (!this.#pending) {
+      this.#pending = this.#read().finally(() => {
+        this.#pending = undefined
+        if (this.#dirty && !this.#closed) return this.refresh()
+      })
+    }
+    return this.#pending
+  }
+
+  async #read(): Promise<void> {
+    while (this.#dirty && !this.#closed) {
+      this.#dirty = false
+      try {
+        const tools = await this.#client.tools()
+        if (this.#closed || this.#dirty) continue
+        this.error = undefined
+        const signature = JSON.stringify(tools)
+        if (signature === this.#signature) continue
+        this.#signature = signature
+        this.snapshot = tools
+        for (const listener of this.#listeners) listener()
+      } catch (error) {
+        if (!this.#closed) {
+          this.error = errorMessage(error)
+          this.#log.warn(`presmium-tools: the tool list did not refresh: ${this.error}`)
+        }
+      }
+    }
+  }
+
+  async close(): Promise<void> {
+    this.#closed = true
+    this.#dirty = false
+    this.#listeners.clear()
+    await this.#unsubscribe?.()
+  }
 }
 
 /** One current resource snapshot, shared by notifications and the next model step. */
@@ -81,7 +152,7 @@ export class BindingDiagnostics {
 
 async function closeBinding(binding: DocumentBinding): Promise<void> {
   try {
-    await binding.diagnostics.close()
+    await Promise.all([binding.diagnostics.close(), binding.toolChanges.close()])
   } finally {
     await binding.client.close()
   }
@@ -166,8 +237,10 @@ export class DocumentBindings {
     const grant = await this.#server.requestJson<{ url: string, token: string }>(`${SERVER_ROUTES}tokens`, { body: { document: document.dir, session: id } })
     const client = await connectPresmiumMcp(grant.url, grant.token)
     const diagnostics = new BindingDiagnostics(client, document.dir)
+    const toolChanges = new BindingTools(client, this.#log)
     try {
-      const binding: DocumentBinding = { agentSessionId: id, document, dir: resolve(root, document.dir), client, tools: await client.tools(), diagnostics }
+      const binding: DocumentBinding = { agentSessionId: id, document, dir: resolve(root, document.dir), client, get tools() { return toolChanges.snapshot }, toolChanges, diagnostics }
+      await toolChanges.start()
       await diagnostics.start()
       if (current()) {
         this.#failures.delete(id)
@@ -175,11 +248,11 @@ export class DocumentBindings {
         return binding
       }
     } catch (error) {
-      await diagnostics.close().catch(() => undefined)
+      await Promise.all([diagnostics.close(), toolChanges.close()]).catch(() => undefined)
       await client.close().catch(() => undefined)
       throw error
     }
-    await diagnostics.close().finally(() => client.close())
+    await Promise.all([diagnostics.close(), toolChanges.close()]).finally(() => client.close())
     return undefined
   }
 

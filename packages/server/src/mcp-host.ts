@@ -40,6 +40,9 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
   }
   return {
     process: { command: options.command },
+    get authoring() { return options.serverHost?.authoring },
+    readyTools: document => options.serverHost?.agentTools?.(document) ?? { tools: [], service: options.service },
+    watchTools: listener => options.serverHost?.watchAgentTools?.(listener) ?? (() => {}),
     documents: () => host().documents(),
     compile: document => host().compile(document),
     async check(document) {
@@ -54,7 +57,7 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
     },
     build: (document, build) => host().build(document, build),
     get jobs() {
-      return host().jobs
+      return options.serverHost?.jobs
     },
     run: (document, target, signal) => host().run(document, target, signal),
     approve: (request, signal) => control.approvals.request(request, signal),
@@ -74,7 +77,7 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
     focus: document => options.focus.find(document),
     watchFocus: listener => options.focus.watch(listener),
     async diagnostics(document) {
-      if (!options.diagnostics.isObserved(document)) {
+      if (!options.diagnostics.isObserved(document) && !options.serverHost?.authoring) {
         try {
           const { doc } = await host().compile(document)
           if (!options.diagnostics.isObserved(document)) options.diagnostics.compiled(document, doc, host().workspaceRoot ?? dirname(doc.meta.entry))

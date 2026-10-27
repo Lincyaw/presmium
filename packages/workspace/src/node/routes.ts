@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
-import { DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, problemResponse, PRODUCTION_AUDIO_AUTHORING, pushStream, sseResponse } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, problemResponse, PRODUCTION_AUDIO_AUTHORING, pushStream, SPEECH, sseResponse } from '@lincyaw/kernel'
 import type { ChangesAnswer, CommitAnswer, CompileJob, DocumentOperation, DocumentsAnswer, JobsAnswer, Member, PresmiumNodePlugin, RequestContext, RevertResult, RevisionsAnswer, Route, SavedAnswer, ServerContribution, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
 import { hasBearerToken } from '@lincyaw/server'
 import { REVERT_TRAILER, saveSummary, trailers } from '../domain/commit-message.ts'
@@ -20,19 +20,28 @@ import { listTemplates } from './templates.ts'
 import type { Jobs } from './jobs.ts'
 import type { WorkbenchApi } from './workbench-api.ts'
 import { documentEditorRoutes } from './document-editor.ts'
+import type { DocumentEditor } from './document-editor.ts'
 import { documentAudioRoutes } from './document-audio.ts'
 import { documentImageRoutes } from './document-images.ts'
-import type { ProductionAudioAuthoring } from '@lincyaw/kernel'
+import { createDocumentTranscriptions, documentTranscriptionRoutes } from './document-transcription.ts'
+import type { ProductionAudioAuthoring, SpeechService } from '@lincyaw/kernel'
 import { documentDirOf } from './writer.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
 export const WORKSPACE_ID = 'presmium.workspace'
 
+/** Host-level author routes and compiled workspace routes retain the same launcher authorization. */
+export function authorizeWorkspaceRoutes(routes: Record<string, Route>, launcherToken?: string): Record<string, Route> {
+  if (!launcherToken) return routes
+  return Object.fromEntries(Object.entries(routes).map(([key, route]) => [key, { ...route, handle: (request, ctx) => hasBearerToken(request, launcherToken) ? route.handle(request, ctx) : Promise.resolve(problemResponse(401, 'the workspace service\'s routes need its token: Authorization: Bearer <PRESMIUM_SERVICE_TOKEN>')) } satisfies Route]))
+}
+
 /** The workspace's routes; the history, the document operations and the reviews are there only in a git repository. */
 export interface WorkspaceRoutesOptions {
   config: WorkspaceConfig
   editor: SourceEditor
+  documentEditor: DocumentEditor
   locks: DocumentLocks
   revisions?: Revisions
   operations?: DocumentOperations
@@ -42,6 +51,7 @@ export interface WorkspaceRoutesOptions {
   jobs?: Jobs
   launcherToken?: string
   audio?: ProductionAudioAuthoring
+  speech?: SpeechService
 }
 
 function toRendererIds(body: unknown): string[] | undefined {
@@ -127,10 +137,12 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       return await revert(revisions, id, ctx.member, { which, ...document ? { document } : {} })
     }),
   })
+  const transcriptions = createDocumentTranscriptions({ root: config.root, editor, audio: options.audio, speech: options.speech })
   const routes: Record<string, Route> = {
-    ...documentEditorRoutes({ root: config.root, editor, revisions, workbench }),
+    ...documentEditorRoutes({ root: config.root, editor, documentEditor: options.documentEditor, workbench }),
     ...documentAudioRoutes({ root: config.root, editor, revisions, audio: options.audio }),
     ...documentImageRoutes({ root: config.root, editor, revisions }),
+    ...documentTranscriptionRoutes(transcriptions),
     documents: {
       role: 'reader',
       handle: (request, ctx) => catchRequestErrors(async () => {
@@ -254,13 +266,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       })),
     },
   }
-  const { launcherToken } = options
-  if (launcherToken) {
-    for (const [key, route] of Object.entries(routes)) {
-      routes[key] = { ...route, handle: (request, ctx) => (hasBearerToken(request, launcherToken) ? route.handle(request, ctx) : Promise.resolve(problemResponse(401, 'the workspace service\'s routes need its token: Authorization: Bearer <PRESMIUM_SERVICE_TOKEN>'))) }
-    }
-  }
-  return { routes }
+  return { routes: authorizeWorkspaceRoutes(routes, options.launcherToken), close: () => transcriptions.close() }
 }
 
 function workbenchRoutes(workbench: WorkbenchApi): Record<string, Route> {
@@ -365,6 +371,6 @@ export function workspaceRoutesPlugin(options: WorkspaceRoutesOptions): Presmium
     id: WORKSPACE_ID,
     version,
     kernel: '^1.0.0',
-    server: ctx => workspaceRoutes({ ...options, audio: ctx.service(PRODUCTION_AUDIO_AUTHORING) }),
+    server: ctx => workspaceRoutes({ ...options, audio: ctx.service(PRODUCTION_AUDIO_AUTHORING), speech: ctx.service(SPEECH) }),
   }
 }

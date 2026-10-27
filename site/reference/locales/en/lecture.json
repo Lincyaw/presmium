@@ -341,7 +341,7 @@
           "children": [
             {
               "type": "text",
-              "text": "validateDocument, DOCUMENT_JSON_SCHEMA and TeachingDocument form one authoring contract shared by Web, agents, direct file edits and compilation. Workspace changes carry baseDocumentVersion. Conflicts retain input."
+              "text": "validateDocument, DOCUMENT_JSON_SCHEMA and TeachingDocument form one authoring contract shared by Web, agents, direct file edits and compilation. Workspace changes carry baseDocumentVersion. Conflicts retain input. With workspace MCP, start with get_authoring_capabilities, then use get_document, plan_document_change and apply_document_change to read, preflight and commit. Receipts distinguish saved source from compilation and runtime verification that were not requested."
             }
           ]
         }

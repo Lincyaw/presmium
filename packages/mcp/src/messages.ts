@@ -4,6 +4,7 @@ export interface McpMessages {
   navigate(section: string, step: number): string
   run(section: string, block: string): string
   build(renderers: string): string
+  cancelBuild(target: string): string
   allRenderers: string
   classroomStart(name: string): string
   classroomEnd: string
@@ -16,6 +17,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     navigate: (section, step) => `放映跳转到「${section}」${step > 0 ? `第 ${step} 步` : ''}`,
     run: (section, block) => `运行「${section}」一节的 ${block}`,
     build: renderers => `构建文稿（${renderers}）`,
+    cancelBuild: target => `取消构建（${target}）`,
     allRenderers: '全部渲染端',
     classroomStart: name => `开始课堂${name ? `「${name}」` : ''}`,
     classroomEnd: '结束课堂',
@@ -26,6 +28,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     navigate: (section, step) => `Move the presentation to "${section}"${step > 0 ? `, step ${step}` : ''}`,
     run: (section, block) => `Run ${block} of "${section}"`,
     build: renderers => `Build the deck (${renderers})`,
+    cancelBuild: target => `Cancel build (${target})`,
     allRenderers: 'all renderers',
     classroomStart: name => `Start the classroom${name ? ` "${name}"` : ''}`,
     classroomEnd: 'End the classroom',
