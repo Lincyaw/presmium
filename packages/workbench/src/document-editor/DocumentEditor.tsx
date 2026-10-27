@@ -1,9 +1,11 @@
 import { useMemo, useRef } from 'react'
+import { closeHistory } from '@tiptap/pm/history'
 import type { TeachingDocument } from '@lincyaw/kernel'
 import type { Locale } from '../messages.ts'
 import { BlockNoteSurface } from './BlockNoteSurface.tsx'
 import { DocumentThreadStore } from './comments.ts'
-import { createDocumentProjection, nativeDocumentToProduct, rememberDocumentStructure } from './projection.ts'
+import { createDocumentProjection, nativeDocumentToProduct, nativePage, rememberDocumentStructure } from './projection.ts'
+import type { NativePageCreation } from './projection.ts'
 import { captureRichBaseline } from './rich-text.ts'
 import { captureTableIdentities, seedTableIdentities } from './table-identities.ts'
 import type { DocumentNodeViews, NativeDocumentEditor } from './schema.tsx'
@@ -14,6 +16,9 @@ export interface DocumentEditingPosition {
   nativeBlockId: string
   sectionId: string
   position: number
+}
+export interface DocumentEditorCommands {
+  insertPage(after: string | undefined, title: string): NativePageCreation
 }
 
 export interface DocumentEditorProps {
@@ -33,7 +38,7 @@ export interface DocumentEditorProps {
   onChange(document: TeachingDocument): void
   onSelection?(selection: NativeDocumentSelection | undefined): void
   onEditingPosition?(position: DocumentEditingPosition, editor: NativeDocumentEditor): void
-  onReady?(editor: NativeDocumentEditor | undefined): void
+  onReady?(editor: NativeDocumentEditor | undefined, commands?: DocumentEditorCommands): void
   onComposition?(composing: boolean): void
   onError?(error: Error): void
   commentsPortal?: HTMLElement | null
@@ -111,7 +116,27 @@ export function DocumentEditor(props: DocumentEditorProps) {
         })
         unsubscribe.current = () => { stopComments(); stopSelection(); stopFocus(); cancelFocus() }
       }
-      current.current.onReady?.(value)
+      const commands: DocumentEditorCommands | undefined = value ? { insertPage: (after, title) => {
+        if (current.current.readOnly || editor.current !== value || active.current !== projection || binding.current !== projection || value.prosemirrorView.isDestroyed) throw new Error('page-context-changed')
+        const blocks = value.document, index = after ? blocks.findIndex(block => block.type === 'presmiumPage' && block.props.sectionId === after) : blocks.length - 1
+        if (index < 0) throw new Error('page-boundary')
+        const next = after ? blocks.slice(index + 1).find(block => block.type === 'presmiumPage') : undefined
+        const creation = { sectionId: crypto.randomUUID(), blockId: crypto.randomUUID(), nodeId: crypto.randomUUID(), stepId: crypto.randomUUID() }
+        projection.createdPages.set(creation.sectionId, creation)
+        try {
+          value.transact(transaction => {
+            closeHistory(transaction)
+            value.insertBlocks([nativePage(creation.sectionId, title), { id: creation.nodeId, type: 'paragraph', content: [] }], next ?? blocks.at(-1)!, next ? 'before' : 'after')
+          })
+          // The first keystroke belongs to its own native history event.
+          value.transact(transaction => closeHistory(transaction))
+          return creation
+        } catch (error) {
+          if (!value.getBlock(`page:${creation.sectionId}`)) projection.createdPages.delete(creation.sectionId)
+          throw error
+        }
+      } } : undefined
+      current.current.onReady?.(value, commands)
       if (value) reportPosition()
     }} />
 }

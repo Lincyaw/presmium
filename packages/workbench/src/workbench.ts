@@ -4,6 +4,7 @@ import { DocumentSession } from './document-session.ts'
 import type { DocumentSessionState } from './document-session.ts'
 import type { DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentChangeAnswer, MediaClip, NarrationNode, TeachingDocument } from '@lincyaw/kernel'
 import type { NativeDocumentEditor } from './document-editor/schema.tsx'
+import type { DocumentEditorCommands } from './document-editor/DocumentEditor.tsx'
 import { nativeTextPoint, nativeTextPosition } from './document-editor/selection.ts'
 import type { NativeTextPoint } from './document-editor/selection.ts'
 import type { DocumentFieldBookmark, DocumentFieldRegistration, DocumentHistoryEditor } from './document-editor/focus.ts'
@@ -229,6 +230,8 @@ export class Workbench {
   readonly #removedCueTimings = new Map<string, { pauseMs: number }>()
   #cueTimingScope?: string
   #documentEditor?: NativeDocumentEditor
+  #documentEditorCommands?: DocumentEditorCommands
+  #stopDocumentLayoutScroll?: () => void
   #activeDocumentHistory?: DocumentHistoryEditor
   #unsubscribeDocumentHistory?: () => void
   #unsubscribeDocumentSelection?: () => void
@@ -1018,51 +1021,18 @@ export class Workbench {
     this.#unsubscribeDocumentHistory = editor?.onChange(update)
     update()
   }
-  attachDocumentEditor(editor: NativeDocumentEditor | undefined): void {
+  attachDocumentEditor(editor: NativeDocumentEditor | undefined, commands?: DocumentEditorCommands): void {
     const wasBody = !this.#activeDocumentHistory || this.#activeDocumentHistory === this.#documentEditor
     if (editor !== this.#documentEditor) this.#documentSession.composition(false, 'body')
-    this.#unsubscribeDocumentSelection?.(); this.#documentEditor = editor
-    let stopLayoutScroll: (() => void) | undefined
+    this.#unsubscribeDocumentSelection?.(); this.#stopDocumentLayoutScroll?.(); this.#stopDocumentLayoutScroll = undefined
+    this.#documentEditor = editor; this.#documentEditorCommands = commands
     if (editor) {
       const focus = this.#pendingDocumentFocus, selection = this.#pendingDocumentSelection
       this.#pendingDocumentFocus = undefined; this.#pendingDocumentSelection = undefined
       if (focus && focus.documentId === this.#state.authoring?.content?.id && focus.generation === this.#documentSelectionGeneration && editor.getBlock(focus.nodeId)) {
         // A deferred page operation adopts its selection only after the source write is acknowledged.
         if (!focus.afterSave) {
-          editor.setTextCursorPosition(focus.nodeId, 'start')
-          editor.focus()
-          editor.prosemirrorView.dispatch(editor.prosemirrorState.tr.scrollIntoView())
-          // React node views can finish sizing after the native editor mounts.
-          // Keep only this untouched focus visible through those layout changes.
-          if (typeof ResizeObserver !== 'undefined') {
-            const view = editor.prosemirrorView, document = view.dom.ownerDocument
-            const source = this.#state.authoring!, identity = source.identity, reset = source.reset
-            const request = this.#state.documentNavigation?.request, selected = editor.prosemirrorState.selection
-            let size = view.dom.getBoundingClientRect(), active = true
-            const events = ['pointerdown', 'wheel', 'touchmove', 'keydown', 'beforeinput']
-            const cancel = () => {
-              if (!active) return
-              active = false; observer.disconnect(); stopFocus(); stopSelection()
-              for (const event of events) document.removeEventListener(event, interact, true)
-            }
-            const interact = (event: Event) => { if (event.isTrusted) cancel() }
-            const stopFocus = editor.onFocusChange((_, { focused }) => { if (!focused) cancel() })
-            const stopSelection = editor.onSelectionChange(cancel)
-            const observer = new ResizeObserver(() => {
-              if (!active) return
-              const current = this.#state.authoring
-              if (this.#documentEditor !== editor || view.isDestroyed || !current || current.identity !== identity || current.reset !== reset
-                || current?.content?.id !== focus.documentId || this.#state.documentNavigation?.request !== request
-                || !editor.isFocused() || !editor.prosemirrorState.selection.eq(selected) || editor.getTextCursorPosition().block.id !== focus.nodeId) { cancel(); return }
-              const next = view.dom.getBoundingClientRect()
-              if (next.width === size.width && next.height === size.height) return
-              size = next
-              view.dispatch(editor.prosemirrorState.tr.scrollIntoView())
-            })
-            for (const event of events) document.addEventListener(event, interact, true)
-            observer.observe(view.dom)
-            stopLayoutScroll = cancel
-          }
+          this.#focusDocumentNode(editor, focus.nodeId)
         }
       } else if (!this.#pendingDocumentField && selection && selection.documentId === this.#state.authoring?.content?.id) {
         const anchor = nativeTextPosition(editor, selection.anchor), head = nativeTextPosition(editor, selection.head)
@@ -1079,8 +1049,45 @@ export class Workbench {
       element.addEventListener('focusin', focus)
       if (editor.prosemirrorView.hasFocus()) focus()
       const stopSelection = editor.onSelectionChange(() => { this.#documentSelectionGeneration++ })
-      this.#unsubscribeDocumentSelection = () => { stopLayoutScroll?.(); stopSelection(); element.removeEventListener('focusin', focus) }
+      this.#unsubscribeDocumentSelection = () => { this.#stopDocumentLayoutScroll?.(); stopSelection(); element.removeEventListener('focusin', focus) }
     } else this.#unsubscribeDocumentSelection = undefined
+  }
+  #focusDocumentNode(editor: NativeDocumentEditor, nodeId: string): void {
+    this.#stopDocumentLayoutScroll?.(); this.#stopDocumentLayoutScroll = undefined
+    editor.setTextCursorPosition(nodeId, 'start')
+    editor.focus()
+    editor.prosemirrorView.dispatch(editor.prosemirrorState.tr.scrollIntoView())
+    // React node views can finish sizing after the native editor mounts.
+    // Keep only this untouched focus visible through those layout changes.
+    if (typeof ResizeObserver !== 'undefined') {
+      const view = editor.prosemirrorView, document = view.dom.ownerDocument
+      const source = this.#state.authoring!, identity = source.identity, reset = source.reset, documentId = source.content!.id
+      const request = this.#state.documentNavigation?.request, selected = editor.prosemirrorState.selection
+      let size = view.dom.getBoundingClientRect(), active = true
+      const events = ['pointerdown', 'wheel', 'touchmove', 'keydown', 'beforeinput']
+      const cancel = () => {
+        if (!active) return
+        active = false; observer.disconnect(); stopFocus(); stopSelection()
+        for (const event of events) document.removeEventListener(event, interact, true)
+      }
+      const interact = (event: Event) => { if (event.isTrusted) cancel() }
+      const stopFocus = editor.onFocusChange((_, { focused }) => { if (!focused) cancel() })
+      const stopSelection = editor.onSelectionChange(cancel)
+      const observer = new ResizeObserver(() => {
+        if (!active) return
+        const current = this.#state.authoring
+        if (this.#documentEditor !== editor || view.isDestroyed || !current || current.identity !== identity || current.reset !== reset
+          || current?.content?.id !== documentId || this.#state.documentNavigation?.request !== request
+          || !editor.isFocused() || !editor.prosemirrorState.selection.eq(selected) || editor.getTextCursorPosition().block.id !== nodeId) { cancel(); return }
+        const next = view.dom.getBoundingClientRect()
+        if (next.width === size.width && next.height === size.height) return
+        size = next
+        view.dispatch(editor.prosemirrorState.tr.scrollIntoView())
+      })
+      for (const event of events) document.addEventListener(event, interact, true)
+      observer.observe(view.dom)
+      this.#stopDocumentLayoutScroll = cancel
+    }
   }
   async flushPendingEdits(signal?: AbortSignal): Promise<void> {
     if (isAgentChanging(this.#state)) throw new Error('save-locked')
@@ -1177,21 +1184,17 @@ export class Workbench {
     })
   }
   createPage(after = this.#state.position?.section): void {
-    if (this.#state.isEditingPage || this.#state.isCreatingPage) return
-    const id = crypto.randomUUID(), stepId = crypto.randomUUID(), blockId = crypto.randomUUID(), nodeId = crypto.randomUUID()
-    const generation = this.#documentSelectionGeneration
-    void this.#changeDocumentPage(document => {
-      document.sections[id] = { id, title: this.#messages.newPage, children: [blockId], stepOrder: [stepId], layout: { type: 'stack' } }
-      document.blocks[blockId] = { id: blockId, type: 'text', content: [{ id: nodeId, type: 'paragraph', children: [] }] }
-      document.steps[stepId] = { id: stepId, sectionId: id, visuals: [{ blockId, visible: true }], narrationIds: [] }
-      document.production.stepOverrides[stepId] = { minimumHoldMs: 4000, trailingPauseMs: 500 }
-      const index = after ? document.sectionOrder.indexOf(after) : document.sectionOrder.length - 1
-      document.sectionOrder.splice(index + 1, 0, id)
-      if (generation === this.#documentSelectionGeneration) {
-        this.#pendingDocumentFocus = { documentId: document.id, nodeId, generation }
-        this.#set({ position: { section: id, step: 0, trail: [], view: 'document' }, documentNavigation: { section: id, request: crypto.randomUUID() } })
-      }
-    })
+    const source = this.#state.authoring, editor = this.#documentEditor, commands = this.#documentEditorCommands
+    if (!source?.content || source.loading || source.composing || source.restored || source.error || !editor || !commands
+      || editor.prosemirrorView.isDestroyed || isAgentChanging(this.#state) || this.#state.isEditingPage || this.#state.isCreatingPage
+      || this.#state.isHistoryBusy || this.#state.isHistoryPreparing) return
+    try {
+      this.#set({ pageEditFailure: undefined })
+      const created = commands.insertPage(after, this.#messages.newPage)
+      this.#pendingDocumentField = undefined; this.#pendingDocumentSelection = undefined; this.#pendingDocumentFocus = undefined
+      this.#set({ position: { section: created.sectionId, step: 0, trail: [], view: 'document' }, documentNavigation: { section: created.sectionId, request: crypto.randomUUID() } })
+      this.#focusDocumentNode(editor, created.nodeId)
+    } catch (error) { this.#set({ pageEditFailure: this.#pageEditMessage(errorMessage(error)) }) }
   }
 
   /** Points at a block or a passage (none: stops pointing): the preview outlines it and the conversation is told. */
