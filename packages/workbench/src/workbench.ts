@@ -258,6 +258,7 @@ export class Workbench {
   #unsubscribeDocumentHistory?: () => void
   #unsubscribeDocumentSelection?: () => void
   #documentSelectionGeneration = 0
+  #removedDocumentPosition?: { identity: string, documentId: string, sectionId: string, stepId?: string, version: string, fingerprint: string, scope: number, generation: number, token: string }
   #pendingDocumentFocus?: { documentId: string, nodeId: string, generation: number, afterSave?: true }
   #pendingDocumentSelection?: { documentId: string, anchor: NativeTextPoint, head: NativeTextPoint, focused: boolean }
   readonly #documentFields = new Map<string, DocumentFieldRegistration>()
@@ -342,13 +343,23 @@ export class Workbench {
       const moved = position && selectedStep && selectedIndex >= 0 && (position.section !== selectedStep.sectionId || position.step !== selectedIndex)
       const removed = this.#state.webView === 'document' && position?.view !== 'present' && position && previous?.identity === authoring.identity
         && (selected ? !selectedStep || selectedIndex < 0 : !authoring.content?.sectionOrder.includes(position.section))
+      const restoredPosition = !removed && this.#restoredDocumentPosition(authoring)
+      const scope = this.#documentScope, generation = this.#documentSelectionGeneration
       if (removed && authoring.identity) this.#documentReturnPoints.forget(authoring.identity)
       this.#set({ authoring,
         ...removed ? { position: undefined, documentNavigation: undefined, documentPositionFailure: 'removed' as const } : {},
+        ...restoredPosition ? { documentPositionFailure: undefined } : {},
         ...moved ? { position: { ...position, section: selectedStep.sectionId, step: selectedIndex, trail: [] } } : {},
         hasDocumentTimingDrafts: Boolean(authoring.identity && authoring.content && this.#documentTimingDrafts.has(authoring.identity, authoring.content)),
         documentTimingDraftStorageFailure: this.#documentTimingDrafts.failed,
         save: authoring.error ? { kind: 'failed', message: authoring.error } : authoring.saving ? { kind: 'saving' } : !authoring.dirty && previous?.dirty ? { kind: 'saved', at: new Date().toISOString() } : this.#state.save.kind === 'failed' ? { kind: 'idle' } : this.#state.save })
+      // The deletion owns the token produced above; source restoration only retires its notice.
+      if (removed && previous?.identity && previous.content && previous.version && previous.fingerprint
+        && !previous.loading && !previous.dirty && !previous.saving && !previous.restored && !previous.composing && !previous.recovering && !previous.error
+        && scope === this.#documentScope && generation === this.#documentSelectionGeneration && !this.#state.position && this.#state.documentPositionFailure === 'removed') {
+        this.#removedDocumentPosition = { identity: previous.identity, documentId: previous.content.id, sectionId: position.section,
+          ...selected ? { stepId: selected } : {}, version: previous.version, fingerprint: previous.fingerprint, scope, generation, token: this.#state.documentPositionToken }
+      }
       this.#finishOpeningDocument()
       if (this.#production.changed()) void this.pausePlayback().catch(() => {})
       if (!authoring.dirty && previous?.dirty) { void this.#history.read(authoring.directory); void this.loadDocuments() }
@@ -409,7 +420,23 @@ export class Workbench {
 
   #nextDocumentPosition(): string { return `${this.#positionSeed}:${++this.#positionSequence}` }
 
+  #restoredDocumentPosition(source: DocumentSessionState): boolean {
+    const removed = this.#removedDocumentPosition
+    if (!removed) return false
+    if (removed.scope !== this.#documentScope || removed.generation !== this.#documentSelectionGeneration || removed.token !== this.#state.documentPositionToken
+      || removed.identity !== source.identity || this.#state.documentPositionFailure !== 'removed' || source.error) {
+      this.#removedDocumentPosition = undefined
+      return false
+    }
+    const section = source.content?.sections[removed.sectionId]
+    return !source.loading && !source.dirty && !source.saving && !source.restored && !source.composing && !source.recovering
+      && source.version === removed.version && source.fingerprint === removed.fingerprint && source.content?.id === removed.documentId
+      && Boolean(section && source.content?.sectionOrder.includes(removed.sectionId)
+        && (!removed.stepId || section.stepOrder.includes(removed.stepId) && source.content.steps[removed.stepId]?.sectionId === removed.sectionId))
+  }
+
   #set(patch: Partial<WorkbenchState>): void {
+    if (Object.hasOwn(patch, 'position') || Object.hasOwn(patch, 'documentPositionFailure')) this.#removedDocumentPosition = undefined
     if (Object.hasOwn(patch, 'position')) { this.#cancelOpeningDocument(); this.#stopDocumentReturnScroll?.() }
     this.#state = { ...this.#state, ...patch, ...Object.hasOwn(patch, 'position') ? { documentPositionToken: this.#nextDocumentPosition(), documentPositionIntent: patch.documentPositionIntent ?? 'seek' } : {} }
     if (Object.hasOwn(patch, 'position')) this.#saveDocumentReturnPoint()
