@@ -31,7 +31,7 @@ export const HISTORY_TOOLS: ToolSpec[] = [
       const document = await call.document(), request = call.args.request
       if (!validateDocumentHistoryChange(request)) throw Object.assign(new Error('history-change-invalid'), { status: 400 })
       const lang = (await call.host.documents()).find(item => item.dir === document)?.lang ?? 'zh-CN'
-      await call.approve('operate', m => m.historyChange(which, request.expect), { lang, detail: JSON.stringify({ document, source: request.source, snapshot: request.snapshot, expect: request.expect }) })
+      await call.approve('operate', m => m.historyChange(which, request.expect), { lang, detail: JSON.stringify({ document, source: request.source, snapshot: request.snapshot, expect: request.expect }), check: () => service(call).checkChange(document, which, request, call.caller.member, 'agent') })
       return service(call).change(document, which, request, call.caller.member, 'agent')
     },
   })),
