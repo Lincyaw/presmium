@@ -62,3 +62,11 @@ HTTP `document/action/apply` 由可信适配器固定 editor origin；MCP 固定
 最终 `check-types` 1292 文件、layering、skills、packages、diff 检查通过；第一份类型日志中的 erasable syntax 参数属性错误已改为显式字段，保留原失败日志。没有新 tracked tests，也未运行套件、完整示例构建、模型或公共服务。
 
 本片没有 Definition 实现闭包复制、修改共享实现、删除 Definition、通用大文写回、素材字节替换或全部 MCP parity。Web 表单的原生输入、焦点、恢复与视觉验收由界面片单独记录。幂等边界仍为原进程内五分钟、64 plans／64 receipts 和 current-source；不承诺进程重启后或所有记录遗忘后的无限重放。
+
+## 原生 Node ESM 入口补证
+
+真实 Studio 的后续预览暴露了前述 Jiti 消费未覆盖的入口：fast-json-patch 3.1.1 的公开包以 main 指向 CommonJS，Node 原生 ESM 不能取得其 applyPatch named export。`.presmium/fast-json-patch-interop/native-before.log` 保留原生 full-kernel import 的真实 SyntaxError。此处只将公开根入口改为默认导入，再取同一对象的 applyPatch／compare；没有依赖内部路径、fork、条件假实现或替换算法。
+
+原生 Node 24.22.0 脚本 `.presmium/fast-json-patch-interop/consumer.mjs` 直接 import `.ts` kernel/compiler 源码，没有以 Jiti 作为消费者入口。最终 `run-1793153640586/result.json` **5/5**，SHA-256 `92cd28d6242651eb9d36491920e6df2a85faed0dfb5977281b21e513c071d526`：full-kernel import 与 canonical 校验、真实参数修改及继承影响、成熟 diff／数组修改、大型未知字段保留，以及单个真实文稿的 web 查看器构建全部通过。该文稿有两页、真实 React／PmButton／CSS 实现、兼容 Definition 和静态 fallback；只链接 react、react-dom、@lincyaw/host 三个公开包，不把整个 node_modules 当成消费者安装。最终 web index 为 13,932 字节，构建 findings 为空，原 JSON／组件／CSS 字节不变。五个登记源起止与当前一致，类型检查 1292 文件通过。
+
+忽略脚本首版误写相对 import，多出一个父目录，在 bootstrap 即报 ERR_MODULE_NOT_FOUND；原 consumer-first.log 保留，修正脚本路径后才运行上述五项，不将它归因于产品。私有临时根已清，构建进程 exit 0；没有 Studio 服务、模型、外部请求、套件或公共端口操作。本补证基于此 worktree 的参数后端源，不冒称完整整合 UI 已复验。原 16／22 证据及其 source hashes 维持原样。

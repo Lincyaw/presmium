@@ -1,10 +1,12 @@
-import { applyPatch, compare } from 'fast-json-patch'
+import jsonPatch from 'fast-json-patch'
 import type { Operation } from 'fast-json-patch'
 import { validateDocument } from './document.ts'
 import { documentParameterAccess } from './parameters.ts'
 import { DOCUMENT_PARAMETER_MAX_CHANGES, DOCUMENT_PARAMETER_MAX_PATH_DEPTH } from './contracts/authoring-actions.ts'
 import type { DocumentComponentAction, DocumentComponentEffect, DocumentParameterChange } from './contracts/authoring-actions.ts'
 import type { ComponentBlock, Definition, JsonObject, JsonSchema, JsonValue, TeachingDocument, VisualState } from './contracts/document.ts'
+
+const { applyPatch, compare } = jsonPatch
 
 export class DocumentComponentError extends Error {
   readonly status: number
