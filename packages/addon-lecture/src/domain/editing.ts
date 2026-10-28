@@ -55,6 +55,7 @@ export function transcribedTrack(track: LectureTrack, transcripts: readonly Segm
       d: Math.max(1, Math.round((s.end - s.start) * 1000)),
       text: s.text.trim(),
       ...words.length ? { words } : {},
+      alignment: words.length ? 'words' : 'none',
       section: segment.section,
       step: stepAt(track, segment.section, t),
     }
@@ -81,7 +82,7 @@ export function editUtterance(track: LectureTrack, id: string, text: string): Le
 export function resynthesizedTrack(track: LectureTrack, clips: ReadonlyMap<string, Clip>, voice: Voice): LectureTrack {
   let events = track.events
   let end = 0
-  const utterances = [...track.utterances].sort((a, b) => a.t - b.t).map((said) => {
+  const utterances = [...track.utterances].sort((a, b) => a.t - b.t).map((said): Utterance => {
     const clip = clips.get(said.id)
     const t = Math.max(said.t, end)
     const shift = t - said.t
@@ -105,7 +106,7 @@ export function resynthesizedTrack(track: LectureTrack, clips: ReadonlyMap<strin
     }
     events = moveAnchors(events, u.id, anchor)
     const { words: _words, ...rest } = u
-    return { ...rest, d: Math.round(clip.duration * 1000), clip: clip.file, ...words ? { words } : {} }
+    return { ...rest, d: Math.round(clip.duration * 1000), clip: clip.file, alignment: words?.length ? 'words' : 'proportional', ...words ? { words } : {} }
   })
   return { ...track, voice, utterances, events }
 }

@@ -3,6 +3,7 @@ import type { IRDocument, ProductionAssetInspection, ProductionAudio, Production
 import { plannedAnimations, plannedUtterances } from './plan.ts'
 import type { LecturePlan } from './plan.ts'
 import { trackDuration } from './track.ts'
+import { captionGroups } from './captions.ts'
 import type { LectureTrack } from './track.ts'
 
 const messages = {
@@ -93,16 +94,20 @@ export function projectProductionPlan(doc: IRDocument, plan: LecturePlan, track:
   for (const utterance of track.utterances) {
     const section = doc.sections.find(section => section.id === utterance.section), stepId = section?.stepIds?.[utterance.step ?? 0]
     if (!section || !stepId) continue
-    const unit = byId.get(utterance.id), file = utterance.clipId ? audio.get(utterance.clipId) : undefined
+    const unit = byId.get(utterance.id), file = utterance.clipId ? audio.get(utterance.clipId) : undefined, groups = captionGroups(utterance)
     const covered = pages.find(page => page.sectionId === section.id)?.steps.filter(step => step.startMs !== undefined && step.endMs !== undefined && step.startMs < utterance.t + utterance.d && step.endMs > utterance.t).map(step => step.stepId) ?? []
     const segment: ProductionSegment = {
       id: utterance.id, sectionId: section.id, stepId, stepIds: [...new Set([stepId, ...covered])], ...unit ? { sourceStepId: section.stepIds?.[unit.step] } : {},
       ...utterance.narrationIds ? { narrationIds: [...utterance.narrationIds] } : {}, utteranceId: utterance.id, label: utterance.text,
       ...range(utterance.t, utterance.t + utterance.d), status: utterance.recording ? 'recorded' : file ? 'cached' : utterance.silent ? 'silent' : unit?.sourceKind === 'recording' || unit?.sourceKind === 'unset' ? 'blocked' : 'missing',
-      alignment: utterance.silent || utterance.recording ? 'none' : utterance.words?.length ? 'words' : 'proportional',
+      alignment: groups[0]?.alignment ?? 'none',
     }
     if (!utterance.recording) voice.push({ ...segment, id: `voice:${utterance.id}`, ...file ? { audio: file } : {} })
-    caption.push({ ...segment, id: `caption:${utterance.id}` })
+    for (const group of groups) {
+      const covered = pages.find(page => page.sectionId === section.id)?.steps.filter(step => step.startMs !== undefined && step.endMs !== undefined && step.startMs < group.t + group.d && step.endMs > group.t).map(step => step.stepId) ?? []
+      caption.push({ ...segment, id: `caption:${group.id}`, stepId: covered[0] ?? stepId, stepIds: covered.length ? covered : [stepId], label: group.text,
+        ...range(group.t, group.t + group.d), alignment: group.alignment })
+    }
   }
   for (const segment of track.audio ?? []) {
     if (segment.role === 'recording' && segment.assetId && segment.stepId) {

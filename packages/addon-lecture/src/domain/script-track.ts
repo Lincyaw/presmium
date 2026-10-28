@@ -100,7 +100,8 @@ export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>,
           if (piece.id && clip) {
             utterance = { id: piece.id, t, d: Math.round(clip.duration * 1000), text: piece.text, section: section.id, step: section.webStep(current), clip: clip.file }
             if (clip.speech) utterance.voice = clip.speech
-            if (clip.words?.length) utterance.words = trackWords(clip.words, t)
+            if (clip.words?.length) { utterance.words = trackWords(clip.words, t); utterance.alignment = 'words' }
+            else utterance.alignment = 'proportional'
             utterances.push(utterance)
           } else if (piece.id && silent.has(piece.id)) {
             utterance = { id: piece.id, t, d: 0, text: piece.text, section: section.id, step: section.webStep(current), silent: true }

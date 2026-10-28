@@ -1394,6 +1394,14 @@
 }
 
 /* Native narration is a compact typed field, including when embedded in a body node. */
+.pm-ui-timeline__segment-picker { display: none; min-width: 0; }
+@media (max-width: 767px), (pointer: coarse) {
+  .pm-ui-timeline__segment-picker { display: block; }
+}
+@media (pointer: coarse) {
+  .pm-ui-timeline[data-segment-picker='caption'] .pm-ui-timeline__track[data-track='caption'] .pm-ui-timeline__segment { pointer-events: none; }
+}
+
 .pm-ui-narration-editor {
   min-width: 0;
   border: var(--pm-size-hairline) solid var(--pm-color-line);
