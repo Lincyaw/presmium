@@ -7,7 +7,7 @@ import { deckLocale, docBlocks, errorMessage, hasRole, isPresentingRole, isRecor
 import type { AgentTool, ApprovalKind, ApprovalScope, CodeNode, CompileJob, DocumentSummary, Finding, IRDocument } from '@lincyaw/kernel'
 import { codeRef, deckInfo, diagnosticsOf, findBlock, findSection, locate, outputsOf, relativeToDeck, runInfo, search, sectionDetail, sectionSummary, stepDetail } from './deck.ts'
 import type { McpCaller, McpHost, McpProcess } from './host.ts'
-import { MCP_MESSAGES } from './messages.ts'
+import { MCP_ERROR_TEXT, MCP_MESSAGES } from './messages.ts'
 import type { McpMessages } from './messages.ts'
 import { TOOL_APPROVAL_META, TOOL_KIND_META } from './tool-meta.ts'
 import { AUTHORING_TOOLS } from './authoring.ts'
@@ -352,6 +352,7 @@ const TOOLS: ToolSpec[] = [
       const own = () => jobs.list(document).find(job => job.id === id)
       const before = own()
       if (!before) throw Object.assign(new Error('job-not-found'), { status: 404 })
+      if (before.state !== 'queued' && before.state !== 'running') return { cancellation: 'already-finished', job: jobSummary(before, LOG_TAIL) }
       const lang = (await call.host.documents()).find(info => info.dir === document)?.lang ?? ''
       await call.approve('operate', m => m.cancelBuild(before.target), { lang })
       const current = own()
@@ -468,14 +469,16 @@ function toText(data: unknown): string {
   return typeof data === 'string' ? data : JSON.stringify(data, null, 2)
 }
 
-async function toolResult(run: () => Promise<unknown>, structured = false): Promise<CallToolResult> {
+async function toolResult(run: () => Promise<unknown>, structured = false, lang?: () => Promise<string | undefined>): Promise<CallToolResult> {
   try {
     const result = await run()
     return { content: [{ type: 'text', text: toText(result) }], ...structured && isRecord(result) ? { structuredContent: result } : {} }
   } catch (error) {
     if (structured) {
       const status = isRecord(error) && typeof error.status === 'number' ? error.status : 500
-      const failure = { error: { code: status < 500 ? errorMessage(error) : 'tool-failed', message: errorMessage(error), status, retryable: status >= 500, ...isRecord(error) && isRecord(error.detail) ? { detail: error.detail } : {} } }
+      const detail = isRecord(error) && isRecord(error.detail) ? error.detail : undefined
+      const explain = status < 500 ? MCP_ERROR_TEXT[deckLocale(await lang?.().catch(() => undefined) ?? '')][errorMessage(error)] : undefined
+      const failure = { error: { code: status < 500 ? errorMessage(error) : 'tool-failed', message: explain ? explain(detail ?? {}) : errorMessage(error), status, retryable: status >= 500, ...detail ? { detail } : {} } }
       return { isError: true, structuredContent: failure, content: [{ type: 'text', text: toText(failure) }] }
     }
     return { isError: true, content: [{ type: 'text', text: errorMessage(error) }] }
@@ -618,7 +621,10 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
       inputSchema: fromJsonSchema<Args>((tool.inputSchema ?? schemaOf(tool.properties, tool.required)) as JsonSchemaType),
       annotations: { readOnlyHint: tool.kind === 'read' },
       _meta: meta(tool.kind),
-    }, (args, ctx) => toolResult(() => tool.run(call(args, ctx.mcpReq.signal)), tool.structured))
+    }, (args, ctx) => {
+      const own = call(args, ctx.mcpReq.signal)
+      return toolResult(() => tool.run(own), tool.structured, async () => { const dir = await own.document(); return (await host.documents()).find(doc => doc.dir === dir)?.lang })
+    })
   }
   for (const tool of plugins) {
     server.registerTool(tool.name, {

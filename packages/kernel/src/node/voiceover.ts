@@ -87,6 +87,38 @@ export function createVoiceoverOwner() {
       else { intent.state = 'cancelled'; intent.controller.abort(new Error('voice-cancelled')); if (!intent.payload) intent.finish() }
       return observation('intent' in query ? query.intent : intent.job!.job.intent, intent)
     },
+    /** Cancellation that would change nothing (the job or intent already ended) is answered here, without asking. */
+    checkCancel(query: VoiceoverJobQuery): VoiceoverCancellation | undefined {
+      available()
+      if (!validateVoiceoverJobQuery(query)) throw new VoiceoverOperationError(400, 'voice-cancel-invalid')
+      const intent = find(query)
+      if (!intent) { if ('intent' in query) return undefined; throw new VoiceoverOperationError(404, 'voice-job-unknown') }
+      const state = intent.job?.job.state ?? intent.state
+      return state === 'queued' || state === 'running' || state === 'preparing' ? undefined : observation('intent' in query ? query.intent : intent.job!.job.intent, intent)
+    },
+    /** The same admission as start, released at once: a request that passes would be admitted unless the document changes. */
+    checkStart(request: VoiceoverStart, load: Load, signal?: AbortSignal): Promise<void> {
+      if (!validateVoiceoverStart(request)) throw new VoiceoverOperationError(400, 'voice-generation-invalid')
+      return work(signal, async signal => {
+        const known = intents.get(request.intent)
+        if (known?.payload && known.payload !== startPayload(request)) throw new VoiceoverOperationError(409, 'voice-intent-changed')
+        if (known?.job) return
+        if (known?.state === 'cancelled') throw new VoiceoverOperationError(409, 'voice-cancelled')
+        if (known?.state === 'failed') throw new VoiceoverOperationError(409, 'voice-intent-failed')
+        if (known) throw new VoiceoverOperationError(409, 'voice-job-busy')
+        const execution = await load(request.source, signal)
+        ;(await execution.prepare(structuredClone(request), signal)).dispose()
+      })
+    },
+    checkPreview(request: VoicePreviewStart, signal?: AbortSignal): Promise<void> {
+      if (!validateVoicePreviewStart(request)) throw new VoiceoverOperationError(400, 'voice-preview-invalid')
+      return work(signal, async signal => {
+        const quoted = quotes.get(request.quote)
+        if (!quoted || quoted.expires < Date.now() || previewPayload(quoted.value) !== previewPayload(request)) throw new VoiceoverOperationError(409, 'voice-preview-changed')
+        const { quote: _, ...check } = request
+        if ((await quoted.execution.quote(check, signal)).quote !== quoted.underlying) throw new VoiceoverOperationError(409, 'voice-preview-changed')
+      })
+    },
     start(request: VoiceoverStart, load: Load, signal?: AbortSignal): Promise<VoiceoverJob> {
       if (!validateVoiceoverStart(request)) throw new VoiceoverOperationError(400, 'voice-generation-invalid')
       request = structuredClone(request)
