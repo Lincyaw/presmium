@@ -120,8 +120,8 @@ export class SourceEditor {
 
   /** Checks path and document policy without requiring a file to exist. */
   assertEditable(scope: Scope, path: string, member: Member): void {
-    if (typeof path !== 'string' || !path || path.startsWith('/') || path.includes('\\') || path.includes('\0') || path.split('/').some(part => part === '' || part === '.' || part === '..' || HIDDEN_FROM_EDITOR.has(part))) throw new RequestError(400, `not a source path: ${JSON.stringify(path)}`)
-    if (!this.canEdit(scope, path, member)) throw new RequestError(403, `${path} is not a file this page edits`)
+    if (typeof path !== 'string' || !path || path.startsWith('/') || path.includes('\\') || path.includes('\0') || path.split('/').some(part => part === '' || part === '.' || part === '..' || HIDDEN_FROM_EDITOR.has(part))) throw new RequestError(400, 'workspace-path-invalid', { path: String(path).slice(0, 500) })
+    if (!this.canEdit(scope, path, member)) throw new RequestError(403, 'workspace-file-forbidden', { path })
   }
 
   /** A regular file under the same path and document policy as source editing. */
@@ -132,9 +132,9 @@ export class SourceEditor {
     try {
       real = realpathSync(file)
     } catch {
-      throw new RequestError(404, `no file ${path}`)
+      throw new RequestError(404, 'workspace-file-missing', { path })
     }
-    if (real !== file || !lstatSync(file).isFile()) throw new RequestError(403, `${path} is not a regular file of the workspace`)
+    if (real !== file || !lstatSync(file).isFile()) throw new RequestError(403, 'workspace-file-irregular', { path })
     return file
   }
 

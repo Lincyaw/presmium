@@ -54,7 +54,7 @@ export const VOICE_AUTHORING_TOOLS: ToolSpec[] = [
     run: async call => {
       const selected = await call.document(), request = call.args.request as VoiceoverStart
       const scope = request.scope.kind === 'page' ? request.scope.section : request.scope.kind === 'step' ? request.scope.target.section : request.scope.kind
-      await call.approve('spend', messages => messages.generateVoiceover(scope), { lang: await language(call, selected), detail: `${selected}\n${request.intent}` })
+      await call.approve('spend', messages => messages.generateVoiceover(scope), { lang: await language(call, selected), detail: `${selected}\n${request.intent}`, check: () => service(call).checkStart(selected, request, call.caller.member, call.signal) })
       call.signal.throwIfAborted()
       return service(call).start(selected, request, call.caller.member, call.signal)
     },
@@ -65,6 +65,8 @@ export const VOICE_AUTHORING_TOOLS: ToolSpec[] = [
     inputSchema: input({ query: structuredClone(VOICEOVER_JOB_QUERY_SCHEMA) }, ['query']),
     run: async call => {
       const selected = await call.document(), query = call.args.query as VoiceoverJobQuery
+      const finished = await service(call).checkCancel(selected, query, call.caller.member)
+      if (finished) return finished
       await call.approve('operate', messages => messages.cancelVoiceover('id' in query ? query.id : query.intent), { lang: await language(call, selected), detail: selected })
       call.signal.throwIfAborted()
       return service(call).cancel(selected, query, call.caller.member)
@@ -82,7 +84,7 @@ export const VOICE_AUTHORING_TOOLS: ToolSpec[] = [
     inputSchema: input({ request: structuredClone(VOICE_PREVIEW_START_SCHEMA) }, ['request']),
     run: async call => {
       const selected = await call.document(), request = call.args.request as VoicePreviewStart
-      await call.approve('spend', messages => messages.previewVoice(request.voice.voice), { lang: await language(call, selected), detail: selected })
+      await call.approve('spend', messages => messages.previewVoice(request.voice.voice), { lang: await language(call, selected), detail: selected, check: () => service(call).checkPreview(selected, request, call.caller.member, call.signal) })
       call.signal.throwIfAborted()
       const result = await service(call).preview(selected, request, call.caller.member, call.signal)
       return { ...result, uri: `presmium://voice-preview/${encodeURIComponent(result.id)}?document=${encodeURIComponent(selected)}` }
