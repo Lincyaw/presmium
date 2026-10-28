@@ -284,7 +284,7 @@ const TOOLS: ToolSpec[] = [
   {
     name: 'build',
     structured: true,
-    description: 'Builds or exports the deck once allowed. A workspace host requires source {version, fingerprint} from get_document and checks that exact saved source. wait: false returns jobs immediately; follow their source, sequence and terminal state with get_builds. The compiler-only stdio host builds synchronously and cannot confirm a requested source or cancel a build.',
+    description: 'Builds or exports the deck once allowed. A workspace host requires source {version, fingerprint} from get_document and checks that exact saved source, the targets and the inputs before asking the author; when every target already has a queued, running or finished job of that exact source and inputs, those jobs are returned with reused: true and nothing is asked or built. wait: false returns jobs immediately; follow their source, sequence and terminal state with get_builds. The compiler-only stdio host builds synchronously and cannot confirm a requested source or cancel a build.',
     properties: {
       ...DOCUMENT,
       to: { type: 'array', items: { type: 'string' }, description: 'What to make, e.g. ["slides", "pdf"]; default: the deck\'s renderers.' },
@@ -299,14 +299,26 @@ const TOOLS: ToolSpec[] = [
       const source = call.args.source
       if (jobs && (!isRecord(source) || typeof source.version !== 'string' || !source.version || source.version.length > 128 || typeof source.fingerprint !== 'string' || !source.fingerprint || source.fingerprint.length > 128)) throw Object.assign(new Error('job-source-required'), { status: 400 })
       if (!jobs && source !== undefined) throw Object.assign(new Error('job-source-unavailable'), { status: 409 })
-      await call.approve('operate', m => m.build(to?.join(', ') || m.allRenderers))
       if (jobs) {
-        const targets = to?.length ? to : (await jobs.targets(document)).filter(target => target.kind === 'render').map(target => target.id)
+        const targets = [...new Set(to?.length ? to : (await jobs.targets(document)).filter(target => target.kind === 'render').map(target => target.id))]
+        if (!targets.length) throw Object.assign(new Error('job-targets-empty'), { status: 422 })
         const expected = source as { version: string, fingerprint: string }
-        const started = await Promise.all(targets.map(target => jobs.start(document, target, expected)))
-        const ended = call.args.wait === false ? started : await Promise.all(started.map(job => jobs.wait(job.id)))
-        return { jobs: ended.map(job => jobSummary(job)) }
+        const finish = async (started: CompileJob[], reused?: true) => {
+          const ended = call.args.wait === false ? started : await Promise.all(started.map(job => jobs.wait(job.id)))
+          return { jobs: ended.map(job => jobSummary(job)), ...reused ? { reused } : {} }
+        }
+        if (!call.caller.confirmed) {
+          // Checks every target before the author is asked; jobs that already exist for this exact source are returned, not asked for again.
+          const existing: (CompileJob | undefined)[] = []
+          for (const target of targets) existing.push(await jobs.check(document, target, expected))
+          if (existing.every(job => job !== undefined)) return finish(existing as CompileJob[], true)
+          call.signal.throwIfAborted()
+        }
+        const lang = (await call.host.documents()).find(info => info.dir === document)?.lang ?? ''
+        await call.approve('operate', m => m.build(targets.join(', ') || m.allRenderers), { lang })
+        return finish(await Promise.all(targets.map(target => jobs.start(document, target, expected))))
       }
+      await call.approve('operate', m => m.build(to?.join(', ') || m.allRenderers))
       const { doc } = await call.compiled()
       const report = await call.host.build(document, { to })
       return {
