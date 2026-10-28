@@ -21,3 +21,6 @@
 最终 Studio 登记 1190 个运行输入，起止与当前源码全部一致；前后提交分别为 `fd9a1f1772c03d82ebb10ffc5ffe3ee60d2c7a6e` 和 `7935255b3c3bc8cecf6b0f16a890a5f01d239688`。受控 18 项材料属于前一个提交阶段，后来 Workbench 单行状态映射不在该阶段的 current 声明中；Select widget 字节与最终版本相同。完整索引及精确提交证明在 `.presmium/schema-enum-clear/final-manifest.json`。
 
 Studio 的 page／console／HTTP／external／模型请求均为空，所有浏览器、服务、临时 home、workspace 与 fixture 全清。类型 1314 文件通过。根代理对 Select 三行改动独立静审通过，并核对保存状态映射；本片没有操作公共服务、部署或 push。刻意的 HTTP 失败未在本片注入，不将未变化的错误优先分支冒称已做故障验证。
+# 4320 更新
+
+运行版本 `a4030c7ac91194f6c7f5d6986dd8d6d2d0c6356a` 已更新至工作台。独立快照构建通过 1236 项来源检查，客户端 SHA-256 为 `1f977d4f1361f3e50d2c3866a162cac50c3f487cb74953a07f5e726289d06317`。更新后只读健康检查 22 项通过，`localhost` 与 `127.0.0.1` 的既有认证会话正常，重启过程保留 11 份文稿。
