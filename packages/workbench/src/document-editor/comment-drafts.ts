@@ -31,7 +31,7 @@ export interface CommentDraftRecord {
 }
 export interface CommentDraftCandidate extends CommentDraftRecord { token: string, storage: 'durable' | 'session' }
 export interface CommentDraftState { candidates: readonly CommentDraftCandidate[], pending: boolean, failed: boolean, reading: boolean }
-interface Writing { record: CommentDraftRecord, raw: string, store: DocumentDraftStore, generation: number, pending: boolean, failed: boolean, done: Promise<DraftStoreResult> }
+interface Writing { record: CommentDraftRecord, raw: string, store: DocumentDraftStore, generation: number, pending: boolean, failed: boolean, done: Promise<DraftStoreResult>, clearing?: boolean }
 const PREFIX = 'presmium.comment-draft.v1:'
 const SETTLED = 'presmium.comment-draft-settled.v1:'
 const MAX_CHARS = 1 << 20
@@ -80,21 +80,64 @@ export class CommentDrafts {
   #document?: TeachingDocument
   #version?: string
   #acknowledged = false
+  #revision = 0
+  #settling = 0
+  readonly #changed?: () => void
   #readFailure = false
   #admissionFailure = false
-  constructor(identity: string, memberId: string) {
+  constructor(identity: string, memberId: string, changed?: () => void) {
     this.#scope = JSON.stringify([identity, memberId])
+    this.#changed = changed
   }
+  get revision(): number { return this.#revision }
+  get readable(): boolean { return !this.#closed && !this.#settling && this.#started && Boolean(this.#reader && this.#document && this.#version) }
+  #touch(): void { if (!this.#closed) { this.#revision++; this.#changed?.() } }
   start(): void {
     if (this.#closed || this.#started) return
     this.#started = true
-    this.#reader = new DocumentDraftStore(this.#scope, () => { void this.refresh() })
+    this.#reader = new DocumentDraftStore(this.#scope, () => { this.#touch(); void this.refresh() })
+    this.#touch()
     if (typeof window !== 'undefined') window.addEventListener('beforeunload', this.#leave)
     void this.refresh()
   }
   readonly #leave = (event: BeforeUnloadEvent) => { if (this.#state.pending || this.#state.failed || [...this.#writing.values()].some(value => value.record.composing)) event.preventDefault() }
   snapshot = (): CommentDraftState => this.#state
   subscribe = (listener: () => void): (() => void) => { this.#listeners.add(listener); return () => this.#listeners.delete(listener) }
+
+  /** Explicit agent reads borrow the original reader; they never settle, restore or discard a backup. */
+  async readForAgent(signal: AbortSignal, reference?: CommentDraftReference): Promise<{ revision: number, candidates: CommentDraftCandidate[], coverage: 'stored-and-session' | 'session-only', skippedInvalid: number }> {
+    signal.throwIfAborted()
+    if (!this.readable || !this.#reader) throw new Error('client-comment-drafts-unavailable')
+    const revision = this.#revision, writing = new Map(this.#writing), key = reference ? keyOf(this.#scope, reference.id) : undefined
+    const known = reference && writing.get(reference.id)
+    if (known && known.record.revision !== reference!.revision) throw new Error('client-comment-draft-changed')
+    const current = () => { signal.throwIfAborted(); if (this.#closed || revision !== this.#revision) throw new Error('client-comment-drafts-changed') }
+    let stored: Map<string, unknown>, coverage: 'stored-and-session' | 'session-only' = 'stored-and-session'
+    try { stored = await this.#reader.read(key ? [key, markerOf(this.#scope, reference!)] : [prefix(this.#scope), markerPrefix(this.#scope)], signal) }
+    catch (error) { current(); if (reference ? !known : writing.size === 0) throw new Error('client-comment-drafts-unavailable'); stored = new Map(); coverage = 'session-only' }
+    current()
+    const entries = new Map<string, { raw: unknown, storage: 'durable' | 'session' }>()
+    for (const [name, raw] of stored) if (name.startsWith(prefix(this.#scope)) && (!key || name === key)) entries.set(name, { raw, storage: 'durable' })
+    // A newer in-memory version always shadows its older IndexedDB value, including failed admission.
+    for (const [id, value] of writing) if (!reference || id === reference.id) entries.set(keyOf(this.#scope, id), { raw: value.raw, storage: stored.get(keyOf(this.#scope, id)) === value.raw ? 'durable' : 'session' })
+    const candidates: CommentDraftCandidate[] = []
+    let skippedInvalid = 0
+    for (const [name, entry] of entries) {
+      try {
+        if (typeof entry.raw !== 'string' || entry.storage === 'durable' && entry.raw.length > MAX_CHARS) throw new Error('comment-draft-data')
+        const value: unknown = JSON.parse(entry.raw)
+        if (!valid(value, this.#scope) || name !== keyOf(this.#scope, value.id) || !this.#validContent(value)) throw new Error('comment-draft-data')
+        const token = await tokenOf(entry.raw)
+        current()
+        if (stored.get(markerOf(this.#scope, { id: value.id, revision: value.revision, token })) === token || this.#isCommitted(value)) continue
+        if (reference && (value.revision !== reference.revision || token !== reference.token)) throw new Error('client-comment-draft-changed')
+        candidates.push({ ...value, token, storage: entry.storage })
+      } catch (error) { current(); if (reference) throw new Error('client-comment-draft-changed'); skippedInvalid++ }
+    }
+    current()
+    if (reference && candidates.length !== 1) throw new Error('client-comment-draft-changed')
+    return { revision, candidates: candidates.sort((a, b) => a.id.localeCompare(b.id)), coverage, skippedInvalid }
+  }
   #emit(patch: Partial<CommentDraftState>): void {
     if (this.#closed) return
     this.#state = { ...this.#state, ...patch }
@@ -168,15 +211,17 @@ export class CommentDrafts {
     if (!commit) {
       // Keep the latest native bytes in this Workbench even when durable admission is refused.
       this.#writing.set(record.id, { record, raw, store, generation: 0, pending: false, failed: true, done: Promise.resolve('failed') })
+      this.#touch()
       this.#pending(); void this.refresh()
       return record
     }
     const writing: Writing = { record, raw, store, generation: commit.generation, pending: true, failed: previous?.failed ?? false, done: commit.done }
-    this.#writing.set(record.id, writing); this.#pending()
+    this.#writing.set(record.id, writing); this.#touch(); this.#pending()
     void commit.done.then(result => {
       if (this.#closed || this.#writing.get(record.id) !== writing) return
       writing.pending = false
       writing.failed = result === 'failed'; this.#admissionFailure = false; this.#pending()
+      this.#touch()
       void this.refresh()
     })
     return record
@@ -189,19 +234,24 @@ export class CommentDrafts {
   }
   async clearOwn(record: CommentDraftRecord): Promise<boolean> {
     const value = this.#writing.get(record.id)
-    if (!value || value.record.revision !== record.revision || record.owner !== this.#owner || this.#closed) return false
+    if (!value || value.clearing || value.record.revision !== record.revision || record.owner !== this.#owner || this.#closed) return false
+    value.clearing = true; this.#settling++; this.#touch()
+    try {
     const commit = value.store.remove(keyOf(this.#scope, record.id), [])
     if (!commit) return false
     value.pending = true; this.#pending()
     const result = await commit.done
     if (this.#closed || this.#writing.get(record.id) !== value) return false
     value.pending = false
-    if (result === 'committed' && value.record.revision === record.revision) { this.#writing.delete(record.id); value.store.close() }
+    if (result === 'committed' && value.record.revision === record.revision) { this.#writing.delete(record.id); this.#touch(); value.store.close() }
     else if (result === 'failed') this.#admissionFailure = true
     this.#pending(); void this.refresh()
     return result === 'committed'
+    } finally { value.clearing = false; this.#settling--; this.#touch() }
   }
   async discard(reference: CommentDraftReference): Promise<boolean> {
+    if (this.#closed || !this.#reader) return false
+    this.#settling++; this.#touch()
     try {
     if (this.#closed || !this.#reader) return false
     const values = await this.#reader.read([prefix(this.#scope)]), writing = this.#writing.get(reference.id)
@@ -211,12 +261,14 @@ export class CommentDrafts {
     if (!valid(value, this.#scope) || value.revision !== reference.revision || this.#closed) return false
     const committed = await this.#reader!.mark([[markerOf(this.#scope, reference), reference.token]])
     if (!this.#closed) {
+      if (committed) this.#touch()
       if (committed && writing && this.#writing.get(reference.id) === writing && writing.record.revision === reference.revision && await tokenOf(writing.raw) === reference.token) { this.#writing.delete(reference.id); writing.store.close() }
       if (!committed) this.#admissionFailure = true
       this.#pending(); await this.refresh()
     }
     return committed
     } catch { this.#readFailure = true; this.#pending(); return false }
+    finally { this.#settling--; this.#touch() }
   }
   async recover(reference: CommentDraftReference, target: CommentComposerTarget, version: string): Promise<CommentDraftRecord | undefined> {
     try {
@@ -230,6 +282,7 @@ export class CommentDrafts {
     const store = new DocumentDraftStore(this.#scope), next = JSON.stringify(record)
     if (next.length > MAX_CHARS || !await store.create(keyOf(this.#scope, record.id), next) || this.#closed) { store.close(); if (!this.#closed) { this.#admissionFailure = true; this.#pending() }; return }
     this.#writing.set(record.id, { record, raw: next, store, generation: 0, pending: false, failed: false, done: Promise.resolve('committed') })
+    this.#touch()
     return record
     } catch { this.#readFailure = true; this.#pending(); return }
   }
@@ -246,13 +299,16 @@ export class CommentDrafts {
 /** Workbench lifetime keeps unpublished session material when a document surface unmounts. */
 export class CommentDraftBank {
   readonly #documents = new Map<string, CommentDrafts>()
+  readonly #listeners = new Set<() => void>()
   #closed = false
   get(identity: string, memberId: string): CommentDrafts | undefined {
     if (this.#closed) return
     const key = JSON.stringify([identity, memberId])
     let value = this.#documents.get(key)
-    if (!value) { value = new CommentDrafts(identity, memberId); this.#documents.set(key, value) }
+    if (!value) { value = new CommentDrafts(identity, memberId, () => { for (const listener of this.#listeners) listener() }); this.#documents.set(key, value) }
     return value
   }
-  close(): void { this.#closed = true; for (const value of this.#documents.values()) value.close(); this.#documents.clear() }
+  peek(identity: string, memberId: string): CommentDrafts | undefined { return this.#closed ? undefined : this.#documents.get(JSON.stringify([identity, memberId])) }
+  subscribe(listener: () => void): () => void { this.#listeners.add(listener); return () => this.#listeners.delete(listener) }
+  close(): void { this.#closed = true; this.#listeners.clear(); for (const value of this.#documents.values()) value.close(); this.#documents.clear() }
 }

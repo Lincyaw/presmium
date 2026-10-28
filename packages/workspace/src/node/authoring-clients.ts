@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID, createHash } from 'node:crypto'
-import { AUTHORING_CLIENT_MAX_CLIENTS, AUTHORING_CLIENT_MAX_REQUESTS, AUTHORING_CLIENT_MAX_REQUEST_CHARS, AUTHORING_CLIENT_MAX_RESPONSE_CHARS, AUTHORING_CLIENT_REQUEST_TIMEOUT_MS, DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, problemResponse, pushStream, sseResponse } from '@lincyaw/kernel'
+import { AUTHORING_CLIENT_ACK_MAX_BYTES, AUTHORING_CLIENT_MAX_CLIENTS, AUTHORING_CLIENT_MAX_REQUESTS, AUTHORING_CLIENT_MAX_REQUEST_CHARS, AUTHORING_CLIENT_MAX_RESPONSE_CHARS, AUTHORING_CLIENT_REQUEST_TIMEOUT_MS, authoringClientResultFits, DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, problemResponse, pushStream, sseResponse } from '@lincyaw/kernel'
 import type { AuthoringClientAcknowledgement, AuthoringClientConnection, AuthoringClientDescriptor, AuthoringClientEvent, AuthoringClientLease, AuthoringClientOpen, AuthoringClientReport, AuthoringClientRequest, AuthoringClientRequestResult, AuthoringClients, CanonicalSource, Member, PushStream, Route } from '@lincyaw/kernel'
 import { validateAuthoringClientAcknowledgement, validateAuthoringClientLease, validateAuthoringClientOpen, validateAuthoringClientQuery, validateAuthoringClientReport, validateAuthoringClientRequest, validateAuthoringClientRequestQuery } from '@lincyaw/kernel/node'
 import { readAuthoringDocument } from './document-editor.ts'
@@ -10,7 +10,7 @@ type Client = { member: string, credential: string, value: AuthoringClientDescri
 type Pending = { member: string, signature: string, request: AuthoringClientRequest, value: AuthoringClientRequestResult, timer?: ReturnType<typeof setTimeout> }
 const sameSource = (a: CanonicalSource, b: CanonicalSource) => a.documentId === b.documentId && a.version === b.version && a.fingerprint === b.fingerprint
 const size = (value: unknown) => JSON.stringify(value, null, 2).length
-const budget = (value: unknown) => { const text = JSON.stringify(value); if (text === undefined) throw new RequestError(400, 'client-request-invalid'); if (text.length > AUTHORING_CLIENT_MAX_REQUEST_CHARS) throw new RequestError(413, 'client-request-too-large') }
+const budget = (value: unknown, maximum = AUTHORING_CLIENT_MAX_REQUEST_CHARS) => { const text = JSON.stringify(value); if (text === undefined) throw new RequestError(400, 'client-request-invalid'); if (text.length > maximum) throw new RequestError(413, 'client-request-too-large') }
 const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value, (_, entry) => isRecord(entry) ? Object.fromEntries(Object.entries(entry).sort(([a], [b]) => a.localeCompare(b))) : entry)).digest('hex')
 const terminal = (pending: Pending) => !['sent', 'executing'].includes(pending.value.state)
 
@@ -68,7 +68,7 @@ export function createAuthoringClients(editor: SourceEditor) {
       if (!validateAuthoringClientQuery(query)) throw new RequestError(400, 'client-query-invalid')
       const all = [...clients.values()].filter(client => client.member === member.id && client.value.document === document && (!query.clientId || client.value.clientId === query.clientId)
         && (!query.after || client.value.clientId > query.after)).sort((a, b) => a.value.clientId.localeCompare(b.value.clientId))
-      const answer = { document, clients: [] as AuthoringClientDescriptor[], unavailable: ['recording', 'draft-content', 'review', 'open-document'] }
+      const answer = { document, clients: [] as AuthoringClientDescriptor[], unavailable: ['recording', 'draft-restore', 'draft-discard', 'other-draft-families', 'review', 'open-document'] }
       for (const client of all) {
         const row = structuredClone(client.value)
         if (size({ ...answer, clients: [...answer.clients, row], nextAfter: row.clientId }) > AUTHORING_CLIENT_MAX_RESPONSE_CHARS) break
@@ -151,15 +151,27 @@ export function createAuthoringClients(editor: SourceEditor) {
     const actual = ack.state === 'executing' || ack.state === 'done' ? current(document, member) : undefined
     if (ack.state === 'executing' && (ack.snapshot.revision !== pending.request.expectedClientState.revision || !actual || !sameSource(actual, pending.request.source))) throw new RequestError(409, 'client-state-changed')
     if (ack.state === 'done' && (!actual || !sameSource(actual, ack.snapshot.source))) throw new RequestError(409, 'client-source-changed')
+    const action = pending.request.action, comment = action.type === 'comment-drafts.inspect' || action.type === 'comment-drafts.read'
+    if (ack.result && (!comment || ack.state !== 'done' || ack.result.type !== action.type)) throw new RequestError(400, 'client-result-invalid')
+    if (comment && ack.state === 'done') {
+      const result = ack.result
+      if (!result || ack.snapshot.revision !== pending.request.expectedClientState.revision) throw new RequestError(409, 'client-comment-drafts-changed')
+      if (!authoringClientResultFits({ request: pending.request, connection: client.value, document, snapshot: ack.snapshot }, result)) throw new RequestError(413, 'client-comment-result-too-large')
+      if (action.type === 'comment-drafts.read' && (result.type !== action.type || result.draft.id !== action.draft.id || result.draft.revision !== action.draft.revision || result.draft.token !== action.draft.token
+        || result.offset !== action.offset || result.endOffset !== result.offset + result.jsonText.length || result.endOffset > result.totalUtf16
+        || result.jsonText.length > (action.maxChars ?? 2048))) throw new RequestError(400, 'client-result-invalid')
+      if (action.type === 'comment-drafts.inspect' && (result.type !== action.type || result.drafts.length > (action.limit ?? 10)
+        || action.cursor && action.cursor.token !== result.token || result.next && result.next.token !== result.token)) throw new RequestError(400, 'client-result-invalid')
+    }
     report(client, ack, digest(ack))
-    pending.value = { ...pending.value, observedAt: new Date().toISOString(), snapshot: structuredClone(ack.snapshot), verification: 'browser-acknowledged', ...ack.error ? { error: structuredClone(ack.error) } : {} }
+    pending.value = { ...pending.value, observedAt: new Date().toISOString(), snapshot: structuredClone(ack.snapshot), verification: 'browser-acknowledged', ...ack.error ? { error: structuredClone(ack.error) } : {}, ...ack.result ? { result: structuredClone(ack.result) } : {} }
     if (ack.state === 'executing') pending.value.state = 'executing'
     else finish(pending, ack.state)
     return { accepted: true }
   }
-  const post = (kind: 'register' | 'report' | 'ack'): Route => ({ role: 'editor', maxBody: 16384, handle: (request, ctx) => catchRequestErrors(async () => {
+  const post = (kind: 'register' | 'report' | 'ack'): Route => ({ role: 'editor', maxBody: kind === 'ack' ? AUTHORING_CLIENT_ACK_MAX_BYTES : 16384, handle: (request, ctx) => catchRequestErrors(async () => {
     if (request.method !== 'POST') return problemResponse(405, 'POST')
-    const value: unknown = await request.json().catch(() => undefined); budget(value)
+    const value: unknown = await request.json().catch(() => undefined); budget(value, kind === 'ack' ? AUTHORING_CLIENT_MAX_RESPONSE_CHARS : AUTHORING_CLIENT_MAX_REQUEST_CHARS)
     if (kind === 'register') { if (!validateAuthoringClientOpen(value)) throw new RequestError(400, 'client-open-invalid'); return jsonResponse(register(ctx.document, value, ctx.member)) }
     if (!isRecord(value) || Object.keys(value).some(key => !['connection', 'report'].includes(key)) || !validateAuthoringClientLease(value.connection)) throw new RequestError(400, 'client-connection-invalid')
     if (kind === 'ack') { if (!validateAuthoringClientAcknowledgement(value.report)) throw new RequestError(400, 'client-ack-invalid'); return jsonResponse(acknowledge(ctx.document, value.connection, value.report, ctx.member)) }

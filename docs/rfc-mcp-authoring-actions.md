@@ -47,10 +47,10 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 音色目录、搜索筛选、继承与批量应用 | `DocumentVoiceAuthoring` 读配置与目录，不依赖编译；kernel `document-voices.ts` 与 Web 共用继承和影响预检，批量默认保留覆盖 | 已有目录读取与第 20 节 `voice.set` 的文稿／页／步骤／步骤集合范围、保留覆盖／明确清除和恢复继承 | 配置存在不代表合成成功；不允许此动作绕过真实录音采用 |
 | 音色样本／当前讲稿试听 | 同一 owner 的 quote → 显式请求 → 真实音频；HTTP 保留 `VoicePreviewAnswer` | 已有 `quote_voice_preview/preview_voice` 与限额内的二进制 MCP resource | quote 固定实际 execution、source、revision、提供方和缓存状态；生成成功不是客户端已试听 |
 | 配音生成、进度、取消 | `DocumentVoiceAuthoring` 与独立 Node owner；HTTP/MCP 同一任务实例，standalone 同工厂 | 已有 `get_voiceover_status/get_voiceover_jobs/get_voiceover_job/start_voiceover/cancel_voiceover`，保留 intent/source/revision/scope/sequence | 查询／取消不要求当前编译；配置 remount 保留任务；当前仅进程内发现与幂等，尚无跨重启恢复账本 |
-| 计划、波形、定位、播放、暂停、速率 | `ProductionPlan`、单一播放器、预览协议中的制作请求 | 已有 `read_production_plan` 及第 9.1 节的真实作者客户端请求／回执；`navigate` 仍仅定位放映窗口，`get_runtime` 只读报告 | 不自动准备计划或切模式；客户端录制与草稿仍不支持 |
+| 计划、波形、定位、播放、暂停、速率 | `ProductionPlan`、单一播放器、预览协议中的制作请求 | 已有 `read_production_plan` 及第 9.1 节的真实作者客户端请求／回执；`navigate` 仍仅定位放映窗口，`get_runtime` 只读报告 | 准备计划须显式请求，不自动切模式；客户端录制尚未接入 |
 | 编译、预览、导出、下载 | workspace `jobs` 需要明确 `JobSource`，支持状态、事件、取消、版本和文件 | `build/get_builds/cancel_build` 已保留 source、sequence、inputFingerprint、captions 与文件；取消不要求先编译 | 后续统一任务发现、持久意图账本与资源；当前反馈见[输出验证记录](benchmarks/mcp-output-feedback-2026-10-27.md) |
 | 诊断、失败详情、运行验证 | UI `readDiagnostics` 读诊断快照；编译／浏览器／作者窗口分来源。已选 Doc 无 IR 也能报告请求失败和异常，authoringSource 只表示已知保存基线 | `get_diagnostics` 有界读取同一快照且不编译，`check_document` 才显式检查；协议与[未编译窗口](diagnostic-feedback.md#未编译的作者窗口)保留来源和独立实例。runtime 有报告但不证明最新源 | 带完整来源绑定的验证请求及浏览器实际结果；检查计数、空快照和作者保存基线不能替代当前源验证；未关联文稿故障与窗口在线状态仍待 |
-| 文稿草稿、外部变更、保存冲突 | `DocumentSession` 和制作 drafts 在浏览器按来源隔离；不能从服务看见未提交字节 | 第 9.1 节有界编辑状态与 canonical source.flush；不读取未提交表单正文 | 本地草稿内容、保留／恢复仍待；未连接或未检查时不能推断已保存 |
+| 文稿草稿、外部变更、保存冲突 | `DocumentSession` 和制作 drafts 在浏览器按来源隔离；默认状态不含未提交字节 | 第 9.1 节有界编辑状态、canonical source.flush 及第 9.2 节显式批注草稿读取 | 其他表单草稿与批注恢复／丢弃尚未接入 MCP；未连接或未检查时不能推断已保存 |
 | 审阅、逐文件拒绝、检查点恢复 | workspace `review/*` 与 `CHANGE_REVIEW`，持锁到结束 | 核心 MCP 无适配，dsh 自有桥接 | 同一 reviewId、范围、来源与修改 digest，绑定宿主授权决策 |
 | 历史、查看旧版本、撤消、重做、放弃未提交修改 | Web 与 MCP 共用 `DocumentHistory`／Revisions，历史按原修改分页，完整链状态不依赖局部页；原生编辑历史独立 | 已有 `get_document_history/read_history_file/undo_document_change/redo_document_change/revert_document_change`，绑定 raw source、HEAD 与完整目标；见第 21 节 | 未保存的客户端历史、外部修改提交、项目恢复与通用 discard 仍不开放；已知回执仅进程内且结果仍当前 |
 
@@ -203,7 +203,7 @@ agent 对已保存源执行事务不依赖一个永远在线的浏览器。客�
 | `request_authoring_client` | operate | 指定 clientId、epoch、connectionId、客户端 revision、CanonicalSource 和 requestId；返回受理状态，不冒充完成 |
 | `get_authoring_client_request` | read | 返回 sent／executing／done／refused／failed／expired，以及真实浏览器观察、verification 和 current |
 
-已实现动作是 `state.read`、`source.flush`、`preview.prepare`、`playback.pause`、`position.step`、`playback.play`、`playback.seek` 和 `playback.rate`。`source.flush` 只等待当前 canonical source actor 的保存；批注输入、数值表单、录制候选等未接入内容不能据此声称已保存。组词、恢复冲突或锁定时不开放 flush。Doc 中的 step 动作只按稳定 ID 定位，并先暂停；不切换模式、不编译。播放、seek、rate 只面向作者已准备好的精确 ProductionBinding 和有效计划，等待原生产播放器的真实帧回执，不能把 estimated／unknown 当作可播放。可选速率与人类控件共用内核常量。
+已实现动作是 `state.read`、`source.flush`、`preview.prepare`、`playback.pause`、`position.step`、`playback.play`、`playback.seek`、`playback.rate`、`comment-drafts.inspect` 和 `comment-drafts.read`。`source.flush` 只等待当前 canonical source actor 的保存；批注输入、数值表单、录制候选等未接入内容不能据此声称已保存。组词、恢复冲突或锁定时不开放 flush。Doc 中的 step 动作只按稳定 ID 定位，并先暂停；不切换模式、不编译。播放、seek、rate 只面向作者已准备好的精确 ProductionBinding 和有效计划，等待原生产播放器的真实帧回执，不能把 estimated／unknown 当作可播放。可选速率与人类控件共用内核常量。
 
 `preview.prepare` 是明确编译并准备当前已保存来源的动作，复用 `Workbench.preparePresentation` 和 `compileDocumentPreview`。先暂停，保持当前模式和稳定位置；Doc 不进入 Video／Present，也不合成或播放。`snapshot.preview` 区分 unprepared／preparing／prepared／unavailable；只有真实 IR 的 source、fingerprint 和项目代次仍当前时，prepared 才带 `source/irRevision/projectRevision`。没有浏览器就没有可执行动作；编译失败或不可用返回失败，不伪造准备完成。
 
@@ -215,9 +215,26 @@ MCP 请求仍为 30 秒，不延长为人工准备的 45 秒。浏览器在原 `
 
 目前最多保留 16 个客户端和 64 条进程内请求回执，请求 30 秒过期。保留期内相同 epoch／requestId 的相同意图只读取原回执，不重新派发；更换参数拒绝。断线后不自动重播；丢失播放回执时先重读状态，不以新 requestId 重试播放。旧终态可读，但只有连接、客户端状态及已保存来源仍相符时 current 才为 true。请求最多 4096 个 JSON 字符，回复最多 7168 个 pretty JSON UTF-16 字符，客户端清单分页。
 
-录制、草稿 inspect／read／keep／restore／discard、审阅和打开文稿尚未接入此通道，清单明确列为 unavailable。本节之前的完整客户端协议仍是后续目标。
+录制、批注草稿 keep／restore／discard、其他表单草稿、审阅和打开文稿尚未接入此通道，清单明确列为 unavailable。本节之前的完整客户端协议仍是后续目标。
 
 实际 Studio／MCP／浏览器旅程、冻结范围和清理见[客户端闭环验证记录](benchmarks/mcp-authoring-client-2026-10-28.md)与[显式准备记录](benchmarks/mcp-preview-prepare-2026-10-28.md)。
+
+### 9.2 已接入的显式批注草稿读取
+
+批注草稿读取沿第 9.1 节同一请求、executing ACK、30 秒截止时间与终态回执执行，仍需 operate 授权。`get_authoring_clients` 和被动报告只返回状态及动作，`unsubmittedContent` 始终为 `not-inspected`；显式结果只保留在相应请求回执中，不进入客户端快照。没有在线客户端或现有批注 owner 尚未就绪时是 unavailable／unknown，不能把它当作空草稿列表。
+
+`comment-drafts.inspect` 只读当前文稿与可信 member 的原 `CommentDraftBank`，不创建草稿 owner、不调用会结算草稿的 `refresh`、不写入或恢复内容。参数 `limit` 为 1–10，可传上页的 `cursor:{after,token}`。结果的 `family` 固定为 `comment`；`coverage` 区分 `stored-and-session` 与存储不可读但有当前内存稿的 `session-only`，另报 `skippedInvalid`。列表只含以下元数据：
+
+- `draft:{id,revision,token}`、`kind`、`storage`、`updatedAt`、`baseVersion`、`composing`、`pendingSubmission`。
+- 已有目标可带 `threadId`／`commentId`；新建意图不伪造线程身份。
+
+正文、目标内容签名、baseline、pending value 与 owner／scope 均不属于元数据。列表 token 绑定该次完整元数据集合及覆盖状态；集合改变即拒绝旧分页。`storage:session` 表示仍在原 owner 内存中的最新稿，不表示 strict IndexedDB 已保存。当前内存稿始终遮蔽同 ID 的旧存储记录，不能因旧 token 不符而回退读取旧字节。
+
+`comment-drafts.read` 必须带 inspect 返回的完整 `draft`、UTF-16 `offset`，可选 `maxChars` 为 2–2048。结果格式 `presmium-rich-text-json-v1` 是 Presmium `RichTextNode[]` 的 `JSON.stringify(content)`，不包含草稿 envelope 或 BlockNote 内部状态。每片带相同的 `sha256`、`totalUtf16`、`totalUtf8`，以及 `offset/endOffset/jsonText`。SHA-256 按完整 JSON 文本的 UTF-8 字节计算；按偏移拼齐后校验摘要并只解析一次。偏移不得落在代理对中间，末尾也不拆代理对；JSON 转义和组合字符可跨片，不应逐片解析。非 EOF 片段必须向前推进。
+
+每片重新核 exact 引用、原 source、client epoch／connection／revision、草稿变更代次和取消信号。输入、清空／丢弃开始、切文稿、断线或更新通知会使旧读取失效；清空仍等待 strict 删除时不开放新读取。成功旧回执仍可历史读取，但 `current:false`，同意图重试只返回原回执，不重新读取。过期 token、未知内容或未就绪不能冒充当前空列表。读取不保存 canonical，不编译、不切模式，也不操作原生选区。
+
+结果按完整 envelope 动态缩短列表或片段：MCP 请求仍限 4096 个 JSON UTF-16 字符，完整回执限 7168 个 pretty JSON UTF-16 字符；内部 ACK 保持 7168 字符与 32 KiB HTTP UTF-8 上限，同时完整共享 WebSocket 帧仍限原有 8 KiB。实际发出与服务端接收前均再核预算，不提高 socket 上限；没有可用容量时明确拒绝，不能返回不推进的片段。实际私有 Studio、官方 MCP SDK、Unicode 分页与失效边界见[批注草稿读取记录](benchmarks/mcp-comment-draft-reads-2026-10-28.md)。
 
 ## 10. 审阅、历史与权限
 
@@ -406,7 +423,7 @@ apply 通过原 operate、member/document/token、review、CAS、锁、历史和
 
 TTS 设置不运行提供方，不表示可合成、生成成功或客户端已试听。新录音来源仍须经过 `adopt_recording` 的真实文件 SHA／时长／本步范围检查，不能直接设置 assetId；明确替换原 recording 只清其配置槽位，不删除原始字节。音色继承与提供方目录继续见[音色作者边界](voice-authoring.md)。
 
-原生编辑器对 clean、非 IME 的外部 comments／production 更新保留原实例、正文 history 和未提交回复；同步前读取最新 actor 版本，不能让旧线程 snapshot 写回新源。第二次源采用后立即原生输入，锚点沿公开 transaction 从原文档映射，不按新文本重夹位置。正文 Undo 沿最新 canonical 保留外部音色／批注。原生现有评论的编辑基线通过公开 `Comments.Editor` 与 submit 扩展固定；目标正文变更时保留视图草稿、阻止 Save／快捷键覆盖新正文，canonical snapshot 始终使用最新内容，明确取消后显示保存值。无关 reply/reaction 不触发正文冲突。reply 与已有 comment edit 另有 workspace/member/稳定目标绑定的 strict IndexedDB 备份及显式恢复，关闭侧栏、切文稿、刷新后可取回；正文基线变化阻止旧 Save，删除目标只提供取稿和精确丢弃，不重新绑定。实际 pending ACK 不清后输入。尚无 thread ID 的新建 composer 也按创建意图、可信 member、源版本、稳定范围与内容签名备份；没有伪造线程 ID。明确恢复先 strict 保留当前稿并 fork，再经公开 `editor.transact`／`TextSelection` 一次恢复原范围。目标改变或消失只取稿，晚输入／位置改变／IME 优先；只有实际 clean canonical 的新线程／评论身份、原 anchor、正文与时间一致才退休提交稿。MCP 在本片仍不能读取或恢复客户端未提交字节。见[原生批注草稿记录](benchmarks/native-comment-drafts-2026-10-28.md)与[新建稿记录](benchmarks/native-new-comment-drafts-2026-10-28.md)。
+原生编辑器对 clean、非 IME 的外部 comments／production 更新保留原实例、正文 history 和未提交回复；同步前读取最新 actor 版本，不能让旧线程 snapshot 写回新源。第二次源采用后立即原生输入，锚点沿公开 transaction 从原文档映射，不按新文本重夹位置。正文 Undo 沿最新 canonical 保留外部音色／批注。原生现有评论的编辑基线通过公开 `Comments.Editor` 与 submit 扩展固定；目标正文变更时保留视图草稿、阻止 Save／快捷键覆盖新正文，canonical snapshot 始终使用最新内容，明确取消后显示保存值。无关 reply/reaction 不触发正文冲突。reply 与已有 comment edit 另有 workspace/member/稳定目标绑定的 strict IndexedDB 备份及显式恢复，关闭侧栏、切文稿、刷新后可取回；正文基线变化阻止旧 Save，删除目标只提供取稿和精确丢弃，不重新绑定。实际 pending ACK 不清后输入。尚无 thread ID 的新建 composer 也按创建意图、可信 member、源版本、稳定范围与内容签名备份；没有伪造线程 ID。明确恢复先 strict 保留当前稿并 fork，再经公开 `editor.transact`／`TextSelection` 一次恢复原范围。目标改变或消失只取稿，晚输入／位置改变／IME 优先；只有实际 clean canonical 的新线程／评论身份、原 anchor、正文与时间一致才退休提交稿。MCP 的显式批注草稿读取见第 9.2 节，恢复仍未开放。见[原生批注草稿记录](benchmarks/native-comment-drafts-2026-10-28.md)与[新建稿记录](benchmarks/native-new-comment-drafts-2026-10-28.md)。
 
 分阶段真实证据、未完成观察器记录与源码谱系见[批注作者动作记录](benchmarks/comment-authoring-actions-2026-10-28.md)。本节没有实现客户端播放、麦克风控制、MCP 客户端草稿读取／恢复、审阅会话或全部人机操作。
 

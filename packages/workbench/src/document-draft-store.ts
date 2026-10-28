@@ -59,15 +59,24 @@ export class DocumentDraftStore {
     return this.#database
   }
 
-  async read(prefixes: readonly string[]): Promise<Map<string, unknown>> {
+  async read(prefixes: readonly string[], signal?: AbortSignal): Promise<Map<string, unknown>> {
     if (this.#closing) throw new Error('document-draft-storage-closed')
-    const db = await this.#db()
+    signal?.throwIfAborted()
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const cancel = () => { signal?.removeEventListener('abort', cancel); reject(signal?.reason) }
+      signal?.addEventListener('abort', cancel, { once: true })
+      this.#db().then(value => { signal?.removeEventListener('abort', cancel); resolve(value) }, error => { signal?.removeEventListener('abort', cancel); reject(error) })
+    })
+    signal?.throwIfAborted()
     if (this.#closing) throw new Error('document-draft-storage-closed')
     return new Promise((resolve, reject) => {
       const values = new Map<string, unknown>(), tx = db.transaction(ENTRIES, 'readonly'), store = tx.objectStore(ENTRIES)
-      tx.oncomplete = () => resolve(values)
-      tx.onabort = () => reject(tx.error ?? new Error('document-draft-read-aborted'))
-      tx.onerror = () => reject(tx.error)
+      const cancel = () => { try { tx.abort() } catch { /* The readonly transaction may already have completed. */ } }
+      const stop = () => signal?.removeEventListener('abort', cancel)
+      signal?.addEventListener('abort', cancel, { once: true })
+      tx.oncomplete = () => { stop(); signal?.aborted ? reject(signal.reason) : resolve(values) }
+      tx.onabort = () => { stop(); reject(signal?.aborted ? signal.reason : tx.error ?? new Error('document-draft-read-aborted')) }
+      tx.onerror = () => { stop(); reject(tx.error) }
       for (const prefix of prefixes) {
         const request = store.openCursor(IDBKeyRange.bound(prefix, `${prefix}\uffff`))
         request.onsuccess = () => {
