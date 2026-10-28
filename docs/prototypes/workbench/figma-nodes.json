@@ -523,6 +523,10 @@
           "Saving": {
             "Compact": "278:5635",
             "Touch": "278:5902"
+          },
+          "Applied": {
+            "Compact": "283:6393",
+            "Touch": "283:6433"
           }
         },
         "publicControls": [
@@ -562,7 +566,30 @@
           "newAssets": 0
         },
         "status": "Formal design and schema-only examples; runtime and browser validation belong to the implementing lanes",
-        "verification": "docs/benchmarks/component-properties-design-schemas-2026-10-28.md"
+        "verification": "docs/benchmarks/component-properties-design-schemas-2026-10-28.md",
+        "applied": {
+          "reviewNodeId": "283:6473",
+          "reviewUrl": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=283-6473",
+          "instances": 4,
+          "languages": [
+            "zh-CN",
+            "en"
+          ],
+          "widths": [
+            "desktop",
+            "390 narrow"
+          ],
+          "themes": [
+            "Light",
+            "Dark"
+          ],
+          "publicControls": [
+            "PmDialog",
+            "PmButton"
+          ],
+          "interactionContract": "Apply succeeds without closing. Undo targets the acknowledged Git revision through existing document history and is unavailable with later pending input or unavailable history capability. Done closes. Apply is disabled without new changes. Native body Undo stays separate.",
+          "lineage": "Added after af75a0b8. Original six-state review 278:5946 and schema evidence remain unchanged."
+        }
       }
     },
     "variantCounts": {
