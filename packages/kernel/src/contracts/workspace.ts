@@ -397,6 +397,8 @@ export interface OutputJobs {
   list(document?: string): CompileJob[]
   /** Confirms the optional saved source, then captures a fresh compilation. Reuse also requires identical source and inputs. */
   start(document: string, target: string, source?: JobSource): Promise<CompileJob>
+  /** Runs start's checks without starting anything: the job start would reuse, or undefined when it would queue a new one. */
+  check(document: string, target: string, source?: JobSource): Promise<CompileJob | undefined>
   /** Settles once the job has ended. */
   wait(id: string): Promise<CompileJob>
   cancel(id: string): CompileJob | undefined

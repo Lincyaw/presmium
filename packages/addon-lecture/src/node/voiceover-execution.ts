@@ -62,11 +62,18 @@ export function voiceoverExecution(ctx: NodeServiceContext): VoiceoverExecution 
     return now
   }
   const engines = async (speech: SpeechService) => (await speech.engines()).filter(engine => engine.tts)
+  /** Naming an engine that does not synthesize, or that is not configured, is a bad request; only having no engine at all is the service's state. */
+  const noEngine = async (speech: SpeechService, preferred: string | undefined) => {
+    if (!preferred) return new RouteRefusal(503, 'voice-not-configured')
+    const id = speechEngineId(preferred), all = await speech.engines()
+    if (all.some(engine => engine.id === id)) return new RouteRefusal(422, 'voice-engine-unsupported')
+    return all.some(engine => engine.tts) ? new RouteRefusal(422, 'voice-engine-unknown') : new RouteRefusal(503, 'voice-not-configured')
+  }
   const providerFor = async (speech: SpeechService, voice: SpeechVoice, now: Context, signal?: AbortSignal) => {
     const list = await engines(speech)
     const preferred = voice.engine ?? await speech.defaultSynthesisEngine?.()
     const engine = preferred ? list.find(engine => engine.id === speechEngineId(preferred)) : undefined
-    if (!engine) throw new RouteRefusal(503, 'voice-not-configured')
+    if (!engine) throw await noEngine(speech, preferred)
     const catalog = await speech.voiceCatalog?.(engine.id, undefined, signal)
     if (catalog?.status !== 'available') throw new RouteRefusal(409, 'voice-catalog-unavailable')
     const chosen = catalog.voices.find(candidate => candidate.id === voice.voice)
@@ -125,7 +132,7 @@ export function voiceoverExecution(ctx: NodeServiceContext): VoiceoverExecution 
     const engine = preferred ? available.find(engine => engine.id === speechEngineId(preferred)) : undefined
     const request = { ...voice, ...engine ? { engine: engine.id } : {}, text, lang: now.lang, ...now.lexicon ? { lexicon: now.lexicon } : {} }
     const hit = await speech.lookup?.(request, signal)
-    if (!engine && !hit) throw new RouteRefusal(503, 'voice-not-configured')
+    if (!engine && !hit) throw await noEngine(speech, preferred)
     if (!hit) await providerFor(speech, voice, now, signal)
     await assertCurrent(now)
     const provider = hit?.provider ?? engine!.provider, local = Boolean(hit || engine?.local)
