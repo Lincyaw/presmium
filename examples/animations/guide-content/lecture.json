@@ -811,7 +811,7 @@
                     }
                   ],
                   "style": {
-                    "background": "var(--pm-color-surface-sunk)"
+                    "background": "var(--pm-color-sunk)"
                   },
                   "colspan": 3
                 }

@@ -176,6 +176,10 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore }: {
         getDocumentVersion={() => { const current = workbench.getState().authoring; return current && current.identity === source.identity && current.reset === source.reset ? current.version : undefined }} reset={source.reset} locale={locale} readOnly={readOnly}
         uploadImage={(file, signal) => workbench.importDocumentImage(file, source.identity!, signal)}
         getPositionToken={() => workbench.getState().documentPositionToken}
+        onSectionLink={sectionId => {
+          if (!workbench.getDocument(source.identity)?.sections[sectionId]) return false
+          workbench.goToSection(sectionId); return true
+        }}
         resolveAssetURL={async location => {
           if (/^(?:[a-z][a-z\d+.-]*:|\/)/i.test(location)) return location
           const asset = Object.values((workbench.getDocument(source.identity) ?? source.content)?.assets ?? {}).find(asset => asset.location === location)
