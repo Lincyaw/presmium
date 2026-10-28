@@ -2,11 +2,11 @@ import type { AuthoringClientAction, AuthoringClientActionResult, CanonicalSourc
 import { authoringDraftFragment, draftContentHash } from './authoring-draft-fragment.ts'
 import type { ComponentPropertyAgentCandidate, ComponentPropertyDrafts } from './component-property-drafts.ts'
 
-const reference = ({ record, token }: ComponentPropertyAgentCandidate) => ({ id: record.id, revision: record.revision, token, blockId: record.target.blockId, ...record.target.stepId !== undefined ? { stepId: record.target.stepId } : {} })
+export const componentDraftReference = ({ record, token }: ComponentPropertyAgentCandidate) => ({ id: record.id, revision: record.revision, token, blockId: record.target.blockId, ...record.target.stepId !== undefined ? { stepId: record.target.stepId } : {} })
 /** Metadata is an explicit whitelist: neither baseline/value nor trusted scope identities are spread. */
-function metadata(value: ComponentPropertyAgentCandidate, source: CanonicalSource): ClientComponentDraftMetadata {
+export function componentDraftMetadata(value: ComponentPropertyAgentCandidate, source: CanonicalSource): ClientComponentDraftMetadata {
   const { record } = value
-  return { draft: reference(value), definitionId: record.definitionId, storage: value.storage, status: value.status, updatedAt: Date.parse(record.updatedAt), baseVersion: record.source.version,
+  return { draft: componentDraftReference(value), current: value.current, definitionId: record.definitionId, storage: value.storage, status: value.status, updatedAt: Date.parse(record.updatedAt), baseVersion: record.source.version,
     sourceCurrent: record.source.documentId === source.documentId && record.source.version === source.version && record.source.fingerprint === source.fingerprint, composing: record.composing, reset: record.reset }
 }
 
@@ -14,7 +14,7 @@ export async function inspectComponentDrafts(drafts: ComponentPropertyDrafts, co
   const read = await drafts.readForAgent(context, signal, action.type === 'component-drafts.read' ? action.draft : undefined)
   const current = () => { signal.throwIfAborted(); if (!drafts.readable(context.identity, context.memberId) || drafts.revision(context.identity, context.memberId) !== read.revision) throw new Error('client-component-drafts-changed') }
   if (action.type === 'component-drafts.inspect') {
-    const values = read.candidates.map(value => metadata(value, context.source)), token = await draftContentHash(JSON.stringify({ values, coverage: read.coverage, skippedInvalid: read.skippedInvalid }))
+    const values = read.candidates.map(value => componentDraftMetadata(value, context.source)), token = await draftContentHash(JSON.stringify({ values, coverage: read.coverage, skippedInvalid: read.skippedInvalid }))
     current()
     if (action.cursor && action.cursor.token !== token) throw new Error('client-component-drafts-changed')
     const start = action.cursor ? values.findIndex(value => value.draft.token === action.cursor!.after) + 1 : 0
@@ -31,5 +31,5 @@ export async function inspectComponentDrafts(drafts: ComponentPropertyDrafts, co
     return result
   }
   const value = read.candidates[0]!
-  return authoringDraftFragment({ text: JSON.stringify(value.record.value), base: { type: action.type, family: 'component', draft: reference(value), storage: value.storage, format: 'presmium-component-parameters-json-v1' }, offset: action.offset, maxChars: action.maxChars }, current, fits)
+  return authoringDraftFragment({ text: JSON.stringify(value.record.value), base: { type: action.type, family: 'component', draft: componentDraftReference(value), storage: value.storage, format: 'presmium-component-parameters-json-v1' }, offset: action.offset, maxChars: action.maxChars }, current, fits)
 }
