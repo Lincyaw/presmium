@@ -44,3 +44,9 @@ Doc 仍只有字幕文字和配音开始。时间表单的未提交输入只在�
 正式 Figma [ManualCaptionTiming](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=292-7743)复用公共 Dialog／Input／Button／Notice，Compact／Touch 各覆盖 Ready、Loading、Invalid、Stale、Unavailable、Saving、Applied；[亮暗审阅板](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=293-7121)与四张实际 Studio 图已查看。业务 CSS 仅布局，原生输入与按钮承担焦点和键盘行为。
 
 本片没有任意 caret 分句、自动原音词对齐、跨步骤字幕、译文时间编辑或表单 IDB／跨 Tab 恢复。表单权限、required review、精确 receipt 与 source CAS 沿共享 owner 并经独立静审，本轮没有重复完整权限／Git 故障矩阵；reset、切步关闭后的旧错误守卫也未独立扩成全部运行反例。没有物理触屏、全部输入法或普遍语音准确率验收；Unicode 验证与真实 coarse 390 视图不能替代这些条件。
+
+## 4320 交付
+
+运行版本 `ab1d5affe5141f72d270d57ecf23833be32598f9` 已更新到 4320。最终合并源码在私有 Studio 的 Web／MCP 操作完成 26 项，计划加载和已有输入保护完成 11 项；此前同一合并版本的主体与音频更新保护完成 12 项、保存回执保护完成 10 项，实际 WebM 导出及字幕画面完成 6 项。导出图片中的首句、空白和次句已逐张查看；对话框亮暗与桌面窄屏四图也已查看。不同轮次分别记录，不把较早结果说成完整最终轮。
+
+固定源码客户端构建检查 1254 项、类型检查 1332 文件、分层和令牌检查通过。在线只读健康检查 22 项、示例视频入口 8 项通过；两个 host 的既有认证会话正常，重启前后 11 份文稿字节未变。未运行测试套件或全量示例构建。上述视频是短片及受控浏览器验证，不代表所有编码格式、设备或工程规模均已验收。
