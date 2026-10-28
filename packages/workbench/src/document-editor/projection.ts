@@ -18,7 +18,7 @@ export interface DocumentProjection extends RichProjection {
 }
 export type NativePageCreation = DocumentPageIds
 const newId = () => crypto.randomUUID()
-const pageId = (sectionId: string) => `page:${sectionId}`
+export const pageId = (sectionId: string) => `page:${sectionId}`
 function plain(nodes: readonly { type: string, text?: string, children?: readonly unknown[] }[]): string {
   return nodes.map(node => node.type === 'text' ? node.text ?? '' : node.type === 'break' ? '\n' : node.children ? plain(node.children as Parameters<typeof plain>[0]) : '').join('')
 }

@@ -1150,6 +1150,28 @@
   line-height: var(--pm-leading-ui);
 }
 
+/* A colour sample for document colour menus; --pm-swatch and --pm-swatch-background carry the token being offered. */
+.pm-ui-color-swatch {
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--pm-size-icon-lg);
+  height: var(--pm-size-icon-lg);
+  border: var(--pm-size-hairline) solid var(--pm-color-line-strong);
+  border-radius: var(--pm-radius-chip);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-sm);
+  font-weight: var(--pm-weight-semibold);
+  line-height: 1;
+}
+.pm-ui-color-swatch[data-kind='text'] { color: var(--pm-swatch, var(--pm-color-ink)); }
+.pm-ui-color-swatch[data-kind='background'] { background: var(--pm-swatch, var(--pm-color-surface)); }
+.pm-ui-color-swatch--pair { color: var(--pm-swatch, var(--pm-color-ink)); background: var(--pm-swatch-background, transparent); }
+.bn-color-picker-dropdown [data-document-color] { gap: var(--pm-space-2); font-size: var(--pm-text-sm); }
+
 .pm-ui-block-editor .bn-menu-dropdown.bn-table-handle-menu [role='menuitem'] {
   font-size: var(--pm-text-sm);
 }

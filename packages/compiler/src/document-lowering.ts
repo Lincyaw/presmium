@@ -1,4 +1,4 @@
-import { captionSourceFingerprint, isRecord, voiceTarget } from '@lincyaw/kernel'
+import { captionSourceFingerprint, documentColorValue, isRecord, voiceTarget } from '@lincyaw/kernel'
 import type { CodeNode, ComponentNode, Definition, DocumentBlock, Finding, InlineNode, IRBlock, IRSection, JsonObject, MdastNode, NarrationNode, RichTextNode, SourcePos, TeachingDocument, TextStyle, VisualState } from '@lincyaw/kernel'
 import { relative, resolve, sep } from 'node:path'
 
@@ -124,7 +124,7 @@ function isMotionScene(definition: Definition): boolean {
 function styled(node: MdastNode, style: TextStyle | undefined): MdastNode {
   if (!style) return node
   const properties: Record<string, string> = {}
-  const css = [style.alignment ? `text-align:${style.alignment}` : '', style.color ? `color:${style.color}` : '', style.background ? `background-color:${style.background}` : ''].filter(Boolean).join(';')
+  const css = [style.alignment ? `text-align:${style.alignment}` : '', style.color ? `color:${documentColorValue(style.color, 'text')}` : '', style.background ? `background-color:${documentColorValue(style.background, 'background')}` : ''].filter(Boolean).join(';')
   if (css) properties.style = css
   return { ...node, data: { hProperties: properties } }
 }
@@ -135,7 +135,7 @@ export function inlineText(nodes: InlineNode[]): MdastNode[] {
       let result: MdastNode = { type: node.marks?.some(mark => mark.type === 'code') ? 'inlineCode' : 'text', value: node.text }
       for (const mark of node.marks ?? []) {
         if (mark.type === 'code') continue
-        if (mark.type === 'color' || mark.type === 'background') result = { type: 'emphasis', children: [result], data: { hName: 'span', hProperties: { style: `${mark.type === 'color' ? 'color' : 'background-color'}:${mark.value}` } } }
+        if (mark.type === 'color' || mark.type === 'background') result = { type: 'emphasis', children: [result], data: { hName: 'span', hProperties: { style: mark.type === 'color' ? `color:${documentColorValue(mark.value, 'text')}` : `background-color:${documentColorValue(mark.value, 'background')}` } } }
         else result = { type: { bold: 'strong', italic: 'emphasis', underline: 'underline', strike: 'delete' }[mark.type], children: [result] }
       }
       return result
