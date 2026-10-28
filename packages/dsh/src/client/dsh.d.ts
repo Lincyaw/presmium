@@ -45,6 +45,8 @@ interface DshSlotOptions {
   children?: Record<string, { kind: 'single' | 'keyed' | 'list', scope: 'root' }>
   store?: unknown
   inject?: unknown
+  /** A `chain` slot's election: the first non-null result in priority order renders. */
+  select?: (owner: unknown) => unknown
 }
 
 interface DshSlotEntry {
@@ -77,6 +79,7 @@ interface DshLocale {
   addLanguage(language: { id: string, label: string, fallback?: string }): () => void
   register(ns: string, locale: string | Record<string, Record<string, string>>, dict?: Record<string, string>): () => void
   bind(ns: string): (key: string, values?: Record<string, string>) => string
+  setLocale(id: string): unknown
 }
 
 interface DshShortcuts {
@@ -121,6 +124,7 @@ interface DshSessionBinding {
 }
 
 interface DshClientContext {
+  remote: { session: { modelCatalog(): Promise<{ ok: boolean, value?: { routableProviders?: readonly string[] } }> } }
   effect(effect: () => unknown, label?: string): void
   on(event: string, listener: (...args: any[]) => void): () => void
   inject(names: string[], apply: (ctx: DshClientContext) => void): void

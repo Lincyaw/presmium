@@ -12,6 +12,7 @@ import { registerNavigationShell } from './navigation-shell.tsx'
 import { createObservable } from './observable.ts'
 import { isSamePath } from './paths.ts'
 import { registerAgentRequests } from './agent-requests.ts'
+import { registerAssistantSetup } from './assistant-setup.tsx'
 import { rootLayoutFor } from './RootLayout.tsx'
 import { beginRootReload, restoreRootReturnPoint, saveRootReturnPoint } from './root-reload.ts'
 import { registerSourceLinks } from './source-links.tsx'
@@ -58,7 +59,7 @@ export function apply(ctx: DshClientContext): void {
     if (!nativeLayout) saveRootReturnPoint(workbench)
   }, 'presmium: workbench')
   syncDocumentContext(ctx, workbench)
-  registerAgentRequests(ctx, workbench)
+  registerAgentRequests(ctx, workbench, registerAssistantSetup(ctx, workbench))
   ctx.effect(() => ctx.locale.subscribe(() => workbench.setLocale(workbenchLocale(ctx.locale.getLocale().active))), 'presmium: language')
   ctx.effect(() => ctx.theme.overrideTokens(CLIENT_ID, DSH_THEME_TOKENS), 'presmium: 书卷 tokens')
   ctx.effect(() => {
