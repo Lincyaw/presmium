@@ -52,6 +52,8 @@ BlockNote 的公共适配类为 `pm-ui-block-editor`，由工作台的全篇 `Bl
 放映字幕复用 host 的 `PmCaption`：`label` 提供可访问名称，`lines` 保留当前字幕段落顺序，`hint` 只补充作者可理解的状态。外观由 `packages/design/src/caption.css` 与 `--pm-caption-max-width`、`--pm-caption-max-height` 令牌定义；超长文本在安全区内滚动，业务层只安排它与画面、控制栏的位置。放映字幕通过 host 的 `PmCaptionProvider` 与 `PmCaption overlay` 进入幻灯片画布内的共享浮层，底部避让页脚；显示、隐藏与换行不参与画布外布局，不改变幻灯片的位置或缩放。按步骤字幕与真实时序字幕通过宿主显示权协调，不能叠加两套字幕。浮层字幕获得焦点时，Home／End、PageUp／PageDown、上下方向键及空格保留浏览器原生滚动，不触发放映跳步；Shift＋空格向上滚动，左右步键、Escape 与 Tab 保留原行为。公共组件先调用传入的 `onKeyDown`，尊重已取消事件、输入法和修饰键。
 Figma 公共 `Presmium/Caption` 对应单段、多段、空讲稿和超长滚动四种状态，节点登记在 `figma-nodes.json`。其颜色、间距、边框、圆角与最大宽度绑定公共变量，正文和提示复用已有 16px／12px 文字样式。滚动示例以 800px 高视口呈现 `28vh` 的 224px 上限，运行时继续按实际视口计算。
 
+调用方可向 `PmCaption` 提供由可信词边界派生的当前短句；公共控件不推测时间或自行翻页。Video 的 `PmTimeline.onSelectSegment` 将已有片段按钮的激活交回 owner，仅确认来源与词时码的字幕允许暂停并定位到片段起点；其它片段保留步骤选择。窄屏或粗指针另显示可选 `PmSelect density="touch"` 动作入口，默认 44px；选择后回到 placeholder，时间线继续表示当前位置。粗指针字幕轨不接收 pointer，使用现整尺寸步骤按钮和该选择器，键盘及 fine pointer 保留轨道激活。即使 none／过期导致选择器无项，粗指针保护仍在；画面和配音轨不受影响。精度短标签使用既有 title／可访问描述，不增加常驻说明。映射失败、未对齐、插值和没有独立时码的译文继续完整显示。正式 Caption／Timeline description 与[真实验证](benchmarks/timed-caption-segments-2026-10-28.md)同步。
+
 放映导航与讲授播放组合在同一底栏，播放／暂停和字幕复用 host `PmIconButton`，进度复用 `pm-ui-range`，次要选项复用 `PmMenu`，只读字幕／章节复用 `PmDrawer`。业务样式只安排伸缩和排列，不另加播放器背景、边框或控件外观。
 
 时间输入、播放头、音色项和素材选择等领域控件也需作为 workbench 内可复用组件规定状态与外观，不因它们具有业务名称就豁免公共设计。波形和时间片段的内容可由领域数据绘制，其控件边界、选择、焦点和热区仍遵循本规范。
