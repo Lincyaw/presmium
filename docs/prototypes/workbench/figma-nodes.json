@@ -1467,6 +1467,18 @@
         },
         "source": "packages/design/src/components.css / tokens.css",
         "behavior": "Public native Card/Editor classes bound floating and sidebar widths; unspaced URLs, identifiers and mixed CJK wrap unchanged. The native editor scrolls independently so Save stays reachable. No selection, callback, draft or canonical changes."
+      },
+      "pointerSelection": {
+        "componentSetId": "269:5405",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=269-5405",
+        "source": "packages/workbench/src/document-editor/DocumentComments.tsx / BlockNoteSurface.tsx / packages/design/src/components.css",
+        "behavior": "Native body pointer selection and a non-empty body range hide the existing-thread card; normal collapsed clicks keep native opening. The native thread/reply owner stays mounted; no DOM range writes.",
+        "designRead": {
+          "skill": "figma-design-to-code",
+          "session": "e50ae959-ddd0-426f-9484-c771c5b4854c",
+          "existingNode": true,
+          "descriptionUpdated": true
+        }
       }
     }
   },
