@@ -2,6 +2,7 @@ import type { IncomingMessage } from 'node:http'
 import type { Duplex } from 'node:stream'
 import { EventSource } from 'eventsource'
 import { WebSocketServer, WebSocket } from 'ws'
+import { AUTHORING_CLIENT_EVENT_MAX_BYTES } from '@lincyaw/kernel'
 import type { AuthoringClientLease, AuthoringClientEvent } from '@lincyaw/kernel'
 import { validateAuthoringClientLease } from '@lincyaw/kernel/node'
 import type { DshContext } from './dsh-types.ts'
@@ -32,7 +33,7 @@ const MAX_BUFFERED_BYTES = 2 << 20
 
 /** Borrow the framework listener and trust fence; never take ownership of their server or Peer. */
 export function apply(ctx: EventContext): void {
-  const server = new WebSocketServer({ noServer: true, maxPayload: 8 << 10, perMessageDeflate: false })
+  const server = new WebSocketServer({ noServer: true, maxPayload: AUTHORING_CLIENT_EVENT_MAX_BYTES, perMessageDeflate: false })
   const sockets = new Map<WebSocket, () => void>()
   const unregister = ctx.webServer.registerUpgrade({
     path: WORKSPACE_EVENTS_PATH,

@@ -1,4 +1,5 @@
-import type { AuthoringClientEvent, AuthoringClientSnapshot, CanonicalSource } from '@lincyaw/kernel'
+import { authoringClientResultFits } from '@lincyaw/kernel'
+import type { AuthoringClientActionResult, AuthoringClientEvent, AuthoringClientSnapshot, CanonicalSource } from '@lincyaw/kernel'
 import type { Workbench } from './workbench.ts'
 import type { AuthoringClientChannel } from './workspace-client.ts'
 
@@ -16,6 +17,7 @@ export function connectAuthoringClient(workbench: Workbench): () => void {
   let closed = false, revision = 0, sequence = 0
   let attached: Attachment | undefined
   let lastSignature: string | undefined, lastContent: object | undefined
+  let lastDraftRevision: number | undefined
   let active: { requestId: string, controller: AbortController } | undefined
   let reports: Promise<void> = Promise.resolve()
   let pendingState: { owner: Attachment, connectionId: string, value: AuthoringClientSnapshot } | undefined
@@ -24,20 +26,21 @@ export function connectAuthoringClient(workbench: Workbench): () => void {
   const snapshot = (): AuthoringClientSnapshot | undefined => {
     const value = workbench.authoringClientSnapshot(revision)
     if (!value) return
-    const next = signature(value), content = workbench.state.authoring?.content
-    if (next !== lastSignature || content !== lastContent) { revision++; lastSignature = next; lastContent = content }
+    const next = signature(value), content = workbench.state.authoring?.content, drafts = workbench.authoringCommentDraftRevision()
+    if (next !== lastSignature || content !== lastContent || drafts !== lastDraftRevision) { revision++; lastSignature = next; lastContent = content; lastDraftRevision = drafts }
     return { ...value, revision }
   }
   const detach = () => {
     active?.controller.abort(); active = undefined
     attached?.channel.close(); attached = undefined
     pendingState = undefined
-    lastSignature = undefined; lastContent = undefined; seen.clear()
+    lastSignature = undefined; lastContent = undefined; lastDraftRevision = undefined; seen.clear()
   }
-  const send = (owner: Attachment, connectionId: string, value: AuthoringClientSnapshot, acknowledgement?: { requestId: string, state: 'executing' | 'done' | 'refused' | 'failed', error?: { code: string } }) => {
+  const send = (owner: Attachment, connectionId: string, value: AuthoringClientSnapshot, acknowledgement?: { requestId: string, state: 'executing' | 'done' | 'refused' | 'failed', error?: { code: string }, result?: AuthoringClientActionResult }, preflight?: () => void) => {
     const report = { sequence: ++sequence, snapshot: value, ...acknowledgement }
     const next = reports.then(() => {
       if (closed || attached !== owner || owner.connectionId !== connectionId) throw new Error('client-connection-changed')
+      preflight?.()
       return acknowledgement ? owner.channel.acknowledge(connectionId, report as import('@lincyaw/kernel').AuthoringClientAcknowledgement) : owner.channel.publish(connectionId, report)
     })
     reports = next.catch(() => {})
@@ -93,11 +96,17 @@ export function connectAuthoringClient(workbench: Workbench): () => void {
       owned()
       const latest = snapshot()
       if (!latest || latest.revision !== request.expectedClientState.revision || !sameSource(latest.source, request.source)) throw new Error('client-state-changed')
-      await workbench.executeAuthoringClientAction(request.action, request.source, controller.signal, expiresAt)
+      const fits = (result: AuthoringClientActionResult) => authoringClientResultFits({ request, connection: { clientId, epoch: owner.epoch, connectionId }, document: owner.directory, snapshot: snapshot() ?? value }, result)
+      const actionResult = await workbench.executeAuthoringClientAction(request.action, request.source, controller.signal, expiresAt, fits)
       owned()
       const result = snapshot()
       if (!result) throw new Error('client-document-changed')
-      await send(owner, connectionId, result, { requestId: request.requestId, state: 'done' })
+      await send(owner, connectionId, result, { requestId: request.requestId, state: 'done', ...actionResult ? { result: actionResult } : {} }, actionResult ? () => {
+        owned()
+        const latest = snapshot()
+        if (!latest || latest.revision !== request.expectedClientState.revision || latest.revision !== result.revision) throw new Error('client-comment-drafts-changed')
+        if (!fits(actionResult)) throw new Error('client-comment-result-too-large')
+      } : undefined)
     } catch (error) {
       const result = snapshot()
       const code = error instanceof Error && /^(client|production)-[a-z-]{1,100}$/.test(error.message) ? error.message : 'client-action-not-verified'
@@ -121,6 +130,7 @@ export function connectAuthoringClient(workbench: Workbench): () => void {
     } else if (before !== revision && attached.connectionId) publishState(attached, attached.connectionId, value)
   }
   const stop = workbench.subscribe(changed)
+  const stopDrafts = workbench.subscribeCommentDraftChanges(changed)
   changed()
-  return () => { closed = true; stop(); detach() }
+  return () => { closed = true; stop(); stopDrafts(); detach() }
 }

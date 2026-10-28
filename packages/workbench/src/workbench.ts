@@ -2,6 +2,7 @@ import type { ProjectOperation, ProjectPlan } from '@lincyaw/kernel'
 import { undoDepth, redoDepth } from '@tiptap/pm/history'
 import { TextSelection } from '@tiptap/pm/state'
 import { CommentDraftBank } from './document-editor/comment-drafts.ts'
+import { inspectCommentDrafts } from './document-editor/comment-draft-inspection.ts'
 import { DocumentSession } from './document-session.ts'
 import { reconcileRecordingAdoption } from './recording-adoption.ts'
 import { disposeTranscriptionSessions } from './transcription-session.ts'
@@ -43,7 +44,7 @@ import type { ProductionBinding, ProductionPlan, ProductionPlaybackCommand, Prod
 import { workspaceClient, WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 import type { PageDeletePlan } from '@lincyaw/kernel'
-import type { AuthoringClientAction, AuthoringClientSnapshot } from '@lincyaw/kernel'
+import type { AuthoringClientAction, AuthoringClientActionResult, AuthoringClientSnapshot } from '@lincyaw/kernel'
 import { PRODUCTION_PLAYBACK_RATES } from '@lincyaw/kernel'
 
 /** `editing`: the canonical document is edited in the parent; `viewing`: a derived snapshot is presented. */
@@ -417,6 +418,12 @@ export class Workbench {
     const source = this.#state.authoring
     return source?.identity === identity && source.member?.id ? this.#commentDrafts.get(identity, source.member.id) : undefined
   }
+  /** A status counter only: passive client reports never enumerate or serialize drafts. */
+  authoringCommentDraftRevision(): number {
+    const source = this.#state.authoring
+    return source?.identity && source.member?.id ? this.#commentDrafts.peek(source.identity, source.member.id)?.revision ?? 0 : 0
+  }
+  subscribeCommentDraftChanges(listener: () => void): () => void { return this.#commentDrafts.subscribe(listener) }
 
   getState = (): WorkbenchState => this.#state
 
@@ -982,6 +989,7 @@ export class Workbench {
     const plan = state.productionPlan, playback = state.productionPlayback
     const ready = clean && plan?.canPreview && this.#productionReady() && playback?.status === 'ready' && sameProductionBinding(plan.binding, playback.binding)
     const position = state.position, page = position && content.sections[position.section]
+    const commentDrafts = source.member?.id ? this.#commentDrafts.peek(source.identity, source.member.id) : undefined
     const prepared = state.presentationSnapshot, actual = { documentId: content.id, version: source.version, fingerprint: source.fingerprint }
     const preparedCurrent = clean && prepared && prepared.version === source.version && prepared.fingerprint === source.fingerprint && prepared.project === (source.projectRevision ?? 0)
       && state.ir?.revision === prepared.revision && state.ir.doc.source?.version === source.version && state.ir.doc.source.fingerprint === source.fingerprint
@@ -992,18 +1000,26 @@ export class Workbench {
       preview: preparedCurrent ? { status: 'prepared', source: actual, irRevision: prepared.revision, projectRevision: prepared.project }
         : { status: state.isPreparingPresentation ? 'preparing' : state.presentationFailure ? 'unavailable' : 'unprepared' },
       actions: ['state.read', 'playback.pause', ...safe ? ['source.flush' as const] : [],
+        ...commentDrafts?.readable ? ['comment-drafts.inspect' as const, 'comment-drafts.read' as const] : [],
         ...this.#canPreparePresentation() ? ['preview.prepare' as const] : [],
         ...clean && (state.webView === 'document' || ready) ? ['position.step' as const] : [],
         ...ready ? ['playback.play' as const, 'playback.seek' as const, 'playback.rate' as const] : []], unsubmittedContent: 'not-inspected' }
   }
 
   /** Reuses the same source actor, mutual-audio gate and frame acknowledgements as the human controls. */
-  async executeAuthoringClientAction(action: AuthoringClientAction, expected: CanonicalSource, signal: AbortSignal, deadline?: number): Promise<void> {
+  async executeAuthoringClientAction(action: AuthoringClientAction, expected: CanonicalSource, signal: AbortSignal, deadline?: number, fits?: (result: AuthoringClientActionResult) => boolean): Promise<void | AuthoringClientActionResult> {
     const scope = this.#documentScope, identity = this.#state.authoring?.identity, document = this.#state.document, interaction = this.#state.documentPositionToken
     const owned = () => { signal.throwIfAborted(); if (scope !== this.#documentScope || identity !== this.#state.authoring?.identity || document !== this.#state.document) throw new Error('client-document-changed') }
     const current = () => { owned(); const state = this.authoringClientSnapshot(0); if (!state || !sameSource(state.source, expected) || !state.actions.includes(action.type)) throw new Error('client-action-unavailable'); return state }
     current()
     if (action.type === 'state.read') return
+    if (action.type === 'comment-drafts.inspect' || action.type === 'comment-drafts.read') {
+      const drafts = identity ? this.documentCommentDrafts(identity) : undefined
+      if (!drafts?.readable || !fits) throw new Error('client-comment-drafts-unavailable')
+      const result = await inspectCommentDrafts(drafts, action, signal, fits)
+      current()
+      return result
+    }
     if (action.type === 'preview.prepare') {
       const view = this.#state.webView
       const stop = this.subscribe(() => { if (interaction !== this.#state.documentPositionToken || view !== this.#state.webView) this.cancelPreviewPreparation() })

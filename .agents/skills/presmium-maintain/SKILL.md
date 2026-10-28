@@ -100,8 +100,9 @@ action, then read its receipt; admission is not completion. Exact source, client
 input revision are required. Only the browser channel may acknowledge, and it waits for executing
 admission before invoking the existing source/playback control. Never add an MCP ACK tool, a per-tab
 browser SSE, automatic compile/mode switch, estimated playing state or replay after disconnect.
-`source.flush` covers the canonical source actor only; recording and local form draft capabilities
-remain unavailable until their real owners are wired.
+`source.flush` covers the canonical source actor only. Explicit comment draft inspect/read uses the
+existing bank and bounded request result; passive state never contains draft content. Recording, other
+form drafts and MCP draft restore/discard remain unavailable until their real owners are wired.
 
 No dependency internals, no forks or patches. No package uses `vitepress` or `@slidev/*`: the web page and
 the slides are both pages of Presmium's own prebuilt viewer (`docs/architecture.md` 1.1).
