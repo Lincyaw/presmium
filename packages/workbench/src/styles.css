@@ -2,6 +2,7 @@
 @import '@blocknote/mantine/style.css';
 @import './document-editor/style.css';
 @import './step-production.css';
+@import './component-properties.css';
 
 .pmw-preview__frames[data-pending-snapshot]:not([data-presentation-gated]) { visibility: hidden; }
 

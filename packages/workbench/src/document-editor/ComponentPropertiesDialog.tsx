@@ -10,7 +10,6 @@ import { componentPropertyAction, componentSource, rebaseComponentPropertyDraft,
 import type { ComponentPropertyBackup, ComponentPropertyBackupRead, ComponentPropertyDraft, ComponentPropertyTarget } from '../component-property-drafts.ts'
 import { PmSchemaForm, schemaFormPropertyNames } from '../schema-form/PmSchemaForm.tsx'
 import { ComponentMaterials, componentDefinitionLabel } from './ComponentMaterials.tsx'
-import '../component-properties.css'
 
 const subscribeEmpty = () => () => {}, snapshotEmpty = () => 0
 const targetKey = (target: ComponentPropertyTarget) => JSON.stringify([target.identity, target.memberId, target.blockId, target.stepId ?? null])
