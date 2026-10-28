@@ -128,7 +128,7 @@ function CommentDraftRetrieval() {
 export function DocumentCommentEditor(props: ComponentProps['Comments']['Editor']) {
   const context = useContext(COMMENT_EDITOR_CONTEXT), threadId = useContext(THREAD_CONTEXT)
   const [handle, setHandle] = useState<DocumentCommentEditorHandle>(), [, setRevision] = useState(0), [recoveryFailure, setRecoveryFailure] = useState(false)
-  const currentHandle = useRef(handle)
+  const currentHandle = useRef(handle), recoveryOwner = useRef(0)
   currentHandle.current = handle
   const current = useRef(props), active = useRef(true), input = useRef(0), composing = useRef(false), submitting = useRef(false), suppress = useRef(false)
   current.current = props
@@ -188,6 +188,7 @@ export function DocumentCommentEditor(props: ComponentProps['Comments']['Editor'
     if (editable.current && !props.editable && record.current && drafts) { const value = record.current; record.current = undefined; void drafts.clearOwn(value) }
     editable.current = props.editable
   }, [handle, props.editable, drafts])
+  useLayoutEffect(() => { recoveryOwner.current++; setRecoveryFailure(false) }, [handle, props.editable])
   const failure = useSyncExternalStore(handle?.subscribe ?? emptySubscribe, handle?.failure ?? (() => undefined))
   const target = handle?.target, t = DOCUMENT_EDITOR_MESSAGES[context?.locale ?? 'en']
   const candidates = target ? state.candidates.filter(value => sameCommentDraftTarget(value.target, target) && value.id !== record.current?.id) : []
@@ -238,7 +239,7 @@ export function DocumentCommentEditor(props: ComponentProps['Comments']['Editor'
     <MantineCommentEditor {...props} />
     {recoveryFailure && <PmNotice tone="warn">{t.commentRecoveryChanged}</PmNotice>}
     {failure && <PmNotice tone="danger">{failure === 'changed' ? t.commentChanged : t.commentUnavailable}</PmNotice>}
-    {drafts && props.editable && <DraftChoices candidates={candidates} disabled={composing.current || submitting.current} onRecover={async candidate => { const captured = handle; setRecoveryFailure(false); try { await recover(candidate) } catch { if (active.current && currentHandle.current === captured) setRecoveryFailure(true) } }} onDiscard={async candidate => { await drafts.discard(candidate) }} />}
+    {drafts && props.editable && <DraftChoices candidates={candidates} disabled={composing.current || submitting.current} onRecover={async candidate => { const captured = handle, owner = recoveryOwner.current; setRecoveryFailure(false); try { await recover(candidate) } catch { if (active.current && current.current.editable && currentHandle.current === captured && recoveryOwner.current === owner) setRecoveryFailure(true) } }} onDiscard={async candidate => { await drafts.discard(candidate) }} />}
     {drafts && props.editable && state.failed && !context?.sidebar && <PmNotice tone="warn">{t.commentBackupFailed}</PmNotice>}
   </div>
 }
