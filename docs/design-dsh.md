@@ -390,8 +390,8 @@ dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达�
 - **技能**：skill-filesystem 的 `agentsHome` 与环境变量 `DSH_AGENTS_HOME` 都指向 Presmium 状态目录中的空目录。
 - **第一次使用**：工作区控制器的 `documentsDirectory` 指向 Presmium 的状态目录，并在启动时登记好文档的工作区。两者都做到，第一次使用就不会在 `~/Documents` 下建目录。
 - **沙箱**：`workspace-write`，确认策略为 ask。
-- **persona**：headless 与 acp 的 persona 是 `system-prompt` 行的 `personaPrefix`，补丁整体替换这一行的配置，换成 Presmium 的说明。web 载体用 `web.patch.yml` 中声明的预设 `preset-authoring` 承载工作台中的角色：作者是可能不懂代码的教师，只看到读者看到的文稿；作者的消息与批注就是要做的事；按作者看到的内容说话，不提文件、路径、行号、语法、命令、工具、沙箱与 git。`agent-preset-registry` 默认使用该预设；预设内的 `persona` 行遮蔽部署级的 `personaPrefix`，所以两段文字各自完整。写作的发布会原则在 `presmium-author` 技能中，改写内容时加载。预设只带写讲义需要的工具，不带定时任务、目标与子 agent（含 workflow）。dsh 自带的 `preset-standard` 等仍可选，选中时仍是“You are a coding agent powered by …”。
-- **界面**（`web.patch.yml`）：关掉 `ui-layout` 与 `ui-sidebar`（由 Presmium 的根布局与导航外壳替换；退路模式下同时重新打开）、`ui-brand-official`、`ui-settings-account`、`account-controller`、`deepseek-account`、`llm-deepseek-account`、`web-search-deepseek`（DeepSeek 的搜索服务）与 `ui-settings-session-log`（上传会话日志的设置）。插件页中的实验插件与插件市场没有可关的行：它们是 dsh 安装自带的可选 bundle 与按需的官方目录，由插件页的“实验插件”组列出；工作台按这个组的 DOM 属性 `data-plugin-group="extensions"` 隐藏它。确切的行 ID 以锁定的版本为准，由升级闸门第 1 组核对；这个属性由第 3 组核对。
+- **persona**：headless 与 acp 的 persona 是 `system-prompt` 行的 `personaPrefix`，补丁整体替换这一行的配置，换成 Presmium 的说明。web 载体用 `web.patch.yml` 中声明的预设 `preset-authoring` 承载工作台中的角色：作者是可能不懂代码的教师，只看到读者看到的文稿；作者的消息与批注就是要做的事；按作者看到的内容说话，不提文件、路径、行号、语法、命令、工具、沙箱与 git。`agent-preset-registry` 默认使用该预设；预设内的 `persona` 行遮蔽部署级的 `personaPrefix`，所以两段文字各自完整。写作的发布会原则在 `presmium-author` 技能中，改写内容时加载。预设只带写讲义需要的工具，不带定时任务、目标与子 agent（含 workflow）。web 载体关掉 `ui-agent-preset`（设置中的“Agent 预设”页与对话中的预设选择），工作台的会话一律用这个预设；headless 与 acp 不受影响。
+- **界面**（`web.patch.yml`）：关掉 `ui-layout` 与 `ui-sidebar`（由 Presmium 的根布局与导航外壳替换；退路模式下同时重新打开）、`ui-brand-official`、`ui-settings-account`、`account-controller`、`deepseek-account`、`llm-deepseek-account`、`web-search-deepseek`（DeepSeek 的搜索服务）、`ui-settings-session-log`（上传会话日志的设置）、`ui-settings-plugins`（设置中的“内置插件”页）与 `ui-agent-preset`（“Agent 预设”页与预设选择）。插件页中的实验插件与插件市场没有可关的行：它们是 dsh 安装自带的可选 bundle 与按需的官方目录，由插件页的“实验插件”组列出；工作台按这个组的 DOM 属性 `data-plugin-group="extensions"` 隐藏它。确切的行 ID 以锁定的版本为准，由升级闸门第 1 组核对；这个属性由第 3 组核对。
 
 ### 6.7 观测数据
 
@@ -499,6 +499,8 @@ AI 的专用请求先经 `agent-requests.ts` 绑定文稿与焦点，再交给�
 直接复用：对话、确认卡片（在 `conversation.composer` 中）、会话与工作区浏览器、设置与模型设置、终端、文件、jobs、计划、插件管理（可用范围受 6.6 节限制）。侧栏与对话头部通过公开槽位组合，不嵌套第二套导航外壳。
 
 Presmium 自己占用的槽位：品牌槽位 `sidebar.brand.mark`、`sidebar.brand.name`、`conversation.hero.brand.mark`；`settings.onboarding` 中的 `welcome-notice`（优先级 -1，替换首次使用的提示）。
+
+设置面向作者（[UI/UX RFC 1.1 节](rfc-workbench-uiux.md#11-web桌面与-vs-code)）：通用设置只留语言、外观、字号、“显示代码工作视图”与快捷键，另有“模型”页。`author-settings.ts` 经 `ctx.configForms`（`whileServed`、`get(...).set`）把作者的默认值写进 profile 自己的补丁层，只写作者还没选过的字段：`ui-settings.enabled: false`（代码工作视图关）、`ui-chat.transcriptView: compact`、`ui-chat.performanceUsage: compact`。不能放进 `--patch`：命令行补丁高于 profile 层，设置表单会拒绝作者此后的修改。代码工作视图关着时，`settings.general.item` 中的技术行（`permission`、`transcript-view`、`composer-enter`、`performance-usage`，ID 在 `contract.ts` 的 `TECHNICAL_SETTINGS`）被同 ID、优先级 -1 的空单元遮蔽；打开代码工作视图后恢复。`settings.section` 的导航直接列出全部条目，同 ID 遮蔽会多出空白项，所以“内置插件”“Agent 预设”两页按行关掉。设置头部的“打开配置文件”由 `ui-settings-general` 在回环地址上自带，没有公开开关，保留。证据见[作者设置与帮助记录](benchmarks/author-settings-help-2026-10-28.md)。
 
 首次使用的提示：dsh 把 `settings.onboarding` 的步骤画在侧栏底部的设置区里，根布局中侧栏平时收起，所以 Presmium 的提示画在页面之上（portal）。dsh 自己的 `welcome-notice` 在宿主上记“已读”，替换它的步骤只能调用 `complete()`（只在页面的内存中），所以“已读”记在浏览器的 `localStorage`。同一个槽位中 DeepSeek 的登录步骤（`deepseek-official`）以同样的方式换成立即完成的步骤。
 

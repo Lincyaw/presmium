@@ -35,6 +35,13 @@
   disabled: true
 - id: ui-settings-session-log
   disabled: true
+# Settings pages an author has no use for: the built-in plugins (the plugin rows of every session) and the agent presets
+# (the workbench's sessions use the authoring preset). Technical rows of the General page stay behind the coding view
+# (src/client/author-settings.ts).
+- id: ui-settings-plugins
+  disabled: true
+- id: ui-agent-preset
+  disabled: true
 # The changed-files and delivery cards under the AI's replies, with the guidance to link every file the reply names: the
 # author sees no files. The workbench makes the changed blocks blink on the document instead.
 - id: ui-deliverables
