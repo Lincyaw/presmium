@@ -74,7 +74,7 @@ export function ComponentPropertiesDialog({ identity, blockId, stepId, onClose }
     if (initial?.key === key && (bank.get(target) || sameComponentSource(initial.draft.source, componentSource({ content: document, version: source.version, fingerprint: source.fingerprint })))) return
     try { setInitial({ key, draft: fresh(document, componentSource({ content: document, version: source.version, fingerprint: source.fingerprint }), target) }) }
     catch (error) { setError(message(error, t)) }
-  }, [ready, bank, key, revision, source?.version, source?.fingerprint, busy])
+  }, [ready, bank, key, revision, source?.version, source?.fingerprint, busy, initial])
   const draft = bank?.get(target) ?? (initial?.key === key ? initial.draft : undefined)
   const stored = bank?.get(target)
   const editable = Boolean(source?.member?.roles.some(role => role === 'editor' || role === 'owner'))
