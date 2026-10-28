@@ -1,0 +1,25 @@
+{
+  "input": "78b4960ea1fef2d0af2ac6d9d707558e3f7442a1fe10583b28ec5f9501a510f1",
+  "entry": "lecture.json",
+  "lang": "javascript",
+  "code": "const values = Array.from({length: Number(n)}, (_, i) => i + 1)\nconst total = values.reduce((sum, value) => sum + value, 0)\nconsole.log(JSON.stringify({n: Number(n), total}))",
+  "environment": "node v24.22.0",
+  "run": {
+    "ok": true,
+    "stdout": "{\"n\":5,\"total\":15}\n",
+    "stderr": "",
+    "exitCode": 0,
+    "durationMs": 107,
+    "timedOut": false,
+    "source": "live",
+    "executorId": "presmium.node",
+    "outputs": [
+      {
+        "output_type": "stream",
+        "name": "stdout",
+        "text": "{\"n\":5,\"total\":15}\n"
+      }
+    ],
+    "cacheKey": "4ef71f97a593dbae89de8d901b340072e5a3369537e27aaac97e68d27a3039ab"
+  }
+}
