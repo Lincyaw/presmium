@@ -45,6 +45,8 @@
     "@radix-ui/react-tabs": "^1.2.1",
     "@radix-ui/react-toolbar": "^1.2.1",
     "@radix-ui/react-tooltip": "^1.4.1",
+    "@rjsf/core": "6.11.0",
+    "@rjsf/utils": "6.11.0",
     "@tiptap/core": "3.32.0",
     "@tiptap/extension-file-handler": "3.32.0",
     "@tiptap/pm": "3.32.0"

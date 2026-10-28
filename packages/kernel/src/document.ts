@@ -1,7 +1,7 @@
 import { Validator } from '@cfworker/json-schema'
-import type { Schema } from '@cfworker/json-schema'
 import { DOCUMENT_JSON_SCHEMA } from './document-schema.ts'
 import { isRecord } from './errors.ts'
+import { validateDocumentParameters } from './parameters.ts'
 import type { DocumentIssue, DocumentValidation, RichTextNode, TeachingDocument } from './contracts/document.ts'
 
 export { DOCUMENT_JSON_SCHEMA } from './document-schema.ts'
@@ -117,10 +117,8 @@ export function validateDocument(value: unknown): DocumentValidation {
     if (node.type === 'extension' && 'fallback' in node && Array.isArray(node.fallback)) node.fallback.forEach((child, index) => rich(child as RichTextNode, `${path}/fallback/${index}`, collected))
   }
   const schema = (value: JsonSchemaLike, parameters: unknown, path: string) => {
-    try {
-      const result = new Validator(value as Schema, '2020-12', false).validate(parameters)
-      if (!result.valid) for (const error of result.errors.slice(0, 10)) issue(path + error.instanceLocation.replace(/^#/, ''), 'parameters.schema', error.error)
-    } catch (error) { issue(path, 'parameters.schema-unavailable', error instanceof Error ? error.message : 'This parameter schema cannot be validated.') }
+    const result = validateDocumentParameters(value, parameters)
+    for (const error of result.issues) issue(path + error.path, result.available ? 'parameters.schema' : 'parameters.schema-unavailable', error.message)
   }
   for (const [id, block] of Object.entries(doc.blocks)) {
     const path = at('/blocks', id)

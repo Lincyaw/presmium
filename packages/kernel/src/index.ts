@@ -13,6 +13,8 @@ export { createAnchorResolverRegistry, isRenderable, parseAnchor } from './ancho
 export type { ParsedAnchor } from './anchors.ts'
 export { diagnosticOf } from './diagnostics.ts'
 export { DOCUMENT_JSON_SCHEMA, validateDocument } from './document.ts'
+export { validateDocumentParameters } from './parameters.ts'
+export type { DocumentParameterIssue, DocumentParameterSchemaReference, DocumentParameterValidation } from './parameters.ts'
 export { docBlocks, irBlocks, nodeMdast } from './blocks.ts'
 export { CheckRegistry } from './checks.ts'
 export { errorMessage, isRecord } from './errors.ts'
