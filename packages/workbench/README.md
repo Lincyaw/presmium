@@ -30,27 +30,23 @@ The page reaches the workspace service's routes under its own `api/presmium/` pa
 
 ## On the page
 
-The toolbar holds:
-
-- Back, the title, Undo and Redo, and whether the document is saved;
-- the view (Document or Slides, when the document has slides) and the mode (Editing or Viewing);
-- Comments and Version History.
+The document toolbar holds the navigation pane, Undo and Redo, whether the document is saved, Video production, Captions, Comments, Version History, Presentation preview and Export. Below 768 px, Video production, Captions and Version History move into a More menu so the toolbar stays on one row.
 
 The names follow Microsoft Word's, in Chinese and English.
 
-In Editing mode, hovering outlines a block. Clicking a block or selecting text opens a toolbar beside the mouse with Edit text, New Comment and Rewrite with AI.
+The document is one continuous editor: the author types in place and the change is saved after a short pause. Selecting text opens the formatting toolbar, which includes Add comment. Generated content (components and diagrams) shows its preview, not its source; authors change it through its properties or the AI assistant.
 
-Double-clicking a text block edits it in place. Enter keeps the edit and Esc puts the text back. The edit is written back to the block's source lines (`applyRenderedEdit`). Text that crosses formatting is offered to the AI instead, since writing it back would break the formatting.
-
-In Viewing mode the document behaves as it does for its readers.
-
-Every save is a version. Undo and Redo (Ctrl+Z, Ctrl+Y or Ctrl+Shift+Z, also while the document has the focus) walk the versions. Version History undoes any one of them, or redoes it.
+Every save is a version. Undo and Redo (Ctrl+Z, Ctrl+Y or Ctrl+Shift+Z) walk the versions, and Version History undoes any one of them.
 
 The AI's turns become versions too. When the workspace asks to review them (`review: required`), the author accepts or rejects them first.
 
-Comments are notes for the AI. The author writes them one by one, and they wait, numbered on their blocks, until the author sends them: Send N comments to AI in the toolbar puts them in one message. The AI's changes become a version. Comments are kept in the browser, by workspace and document.
+Comments are saved in the document with the text they point at. The Comments panel lists them; each can be replied to, reacted to, resolved and reopened.
 
-The workbench hands requests to the conversation through `workbench.onAgentRequest`; the host binds that to its agent session. These requests are Rewrite with AI, comments, and fixing content that does not display. Hosts route links to a document's Markdown through `workbench.revealSource(path, line)`, which opens that document and outlines the block at the line.
+Presentation preview shows the slides with the arrow keys and `Esc` working at once; `Esc` first closes an open menu or dialog, then leaves the presentation.
+
+Operations that an outside AI tool asks to perform appear as Approvals in the app bar, where the author allows or denies them.
+
+The workbench hands requests to the conversation through `workbench.onAgentRequest`; the host binds that to its agent session. Hosts route links to a document's source through `workbench.revealSource(path, line)`, which opens that document and outlines the block at the line.
 
 ## Documentation
 
