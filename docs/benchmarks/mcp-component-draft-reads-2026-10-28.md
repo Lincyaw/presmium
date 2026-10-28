@@ -45,6 +45,7 @@ bank 消费使用单独随机 scope、真实浏览器 WebCrypto 和 strict IDB�
 两次 Studio 的 backend／frontend、浏览器、私有 home／workspace／fixture 均已关闭或删除；登记的五个 Studio owner／子进程 PID 实际不存在。bank 的浏览器与随机端口服务均已关闭。所有轮次 0 模型请求、0 外部访问；Studio 两轮 0 browser error／HTTP error。未操作公共 4320／17407。
 
 轻检查：types 1318、layering、skills、packages 40、diff 均通过。没有新增 tracked tests，没有运行套件、完整示例或模型。没有新增 UI 视觉控件／CSS，因此未另造 Figma 节点或四组合视觉验收。
+
 ## 4320 更新
 
 运行版本 `8b0a08464a492d61745290ed774ce300c6315989` 已更新至工作台。组合版本的真实 Studio 与 MCP 客户端操作通过 17 项；更新后在线只读检查 23 项通过，包括当前浏览器客户端声明新读取动作且被动状态不包含草稿内容。独立快照构建通过 1240 项来源检查，客户端 SHA-256 为 `9df8f5529a4076dfb319ca34c24468bfdb61b6f1934049a64e7e7b5d3dbe2bbc`。双 host 的既有认证会话正常，更新过程保留 11 份文稿。
