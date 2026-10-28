@@ -1,0 +1,24 @@
+.component-properties__content,
+.component-properties__backups,
+.component-properties__references {
+  display: grid;
+  gap: var(--pm-space-3);
+  min-width: 0;
+}
+.component-properties__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pm-space-2);
+}
+.component-properties__reference {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pm-space-2);
+  min-width: 0;
+}
+.component-properties__reference > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

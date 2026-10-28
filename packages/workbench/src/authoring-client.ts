@@ -17,7 +17,7 @@ export function connectAuthoringClient(workbench: Workbench): () => void {
   let closed = false, revision = 0, sequence = 0
   let attached: Attachment | undefined
   let lastSignature: string | undefined, lastContent: object | undefined
-  let lastDraftRevision: number | undefined
+  let lastDraftRevision: string | undefined
   let active: { requestId: string, controller: AbortController } | undefined
   let reports: Promise<void> = Promise.resolve()
   let pendingState: { owner: Attachment, connectionId: string, value: AuthoringClientSnapshot } | undefined
@@ -26,7 +26,7 @@ export function connectAuthoringClient(workbench: Workbench): () => void {
   const snapshot = (): AuthoringClientSnapshot | undefined => {
     const value = workbench.authoringClientSnapshot(revision)
     if (!value) return
-    const next = signature(value), content = workbench.state.authoring?.content, drafts = workbench.authoringCommentDraftRevision()
+    const next = signature(value), content = workbench.state.authoring?.content, drafts = workbench.authoringDraftRevision()
     if (next !== lastSignature || content !== lastContent || drafts !== lastDraftRevision) { revision++; lastSignature = next; lastContent = content; lastDraftRevision = drafts }
     return { ...value, revision }
   }
@@ -130,7 +130,7 @@ export function connectAuthoringClient(workbench: Workbench): () => void {
     } else if (before !== revision && attached.connectionId) publishState(attached, attached.connectionId, value)
   }
   const stop = workbench.subscribe(changed)
-  const stopDrafts = workbench.subscribeCommentDraftChanges(changed)
+  const stopDrafts = workbench.subscribeAuthoringDraftChanges(changed)
   changed()
   return () => { closed = true; stop(); stopDrafts(); detach() }
 }

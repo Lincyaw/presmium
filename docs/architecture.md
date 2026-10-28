@@ -1900,6 +1900,10 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 | simple-git | MIT | 代码引用读取 git 中的文件、本地环境的仓库；工作区审阅直接运行 git，以控制 git 目录、对象库与钩子设置（10.7 节） | addon-code、addon-exec-local |
 | React、React DOM | MIT | 工作台、预打包查看器、插件组件与 SSR；工作台由 dsh 外壳提供同一份 React，查看器通过 import map 共享 | host、viewer、web、workbench、dsh、各浏览器插件 |
 | BlockNote（`@blocknote/core`、`@blocknote/react`、`@blocknote/mantine`） | MPL-2.0 | 作者侧正文、字幕和讲稿编辑，原生选区、历史与批注 | workbench |
+| RJSF（`@rjsf/core`、`@rjsf/utils`） | Apache-2.0 | 公共参数表单；通过公开 fields、templates、widgets 组合 Pm 控件，保留未知值；草稿与保存由调用方负责 | workbench |
+| `@cfworker/json-schema` | MIT | 文稿及组件参数共用的 JSON Schema 2020-12 校验 | kernel |
+| `json-schema-library` | MIT | 参数路径与只读注解查询，不承担文稿有效性判断；不自动加载远端引用 | kernel |
+| `fast-json-patch` | MIT | 比较参数草稿并派生受限的领域操作，最终保存仍经过文稿校验与版本检查 | kernel |
 | Radix Primitives（`@radix-ui/react-*`） | MIT | 弹窗、菜单、浮层、标签页、焦点范围 | host、viewer、workbench |
 | dnd kit（`@dnd-kit/react`、`@dnd-kit/dom`） | MIT | 页面列表的指针、触屏、键盘排序与读屏反馈，提交仍经过文稿保存边界 | workbench |
 | esbuild | MIT | 把 `@lincyaw/dsh` 的客户端部分构建为 dsh 的工厂格式 | dsh |

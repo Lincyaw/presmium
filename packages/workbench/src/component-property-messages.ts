@@ -1,0 +1,31 @@
+export const COMPONENT_PROPERTY_MESSAGES = {
+  'zh-CN': {
+    properties: '属性', scope: '参数范围', base: '基础参数', step: '当前步骤', materials: '素材与引用', back: '返回参数',
+    apply: '应用', adopt: '采用', cancel: '取消', done: '完成', undo: '撤消', reset: '恢复继承', resetPending: '待恢复继承', edit: '继续编辑',
+    loading: '正在读取参数…', empty: '此内容没有公开参数。', changed: '文稿已更新，请重新检查。', recheck: '重新检查',
+    invalid: '请检查参数。', failed: '未能应用，请重试。', denied: '没有修改权限。', missing: '此内容已移除。',
+    storage: '输入仅保留在本次会话。', storagePending: '正在备份输入…', storageRead: '未能读取备份。', limit: '无法再保留参数草稿。',
+    retry: '重试', backup: '参数备份', recover: '恢复', discard: '丢弃', discardChanges: '放弃更改', unreadable: '部分备份无法读取。',
+    backupChanged: '备份或输入已变化，请重新读取。', definitionChanged: '素材已改变，请核对保留的输入。',
+    preserved: '保留已有步骤覆盖', impact: (count: number) => `影响 ${count} 个步骤`,
+    search: '搜索素材', definitions: '已有素材', noDefinitions: '没有兼容素材。', results: (count: number) => `${count} 项`,
+    current: '当前素材', incompatible: '不适用于当前内容', module: '此实现暂不支持', references: '引用位置', locate: '定位',
+    actions: '素材操作', copy: '独立副本', remove: '删除', unavailable: '尚未提供独立副本或删除能力。', copyUnavailable: '尚未提供独立副本。', inUse: '此素材正在被引用。',
+    saved: '已应用', resetReason: '恢复后将使用继承参数。',
+  },
+  en: {
+    properties: 'Properties', scope: 'Parameter scope', base: 'Base parameters', step: 'Current step', materials: 'Materials', back: 'Back to parameters',
+    apply: 'Apply', adopt: 'Use', cancel: 'Cancel', done: 'Done', undo: 'Undo', reset: 'Restore inheritance', resetPending: 'Inheritance will be restored', edit: 'Keep editing',
+    loading: 'Reading parameters…', empty: 'No public parameters.', changed: 'The document changed. Review again.', recheck: 'Review again',
+    invalid: 'Check the parameters.', failed: 'Could not apply. Try again.', denied: 'Editing is not permitted.', missing: 'This content was removed.',
+    storage: 'Input is kept only in this session.', storagePending: 'Backing up input…', storageRead: 'Could not read backups.', limit: 'No more parameter drafts can be kept.',
+    retry: 'Retry', backup: 'Parameter backup', recover: 'Recover', discard: 'Discard', discardChanges: 'Discard changes', unreadable: 'Some backups could not be read.',
+    backupChanged: 'The backup or input changed. Read it again.', definitionChanged: 'The material changed. Review the retained input.',
+    preserved: 'Keep existing step overrides', impact: (count: number) => `Affects ${count} ${count === 1 ? 'step' : 'steps'}`,
+    search: 'Search materials', definitions: 'Existing materials', noDefinitions: 'No compatible materials.', results: (count: number) => `${count} ${count === 1 ? 'item' : 'items'}`,
+    current: 'Current material', incompatible: 'Not compatible with this content', module: 'This implementation is not supported', references: 'References', locate: 'Locate',
+    actions: 'Material actions', copy: 'Independent copy', remove: 'Delete', unavailable: 'Independent copies and deletion are not available yet.', copyUnavailable: 'Independent copies are not available yet.', inUse: 'This material is in use.',
+    saved: 'Applied', resetReason: 'Inherited parameters will be used.',
+  },
+}
+export type ComponentPropertyMessages = typeof COMPONENT_PROPERTY_MESSAGES['en']

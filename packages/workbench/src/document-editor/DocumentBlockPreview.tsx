@@ -8,6 +8,8 @@ import { prepareDocumentPreview } from '../document-preview.ts'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
 import { documentBlockSection, DocumentStepNarration } from './DocumentStepNarration.tsx'
 import { DocumentBlockPlayback } from './block-playback.ts'
+import { ComponentPropertiesDialog } from './ComponentPropertiesDialog.tsx'
+import { COMPONENT_PROPERTY_MESSAGES } from '../component-property-messages.ts'
 
 interface Snapshot { address: string, revision: string }
 interface PreviewState { snapshot?: Snapshot, status: 'idle' | 'loading' | 'ready' | 'failed' }
@@ -34,6 +36,7 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   }, [])
   const [visible, setVisible] = useState(false), [attempt, setAttempt] = useState(0), [height, setHeight] = useState<number>()
   const [state, setState] = useState<PreviewState>({ status: 'idle' })
+  const [properties, setProperties] = useState<{ identity: string, stepId?: string }>()
   const currentState = useRef(state)
   currentState.current = state
   const runtimeGeneration = useRef(0), pauseRuntime = useRef<() => void>(() => {})
@@ -187,6 +190,8 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   return <section ref={root} className="pm-ui-block-preview" data-block-preview={blockId} data-status={state.status} contentEditable={false}>
     <header className="pm-ui-block-preview__header"><span className="pm-ui-block-preview__label" role={state.status === 'failed' ? 'status' : undefined}><PmIcon name="slides" />{state.status === 'failed' ? t.previewFailure : old && state.snapshot ? t.previewPrevious : state.status === 'loading' ? t.previewLoading : t.previewSnapshot}</span>
       <span className="pm-ui-block-preview__actions">
+        {source?.content?.blocks[blockId]?.type === 'component' && <PmIconButton small icon="sliders" label={COMPONENT_PROPERTY_MESSAGES[locale].properties}
+          data-component-properties={blockId} disabled={!source.identity} onClick={() => { if (source.identity) setProperties({ identity: source.identity, stepId }) }} />}
         <PmIconButton small icon="captions" label={t.stepCaptions} aria-expanded={narrationOpen} aria-controls={narrationOpen ? narrationPanel : undefined} aria-pressed={narrationOpen} disabled={!stepId} onClick={() => {
           pause()
           if (sectionId && stepId) workbench.observeDocumentStep(sectionId, stepId)
@@ -201,5 +206,6 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
       {enabled && !src && state.status === 'loading' && <p className="pm-ui-block-preview__pending" role="status">{t.previewLoading}</p>}
     </div>
     {sectionId && stepId && <DocumentStepNarration blockId={blockId} sectionId={sectionId} stepId={stepId} expanded={narrationOpen} panelId={narrationPanel} onPause={pause} />}
+    {properties && <ComponentPropertiesDialog identity={properties.identity} blockId={blockId} stepId={properties.stepId} onClose={() => setProperties(undefined)} />}
   </section>
 }
