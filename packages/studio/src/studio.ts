@@ -1,5 +1,5 @@
-import { randomBytes } from 'node:crypto'
-import { closeSync, mkdirSync, openSync, renameSync, writeSync } from 'node:fs'
+import { createHash, randomBytes } from 'node:crypto'
+import { closeSync, copyFileSync, existsSync, mkdirSync, openSync, readdirSync, realpathSync, renameSync, statSync, writeSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { createServer, isIP } from 'node:net'
 import type { AddressInfo } from 'node:net'
@@ -39,6 +39,35 @@ export interface Studio {
 
 function studioHome(env: NodeJS.ProcessEnv = process.env): string {
   return join(env.XDG_STATE_HOME || join(env.HOME || homedir(), '.local', 'state'), 'presmium', 'studio')
+}
+
+/** The bundle `@lincyaw/dsh` this package depends on: the directory the profile links to. */
+function bundleDir(): string {
+  return realpathSync(dirname(createRequire(join(PACKAGE_DIR, 'package.json')).resolve('@lincyaw/dsh/package.json')))
+}
+
+/**
+ * The profile of this installation, `presmium-studio-<hash of the bundle's directory>`: its `node_modules` links to
+ * this installation's bundle, so Studios of other checkouts or versions sharing the home never repoint it. A new
+ * one starts with the author's settings, the profile patch of the Studio profile used last (the earlier single
+ * profile `presmium-studio` included); sessions and credentials are in the shared home, and its log is `<profile>.log` there.
+ */
+function installProfile(home: string, bundle: string): string {
+  const name = `${PROFILE}-${createHash('sha256').update(bundle).digest('hex').slice(0, 10)}`
+  const profiles = join(home, 'profiles')
+  const patch = join(profiles, name, 'cordis.patch.yml')
+  if (!existsSync(patch)) {
+    const last = (existsSync(profiles) ? readdirSync(profiles) : [])
+      .filter(other => other === PROFILE || other.startsWith(`${PROFILE}-`))
+      .map(other => join(profiles, other, 'cordis.patch.yml'))
+      .filter(file => existsSync(file))
+      .sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs)[0]
+    if (last) {
+      mkdirSync(dirname(patch), { recursive: true })
+      copyFileSync(last, patch)
+    }
+  }
+  return name
 }
 
 /** The `presmium` command of the `@lincyaw/presmium` package this one depends on. */
@@ -114,8 +143,10 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
 
   const home = studioHome(env)
   mkdirSync(home, { recursive: true, mode: 0o700 })
-  writeProfile(home, PROFILE, 'web')
-  const log = new Log(join(home, 'presmium-studio.log'))
+  const bundle = bundleDir()
+  const profile = installProfile(home, bundle)
+  writeProfile(home, profile, 'web', bundle)
+  const log = new Log(join(home, `${profile}.log`))
   const serviceToken = randomBytes(24).toString('base64url')
   const started: LaunchedProcess[] = []
   const stopAll = async () => {
@@ -139,7 +170,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
     const { url, root } = await server.ready
 
     const dsh = launchNode('DeepSeek Harness', [
-      dshBin(PACKAGE_DIR), ...launchArgs(PROFILE, 'web'), '--port', String(port), '--no-open',
+      dshBin(PACKAGE_DIR), ...launchArgs(profile, 'web'), '--port', String(port), '--no-open',
       ...listenAddress ? ['--host', listenAddress, '--trusted-host', `${bracketIPv6(listenAddress)}:${port}`] : [],
     ], {
       cwd: root,

@@ -7,7 +7,7 @@ order of work and the rules for judging the evidence.
 
 For slow switches or exports, look at the `pnpm studio` terminal first: stderr forwards the workspace
 service's log live, and startup prints the path of the persistent log (by default
-`~/.local/state/presmium/studio/presmium-studio.log`, following `XDG_STATE_HOME`). The log carries UTC times
+`~/.local/state/presmium/studio/presmium-studio-<hash>.log`, one per installation or checkout, following `XDG_STATE_HOME`). The log carries UTC times
 and the process each line comes from (`docs/design-dsh.md` 11.2). Align document, phase, cache or fallback
 and duration by the preview request number (`[preview N]`) or the job ID (`[job]`).
 
