@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { createPreviewPool } from '../preview-pool.ts'
 import type { PresentationAction, PreviewFrameStatus } from '../preview-pool.ts'
@@ -39,6 +39,16 @@ export function PreviewPanel({ active = true, onPresentationAction, presentation
     return () => { current.dispose(); pool.current = undefined }
   }, [workbench, presentation])
   useLayoutEffect(() => { pool.current?.confirmPresentation(confirmedRevision) }, [confirmedRevision])
+  // A presentation takes the keyboard (arrows, space, Esc) once its frame can be seen, unless the author already focused something else.
+  const keyboardTaken = useRef(false)
+  useEffect(() => {
+    if (!presentation || !active || !ready || keyboardTaken.current) return
+    const frame = container.current?.querySelector<HTMLIFrameElement>('iframe[data-active="true"]:not([hidden])')
+    const focused = globalThis.document.activeElement
+    if (!frame || focused && focused !== globalThis.document.body) return
+    frame.focus()
+    keyboardTaken.current = globalThis.document.activeElement === frame
+  }, [presentation, active, ready, snapshotMatches, canvasGate])
   useLayoutEffect(() => {
     pool.current?.select(active && document !== undefined && !failure && !(renderer === 'slides' && preview && !preview.slides)
       ? { document, renderer, address, title: t.previewTitle(title), reload: loads + reload }

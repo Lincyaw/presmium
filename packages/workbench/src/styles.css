@@ -948,8 +948,7 @@
 .pmw-toolbar--present { justify-content: flex-end; }
 @media (max-width: 767px) {
   .pmw-source-document { padding: var(--pm-space-2); }
-  .pmw-toolbar { flex-wrap: wrap; overflow: visible; }
-  .pmw-toolbar__status { margin-inline-start: auto; }
+  .pmw-toolbar__status { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .pmw-document__aside { width: 100%; }
   .pmw-step-timeline { padding: var(--pm-space-2); }
 }

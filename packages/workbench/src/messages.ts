@@ -24,7 +24,6 @@ const zh = {
   pageMore: (title: string) => `页面操作：${title}`,
   pageRenameTitle: '重命名页面',
   pageCopy: '复制页面',
-  pageCopyTitle: (title: string) => `${title}（副本）`,
   movePageUp: '上移页面',
   movePageDown: '下移页面',
   previewPreparing: '正在准备文稿预览，首次打开可能需要一些时间…',
@@ -50,7 +49,6 @@ const zh = {
   pages: '页面',
   newPage: '新建页面',
   untitledPage: '未命名页面',
-  createdPage: '新建页面',
   pageEditFiles: '此文稿的页面来自多个文件，暂不支持直接重命名或移动。原内容已保留。',
   pageEditBoundary: '暂时无法确认此页的完整边界。请重新加载文稿后重试。',
   pageEditHierarchy: '只能移动相邻的同级页面；封面和章节边界保持原位。',
@@ -151,7 +149,6 @@ const zh = {
   confirmRemove: (title: string) => `确定删除“${title}”吗？`,
   removeImpact: (files: number) => `将删除 ${files} 个文件或链接。`,
   projectInspecting: '正在检查…',
-  copyTitle: (title: string) => `${title}（副本）`,
   cancel: '取消',
   close: '关闭',
   created: (title: string) => `已创建“${title}”`,
@@ -189,13 +186,14 @@ const zh = {
   presentHint: '逐步放映幻灯片；配置了讲授时可播放讲解、字幕与动画。视频文件从导出生成。',
   slidesHint: '幻灯片的版式，与放映时相同',
   commands: '命令',
+  moreCommands: '更多',
   navigation: '导航',
   navigationPane: '导航窗格',
   closeNavigation: '关闭导航窗格',
   headings: '标题',
   noSections: '这份文稿还没有章节。',
   statusBar: '状态栏',
-  sectionOf: (n: number, total: number) => `第 ${n} 节，共 ${total} 节`,
+  pageOf: (n: number, total: number) => `第 ${n} 页，共 ${total} 页`,
   slideOf: (n: number, total: number) => `幻灯片 ${n} / ${total}`,
   words: (n: number) => `${n.toLocaleString('zh-CN')} 字`,
   comments: '批注',
@@ -329,7 +327,6 @@ const en: WorkbenchMessages = {
   pageMore: (title: string) => `Page actions: ${title}`,
   pageRenameTitle: 'Rename page',
   pageCopy: 'Duplicate page',
-  pageCopyTitle: (title: string) => `${title} (copy)`,
   movePageUp: 'Move page up',
   movePageDown: 'Move page down',
   previewPreparing: 'Preparing the document preview. The first open may take a moment…',
@@ -355,7 +352,6 @@ const en: WorkbenchMessages = {
   pages: 'Pages',
   newPage: 'New page',
   untitledPage: 'Untitled page',
-  createdPage: 'New page',
   pageEditFiles: 'This document’s pages come from multiple files. Direct page renaming and moving are unavailable; the original content is kept.',
   pageEditBoundary: 'The complete page boundary is unclear. Reload the document and try again.',
   pageEditHierarchy: 'Only adjacent peer pages can be moved. Cover and chapter boundaries remain fixed.',
@@ -456,7 +452,6 @@ const en: WorkbenchMessages = {
   confirmRemove: (title: string) => `Delete "${title}"?`,
   removeImpact: (files: number) => `Delete ${files} ${files === 1 ? 'file or link' : 'files or links'}.`,
   projectInspecting: 'Checking…',
-  copyTitle: (title: string) => `${title} (copy)`,
   cancel: 'Cancel',
   close: 'Close',
   created: (title: string) => `Created "${title}"`,
@@ -494,13 +489,14 @@ const en: WorkbenchMessages = {
   presentHint: 'Present step by step, or play configured narration, captions and animations. Export to make a video file.',
   slidesHint: 'The slides\' own layout, as when presenting them',
   commands: 'Commands',
+  moreCommands: 'More',
   navigation: 'Navigation',
   navigationPane: 'Navigation Pane',
   closeNavigation: 'Close the navigation pane',
   headings: 'Headings',
   noSections: 'This document has no sections yet.',
   statusBar: 'Status bar',
-  sectionOf: (n: number, total: number) => `Section ${n} of ${total}`,
+  pageOf: (n: number, total: number) => `Page ${n} of ${total}`,
   slideOf: (n: number, total: number) => `Slide ${n} of ${total}`,
   words: (n: number) => `${n.toLocaleString('en')} ${n === 1 ? 'word' : 'words'}`,
   comments: 'Comments',
@@ -620,6 +616,16 @@ const en: WorkbenchMessages = {
 }
 
 export const MESSAGES: Record<Locale, WorkbenchMessages> = { 'zh-CN': zh, en }
+
+/** Text the workbench writes into a document (new page titles, copy names) follows the document's `lang`, not the interface's. */
+const CONTENT = {
+  'zh-CN': { newPage: '新页面', copyTitle: (title: string) => `${title}（副本）` },
+  en: { newPage: 'New page', copyTitle: (title: string) => `${title} (copy)` },
+} satisfies Record<Locale, unknown>
+
+export function contentText(lang: string | undefined): typeof CONTENT[Locale] {
+  return CONTENT[localeOf(lang ?? 'zh-CN')]
+}
 
 /** A time as "just now", "5 minutes ago", or a date for older ones. */
 export function timeAgo(iso: string, locale: Locale, now = Date.now()): string {
