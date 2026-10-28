@@ -3,6 +3,7 @@ import { errorMessage } from '@lincyaw/kernel'
 import type { DocumentSummary, ProjectPlan } from '@lincyaw/kernel'
 import { PmButton, PmDialog, PmEmpty, PmInput, PmSelect, PmIcon, PmMenu, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
+import { contentText } from '../messages.ts'
 
 type Editing =
   | { op: 'create' }
@@ -75,7 +76,7 @@ export function HomePanel() {
                           items={[{ id: 'rename', label: t.rename, icon: 'edit', disabled: working }, { id: 'copy', label: t.makeCopy, icon: 'copy', disabled: working || doc.dir === '' }, { id: 'delete', label: t.remove, icon: 'trash', danger: true, disabled: working || doc.dir === '' }]}
                           onSelect={(id) => {
                             if (id === 'copy') {
-                              const title = t.copyTitle(doc.title)
+                              const title = contentText(doc.lang).copyTitle(doc.title)
                               void run(async () => {
                                 await workbench.copyDocument(doc.dir, title)
                                 return t.copied(title)

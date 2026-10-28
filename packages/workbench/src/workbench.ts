@@ -46,7 +46,7 @@ import { DocumentDiagnostics } from './diagnostics.ts'
 import { DocumentHistory } from './history.ts'
 import { DocumentJobs } from './jobs.ts'
 import { VoiceoverJobs } from './voiceover-jobs.ts'
-import { localeOf, MESSAGES } from './messages.ts'
+import { contentText, localeOf, MESSAGES } from './messages.ts'
 import type { AgentPlace, Locale } from './messages.ts'
 import { changedPlaces, findPlaceAtLine, findPlaceSource } from './places.ts'
 import { OperationLog } from './telemetry.ts'
@@ -1776,7 +1776,7 @@ export class Workbench {
       if (scope !== this.#documentScope || identity !== this.#state.authoring?.identity) throw new Error('page-context-changed')
       const page = document.sections[section]
       if (!page) throw new Error('page-boundary')
-      const copy = duplicateDocumentPage(document, section, this.#messages.pageCopyTitle(page.title), () => crypto.randomUUID())
+      const copy = duplicateDocumentPage(document, section, contentText(document.metadata.lang).copyTitle(page.title), () => crypto.randomUUID())
       copied = copy.section
       Object.assign(document, copy.document)
       if (generation === this.#documentSelectionGeneration) this.#pendingDocumentFocus = { documentId: document.id, nodeId: `page:${copied}`, generation, afterSave: true }
@@ -1823,7 +1823,7 @@ export class Workbench {
       || this.#state.isHistoryBusy || this.#state.isHistoryPreparing) return false
     try {
       this.#set({ pageEditFailure: undefined })
-      const created = commands.insertPage(after, this.#messages.newPage)
+      const created = commands.insertPage(after, contentText(source.content.metadata.lang).newPage)
       this.#pendingDocumentField = undefined; this.#pendingDocumentSelection = undefined; this.#pendingDocumentFocus = undefined
       this.#set({ position: { section: created.sectionId, step: 0, trail: [], view: 'document' }, documentNavigation: { section: created.sectionId, request: crypto.randomUUID() } })
       this.#focusDocumentNode(editor, created.nodeId)
