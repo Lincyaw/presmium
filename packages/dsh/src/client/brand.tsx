@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { BRAND_SLOTS, ONBOARDING } from './contract.ts'
 import { BRAND_COPY, BRAND_LANGUAGES, useClientMessages } from './messages.ts'
+import { rememberOpenSection } from './settings-opener.ts'
 
 export function Logo({ size = 24, className }: { size?: number, className?: string }) {
   return (
@@ -27,6 +28,7 @@ function welcomed(): boolean {
 function Welcome({ workbench, complete, openSection }: { workbench: Workbench, complete?: () => void, openSection?: (id: string) => void }) {
   const t = useClientMessages(workbench)
   const read = welcomed()
+  useEffect(() => rememberOpenSection(openSection), [openSection])
   useEffect(() => {
     if (read) complete?.()
   }, [read, complete])
@@ -62,10 +64,11 @@ function Welcome({ workbench, complete, openSection }: { workbench: Workbench, c
   )
 }
 
-function PassOver({ complete }: { complete?: () => void }) {
+function PassOver({ complete, openSection }: { complete?: () => void, openSection?: (id: string) => void }) {
   useEffect(() => {
+    rememberOpenSection(openSection)
     complete?.()
-  }, [complete])
+  }, [complete, openSection])
   return null
 }
 
@@ -78,6 +81,14 @@ export function registerBrand(ctx: DshClientContext, workbench: Workbench): void
   const [welcome, signIn] = ONBOARDING.steps
   ctx.effect(() => ctx.slots.inject(ONBOARDING.slot, () => ctx.slots.register({ name: ONBOARDING.slot, id: welcome, priority: -1, order: -100 }, props => <Welcome workbench={workbench} {...props} />)), 'presmium: first-use notice')
   ctx.effect(() => ctx.slots.inject(ONBOARDING.slot, () => ctx.slots.register({ name: ONBOARDING.slot, id: signIn, priority: -1, order: 0 }, PassOver)), 'presmium: no DeepSeek sign-in step')
+  // Harness's own `English` and `中文` carry its developer copy in the AI panel ("Describe what you want to build…"),
+  // and a language's dictionary cannot be registered twice; a choice of either becomes the same language with Presmium's
+  // copy. Only changes are followed: the page's first, provisional language may still give way to the stored one.
+  ctx.effect(() => ctx.locale.subscribe(() => {
+    const active = ctx.locale.getLocale().active
+    const language = BRAND_LANGUAGES.find(candidate => candidate.fallback === active)
+    if (language) void ctx.locale.setLocale(language.id)
+  }), 'presmium: Harness\'s languages with Presmium\'s copy')
   for (const language of BRAND_LANGUAGES) {
     ctx.effect(() => ctx.locale.addLanguage({ id: language.id, label: language.label, fallback: language.fallback }), `presmium: language ${language.id}`)
     for (const [ns, dict] of Object.entries(BRAND_COPY[language.id])) ctx.effect(() => ctx.locale.register(ns, language.id, dict), `presmium: ${ns} copy ${language.id}`)
