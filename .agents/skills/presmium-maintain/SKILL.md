@@ -102,7 +102,9 @@ admission before invoking the existing source/playback control. Never add an MCP
 browser SSE, automatic compile/mode switch, estimated playing state or replay after disconnect.
 `source.flush` covers the canonical source actor only. Explicit comment and component-property draft inspect/read use the
 existing banks and bounded request results; passive state never contains draft content. Recording, unwired
-form drafts and MCP draft restore/discard remain unavailable until their real owners are wired.
+form drafts and MCP comment draft restore/discard remain unavailable until their real owners are wired.
+Explicit component-property restore/discard reuse that bank with exact references, strict recovery forks
+and current-input protection; they never Apply canonical parameters.
 
 No dependency internals, no forks or patches. No package uses `vitepress` or `@slidev/*`: the web page and
 the slides are both pages of Presmium's own prebuilt viewer (`docs/architecture.md` 1.1).

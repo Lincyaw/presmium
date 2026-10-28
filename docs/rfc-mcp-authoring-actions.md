@@ -50,7 +50,7 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 计划、波形、定位、播放、暂停、速率 | `ProductionPlan`、单一播放器、预览协议中的制作请求 | 已有 `read_production_plan` 及第 9.1 节的真实作者客户端请求／回执；`navigate` 仍仅定位放映窗口，`get_runtime` 只读报告 | 准备计划须显式请求，不自动切模式；客户端录制尚未接入 |
 | 编译、预览、导出、下载 | workspace `jobs` 需要明确 `JobSource`，支持状态、事件、取消、版本和文件 | `build/get_builds/cancel_build` 已保留 source、sequence、inputFingerprint、captions 与文件；取消不要求先编译 | 后续统一任务发现、持久意图账本与资源；当前反馈见[输出验证记录](benchmarks/mcp-output-feedback-2026-10-27.md) |
 | 诊断、失败详情、运行验证 | UI `readDiagnostics` 读诊断快照；编译／浏览器／作者窗口分来源。已选 Doc 无 IR 也能报告请求失败和异常，authoringSource 只表示已知保存基线 | `get_diagnostics` 有界读取同一快照且不编译，`check_document` 才显式检查；协议与[未编译窗口](diagnostic-feedback.md#未编译的作者窗口)保留来源和独立实例。runtime 有报告但不证明最新源 | 带完整来源绑定的验证请求及浏览器实际结果；检查计数、空快照和作者保存基线不能替代当前源验证；未关联文稿故障与窗口在线状态仍待 |
-| 文稿草稿、外部变更、保存冲突 | `DocumentSession` 和制作 drafts 在浏览器按来源隔离；默认状态不含未提交字节 | 第 9.1 节有界编辑状态、canonical source.flush，以及第 9.2／9.3 节显式批注／组件属性草稿读取 | 未接入的表单草稿与草稿恢复／丢弃仍不可用；未连接或未检查时不能推断已保存 |
+| 文稿草稿、外部变更、保存冲突 | `DocumentSession` 和制作 drafts 在浏览器按来源隔离；默认状态不含未提交字节 | 第 9.1 节有界编辑状态、canonical source.flush，以及第 9.2／9.3 节显式批注读取、组件属性稿读取／恢复／丢弃 | 未接入的表单草稿与批注恢复／丢弃仍不可用；未连接或未检查时不能推断已保存 |
 | 审阅、逐文件拒绝、检查点恢复 | workspace `review/*` 与 `CHANGE_REVIEW`，持锁到结束 | 核心 MCP 无适配，dsh 自有桥接 | 同一 reviewId、范围、来源与修改 digest，绑定宿主授权决策 |
 | 历史、查看旧版本、撤消、重做、放弃未提交修改 | Web 与 MCP 共用 `DocumentHistory`／Revisions，历史按原修改分页，完整链状态不依赖局部页；原生编辑历史独立 | 已有 `get_document_history/read_history_file/undo_document_change/redo_document_change/revert_document_change`，绑定 raw source、HEAD 与完整目标；见第 21 节 | 未保存的客户端历史、外部修改提交、项目恢复与通用 discard 仍不开放；已知回执仅进程内且结果仍当前 |
 
@@ -203,7 +203,7 @@ agent 对已保存源执行事务不依赖一个永远在线的浏览器。客�
 | `request_authoring_client` | operate | 指定 clientId、epoch、connectionId、客户端 revision、CanonicalSource 和 requestId；返回受理状态，不冒充完成 |
 | `get_authoring_client_request` | read | 返回 sent／executing／done／refused／failed／expired，以及真实浏览器观察、verification 和 current |
 
-已实现动作是 `state.read`、`source.flush`、`preview.prepare`、`playback.pause`、`position.step`、`playback.play`、`playback.seek`、`playback.rate`、`comment-drafts.inspect`、`comment-drafts.read`、`component-drafts.inspect` 和 `component-drafts.read`。`source.flush` 只等待当前 canonical source actor 的保存；批注输入、数值表单、录制候选等未接入内容不能据此声称已保存。组词、恢复冲突或锁定时不开放 flush。Doc 中的 step 动作只按稳定 ID 定位，并先暂停；不切换模式、不编译。播放、seek、rate 只面向作者已准备好的精确 ProductionBinding 和有效计划，等待原生产播放器的真实帧回执，不能把 estimated／unknown 当作可播放。可选速率与人类控件共用内核常量。
+已实现动作是 `state.read`、`source.flush`、`preview.prepare`、`playback.pause`、`position.step`、`playback.play`、`playback.seek`、`playback.rate`、`comment-drafts.inspect`、`comment-drafts.read`、`component-drafts.inspect`、`component-drafts.read`、`component-drafts.restore` 和 `component-drafts.discard`。`source.flush` 只等待当前 canonical source actor 的保存；批注输入、数值表单、录制候选等未接入内容不能据此声称已保存。组词、恢复冲突或锁定时不开放 flush。Doc 中的 step 动作只按稳定 ID 定位，并先暂停；不切换模式、不编译。播放、seek、rate 只面向作者已准备好的精确 ProductionBinding 和有效计划，等待原生产播放器的真实帧回执，不能把 estimated／unknown 当作可播放。可选速率与人类控件共用内核常量。
 
 `preview.prepare` 是明确编译并准备当前已保存来源的动作，复用 `Workbench.preparePresentation` 和 `compileDocumentPreview`。先暂停，保持当前模式和稳定位置；Doc 不进入 Video／Present，也不合成或播放。`snapshot.preview` 区分 unprepared／preparing／prepared／unavailable；只有真实 IR 的 source、fingerprint 和项目代次仍当前时，prepared 才带 `source/irRevision/projectRevision`。没有浏览器就没有可执行动作；编译失败或不可用返回失败，不伪造准备完成。
 
@@ -215,7 +215,7 @@ MCP 请求仍为 30 秒，不延长为人工准备的 45 秒。浏览器在原 `
 
 目前最多保留 16 个客户端和 64 条进程内请求回执，请求 30 秒过期。保留期内相同 epoch／requestId 的相同意图只读取原回执，不重新派发；更换参数拒绝。断线后不自动重播；丢失播放回执时先重读状态，不以新 requestId 重试播放。旧终态可读，但只有连接、客户端状态及已保存来源仍相符时 current 才为 true。请求最多 4096 个 JSON 字符，回复最多 7168 个 pretty JSON UTF-16 字符，客户端清单分页。
 
-录制、草稿 keep／restore／discard、未接入的其他表单草稿、审阅和打开文稿尚未接入此通道，清单明确列为 unavailable。本节之前的完整客户端协议仍是后续目标。
+录制、批注草稿 keep／restore／discard、未接入的其他表单草稿、审阅和打开文稿尚未接入此通道，清单明确列为 unavailable。本节之前的完整客户端协议仍是后续目标。
 
 实际 Studio／MCP／浏览器旅程、冻结范围和清理见[客户端闭环验证记录](benchmarks/mcp-authoring-client-2026-10-28.md)与[显式准备记录](benchmarks/mcp-preview-prepare-2026-10-28.md)。
 
@@ -241,13 +241,23 @@ MCP 请求仍为 30 秒，不延长为人工准备的 45 秒。浏览器在原 `
 
 `component-drafts.inspect/read` 使用第 9.1 节同一在线客户端、operate 授权、请求意图与浏览器回执。它们借用 `ComponentPropertyDrafts` 的当前输入和 strict IndexedDB 备份；默认清单及被动报告仍为 `unsubmittedContent:not-inspected`，不枚举草稿、不传参数值。没有可信 member、正在清理／恢复或存储未知且没有当前 session 稿时明确不可用。
 
-inspect 支持 `limit:1–10` 与 `cursor:{after,token}`。`family` 为 `component`，`coverage` 为 `stored-and-session` 或 `session-only`，并带 `skippedInvalid`。每项仅有 `draft:{id,revision,token,blockId,stepId?}`、`definitionId`、`storage`、`status`、`updatedAt`、`baseVersion`、`sourceCurrent`、`composing`、`reset`。`status` 区分 available／pending／session-only；不返回 baseline、参数 value、workspace identity 或 memberId。列表 token 绑定元数据集合；cursor 是上页返回的不透明引用，集合改变必须重新 inspect。一次读取最多接纳 2048 条存储记录，超限明确失败。
+inspect 支持 `limit:1–10` 与 `cursor:{after,token}`。`family` 为 `component`，`coverage` 为 `stored-and-session` 或 `session-only`，并带 `skippedInvalid`。每项仅有 `draft:{id,revision,token,blockId,stepId?}`、`definitionId`、`current`、`storage`、`status`、`updatedAt`、`baseVersion`、`sourceCurrent`、`composing`、`reset`。`current` 只表示该条是否为这个客户端 bank 的当前输入；不代表别窗没有输入。`status` 区分 available／pending／session-only；不返回 baseline、参数 value、workspace identity 或 memberId。列表 token 绑定元数据集合；cursor 是上页返回的不透明引用，集合改变必须重新 inspect。一次读取最多接纳 2048 条存储记录，超限明确失败。
 
 read 必须原样携带 inspect 的完整 draft 引用。格式 `presmium-component-parameters-json-v1` 是当前 `JSON.stringify(record.value)`，含该表单保留的 unknown 参数，不包含 baseline 或整个草稿 envelope。偏移、Unicode、长度和完整 UTF-8 SHA-256 与第 9.2 节相同，`maxChars` 为 2–2048；完整回执、HTTP ACK 和共享 WebSocket 同时受原有 7168 字符／32 KiB／8 KiB 预算约束。模型拼齐完整 JSON 文本、核摘要后才解析，不应把某片当作完整参数。
 
-每片重新读取精确 id／revision／token／block／step，并核当前 source、client epoch／connection／revision 和 bank 变更代次。同 target 最新 session 输入始终遮蔽旧存储字节，包括 strict 备份失败或超过 1 Mi UTF-16 字符的当前稿；`storage:session` 不承诺重启可恢复。另一窗口丢弃备份也不代表本窗口可见输入已丢弃，该输入仍可显式读取并标为 session-only。清理／恢复开始立即使 agent 读取不可用，但不会因此拒绝另一 target 的人工 clear／recover。没有新增草稿 writer、恢复动作或丢弃动作。
+每片重新读取精确 id／revision／token／block／step，并核当前 source、client epoch／connection／revision 和 bank 变更代次。同 target 最新 session 输入始终遮蔽旧存储字节，包括 strict 备份失败或超过 1 Mi UTF-16 字符的当前稿；`storage:session` 不承诺重启可恢复。另一窗口丢弃备份也不代表本窗口可见输入已丢弃，该输入仍可显式读取并标为 session-only。清理／恢复开始立即使 agent 读取不可用，但不会因此拒绝另一 target 的人工 clear／recover。这些读取动作不新增草稿 writer，也不恢复或丢弃内容。
 
 `current` 是该客户端已报告 revision 与本次读取快照的观察结果。IndexedDB 事务与跨窗 BroadcastChannel 通知不构成全局原子锁；另一窗口可能已提交而通知尚未到达。收到变更后旧引用／分页失效，调用方应重新 inspect。不得把历史回执或同一时刻的 `current:true` 声称为跨窗线性一致；同意图重试只读保留回执，不重新读取。实际范围见[组件草稿读取记录](benchmarks/mcp-component-draft-reads-2026-10-28.md)。
+
+组件属性稿另支持两个明确的 operate 请求，仍经 executing／done 回执，不新增工具、writer 或持久任务账本：
+
+- `component-drafts.restore` 带精确 `draft` 候选引用，以及 `expectedCurrent`。当前 target 已有稿 A 时必须给 inspect 得到的 A 完整引用；确无当前稿才传 null。候选必须是 backup，不能把当前稿当恢复来源。A 必须已 strict 备份、available 且非组词；pending／session-only／IME 或容量不足明确拒绝，原稿不动。原 bank 严格建立新 UUID 分支后才采用 B，保留 A 和原 B 的存储 key。每次 await 后复核 identity／member／当前 source／目标归属与 Definition，目标失效不能重绑。回执只带请求引用、新分支元数据 `restored`、原 A 引用或 null `preservedCurrent`。
+- `component-drafts.discard` 带精确 `draft` 与 `current:boolean`，明确选择本客户端当前稿或一条备份。当前稿同样限 strict available、非组词；按 exact record 删除，只退休所选分支，不结算未选的 origins。backup 只写该 id／revision／token 的 marker，即使旧目标已不在正文也不改绑；别窗的可见输入不因此消失。结果只带该引用、原 current 标记与 `discarded:true`，不会返回参数值。
+
+恢复只更新现有属性表单 bank，不改 canonical、不自动 Apply／rebase、不打开 Dialog、不导航或抢焦点。恢复值可能仍无效或来自旧 source；`restored.sourceCurrent:false` 时须由作者在原生 Dialog 明确重新核对，只有原 Apply 通过共享参数校验和 CAS 才保存。`item.current`／`result.current` 的分支标记不同于最外层回执 `current` 的已观察客户端状态。
+
+写动作允许自身推进 client revision；done 入队前仍锁定最终 revision、source、epoch 和 connection，不能放宽只读请求的原 expected revision 门槛。后来输入、来源变化或取消若发生在严格 fork 后、采用前，A 保留，已提交的新分支仍可重新 inspect。已经开始的 strict 清理可能完成，断线／超时不承诺回滚；不确定时读取真实状态，不换 requestId 盲目重复。相同保留意图只读原回执，不再 fork。跨窗仍遵守上述 observed-only 边界。实际分阶段范围见[恢复／丢弃记录](benchmarks/mcp-component-draft-mutations-2026-10-28.md)。
+
 
 ## 10. 审阅、历史与权限
 
