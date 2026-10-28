@@ -1,8 +1,8 @@
-import { createContext, useContext, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { FocusEvent, ReactNode } from 'react'
 import { CommentEditorSubmitExtension, CommentsExtension } from '@blocknote/core/comments'
 import { components } from '@blocknote/mantine'
-import { getReferenceText, Thread, useBlockNoteEditor, useCreateBlockNote, useExtension, useExtensionState, useThreads } from '@blocknote/react'
+import { FloatingThreadController, getReferenceText, Thread, useBlockNoteEditor, useCreateBlockNote, useEditorState, useExtension, useExtensionState, useThreads } from '@blocknote/react'
 import type { ComponentProps, ThreadProps } from '@blocknote/react'
 import type { Locale } from '../messages.ts'
 import { PmButton, PmNotice, PmSelect } from '../components.tsx'
@@ -26,6 +26,50 @@ const composerDrafts = new WeakMap<object, { owner: CommentDrafts | undefined, c
 /** The public Thread boundary supplies identity; an editor never guesses the selected thread. */
 export function DocumentCommentThread(props: ThreadProps) {
   return <THREAD_CONTEXT.Provider value={props.thread.id}><Thread {...props} /></THREAD_CONTEXT.Provider>
+}
+
+/** Keep the native controller and reply editor while body selection owns the pointer. */
+export function DocumentFloatingThreadController() {
+  const editor = useBlockNoteEditor(), { selectedThreadId } = useExtensionState(CommentsExtension)
+  const empty = useEditorState({ editor, on: 'selection', selector: ({ editor }) => editor.prosemirrorState.selection.empty })
+  const [selecting, setSelecting] = useState(false)
+  useEffect(() => {
+    const view = editor.prosemirrorView, body = view.dom, document = body.ownerDocument
+    let pressed = false
+    const down = (event: PointerEvent) => {
+      if (event.button !== 0 || event.isPrimary === false || !view.editable || view.composing
+        || !(event.target instanceof Element) || event.target.closest('[contenteditable="false"]')) return
+      pressed = true
+      setSelecting(true)
+    }
+    const click = () => {
+      if (!pressed) return
+      pressed = false
+      // Only the native collapse flag gates a popover; ranges and content stay editor-owned.
+      // PM may still report the previous caret at the end of a fast pointer selection.
+      setSelecting(document.getSelection()?.isCollapsed === false)
+    }
+    const key = () => { pressed = false; setSelecting(false) }
+    const cancel = () => { if (pressed) { pressed = false; setSelecting(true) } }
+    body.addEventListener('pointerdown', down, true)
+    body.addEventListener('keydown', key, true)
+    document.addEventListener('click', click)
+    document.addEventListener('pointercancel', cancel, true)
+    document.defaultView?.addEventListener('blur', cancel)
+    return () => {
+      pressed = false
+      body.removeEventListener('pointerdown', down, true)
+      body.removeEventListener('keydown', key, true)
+      document.removeEventListener('click', click)
+      document.removeEventListener('pointercancel', cancel, true)
+      document.defaultView?.removeEventListener('blur', cancel)
+    }
+  }, [editor])
+  const blocked = selecting || !empty
+  return <FloatingThreadController floatingThread={DocumentCommentThread} floatingUIOptions={{
+    useFloatingOptions: { open: Boolean(selectedThreadId) && !blocked },
+    elementProps: { className: blocked ? 'pm-ui-comment-hidden' : undefined },
+  }} />
 }
 
 /** Native Thread composition, with the same public focus/blur and position ordering as the sidebar. */

@@ -1165,6 +1165,11 @@
 }
 
 /* Native floating cards and sidebar threads share bounded, wrappable content. */
+.pm-ui-block-editor .pm-ui-comment-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .pm-ui-block-editor .bn-thread {
   width: min(var(--pm-comment-width), calc(100vw - var(--pm-space-8)));
   min-width: 0;

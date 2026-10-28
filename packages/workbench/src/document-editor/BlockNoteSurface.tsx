@@ -3,7 +3,7 @@ import type { ForwardRefExoticComponent, ReactNode, RefAttributes } from 'react'
 import { filterSuggestionItems } from '@blocknote/core'
 import { en, zh } from '@blocknote/core/locales'
 import { BlockNoteView, components } from '@blocknote/mantine'
-import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ColorStyleButton, ComponentsContext, CreateLinkButton, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, NestBlockButton, RenderInPortalElement, SuggestionMenuController, TableCellMergeButton, TextAlignButton, FloatingThreadController, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
+import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ColorStyleButton, ComponentsContext, CreateLinkButton, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, NestBlockButton, RenderInPortalElement, SuggestionMenuController, TableCellMergeButton, TextAlignButton, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
 import type { ComponentProps, FormattingToolbarProps } from '@blocknote/react'
 import { useMediaQuery } from '@mantine/hooks'
 import type { Locale } from '../messages.ts'
@@ -18,7 +18,7 @@ import type { ImageImportFailure } from './file-input.ts'
 import { nativeTextClipboard } from './clipboard.ts'
 import { excludeCommentMarkHistory, nativeComments, nativeCommentSelection } from './comments.ts'
 import type { DocumentThreadStore } from './comments.ts'
-import { COMMENT_EDITOR_CONTEXT, DocumentCommentEditor, DocumentCommentThread, DocumentThreadsSidebar } from './DocumentComments.tsx'
+import { COMMENT_EDITOR_CONTEXT, DocumentCommentEditor, DocumentFloatingThreadController, DocumentThreadsSidebar } from './DocumentComments.tsx'
 import { DocumentNewCommentController, DocumentNewCommentRecovery, NewCommentDraftProvider } from './NewCommentDrafts.tsx'
 
 export const DOCUMENT_EDITOR_THEME = {
@@ -159,7 +159,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         <ComponentsContext.Provider value={DOCUMENT_EDITOR_COMPONENTS}>
         <PlainContentComments editor={editor} />
         <BlockNoteViewEditor><NewCommentDraftProvider>
-        <DocumentNewCommentController />{!props.commentsPortal && <FloatingThreadController floatingThread={DocumentCommentThread} />}{props.commentsPortal && <><RenderInPortalElement target={props.commentsPortal}><DocumentThreadsSidebar><DocumentNewCommentRecovery /></DocumentThreadsSidebar></RenderInPortalElement></>}
+        <DocumentNewCommentController />{!props.commentsPortal && <DocumentFloatingThreadController />}{props.commentsPortal && <><RenderInPortalElement target={props.commentsPortal}><DocumentThreadsSidebar><DocumentNewCommentRecovery /></DocumentThreadsSidebar></RenderInPortalElement></>}
         <FormattingToolbarController formattingToolbar={EditorToolbar} />
         <SuggestionMenuController triggerCharacter="/" getItems={async query => editor.getTextCursorPosition().block.type === 'presmiumPage' ? [] : filterSuggestionItems([...getDefaultReactSlashMenuItems(editor), {
           title: t.page, aliases: ['page', 'section', '页面', '章节'], group: t.document,
