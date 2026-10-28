@@ -34,6 +34,8 @@ ignored 入口为 `.presmium/component-properties-ui/consumer.mjs`，fixture 为
 
 配额探针记录了真实 `navigator.storage.estimate()` 与 CDP usage。覆盖前 usage 为 81920，CDP 报告 `quota=1`、`overrideActive=true`，但小型 strict fork 事务实际成功；因此最终明确记 `faultVerified:false`。**本轮没有验证配额失败时 A 的保留**，不把设置成功等同于实际事务拒绝。成功恢复保留 A 的候选已经实测。
 
+随后使用 90000 字节随机数据生成不可压缩的私有参数，再运行同一真实 Studio 流程（`quota-run-1793154988998/result.json`，SHA-256 `9bb26522c92dbbb8e9ce65f7147154bca6a3cc655d9c690e490a5810c5db4191`）。CDP 仍报告覆盖配额为 1，但 IndexedDB 占用从 860160 增至 983040 字节，事务依然成功；26 项操作通过，来源未变、私有资源已清理。配额拒绝分支仍未验证。
+
 最终 owner／backend／frontend PID 分别为 `2508267／2508461／2508502`，均已实查不存在；浏览器、服务、临时 home／workspace／fixture 全部清理。四轮各自保留 cleanup 与源码谱系，原始 raw 未改写。根侧各冻结节点的类型及轻量检查另有日志，不把前序检查笼统说成最终全部字节重跑。
 
 ## 独立丢 ACK 与原生删除尾链
