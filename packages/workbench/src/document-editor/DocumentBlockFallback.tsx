@@ -2,6 +2,7 @@ import type { DocumentBlock, JsonValue, TeachingDocument } from '@lincyaw/kernel
 import type { Locale } from '../messages.ts'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
 import { PmNotice } from '../components.tsx'
+import { isDiagram } from './projection.ts'
 
 export function fallbackText(value: unknown): string {
   if (!value || typeof value !== 'object') return ''
@@ -17,6 +18,7 @@ export function fallbackText(value: unknown): string {
 /** A readable source fallback while the independent component snapshot is unavailable. */
 export function DocumentBlockFallback({ block, document, locale }: { block: DocumentBlock, document: TeachingDocument, locale: Locale }) {
   const t = DOCUMENT_EDITOR_MESSAGES[locale]
+  if (isDiagram(block, document)) return <PmNotice>{t.diagram(block.type === 'code' && block.title || '')}</PmNotice>
   if (block.type === 'code') return <PmNotice>{t.codeReference(block.title ?? block.origin?.anchor ?? block.language)}</PmNotice>
   if (block.type !== 'component') return null
   const definition = document.definitions[block.definitionId]
