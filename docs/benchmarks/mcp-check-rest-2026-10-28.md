@@ -94,3 +94,49 @@ MCP 结构化失败（`code` 不变，`message` 按文稿语言）：
 ## 未覆盖项
 
 没有验证预确认令牌（内置助手）的路径、required review 打开时的拒绝、Firefox／WebKit、工作台亮暗色与窄屏（本次只改提示文字，没有改样式），以及 `history-revert-outside-documents` 的实际触发。
+
+## `build` 先检查、后批准；引擎请求错误改为 422
+
+2026-10-28，在分支 `work/mcp-build-2026-10-28` 上补齐上文“发现的问题”中的两项。Studio 从该分支源码在 4349 端口启动（`XDG_STATE_HOME=<临时目录>/state`），工作区由 `examples/animations/try.mjs` 新准备，载入同一份本机语音配置；为检查英文文本，把“功能导览 02”的 `lang` 改成 `en` 并提交。客户端、令牌与“出现批准”的观察方式同上，没有调用任何模型。
+
+### 改动
+
+- `OutputJobs.check(document, target, source?)`：与 `start` 共用同一段接纳（重新编译、source 与指纹、保存版本是否已编译、目标是否存在、译文、输入文件版本），不建作业；返回 `start` 会复用的同一作业（同一目标、source、IR revision 与输入、状态为排队／运行／完成），否则为空。
+- MCP `build`：未经预确认时先对每个目标调用 `check`；任何一项失败直接返回错误码，不请求批准。所有目标都已有同一 source 与输入的作业时，直接返回这些作业并带 `reused: true`，不请求批准，也不重新构建。否则请求批准，批准之后 `start` 照旧全部重查。`to` 去重；没有可构建的渲染端返回 422 `job-targets-empty`。
+- 未知目标由原来的 500 英文文字改为 422 `job-target-unknown`（`detail.target`、`detail.targets`）。
+- `start_transcription`：指定的引擎已配置但不能转写时返回 422 `transcription-engine-unsupported`，没有这个引擎时返回 422 `transcription-engine-unknown`（`detail.engine`、`detail.engines` 为能转写的引擎）；只有语音服务未解析（配置有错误、没有语音服务）时仍为 503 `transcription-engine-unavailable`。
+- 配音（`quote_voice_preview`、`preview_voice`，以及 `start_voiceover` 的逐句检查）：指定的引擎不能合成时 422 `voice-engine-unsupported`，未配置时 422 `voice-engine-unknown`；没有指定引擎且没有默认引擎、或根本没有能合成的引擎时仍为 503 `voice-not-configured`。
+- 文本：上述码与 `job-source-required`、`job-source-changed`、`job-source-not-compiled`、`job-source-unavailable`、`job-inputs-changed`、`job-translations-invalid` 都有文稿语言的 `message`。工作台配音失败把两条新配音码归入“所选音色不支持……”，转写失败归入“尚未配置转写服务”。
+
+### 实际运行
+
+| 工具 | 请求 | 结果 | 出现批准 |
+| --- | --- | --- | --- |
+| `build` | 不带 source | 20 ms，400 `job-source-required`，“构建需要文稿当前保存的版本（get_document 返回的 source.version 与 source.fingerprint）。” | 否 |
+| | 陈旧指纹 | 32 ms，409 `job-source-changed`，“文稿在读取之后又被保存过，请重新读取文稿后再构建。” | 否 |
+| | 未知目标 `docx` | 34 ms，422 `job-target-unknown`，“这份文稿不能生成「docx」；可以生成：web, slides, notebook, lecture, video, pdf, png, pptx。” | 否 |
+| | `["notebook", "docx"]` | 49 ms，同上 422，没有建立 notebook 作业 | 否 |
+| | 功能导览 02（en），未知目标 | 54 ms，422，“This document cannot be made into “docx”; it can be made into: web, slides, …” | 否 |
+| | 功能导览 02（en），陈旧版本 | 38 ms，409，“The document was saved again after it was read. Read it again, then build.” | 否 |
+| | 正常构建 notebook | 81 ms 后出现“构建文稿（notebook）”，允许后作业 `done`，文件 `notebook/lecture.ipynb`，source 与请求一致 | 是 |
+| | 同一 source 再构建 notebook（`wait` 默认与 `false` 各一次） | 26／30 ms，返回同一作业 `done`，`reused: true` | 否 |
+| | 正常构建 slides（`wait: false`） | 82 ms 后出现，允许后返回 `queued` 作业；最终 `done`，20 个文件 | 是 |
+| | slides 运行中再请求同一构建 | 207 ms，返回同一作业 `running`，`reused: true` | 否 |
+| | 等待批准期间文稿被改，再允许 | 409 `job-source-changed`，没有为该请求建立作业 | 是 |
+| `start_transcription` | 引擎 `edge`（只能朗读） | 48 ms，422 `transcription-engine-unsupported`，`retryable: false`，“引擎「edge」不能转写语音；可用于转写的引擎：whisper。” | 否 |
+| | 引擎 `nope` | 45 ms，422 `transcription-engine-unknown`，`retryable: false`，“没有名为「nope」的语音引擎；可用于转写的引擎：whisper。” | 否 |
+| | 引擎 `whisper`，在工作台拒绝 | 79 ms 后出现“agent 工具 start_transcription”，拒绝后 403 `operation-not-allowed` | 是 |
+| `quote_voice_preview`（read） | 引擎 `whisper`（只能转写） | 37 ms，422 `voice-engine-unsupported`，`retryable: false`，“所选引擎不能合成语音，请改用能朗读的引擎（get_voice_authoring_capabilities）。” | — |
+| | 引擎 `nope` | 24 ms，422 `voice-engine-unknown`，`retryable: false`，“没有配置所选的语音引擎，请从 get_voice_authoring_capabilities 中选择。” | — |
+| | 引擎 `edge` | 31 ms，正常报价（微软 Edge 朗读） | — |
+| `preview_voice` | 引擎 `whisper`，带 `edge` 的报价 | 22 ms，409 `voice-preview-changed`（报价先不符） | 否 |
+
+改动前：`start_transcription` 指定 `edge` 实测返回 503、`retryable: true`（见上文表格）；按改动前的代码，`build` 先请求批准、允许后才核对 source 与目标（未知目标为 500 英文文字），配音报价指定只能转写的引擎返回 503 `voice-not-configured`，这两项本次没有在改动前实测。
+
+### 结构检查
+
+`check-types`、`check-layering`、`check-skills` 通过。未运行测试套件、e2e 或示例完整构建。
+
+### 未覆盖项
+
+没有验证预确认令牌（内置助手）的路径、compiler-only 的 stdio 宿主（不经作业，`to` 仍在批准之后由构建本身核对）、语音服务配置有错误时的 503 分支，以及 Firefox／WebKit。

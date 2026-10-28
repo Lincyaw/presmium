@@ -96,7 +96,7 @@ export function voiceFailure(error: unknown, locale: Locale): string {
   const t = VOICE_MESSAGES[locale]
   const message = error instanceof Error ? error.message : ''
   if (message === 'not-configured' || message === 'voice-not-configured') return t.noService
-  if (message === 'voice-unavailable') return t.voiceUnavailable
+  if (message === 'voice-unavailable' || message === 'voice-engine-unsupported' || message === 'voice-engine-unknown') return t.voiceUnavailable
   if (message === 'voice-catalog-unavailable' || message === 'catalog-unavailable') return t.catalogUnsupported
   if (message === 'voice-cue-step') return t.cueStep
   if (message === 'voice-script-empty') return t.noScript

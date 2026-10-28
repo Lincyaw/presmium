@@ -20,7 +20,7 @@ export const TRANSCRIPTION_MESSAGES = {
 export function transcriptionFailure(error: unknown, locale: Locale): string {
   const t = TRANSCRIPTION_MESSAGES[locale], code = error instanceof Error ? error.message : ''
   if (code.includes('version-changed') || code.includes('source-changed') || code.includes('plan-changed') || code.includes('plan-expired')) return t.sourceChanged
-  if (code.includes('engine-unavailable') || code.includes('speech-unavailable')) return t.unavailable
+  if (code.includes('engine-unavailable') || code.includes('engine-unsupported') || code.includes('engine-unknown') || code.includes('speech-unavailable')) return t.unavailable
   if (code.includes('services-unavailable')) return t.unresolved
   return t.requestFailed
 }
