@@ -6,17 +6,18 @@ import { documentTranscriptionSession } from '../transcription-session.ts'
 import { TRANSCRIPTION_MESSAGES, transcriptionFailure } from '../transcription-messages.ts'
 import { TranscriptionAdoption } from './TranscriptionAdoption.tsx'
 
-interface Props { identity: string, directory: string, document: TeachingDocument, sectionId: string, stepId: string, disabled: boolean, active: boolean, selectedAssetId?: string }
+interface Props { identity: string, directory: string, document: TeachingDocument, sectionId: string, stepId: string, disabled: boolean, active: boolean, selectedAsset?: { id: string, revision: number }, onSelectAsset(): void }
 
 /** ASR creates material; a separate, source-bound review is the only script write. */
-export function ProductionTranscription({ identity, directory, document, sectionId, stepId, disabled, active, selectedAssetId }: Props) {
+export function ProductionTranscription({ identity, directory, document, sectionId, stepId, disabled, active, selectedAsset, onSelectAsset }: Props) {
   const workbench = useWorkbench(), locale = useWorkbenchState(state => state.locale), t = TRANSCRIPTION_MESSAGES[locale]
   const source = useWorkbenchState(state => state.authoring)
   const session = useMemo(() => documentTranscriptionSession(workbench.client, identity, directory, document.id), [workbench, identity, directory, document.id])
   const subscribe = useMemo(() => active ? session.subscribe : () => () => {}, [session, active])
   const state = useSyncExternalStore(subscribe, session.getState, session.getState)
   const assets = Object.values(document.assets).filter(asset => asset.kind === 'audio')
-  const [assetId, setAssetId] = useState(selectedAssetId ?? state.request?.assetId ?? state.task?.audio.assetId ?? assets.at(-1)?.id ?? '')
+  const [assetId, setAssetId] = useState(selectedAsset?.id ?? state.request?.assetId ?? state.task?.audio.assetId ?? assets.at(-1)?.id ?? '')
+  const receivedSelection = useRef<number>()
   const [capability, setCapability] = useState<TranscriptionCapabilities>(), [engine, setEngine] = useState(''), [refresh, setRefresh] = useState(0)
   const [candidate, setCandidate] = useState<TranscriptionRevision>(), [reading, setReading] = useState(false), [failure, setFailure] = useState<string>()
   const [records, setRecords] = useState<TranscriptionListAnswer>({ tasks: [], issues: [] })
@@ -28,8 +29,11 @@ export function ProductionTranscription({ identity, directory, document, section
   const otherTask = records.tasks.find(task => task.id !== state.task?.id && ['queued', 'running', 'cancelling'].includes(task.state))
   const busy = selectedBusy || Boolean(otherTask)
   useEffect(() => {
-    if (selectedAssetId && document.assets[selectedAssetId]?.kind === 'audio') { inspectionRequest.current?.abort(); setAssetId(selectedAssetId) }
-  }, [selectedAssetId, document.assets])
+    if (selectedAsset && receivedSelection.current !== selectedAsset.revision && document.assets[selectedAsset.id]?.kind === 'audio') {
+      receivedSelection.current = selectedAsset.revision
+      inspectionRequest.current?.abort(); setAssetId(selectedAsset.id)
+    }
+  }, [selectedAsset, document.assets])
   useEffect(() => { owner.current.active = true; return () => { owner.current.active = false; importRequest.current?.abort(); inspectionRequest.current?.abort() } }, [])
   useEffect(() => { if (!active || disabled) inspectionRequest.current?.abort() }, [active, disabled])
   useEffect(() => {
@@ -73,6 +77,7 @@ export function ProductionTranscription({ identity, directory, document, section
   const importAudio = async (value: File) => {
     const now = workbench.getState().authoring
     if (!current() || importRequest.current || disabled || !now?.version) return
+    onSelectAsset()
     const controller = new AbortController(); importRequest.current = controller; setImporting(true); setFailure(undefined)
     pendingFile.current = value
     try {
@@ -113,7 +118,7 @@ export function ProductionTranscription({ identity, directory, document, section
       <PmIconButton small icon="refresh" label={t.refresh} loading={state.checking && !busy} onClick={() => { setRefresh(value => value + 1); void session.refresh() }} />
     </div>
     {!assets.length ? <span>{t.noAudio}</span> : <>
-      <PmSelect label={t.audio} value={document.assets[assetId]?.kind === 'audio' ? assetId : ''} disabled={disabled || importing} onChange={event => { inspectionRequest.current?.abort(); setAssetId(event.target.value) }}><option value="">{t.none}</option>{assets.map(asset => <option key={asset.id} value={asset.id}>{asset.title ?? asset.location.split('/').at(-1) ?? asset.id}</option>)}</PmSelect>
+      <PmSelect label={t.audio} value={document.assets[assetId]?.kind === 'audio' ? assetId : ''} disabled={disabled || importing} onChange={event => { onSelectAsset(); inspectionRequest.current?.abort(); setAssetId(event.target.value) }}><option value="">{t.none}</option>{assets.map(asset => <option key={asset.id} value={asset.id}>{asset.title ?? asset.location.split('/').at(-1) ?? asset.id}</option>)}</PmSelect>
       {capability?.engines.length ? <PmSelect label={t.service} value={engine} disabled={disabled || busy} onChange={event => { inspectionRequest.current?.abort(); setEngine(event.target.value) }}>{capability.engines.map(value => <option key={value.id} value={value.id}>{value.provider}{capability.engines.filter(other => other.provider === value.provider).length > 1 ? ` · ${value.id}` : ''}</option>)}</PmSelect> : capability ? <span>{capability.status === 'unknown' ? t.unresolved : t.unavailable}</span> : null}
       {capability && !capability.available && capability.engines.length > 0 && <span>{capability.reason === 'audio-unavailable' ? t.audioUnavailable : t.unresolved}</span>}
       <div className="pmw-transcription__actions">

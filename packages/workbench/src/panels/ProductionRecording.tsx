@@ -10,11 +10,11 @@ import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { mediaFailure } from '../media-messages.ts'
 import { ProductionRecordingRange } from './ProductionRecordingRange.tsx'
 
-interface Props { identity: string, sectionId: string, stepId: string, active: boolean, disabled: boolean, onImported(assetId: string): void, onAdopted(): void }
+interface Props { identity: string, sectionId: string, stepId: string, active: boolean, disabled: boolean, onImportStarted(): number, onImported(assetId: string, selection: number): void, onAdopted(): void }
 const elapsed = (ms: number) => `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`
 
 /** Video-only microphone material. The document actor and existing binary transaction still own every save. */
-export function ProductionRecording({ identity, sectionId, stepId, active, disabled, onImported, onAdopted }: Props) {
+export function ProductionRecording({ identity, sectionId, stepId, active, disabled, onImportStarted, onImported, onAdopted }: Props) {
   const workbench = useWorkbench(), locale = useWorkbenchState(state => state.locale), t = AUDIO_RECORDING_MESSAGES[locale]
   const source = useWorkbenchState(state => state.authoring)
   const [recording] = useState(() => documentRecording(workbench, identity))
@@ -56,7 +56,7 @@ export function ProductionRecording({ identity, sectionId, stepId, active, disab
   }
   const save = async () => {
     if (!candidate || saving || !current()) return
-    const file = candidate.file, selection = adoption.revision(), controller = new AbortController()
+    const file = candidate.file, selection = adoption.revision(), transcriptionSelection = onImportStarted(), controller = new AbortController()
     request.current = controller; setSaving(true); setFailure(undefined)
     const owns = () => current() && !controller.signal.aborted && request.current === controller && recording.snapshot().candidate?.file === file
     try {
@@ -66,7 +66,7 @@ export function ProductionRecording({ identity, sectionId, stepId, active, disab
       if (!currentSource?.version || currentSource.identity !== identity || currentSource.dirty || currentSource.saving || currentSource.composing || currentSource.restored || currentSource.error) throw new Error('production-source-changed')
       const answer = await workbench.ensureDocumentAudio(file, { identity, version: currentSource.version }, controller.signal)
       if (!owns()) return
-      recording.imported(file, answer.inspection.assetId); adoption.imported(answer.inspection.assetId, selection); onImported(answer.inspection.assetId)
+      recording.imported(file, answer.inspection.assetId); adoption.imported(answer.inspection.assetId, selection); onImported(answer.inspection.assetId, transcriptionSelection)
     } catch (error) {
       if (owns()) setFailure(`${t.saveFailed} ${mediaFailure(error, locale)}`)
     } finally {
