@@ -23,7 +23,7 @@ export function captureRichBaseline(blocks: readonly DocumentEditorBlock[], cont
   for (const block of blocks) { context.baseline.set(block.id, JSON.stringify(block)); captureRichBaseline(block.children, context) }
 }
 const id = () => crypto.randomUUID()
-const atom = (node: RichTextNode): DocumentEditorInput => ({ id: node.id, type: 'presmiumAtom', props: { entityId: node.id, kind: `rich:${node.type}`, label: node.type === 'math' ? node.value : node.type === 'extension' ? fallbackText(node.fallback) : fallbackText(node) } })
+const atom = (node: RichTextNode): DocumentEditorInput => ({ id: node.id, type: 'presmiumAtom', props: { entityId: node.id, kind: `rich:${node.type}`, label: node.type === 'extension' ? fallbackText(node.fallback) : fallbackText(node) } })
 
 /** The projection records structural identities; the saved document owns all content. */
 export function productRichTextToNative(nodes: readonly RichTextNode[], context: RichProjection): DocumentEditorInput[] {
@@ -31,7 +31,8 @@ export function productRichTextToNative(nodes: readonly RichTextNode[], context:
     context.rich.set(node.id, { original: structuredClone(node) })
     if (node.type === 'paragraph' || node.type === 'heading') return [{ id: node.id, type: node.type, props: { ...productTextStyleToNative(node.style), ...node.type === 'heading' ? { level: node.level } : {} }, content: productInlineToNative(node.children, context) } as DocumentEditorInput]
     if (node.type === 'code') return [{ id: node.id, type: 'codeBlock', props: { language: node.language }, content: node.value }]
-    if (node.type === 'math' || node.type === 'extension') return [atom(node)]
+    if (node.type === 'math') return [{ id: node.id, type: 'presmiumMath', content: node.value }]
+    if (node.type === 'extension') return [atom(node)]
     if (node.type === 'blockquote') {
       const [first, ...rest] = node.children
       if (!first || first.type !== 'paragraph') return [{ ...atom(node), children: productRichTextToNative(node.children, context) }]
@@ -105,6 +106,7 @@ export function nativeRichTextToProduct(blocks: readonly DocumentEditorBlock[], 
       const style = nativeTextStyleToProduct(block.props)
       result.push({ id: block.id, type: 'heading', level: Math.max(1, Math.min(6, block.props.level)) as 1 | 2 | 3 | 4 | 5 | 6, children: inline(block, context), ...style ? { style } : {} })
     } else if (block.type === 'quote') result.push({ id: block.id, type: 'blockquote', children: [paragraph(block, context, identity?.paragraphId ?? id()), ...nativeRichTextToProduct(block.children, context, usedListIds ??= new Set())] })
+    else if (block.type === 'presmiumMath') result.push({ id: block.id, type: 'math', value: block.content.map(part => part.text).join('') })
     else if (block.type === 'codeBlock') result.push({ id: block.id, type: 'code', language: block.props.language, value: block.content.map(part => part.text).join('') })
     else if (block.type === 'table') {
       const original = identity?.original?.type === 'table' ? identity.original : undefined

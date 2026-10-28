@@ -1037,6 +1037,92 @@
 
 .pm-ui-block-editor .bn-block-content[data-content-type='codeBlock'] code { color: inherit; }
 
+/* Document content uses the same link, check and inline code treatment as the reading view. */
+.pm-ui-block-editor .bn-inline-content a {
+  color: var(--pm-color-accent);
+  text-decoration: underline;
+  text-decoration-color: var(--pm-color-accent-line);
+  text-underline-offset: var(--pm-space-px);
+}
+
+.pm-ui-block-editor .bn-inline-content a:hover { text-decoration-color: currentColor; }
+
+.pm-ui-block-editor .bn-block-content[data-content-type='checkListItem'] input[type='checkbox'] { accent-color: var(--pm-color-accent); }
+
+.pm-ui-block-editor .bn-inline-content code:not(.bn-source-block-popup *) {
+  padding-inline: var(--pm-space-1);
+  border-radius: var(--pm-radius-chip);
+  background: var(--pm-color-sunk);
+  font-family: var(--pm-font-mono);
+  font-size: 0.9em;
+}
+
+/* Formulas: BlockNote's preview-with-source popup, held to the editor's tokens. */
+.pm-ui-block-editor .bn-preview-container { color: var(--pm-color-ink); }
+.pm-ui-block-editor .bn-block-content .bn-preview-with-source-popup { padding: var(--pm-space-3); }
+.pm-ui-block-editor .bn-block-content .pm-document-editor__math--display { width: 100%; overflow-x: auto; text-align: center; }
+.pm-ui-block-editor .bn-preview-container:hover { border-radius: var(--pm-radius-small); background: var(--pm-color-hover); }
+
+.pm-ui-block-editor .bn-preview-with-source-popup[data-open='true'] .bn-source-block-popup {
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-surface);
+  box-shadow: var(--pm-shadow-float);
+  color: var(--pm-color-ink);
+}
+
+.pm-ui-block-editor .bn-inline-content-section .bn-preview-with-source-popup[data-open='true'] .bn-source-block-popup {
+  width: var(--pm-popover-min-width);
+  max-width: calc(100vw - var(--pm-space-8));
+}
+
+.pm-ui-block-editor .bn-code-block-source-popup-body > pre {
+  padding: var(--pm-space-3);
+  font-family: var(--pm-font-mono);
+  font-size: var(--pm-text-md);
+}
+
+.pm-ui-block-editor .bn-code-block-source-popup-input-empty::before { inset-inline: var(--pm-space-3); top: var(--pm-space-3); color: var(--pm-color-muted); opacity: 1; }
+.pm-ui-block-editor .bn-code-block-source-popup-ok-button-wrapper { padding: var(--pm-space-2); }
+
+.pm-ui-block-editor .bn-code-block-source-popup-ok-button {
+  min-height: var(--pm-size-tool);
+  padding: 0 var(--pm-space-3);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-accent);
+  color: var(--pm-color-on-accent);
+  font-size: var(--pm-text-sm);
+  font-weight: var(--pm-weight-medium);
+}
+
+.pm-ui-block-editor .bn-code-block-source-popup-ok-button:hover { background: var(--pm-color-accent-hover); }
+.pm-ui-block-editor .bn-code-block-source-popup-ok-button:focus-visible { outline: var(--pm-space-px) solid var(--pm-color-accent); outline-offset: var(--pm-space-px); }
+.pm-ui-block-editor .bn-code-block-source-popup-ok-button-icon { width: var(--pm-size-icon); height: var(--pm-size-icon); }
+
+.pm-ui-block-editor .bn-code-block-source-error {
+  padding: var(--pm-space-2) var(--pm-space-3);
+  border-top: var(--pm-size-hairline) solid var(--pm-color-line);
+  color: var(--pm-color-danger);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-sm);
+}
+
+.pm-ui-block-editor .bn-preview-placeholder {
+  border-radius: var(--pm-radius-small);
+  background: var(--pm-color-sunk);
+  color: var(--pm-color-muted);
+}
+
+.pm-ui-block-editor .bn-preview-placeholder-error {
+  background: var(--pm-color-danger-soft);
+  color: var(--pm-color-danger);
+}
+
+@media (pointer: coarse) {
+  .pm-ui-block-editor .bn-code-block-source-popup-ok-button { min-height: var(--pm-control-hit-area); font-size: var(--pm-text-lg); }
+  .pm-ui-block-editor .bn-code-block-source-popup-body > pre { font-size: var(--pm-text-lg); }
+}
+
 .pm-ui-block-editor .bn-comment-editor.bn-container {
   --bn-colors-editor-text: var(--pm-color-ink);
   --bn-colors-editor-background: var(--pm-color-surface);
@@ -1315,6 +1401,17 @@
 }
 
 .pm-ui-block-editor:focus-within .ProseMirror-selectednode > .bn-block-content > ::after {
+  box-shadow: inset 0 0 0 var(--pm-size-stroke) var(--pm-color-accent);
+}
+
+/* Previews that mark themselves selected (formulas) use the same accent outline, without a fill over the content. */
+.pm-ui-block-editor :is(.bn-block-content, .bn-inline-content) .ProseMirror-selectednode::after {
+  background: transparent;
+  border-radius: var(--pm-radius-small);
+  box-shadow: none;
+}
+
+.pm-ui-block-editor:focus-within :is(.bn-block-content, .bn-inline-content) .ProseMirror-selectednode::after {
   box-shadow: inset 0 0 0 var(--pm-size-stroke) var(--pm-color-accent);
 }
 
