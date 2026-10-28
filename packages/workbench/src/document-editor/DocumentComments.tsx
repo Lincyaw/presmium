@@ -7,7 +7,7 @@ import type { ComponentProps, ThreadProps } from '@blocknote/react'
 import type { Locale } from '../messages.ts'
 import { PmButton, PmNotice, PmSelect } from '../components.tsx'
 import type { DocumentCommentEditorHandle, DocumentThreadStore } from './comments.ts'
-import type { CommentDrafts, CommentDraftCandidate, CommentDraftRecord, CommentDraftReference } from './comment-drafts.ts'
+import type { CommentDrafts, CommentDraftCandidate, CommentDraftRecord, CommentDraftReference, CommentDraftOperation } from './comment-drafts.ts'
 import { isNewCommentDraft, sameCommentDraftTarget } from './comment-drafts.ts'
 import { createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
 import { commentEditorSchema } from './schema.tsx'
@@ -127,7 +127,9 @@ function CommentDraftRetrieval() {
 
 export function DocumentCommentEditor(props: ComponentProps['Comments']['Editor']) {
   const context = useContext(COMMENT_EDITOR_CONTEXT), threadId = useContext(THREAD_CONTEXT)
-  const [handle, setHandle] = useState<DocumentCommentEditorHandle>(), [, setRevision] = useState(0)
+  const [handle, setHandle] = useState<DocumentCommentEditorHandle>(), [, setRevision] = useState(0), [recoveryFailure, setRecoveryFailure] = useState(false)
+  const currentHandle = useRef(handle)
+  currentHandle.current = handle
   const current = useRef(props), active = useRef(true), input = useRef(0), composing = useRef(false), submitting = useRef(false), suppress = useRef(false)
   current.current = props
   const drafts = context?.store.drafts
@@ -137,10 +139,12 @@ export function DocumentCommentEditor(props: ComponentProps['Comments']['Editor'
     return value
   }, [props.editor, drafts])
   const rich = useMemo(() => ({ current: record.rich }), [record])
+  const composerId = useRef(crypto.randomUUID())
   const state = useSyncExternalStore(drafts?.subscribe ?? emptySubscribe, drafts?.snapshot ?? (() => emptyState))
   useLayoutEffect(() => {
     if (!context || !threadId) return
     active.current = true; ++input.current
+    if (record.current && drafts && !drafts.owns(record.current)) record.current = undefined
     const value = context.store.bindEditor(props.editor, props.editable, threadId)
     setHandle(value)
     const original = props.editor.getExtension(CommentEditorSubmitExtension)
@@ -163,7 +167,7 @@ export function DocumentCommentEditor(props: ComponentProps['Comments']['Editor'
     }
     const stop = props.editor.onChange(() => {
       if (!active.current || !current.current.editable || suppress.current || submitting.current) return
-      ++input.current
+      ++input.current; setRecoveryFailure(false)
       const version = context.store.version
       if (!value.target || !drafts || !version) return
       // Empty reply and native Cancel are not new unpublished content.
@@ -187,19 +191,41 @@ export function DocumentCommentEditor(props: ComponentProps['Comments']['Editor'
   const failure = useSyncExternalStore(handle?.subscribe ?? emptySubscribe, handle?.failure ?? (() => undefined))
   const target = handle?.target, t = DOCUMENT_EDITOR_MESSAGES[context?.locale ?? 'en']
   const candidates = target ? state.candidates.filter(value => sameCommentDraftTarget(value.target, target) && value.id !== record.current?.id) : []
-  const recover = async (candidate: CommentDraftCandidate) => {
-    if (!drafts || !target || !context?.store.version || !props.editable || composing.current || submitting.current) return
-    const before = input.current, version = context.store.version
+  const recover = async (candidate: CommentDraftCandidate, operation?: CommentDraftOperation): Promise<CommentDraftRecord | undefined> => {
+    if (!drafts || !target || !context?.store.version || !props.editable || composing.current || submitting.current || props.editor.prosemirrorView.composing) return
+    context.store.beforeAction?.()
+    const before = input.current, version = context.store.version, native = props.editor.prosemirrorState, position = context.getPositionToken?.()
     const own = record.current
+    const owns = () => {
+      operation?.signal?.throwIfAborted(); operation?.guard?.()
+      context.store.beforeAction?.()
+      if (!active.current || input.current !== before || context.store.version !== version || composing.current || submitting.current || !current.current.editable
+        || props.editor.prosemirrorView.isDestroyed || props.editor.prosemirrorView.composing || props.editor.prosemirrorState.doc !== native.doc
+        || props.editor.prosemirrorState.selection !== native.selection || context.getPositionToken?.() !== position || record.current !== own
+        || context.store.draftTargetState(target) === 'unavailable') throw new Error('client-comment-composer-changed')
+    }
     if (own && !await drafts.confirm(own)) return
-    if (!active.current || input.current !== before || context.store.version !== version || composing.current || !current.current.editable) return
-    const value = await drafts.recover(candidate, target, version)
-    if (!value || !active.current || input.current !== before || context.store.version !== version || composing.current || !current.current.editable) return
+    owns()
+    const value = await drafts.recover(candidate, target, version, { signal: operation?.signal, guard: owns })
+    if (!value) return
+    owns()
     suppress.current = true
-    try { props.editor.replaceBlocks(props.editor.document, productRichTextToNative(value.content, rich.current)); record.current = value; handle?.restoreBaseline(!isNewCommentDraft(candidate.target) ? candidate.target.baseline : undefined); ++input.current; setRevision(value => value + 1) }
-    finally { suppress.current = false }
-    await drafts.discard(candidate)
+    try {
+      props.editor.replaceBlocks(props.editor.document, productRichTextToNative(value.content, rich.current))
+      const actual = nativeRichTextToProduct(props.editor.document as DocumentEditorBlock[], rich.current)
+      if (JSON.stringify(actual) !== JSON.stringify(value.content)) throw new Error('client-comment-native-unverified')
+      record.current = value; handle?.restoreBaseline(!isNewCommentDraft(candidate.target) ? candidate.target.baseline : undefined)
+      ++input.current; setRevision(value => value + 1)
+    } finally { suppress.current = false }
+    if (!operation) await drafts.discard(candidate)
+    return value
   }
+  useLayoutEffect(() => {
+    if (!drafts || !target || !props.editable) return
+    return drafts.registerComposer({ id: composerId.current, target,
+      snapshot: () => { const available = active.current && current.current.editable && !submitting.current && !props.editor.prosemirrorView.isDestroyed; return { record: record.current, composing: composing.current || available && props.editor.prosemirrorView.composing, available } },
+      targetState: () => context?.store.draftTargetState(target) ?? 'unavailable', restore: recover })
+  }, [drafts, handle, props.editor, props.editable])
   const composition = (value: boolean) => {
     composing.current = value
     if (record.current && target && drafts && context?.store.version) {
@@ -210,8 +236,9 @@ export function DocumentCommentEditor(props: ComponentProps['Comments']['Editor'
   return <div data-comment-draft-editor={target ? JSON.stringify([target.threadId, target.commentId ?? null]) : undefined} aria-busy={state.pending || undefined}
     onCompositionStart={() => composition(true)} onCompositionEnd={() => composition(false)}>
     <MantineCommentEditor {...props} />
+    {recoveryFailure && <PmNotice tone="warn">{t.commentRecoveryChanged}</PmNotice>}
     {failure && <PmNotice tone="danger">{failure === 'changed' ? t.commentChanged : t.commentUnavailable}</PmNotice>}
-    {drafts && props.editable && <DraftChoices candidates={candidates} disabled={composing.current || submitting.current} onRecover={recover} onDiscard={async candidate => { await drafts.discard(candidate) }} />}
+    {drafts && props.editable && <DraftChoices candidates={candidates} disabled={composing.current || submitting.current} onRecover={async candidate => { const captured = handle; setRecoveryFailure(false); try { await recover(candidate) } catch { if (active.current && currentHandle.current === captured) setRecoveryFailure(true) } }} onDiscard={async candidate => { await drafts.discard(candidate) }} />}
     {drafts && props.editable && state.failed && !context?.sidebar && <PmNotice tone="warn">{t.commentBackupFailed}</PmNotice>}
   </div>
 }

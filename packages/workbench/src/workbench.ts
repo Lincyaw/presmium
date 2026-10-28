@@ -8,6 +8,7 @@ import { componentSource, reconcileComponentAction, sameComponentSource } from '
 import { applyDocumentComponentAction, documentComponentSection, effectiveComponentParameters } from '@lincyaw/kernel'
 import type { DocumentAuthoringActionPlan, DocumentComponentAction, AppliedDocumentAuthoringAction } from '@lincyaw/kernel'
 import { inspectCommentDrafts } from './document-editor/comment-draft-inspection.ts'
+import { mutateCommentDrafts } from './document-editor/comment-draft-actions.ts'
 import { inspectComponentDrafts } from './component-draft-inspection.ts'
 import { mutateComponentDrafts } from './component-draft-actions.ts'
 import { DocumentSession } from './document-session.ts'
@@ -1018,6 +1019,7 @@ export class Workbench {
         : { status: state.isPreparingPresentation ? 'preparing' : state.presentationFailure ? 'unavailable' : 'unprepared' },
       actions: ['state.read', 'playback.pause', ...safe ? ['source.flush' as const] : [],
         ...commentDrafts?.readable ? ['comment-drafts.inspect' as const, 'comment-drafts.read' as const] : [],
+        ...clean && !state.isHistoryBusy && !state.isHistoryPreparing && commentDrafts?.readable && commentDrafts.ownersKnown ? ['comment-drafts.discard' as const, ...state.webView === 'document' && commentDrafts.hasRestoreComposer() ? ['comment-drafts.restore' as const] : []] : [],
         ...source.member?.id && this.#componentPropertyDrafts.readable(source.identity, source.member.id) ? ['component-drafts.inspect' as const, 'component-drafts.read' as const] : [],
         ...clean && !state.isHistoryBusy && !state.isHistoryPreparing && source.member?.id && this.#componentPropertyDrafts.readable(source.identity, source.member.id) ? ['component-drafts.restore' as const, 'component-drafts.discard' as const] : [],
         ...this.#canPreparePresentation() ? ['preview.prepare' as const] : [],
@@ -1038,6 +1040,20 @@ export class Workbench {
       const result = await inspectCommentDrafts(drafts, action, signal, fits)
       current()
       return result
+    }
+    if (action.type === 'comment-drafts.restore' || action.type === 'comment-drafts.discard') {
+      const memberId = this.#state.authoring?.member?.id, drafts = identity ? this.documentCommentDrafts(identity) : undefined
+      if (!identity || !memberId || !drafts || !fits) throw new Error('client-comment-drafts-unavailable')
+      const guard = () => {
+        owned()
+        const state = this.#state, source = state.authoring
+        if (!source?.content || source.member?.id !== memberId || !source.version || !source.fingerprint
+          || !sameSource({ documentId: source.content.id, version: source.version, fingerprint: source.fingerprint }, expected)
+          || source.loading || source.dirty || source.saving || source.composing || source.restored || source.recovering || source.error || isAgentChanging(state)
+          || state.isCreatingPage || state.isEditingPage || state.isHistoryBusy || state.isHistoryPreparing || state.hasDocumentTimingDrafts
+          || action.type === 'comment-drafts.restore' && state.webView !== 'document') throw new Error('client-source-changed')
+      }
+      return mutateCommentDrafts(drafts, action, signal, guard, fits)
     }
     if (action.type === 'component-drafts.inspect' || action.type === 'component-drafts.read') {
       const memberId = this.#state.authoring?.member?.id
