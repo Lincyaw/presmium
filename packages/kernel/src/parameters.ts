@@ -12,10 +12,10 @@ export interface DocumentParameterIssue {
 }
 export interface DocumentParameterValidation { available: boolean, valid: boolean, issues: DocumentParameterIssue[] }
 export interface DocumentParameterSchemaReference { id: string, schema: JsonSchema }
-export interface DocumentParameterAccess { available: boolean, public: boolean, readOnly: boolean, reason?: 'invalid-path' | 'schema-unavailable' | 'path-unavailable' }
+export interface DocumentParameterAccess { available: boolean, public: boolean, readOnly: boolean, reason?: 'invalid-path' | 'schema-unavailable' | 'path-unavailable' | 'value-unresolved' }
 
-/** False is no read-only declaration; it cannot cancel true from another applicable schema. */
-function withoutFalseReadOnly(schema: JsonSchema): JsonSchema {
+/** A private annotation view: false cannot cancel another applicable true; author JSON is untouched. */
+export function documentParameterSchemaForAccess(schema: JsonSchema): JsonSchema {
   const result = structuredClone(schema)
   const object = (value: unknown): value is Record<string, unknown> => Boolean(value && typeof value === 'object' && !Array.isArray(value))
   let visited = 0
@@ -45,14 +45,17 @@ export function documentParameterAccess(schema: JsonSchema, value: unknown, path
   let readOnly = false
   try {
     // Only the bundled 2020-12 draft and this local schema are registered. No remote loader.
-    const root = compileSchema(withoutFalseReadOnly(schema), { drafts: [draft2020], draft: 'draft-2020-12', throwOnInvalidSchema: true, throwOnInvalidRef: true })
+    const root = compileSchema(documentParameterSchemaForAccess(schema), { drafts: [draft2020], draft: 'draft-2020-12', throwOnInvalidSchema: true, throwOnInvalidRef: true })
+    const reason = (error: { code: unknown }): 'path-unavailable' | 'value-unresolved' => typeof error.code === 'string' && ['one-of-error', 'any-of-error'].includes(error.code) ? 'value-unresolved' : 'path-unavailable'
     let pointer = '', current = value
     for (let index = 0; index <= path.length; index++) {
       const found = root.getNode(pointer, value, { createSchema: false })
-      if (found.error) return { available: false, public: false, readOnly, reason: 'path-unavailable' }
+      if (found.error) return { available: false, public: false, readOnly, reason: reason(found.error) }
       if (!found.node) return { available: true, public: false, readOnly }
+      if (typeof found.node.schema === 'object' && found.node.schema.readOnly === true) readOnly = true
       const reduced = found.node.reduceNode(current)
-      if (reduced.error || !reduced.node) return { available: false, public: false, readOnly, reason: 'path-unavailable' }
+      if (reduced.error) return { available: false, public: false, readOnly, reason: reason(reduced.error) }
+      if (!reduced.node) return { available: false, public: false, readOnly, reason: 'path-unavailable' }
       if (typeof reduced.node.schema === 'object' && reduced.node.schema.readOnly === true) readOnly = true
       if (index === path.length) return { available: true, public: true, readOnly }
       const key = path[index]!
