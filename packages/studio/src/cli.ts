@@ -11,7 +11,7 @@ service of the directory (the workspace root, or a deck's directory; default: .)
 address to open in the browser. The model is chosen in the workbench's model settings, or given by the
 environment: DEEPSEEK_API_KEY, or PRESMIUM_MODEL_URL, PRESMIUM_MODEL_KEY and PRESMIUM_MODEL_PROVIDER for
 a Messages-compatible service. DeepSeek Harness's home (sessions, model settings and credentials, the
-log presmium-studio.log) is $XDG_STATE_HOME/presmium/studio.
+log presmium-studio-<hash>.log, one per installation) is $XDG_STATE_HOME/presmium/studio.
 
 Options:
   --port <n>     the workbench's port (default: 4320, or a free one when that is in use)
