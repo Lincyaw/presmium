@@ -1,11 +1,15 @@
 import { relative, sep } from 'node:path'
 import { relativeIR } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
-import { errorMessage, PREVIEW_REVISION, pushStream } from '@lincyaw/kernel'
+import { errorMessage, PREVIEW_REVISION, PreviewPreparing, pushStream } from '@lincyaw/kernel'
 import { irRevision } from '@lincyaw/kernel/node'
 import type { DocumentVoiceAuthoring, DocumentVoiceCapabilities, Finding, IrAnswer, IRDocument, IrEvent, Logger, Member, PreviewAnswer, PreviewRenderer, VoiceCatalogAnswer } from '@lincyaw/kernel'
 import type { DiagnosticStore, ServerHost } from '@lincyaw/server'
 import type { CompileSession } from './compile-session.ts'
+import { RequestError } from './errors.ts'
+
+// The workbench asks again this soon when the viewer app or the document's code is still being built.
+const PREPARING_RETRY_MS = 1000
 
 export interface BuildAnswer {
   outputs: { renderer: string, outDir: string }[]
@@ -26,7 +30,8 @@ export interface WorkbenchApi {
   events(document: string, signal: AbortSignal): AsyncIterable<{ event: string, data: IrEvent }>
   /**
    * The document's preview addresses: the viewer app's page of the document, and the same page showing its slides.
-   * `prefetch`: the workbench prepares the document ahead of the author's click, answered at once.
+   * `prefetch`: the workbench prepares the document ahead of the author's click, answered at once. A build still running
+   * after the wait is answered with 503 `preview-preparing` and `Retry-After`.
    */
   preview(document: string, renderer?: PreviewRenderer, prefetch?: boolean): Promise<PreviewAnswer>
   build(document: string, to?: string[]): Promise<BuildAnswer>
@@ -124,6 +129,10 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
         // The viewer app's page once it has what the document needs (an opened document waits for it a while), else the
         // document's page on the site.
         const page = await options.viewerPage?.(document, !prefetch).catch((error: unknown) => {
+          if (error instanceof PreviewPreparing) {
+            outcome = 'preparing'
+            throw new RequestError(503, 'preview-preparing', { retryAfterMs: PREPARING_RETRY_MS }, { 'Retry-After': String(PREPARING_RETRY_MS / 1000) })
+          }
           log.warn(`the viewer app cannot show ${document || '.'}: ${errorMessage(error)}`)
           if (!prefetch) throw error
           return undefined
@@ -138,7 +147,7 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
         outcome = 'ready'
         return { document, web, ...slides ? { slides: `${web}${web.includes('?') ? '&' : '?'}form=slides` } : {} }
       } catch (error) {
-        log.warn(`${label} phase=${phase} error=${errorMessage(error)}`)
+        if (outcome !== 'preparing') log.warn(`${label} phase=${phase} error=${errorMessage(error)}`)
         throw error
       } finally {
         log.info(`${label} state=${outcome} phase=${phase} elapsedMs=${Date.now() - started}`)
