@@ -20,7 +20,7 @@ function ObjectFields(props: ObjectFieldTemplateProps<unknown, any, SchemaFormCo
 function ArrayFields(props: ArrayFieldTemplateProps<unknown, any, SchemaFormContext>) {
   const context = props.registry.formContext
   const scope = useContext(SchemaFormPath)
-  const invoke = (action: (event?: unknown) => void, event: unknown) => { context.intent = scope.path; action(event) }
+  const invoke = (action: (event?: unknown) => void, event: unknown) => { context.intent = scope.path; context.intentReadOnly = Boolean(props.disabled || props.readonly); action(event) }
   return <PmField label={props.title} group density={context.density}><div className="pm-ui-schema-form__fields">{props.items.map(item => <div key={item.key} className="pm-ui-schema-form__item">
     <div className="pm-ui-schema-form__field"><SchemaFormPath.Provider value={{ path: [...scope.path, item.index] }}>{item.children}</SchemaFormPath.Provider></div>
     {item.hasToolbar && <div className="pm-ui-schema-form__actions">

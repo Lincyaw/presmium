@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import Form from '@rjsf/core'
 import { createSchemaUtils } from '@rjsf/utils'
 import type { RJSFSchema } from '@rjsf/utils'
-import { validateDocumentParameters } from '@lincyaw/kernel'
+import { validateDocumentParameters, documentParameterAccess, documentParameterSchemaForAccess } from '@lincyaw/kernel'
 import type { DocumentParameterValidation, JsonSchema, JsonValue } from '@lincyaw/kernel'
 import { PmNotice } from '../components.tsx'
 import type { ControlDensity } from '../components.tsx'
@@ -27,6 +27,8 @@ export interface PmSchemaFormProps {
   label?: string
   error?: ReactNode
   extraValidation?(value: JsonValue): DocumentParameterValidation
+  /** Independent roots used for field access only; validity still belongs to extraValidation. */
+  accessorSchemas?: readonly JsonSchema[]
   hideProperties?: readonly string[]
   empty?: ReactNode
   idPrefix?: string
@@ -75,7 +77,7 @@ function withoutDefaults(schema: JsonSchema): RJSFSchema {
 /** Top-level fields resolved through the same public schema utilities used by the form. */
 export function schemaFormPropertyNames(schema: JsonSchema, value: JsonValue): { available: boolean, names: string[] } {
   try {
-    const rendered = withoutDefaults(schema), validator = schemaFormValidator(rendered)
+    const rendered = withoutDefaults(documentParameterSchemaForAccess(schema)), validator = schemaFormValidator(rendered)
     const resolved = createSchemaUtils(validator, rendered).retrieveSchema(rendered, value)
     // A selector's uncommitted branch is UI state, so it cannot be inferred from the saved value.
     if (resolved.oneOf || resolved.anyOf) return { available: false, names: [] }
@@ -84,26 +86,36 @@ export function schemaFormPropertyNames(schema: JsonSchema, value: JsonValue): {
 }
 
 /** Controlled parameter fields. The caller owns drafts, scope, persistence and adoption. */
-export function PmSchemaForm({ schema, value, onChange, onValidationChange, onComposition, extraValidation, hideProperties = [], empty, idPrefix, disabled = false, readOnly = false, density = 'compact', locale = 'zh-CN', label, error }: PmSchemaFormProps) {
-  const id = useId(), current = useRef({ schema, value, onChange, onValidationChange, onComposition, extraValidation, disabled, readOnly })
-  current.current = { schema, value, onChange, onValidationChange, onComposition, extraValidation, disabled, readOnly }
+export function PmSchemaForm({ schema, value, onChange, onValidationChange, onComposition, extraValidation, accessorSchemas = [], hideProperties = [], empty, idPrefix, disabled = false, readOnly = false, density = 'compact', locale = 'zh-CN', label, error }: PmSchemaFormProps) {
+  const id = useId(), current = useRef({ schema, value, onChange, onValidationChange, onComposition, extraValidation, accessorSchemas, disabled, readOnly })
+  current.current = { schema, value, onChange, onValidationChange, onComposition, extraValidation, accessorSchemas, disabled, readOnly }
   const [inputErrors, setInputErrors] = useState<Record<string, string>>({}), [composing, setComposing] = useState(false)
   const composition = useRef(false)
   const reportedValidation = useRef<string>()
-  const rendered = useMemo(() => withoutDefaults(schema), [schema]), validator = useMemo(() => schemaFormValidator(rendered), [rendered])
+  const view = useMemo(() => { try { return { available: true, schema: withoutDefaults(documentParameterSchemaForAccess(schema)) } } catch { return { available: false, schema: {} as RJSFSchema } } }, [schema])
+  const rendered = view.schema, validator = useMemo(() => schemaFormValidator(rendered), [rendered])
   const utilities = useMemo(() => createSchemaUtils(validator, rendered), [validator, rendered])
   const validate = (next: JsonValue) => {
     const base = validateDocumentParameters(current.current.schema, next), extra = current.current.extraValidation?.(next)
     return extra ? { available: base.available && extra.available, valid: base.valid && extra.valid, issues: [...base.issues, ...extra.issues] } : base
   }
   const validation = useMemo(() => validate(value), [schema, value, extraValidation])
-  const context = useMemo<SchemaFormContext>(() => ({ density, messages: SCHEMA_FORM_MESSAGES[locale], paths: new Map(), schemas: new Map(),
+  const context = useMemo<SchemaFormContext>(() => ({ density, messages: SCHEMA_FORM_MESSAGES[locale], paths: new Map(), schemas: new Map(), readOnly: new Map(),
     mark(control) {
       const branch = control.replace(/__(?:oneof|anyof)_select$/, '')
       this.intent = this.paths.get(control) ?? this.paths.get(branch)
+      this.intentReadOnly = this.readOnly.get(control) ?? this.readOnly.get(branch)
       this.branch = branch !== control ? branch : undefined
     },
     inputError(control, message) { setInputErrors(errors => errors[control] === message || !message && !Object.hasOwn(errors, control) ? errors : message ? { ...errors, [control]: message } : Object.fromEntries(Object.entries(errors).filter(([key]) => key !== control))) },
+    access(path) {
+      const latest = current.current, primary = documentParameterAccess(latest.schema, latest.value, path)
+      // RJSF's public SchemaField carries the explicitly selected UI branch while a draft is incomplete.
+      // Schema/reference failures never use this path; the canonical validator must still be available.
+      const selected = primary.reason === 'value-unresolved' && validateDocumentParameters(latest.schema, latest.value).available
+      const additional = latest.accessorSchemas.map(root => documentParameterAccess(root, latest.value, path))
+      return { available: (primary.available || selected) && additional.every(result => result.available), public: primary.public || selected || additional.some(result => result.public), readOnly: primary.readOnly || additional.some(result => result.readOnly) }
+    },
     hideProperties: new Set(hideProperties), empty,
   }), [density, locale, JSON.stringify(hideProperties), empty])
   const result = useMemo<DocumentParameterValidation>(() => {
@@ -138,7 +150,7 @@ export function PmSchemaForm({ schema, value, onChange, onValidationChange, onCo
     }
     return merged
   }
-  if (!validation.available) return <PmNotice tone="warn">{context.messages.unsupported}</PmNotice>
+  if (!validation.available || !view.available) return <PmNotice tone="warn">{context.messages.unsupported}</PmNotice>
   return <div className="pm-ui-schema-form" data-density={density} role="group" aria-label={label}
     onCompositionStart={() => { composition.current = true; setComposing(true); current.current.onComposition?.(true) }}
     onCompositionEnd={() => { composition.current = false; setComposing(false); current.current.onComposition?.(false) }}>
@@ -147,9 +159,11 @@ export function PmSchemaForm({ schema, value, onChange, onValidationChange, onCo
       idPrefix={idPrefix ?? `parameters-${id}`} tagName="div" noHtml5Validate showErrorList={false} liveValidate disabled={disabled} readonly={readOnly}
       experimental_defaultFormStateBehavior={{ emptyObjectFields: 'skipDefaults', arrayMinItems: { populate: 'never' }, constAsDefaults: 'never' }}
       uiSchema={{ 'ui:options': { expandable: false } }} onChange={event => {
-        const latest = current.current, path = context.intent, branch = context.branch
-        context.intent = undefined; context.branch = undefined
-        if (!path || latest.disabled || latest.readOnly) return
+        const latest = current.current, path = context.intent, branch = context.branch, intentReadOnly = context.intentReadOnly
+        context.intent = undefined; context.branch = undefined; context.intentReadOnly = undefined
+        if (!path || latest.disabled || latest.readOnly || intentReadOnly) return
+        const access = context.access(path)
+        if (!access.available || !access.public || access.readOnly) return
         let next = jsonValue(at(event.formData, path))
         if (branch) {
           let scope = rendered, data: unknown = latest.value

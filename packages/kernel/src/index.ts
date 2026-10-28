@@ -14,7 +14,7 @@ export { createAnchorResolverRegistry, isRenderable, parseAnchor } from './ancho
 export type { ParsedAnchor } from './anchors.ts'
 export { diagnosticOf } from './diagnostics.ts'
 export { DOCUMENT_JSON_SCHEMA, validateDocument } from './document.ts'
-export { validateDocumentParameters, documentParameterAccess } from './parameters.ts'
+export { validateDocumentParameters, documentParameterAccess, documentParameterSchemaForAccess } from './parameters.ts'
 export type { DocumentParameterAccess, DocumentParameterIssue, DocumentParameterSchemaReference, DocumentParameterValidation } from './parameters.ts'
 export { docBlocks, irBlocks, nodeMdast } from './blocks.ts'
 export { CheckRegistry } from './checks.ts'

@@ -39,3 +39,23 @@ Figma 读取 `ComponentProperties` 的 Compact Base `278:5411` 与 NoFields `278
 | `../schema-form-verification/run-1793150917330/result.json` | 加入新依赖后公开根入口构建及真实浏览器再验证 30/30，1182 输入起止/current 一致，错误为空，浏览器和私服全关闭 |
 
 最终类型检查 1302 文件通过。参数访问片的 manifest 与精确提交证明单独登记，不把新增依赖后的结果冒充此前公共表单提交时的冻结字节。此处不宣称参数动作的端到端只读门禁已经接入；后者由领域动作片复用本函数并独立验证。
+
+## 表单字段的统一访问限制
+
+再以独立片把同一个注解视图与访问函数接入公开 SchemaField。`accessorSchemas?: readonly JsonSchema[]` 提供额外的独立 schema 根：任一根声明路径即可属于 public，任一适用根声明只读即只读；额外根不可解析则保留当前值并显示短只读状态。表单展示和原生 readonly／disabled、数组操作与回调门禁一致，原始 schema 和额外 `extraValidation` 的完整 CFworker 校验不变。
+
+无效草稿不会自动冻结：库的 oneOf／anyOf 数据选支错误以 `value-unresolved` 区别于 schema／引用失败，后端仍收到 unavailable。只有公开 RJSF SchemaField 已显式选择的 UI 分支、且原始 CFworker 校验器可用时，表单才继续该分支的输入。没有生成猜测值、保存 last-good 副本或改变源数据；空数字分支和 `-` 均可补填、修正或切回。真正 schema／引用错误维持只读。注解视图也修复标准 allOf-only 根被原 adapter 显示为空的问题，公开字段查询同步使用相同视图。
+
+忽略证据在 `.presmium/schema-form-access-verification/`：
+
+| 原始记录 | 实际结果 |
+|---|---|
+| `before-1793151262822` | 首次定位 allOf-only 字段超时；其原始页面显示空参数，保留未覆盖的事实 |
+| `before-1793151363123` | 7 项 expected-counterexample；allOf、ref sibling、状态 schema 与父对象的四个原生输入都可编辑，真实 fill 改变草稿 |
+| `after-1793151534884` | 同四个输入恢复原生只读，7 项通过；不是最终源码谱系 |
+| `after-expanded-1793151653215` | strict locator 因实际 anyOf 重复同 ID 控件失败，原始红结果保留 |
+| `after-final-1793151765301` | 最终 21/21；全部出现的只读控件均阻止真实键盘输入，状态数组动作禁用，坏引用保值只读，allOf-only 正常出现，union 空分支／`-` 可修正并切回，unknown 不丢；明暗 × 1440／390 已看 |
+
+最终同源复核包括公共表单 `run-1793151766355` 的 30/30 与 helper `consumer-1793151837773` 的 52/52；两轮浏览器各登记 1182 个输入，起止与最终提交前源码一致，console／page／HTTP／external 为空，浏览器及私有服务器关闭。类型 1302 文件通过。该片的最终 manifest 与提交证明单独保存在 `schema-form-access-verification/`。
+
+**尚未完成的显示缺陷：** 外层 properties 与 anyOf 分支重复同一字段时，RJSF 会渲染两份同 ID 控件。最终记录保留 `anyOfDuplicateControls: 2`；遍历两份只读输入不代表这个 UX 已修复。去重将另用公开 field／template 接缝实现，不靠 CSS 隐藏，也不修改 schema、数据或完整校验。本片不作为完整 anyOf 渲染验收。
