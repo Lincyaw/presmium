@@ -25,8 +25,10 @@ const videoExporter: Exporter = {
   },
   async run(ctx) {
     ctx.progress('build')
+    if (!ctx.source) throw new Error('job-source-not-compiled')
     const result = await exportVideo({
       deckDir: ctx.deckDir,
+      source: ctx.source,
       out: join(ctx.outDir, 'lecture.webm'),
       log: ctx.log,
       progress: (done, total) => ctx.progress('frames', done, total),

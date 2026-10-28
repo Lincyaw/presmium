@@ -27,6 +27,7 @@ export async function exportDocument(compilation: Compilation, id: string, optio
     return await found.exporter.run({
       deckDir: compilation.deckDir,
       workspaceRoot: compilation.workspaceRoot,
+      source: compilation.doc.source,
       config: found.config,
       outDir: options.outDir,
       signal: options.signal ?? new AbortController().signal,

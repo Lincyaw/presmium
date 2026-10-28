@@ -4,11 +4,14 @@ import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { build, Compiler, playwrightChromium, serveDirectory } from '@lincyaw/compiler'
 import { ABSOLUTE_URL, aigcLabel, aigcString, deckLocale, errorMessage } from '@lincyaw/kernel'
+import type { CanonicalSource } from '@lincyaw/kernel'
 import { audioSegments, clockText, defaultTrack, LECTURE_MESSAGES, parseTrack, trackDuration } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 
 export interface ExportOptions {
   deckDir: string
+  /** Refuse to render if the fresh compilation differs from the requested canonical document. */
+  source?: CanonicalSource
   track?: string
   out?: string
   width?: number
@@ -174,6 +177,8 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
   try {
     log('building the web form and the lectures…')
     const compilation = await new Compiler(deckDir).compile()
+    const actual = compilation.doc.source
+    if (options.source && (!actual || actual.documentId !== options.source.documentId || actual.version !== options.source.version || actual.fingerprint !== options.source.fingerprint)) throw new Error('job-source-changed')
     const report = await build(compilation, { outDir: work, to: ['web', 'lecture'] })
     const errors = report.findings.filter(f => f.severity === 'error')
     // The first reason first: a one-line summary (a workbench shows it) says what to fix.

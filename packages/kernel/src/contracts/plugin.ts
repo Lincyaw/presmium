@@ -1,4 +1,4 @@
-import type { DirectiveSpec, IRDocument, IRPass, Renderer, RendererContribution, RoleSpec } from '../ir.ts'
+import type { CanonicalSource, DirectiveSpec, IRDocument, IRPass, Renderer, RendererContribution, RoleSpec } from '../ir.ts'
 import type { AgentTool } from './agent.ts'
 import type { AnchorResolver, AnchorString } from './anchors.ts'
 import type { Check, CheckContext } from './checks.ts'
@@ -102,6 +102,8 @@ export interface Exporter {
 export interface ExportContext {
   deckDir: string
   workspaceRoot: string
+  /** The exact canonical source from which the requested compilation was derived. */
+  source?: CanonicalSource
   /** The plugin's configuration in the document (`presmium.<plugin id>`). */
   config: Record<string, unknown>
   /** An empty directory, the job's own, for the files. */
