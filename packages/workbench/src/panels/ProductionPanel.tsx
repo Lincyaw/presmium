@@ -38,7 +38,8 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
   const [playerBusy, setPlayerBusy] = useState(false), [seeking, setSeeking] = useState(false), controlRequest = useRef<AbortController>()
   const [enabling, setEnabling] = useState(false)
   const [mediaRefresh, setMediaRefresh] = useState(false)
-  const [transcriptionAsset, setTranscriptionAsset] = useState<{ identity: string, id: string }>()
+  const [transcriptionAsset, setTranscriptionAsset] = useState<{ identity: string, id: string, revision: number }>()
+  const transcriptionSelection = useRef(0)
   const owner = useRef({ active: true, generation: 0 }), initial = useRef(false)
   const document = source?.content, sectionId = position && document?.sections[position.section] ? position.section : document?.sectionOrder[0]
   const declared = Boolean(document?.metadata.plugins?.includes('@lincyaw/addon-lecture'))
@@ -163,9 +164,15 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
         <PmCard><DocumentVoiceField key={`${source.identity}:${stepId}`} stepId={stepId} disabled={blocked || closing}
           onGenerate={() => { workbench.stopAuditions(); setGenerateStep(stepId) }} /></PmCard>
         <ProductionRecording key={source.identity} identity={source.identity} sectionId={sectionId} stepId={stepId} active={tab !== 'outputs' && (wide || tab === 'script')} disabled={blocked || closing}
-          onImported={assetId => { setMediaRefresh(true); setTranscriptionAsset({ identity: source.identity!, id: assetId }) }} onAdopted={() => setMediaRefresh(true)} />
+          onImportStarted={() => transcriptionSelection.current}
+          onImported={(assetId, selection) => {
+            setMediaRefresh(true)
+            if (selection === transcriptionSelection.current) setTranscriptionAsset({ identity: source.identity!, id: assetId, revision: ++transcriptionSelection.current })
+          }} onAdopted={() => setMediaRefresh(true)} />
         <ProductionTranscription key={source.identity} identity={source.identity} directory={source.directory} document={document} sectionId={sectionId} stepId={stepId}
-          active={tab !== 'outputs' && (wide || tab === 'script')} disabled={blocked || closing} selectedAssetId={transcriptionAsset?.identity === source.identity ? transcriptionAsset.id : undefined} />
+          active={tab !== 'outputs' && (wide || tab === 'script')} disabled={blocked || closing}
+          selectedAsset={transcriptionAsset?.identity === source.identity ? transcriptionAsset : undefined}
+          onSelectAsset={() => { transcriptionSelection.current++; setTranscriptionAsset(undefined) }} />
         <ProductionMediaClips key={`${source.identity}:${stepId}`} identity={source.identity} version={source.version ?? ''} document={document} sectionId={sectionId} stepId={stepId}
           binding={planCurrent ? plan?.binding : undefined} stepDurationMs={(() => { const step = planCurrent ? plan?.pages.find(page => page.sectionId === sectionId)?.steps.find(step => step.stepId === stepId) : undefined; return step?.timing === 'confirmed' && step.startMs !== undefined && step.endMs !== undefined ? step.endMs - step.startMs : undefined })()}
           disabled={blocked || closing || !declared || !source.version || Boolean(source.dirty || source.saving || source.restored || source.error)} onChanged={() => setMediaRefresh(true)} />
