@@ -467,4 +467,6 @@ component effect 记录稳定 block/page/step、实际变更路径、影响 bloc
 
 `GET document/capabilities` 返回同一作者能力与限制，无编译／Node 服务装配。独立素材副本明确 `independentCopy: { available: false, reason: "implementation-closure-unavailable" }`：只 clone Definition 或一个 TSX 仍共享代码／CSS／辅助模块，现有整文稿 bundle inputs 不证明实现闭包。Definition 没有实例基础参数的共享默认槽位，本片不把所有实例批量覆盖冒充修改共享默认。
 
-同一 source／member／document／token、完整文稿验证、原计划 family、review、CAS、历史和读回全部保留。HTTP 人工采用固定 editor，MCP 固定 agent。409 后不能偷偷换源重试；同引用丢 ACK 沿原 receipt，Undo ABA 拒绝。请求／结果仍限 4096／7168 字符，保留参数不计入短字段请求，已编辑值超限返回可恢复 413。真实 SDK／HTTP、503 个影响步骤与公开 DSH pruner 证据见[参数动作记录](benchmarks/component-parameter-actions-2026-10-28.md)。本节不宣称界面整体验收或 MCP 全覆盖。
+同一 source／member／document／token、完整文稿验证、原计划 family、review、CAS、历史和读回全部保留。HTTP 人工采用固定 editor，MCP 固定 agent。409 后不能偷偷换源重试；同引用丢 ACK 沿原 receipt，Undo ABA 拒绝。请求／结果仍限 4096／7168 字符，保留参数不计入短字段请求，已编辑值超限返回可恢复 413。真实 SDK／HTTP、503 个影响步骤与公开 DSH pruner 证据见[参数动作记录](benchmarks/component-parameter-actions-2026-10-28.md)。
+
+Web 已通过同一边界接入组件属性 Dialog：基础／当前步骤的公开字段、恢复继承提案、真实影响、已有 Definition 选择与引用定位；采用和选择分开，应用后保持 Dialog。对应 Git 修订撤消与正文原生历史独立。目标草稿 strict 备份及显式 fork 恢复不成为 MCP 默认可读内容，也未新增 MCP 表单草稿恢复／丢弃能力。[隔离 Studio 首轮](benchmarks/component-properties-ui-2026-10-28.md)在固定 4c555484 运行源完成 26 项和中英文四组合；相同运行字节另完成独立丢 ACK、后来原生删除及撤消 8 项。真实小事务未触发配额拒绝，故障保留分支仍未验证。这些记录不替代完整 Schema、跨进程故障、物理触屏或全部 MCP parity。
