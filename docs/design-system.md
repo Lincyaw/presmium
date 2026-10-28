@@ -49,7 +49,7 @@ BlockNote 的公共适配类为 `pm-ui-block-editor`，由工作台的全篇 `Bl
 
 文档里的字幕侧栏和动画展开区只提供字幕输入及配音开始时机。音色、应用范围、生成入口，以及停留时长、结束停顿、继承恢复和发音工具放在视频制作；音色沿用 `DocumentVoiceField` 与 `DocumentVoiceDialog`，讲稿与制作设置继续通过同一文稿保存边界写入。切换界面不清除这些设置，也不把它们补成文档里的常驻说明。
 
-放映字幕复用 host 的 `PmCaption`：`label` 提供可访问名称，`lines` 保留当前字幕段落顺序，`hint` 只补充作者可理解的状态。外观由 `packages/design/src/caption.css` 与 `--pm-caption-max-width`、`--pm-caption-max-height` 令牌定义；超长文本在安全区内滚动，业务层只安排它与画面、控制栏的位置。放映字幕通过 host 的 `PmCaptionProvider` 与 `PmCaption overlay` 进入幻灯片画布内的共享浮层，底部避让页脚；显示、隐藏与换行不参与画布外布局，不改变幻灯片的位置或缩放。按步骤字幕与真实时序字幕通过宿主显示权协调，不能叠加两套字幕。
+放映字幕复用 host 的 `PmCaption`：`label` 提供可访问名称，`lines` 保留当前字幕段落顺序，`hint` 只补充作者可理解的状态。外观由 `packages/design/src/caption.css` 与 `--pm-caption-max-width`、`--pm-caption-max-height` 令牌定义；超长文本在安全区内滚动，业务层只安排它与画面、控制栏的位置。放映字幕通过 host 的 `PmCaptionProvider` 与 `PmCaption overlay` 进入幻灯片画布内的共享浮层，底部避让页脚；显示、隐藏与换行不参与画布外布局，不改变幻灯片的位置或缩放。按步骤字幕与真实时序字幕通过宿主显示权协调，不能叠加两套字幕。浮层字幕获得焦点时，Home／End、PageUp／PageDown、上下方向键及空格保留浏览器原生滚动，不触发放映跳步；Shift＋空格向上滚动，左右步键、Escape 与 Tab 保留原行为。公共组件先调用传入的 `onKeyDown`，尊重已取消事件、输入法和修饰键。
 Figma 公共 `Presmium/Caption` 对应单段、多段、空讲稿和超长滚动四种状态，节点登记在 `figma-nodes.json`。其颜色、间距、边框、圆角与最大宽度绑定公共变量，正文和提示复用已有 16px／12px 文字样式。滚动示例以 800px 高视口呈现 `28vh` 的 224px 上限，运行时继续按实际视口计算。
 
 放映导航与讲授播放组合在同一底栏，播放／暂停和字幕复用 host `PmIconButton`，进度复用 `pm-ui-range`，次要选项复用 `PmMenu`，只读字幕／章节复用 `PmDrawer`。业务样式只安排伸缩和排列，不另加播放器背景、边框或控件外观。

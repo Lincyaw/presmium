@@ -1,5 +1,5 @@
 import { createContext, createElement as h, useContext } from 'react'
-import type { HTMLAttributes, ReactNode } from 'react'
+import type { HTMLAttributes, KeyboardEvent, ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
 const CaptionContainer = createContext<HTMLElement | null>(null)
@@ -17,9 +17,14 @@ export interface CaptionProps extends HTMLAttributes<HTMLElement> {
 }
 
 /** Read-only caption text; its caller owns the source and playback position. */
-export function PmCaption({ label, lines, hint, overlay = false, className, ...props }: CaptionProps) {
+export function PmCaption({ label, lines, hint, overlay = false, className, onKeyDown, ...props }: CaptionProps) {
   const container = useContext(CaptionContainer)
-  const caption = h('section', { ...props, className: ['pm-ui-caption', className].filter(Boolean).join(' '), 'data-overlay': overlay || undefined, 'aria-label': label, 'aria-live': 'polite', 'aria-atomic': true, tabIndex: overlay ? 0 : props.tabIndex },
+  const keyDown = (event: KeyboardEvent<HTMLElement>) => {
+    onKeyDown?.(event)
+    if (overlay && !event.defaultPrevented && !event.nativeEvent.isComposing && !event.altKey && !event.ctrlKey && !event.metaKey
+      && ['Home', 'End', 'PageUp', 'PageDown', 'ArrowUp', 'ArrowDown', ' '].includes(event.key)) event.stopPropagation()
+  }
+  const caption = h('section', { ...props, onKeyDown: keyDown, className: ['pm-ui-caption', className].filter(Boolean).join(' '), 'data-overlay': overlay || undefined, 'aria-label': label, 'aria-live': 'polite', 'aria-atomic': true, tabIndex: overlay ? 0 : props.tabIndex },
     hint ? h('p', { className: 'pm-ui-caption__hint' }, hint) : null,
     lines.map((text, index) => h('p', { key: index, className: 'pm-ui-caption__line' }, text)))
   return overlay ? container && createPortal(caption, container) : caption
