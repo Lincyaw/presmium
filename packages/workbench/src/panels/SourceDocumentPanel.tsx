@@ -38,6 +38,8 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore }: {
     const element = container.current
     if (element && source?.identity && source.content) return workbench.attachDocumentViewport(element, source.identity)
   }, [workbench, source?.identity, Boolean(source?.content)])
+  // The editor applies `readOnly` while committing, so it is editable by the time this runs.
+  useEffect(() => { if (!readOnly) workbench.documentEditorEditable() }, [workbench, readOnly])
   useEffect(() => {
     if (!navigation) return
     const request = JSON.stringify([source?.identity, navigation.request])
