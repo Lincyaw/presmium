@@ -159,7 +159,10 @@
         },
         "maxWidthVariableId": "VariableID:110:1822",
         "overflowReferenceViewportHeight": 800,
-        "runtimeMaxHeight": "28vh"
+        "runtimeMaxHeight": "28vh",
+        "keyboardContract": "Overlay scroll keys Home/End/PageUp/PageDown/ArrowUp/ArrowDown/Space keep native default scrolling and do not bubble into presentation navigation. Shift+Space scrolls up. Caller onKeyDown runs first; defaultPrevented, composing and Alt/Ctrl/Meta remain caller-owned. Escape, left/right step keys and Tab keep existing behavior.",
+        "keyboardDescriptionSession": "f99221e6-81e2-4735-b6b1-197f72ba03f9",
+        "keyboardVerification": "docs/benchmarks/caption-keyboard-scroll-2026-10-28.md"
       },
       "NarrationEditor": {
         "nodeId": "107:1820",

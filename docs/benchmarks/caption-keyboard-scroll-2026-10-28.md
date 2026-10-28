@@ -1,0 +1,38 @@
+# 浮层字幕的原生键盘滚读
+
+2026-10-28，在独立 `caption-keyboard-scroll` 工作树修复公共 `PmCaption`。基线 `610f2182` 仅比调查时的 `5ca52411` 多交付文档。没有操作公共服务、修改文稿或运行模型、导出、测试套件及新 tracked tests。
+
+## 问题与修复
+
+长字幕保留全文，通过公共安全区内的 `overflow:auto` 滚动，没有自动分段。原真实调查 `recording-caption-readability/run-1793146429849/result.json` 完成观察 3/4：内容高 128、可视高 77，原生滚轮使 `scrollTop` 从 0 到 51，尾词可达；点击后实际焦点为字幕 section，Home／End 却保持滚动位置，并使父 Video 从 Step 1／0 秒跳到 Step 2／2 秒。该原始记录 SHA 为 `8368383f5f0b8e9979f18117c8cb8962146418aae8fe34301055c172cd7d0444`，不改成 4/4。
+
+根因在公共组件与查看器的按键归属：`viewer/src/client/views/actions.ts` 在 window 冒泡阶段将 Home／End、上下键、PageUp／PageDown 和空格映射为放映导航并取消默认行为；焦点在只读字幕时不属于它原有的输入控件排除表。
+
+只修改 `host/src/design/caption.ts`：先调用传入的 `onKeyDown`；浮层字幕对未取消、非输入法、无 Alt／Ctrl／Meta 的原生滚动键停止冒泡，不调用 `preventDefault`。浏览器继续管理滚动、焦点与滚动量。Shift＋空格保持向上滚动；左右步键、Escape、Tab 和其它播放键保持原来的处理路径。非浮层字幕不截键。
+
+没有更改全局查看器键表、CSS、字幕文本、分段、播放时钟或焦点，也没有手写 `scrollTop`、选区、计时重试或另一套键盘状态。调用方优先、已取消事件、修饰键和输入法门槛经源码独立审查；本次实际界面未注入自定义 caller、修改键或输入法事件。
+
+## 分阶段真实验证
+
+同一真实私有文稿和原版 `startStudio({isolateClient:true})`，浅／深色 × 1440／390。使用原生 mouse wheel、点击、键盘；脚本只读滚动尺寸、尾词 Range 几何、焦点、父步骤与 keydown 事件。窄屏通过正式 RadioGroup 的 Visuals 选项进入可交互画面。
+
+| 原始记录 | 实际范围与终态 |
+| --- | --- |
+| `after-1793146852492/result.json` | 前 16 项验证两种桌面组合，每种 8 项：原生滚轮、点击焦点、Home／End 精确首尾、其它垂直键及 Space／ShiftSpace、左右步键、浏览器默认未取消、Escape 退回 Doc。第 17 项记录窄屏确有溢出，随后消费者错误地操作后台 caption，被当前属性栏拦截；整份 `complete:false`，不是完整四组合通过。 |
+| `after-1793146958882/result.json` | 重复桌面 16 项通过，但消费者将窄屏公共分段控件误写为 role=tab，点击超时，`complete:false`。保留原始记录，没有改产品去适应定位器。 |
+| `after-1793147040650/result.json` | 正确 Radio 进入窄屏，4 项已证实 Home 到 0、End 到 110且仍为 Step 1；随后因消费者错误要求 PageUp 一次滚完整个 156 高内容而非一页，`complete:false`。 |
+| `after-1793147151714/result.json` | 最后只补两种窄屏，17/17 完成。Home／End 仍严格首尾，其它垂直键按实际方向推进并等滚动稳定；所有滚动键保留默认行为、不到达 window 冒泡导航且父步骤始终为 1。左右键实际 1→2→1，Escape 实际退出 Video；最后确认原文稿和音频不变、零模型及外部请求。没有再重跑已证实的桌面。 |
+
+上述 raw 位于本工作树 `.presmium/caption-keyboard-scroll/`，各份独立保留，不能拼成同轮 33/33。所有消费者的 1,243 个受版本控制包源码首尾与当前相同，公共 caption 唯一运行源 SHA 始终为 `d77ea7062609d57e07dcae00fe043cf367fc38e1872b2825ea72e9a00c70475b`。同目录 `source-evidence.json` 记录各轮 SHA、四组来源与清理；最终 manifest 记录提交文件和检查。
+
+四组 End 稳定截图已实际查看。桌面字幕为 `scrollHeight=128/clientHeight=77`，Home／End 的 `scrollTop=0/51`；窄屏为 `156/46`，首尾为 `0/110`。尾词完整进入可视区，焦点仍在字幕，父时间与步骤不变。窄屏一次可见文字较少，完整讲稿需要主动滚读；此修复没有承诺自动逐句字幕或真实词对齐。事件审计只观察 capture／window bubble 与 `defaultPrevented`，不代替键盘或返回虚构结果。
+
+## 来源、设计与清理
+
+第一次拼接 ignored helper 有解析错误，未执行模块或创建服务；失败脚本保留。后续三份不完整记录均保留原失败与截图，产品源码没有在消费者运行时修改。
+
+Figma 现有公共 `Presmium/Caption` `110:1847` 的 description 已实际追加上述键盘归属，session 为 `f99221e6-81e2-4735-b6b1-197f72ba03f9`。没有创建新节点或修改视觉；本地 ledger 和设计系统同步同一规则。
+
+类型检查 1,288 文件通过，分层、技能、包结构及 diff 检查通过。四次 after 的 12 个自有 PID 实际全部不存在，browser、SDK client、临时 home／workspace／fixture／operator 均已清理。原 before 的资源另有已完成清理记录。没有停止其它 agent 的服务，没有变更 4320／17407。
+
+本次是 Chromium 的桌面与移动触屏模拟，不声称实体移动键盘、其它浏览器、OS 输入法、Tab 全路径或自定义调用方处理器已经实际验收。没有重跑裁切 17 项或真实 WebM 导出，其先前独立证据保持原范围。
