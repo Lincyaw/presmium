@@ -15,6 +15,7 @@ export const COLORS = [
   'code',
   'ink',
   'muted',
+  'muted-soft',
   'line',
   'line-strong',
   'accent',

@@ -3,6 +3,7 @@
   --pm-color-bg: var(--pm-contrast-bg);
   --pm-color-surface: var(--pm-contrast-bg);
   --pm-color-sunk: var(--pm-contrast-bg);
+  --pm-color-muted-soft: var(--pm-contrast-bg);
   --pm-color-code: var(--pm-contrast-bg);
   --pm-color-selected: var(--pm-contrast-bg);
   --pm-color-accent-soft: var(--pm-contrast-bg);
