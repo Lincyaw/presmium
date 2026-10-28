@@ -27,11 +27,13 @@ export const IMAGE_AUTHORING_TOOLS: ToolSpec[] = [
   },
   {
     name: 'import_workspace_image', kind: 'operate', structured: true,
-    description: 'Imports one regular image from the selected document scope after authorization. Uses the same Web image validation and canonical/binary transaction, exact source and original SHA-256/length, agent history origin, and process-local current-source receipt. Required review cannot be bypassed. Returns verified saved asset metadata; no remote upload, scene compilation or runtime verification is implied.',
+    description: 'Imports one regular image from the selected document scope after authorization; a stale source or changed file is refused before authorization is asked. Uses the same Web image validation and canonical/binary transaction, exact source and original SHA-256/length, agent history origin, and process-local current-source receipt. Required review cannot be bypassed. Returns verified saved asset metadata; no remote upload, scene compilation or runtime verification is implied.',
     inputSchema: input({ request: structuredClone(DOCUMENT_WORKSPACE_IMAGE_IMPORT_SCHEMA) }, ['request']),
     run: async call => {
       const selected = await call.document(), request = call.args.request as DocumentWorkspaceImageImport, authoring = call.host.authoring?.capabilities(selected, call.caller.member)
       if (authoring && !authoring.actions.apply) throw Object.assign(new Error(authoring.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: authoring.applyUnavailableReason ? 409 : 403 })
+      // Refuse a stale source or changed file before asking the author; the import checks again.
+      await service(call).checkWorkspaceImport(selected, request, call.caller.member, call.signal)
       const target = (await call.host.documents()).find(document => document.dir === selected)
       await call.approve('operate', messages => messages.importImage(request.file.path.split('/').at(-1) ?? request.file.path), { lang: target?.lang ?? '', detail: `${target?.title ?? selected}\n${request.file.path}` })
       call.signal.throwIfAborted()

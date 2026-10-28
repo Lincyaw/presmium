@@ -147,6 +147,16 @@ span.pmw-appbar__place {
   background: var(--pm-color-line);
 }
 
+.pmw-appbar__approvals {
+  display: inline-flex;
+  flex: none;
+  margin-right: var(--pm-space-1);
+}
+
+.pmw-appbar__approvals:empty {
+  display: none;
+}
+
 .pmw-appbar__more {
   display: inline-flex;
   color: var(--pm-color-muted);

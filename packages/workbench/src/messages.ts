@@ -311,6 +311,14 @@ const zh = {
       comment.quote ? `\n原文：「${comment.quote}」` : '',
     ].join('')),
   ].join('\n\n'),
+  approvals: (count: number) => `待确认 ${count}`,
+  approvalsTitle: '待确认的操作',
+  approvalFrom: (who: string) => `来自${who}`,
+  approvalOrigin: { 'presmium.mcp': '外部 AI 工具（MCP）' } as Record<string, string>,
+  approvalAllow: '允许',
+  approvalDeny: '拒绝',
+  approvalExpired: '此请求已结束或超时，未执行。',
+  approvalFailed: '未能发送答复，请重试。',
   rewriteEditRequest: (before: string, after: string) => `把这段文字改成：「${after}」，保留原有的格式与结构。原来是：「${before}」`,
 }
 
@@ -616,6 +624,14 @@ const en: WorkbenchMessages = {
       comment.quote ? `\nText: "${comment.quote}"` : '',
     ].join('')),
   ].join('\n\n'),
+  approvals: (count: number) => `Approvals ${count}`,
+  approvalsTitle: 'Operations to approve',
+  approvalFrom: (who: string) => `From ${who}`,
+  approvalOrigin: { 'presmium.mcp': 'an external AI tool (MCP)' },
+  approvalAllow: 'Allow',
+  approvalDeny: 'Deny',
+  approvalExpired: 'This request already ended or timed out; nothing was done.',
+  approvalFailed: 'Your answer was not sent. Try again.',
   rewriteEditRequest: (before: string, after: string) => `Change this text to: "${after}", keeping its formatting and structure. It was: "${before}"`,
 }
 

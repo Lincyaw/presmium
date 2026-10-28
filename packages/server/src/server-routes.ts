@@ -37,8 +37,9 @@ export function createServerRouteHandler(options: ServerRoutesOptions): (request
 
   const controlRoute = async (request: Request, { member, document, req }: ServerRouteContext): Promise<Response> => {
     if (request.method === 'GET') {
-      const window = new URL(request.url).searchParams.get('window') || randomUUID()
-      const stream = control.open(window, member, document)
+      const query = new URL(request.url).searchParams
+      const window = query.get('window') || randomUUID()
+      const stream = control.open(window, member, document, { observer: query.get('observe') === 'approvals' })
       req.once('close', () => stream.end())
       return sseResponse(stream, request.signal)
     }
