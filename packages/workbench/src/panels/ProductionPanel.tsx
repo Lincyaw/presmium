@@ -31,6 +31,7 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
   const plan = useWorkbenchState(state => state.productionPlan), playback = useWorkbenchState(state => state.productionPlayback)
   const playbackFailure = useWorkbenchState(state => state.productionFailure), connection = useWorkbenchState(state => state.previewConnection)
   const previewReload = useWorkbenchState(state => state.previewReload), timingDraft = useWorkbenchState(state => Boolean(state.hasDocumentTimingDrafts || state.documentTimingDraftStorageFailure))
+  const captionDraftSteps = useWorkbenchState(state => state.captionTimingDraftSteps), captionStorageFailure = useWorkbenchState(state => state.captionTimingDraftStorageFailure)
   const frameCurrent = useWorkbenchState(state => Boolean(state.presentationSnapshot && state.previewIrRevision === state.presentationSnapshot.revision))
   const blocked = useWorkbenchState(state => Boolean(state.authoring?.loading || state.authoring?.composing) || isAgentChanging(state))
   const [wide, setWide] = useState(() => matchMedia('(min-width: 1280px)').matches), [tab, setTab] = useState('script')
@@ -131,6 +132,8 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
       <PmToolbarButton asChild><PmIconButton small icon="refresh" label={p.prepare} loading={preparing} disabled={blocked || closing} onClick={() => void compile()} /></PmToolbarButton>
       <PmToolbarButton asChild><PmIconButton small icon="export" label={p.outputs} aria-pressed={tab === 'outputs'} onClick={() => setTab(current => current === 'outputs' ? 'script' : 'outputs')} /></PmToolbarButton>
     </PmToolbar>
+    {captionStorageFailure && <PmNotice tone="warn">{p.captionStorageFailed}</PmNotice>}
+    {captionDraftSteps?.length ? <PmNotice tone="warn">{p.captionDraft} {document.sectionOrder.flatMap(pageId => document.sections[pageId]?.stepOrder.map((id, index) => captionDraftSteps.includes(id) ? <PmButton key={id} small onClick={() => select(pageId, id)}>{document.sections[pageId]!.title} · {p.stepNumber(index)}</PmButton> : null) ?? [])}</PmNotice> : null}
     {!wide && <div className="pmw-production__status"><PmBadge tone={sourceCurrent && frameCurrent ? 'ok' : preparing || sourceCurrent ? 'accent' : 'warn'}>{sourceCurrent && frameCurrent ? p.current : preparing || sourceCurrent ? p.preparing : p.outdated}</PmBadge></div>}
     {failure && <PmNotice tone="danger">{failure}</PmNotice>}
     {!declared && <PmNotice tone="accent"><span>{p.enableHint}</span><PmButton small loading={enabling} disabled={blocked || closing} onClick={() => void enable()}>{p.enable}</PmButton></PmNotice>}

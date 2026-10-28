@@ -4,9 +4,8 @@ import type { CaptionTiming, CaptionTimingSource, DocumentCaptionTimingAction, P
 import { PmButton, PmCard, PmDialog, PmInput, PmNotice } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { CAPTION_TIMING_MESSAGES } from '../caption-timing-messages.ts'
+import type { CaptionTimingDraft as Draft, CaptionTimingRow as Row } from '../caption-timing-drafts.ts'
 
-interface Row { id: string, from: number, to: number, start: string, end: string }
-interface Draft { version: string, text: string, basis: CaptionTimingSource, rows: Row[] }
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 const seconds = (raw: string) => {
   if (!/^\d+(?:\.\d{1,3})?$/.test(raw.trim())) return undefined
@@ -41,20 +40,22 @@ export function ProductionCaptionTiming({ identity, stepId, plan, current, loadi
 }) {
   const workbench = useWorkbench(), source = useWorkbenchState(state => state.authoring), locale = useWorkbenchState(state => state.locale), t = CAPTION_TIMING_MESSAGES[locale]
   const document = source?.identity === identity ? source.content : undefined, basis = current ? plan?.pages.flatMap(page => page.steps).find(step => step.stepId === stepId)?.captionTiming : undefined
+  const pendingSteps = useWorkbenchState(state => state.captionTimingDraftSteps), storageFailure = useWorkbenchState(state => state.captionTimingDraftStorageFailure)
   const [open, setOpen] = useState(false), [busy, setBusy] = useState(false), [failure, setFailure] = useState<string>(), [saved, setSaved] = useState(false), [, render] = useState(0)
   const drafts = useRef(new Map<string, Draft>()), alive = useRef(true), request = useRef<AbortController>(), needsRefresh = useRef(false), openRef = useRef(false), composing = useRef(false)
   const latest = useRef({ stepId, onChanged }); latest.current = { stepId, onChanged }
-  const draft = drafts.current.get(stepId), value = draft && valueOf(draft), canonical = document?.production.captionTimings?.[stepId]
+  if (!drafts.current.has(stepId)) { const savedDraft = workbench.captionTimingDraft(stepId, identity); if (savedDraft) drafts.current.set(stepId, savedDraft) }
+  const draft = drafts.current.get(stepId), value = draft && valueOf(draft), canonical = document?.production.captionTimings?.[stepId], hasDraft = Boolean(pendingSteps?.includes(stepId))
   const changed = draft && source?.version !== draft.version || draft && basis && (!same(draft.basis, basis) || draft.text !== (document && stepCaptionText(document, stepId)))
   const writable = Boolean(source?.version && source.fingerprint && !source.loading && !source.dirty && !source.saving && !source.composing && !source.restored && !source.recovering && !source.error && !disabled)
   useEffect(() => { alive.current = true; return () => { alive.current = false; request.current?.abort() } }, [])
   useEffect(() => { request.current?.abort(); openRef.current = false; setOpen(false); setBusy(false); setFailure(undefined); setSaved(false) }, [stepId])
-  const pending = (next: Draft) => { drafts.current.set(stepId, next); setSaved(false); setFailure(undefined); render(n => n + 1) }
+  const pending = (next: Draft, changedByAuthor = true) => { drafts.current.set(stepId, next); if (changedByAuthor) workbench.setCaptionTimingDraft(stepId, next, identity); setSaved(false); setFailure(undefined); render(n => n + 1) }
   const initialize = () => {
     if (!document || !source?.version || !basis) return
     const text = stepCaptionText(document, stepId), existing = document.production.captionTimings?.[stepId]
     const original = existing?.sourceFingerprint === captionSourceFingerprint(document, stepId)
-    pending({ version: source.version, text, basis: original ? { ...structuredClone(basis), sourceFingerprint: existing.sourceFingerprint, playbackFingerprint: existing.playbackFingerprint, durationMs: existing.durationMs, narrationIds: [...existing.narrationIds] } : structuredClone(basis), rows: original ? existing.segments.map(row => ({ id: row.id, from: row.from, to: row.to, start: String(row.startMs / 1000), end: String(row.endMs / 1000) })) : lineRows(text) })
+    pending({ version: source.version, text, basis: original ? { ...structuredClone(basis), sourceFingerprint: existing.sourceFingerprint, playbackFingerprint: existing.playbackFingerprint, durationMs: existing.durationMs, narrationIds: [...existing.narrationIds] } : structuredClone(basis), rows: original ? existing.segments.map(row => ({ id: row.id, from: row.from, to: row.to, start: String(row.startMs / 1000), end: String(row.endMs / 1000) })) : lineRows(text) }, false)
   }
   useEffect(() => {
     // A plan may arrive after opening. Step/close effects fence the original opening;
@@ -76,6 +77,7 @@ export function ProductionCaptionTiming({ identity, stepId, plan, current, loadi
       if (!alive.current || workbench.getState().authoring?.identity !== identity) return
       const ownsInput = drafts.current.get(target) === sent
       if (ownsInput) {
+        workbench.setCaptionTimingDraft(target, undefined, identity)
         if (automatic) drafts.current.delete(target)
         else if (sent) drafts.current.set(target, { ...sent, version: answer.version })
       }
@@ -110,6 +112,8 @@ export function ProductionCaptionTiming({ identity, stepId, plan, current, loadi
           <PmButton small disabled={!basis?.available || busy || !writable} onClick={() => { if (document && basis && source?.version) pending({ version: source.version, text: stepCaptionText(document, stepId), basis: structuredClone(basis), rows: lineRows(stepCaptionText(document, stepId)) }) }}>{t.split}</PmButton>
           <PmButton small disabled={!canonical || busy || !writable} onClick={() => void apply(true)}>{t.automatic}</PmButton>
         </div>
+        {storageFailure && <PmNotice tone="warn">{t.storageFailed}</PmNotice>}
+        {hasDraft && <PmButton small disabled={busy} onClick={() => { workbench.setCaptionTimingDraft(stepId, undefined, identity); drafts.current.delete(stepId); initialize() }}>{t.discard}</PmButton>}
         {saved && <PmNotice tone="ok">{t.saved}</PmNotice>}
         {failure && <PmNotice tone="danger">{failure}</PmNotice>}
       </div>
