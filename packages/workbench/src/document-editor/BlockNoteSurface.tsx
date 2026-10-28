@@ -3,7 +3,7 @@ import type { ForwardRefExoticComponent, ReactNode, RefAttributes } from 'react'
 import { filterSuggestionItems } from '@blocknote/core'
 import { en, zh } from '@blocknote/core/locales'
 import { BlockNoteView, components } from '@blocknote/mantine'
-import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ColorStyleButton, ComponentsContext, CreateLinkButton, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, NestBlockButton, RenderInPortalElement, SuggestionMenuController, TableCellMergeButton, TextAlignButton, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
+import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ComponentsContext, CreateLinkButton, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, LinkToolbarController, NestBlockButton, RenderInPortalElement, SideMenuController, SuggestionMenuController, TableCellMergeButton, TableHandlesController, TextAlignButton, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
 import type { ComponentProps, FormattingToolbarProps } from '@blocknote/react'
 import { useMediaQuery } from '@mantine/hooks'
 import type { Locale } from '../messages.ts'
@@ -18,6 +18,8 @@ import type { ImageImportFailure } from './file-input.ts'
 import { nativeTextClipboard } from './clipboard.ts'
 import { documentBlockColors } from './colors.ts'
 import { DOCUMENT_EDITOR_LOCALE } from './math.tsx'
+import { DOCUMENT_LINKS, DocumentColorButton, DocumentLinkToolbar, DocumentSideMenu, DocumentTableCellButton, DocumentTableHandle, FormulaToolbarButton, formulaSlashItems, openDocumentLink } from './authoring.tsx'
+import type { DocumentLinks } from './authoring.tsx'
 import { excludeCommentMarkHistory, nativeComments, nativeCommentSelection } from './comments.ts'
 import type { DocumentThreadStore } from './comments.ts'
 import { COMMENT_EDITOR_CONTEXT, DocumentCommentEditor, DocumentFloatingThreadController, DocumentThreadsSidebar } from './DocumentComments.tsx'
@@ -77,6 +79,8 @@ export interface BlockNoteSurfaceProps {
   onCommentDraftRestore?(): void
   onReady?(editor: NativeDocumentEditor | undefined): void
   onComposition?(composing: boolean): void
+  /** Shows a page of this document from an in-document link; false when none matches. */
+  onSectionLink?(sectionId: string): boolean
   children?: ReactNode
 }
 
@@ -89,7 +93,7 @@ function EditorToolbar(props: FormattingToolbarProps) {
     <BasicTextStyleButton basicTextStyle="bold" /><BasicTextStyleButton basicTextStyle="italic" />
     <BasicTextStyleButton basicTextStyle="underline" /><BasicTextStyleButton basicTextStyle="strike" /><BasicTextStyleButton basicTextStyle="code" />
     <TextAlignButton textAlignment="left" /><TextAlignButton textAlignment="center" /><TextAlignButton textAlignment="right" />
-    <ColorStyleButton /><NestBlockButton /><UnnestBlockButton /><CreateLinkButton />
+    <DocumentColorButton /><NestBlockButton /><UnnestBlockButton /><CreateLinkButton /><FormulaToolbarButton />
     <TableCellMergeButton />
     <AddCommentButton />
   </FormattingToolbar>
@@ -106,6 +110,12 @@ function PlainContentComments({ editor }: { editor: NativeDocumentEditor }) {
   return show && editor.getExtension('comments') ? <div className="pm-document-editor__comment-tools"><FormattingToolbar><AddCommentButton /></FormattingToolbar></div> : null
 }
 
+// Formulas join the group that holds tables so the menu keeps one heading per group.
+function withFormulas<Item extends { group?: string }>(items: Item[], formulas: Item[]): Item[] {
+  const index = items.findLastIndex(item => item.group === formulas[0]?.group)
+  return index < 0 ? [...items, ...formulas] : [...items.slice(0, index + 1), ...formulas, ...items.slice(index + 1)]
+}
+
 /** One native editor owns selection, transactions and history across the complete document. */
 export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
   const current = useRef(props)
@@ -114,6 +124,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
   current.current = props
   const dictionary = props.locale === 'zh-CN' ? zh : en
   const t = DOCUMENT_EDITOR_MESSAGES[props.locale]
+  const links = useMemo<DocumentLinks>(() => ({ openSection: sectionId => current.current.onSectionLink?.(sectionId) ?? false }), [])
   const fileMessages = IMAGE_IMPORT_MESSAGES[props.locale]
   const editor = useCreateBlockNote({ schema: documentEditorSchema, initialContent: props.initialContent,
     resolveFileUrl: location => current.current.resolveAssetURL?.(location) ?? Promise.resolve(location),
@@ -139,6 +150,8 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
       return defaultPasteHandler({ prioritizeMarkdownOverHTML: false })
     },
     dictionary, tables: { splitCells: true, cellBackgroundColor: true, cellTextColor: true, headers: true },
+    // The surface's own click handler opens links in editable and read-only states alike.
+    links: { onClick: () => true },
     extensions: [nativeTextClipboard, documentBlockColors, imageFileInput({
       onStart: () => { if (current.current.identity === props.identity) setFileErrors(undefined) },
       onFailure: failure => { if (current.current.identity === props.identity) setFileErrors(value => ({ identity: props.identity, failures: [...(value?.identity === props.identity ? value.failures : []), failure] })) },
@@ -154,14 +167,21 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
       stopCommentHistory?.(); current.current.onReady?.(undefined)
     }
   }, [editor])
-  return <DOCUMENT_EDITOR_LOCALE.Provider value={props.locale}><DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}><COMMENT_EDITOR_CONTEXT.Provider value={props.comments ? { store: props.comments, locale: props.locale, sidebar: Boolean(props.commentsPortal), getPositionToken: () => current.current.getPositionToken?.(), onDraftRestore: () => current.current.onCommentDraftRestore?.() } : undefined}>
+  return <DOCUMENT_EDITOR_LOCALE.Provider value={props.locale}><DOCUMENT_LINKS.Provider value={links}><DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}><COMMENT_EDITOR_CONTEXT.Provider value={props.comments ? { store: props.comments, locale: props.locale, sidebar: Boolean(props.commentsPortal), getPositionToken: () => current.current.getPositionToken?.(), onDraftRestore: () => current.current.onCommentDraftRestore?.() } : undefined}>
     <div className="pm-document-editor pm-ui-block-editor pm-ui" data-document-editor={props.identity}
       onDragEnter={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
       onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
+      onClick={event => {
+        const link = event.target instanceof Element ? event.target.closest('a[data-inline-content-type="link"]') : null
+        const href = link?.getAttribute('href')
+        if (!href || event.button !== 0) return
+        event.preventDefault()
+        openDocumentLink(href, links)
+      }}
       onCompositionStart={() => current.current.onComposition?.(true)}
       onCompositionEnd={() => queueMicrotask(() => current.current.onComposition?.(false))}>
       {fileErrors?.identity === props.identity && <PmNotice tone="danger"><div className="pm-document-editor__file-errors"><ul>{fileErrors.failures.map((failure, index) => <li key={index}>{failure.name} · {fileMessages[failure.kind]}</li>)}</ul><PmIconButton small icon="close" label={fileMessages.dismiss} onClick={() => setFileErrors(undefined)} /></div></PmNotice>}
-      <BlockNoteView editor={editor} editable={!props.readOnly} theme={DOCUMENT_EDITOR_THEME} formattingToolbar={false} slashMenu={false} renderEditor={false} comments={false}
+      <BlockNoteView editor={editor} editable={!props.readOnly} theme={DOCUMENT_EDITOR_THEME} formattingToolbar={false} slashMenu={false} linkToolbar={false} sideMenu={false} tableHandles={false} renderEditor={false} comments={false}
         onChange={() => current.current.onChange(editor.document, editor)}
         onSelectionChange={() => current.current.onSelection?.(documentSelection(editor))}>
         <ComponentsContext.Provider value={DOCUMENT_EDITOR_COMPONENTS}>
@@ -169,7 +189,10 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         <BlockNoteViewEditor><NewCommentDraftProvider>
         <DocumentNewCommentController />{!props.commentsPortal && <DocumentFloatingThreadController />}{props.commentsPortal && <><RenderInPortalElement target={props.commentsPortal}><DocumentThreadsSidebar><DocumentNewCommentRecovery /></DocumentThreadsSidebar></RenderInPortalElement></>}
         <FormattingToolbarController formattingToolbar={EditorToolbar} />
-        <SuggestionMenuController triggerCharacter="/" getItems={async query => editor.getTextCursorPosition().block.type === 'presmiumPage' ? [] : filterSuggestionItems([...getDefaultReactSlashMenuItems(editor), {
+        <LinkToolbarController linkToolbar={DocumentLinkToolbar} />
+        <SideMenuController sideMenu={DocumentSideMenu} />
+        <TableHandlesController tableHandle={DocumentTableHandle} tableCellHandle={DocumentTableCellButton} />
+        <SuggestionMenuController triggerCharacter="/" getItems={async query => editor.getTextCursorPosition().block.type === 'presmiumPage' ? [] : filterSuggestionItems([...withFormulas(getDefaultReactSlashMenuItems(editor), formulaSlashItems(editor, props.locale, dictionary.slash_menu.table.group)), {
           title: t.page, aliases: ['page', 'section', '页面', '章节'], group: t.document,
           onItemClick: () => { const current = editor.getTextCursorPosition().block; editor.insertBlocks([{ type: 'presmiumPage', props: { sectionId: crypto.randomUUID() }, content: t.untitledPage }], current, 'after') },
         }], query)} />
@@ -178,5 +201,5 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         </ComponentsContext.Provider>
       </BlockNoteView>
     </div>
-  </COMMENT_EDITOR_CONTEXT.Provider></DOCUMENT_NODE_VIEWS.Provider></DOCUMENT_EDITOR_LOCALE.Provider>
+  </COMMENT_EDITOR_CONTEXT.Provider></DOCUMENT_NODE_VIEWS.Provider></DOCUMENT_LINKS.Provider></DOCUMENT_EDITOR_LOCALE.Provider>
 }
