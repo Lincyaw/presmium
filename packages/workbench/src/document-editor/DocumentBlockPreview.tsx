@@ -6,13 +6,15 @@ import { PmIconButton, PmIcon } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { prepareDocumentPreview } from '../document-preview.ts'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
+import { BLOCK_PREVIEW_MESSAGES } from './block-preview-messages.ts'
 import { documentBlockSection, DocumentStepNarration } from './DocumentStepNarration.tsx'
 import { DocumentBlockPlayback } from './block-playback.ts'
 import { ComponentPropertiesDialog } from './ComponentPropertiesDialog.tsx'
 import { COMPONENT_PROPERTY_MESSAGES } from '../component-property-messages.ts'
 
 interface Snapshot { address: string, revision: string }
-interface PreviewState { snapshot?: Snapshot, status: 'idle' | 'loading' | 'ready' | 'failed' }
+// `preparing`: the server is still building what the preview needs; it is asked again until ready.
+interface PreviewState { snapshot?: Snapshot, status: 'idle' | 'loading' | 'preparing' | 'ready' | 'failed', failure?: 'build' | 'display' }
 /** A read-only runtime is a custom native block, independent from the document's editable JSON and selection. */
 export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, fallback?: ReactNode }) {
   const workbench = useWorkbench()
@@ -20,7 +22,7 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   const directory = useWorkbenchState(state => state.document)
   const documentView = useWorkbenchState(state => state.webView === 'document')
   const dark = useWorkbenchState(state => state.isDark)
-  const locale = useWorkbenchState(state => state.locale), t = DOCUMENT_EDITOR_MESSAGES[locale]
+  const locale = useWorkbenchState(state => state.locale), t = DOCUMENT_EDITOR_MESSAGES[locale], p = BLOCK_PREVIEW_MESSAGES[locale]
   const position = useWorkbenchState(state => state.position)
   const navigation = useWorkbenchState(state => state.documentPositionToken)
   const navigationIntent = useWorkbenchState(state => state.documentPositionIntent)
@@ -46,7 +48,7 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   const reportedNavigation = useRef<string>()
   const editingStep = useRef<string>()
   const playback = useRef<DocumentBlockPlayback>()
-  const fail = useCallback(() => {
+  const fail = useCallback((failure: 'build' | 'display' = 'display') => {
     // Retire this child before React removes it. A queued ready/position message
     // cannot restore a failed runtime or adopt its position in the document.
     pauseRuntime.current()
@@ -54,7 +56,7 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
     frameReady.current = false
     playback.current?.dispose()
     playback.current = undefined
-    setState({ status: 'failed' })
+    setState({ status: 'failed', failure })
   }, [])
   const [loadedVersion, setLoadedVersion] = useState<string>()
   const [loadedProject, setLoadedProject] = useState(0), [loadedAttempt, setLoadedAttempt] = useState(0)
@@ -69,14 +71,15 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   }, [])
   useEffect(() => {
     if (!enabled || directory === undefined || !source?.version) return
-    if (!source.fingerprint) { fail(); return }
+    if (!source.fingerprint) { fail('build'); return }
     let current = true
     const version = source.version
-    setState(before => ({ ...before, status: 'loading' }))
-    void prepareDocumentPreview(workbench.client, { directory, version, fingerprint: source.fingerprint, project: source.projectRevision ?? 0 }, attempt > 0).then(snapshot => {
+    setState(before => ({ ...before, status: 'loading', failure: undefined }))
+    const preparing = () => { if (current) setState(before => (before.status === 'loading' ? { ...before, status: 'preparing' } : before)) }
+    void prepareDocumentPreview(workbench.client, { directory, version, fingerprint: source.fingerprint, project: source.projectRevision ?? 0 }, attempt > 0, preparing).then(snapshot => {
       if (!current) return
       setState({ snapshot, status: 'loading' }); setLoadedVersion(version); setLoadedProject(source.projectRevision ?? 0); setLoadedAttempt(attempt)
-    }, () => { if (current) fail() })
+    }, () => { if (current) fail('build') })
     return () => { current = false }
   }, [enabled, directory, source?.version, source?.fingerprint, source?.projectRevision, attempt, workbench, fail])
   const address = state.snapshot ? new URL(state.snapshot.address) : undefined
@@ -144,7 +147,7 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
       if (!value || !['presmium:block-preview', 'presmium:block-preview-position', 'presmium:block-preview-playback-request', 'presmium:block-preview-playback-cancelled'].includes(value.type) || value.blockId !== blockId || value.document !== directory) return
       if (value.revision !== expected) {
         if (mismatches.current++ < 3) setAttempt(value => value + 1)
-        else fail()
+        else fail('display')
         return
       }
       const cancelled = toBlockPreviewPlaybackCancelled(value)
@@ -176,19 +179,19 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
         return
       }
       if (typeof value.height === 'number' && Number.isFinite(value.height)) setHeight(Math.max(1, Math.min(value.height, 4096)))
-      if (value.status === 'failed') fail()
+      if (value.status === 'failed') fail('display')
       else if (value.status === 'ready') {
         if (!frameReady.current) { frameReady.current = true; setReadiness(value => value + 1) }
         mismatches.current = 0; setState(before => ({ ...before, status: 'ready' }))
       }
     }
     window.addEventListener('message', listener)
-    const timeout = setTimeout(() => { if (generation === runtimeGeneration.current && currentState.current.status === 'loading') fail() }, 30_000)
+    const timeout = setTimeout(() => { if (generation === runtimeGeneration.current && currentState.current.status === 'loading') fail('display') }, 30_000)
     return () => { clearTimeout(timeout); window.removeEventListener('message', listener) }
   }, [src, origin, enabled, state.snapshot?.revision, blockId, directory, loadedVersion, loadedProject, workbench, fail])
   const old = source?.dirty || source?.saving || source?.error || source?.restored || loadedVersion !== source?.version || loadedProject !== (source?.projectRevision ?? 0)
   return <section ref={root} className="pm-ui-block-preview" data-block-preview={blockId} data-status={state.status} contentEditable={false}>
-    <header className="pm-ui-block-preview__header"><span className="pm-ui-block-preview__label" role={state.status === 'failed' ? 'status' : undefined}><PmIcon name="slides" />{state.status === 'failed' ? t.previewFailure : old && state.snapshot ? t.previewPrevious : state.status === 'loading' ? t.previewLoading : t.previewSnapshot}</span>
+    <header className="pm-ui-block-preview__header"><span className="pm-ui-block-preview__label" role={state.status === 'failed' ? 'status' : undefined}><PmIcon name="slides" />{state.status === 'failed' ? t.previewFailure : old && state.snapshot ? t.previewPrevious : state.status === 'preparing' ? p.preparing : state.status === 'loading' ? t.previewLoading : t.previewSnapshot}</span>
       <span className="pm-ui-block-preview__actions">
         {source?.content?.blocks[blockId]?.type === 'component' && <PmIconButton small icon="sliders" label={COMPONENT_PROPERTY_MESSAGES[locale].properties}
           data-component-properties={blockId} disabled={!source.identity} onClick={() => { if (source.identity) setProperties({ identity: source.identity, stepId }) }} />}
@@ -197,13 +200,15 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
           if (sectionId && stepId) workbench.observeDocumentStep(sectionId, stepId)
           setNarrationOpen(value => !value)
         }} />
-        <PmIconButton small icon="refresh" label={state.status === 'failed' ? t.previewRetry : t.previewRefresh} hint={state.status === 'loading' ? t.previewLoading : state.status === 'failed' ? t.previewRetry : t.previewRefresh} loading={state.status === 'loading'} onClick={() => { pause(); if (!source?.fingerprint) void workbench.retryDocument(); setAttempt(value => value + 1) }} disabled={!enabled} />
+        <PmIconButton small icon="refresh" label={state.status === 'failed' ? t.previewRetry : t.previewRefresh} hint={state.status === 'loading' ? t.previewLoading : state.status === 'preparing' ? p.preparing : state.status === 'failed' ? t.previewRetry : t.previewRefresh}
+          loading={state.status === 'loading' || state.status === 'preparing'} onClick={() => { pause(); if (!source?.fingerprint) void workbench.retryDocument(); setAttempt(value => value + 1) }} disabled={!enabled && state.status !== 'failed'} />
       </span></header>
     <div className="pm-ui-block-preview__viewport" role="region" aria-label={t.previewTitle} tabIndex={enabled && src ? -1 : 0}
       style={height === undefined ? undefined : { '--pm-block-content-height': `${height}px` } as CSSProperties}
       onKeyDownCapture={event => { if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) event.stopPropagation() }}>
       {enabled && src ? <iframe key={src} ref={mountFrame} className="pm-ui-block-preview__frame" src={src} title={t.previewTitle} sandbox="allow-scripts allow-same-origin" onFocus={() => { editingStep.current = undefined }} /> : fallback}
-      {enabled && !src && state.status === 'loading' && <p className="pm-ui-block-preview__pending" role="status">{t.previewLoading}</p>}
+      {enabled && !src && (state.status === 'loading' || state.status === 'preparing') && <p className="pm-ui-block-preview__pending" role="status">{state.status === 'preparing' ? p.preparingDetail : t.previewLoading}</p>}
+      {state.status === 'failed' && <p className="pm-ui-block-preview__pending">{state.failure === 'build' ? p.buildFailure : p.displayFailure}</p>}
     </div>
     {sectionId && stepId && <DocumentStepNarration blockId={blockId} sectionId={sectionId} stepId={stepId} expanded={narrationOpen} panelId={narrationPanel} onPause={pause} />}
     {properties && <ComponentPropertiesDialog identity={properties.identity} blockId={blockId} stepId={properties.stepId} onClose={() => setProperties(undefined)} />}

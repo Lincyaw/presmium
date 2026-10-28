@@ -348,6 +348,7 @@ export interface SiteDevServer {
    * The address (below the site's URL) of the workbench's viewer app showing document `dir`, once the app (prebuilt for
    * the workspace's plugins) and the document's own bundle are built: they are started when missing, and waited for a
    * while with `wait`. Undefined until then, and for a document whose plugins the app cannot run (its dev server shows it).
+   * With `wait`, a build still running after the wait rejects with `PreviewPreparing`; a failed build with its reason.
    */
   app?(dir: string, wait?: boolean): Promise<string | undefined>
   close(): Promise<void>

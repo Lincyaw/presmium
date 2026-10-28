@@ -38,7 +38,7 @@ import type { StepDurationDraft, StepDurationKey, StepTimingPatch } from './step
 import { DocumentTimingDrafts } from './document-timing-drafts.ts'
 import { CaptionTimingDrafts } from './caption-timing-drafts.ts'
 import type { CaptionTimingDraft } from './caption-timing-drafts.ts'
-import { compileDocumentPreview, waitForPreviewRequest } from './document-preview.ts'
+import { compileDocumentPreview, readPreviewWhenReady, waitForPreviewRequest } from './document-preview.ts'
 import { readDocumentSnapshot } from './document-preview.ts'
 import { errorMessage, sameProductionBinding, slideShape, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
 import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, JobsAnswer, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPoint, PreviewPosition, PreviewRect, PreviewRenderer, PreviewReport, ReviewChange, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
@@ -770,7 +770,7 @@ export class Workbench {
     const renderer = this.#state.previewRenderer
     const current = () => this.#state.document === dir && this.#state.previewRenderer === renderer && read === this.#previewReads
     try {
-      const preview = await this.client.readPreview(dir, renderer, AbortSignal.timeout(45_000))
+      const preview = await readPreviewWhenReady(this.client, dir, renderer, { waiting: current })
       if (current()) this.#set({ preview, previewFailure: undefined })
     } catch (error) {
       if (current()) this.#set({ previewFailure: error instanceof Error && error.name === 'TimeoutError' ? this.#messages.previewPrepareTimeout : errorMessage(error) })
