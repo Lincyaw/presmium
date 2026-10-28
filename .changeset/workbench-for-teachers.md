@@ -6,23 +6,23 @@
 '@lincyaw/design': patch
 ---
 
-The workbench is for teachers who know no code: they edit the document as its readers see it, and every change is a version they can undo.
+The workbench is for teachers who know no code: they write the document in one continuous editor, and every save is a version they can undo.
 
 - `@lincyaw/workbench`:
-  - The documents are listed, made, renamed and copied by title.
-  - A document shows as its web form or slides, with a toolbar: Undo, Redo, whether it is saved, the view, Editing or Viewing, Comments and Version History.
-  - Clicking a block or selecting text opens Edit text, New Comment and Rewrite with AI beside the mouse; a double-click edits text in place, mapped back to the source (`applyRenderedEdit`), and text that crosses formatting goes to the AI.
-  - Comments are notes for the AI: written one by one and numbered on their blocks, then sent together with Send N comments to AI. Undo, Redo and Version History work by revision. Content that does not display is said plainly, with Fix with AI.
-  - New: `DocumentView`, `CommentsPanel`, `HistoryPanel`, `PreviewPanel`, `applyRenderedEdit`, `documentDirFor`, `withTitle`, `hasSlides`, `isAgentChanging`, `timeAgo`, and the types `Pointer`, `SaveState`, `EditFallback`, `AgentRequest`, `WorkbenchMode`, `DocumentComment`. `Workbench` gains `editText`, `point`, `addComment`, `askAgent`, `askAgentAboutComments`, `undo`, `redo`, `revealSource`, `revealPlace`, `setMode`, `onAgentRequest`, `createDocument`, `copyDocument` and `retitleDocument`. `WorkspaceClient` gains `undo` and `redo`, and `saveSource` takes a summary.
-  - Removed: the source editor, file tree, problems panel, changes panel, Quick Open and status items (`DocumentEditor`, `SourcePanel`, `FilesPanel`, `ProblemsPanel`, `ChangesPanel`, `QuickOpen`, `StatusItems`, `createEditor`, `mergeTexts`, `DocumentPane`, `WORKSPACE_SCOPE`, `isWorkspaceRootOpen`), with their dependencies (CodeMirror, node-diff3, cmdk, React Arborist).
+  - Documents are listed on the home page by title, and are made from a template, renamed, copied and deleted by title. A new document opens on one blank page, ready for typing.
+  - The Pages pane lists the document's pages by number and title; pages are added, copied, renamed, moved (by pointer, touch or keyboard) and deleted there.
+  - The document is one editor: the author types in place and the change is saved after a short pause. Selecting text opens the formatting toolbar: styles, links, inline formulas, text and background colours from a semantic palette (the same colours in the editor and the published pages, light and dark) and Add comment. The slash menu inserts blocks such as headings, lists, tables, images and formula blocks. Formulas show typeset and are edited in a popup with a live preview.
+  - Generated content (animations, components and diagrams) shows its picture, not its source; the author changes it through its properties or the AI assistant.
+  - The toolbar holds the Pages pane, Undo and Redo, whether the document is saved, Video production, Captions, Comments, Version History, Presentation preview and Export. Below 768 px, Video production, Captions and Version History move into a More menu so the toolbar stays on one row.
+  - Undo and Redo (Ctrl+Z, Ctrl+Y or Ctrl+Shift+Z) walk the versions, and Version History undoes any one of them. Unsaved typing survives a reload or a lost connection and is restored to the same document.
+  - Comments are saved with the text they point at, across paragraphs and pages. The Comments panel lists them; each can be replied to, reacted to, resolved and reopened.
+  - Presentation preview shows the slides of the saved version, with the arrow keys and `Esc` working at once; `Esc` first closes an open menu or dialog, then leaves the presentation.
+  - Video production puts the page's picture, voiceover and captions on one timeline: the author edits each step's script, picks voices for the document, a page or a step, records their own voice, trims imported audio and decides whether the voice plays with the animation or after it.
+  - The names follow Microsoft Word's, in Chinese and English, and every control works in light and dark, on the desktop and on a phone.
 - `@lincyaw/dsh`:
-  - The activity bar keeps Documents and the AI assistant, with More (plugins, automation tasks), Settings and Help.
-  - The chat history lists sessions without their workspace, and the conversation offers no other workspace or agent preset.
-  - The conversation's placeholders speak to teachers. Rewrite with AI, comments and Fix with AI go to the current session. Links to a document's Markdown show that place in the document.
-  - The routes `history/undo` and `history/redo` are passed on to the workspace service.
-- `@lincyaw/kernel`:
-  - The preview protocol's `edit` command and `editing`, `edited` and `rect` reports edit a block's text in place. `picked` and `selection` give their position.
-  - `shortcut` carries `undo`, `redo` and `dismiss` instead of `open-files` and `open-commands`.
-  - `SavedAnswer` gives the revision a save made, and `RevisionsAnswer` the next undo and redo.
-- `@lincyaw/workspace`: every save in a git workspace is a revision. `history/undo` and `history/redo` walk a document's revisions. An agent's turn is committed when it ends unless `review: required` is set.
-- `@lincyaw/design`: icons `comment`, `comment-add`, `chat`, `versions`, `eye`, `edit-text` and `resolved`.
+  - The app bar holds the document's path and title, Approvals (only when an outside AI tool asks to do something, which the author allows or denies), the AI assistant, More and Settings.
+  - Settings offer the language, appearance, text size, keyboard shortcuts and the model; the code working view, with the AI's working details and permissions, stays off unless the author turns it on. Help names only buttons that exist.
+  - The AI assistant works on the open document; without a model it says so and leads the author to set one up.
+- `@lincyaw/kernel`: the preview protocol carries the position, edits and shortcuts the editor and the preview share, and the semantic palette of document colours (`DOCUMENT_COLOR_NAMES`, `documentColorToken`, `documentColorValue`).
+- `@lincyaw/workspace`: every save in a git workspace is a version. `history/undo` and `history/redo` walk a document's versions. An AI's turn is a version too, committed when it ends, or held for the author to accept or reject when `review: required` is set.
+- `@lincyaw/design`: the icons, colour tokens and shared controls the workbench is built from, in light and dark.
