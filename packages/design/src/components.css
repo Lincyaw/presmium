@@ -1208,6 +1208,11 @@
   padding-block-start: calc(var(--pm-size-tool) + var(--pm-space-2));
 }
 
+.pm-ui-block-editor .bn-threads-sidebar {
+  box-sizing: border-box;
+  padding-inline: var(--pm-space-3);
+}
+
 .pm-ui-block-editor .bn-threads-sidebar .bn-thread {
   min-width: 0;
   max-width: 100%;
