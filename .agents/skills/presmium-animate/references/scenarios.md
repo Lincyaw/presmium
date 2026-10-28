@@ -134,6 +134,25 @@ Run the algorithm in plain JS while building the scene, record its events (compa
 | Existing footage or a screen recording | `{video}` (captions, poster), `{youtube}`; a GIF with `{animation}` and `:still:` | — |
 | Static diagrams and mind maps | ```` ```mermaid ````, `{markmap}`, PlantUML; no animation needed | — |
 
+## 11. Promotion: products, papers and benchmarks
+
+Pieces with a fixed length (1, 5, 10, 30 or 60 s), exported as video. What each second shows and how to compose the longer ones from the shorter: `lengths.md` (this folder). The gallery document is `gallery/lengths/lecture.json` (every animation once; its scenes are under `gallery/lengths/scenes/`); the films built from them are `gallery/films/lecture.json`.
+
+| Scenario | Length | Gallery |
+|---|---|---|
+| Polished one-second moves: odometer, comet stroke, neon trace, gooey split, shockwave, border beam, tilt and glare, impact slam, whip pan, particle logo… | 1–2 s | lengths `fx/<library>/` (all 24 in the table of `lengths.md`) |
+| Logo sting, brand opener or closer | 5 s | lengths `5s/logo-sting` |
+| Product hero loop for a landing page | 5 s | lengths `5s/turntable` |
+| One feature, one click | 5 s | lengths `5s/feature-click` |
+| A new entry joins a leaderboard (benchmark announcement) | 5 s | lengths `5s/leaderboard` |
+| A paper's key number against its baseline | 5 s | lengths `5s/key-result` |
+| Project-page teaser loop | 5 s | lengths `5s/attention` |
+| Problem → solution without words | 10 s | lengths `10s/problem-solution` |
+| A method in one figure | 10 s | lengths `10s/method` |
+| One chart insight | 10 s | lengths `10s/data-story` |
+| Product spot, paper teaser | 30 s | films sections `s30-product`, `s30-paper` (their shot lists: the same sections of lengths) |
+| Product explainer, paper video | 60 s | films sections `s60-product`, `s60-paper` |
+
 ## When nothing here fits
 
 Pick by the picture with the table in `libraries.md` (this folder), find the nearest gallery scene, and keep the rules in `SKILL.md`. Things not available today: LaTeX inside scenes and formula morphing; handwriting text along its strokes; images, audio and video inside Remotion scenes; real map data (bring your own GeoJSON in the document); interactive controls inside a scene (scenes follow the step and the narration; learners interact through `{run-panel}`, `{step-run}`, `{predict}`, `{quiz}`, `{exercise}`).

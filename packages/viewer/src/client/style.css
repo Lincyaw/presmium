@@ -787,6 +787,17 @@ html.pm-presenting {
   padding: 0;
 }
 
+/* A full slide is all content (a scene, a picture); its title stays for assistive technology only. */
+.pm-slide--full .pm-slide__title {
+  position: absolute;
+  width: var(--pm-size-hairline);
+  height: var(--pm-size-hairline);
+  margin: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .pm-slide__footer {
   position: absolute;
   right: 3.1em;

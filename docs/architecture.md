@@ -1500,7 +1500,7 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 
 | 组 | 令牌 | 说明 |
 |---|---|---|
-| 颜色 | `--pm-color-bg`、`surface`、`sunk`、`chrome`、`canvas`、`hover`、`primary-hover`、`primary-pressed`、`accent-hover`、`accent-pressed`、`backdrop`、`code`、`ink`、`muted`、`line`、`line-strong`、`accent`、`accent-soft`、`accent-line`、`on-accent`、`selected`、`ok`、`ok-soft`、`warn`、`warn-soft`、`danger`、`danger-soft`、`add`、`del`、`gutter`、`syntax-key`、`syntax-string`、`syntax-keyword`、`qr-paper`、`qr-ink` | 二维码的 paper/ink 在暗色中保留固定对比。其余取值见 `packages/design/src/tokens.css`。`ok` 在 `ok-soft` 上达到 AA；`line-strong` 在 `bg`、`surface`、`sunk` 上达到 3:1（WCAG 1.4.11）。源码编辑器的行号用 `muted`（5.11 节）；`danger` 与 `del` 同色。`chrome` 是编辑台围在文稿四周的界面（各种栏与窗格），`canvas` 是纸张或幻灯片下面的画布；`hover` 是鼠标下的扁平控件，`accent-line` 是按下的控件的边，`backdrop` 是模态遮罩 |
+| 颜色 | `--pm-color-bg`、`surface`、`sunk`、`chrome`、`canvas`、`hover`、`primary-hover`、`primary-pressed`、`accent-hover`、`accent-pressed`、`backdrop`、`code`、`ink`、`muted`、`line`、`line-strong`、`accent`、`accent-soft`、`accent-line`、`on-accent`、`selected`、`ok`、`ok-soft`、`warn`、`warn-soft`、`danger`、`danger-soft`、`add`、`del`、`gutter`、`syntax-key`、`syntax-string`、`syntax-keyword`、`qr-paper`、`qr-ink`、`sheen`、`shadow` | 二维码的 paper/ink 在暗色中保留固定对比；动画的高光 `sheen` 与投影 `shadow` 在两种外观下都保持浅与深。其余取值见 `packages/design/src/tokens.css`。`ok` 在 `ok-soft` 上达到 AA；`line-strong` 在 `bg`、`surface`、`sunk` 上达到 3:1（WCAG 1.4.11）。源码编辑器的行号用 `muted`（5.11 节）；`danger` 与 `del` 同色。`chrome` 是编辑台围在文稿四周的界面（各种栏与窗格），`canvas` 是纸张或幻灯片下面的画布；`hover` 是鼠标下的扁平控件，`accent-line` 是按下的控件的边，`backdrop` 是模态遮罩 |
 | 字体 | `--pm-font-sans`、`--pm-font-serif`、`--pm-font-mono` | IBM Plex Sans、Source Serif 4、IBM Plex Mono，后接中文的系统字体 |
 | 字号 | `--pm-text-xs`、`sm`、`md`、`lg`、`reading`、`title`、`display` | 12、13、14（界面）、16、17（阅读）、20、32 px，以 rem 表示，跟随读者的字号 |
 | 行高 | `--pm-leading-tight`、`ui`、`reading` | 1.25、1.6、1.85 |
@@ -1585,7 +1585,7 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 - 样式只取令牌，明暗随令牌切换：`surface` 底、`ink` 字；标题用衬线体，是正文的 2.2 倍；正文 18 px（`--pm-slide-text`），讲义自己的段落与列表用衬线体，组件保持无衬线体。
 - 一节的 `{hints} slides:` 选它的版式：`layout`（`default`、`cover`、`center`、`full`；有多节时第一节默认 `cover`，其余默认 `default`）、`class`（加在这张幻灯片上的类）、`zoom`（内容的缩放）。
 - `default` 版式：标题上方是这一节所在的章（`slideChapters`：比这一节层级高、最外层、有标题的章节），底部是讲义标题、步骤条与页码（`n / 总数`）。步骤条每步一段，已到的为强调色，其余为 `line-strong`；它的可访问名称是“第 n 步，共 m 步”。
-- `cover` 版式：标题大而靠下，上方一条强调色的短线；底部没有讲义标题。`center` 版式的内容居中；`full` 版式没有内边距与底部。
+- `cover` 版式：标题大而靠下，上方一条强调色的短线；底部没有讲义标题。`center` 版式的内容居中；`full` 版式没有内边距、章与底部，标题只留给读屏软件，内容（例如一段动画）铺满整张。
 - 每张幻灯片上有插件的 `slide` 图层（`.pm-slide__layers`，画布的坐标，5.1 节）。
 - 幻灯片页链接到网页形态的同一处：放映控制条上的“在网页中阅读”指向 `presmium.web.webUrl`（默认与幻灯片并列的 `../web`），网页形态的章节标题旁的链接指向 `presmium.web.slidesUrl`（默认 `../slides`）；两种形态的地址都以 `?slide=<n>&step=<k>` 定位，演讲者视图另加 `view=presenter`。
 

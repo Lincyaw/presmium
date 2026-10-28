@@ -1,0 +1,5349 @@
+{
+  "schemaVersion": 1,
+  "id": "document-lengths-films",
+  "metadata": {
+    "title": "宣传片：30 秒与 60 秒",
+    "lang": "zh-CN",
+    "description": "四部由短动画组合成的宣传片：产品与论文各一部 30 秒、一部 60 秒，用于放映和导出视频。",
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-lecture"
+    ],
+    "renderers": {
+      "web": {},
+      "lecture": {}
+    }
+  },
+  "sectionOrder": [
+    "intro",
+    "s30",
+    "s30-product",
+    "s30-product--1",
+    "s30-product--2",
+    "s30-product--3",
+    "s30-product--4",
+    "s30-product--5",
+    "s30-product--6",
+    "s30-paper",
+    "s30-paper--1",
+    "s30-paper--2",
+    "s30-paper--3",
+    "s30-paper--4",
+    "s30-paper--5",
+    "s60",
+    "s60-product",
+    "s60-product--1",
+    "s60-product--2",
+    "s60-product--3",
+    "s60-product--4",
+    "s60-product--5",
+    "s60-product--6",
+    "s60-product--7",
+    "s60-product--8",
+    "s60-product--9",
+    "s60-product--10",
+    "s60-product--11",
+    "s60-paper",
+    "s60-paper--1",
+    "s60-paper--2",
+    "s60-paper--3",
+    "s60-paper--4",
+    "s60-paper--5",
+    "s60-paper--6"
+  ],
+  "sections": {
+    "intro": {
+      "id": "intro",
+      "title": "宣传片：30 秒与 60 秒",
+      "level": 1,
+      "children": [
+        "intro--card",
+        "intro--notes"
+      ],
+      "stepOrder": [
+        "intro--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "cover"
+          }
+        }
+      }
+    },
+    "s30": {
+      "id": "s30",
+      "title": "30 秒：一支短片",
+      "level": 2,
+      "children": [
+        "s30--card",
+        "s30--notes"
+      ],
+      "stepOrder": [
+        "s30--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "center"
+          }
+        }
+      }
+    },
+    "s30-product": {
+      "id": "s30-product",
+      "title": "产品宣传 30 秒",
+      "level": 3,
+      "children": [
+        "s30-product--notes",
+        "s30-product--shot"
+      ],
+      "stepOrder": [
+        "s30-product--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s30-product--1": {
+      "id": "s30-product--1",
+      "title": "镜头 2 · 5 秒 · 品牌片头",
+      "level": 4,
+      "children": [
+        "s30-product--1--shot"
+      ],
+      "stepOrder": [
+        "s30-product--1--step-0",
+        "s30-product--1--step-1",
+        "s30-product--1--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s30-product--2": {
+      "id": "s30-product--2",
+      "title": "镜头 3 · 10 秒 · 问题 → 解决",
+      "level": 4,
+      "children": [
+        "s30-product--2--shot"
+      ],
+      "stepOrder": [
+        "s30-product--2--step-0",
+        "s30-product--2--step-1"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s30-product--3": {
+      "id": "s30-product--3",
+      "title": "镜头 4 · 10 秒 · 问题 → 解决",
+      "level": 4,
+      "children": [
+        "s30-product--3--shot"
+      ],
+      "stepOrder": [
+        "s30-product--3--step-0",
+        "s30-product--3--step-1",
+        "s30-product--3--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s30-product--4": {
+      "id": "s30-product--4",
+      "title": "镜头 5 · 5 秒 · 一次点击",
+      "level": 4,
+      "children": [
+        "s30-product--4--shot"
+      ],
+      "stepOrder": [
+        "s30-product--4--step-0",
+        "s30-product--4--step-1",
+        "s30-product--4--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s30-product--5": {
+      "id": "s30-product--5",
+      "title": "镜头 6 · 5 秒 · 一次点击",
+      "level": 4,
+      "children": [
+        "s30-product--5--shot"
+      ],
+      "stepOrder": [
+        "s30-product--5--step-0",
+        "s30-product--5--step-1",
+        "s30-product--5--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s30-product--6": {
+      "id": "s30-product--6",
+      "title": "镜头 7 · 30 秒 · 长片镜头：行动号召",
+      "level": 4,
+      "children": [
+        "s30-product--6--shot"
+      ],
+      "stepOrder": [
+        "s30-product--6--step-0",
+        "s30-product--6--step-1",
+        "s30-product--6--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s30-paper": {
+      "id": "s30-paper",
+      "title": "论文宣传 30 秒",
+      "level": 3,
+      "children": [
+        "s30-paper--notes",
+        "s30-paper--shot"
+      ],
+      "stepOrder": [
+        "s30-paper--step-0",
+        "s30-paper--step-1"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s30-paper--1": {
+      "id": "s30-paper--1",
+      "title": "镜头 2 · 30 秒 · 长片镜头：逐词计算",
+      "level": 4,
+      "children": [
+        "s30-paper--1--shot"
+      ],
+      "stepOrder": [
+        "s30-paper--1--step-0",
+        "s30-paper--1--step-1",
+        "s30-paper--1--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s30-paper--2": {
+      "id": "s30-paper--2",
+      "title": "镜头 3 · 5 秒 · 项目页循环：自注意力",
+      "level": 4,
+      "children": [
+        "s30-paper--2--shot"
+      ],
+      "stepOrder": [
+        "s30-paper--2--step-0",
+        "s30-paper--2--step-1",
+        "s30-paper--2--step-2",
+        "s30-paper--2--step-3"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s30-paper--3": {
+      "id": "s30-paper--3",
+      "title": "镜头 4 · 10 秒 · 方法一图",
+      "level": 4,
+      "children": [
+        "s30-paper--3--shot"
+      ],
+      "stepOrder": [
+        "s30-paper--3--step-0",
+        "s30-paper--3--step-1",
+        "s30-paper--3--step-2",
+        "s30-paper--3--step-3",
+        "s30-paper--3--step-4"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s30-paper--4": {
+      "id": "s30-paper--4",
+      "title": "镜头 5 · 5 秒 · 关键结果",
+      "level": 4,
+      "children": [
+        "s30-paper--4--shot"
+      ],
+      "stepOrder": [
+        "s30-paper--4--step-0",
+        "s30-paper--4--step-1",
+        "s30-paper--4--step-2",
+        "s30-paper--4--step-3"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s30-paper--5": {
+      "id": "s30-paper--5",
+      "title": "镜头 6 · 30 秒 · 长片镜头：论文标题卡",
+      "level": 4,
+      "children": [
+        "s30-paper--5--shot"
+      ],
+      "stepOrder": [
+        "s30-paper--5--step-0",
+        "s30-paper--5--step-1",
+        "s30-paper--5--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60": {
+      "id": "s60",
+      "title": "60 秒：一支完整的宣传片",
+      "level": 2,
+      "children": [
+        "s60--card",
+        "s60--notes"
+      ],
+      "stepOrder": [
+        "s60--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "center"
+          }
+        }
+      }
+    },
+    "s60-product": {
+      "id": "s60-product",
+      "title": "产品宣传 60 秒",
+      "level": 3,
+      "children": [
+        "s60-product--notes",
+        "s60-product--shot"
+      ],
+      "stepOrder": [
+        "s60-product--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-product--1": {
+      "id": "s60-product--1",
+      "title": "镜头 2 · 5 秒 · 品牌片头",
+      "level": 4,
+      "children": [
+        "s60-product--1--shot"
+      ],
+      "stepOrder": [
+        "s60-product--1--step-0",
+        "s60-product--1--step-1",
+        "s60-product--1--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-product--2": {
+      "id": "s60-product--2",
+      "title": "镜头 3 · 10 秒 · 问题 → 解决",
+      "level": 4,
+      "children": [
+        "s60-product--2--shot"
+      ],
+      "stepOrder": [
+        "s60-product--2--step-0",
+        "s60-product--2--step-1"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-product--3": {
+      "id": "s60-product--3",
+      "title": "镜头 4 · 10 秒 · 问题 → 解决",
+      "level": 4,
+      "children": [
+        "s60-product--3--shot"
+      ],
+      "stepOrder": [
+        "s60-product--3--step-0",
+        "s60-product--3--step-1",
+        "s60-product--3--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-product--4": {
+      "id": "s60-product--4",
+      "title": "镜头 5 · 5 秒 · 一次点击",
+      "level": 4,
+      "children": [
+        "s60-product--4--shot"
+      ],
+      "stepOrder": [
+        "s60-product--4--step-0",
+        "s60-product--4--step-1",
+        "s60-product--4--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-product--5": {
+      "id": "s60-product--5",
+      "title": "镜头 6 · 1 秒 · 交换：沿弧线换位",
+      "level": 4,
+      "children": [
+        "s60-product--5--shot"
+      ],
+      "stepOrder": [
+        "s60-product--5--step-0",
+        "s60-product--5--step-1"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-product--6": {
+      "id": "s60-product--6",
+      "title": "镜头 7 · 精致原子 · GSAP · 蓄力变形",
+      "level": 4,
+      "children": [
+        "s60-product--6--shot"
+      ],
+      "stepOrder": [
+        "s60-product--6--step-0",
+        "s60-product--6--step-1"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-product--7": {
+      "id": "s60-product--7",
+      "title": "镜头 8 · 精致原子 · Anime.js · 一键发布",
+      "level": 4,
+      "children": [
+        "s60-product--7--shot"
+      ],
+      "stepOrder": [
+        "s60-product--7--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-product--8": {
+      "id": "s60-product--8",
+      "title": "镜头 9 · 精致原子 · GSAP · 彗星光迹",
+      "level": 4,
+      "children": [
+        "s60-product--8--shot"
+      ],
+      "stepOrder": [
+        "s60-product--8--step-0",
+        "s60-product--8--step-1"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-product--9": {
+      "id": "s60-product--9",
+      "title": "镜头 10 · 5 秒 · 动态文字",
+      "level": 4,
+      "children": [
+        "s60-product--9--shot"
+      ],
+      "stepOrder": [
+        "s60-product--9--step-0",
+        "s60-product--9--step-1",
+        "s60-product--9--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-product--10": {
+      "id": "s60-product--10",
+      "title": "镜头 11 · 5 秒 · 一次点击",
+      "level": 4,
+      "children": [
+        "s60-product--10--shot"
+      ],
+      "stepOrder": [
+        "s60-product--10--step-0",
+        "s60-product--10--step-1",
+        "s60-product--10--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-product--11": {
+      "id": "s60-product--11",
+      "title": "镜头 12 · 30 秒 · 长片镜头：行动号召",
+      "level": 4,
+      "children": [
+        "s60-product--11--shot"
+      ],
+      "stepOrder": [
+        "s60-product--11--step-0",
+        "s60-product--11--step-1",
+        "s60-product--11--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-paper": {
+      "id": "s60-paper",
+      "title": "论文宣传 60 秒",
+      "level": 3,
+      "children": [
+        "s60-paper--notes",
+        "s60-paper--shot"
+      ],
+      "stepOrder": [
+        "s60-paper--step-0",
+        "s60-paper--step-1",
+        "s60-paper--step-2",
+        "s60-paper--step-3"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-paper--1": {
+      "id": "s60-paper--1",
+      "title": "镜头 2 · 30 秒 · 长片镜头：逐词计算",
+      "level": 4,
+      "children": [
+        "s60-paper--1--shot"
+      ],
+      "stepOrder": [
+        "s60-paper--1--step-0",
+        "s60-paper--1--step-1",
+        "s60-paper--1--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-paper--2": {
+      "id": "s60-paper--2",
+      "title": "镜头 3 · 5 秒 · 项目页循环：自注意力",
+      "level": 4,
+      "children": [
+        "s60-paper--2--shot"
+      ],
+      "stepOrder": [
+        "s60-paper--2--step-0",
+        "s60-paper--2--step-1",
+        "s60-paper--2--step-2",
+        "s60-paper--2--step-3"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-paper--3": {
+      "id": "s60-paper--3",
+      "title": "镜头 4 · 10 秒 · 方法一图",
+      "level": 4,
+      "children": [
+        "s60-paper--3--shot"
+      ],
+      "stepOrder": [
+        "s60-paper--3--step-0",
+        "s60-paper--3--step-1",
+        "s60-paper--3--step-2",
+        "s60-paper--3--step-3",
+        "s60-paper--3--step-4"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-paper--4": {
+      "id": "s60-paper--4",
+      "title": "镜头 5 · 10 秒 · 数据故事：更高分，更省算力",
+      "level": 4,
+      "children": [
+        "s60-paper--4--shot"
+      ],
+      "stepOrder": [
+        "s60-paper--4--step-0",
+        "s60-paper--4--step-1",
+        "s60-paper--4--step-2",
+        "s60-paper--4--step-3",
+        "s60-paper--4--step-4"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-paper--5": {
+      "id": "s60-paper--5",
+      "title": "镜头 6 · 5 秒 · 动态文字",
+      "level": 4,
+      "children": [
+        "s60-paper--5--shot"
+      ],
+      "stepOrder": [
+        "s60-paper--5--step-0",
+        "s60-paper--5--step-1",
+        "s60-paper--5--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s60-paper--6": {
+      "id": "s60-paper--6",
+      "title": "镜头 7 · 30 秒 · 长片镜头：论文标题卡",
+      "level": 4,
+      "children": [
+        "s60-paper--6--shot"
+      ],
+      "stepOrder": [
+        "s60-paper--6--step-0",
+        "s60-paper--6--step-1",
+        "s60-paper--6--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    }
+  },
+  "blocks": {
+    "intro--card": {
+      "id": "intro--card",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--card--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "30 秒 · 60 秒"
+            }
+          ]
+        },
+        {
+          "id": "intro--card--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每个镜头都来自短动画"
+            }
+          ]
+        }
+      ]
+    },
+    "intro--notes": {
+      "id": "intro--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "四部片子的每个镜头都是 "
+            },
+            {
+              "type": "text",
+              "text": "lengths",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 文稿里的场景："
+            },
+            {
+              "type": "text",
+              "text": "scenes/",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 下的文件只是一行转发，动画代码只有一份。分镜表与每个镜头的出处见 "
+            },
+            {
+              "type": "text",
+              "text": "lengths",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 文稿的 30 秒与 60 秒档。"
+            }
+          ]
+        },
+        {
+          "id": "intro--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "导出："
+            },
+            {
+              "type": "text",
+              "text": "presmium build films --to web,lecture",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "，再 "
+            },
+            {
+              "type": "text",
+              "text": "presmium-lecture export films",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "；"
+            },
+            {
+              "type": "text",
+              "text": "dist/lecture/script/chapters.vtt",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 给出每一节的起止时间，按片子的第一节和最后一节切出单片。"
+            }
+          ]
+        }
+      ]
+    },
+    "s30--card": {
+      "id": "s30--card",
+      "type": "text",
+      "content": [
+        {
+          "id": "s30--card--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "钩子 · 问题 · 答案 · 证据 · 行动"
+            }
+          ]
+        }
+      ]
+    },
+    "s30--notes": {
+      "id": "s30--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "s30--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "30 秒是有起承转合的短片：前 3 秒是钩子（一个醒目的画面或结果），5 秒内出现品牌或标题，然后是问题、2–3 个各约 4–6 秒的答案段、一个证据，最后 3–5 秒是停住的行动号召或标题卡。"
+            }
+          ]
+        },
+        {
+          "id": "s30--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "30 秒片子不新写动画：每个镜头都是前面 1 秒、5 秒、10 秒档的场景，换参数、换时长、只取其中几个状态。前 5 秒至少切两个镜头；镜头之间直接切换，镜头内部用原子动效。下面的分镜表注明每个镜头来自哪个作品；只在长片里出现的三个镜头（循环网络、行动号召、标题卡）放在本档最后。"
+            }
+          ]
+        }
+      ]
+    },
+    "s30-product--notes": {
+      "id": "s30-product--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "s30-product--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "产品：Presmium。七个镜头全部复用前面档位的场景；全片只有品牌名、按钮上的字和一条命令。"
+            }
+          ]
+        },
+        {
+          "id": "s30-product--notes--n1",
+          "type": "table",
+          "headerRows": 1,
+          "children": [
+            {
+              "id": "s30-product--notes--n1--r0",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s30-product--notes--n1--r0c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "时间"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-product--notes--n1--r0c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "画面"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-product--notes--n1--r0c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "为什么"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s30-product--notes--n1--r1",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s30-product--notes--n1--r1c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "0–3 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-product--notes--n1--r1c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "产品主视觉循环（5 秒档，压到 3 秒）"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-product--notes--n1--r1c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "钩子：先给画面，不给字"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s30-product--notes--n1--r2",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s30-product--notes--n1--r2c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "3–8 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-product--notes--n1--r2c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "品牌片头"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-product--notes--n1--r2c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "5 秒内出品牌"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s30-product--notes--n1--r3",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s30-product--notes--n1--r3c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "8–12 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-product--notes--n1--r3c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "问题→解决的前两个状态：文件散落、改一处三处过期"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-product--notes--n1--r3c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "问题"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s30-product--notes--n1--r4",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s30-product--notes--n1--r4c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "12–18 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-product--notes--n1--r4c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "同一场景的后三个状态：合成一份、派生四种形态"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-product--notes--n1--r4c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "答案；与问题是同一个场景，物体保持身份"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s30-product--notes--n1--r5",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s30-product--notes--n1--r5c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "18–22 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-product--notes--n1--r5c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "一次点击：输入一句话让 AI 改稿，预览更新"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-product--notes--n1--r5c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "功能一"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s30-product--notes--n1--r6",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s30-product--notes--n1--r6c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "22–26 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-product--notes--n1--r6c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "一次点击：导出视频"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-product--notes--n1--r6c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "功能二"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s30-product--notes--n1--r7",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s30-product--notes--n1--r7c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "26–30 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-product--notes--n1--r7c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "行动号召：标志、命令、地址，停住"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-product--notes--n1--r7c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "最后一帧最常被暂停，只留行动需要的东西"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "s30-product--shot": {
+      "id": "s30-product--shot",
+      "type": "component",
+      "definitionId": "s30-product--shot--definition",
+      "parameters": {
+        "scene": "5s/turntable",
+        "alt": "悬浮摆动的平板。"
+      }
+    },
+    "s30-product--1--shot": {
+      "id": "s30-product--1--shot",
+      "type": "component",
+      "definitionId": "s30-product--1--shot--definition",
+      "parameters": {
+        "scene": "5s/logo-sting",
+        "alt": "Presmium 标志与名字。",
+        "tagline": "一份文稿，四种形态"
+      }
+    },
+    "s30-product--2--shot": {
+      "id": "s30-product--2--shot",
+      "type": "component",
+      "definitionId": "s30-product--2--shot--definition",
+      "parameters": {
+        "scene": "10s/problem-solution",
+        "alt": "散落的文件合成一份文稿，再派生出四种形态。"
+      }
+    },
+    "s30-product--3--shot": {
+      "id": "s30-product--3--shot",
+      "type": "component",
+      "definitionId": "s30-product--3--shot--definition",
+      "parameters": {
+        "scene": "10s/problem-solution",
+        "alt": "散落的文件合成一份文稿，再派生出四种形态。"
+      }
+    },
+    "s30-product--4--shot": {
+      "id": "s30-product--4--shot",
+      "type": "component",
+      "definitionId": "s30-product--4--shot--definition",
+      "parameters": {
+        "scene": "5s/feature-click",
+        "alt": "在输入框写“第二步放慢一点”，点击后预览更新。",
+        "prompt": "第二步放慢一点",
+        "button": "让 AI 改",
+        "result": "预览已更新",
+        "caption": ""
+      }
+    },
+    "s30-product--5--shot": {
+      "id": "s30-product--5--shot",
+      "type": "component",
+      "definitionId": "s30-product--5--shot--definition",
+      "parameters": {
+        "scene": "5s/feature-click",
+        "alt": "点击导出视频。",
+        "caption": "一键出片"
+      }
+    },
+    "s30-product--6--shot": {
+      "id": "s30-product--6--shot",
+      "type": "component",
+      "definitionId": "s30-product--6--shot--definition",
+      "parameters": {
+        "scene": "film/cta",
+        "alt": "Presmium 标志、命令 pnpm studio 和项目地址。"
+      }
+    },
+    "s30-paper--notes": {
+      "id": "s30-paper--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "s30-paper--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "论文：Attention Is All You Need。结构取自会议快进视频：结果先行，再讲问题、核心想法、方法、证据，最后是标题卡。数据为论文真实数值，注意力权重为示意。"
+            }
+          ]
+        },
+        {
+          "id": "s30-paper--notes--n1",
+          "type": "table",
+          "headerRows": 1,
+          "children": [
+            {
+              "id": "s30-paper--notes--n1--r0",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s30-paper--notes--n1--r0c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "时间"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-paper--notes--n1--r0c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "画面"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-paper--notes--n1--r0c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "为什么"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s30-paper--notes--n1--r1",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s30-paper--notes--n1--r1c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "0–2.5 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-paper--notes--n1--r1c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "数字像里程表一样滚到 28.4（精致原子 + 停留）"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-paper--notes--n1--r1c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "钩子：结果先行"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s30-paper--notes--n1--r2",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s30-paper--notes--n1--r2c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "2.5–8.5 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-paper--notes--n1--r2c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "循环网络逐词读句子，“小猫”的颜色一步步褪掉"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-paper--notes--n1--r2c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "问题：远处的词要经过中间每一个词"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s30-paper--notes--n1--r3",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s30-paper--notes--n1--r3c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "8.5–15.5 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-paper--notes--n1--r3c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "同一句话：“它”同时看到所有词，最粗的线连到“小猫”"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-paper--notes--n1--r3c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "核心想法；与上一镜头同一句话，对比一目了然"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s30-paper--notes--n1--r4",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s30-paper--notes--n1--r4c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "15.5–22.5 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-paper--notes--n1--r4c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "方法一图：编码器的数据流和“×6”"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-paper--notes--n1--r4c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "方法"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s30-paper--notes--n1--r5",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s30-paper--notes--n1--r5c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "22.5–27 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-paper--notes--n1--r5c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "关键结果：26.36 → 28.4"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-paper--notes--n1--r5c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "证据"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s30-paper--notes--n1--r6",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s30-paper--notes--n1--r6c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "27–30 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-paper--notes--n1--r6c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "标题卡"
+                    }
+                  ]
+                },
+                {
+                  "id": "s30-paper--notes--n1--r6c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "最后 3 秒给出处"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "s30-paper--shot": {
+      "id": "s30-paper--shot",
+      "type": "component",
+      "definitionId": "s30-paper--shot--definition",
+      "parameters": {
+        "scene": "fx/gsap/odometer",
+        "alt": "数字像里程表一样滚到 28.4 BLEU。"
+      }
+    },
+    "s30-paper--1--shot": {
+      "id": "s30-paper--1--shot",
+      "type": "component",
+      "definitionId": "s30-paper--1--shot--definition",
+      "parameters": {
+        "scene": "film/rnn-chain",
+        "alt": "循环网络逐词读“小猫没有过马路因为它太累了”。"
+      }
+    },
+    "s30-paper--2--shot": {
+      "id": "s30-paper--2--shot",
+      "type": "component",
+      "definitionId": "s30-paper--2--shot--definition",
+      "parameters": {
+        "scene": "5s/attention",
+        "alt": "“它”同时连向所有词，最粗的一条指向“小猫”。"
+      }
+    },
+    "s30-paper--3--shot": {
+      "id": "s30-paper--3--shot",
+      "type": "component",
+      "definitionId": "s30-paper--3--shot--definition",
+      "parameters": {
+        "scene": "10s/method",
+        "alt": "Transformer 编码器的数据流。"
+      }
+    },
+    "s30-paper--4--shot": {
+      "id": "s30-paper--4--shot",
+      "type": "component",
+      "definitionId": "s30-paper--4--shot--definition",
+      "parameters": {
+        "scene": "5s/key-result",
+        "alt": "BLEU：26.36 与 28.4。"
+      }
+    },
+    "s30-paper--5--shot": {
+      "id": "s30-paper--5--shot",
+      "type": "component",
+      "definitionId": "s30-paper--5--shot--definition",
+      "parameters": {
+        "scene": "film/title-card",
+        "alt": "Attention Is All You Need，Vaswani et al.，NeurIPS 2017。"
+      }
+    },
+    "s60--card": {
+      "id": "s60--card",
+      "type": "text",
+      "content": [
+        {
+          "id": "s60--card--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在 30 秒的骨架里加上“怎么做到的”"
+            }
+          ]
+        }
+      ]
+    },
+    "s60--notes": {
+      "id": "s60--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "s60--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "60 秒不是把 30 秒放慢：骨架不变（钩子、品牌、问题、答案、行动），多出来的 30 秒放进“怎么做到的”和更多证据。每段 8–10 秒，每段本身是一个 10 秒档的“交代 → 变化 → 结果”。"
+            }
+          ]
+        },
+        {
+          "id": "s60--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "节奏要有起伏：讲机制的段落镜头长、动作少；蒙太奇段落用一串 1.5 秒的原子动效快切；结尾的行动号召或标题卡停 5 秒以上。"
+            }
+          ]
+        }
+      ]
+    },
+    "s60-product--notes": {
+      "id": "s60-product--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "s60-product--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "产品：Presmium。在 30 秒版本上展开“怎么做到的”：AI 改稿、代码动画的快切蒙太奇、四种形态，再到导出与行动号召。"
+            }
+          ]
+        },
+        {
+          "id": "s60-product--notes--n1",
+          "type": "table",
+          "headerRows": 1,
+          "children": [
+            {
+              "id": "s60-product--notes--n1--r0",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-product--notes--n1--r0c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "时间"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r0c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "画面"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r0c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "为什么"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s60-product--notes--n1--r1",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-product--notes--n1--r1c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "0–4 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r1c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "产品主视觉循环"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r1c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "钩子"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s60-product--notes--n1--r2",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-product--notes--n1--r2c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "4–9 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r2c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "品牌片头"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r2c2",
+                  "type": "tableCell",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "s60-product--notes--n1--r3",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-product--notes--n1--r3c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "9–17 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r3c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "文件散落，改一处三处过期"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r3c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "问题，比 30 秒版多停一会儿"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s60-product--notes--n1--r4",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-product--notes--n1--r4c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "17–27 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r4c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "合成一份文稿，派生四种形态"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r4c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "答案"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s60-product--notes--n1--r5",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-product--notes--n1--r5c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "27–37 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r5c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "输入一句话让 AI 改稿，预览更新"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r5c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "怎么做到的：写"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s60-product--notes--n1--r6",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-product--notes--n1--r6c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "37–43 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r6c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "四个原子快切：交换、蓄力变形、一键发布、彗星光迹"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r6c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "怎么做到的：动；长短不一的快切制造节奏变化"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s60-product--notes--n1--r7",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-product--notes--n1--r7c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "43–48 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r7c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "动态文字：一份文稿，四种形态"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r7c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "概括"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s60-product--notes--n1--r8",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-product--notes--n1--r8c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "48–53 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r8c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "一键导出视频"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r8c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "怎么做到的：发"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s60-product--notes--n1--r9",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-product--notes--n1--r9c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "53–60 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r9c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "行动号召，停 3.5 秒"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-product--notes--n1--r9c2",
+                  "type": "tableCell",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "s60-product--shot": {
+      "id": "s60-product--shot",
+      "type": "component",
+      "definitionId": "s60-product--shot--definition",
+      "parameters": {
+        "scene": "5s/turntable",
+        "alt": "悬浮摆动的平板。"
+      }
+    },
+    "s60-product--1--shot": {
+      "id": "s60-product--1--shot",
+      "type": "component",
+      "definitionId": "s60-product--1--shot--definition",
+      "parameters": {
+        "scene": "5s/logo-sting",
+        "alt": "Presmium 标志与名字。",
+        "tagline": "一份文稿，四种形态"
+      }
+    },
+    "s60-product--2--shot": {
+      "id": "s60-product--2--shot",
+      "type": "component",
+      "definitionId": "s60-product--2--shot--definition",
+      "parameters": {
+        "scene": "10s/problem-solution",
+        "alt": "散落的文件合成一份文稿，再派生出四种形态。"
+      }
+    },
+    "s60-product--3--shot": {
+      "id": "s60-product--3--shot",
+      "type": "component",
+      "definitionId": "s60-product--3--shot--definition",
+      "parameters": {
+        "scene": "10s/problem-solution",
+        "alt": "散落的文件合成一份文稿，再派生出四种形态。"
+      }
+    },
+    "s60-product--4--shot": {
+      "id": "s60-product--4--shot",
+      "type": "component",
+      "definitionId": "s60-product--4--shot--definition",
+      "parameters": {
+        "scene": "5s/feature-click",
+        "alt": "在输入框写“第二步放慢一点”，点击后预览更新。",
+        "prompt": "第二步放慢一点",
+        "button": "让 AI 改",
+        "result": "预览已更新",
+        "caption": ""
+      }
+    },
+    "s60-product--5--shot": {
+      "id": "s60-product--5--shot",
+      "type": "component",
+      "definitionId": "s60-product--5--shot--definition",
+      "parameters": {
+        "scene": "1s/swap",
+        "alt": "两张卡片交换位置。"
+      }
+    },
+    "s60-product--6--shot": {
+      "id": "s60-product--6--shot",
+      "type": "component",
+      "definitionId": "s60-product--6--shot--definition",
+      "parameters": {
+        "scene": "fx/gsap/morph-anticipation",
+        "alt": "播放三角转半圈变成对勾。"
+      }
+    },
+    "s60-product--7--shot": {
+      "id": "s60-product--7--shot",
+      "type": "component",
+      "definitionId": "s60-product--7--shot--definition",
+      "parameters": {
+        "scene": "fx/anime/submit-burst",
+        "alt": "点击发布，完成后爆出火花。"
+      }
+    },
+    "s60-product--8--shot": {
+      "id": "s60-product--8--shot",
+      "type": "component",
+      "definitionId": "s60-product--8--shot--definition",
+      "parameters": {
+        "scene": "fx/gsap/comet-stroke",
+        "alt": "一束光从文稿飞到网页。"
+      }
+    },
+    "s60-product--9--shot": {
+      "id": "s60-product--9--shot",
+      "type": "component",
+      "definitionId": "s60-product--9--shot--definition",
+      "parameters": {
+        "scene": "5s/kinetic",
+        "alt": "一份文稿：网页、幻灯片、Notebook、视频。"
+      }
+    },
+    "s60-product--10--shot": {
+      "id": "s60-product--10--shot",
+      "type": "component",
+      "definitionId": "s60-product--10--shot--definition",
+      "parameters": {
+        "scene": "5s/feature-click",
+        "alt": "点击导出视频。",
+        "caption": "一键出片"
+      }
+    },
+    "s60-product--11--shot": {
+      "id": "s60-product--11--shot",
+      "type": "component",
+      "definitionId": "s60-product--11--shot--definition",
+      "parameters": {
+        "scene": "film/cta",
+        "alt": "Presmium 标志、命令 pnpm studio 和项目地址。"
+      }
+    },
+    "s60-paper--notes": {
+      "id": "s60-paper--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "s60-paper--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "论文：Attention Is All You Need。结果先行，然后每段 10 秒：问题、核心想法、方法、证据，最后是结论和 8 秒标题卡。"
+            }
+          ]
+        },
+        {
+          "id": "s60-paper--notes--n1",
+          "type": "table",
+          "headerRows": 1,
+          "children": [
+            {
+              "id": "s60-paper--notes--n1--r0",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-paper--notes--n1--r0c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "时间"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-paper--notes--n1--r0c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "画面"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-paper--notes--n1--r0c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "为什么"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s60-paper--notes--n1--r1",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-paper--notes--n1--r1c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "0–5 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-paper--notes--n1--r1c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "关键结果：26.36 → 28.4"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-paper--notes--n1--r1c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "结果先行"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s60-paper--notes--n1--r2",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-paper--notes--n1--r2c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "5–15 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-paper--notes--n1--r2c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "循环网络逐词读句子"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-paper--notes--n1--r2c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "问题"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s60-paper--notes--n1--r3",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-paper--notes--n1--r3c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "15–25 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-paper--notes--n1--r3c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "自注意力：同一句话，一步看全句"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-paper--notes--n1--r3c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "核心想法"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s60-paper--notes--n1--r4",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-paper--notes--n1--r4c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "25–35 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-paper--notes--n1--r4c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "方法一图"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-paper--notes--n1--r4c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "方法"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s60-paper--notes--n1--r5",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-paper--notes--n1--r5c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "35–45 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-paper--notes--n1--r5c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "数据故事：更高分、更省算力"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-paper--notes--n1--r5c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "证据：比 30 秒版多一张图"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s60-paper--notes--n1--r6",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-paper--notes--n1--r6c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "45–52 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-paper--notes--n1--r6c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "动态文字：可以并行 → 训练更快、模型更大、效果更好"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-paper--notes--n1--r6c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "结论"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s60-paper--notes--n1--r7",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s60-paper--notes--n1--r7c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "52–60 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-paper--notes--n1--r7c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "标题卡，停 5 秒"
+                    }
+                  ]
+                },
+                {
+                  "id": "s60-paper--notes--n1--r7c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "出处与地址"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "s60-paper--shot": {
+      "id": "s60-paper--shot",
+      "type": "component",
+      "definitionId": "s60-paper--shot--definition",
+      "parameters": {
+        "scene": "5s/key-result",
+        "alt": "BLEU：26.36 与 28.4。"
+      }
+    },
+    "s60-paper--1--shot": {
+      "id": "s60-paper--1--shot",
+      "type": "component",
+      "definitionId": "s60-paper--1--shot--definition",
+      "parameters": {
+        "scene": "film/rnn-chain",
+        "alt": "循环网络逐词读“小猫没有过马路因为它太累了”。"
+      }
+    },
+    "s60-paper--2--shot": {
+      "id": "s60-paper--2--shot",
+      "type": "component",
+      "definitionId": "s60-paper--2--shot--definition",
+      "parameters": {
+        "scene": "5s/attention",
+        "alt": "“它”同时连向所有词，最粗的一条指向“小猫”。"
+      }
+    },
+    "s60-paper--3--shot": {
+      "id": "s60-paper--3--shot",
+      "type": "component",
+      "definitionId": "s60-paper--3--shot--definition",
+      "parameters": {
+        "scene": "10s/method",
+        "alt": "Transformer 编码器的数据流。"
+      }
+    },
+    "s60-paper--4--shot": {
+      "id": "s60-paper--4--shot",
+      "type": "component",
+      "definitionId": "s60-paper--4--shot--definition",
+      "parameters": {
+        "scene": "10s/data-story",
+        "alt": "BLEU 与训练算力的散点图。"
+      }
+    },
+    "s60-paper--5--shot": {
+      "id": "s60-paper--5--shot",
+      "type": "component",
+      "definitionId": "s60-paper--5--shot--definition",
+      "parameters": {
+        "scene": "5s/kinetic",
+        "alt": "可以并行：训练更快、模型更大、效果更好。",
+        "head": "可以并行",
+        "items": [
+          "训练更快",
+          "模型更大",
+          "效果更好"
+        ]
+      }
+    },
+    "s60-paper--6--shot": {
+      "id": "s60-paper--6--shot",
+      "type": "component",
+      "definitionId": "s60-paper--6--shot--definition",
+      "parameters": {
+        "scene": "film/title-card",
+        "alt": "Attention Is All You Need，Vaswani et al.，NeurIPS 2017。"
+      }
+    }
+  },
+  "steps": {
+    "intro--step-0": {
+      "id": "intro--step-0",
+      "sectionId": "intro",
+      "visuals": [
+        {
+          "blockId": "intro--card",
+          "visible": true
+        },
+        {
+          "blockId": "intro--notes",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30--step-0": {
+      "id": "s30--step-0",
+      "sectionId": "s30",
+      "visuals": [
+        {
+          "blockId": "s30--card",
+          "visible": true
+        },
+        {
+          "blockId": "s30--notes",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--step-0": {
+      "id": "s30-product--step-0",
+      "sectionId": "s30-product",
+      "visuals": [
+        {
+          "blockId": "s30-product--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s30-product--shot",
+          "visible": true,
+          "state": "loop"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--1--step-0": {
+      "id": "s30-product--1--step-0",
+      "sectionId": "s30-product--1",
+      "visuals": [
+        {
+          "blockId": "s30-product--1--shot",
+          "visible": true,
+          "state": "mark"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--1--step-1": {
+      "id": "s30-product--1--step-1",
+      "sectionId": "s30-product--1",
+      "visuals": [
+        {
+          "blockId": "s30-product--1--shot",
+          "visible": true,
+          "state": "name"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--1--step-2": {
+      "id": "s30-product--1--step-2",
+      "sectionId": "s30-product--1",
+      "visuals": [
+        {
+          "blockId": "s30-product--1--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--2--step-0": {
+      "id": "s30-product--2--step-0",
+      "sectionId": "s30-product--2",
+      "visuals": [
+        {
+          "blockId": "s30-product--2--shot",
+          "visible": true,
+          "state": "chaos"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--2--step-1": {
+      "id": "s30-product--2--step-1",
+      "sectionId": "s30-product--2",
+      "visuals": [
+        {
+          "blockId": "s30-product--2--shot",
+          "visible": true,
+          "state": "pain"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--3--step-0": {
+      "id": "s30-product--3--step-0",
+      "sectionId": "s30-product--3",
+      "visuals": [
+        {
+          "blockId": "s30-product--3--shot",
+          "visible": true,
+          "state": "gather"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--3--step-1": {
+      "id": "s30-product--3--step-1",
+      "sectionId": "s30-product--3",
+      "visuals": [
+        {
+          "blockId": "s30-product--3--shot",
+          "visible": true,
+          "state": "fanout"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--3--step-2": {
+      "id": "s30-product--3--step-2",
+      "sectionId": "s30-product--3",
+      "visuals": [
+        {
+          "blockId": "s30-product--3--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--4--step-0": {
+      "id": "s30-product--4--step-0",
+      "sectionId": "s30-product--4",
+      "visuals": [
+        {
+          "blockId": "s30-product--4--shot",
+          "visible": true,
+          "state": "ui"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--4--step-1": {
+      "id": "s30-product--4--step-1",
+      "sectionId": "s30-product--4",
+      "visuals": [
+        {
+          "blockId": "s30-product--4--shot",
+          "visible": true,
+          "state": "click"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--4--step-2": {
+      "id": "s30-product--4--step-2",
+      "sectionId": "s30-product--4",
+      "visuals": [
+        {
+          "blockId": "s30-product--4--shot",
+          "visible": true,
+          "state": "done"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--5--step-0": {
+      "id": "s30-product--5--step-0",
+      "sectionId": "s30-product--5",
+      "visuals": [
+        {
+          "blockId": "s30-product--5--shot",
+          "visible": true,
+          "state": "ui"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--5--step-1": {
+      "id": "s30-product--5--step-1",
+      "sectionId": "s30-product--5",
+      "visuals": [
+        {
+          "blockId": "s30-product--5--shot",
+          "visible": true,
+          "state": "click"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--5--step-2": {
+      "id": "s30-product--5--step-2",
+      "sectionId": "s30-product--5",
+      "visuals": [
+        {
+          "blockId": "s30-product--5--shot",
+          "visible": true,
+          "state": "done"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--6--step-0": {
+      "id": "s30-product--6--step-0",
+      "sectionId": "s30-product--6",
+      "visuals": [
+        {
+          "blockId": "s30-product--6--shot",
+          "visible": true,
+          "state": "mark"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--6--step-1": {
+      "id": "s30-product--6--step-1",
+      "sectionId": "s30-product--6",
+      "visuals": [
+        {
+          "blockId": "s30-product--6--shot",
+          "visible": true,
+          "state": "type"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-product--6--step-2": {
+      "id": "s30-product--6--step-2",
+      "sectionId": "s30-product--6",
+      "visuals": [
+        {
+          "blockId": "s30-product--6--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--step-0": {
+      "id": "s30-paper--step-0",
+      "sectionId": "s30-paper",
+      "visuals": [
+        {
+          "blockId": "s30-paper--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s30-paper--shot",
+          "visible": true,
+          "state": "roll"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--step-1": {
+      "id": "s30-paper--step-1",
+      "sectionId": "s30-paper",
+      "visuals": [
+        {
+          "blockId": "s30-paper--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s30-paper--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--1--step-0": {
+      "id": "s30-paper--1--step-0",
+      "sectionId": "s30-paper--1",
+      "visuals": [
+        {
+          "blockId": "s30-paper--1--shot",
+          "visible": true,
+          "state": "tokens"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--1--step-1": {
+      "id": "s30-paper--1--step-1",
+      "sectionId": "s30-paper--1",
+      "visuals": [
+        {
+          "blockId": "s30-paper--1--shot",
+          "visible": true,
+          "state": "chain"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--1--step-2": {
+      "id": "s30-paper--1--step-2",
+      "sectionId": "s30-paper--1",
+      "visuals": [
+        {
+          "blockId": "s30-paper--1--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--2--step-0": {
+      "id": "s30-paper--2--step-0",
+      "sectionId": "s30-paper--2",
+      "visuals": [
+        {
+          "blockId": "s30-paper--2--shot",
+          "visible": true,
+          "state": "tokens"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--2--step-1": {
+      "id": "s30-paper--2--step-1",
+      "sectionId": "s30-paper--2",
+      "visuals": [
+        {
+          "blockId": "s30-paper--2--shot",
+          "visible": true,
+          "state": "attend"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--2--step-2": {
+      "id": "s30-paper--2--step-2",
+      "sectionId": "s30-paper--2",
+      "visuals": [
+        {
+          "blockId": "s30-paper--2--shot",
+          "visible": true,
+          "state": "focus"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--2--step-3": {
+      "id": "s30-paper--2--step-3",
+      "sectionId": "s30-paper--2",
+      "visuals": [
+        {
+          "blockId": "s30-paper--2--shot",
+          "visible": true,
+          "state": "release"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--3--step-0": {
+      "id": "s30-paper--3--step-0",
+      "sectionId": "s30-paper--3",
+      "visuals": [
+        {
+          "blockId": "s30-paper--3--shot",
+          "visible": true,
+          "state": "input"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--3--step-1": {
+      "id": "s30-paper--3--step-1",
+      "sectionId": "s30-paper--3",
+      "visuals": [
+        {
+          "blockId": "s30-paper--3--shot",
+          "visible": true,
+          "state": "build"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--3--step-2": {
+      "id": "s30-paper--3--step-2",
+      "sectionId": "s30-paper--3",
+      "visuals": [
+        {
+          "blockId": "s30-paper--3--shot",
+          "visible": true,
+          "state": "flow"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--3--step-3": {
+      "id": "s30-paper--3--step-3",
+      "sectionId": "s30-paper--3",
+      "visuals": [
+        {
+          "blockId": "s30-paper--3--shot",
+          "visible": true,
+          "state": "stack"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--3--step-4": {
+      "id": "s30-paper--3--step-4",
+      "sectionId": "s30-paper--3",
+      "visuals": [
+        {
+          "blockId": "s30-paper--3--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--4--step-0": {
+      "id": "s30-paper--4--step-0",
+      "sectionId": "s30-paper--4",
+      "visuals": [
+        {
+          "blockId": "s30-paper--4--shot",
+          "visible": true,
+          "state": "setup"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--4--step-1": {
+      "id": "s30-paper--4--step-1",
+      "sectionId": "s30-paper--4",
+      "visuals": [
+        {
+          "blockId": "s30-paper--4--shot",
+          "visible": true,
+          "state": "baseline"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--4--step-2": {
+      "id": "s30-paper--4--step-2",
+      "sectionId": "s30-paper--4",
+      "visuals": [
+        {
+          "blockId": "s30-paper--4--shot",
+          "visible": true,
+          "state": "ours"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--4--step-3": {
+      "id": "s30-paper--4--step-3",
+      "sectionId": "s30-paper--4",
+      "visuals": [
+        {
+          "blockId": "s30-paper--4--shot",
+          "visible": true,
+          "state": "delta"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--5--step-0": {
+      "id": "s30-paper--5--step-0",
+      "sectionId": "s30-paper--5",
+      "visuals": [
+        {
+          "blockId": "s30-paper--5--shot",
+          "visible": true,
+          "state": "title"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--5--step-1": {
+      "id": "s30-paper--5--step-1",
+      "sectionId": "s30-paper--5",
+      "visuals": [
+        {
+          "blockId": "s30-paper--5--shot",
+          "visible": true,
+          "state": "meta"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s30-paper--5--step-2": {
+      "id": "s30-paper--5--step-2",
+      "sectionId": "s30-paper--5",
+      "visuals": [
+        {
+          "blockId": "s30-paper--5--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60--step-0": {
+      "id": "s60--step-0",
+      "sectionId": "s60",
+      "visuals": [
+        {
+          "blockId": "s60--card",
+          "visible": true
+        },
+        {
+          "blockId": "s60--notes",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--step-0": {
+      "id": "s60-product--step-0",
+      "sectionId": "s60-product",
+      "visuals": [
+        {
+          "blockId": "s60-product--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s60-product--shot",
+          "visible": true,
+          "state": "loop"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--1--step-0": {
+      "id": "s60-product--1--step-0",
+      "sectionId": "s60-product--1",
+      "visuals": [
+        {
+          "blockId": "s60-product--1--shot",
+          "visible": true,
+          "state": "mark"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--1--step-1": {
+      "id": "s60-product--1--step-1",
+      "sectionId": "s60-product--1",
+      "visuals": [
+        {
+          "blockId": "s60-product--1--shot",
+          "visible": true,
+          "state": "name"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--1--step-2": {
+      "id": "s60-product--1--step-2",
+      "sectionId": "s60-product--1",
+      "visuals": [
+        {
+          "blockId": "s60-product--1--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--2--step-0": {
+      "id": "s60-product--2--step-0",
+      "sectionId": "s60-product--2",
+      "visuals": [
+        {
+          "blockId": "s60-product--2--shot",
+          "visible": true,
+          "state": "chaos"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--2--step-1": {
+      "id": "s60-product--2--step-1",
+      "sectionId": "s60-product--2",
+      "visuals": [
+        {
+          "blockId": "s60-product--2--shot",
+          "visible": true,
+          "state": "pain"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--3--step-0": {
+      "id": "s60-product--3--step-0",
+      "sectionId": "s60-product--3",
+      "visuals": [
+        {
+          "blockId": "s60-product--3--shot",
+          "visible": true,
+          "state": "gather"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--3--step-1": {
+      "id": "s60-product--3--step-1",
+      "sectionId": "s60-product--3",
+      "visuals": [
+        {
+          "blockId": "s60-product--3--shot",
+          "visible": true,
+          "state": "fanout"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--3--step-2": {
+      "id": "s60-product--3--step-2",
+      "sectionId": "s60-product--3",
+      "visuals": [
+        {
+          "blockId": "s60-product--3--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--4--step-0": {
+      "id": "s60-product--4--step-0",
+      "sectionId": "s60-product--4",
+      "visuals": [
+        {
+          "blockId": "s60-product--4--shot",
+          "visible": true,
+          "state": "ui"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--4--step-1": {
+      "id": "s60-product--4--step-1",
+      "sectionId": "s60-product--4",
+      "visuals": [
+        {
+          "blockId": "s60-product--4--shot",
+          "visible": true,
+          "state": "click"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--4--step-2": {
+      "id": "s60-product--4--step-2",
+      "sectionId": "s60-product--4",
+      "visuals": [
+        {
+          "blockId": "s60-product--4--shot",
+          "visible": true,
+          "state": "done"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--5--step-0": {
+      "id": "s60-product--5--step-0",
+      "sectionId": "s60-product--5",
+      "visuals": [
+        {
+          "blockId": "s60-product--5--shot",
+          "visible": true,
+          "state": "play"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--5--step-1": {
+      "id": "s60-product--5--step-1",
+      "sectionId": "s60-product--5",
+      "visuals": [
+        {
+          "blockId": "s60-product--5--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--6--step-0": {
+      "id": "s60-product--6--step-0",
+      "sectionId": "s60-product--6",
+      "visuals": [
+        {
+          "blockId": "s60-product--6--shot",
+          "visible": true,
+          "state": "morph"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--6--step-1": {
+      "id": "s60-product--6--step-1",
+      "sectionId": "s60-product--6",
+      "visuals": [
+        {
+          "blockId": "s60-product--6--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--7--step-0": {
+      "id": "s60-product--7--step-0",
+      "sectionId": "s60-product--7",
+      "visuals": [
+        {
+          "blockId": "s60-product--7--shot",
+          "visible": true,
+          "state": "submit"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--8--step-0": {
+      "id": "s60-product--8--step-0",
+      "sectionId": "s60-product--8",
+      "visuals": [
+        {
+          "blockId": "s60-product--8--shot",
+          "visible": true,
+          "state": "link"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--8--step-1": {
+      "id": "s60-product--8--step-1",
+      "sectionId": "s60-product--8",
+      "visuals": [
+        {
+          "blockId": "s60-product--8--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--9--step-0": {
+      "id": "s60-product--9--step-0",
+      "sectionId": "s60-product--9",
+      "visuals": [
+        {
+          "blockId": "s60-product--9--shot",
+          "visible": true,
+          "state": "head"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--9--step-1": {
+      "id": "s60-product--9--step-1",
+      "sectionId": "s60-product--9",
+      "visuals": [
+        {
+          "blockId": "s60-product--9--shot",
+          "visible": true,
+          "state": "items"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--9--step-2": {
+      "id": "s60-product--9--step-2",
+      "sectionId": "s60-product--9",
+      "visuals": [
+        {
+          "blockId": "s60-product--9--shot",
+          "visible": true,
+          "state": "punch"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--10--step-0": {
+      "id": "s60-product--10--step-0",
+      "sectionId": "s60-product--10",
+      "visuals": [
+        {
+          "blockId": "s60-product--10--shot",
+          "visible": true,
+          "state": "ui"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--10--step-1": {
+      "id": "s60-product--10--step-1",
+      "sectionId": "s60-product--10",
+      "visuals": [
+        {
+          "blockId": "s60-product--10--shot",
+          "visible": true,
+          "state": "click"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--10--step-2": {
+      "id": "s60-product--10--step-2",
+      "sectionId": "s60-product--10",
+      "visuals": [
+        {
+          "blockId": "s60-product--10--shot",
+          "visible": true,
+          "state": "done"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--11--step-0": {
+      "id": "s60-product--11--step-0",
+      "sectionId": "s60-product--11",
+      "visuals": [
+        {
+          "blockId": "s60-product--11--shot",
+          "visible": true,
+          "state": "mark"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--11--step-1": {
+      "id": "s60-product--11--step-1",
+      "sectionId": "s60-product--11",
+      "visuals": [
+        {
+          "blockId": "s60-product--11--shot",
+          "visible": true,
+          "state": "type"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-product--11--step-2": {
+      "id": "s60-product--11--step-2",
+      "sectionId": "s60-product--11",
+      "visuals": [
+        {
+          "blockId": "s60-product--11--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--step-0": {
+      "id": "s60-paper--step-0",
+      "sectionId": "s60-paper",
+      "visuals": [
+        {
+          "blockId": "s60-paper--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s60-paper--shot",
+          "visible": true,
+          "state": "setup"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--step-1": {
+      "id": "s60-paper--step-1",
+      "sectionId": "s60-paper",
+      "visuals": [
+        {
+          "blockId": "s60-paper--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s60-paper--shot",
+          "visible": true,
+          "state": "baseline"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--step-2": {
+      "id": "s60-paper--step-2",
+      "sectionId": "s60-paper",
+      "visuals": [
+        {
+          "blockId": "s60-paper--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s60-paper--shot",
+          "visible": true,
+          "state": "ours"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--step-3": {
+      "id": "s60-paper--step-3",
+      "sectionId": "s60-paper",
+      "visuals": [
+        {
+          "blockId": "s60-paper--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s60-paper--shot",
+          "visible": true,
+          "state": "delta"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--1--step-0": {
+      "id": "s60-paper--1--step-0",
+      "sectionId": "s60-paper--1",
+      "visuals": [
+        {
+          "blockId": "s60-paper--1--shot",
+          "visible": true,
+          "state": "tokens"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--1--step-1": {
+      "id": "s60-paper--1--step-1",
+      "sectionId": "s60-paper--1",
+      "visuals": [
+        {
+          "blockId": "s60-paper--1--shot",
+          "visible": true,
+          "state": "chain"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--1--step-2": {
+      "id": "s60-paper--1--step-2",
+      "sectionId": "s60-paper--1",
+      "visuals": [
+        {
+          "blockId": "s60-paper--1--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--2--step-0": {
+      "id": "s60-paper--2--step-0",
+      "sectionId": "s60-paper--2",
+      "visuals": [
+        {
+          "blockId": "s60-paper--2--shot",
+          "visible": true,
+          "state": "tokens"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--2--step-1": {
+      "id": "s60-paper--2--step-1",
+      "sectionId": "s60-paper--2",
+      "visuals": [
+        {
+          "blockId": "s60-paper--2--shot",
+          "visible": true,
+          "state": "attend"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--2--step-2": {
+      "id": "s60-paper--2--step-2",
+      "sectionId": "s60-paper--2",
+      "visuals": [
+        {
+          "blockId": "s60-paper--2--shot",
+          "visible": true,
+          "state": "focus"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--2--step-3": {
+      "id": "s60-paper--2--step-3",
+      "sectionId": "s60-paper--2",
+      "visuals": [
+        {
+          "blockId": "s60-paper--2--shot",
+          "visible": true,
+          "state": "release"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--3--step-0": {
+      "id": "s60-paper--3--step-0",
+      "sectionId": "s60-paper--3",
+      "visuals": [
+        {
+          "blockId": "s60-paper--3--shot",
+          "visible": true,
+          "state": "input"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--3--step-1": {
+      "id": "s60-paper--3--step-1",
+      "sectionId": "s60-paper--3",
+      "visuals": [
+        {
+          "blockId": "s60-paper--3--shot",
+          "visible": true,
+          "state": "build"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--3--step-2": {
+      "id": "s60-paper--3--step-2",
+      "sectionId": "s60-paper--3",
+      "visuals": [
+        {
+          "blockId": "s60-paper--3--shot",
+          "visible": true,
+          "state": "flow"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--3--step-3": {
+      "id": "s60-paper--3--step-3",
+      "sectionId": "s60-paper--3",
+      "visuals": [
+        {
+          "blockId": "s60-paper--3--shot",
+          "visible": true,
+          "state": "stack"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--3--step-4": {
+      "id": "s60-paper--3--step-4",
+      "sectionId": "s60-paper--3",
+      "visuals": [
+        {
+          "blockId": "s60-paper--3--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--4--step-0": {
+      "id": "s60-paper--4--step-0",
+      "sectionId": "s60-paper--4",
+      "visuals": [
+        {
+          "blockId": "s60-paper--4--shot",
+          "visible": true,
+          "state": "axes"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--4--step-1": {
+      "id": "s60-paper--4--step-1",
+      "sectionId": "s60-paper--4",
+      "visuals": [
+        {
+          "blockId": "s60-paper--4--shot",
+          "visible": true,
+          "state": "baselines"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--4--step-2": {
+      "id": "s60-paper--4--step-2",
+      "sectionId": "s60-paper--4",
+      "visuals": [
+        {
+          "blockId": "s60-paper--4--shot",
+          "visible": true,
+          "state": "frontier"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--4--step-3": {
+      "id": "s60-paper--4--step-3",
+      "sectionId": "s60-paper--4",
+      "visuals": [
+        {
+          "blockId": "s60-paper--4--shot",
+          "visible": true,
+          "state": "ours"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--4--step-4": {
+      "id": "s60-paper--4--step-4",
+      "sectionId": "s60-paper--4",
+      "visuals": [
+        {
+          "blockId": "s60-paper--4--shot",
+          "visible": true,
+          "state": "insight"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--5--step-0": {
+      "id": "s60-paper--5--step-0",
+      "sectionId": "s60-paper--5",
+      "visuals": [
+        {
+          "blockId": "s60-paper--5--shot",
+          "visible": true,
+          "state": "head"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--5--step-1": {
+      "id": "s60-paper--5--step-1",
+      "sectionId": "s60-paper--5",
+      "visuals": [
+        {
+          "blockId": "s60-paper--5--shot",
+          "visible": true,
+          "state": "items"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--5--step-2": {
+      "id": "s60-paper--5--step-2",
+      "sectionId": "s60-paper--5",
+      "visuals": [
+        {
+          "blockId": "s60-paper--5--shot",
+          "visible": true,
+          "state": "punch"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--6--step-0": {
+      "id": "s60-paper--6--step-0",
+      "sectionId": "s60-paper--6",
+      "visuals": [
+        {
+          "blockId": "s60-paper--6--shot",
+          "visible": true,
+          "state": "title"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--6--step-1": {
+      "id": "s60-paper--6--step-1",
+      "sectionId": "s60-paper--6",
+      "visuals": [
+        {
+          "blockId": "s60-paper--6--shot",
+          "visible": true,
+          "state": "meta"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s60-paper--6--step-2": {
+      "id": "s60-paper--6--step-2",
+      "sectionId": "s60-paper--6",
+      "visuals": [
+        {
+          "blockId": "s60-paper--6--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "s30-product--shot--definition": {
+      "id": "s30-product--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/5s/turntable.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "loop"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          3000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "悬浮摆动的平板。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s30-product--1--shot--definition": {
+      "id": "s30-product--1--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/5s/logo-sting.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "mark"
+        },
+        {
+          "id": "name"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1500,
+          1500,
+          2000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Presmium 标志与名字。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s30-product--2--shot--definition": {
+      "id": "s30-product--2--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/10s/problem-solution.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "chaos"
+        },
+        {
+          "id": "pain"
+        },
+        {
+          "id": "gather"
+        },
+        {
+          "id": "fanout"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          2000,
+          2000,
+          1800,
+          2600,
+          1600
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "散落的文件合成一份文稿，再派生出四种形态。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s30-product--3--shot--definition": {
+      "id": "s30-product--3--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/10s/problem-solution.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "chaos"
+        },
+        {
+          "id": "pain"
+        },
+        {
+          "id": "gather"
+        },
+        {
+          "id": "fanout"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          2000,
+          2000,
+          1800,
+          2600,
+          1600
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "散落的文件合成一份文稿，再派生出四种形态。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s30-product--4--shot--definition": {
+      "id": "s30-product--4--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/5s/feature-click.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "ui"
+        },
+        {
+          "id": "click"
+        },
+        {
+          "id": "done"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1600,
+          1000,
+          1400
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "在输入框写“第二步放慢一点”，点击后预览更新。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s30-product--5--shot--definition": {
+      "id": "s30-product--5--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/5s/feature-click.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "ui"
+        },
+        {
+          "id": "click"
+        },
+        {
+          "id": "done"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1200,
+          1200,
+          1600
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "点击导出视频。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s30-product--6--shot--definition": {
+      "id": "s30-product--6--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/film/cta.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "mark"
+        },
+        {
+          "id": "type"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1500,
+          1500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Presmium 标志、命令 pnpm studio 和项目地址。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s30-paper--shot--definition": {
+      "id": "s30-paper--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/fx/gsap/odometer.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "roll"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "数字像里程表一样滚到 28.4 BLEU。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s30-paper--1--shot--definition": {
+      "id": "s30-paper--1--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/film/rnn-chain.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "tokens"
+        },
+        {
+          "id": "chain"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          3600,
+          1400
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "循环网络逐词读“小猫没有过马路因为它太累了”。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s30-paper--2--shot--definition": {
+      "id": "s30-paper--2--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/5s/attention.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "tokens"
+        },
+        {
+          "id": "attend"
+        },
+        {
+          "id": "focus"
+        },
+        {
+          "id": "release"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          800,
+          1600,
+          3000,
+          1600
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "“它”同时连向所有词，最粗的一条指向“小猫”。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s30-paper--3--shot--definition": {
+      "id": "s30-paper--3--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/10s/method.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "input"
+        },
+        {
+          "id": "build"
+        },
+        {
+          "id": "flow"
+        },
+        {
+          "id": "stack"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          800,
+          1800,
+          2400,
+          1200,
+          800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Transformer 编码器的数据流。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s30-paper--4--shot--definition": {
+      "id": "s30-paper--4--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/5s/key-result.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "setup"
+        },
+        {
+          "id": "baseline"
+        },
+        {
+          "id": "ours"
+        },
+        {
+          "id": "delta"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          600,
+          900,
+          900,
+          2100
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "BLEU：26.36 与 28.4。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s30-paper--5--shot--definition": {
+      "id": "s30-paper--5--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/film/title-card.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "title"
+        },
+        {
+          "id": "meta"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1200,
+          900,
+          900
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Attention Is All You Need，Vaswani et al.，NeurIPS 2017。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-product--shot--definition": {
+      "id": "s60-product--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/5s/turntable.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "loop"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          4000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "悬浮摆动的平板。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-product--1--shot--definition": {
+      "id": "s60-product--1--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/5s/logo-sting.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "mark"
+        },
+        {
+          "id": "name"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1600,
+          1600,
+          1800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Presmium 标志与名字。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-product--2--shot--definition": {
+      "id": "s60-product--2--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/10s/problem-solution.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "chaos"
+        },
+        {
+          "id": "pain"
+        },
+        {
+          "id": "gather"
+        },
+        {
+          "id": "fanout"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          3500,
+          4500,
+          2500,
+          4500,
+          3000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "散落的文件合成一份文稿，再派生出四种形态。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-product--3--shot--definition": {
+      "id": "s60-product--3--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/10s/problem-solution.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "chaos"
+        },
+        {
+          "id": "pain"
+        },
+        {
+          "id": "gather"
+        },
+        {
+          "id": "fanout"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          3500,
+          4500,
+          2500,
+          4500,
+          3000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "散落的文件合成一份文稿，再派生出四种形态。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-product--4--shot--definition": {
+      "id": "s60-product--4--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/5s/feature-click.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "ui"
+        },
+        {
+          "id": "click"
+        },
+        {
+          "id": "done"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          3000,
+          2500,
+          4500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "在输入框写“第二步放慢一点”，点击后预览更新。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-product--5--shot--definition": {
+      "id": "s60-product--5--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/1s/swap.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "play"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          200
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "两张卡片交换位置。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-product--6--shot--definition": {
+      "id": "s60-product--6--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/fx/gsap/morph-anticipation.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "morph"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          300
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "播放三角转半圈变成对勾。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-product--7--shot--definition": {
+      "id": "s60-product--7--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/fx/anime/submit-burst.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "submit"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          2000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "点击发布，完成后爆出火花。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-product--8--shot--definition": {
+      "id": "s60-product--8--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/fx/gsap/comet-stroke.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "link"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一束光从文稿飞到网页。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-product--9--shot--definition": {
+      "id": "s60-product--9--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/5s/kinetic.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "head"
+        },
+        {
+          "id": "items"
+        },
+        {
+          "id": "punch"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1800,
+          2200
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一份文稿：网页、幻灯片、Notebook、视频。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-product--10--shot--definition": {
+      "id": "s60-product--10--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/5s/feature-click.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "ui"
+        },
+        {
+          "id": "click"
+        },
+        {
+          "id": "done"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1500,
+          1500,
+          2000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "点击导出视频。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-product--11--shot--definition": {
+      "id": "s60-product--11--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/film/cta.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "mark"
+        },
+        {
+          "id": "type"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1500,
+          2000,
+          3500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Presmium 标志、命令 pnpm studio 和项目地址。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-paper--shot--definition": {
+      "id": "s60-paper--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/5s/key-result.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "setup"
+        },
+        {
+          "id": "baseline"
+        },
+        {
+          "id": "ours"
+        },
+        {
+          "id": "delta"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          800,
+          1200,
+          1200,
+          1800
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "BLEU：26.36 与 28.4。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-paper--1--shot--definition": {
+      "id": "s60-paper--1--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/film/rnn-chain.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "tokens"
+        },
+        {
+          "id": "chain"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1500,
+          5500,
+          3000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "循环网络逐词读“小猫没有过马路因为它太累了”。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-paper--2--shot--definition": {
+      "id": "s60-paper--2--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/5s/attention.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "tokens"
+        },
+        {
+          "id": "attend"
+        },
+        {
+          "id": "focus"
+        },
+        {
+          "id": "release"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1200,
+          2400,
+          4400,
+          2000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "“它”同时连向所有词，最粗的一条指向“小猫”。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-paper--3--shot--definition": {
+      "id": "s60-paper--3--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/10s/method.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "input"
+        },
+        {
+          "id": "build"
+        },
+        {
+          "id": "flow"
+        },
+        {
+          "id": "stack"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1500,
+          2500,
+          3000,
+          1500,
+          1500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Transformer 编码器的数据流。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-paper--4--shot--definition": {
+      "id": "s60-paper--4--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/10s/data-story.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "axes"
+        },
+        {
+          "id": "baselines"
+        },
+        {
+          "id": "frontier"
+        },
+        {
+          "id": "ours"
+        },
+        {
+          "id": "insight"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1500,
+          2500,
+          1500,
+          2000,
+          2500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "BLEU 与训练算力的散点图。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-paper--5--shot--definition": {
+      "id": "s60-paper--5--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/5s/kinetic.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "head"
+        },
+        {
+          "id": "items"
+        },
+        {
+          "id": "punch"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          2400,
+          3600
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "可以并行：训练更快、模型更大、效果更好。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s60-paper--6--shot--definition": {
+      "id": "s60-paper--6--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/film/title-card.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "title"
+        },
+        {
+          "id": "meta"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1500,
+          1500,
+          5000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Attention Is All You Need，Vaswani et al.，NeurIPS 2017。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      },
+      "trailingPauseMs": 0
+    },
+    "stepOverrides": {
+      "intro--step-0": {
+        "minimumHoldMs": 2500
+      },
+      "s30--step-0": {
+        "minimumHoldMs": 2000
+      },
+      "s60--step-0": {
+        "minimumHoldMs": 2000
+      }
+    },
+    "mediaClips": []
+  }
+}

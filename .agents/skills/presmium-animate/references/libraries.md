@@ -15,10 +15,21 @@ A scene file default-exports one call to a function from `@lincyaw/addon-motion/
 | `durations` | Definition scene durations in milliseconds, one per step |
 | `total` | Their sum, the length of the timeline in milliseconds |
 | `width`, `height` | The layout size of `root` in CSS pixels before ancestor transforms (including slide scaling) when the scene is built |
-| `color(name)` | A design-system color as `rgb()`/`rgba()`, such as `color('accent')` (names in `SKILL.md`, "Rules every scene follows") |
+| `color(name)` | A design-system color as `rgb()`/`rgba()`, such as `color('accent')` (names in "Rules for every library" below) |
 | the library | `gsap` and `plugins`; `anime`; `motion`; `d3`; `THREE`, `renderer` and `addons`; `React` and `remotion` |
 
 Each library counts time in its own unit: GSAP and Motion in seconds (`at(k) / 1000`), Anime.js, D3, Three.js and `defineScene` in milliseconds, Remotion in frames.
+
+## Rules for every library
+
+- **Colors** come from `color(name)` or `var(--pm-color-<name>)`. Names: `bg`, `surface`, `sunk`, `code`, `ink`, `muted`, `line`, `line-strong`, `accent`, `accent-soft`, `accent-line`, `on-accent`, `ok`, `ok-soft`, `warn`, `warn-soft`, `danger`, `danger-soft`, `syntax-key`, `syntax-string`, `syntax-keyword`, `pointer-fill`, `pointer-stroke`, and for light and shade `sheen` (stays light in both themes) and `shadow` (stays dark). Mix with `color-mix(in oklab, var(--pm-color-accent) 40%, transparent)`.
+- **Light and shade by theme.** The scene is built again when the theme changes, so decide at build from `color('bg')`. A white highlight (sheen, hot core, sparkle) reads as light on the dark page but as a gap on a white card: on the light page use the accent mixed with `shadow` instead. A halo in the accent color muddies the light page and reads as light only on the dark one: make it about 0.3 strong on light and 0.5 on dark. To darken a color in both themes, mix it with `shadow`, not `ink` (which is light in dark mode).
+- **Fonts that ship:** IBM Plex Sans 400/500/600, Source Serif 4 400/600, IBM Plex Mono 400/500, Latin only. Heavier weights are synthesized by the browser; there is no variable axis, so a weight tween snaps. Chinese falls back to system fonts whose widths differ by machine: never measure text at build.
+- **SVG ids are page-wide.** A document can show the same scene twice; give every filter, mask, clip path, gradient and pattern an id made when the scene is built (a counter), never a fixed one. Filters and gradients on a zero-height line need `userSpaceOnUse` regions, or nothing renders.
+- **Nothing else animates what a scene moves:** no CSS transitions or `@keyframes` on those elements. A filter or clip path tweens only between the same function lists (`blur(0px)` to `blur(8px)`, never from `none`); remove the filter when it reaches zero.
+- **Speed effects from speed.** Trails, smears and blur are earlier poses of the same function of time or a function of the velocity of its ease, so they are exact at any seek and vanish at rest.
+- **Rest frames stay still.** Springs keep creeping after they look settled and re-rasterize text; snap to the exact end within 0.001. Keep an identity 3D transform at rest instead of removing it, and give `preserve-3d` elements `will-change: transform`: Chromium rasterizes a layer that once had a 3D transform differently, so a frame would depend on how it was reached.
+- **Seeking a one-state scene:** its reading view shows no step buttons (they appear only with more than one state); check seeking with the scrubber (`.pm-scene__scrub`).
 
 ## Pick by the picture
 
@@ -102,6 +113,11 @@ Presmium sets `force3D: false` (so a frame looks the same however it was reached
 - **TextPlugin:** `preserveSpaces: true` keeps indentation in code.
 - **Randomness:** `"random(...)"`, `stagger.from: 'random'` and `utils.shuffle` use `Math.random`; compute values with a seeded generator and pass function-based values.
 - **Algorithms:** run the algorithm in plain JS at build (binary search, selection sort, k-means), then emit one tween per event at its step.
+- **Moving segments with DrawSVG:** values outside 0–100% wrap unless the end value has `nowrap`; with it, `'-30% 0% nowrap'` → `'100% 130% nowrap'` is a segment that grows out of the start and drains into the end. A head locked to it rides `motionPath` with an ease function, `ease: p => Math.min(1, span * E(p))`.
+- **Round caps on zero-length dashes paint dots** (`'0% 0%'`, `'100% 100%'`): hide the path before and after, run the segment a little past the end, or fade sparks while they are still lines.
+- **Fast eases on short turns:** `expo.out` or `power4.out` on a 0.5–0.6 s rotation lands within three frames at 30 fps, so the turn is never seen; use `power3.out` over 0.65 s or more.
+- **Overshoot is a share of the travel:** wheels or bars that travel different distances need one ease function each (`ease: p => …`) to overshoot by the same amount.
+- **A smear's stretch goes on a window-sized wrapper**, not on a long moving strip, or the shown part moves.
 - **Not for scenes:** ScrambleText (random on every render), `Flip.from` after `getState` (changes the DOM at build; use `Flip.fit(el, target, { getVars: true })` and tween the returned values), `quickTo`, ScrollTrigger, Draggable, Inertia.
 
 ## Anime.js
@@ -129,6 +145,11 @@ export default animeScene(({ root, anime, at, color }) => {
 - **`loop` with a stagger `delay`** repeats the whole staggered group as one iteration; add one tween per element instead.
 - **Arrowheads:** a `marker-end` shows before its line is drawn; draw arrowheads as separate shapes that fade in.
 - **A motion path drawn right to left** turns its label upside down through `rotate`; use only `translateX`/`translateY` from it.
+- **A head streak is not a drawable with string keyframes:** `['0 0', '0.92 1', '1 1']` splits its duration evenly and runs ahead of a `'0 0'`→`'0 1'` core; draw values past 1 wrap to the start. Drive the streak from one clock (head `E(p)`, tail `E((p − lag) / (1 − lag))`) and write it with the drawable's `setAttribute('draw', …)`.
+- **A spring from rest rushes through a slow phase:** ease the slow part with a keyframe, then finish with `{ to, ease: spring(…) }`; its settling time may run past the state.
+- **One property, one ease:** a shock ring whose radius, width and opacity share `outExpo` vanishes in a few frames; give each its own (`{ from, to, ease }`), opacity on `inQuad`.
+- **Function values go on each keyframe's `to`:** `[{ from: 0, to: (_, i) => dx[i] }, { to: 0 }]`.
+- **A color tween from near the background to a saturated color passes through grey;** grow a clipped shape of the new color instead.
 - **Not for scenes:** `text.scrambleText` (not pure even with a seed; write a hash of position and frame instead), `irregular()` (random), `splitText` by lines (re-splits on resize), composition `blend` (nothing while paused), WAAPI, draggables, scroll.
 - **3D:** put `perspective` on the parent in CSS; tweening it without a from-value starts at 0px.
 
@@ -159,6 +180,10 @@ export default motionScene(({ root, motion, at, color }) => {
 - **3D flips:** fade a wrapper, not the element with `preserve-3d`, or the back face never shows.
 - **Colors** on WAAPI properties (`backgroundColor`) and JS properties (`stroke`, `fill`) mix differently; don't pair them where they must match.
 - **Grid stagger:** `stagger()` knows only the index; use `delay: i => distance(i) * k` for a 2D ripple.
+- **Segments ease with `easeOut` by default**, not `easeInOut`: set `ease` on every segment. A multi-keyframe segment eases every interval; for a value sampled along a curve, bake the easing into the samples and use `ease: 'linear'`.
+- **A spring segment needs both ends** (`scale: [1.12, 1]`); with one target value it is built for a travel of 100.
+- **Springs overshoot below zero** on the way back to rest: a floating layer's `z` sinks behind its card. Clamp it and keep a small positive minimum.
+- **Not for scenes:** `springValue`, `followValue`, `attachSpring` (wall clock) and `animateView` (View Transitions); `splitText` and layout animation are Motion+ only, so split text and compute layouts by hand.
 
 ## D3
 
@@ -186,6 +211,10 @@ D3 does not animate here: `transition()` and `d3.timer` run on their own clock a
 - **`d3.interpolateZoom`** gives the fly-to path; use the step's duration, not the one it suggests.
 - **Measure nothing at build:** draw lines with `pathLength="1"` and a dash offset.
 - **Layout details:** `paddingOuter` before `paddingTop` on a treemap; categorical schemes like `schemeSet3` keep dark labels readable in both themes; a blended projection has no `invert`, so hide the far side of a globe with `d3.geoDistance`.
+- **A point riding a clipped curve:** replay the curve into a recording context (`moveTo`, `lineTo`, `bezierCurveTo`) once at build and solve the segment at x; exact, with no `getPointAtLength`, and slicing the data instead makes `curveMonotoneX` wobble. A clip open at the start shows the line's round cap before the draw: keep its width 0 until the draw starts.
+- **Numbers that change meaning** (an amount becoming a share): interpolate one number and fade a `%` in; cross-fading two numbers in one place garbles midway.
+- **Text halos** (`paint-order: stroke` in `bg`) show as outlines on slides and in the export, where the scene sits on a card; keep labels off busy fills instead.
+- **Bending a strip into a ring:** `d3.arc` at tiny curvature jumps (huge radii are imprecise in path strings); sample the outline and bend it with a formula that is exact at zero curvature. `d3-sankey` and `d3-hexbin` are not part of the scene's `d3`.
 - **Not for scenes:** `transition()`, `d3.timer`, brush, zoom and drag behaviours. No map data is bundled: a globe uses `d3.geoGraticule` and generated shapes unless the document ships its own data.
 
 ## Three.js
@@ -214,6 +243,10 @@ export default threeScene(({ THREE, renderer, addons, at, width, height, color, 
 - **Shaders:** set `uniforms.uTime.value = ms / 1000` in `render`; multiply `gl_PointSize` by the pixel ratio; set the bounding sphere by hand when positions come from the shader. Normal blending: additive blending washes out on the light page.
 - **Theme:** the background stays transparent (don't set `scene.background`); fog color = the page background; lit solids use a mid-tone like `line-strong` (`surface` is near-black in dark mode); a metal with a dark color becomes a black mirror; shadows stay black (`ink` is light in dark mode).
 - **Details that bit:** a dashed line built from zero-length points is culled (`frustumCulled = false`); `PCFSoftShadowMap` is gone in r186 (`PCFShadowMap` with `shadow.radius`); TubeGeometry draw ranges must be whole rings (radial segments × 6 indices); `LatheGeometry`'s `phiStart` of 0 is on +z.
+- **Glass needs something opaque behind it:** transmission refracts only the scene's own objects (never the page behind the transparent canvas), and with nothing opaque behind it the glass turns milky grey. Put an opaque backdrop mesh behind it and paint shadows into that backdrop's shader (transparent meshes are left out of the transmission pass). On rough glass keep `specularIntensity` near 0.25 and let a smooth clearcoat carry the highlight.
+- **Light sweeps:** turn `scene.environmentRotation` across a studio environment (PMREM) of bright panels kept inside its walls (a panel on a wall fights it for depth and vanishes). On a flat face the reflection moves by the rotation minus twice the object's yaw, so hold the yaw still during a sweep.
+- **Shader colors:** end a `ShaderMaterial`'s fragment shader with `#include <colorspace_fragment>`, or token colors read through `THREE.Color` come out too dark. `half` is reserved in GLSL ES 3.00 (a variable of that name breaks the shader and the mesh silently disappears).
+- **Glow without post-processing:** no bloom or composer is available; use halo sprites with a soft radial texture, a Fresnel rim, and for instanced nodes add the instance color to the emission in `onBeforeCompile` (`totalEmissiveRadiance += vColor.rgb * k`), since the instance color alone only shades the diffuse term. Additive particles converging on one shape saturate to white on the dark page: about 0.3 of each point's light. On the light page a lightening flash vanishes; use sparse stars in a warm token instead.
 - **Budget:** about 14 Three.js scenes per web page. Each holds a WebGL context, and browsers keep only a limited number per page (older ones lose their canvas); split a longer document.
 
 ## Remotion
@@ -247,6 +280,9 @@ export default remotionScene(({ React, remotion, at, durations, color }) => {
 - **Colors** for `interpolateColors` come from `color()` in the closure; plain styles can use `var(--pm-color-…)`.
 - **`posterize`** rounds frames from 0: pass `frame - F(at(k))`. A `Series`' last panel has a finite length: skip its exit animation. `transform: scale` doesn't push neighbours: animate margins too for a word that grows.
 - **Randomness:** `random(seed)`; a wobble is `Math.sin` with seeded phases.
+- **`Easing.exp` never reaches 0 or 1** (2⁻¹⁰ at the ends): `Easing.inOut(Easing.exp)` stops 0.05% short, a soft edge on a full-width pan. Rescale the ease to start at 0 and end at 1.
+- **A trail on the impact frame turns a hard stop into mush:** draw trails only before the hit.
+- **Trim paths:** draw the visible segment between its tail and head points; a zero-length dash with round caps still draws a dot.
 - **Not for scenes:** `Img` and `staticFile` (nothing waits for images to load, and there is no public folder), `Audio`, `Video`; `@remotion/transitions`, `shapes`, `paths`, `noise` are not installed, so write transitions by hand (the gallery's `series-transition`, `wipe`).
 
 ## Your own drawing: `defineScene`

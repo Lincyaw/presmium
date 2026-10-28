@@ -13,7 +13,7 @@ Read the teaching document's `lecture.json` and the relevant project code before
 - Highlight or replace code when the lesson is a program's changing state. Code highlights and variants reference stable step IDs.
 - Use a scene when objects must move, morph or be connected. Its definition declares implementation, parameter Schema and stable state IDs; a component block supplies instance parameters.
 
-Read [Scenarios](references/scenarios.md) for teaching patterns, [Libraries](references/libraries.md) for implementation choices and [Timeline](references/timeline.md) for step/narration alignment. The gallery has one `lecture.json` per animation library and project files under `scenes/`; inspect the closest real example instead of inventing an API.
+Read [Scenarios](references/scenarios.md) for teaching patterns, [Libraries](references/libraries.md) for implementation choices, [Timeline](references/timeline.md) for step/narration alignment and [Lengths](references/lengths.md) when the piece has a target length (1, 5, 10, 30 or 60 s) or is a promo, teaser, sting or loop to export as video. The gallery has one `lecture.json` per animation library and project files under `scenes/`; inspect the closest real example instead of inventing an API.
 
 ## Implement through public scene APIs
 
