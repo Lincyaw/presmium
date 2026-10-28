@@ -265,7 +265,9 @@ export function remotionScene(build: (ctx: SceneContext & { React: typeof ReactM
       const root = createRoot(ctx.root)
       return {
         seek(ms) {
-          const frame = Math.min(frames - 1, Math.max(0, Math.floor(ms * composition.fps / 1000)))
+          // Half a millisecond of slack: the lecture export asks for whole milliseconds (frame 1 at 30 fps is
+          // 33 ms, not 33.3), which would otherwise show the frame before, every third frame.
+          const frame = Math.min(frames - 1, Math.max(0, Math.floor((ms + 0.5) * composition.fps / 1000)))
           flushSync(() => root.render(React.createElement(Thumbnail, {
             component: composition.component,
             compositionWidth: composition.width,
