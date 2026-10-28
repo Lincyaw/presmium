@@ -198,13 +198,17 @@ export default function SceneView(props: SceneProps) {
     observer.observe(root)
     return () => observer.disconnect()
   }, [seen, printed, expanded])
+  useEffect(() => () => {
+    instance.current?.dispose?.()
+    instance.current = undefined
+  }, [])
   useEffect(() => {
     const root = stage.current
     if (!enabled || !root) return
     let disposed = false
     let observer: ResizeObserver | undefined
     let resizeTimer: ReturnType<typeof setTimeout> | undefined
-    let dimensions = { width: 0, height: 0 }
+    let dimensions = { width: root.clientWidth, height: root.clientHeight }
     const build = async () => {
       const definition = await loadScene(props.scene)
       if (disposed) return
@@ -212,13 +216,17 @@ export default function SceneView(props: SceneProps) {
         setStatus('missing')
         throw new Error(`the deck has no scene ${props.scene}`)
       }
-      instance.current?.dispose?.()
-      root.replaceChildren()
+      // A rebuild (another step's state, the theme, a resize) is made in a hidden layer while the
+      // shown scene keeps following the time; the two swap in one task. Disposed first, the shown
+      // scene would paint its authored DOM (a from() tween's end, later steps' elements) for frames.
+      const layer = root.appendChild(document.createElement('div'))
+      layer.className = 'pm-scene__layer'
+      layer.dataset.pending = ''
       const box = { width: root.clientWidth, height: root.clientHeight }
       dimensions = { width: box.width, height: box.height }
       let swatch: CanvasRenderingContext2D | null | undefined
       const made = await definition.create({
-        root,
+        root: layer,
         parameters: sceneParameters,
         state: sceneState,
         durations,
@@ -242,8 +250,22 @@ export default function SceneView(props: SceneProps) {
             ? `rgb(${r}, ${g}, ${b})`
             : `rgba(${r}, ${g}, ${b}, ${Math.round((a! / 255) * 1000) / 1000})`
         },
+      }).catch((error: unknown) => {
+        layer.remove()
+        if (!disposed) {
+          instance.current?.dispose?.()
+          instance.current = undefined
+          root.replaceChildren()
+        }
+        throw error
       })
-      if (disposed) return made.dispose?.()
+      if (disposed) {
+        made.dispose?.()
+        return layer.remove()
+      }
+      instance.current?.dispose?.()
+      for (const child of [...root.children]) if (child !== layer) child.remove()
+      delete layer.dataset.pending
       instance.current = made
       made.seek(shownNow.current)
       setStatus('ready')
@@ -277,8 +299,6 @@ export default function SceneView(props: SceneProps) {
       disposed = true
       clearTimeout(resizeTimer)
       observer?.disconnect()
-      instance.current?.dispose?.()
-      instance.current = undefined
     }
   }, [enabled, props.scene, JSON.stringify(durations), JSON.stringify(sceneParameters), sceneState, dark, clock])
   const box: CSSProperties = props.height

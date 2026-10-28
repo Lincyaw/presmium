@@ -19,6 +19,16 @@
   /* A scene can size its layout to the picture with cqw and cqh. */
   container-type: size;
 }
+.pm-scene__layer {
+  position: absolute;
+  inset: 0;
+  /* The scene's root, so its own cqw and cqh are the picture's, as the stage's are. */
+  container-type: size;
+}
+/* Laid out at the stage's size, so the scene being made can measure itself. */
+.pm-scene__layer[data-pending] {
+  visibility: hidden;
+}
 .pm-scene__notice {
   position: absolute;
   inset: 0;
