@@ -6,7 +6,7 @@ import { WORKSPACE_EVENTS_PATH, workspaceEventMessage } from '../workspace-event
 import type { WorkspaceEventTopic, WorkspaceEventCommand } from '../workspace-events.ts'
 
 const TOPICS: Readonly<Record<string, WorkspaceEventTopic>> = {
-  document: 'document', diagnostics: 'diagnostics', review: 'review', revision: 'ir', job: 'jobs', 'viewer-site': 'viewer-site', 'viewer-control': 'viewer-control',
+  document: 'document', diagnostics: 'diagnostics', review: 'review', revision: 'ir', job: 'jobs', 'viewer-site': 'viewer-site', 'viewer-control': 'viewer-control', approvals: 'approvals',
 }
 
 /** Each live reader owns one logical subscription; the library owns physical reconnect timing. */
@@ -52,7 +52,7 @@ export function workspaceSubscriptions(ctx: Pick<DshClientContext, 'effect'>): W
     else if (value.type === 'error') { rejectPublications(reader); reader.failed?.() }
     else {
       const topic = reader.request.topic
-      const named = topic === 'viewer-site' ? ['ir', 'reload'] : topic === 'viewer-control' ? ['ready', 'approval', 'settled', 'go', 'session'] : undefined
+      const named = topic === 'viewer-site' ? ['ir', 'reload'] : topic === 'viewer-control' ? ['ready', 'approval', 'settled', 'go', 'session'] : topic === 'approvals' ? ['approval', 'settled'] : undefined
       if (named && (!value.event || !named.includes(value.event))) return
       reader.received(value.data, value.event)
     }

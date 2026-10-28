@@ -128,7 +128,7 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 | Tabs | workbench、host 的 `PmTabs`、`PmTabPanel` 与 `pm-ui-tab` | 已提供图标标签与手动激活；方向键移焦，确认后激活，面板由公共封装关联 |
 | Tooltip | workbench、host 的 `PmTooltip` 与 `PmIconButton` | 已封装 Radix Tooltip；悬停延迟 300ms，键盘聚焦立即显示，可附快捷键 |
 | Segmented | workbench、host 的 `PmSegmented`、`pm-ui-segmented` | 已用 Radix Radio Group 管理横排互斥参数、图标、禁用和选中；不代替工作区导航 |
-| Popover／Drawer | host 的 `PmPopover`、`PmDrawer` 与共用 CSS | 依据任务使用浮层或侧抽屉；workbench 需要时走公开公共封装，不引用 host 或复制私有实现 |
+| Popover／Drawer | host 的 `PmPopover`、`PmDrawer`，workbench 的 `PmPopover`（同一 Radix Popover 与 `pm-ui-popover` 表面，首个使用者是应用栏的待确认），共用 CSS | 依据任务使用浮层或侧抽屉；workbench 不引用 host 或复制私有实现；workbench Drawer 与 Figma 变体待补 |
 | Field／Notice／Empty | `PmField`、`PmNotice`、`PmEmpty` | 同一位置展示字段说明、错误和恢复入口，不把所有状态写成页面私有提示卡 |
 | SchemaForm | workbench `PmSchemaForm`、`schemaFormPropertyNames` | RJSF 6.11.0 的公开 fields／templates／widgets 组合已有 Pm 控件，CFworker 与文稿共用校验。公共根入口所需的同版 validator-ajv8 作为常规依赖安装，表单不使用它校验，实际生产构建中输出为零。只显示声明的命名字段；推导的 additionalProperties 连字段名也不展示，原数据保留。独立状态根通过 `accessorSchemas` 限制只读、`extraValidation` 分别校验，不拼接引用根。联合分支只有唯一、必填标量 const 与明确 discriminator 的实证路径开放编辑；其余首开即只读，外层独立字段继续。范围、草稿、应用与来源冲突由调用方持有。实际范围见[公共参数表单验证](benchmarks/component-schema-form-2026-10-28.md) |
 | Range | workbench `PmRange`、`pm-ui-range`，使用原生 range | 提供受控数值、读屏值、焦点、禁用和三种密度；方向键／Home／End 提交意图，拖动先显示本地预览，释放时单次提交，Esc／取消／失焦／卸载丢弃手势草稿 |

@@ -138,10 +138,12 @@ export function apply(ctx: EventContext): void {
             }
             const route = command.topic === 'viewer-site' ? { path: '/__app/events', events: ['ir', 'reload'] }
               : command.topic === 'viewer-control' ? { path: `${SERVER_ROUTES}control`, events: ['ready', 'approval', 'settled', 'go', 'session'] }
-                : { path: ROUTES[command.topic].path, events: [ROUTES[command.topic].event] }
+                : command.topic === 'approvals' ? { path: `${SERVER_ROUTES}control`, events: ['approval', 'settled'] }
+                  : { path: ROUTES[command.topic].path, events: [ROUTES[command.topic].event] }
             const query = new URLSearchParams({ document: command.document })
             if (command.topic === 'viewer-site') { query.set('app', command.app); query.set('lang', command.lang); query.set('form', command.form) }
             if (command.topic === 'viewer-control') query.set('window', command.window)
+            if (command.topic === 'approvals') query.set('observe', 'approvals')
             const path = `${route.path}?${query}`
             source = new EventSource(new URL(path, endpoint.url), {
               fetch: (_address, init) => ctx.presmium.server.request(path, {
@@ -151,7 +153,7 @@ export function apply(ctx: EventContext): void {
             })
             source.addEventListener('open', () => { if (current()) send({ id: command.id, type: 'ready' }) })
             source.addEventListener('error', () => { if (current()) send({ id: command.id, type: 'error' }) })
-            for (const name of route.events) source.addEventListener(name, event => { if (current()) send({ id: command.id, type: 'event', ...command.topic === 'viewer-site' || command.topic === 'viewer-control' ? { event: name } : {}, data: event.data }) })
+            for (const name of route.events) source.addEventListener(name, event => { if (current()) send({ id: command.id, type: 'event', ...command.topic === 'viewer-site' || command.topic === 'viewer-control' || command.topic === 'approvals' ? { event: name } : {}, data: event.data }) })
           }).catch(() => { if (current()) send({ id: command.id, type: 'error' }) })
         })
       })
