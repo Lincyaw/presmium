@@ -2,6 +2,7 @@ import type { ProjectOperation, ProjectPlan, ProjectPlanRequest, ProjectApply, P
 import type { PreviewEventSubscription } from '@lincyaw/kernel'
 import type { AuthoringDiagnostics } from '@lincyaw/kernel'
 import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobSource, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, SourceTransactionAnswer, SourceTransactionChange, StartJobRequest, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
+import type { ApprovalRequest } from '@lincyaw/kernel'
 import type { OperationBatch } from './telemetry.ts'
 import type { VoiceCatalogAnswer, VoiceoverCancellation, VoiceoverJob, VoiceoverJobsAnswer, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest } from '@lincyaw/kernel'
 import type { PageDeleteAnswer, PageDeletePlan, PageDeleteRequest } from '@lincyaw/kernel'
@@ -11,6 +12,13 @@ import type { DocumentRecordingAdoption, VerifiedDocumentRecordingAdoption, Docu
 import type { DocumentImageImport, DocumentImageImportAnswer } from '@lincyaw/kernel'
 import type { ProductionAssetAnswer, ProductionAssetQuery, ProductionMediaQuery, ProductionPlan, ProductionPlanQuery } from '@lincyaw/kernel'
 import type { DocumentTranscriptionRequest, TranscriptionCapabilities, TranscriptionTask, TranscriptionListAnswer, TranscriptionRevision, TranscriptionCancellation, TranscriptionAdoptionDraft, TranscriptionAdoptionPlan, TranscriptionAdoptionApply, TranscriptionAdoptionAnswer } from '@lincyaw/kernel'
+
+/** A change of the host's pending approvals that this author may answer. */
+export type ApprovalEvent =
+  | { type: 'approval', id: string, request: ApprovalRequest }
+  | { type: 'settled', id: string }
+  /** The connection (re)opened: the pending approvals follow, so earlier ones are no longer known. */
+  | { type: 'reset' }
 
 const observedFailures = new WeakSet<object>()
 /** Whether the owned request observer already received this transport failure. */
@@ -122,6 +130,10 @@ export interface WorkspaceClient {
   cancelJob(document: string, id: string): Promise<CompileJob>
   /** Each change of the document's jobs, as it happens. */
   subscribeJobs(document: string, changed: (job: CompileJob) => void, failed?: () => void, ready?: () => void): () => void
+  /** The host's approvals of agent operations; the workbench hears them without being a viewer window. */
+  subscribeApprovals(changed: (event: ApprovalEvent) => void, failed?: () => void): () => void
+  /** Answers one approval; a 404 means it already ended (answered elsewhere or timed out). */
+  answerApproval(id: string, allow: boolean): Promise<void>
   /** Whether the host collects the workbench's operations for its operator. */
   readTelemetry(): Promise<{ enabled: boolean }>
   /** Sends a batch of operations; `beacon` hands it to the browser to deliver while the page goes away. */
@@ -399,6 +411,24 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     revertRevision: (document, request) => post(url('revisions/revert', document), request),
     undo: (document, request) => post(url('history/undo', document), request),
     redo: (document, request) => post(url('history/redo', document), request),
+    subscribeApprovals(changed, failed) {
+      const address = url('control', '', { observe: 'approvals' })
+      const received = (data: string, event?: string) => {
+        let value: { id?: unknown, request?: unknown }
+        try { value = JSON.parse(data) } catch { return }
+        if (typeof value.id !== 'string') return
+        if (event === 'approval' && value.request && typeof value.request === 'object') changed({ type: 'approval', id: value.id, request: value.request as ApprovalRequest })
+        else if (event === 'settled') changed({ type: 'settled', id: value.id })
+      }
+      const lost = () => { changed({ type: 'reset' }); failed?.() }
+      if (subscription) return subscription(address, 'approvals', received, lost, () => changed({ type: 'reset' }))
+      const source = new EventSource(address)
+      for (const name of ['approval', 'settled']) source.addEventListener(name, event => received((event as MessageEvent<string>).data, name))
+      source.addEventListener('open', () => changed({ type: 'reset' }))
+      source.addEventListener('error', lost)
+      return () => source.close()
+    },
+    answerApproval: async (id, allow) => { await post(url('control'), { type: 'answer', id, allow }) },
     readTelemetry: () => call(url('telemetry')),
     sendTelemetry: async (batch, beacon) => {
       const body = JSON.stringify(batch)

@@ -602,7 +602,8 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
           from: 'presmium.mcp',
           member: caller.member.id,
         }, signal)
-        if (!allowed) throw new Error('the operation was not allowed')
+        // A denial or timeout is the author's decision, not a transient failure: retrying asks again.
+        if (!allowed) throw Object.assign(new Error('operation-not-allowed'), { status: 403 })
       },
     }
     return self

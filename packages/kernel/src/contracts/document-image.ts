@@ -23,6 +23,8 @@ export interface DocumentImageCapabilities {
 export interface DocumentImageAuthoring {
   capabilities(document: string, member: Member): Promise<DocumentImageCapabilities>
   inspectWorkspace(document: string, request: DocumentWorkspaceImageInspect, member: Member, signal?: AbortSignal): Promise<WorkspaceImageInspection>
+  /** The import's checks without its transaction (scope, file bytes and SHA-256/length, current source or a replayable receipt), so a doomed import is refused before the author is asked; `importWorkspace` checks everything again. */
+  checkWorkspaceImport(document: string, request: DocumentWorkspaceImageImport, member: Member, signal?: AbortSignal): Promise<void>
   importWorkspace(document: string, request: DocumentWorkspaceImageImport, member: Member, signal?: AbortSignal): Promise<VerifiedDocumentImageImport>
 }
 const source = { type: 'object', additionalProperties: false, properties: { documentId: { type: 'string', minLength: 1, maxLength: 200 }, version: { type: 'string', pattern: '^[a-f\\d]{20}$' }, fingerprint: { type: 'string', pattern: '^[a-f\\d]{16}$' } }, required: ['documentId', 'version', 'fingerprint'] } as const

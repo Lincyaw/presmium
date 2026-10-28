@@ -1,5 +1,5 @@
 import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
-import { DocumentView, HomePanel, PmDialog, PmIcon, PmMenu, useWorkbenchState, WorkbenchProvider } from '@lincyaw/workbench'
+import { DocumentView, HomePanel, PmDialog, PmIcon, PmMenu, useWorkbenchState, WorkbenchApprovals, WorkbenchProvider } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode, RefObject } from 'react'
@@ -263,7 +263,7 @@ interface AppBarProps {
 
 /**
  * The bar across the top, as an editor has: the brand and where the author is (the documents, the open document or a
- * global panel), then the AI assistant, more (plugins, automation), settings and help. On a narrow screen the places
+ * global panel), then operations waiting for the author's approval, the AI assistant, more (plugins, automation), settings and help. On a narrow screen the places
  * are the panes it switches between.
  */
 function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, narrow, openSettings, openHelp }: AppBarProps) {
@@ -311,6 +311,7 @@ function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, nar
         {panelLabel && <li><span className="pmw-appbar__place" aria-current="page"><span className="pmw-appbar__label">{panelLabel}</span></span></li>}
       </ol>
       <span className="pmw-spacer" />
+      <span className="pmw-appbar__approvals" data-activity="approvals"><WorkbenchApprovals density={narrow ? 'touch' : 'compact'} /></span>
       <button type="button" className="pmw-appbar__button pmw-appbar__assistant" data-activity="assistant" title={t.assistant} aria-pressed={chatShown} onClick={toggleAssistant}>
         <PmIcon name="sparkle" /><span className="pmw-appbar__label">{t.assistant}</span>
         {working && <span className="pmw-appbar__busy" aria-hidden="true" />}
