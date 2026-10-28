@@ -30,6 +30,8 @@ interface Window {
   id: string
   member: Member
   document: string
+  /** Hears approvals only: not a viewer, so it is never navigated, counted or asked to report. */
+  observer: boolean
   report?: WindowReport
   send(event: string, data: unknown): void
   close(): void
@@ -65,11 +67,11 @@ export class ControlChannel {
     request: (request, signal) => this.#request(request, signal),
   }
 
-  open(id: string, member: Member, document: string): PushStream<{ event: string, data: unknown }> {
+  open(id: string, member: Member, document: string, options: { observer?: boolean } = {}): PushStream<{ event: string, data: unknown }> {
     this.#windows.get(id)?.close()
     let window!: Window
     const stream = pushStream<{ event: string, data: unknown }>((push) => {
-      window = { id, member, document, send: (event, data) => push({ event, data }), close: () => stream.end() }
+      window = { id, member, document, observer: options.observer === true, send: (event, data) => push({ event, data }), close: () => stream.end() }
       this.#windows.set(id, window)
       return () => {
         if (this.#windows.get(id) === window) this.#windows.delete(id)
@@ -84,7 +86,7 @@ export class ControlChannel {
 
   report(id: string, member: Member, report: Omit<WindowReport, 'at'>): boolean {
     const window = this.#windows.get(id)
-    if (!window || window.member.id !== member.id) return false
+    if (!window || window.observer || window.member.id !== member.id) return false
     const moved = JSON.stringify(report.position) !== JSON.stringify(window.report?.position)
     window.report = { ...report, at: Date.now() }
     if (moved) for (const listener of [...this.#watchers]) listener()
@@ -182,7 +184,7 @@ export class ControlChannel {
   }
 
   #windowsOf(filter: WindowFilter): Window[] {
-    return [...this.#windows.values()].filter(w => (!filter.member || w.member.id === filter.member.id) && (filter.document === undefined || w.document === filter.document))
+    return [...this.#windows.values()].filter(w => !w.observer && (!filter.member || w.member.id === filter.member.id) && (filter.document === undefined || w.document === filter.document))
   }
 
   #eligible(member: Member, request: ApprovalRequest): boolean {

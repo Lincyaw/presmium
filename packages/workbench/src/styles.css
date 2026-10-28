@@ -992,3 +992,14 @@
   gap: var(--pm-space-2);
   margin: 0 var(--pm-space-3);
 }
+
+/* The host's pending approvals, from the app bar. */
+.pmw-approvals { display: grid; gap: var(--pm-space-2); }
+.pmw-approvals__heading { margin: 0; font-size: var(--pm-text-md); font-weight: var(--pm-weight-semibold); }
+.pmw-approvals__list { display: grid; gap: var(--pm-space-3); margin: 0; padding: 0; list-style: none; }
+.pmw-approvals__item { display: grid; gap: var(--pm-space-1); }
+.pmw-approvals__item + .pmw-approvals__item { padding-top: var(--pm-space-3); border-top: var(--pm-size-hairline) solid var(--pm-color-line); }
+.pmw-approvals__title { margin: 0; color: var(--pm-color-ink); overflow-wrap: anywhere; }
+.pmw-approvals .pmw-muted { margin: 0; }
+.pmw-approvals__detail { max-height: 30vh; margin: 0; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pmw-approvals__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--pm-space-2); }

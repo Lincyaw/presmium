@@ -11,6 +11,7 @@ export const ROUTES: Record<string, string> = Object.fromEntries([
     'ir', 'ir/events', 'preview', 'build', 'check', 'jobs', 'jobs/cancel', 'jobs/events', 'voice-catalog', 'voice-capabilities',
     'review', 'review/open', 'review/step', 'review/accept', 'review/reject', 'review/restore'].map(path => [path, `${WORKSPACE_ROUTES}${path}`]),
   ['focus', `${SERVER_ROUTES}focus`],
+  ['control', `${SERVER_ROUTES}control`],
   ['diagnostics', `${SERVER_ROUTES}diagnostics`],
   ['diagnostics/events', `${SERVER_ROUTES}diagnostics/events`],
   ['diagnostics/authoring', `${SERVER_ROUTES}diagnostics/authoring`],
