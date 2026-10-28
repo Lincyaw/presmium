@@ -7,7 +7,7 @@ import type { Locale } from '../messages.ts'
 import { BlockNoteSurface } from './BlockNoteSurface.tsx'
 import type { CommentDrafts } from './comment-drafts.ts'
 import { DocumentThreadStore } from './comments.ts'
-import { createDocumentProjection, nativeDocumentToProduct, nativePage, rememberComponentConfiguration, rememberDocumentStructure } from './projection.ts'
+import { createDocumentProjection, nativeDocumentToProduct, nativePage, pageId, rememberComponentConfiguration, rememberDocumentStructure } from './projection.ts'
 import type { NativePageCreation } from './projection.ts'
 import { captureRichBaseline } from './rich-text.ts'
 import { captureTableIdentities, seedTableIdentities } from './table-identities.ts'
@@ -52,6 +52,7 @@ export interface DocumentEditorProps {
   onEditingPosition?(position: DocumentEditingPosition, editor: NativeDocumentEditor): void
   onReady?(editor: NativeDocumentEditor | undefined, commands?: DocumentEditorCommands): void
   onComposition?(composing: boolean): void
+  onSectionLink?(sectionId: string): boolean
   onError?(error: Error): void
   commentsPortal?: HTMLElement | null
   onCommentDraftRestore?(): void
@@ -124,7 +125,13 @@ export function DocumentEditor(props: DocumentEditorProps) {
   }
   return <BlockNoteSurface identity={props.identity} reset={props.reset} initialContent={projection.content} locale={props.locale} readOnly={props.readOnly}
     resolveAssetURL={props.resolveAssetURL} uploadImage={props.uploadImage}
-    comments={comments} commentsPortal={props.commentsPortal} onCommentDraftRestore={() => current.current.onCommentDraftRestore?.()} nodeViews={props.nodeViews} onComposition={props.onComposition} onSelection={props.onSelection}
+    comments={comments} commentsPortal={props.commentsPortal} onCommentDraftRestore={() => current.current.onCommentDraftRestore?.()} nodeViews={props.nodeViews} onComposition={props.onComposition} onSelection={props.onSelection} onSectionLink={sectionId => {
+      if (!current.current.onSectionLink?.(sectionId)) return false
+      // The click placed the caret in the link; it follows the reader to the page they asked for.
+      const value = editor.current
+      if (value && !value.prosemirrorView.isDestroyed && value.getBlock(pageId(sectionId))) value.setTextCursorPosition(pageId(sectionId), 'start')
+      return true
+    }}
     onChange={emit} onReady={value => {
       if (projection !== active.current) return
       unsubscribe.current?.(); unsubscribe.current = undefined
