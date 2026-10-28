@@ -250,6 +250,13 @@
   min-width: 0;
 }
 
+.pm-ui-schema-form,
+.pm-ui-schema-form__fields { display: grid; gap: var(--pm-space-3); min-width: 0; }
+.pm-ui-schema-form__field { min-width: 0; }
+.pm-ui-schema-form__item { display: flex; align-items: start; gap: var(--pm-space-2); min-width: 0; }
+.pm-ui-schema-form__item > .pm-ui-schema-form__field { flex: 1; }
+.pm-ui-schema-form__actions { display: flex; flex-wrap: wrap; gap: var(--pm-space-1); }
+
 .pm-ui-field__label {
   color: var(--pm-color-muted);
   font-size: var(--pm-text-sm);
