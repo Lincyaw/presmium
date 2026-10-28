@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
 import { insertOrUpdateBlockForSlashMenu, isTableCell, mapTableCell } from '@blocknote/core'
 import type { Block } from '@blocknote/core'
 import { SideMenuExtension, SourceBlockWithPreviewExtension, TableHandlesExtension } from '@blocknote/core/extensions'
@@ -22,29 +22,56 @@ function Swatch({ kind, value }: { kind: DocumentColorKind, value: string }) {
   return <span className="pm-ui-color-swatch" data-kind={kind} style={style} aria-hidden="true">A</span>
 }
 
-/** The document's semantic palette; choosing an entry saves its design token. */
-function DocumentColorPicker({ text, background }: { text?: ColorChoice, background?: ColorChoice }) {
+/**
+ * Arrow keys move through the swatches as a grid: left and right within a group, up and down to the same colour in
+ * the other group. Mantine's own menu keys run after these and would only step through the items in order, so the
+ * keys handled here stop there; in a submenu the left arrow on a group's first swatch still returns to the parent item.
+ */
+function moveInGrid(event: KeyboardEvent<HTMLDivElement>, sub: boolean) {
+  const item = (event.target as HTMLElement).closest<HTMLElement>('[data-document-color]')
+  const rows = [...event.currentTarget.querySelectorAll('[role=group]')].map(group => [...group.querySelectorAll<HTMLElement>('[data-document-color]')])
+  const row = rows.findIndex(swatches => item && swatches.includes(item))
+  if (row < 0) return
+  const swatches = rows[row]!, column = swatches.indexOf(item!)
+  const at = (index: number) => rows[(index + rows.length) % rows.length]![column]
+  let target: HTMLElement | undefined
+  if (event.key === 'ArrowRight') target = swatches[(column + 1) % swatches.length]
+  else if (event.key === 'ArrowLeft' && !(sub && column === 0)) target = swatches[(column - 1 + swatches.length) % swatches.length]
+  else if (event.key === 'ArrowDown') target = at(row + 1)
+  else if (event.key === 'ArrowUp') target = at(row - 1)
+  if (!target) return
+  event.preventDefault()
+  event.stopPropagation()
+  target.focus()
+}
+
+/** The document's semantic palette as two rows of swatches; choosing one saves its design token. */
+function DocumentColorPicker({ text, background, sub = false }: { text?: ColorChoice, background?: ColorChoice, sub?: boolean }) {
   const Components = useComponentsContext()!, t = useMessages()
   const section = (kind: DocumentColorKind, choice: ColorChoice) => {
     const current = choice.color === 'default' ? 'default' : documentColorValue(choice.color, kind)
-    return <>
-      <Components.Generic.Menu.Label>{kind === 'text' ? t.textColor : t.backgroundColor}</Components.Generic.Menu.Label>
+    const heading = kind === 'text' ? t.textColor : t.backgroundColor
+    return <div className="bn-color-picker-group" role="group" aria-label={heading}>
+      <Components.Generic.Menu.Label>{heading}</Components.Generic.Menu.Label>
       {(['default', ...DOCUMENT_COLOR_NAMES] as const).map(name => {
-        const value = name === 'default' ? 'default' : documentColorToken(name, kind)
+        const value = name === 'default' ? 'default' : documentColorToken(name, kind), checked = current === value
         const label = name === 'default' ? kind === 'text' ? t.colorDefault : t.backgroundDefault : (kind === 'text' ? t.colorNames : t.backgroundNames)[name]
-        return <Components.Generic.Menu.Item key={`${kind}-${name}`} data-document-color={`${kind}-${name}`} icon={<Swatch kind={kind} value={value} />}
-          checked={current === value} onClick={() => choice.setColor(value)}>{label}</Components.Generic.Menu.Item>
+        // The item's role is fixed to menuitem, so the current colour is announced as aria-current.
+        return <Components.Generic.Menu.Item key={`${kind}-${name}`} data-document-color={`${kind}-${name}`} data-checked={checked || undefined}
+          aria-label={label} aria-current={checked || undefined} {...{ title: label }} onClick={() => choice.setColor(value)}>
+          <Swatch kind={kind} value={value} />{checked && <PmIcon name="check" />}
+        </Components.Generic.Menu.Item>
       })}
-    </>
+    </div>
   }
-  return <>{text && section('text', text)}{background && section('background', background)}</>
+  return <div className="bn-color-picker-grid" onKeyDownCapture={event => moveInGrid(event, sub)}>{text && section('text', text)}{background && section('background', background)}</div>
 }
 
 function ColorSubmenu({ children, text, background }: { children: ReactNode, text?: ColorChoice, background?: ColorChoice }) {
   const Components = useComponentsContext()!, portalElement = usePortalElement()
   return <Components.Generic.Menu.Root position="right" sub={true} portalElement={portalElement}>
     <Components.Generic.Menu.Trigger sub={true}><Components.Generic.Menu.Item className="bn-menu-item" subTrigger={true}>{children}</Components.Generic.Menu.Item></Components.Generic.Menu.Trigger>
-    <Components.Generic.Menu.Dropdown sub={true} className="bn-menu-dropdown bn-color-picker-dropdown"><DocumentColorPicker text={text} background={background} /></Components.Generic.Menu.Dropdown>
+    <Components.Generic.Menu.Dropdown sub={true} className="bn-menu-dropdown bn-color-picker-dropdown"><DocumentColorPicker text={text} background={background} sub={true} /></Components.Generic.Menu.Dropdown>
   </Components.Generic.Menu.Root>
 }
 
