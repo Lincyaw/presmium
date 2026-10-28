@@ -363,9 +363,9 @@ export class Revisions implements RevisionService {
   }
 
   async #planRevert(id: string, member: Member, still?: { which: keyof UndoTargets, document?: string }, guard?: (paths: string[]) => Promise<void> | void) {
-    if (still && undoTargets(await this.#entries(still.document))[still.which] !== id) throw new RequestError(409, `the history changed: ${id} is not the next ${still.which} any more; read it again`)
+    if (still && undoTargets(await this.#entries(still.document))[still.which] !== id) throw new RequestError(409, 'history-target-changed', { revision: id, which: still.which })
     const verified = await this.#git.tryOutput(['rev-parse', '--verify', '--quiet', `${id}^{commit}`])
-    if (!verified.ok) throw new Error(`no commit ${id}`)
+    if (!verified.ok) throw new RequestError(404, 'history-revision-not-found')
     const target = (await this.#log(verified.output.trim()))!
     if (!(await this.#git.tryOutput(['merge-base', '--is-ancestor', target.id, 'HEAD'])).ok) throw new RequestError(404, 'history-revision-not-found')
     const parent = await this.#git.tryOutput(['rev-parse', '--verify', '--quiet', `${target.id}^1`])
@@ -377,7 +377,7 @@ export class Revisions implements RevisionService {
     const changes = await this.#changes('HEAD', lines[0])
     if (changes.length === 0) throw new RequestError(409, 'history-change-already-undone')
     const outside = changes.filter(change => documentDirOf(this.#files.config, change.path) === undefined).map(change => change.path)
-    if (outside.length > 0 && !member.roles.includes('owner')) throw new RequestError(403, `only an owner reverts a change of ${outside.join(', ')}, outside the documents`)
+    if (outside.length > 0 && !member.roles.includes('owner')) throw new RequestError(403, 'history-revert-outside-documents', { paths: outside.slice(0, 6) })
     await guard?.(changes.map(change => change.path))
     const blocked = await this.#uncommitted(changes.map(change => change.path))
     if (blocked.length > 0) return { ok: false as const, conflicts: blocked }

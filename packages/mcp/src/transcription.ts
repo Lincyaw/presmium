@@ -30,10 +30,10 @@ export const TRANSCRIPTION_TOOLS: ToolSpec[] = [
     description: 'Explicitly recognizes the selected saved audio through its real configured provider after host authorization. Uses the workspace HTTP task instance, exact source and audio digest, and client intent. Returns a pollable task without adopting text, selecting a voice or starting TTS. Confirmation is injected by the trusted host, never supplied in request.',
     inputSchema: input({ request: structuredClone(DOCUMENT_TRANSCRIPTION_INPUT_SCHEMA) }, ['request']),
     run: async call => {
-      const selected = await call.document()
-      await call.approve('spend', messages => messages.tool('start_transcription'), { lang: await language(call, selected), detail: JSON.stringify({ document: selected, request: call.args.request }) })
+      const selected = await call.document(), request: DocumentTranscriptionRequest = { ...(call.args.request as Omit<DocumentTranscriptionRequest, 'confirmed'>), confirmed: true }
+      await call.approve('spend', messages => messages.tool('start_transcription'), { lang: await language(call, selected), detail: JSON.stringify({ document: selected, request: call.args.request }), check: () => service(call).checkStart(selected, request, call.caller.member, call.signal) })
       call.signal.throwIfAborted()
-      return service(call).start(selected, { ...(call.args.request as Omit<DocumentTranscriptionRequest, 'confirmed'>), confirmed: true }, call.caller.member, call.signal)
+      return service(call).start(selected, request, call.caller.member, call.signal)
     },
   },
   {
@@ -59,10 +59,12 @@ export const TRANSCRIPTION_TOOLS: ToolSpec[] = [
     description: 'Cancels the original task or records cancellation by client intent before admission, using the workspace task instance. Reports actual cancelling/cancelled state and never compiles or reopens a speech provider. An existing id can be cancelled when canonical JSON is invalid.',
     inputSchema: input({ query }, ['query']),
     run: async call => {
-      const selected = await call.document()
-      await call.approve('operate', messages => messages.tool('cancel_transcription'), { lang: await language(call, selected), detail: JSON.stringify({ document: selected, query: call.args.query }) })
+      const selected = await call.document(), query = call.args.query as { id: string } | { intent: string }
+      const finished = await service(call).checkCancel(selected, query, call.caller.member)
+      if (finished) return finished
+      await call.approve('operate', messages => messages.tool('cancel_transcription'), { lang: await language(call, selected), detail: JSON.stringify({ document: selected, query }) })
       call.signal.throwIfAborted()
-      return service(call).cancel(selected, call.args.query as { id: string } | { intent: string }, call.caller.member)
+      return service(call).cancel(selected, query, call.caller.member)
     },
   },
   {

@@ -209,6 +209,28 @@ export function createDocumentTranscriptions({ root, editor, audio, speech, serv
     if (!sameSource(opened(document, member).binding, current.binding)) throw new RequestError(409, 'document-version-changed')
     return capability
   }
+  /** Everything start checks before it stores a task; a replay of the same intent returns its recorded task. */
+  const admission = async (document: string, request: DocumentTranscriptionRequest, member: Member, signal?: AbortSignal) => {
+    if (!validateDocumentTranscriptionRequest(request)) throw new RequestError(400, 'transcription-request-invalid')
+    if (Buffer.byteLength(JSON.stringify(request)) > TRANSCRIPTION_REQUEST_MAX_BYTES) throw new RequestError(413, 'transcription-request-size')
+    const current = opened(document, member), id = taskId(document, current.content.id, member, request.intent), payload = hash(JSON.stringify([request.source.documentId, request.source.version, request.source.fingerprint, request.assetId, request.audioSha256, request.engine, request.lang ?? null, request.hints ?? []]))
+    const previous = active.get(id) ?? await load(document, member, id)
+    if (previous) {
+      if (previous.record.cancelled) throw new RequestError(409, 'transcription-intent-cancelled')
+      if (previous.record.payload !== payload) throw new RequestError(409, 'transcription-intent-reused')
+      const task = previous.record.task
+      if (!task) throw new RequestError(409, 'transcription-record-invalid')
+      return { current, id, payload, previous: task }
+    }
+    const input = await inspect(document, member, request, signal)
+    const capability = await capabilityOf(request.source, input.services)
+    const engine = capability.engines.find(engine => engine.id === request.engine)
+    if (!capability.available || !engine) throw new RequestError(503, 'transcription-engine-unavailable')
+    signal?.throwIfAborted()
+    if (!sameSource(opened(document, member).binding, request.source)) throw new RequestError(409, 'document-version-changed')
+    if ([...active.values()].some(entry => entry.record.document === document) || [...admitting.values()].some(entry => entry.document === document)) throw new RequestError(409, 'transcription-busy')
+    return { current, id, payload, input, engine }
+  }
   const run = async (entry: Active, request: DocumentTranscriptionRequest, engine: SpeechEngineInfo, input: Awaited<ReturnType<typeof inspect>>) => {
     const task = entry.record.task!, signal = entry.controller.signal
     try {
@@ -282,24 +304,21 @@ export function createDocumentTranscriptions({ root, editor, audio, speech, serv
       }
       return answer
     },
+    async checkStart(document, request, member, signal) { await admission(document, request, member, signal) },
+    async checkCancel(document, query, member) {
+      const id = resolveId(document, member, query)
+      if (admitting.has(id)) return undefined
+      const running = active.get(id), entry = running ?? await load(document, member, id)
+      if (!entry) { if ('intent' in query) return undefined; throw new RequestError(404, 'transcription-task-missing') }
+      const task = entry.record.task
+      // A journal left queued or running by an interrupted owner is still corrected by cancel.
+      if (task && (running ? task.state === 'queued' || task.state === 'running' : ['queued', 'running', 'cancelling'].includes(task.state))) return undefined
+      return { intent: entry.record.intent, state: task?.state ?? 'cancelled', ...task ? { task: await present(document, member, task) } : {} }
+    },
     async start(document, request, member, signal) {
-      if (!validateDocumentTranscriptionRequest(request)) throw new RequestError(400, 'transcription-request-invalid')
-      if (Buffer.byteLength(JSON.stringify(request)) > TRANSCRIPTION_REQUEST_MAX_BYTES) throw new RequestError(413, 'transcription-request-size')
-      const current = opened(document, member), id = taskId(document, current.content.id, member, request.intent), payload = hash(JSON.stringify([request.source.documentId, request.source.version, request.source.fingerprint, request.assetId, request.audioSha256, request.engine, request.lang ?? null, request.hints ?? []]))
-      const previous = active.get(id) ?? await load(document, member, id)
-      if (previous) {
-        if (previous.record.cancelled) throw new RequestError(409, 'transcription-intent-cancelled')
-        if (previous.record.payload !== payload) throw new RequestError(409, 'transcription-intent-reused')
-        if (!previous.record.task) throw new RequestError(409, 'transcription-record-invalid')
-        return present(document, member, previous.record.task)
-      }
-      const input = await inspect(document, member, request, signal)
-      const capability = await capabilityOf(request.source, input.services)
-      const engine = capability.engines.find(engine => engine.id === request.engine)
-      if (!capability.available || !engine) throw new RequestError(503, 'transcription-engine-unavailable')
-      signal?.throwIfAborted()
-      if (!sameSource(opened(document, member).binding, request.source)) throw new RequestError(409, 'document-version-changed')
-      if ([...active.values()].some(entry => entry.record.document === document) || [...admitting.values()].some(entry => entry.document === document)) throw new RequestError(409, 'transcription-busy')
+      const admitted = await admission(document, request, member, signal)
+      if (admitted.previous) return present(document, member, admitted.previous)
+      const { current, id, payload, input, engine } = admitted
       const controller = new AbortController()
       let finished!: () => void
       admitting.set(id, { document, documentId: current.content.id, member: member.id, intent: request.intent, controller, finished: new Promise<void>(resolve => { finished = resolve }) })

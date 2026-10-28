@@ -92,6 +92,15 @@ export function createDocumentVoiceAuthoring({ editor, services, revision }: Doc
       return { ...value, current: value.job ? isCurrent(document, member, value.job) : 'unknown' }
     },
     start: (document, request, member, signal) => ownerOf(document, member).start(request, execution(document, member), signal),
+    checkStart: (document, request, member, signal) => ownerOf(document, member).checkStart(request, execution(document, member), signal),
+    checkCancel: async (document, query, member) => ownerOf(document, member).checkCancel(query),
+    checkPreview: async (document, request, member, signal) => {
+      if (!validateVoicePreviewStart(request)) throw new RequestError(400, 'voice-preview-invalid')
+      const owner = ownerOf(document, member)
+      current(document, member, request.source)
+      await owner.checkPreview(request, signal)
+      current(document, member, request.source)
+    },
     cancel: async (document, query, member) => ownerOf(document, member).cancel(query),
     quotePreview: (document, query, member, signal) => ownerOf(document, member).quote(query, execution(document, member), signal),
     preview: (document, request, member, signal) => {

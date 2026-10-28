@@ -2,8 +2,8 @@ import type { CanonicalSource } from '../ir.ts'
 import type { Finding } from './checks.ts'
 import type { Member } from './server.ts'
 import type { SpeechEngineInfo } from './speech.ts'
-import type { VoiceCatalogAnswer } from './voice.ts'
-import type { DocumentVoiceTasks } from './voiceover-execution.ts'
+import type { VoiceCatalogAnswer, VoiceoverCancellation } from './voice.ts'
+import type { DocumentVoiceTasks, VoiceoverJobQuery, VoiceoverStart, VoicePreviewStart } from './voiceover-execution.ts'
 
 export interface DocumentVoiceCapabilities {
   document: string
@@ -27,6 +27,11 @@ export interface DocumentVoiceCatalogAnswer extends VoiceCatalogAnswer { documen
 export interface DocumentVoiceAuthoring extends DocumentVoiceTasks {
   capabilities(document: string, member: Member, signal?: AbortSignal): Promise<DocumentVoiceCapabilities>
   catalog(document: string, query: DocumentVoiceCatalogQuery, member: Member, signal?: AbortSignal): Promise<DocumentVoiceCatalogAnswer>
+  /** Checks a start or preview with the same path as the action, without synthesizing, so an agent asks only for one that would run. */
+  checkStart(document: string, request: VoiceoverStart, member: Member, signal?: AbortSignal): Promise<void>
+  checkPreview(document: string, request: VoicePreviewStart, member: Member, signal?: AbortSignal): Promise<void>
+  /** Undefined when there is something to cancel; otherwise the unchanged state that cancel would report. */
+  checkCancel(document: string, query: VoiceoverJobQuery, member: Member): Promise<VoiceoverCancellation | undefined>
 }
 
 export const DOCUMENT_VOICE_CATALOG_SCHEMA = {

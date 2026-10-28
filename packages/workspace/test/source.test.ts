@@ -60,7 +60,6 @@ describe('the source routes', () => {
   it('refuses another document\'s file, and the workspace\'s configuration, to a document\'s page (403)', async () => {
     const opened = await read('intro/lecture.md')
     expect(opened.status).toBe(403)
-    expect(opened.json().error).toMatch(/is not a file this page edits/)
     expect((await read('presmium.workspace.yaml')).status).toBe(403)
     const before = file('intro/lecture.md')
     expect((await save('intro/lecture.md', 'from the guide', 'x')).status).toBe(403)
