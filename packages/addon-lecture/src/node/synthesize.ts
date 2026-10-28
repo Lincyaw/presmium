@@ -1,3 +1,6 @@
+import { createHash } from 'node:crypto'
+import { createReadStream } from 'node:fs'
+import { stat } from 'node:fs/promises'
 import { basename, relative } from 'node:path'
 import { errorMessage, recordingSourceRange, remapWords } from '@lincyaw/kernel'
 import type { IRDocument, ProductionDiagnostic, SpeechService, SynthesisRequest, WordSpan, WrittenWord } from '@lincyaw/kernel'
@@ -5,6 +8,7 @@ import { irHash, plannedUtterances, referencedBlocks, SCRIPT_TRACK, scriptTrack,
 import type { Clip, CutAnimation, LecturePlan, LectureTrack, LectureVoice, RecordingClip, Voice } from '../domain/index.ts'
 import type { DeckPlan } from './plan.ts'
 import { deckPlan } from './plan.ts'
+import { applyCaptionTimings } from '../domain/caption-timing.ts'
 import { projectProductionPlan } from '../domain/production.ts'
 import { placeProductionAudio, productionAudioMessage } from '../domain/production-audio.ts'
 import { inspectProductionAssets } from './production-assets.ts'
@@ -20,7 +24,10 @@ export interface SynthesisOptions {
   assertCurrent?: () => Promise<void>
 }
 
+const audioStamp = async (path: string) => { const s = await stat(path); return [s.dev, s.ino, s.size, s.mtimeMs, s.ctimeMs].join(':') }
+
 export interface SynthesizedClip extends Clip {
+  stamp: string
   path: string
   key: string
   engine: string
@@ -48,7 +55,11 @@ export async function synthesizeClip(speech: SpeechService, said: { text: string
     ? synthesis.words
     : await speech.alignWords?.(synthesis.key, { lang: options.lang, transcribe: !options.cacheOnly && options.alignByTranscription !== false }, signal)
   const words: WrittenWord[] | undefined = engineWords && remapWords(engineWords, said.text, said.spoken, said.spans)
+  const stamp = await audioStamp(synthesis.audio), digest = createHash('sha256')
+  for await (const chunk of createReadStream(synthesis.audio, { signal })) digest.update(chunk)
+  if (await audioStamp(synthesis.audio) !== stamp) throw new Error('production-media-changed')
   return {
+    stamp, sha256: digest.digest('hex'),
     file: basename(synthesis.audio),
     path: synthesis.audio,
     duration: synthesis.duration,
@@ -116,6 +127,7 @@ export async function synthesizePlan(speech: SpeechService, plan: LecturePlan, o
 }
 
 export interface SynthesizedLecture {
+  captionDiagnostics?: ProductionDiagnostic[]
   deck: DeckPlan
   /** The lecture, every sentence said; none when one could not be. */
   track?: LectureTrack
@@ -159,6 +171,7 @@ export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech
   }, events => referencedBlocks(doc, events), unsaid, new Set(units.filter(unit => unit.sourceKind === 'none').map(unit => unit.id)), recordings)
   const base = projectProductionPlan(doc, deck.plan, track, new Map(), synthesized.failures, recordingDiagnostics)
   const media = placeProductionAudio(doc, base.pages, new Map([...assets.assets].map(([id, file]) => [id, file.asset])), assets.errors)
+  const captionDiagnostics = applyCaptionTimings(doc, track, base.pages)
   const mediaDiagnostics: ProductionDiagnostic[] = [...recordingDiagnostics, ...media.issues.map(issue => ({ ...issue, severity: 'error' as const, message: productionAudioMessage(doc, issue.code) }))]
   if (media.clips.length) track.audio = [...track.audio ?? [], ...media.clips.map(clip => {
     const file = assets.assets.get(clip.assetId)!
@@ -166,7 +179,7 @@ export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech
   })]
   await options.assertCurrent?.()
   signal?.throwIfAborted()
-  const common = { deck, preview: track, clips: synthesized.clips, failures: synthesized.failures, assets: assets.assets, mediaDiagnostics }
+  const common = { deck, captionDiagnostics, preview: track, clips: synthesized.clips, failures: synthesized.failures, assets: assets.assets, mediaDiagnostics }
   if (synthesized.failures.length > 0 || mediaDiagnostics.length || deck.findings.some(finding => finding.severity === 'error')) return { ...common, cuts: [] }
   return { ...common, track, cuts }
 }

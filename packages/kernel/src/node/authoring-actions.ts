@@ -31,6 +31,8 @@ export const DOCUMENT_AUTHORING_ACTION_SCHEMA: Schema = {
       action('comment.resolve', { threadId: id }), action('comment.reopen', { threadId: id }),
       action('comment.delete', { threadId: id, commentId: id }, ['threadId']),
       action('voice.set', { scope, source: voice, replaceOverrides: { type: 'boolean' } }, ['scope', 'source']),
+      action('caption.timing.set', { stepId: id, value: { $ref: '#/$defs/CaptionTiming' } }),
+      action('caption.timing.reset', { stepId: id }),
       action('component.parameters.patch', { blockId: id, changes }),
       action('component.step-parameters.patch', { blockId: id, stepId: id, changes }),
       action('component.step-parameters.reset', { blockId: id, stepId: id }),

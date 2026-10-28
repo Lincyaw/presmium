@@ -104,7 +104,7 @@ export function removeDocumentPage(source: TeachingDocument, section: string, al
   if (impact.references.length) throw new Error('page-referenced')
   const document = structuredClone(source), page = document.sections[section]!
   for (const id of impact.blocks) delete document.blocks[id]
-  for (const id of impact.steps) { delete document.steps[id]; delete document.production.stepOverrides[id] }
+  for (const id of impact.steps) { delete document.steps[id]; delete document.production.stepOverrides[id]; if (document.production.captionTimings) delete document.production.captionTimings[id] }
   for (const id of impact.narrations) { delete document.narrations[id]; if (document.production.narrationOverrides) delete document.production.narrationOverrides[id] }
   for (const id of impact.cues) if (document.production.cueTimings) delete document.production.cueTimings[id]
   if (document.production.sectionOverrides) delete document.production.sectionOverrides[section]
@@ -176,6 +176,12 @@ export function duplicateDocumentPage(source: TeachingDocument, section: string,
     if (step.inherits) step.inherits = reference(step.inherits)
     document.steps[step.id] = step
     if (document.production.stepOverrides[stepId]) document.production.stepOverrides[step.id] = structuredClone(document.production.stepOverrides[stepId]!)
+    const timing = source.production.captionTimings?.[stepId]
+    // A copied identity needs a new explicit media/time confirmation; retain the proposal as stale.
+    if (timing) {
+      document.production.captionTimings ??= {}
+      document.production.captionTimings[step.id] = { ...structuredClone(timing), narrationIds: timing.narrationIds.map(reference) }
+    }
   }
   if (document.production.sectionOverrides?.[section]) document.production.sectionOverrides[id] = structuredClone(document.production.sectionOverrides[section]!)
   for (const clip of source.production.mediaClips) if (page.stepOrder.includes(clip.attachment.stepId)) {

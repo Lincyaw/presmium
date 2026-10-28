@@ -59,7 +59,7 @@ export interface ProductionSegment extends ProductionRange {
   utteranceId?: string
   label: string
   status?: 'cached' | 'recorded' | 'silent' | 'missing' | 'blocked'
-  alignment?: 'words' | 'proportional' | 'none'
+  alignment?: 'words' | 'proportional' | 'none' | 'manual'
   audio?: ProductionAudio
   /** Imported media is distinct from a synthesized speech-cache entry. */
   media?: ProductionAssetInspection
@@ -72,7 +72,15 @@ export interface ProductionSegment extends ProductionRange {
   waveformStatus?: 'available' | 'unavailable'
 }
 export interface ProductionTrack { kind: 'visual' | 'voice' | 'caption', segments: ProductionSegment[] }
-export interface ProductionStep extends ProductionRange { stepId: string, index: number, holdMs?: number, animationMs?: number }
+export interface CaptionTimingSource {
+  available: boolean
+  reason?: string
+  sourceFingerprint: string
+  playbackFingerprint?: string
+  durationMs?: number
+  narrationIds: string[]
+}
+export interface ProductionStep extends ProductionRange { captionTiming?: CaptionTimingSource, stepId: string, index: number, holdMs?: number, animationMs?: number }
 export interface ProductionPage extends ProductionRange { sectionId: string, title: string, steps: ProductionStep[] }
 export interface ProductionDiagnostic {
   code: string

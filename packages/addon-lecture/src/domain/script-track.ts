@@ -10,6 +10,7 @@ export interface Clip {
   duration: number
   words?: WrittenWord[]
   speech?: Voice
+  sha256?: string
 }
 
 export interface RecordingClip {
@@ -100,6 +101,7 @@ export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>,
           if (piece.id && clip) {
             utterance = { id: piece.id, t, d: Math.round(clip.duration * 1000), text: piece.text, section: section.id, step: section.webStep(current), clip: clip.file }
             if (clip.speech) utterance.voice = clip.speech
+            if (clip.sha256) utterance.audioSha256 = clip.sha256
             if (clip.words?.length) { utterance.words = trackWords(clip.words, t); utterance.alignment = 'words' }
             else utterance.alignment = 'proportional'
             utterances.push(utterance)

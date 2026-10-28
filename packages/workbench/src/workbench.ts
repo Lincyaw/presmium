@@ -1,3 +1,6 @@
+import { applyDocumentCaptionTiming } from '@lincyaw/kernel'
+import type { DocumentCaptionTimingAction } from '@lincyaw/kernel'
+import { reconcileCaptionTiming } from './caption-timing.ts'
 import type { ProjectOperation, ProjectPlan } from '@lincyaw/kernel'
 import { undoDepth, redoDepth } from '@tiptap/pm/history'
 import { TextSelection } from '@tiptap/pm/state'
@@ -1469,6 +1472,36 @@ export class Workbench {
           if (!applyDocumentComponentAction(current.content, action).effect.changed) return remember({ document: source.directory, content: plan.content,
             version: current.version, fingerprint: current.fingerprint, issues: plan.issues, changeId: plan.changeId, files: plan.files.map(value => ({ path: value.path, version: value.version })) })
         } catch { /* A later conflicting input keeps the original request failure and form draft. */ }
+      }
+      throw error
+    }
+  }
+  /** Manual caption times reuse the canonical action plan, media preflight and original source actor. */
+  async applyDocumentCaptionTiming(action: DocumentCaptionTimingAction, id: string, expected: { identity: string, version: string, fingerprint: string }, signal?: AbortSignal): Promise<DocumentChangeAnswer> {
+    const source = this.#mediaSource(expected), scope = this.#documentScope
+    if (!source.content || source.fingerprint !== expected.fingerprint) throw new Error('caption-source-changed')
+    const request = { id, source: componentSource({ content: source.content, version: source.version!, fingerprint: source.fingerprint! }), action }
+    const plan = await this.client.planDocumentAction(source.directory, request, signal)
+    signal?.throwIfAborted()
+    if (scope !== this.#documentScope || this.#state.authoring?.identity !== expected.identity || plan.effect.kind !== 'caption'
+      || plan.changeId !== id || JSON.stringify(plan.action) !== JSON.stringify(action) || !sameComponentSource(plan.source, request.source)) throw new Error('caption-source-changed')
+    this.#playback.stopPreviewOutputs()
+    await this.pausePlayback()
+    try {
+      return await this.#documentSession.commitExternal(expected, async (_before, ownedSignal) => {
+        const receipt = await this.client.applyDocumentAction(source.directory, { planId: plan.planId, digest: plan.digest, source: plan.source }, ownedSignal)
+        const actual = await this.client.readDocument(source.directory)
+        if (receipt.planId !== plan.planId || receipt.digest !== plan.digest || receipt.changeId !== id || !receipt.verification.saved || !receipt.verification.actionStateVerified
+          || !sameComponentSource(receipt.verification.source, componentSource(actual))) throw new Error('document-confirmation')
+        return { ...actual, changeId: id, files: receipt.files }
+      }, (before, answer, current) => reconcileCaptionTiming(action, before, answer, current), signal)
+    } catch (error) {
+      const current = this.#state.authoring, file = plan.files.find(file => file.path === (source.directory ? `${source.directory}/lecture.json` : 'lecture.json'))
+      // Lost ACK was independently read by commitExternal; only the exact predicted saved version can settle it.
+      if (scope === this.#documentScope && current?.identity === expected.identity && current.content && current.version === file?.version && current.fingerprint && !current.error) {
+        try {
+          if (!applyDocumentCaptionTiming(current.content, action).effect.changed) return { document: source.directory, content: plan.content, version: current.version!, fingerprint: current.fingerprint, changeId: id, issues: plan.issues, files: plan.files.map(({ path, version }) => ({ path, version })) }
+        } catch { /* A newer target stays pending with the actual request error. */ }
       }
       throw error
     }

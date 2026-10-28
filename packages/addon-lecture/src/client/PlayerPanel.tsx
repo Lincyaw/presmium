@@ -113,17 +113,19 @@ export default function PlayerPanel(_props: { view?: string }) {
     lang && lang !== player?.track.lang
       ? (u.translations?.[lang]?.text ?? u.text)
       : captionGroupAt(groupedCaptions.get(u.id) ?? [], time)?.text ?? u.text
-  const caption = selectedCaptions ? selectedCaptions.map(text).join(' ') : current ? text(current) : undefined
+  const manual = player?.track.captionOverrides?.find(own => own.startMs <= time && time < own.endMs), manualText = manual && captionGroupAt(manual.groups, time)?.text
+  const originalLanguage = !lang || lang === player?.track.lang
+  const caption = manual && originalLanguage ? manualText : selectedCaptions ? selectedCaptions.map(text).join(' ') : current ? text(current) : undefined
   const burned =
-    burnedCaptions && current && player
-      ? burnedCaptions === player.track.lang ? text(current) : captionText(player.track, current, burnedCaptions)
+    burnedCaptions && player && (current || manual)
+      ? burnedCaptions === player.track.lang ? manual ? manualText : current && text(current) : current && captionText(player.track, current, burnedCaptions)
       : undefined
   const stale = new Set(
     player && lang && lang !== player.track.lang
       ? player.track.utterances.filter((u) => isStale(u, lang)).map((u) => u.id)
       : [],
   )
-  if (controlled) return player && current && caption ? <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang} /> : null
+  if (controlled) return player && (current || manual) && caption ? <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang} /> : null
   if (!id) return null
   if (exporting) return player ? <div className="pm-lecture-layer">
     <div className="pm-lecture-export" data-time={Math.round(time)} data-clip={current?.clip}>
@@ -157,8 +159,8 @@ export default function PlayerPanel(_props: { view?: string }) {
     else if (option === 'close') play(undefined)
   }
   return <>
-    {(captions || current?.unsaid) && current && caption && <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang}
-      data-stale={stale.has(current.id) ? 'true' : undefined} hint={stale.has(current.id) ? t.player.stale : undefined} />}
+    {(captions || current?.unsaid) && (current || manual) && caption && <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang}
+      data-stale={current && stale.has(current.id) ? 'true' : undefined} hint={current && stale.has(current.id) ? t.player.stale : undefined} />}
     {panel && <PmDrawer open label={panel === 'transcript' ? t.player.transcript : t.player.chapters} onClose={() => setPanel(undefined)}>
       <PmTabs value={panel} onValueChange={value => setPanel(value as 'transcript' | 'chapters')}
         tabs={[{ value: 'transcript', label: t.player.transcript }, { value: 'chapters', label: t.player.chapters }]} label={t.player.sideTabs} />
