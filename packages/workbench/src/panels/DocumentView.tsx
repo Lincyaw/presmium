@@ -57,6 +57,12 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   const currentScope = useRef({ document, active })
   currentScope.current = { document, active }
   const [navigation, setNavigation] = useState(() => typeof matchMedia === 'function' && matchMedia(ROOMY).matches)
+  // Where the pane covers the page, another document opens with it closed, so its body is not hidden.
+  const [navigationDocument, setNavigationDocument] = useState(document)
+  if (navigationDocument !== document) {
+    setNavigationDocument(document)
+    if (navigation && typeof matchMedia === 'function' && !matchMedia(ROOMY).matches) setNavigation(false)
+  }
   const compilePresentation = async (ready?: () => void): Promise<void> => {
     if (workbench.getState().isPreparingPresentation) return
     const generation = ++transition.current, identity = workbench.getState().authoring?.identity

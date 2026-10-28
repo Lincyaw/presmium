@@ -631,6 +631,8 @@ export class Workbench {
     if (source.identity !== basis.identity || source.reset !== basis.reset || source.version !== basis.version || source.content !== basis.content) { this.#cancelOpeningDocument(); return }
     const editor = this.#documentEditor, binding = this.#documentEditorBinding, viewport = this.#documentViewport
     if (!editor || editor.prosemirrorView.isDestroyed || binding?.identity !== source.identity || binding.reset !== source.reset || viewport?.identity !== source.identity) return
+    // The editor can mount read-only while the source is still loading; a read-only body cannot take the caret yet.
+    if (pending.focus && !editor.isEditable) return
     this.#cancelOpeningDocument()
     if (pending.focus) {
       const body = (blocks: typeof editor.document, sectionId?: string): { nodeId: string, sectionId: string } | undefined => {
@@ -689,6 +691,9 @@ export class Workbench {
     this.#finishOpeningDocument()
     return () => { if (this.#documentViewport === viewport) { this.#saveDocumentReturnPoint(); this.#stopDocumentReturnScroll?.(); this.#documentViewport = undefined }; viewport.stop() }
   }
+
+  /** The body editor became editable: an opening that waits to put the caret in it can finish now. */
+  documentEditorEditable(): void { this.#finishOpeningDocument() }
 
   async openDocument(dir: string, options: { focus?: 'body', expectedIdentity?: string, fallbackReturnPoint?: DocumentReturnPoint } = {}): Promise<void> {
     if (this.#state.document === dir) {
