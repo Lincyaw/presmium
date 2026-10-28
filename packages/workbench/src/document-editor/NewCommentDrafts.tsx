@@ -45,7 +45,9 @@ export function NewCommentDraftProvider({ children }: { children?: ReactNode }) 
   const restore = async (candidate: CommentDraftCandidate, current = () => true) => {
     const store = context?.store, drafts = store?.drafts, target = candidate.target
     if (!store || !drafts || !isNewCommentDraft(target) || candidate.storage !== 'durable' || editor.prosemirrorView.isDestroyed || editor.prosemirrorView.composing) return
-    const request = ++operation.current, binding = latest.current, input = binding?.input, record = binding?.record
+    const binding = latest.current
+    if (binding?.record && !drafts.owns(binding.record)) binding.record = undefined
+    const request = ++operation.current, input = binding?.input, record = binding?.record
     try {
       store.beforeAction?.()
       if (!store.auth.canCreateThread() || store.draftTargetState(target) !== 'current' || !store.newDraftPositions(target, editor)) { setFailure(true); return }
@@ -149,6 +151,13 @@ function NewCommentEditor(props: ComponentProps['Comments']['Editor']) {
         nativeRichTextToProduct(props.editor.document as DocumentEditorBlock[], rich), binding.composing, binding.record) ?? binding.record
     })
     return () => { stop(); if (original && guarded && !props.editor.prosemirrorView.isDestroyed && props.editor.getExtension(CommentEditorSubmitExtension) === guarded) props.editor.replaceExtension(guarded, original) }
+  }, [binding, drafts, props.editor])
+  const composerId = useRef(crypto.randomUUID())
+  useLayoutEffect(() => {
+    if (!binding || !drafts || !context) return
+    return drafts.registerComposer({ id: composerId.current, target: binding.target,
+      snapshot: () => { const available = binding.active && !submitting.current && !props.editor.prosemirrorView.isDestroyed; return { record: binding.record, composing: binding.composing || available && props.editor.prosemirrorView.composing, available } },
+      targetState: () => context.store.draftTargetState(binding.target) })
   }, [binding, drafts, props.editor])
   const t = DOCUMENT_EDITOR_MESSAGES[context?.locale ?? 'en']
   const composition = (value: boolean) => {

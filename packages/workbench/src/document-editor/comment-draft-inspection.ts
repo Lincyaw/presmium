@@ -3,13 +3,13 @@ import { isNewCommentDraft } from './comment-drafts.ts'
 import { authoringDraftFragment, draftContentHash as hash } from '../authoring-draft-fragment.ts'
 import type { CommentDraftCandidate, CommentDrafts } from './comment-drafts.ts'
 
-const reference = (value: CommentDraftCandidate) => ({ id: value.id, revision: value.revision, token: value.token })
+export const commentDraftReference = (value: CommentDraftCandidate) => ({ id: value.id, revision: value.revision, token: value.token })
 
 /** Only these fields may leave the client during inspection. Target signatures and baselines contain prose. */
-function metadata(value: CommentDraftCandidate): ClientCommentDraftMetadata {
+export function commentDraftMetadata(value: CommentDraftCandidate, drafts: CommentDrafts): ClientCommentDraftMetadata {
   const target = value.target
-  return { draft: reference(value), kind: isNewCommentDraft(target) ? 'create' : target.commentId ? 'edit' : 'reply', storage: value.storage,
-    updatedAt: value.updatedAt, baseVersion: value.version, composing: value.composing, pendingSubmission: Boolean(value.pending),
+  return { draft: commentDraftReference(value), kind: isNewCommentDraft(target) ? 'create' : target.commentId ? 'edit' : 'reply', storage: value.storage,
+    updatedAt: value.updatedAt, baseVersion: value.version, composing: value.composing, pendingSubmission: Boolean(value.pending), ownersKnown: drafts.ownersKnown, active: drafts.activeRecord(value), discardable: !value.composing && !value.pending && !drafts.targetActive(value.target),
     ...isNewCommentDraft(target) ? {} : { threadId: target.threadId, ...target.commentId ? { commentId: target.commentId } : {} } }
 }
 
@@ -17,7 +17,7 @@ export async function inspectCommentDrafts(drafts: CommentDrafts, action: Extrac
   const read = await drafts.readForAgent(signal, action.type === 'comment-drafts.read' ? action.draft : undefined)
   const current = () => { signal.throwIfAborted(); if (drafts.revision !== read.revision) throw new Error('client-comment-drafts-changed') }
   if (action.type === 'comment-drafts.inspect') {
-    const values = read.candidates.map(metadata), token = await hash(JSON.stringify({ values, coverage: read.coverage, skippedInvalid: read.skippedInvalid }))
+    const values = await Promise.all(read.candidates.map(async value => { const restore = await drafts.restoreChoice(value, signal); return { ...commentDraftMetadata(value, drafts), ...restore ? { restore } : {} } })), token = await hash(JSON.stringify({ values, coverage: read.coverage, skippedInvalid: read.skippedInvalid }))
     current()
     if (action.cursor && action.cursor.token !== token) throw new Error('client-comment-drafts-changed')
     const start = action.cursor ? values.findIndex(value => value.draft.id === action.cursor!.after) + 1 : 0
@@ -34,5 +34,5 @@ export async function inspectCommentDrafts(drafts: CommentDrafts, action: Extrac
     return result
   }
   const value = read.candidates[0]!
-  return authoringDraftFragment({ text: JSON.stringify(value.content), base: { type: action.type, family: 'comment', draft: reference(value), storage: value.storage, format: 'presmium-rich-text-json-v1' }, offset: action.offset, maxChars: action.maxChars }, current, fits)
+  return authoringDraftFragment({ text: JSON.stringify(value.content), base: { type: action.type, family: 'comment', draft: commentDraftReference(value), storage: value.storage, format: 'presmium-rich-text-json-v1' }, offset: action.offset, maxChars: action.maxChars }, current, fits)
 }

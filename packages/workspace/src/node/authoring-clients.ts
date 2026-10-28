@@ -68,7 +68,7 @@ export function createAuthoringClients(editor: SourceEditor) {
       if (!validateAuthoringClientQuery(query)) throw new RequestError(400, 'client-query-invalid')
       const all = [...clients.values()].filter(client => client.member === member.id && client.value.document === document && (!query.clientId || client.value.clientId === query.clientId)
         && (!query.after || client.value.clientId > query.after)).sort((a, b) => a.value.clientId.localeCompare(b.value.clientId))
-      const answer = { document, clients: [] as AuthoringClientDescriptor[], unavailable: ['recording', 'comment-draft-restore', 'comment-draft-discard', 'timing-drafts', 'recording-drafts', 'review', 'open-document'] }
+      const answer = { document, clients: [] as AuthoringClientDescriptor[], unavailable: ['recording', 'new-comment-restore', 'active-comment-discard', 'timing-drafts', 'recording-drafts', 'review', 'open-document'] }
       for (const client of all) {
         const row = structuredClone(client.value)
         if (size({ ...answer, clients: [...answer.clients, row], nextAfter: row.clientId }) > AUTHORING_CLIENT_MAX_RESPONSE_CHARS) break
@@ -156,7 +156,7 @@ export function createAuthoringClients(editor: SourceEditor) {
     if (ack.result && (!family || ack.state !== 'done' || ack.result.type !== action.type || ack.result.family !== family)) throw new RequestError(400, 'client-result-invalid')
     if (family && ack.state === 'done') {
       const result = ack.result
-      const mutation = action.type === 'component-drafts.restore' || action.type === 'component-drafts.discard'
+      const mutation = action.type === 'component-drafts.restore' || action.type === 'component-drafts.discard' || action.type === 'comment-drafts.restore' || action.type === 'comment-drafts.discard'
       if (!result || (mutation ? ack.snapshot.revision <= pending.request.expectedClientState.revision : ack.snapshot.revision !== pending.request.expectedClientState.revision)) throw new RequestError(409, `client-${family}-drafts-changed`)
       if (!authoringClientResultFits({ request: pending.request, connection: client.value, document, snapshot: ack.snapshot }, result)) throw new RequestError(413, `client-${family}-result-too-large`)
       if ((action.type === 'comment-drafts.read' || action.type === 'component-drafts.read') && (result.type !== action.type || result.draft.id !== action.draft.id || result.draft.revision !== action.draft.revision || result.draft.token !== action.draft.token
@@ -165,6 +165,11 @@ export function createAuthoringClients(editor: SourceEditor) {
         || result.jsonText.length > (action.maxChars ?? 2048))) throw new RequestError(400, 'client-result-invalid')
       if ((action.type === 'comment-drafts.inspect' || action.type === 'component-drafts.inspect') && (result.type !== action.type || result.drafts.length > (action.limit ?? 10)
         || action.cursor && action.cursor.token !== result.token || result.next && result.next.token !== result.token)) throw new RequestError(400, 'client-result-invalid')
+      const sameComment = (a: import('@lincyaw/kernel').ClientCommentDraftReference | null, b: import('@lincyaw/kernel').ClientCommentDraftReference | null) => a === null || b === null ? a === b
+        : a.id === b.id && a.revision === b.revision && a.token === b.token
+      if (action.type === 'comment-drafts.restore' && (result.type !== action.type || !sameComment(result.draft, action.draft) || result.composerId !== action.composerId
+        || !sameComment(result.preservedCurrent, action.expectedCurrent) || result.restored.revision !== 1 || result.restored.id === action.draft.id || result.restored.id === action.expectedCurrent?.id)) throw new RequestError(400, 'client-result-invalid')
+      if (action.type === 'comment-drafts.discard' && (result.type !== action.type || !sameComment(result.draft, action.draft) || !result.discarded)) throw new RequestError(400, 'client-result-invalid')
       const sameDraft = (a: import('@lincyaw/kernel').ClientComponentDraftReference | null, b: import('@lincyaw/kernel').ClientComponentDraftReference | null) => a === null || b === null ? a === b
         : a.id === b.id && a.revision === b.revision && a.token === b.token && a.blockId === b.blockId && a.stepId === b.stepId
       if (action.type === 'component-drafts.restore' && (result.type !== action.type || !sameDraft(result.draft, action.draft) || !sameDraft(result.preservedCurrent, action.expectedCurrent)

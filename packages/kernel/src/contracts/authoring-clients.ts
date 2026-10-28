@@ -12,7 +12,7 @@ export const AUTHORING_CLIENT_MAX_REQUESTS = 64
 export const AUTHORING_CLIENT_REQUEST_TIMEOUT_MS = 30000
 export const AUTHORING_CLIENT_ACK_MAX_BYTES = 32768
 export const AUTHORING_CLIENT_EVENT_MAX_BYTES = 8 << 10
-export const AUTHORING_CLIENT_ACTIONS = ['state.read', 'source.flush', 'preview.prepare', 'comment-drafts.inspect', 'comment-drafts.read', 'component-drafts.inspect', 'component-drafts.read', 'component-drafts.restore', 'component-drafts.discard', 'playback.pause', 'position.step', 'playback.play', 'playback.seek', 'playback.rate'] as const
+export const AUTHORING_CLIENT_ACTIONS = ['state.read', 'source.flush', 'preview.prepare', 'comment-drafts.inspect', 'comment-drafts.read', 'comment-drafts.restore', 'comment-drafts.discard', 'component-drafts.inspect', 'component-drafts.read', 'component-drafts.restore', 'component-drafts.discard', 'playback.pause', 'position.step', 'playback.play', 'playback.seek', 'playback.rate'] as const
 export type AuthoringClientActionType = typeof AUTHORING_CLIENT_ACTIONS[number]
 export type AuthoringClientAction =
   | { type: 'state.read' }
@@ -20,6 +20,8 @@ export type AuthoringClientAction =
   | { type: 'preview.prepare' }
   | { type: 'comment-drafts.inspect', cursor?: { after: string, token: string }, limit?: number }
   | { type: 'comment-drafts.read', draft: ClientCommentDraftReference, offset: number, maxChars?: number }
+  | { type: 'comment-drafts.restore', draft: ClientCommentDraftReference, composerId: string, expectedCurrent: ClientCommentDraftReference | null }
+  | { type: 'comment-drafts.discard', draft: ClientCommentDraftReference }
   | { type: 'component-drafts.inspect', cursor?: { after: string, token: string }, limit?: number }
   | { type: 'component-drafts.read', draft: ClientComponentDraftReference, offset: number, maxChars?: number }
   | { type: 'component-drafts.restore', draft: ClientComponentDraftReference, expectedCurrent: ClientComponentDraftReference | null }
@@ -54,12 +56,18 @@ export interface ClientCommentDraftMetadata {
   baseVersion: string
   composing: boolean
   pendingSubmission: boolean
+  ownersKnown: boolean
+  active: boolean
+  discardable: boolean
+  restore?: { composerId: string, expectedCurrent: ClientCommentDraftReference | null }
   threadId?: string
   commentId?: string
 }
 export type AuthoringClientActionResult =
   | { type: 'comment-drafts.inspect', family: 'comment', coverage: 'stored-and-session' | 'session-only', skippedInvalid: number, token: string, drafts: ClientCommentDraftMetadata[], next?: { after: string, token: string } }
   | { type: 'comment-drafts.read', family: 'comment', draft: ClientCommentDraftReference, storage: 'durable' | 'session', format: 'presmium-rich-text-json-v1', offset: number, endOffset: number, totalUtf16: number, totalUtf8: number, sha256: string, jsonText: string }
+  | { type: 'comment-drafts.restore', family: 'comment', draft: ClientCommentDraftReference, composerId: string, restored: ClientCommentDraftReference, preservedCurrent: ClientCommentDraftReference | null, targetState: 'current' | 'changed' }
+  | { type: 'comment-drafts.discard', family: 'comment', draft: ClientCommentDraftReference, discarded: true }
   | { type: 'component-drafts.inspect', family: 'component', coverage: 'stored-and-session' | 'session-only', skippedInvalid: number, token: string, drafts: ClientComponentDraftMetadata[], next?: { after: string, token: string } }
   | { type: 'component-drafts.read', family: 'component', draft: ClientComponentDraftReference, storage: 'durable' | 'session', format: 'presmium-component-parameters-json-v1', offset: number, endOffset: number, totalUtf16: number, totalUtf8: number, sha256: string, jsonText: string }
   | { type: 'component-drafts.restore', family: 'component', draft: ClientComponentDraftReference, restored: ClientComponentDraftMetadata, preservedCurrent: ClientComponentDraftReference | null }
@@ -158,11 +166,15 @@ const draftReference = object({ id: entity, revision: { type: 'integer', minimum
 const componentDraftReference = object({ id: entity, revision: { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER }, token: digest, blockId: entity, stepId: entity }, ['id', 'revision', 'token', 'blockId'])
 const componentMetadata = object({ draft: componentDraftReference, definitionId: entity, current: bool, storage: { enum: ['durable', 'session'] }, status: { enum: ['available', 'pending', 'session-only'] }, updatedAt: integer, baseVersion: entity, sourceCurrent: bool, composing: bool, reset: bool })
 const nullableComponentReference: Schema = { oneOf: [componentDraftReference, { type: 'null' }] }
+const nullableCommentReference: Schema = { oneOf: [draftReference, { type: 'null' }] }
+const commentRestore = object({ composerId: id, expectedCurrent: nullableCommentReference })
 const cursor = object({ after: entity, token: digest })
 export const AUTHORING_CLIENT_ACTION_RESULT_SCHEMA: Schema = { oneOf: [
   object({ type: { const: 'comment-drafts.inspect' }, family: { const: 'comment' }, coverage: { enum: ['stored-and-session', 'session-only'] }, skippedInvalid: integer,
-    token: digest, drafts: { type: 'array', maxItems: 10, items: object({ draft: draftReference, kind: { enum: ['create', 'reply', 'edit'] }, storage: { enum: ['durable', 'session'] }, updatedAt: integer, baseVersion: entity, composing: bool, pendingSubmission: bool, threadId: entity, commentId: entity }, ['draft', 'kind', 'storage', 'updatedAt', 'baseVersion', 'composing', 'pendingSubmission']) }, next: cursor }, ['type', 'family', 'coverage', 'skippedInvalid', 'token', 'drafts']),
+    token: digest, drafts: { type: 'array', maxItems: 10, items: object({ draft: draftReference, kind: { enum: ['create', 'reply', 'edit'] }, storage: { enum: ['durable', 'session'] }, updatedAt: integer, baseVersion: entity, composing: bool, pendingSubmission: bool, ownersKnown: bool, active: bool, discardable: bool, restore: commentRestore, threadId: entity, commentId: entity }, ['draft', 'kind', 'storage', 'updatedAt', 'baseVersion', 'composing', 'pendingSubmission', 'ownersKnown', 'active', 'discardable']) }, next: cursor }, ['type', 'family', 'coverage', 'skippedInvalid', 'token', 'drafts']),
   object({ type: { const: 'comment-drafts.read' }, family: { const: 'comment' }, draft: draftReference, storage: { enum: ['durable', 'session'] }, format: { const: 'presmium-rich-text-json-v1' }, offset: integer, endOffset: integer, totalUtf16: integer, totalUtf8: integer, sha256: digest, jsonText: { type: 'string', maxLength: 2048 } }),
+  object({ type: { const: 'comment-drafts.restore' }, family: { const: 'comment' }, draft: draftReference, composerId: id, restored: draftReference, preservedCurrent: nullableCommentReference, targetState: { enum: ['current', 'changed'] } }),
+  object({ type: { const: 'comment-drafts.discard' }, family: { const: 'comment' }, draft: draftReference, discarded: { const: true } }),
   object({ type: { const: 'component-drafts.inspect' }, family: { const: 'component' }, coverage: { enum: ['stored-and-session', 'session-only'] }, skippedInvalid: integer,
     token: digest, drafts: { type: 'array', maxItems: 10, items: componentMetadata }, next: cursor }, ['type', 'family', 'coverage', 'skippedInvalid', 'token', 'drafts']),
   object({ type: { const: 'component-drafts.read' }, family: { const: 'component' }, draft: componentDraftReference, storage: { enum: ['durable', 'session'] }, format: { const: 'presmium-component-parameters-json-v1' }, offset: integer, endOffset: integer, totalUtf16: integer, totalUtf8: integer, sha256: digest, jsonText: { type: 'string', maxLength: 2048 } }),
@@ -184,6 +196,8 @@ export const AUTHORING_CLIENT_ACTION_SCHEMA: Schema = { oneOf: [
   action('state.read'), action('source.flush'), action('preview.prepare'), action('playback.pause'), action('position.step', { sectionId: entity, stepId: entity }),
   object({ type: { const: 'comment-drafts.inspect' }, cursor, limit: { type: 'integer', minimum: 1, maximum: 10 } }, ['type']),
   object({ type: { const: 'comment-drafts.read' }, draft: draftReference, offset: integer, maxChars: { type: 'integer', minimum: 2, maximum: 2048 } }, ['type', 'draft', 'offset']),
+  action('comment-drafts.restore', { draft: draftReference, composerId: id, expectedCurrent: nullableCommentReference }),
+  action('comment-drafts.discard', { draft: draftReference }),
   object({ type: { const: 'component-drafts.inspect' }, cursor, limit: { type: 'integer', minimum: 1, maximum: 10 } }, ['type']),
   object({ type: { const: 'component-drafts.read' }, draft: componentDraftReference, offset: integer, maxChars: { type: 'integer', minimum: 2, maximum: 2048 } }, ['type', 'draft', 'offset']),
   action('component-drafts.restore', { draft: componentDraftReference, expectedCurrent: nullableComponentReference }),
