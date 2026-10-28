@@ -16,6 +16,8 @@ import { DOCUMENT_EDITOR_MESSAGES, IMAGE_IMPORT_MESSAGES } from './messages.ts'
 import { imageFileInput } from './file-input.ts'
 import type { ImageImportFailure } from './file-input.ts'
 import { nativeTextClipboard } from './clipboard.ts'
+import { documentBlockColors } from './colors.ts'
+import { DOCUMENT_EDITOR_LOCALE } from './math.tsx'
 import { excludeCommentMarkHistory, nativeComments, nativeCommentSelection } from './comments.ts'
 import type { DocumentThreadStore } from './comments.ts'
 import { COMMENT_EDITOR_CONTEXT, DocumentCommentEditor, DocumentFloatingThreadController, DocumentThreadsSidebar } from './DocumentComments.tsx'
@@ -137,7 +139,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
       return defaultPasteHandler({ prioritizeMarkdownOverHTML: false })
     },
     dictionary, tables: { splitCells: true, cellBackgroundColor: true, cellTextColor: true, headers: true },
-    extensions: [nativeTextClipboard, imageFileInput({
+    extensions: [nativeTextClipboard, documentBlockColors, imageFileInput({
       onStart: () => { if (current.current.identity === props.identity) setFileErrors(undefined) },
       onFailure: failure => { if (current.current.identity === props.identity) setFileErrors(value => ({ identity: props.identity, failures: [...(value?.identity === props.identity ? value.failures : []), failure] })) },
     }), ...props.comments ? [nativeCommentSelection(), nativeComments(props.comments, t.author)] : []],
@@ -152,7 +154,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
       stopCommentHistory?.(); current.current.onReady?.(undefined)
     }
   }, [editor])
-  return <DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}><COMMENT_EDITOR_CONTEXT.Provider value={props.comments ? { store: props.comments, locale: props.locale, sidebar: Boolean(props.commentsPortal), getPositionToken: () => current.current.getPositionToken?.(), onDraftRestore: () => current.current.onCommentDraftRestore?.() } : undefined}>
+  return <DOCUMENT_EDITOR_LOCALE.Provider value={props.locale}><DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}><COMMENT_EDITOR_CONTEXT.Provider value={props.comments ? { store: props.comments, locale: props.locale, sidebar: Boolean(props.commentsPortal), getPositionToken: () => current.current.getPositionToken?.(), onDraftRestore: () => current.current.onCommentDraftRestore?.() } : undefined}>
     <div className="pm-document-editor pm-ui-block-editor pm-ui" data-document-editor={props.identity}
       onDragEnter={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
       onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
@@ -176,5 +178,5 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         </ComponentsContext.Provider>
       </BlockNoteView>
     </div>
-  </COMMENT_EDITOR_CONTEXT.Provider></DOCUMENT_NODE_VIEWS.Provider>
+  </COMMENT_EDITOR_CONTEXT.Provider></DOCUMENT_NODE_VIEWS.Provider></DOCUMENT_EDITOR_LOCALE.Provider>
 }

@@ -5,6 +5,8 @@ import type { Block, BlockNoteEditor, PartialBlock, StyleConfig, StyleSpec } fro
 import { createReactBlockSpec, createReactInlineContentSpec } from '@blocknote/react'
 import { DOCUMENT_IMAGE_MEDIA_TYPES } from '@lincyaw/kernel'
 import { tableIdentityExtension } from './table-identities.ts'
+import { documentColorStyles } from './colors.ts'
+import { mathBlock, mathInline } from './math.tsx'
 
 export interface DocumentNodeViews {
   renderBlock?(id: string, kind: string): ReactNode
@@ -84,7 +86,7 @@ function clipboardStyle<Config extends StyleConfig>(spec: StyleSpec<Config>): St
 
 // HTML already carries formatting; its literal text must not run through inline Markdown paste rules again.
 const clipboardStyles = {
-  ...defaultStyleSpecs,
+  ...defaultStyleSpecs, ...documentColorStyles,
   bold: clipboardStyle(defaultStyleSpecs.bold), italic: clipboardStyle(defaultStyleSpecs.italic),
   strike: clipboardStyle(defaultStyleSpecs.strike), code: clipboardStyle(defaultStyleSpecs.code),
 }
@@ -96,9 +98,9 @@ export const documentEditorSchema = BlockNoteSchema.create({
     bulletListItem: defaultBlockSpecs.bulletListItem, numberedListItem: defaultBlockSpecs.numberedListItem,
     checkListItem: defaultBlockSpecs.checkListItem, quote: defaultBlockSpecs.quote,
     codeBlock: defaultBlockSpecs.codeBlock, table, image,
-    presmiumPage: page, presmiumAtom: atom, presmiumContainer: container,
+    presmiumPage: page, presmiumAtom: atom, presmiumContainer: container, presmiumMath: mathBlock,
   },
-  inlineContentSpecs: { ...defaultInlineContentSpecs, presmiumInline: inline },
+  inlineContentSpecs: { ...defaultInlineContentSpecs, presmiumInline: inline, presmiumMathInline: mathInline },
   styleSpecs: clipboardStyles,
 })
 export const commentEditorSchema = BlockNoteSchema.create({
@@ -106,9 +108,9 @@ export const commentEditorSchema = BlockNoteSchema.create({
     paragraph: defaultBlockSpecs.paragraph, heading: defaultBlockSpecs.heading,
     bulletListItem: defaultBlockSpecs.bulletListItem, numberedListItem: defaultBlockSpecs.numberedListItem,
     checkListItem: defaultBlockSpecs.checkListItem, quote: defaultBlockSpecs.quote,
-    codeBlock: defaultBlockSpecs.codeBlock, table, presmiumAtom: atom,
+    codeBlock: defaultBlockSpecs.codeBlock, table, presmiumAtom: atom, presmiumMath: mathBlock,
   },
-  inlineContentSpecs: { ...defaultInlineContentSpecs, presmiumInline: inline }, styleSpecs: defaultStyleSpecs,
+  inlineContentSpecs: { ...defaultInlineContentSpecs, presmiumInline: inline, presmiumMathInline: mathInline }, styleSpecs: { ...defaultStyleSpecs, ...documentColorStyles },
 })
 export type DocumentEditorBlock = Block<typeof documentEditorSchema.blockSchema, typeof documentEditorSchema.inlineContentSchema, typeof documentEditorSchema.styleSchema>
 export type DocumentEditorInput = PartialBlock<typeof documentEditorSchema.blockSchema, typeof documentEditorSchema.inlineContentSchema, typeof documentEditorSchema.styleSchema>

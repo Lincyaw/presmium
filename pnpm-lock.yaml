@@ -1477,6 +1477,9 @@ importers:
       '@tiptap/pm':
         specifier: 3.32.0
         version: 3.32.0
+      katex:
+        specifier: 0.18.10
+        version: 0.18.10
     devDependencies:
       '@lincyaw/compiler':
         specifier: workspace:*
