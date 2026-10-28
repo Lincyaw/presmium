@@ -143,7 +143,11 @@ export interface AppliedDocumentChange extends DocumentChangeAnswer {
   verification: { saved: true, source: CanonicalSource, compiled: 'not-requested', runtime: 'not-requested' }
 }
 
-/** Injected by an authoring host. Neither MCP nor compilation owns file-writing semantics. */
+/**
+ * Injected by an authoring host. Neither MCP nor compilation owns file-writing semantics.
+ * Each `check*` runs its apply's checks (plan reference, review, current source or a replayable receipt, the dry-run transaction) without writing,
+ * so a doomed request is refused before the author is asked; the apply checks everything again.
+ */
 export interface DocumentAuthoring {
   capabilities(document: string, member: Member): AuthoringCapabilities
   read(document: string, member: Member): Promise<DocumentAnswer>
@@ -152,14 +156,18 @@ export interface DocumentAuthoring {
   plan(document: string, change: DocumentChange, member: Member): Promise<DocumentChangePlan>
   planPageDuplication(document: string, request: DocumentPageDuplicationRequest, member: Member): Promise<DocumentPageDuplicationPlan>
   readPageDuplicationPlan(document: string, reference: DocumentPageDuplicationRead, member: Member): Promise<DocumentPageDuplicationInspection>
+  checkPageDuplication(document: string, reference: DocumentPageDuplicationReference, member: Member): Promise<void>
   applyPageDuplication(document: string, reference: DocumentPageDuplicationReference, member: Member): Promise<AppliedDocumentPageDuplication>
   planPageChange(document: string, request: DocumentPageChangeRequest, member: Member): Promise<DocumentPageChangePlan>
   readPageChangePlan(document: string, reference: DocumentPageDuplicationRead, member: Member): Promise<DocumentPageChangeInspection>
+  checkPageChange(document: string, reference: DocumentPageChangeReference, member: Member): Promise<void>
   applyPageChange(document: string, reference: DocumentPageChangeReference, member: Member): Promise<AppliedDocumentPageChange>
   planAction(document: string, request: DocumentAuthoringActionRequest, member: Member): Promise<DocumentAuthoringActionPlan>
   readActionPlan(document: string, reference: DocumentAuthoringActionRead, member: Member): Promise<DocumentAuthoringActionInspection>
   readActionImpact(document: string, query: DocumentComponentImpactQuery, member: Member): Promise<DocumentComponentImpactAnswer>
+  checkAction(document: string, reference: DocumentAuthoringActionReference, member: Member): Promise<void>
   applyAction(document: string, reference: DocumentAuthoringActionReference, member: Member): Promise<AppliedDocumentAuthoringAction>
+  checkApply(document: string, request: ApplyDocumentChange, member: Member): Promise<void>
   apply(document: string, request: ApplyDocumentChange, member: Member): Promise<AppliedDocumentChange>
 }
 

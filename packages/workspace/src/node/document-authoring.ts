@@ -5,7 +5,7 @@ import type { AppliedDocumentChange, ApplyDocumentChange, CanonicalSource, Docum
 import { RequestError } from './errors.ts'
 import { applyDocumentAuthoringAction, DOCUMENT_ACTION_MAX_REQUEST_CHARS, DOCUMENT_ACTION_MAX_RESPONSE_CHARS, DOCUMENT_AUTHORING_ACTION_TYPES, DOCUMENT_PARAMETER_MAX_CHANGES, DOCUMENT_PARAMETER_MAX_PATH_DEPTH, DocumentCommentError, DocumentComponentError, DocumentCaptionTimingError, ProductionAudioRefusal } from '@lincyaw/kernel'
 import { validateDocumentAuthoringAction, validateDocumentAuthoringActionReference, validateDocumentAuthoringActionImpact } from '@lincyaw/kernel/node'
-import type { AppliedDocumentAuthoringAction, DocumentAuthoringActionReference, DocumentAuthoringActionPlan, DocumentComponentImpactAnswer, DocumentAuthoringAction, ProductionPlan } from '@lincyaw/kernel'
+import type { AppliedDocumentAuthoringAction, DocumentAuthoringActionReference, DocumentPageChangeReference, DocumentPageDuplicationReference, DocumentAuthoringActionPlan, DocumentComponentImpactAnswer, DocumentAuthoringAction, ProductionPlan } from '@lincyaw/kernel'
 import { MAX_SOURCE, MAX_SOURCE_CHANGES } from './source-editor.ts'
 import type { SourceEditor, SourceTransactionHistory } from './source-editor.ts'
 import type { Revisions } from './revisions.ts'
@@ -112,15 +112,25 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
     }
     return { content: checked.document, issues: checked.issues, changes }
   }
+  /** The receipt this exact change replays while its saved files are still current. */
+  const replayOf = (document: string, change: DocumentChange, member: Member, current: DocumentAnswer) => {
+    const receipt = receipts.get(keyOf(document, member, change.id))
+    if (!receipt) return undefined
+    if (receipt.signature !== signatureOf(change)) throw new RequestError(409, 'document-change-id-reused')
+    if (receipt.version !== current.version) throw new RequestError(409, 'document-version-changed', { version: current.version })
+    if (receipt.files.some(file => editor.read(editor.scope(document), file.path, member).version !== file.version)) throw new RequestError(409, 'document-files-changed')
+    return receipt
+  }
+  const checkSave = async (document: string, change: DocumentChange, member: Member) => {
+    const current = await read(document, member)
+    if (replayOf(document, change, member, current)) return
+    const candidate = await filesOf(document, current, change)
+    await editor.planTransaction(editor.scope(document), candidate.changes, member)
+  }
   const saveChange = async (document: string, raw: DocumentChange, member: Member, origin: 'editor' | 'agent' = 'editor'): Promise<DocumentChangeAnswer> => {
     const change = checkedChange(raw), current = await read(document, member)
-    const signature = signatureOf(change), key = keyOf(document, member, change.id), receipt = receipts.get(key)
-    if (receipt) {
-      if (receipt.signature !== signature) throw new RequestError(409, 'document-change-id-reused')
-      if (receipt.version !== current.version) throw new RequestError(409, 'document-version-changed', { version: current.version })
-      if (receipt.files.some(file => editor.read(editor.scope(document), file.path, member).version !== file.version)) throw new RequestError(409, 'document-files-changed')
-      return { ...current, changeId: change.id, files: receipt.files, ...receipt.commit ? { commit: receipt.commit } : {} }
-    }
+    const signature = signatureOf(change), key = keyOf(document, member, change.id), receipt = replayOf(document, change, member, current)
+    if (receipt) return { ...current, changeId: change.id, files: receipt.files, ...receipt.commit ? { commit: receipt.commit } : {} }
     const candidate = await filesOf(document, current, change)
     const ownHistory: SourceTransactionHistory | undefined = revisions ? { run: work => revisions.transaction(work), commit: (paths, lang) => revisions.commitWhileLocked({ paths, summary: lang?.startsWith('en') ? 'Edit document' : '编辑文稿', body: '', origin: { kind: origin, member } }) } : undefined
     const saved = await editor.transaction(editor.scope(document), candidate.changes, member, ownHistory)
@@ -171,17 +181,20 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
     if (record.expires < Date.now() && !(replay && receipts.get(record.key)?.signature === digest)) throw new RequestError(409, 'document-plan-expired')
     return plan
   }
-  const applyPlannedChange = async (document: string, request: ApplyDocumentChange, member: Member, family: 'generic' | 'page' | 'duplication' | 'action', origin: 'agent' | 'editor' = 'agent'): Promise<AppliedDocumentChange> => {
+  const plannedChange = (document: string, request: ApplyDocumentChange, member: Member, family: 'generic' | 'page' | 'duplication' | 'action', origin: 'agent' | 'editor'): DocumentChange => {
     if (reviewRequired && origin === 'agent') throw new RequestError(409, 'authoring-review-required')
     const change = checkedChange(request.change), key = keyOf(document, member, change.id), plan = plans.get(request.planId)
     if (!plan?.ready || plan.key !== key || plan.signature !== signatureOf(change)) throw new RequestError(409, 'document-plan-changed')
     const actual = plan.action ? 'action' : plan.page ? 'page' : plan.duplication ? 'duplication' : 'generic'
     if (actual !== family) throw new RequestError(409, 'document-plan-family-changed')
     if (plan.expires < Date.now() && receipts.get(key)?.signature !== plan.signature) throw new RequestError(409, 'document-plan-expired')
-    const answer = await saveChange(document, change, member, origin)
+    return change
+  }
+  const applyPlannedChange = async (document: string, request: ApplyDocumentChange, member: Member, family: 'generic' | 'page' | 'duplication' | 'action', origin: 'agent' | 'editor' = 'agent'): Promise<AppliedDocumentChange> => {
+    const answer = await saveChange(document, plannedChange(document, request, member, family, origin), member, origin)
     return { ...answer, verification: { saved: true, source: sourceOf(answer), compiled: 'not-requested', runtime: 'not-requested' } }
   }
-  const applyAction = async (document: string, reference: DocumentAuthoringActionReference, member: Member, origin: 'agent' | 'editor'): Promise<AppliedDocumentAuthoringAction> => {
+  const actionPreflight = async (document: string, reference: DocumentAuthoringActionReference, member: Member, origin: 'agent' | 'editor') => {
     if (reviewRequired && origin === 'agent') throw new RequestError(409, 'authoring-review-required')
     if (!validateDocumentAuthoringActionReference(reference)) throw new RequestError(400, 'authoring-action-reference-invalid')
     const plan = await actionOf(document, reference.planId, reference.digest, member, true)
@@ -192,11 +205,34 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
     if (receipt && receipt.signature !== plan.digest) throw new RequestError(409, 'document-change-id-reused')
     readSelection(document, receipt ? { documentId: plan.content.id, version: expected, fingerprint: fnv1a64(`${JSON.stringify(plan.content, null, 2)}\n`) } : plan.source, member, () => undefined)
     if (!receipt) await validateCaption(document, plan.source, plan.action)
+    return { plan, expected }
+  }
+  const applyAction = async (document: string, reference: DocumentAuthoringActionReference, member: Member, origin: 'agent' | 'editor'): Promise<AppliedDocumentAuthoringAction> => {
+    const { plan, expected } = await actionPreflight(document, reference, member, origin)
     const answer = await applyPlannedChange(document, { change: plan.change, planId: plan.planId }, member, 'action', origin)
     if (answer.version !== expected || JSON.stringify(answer.content) !== JSON.stringify(plan.content)) throw new RequestError(409, 'document-readback-changed', { committed: true, changeId: plan.changeId, version: answer.version })
     const { content: _content, issues: _issues, commit, ...saved } = answer
     return { ...saved, ...commit ? { commit: { id: commit.id, origin: commit.origin.kind } } : {}, planId: plan.planId, digest: plan.digest, action: plan.action.type, effect: plan.effect,
       verification: { ...answer.verification, plannedVersion: expected, actionStateVerified: true } }
+  }
+  const duplicationPreflight = async (document: string, reference: DocumentPageDuplicationReference, member: Member) => {
+    if (reviewRequired) throw new RequestError(409, 'authoring-review-required')
+    if (!validateDocumentPageDuplicationApply(reference)) throw new RequestError(400, 'page-duplication-reference-invalid')
+    const plan = await duplicationOf(document, reference.planId, reference.digest, member, true)
+    if (reference.source.documentId !== plan.source.documentId || reference.source.version !== plan.source.version || reference.source.fingerprint !== plan.source.fingerprint) throw new RequestError(409, 'document-plan-changed')
+    return plan
+  }
+  const pagePreflight = async (document: string, reference: DocumentPageChangeReference, member: Member) => {
+    if (reviewRequired) throw new RequestError(409, 'authoring-review-required')
+    if (!validateDocumentPageChangeApply(reference)) throw new RequestError(400, 'page-change-reference-invalid')
+    const plan = await pageOf(document, reference.planId, reference.digest, member, true)
+    if (reference.source.documentId !== plan.source.documentId || reference.source.version !== plan.source.version || reference.source.fingerprint !== plan.source.fingerprint) throw new RequestError(409, 'document-plan-changed')
+    if (plan.action.type === 'delete' && reference.confirmDeletion !== true) throw new RequestError(409, 'page-deletion-confirmation-required', { planId: plan.planId, digest: plan.digest, next: 'Review this plan deletion impact and repeat the same reference with confirmDeletion:true.' })
+    if (plan.action.type !== 'delete' && reference.confirmDeletion) throw new RequestError(400, 'page-deletion-confirmation-unexpected')
+    const expected = plan.files.find(file => file.path === entryOf(document))!.version, receipt = receipts.get(keyOf(document, member, plan.changeId))
+    if (receipt && receipt.signature !== plan.digest) throw new RequestError(409, 'document-change-id-reused')
+    readSelection(document, receipt ? { documentId: plan.content.id, version: expected, fingerprint: fnv1a64(`${JSON.stringify(plan.content, null, 2)}\n`) } : plan.source, member, () => undefined)
+    return { plan, expected }
   }
   const service: DocumentEditor = {
     capabilities(_document, member) {
@@ -246,11 +282,12 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
       const sourceCurrent = plan.source.documentId === currentSource.documentId && plan.source.version === currentSource.version && plan.source.fingerprint === currentSource.fingerprint
       return { plan: structuredClone(plan), currentSource, state: receipt ? receipt.signature === plan.digest && receipt.version === current.version ? 'applied' : 'old' : sourceCurrent ? 'current' : 'old' }
     },
+    async checkPageDuplication(document, reference, member) {
+      const plan = await duplicationPreflight(document, reference, member)
+      await checkSave(document, plannedChange(document, { change: plan.change, planId: plan.planId }, member, 'duplication', 'agent'), member)
+    },
     async applyPageDuplication(document, reference, member) {
-      if (reviewRequired) throw new RequestError(409, 'authoring-review-required')
-      if (!validateDocumentPageDuplicationApply(reference)) throw new RequestError(400, 'page-duplication-reference-invalid')
-      const plan = await duplicationOf(document, reference.planId, reference.digest, member, true)
-      if (reference.source.documentId !== plan.source.documentId || reference.source.version !== plan.source.version || reference.source.fingerprint !== plan.source.fingerprint) throw new RequestError(409, 'document-plan-changed')
+      const plan = await duplicationPreflight(document, reference, member)
       const answer = await applyPlannedChange(document, { change: plan.change, planId: plan.planId }, member, 'duplication')
       const expected = plan.files.find(file => file.path === entryOf(document))!.version
       if (answer.version !== expected || !answer.content.sections[plan.section.to]) throw new RequestError(409, 'document-readback-changed', { committed: true, changeId: plan.changeId, version: answer.version })
@@ -307,16 +344,12 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
       const sameSource = plan.source.documentId === currentSource.documentId && plan.source.version === currentSource.version && plan.source.fingerprint === currentSource.fingerprint
       return { plan: structuredClone(plan), currentSource, state: receipt ? receipt.signature === plan.digest && receipt.version === current.version ? 'applied' : 'old' : sameSource ? 'current' : 'old' }
     },
+    async checkPageChange(document, reference, member) {
+      const { plan } = await pagePreflight(document, reference, member)
+      await checkSave(document, plannedChange(document, { change: plan.change, planId: plan.planId }, member, 'page', 'agent'), member)
+    },
     async applyPageChange(document, reference, member) {
-      if (reviewRequired) throw new RequestError(409, 'authoring-review-required')
-      if (!validateDocumentPageChangeApply(reference)) throw new RequestError(400, 'page-change-reference-invalid')
-      const plan = await pageOf(document, reference.planId, reference.digest, member, true)
-      if (reference.source.documentId !== plan.source.documentId || reference.source.version !== plan.source.version || reference.source.fingerprint !== plan.source.fingerprint) throw new RequestError(409, 'document-plan-changed')
-      if (plan.action.type === 'delete' && reference.confirmDeletion !== true) throw new RequestError(409, 'page-deletion-confirmation-required', { planId: plan.planId, digest: plan.digest, next: 'Review this plan deletion impact and repeat the same reference with confirmDeletion:true.' })
-      if (plan.action.type !== 'delete' && reference.confirmDeletion) throw new RequestError(400, 'page-deletion-confirmation-unexpected')
-      const expected = plan.files.find(file => file.path === entryOf(document))!.version, receipt = receipts.get(keyOf(document, member, plan.changeId))
-      if (receipt && receipt.signature !== plan.digest) throw new RequestError(409, 'document-change-id-reused')
-      readSelection(document, receipt ? { documentId: plan.content.id, version: expected, fingerprint: fnv1a64(`${JSON.stringify(plan.content, null, 2)}\n`) } : plan.source, member, () => undefined)
+      const { plan, expected } = await pagePreflight(document, reference, member)
       const answer = await applyPlannedChange(document, { change: plan.change, planId: plan.planId }, member, 'page')
       if (answer.version !== expected || JSON.stringify(answer.content) !== JSON.stringify(plan.content)) throw new RequestError(409, 'document-readback-changed', { committed: true, changeId: plan.changeId, version: answer.version })
       const { content: _content, issues: _issues, commit, ...saved } = answer
@@ -386,8 +419,15 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
       if (!answer.entries.length && offset < values.length || JSON.stringify(answer, null, 2).length > DOCUMENT_ACTION_MAX_RESPONSE_CHARS) throw new RequestError(413, 'authoring-action-impact-too-large')
       return answer
     },
+    async checkAction(document, reference, member) {
+      const { plan } = await actionPreflight(document, reference, member, 'agent')
+      await checkSave(document, plannedChange(document, { change: plan.change, planId: plan.planId }, member, 'action', 'agent'), member)
+    },
     applyAction: (document, reference, member) => applyAction(document, reference, member, 'agent'),
     applyEditorAction: (document, reference, member) => applyAction(document, reference, member, 'editor'),
+    async checkApply(document, request, member) {
+      await checkSave(document, plannedChange(document, request, member, 'generic', 'agent'), member)
+    },
     async apply(document, request: ApplyDocumentChange, member): Promise<AppliedDocumentChange> {
       return applyPlannedChange(document, request, member, 'generic')
     },

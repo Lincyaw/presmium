@@ -51,6 +51,8 @@ export interface TranscriptionAdoptionAnswer extends DocumentChangeAnswer {
 /** Agent-safe surface. An editor HTTP adapter receives its trusted write path separately. */
 export interface DocumentTranscriptionAdoption {
   plan(document: string, draft: TranscriptionAdoptionDraft, member: Member): Promise<TranscriptionAdoptionPlan>
+  /** The adoption's checks without writing: plan, draft revision, candidate, current source; `apply` checks everything again. */
+  check(document: string, request: TranscriptionAdoptionApply, member: Member): Promise<void>
   apply(document: string, request: TranscriptionAdoptionApply, member: Member): Promise<TranscriptionAdoptionAnswer>
 }
 

@@ -114,7 +114,7 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
       const document = await call.document(), own = service(call), capability = own.capabilities(document, call.caller.member)
       if (!capability.actions.applyPageChange) throw Object.assign(new Error(capability.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: capability.applyUnavailableReason ? 409 : 403 })
       const summary = (await call.host.documents()).find(item => item.dir === document)
-      await call.approve('operate', messages => messages.applyPagePlan, { lang: summary?.lang ?? '', detail: JSON.stringify({ document, request: call.args.request }) })
+      await call.approve('operate', messages => messages.applyPagePlan, { lang: summary?.lang ?? '', detail: JSON.stringify({ document, request: call.args.request }), check: () => own.checkPageChange(document, call.args.request as DocumentPageChangeReference, call.caller.member) })
       call.signal.throwIfAborted()
       return own.applyPageChange(document, call.args.request as DocumentPageChangeReference, call.caller.member)
     }),
@@ -133,7 +133,7 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
       const document = await call.document(), own = service(call), capability = own.capabilities(document, call.caller.member)
       if (!capability.actions.applyPageDuplication) throw Object.assign(new Error(capability.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: capability.applyUnavailableReason ? 409 : 403 })
       const current = await own.read(document, call.caller.member)
-      await call.approve('operate', messages => messages.duplicatePage, { lang: current.content.metadata.lang ?? '', detail: JSON.stringify({ document, request: call.args.request }) })
+      await call.approve('operate', messages => messages.duplicatePage, { lang: current.content.metadata.lang ?? '', detail: JSON.stringify({ document, request: call.args.request }), check: () => own.checkPageDuplication(document, call.args.request as DocumentPageDuplicationReference, call.caller.member) })
       call.signal.throwIfAborted()
       return own.applyPageDuplication(document, call.args.request as DocumentPageDuplicationReference, call.caller.member)
     },
@@ -147,7 +147,7 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
       const capability = own.capabilities(document, call.caller.member)
       if (!capability.actions.apply) throw Object.assign(new Error(capability.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: capability.applyUnavailableReason ? 409 : 403 })
       const current = await own.read(document, call.caller.member)
-      await call.approve('operate', messages => messages.tool('apply_document_change'), { lang: current.content.metadata.lang ?? '', detail: JSON.stringify({ document, planId: call.args.planId, change: call.args.change }) })
+      await call.approve('operate', messages => messages.tool('apply_document_change'), { lang: current.content.metadata.lang ?? '', detail: JSON.stringify({ document, planId: call.args.planId, change: call.args.change }), check: () => own.checkApply(document, { change: call.args.change as DocumentChange, planId: String(call.args.planId) }, call.caller.member) })
       call.signal.throwIfAborted()
       return own.apply(document, { change: call.args.change as DocumentChange, planId: String(call.args.planId) }, call.caller.member)
     },

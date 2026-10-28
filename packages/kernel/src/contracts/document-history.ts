@@ -44,6 +44,8 @@ export interface DocumentHistoryChanged extends DocumentHistoryBinding {
 export interface DocumentHistory {
   list(document: string, query: DocumentHistoryQuery, member: Member): Promise<DocumentHistoryAnswer>
   read(document: string, query: DocumentHistoryRead, member: Member): Promise<DocumentHistoryFile>
+  /** The change's checks without writing: binding, target, document scope, next undo/redo, conflicts and uncommitted files, or a replayable receipt. */
+  checkChange(document: string, which: 'undo' | 'redo' | 'revert', request: DocumentHistoryChange, member: Member, origin?: 'editor' | 'agent'): Promise<void>
   change(document: string, which: 'undo' | 'redo' | 'revert', request: DocumentHistoryChange, member: Member, origin?: 'editor' | 'agent'): Promise<DocumentHistoryChanged>
 }
 const hash = { type: 'string', pattern: '^(?:[a-f0-9]{40}|[a-f0-9]{64})$' } as const
