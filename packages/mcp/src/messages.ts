@@ -7,6 +7,7 @@ export interface McpMessages {
   cancelBuild(target: string): string
   adoptRecording(step: string): string
   importAudio(file: string): string
+  importImage(file: string): string
   generateVoiceover(scope: string): string
   cancelVoiceover(target: string): string
   previewVoice(voice: string): string
@@ -32,6 +33,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     cancelBuild: target => `取消构建（${target}）`,
     adoptRecording: step => `采用录音为本步配音「${step}」`,
     importAudio: file => `导入音频「${file}」`,
+    importImage: file => `导入图片「${file}」`,
     generateVoiceover: scope => `生成配音「${scope}」`,
     cancelVoiceover: target => `取消配音「${target}」`,
     previewVoice: voice => `试听音色「${voice}」`,
@@ -55,6 +57,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     cancelBuild: target => `Cancel build (${target})`,
     adoptRecording: step => `Use recording for step “${step}”`,
     importAudio: file => `Import audio “${file}”`,
+    importImage: file => `Import image “${file}”`,
     generateVoiceover: scope => `Generate voiceover “${scope}”`,
     cancelVoiceover: target => `Cancel voiceover “${target}”`,
     previewVoice: voice => `Preview voice “${voice}”`,
