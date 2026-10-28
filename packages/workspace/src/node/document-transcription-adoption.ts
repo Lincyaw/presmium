@@ -19,7 +19,7 @@ export function createTranscriptionAdoption({ documentEditor, transcriptions }: 
     available()
     if (latest.get(receipt.key)?.revision !== receipt.draft.draftRevision) throw new RequestError(409, 'adoption-draft-changed')
   }
-  const apply = async (document: string, raw: TranscriptionAdoptionApply, member: Member, origin: 'editor' | 'agent'): Promise<TranscriptionAdoptionAnswer> => {
+  const preflight = async (document: string, raw: TranscriptionAdoptionApply, member: Member) => {
     available()
     if (!validateTranscriptionAdoptionApply(raw)) throw new RequestError(400, 'adoption-request-invalid')
     const receipt = receipts.get(raw.planId)
@@ -31,6 +31,10 @@ export function createTranscriptionAdoption({ documentEditor, transcriptions }: 
       await transcriptions.verifyResult(document, raw.candidate.id, raw.candidate.revision, raw.source, member)
       assertLatest(receipt)
     }
+    return receipt
+  }
+  const apply = async (document: string, raw: TranscriptionAdoptionApply, member: Member, origin: 'editor' | 'agent'): Promise<TranscriptionAdoptionAnswer> => {
+    const receipt = await preflight(document, raw, member)
     // Origin is selected by the host closure. No request field can choose the editor path.
     const answer = origin === 'agent'
       ? await documentEditor.apply(document, { planId: raw.planId, change: receipt.change }, member)
@@ -64,6 +68,10 @@ export function createTranscriptionAdoption({ documentEditor, transcriptions }: 
       bytes += size
       while (receipts.size > 64 || bytes > 16 << 20) { const id = receipts.keys().next().value!; bytes -= receipts.get(id)!.bytes; receipts.delete(id) }
       return { ...response, planId: plan.planId, expiresAt: plan.expiresAt, content: plan.content }
+    },
+    async check(document, request, member) {
+      const receipt = await preflight(document, request, member)
+      await documentEditor.checkApply(document, { planId: request.planId, change: receipt.change }, member)
     },
     apply: (document, request, member) => apply(document, request, member, 'agent'),
   }

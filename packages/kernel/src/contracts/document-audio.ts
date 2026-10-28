@@ -88,10 +88,16 @@ export interface DocumentAudioAuthoring {
   inspectWorkspace(document: string, request: DocumentWorkspaceAudioInspect, member: Member, signal?: AbortSignal): Promise<WorkspaceAudioInspectionAnswer>
   readProductionPlan(document: string, request: DocProductionPlanQuery, member: Member, signal?: AbortSignal): Promise<ProductionPlan>
   /** Agent entry. Origin and required review come from the host, never from this request. */
+  /** The import's checks without its transaction (scope, file bytes and SHA-256/length, audio format, current source or a replayable receipt); `importWorkspace` checks everything again. */
+  checkWorkspaceImport(document: string, request: DocumentWorkspaceAudioImport, member: Member, signal?: AbortSignal): Promise<void>
   importWorkspace(document: string, request: DocumentWorkspaceAudioImport, member: Member, signal?: AbortSignal): Promise<VerifiedDocumentAudioImport>
   validateClipChange(document: string, request: DocumentMediaClipValidation, member: Member, signal?: AbortSignal): Promise<DocumentMediaClipValidationAnswer>
   /** Agent entry; the transaction rechecks source, real media and current production timing. */
   changeClip(document: string, request: DocumentMediaClipEdit, member: Member, signal?: AbortSignal): Promise<VerifiedDocumentMediaClipChange>
+  /** The change's checks without writing (as validateClipChange, plus review and a replayable receipt). */
+  checkClipChange(document: string, request: DocumentMediaClipEdit, member: Member, signal?: AbortSignal): Promise<void>
+  /** The adoption's checks without writing: step, asset bytes and SHA-256, range, current source or a replayable receipt. */
+  checkRecordingAdoption(document: string, request: DocumentRecordingAdoption, member: Member, signal?: AbortSignal): Promise<void>
   adoptRecording(document: string, request: DocumentRecordingAdoption, member: Member, signal?: AbortSignal): Promise<VerifiedDocumentRecordingAdoption>
 }
 

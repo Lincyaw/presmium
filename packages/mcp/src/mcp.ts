@@ -34,7 +34,8 @@ export interface Call {
   signal: AbortSignal
   document(): Promise<string>
   compiled(): Promise<{ doc: IRDocument, diagnostics: Finding[] }>
-  approve(kind: ApprovalKind, title: (messages: McpMessages) => string, options?: { scope?: ApprovalScope, detail?: string, lang?: string }): Promise<void>
+  /** Asks the author unless the caller is pre-confirmed. `check` runs the write's own checks first, so a request that would fail is refused without asking. */
+  approve(kind: ApprovalKind, title: (messages: McpMessages) => string, options?: { scope?: ApprovalScope, detail?: string, lang?: string, check?: () => Promise<unknown> }): Promise<void>
 }
 
 export interface ToolSpec {
@@ -592,6 +593,8 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
       compiled: () => compiled ??= self.document().then(dir => host.compile(dir)),
       async approve(kind, title, options = {}) {
         if (caller.confirmed) return
+        await options.check?.()
+        signal.throwIfAborted()
         const lang = options.lang ?? (await self.compiled()).doc.meta.lang
         const messages = MCP_MESSAGES[deckLocale(lang)]
         const allowed = await host.approve({

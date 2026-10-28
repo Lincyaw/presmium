@@ -82,7 +82,7 @@ export const TRANSCRIPTION_TOOLS: ToolSpec[] = [
       if (!call.host.transcriptionAdoption || !call.host.authoring) throw Object.assign(new Error('adoption-host-unavailable'), { status: 503 })
       const selected = await call.document(), capability = call.host.authoring.capabilities(selected, call.caller.member)
       if (!capability.actions.apply) throw Object.assign(new Error(capability.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: capability.applyUnavailableReason ? 409 : 403 })
-      await call.approve('operate', messages => messages.tool('apply_transcription_adoption'), { lang: await language(call, selected), detail: JSON.stringify({ document: selected, request: call.args.request }) })
+      await call.approve('operate', messages => messages.tool('apply_transcription_adoption'), { lang: await language(call, selected), detail: JSON.stringify({ document: selected, request: call.args.request }), check: () => call.host.transcriptionAdoption!.check(selected, call.args.request as TranscriptionAdoptionApply, call.caller.member) })
       call.signal.throwIfAborted()
       return call.host.transcriptionAdoption.apply(selected, call.args.request as TranscriptionAdoptionApply, call.caller.member)
     },

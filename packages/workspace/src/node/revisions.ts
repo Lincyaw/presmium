@@ -354,29 +354,44 @@ export class Revisions implements RevisionService {
     return candidates.map(found => found.find(item => { const tree = trees.get(item.query); return tree && regular.get(tree.oid) })?.directory)
   }
 
+  /** The revert's checks under the git queue without writing: next target, ancestry, conflicts, scope, guard and uncommitted files. */
+  checkRevert(id: string, member: Member, still?: { which: keyof UndoTargets, document?: string }, guard?: (paths: string[]) => Promise<void> | void): Promise<{ ok: true } | { ok: false, conflicts: string[] }> {
+    return this.#git.exclusive(async () => {
+      const planned = await this.#planRevert(id, member, still, guard)
+      return planned.ok ? { ok: true } : planned
+    })
+  }
+
+  async #planRevert(id: string, member: Member, still?: { which: keyof UndoTargets, document?: string }, guard?: (paths: string[]) => Promise<void> | void) {
+    if (still && undoTargets(await this.#entries(still.document))[still.which] !== id) throw new RequestError(409, `the history changed: ${id} is not the next ${still.which} any more; read it again`)
+    const verified = await this.#git.tryOutput(['rev-parse', '--verify', '--quiet', `${id}^{commit}`])
+    if (!verified.ok) throw new Error(`no commit ${id}`)
+    const target = (await this.#log(verified.output.trim()))!
+    if (!(await this.#git.tryOutput(['merge-base', '--is-ancestor', target.id, 'HEAD'])).ok) throw new RequestError(404, 'history-revision-not-found')
+    const parent = await this.#git.tryOutput(['rev-parse', '--verify', '--quiet', `${target.id}^1`])
+    if (!parent.ok) throw new RequestError(409, 'history-baseline-has-no-parent')
+    const merged = await this.#git.run(['merge-tree', '--write-tree', '--no-messages', '--name-only', `--merge-base=${target.id}`, 'HEAD', parent.output.trim()])
+    const lines = merged.stdout.toString('utf8').split('\n').map(line => line.trim()).filter(Boolean)
+    if (merged.code === 1) return { ok: false as const, conflicts: [...new Set(lines.slice(1).map(this.#fromTop))] }
+    if (merged.code !== 0 || !lines[0]) throw new Error(`git merge-tree failed: ${merged.stderr.trim()}`)
+    const changes = await this.#changes('HEAD', lines[0])
+    if (changes.length === 0) throw new RequestError(409, 'history-change-already-undone')
+    const outside = changes.filter(change => documentDirOf(this.#files.config, change.path) === undefined).map(change => change.path)
+    if (outside.length > 0 && !member.roles.includes('owner')) throw new RequestError(403, `only an owner reverts a change of ${outside.join(', ')}, outside the documents`)
+    await guard?.(changes.map(change => change.path))
+    const blocked = await this.#uncommitted(changes.map(change => change.path))
+    if (blocked.length > 0) return { ok: false as const, conflicts: blocked }
+    return { ok: true as const, target, tree: lines[0], changes }
+  }
+
   /** Reverts the commit; guards and next-target checks run under the existing git queue. */
   revert(id: string, member: Member, still?: { which: keyof UndoTargets, document?: string }, guard?: (paths: string[]) => Promise<void> | void, kind?: 'editor' | 'agent'): Promise<RevertResult> {
     return this.#git.exclusive(async () => {
-      if (still && undoTargets(await this.#entries(still.document))[still.which] !== id) throw new RequestError(409, `the history changed: ${id} is not the next ${still.which} any more; read it again`)
-      const verified = await this.#git.tryOutput(['rev-parse', '--verify', '--quiet', `${id}^{commit}`])
-      if (!verified.ok) throw new Error(`no commit ${id}`)
-      const target = (await this.#log(verified.output.trim()))!
-      if (!(await this.#git.tryOutput(['merge-base', '--is-ancestor', target.id, 'HEAD'])).ok) throw new RequestError(404, 'history-revision-not-found')
-      const parent = await this.#git.tryOutput(['rev-parse', '--verify', '--quiet', `${target.id}^1`])
-      if (!parent.ok) throw new RequestError(409, 'history-baseline-has-no-parent')
-      const merged = await this.#git.run(['merge-tree', '--write-tree', '--no-messages', '--name-only', `--merge-base=${target.id}`, 'HEAD', parent.output.trim()])
-      const lines = merged.stdout.toString('utf8').split('\n').map(line => line.trim()).filter(Boolean)
-      if (merged.code === 1) return { ok: false, conflicts: [...new Set(lines.slice(1).map(this.#fromTop))] }
-      if (merged.code !== 0 || !lines[0]) throw new Error(`git merge-tree failed: ${merged.stderr.trim()}`)
-      const changes = await this.#changes('HEAD', lines[0])
-      if (changes.length === 0) throw new RequestError(409, 'history-change-already-undone')
-      const outside = changes.filter(change => documentDirOf(this.#files.config, change.path) === undefined).map(change => change.path)
-      if (outside.length > 0 && !member.roles.includes('owner')) throw new RequestError(403, `only an owner reverts a change of ${outside.join(', ')}, outside the documents`)
-      await guard?.(changes.map(change => change.path))
-      const blocked = await this.#uncommitted(changes.map(change => change.path))
-      if (blocked.length > 0) return { ok: false, conflicts: blocked }
+      const planned = await this.#planRevert(id, member, still, guard)
+      if (!planned.ok) return planned
+      const { target, tree, changes } = planned
       const originalHead = await this.head()
-      const restore = await this.#changes(lines[0], 'HEAD')
+      const restore = await this.#changes(tree, 'HEAD')
       const indexPath = resolve(this.#git.root, (await this.#git.output(['rev-parse', '--git-path', 'index'])).trim())
       const oldIndex = existsSync(indexPath) ? readFileSync(indexPath) : undefined
       try {
