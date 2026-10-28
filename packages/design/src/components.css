@@ -1177,7 +1177,40 @@
 .pm-ui-color-swatch[data-kind='text'] { color: var(--pm-swatch, var(--pm-color-ink)); }
 .pm-ui-color-swatch[data-kind='background'] { background: var(--pm-swatch, var(--pm-color-surface)); }
 .pm-ui-color-swatch--pair { color: var(--pm-swatch, var(--pm-color-ink)); background: var(--pm-swatch-background, transparent); }
-.bn-color-picker-dropdown [data-document-color] { gap: var(--pm-space-2); font-size: var(--pm-text-sm); }
+/* Each group is a labelled row of swatch buttons, so both palettes fit on a phone without scrolling. */
+.bn-color-picker-grid { display: grid; gap: var(--pm-space-1); }
+.bn-color-picker-group {
+  --pm-ui-swatch-cell: var(--pm-size-tool);
+  display: grid;
+  grid-template-columns: repeat(6, var(--pm-ui-swatch-cell));
+  gap: var(--pm-space-1);
+}
+.bn-color-picker-group > .mantine-Menu-label { grid-column: 1 / -1; padding-inline: var(--pm-space-1); }
+/* BlockNote fixes its menu items' height; the swatch cell is square at both densities. */
+.bn-menu-dropdown.bn-color-picker-dropdown .mantine-Menu-item[data-document-color] {
+  position: relative;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: var(--pm-ui-swatch-cell);
+  height: var(--pm-ui-swatch-cell);
+  padding: 0;
+  border-radius: var(--pm-radius-small);
+}
+.bn-color-picker-dropdown [data-document-color] .mantine-Menu-itemLabel { display: contents; }
+.bn-color-picker-dropdown [data-document-color][data-checked] { background: var(--pm-color-selected); }
+.bn-color-picker-dropdown [data-document-color][data-checked] .pm-ui-color-swatch { border-color: var(--pm-color-accent); }
+.bn-color-picker-dropdown [data-document-color] .pm-ui-icon {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-end: 0;
+  width: var(--pm-size-icon-sm);
+  height: var(--pm-size-icon-sm);
+  border-radius: var(--pm-radius-pill);
+  background: var(--pm-color-accent);
+  color: var(--pm-color-on-accent);
+}
+.bn-color-picker-dropdown [data-document-color]:focus-visible { outline: var(--pm-space-px) solid var(--pm-color-accent); outline-offset: calc(var(--pm-space-px) * -1); }
 
 .pm-ui-block-editor .bn-menu-dropdown.bn-table-handle-menu [role='menuitem'] {
   font-size: var(--pm-text-sm);
@@ -1400,6 +1433,7 @@
     min-height: var(--pm-control-hit-area);
     font-size: var(--pm-text-lg);
   }
+  .bn-color-picker-group { --pm-ui-swatch-cell: var(--pm-control-hit-area); }
   .pm-ui-block-editor .bn-formatting-toolbar button {
     min-width: var(--pm-control-hit-area);
     min-height: var(--pm-control-hit-area);
