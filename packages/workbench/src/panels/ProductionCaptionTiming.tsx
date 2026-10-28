@@ -111,9 +111,9 @@ export function ProductionCaptionTiming({ identity, stepId, plan, current, loadi
         <div className="pmw-caption-times__actions">
           <PmButton small disabled={!basis?.available || busy || !writable} onClick={() => { if (document && basis && source?.version) pending({ version: source.version, text: stepCaptionText(document, stepId), basis: structuredClone(basis), rows: lineRows(stepCaptionText(document, stepId)) }) }}>{t.split}</PmButton>
           <PmButton small disabled={!canonical || busy || !writable} onClick={() => void apply(true)}>{t.automatic}</PmButton>
+          {hasDraft && <PmButton small disabled={busy} onClick={() => { workbench.setCaptionTimingDraft(stepId, undefined, identity); drafts.current.delete(stepId); initialize() }}>{t.discard}</PmButton>}
         </div>
         {storageFailure && <PmNotice tone="warn">{t.storageFailed}</PmNotice>}
-        {hasDraft && <PmButton small disabled={busy} onClick={() => { workbench.setCaptionTimingDraft(stepId, undefined, identity); drafts.current.delete(stepId); initialize() }}>{t.discard}</PmButton>}
         {saved && <PmNotice tone="ok">{t.saved}</PmNotice>}
         {failure && <PmNotice tone="danger">{failure}</PmNotice>}
       </div>
