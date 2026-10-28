@@ -17,6 +17,23 @@ export const LAYOUT_MEMBERS = ['panelInfo', 'selectPanel', 'beginNavigation', 't
 export const BRAND_SLOTS = ['sidebar.brand.mark', 'sidebar.brand.name', 'conversation.hero.brand.mark'] as const
 export const ONBOARDING = { slot: 'settings.onboarding', steps: ['welcome-notice', 'deepseek-official'] } as const
 
+/**
+ * Where the AI assistant explains a missing model and a failed turn: the composer's takeover chain, and the chat's
+ * `turn-error` node (its shipped cell is replaced, so every failed turn reads in the author's terms).
+ */
+export const ASSISTANT_SLOTS = ['conversation.composer', { name: 'conversation.chat.node', key: 'turn-error' }] as const
+
+/**
+ * Settings → Models, and when the model catalog is read again: on the Host's events that change what can be routed,
+ * whenever the window regains focus, and on a slow poll while no model is usable (Settings is a modal over this page,
+ * so saving a key there does not refocus the window).
+ */
+export const MODEL_SETTINGS = {
+  section: 'models',
+  events: ['credentials/reference-updated', 'settings/document-updated', 'llm/adapters-updated'],
+  pollMs: 3000,
+} as const
+
 export const SHELL_MODULES = [
   'react',
   'react/jsx-runtime',

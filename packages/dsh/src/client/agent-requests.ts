@@ -1,14 +1,16 @@
 import { selectedDocument } from '@lincyaw/workbench'
 import type { AgentAnswer, Workbench } from '@lincyaw/workbench'
+import type { AssistantSetup } from './assistant-setup.tsx'
 import { mainViewAgentSession, postDocumentContext } from './document-context.ts'
 import { CLIENT_MESSAGES } from './messages.ts'
 
 /**
  * Lets the workbench hand requests to the main view's agent session: the author's "Rewrite with AI" and comments, and
  * the repair of the selected document's diagnostics. Each is prompted on the session after its document context is
- * set, and the conversation is shown.
+ * set, and the conversation is shown. Without a usable model nothing is sent: the conversation is shown, where the
+ * composer offers to set one up, and the request answers with that in the author's terms.
  */
-export function registerAgentRequests(ctx: DshClientContext, workbench: Workbench): void {
+export function registerAgentRequests(ctx: DshClientContext, workbench: Workbench, setup: AssistantSetup): void {
   ctx.inject(['sessions', 'layout'], inner => inner.effect(() => {
     let active: DshSessionBinding | undefined
     let offRequests: (() => void) | undefined
@@ -27,6 +29,10 @@ export function registerAgentRequests(ctx: DshClientContext, workbench: Workbenc
           && mainViewAgentSession(inner.sessions.list.getSnapshot().byId)?.id === id
           && selectedDocument(workbench.state) === document
         if (document === null || !isCurrent()) throw new Error(t().repairStale)
+        if (setup.readiness.getSnapshot() === 'missing') {
+          inner.layout.selectPanel(null)
+          throw new Error(t().needsModelRequest)
+        }
         const response = await postDocumentContext(id, document)
         if (!response.ok) throw new Error(await response.text() || `HTTP ${response.status}`)
         if (!isCurrent()) throw new Error(t().repairStale)

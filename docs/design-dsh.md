@@ -498,7 +498,7 @@ AI 的专用请求先经 `agent-requests.ts` 绑定文稿与焦点，再交给�
 
 直接复用：对话、确认卡片（在 `conversation.composer` 中）、会话与工作区浏览器、设置与模型设置、终端、文件、jobs、计划、插件管理（可用范围受 6.6 节限制）。侧栏与对话头部通过公开槽位组合，不嵌套第二套导航外壳。
 
-Presmium 自己占用的槽位：品牌槽位 `sidebar.brand.mark`、`sidebar.brand.name`、`conversation.hero.brand.mark`；`settings.onboarding` 中的 `welcome-notice`（优先级 -1，替换首次使用的提示）。
+Presmium 自己占用的槽位：品牌槽位 `sidebar.brand.mark`、`sidebar.brand.name`、`conversation.hero.brand.mark`；`settings.onboarding` 中的 `welcome-notice`（优先级 -1，替换首次使用的提示）；没有可用模型时 `conversation.composer` 中的接管项，与 `conversation.chat.node` 的 `turn-error` 键（10.1 节）。
 
 设置面向作者（[UI/UX RFC 1.1 节](rfc-workbench-uiux.md#11-web桌面与-vs-code)）：通用设置只留语言、外观、字号、“显示代码工作视图”与快捷键，另有“模型”页。`author-settings.ts` 经 `ctx.configForms`（`whileServed`、`get(...).set`）把作者的默认值写进 profile 自己的补丁层，只写作者还没选过的字段：`ui-settings.enabled: false`（代码工作视图关）、`ui-chat.transcriptView: compact`、`ui-chat.performanceUsage: compact`。不能放进 `--patch`：命令行补丁高于 profile 层，设置表单会拒绝作者此后的修改。代码工作视图关着时，`settings.general.item` 中的技术行（`permission`、`transcript-view`、`composer-enter`、`performance-usage`，ID 在 `contract.ts` 的 `TECHNICAL_SETTINGS`）被同 ID、优先级 -1 的空单元遮蔽；打开代码工作视图后恢复。`settings.section` 的导航直接列出全部条目，同 ID 遮蔽会多出空白项，所以“内置插件”“Agent 预设”两页按行关掉。设置头部的“打开配置文件”由 `ui-settings-general` 在回环地址上自带，没有公开开关，保留。证据见[作者设置与帮助记录](benchmarks/author-settings-help-2026-10-28.md)。
 
@@ -643,10 +643,22 @@ export interface Focus {
 | 情形 | 可用 | 不可用 |
 |---|---|---|
 | 只装核心（没有 dsh） | CLI 的 `build`、`dev`、`check`、`ir`；静态产物；`presmium dev` 的实时预览与“在编辑器中打开”；`presmium serve` 的文档列表与各文档的页面；语言服务与 VS Code 扩展；`presmium-mcp` 与 `/mcp`（外部 agent） | 浏览器中的编辑与工作台中的 AI |
-| 装了 studio，没有模型 | 工作台中除对话以外的全部：文件、编辑、保存、问题、预览、修改历史、撤销、终端。dsh 的 web profile 没有模型也能启动，bundle 全部激活 | 对话：工作台显示 Presmium 自己的说明，指出缺少什么，给出 dsh 模型设置的入口（用 Presmium 结构化的缺少项代码），不显示 dsh 原始的 `MISSING_CREDENTIAL` |
+| 装了 studio，没有模型 | 工作台中除对话以外的全部：文件、编辑、保存、问题、预览、修改历史、撤销、终端。dsh 的 web profile 没有模型也能启动，bundle 全部激活 | 对话：输入区换成 Presmium 的说明“AI 助手需要先设置模型”，唯一的操作“设置模型”打开设置的“模型”页；不能发出注定失败的请求，已写下的草稿留在被替换的输入区下面。失败的一轮以作者的话说明原因，不显示 dsh 原始的 `MISSING_CREDENTIAL`（10.1 节） |
 | 装了 studio，有模型 | 全部 | 无 |
 
 不需要模型的 Presmium 操作（构建、检查）也可以做成 dsh 的斜杠命令（`ctx.commands`），不是必需的。
+
+### 10.1 缺少模型与失败的一轮
+
+`assistant-setup.tsx` 只用 dsh 的公开接口：
+
+- **是否有可用的模型**：读 `ctx.remote.session.modelCatalog()`（`session/modelCatalog`，dsh 的模型选择器读的同一份目录）。`routableProviders` 为空即没有任何可路由的模型（没有设置，或没有任何一个提供方的密钥）。启动时读一次，之后在 dsh 转来的 `credentials/reference-updated`、`settings/document-updated`、`llm/adapters-updated`、窗口重新获得焦点时重读，没有可用模型时另每 3 秒重读（设置是本页之上的模态框，保存密钥不会让窗口重新获得焦点）。
+- **输入区**：没有可用模型时向 `conversation.composer`（chain）登记一个接管项，有了模型就撤下，这是 dsh 文档中“临时接管输入区”的用法。dsh 让默认输入区在接管项下面保持挂载，草稿按会话保存，所以作者已写下的请求在设置好模型后原样还在。说明的唯一操作“设置模型”经 `settings.onboarding` 交给引导步骤的 `openSection('models')` 打开设置的“模型”页：Presmium 的首次使用提示与替换 DeepSeek 登录的步骤每次载入都会被挂载，记下这个回调（`settings-opener.ts`）；首次使用提示的“设置模型”是同一条路径。还没有记下时退回点应用栏的“设置”。
+- **工作台交给 AI 的请求**（批注、“让 AI 处理”）：没有可用模型时不提交，显示 AI 助手（其中是上面的说明），并以作者的话报告需要先设置模型。
+- **失败的一轮**：`conversation.chat.node` 的 `turn-error` 键以优先级 -1 替换 dsh 的单元（被占用的 keyed 单元是公开的替换点），按 `turn/end` 中失败的稳定代码说明：`MISSING_CREDENTIAL`、`NO_ADAPTER` 是“需要先设置模型”，`AUTH`、`INVALID_CREDENTIAL` 是“模型没有接受当前的密钥”，`QUOTA`、`ACCOUNT_QUOTA` 是额度用完，这三类带打开“模型”页的操作；`RATE_LIMIT`、`OVERLOADED`、`CONTEXT_WINDOW_EXCEEDED` 与其余代码各有一句作者能照做的话。提供方原文与代码收在默认折叠的“技术详情”中。
+- **dsh 自己的语言**：语言包的同一命名空间不能为 dsh 内置的 `en`、`zh` 再登记一份（登记会让 `ui-conversation` 激活失败），所以作者在设置中选 dsh 的“English”“中文”时，切换为同一语言的“English (Presmium)”“简体中文（Presmium）”。只跟随变化，不改页面首次的临时语言：浏览器语言只按主子标签匹配到 `en`（如 en-GB）且没有存过语言时，仍是 dsh 的文案。
+
+证据见[缺少模型记录](benchmarks/assistant-no-model-2026-10-28.md)。
 
 ## 11. `presmium studio`
 
