@@ -6,7 +6,8 @@
 .pm-ui-block-preview__viewport { overflow: auto; }
 .pm-ui-block-preview__viewport:focus-visible { outline: var(--pm-space-px) solid var(--pm-color-accent); outline-offset: calc(var(--pm-space-px) * -1); }
 .pm-ui-block-preview__frame[inert] { pointer-events: none; }
-.pm-ui-block-preview__pending { margin: 0; padding: var(--pm-space-3); font-size: var(--pm-text-sm); color: var(--pm-color-muted); }
+/* Scoped to the card so that an editor's own paragraph rules (BlockNote's `.bn-default-styles p`) do not reset it. */
+.pm-ui-block-preview .pm-ui-block-preview__pending { margin: 0; padding: var(--pm-space-3); font-size: var(--pm-text-sm); color: var(--pm-color-muted); }
 .pm-ui-block-preview[data-status="failed"] .pm-ui-block-preview__label { color: var(--pm-color-danger); }
 .pm-ui-block-preview[data-status="failed"] .pm-ui-block-preview__viewport { height: auto; min-height: 0; }
 
