@@ -3,7 +3,7 @@ import type { DocumentEditOperation, DocumentIssue, TeachingDocument } from './d
 import type { Member } from './server.ts'
 import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, RevisionOrigin } from './workspace.ts'
 import type { DocumentOutlineAnswer, DocumentOutlineQuery, DocumentPartAnswer, DocumentPartQuery } from './document-reads.ts'
-import type { AppliedDocumentAuthoringAction, DocumentAuthoringActionInspection, DocumentAuthoringActionPlan, DocumentAuthoringActionRead, DocumentAuthoringActionReference, DocumentAuthoringActionRequest, DocumentAuthoringAction } from './authoring-actions.ts'
+import type { AppliedDocumentAuthoringAction, DocumentAuthoringActionInspection, DocumentAuthoringActionPlan, DocumentAuthoringActionRead, DocumentAuthoringActionReference, DocumentAuthoringActionRequest, DocumentAuthoringAction, DocumentComponentImpactAnswer, DocumentComponentImpactQuery } from './authoring-actions.ts'
 
 export const AUTHORING_API_VERSION = 1 as const
 export const DOCUMENT_OPERATION_TYPES = ['insertBlock', 'moveBlock', 'deleteBlock', 'updateText', 'updateSection', 'setStepState', 'setNarration', 'setTiming', 'replaceAsset'] as const satisfies readonly DocumentEditOperation['type'][]
@@ -19,6 +19,7 @@ export interface AuthoringCapabilities {
   pageLimits?: { maxRequestChars: number, maxResponseChars: number, responseSerialization: 'JSON.stringify(value,null,2)' }
   actionLimits?: { maxRequestChars: number, maxResponseChars: number, responseSerialization: 'JSON.stringify(value,null,2)' }
   semanticActions?: readonly DocumentAuthoringAction['type'][]
+  components?: { parameters: true, stepParameters: true, restoreStepParameters: true, useExistingDefinition: true, impactRead: true, maxChanges: number, maxPathDepth: number, independentCopy: { available: false, reason: 'implementation-closure-unavailable' } }
   operations: readonly DocumentEditOperation['type'][]
   replacement: boolean
   fileChanges: boolean
@@ -157,6 +158,7 @@ export interface DocumentAuthoring {
   applyPageChange(document: string, reference: DocumentPageChangeReference, member: Member): Promise<AppliedDocumentPageChange>
   planAction(document: string, request: DocumentAuthoringActionRequest, member: Member): Promise<DocumentAuthoringActionPlan>
   readActionPlan(document: string, reference: DocumentAuthoringActionRead, member: Member): Promise<DocumentAuthoringActionInspection>
+  readActionImpact(document: string, query: DocumentComponentImpactQuery, member: Member): Promise<DocumentComponentImpactAnswer>
   applyAction(document: string, reference: DocumentAuthoringActionReference, member: Member): Promise<AppliedDocumentAuthoringAction>
   apply(document: string, request: ApplyDocumentChange, member: Member): Promise<AppliedDocumentChange>
 }

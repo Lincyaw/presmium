@@ -1,6 +1,7 @@
 import { hasRole } from './access.ts'
 import { applyDocumentCommentAction, DocumentCommentError, validateDocumentCommentAnchor } from './document-comments.ts'
 import { changeDocumentVoice, documentVoiceStepIds, previewDocumentVoiceChange } from './document-voices.ts'
+import { applyDocumentComponentAction } from './document-components.ts'
 import type { DocumentAuthoringAction, DocumentAuthoringActionEffect } from './contracts/authoring-actions.ts'
 import type { DocumentCommentContext } from './contracts/document-comments.ts'
 import type { TeachingDocument } from './contracts/document.ts'
@@ -8,6 +9,10 @@ import type { TeachingDocument } from './contracts/document.ts'
 /** Fixed context is supplied by the owning adapter exactly once per semantic plan. */
 export function applyDocumentAuthoringAction(document: TeachingDocument, action: DocumentAuthoringAction, context: DocumentCommentContext): { content: TeachingDocument, effect: DocumentAuthoringActionEffect } {
   if (!context.member || !hasRole(context.member, 'editor')) throw new DocumentCommentError(403, 'authoring-permission-denied')
+  if (action.type === 'component.parameters.patch' || action.type === 'component.step-parameters.patch' || action.type === 'component.step-parameters.reset' || action.type === 'component.definition.use') {
+    const { content, effect } = applyDocumentComponentAction(document, action)
+    return { content, effect: { kind: 'component', value: effect } }
+  }
   if (action.type === 'voice.set') {
     if (action.source !== null && action.source.type !== 'tts' && action.source.type !== 'none') throw new DocumentCommentError(422, 'voice-recording-requires-adoption')
     const content = changeDocumentVoice(document, action.scope, action.source, { replaceOverrides: action.replaceOverrides }), recordings = { preserved: 0, removed: 0 }

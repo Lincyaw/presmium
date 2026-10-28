@@ -26,6 +26,13 @@ export function documentEditorRoutes({ root, editor, documentEditor, workbench }
     try { return JSON.parse(query) } catch { throw new RequestError(400, 'document-read-query-invalid') }
   }
   return {
+    'document/capabilities': {
+      role: 'editor',
+      handle: (request, ctx) => catchRequestErrors(async () => {
+        if (request.method !== 'GET') throw new RequestError(405, 'GET')
+        return jsonResponse(documentEditor.capabilities(ctx.document, ctx.member))
+      }),
+    },
     document: {
       role: 'editor',
       handle: (request, ctx) => catchRequestErrors(async () => {
@@ -106,11 +113,18 @@ export function documentEditorRoutes({ root, editor, documentEditor, workbench }
         return jsonResponse(await documentEditor.planAction(ctx.document, await request.json().catch(() => undefined) as DocumentAuthoringActionRequest, ctx.member))
       }),
     },
+    'document/action/impact': {
+      role: 'editor',
+      handle: (request, ctx) => catchRequestErrors(async () => {
+        if (request.method !== 'GET') throw new RequestError(405, 'GET')
+        return jsonResponse(await documentEditor.readActionImpact(ctx.document, queryOf(request) as import('@lincyaw/kernel').DocumentComponentImpactQuery, ctx.member))
+      }),
+    },
     'document/action/apply': {
       role: 'editor', maxBody: 16 << 10,
       handle: (request, ctx) => catchRequestErrors(async () => {
         if (request.method !== 'POST') throw new RequestError(405, 'POST')
-        return jsonResponse(await documentEditor.applyAction(ctx.document, await request.json().catch(() => undefined) as DocumentAuthoringActionReference, ctx.member))
+        return jsonResponse(await documentEditor.applyEditorAction(ctx.document, await request.json().catch(() => undefined) as DocumentAuthoringActionReference, ctx.member))
       }),
     },
     'document/page/plan': {
