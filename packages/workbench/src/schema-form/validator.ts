@@ -1,6 +1,6 @@
 import { validateDocumentParameters } from '@lincyaw/kernel'
 import type { DocumentParameterValidation, JsonSchema } from '@lincyaw/kernel'
-import { createErrorHandler, ErrorSchemaBuilder, ROOT_SCHEMA_PREFIX, toErrorList, unwrapErrorHandler, validationDataMerge, withIdRefPrefix } from '@rjsf/utils'
+import { createErrorHandler, ErrorSchemaBuilder, ROOT_SCHEMA_PREFIX, unwrapErrorHandler, validationDataMerge, withIdRefPrefix } from '@rjsf/utils'
 import type { RJSFSchema, RJSFValidationError, ValidatorType } from '@rjsf/utils'
 
 const pathOf = (pointer: string) => pointer ? pointer.slice(1).split('/').map(value => value.replaceAll('~1', '/').replaceAll('~0', '~')) : []
@@ -15,7 +15,6 @@ export function schemaFormValidator(root: RJSFSchema): ValidatorType {
     return validateDocumentParameters(fragment as JsonSchema, data, [{ id: ROOT_SCHEMA_PREFIX, schema: rootSchema as JsonSchema }])
   }
   return {
-    toErrorList,
     rawValidation<Result>(schema: RJSFSchema, data?: unknown) {
       const result = validate(schema, data)
       return result.available ? { errors: result.issues as Result[] } : { validationError: new Error(result.issues[0]?.message) }

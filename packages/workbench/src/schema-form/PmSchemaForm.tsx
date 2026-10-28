@@ -9,7 +9,7 @@ import { PmNotice } from '../components.tsx'
 import type { ControlDensity } from '../components.tsx'
 import { SCHEMA_FORM_MESSAGES } from './context.ts'
 import type { FieldPathList, SchemaFormContext } from './context.ts'
-import { schemaFormFields } from './fields.tsx'
+import { declaredSchemaProperties, schemaFormFields } from './fields.tsx'
 import { schemaFormTemplates } from './templates.tsx'
 import { schemaFormWidgets } from './widgets.tsx'
 import { schemaFormValidator } from './validator.ts'
@@ -81,7 +81,7 @@ export function schemaFormPropertyNames(schema: JsonSchema, value: JsonValue): {
     const resolved = createSchemaUtils(validator, rendered).retrieveSchema(rendered, value)
     // A selector's uncommitted branch is UI state, so it cannot be inferred from the saved value.
     if (resolved.oneOf || resolved.anyOf) return { available: false, names: [] }
-    return { available: true, names: Object.keys(resolved.properties ?? {}) }
+    return { available: true, names: declaredSchemaProperties(resolved) }
   } catch { return { available: false, names: [] } }
 }
 
@@ -112,7 +112,11 @@ export function PmSchemaForm({ schema, value, onChange, onValidationChange, onCo
       const latest = current.current, primary = documentParameterAccess(latest.schema, latest.value, path)
       // RJSF's public SchemaField carries the explicitly selected UI branch while a draft is incomplete.
       // Schema/reference failures never use this path; the canonical validator must still be available.
-      const selected = primary.reason === 'value-unresolved' && validateDocumentParameters(latest.schema, latest.value).available
+      const draft = primary.reason === 'value-unresolved' || primary.available && !primary.public ? validateDocumentParameters(latest.schema, latest.value) : undefined
+      const pointer = path.length ? `/${path.map(key => String(key).replace(/~/g, '~0').replace(/\//g, '~1')).join('/')}` : ''
+      // Unlike oneOf, the accessor may silently omit an anyOf branch with unanswered required fields.
+      const unanswered = draft?.issues.some(issue => issue.keyword === 'anyOf' && (issue.path === '' || pointer === issue.path || pointer.startsWith(`${issue.path}/`)))
+      const selected = Boolean(draft?.available && (primary.reason === 'value-unresolved' || unanswered))
       const additional = latest.accessorSchemas.map(root => documentParameterAccess(root, latest.value, path))
       return { available: (primary.available || selected) && additional.every(result => result.available), public: primary.public || selected || additional.some(result => result.public), readOnly: primary.readOnly || additional.some(result => result.readOnly) }
     },
@@ -138,7 +142,7 @@ export function PmSchemaForm({ schema, value, onChange, onValidationChange, onCo
     const collect = (candidate: RJSFSchema, level: number) => {
       if (level > 32) throw new Error('schema-form-depth')
       const resolved = utilities.retrieveSchema(candidate, after)
-      Object.assign(fields, resolved.properties)
+      for (const key of declaredSchemaProperties(resolved)) fields[key] = resolved.properties![key] as RJSFSchema
       for (const key of ['allOf', 'oneOf', 'anyOf'] as const) for (const branch of resolved[key] ?? []) if (typeof branch !== 'boolean') collect(branch, level + 1)
     }
     collect(scope, depth)
@@ -157,7 +161,7 @@ export function PmSchemaForm({ schema, value, onChange, onValidationChange, onCo
     {error && <PmNotice tone="danger">{error}</PmNotice>}
     <Form schema={rendered} formData={value} validator={validator} widgets={schemaFormWidgets} templates={schemaFormTemplates} fields={schemaFormFields} formContext={context}
       idPrefix={idPrefix ?? `parameters-${id}`} tagName="div" noHtml5Validate showErrorList={false} liveValidate disabled={disabled} readonly={readOnly}
-      experimental_defaultFormStateBehavior={{ emptyObjectFields: 'skipDefaults', arrayMinItems: { populate: 'never' }, constAsDefaults: 'never' }}
+      experimental_defaultFormStateBehavior={{ emptyObjectFields: 'skipDefaults', arrayMinItems: { populate: 'never' }, constAsDefaults: 'never', requiredBooleanDefault: 'skip' }}
       uiSchema={{ 'ui:options': { expandable: false } }} onChange={event => {
         const latest = current.current, path = context.intent, branch = context.branch, intentReadOnly = context.intentReadOnly
         context.intent = undefined; context.branch = undefined; context.intentReadOnly = undefined
