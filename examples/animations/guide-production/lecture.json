@@ -861,10 +861,13 @@
         "type": "object",
         "properties": {
           "label": {
-            "type": "string"
+            "type": "string",
+            "title": "显示文字"
           },
           "targetId": {
-            "type": "string"
+            "type": "string",
+            "title": "交互目标标识",
+            "readOnly": true
           }
         },
         "required": [
@@ -902,7 +905,8 @@
         "type": "object",
         "properties": {
           "value": {
-            "type": "number"
+            "type": "number",
+            "title": "数值"
           }
         },
         "required": [

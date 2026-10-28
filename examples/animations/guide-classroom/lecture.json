@@ -663,7 +663,29 @@
         "name": "PmQuiz"
       },
       "parameterSchema": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "options": {
+            "type": "array",
+            "title": "选项",
+            "items": {
+              "type": "string"
+            }
+          },
+          "correct": {
+            "type": "array",
+            "title": "正确选项序号（从 0 开始）",
+            "description": "序号须对应当前选项。",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "required": [
+          "options",
+          "correct"
+        ]
       },
       "states": [],
       "data": {
@@ -693,7 +715,29 @@
         "name": "PmQuiz"
       },
       "parameterSchema": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "options": {
+            "type": "array",
+            "title": "选项",
+            "items": {
+              "type": "string"
+            }
+          },
+          "correct": {
+            "type": "array",
+            "title": "正确选项序号（从 0 开始）",
+            "description": "序号须对应当前选项。",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "required": [
+          "options",
+          "correct"
+        ]
       },
       "states": [],
       "data": {
@@ -723,7 +767,39 @@
         "name": "PmPredict"
       },
       "parameterSchema": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "title": "问题"
+          },
+          "choices": {
+            "type": "array",
+            "title": "选项",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reveal": {
+            "type": "array",
+            "title": "揭晓内容标识",
+            "items": {
+              "type": "string"
+            },
+            "readOnly": true
+          },
+          "notes": {
+            "type": "array",
+            "title": "备注内容标识",
+            "items": {
+              "type": "string"
+            },
+            "readOnly": true
+          }
+        },
+        "required": [
+          "question"
+        ]
       },
       "states": [],
       "data": {
@@ -753,7 +829,14 @@
         "name": "PmExercise"
       },
       "parameterSchema": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "timeout": {
+            "type": "number",
+            "title": "执行时限（毫秒）",
+            "exclusiveMinimum": 0
+          }
+        }
       },
       "states": [],
       "data": {
@@ -813,7 +896,20 @@
         "name": "PmPulse"
       },
       "parameterSchema": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "title": "问题"
+          },
+          "levels": {
+            "type": "array",
+            "title": "反馈选项",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       },
       "states": [],
       "data": {

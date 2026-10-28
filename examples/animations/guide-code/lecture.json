@@ -848,7 +848,14 @@
         "name": "PmRunPanel"
       },
       "parameterSchema": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "timeout": {
+            "type": "number",
+            "title": "执行时限（毫秒）",
+            "exclusiveMinimum": 0
+          }
+        }
       },
       "states": [],
       "data": {
@@ -878,7 +885,14 @@
         "name": "PmRunPanel"
       },
       "parameterSchema": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "timeout": {
+            "type": "number",
+            "title": "执行时限（毫秒）",
+            "exclusiveMinimum": 0
+          }
+        }
       },
       "states": [],
       "data": {
@@ -908,7 +922,14 @@
         "name": "PmStepRun"
       },
       "parameterSchema": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "timeout": {
+            "type": "number",
+            "title": "执行时限（毫秒）",
+            "exclusiveMinimum": 0
+          }
+        }
       },
       "states": [
         {
@@ -979,7 +1000,14 @@
         "name": "PmRunPanel"
       },
       "parameterSchema": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "timeout": {
+            "type": "number",
+            "title": "执行时限（毫秒）",
+            "exclusiveMinimum": 0
+          }
+        }
       },
       "states": [],
       "data": {
