@@ -31,6 +31,23 @@ export const SHELL_MODULES = [
   '@deepseek-ai/dsh-client-ui-dockkit',
 ] as const
 
+/**
+ * Harness's technical rows in Settings → General, by cell id, that stay out of an author's Settings while the coding
+ * view is off: the default permission mode and the display of the AI's work (work details and when they collapse, send
+ * behaviour while busy, performance and usage).
+ */
+export const TECHNICAL_SETTINGS = { slot: 'settings.general.item', ids: ['permission', 'transcript-view', 'composer-enter', 'performance-usage'] } as const
+
+/**
+ * The author's defaults for Harness's display preferences, by settings namespace (docs/rfc-workbench-uiux.md 1.1, 4.4):
+ * the coding view (trajectory, code diffs, every agent preset and the technical rows above) off, and the AI's work as
+ * compact, collapsed summaries without token statistics.
+ */
+export const AUTHOR_DEFAULTS: Record<string, Record<string, unknown>> = {
+  'ui-settings': { enabled: false },
+  'ui-chat': { transcriptView: 'compact', performanceUsage: 'compact' },
+}
+
 export const EXPERIMENTAL_GROUP = '[data-plugin-group="extensions"]'
 
 export const UI_LAYOUT = '@deepseek-ai/dsh-client-ui-layout'

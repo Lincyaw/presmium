@@ -28,6 +28,12 @@ interface DshObservable<T> {
 
 type DshSelectorHook<T> = <U>(select: (value: T) => U) => U
 
+interface DshConfigForm {
+  getSnapshot(): { status: 'loading' | 'ready' | 'unavailable', user: unknown, revision: number | undefined, writable: boolean }
+  subscribe(listener: () => void): () => void
+  set(field: string, value: unknown): Promise<boolean>
+}
+
 interface DshSlotOptions {
   name: string
   key?: string
@@ -129,6 +135,11 @@ interface DshClientContext {
   sessions: { list: DshObservable<{ byId: Record<string, { id: string, cwd?: string, retainedBy: { mainView?: number } }> }>, binding(id: string): DshSessionBinding | undefined }
   uiWorkspace: { openWorkspace(id: string, beforeOpen?: (sessionId: string) => void): Promise<void>, startSession(id?: string): void }
   workspaces: { list: DshObservable<{ items: readonly { workspaceId: string, path: string }[] }> }
+  configForms: {
+    developerTools: { enabled: DshObservable<boolean> }
+    get(entryId: string): DshConfigForm
+    whileServed(namespaces: readonly string[], register: (served: ReadonlySet<string>) => () => void): () => void
+  }
 }
 
 interface Window {
