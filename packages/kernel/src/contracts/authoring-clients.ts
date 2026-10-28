@@ -12,7 +12,7 @@ export const AUTHORING_CLIENT_MAX_REQUESTS = 64
 export const AUTHORING_CLIENT_REQUEST_TIMEOUT_MS = 30000
 export const AUTHORING_CLIENT_ACK_MAX_BYTES = 32768
 export const AUTHORING_CLIENT_EVENT_MAX_BYTES = 8 << 10
-export const AUTHORING_CLIENT_ACTIONS = ['state.read', 'source.flush', 'preview.prepare', 'comment-drafts.inspect', 'comment-drafts.read', 'playback.pause', 'position.step', 'playback.play', 'playback.seek', 'playback.rate'] as const
+export const AUTHORING_CLIENT_ACTIONS = ['state.read', 'source.flush', 'preview.prepare', 'comment-drafts.inspect', 'comment-drafts.read', 'component-drafts.inspect', 'component-drafts.read', 'playback.pause', 'position.step', 'playback.play', 'playback.seek', 'playback.rate'] as const
 export type AuthoringClientActionType = typeof AUTHORING_CLIENT_ACTIONS[number]
 export type AuthoringClientAction =
   | { type: 'state.read' }
@@ -20,6 +20,8 @@ export type AuthoringClientAction =
   | { type: 'preview.prepare' }
   | { type: 'comment-drafts.inspect', cursor?: { after: string, token: string }, limit?: number }
   | { type: 'comment-drafts.read', draft: ClientCommentDraftReference, offset: number, maxChars?: number }
+  | { type: 'component-drafts.inspect', cursor?: { after: string, token: string }, limit?: number }
+  | { type: 'component-drafts.read', draft: ClientComponentDraftReference, offset: number, maxChars?: number }
   | { type: 'playback.pause' }
   | { type: 'position.step', sectionId: string, stepId: string }
   | { type: 'playback.play', binding: ProductionBinding }
@@ -27,6 +29,19 @@ export type AuthoringClientAction =
   | { type: 'playback.rate', binding: ProductionBinding, rate: number }
 
 export interface ClientCommentDraftReference { id: string, revision: number, token: string }
+export interface ClientComponentDraftReference { id: string, revision: number, token: string, blockId: string, stepId?: string }
+/** No parameter values, baselines, workspace identity or member IDs enter this metadata. */
+export interface ClientComponentDraftMetadata {
+  draft: ClientComponentDraftReference
+  definitionId: string
+  storage: 'durable' | 'session'
+  status: 'available' | 'pending' | 'session-only'
+  updatedAt: number
+  baseVersion: string
+  sourceCurrent: boolean
+  composing: boolean
+  reset: boolean
+}
 /** Explicit inspection deliberately excludes content, source signatures, comment baselines and pending values. */
 export interface ClientCommentDraftMetadata {
   draft: ClientCommentDraftReference
@@ -42,6 +57,8 @@ export interface ClientCommentDraftMetadata {
 export type AuthoringClientActionResult =
   | { type: 'comment-drafts.inspect', family: 'comment', coverage: 'stored-and-session' | 'session-only', skippedInvalid: number, token: string, drafts: ClientCommentDraftMetadata[], next?: { after: string, token: string } }
   | { type: 'comment-drafts.read', family: 'comment', draft: ClientCommentDraftReference, storage: 'durable' | 'session', format: 'presmium-rich-text-json-v1', offset: number, endOffset: number, totalUtf16: number, totalUtf8: number, sha256: string, jsonText: string }
+  | { type: 'component-drafts.inspect', family: 'component', coverage: 'stored-and-session' | 'session-only', skippedInvalid: number, token: string, drafts: ClientComponentDraftMetadata[], next?: { after: string, token: string } }
+  | { type: 'component-drafts.read', family: 'component', draft: ClientComponentDraftReference, storage: 'durable' | 'session', format: 'presmium-component-parameters-json-v1', offset: number, endOffset: number, totalUtf16: number, totalUtf8: number, sha256: string, jsonText: string }
 
 /** Reports contain no editor text. Time is an observed sample, never a server-estimated playhead. */
 export interface AuthoringClientSnapshot {
@@ -133,11 +150,15 @@ const bool: Schema = { type: 'boolean' }
 const object = (properties: Record<string, Schema>, required = Object.keys(properties)): Schema => ({ type: 'object', additionalProperties: false, properties, required })
 const digest: Schema = { type: 'string', pattern: '^[a-f0-9]{64}$' }
 const draftReference = object({ id: entity, revision: { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER }, token: digest })
+const componentDraftReference = object({ id: entity, revision: { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER }, token: digest, blockId: entity, stepId: entity }, ['id', 'revision', 'token', 'blockId'])
 const cursor = object({ after: entity, token: digest })
 export const AUTHORING_CLIENT_ACTION_RESULT_SCHEMA: Schema = { oneOf: [
   object({ type: { const: 'comment-drafts.inspect' }, family: { const: 'comment' }, coverage: { enum: ['stored-and-session', 'session-only'] }, skippedInvalid: integer,
     token: digest, drafts: { type: 'array', maxItems: 10, items: object({ draft: draftReference, kind: { enum: ['create', 'reply', 'edit'] }, storage: { enum: ['durable', 'session'] }, updatedAt: integer, baseVersion: entity, composing: bool, pendingSubmission: bool, threadId: entity, commentId: entity }, ['draft', 'kind', 'storage', 'updatedAt', 'baseVersion', 'composing', 'pendingSubmission']) }, next: cursor }, ['type', 'family', 'coverage', 'skippedInvalid', 'token', 'drafts']),
   object({ type: { const: 'comment-drafts.read' }, family: { const: 'comment' }, draft: draftReference, storage: { enum: ['durable', 'session'] }, format: { const: 'presmium-rich-text-json-v1' }, offset: integer, endOffset: integer, totalUtf16: integer, totalUtf8: integer, sha256: digest, jsonText: { type: 'string', maxLength: 2048 } }),
+  object({ type: { const: 'component-drafts.inspect' }, family: { const: 'component' }, coverage: { enum: ['stored-and-session', 'session-only'] }, skippedInvalid: integer,
+    token: digest, drafts: { type: 'array', maxItems: 10, items: object({ draft: componentDraftReference, definitionId: entity, storage: { enum: ['durable', 'session'] }, status: { enum: ['available', 'pending', 'session-only'] }, updatedAt: integer, baseVersion: entity, sourceCurrent: bool, composing: bool, reset: bool }) }, next: cursor }, ['type', 'family', 'coverage', 'skippedInvalid', 'token', 'drafts']),
+  object({ type: { const: 'component-drafts.read' }, family: { const: 'component' }, draft: componentDraftReference, storage: { enum: ['durable', 'session'] }, format: { const: 'presmium-component-parameters-json-v1' }, offset: integer, endOffset: integer, totalUtf16: integer, totalUtf8: integer, sha256: digest, jsonText: { type: 'string', maxLength: 2048 } }),
 ] }
 const source = DOCUMENT_PAGE_DUPLICATION_SCHEMA.properties.source as unknown as Schema
 const binding = object({ source, irRevision: entity, planId: entity })
@@ -154,6 +175,8 @@ export const AUTHORING_CLIENT_ACTION_SCHEMA: Schema = { oneOf: [
   action('state.read'), action('source.flush'), action('preview.prepare'), action('playback.pause'), action('position.step', { sectionId: entity, stepId: entity }),
   object({ type: { const: 'comment-drafts.inspect' }, cursor, limit: { type: 'integer', minimum: 1, maximum: 10 } }, ['type']),
   object({ type: { const: 'comment-drafts.read' }, draft: draftReference, offset: integer, maxChars: { type: 'integer', minimum: 2, maximum: 2048 } }, ['type', 'draft', 'offset']),
+  object({ type: { const: 'component-drafts.inspect' }, cursor, limit: { type: 'integer', minimum: 1, maximum: 10 } }, ['type']),
+  object({ type: { const: 'component-drafts.read' }, draft: componentDraftReference, offset: integer, maxChars: { type: 'integer', minimum: 2, maximum: 2048 } }, ['type', 'draft', 'offset']),
   action('playback.play', { binding }), action('playback.seek', { binding, timeMs: number }), action('playback.rate', { binding, rate: { enum: [...PRODUCTION_PLAYBACK_RATES] } }),
 ] }
 export const AUTHORING_CLIENT_REQUEST_SCHEMA: Schema = object({ clientId: id, epoch: id, requestId: id, source, expectedClientState: object({ connectionId: id, revision: integer }), action: AUTHORING_CLIENT_ACTION_SCHEMA })
