@@ -23,3 +23,19 @@ Figma 读取 `ComponentProperties` 的 Compact Base `278:5411` 与 NoFields `278
 原始失败均保留：6.11 根入口构建缺少 dev-only `@rjsf/validator-ajv8`；内部子路径仅探索，未交付。原 oneOf 分支保留错误以公开根 schema scope 修复。`run-1793149955003` 的 30 个行为断言虽通过，但出现 16 条 React 更新深度警告，不能记作 clean；最终以语义相等的 validation 通知去重消除，再将 console 纳入失败条件重跑。`run-1793149729151` 为先前 21 项清洁基线，不冒充最终源码证据。
 
 独立 peer 只读全部六模块、导出和 CSS，给出 scoped APPROVE；未另起消费者。轻量检查与精确提交字节证明登记在同目录 final-manifest.json。未运行测试套件、示例全量构建或公开部署。
+
+## 共享参数访问能力
+
+随后独立增加 `documentParameterAccess(schema, value, path)`，返回 `available`、`public`、`readOnly` 及有界失败代码。它通过 json-schema-library 11.6.16 的公开 `compileSchema`、`getNode` 与 `reduceNode` 获取明确 schema 路径及只读祖先，固定本地 draft-2020-12，不注册远程 loader。显式 pattern／additionalProperties 的 schema 也属于声明；宽泛 object、缺少 item schema 或未声明键不从当前数据推断为公共字段。引用缺失、分支不确定、非法 schema 或解析限制返回 unavailable。单次路径最多 64 层，schema 注解遍历最多 64 层／50000 个 schema 节点。
+
+该库的原始 `getNode` 在 `allOf` 中会以后面的 `readOnly:false` 覆盖前面的 true，公开 `reduceNode` 同样如此；默认 validation 注解不收集只读，扩展注解 hook 在 anyOf／引用旁注中也未完整收集。原始反例保留，未作为权限判断交付。最终仅在私有 schema 副本的标准 schema 位置移除 false 注解：false 表示没有只读声明，不能撤销另一适用 schema 的 true。default、const、enum、examples 等数据未改；引用、分支、约束仍由库解析，作者 JSON 不回写。CFworker 的原始 schema 完整校验保持不变。此能力不是手写通用 resolver，也不代替动作 owner 对变更叶子、数组操作和前后两个有效 schema 状态的检查。
+
+| 忽略证据：`.presmium/schema-access-verification/` | 实际结果 |
+|---|---|
+| `probe-1793150679251.json` | 原始库 26 项中 24 通过；保留 allOf 顺序覆盖与根未 reduce 两个失败 |
+| `annotations-1793150706715.json`、`annotation-extension-1793150751991.json` | 公开注解接口不足的原始材料，未采用该方案 |
+| `normalize-probe-1793150798357.json` | 13 项窄探针通过，含两种顺序、ref 旁注、未选分支及数据不变 |
+| `consumer-1793150910229.json` | 实际最终 helper 52/52；四个运行源起止一致，无作者数据变更；单次查询最大约 3.2ms，仅作本地观测 |
+| `../schema-form-verification/run-1793150917330/result.json` | 加入新依赖后公开根入口构建及真实浏览器再验证 30/30，1182 输入起止/current 一致，错误为空，浏览器和私服全关闭 |
+
+最终类型检查 1302 文件通过。参数访问片的 manifest 与精确提交证明单独登记，不把新增依赖后的结果冒充此前公共表单提交时的冻结字节。此处不宣称参数动作的端到端只读门禁已经接入；后者由领域动作片复用本函数并独立验证。
