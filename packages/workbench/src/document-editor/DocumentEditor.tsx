@@ -7,7 +7,7 @@ import type { Locale } from '../messages.ts'
 import { BlockNoteSurface } from './BlockNoteSurface.tsx'
 import type { CommentDrafts } from './comment-drafts.ts'
 import { DocumentThreadStore } from './comments.ts'
-import { createDocumentProjection, nativeDocumentToProduct, nativePage, rememberDocumentStructure } from './projection.ts'
+import { createDocumentProjection, nativeDocumentToProduct, nativePage, rememberComponentConfiguration, rememberDocumentStructure } from './projection.ts'
 import type { NativePageCreation } from './projection.ts'
 import { captureRichBaseline } from './rich-text.ts'
 import { captureTableIdentities, seedTableIdentities } from './table-identities.ts'
@@ -22,6 +22,7 @@ export interface DocumentEditingPosition {
 }
 export interface DocumentEditorCommands {
   insertPage(after: string | undefined, title: string): NativePageCreation
+  rememberComponentConfiguration(document: TeachingDocument): void
 }
 
 export interface DocumentEditorProps {
@@ -59,6 +60,7 @@ export interface DocumentEditorProps {
 /** A source version reset replaces the editor; its own save receipts never replace it. */
 export function DocumentEditor(props: DocumentEditorProps) {
   const projection = useMemo(() => createDocumentProjection(props.document), [props.identity, props.reset])
+  useEffect(() => rememberComponentConfiguration(projection, props.document), [projection, props.version])
   const comments = useMemo(() => new DocumentThreadStore(props.document, props.member, props.version, props.identity, props.commentDrafts), [props.identity, props.reset])
   useEffect(() => {
     const latest = current.current, document = latest.getDocument ? latest.getDocument() : latest.document
@@ -153,7 +155,9 @@ export function DocumentEditor(props: DocumentEditorProps) {
         })
         unsubscribe.current = () => { stopBefore(); stopComments(); stopSelection(); stopFocus(); cancelFocus() }
       }
-      const commands: DocumentEditorCommands | undefined = value ? { insertPage: (after, title) => {
+      const commands: DocumentEditorCommands | undefined = value ? { rememberComponentConfiguration: document => {
+        if (editor.current === value && active.current === projection && binding.current === projection && !value.prosemirrorView.isDestroyed) rememberComponentConfiguration(projection, document)
+      }, insertPage: (after, title) => {
         if (current.current.readOnly || editor.current !== value || active.current !== projection || binding.current !== projection || value.prosemirrorView.isDestroyed) throw new Error('page-context-changed')
         const blocks = value.document, index = after ? blocks.findIndex(block => block.type === 'presmiumPage' && block.props.sectionId === after) : blocks.length - 1
         if (index < 0) throw new Error('page-boundary')

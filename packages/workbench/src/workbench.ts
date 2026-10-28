@@ -2,6 +2,10 @@ import type { ProjectOperation, ProjectPlan } from '@lincyaw/kernel'
 import { undoDepth, redoDepth } from '@tiptap/pm/history'
 import { TextSelection } from '@tiptap/pm/state'
 import { CommentDraftBank } from './document-editor/comment-drafts.ts'
+import { ComponentPropertyDrafts } from './component-property-drafts.ts'
+import { componentSource, reconcileComponentAction, sameComponentSource } from './component-properties.ts'
+import { applyDocumentComponentAction, documentComponentSection, effectiveComponentParameters } from '@lincyaw/kernel'
+import type { DocumentAuthoringActionPlan, DocumentComponentAction, AppliedDocumentAuthoringAction } from '@lincyaw/kernel'
 import { inspectCommentDrafts } from './document-editor/comment-draft-inspection.ts'
 import { DocumentSession } from './document-session.ts'
 import { reconcileRecordingAdoption } from './recording-adoption.ts'
@@ -129,7 +133,7 @@ export interface WorkbenchState {
   documentPositionToken: string
   documentPositionIntent: 'seek' | 'pause'
   /** An explicit source navigation request; scrolling updates position without issuing another request. */
-  documentNavigation?: { section: string, request: string }
+  documentNavigation?: { section: string, block?: string, request: string }
   documentPositionFailure?: 'removed'
   isCreatingPage?: boolean
   isEditingPage?: boolean
@@ -271,6 +275,7 @@ export class Workbench {
   #state: WorkbenchState
   readonly #listeners = new Set<Listener>()
   readonly #commentDrafts = new CommentDraftBank()
+  readonly #componentPropertyDrafts = new ComponentPropertyDrafts()
   readonly #positionSeed = Array.from(crypto.getRandomValues(new Uint32Array(2)), value => value.toString(36)).join('-')
   #positionSequence = 0
   readonly #selectedSteps = new Map<string, number>()
@@ -423,7 +428,16 @@ export class Workbench {
     const source = this.#state.authoring
     return source?.identity && source.member?.id ? this.#commentDrafts.peek(source.identity, source.member.id)?.revision ?? 0 : 0
   }
-  subscribeCommentDraftChanges(listener: () => void): () => void { return this.#commentDrafts.subscribe(listener) }
+  documentPropertyDrafts(identity: string): ComponentPropertyDrafts | undefined { return this.#state.authoring?.identity === identity ? this.#componentPropertyDrafts : undefined }
+  /** Only counters enter passive client state; no new form payload is exposed to MCP. */
+  authoringDraftRevision(): string {
+    const source = this.#state.authoring
+    return JSON.stringify([this.authoringCommentDraftRevision(), source?.identity && source.member?.id ? this.#componentPropertyDrafts.revision(source.identity, source.member.id) : 0])
+  }
+  subscribeAuthoringDraftChanges(listener: () => void): () => void {
+    const comments = this.#commentDrafts.subscribe(listener), properties = this.#componentPropertyDrafts.subscribe(listener)
+    return () => { comments(); properties() }
+  }
 
   getState = (): WorkbenchState => this.#state
 
@@ -1362,6 +1376,56 @@ export class Workbench {
     if (!saved || saved.dirty || saved.saving || saved.composing || saved.restored || saved.error) throw new Error('voice-save-unconfirmed')
     return true
   }
+  /** Parameter planning is an authoring read; it does not compile, change modes or write the document. */
+  async planDocumentComponentAction(action: DocumentComponentAction, id: string, expected: { identity: string, version: string, fingerprint: string }, signal?: AbortSignal): Promise<DocumentAuthoringActionPlan> {
+    const source = this.#mediaSource(expected), scope = this.#documentScope
+    if (!source.content || !source.fingerprint || source.fingerprint !== expected.fingerprint) throw new Error('component-source-changed')
+    const request = { id, source: componentSource({ content: source.content, version: source.version!, fingerprint: source.fingerprint }), action: structuredClone(action) }
+    const answer = await this.client.planDocumentAction(source.directory, request, signal)
+    signal?.throwIfAborted()
+    const current = this.#mediaSource(expected)
+    if (scope !== this.#documentScope || !current.content || !current.fingerprint || answer.document !== source.directory || answer.changeId !== id || answer.effect.kind !== 'component'
+      || !sameComponentSource(answer.source, request.source) || JSON.stringify(answer.action) !== JSON.stringify(request.action)) throw new Error('component-source-changed')
+    return answer
+  }
+  /** The existing source actor owns adoption and ambiguous-response recovery, including later native input. */
+  async applyDocumentComponentPlan(plan: DocumentAuthoringActionPlan, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<{ answer: DocumentChangeAnswer, commitId?: string }> {
+    if (plan.effect.kind !== 'component' || !plan.action.type.startsWith('component.')) throw new Error('component-plan-invalid')
+    const source = this.#mediaSource(expected), action = plan.action as DocumentComponentAction, scope = this.#documentScope
+    if (!source.content || !source.fingerprint || !sameComponentSource(plan.source, componentSource({ content: source.content, version: source.version!, fingerprint: source.fingerprint }))) throw new Error('component-source-changed')
+    this.#playback.stopPreviewOutputs()
+    await this.pausePlayback()
+    let receipt: AppliedDocumentAuthoringAction | undefined
+    const remember = (answer: DocumentChangeAnswer) => {
+      if (this.#documentEditorBinding?.identity === expected.identity) this.#documentEditorCommands?.rememberComponentConfiguration(answer.content)
+      return { answer, ...receipt?.commit ? { commitId: receipt.commit.id } : {} }
+    }
+    try {
+      const answer = await this.#documentSession.commitExternal(expected, async (_before, ownedSignal) => {
+        receipt = await this.client.applyDocumentAction(source.directory, { planId: plan.planId, digest: plan.digest, source: plan.source }, ownedSignal)
+        const current = await this.client.readDocument(source.directory)
+        if (receipt.planId !== plan.planId || receipt.digest !== plan.digest || receipt.changeId !== plan.changeId || receipt.action !== plan.action.type
+          || !receipt.verification.saved || !receipt.verification.actionStateVerified || !sameComponentSource(receipt.verification.source, componentSource(current))) throw new Error('document-confirmation')
+        return { ...current, changeId: receipt.changeId, files: receipt.files }
+      }, (before, answer, current) => reconcileComponentAction(action, before, answer, current), signal)
+      if (scope !== this.#documentScope || this.#state.authoring?.identity !== expected.identity) throw new Error('component-source-changed')
+      return remember(answer)
+    } catch (error) {
+      const current = this.#state.authoring, file = plan.files.find(value => value.path === (source.directory ? `${source.directory}/lecture.json` : 'lecture.json'))
+      // commitExternal has independently read and reconciled this exact predicted canonical version.
+      if (scope === this.#documentScope && current?.identity === expected.identity && current.content && current.version && current.fingerprint && !current.error
+        && file?.version === current.version && current.version !== plan.source.version) {
+        // Canonical acceptance is already known even when later native input has
+        // deleted the target. Undoing that deletion must restore its accepted configuration.
+        if (this.#documentEditorBinding?.identity === expected.identity) this.#documentEditorCommands?.rememberComponentConfiguration(plan.content)
+        try {
+          if (!applyDocumentComponentAction(current.content, action).effect.changed) return remember({ document: source.directory, content: plan.content,
+            version: current.version, fingerprint: current.fingerprint, issues: plan.issues, changeId: plan.changeId, files: plan.files.map(value => ({ path: value.path, version: value.version })) })
+        } catch { /* A later conflicting input keeps the original request failure and form draft. */ }
+      }
+      throw error
+    }
+  }
   /** Uses the current actor revision so timing edits cannot replace later body or narration input. */
   setDocumentStepProduction(stepId: string, patch: StepTimingPatch, identity?: string): void {
     const document = this.getDocument(identity)
@@ -1771,6 +1835,18 @@ export class Workbench {
     this.goToStep(section, this.#selectedSteps.get(`${this.#state.document}\0${section}`) ?? 0)
   }
 
+  /** Material references locate a canonical block in Doc without entering a runtime view or rewriting selection. */
+  revealDocumentComponent(blockId: string, identity: string): void {
+    const source = this.#state.authoring, document = this.getDocument(identity)
+    if (!document || source?.identity !== identity || this.#state.webView !== 'document' || document.blocks[blockId]?.type !== 'component') return
+    const sectionId = documentComponentSection(document, blockId), section = document.sections[sectionId]!
+    const current = this.#state.position?.section === sectionId ? this.#state.position.step : this.#selectedSteps.get(`${this.#state.document}\0${sectionId}`) ?? 0
+    const visible = (index: number) => Boolean(section.stepOrder[index] && effectiveComponentParameters(document, blockId, section.stepOrder[index]).visual?.visible)
+    const step = visible(current) ? current : Math.max(0, section.stepOrder.findIndex((_, index) => visible(index)))
+    this.#set({ position: { section: sectionId, step, trail: [], view: 'document' }, documentPositionFailure: undefined,
+      documentNavigation: { section: sectionId, block: blockId, request: crypto.randomUUID() } })
+  }
+
   observeDocumentSection(section: string): void {
     if (this.#state.webView !== 'document' || !this.#state.authoring?.content?.sections[section]) return
     if (this.#state.documentPositionFailure) this.#set({ documentPositionFailure: undefined })
@@ -2074,6 +2150,7 @@ export class Workbench {
     this.#diagnostics.dispose()
     this.#documentSession.dispose()
     this.#commentDrafts.close()
+    this.#componentPropertyDrafts.close()
     disposeTranscriptionSessions(this.client)
     disposeDocumentRecordings(this)
   }

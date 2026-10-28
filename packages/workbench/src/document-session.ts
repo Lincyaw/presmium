@@ -55,7 +55,33 @@ interface Slot {
 const serialize = (value: unknown) => JSON.stringify(value, (_, entry) => entry && typeof entry === 'object' && !Array.isArray(entry) ? Object.fromEntries(Object.entries(entry).sort(([a], [b]) => a.localeCompare(b))) : entry)
 /** Non-body authoring changes keep native selection, comment drafts and body history. */
 function keepsEditorContent(before: TeachingDocument, after: TeachingDocument): boolean {
-  const editing = ({ assets: _assets, production: _production, comments: _comments, ...document }: TeachingDocument) => document
+  const editing = ({ assets: _assets, production: _production, comments: _comments, definitions: _definitions, ...document }: TeachingDocument) => {
+    const resolved = new Map<string, Map<string, { blockId: string, visible: boolean, state?: string }>>()
+    const visiting = new Set<string>()
+    const visuals = (id?: string): Map<string, { blockId: string, visible: boolean, state?: string }> => {
+      if (!id || !document.steps[id] || visiting.has(id)) return new Map()
+      const known = resolved.get(id)
+      if (known) return known
+      visiting.add(id)
+      const step = document.steps[id]!, result = new Map(visuals(step.inherits))
+      for (const { parameters: _parameters, ...visual } of step.visuals) result.set(visual.blockId, { ...result.get(visual.blockId), ...visual })
+      visiting.delete(id); resolved.set(id, result)
+      return result
+    }
+    return { ...document,
+    blocks: Object.fromEntries(Object.entries(document.blocks).map(([id, block]) => {
+      if (block.type !== 'component') return [id, block]
+      const { parameters: _parameters, definitionId: _definitionId, ...body } = block
+      return [id, body]
+    })),
+    steps: Object.fromEntries(Object.entries(document.steps).map(([id, step]) => [id, { ...step, visuals: step.visuals.flatMap(({ parameters: _parameters, ...visual }) => {
+      if (document.blocks[visual.blockId]?.type !== 'component') return [visual]
+      const inherited = visuals(step.inherits).get(visual.blockId)
+      // A first parameter override materializes the already inherited visibility. It is not a body-tree edit.
+      return visual.visible === (inherited?.visible ?? false) && (visual.state ?? inherited?.state) === inherited?.state ? [] : [visual]
+    }) }])),
+    }
+  }
   return serialize(editing(before)) === serialize(editing(after))
     && Object.entries(before.assets).every(([id, asset]) => Object.hasOwn(after.assets, id) && serialize(asset) === serialize(after.assets[id]))
 }

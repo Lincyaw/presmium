@@ -41,8 +41,11 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore }: {
     if (!navigation) return
     const request = JSON.stringify([source?.identity, navigation.request])
     if (consumedNavigation.current === request) return
-    const heading = container.current?.querySelector(`[data-document-section="${CSS.escape(navigation.section)}"]`)
-    if (heading) { consumedNavigation.current = request; heading.scrollIntoView({ block: 'start' }) }
+    const target = navigation.block ? container.current?.querySelector(`[data-block-preview="${CSS.escape(navigation.block)}"]`) : container.current?.querySelector(`[data-document-section="${CSS.escape(navigation.section)}"]`)
+    if (target) {
+      consumedNavigation.current = request; target.scrollIntoView({ block: navigation.block ? 'center' : 'start' })
+      if (navigation.block) target.querySelector<HTMLElement>('[data-component-properties]')?.focus({ preventScroll: true })
+    }
   }, [navigation, source?.identity, source?.reset])
   useEffect(() => {
     const element = container.current

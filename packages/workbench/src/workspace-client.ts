@@ -6,6 +6,7 @@ import type { OperationBatch } from './telemetry.ts'
 import type { VoiceCatalogAnswer, VoiceoverCancellation, VoiceoverJob, VoiceoverJobsAnswer, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest } from '@lincyaw/kernel'
 import type { PageDeleteAnswer, PageDeletePlan, PageDeleteRequest } from '@lincyaw/kernel'
 import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, DocumentEvent } from '@lincyaw/kernel'
+import type { AppliedDocumentAuthoringAction, AuthoringCapabilities, DocumentAuthoringActionInspection, DocumentAuthoringActionPlan, DocumentAuthoringActionRead, DocumentAuthoringActionReference, DocumentAuthoringActionRequest } from '@lincyaw/kernel'
 import type { DocumentRecordingAdoption, VerifiedDocumentRecordingAdoption, DocumentAudioImport, DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentMediaClipChange } from '@lincyaw/kernel'
 import type { DocumentImageImport, DocumentImageImportAnswer } from '@lincyaw/kernel'
 import type { ProductionAssetAnswer, ProductionAssetQuery, ProductionMediaQuery, ProductionPlan, ProductionPlanQuery } from '@lincyaw/kernel'
@@ -53,6 +54,10 @@ export interface WorkspaceClient {
   saveSourceTransaction(document: string, changes: SourceTransactionChange[], message?: string): Promise<SourceTransactionAnswer>
   readIr(document: string): Promise<IrAnswer>
   readDocument(document: string): Promise<DocumentAnswer>
+  readAuthoringCapabilities(document: string, signal?: AbortSignal): Promise<AuthoringCapabilities>
+  planDocumentAction(document: string, request: DocumentAuthoringActionRequest, signal?: AbortSignal): Promise<DocumentAuthoringActionPlan>
+  readDocumentActionPlan(document: string, reference: DocumentAuthoringActionRead, signal?: AbortSignal): Promise<DocumentAuthoringActionInspection>
+  applyDocumentAction(document: string, reference: DocumentAuthoringActionReference, signal?: AbortSignal): Promise<AppliedDocumentAuthoringAction>
   /** A same-origin display URL; the canonical asset location remains untouched. */
   documentAssetURL(document: string, assetId: string): string
   changeDocument(document: string, change: DocumentChange): Promise<DocumentChangeAnswer>
@@ -313,6 +318,10 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     saveSourceTransaction: (document, changes, message) => post(url('source/transaction', document), { changes, ...message ? { message } : {} }),
     readIr,
     readDocument: document => call(url('document', document)),
+    readAuthoringCapabilities: (document, signal) => call(url('document/capabilities', document), { signal }),
+    planDocumentAction: (document, request, signal) => post(url('document/action/plan', document), request, signal),
+    readDocumentActionPlan: (document, reference, signal) => call(url('document/action/plan', document, { planId: reference.planId, digest: reference.digest }), { signal }),
+    applyDocumentAction: (document, reference, signal) => post(url('document/action/apply', document), reference, signal),
     documentAssetURL: (document, asset) => url('document/asset', document, { asset }),
     changeDocument: (document, change) => post(url('document/change', document), change),
     importDocumentImage: (document, file, change, signal) => {

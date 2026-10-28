@@ -14,6 +14,7 @@ export interface DocumentProjection extends RichProjection {
   structure?: string
   structures: Map<string, Pick<DocumentProjection, 'document' | 'rich' | 'owners' | 'pages' | 'baseline'>>
   createdPages: Map<string, NativePageCreation>
+  componentConfiguration: Map<string, string>
 }
 export type NativePageCreation = DocumentPageIds
 const newId = () => crypto.randomUUID()
@@ -42,7 +43,7 @@ function productBlock(blockId: string, context: DocumentProjection, sectionId: s
 }
 
 export function createDocumentProjection(document: TeachingDocument): DocumentProjection {
-  const context: DocumentProjection = { ...createRichProjection(), owners: new Map(), pages: new Map(), blockSections: new Map(), structures: new Map(), createdPages: new Map(), document: structuredClone(document), content: [] }
+  const context: DocumentProjection = { ...createRichProjection(), owners: new Map(), pages: new Map(), blockSections: new Map(), structures: new Map(), createdPages: new Map(), componentConfiguration: new Map(), document: structuredClone(document), content: [] }
   context.content = document.sectionOrder.flatMap(sectionId => {
     const section = document.sections[sectionId]!
     context.pages.set(pageId(sectionId), sectionId)
@@ -64,6 +65,44 @@ export function rememberDocumentStructure(blocks: readonly DocumentEditorBlock[]
   if (!context.structures.has(structure)) context.structures.set(structure, {
     document: context.document, rich: new Map(context.rich), owners: new Map(context.owners), pages: new Map(context.pages), baseline: new Map(context.baseline),
   })
+}
+
+/** Source-owned component configuration also accompanies a missing node in native structural history. */
+export function rememberComponentConfiguration(context: DocumentProjection, source: TeachingDocument): void {
+  const changed = new Set<string>()
+  const overrides = new Map<string, unknown[]>()
+  for (const step of Object.values(source.steps)) for (const visual of step.visuals) if (visual.parameters) {
+    let values = overrides.get(visual.blockId)
+    if (!values) overrides.set(visual.blockId, values = [])
+    values.push([step.id, visual.parameters])
+  }
+  for (const block of Object.values(source.blocks)) {
+    if (block.type !== 'component') continue
+    const signature = JSON.stringify([block.definitionId, block.parameters, overrides.get(block.id) ?? []])
+    if (context.componentConfiguration.get(block.id) === signature) continue
+    context.componentConfiguration.set(block.id, signature); changed.add(block.id)
+  }
+  if (!changed.size) return
+  for (const snapshot of context.structures.values()) {
+    for (const id of changed) {
+      const current = source.blocks[id]!
+      const previous = snapshot.document.blocks[id]
+      if (current.type !== 'component' || previous?.type !== 'component') continue
+      snapshot.document = { ...snapshot.document, blocks: { ...snapshot.document.blocks, [id]: { ...previous, definitionId: current.definitionId, parameters: structuredClone(current.parameters) } } }
+    }
+    for (const [id, current] of Object.entries(source.steps)) {
+      const previous = snapshot.document.steps[id]
+      if (!previous || !previous.visuals.some(visual => changed.has(visual.blockId)) && !current.visuals.some(visual => changed.has(visual.blockId) && visual.parameters)) continue
+      const visuals = previous.visuals.map(visual => {
+        if (!changed.has(visual.blockId)) return visual
+        const configured = current.visuals.find(value => value.blockId === visual.blockId)
+        const { parameters: _parameters, ...preserved } = visual
+        return { ...preserved, ...configured?.parameters ? { parameters: structuredClone(configured.parameters) } : {} }
+      })
+      for (const visual of current.visuals) if (changed.has(visual.blockId) && visual.parameters && !visuals.some(value => value.blockId === visual.blockId) && snapshot.document.blocks[visual.blockId]?.type === 'component') visuals.push(structuredClone(visual))
+      snapshot.document = { ...snapshot.document, steps: { ...snapshot.document.steps, [id]: { ...previous, visuals } } }
+    }
+  }
 }
 
 /** Share unchanged JSON branches across the editor's in-memory structural history. */
