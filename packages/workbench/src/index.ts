@@ -1,4 +1,6 @@
 export * from './components.tsx'
+export { PmSchemaForm, schemaFormPropertyNames } from './schema-form/PmSchemaForm.tsx'
+export type { PmSchemaFormProps } from './schema-form/PmSchemaForm.tsx'
 export { StepProductionEditor } from './StepProductionEditor.tsx'
 export type { StepProductionEditorProps } from './StepProductionEditor.tsx'
 export { MediaClipEditor } from './MediaClipEditor.tsx'
