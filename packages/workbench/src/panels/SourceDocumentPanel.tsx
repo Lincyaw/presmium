@@ -6,6 +6,7 @@ import { DOCUMENT_EDITOR_MESSAGES } from '../document-editor/messages.ts'
 import { DocumentBlockFallback } from '../document-editor/DocumentBlockFallback.tsx'
 import { DocumentBlockPreview } from '../document-editor/DocumentBlockPreview.tsx'
 import { nativeEditingCursor } from '../document-editor/selection.ts'
+import { hasBlockPreview } from '../document-editor/projection.ts'
 import type { NativeDocumentEditor } from '../document-editor/schema.tsx'
 import { isAgentChanging } from '../workbench.ts'
 
@@ -182,7 +183,7 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore }: {
           const block = source.content?.blocks[id]
           if (!block || !source.content) return undefined
           const fallback = <DocumentBlockFallback block={block} document={source.content} locale={locale} />
-          return block.type === 'component' ? <DocumentBlockPreview blockId={id} fallback={fallback} /> : fallback
+          return hasBlockPreview(block, source.content) ? <DocumentBlockPreview blockId={id} fallback={fallback} /> : fallback
         } }}
         commentsPortal={commentsPortal} onChange={document => workbench.recordDocument(document)} onReady={(editor, commands) => {
           bodyEditor.current = editor
