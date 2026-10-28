@@ -1,0 +1,26 @@
+{
+  "input": "2256532ed893725967a8882ac38b75e26949e28cf407bf5ba05282fd4cd35047",
+  "entry": "lecture.json",
+  "lang": "python",
+  "code": "values = [n * n for n in range(1, count + 1)]\nprint(values if verbose else sum(values))",
+  "environment": "Python 3.14.8",
+  "revision": "runner d01beb21eed32365",
+  "run": {
+    "ok": true,
+    "stdout": "30\n",
+    "stderr": "",
+    "exitCode": 0,
+    "durationMs": 55,
+    "timedOut": false,
+    "source": "live",
+    "executorId": "presmium.python",
+    "outputs": [
+      {
+        "output_type": "stream",
+        "name": "stdout",
+        "text": "30\n"
+      }
+    ],
+    "cacheKey": "2f6f17b8f4084a4779615d7c04df07f06a774726558ab0c28d84caf7cd8f49cb"
+  }
+}
