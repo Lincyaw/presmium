@@ -54,7 +54,7 @@ export const AUTHORING_ACTION_TOOLS: readonly ToolSpec[] = [
       const document = await call.document(), own = service(call), capability = own.capabilities(document, call.caller.member)
       if (!capability.actions.applyAction) throw Object.assign(new Error(capability.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: capability.applyUnavailableReason ? 409 : 403 })
       const entry = (await call.host.documents()).find(item => item.dir === document)
-      await call.approve('operate', messages => messages.applyAuthoringAction, { lang: entry?.lang ?? '', detail: JSON.stringify({ document, request: call.args.request }) })
+      await call.approve('operate', messages => messages.applyAuthoringAction, { lang: entry?.lang ?? '', detail: JSON.stringify({ document, request: call.args.request }), check: () => own.checkAction(document, call.args.request as DocumentAuthoringActionReference, call.caller.member) })
       call.signal.throwIfAborted()
       const answer = await own.applyAction(document, call.args.request as DocumentAuthoringActionReference, call.caller.member)
       return { ...answer, effect: effectSummary(answer.effect) }

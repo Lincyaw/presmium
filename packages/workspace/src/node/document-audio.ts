@@ -3,7 +3,7 @@ import { constants } from 'node:fs'
 import { lstat, open } from 'node:fs/promises'
 import { basename, join, relative } from 'node:path'
 import { ASSET_TITLE_MAX_LENGTH, DOCUMENT_AUDIO_MAX_BYTES, DOCUMENT_AUDIO_REQUEST_MAX_BYTES, fnv1a64, hasRole, isRecord, jsonResponse, ProductionAudioRefusal, recordingSourceRange, recordingStepIssue, validateDocument } from '@lincyaw/kernel'
-import type { Asset, CanonicalSource, DocumentRecordingAdoption, VerifiedDocumentRecordingAdoption, DocumentAudioAuthoring, DocumentAudioCapabilities, DocumentAudioImport, DocumentAudioInspectionAnswer, DocumentChangeAnswer, DocumentMediaClipEdit, DocumentMediaClipValidation, DocumentMediaClipValidationAnswer, Finding, Member, ProductionAudioAuthoring, RequestContext, Route, TeachingDocument, VerifiedDocumentAudioImport, VerifiedDocumentMediaClipChange, WorkspaceAudioInspectionAnswer } from '@lincyaw/kernel'
+import type { Asset, CanonicalSource, DocumentRecordingAdoption, VerifiedDocumentRecordingAdoption, DocumentAudioAuthoring, DocumentAudioCapabilities, DocumentAudioImport, DocumentAudioInspectionAnswer, DocumentChangeAnswer, DocumentMediaClipEdit, DocumentMediaClipValidation, DocumentMediaClipValidationAnswer, DocumentWorkspaceAudioImport, Finding, Member, ProductionAudioAuthoring, RequestContext, Route, TeachingDocument, VerifiedDocumentAudioImport, VerifiedDocumentMediaClipChange, WorkspaceAudioInspectionAnswer } from '@lincyaw/kernel'
 import { productionAssetFile, validateDocumentRecordingAdoption, validateDocumentAudioInspect, validateDocumentWorkspaceAudioImport, validateDocumentWorkspaceAudioInspect, validateDocumentMediaClipValidation, validateDocumentMediaClipEdit, validateDocumentProductionPlanQuery } from '@lincyaw/kernel/node'
 import { readAuthoringDocument } from './document-editor.ts'
 import { catchRequestErrors, RequestError } from './errors.ts'
@@ -127,10 +127,19 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
       throw new RequestError(409, 'audio-readback-changed', { committed: true, changeId: id, assetId: receipt.assetId, version: receipt.version, ...currentSource ? { currentSource } : {}, reason: error instanceof Error ? error.message : 'readback-failed' })
     }
   }
+  const importKey = (ctx: RequestContext, id: string) => JSON.stringify(['audio', ctx.document, ctx.member.id, id])
+  const importSignature = (change: DocumentAudioImport, source: CanonicalSource, title: string, sha256: string, byteLength: number) => hash(JSON.stringify([change.id, source.documentId, change.baseDocumentVersion, source.fingerprint, title, sha256, byteLength]))
+  /** A known intent replays (receipt still current) or joins its flight; a different payload under the same ID is refused. */
+  const known = (ctx: RequestContext, signature: string, previous: Receipt | undefined, pending: { signature: string } | undefined) => {
+    if (!previous && !pending) return false
+    if ((previous ?? pending)!.signature !== signature) throw new RequestError(409, 'document-change-id-reused')
+    if (previous) opened(ctx, previous.version)
+    return true
+  }
   const once = (ctx: RequestContext, change: DocumentAudioImport, source: CanonicalSource, title: string, sha256: string, byteLength: number, origin: 'editor' | 'agent', run: () => Promise<VerifiedDocumentAudioImport>) => {
     authorize(ctx.member); available()
     if (origin === 'agent' && reviewRequired) throw new RequestError(409, 'authoring-review-required')
-    const key = JSON.stringify(['audio', ctx.document, ctx.member.id, change.id]), signature = hash(JSON.stringify([change.id, source.documentId, change.baseDocumentVersion, source.fingerprint, title, sha256, byteLength]))
+    const key = importKey(ctx, change.id), signature = importSignature(change, source, title, sha256, byteLength)
     const previous = receipts.get(key)
     if (previous) {
       if (previous.signature !== signature) throw new RequestError(409, 'document-change-id-reused')
@@ -154,8 +163,8 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
     check(signal); opened(ctx, change.baseDocumentVersion, source)
     const saved = await editor.transactionWithBinary(scopeOf(ctx.document), { path: current.source.path, content, base: current.source.version }, { path, content: bytes }, ctx.member, history(ctx, candidate, origin, async () => { check(signal) }))
     const version = saved.versions.find(file => file.path === current.source.path)!.version
-    const receipt: Receipt = { signature: hash(JSON.stringify([change.id, source.documentId, change.baseDocumentVersion, source.fingerprint, title, hash(bytes), bytes.length])), source, version, files: saved.versions, assetId, inspection: probed.inspection, ...saved.revision ? { commit: saved.revision } : {} }
-    remember(JSON.stringify(['audio', ctx.document, ctx.member.id, change.id]), receipt)
+    const receipt: Receipt = { signature: importSignature(change, source, title, hash(bytes), bytes.length), source, version, files: saved.versions, assetId, inspection: probed.inspection, ...saved.revision ? { commit: saved.revision } : {} }
+    remember(importKey(ctx, change.id), receipt)
     // A committed write is verified even when its request disconnected or shutdown began meanwhile.
     return readback(ctx, change.id, receipt)
   }
@@ -207,12 +216,16 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
       throw new RequestError(409, 'media-clip-readback-changed', { committed: true, changeId: id, version: receipt.version, ...currentSource ? { currentSource } : {}, reason: error instanceof Error ? error.message : 'readback-failed' })
     }
   }
-  const changeClip = (ctx: RequestContext, request: DocumentMediaClipEdit, origin: 'editor' | 'agent', signal: AbortSignal): Promise<VerifiedDocumentMediaClipChange> => {
+  const clipIntent = (ctx: RequestContext, request: DocumentMediaClipEdit, origin: 'editor' | 'agent') => {
     if (!validateDocumentMediaClipEdit(request)) throw new RequestError(400, 'document-media-clip-invalid')
     if (Buffer.byteLength(JSON.stringify(request)) > DOCUMENT_AUDIO_REQUEST_MAX_BYTES) throw new RequestError(413, 'document-audio-request-size')
     if (origin === 'agent' && reviewRequired) throw new RequestError(409, 'authoring-review-required')
     const key = JSON.stringify(['clip', ctx.document, ctx.member.id, request.id]), source = request.source
     const signature = hash(JSON.stringify([request.id, source.documentId, source.version, source.fingerprint, ...'clip' in request ? [request.binding.irRevision, request.binding.planId, request.binding.source.documentId, request.binding.source.version, request.binding.source.fingerprint, request.clip.id, request.clip.assetId, request.clip.sourceRange.startMs, request.clip.sourceRange.endMs, request.clip.attachment.stepId, request.clip.attachment.offsetMs, request.clip.volume, request.clip.muted ?? false] : [request.removeClipId]]))
+    return { key, source, signature }
+  }
+  const changeClip = (ctx: RequestContext, request: DocumentMediaClipEdit, origin: 'editor' | 'agent', signal: AbortSignal): Promise<VerifiedDocumentMediaClipChange> => {
+    const { key, source, signature } = clipIntent(ctx, request, origin)
     const previous = receipts.get(key)
     if (previous) {
       if (previous.signature !== signature) throw new RequestError(409, 'document-change-id-reused')
@@ -249,11 +262,34 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
       throw new RequestError(409, 'recording-readback-changed', { committed: true, changeId: id, version: receipt.version, ...currentSource ? { currentSource } : {}, reason: error instanceof Error ? error.message : 'readback-failed' })
     }
   }
-  const adoptRecording = (ctx: RequestContext, request: DocumentRecordingAdoption, origin: 'editor' | 'agent', signal: AbortSignal): Promise<VerifiedDocumentRecordingAdoption> => {
+  const recordingIntent = (ctx: RequestContext, request: DocumentRecordingAdoption, origin: 'editor' | 'agent') => {
     if (!validateDocumentRecordingAdoption(request)) throw new RequestError(400, 'document-recording-invalid')
     if (Buffer.byteLength(JSON.stringify(request)) > DOCUMENT_AUDIO_REQUEST_MAX_BYTES) throw new RequestError(413, 'document-audio-request-size')
     if (origin === 'agent' && reviewRequired) throw new RequestError(409, 'authoring-review-required')
-    const key = JSON.stringify(['recording', ctx.document, ctx.member.id, request.id]), signature = hash(JSON.stringify([request.id, request.source.documentId, request.source.version, request.source.fingerprint, request.stepId, request.assetId, request.sha256, request.sourceRange]))
+    return { key: JSON.stringify(['recording', ctx.document, ctx.member.id, request.id]), signature: hash(JSON.stringify([request.id, request.source.documentId, request.source.version, request.source.fingerprint, request.stepId, request.assetId, request.sha256, request.sourceRange])) }
+  }
+  const prepareRecording = async (ctx: RequestContext, request: DocumentRecordingAdoption, signal: AbortSignal) => {
+    check(signal)
+    const current = opened(ctx, request.source.version, request.source), step = current.content.steps[request.stepId], asset = current.content.assets[request.assetId]
+    if (!step) throw new RequestError(404, 'document-step-missing')
+    if (!asset) throw new RequestError(404, 'production.asset-missing')
+    const original = current.content.production.stepOverrides[step.id]?.voiceSource ?? current.content.production.sectionOverrides?.[step.sectionId]?.voiceSource ?? current.content.production.defaults.voiceSource
+    if (request.sourceRange && (original?.type !== 'recording' || original.assetId !== asset.id)) throw new RequestError(409, 'recording-source-changed')
+    const issue = recordingStepIssue(current.content, request.stepId)
+    if (issue) throw new RequestError(422, issue)
+    const inspection = await inspect(ctx, asset, request.source, signal)
+    if (inspection.sha256 !== request.sha256) throw new RequestError(409, 'production.asset-changed')
+    const voice = { type: 'recording' as const, assetId: asset.id, ...request.sourceRange ? { sourceRange: { ...request.sourceRange } } : {} }
+    if (!recordingSourceRange(voice, inspection.durationMs)) throw new RequestError(422, 'production.media-range')
+    const candidate = structuredClone(current.content)
+    candidate.assets[asset.id]!.fingerprint = `sha256:${inspection.sha256}`
+    candidate.production.stepOverrides[step.id] = { ...candidate.production.stepOverrides[step.id], voiceSource: voice }
+    const checked = validateDocument(candidate)
+    if (!checked.document || checked.issues.some(issue => issue.severity === 'error')) throw new RequestError(422, 'document-invalid', { issues: checked.issues })
+    return { current, step, asset, inspection, voice, document: checked.document, content: `${JSON.stringify(checked.document, null, 2)}\n` }
+  }
+  const adoptRecording = (ctx: RequestContext, request: DocumentRecordingAdoption, origin: 'editor' | 'agent', signal: AbortSignal): Promise<VerifiedDocumentRecordingAdoption> => {
+    const { key, signature } = recordingIntent(ctx, request, origin)
     const previous = receipts.get(key)
     if (previous) {
       if (previous.signature !== signature) throw new RequestError(409, 'document-change-id-reused')
@@ -263,23 +299,7 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
     const pending = recordingChanges.get(key)
     if (pending) { if (pending.signature !== signature) throw new RequestError(409, 'document-change-id-reused'); return pending.promise }
     const promise = Promise.resolve().then(async () => {
-      check(signal)
-      const current = opened(ctx, request.source.version, request.source), step = current.content.steps[request.stepId], asset = current.content.assets[request.assetId]
-      if (!step) throw new RequestError(404, 'document-step-missing')
-      if (!asset) throw new RequestError(404, 'production.asset-missing')
-      const original = current.content.production.stepOverrides[step.id]?.voiceSource ?? current.content.production.sectionOverrides?.[step.sectionId]?.voiceSource ?? current.content.production.defaults.voiceSource
-      if (request.sourceRange && (original?.type !== 'recording' || original.assetId !== asset.id)) throw new RequestError(409, 'recording-source-changed')
-      const issue = recordingStepIssue(current.content, request.stepId)
-      if (issue) throw new RequestError(422, issue)
-      const inspection = await inspect(ctx, asset, request.source, signal)
-      if (inspection.sha256 !== request.sha256) throw new RequestError(409, 'production.asset-changed')
-      const voice = { type: 'recording' as const, assetId: asset.id, ...request.sourceRange ? { sourceRange: { ...request.sourceRange } } : {} }
-      if (!recordingSourceRange(voice, inspection.durationMs)) throw new RequestError(422, 'production.media-range')
-      const candidate = structuredClone(current.content)
-      candidate.assets[asset.id]!.fingerprint = `sha256:${inspection.sha256}`
-      candidate.production.stepOverrides[step.id] = { ...candidate.production.stepOverrides[step.id], voiceSource: voice }
-      const checked = validateDocument(candidate)
-      if (!checked.document || checked.issues.some(issue => issue.severity === 'error')) throw new RequestError(422, 'document-invalid', { issues: checked.issues })
+      const { current, step, asset, inspection, voice, document, content } = await prepareRecording(ctx, request, signal)
       const validate = async () => {
         check(signal); opened(ctx, request.source.version, request.source)
         const actual = await inspect(ctx, asset, request.source, signal)
@@ -287,13 +307,20 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
         if (!recordingSourceRange(voice, actual.durationMs)) throw new RequestError(422, 'production.media-range')
         check(signal)
       }
-      const saved = await editor.transaction(scopeOf(ctx.document), [{ path: current.source.path, content: `${JSON.stringify(checked.document, null, 2)}\n`, base: request.source.version }], ctx.member, history(ctx, checked.document, origin, validate))
+      const saved = await editor.transaction(scopeOf(ctx.document), [{ path: current.source.path, content, base: request.source.version }], ctx.member, history(ctx, document, origin, validate))
       const receipt: Receipt = { signature, source: request.source, version: saved.versions[0]!.version, files: saved.versions, assetId: asset.id, recording: { stepId: step.id, sha256: inspection.sha256, durationMs: inspection.durationMs, ...request.sourceRange ? { sourceRange: { ...request.sourceRange } } : {} }, ...saved.revision ? { commit: saved.revision } : {} }
       remember(key, receipt)
       return recordingReadback(ctx, request.id, receipt)
     }).finally(() => { if (recordingChanges.get(key)?.promise === promise) recordingChanges.delete(key) })
     recordingChanges.set(key, { signature, promise })
     return promise
+  }
+  const workspaceImport = (document: string, request: DocumentWorkspaceAudioImport, member: Member) => {
+    authorize(member); available()
+    if (!validateDocumentWorkspaceAudioImport(request)) throw new RequestError(400, 'document-audio-import-invalid')
+    if (Buffer.byteLength(JSON.stringify(request)) > DOCUMENT_AUDIO_REQUEST_MAX_BYTES) throw new RequestError(413, 'document-audio-request-size')
+    workspacePath(document, request.file.path, member)
+    return { ctx: ctxOf(document, member), title: titleOf(basename(request.file.path)), change: { id: request.id, baseDocumentVersion: request.source.version } }
   }
   const service: DocumentAudioAuthoring = {
     capabilities: (document, member) => work(member, undefined, async signal => {
@@ -333,12 +360,22 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
       if (!sameSource(plan.binding.source, request.source) || request.irRevision !== undefined && plan.binding.irRevision !== request.irRevision) throw new RequestError(409, 'production-binding-changed')
       return plan
     }),
+    checkWorkspaceImport(document, request, member, signal) {
+      const { ctx, title, change } = workspaceImport(document, request, member)
+      return work(member, signal, async signal => {
+        if (reviewRequired) throw new RequestError(409, 'authoring-review-required')
+        const key = importKey(ctx, request.id)
+        if (known(ctx, importSignature(change, request.source, title, request.file.sha256, request.file.byteLength), receipts.get(key), imports.get(key))) return
+        opened(ctx, request.source.version, request.source)
+        const [bytes, found] = await Promise.all([reader(ctx, request.file.path, signal), resolved(document, request.source, signal)])
+        if (bytes.length !== request.file.byteLength || hash(bytes) !== request.file.sha256) throw new RequestError(409, 'audio-file-changed')
+        if (!found.audio) throw new RequestError(503, 'production-audio-unavailable')
+        await found.audio.inspectBytes('workspace-audio-probe', bytes, signal)
+        check(signal); opened(ctx, request.source.version, request.source)
+      })
+    },
     importWorkspace(document, request, member, signal) {
-      authorize(member); available()
-      if (!validateDocumentWorkspaceAudioImport(request)) throw new RequestError(400, 'document-audio-import-invalid')
-      if (Buffer.byteLength(JSON.stringify(request)) > DOCUMENT_AUDIO_REQUEST_MAX_BYTES) throw new RequestError(413, 'document-audio-request-size')
-      workspacePath(document, request.file.path, member)
-      const ctx = ctxOf(document, member), title = titleOf(basename(request.file.path)), change = { id: request.id, baseDocumentVersion: request.source.version }
+      const { ctx, title, change } = workspaceImport(document, request, member)
       return work(member, signal, signal => once(ctx, change, request.source, title, request.file.sha256, request.file.byteLength, 'agent', async () => {
         opened(ctx, request.source.version, request.source)
         const [bytes, found] = await Promise.all([reader(ctx, request.file.path, signal), resolved(document, request.source, signal)])
@@ -354,6 +391,21 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
       await editor.planTransaction(scopeOf(document), [{ path: prepared.current.source.path, content: prepared.content, base: request.source.version }], member)
       check(signal); opened(ctx, request.source.version, request.source)
       return prepared.answer
+    }),
+    checkClipChange: (document, request, member, signal) => work(member, signal, async signal => {
+      const ctx = ctxOf(document, member), { key, signature } = clipIntent(ctx, request, 'agent')
+      if (known(ctx, signature, receipts.get(key), clipChanges.get(key))) return
+      const prepared = prepareClip(ctx, request)
+      await prepared.validate(signal)
+      await editor.planTransaction(scopeOf(document), [{ path: prepared.current.source.path, content: prepared.content, base: request.source.version }], member)
+      check(signal); opened(ctx, request.source.version, request.source)
+    }),
+    checkRecordingAdoption: (document, request, member, signal) => work(member, signal, async signal => {
+      const ctx = ctxOf(document, member), { key, signature } = recordingIntent(ctx, request, 'agent')
+      if (known(ctx, signature, receipts.get(key), recordingChanges.get(key))) return
+      const prepared = await prepareRecording(ctx, request, signal)
+      await editor.planTransaction(scopeOf(document), [{ path: prepared.current.source.path, content: prepared.content, base: request.source.version }], member)
+      check(signal); opened(ctx, request.source.version, request.source)
     }),
     changeClip: (document, request, member, signal) => work(member, signal, signal => changeClip(ctxOf(document, member), request, 'agent', signal)),
     adoptRecording: (document, request, member, signal) => work(member, signal, signal => adoptRecording(ctxOf(document, member), request, 'agent', signal)),

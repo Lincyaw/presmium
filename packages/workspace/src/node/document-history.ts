@@ -59,6 +59,28 @@ export function createDocumentHistory(options: DocumentHistoryOptions): { servic
       ...entry.revertedBy ? { revertedBy: entry.revertedBy } : {}, ...entry.reverts ? { reverts: entry.reverts } : {}, ...entry.redo ? { redo: true } : {},
       ...entry.operation ? { operation: entry.operation } : {}, ...entry.revertible === false ? { revertible: false } : {}, ...entry.undone !== undefined ? { undone: entry.undone, revertTarget: entry.revertTarget } : {} }
   }
+  const intent = (document: string, which: 'undo' | 'redo' | 'revert', request: DocumentHistoryChange, member: Member, origin: 'editor' | 'agent') => {
+    open()
+    requestSize(request)
+    if (!validateDocumentHistoryChange(request)) throw new RequestError(400, 'history-change-invalid')
+    scope(document, member)
+    if (origin === 'agent' && options.reviewRequired) throw new RequestError(409, 'authoring-review-required')
+    return { key: JSON.stringify([document, member.id, request.id]), signature: digest(JSON.stringify([which, request.id, request.snapshot, request.source.version, request.source.fingerprint, request.expect])) }
+  }
+  const targetPaths = async (document: string, request: DocumentHistoryChange, member: Member) => {
+    const paths = await history().filesOf(request.expect)
+    if (!paths.length) throw new RequestError(404, 'history-revision-not-found')
+    for (const path of paths) {
+      pathAllowed(document, path, member)
+      const owners = await Promise.all([history().ownerAt(request.expect, path), history().ownerAt(`${request.expect}^1`, path)])
+      if (!owners.includes(document) || owners.some(owner => owner !== undefined && owner !== document)) throw new RequestError(403, 'history-file-outside-document')
+    }
+    return paths
+  }
+  const guard = (document: string, request: DocumentHistoryChange, member: Member) => async (changed: string[]) => {
+    for (const path of changed) pathAllowed(document, path, member)
+    if (!sameBinding(await binding(document, member), { source: request.source, snapshot: request.snapshot })) throw new RequestError(409, 'history-source-changed')
+  }
   const service: DocumentHistory = {
     async list(document, query, member) {
       open()
@@ -104,13 +126,25 @@ export function createDocumentHistory(options: DocumentHistoryOptions): { servic
       if (low === offset && offset < content.length) throw new RequestError(413, 'history-file-reply-too-large')
       return reply(low)
     },
+    async checkChange(document, which, request, member, origin = 'editor') {
+      const { key, signature } = intent(document, which, request, member, origin)
+      const known = receipts.get(key), flight = pending.get(key)
+      if (known || flight) {
+        if ((known ?? flight)!.signature !== signature) throw new RequestError(409, 'history-intent-reused')
+        if (known && !flight && !sameBinding(await binding(document, member), { source: known.answer.source, snapshot: known.answer.snapshot })) throw new RequestError(409, 'history-result-no-longer-current')
+        return
+      }
+      const paths = await targetPaths(document, request, member)
+      if (!sameBinding(await binding(document, member), { source: request.source, snapshot: request.snapshot })) throw new RequestError(409, 'history-source-changed')
+      const claimed = locks.claimAll(paths.map(path => documentDirOf(config, path)!), 'revision:revert')
+      if ('holder' in claimed) throw lockedError(claimed.document, claimed.holder)
+      try {
+        const result = await history().checkRevert(request.expect, member, which === 'revert' ? undefined : { which, document }, guard(document, request, member))
+        if (!result.ok) throw new RequestError(409, 'history-conflict', { conflicts: result.conflicts.slice(0, 6).map(path => path.slice(0, 500)), conflictCount: result.conflicts.length })
+      } finally { claimed.release() }
+    },
     async change(document, which, request, member, origin = 'editor') {
-      open()
-      requestSize(request)
-      if (!validateDocumentHistoryChange(request)) throw new RequestError(400, 'history-change-invalid')
-      scope(document, member)
-      if (origin === 'agent' && options.reviewRequired) throw new RequestError(409, 'authoring-review-required')
-      const key = JSON.stringify([document, member.id, request.id]), signature = digest(JSON.stringify([which, request.id, request.snapshot, request.source.version, request.source.fingerprint, request.expect]))
+      const { key, signature } = intent(document, which, request, member, origin)
       const known = receipts.get(key), flight = pending.get(key)
       if (known || flight) {
         if ((known ?? flight)!.signature !== signature) throw new RequestError(409, 'history-intent-reused')
@@ -120,21 +154,12 @@ export function createDocumentHistory(options: DocumentHistoryOptions): { servic
       }
       if (pending.size >= MAX_RECEIPTS) throw new RequestError(429, 'history-busy')
       const work = Promise.resolve().then(async () => {
-        const paths = await history().filesOf(request.expect)
-        if (!paths.length) throw new RequestError(404, 'history-revision-not-found')
-        for (const path of paths) {
-          pathAllowed(document, path, member)
-          const owners = await Promise.all([history().ownerAt(request.expect, path), history().ownerAt(`${request.expect}^1`, path)])
-          if (!owners.includes(document) || owners.some(owner => owner !== undefined && owner !== document)) throw new RequestError(403, 'history-file-outside-document')
-        }
+        const paths = await targetPaths(document, request, member)
         const claimed = locks.claimAll(paths.map(path => documentDirOf(config, path)!), 'revision:revert')
         if ('holder' in claimed) throw lockedError(claimed.document, claimed.holder)
         try {
           const beforeDocuments = listDocuments(config).map(item => item.dir)
-          const result = await history().revert(request.expect, member, which === 'revert' ? undefined : { which, document }, async changed => {
-            for (const path of changed) pathAllowed(document, path, member)
-            if (!sameBinding(await binding(document, member), { source: request.source, snapshot: request.snapshot })) throw new RequestError(409, 'history-source-changed')
-          }, origin)
+          const result = await history().revert(request.expect, member, which === 'revert' ? undefined : { which, document }, guard(document, request, member), origin)
           if (!result.ok) throw new RequestError(409, 'history-conflict', { conflicts: result.conflicts.slice(0, 6).map(path => path.slice(0, 500)), conflictCount: result.conflicts.length })
           const answer: DocumentHistoryChanged = { document, ok: true, revision: { id: result.revision.id, origin: { kind: result.revision.origin.kind } }, ...await binding(document, member), verification: { saved: true, compiled: 'not-requested', runtime: 'not-requested' } }
           receipts.set(key, { signature, answer }); while (receipts.size > MAX_RECEIPTS) receipts.delete(receipts.keys().next().value!)
