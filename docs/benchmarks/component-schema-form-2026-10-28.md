@@ -1,5 +1,7 @@
 # 公共参数表单：2026-10-28
 
+当前版本使用公开 RJSF 6.11.0，稳定联合分支、去重和私有字段边界见末节。前面的 5.24.13 记录按提交阶段保留，不代表最终依赖版本或完整联合结构支持。
+
 本片提供 `@lincyaw/workbench` 的受控 `PmSchemaForm`、公开字段名查询，以及 `@lincyaw/kernel` 的 `validateDocumentParameters`。调用方继续持有目标、草稿、来源版本和应用事务。本片没有把属性入口接入文档，也不宣称共享定义编辑或 MCP 只读字段限制已经完成。
 
 表单使用 RJSF core/utils 5.24.13 的公开根入口与 fields、templates、widgets，组合现有 Pm 控件。CFworker 4.1.1 是文稿及表单的唯一有效性校验器；分支引用通过公开根资源注册。首次渲染不产生变更或填充 default。未知数据不显示为私有字段，实际编辑保留它们；无公开 properties 的对象显示空参数状态。只读、禁用、嵌套对象、数组操作、枚举、布尔值、局部引用和 oneOf 选择经过真实操作。
@@ -58,4 +60,29 @@ Figma 读取 `ComponentProperties` 的 Compact Base `278:5411` 与 NoFields `278
 
 最终同源复核包括公共表单 `run-1793151766355` 的 30/30 与 helper `consumer-1793151837773` 的 52/52；两轮浏览器各登记 1182 个输入，起止与最终提交前源码一致，console／page／HTTP／external 为空，浏览器及私有服务器关闭。类型 1302 文件通过。该片的最终 manifest 与提交证明单独保存在 `schema-form-access-verification/`。
 
-**尚未完成的显示缺陷：** 外层 properties 与 anyOf 分支重复同一字段时，RJSF 会渲染两份同 ID 控件。最终记录保留 `anyOfDuplicateControls: 2`；遍历两份只读输入不代表这个 UX 已修复。去重将另用公开 field／template 接缝实现，不靠 CSS 隐藏，也不修改 schema、数据或完整校验。本片不作为完整 anyOf 渲染验收。
+**aa79 阶段保留的显示缺陷：** 外层 properties 与 anyOf 分支重复同一字段时，RJSF 会渲染两份同 ID 控件。该阶段记录保留 `anyOfDuplicateControls: 2`；遍历两份只读输入不代表该 UX 已修复。后续公开 wrapper 修复与最终能力边界如下。
+
+## 最终公开原生接口与能力边界
+
+core、utils 和 validator-ajv8 固定为 6.11.0。后者是公开根入口开发 helper 的常规解析依赖，表单始终传入 CFworker 适配器，未导入或调用 AJV 校验器。没有内部路径、alias、vendor patch、另一套主题或第二个作者校验语义。实际生产消费者的 metafile 证明 AJV／validator 输出为零；打包材料在 `schema-form-union-verification/rjsf6-production-budget-final.json`。6 版使用公开 fieldPathId.path 作为字段位置，以及 ArrayFieldItem／Buttons templates 的原回调，不自行管理数组身份。
+
+AnyOf／OneOf wrapper 只提供基于外层声明字段名与精确 fieldPathId 的显示 mask，ObjectFieldTemplate 不 mount 重复 content。原生 selector、分支状态、schema、完整校验与数据均未改写；同名嵌套对象与数组项不会被误隐藏。原始 public-props trace 在 `props-before-1793152050835`，表明重复来自外层和选中分支同时渲染同一 ID。
+
+两代库都存在无可靠判别值的分支回退：5 版 `dedup-first-1793152255378`、`dedup-final-1793152413401`，以及 6 版 `rjsf6-adapted-1793152980733` 均保留在第 9 项之后的原始失败。不能因为快速补入合法数字就宣称中间输入稳定。最终只开放真实验证的路径：每个分支都必填同一个 discriminator 属性，具有唯一标量 const，当前值可由公开 `getOptionMatchingSimpleDiscriminator` 匹配，且该字段访问可用、公开、可写。其余分支从首开就保留原生只读 selector 和内容，短条件状态说明不可编辑；外层独立公共字段继续编辑。没有分支引擎、猜测值、undefined shape 缓存或 last-good 权威副本。稳定 anyOf／oneOf 在切支后停顿 300ms、输入 `-` 后再停顿 300ms，均可修正和切回。
+
+显式 `additionalProperties:true` 还会把原始数据的未知键加入 RJSF resolved.properties。`opaque-explicit-before6-1793153653460` 真实显示 opaque／privateRoot 名称，虽未显示值；省略 additionalProperties 的原先消费者未覆盖这个分支。最终用公开 ADDITIONAL_PROPERTY_FLAG 同时过滤实际 mount、propertyNames、union mask 和 preserve 的公开字段名单；已知 private SchemaField 不渲染，嵌套无公开字段对象不显示空标题。8KiB opaque 数据、嵌套私有对象与数组私有值继续保存。`opaque-explicit-after6-1793153743124` 的私有名称列表为空。
+
+`run-1793153746620` 与 `run-1793153923566` 的第 15 项原红保留：扩充的 fixture 将分支明确设为 additionalProperties:true 后，原生库合法保留旧 text 与 unknownChoice，旧 oracle 仍要求删除 text。两轮 raw 中 unknownChoice 始终保留，不能把它误报为丢稿。最终该场景检查所有 schema 允许的数据保留；另一份未明确开放 additionalProperties 的专用消费者仍核对原生切支移除旧分支字段。没有为通过旧 oracle 强删作者数据。
+
+最终消费者结果和源码、清理、提交字节索引统一写在 `.presmium/schema-form-union-verification/final-manifest.json`；普通表单增补了私有键名称断言，联合结构另检全部 DOM ID 唯一、nested／array、引用与保留键字段。最终实际计数见该索引，不把此前 30／20 或探索失败冒称最后版本。未运行测试套件、公开服务或部署。
+
+| 最终当前源码证据 | 实际结果 |
+|---|---|
+| `schema-form-verification/run-1793154064763` | 31/31，显式 broad additionalProperties 的私有名称完全不显示，8KiB opaque 与合法 inactive／unknown 数据保留，普通输入、数组、readonly、IME 均通过 |
+| `schema-form-union-verification/rjsf6-delivery-1793153924684` | 28/28，停顿输入、支持／只读能力边界、全部 DOM ID 唯一、同名 nested／array 与四组合 |
+| `schema-form-access-verification/after-rjsf6-delivery-1793153925868` | 20/20，组合／独立根只读、坏引用保值、array 动作禁用与四组合；比原 21 少一次重复输入检查正是去重结果 |
+| `schema-access-verification/consumer-1793154379418.json` | 新锁下共享 helper 52/52；此处没有重跑套件 |
+
+三份浏览器材料各登记 1182 个输入，起止与提交前当前源码全部匹配，console／page／HTTP／external 为空、私有浏览器和服务器全部关闭。类型 1302 文件、分层、40 包元数据与技能检查通过。运行源码先提交为 `42a0eaad3af214a88270737350b6cb733e2af24c`，纯文档后补。
+
+生产预算是整个公共 workbench 消费者而非表单净体积：压缩前 2,245,395B，gzip 647,835B，metafile 解析 3266 输入，AJV／validator 输出 0B。开发消费者前后为 4,784,774B／4,843,250B（gzip 951,677B／980,067B）；差异包含 fixture 与公开适配变化，不归因于单个库。集成到真实 Doc Dialog 的 source owner／草稿／保存旅程由独立整合片验证，本片不将独立控件消费者冒称整份 Studio 的通过结果。
