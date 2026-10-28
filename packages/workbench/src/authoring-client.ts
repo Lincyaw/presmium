@@ -104,8 +104,8 @@ export function connectAuthoringClient(workbench: Workbench): () => void {
       await send(owner, connectionId, result, { requestId: request.requestId, state: 'done', ...actionResult ? { result: actionResult } : {} }, actionResult ? () => {
         owned()
         const latest = snapshot()
-        if (!latest || latest.revision !== request.expectedClientState.revision || latest.revision !== result.revision) throw new Error('client-comment-drafts-changed')
-        if (!fits(actionResult)) throw new Error('client-comment-result-too-large')
+        if (!latest || latest.revision !== request.expectedClientState.revision || latest.revision !== result.revision) throw new Error(actionResult.family === 'component' ? 'client-component-drafts-changed' : 'client-comment-drafts-changed')
+        if (!fits(actionResult)) throw new Error(actionResult.family === 'component' ? 'client-component-result-too-large' : 'client-comment-result-too-large')
       } : undefined)
     } catch (error) {
       const result = snapshot()

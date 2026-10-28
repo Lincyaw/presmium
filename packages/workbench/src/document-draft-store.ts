@@ -59,8 +59,9 @@ export class DocumentDraftStore {
     return this.#database
   }
 
-  async read(prefixes: readonly string[], signal?: AbortSignal): Promise<Map<string, unknown>> {
+  async read(prefixes: readonly string[], signal?: AbortSignal, maxEntries?: number): Promise<Map<string, unknown>> {
     if (this.#closing) throw new Error('document-draft-storage-closed')
+    if (maxEntries !== undefined && (!Number.isSafeInteger(maxEntries) || maxEntries < 1)) throw new Error('document-draft-read-limit')
     signal?.throwIfAborted()
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const cancel = () => { signal?.removeEventListener('abort', cancel); reject(signal?.reason) }
@@ -71,17 +72,22 @@ export class DocumentDraftStore {
     if (this.#closing) throw new Error('document-draft-storage-closed')
     return new Promise((resolve, reject) => {
       const values = new Map<string, unknown>(), tx = db.transaction(ENTRIES, 'readonly'), store = tx.objectStore(ENTRIES)
+      let exceeded = false
       const cancel = () => { try { tx.abort() } catch { /* The readonly transaction may already have completed. */ } }
       const stop = () => signal?.removeEventListener('abort', cancel)
       signal?.addEventListener('abort', cancel, { once: true })
       tx.oncomplete = () => { stop(); signal?.aborted ? reject(signal.reason) : resolve(values) }
-      tx.onabort = () => { stop(); reject(signal?.aborted ? signal.reason : tx.error ?? new Error('document-draft-read-aborted')) }
+      tx.onabort = () => { stop(); reject(signal?.aborted ? signal.reason : exceeded ? new Error('document-draft-read-limit') : tx.error ?? new Error('document-draft-read-aborted')) }
       tx.onerror = () => { stop(); reject(tx.error) }
       for (const prefix of prefixes) {
         const request = store.openCursor(IDBKeyRange.bound(prefix, `${prefix}\uffff`))
         request.onsuccess = () => {
           const cursor = request.result
-          if (cursor) { values.set(String(cursor.key), cursor.value); cursor.continue() }
+          if (cursor) {
+            const key = String(cursor.key)
+            if (maxEntries !== undefined && values.size >= maxEntries && !values.has(key)) { exceeded = true; tx.abort(); return }
+            values.set(key, cursor.value); cursor.continue()
+          }
         }
       }
     })

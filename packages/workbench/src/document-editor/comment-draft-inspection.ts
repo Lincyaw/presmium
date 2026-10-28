@@ -1,10 +1,9 @@
 import type { AuthoringClientAction, AuthoringClientActionResult, ClientCommentDraftMetadata } from '@lincyaw/kernel'
 import { isNewCommentDraft } from './comment-drafts.ts'
+import { authoringDraftFragment, draftContentHash as hash } from '../authoring-draft-fragment.ts'
 import type { CommentDraftCandidate, CommentDrafts } from './comment-drafts.ts'
 
-const hash = async (value: string) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)))].map(byte => byte.toString(16).padStart(2, '0')).join('')
 const reference = (value: CommentDraftCandidate) => ({ id: value.id, revision: value.revision, token: value.token })
-const boundary = (text: string, offset: number) => !(offset > 0 && offset < text.length && /[\uD800-\uDBFF]/.test(text[offset - 1]!) && /[\uDC00-\uDFFF]/.test(text[offset]!))
 
 /** Only these fields may leave the client during inspection. Target signatures and baselines contain prose. */
 function metadata(value: CommentDraftCandidate): ClientCommentDraftMetadata {
@@ -34,20 +33,6 @@ export async function inspectCommentDrafts(drafts: CommentDrafts, action: Extrac
     if (!fits(result)) throw new Error('client-comment-metadata-too-large')
     return result
   }
-  const value = read.candidates[0]!, text = JSON.stringify(value.content), sha256 = await hash(text)
-  current()
-  if (action.offset > text.length || !boundary(text, action.offset)) throw new Error('client-comment-offset-invalid')
-  const base = { type: action.type, family: 'comment' as const, draft: reference(value), storage: value.storage,
-    format: 'presmium-rich-text-json-v1' as const, offset: action.offset, totalUtf16: text.length, totalUtf8: new TextEncoder().encode(text).byteLength, sha256 }
-  let low = action.offset, high = Math.min(text.length, action.offset + (action.maxChars ?? 2048)), best: AuthoringClientActionResult | undefined
-  while (low <= high) {
-    const middle = Math.floor((low + high) / 2)
-    let end = middle
-    if (!boundary(text, end)) end--
-    const result = { ...base, endOffset: end, jsonText: text.slice(action.offset, end) }
-    if (fits(result)) { if (end > action.offset || end === text.length) best = result; low = middle + 1 }
-    else high = middle - 1
-  }
-  if (!best) throw new Error('client-comment-fragment-too-large')
-  return best
+  const value = read.candidates[0]!
+  return authoringDraftFragment({ text: JSON.stringify(value.content), base: { type: action.type, family: 'comment', draft: reference(value), storage: value.storage, format: 'presmium-rich-text-json-v1' }, offset: action.offset, maxChars: action.maxChars }, current, fits)
 }

@@ -68,7 +68,7 @@ export function createAuthoringClients(editor: SourceEditor) {
       if (!validateAuthoringClientQuery(query)) throw new RequestError(400, 'client-query-invalid')
       const all = [...clients.values()].filter(client => client.member === member.id && client.value.document === document && (!query.clientId || client.value.clientId === query.clientId)
         && (!query.after || client.value.clientId > query.after)).sort((a, b) => a.value.clientId.localeCompare(b.value.clientId))
-      const answer = { document, clients: [] as AuthoringClientDescriptor[], unavailable: ['recording', 'draft-restore', 'draft-discard', 'other-draft-families', 'review', 'open-document'] }
+      const answer = { document, clients: [] as AuthoringClientDescriptor[], unavailable: ['recording', 'draft-restore', 'draft-discard', 'timing-drafts', 'recording-drafts', 'review', 'open-document'] }
       for (const client of all) {
         const row = structuredClone(client.value)
         if (size({ ...answer, clients: [...answer.clients, row], nextAfter: row.clientId }) > AUTHORING_CLIENT_MAX_RESPONSE_CHARS) break
@@ -151,16 +151,18 @@ export function createAuthoringClients(editor: SourceEditor) {
     const actual = ack.state === 'executing' || ack.state === 'done' ? current(document, member) : undefined
     if (ack.state === 'executing' && (ack.snapshot.revision !== pending.request.expectedClientState.revision || !actual || !sameSource(actual, pending.request.source))) throw new RequestError(409, 'client-state-changed')
     if (ack.state === 'done' && (!actual || !sameSource(actual, ack.snapshot.source))) throw new RequestError(409, 'client-source-changed')
-    const action = pending.request.action, comment = action.type === 'comment-drafts.inspect' || action.type === 'comment-drafts.read'
-    if (ack.result && (!comment || ack.state !== 'done' || ack.result.type !== action.type)) throw new RequestError(400, 'client-result-invalid')
-    if (comment && ack.state === 'done') {
+    const action = pending.request.action
+    const family = action.type.startsWith('comment-drafts.') ? 'comment' : action.type.startsWith('component-drafts.') ? 'component' : undefined
+    if (ack.result && (!family || ack.state !== 'done' || ack.result.type !== action.type || ack.result.family !== family)) throw new RequestError(400, 'client-result-invalid')
+    if (family && ack.state === 'done') {
       const result = ack.result
-      if (!result || ack.snapshot.revision !== pending.request.expectedClientState.revision) throw new RequestError(409, 'client-comment-drafts-changed')
-      if (!authoringClientResultFits({ request: pending.request, connection: client.value, document, snapshot: ack.snapshot }, result)) throw new RequestError(413, 'client-comment-result-too-large')
-      if (action.type === 'comment-drafts.read' && (result.type !== action.type || result.draft.id !== action.draft.id || result.draft.revision !== action.draft.revision || result.draft.token !== action.draft.token
+      if (!result || ack.snapshot.revision !== pending.request.expectedClientState.revision) throw new RequestError(409, `client-${family}-drafts-changed`)
+      if (!authoringClientResultFits({ request: pending.request, connection: client.value, document, snapshot: ack.snapshot }, result)) throw new RequestError(413, `client-${family}-result-too-large`)
+      if ((action.type === 'comment-drafts.read' || action.type === 'component-drafts.read') && (result.type !== action.type || result.draft.id !== action.draft.id || result.draft.revision !== action.draft.revision || result.draft.token !== action.draft.token
+        || action.type === 'component-drafts.read' && (result.type !== action.type || result.draft.blockId !== action.draft.blockId || result.draft.stepId !== action.draft.stepId)
         || result.offset !== action.offset || result.endOffset !== result.offset + result.jsonText.length || result.endOffset > result.totalUtf16
         || result.jsonText.length > (action.maxChars ?? 2048))) throw new RequestError(400, 'client-result-invalid')
-      if (action.type === 'comment-drafts.inspect' && (result.type !== action.type || result.drafts.length > (action.limit ?? 10)
+      if ((action.type === 'comment-drafts.inspect' || action.type === 'component-drafts.inspect') && (result.type !== action.type || result.drafts.length > (action.limit ?? 10)
         || action.cursor && action.cursor.token !== result.token || result.next && result.next.token !== result.token)) throw new RequestError(400, 'client-result-invalid')
     }
     report(client, ack, digest(ack))
