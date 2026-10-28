@@ -626,7 +626,8 @@
             "Unavailable": "292:7132",
             "Saving": "292:7200",
             "Applied": "292:7268",
-            "Loading": "294:7314"
+            "Loading": "294:7314",
+            "Draft": "296:7338"
           },
           "Touch": {
             "Ready": "292:7336",
@@ -635,11 +636,13 @@
             "Unavailable": "292:7539",
             "Saving": "292:7607",
             "Applied": "292:7675",
-            "Loading": "294:7355"
+            "Loading": "294:7355",
+            "Draft": "296:7380"
           }
         },
-        "behavior": "Video only: original typed narration is read-only; explicit line-break partitions and author times relative to one stable step. Actual audio and confirmed duration required. Source/media/timing changes require explicit review; no inferred word alignment. Manual gaps stay empty in Web, VTT and burned captions. Apply uses the shared canonical action/actor; old ACK never clears or labels later input saved. Unapplied form drafts survive closing and step changes only within the mounted Video session; no reload/IDB recovery claim. Doc remains caption text and narration start.",
-        "loadingBehavior": "Missing basis shows actual reading/preparation status, never an inferred audio absence. The same opening initializes only when its current target plan arrives; Map.has preserves existing input, and close/step fences prevent late initialization. A saved result does not repeat unavailable while the next plan is pending."
+        "behavior": "Video only: original typed narration is read-only; explicit line-break partitions and author times relative to one stable step. Actual audio and confirmed duration required. Source/media/timing changes require explicit review; no inferred word alignment. Manual gaps stay empty in Web, VTT and burned captions. Apply uses the shared canonical action/actor; old ACK never clears or labels later input saved. Unapplied form drafts survive Video exit and same-tab reload; no strict crash/IDB recovery claim. Doc remains caption text and narration start.",
+        "loadingBehavior": "Missing basis shows actual reading/preparation status, never an inferred audio absence. The same opening initializes only when its current target plan arrives; Map.has preserves existing input, and close/step fences prevent late initialization. A saved result does not repeat unavailable while the next plan is pending.",
+        "draftBehavior": "Unapplied form input is kept per workspace, member and stable step in this browser tab; apply or discard it before export. Storage failure keeps memory input and enables native leave protection. This does not promise strict crash or cross-tab recovery."
       }
     },
     "variantCounts": {

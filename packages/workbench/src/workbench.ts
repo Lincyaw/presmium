@@ -36,6 +36,8 @@ import type { DocumentVoiceOptions, DocumentVoiceScope } from './document-voices
 import type { CanonicalSource, VoiceoverJob, VoiceSource } from '@lincyaw/kernel'
 import type { StepDurationDraft, StepDurationKey, StepTimingPatch } from './step-production.ts'
 import { DocumentTimingDrafts } from './document-timing-drafts.ts'
+import { CaptionTimingDrafts } from './caption-timing-drafts.ts'
+import type { CaptionTimingDraft } from './caption-timing-drafts.ts'
 import { compileDocumentPreview, waitForPreviewRequest } from './document-preview.ts'
 import { readDocumentSnapshot } from './document-preview.ts'
 import { errorMessage, sameProductionBinding, slideShape, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
@@ -106,6 +108,8 @@ export interface WorkbenchState {
   /** Unaccepted numeric form input is retained separately from saved canonical timing. */
   hasDocumentTimingDrafts?: boolean
   documentTimingDraftStorageFailure?: boolean
+  captionTimingDraftSteps?: string[]
+  captionTimingDraftStorageFailure?: boolean
   isDark: boolean
   documents?: DocumentsAnswer
   documentsFailure?: string
@@ -259,6 +263,7 @@ export class Workbench {
   readonly #audioImports = new WeakMap<File, { identity: string, version: string, id: string }>()
   readonly #audioFingerprints = new WeakMap<File, Promise<string>>()
   readonly #documentTimingDrafts = new DocumentTimingDrafts()
+  readonly #captionTimingDrafts = new CaptionTimingDrafts()
   readonly #removedCueTimings = new Map<string, { pauseMs: number }>()
   #cueTimingScope?: string
   #documentEditor?: NativeDocumentEditor
@@ -371,6 +376,8 @@ export class Workbench {
         ...moved ? { position: { ...position, section: selectedStep.sectionId, step: selectedIndex, trail: [] } } : {},
         hasDocumentTimingDrafts: Boolean(authoring.identity && authoring.content && this.#documentTimingDrafts.has(authoring.identity, authoring.content)),
         documentTimingDraftStorageFailure: this.#documentTimingDrafts.failed,
+        captionTimingDraftSteps: authoring.identity && authoring.member?.id && authoring.content ? this.#captionTimingDrafts.steps({ identity: authoring.identity, memberId: authoring.member.id }, authoring.content) : [],
+        captionTimingDraftStorageFailure: Boolean(authoring.identity && authoring.member?.id && this.#captionTimingDrafts.failed({ identity: authoring.identity, memberId: authoring.member.id })),
         save: authoring.error ? { kind: 'failed', message: authoring.error } : authoring.saving ? { kind: 'saving' } : !authoring.dirty && (previous?.dirty || previous?.saving) ? { kind: 'saved', at: new Date().toISOString() } : this.#state.save.kind === 'failed' ? { kind: 'idle' } : this.#state.save })
       // The deletion owns the token produced above; source restoration only retires its notice.
       if (removed && previous?.identity && previous.content && previous.version && previous.fingerprint
@@ -1526,6 +1533,17 @@ export class Workbench {
     if (!this.#documentTimingDrafts.set(identity, document, stepId, key, draft)) return
     this.#set({ authoring: { ...source }, hasDocumentTimingDrafts: this.#documentTimingDrafts.has(identity, document), documentTimingDraftStorageFailure: this.#documentTimingDrafts.failed })
   }
+  captionTimingDraft(stepId: string, identity: string): CaptionTimingDraft | undefined {
+    const source = this.#state.authoring
+    return source?.identity === identity && source.member?.id ? this.#captionTimingDrafts.get({ identity, memberId: source.member.id }, stepId) : undefined
+  }
+  setCaptionTimingDraft(stepId: string, draft: CaptionTimingDraft | undefined, identity: string): void {
+    const source = this.#state.authoring, document = this.getDocument(identity)
+    if (!document?.steps[stepId] || source?.identity !== identity || !source.member?.id) return
+    const scope = { identity, memberId: source.member.id }
+    this.#captionTimingDrafts.set(scope, stepId, draft)
+    this.#set({ captionTimingDraftSteps: this.#captionTimingDrafts.steps(scope, document), captionTimingDraftStorageFailure: this.#captionTimingDrafts.failed(scope) })
+  }
   /** Changes one stable narration target without replacing the body editor or derived captions. */
   setDocumentNarration(stepId: string, narrationId: string | undefined, content: NarrationNode[], identity?: string): string | undefined {
     const document = this.getDocument(identity)
@@ -2057,11 +2075,13 @@ export class Workbench {
       const stop = this.observeJobs()
       try {
         if (this.#state.hasDocumentTimingDrafts || this.#state.documentTimingDraftStorageFailure) throw new Error('job-timing-draft')
+        if (this.#state.captionTimingDraftSteps?.length || this.#state.captionTimingDraftStorageFailure) throw new Error('job-caption-draft')
         await this.flushPendingEdits(controller.signal)
         if (!current()) return
         const source = this.#state.authoring
         if (!source?.version || !source.fingerprint || source.dirty || source.saving || source.composing || source.restored || source.error) throw new Error('job-save-required')
         if (this.#state.hasDocumentTimingDrafts || this.#state.documentTimingDraftStorageFailure) throw new Error('job-timing-draft')
+        if (this.#state.captionTimingDraftSteps?.length || this.#state.captionTimingDraftStorageFailure) throw new Error('job-caption-draft')
         this.#set({ jobPreparing: { target, canCancel: false } })
         await this.#jobs.start(document, target, { version: source.version, fingerprint: source.fingerprint })
       } catch (error) {
@@ -2232,6 +2252,7 @@ export class Workbench {
     this.#documentSession.dispose()
     this.#commentDrafts.close()
     this.#componentPropertyDrafts.close()
+    this.#captionTimingDrafts.close()
     disposeTranscriptionSessions(this.client)
     disposeDocumentRecordings(this)
   }
