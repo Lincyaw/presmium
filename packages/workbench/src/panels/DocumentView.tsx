@@ -369,7 +369,7 @@ function DocumentNotices() {
       {save.kind === 'locked' && <PmNotice tone="warn">{t.saveLocked}</PmNotice>}
       {timingDrafts && <PmNotice tone="warn">{t.timingDraftPending}</PmNotice>}
       {save.kind === 'failed' && !sourceError && <PmNotice tone="danger">{t.saveFailed(save.message)}</PmNotice>}
-      {historyFailure && <PmNotice tone="danger">{t.historyFailed(historyFailure)}</PmNotice>}
+      {historyFailure && <PmNotice tone="danger">{t.historyFailed(t.historyFailureReasons[historyFailure] ?? historyFailure)}</PmNotice>}
       {focusFailure && <PmNotice tone="warn">{t.focusFailed(focusFailure)}</PmNotice>}
       {askFailure && <PmNotice tone="danger">{t.askFailed(askFailure)}</PmNotice>}
       <ProblemsNotice />

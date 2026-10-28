@@ -105,4 +105,8 @@ export interface DocumentTranscriptions {
   /** Rechecks current canonical source and the exact original audio, without recognizing it again. */
   verifyResult(document: string, id: string, revision: string, source: CanonicalSource, member: Member): Promise<TranscriptionRevision>
   cancel(document: string, query: { id: string } | { intent: string }, member: Member): Promise<TranscriptionCancellation>
+  /** Checks a start with the same path, without storing a task or calling the provider, so an agent asks only for one that would run. */
+  checkStart(document: string, request: DocumentTranscriptionRequest, member: Member, signal?: AbortSignal): Promise<void>
+  /** Undefined when there is something to cancel; otherwise the unchanged state that cancel would report. */
+  checkCancel(document: string, query: { id: string } | { intent: string }, member: Member): Promise<TranscriptionCancellation | undefined>
 }

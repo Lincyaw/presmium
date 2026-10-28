@@ -75,3 +75,28 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     detail: member => `An MCP client, with a token of ${member}`,
   },
 }
+
+type Detail = Record<string, unknown>
+const path = (detail: Detail) => typeof detail.path === 'string' ? detail.path : ''
+const which = (detail: Detail, zh: boolean) => detail.which === 'redo' ? zh ? '恢复' : 'redo' : zh ? '撤消' : 'undo'
+const paths = (detail: Detail) => Array.isArray(detail.paths) ? detail.paths.join(', ') : ''
+
+/** Author-readable text for failure codes an agent relays, in the document's language. */
+export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => string>> = {
+  'zh-CN': {
+    'workspace-file-missing': detail => `找不到文件「${path(detail)}」，请检查路径或先把文件放进工作区。`,
+    'workspace-file-forbidden': detail => `「${path(detail)}」不属于这份文稿，不能在这里使用。`,
+    'workspace-file-irregular': detail => `「${path(detail)}」不是工作区中的普通文件（可能是链接或文件夹）。`,
+    'workspace-path-invalid': detail => `「${path(detail)}」不是有效的工作区路径。`,
+    'history-target-changed': detail => `版本历史已变化：${detail.revision} 不再是下一个可${which(detail, true)}的更改。请重新读取历史后再试。`,
+    'history-revert-outside-documents': detail => `这一更改涉及文稿之外的文件（${paths(detail)}），只有工作区所有者可以撤消。`,
+  },
+  en: {
+    'workspace-file-missing': detail => `There is no file “${path(detail)}”. Check the path, or put the file in the workspace first.`,
+    'workspace-file-forbidden': detail => `“${path(detail)}” does not belong to this document and cannot be used here.`,
+    'workspace-file-irregular': detail => `“${path(detail)}” is not a regular file of the workspace (it may be a link or a folder).`,
+    'workspace-path-invalid': detail => `“${path(detail)}” is not a valid workspace path.`,
+    'history-target-changed': detail => `The version history changed: ${detail.revision} is no longer the next change to ${which(detail, false)}. Read the history again and retry.`,
+    'history-revert-outside-documents': detail => `This change touches files outside the documents (${paths(detail)}); only the workspace owner can undo it.`,
+  },
+}

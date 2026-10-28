@@ -43,7 +43,7 @@ export function mediaFailure(error: unknown, locale: Locale): string {
   if (code === 'production.asset-size') return t.size
   if (code === 'production.asset-duration') return t.duration
   if (code === 'production.asset-changed' || code === 'production.asset-fingerprint') return t.changed
-  if (['production.asset-missing', 'production.asset-path', 'production.asset-file'].includes(code)) return t.missing
+  if (['production.asset-missing', 'production.asset-path', 'production.asset-file', 'workspace-file-missing'].includes(code)) return t.missing
   if (code === 'production.asset-format' || code === 'production.asset-kind') return t.format
   if (code === 'production.media-range') return t.invalidRange
   if (code === 'production.media-step-range') return t.exceedsStep
