@@ -53,3 +53,7 @@ SDK 响应实际通过原阈值 8192 的公开 DSH result-pruner，完整 JSON�
 当前性仍是已读快照与已报告 revision，IDB 与 BC 不是跨窗全局原子锁。取消不承诺撤回已经开始的 strict 提交，原意图未知时先 inspect。没有开放批注恢复／丢弃、任意客户端草稿写入、自动提交参数、跨进程账本或物理触屏验收。
 
 所有自有 Studio owner／backend／frontend 已退出，浏览器、私有 home／workspace／fixture 和 bank 随机端口均清理；没有模型／外部调用，没有操作公共 4320／17407。轻检查 types 1320、layering、skills、packages 40、diff 通过。没有新增 tracked tests、运行套件或完整示例。未新增 UI 控件或样式，未新增 Figma 节点。
+
+## 4320 更新
+
+运行版本 `bc6c78bce2be148570f1647e721a9475b9a22e2a` 已更新至工作台。组合版本的真实 Studio 与 MCP 客户端操作通过 17 项，包括断线取消；在线只读检查 23 项通过，客户端已声明恢复和丢弃动作且被动状态不包含草稿内容。独立快照构建通过 1242 项来源检查，客户端 SHA-256 为 `bd0ab2d3fb8fa9b7917368e100d0f2de3987f2c51fbce6e754a3859b051dba36`。双 host 的既有认证会话正常，更新过程保留 11 份文稿。
