@@ -7,7 +7,7 @@ export { applyDocumentCommentAction, isDocumentTextLink, documentCommentTargets,
 export { applyDocumentAuthoringAction } from './document-authoring-actions.ts'
 export type { DocumentStepVoice, DocumentVoiceImpact, DocumentVoiceOptions, DocumentVoiceScope } from './document-voices.ts'
 export { prepareTranscriptionAdoption } from './transcription-adoption.ts'
-export { productionAssetIds, recordingStepIssue } from './recording.ts'
+export { productionAssetIds, recordingStepIssue, recordingSourceRange } from './recording.ts'
 export * from './ir.ts'
 export { createAnchorResolverRegistry, isRenderable, parseAnchor } from './anchors.ts'
 export type { ParsedAnchor } from './anchors.ts'

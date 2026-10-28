@@ -1,4 +1,11 @@
-import type { Production, TeachingDocument } from './contracts/document.ts'
+import type { Production, TeachingDocument, TimeRange, VoiceSource } from './contracts/document.ts'
+
+/** Resolve only against a real inspected duration; no source bytes or authored text are changed. */
+export function recordingSourceRange(source: Extract<VoiceSource, { type: 'recording' }>, durationMs: number): TimeRange | undefined {
+  const range = source.sourceRange ?? { startMs: 0, endMs: durationMs }
+  return Number.isFinite(durationMs) && durationMs > 0 && Number.isFinite(range.startMs) && Number.isFinite(range.endMs)
+    && range.startMs >= 0 && range.endMs > range.startMs && range.endMs <= durationMs ? { ...range } : undefined
+}
 
 /** Assets used by surviving steps; inherited recordings are resolved before collecting references. */
 export function productionAssetIds(production: Production | undefined, sections: readonly { id: string, stepIds?: readonly string[] }[]): string[] {

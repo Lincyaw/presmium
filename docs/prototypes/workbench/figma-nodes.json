@@ -472,6 +472,14 @@
           "SourceChanged": "245:5300"
         },
         "source": "packages/workbench/src/panels/ProductionRecording.tsx",
+        "rangeFields": {
+          "source": "packages/workbench/src/panels/ProductionRecordingRange.tsx",
+          "referenceNodeId": "168:3749",
+          "referenceScope": "Read formal MediaClipEditor Ready only for paired In/Out fields, actual original/used duration and explicit Apply/Restore full. Recording narration is not a background MediaClip; no new formal node is claimed.",
+          "designContextSession": "2fed9884-1f8a-403d-9420-e1e194865bbe",
+          "behavior": "Video only, adopted same-asset current step, real duration/SHA/source checks. Invalid pending input remains visible. Restore full is pending until Apply. Full script remains with alignment none and review feedback. Source/step changes cannot adopt an old read; no new CSS or assets.",
+          "verification": "docs/benchmarks/recording-source-trim-2026-10-28.md"
+        },
         "behavior": "Video-only original-audio composition. One saved-bank selector plus explicit whole-step adoption, separate from Save, background media clips, ASR and TTS. Candidate and selection survive failure/source changes; source/StepID/asset/SHA bind the request. Late acknowledgement never retargets a new step, overwrites later input or stops a newer microphone capture. No extra confirmation dialog. Current-recording summaries and the existing voice dialog show real asset titles or the localized recording-source fallback, without raw paths, opaque IDs or permanent trim/alignment warnings. Actual errors remain visible.",
         "publicControls": [
           "PmCard",

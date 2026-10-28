@@ -212,6 +212,7 @@ export function validateDocument(value: unknown): DocumentValidation {
   const voice = (production: TeachingDocument['production']['defaults'], path: string) => {
     const source = production.voiceSource
     if (source?.type === 'recording' && reference(doc.assets, source.assetId, `${path}/voiceSource/assetId`, 'asset') && !['audio', 'video'].includes(doc.assets[source.assetId]!.kind)) issue(`${path}/voiceSource/assetId`, 'asset.kind', 'Recorded speech requires audio or video.')
+    if (source?.type === 'recording' && source.sourceRange && source.sourceRange.endMs <= source.sourceRange.startMs) issue(`${path}/voiceSource/sourceRange`, 'media.range', 'A recording range must end after it starts.')
   }
   voice(doc.production.defaults, '/production/defaults')
   for (const [id, override] of Object.entries(doc.production.sectionOverrides ?? {})) { reference(doc.sections, id, at('/production/sectionOverrides', id), 'section'); voice(override, at('/production/sectionOverrides', id)) }

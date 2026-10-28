@@ -1,4 +1,4 @@
-import type { SourcePos, TrackEvent, WrittenWord } from '@lincyaw/kernel'
+import type { SourcePos, TimeRange, TrackEvent, WrittenWord } from '@lincyaw/kernel'
 import type { LecturePlan, PlannedCue } from './plan.ts'
 import { wordTime } from './timing.ts'
 import type { LectureTrack, MediaSegment, TrackBlock, Utterance, Voice } from './track.ts'
@@ -18,6 +18,7 @@ export interface RecordingClip {
   src: string
   sha256: string
   durationMs: number
+  sourceRange?: TimeRange
 }
 
 export interface ScriptHead {
@@ -85,7 +86,7 @@ export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>,
         const clip = recordings.get(recording.id)
         if (clip && !recording.issue) {
           if (recording.mode === 'after') hold()
-          audio.push({ section: section.id, role: 'recording', stepId: recording.stepId, narrationIds: recording.narrationIds, start: t / 1000, duration: clip.durationMs / 1000, src: clip.src, clipId: clip.clipId, assetId: clip.assetId, sha256: clip.sha256 })
+          audio.push({ section: section.id, role: 'recording', stepId: recording.stepId, narrationIds: recording.narrationIds, start: t / 1000, duration: clip.durationMs / 1000, sourceStartMs: clip.sourceRange?.startMs ?? 0, src: clip.src, clipId: clip.clipId, assetId: clip.assetId, sha256: clip.sha256 })
           if (recording.text) utterances.push({ id: recording.id, t, d: clip.durationMs, text: recording.text, section: section.id, step: section.webStep(step), narrationIds: recording.narrationIds, recording: true, voice: { kind: 'recorded' } })
           for (const cue of recording.cues) { if (cue.name === 'ink') inked = true; events.push([t, cue.name, cue.data]) }
           t += clip.durationMs

@@ -1,5 +1,5 @@
 import { irBlocks, parseDuration } from '@lincyaw/kernel'
-import type { CodeNode, IRBlock, IRDocument, IRSection, RecordedRun, SourcePos, SpeechVoice, VoiceTarget, WordSpan } from '@lincyaw/kernel'
+import type { CodeNode, IRBlock, IRDocument, IRSection, RecordedRun, SourcePos, SpeechVoice, TimeRange, VoiceTarget, WordSpan } from '@lincyaw/kernel'
 import { narrationVoice } from './config.ts'
 import { blockKey, codeLineCount, lastNamedLine } from './drift.ts'
 import type { CueCommand, CueMark, SpokenText } from './narration.ts'
@@ -38,6 +38,7 @@ export interface PlannedRecording {
   step: number
   stepId: string
   assetId: string
+  sourceRange?: TimeRange
   mode: 'during' | 'after'
   text: string
   narrationIds: string[]
@@ -286,7 +287,7 @@ export function lecturePlan(doc: IRDocument): LecturePlan {
         }
       }
       const stepId = section.stepIds![step]!
-      return [{ id: `recording:${stepId}`, step, stepId, assetId: setting.voiceSource.assetId, mode, text: own.flatMap(paragraph => paragraph.pieces.map(piece => piece.text)).filter(Boolean).join('\n\n'), narrationIds: [...new Set(own.flatMap(paragraph => paragraph.narrationId ?? []))], cues, ...issue ? { issue } : {} }]
+      return [{ id: `recording:${stepId}`, step, stepId, assetId: setting.voiceSource.assetId, ...setting.voiceSource.sourceRange ? { sourceRange: { ...setting.voiceSource.sourceRange } } : {}, mode, text: own.flatMap(paragraph => paragraph.pieces.map(piece => piece.text)).filter(Boolean).join('\n\n'), narrationIds: [...new Set(own.flatMap(paragraph => paragraph.narrationId ?? []))], cues, ...issue ? { issue } : {} }]
     })
     return { id: section.id, title: section.title, steps: section.steps, from: 'narration', paragraphs, recordings, holds: stepHolds(section, doc), ...trailingPauseMs ? { trailingPauseMs } : {}, webStep: webSteps(section) }
   })

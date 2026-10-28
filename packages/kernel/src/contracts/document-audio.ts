@@ -1,6 +1,6 @@
 import type { CanonicalSource } from '../ir.ts'
 import type { Finding } from './checks.ts'
-import type { DocumentIssue, MediaClip } from './document.ts'
+import type { DocumentIssue, MediaClip, TimeRange } from './document.ts'
 import { DOCUMENT_AUDIO_MAX_BYTES } from './production-assets.ts'
 import type { DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, ProductionAssetInspection, ProductionAudioPlanQuery } from './production-assets.ts'
 import type { ProductionBinding, ProductionPlan } from './production.ts'
@@ -26,10 +26,10 @@ export interface DocumentAudioCapabilities {
   review: 'required-unsupported' | 'locks-and-history' | 'locks-only'
 }
 export interface DocumentAudioInspect { source: CanonicalSource, assetId: string }
-/** Explicit whole-file narration adoption. Does not edit narration text, cues or media clips. */
-export interface DocumentRecordingAdoption { id: string, source: CanonicalSource, stepId: string, assetId: string, sha256: string }
+/** Missing range adopts the whole file. A range edits only an already adopted same-asset step recording. */
+export interface DocumentRecordingAdoption { id: string, source: CanonicalSource, stepId: string, assetId: string, sha256: string, sourceRange?: TimeRange }
 export interface VerifiedDocumentRecordingAdoption extends DocumentChangeAnswer {
-  verification: { saved: true, source: CanonicalSource, stepId: string, assetId: string, sha256: string, durationMs: number, compiled: 'not-requested', runtime: 'not-requested' }
+  verification: { saved: true, source: CanonicalSource, stepId: string, assetId: string, sha256: string, durationMs: number, sourceRange?: TimeRange, usedDurationMs?: number, compiled: 'not-requested', runtime: 'not-requested' }
 }
 /** Inspect an existing real snapshot; an expected revision is optional during discovery. */
 export type DocProductionPlanQuery = ProductionAudioPlanQuery
@@ -103,7 +103,7 @@ export const DOCUMENT_AUDIO_INSPECTION_SCHEMA = {
 } as const
 export const DOCUMENT_RECORDING_ADOPTION_SCHEMA = {
   type: 'object', additionalProperties: false,
-  properties: { id: { type: 'string', minLength: 1, maxLength: 200 }, source, stepId: { type: 'string', minLength: 1, maxLength: 200 }, assetId: { type: 'string', minLength: 1, maxLength: 200 }, sha256: { type: 'string', pattern: '^[a-f\\d]{64}$' } },
+  properties: { id: { type: 'string', minLength: 1, maxLength: 200 }, source, stepId: { type: 'string', minLength: 1, maxLength: 200 }, assetId: { type: 'string', minLength: 1, maxLength: 200 }, sha256: { type: 'string', pattern: '^[a-f\\d]{64}$' }, sourceRange: { type: 'object', additionalProperties: false, properties: { startMs: { type: 'number', minimum: 0 }, endMs: { type: 'number', minimum: 0 } }, required: ['startMs', 'endMs'] } },
   required: ['id', 'source', 'stepId', 'assetId', 'sha256'],
 } as const
 export const DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA = {

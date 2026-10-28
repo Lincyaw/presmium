@@ -140,6 +140,11 @@ interface StepProduction {
   voiceSource?: VoiceSource
 }
 
+type VoiceSource =
+  | { type: 'none' }
+  | { type: 'tts', voice: SpeechVoice }
+  | { type: 'recording', assetId: AssetId, sourceRange?: TimeRange }
+
 interface MediaClip {
   id: ClipId
   assetId: AssetId
@@ -148,6 +153,8 @@ interface MediaClip {
   volume: number
 }
 ```
+
+录音的可选 `sourceRange` 只选择原文件区间；省略表示整段。实际时长与 SHA 在共享采用服务中核对，保存不改原字节、Narration 或 ASR 来源。裁切后整步字幕仍为 `alignment=none`，详见[音频作者接口](audio-authoring.md#采用原音为本步配音)。
 
 讲授默认顺序从 `sectionOrder → section.stepOrder` 派生，不重复持久化。时序决定仅由 Production 保存，Step 不再保存另一份 timing。配音继承和实际来源必须有唯一规则，不在讲稿和编排中留下互相覆盖的两份配置。绝对起止时间、精确时长和播放片段属于派生的 PlaybackPlan。
 

@@ -1,5 +1,5 @@
 import { basename, relative } from 'node:path'
-import { errorMessage, remapWords } from '@lincyaw/kernel'
+import { errorMessage, recordingSourceRange, remapWords } from '@lincyaw/kernel'
 import type { IRDocument, ProductionDiagnostic, SpeechService, SynthesisRequest, WordSpan, WrittenWord } from '@lincyaw/kernel'
 import { irHash, plannedUtterances, referencedBlocks, SCRIPT_TRACK, scriptTrack, sectionHashes } from '../domain/index.ts'
 import type { Clip, CutAnimation, LecturePlan, LectureTrack, LectureVoice, RecordingClip, Voice } from '../domain/index.ts'
@@ -142,7 +142,11 @@ export async function synthesizeLecture(doc: IRDocument, deckDir: string, speech
     if (!file) {
       const code = assets.errors.get(recording.assetId) ?? 'production.asset-missing'
       recordingDiagnostics.push({ code, severity: 'error', message: productionAudioMessage(doc, code), sectionId: section.id, stepId: recording.stepId, assetId: recording.assetId })
-    } else if (!recording.issue) recordings.set(recording.id, { assetId: recording.assetId, clipId: file.asset.mediaId, src: `audio/${file.asset.mediaId}.${file.extension}`, sha256: file.asset.sha256, durationMs: file.asset.durationMs })
+    } else if (!recording.issue) {
+      const range = recordingSourceRange({ type: 'recording', assetId: recording.assetId, sourceRange: recording.sourceRange }, file.asset.durationMs)
+      if (!range) recordingDiagnostics.push({ code: 'production.media-range', severity: 'error', message: productionAudioMessage(doc, 'production.media-range'), sectionId: section.id, stepId: recording.stepId, assetId: recording.assetId })
+      else recordings.set(recording.id, { assetId: recording.assetId, clipId: file.asset.mediaId, src: `audio/${file.asset.mediaId}.${file.extension}`, sha256: file.asset.sha256, durationMs: range.endMs - range.startMs, sourceRange: range })
+    }
   }
   const unsaid = new Map(synthesized.failures.map(failure => [failure.id, failure.reason]))
   const { track, cuts } = scriptTrack(deck.plan, synthesized.clips, {
