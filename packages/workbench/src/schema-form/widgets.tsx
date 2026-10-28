@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { enumOptionsValueForIndex } from '@rjsf/utils'
 import type { WidgetProps } from '@rjsf/utils'
 import { PmField, PmInput, PmNotice, PmSegmented, PmSelect, PmTextarea } from '../components.tsx'
 import type { SchemaFormContext } from './context.ts'
@@ -34,8 +35,7 @@ function Select(props: Props) {
   if (props.multiple) return <PmNotice>{registry.formContext.messages.unsupported}</PmNotice>
   return <PmSelect id={id} label={label} value={selected < 0 ? '' : String(selected)} disabled={disabled || readonly} density={registry.formContext.density}
     error={feedback(props)} onBlur={() => props.onBlur(id, value)} onFocus={() => props.onFocus(id, value)} onChange={event => {
-      const option = choices[Number(event.currentTarget.value)]
-      if (option) change(props, option.value)
+      change(props, enumOptionsValueForIndex(event.currentTarget.value, choices, options.emptyValue))
     }}><option value="">{registry.formContext.messages.choose}</option>{choices.map((option, index) => <option key={index} value={index}>{option.label}</option>)}</PmSelect>
 }
 
