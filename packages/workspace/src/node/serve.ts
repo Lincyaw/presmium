@@ -31,6 +31,7 @@ import type { DocumentEditor } from './document-editor.ts'
 import { createDocumentTranscriptions } from './document-transcription.ts'
 import { createTranscriptionAdoption } from './document-transcription-adoption.ts'
 import { createDocumentAudioAuthoring } from './document-audio.ts'
+import { createDocumentImageAuthoring } from './document-images.ts'
 import { createDocumentVoiceAuthoring } from './document-voice.ts'
 import type { DocumentVoiceServices } from './document-voice.ts'
 import { createWorkbenchBackend } from './workbench-api.ts'
@@ -107,6 +108,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   let transcriptions: ReturnType<typeof createDocumentTranscriptions> | undefined
   let transcriptionAdoption: ReturnType<typeof createTranscriptionAdoption> | undefined
   let audioAuthoring: ReturnType<typeof createDocumentAudioAuthoring> | undefined
+  let imageAuthoring: ReturnType<typeof createDocumentImageAuthoring> | undefined
   let voiceAuthoring: ReturnType<typeof createDocumentVoiceAuthoring> | undefined
   let workspaceRoutesOwner: ReturnType<typeof workspaceRoutes> | undefined
   let routesPlugin: ServedPlugin | undefined
@@ -252,6 +254,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     get projectAuthoring() { return projectAuthoring?.service },
     get authoringClients() { return authoringClients?.service },
     get audioAuthoring() { return audioAuthoring?.service },
+    get imageAuthoring() { return imageAuthoring?.service },
     get voiceAuthoring() { return voiceAuthoring?.service },
     get transcriptions() { return transcriptions },
     get transcriptionAdoption() { return transcriptionAdoption?.service },
@@ -370,6 +373,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   transcriptions = createDocumentTranscriptions({ root, editor, services: authoringServices })
   transcriptionAdoption = createTranscriptionAdoption({ documentEditor, transcriptions })
   audioAuthoring = createDocumentAudioAuthoring({ root, editor, revisions: history?.revisions, services: authoringServices, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
+  imageAuthoring = createDocumentImageAuthoring({ root, editor, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   const routeOptions = {
       config,
       editor,
@@ -377,6 +381,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       transcriptions,
       transcriptionAdoptionRoutes: transcriptionAdoption.routes,
       audioAuthoringRoutes: audioAuthoring.routes,
+      imageAuthoringRoutes: imageAuthoring.routes,
       historyRoutes: documentHistory.routes,
       authoringClientRoutes: authoringClients.routes,
       projectRoutes: projectAuthoring.routes,

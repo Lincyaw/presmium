@@ -22,7 +22,7 @@ import type { WorkbenchApi } from './workbench-api.ts'
 import { documentEditorRoutes } from './document-editor.ts'
 import type { DocumentEditor } from './document-editor.ts'
 import { createDocumentAudioAuthoring } from './document-audio.ts'
-import { documentImageRoutes } from './document-images.ts'
+import { createDocumentImageAuthoring } from './document-images.ts'
 import { createDocumentTranscriptions, documentTranscriptionRoutes } from './document-transcription.ts'
 import type { DocumentTranscriptions, ProductionAudioAuthoring, SpeechService } from '@lincyaw/kernel'
 import { documentDirOf } from './writer.ts'
@@ -57,6 +57,7 @@ export interface WorkspaceRoutesOptions {
   transcriptions?: DocumentTranscriptions
   transcriptionAdoptionRoutes?: Record<string, Route>
   audioAuthoringRoutes?: Record<string, Route>
+  imageAuthoringRoutes?: Record<string, Route>
   historyRoutes?: Record<string, Route>
   authoringClientRoutes?: Record<string, Route>
   projectRoutes?: Record<string, Route>
@@ -107,7 +108,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
   const routes: Record<string, Route> = {
     ...documentEditorRoutes({ root: config.root, editor, documentEditor: options.documentEditor, workbench }),
     ...(options.audioAuthoringRoutes ?? ownedAudio!.routes),
-    ...documentImageRoutes({ root: config.root, editor, revisions }),
+    ...(options.imageAuthoringRoutes ?? createDocumentImageAuthoring({ root: config.root, editor, revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' }).routes),
     ...documentTranscriptionRoutes(transcriptions),
     ...options.transcriptionAdoptionRoutes,
     documents: {

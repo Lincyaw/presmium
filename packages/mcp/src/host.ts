@@ -7,6 +7,7 @@ import type {
   DiagnosticSnapshot,
   DocumentAuthoring,
   DocumentAudioAuthoring,
+  DocumentImageAuthoring,
   DocumentVoiceAuthoring,
   DocumentTranscriptions,
   DocumentTranscriptionAdoption,
@@ -68,6 +69,7 @@ export interface McpHost {
   documentHistory?: DocumentHistory
   authoringClients?: AuthoringClients
   audioAuthoring?: DocumentAudioAuthoring
+  imageAuthoring?: DocumentImageAuthoring
   voiceAuthoring?: DocumentVoiceAuthoring
   transcriptions?: DocumentTranscriptions
   transcriptionAdoption?: DocumentTranscriptionAdoption

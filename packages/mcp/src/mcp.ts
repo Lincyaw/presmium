@@ -16,6 +16,7 @@ import { HISTORY_TOOLS } from './history.ts'
 import { AUTHORING_CLIENT_TOOLS } from './authoring-clients.ts'
 import { TRANSCRIPTION_TOOLS } from './transcription.ts'
 import { AUDIO_AUTHORING_TOOLS } from './audio-authoring.ts'
+import { IMAGE_AUTHORING_TOOLS } from './image-authoring.ts'
 import { VOICE_AUTHORING_TOOLS } from './voice-authoring.ts'
 import { DIAGNOSTIC_TOOLS, diagnosticSnapshot } from './diagnostics.ts'
 
@@ -127,6 +128,7 @@ const TOOLS: ToolSpec[] = [
   ...PROJECT_TOOLS,
   ...AUTHORING_CLIENT_TOOLS,
   ...AUDIO_AUTHORING_TOOLS,
+  ...IMAGE_AUTHORING_TOOLS,
   ...VOICE_AUTHORING_TOOLS,
   ...TRANSCRIPTION_TOOLS,
   {
@@ -422,6 +424,8 @@ function hostSupports(host: McpHost, name: string): boolean {
     case 'quote_voice_preview':
     case 'preview_voice': return Boolean(host.voiceAuthoring)
     case 'get_voice_catalog': return Boolean(host.voiceAuthoring)
+    case 'inspect_workspace_image':
+    case 'import_workspace_image': return Boolean(host.imageAuthoring)
     case 'adopt_recording':
     case 'inspect_document_audio':
     case 'inspect_workspace_audio':

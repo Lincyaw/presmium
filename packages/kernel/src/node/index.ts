@@ -21,3 +21,4 @@ export { directSandbox, minimalRunEnv, RUN_REQUEST_FILE, RUN_RESULT_PREFIX, runR
 export { validateDocumentHistoryQuery, validateDocumentHistoryRead, validateDocumentHistoryChange } from './document-history.ts'
 export { validateAuthoringClientRequest, validateAuthoringClientQuery, validateAuthoringClientRequestQuery, validateAuthoringClientOpen, validateAuthoringClientReport, validateAuthoringClientAcknowledgement, validateAuthoringClientLease } from './authoring-clients.ts'
 export { validateProjectPlan, validateProjectApply } from './projects.ts'
+export { validateDocumentWorkspaceImageInspect, validateDocumentWorkspaceImageImport } from './document-image.ts'
