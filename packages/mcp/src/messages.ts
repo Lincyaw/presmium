@@ -80,6 +80,7 @@ type Detail = Record<string, unknown>
 const path = (detail: Detail) => typeof detail.path === 'string' ? detail.path : ''
 const which = (detail: Detail, zh: boolean) => detail.which === 'redo' ? zh ? '恢复' : 'redo' : zh ? '撤消' : 'undo'
 const paths = (detail: Detail) => Array.isArray(detail.paths) ? detail.paths.join(', ') : ''
+const list = (value: unknown, none: string) => Array.isArray(value) && value.length ? value.join(', ') : none
 
 /** Author-readable text for failure codes an agent relays, in the document's language. */
 export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => string>> = {
@@ -90,6 +91,18 @@ export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => s
     'workspace-path-invalid': detail => `「${path(detail)}」不是有效的工作区路径。`,
     'history-target-changed': detail => `版本历史已变化：${detail.revision} 不再是下一个可${which(detail, true)}的更改。请重新读取历史后再试。`,
     'history-revert-outside-documents': detail => `这一更改涉及文稿之外的文件（${paths(detail)}），只有工作区所有者可以撤消。`,
+    'job-source-required': () => '构建需要文稿当前保存的版本（get_document 返回的 source.version 与 source.fingerprint）。',
+    'job-source-unavailable': () => '这个宿主不能核对文稿版本，请不带 source 再构建。',
+    'job-source-changed': () => '文稿在读取之后又被保存过，请重新读取文稿后再构建。',
+    'job-source-not-compiled': () => '文稿的保存版本还没有被编译，请稍后重新读取文稿再构建。',
+    'job-inputs-changed': () => '构建用到的文件在构建期间被修改，请重新构建。',
+    'job-target-unknown': detail => `这份文稿不能生成「${detail.target}」；可以生成：${list(detail.targets, '无')}。`,
+    'job-targets-empty': () => '这份文稿没有可以构建的渲染端，请在 to 中指明要生成的内容。',
+    'job-translations-invalid': () => '文稿的译文有错误，修正后才能构建。',
+    'transcription-engine-unsupported': detail => `引擎「${detail.engine}」不能转写语音；可用于转写的引擎：${list(detail.engines, '无')}。`,
+    'transcription-engine-unknown': detail => `没有名为「${detail.engine}」的语音引擎；可用于转写的引擎：${list(detail.engines, '无')}。`,
+    'voice-engine-unsupported': () => '所选引擎不能合成语音，请改用能朗读的引擎（get_voice_authoring_capabilities）。',
+    'voice-engine-unknown': () => '没有配置所选的语音引擎，请从 get_voice_authoring_capabilities 中选择。',
   },
   en: {
     'workspace-file-missing': detail => `There is no file “${path(detail)}”. Check the path, or put the file in the workspace first.`,
@@ -98,5 +111,17 @@ export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => s
     'workspace-path-invalid': detail => `“${path(detail)}” is not a valid workspace path.`,
     'history-target-changed': detail => `The version history changed: ${detail.revision} is no longer the next change to ${which(detail, false)}. Read the history again and retry.`,
     'history-revert-outside-documents': detail => `This change touches files outside the documents (${paths(detail)}); only the workspace owner can undo it.`,
+    'job-source-required': () => 'A build needs the document\'s saved source (source.version and source.fingerprint from get_document).',
+    'job-source-unavailable': () => 'This host cannot confirm a document source; build without source.',
+    'job-source-changed': () => 'The document was saved again after it was read. Read it again, then build.',
+    'job-source-not-compiled': () => 'The saved document has not been compiled yet. Read it again shortly, then build.',
+    'job-inputs-changed': () => 'Files the build reads changed while it ran. Build again.',
+    'job-target-unknown': detail => `This document cannot be made into “${detail.target}”; it can be made into: ${list(detail.targets, 'nothing')}.`,
+    'job-targets-empty': () => 'This document has no renderer to build; name what to make in to.',
+    'job-translations-invalid': () => 'The document\'s translations have errors; fix them before building.',
+    'transcription-engine-unsupported': detail => `The engine “${detail.engine}” cannot transcribe speech; engines that can: ${list(detail.engines, 'none')}.`,
+    'transcription-engine-unknown': detail => `There is no speech engine “${detail.engine}”; engines that can transcribe: ${list(detail.engines, 'none')}.`,
+    'voice-engine-unsupported': () => 'The selected engine cannot synthesize speech; choose one that can (get_voice_authoring_capabilities).',
+    'voice-engine-unknown': () => 'The selected speech engine is not configured; choose one from get_voice_authoring_capabilities.',
   },
 }

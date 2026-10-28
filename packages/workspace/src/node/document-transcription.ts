@@ -225,7 +225,13 @@ export function createDocumentTranscriptions({ root, editor, audio, speech, serv
     const input = await inspect(document, member, request, signal)
     const capability = await capabilityOf(request.source, input.services)
     const engine = capability.engines.find(engine => engine.id === request.engine)
-    if (!capability.available || !engine) throw new RequestError(503, 'transcription-engine-unavailable')
+    if (!engine) {
+      // Asking for an engine that is configured but does not recognize speech, or is not configured, is a bad request; only unresolved speech services may come back.
+      const speech = capability.status === 'unknown' ? undefined : input.services.speech
+      if (!speech) throw new RequestError(503, 'transcription-engine-unavailable')
+      const named = (await speech.engines()).some(own => own.id === request.engine)
+      throw new RequestError(422, named ? 'transcription-engine-unsupported' : 'transcription-engine-unknown', { engine: request.engine, engines: capability.engines.map(own => own.id) })
+    }
     signal?.throwIfAborted()
     if (!sameSource(opened(document, member).binding, request.source)) throw new RequestError(409, 'document-version-changed')
     if ([...active.values()].some(entry => entry.record.document === document) || [...admitting.values()].some(entry => entry.document === document)) throw new RequestError(409, 'transcription-busy')

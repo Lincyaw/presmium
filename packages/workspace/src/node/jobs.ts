@@ -246,6 +246,34 @@ export function createJobs(options: JobsOptions): Jobs {
     })
   }
 
+  /** Everything start checks before it queues a job, and the job of the same target, source and inputs it would reuse. */
+  const admission = async (document: string, target: string, expected?: JobSource) => {
+    if (closed) throw new Error('the workspace service is closing')
+    // The interactive preview may still hold an older successful compilation. An explicit output compiles afresh.
+    const compilation = await options.compilation(document, true)
+    const source = sourceOf(compilation)
+    const confirmed = () => {
+      if (closed) throw new Error('the workspace service is closing')
+      if (expected && !sameSource(expected, source) || !sameSource(sourceOf(compilation), source)) throw new RequestError(409, 'job-source-changed')
+      if (compilation.sourceFingerprints?.[compilation.entry] !== source.fingerprint) throw new RequestError(409, 'job-source-not-compiled')
+    }
+    confirmed()
+    const revision = options.revision(compilation)
+    const targets = await targetsOf(compilation)
+    const known = targets.find(own => own.id === target)
+    if (!known) throw new RequestError(422, 'job-target-unknown', { target, targets: targets.map(own => own.id) })
+    // Locale sources are compiled by renderers later, so they are not part of the original's tracked input list.
+    const translations = await compileTranslations(compilation)
+    if (translations.findings.some(finding => finding.severity === 'error')) throw new RequestError(422, 'job-translations-invalid')
+    confirmed()
+    const inputs = await inputVersions([...compilation.inputs.files, ...translations.translations.flatMap(translation => translation.files)].filter(file => !compilation.sourceFiles.includes(file)))
+    confirmed()
+    const inputFingerprint = fnv1a64(JSON.stringify([...inputs].sort(([a], [b]) => a.localeCompare(b))))
+    // The same target of the same revision, made or being made: not again.
+    const same = [...jobs.values()].reverse().find(job => job.document === document && job.target === target && job.revision === revision && sameSource(job.source, source) && job.inputFingerprint === inputFingerprint && ['queued', 'running', 'done'].includes(job.state))
+    return { compilation, source, revision, known, inputs, inputFingerprint, same }
+  }
+
   return {
     async targets(document) {
       return await targetsOf(await options.compilation(document))
@@ -258,30 +286,12 @@ export function createJobs(options: JobsOptions): Jobs {
       return job && present(job)
     },
     directory: job => (job.kind === 'render' ? join(root, job.id, job.target) : join(root, job.id)),
+    async check(document, target, expected) {
+      const admitted = await admission(document, target, expected)
+      return admitted.same && present(admitted.same)
+    },
     async start(document, target, expected) {
-      if (closed) throw new Error('the workspace service is closing')
-      // The interactive preview may still hold an older successful compilation. An explicit output compiles afresh.
-      const compilation = await options.compilation(document, true)
-      const source = sourceOf(compilation)
-      const confirmed = () => {
-        if (closed) throw new Error('the workspace service is closing')
-        if (expected && !sameSource(expected, source) || !sameSource(sourceOf(compilation), source)) throw new RequestError(409, 'job-source-changed')
-        if (compilation.sourceFingerprints?.[compilation.entry] !== source.fingerprint) throw new RequestError(409, 'job-source-not-compiled')
-      }
-      confirmed()
-      const revision = options.revision(compilation)
-      const targets = await targetsOf(compilation)
-      // Locale sources are compiled by renderers later, so they are not part of the original's tracked input list.
-      const translations = await compileTranslations(compilation)
-      if (translations.findings.some(finding => finding.severity === 'error')) throw new RequestError(422, 'job-translations-invalid')
-      confirmed()
-      const inputs = await inputVersions([...compilation.inputs.files, ...translations.translations.flatMap(translation => translation.files)].filter(file => !compilation.sourceFiles.includes(file)))
-      confirmed()
-      const inputFingerprint = fnv1a64(JSON.stringify([...inputs].sort(([a], [b]) => a.localeCompare(b))))
-      const known = targets.find(own => own.id === target)
-      if (!known) throw new Error(`${document || '.'} cannot be made into ${target}: ${targets.map(own => own.id).join(', ') || 'nothing'}`)
-      // The same target of the same revision, made or being made: not again.
-      const same = [...jobs.values()].reverse().find(job => job.document === document && job.target === target && job.revision === revision && sameSource(job.source, source) && job.inputFingerprint === inputFingerprint && ['queued', 'running', 'done'].includes(job.state))
+      const { compilation, source, revision, known, inputs, inputFingerprint, same } = await admission(document, target, expected)
       if (same) {
         options.log.info(`[job ${same.id}] document=${JSON.stringify(document || '.')} target=${target} reuse=${same.state}`)
         return present(same)
