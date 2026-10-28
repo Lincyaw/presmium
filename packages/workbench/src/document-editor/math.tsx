@@ -1,9 +1,10 @@
-import { createContext, useContext, useMemo, useRef } from 'react'
+import { createContext, useCallback, useContext, useMemo, useRef } from 'react'
 import type { ReactNode } from 'react'
 import katex from 'katex'
-import { createReactBlockSpec, createReactInlineContentSpec, SourceBlockWithPreview, SourceInlineContentWithPreview } from '@blocknote/react'
+import { createReactBlockSpec, createReactInlineContentSpec, SourceBlockWithPreview, SourceInlineContentWithPreview, useSourceInlineContentPreviewPopup } from '@blocknote/react'
 import type { Locale } from '../messages.ts'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
+import { useInlineSourcePopupPlacement } from './popover.tsx'
 
 export const DOCUMENT_EDITOR_LOCALE = createContext<Locale>('zh-CN')
 
@@ -52,7 +53,11 @@ export const mathInline = createReactInlineContentSpec({
   meta: { hasPreview: true, code: true },
   render: function MathInline({ inlineContent, editor, node, getPos, contentRef }) {
     const math = useMathPreview(inlineContent.content, false)
-    return <SourceInlineContentWithPreview editor={editor} node={node} getPos={getPos} contentRef={contentRef} source={inlineContent.content} preview={math.preview} error={math.error}
+    const { isOpen } = useSourceInlineContentPreviewPopup({ editor, node, getPos })
+    const sourceElement = useRef<HTMLElement | null>(null)
+    const sourceRef = useCallback((element: HTMLElement | null) => { sourceElement.current = element; contentRef(element) }, [contentRef])
+    useInlineSourcePopupPlacement(useCallback(() => sourceElement.current, []), isOpen)
+    return <SourceInlineContentWithPreview editor={editor} node={node} getPos={getPos} contentRef={sourceRef} source={inlineContent.content} preview={math.preview} error={math.error}
       emptySourcePlaceholder={math.empty} errorPreview={math.invalid} sourcePlaceholder={math.placeholder} />
   },
 })
