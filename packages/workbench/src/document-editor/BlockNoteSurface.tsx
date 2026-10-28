@@ -49,7 +49,13 @@ const DocumentReactionBadge = forwardRef<HTMLInputElement, ComponentProps['Gener
     onClick={event => { if (event.target instanceof HTMLInputElement) props.onClick?.(event) }} /></span></PmTooltip>
 })
 
-const DOCUMENT_EDITOR_COMPONENTS = { ...components, Generic: { ...components.Generic, Badge: { ...components.Generic.Badge, Root: DocumentReactionBadge } }, Comments: { ...components.Comments, Comment: DocumentComment, Editor: DocumentCommentEditor } }
+const MantineToolbarButton = components.Generic.Toolbar.Button as ForwardRefExoticComponent<ComponentProps['Generic']['Toolbar']['Button'] & RefAttributes<HTMLButtonElement>>
+const DocumentToolbarButton = forwardRef<HTMLButtonElement, ComponentProps['Generic']['Toolbar']['Button']>(function DocumentToolbarButton(props, ref) {
+  const label = props.label ?? props.mainTooltip
+  return label === undefined ? <MantineToolbarButton {...props} ref={ref} /> : <MantineToolbarButton {...props} ref={ref} label={label} />
+})
+
+const DOCUMENT_EDITOR_COMPONENTS = { ...components, Generic: { ...components.Generic, Badge: { ...components.Generic.Badge, Root: DocumentReactionBadge }, Toolbar: { ...components.Generic.Toolbar, Button: DocumentToolbarButton } }, Comments: { ...components.Comments, Comment: DocumentComment, Editor: DocumentCommentEditor } }
 
 export interface BlockNoteSurfaceProps {
   identity: string
