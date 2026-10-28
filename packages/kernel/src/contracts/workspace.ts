@@ -262,6 +262,8 @@ export interface ErrorAnswer {
   locked?: { document: string, holder: string }
   exists?: true
   ignored?: string[]
+  /** With `preview-preparing` (503): when to ask again. */
+  retryAfterMs?: number
 }
 
 /** @experimental */

@@ -18,7 +18,7 @@ export { validateDocumentParameters, documentParameterAccess, documentParameterS
 export type { DocumentParameterAccess, DocumentParameterIssue, DocumentParameterSchemaReference, DocumentParameterValidation } from './parameters.ts'
 export { docBlocks, irBlocks, nodeMdast } from './blocks.ts'
 export { CheckRegistry } from './checks.ts'
-export { errorMessage, isRecord } from './errors.ts'
+export { errorMessage, isRecord, PreviewPreparing } from './errors.ts'
 export { createEventBus } from './events.ts'
 export { CREDENTIAL_VARIABLE, environmentExecutor, failedRun, languageId } from './execution.ts'
 export { gitConfigArgs, gitEnvironment } from './git.ts'

@@ -19,7 +19,7 @@ export const ROUTES: Record<string, string> = Object.fromEntries([
 ])
 
 const PASSED = ['accept', 'content-type', 'presmium-document', 'last-event-id', 'if-none-match']
-const RETURNED = ['content-type', 'cache-control', 'content-disposition', 'content-security-policy', 'x-content-type-options', 'cross-origin-resource-policy', 'x-accel-buffering', 'etag']
+const RETURNED = ['content-type', 'cache-control', 'content-disposition', 'content-security-policy', 'x-content-type-options', 'cross-origin-resource-policy', 'x-accel-buffering', 'etag', 'retry-after']
 
 export function apply(ctx: DshContext): void {
   for (const [path, target] of Object.entries(ROUTES)) {

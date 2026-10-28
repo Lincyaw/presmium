@@ -8,7 +8,7 @@ import type { Duplex } from 'node:stream'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { stripVTControlCharacters } from 'node:util'
-import { errorMessage, irBlocks, localRequestRefusal, previewFrameAncestors, safeDecodeURIComponent, viewFor } from '@lincyaw/kernel'
+import { errorMessage, irBlocks, localRequestRefusal, previewFrameAncestors, PreviewPreparing, safeDecodeURIComponent, viewFor } from '@lincyaw/kernel'
 import type { IRDocument, NodeVitePlugin, RenderContext, RuntimeAssets, SiteSpec } from '@lincyaw/kernel'
 import { spawnInteractiveNode } from '@lincyaw/kernel/node'
 import { diffDocuments } from '@lincyaw/viewer/domain'
@@ -195,6 +195,8 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   // The apps whose pages show code since changed.
   const outdated = new Set<string>()
   let building: Promise<void> | undefined
+  // Why the last build of the app failed; cleared when one succeeds.
+  let appFailure: string | undefined
   let pending: AppPlugin[] | undefined
   let closed = false
   const log = options.log ?? ((message: string) => console.warn(`[presmium] ${message}`))
@@ -277,8 +279,10 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
           const app = await worker.run<ViewerApp>({ kind: 'app', cacheDir: options.cacheDir, plugins: all })
           if (closed) return
           replace(app)
+          appFailure = undefined
           log(`the viewer app was built in ${((Date.now() - started) / 1000).toFixed(1)} s`)
         } catch (error) {
+          appFailure = stripVTControlCharacters(errorMessage(error))
           log(`the viewer app could not be built: ${errorMessage(error)}`)
         }
       }
@@ -717,8 +721,11 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
         clearTimeout(timer)
       }
       const available = ready() && (!wait || await currentDocumentBundle(dir, await documentOf(dir)))
-      log(`[viewer] document=${JSON.stringify(dir || '.')} cache=${cached ? 'hit' : 'miss'} wait=${wait} state=${available ? 'ready' : wait ? 'failed' : 'building'} elapsedMs=${Date.now() - started}`)
-      if (wait && !available) throw new Error(stateOf(dir).bundleFailure ?? 'the viewer app or the current document code could not be built; the server\'s log says why')
+      // A build still running when the wait ends is not a failure: the workbench asks again.
+      const preparing = !available && (building !== undefined || stateOf(dir).building !== undefined)
+      log(`[viewer] document=${JSON.stringify(dir || '.')} cache=${cached ? 'hit' : 'miss'} wait=${wait} state=${available ? 'ready' : preparing || !wait ? 'building' : 'failed'} elapsedMs=${Date.now() - started}`)
+      if (wait && preparing) throw new PreviewPreparing()
+      if (wait && !available) throw new Error(stateOf(dir).bundleFailure ?? appFailure ?? 'the viewer app or the current document code could not be built; the server\'s log says why')
       return available ? `${base}${PREFIX}view?document=${encodeURIComponent(dir)}` : undefined
     },
     async warm(dir) {

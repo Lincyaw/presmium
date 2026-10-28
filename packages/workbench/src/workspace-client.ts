@@ -21,6 +21,8 @@ export type ApprovalEvent =
   | { type: 'reset' }
 
 const observedFailures = new WeakSet<object>()
+// A 503 with Retry-After is work still in progress (a preview being prepared), not a failure of the service.
+const isRetryLater = (response: Response) => response.status === 503 && response.headers.has('Retry-After')
 /** Whether the owned request observer already received this transport failure. */
 export const isObservedWorkspaceFailure = (error: unknown): boolean => typeof error === 'object' && error !== null && observedFailures.has(error)
 
@@ -179,7 +181,7 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     emit('start')
     try {
       const response = await fetch(address, { credentials: 'same-origin', ...init })
-      if (response.status >= 500) emit('failure', response.status)
+      if (response.status >= 500 && !isRetryLater(response)) emit('failure', response.status)
       else emit('recovery', response.status)
       return response
     } catch (error) {
@@ -209,7 +211,7 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     const data = await response.json().catch(() => ({})) as T & ErrorAnswer
     if (!response.ok) {
       const error = new WorkspaceServerError(response.status, data)
-      if (response.status >= 500) observedFailures.add(error)
+      if (response.status >= 500 && !isRetryLater(response)) observedFailures.add(error)
       throw error
     }
     return data
