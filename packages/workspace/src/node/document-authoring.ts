@@ -3,9 +3,9 @@ import { applyDocumentOperations, AUTHORING_API_VERSION, createDocumentPage, DOC
 import { validateDocumentChange, validateDocumentPageChange, validateDocumentPageChangeApply, validateDocumentPageDuplication, validateDocumentPageDuplicationApply, validateDocumentOutlineQuery, validateDocumentPartQuery } from '@lincyaw/kernel/node'
 import type { AppliedDocumentChange, ApplyDocumentChange, CanonicalSource, DocumentAnswer, DocumentAuthoring, DocumentChange, DocumentChangeAnswer, DocumentChangePlan, DocumentIssue, DocumentPageAction, DocumentPageChangePlan, DocumentPageDuplicationPlan, Member, RequestContext, SourceTransactionChange, TeachingDocument } from '@lincyaw/kernel'
 import { RequestError } from './errors.ts'
-import { applyDocumentAuthoringAction, DOCUMENT_ACTION_MAX_REQUEST_CHARS, DOCUMENT_ACTION_MAX_RESPONSE_CHARS, DOCUMENT_AUTHORING_ACTION_TYPES, DocumentCommentError } from '@lincyaw/kernel'
-import { validateDocumentAuthoringAction, validateDocumentAuthoringActionReference } from '@lincyaw/kernel/node'
-import type { DocumentAuthoringActionPlan } from '@lincyaw/kernel'
+import { applyDocumentAuthoringAction, DOCUMENT_ACTION_MAX_REQUEST_CHARS, DOCUMENT_ACTION_MAX_RESPONSE_CHARS, DOCUMENT_AUTHORING_ACTION_TYPES, DOCUMENT_PARAMETER_MAX_CHANGES, DOCUMENT_PARAMETER_MAX_PATH_DEPTH, DocumentCommentError, DocumentComponentError } from '@lincyaw/kernel'
+import { validateDocumentAuthoringAction, validateDocumentAuthoringActionReference, validateDocumentAuthoringActionImpact } from '@lincyaw/kernel/node'
+import type { AppliedDocumentAuthoringAction, DocumentAuthoringActionReference, DocumentAuthoringActionPlan, DocumentComponentImpactAnswer } from '@lincyaw/kernel'
 import { MAX_SOURCE, MAX_SOURCE_CHANGES } from './source-editor.ts'
 import type { SourceEditor, SourceTransactionHistory } from './source-editor.ts'
 import type { Revisions } from './revisions.ts'
@@ -35,6 +35,8 @@ export function readAuthoringDocument(editor: SourceEditor, ctx: Pick<RequestCon
 export interface DocumentEditor extends DocumentAuthoring {
   /** Direct author saves retain the HTTP transaction boundary; agents apply a reviewed preflight. */
   change(document: string, change: DocumentChange, member: Member): Promise<DocumentChangeAnswer>
+  /** Only the authenticated editor HTTP adapter selects this origin; no request field can select it. */
+  applyEditorAction(document: string, reference: DocumentAuthoringActionReference, member: Member): Promise<AppliedDocumentAuthoringAction>
 }
 
 export function createDocumentEditor({ editor, revisions, reviewRequired = false }: { editor: SourceEditor, revisions?: Revisions, reviewRequired?: boolean }): DocumentEditor {
@@ -159,20 +161,36 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
     if (record.expires < Date.now() && !(replay && receipts.get(record.key)?.signature === digest)) throw new RequestError(409, 'document-plan-expired')
     return plan
   }
-  const applyPlannedChange = async (document: string, request: ApplyDocumentChange, member: Member, family: 'generic' | 'page' | 'duplication' | 'action'): Promise<AppliedDocumentChange> => {
-    if (reviewRequired) throw new RequestError(409, 'authoring-review-required')
+  const applyPlannedChange = async (document: string, request: ApplyDocumentChange, member: Member, family: 'generic' | 'page' | 'duplication' | 'action', origin: 'agent' | 'editor' = 'agent'): Promise<AppliedDocumentChange> => {
+    if (reviewRequired && origin === 'agent') throw new RequestError(409, 'authoring-review-required')
     const change = checkedChange(request.change), key = keyOf(document, member, change.id), plan = plans.get(request.planId)
     if (!plan?.ready || plan.key !== key || plan.signature !== signatureOf(change)) throw new RequestError(409, 'document-plan-changed')
     const actual = plan.action ? 'action' : plan.page ? 'page' : plan.duplication ? 'duplication' : 'generic'
     if (actual !== family) throw new RequestError(409, 'document-plan-family-changed')
     if (plan.expires < Date.now() && receipts.get(key)?.signature !== plan.signature) throw new RequestError(409, 'document-plan-expired')
-    const answer = await saveChange(document, change, member, 'agent')
+    const answer = await saveChange(document, change, member, origin)
     return { ...answer, verification: { saved: true, source: sourceOf(answer), compiled: 'not-requested', runtime: 'not-requested' } }
+  }
+  const applyAction = async (document: string, reference: DocumentAuthoringActionReference, member: Member, origin: 'agent' | 'editor'): Promise<AppliedDocumentAuthoringAction> => {
+    if (reviewRequired && origin === 'agent') throw new RequestError(409, 'authoring-review-required')
+    if (!validateDocumentAuthoringActionReference(reference)) throw new RequestError(400, 'authoring-action-reference-invalid')
+    const plan = await actionOf(document, reference.planId, reference.digest, member, true)
+    if (reference.source.documentId !== plan.source.documentId || reference.source.version !== plan.source.version || reference.source.fingerprint !== plan.source.fingerprint) throw new RequestError(409, 'document-plan-changed')
+    if (plan.action.type === 'comment.delete' && !reference.confirmDeletion) throw new RequestError(409, 'comment-deletion-confirmation-required', { planId: plan.planId, digest: plan.digest, next: 'Review this exact discussion deletion, then retry its reference with confirmDeletion:true.' })
+    if (plan.action.type !== 'comment.delete' && reference.confirmDeletion) throw new RequestError(400, 'comment-deletion-confirmation-unexpected')
+    const expected = plan.files.find(file => file.path === entryOf(document))!.version, receipt = receipts.get(keyOf(document, member, plan.changeId))
+    if (receipt && receipt.signature !== plan.digest) throw new RequestError(409, 'document-change-id-reused')
+    readSelection(document, receipt ? { documentId: plan.content.id, version: expected, fingerprint: fnv1a64(`${JSON.stringify(plan.content, null, 2)}\n`) } : plan.source, member, () => undefined)
+    const answer = await applyPlannedChange(document, { change: plan.change, planId: plan.planId }, member, 'action', origin)
+    if (answer.version !== expected || JSON.stringify(answer.content) !== JSON.stringify(plan.content)) throw new RequestError(409, 'document-readback-changed', { committed: true, changeId: plan.changeId, version: answer.version })
+    const { content: _content, issues: _issues, commit, ...saved } = answer
+    return { ...saved, ...commit ? { commit: { id: commit.id, origin: commit.origin.kind } } : {}, planId: plan.planId, digest: plan.digest, action: plan.action.type, effect: plan.effect,
+      verification: { ...answer.verification, plannedVersion: expected, actionStateVerified: true } }
   }
   const service: DocumentEditor = {
     capabilities(_document, member) {
       const allowed = hasRole(member, 'editor')
-      return { apiVersion: AUTHORING_API_VERSION, documentSchemaVersion: DOCUMENT_SCHEMA_VERSION, available: allowed, ...allowed ? {} : { reason: 'permission-denied' as const }, actions: { read: allowed, outline: allowed, readPart: allowed, plan: allowed, apply: allowed && !reviewRequired, planPageDuplication: allowed, applyPageDuplication: allowed && !reviewRequired, planPageChange: allowed, applyPageChange: allowed && !reviewRequired, planAction: allowed, applyAction: allowed && !reviewRequired }, readLimits: { maxRequestChars: DOCUMENT_READ_MAX_REQUEST_CHARS, maxResponseChars: DOCUMENT_READ_MAX_RESPONSE_CHARS, responseSerialization: 'JSON.stringify(value,null,2)', offsetUnit: 'utf16' }, ...reviewRequired ? { applyUnavailableReason: 'review-required' as const } : {}, pageLimits: { maxRequestChars: DOCUMENT_READ_MAX_REQUEST_CHARS, maxResponseChars: DOCUMENT_READ_MAX_RESPONSE_CHARS, responseSerialization: 'JSON.stringify(value,null,2)' }, semanticActions: DOCUMENT_AUTHORING_ACTION_TYPES, actionLimits: { maxRequestChars: DOCUMENT_ACTION_MAX_REQUEST_CHARS, maxResponseChars: DOCUMENT_ACTION_MAX_RESPONSE_CHARS, responseSerialization: 'JSON.stringify(value,null,2)' }, operations: DOCUMENT_OPERATION_TYPES, replacement: true, fileChanges: true, limits: { maxFiles: MAX_SOURCE_CHANGES, maxTextBytes: MAX_SOURCE, maxOperations: 1000, planLifetimeMs: PLAN_LIFETIME_MS, maxPlans: MAX_RECEIPTS, maxReceipts: MAX_RECEIPTS }, idempotency: 'process-current-source', review: reviewRequired ? 'required-unsupported' : revisions ? 'locks-and-history' : 'locks-only' }
+      return { apiVersion: AUTHORING_API_VERSION, documentSchemaVersion: DOCUMENT_SCHEMA_VERSION, available: allowed, ...allowed ? {} : { reason: 'permission-denied' as const }, actions: { read: allowed, outline: allowed, readPart: allowed, plan: allowed, apply: allowed && !reviewRequired, planPageDuplication: allowed, applyPageDuplication: allowed && !reviewRequired, planPageChange: allowed, applyPageChange: allowed && !reviewRequired, planAction: allowed, applyAction: allowed && !reviewRequired }, readLimits: { maxRequestChars: DOCUMENT_READ_MAX_REQUEST_CHARS, maxResponseChars: DOCUMENT_READ_MAX_RESPONSE_CHARS, responseSerialization: 'JSON.stringify(value,null,2)', offsetUnit: 'utf16' }, ...reviewRequired ? { applyUnavailableReason: 'review-required' as const } : {}, pageLimits: { maxRequestChars: DOCUMENT_READ_MAX_REQUEST_CHARS, maxResponseChars: DOCUMENT_READ_MAX_RESPONSE_CHARS, responseSerialization: 'JSON.stringify(value,null,2)' }, semanticActions: DOCUMENT_AUTHORING_ACTION_TYPES, components: { parameters: true, stepParameters: true, restoreStepParameters: true, useExistingDefinition: true, impactRead: true, maxChanges: DOCUMENT_PARAMETER_MAX_CHANGES, maxPathDepth: DOCUMENT_PARAMETER_MAX_PATH_DEPTH, independentCopy: { available: false, reason: 'implementation-closure-unavailable' } }, actionLimits: { maxRequestChars: DOCUMENT_ACTION_MAX_REQUEST_CHARS, maxResponseChars: DOCUMENT_ACTION_MAX_RESPONSE_CHARS, responseSerialization: 'JSON.stringify(value,null,2)' }, operations: DOCUMENT_OPERATION_TYPES, replacement: true, fileChanges: true, limits: { maxFiles: MAX_SOURCE_CHANGES, maxTextBytes: MAX_SOURCE, maxOperations: 1000, planLifetimeMs: PLAN_LIFETIME_MS, maxPlans: MAX_RECEIPTS, maxReceipts: MAX_RECEIPTS }, idempotency: 'process-current-source', review: reviewRequired ? 'required-unsupported' : revisions ? 'locks-and-history' : 'locks-only' }
     },
     read,
     async outline(document, query, member) {
@@ -299,7 +317,7 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
     },
     async planAction(document, raw, member) {
       if (!validateDocumentAuthoringAction(raw)) throw new RequestError(400, 'authoring-action-invalid')
-      if (JSON.stringify(raw).length > DOCUMENT_ACTION_MAX_REQUEST_CHARS) throw new RequestError(413, 'authoring-action-request-too-large')
+      if (JSON.stringify(raw).length > DOCUMENT_ACTION_MAX_REQUEST_CHARS) throw new RequestError(413, 'authoring-action-request-too-large', { limits: { maxRequestChars: DOCUMENT_ACTION_MAX_REQUEST_CHARS }, next: 'Submit only changed parameter fields. Retained values do not belong in the request; keep the local draft when an edited value exceeds this limit.' })
       const source = { documentId: raw.source.documentId, version: raw.source.version, fingerprint: raw.source.fingerprint }
       const current = readSelection(document, source, member, content => content), action = structuredClone(raw.action), key = keyOf(document, member, raw.id)
       const signature = createHash('sha256').update(JSON.stringify({ id: raw.id, source, action }, (_, value) => value && typeof value === 'object' && !Array.isArray(value) ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) : value)).digest('hex')
@@ -318,6 +336,7 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
         try { materialized = applyDocumentAuthoringAction(current, action, { member, now: new Date().toISOString(), allocate: randomUUID, allocateContentIds: true }) }
         catch (error) {
           if (error instanceof DocumentCommentError) throw new RequestError(error.status, error.message)
+          if (error instanceof DocumentComponentError) throw new RequestError(error.status, error.message, error.detail)
           throw new RequestError(422, 'authoring-action-invalid', { reason: error instanceof Error ? error.message : 'invalid-action' })
         }
         const change: DocumentChange = { id: raw.id, baseDocumentVersion: source.version, replacement: materialized.content }
@@ -337,22 +356,25 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
       const sameSource = JSON.stringify(plan.source) === JSON.stringify(currentSource)
       return { plan: structuredClone(plan), currentSource, state: receipt ? receipt.signature === plan.digest && receipt.version === current.version ? 'applied' : 'old' : sameSource ? 'current' : 'old' }
     },
-    async applyAction(document, reference, member) {
-      if (reviewRequired) throw new RequestError(409, 'authoring-review-required')
-      if (!validateDocumentAuthoringActionReference(reference)) throw new RequestError(400, 'authoring-action-reference-invalid')
-      const plan = await actionOf(document, reference.planId, reference.digest, member, true)
-      if (reference.source.documentId !== plan.source.documentId || reference.source.version !== plan.source.version || reference.source.fingerprint !== plan.source.fingerprint) throw new RequestError(409, 'document-plan-changed')
-      if (plan.action.type === 'comment.delete' && !reference.confirmDeletion) throw new RequestError(409, 'comment-deletion-confirmation-required', { planId: plan.planId, digest: plan.digest, next: 'Review this exact discussion deletion, then retry its reference with confirmDeletion:true.' })
-      if (plan.action.type !== 'comment.delete' && reference.confirmDeletion) throw new RequestError(400, 'comment-deletion-confirmation-unexpected')
-      const expected = plan.files.find(file => file.path === entryOf(document))!.version, receipt = receipts.get(keyOf(document, member, plan.changeId))
-      if (receipt && receipt.signature !== plan.digest) throw new RequestError(409, 'document-change-id-reused')
-      readSelection(document, receipt ? { documentId: plan.content.id, version: expected, fingerprint: fnv1a64(`${JSON.stringify(plan.content, null, 2)}\n`) } : plan.source, member, () => undefined)
-      const answer = await applyPlannedChange(document, { change: plan.change, planId: plan.planId }, member, 'action')
-      if (answer.version !== expected || JSON.stringify(answer.content) !== JSON.stringify(plan.content)) throw new RequestError(409, 'document-readback-changed', { committed: true, changeId: plan.changeId, version: answer.version })
-      const { content: _content, issues: _issues, commit, ...saved } = answer
-      return { ...saved, ...commit ? { commit: { id: commit.id, origin: commit.origin.kind } } : {}, planId: plan.planId, digest: plan.digest, action: plan.action.type, effect: plan.effect,
-        verification: { ...answer.verification, plannedVersion: expected, actionStateVerified: true } }
+    async readActionImpact(document, query, member) {
+      if (!validateDocumentAuthoringActionImpact(query)) throw new RequestError(400, 'authoring-action-impact-invalid')
+      const { plan, ...state } = await service.readActionPlan(document, { planId: query.planId, digest: query.digest }, member)
+      if (plan.effect.kind !== 'component') throw new RequestError(422, 'authoring-action-impact-unavailable')
+      const [group, name] = query.collection.split('.') as ['affected' | 'overrides' | 'references', string]
+      const values = (plan.effect.value[group] as unknown as Record<string, string[]>)[name]!
+      const offset = query.offset ?? 0
+      if (offset > values.length) throw new RequestError(400, 'authoring-action-impact-offset')
+      const answer: DocumentComponentImpactAnswer = { planId: plan.planId, digest: plan.digest, source: plan.source, ...state, collection: query.collection, offset, total: values.length, entries: [], complete: offset === values.length }
+      for (let index = offset; index < values.length; index++) {
+        const next = index + 1, candidate = { ...answer, entries: [...answer.entries, values[index]!], complete: next === values.length, ...next < values.length ? { nextOffset: next } : { nextOffset: undefined } }
+        if (JSON.stringify(candidate, null, 2).length > DOCUMENT_ACTION_MAX_RESPONSE_CHARS) break
+        Object.assign(answer, candidate)
+      }
+      if (!answer.entries.length && offset < values.length || JSON.stringify(answer, null, 2).length > DOCUMENT_ACTION_MAX_RESPONSE_CHARS) throw new RequestError(413, 'authoring-action-impact-too-large')
+      return answer
     },
+    applyAction: (document, reference, member) => applyAction(document, reference, member, 'agent'),
+    applyEditorAction: (document, reference, member) => applyAction(document, reference, member, 'editor'),
     async apply(document, request: ApplyDocumentChange, member): Promise<AppliedDocumentChange> {
       return applyPlannedChange(document, request, member, 'generic')
     },

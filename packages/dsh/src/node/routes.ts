@@ -5,7 +5,7 @@ export const name = 'presmium-routes'
 export const inject = ['presmium', 'connection']
 
 export const ROUTES: Record<string, string> = Object.fromEntries([
-  ...['project/capabilities', 'project/plan', 'project/apply', 'documents', 'document', 'document/outline', 'document/part', 'document/page/plan', 'document/page/apply', 'document/action/plan', 'document/action/apply', 'document/asset', 'document/events', 'document/change', 'document/image', 'document/audio', 'document/recording/adopt', 'document/media-clip', 'files', 'source', 'source/create', 'source/transaction', 'changes', 'changes/commit', 'changes/discard', 'revisions', 'revisions/revert', 'history/list', 'history/file', 'history/undo', 'history/redo',
+  ...['project/capabilities', 'project/plan', 'project/apply', 'documents', 'document', 'document/capabilities', 'document/outline', 'document/part', 'document/page/plan', 'document/page/apply', 'document/action/plan', 'document/action/impact', 'document/action/apply', 'document/asset', 'document/events', 'document/change', 'document/image', 'document/audio', 'document/recording/adopt', 'document/media-clip', 'files', 'source', 'source/create', 'source/transaction', 'changes', 'changes/commit', 'changes/discard', 'revisions', 'revisions/revert', 'history/list', 'history/file', 'history/undo', 'history/redo',
     'document/media-clip/validate', 'document/transcription/capabilities', 'document/transcription', 'document/transcription/result', 'document/transcription/cancel',
     'document/transcription/adoption/plan', 'document/transcription/adoption/apply',
     'ir', 'ir/events', 'preview', 'build', 'check', 'jobs', 'jobs/cancel', 'jobs/events', 'voice-catalog', 'voice-capabilities',

@@ -5,6 +5,7 @@ export { documentOutline, documentPart, DocumentReadError } from './document-rea
 export { changeDocumentVoice, documentVoiceStepIds, previewDocumentVoiceChange, resolveDocumentStepVoice } from './document-voices.ts'
 export { applyDocumentCommentAction, isDocumentTextLink, documentCommentTargets, validateDocumentCommentAnchor, DocumentCommentError } from './document-comments.ts'
 export { applyDocumentAuthoringAction } from './document-authoring-actions.ts'
+export { applyDocumentComponentAction, effectiveComponentParameters, createDocumentParameterChanges, DocumentComponentError } from './document-components.ts'
 export type { DocumentStepVoice, DocumentVoiceImpact, DocumentVoiceOptions, DocumentVoiceScope } from './document-voices.ts'
 export { prepareTranscriptionAdoption } from './transcription-adoption.ts'
 export { productionAssetIds, recordingStepIssue, recordingSourceRange } from './recording.ts'

@@ -1,7 +1,7 @@
 export { copyPublished, productionAssetFile } from './assets.ts'
 export { DOCUMENT_CHANGE_JSON_SCHEMA, validateDocumentChange, validateDocumentPageChange, validateDocumentPageChangeApply, validateDocumentPageDuplication, validateDocumentPageDuplicationApply } from '../authoring.ts'
 export { validateDocumentOutlineQuery, validateDocumentPartQuery } from './document-reads.ts'
-export { DOCUMENT_AUTHORING_ACTION_SCHEMA, DOCUMENT_AUTHORING_ACTION_APPLY_SCHEMA, validateDocumentAuthoringAction, validateDocumentAuthoringActionReference } from './authoring-actions.ts'
+export { DOCUMENT_AUTHORING_ACTION_SCHEMA, DOCUMENT_AUTHORING_ACTION_APPLY_SCHEMA, DOCUMENT_AUTHORING_ACTION_IMPACT_SCHEMA, validateDocumentAuthoringAction, validateDocumentAuthoringActionReference, validateDocumentAuthoringActionImpact } from './authoring-actions.ts'
 export { validateDocumentTranscriptionRequest } from './transcription.ts'
 export { validateDocumentRecordingAdoption, validateDocumentAudioInspect, validateDocumentWorkspaceAudioImport, validateDocumentWorkspaceAudioInspect, validateDocumentMediaClipValidation, validateDocumentMediaClipEdit, validateDocumentProductionPlanQuery } from './document-audio.ts'
 export { validateDocumentVoiceCatalogQuery } from './document-voice.ts'
