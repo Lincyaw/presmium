@@ -84,13 +84,14 @@ export function registerBrand(ctx: DshClientContext, workbench: Workbench): void
   // Harness's own `English` and `中文` carry its developer copy in the AI panel ("Describe what you want to build…"),
   // and a language's dictionary cannot be registered twice; a choice of either becomes the same language with Presmium's
   // copy. Only changes are followed: the page's first, provisional language may still give way to the stored one.
-  ctx.effect(() => ctx.locale.subscribe(() => {
-    const active = ctx.locale.getLocale().active
-    const language = BRAND_LANGUAGES.find(candidate => candidate.fallback === active)
-    if (language) void ctx.locale.setLocale(language.id)
-  }), 'presmium: Harness\'s languages with Presmium\'s copy')
   for (const language of BRAND_LANGUAGES) {
     ctx.effect(() => ctx.locale.addLanguage({ id: language.id, label: language.label, fallback: language.fallback }), `presmium: language ${language.id}`)
     for (const [ns, dict] of Object.entries(BRAND_COPY[language.id])) ctx.effect(() => ctx.locale.register(ns, language.id, dict), `presmium: ${ns} copy ${language.id}`)
   }
+  ctx.effect(() => ctx.locale.subscribe(() => {
+    const active = ctx.locale.getLocale().active
+    const language = BRAND_LANGUAGES.find(candidate => candidate.fallback === active)
+    // The language may still be unregistered while its definition loads or after it is unloaded.
+    if (language && ctx.locale.getLocale().locales.some(locale => locale.id === language.id)) void ctx.locale.setLocale(language.id)
+  }), 'presmium: Harness\'s languages with Presmium\'s copy')
 }
