@@ -60,6 +60,7 @@ function nativeText(node: Extract<InlineNode, { type: 'text' | 'break' }>): Nati
 export function productInlineToNative(nodes: readonly InlineNode[], context: InlineProjectionContext): NativeInline[] {
   return nodes.map(node => {
     if (node.type === 'text' || node.type === 'break') return nativeText(node)
+    if (node.type === 'math') return { type: 'presmiumMathInline', props: {}, content: node.value }
     if (isDocumentTextLink(node)) {
       return { type: 'link', href: node.href, content: node.children.map(child => nativeText(child as Extract<InlineNode, { type: 'text' | 'break' }>)) }
     }
@@ -83,7 +84,7 @@ export function nativeInlineToProduct(nodes: readonly NativeInline[], context: I
   return nodes.flatMap(node => {
     if (node.type === 'text') return productText(node)
     if (node.type === 'link') return [{ type: 'link', href: node.href, children: node.content.flatMap(productText) } satisfies InlineNode]
-    if (node.props.kind === 'math') return [{ type: 'math', value: node.props.label } satisfies InlineNode]
+    if (node.type === 'presmiumMathInline') return [{ type: 'math', value: node.content } satisfies InlineNode]
     const original = context.opaqueInline.get(node.props.entityId)
     if (!original) throw new Error('document-inline-reference')
     return [structuredClone(original)]

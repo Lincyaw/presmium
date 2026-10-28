@@ -35,6 +35,7 @@ BlockNote 的公共适配类为 `pm-ui-block-editor`，由工作台的全篇 `Bl
 实际名称、菜单、编辑与取消验证及窄屏观察限制见[批注工具栏记录](benchmarks/comment-toolbar-accessibility-2026-10-28.md)。
 正文指针框选期间与非空正文选区不显示已有线程浮层，避免它覆盖待选文字。常驻原生 FloatingThreadController 通过公开 open 与 elementProps 适配；隐藏关闭过渡的残留内容但保留线程和回复 editor。正常收拢点击仍走原生打开与首击处理，不写回 DOM 选区。见[框选验证](benchmarks/native-comment-pointer-selection-2026-10-28.md)。
 表格合并使用同一工具条内的公开 `TableCellMergeButton`，拆分使用原生单元格菜单，保留官方选区、可用条件、图标和回调。[NativeTable](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=199-4529) 登记紧凑与触屏密度的跨单元格选区、合并、拆分状态；样式沿用公共 BlockNote 适配，不增加业务按钮或表格浮层。
+正文公式使用 BlockNote 公开的 `SourceBlockWithPreview`／`SourceInlineContentWithPreview`：平时只显示 KaTeX 排版结果（MathML 输出，不打包字体），点击后在原生弹层中编辑 LaTeX 并实时预览，出错时保留上次正确的画面并在弹层内显示本地化提示。弹层、确认按钮、错误与空状态及选中描边在 `pm-ui-block-editor` 层改用表面、描边、`accent`、`danger` 与尺寸令牌。正文链接沿用 `pm-ui-link` 的 `accent` 下划线，任务勾选框用 `accent-color`，行内代码用 `sunk` 底与等宽字体；文稿中不属于 BlockNote 调色板的颜色（通常是设计令牌）按原值绘制，行内标记经公开 mark view，段落与单元格属性经公开节点装饰。见[正文富文本保真记录](benchmarks/editor-rich-text-fidelity-2026-10-28.md)。
 原生图片面板使用 `.pm-ui-block-editor .bn-panel` 公共适配，保留 BlockNote FilePanel 的上传、嵌入、加载与失败行为。[NativeFilePanel](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=211-4825) 组合现有紧凑按钮与输入框，桌面 30／13、触屏 44／16，宽度受视口约束；不另造上传器或常驻说明。
 
 ## 2. Tokens、公共控件与业务布局
