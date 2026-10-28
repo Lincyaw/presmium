@@ -1076,6 +1076,13 @@
   max-width: calc(100vw - var(--pm-space-8));
 }
 
+/* The editor places an open inline popup inside the screen (flipped above the line or slid left) through these properties. */
+.pm-ui-block-editor .bn-inline-content-section .bn-preview-with-source-popup[data-open='true'] .bn-source-block-popup[style*='--pm-source-popup-x'] {
+  top: var(--pm-source-popup-y);
+  left: var(--pm-source-popup-x);
+  margin-top: 0;
+}
+
 .pm-ui-block-editor .bn-code-block-source-popup-body > pre {
   padding: var(--pm-space-3);
   font-family: var(--pm-font-mono);

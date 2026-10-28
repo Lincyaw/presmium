@@ -22,6 +22,7 @@ import { DOCUMENT_LINKS, DocumentColorButton, DocumentLinkToolbar, DocumentSideM
 import type { DocumentLinks } from './authoring.tsx'
 import { excludeCommentMarkHistory, nativeComments, nativeCommentSelection } from './comments.ts'
 import type { DocumentThreadStore } from './comments.ts'
+import { DocumentMenuRoot, linkToolbarFloating } from './popover.tsx'
 import { COMMENT_EDITOR_CONTEXT, DocumentCommentEditor, DocumentFloatingThreadController, DocumentThreadsSidebar } from './DocumentComments.tsx'
 import { DocumentNewCommentController, DocumentNewCommentRecovery, NewCommentDraftProvider } from './NewCommentDrafts.tsx'
 
@@ -59,7 +60,7 @@ const DocumentToolbarButton = forwardRef<HTMLButtonElement, ComponentProps['Gene
   return label === undefined ? <MantineToolbarButton {...props} ref={ref} /> : <MantineToolbarButton {...props} ref={ref} label={label} />
 })
 
-const DOCUMENT_EDITOR_COMPONENTS = { ...components, Generic: { ...components.Generic, Badge: { ...components.Generic.Badge, Root: DocumentReactionBadge }, Toolbar: { ...components.Generic.Toolbar, Button: DocumentToolbarButton } }, Comments: { ...components.Comments, Comment: DocumentComment, Editor: DocumentCommentEditor } }
+const DOCUMENT_EDITOR_COMPONENTS = { ...components, Generic: { ...components.Generic, Menu: { ...components.Generic.Menu, Root: DocumentMenuRoot }, Badge: { ...components.Generic.Badge, Root: DocumentReactionBadge }, Toolbar: { ...components.Generic.Toolbar, Button: DocumentToolbarButton } }, Comments: { ...components.Comments, Comment: DocumentComment, Editor: DocumentCommentEditor } }
 
 export interface BlockNoteSurfaceProps {
   identity: string
@@ -124,6 +125,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
   current.current = props
   const dictionary = props.locale === 'zh-CN' ? zh : en
   const t = DOCUMENT_EDITOR_MESSAGES[props.locale]
+  const linkToolbarOptions = useMemo(linkToolbarFloating, [])
   const links = useMemo<DocumentLinks>(() => ({ openSection: sectionId => current.current.onSectionLink?.(sectionId) ?? false }), [])
   const fileMessages = IMAGE_IMPORT_MESSAGES[props.locale]
   const editor = useCreateBlockNote({ schema: documentEditorSchema, initialContent: props.initialContent,
@@ -189,7 +191,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         <BlockNoteViewEditor><NewCommentDraftProvider>
         <DocumentNewCommentController />{!props.commentsPortal && <DocumentFloatingThreadController />}{props.commentsPortal && <><RenderInPortalElement target={props.commentsPortal}><DocumentThreadsSidebar><DocumentNewCommentRecovery /></DocumentThreadsSidebar></RenderInPortalElement></>}
         <FormattingToolbarController formattingToolbar={EditorToolbar} />
-        <LinkToolbarController linkToolbar={DocumentLinkToolbar} />
+        <LinkToolbarController linkToolbar={DocumentLinkToolbar} floatingUIOptions={linkToolbarOptions} />
         <SideMenuController sideMenu={DocumentSideMenu} />
         <TableHandlesController tableHandle={DocumentTableHandle} tableCellHandle={DocumentTableCellButton} />
         <SuggestionMenuController triggerCharacter="/" getItems={async query => editor.getTextCursorPosition().block.type === 'presmiumPage' ? [] : filterSuggestionItems([...withFormulas(getDefaultReactSlashMenuItems(editor), formulaSlashItems(editor, props.locale, dictionary.slash_menu.table.group)), {
