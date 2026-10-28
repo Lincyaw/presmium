@@ -36,3 +36,11 @@ Figma [ComponentProperties](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?
 - 临时单文稿副本已删除，CLI 进程已终止；证据保留在本片工作树的 ignored `.presmium/component-properties-design/`。Figma 最终图为 `review-final.png`，校验为 `validation.json`，单文稿结果为 `guide-check.json`，schema 比对为 `schema-only-proof.json`。
 
 设计图与 schema 通过不代表 Dialog 的焦点、草稿恢复、事务并发、素材引用或四组合浏览器流程已经验收；这些由各实现片的真实消费者单独记录。
+
+## Applied 设计增量
+
+在原设计与 schema 提交 `af75a0b8f4b89c25200f46039ff9093bed2da4e8` 之后，仅追加第七种属性状态 Applied：Compact `283:6393`、Touch `283:6433`。成功应用后保留 Dialog，底栏复用公共按钮显示“撤消／完成／应用”；没有新更改时禁用应用。撤消指向已确认 Git 修订，受后续输入、来源和实际历史能力约束，不指向原生正文 Undo；完成关闭 Dialog。
+
+[独立四组合审阅](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=283-6473) 为亮桌中文、暗桌英文、亮窄中文与暗窄英文，已实际查看 `applied-review.png`，短文字与三个底栏动作均完整。没有新增控件、资产或样式。原六态的 12 个主组件和 24 实例审阅图 `278:5946` 保留，原 schema、编译结果与 manifest 未改写。
+
+本增量只修改设计说明与节点索引，没有运行时源码改动，也没有重跑 schema 编译、模型或浏览器消费者。真正的 Git 撤消、待应用输入门禁与正文原生历史归属仍需实现片的真实流程验证。
