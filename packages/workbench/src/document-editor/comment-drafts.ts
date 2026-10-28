@@ -95,7 +95,7 @@ export class CommentDrafts {
   start(): void {
     if (this.#closed || this.#started) return
     this.#started = true
-    this.#reader = new DocumentDraftStore(this.#scope, () => { this.#touch(); void this.refresh() })
+    this.#reader = new DocumentDraftStore(this.#scope, () => { this.#touch(); void this.refresh() }, { family: 'comment' })
     this.#touch()
     if (typeof window !== 'undefined') window.addEventListener('beforeunload', this.#leave)
     void this.refresh()
@@ -207,7 +207,7 @@ export class CommentDrafts {
   }
   #put(record: CommentDraftRecord, previous?: Writing): CommentDraftRecord | undefined {
     const raw = JSON.stringify(record)
-    const store = previous?.store ?? new DocumentDraftStore(this.#scope), commit = raw.length <= MAX_CHARS ? store.put(keyOf(this.#scope, record.id), raw) : undefined
+    const store = previous?.store ?? new DocumentDraftStore(this.#scope, undefined, { family: 'comment' }), commit = raw.length <= MAX_CHARS ? store.put(keyOf(this.#scope, record.id), raw) : undefined
     if (!commit) {
       // Keep the latest native bytes in this Workbench even when durable admission is refused.
       this.#writing.set(record.id, { record, raw, store, generation: 0, pending: false, failed: true, done: Promise.resolve('failed') })
@@ -279,7 +279,7 @@ export class CommentDrafts {
     const value: unknown = JSON.parse(raw)
     if (!valid(value, this.#scope) || value.revision !== reference.revision || !sameCommentDraftTarget(value.target, target) || !this.#validContent(value) || this.#closed) return
     const record: CommentDraftRecord = { ...value, target: isNewCommentDraft(target) ? structuredClone(target) : value.target, id: crypto.randomUUID(), owner: this.#owner, revision: 1, updatedAt: Date.now(), version, composing: false, pending: undefined }
-    const store = new DocumentDraftStore(this.#scope), next = JSON.stringify(record)
+    const store = new DocumentDraftStore(this.#scope, undefined, { family: 'comment' }), next = JSON.stringify(record)
     if (next.length > MAX_CHARS || !await store.create(keyOf(this.#scope, record.id), next) || this.#closed) { store.close(); if (!this.#closed) { this.#admissionFailure = true; this.#pending() }; return }
     this.#writing.set(record.id, { record, raw: next, store, generation: 0, pending: false, failed: false, done: Promise.resolve('committed') })
     this.#touch()

@@ -19,7 +19,7 @@ export interface ComponentPropertyDraft {
 }
 export interface ComponentPropertyBackup { record: ComponentPropertyDraft, token: string, key: string }
 export interface ComponentPropertyBackupRead { candidates: ComponentPropertyBackup[], unreadable: number }
-export interface ComponentPropertyAgentCandidate extends ComponentPropertyBackup { storage: 'durable' | 'session', status: 'available' | 'pending' | 'session-only' }
+export interface ComponentPropertyAgentCandidate extends ComponentPropertyBackup { current: boolean, storage: 'durable' | 'session', status: 'available' | 'pending' | 'session-only' }
 interface Entry { record: ComponentPropertyDraft, store: DocumentDraftStore, operation?: DraftStoreCommit, failed: boolean, origins: ComponentPropertyBackup[] }
 const PREFIX = 'presmium.component-properties.v1:'
 const SETTLED = 'presmium.component-properties-settled.v1:'
@@ -50,6 +50,7 @@ export class ComponentPropertyDrafts {
   readonly #revisions = new Map<string, number>()
   readonly #settling = new Map<string, number>()
   #agentReader?: { identity: string, memberId: string, store: DocumentDraftStore }
+  readonly #writerOwner = crypto.randomUUID()
   #revision = 0
   #closed = false
   readonly #leave = (event: BeforeUnloadEvent) => {
@@ -96,7 +97,7 @@ export class ComponentPropertyDrafts {
     if (!this.readable(identity, memberId)) throw new Error('client-component-drafts-unavailable')
     if (this.#agentReader && (this.#agentReader.identity !== identity || this.#agentReader.memberId !== memberId)) this.stopAgentRead()
     if (!this.#agentReader) {
-      const store = new DocumentDraftStore(JSON.stringify([identity, memberId]), () => { if (this.#agentReader?.store === store) this.#touch({ identity, memberId }) })
+      const store = new DocumentDraftStore(JSON.stringify([identity, memberId]), () => { if (this.#agentReader?.store === store) this.#touch({ identity, memberId }) }, { owner: this.#writerOwner, family: 'component' })
       this.#agentReader = { identity, memberId, store }
     }
     const reader = this.#agentReader, revision = this.revision(identity, memberId), writing = [...this.#entries.values()].filter(entry => entry.record.target.identity === identity && entry.record.target.memberId === memberId)
@@ -134,7 +135,7 @@ export class ComponentPropertyDrafts {
         const marked = stored.get(marker({ key: name, token, record: value })) === token
         if (marked && !entry.current) continue
         // Discarding a backup in another tab does not discard this tab's visible input.
-        const candidate: ComponentPropertyAgentCandidate = { key: name, token, record: value, storage: marked ? 'session' : entry.storage, status: marked ? 'session-only' : entry.status }
+        const candidate: ComponentPropertyAgentCandidate = { key: name, token, record: value, current: entry.current, storage: marked ? 'session' : entry.storage, status: marked ? 'session-only' : entry.status }
         if (reference && (value.id !== reference.id || value.revision !== reference.revision || token !== reference.token)) throw new Error('client-component-draft-changed')
         candidates.push(candidate)
       } catch { current(); if (reference) throw new Error('client-component-draft-changed'); skippedInvalid++ }
@@ -151,7 +152,7 @@ export class ComponentPropertyDrafts {
     const record: ComponentPropertyDraft = { format: 1, id: previous?.record.id ?? crypto.randomUUID(), revision: (previous?.record.revision ?? 0) + 1,
       target: structuredClone(target), source: structuredClone(value.source), definitionId: value.definitionId, baseline: structuredClone(value.baseline), value: structuredClone(value.value),
       reset: Boolean(value.reset), composing: Boolean(value.composing), updatedAt: new Date().toISOString() }
-    const entry: Entry = previous ?? { record, store: new DocumentDraftStore(scope(target)), failed: false, origins: [] }
+    const entry: Entry = previous ?? { record, store: new DocumentDraftStore(scope(target), undefined, { owner: this.#writerOwner, family: 'component' }), failed: false, origins: [] }
     entry.record = record
     for (const origin of origins) if (!entry.origins.some(candidate => candidate.key === origin.key && candidate.token === origin.token)) entry.origins.push(origin)
     this.#entries.set(key, entry)
@@ -170,7 +171,7 @@ export class ComponentPropertyDrafts {
   /** Reads never settle a foreign backup or replace current input. Recovery is an explicit caller action. */
   async read(target: ComponentPropertyTarget, signal?: AbortSignal): Promise<ComponentPropertyBackupRead> {
     if (this.#closed) throw new Error('component-draft-closed')
-    const reader = new DocumentDraftStore(scope(target))
+    const reader = new DocumentDraftStore(scope(target), undefined, { owner: this.#writerOwner, family: 'component' })
     try {
       const stored = await reader.read([prefix(target), markerPrefix(target)], signal), result: ComponentPropertyBackup[] = []
       if (stored.size > 1024) throw new Error('component-draft-limit')
@@ -194,13 +195,14 @@ export class ComponentPropertyDrafts {
   }
 
   /** Recovery creates a confirmed branch before replacing the current in-memory draft. */
-  async recover(backup: ComponentPropertyBackup, expected: ComponentPropertyDraft | undefined, signal?: AbortSignal): Promise<boolean> {
+  async recover(backup: ComponentPropertyBackup, expected: ComponentPropertyDraft | undefined, signal?: AbortSignal, guard?: () => void): Promise<boolean> {
     const target = backup.record.target, key = targetKey(target), previous = this.#entries.get(key)
     const owns = () => !this.#closed && this.#entries.get(key) === previous && previous?.record === expected
       && this.status(target) === 'available' && this.canKeep(target)
+    signal?.throwIfAborted(); guard?.()
     if (!owns()) return false
     const settled = this.#settle(target)
-    const store = new DocumentDraftStore(scope(target))
+    const store = new DocumentDraftStore(scope(target), undefined, { owner: this.#writerOwner, family: 'component' })
     let adopted = false
     try {
       const values = await store.read([backup.key, marker(backup)], signal), raw = values.get(backup.key)
@@ -210,6 +212,7 @@ export class ComponentPropertyDrafts {
       let value: unknown
       try { value = JSON.parse(raw) } catch { return false }
       if (!valid(value, target) || backup.key !== keyOf(value)) return false
+      guard?.()
       const record: ComponentPropertyDraft = { ...structuredClone(value), id: crypto.randomUUID(), revision: 1, composing: false, updatedAt: new Date().toISOString() }
       const fork = JSON.stringify(record)
       if (fork.length > MAX_CHARS) return false
@@ -217,6 +220,7 @@ export class ComponentPropertyDrafts {
       if (!operation || await operation.done !== 'committed') return false
       signal?.throwIfAborted()
       // A later keystroke retains ownership; the committed branch remains recoverable.
+      guard?.()
       if (!owns()) return false
       this.#entries.set(key, { record, store, failed: false, origins: [backup] })
       previous?.store.close()
@@ -226,12 +230,12 @@ export class ComponentPropertyDrafts {
   }
 
   /** Both the in-memory revision and strict storage owner must still match the acknowledged input. */
-  async clear(expected: ComponentPropertyDraft): Promise<boolean> {
+  async clear(expected: ComponentPropertyDraft, options?: { preserveOrigins?: boolean }): Promise<boolean> {
     const key = targetKey(expected.target), entry = this.#entries.get(key)
     if (this.#closed || !entry || entry.record !== expected) return false
     const settled = this.#settle(expected.target)
     try {
-      const operation = entry.store.remove(keyOf(expected), entry.origins.map(origin => [marker(origin), origin.token] as [string, string]))
+      const operation = entry.store.remove(keyOf(expected), options?.preserveOrigins ? [] : entry.origins.map(origin => [marker(origin), origin.token] as [string, string]))
       if (!operation) { entry.failed = true; this.#touch(expected.target); return false }
       entry.operation = operation; this.#touch(expected.target)
       const result = await operation.done
@@ -244,14 +248,15 @@ export class ComponentPropertyDrafts {
   }
 
   /** A discarded foreign revision is marked exactly; newer input under that key remains recoverable. */
-  async discard(backup: ComponentPropertyBackup, signal?: AbortSignal): Promise<boolean> {
+  async discard(backup: ComponentPropertyBackup, signal?: AbortSignal, guard?: () => void): Promise<boolean> {
+    signal?.throwIfAborted(); guard?.()
     if (this.#closed) return false
     const settled = this.#settle(backup.record.target)
-    const reader = new DocumentDraftStore(scope(backup.record.target))
+    const reader = new DocumentDraftStore(scope(backup.record.target), undefined, { owner: this.#writerOwner, family: 'component' })
     try {
       const values = await reader.read([backup.key], signal), raw = values.get(backup.key)
       if (typeof raw !== 'string' || await tokenOf(raw) !== backup.token) return false
-      signal?.throwIfAborted()
+      signal?.throwIfAborted(); guard?.()
       const result = await reader.mark([[marker(backup), backup.token]])
       this.#touch(backup.record.target)
       return result

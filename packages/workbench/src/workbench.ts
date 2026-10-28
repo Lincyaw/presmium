@@ -3,11 +3,13 @@ import { undoDepth, redoDepth } from '@tiptap/pm/history'
 import { TextSelection } from '@tiptap/pm/state'
 import { CommentDraftBank } from './document-editor/comment-drafts.ts'
 import { ComponentPropertyDrafts } from './component-property-drafts.ts'
+import type { ComponentPropertyDraft } from './component-property-drafts.ts'
 import { componentSource, reconcileComponentAction, sameComponentSource } from './component-properties.ts'
 import { applyDocumentComponentAction, documentComponentSection, effectiveComponentParameters } from '@lincyaw/kernel'
 import type { DocumentAuthoringActionPlan, DocumentComponentAction, AppliedDocumentAuthoringAction } from '@lincyaw/kernel'
 import { inspectCommentDrafts } from './document-editor/comment-draft-inspection.ts'
 import { inspectComponentDrafts } from './component-draft-inspection.ts'
+import { mutateComponentDrafts } from './component-draft-actions.ts'
 import { DocumentSession } from './document-session.ts'
 import { reconcileRecordingAdoption } from './recording-adoption.ts'
 import { disposeTranscriptionSessions } from './transcription-session.ts'
@@ -1017,6 +1019,7 @@ export class Workbench {
       actions: ['state.read', 'playback.pause', ...safe ? ['source.flush' as const] : [],
         ...commentDrafts?.readable ? ['comment-drafts.inspect' as const, 'comment-drafts.read' as const] : [],
         ...source.member?.id && this.#componentPropertyDrafts.readable(source.identity, source.member.id) ? ['component-drafts.inspect' as const, 'component-drafts.read' as const] : [],
+        ...clean && !state.isHistoryBusy && !state.isHistoryPreparing && source.member?.id && this.#componentPropertyDrafts.readable(source.identity, source.member.id) ? ['component-drafts.restore' as const, 'component-drafts.discard' as const] : [],
         ...this.#canPreparePresentation() ? ['preview.prepare' as const] : [],
         ...clean && (state.webView === 'document' || ready) ? ['position.step' as const] : [],
         ...ready ? ['playback.play' as const, 'playback.seek' as const, 'playback.rate' as const] : []], unsubmittedContent: 'not-inspected' }
@@ -1042,6 +1045,25 @@ export class Workbench {
       const result = await inspectComponentDrafts(this.#componentPropertyDrafts, { identity, memberId, source: expected }, action, signal, fits)
       current()
       return result
+    }
+    if (action.type === 'component-drafts.restore' || action.type === 'component-drafts.discard') {
+      const memberId = this.#state.authoring?.member?.id
+      if (!identity || !memberId || !fits) throw new Error('client-component-drafts-unavailable')
+      const guard = (draft?: ComponentPropertyDraft) => {
+        owned()
+        const state = this.#state, source = state.authoring
+        if (!source?.content || source.identity !== identity || source.member?.id !== memberId || !source.version || !source.fingerprint
+          || !sameSource({ documentId: source.content.id, version: source.version, fingerprint: source.fingerprint }, expected)
+          || source.loading || source.dirty || source.saving || source.composing || source.restored || source.recovering || source.error || isAgentChanging(state)
+          || state.isCreatingPage || state.isEditingPage || state.isHistoryBusy || state.isHistoryPreparing || state.hasDocumentTimingDrafts) throw new Error('client-source-changed')
+        if (action.type === 'component-drafts.restore') {
+          const block = source.content.blocks[action.draft.blockId]
+          if (block?.type !== 'component' || draft && block.definitionId !== draft.definitionId) throw new Error('client-component-target-unavailable')
+          // The source-bound bank checks the saved Definition again before adopting its strict fork.
+          try { effectiveComponentParameters(source.content, block.id, action.draft.stepId) } catch { throw new Error('client-component-target-unavailable') }
+        }
+      }
+      return mutateComponentDrafts(this.#componentPropertyDrafts, { identity, memberId, source: expected }, action, signal, guard, fits)
     }
     if (action.type === 'preview.prepare') {
       const view = this.#state.webView

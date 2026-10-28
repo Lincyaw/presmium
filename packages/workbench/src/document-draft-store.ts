@@ -20,13 +20,16 @@ export class DocumentDraftStore {
   readonly #confirmed = new Map<string, string>()
   readonly #foreign = new Set<string>()
   readonly #scope: string
+  readonly #writerOwner?: string
+  readonly #family?: 'comment' | 'component'
 
-  constructor(scope: string, changed?: () => void) {
+  constructor(scope: string, changed?: () => void, notifications?: { owner?: string, family?: 'comment' | 'component' }) {
     this.#scope = scope
+    const writerOwner = this.#writerOwner = notifications?.owner, family = this.#family = notifications?.family
     if (typeof BroadcastChannel !== 'undefined') {
       try {
         this.#channel = new BroadcastChannel(DATABASE)
-        this.#channel.onmessage = event => { if (!this.#closing && event.data?.scope === scope) changed?.() }
+        this.#channel.onmessage = event => { if (!this.#closing && event.data?.scope === scope && (!family || !event.data.family || event.data.family === family) && (!writerOwner || event.data.owner !== writerOwner)) changed?.() }
       } catch { /* Reopening still reads actual storage when cross-tab notification is unavailable. */ }
     }
   }
@@ -93,7 +96,7 @@ export class DocumentDraftStore {
     })
   }
 
-  #notify(): void { if (!this.#closing) this.#channel?.postMessage({ scope: this.#scope }) }
+  #notify(): void { if (!this.#closing) this.#channel?.postMessage({ scope: this.#scope, ...this.#writerOwner ? { owner: this.#writerOwner } : {}, ...this.#family ? { family: this.#family } : {} }) }
 
   async #commit(key: string | undefined, raw: string | undefined, markers: readonly [string, string][]): Promise<{ committed: boolean, foreign: boolean }> {
     try {
