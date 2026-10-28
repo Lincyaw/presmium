@@ -332,6 +332,10 @@ export interface TimelineProps {
   zoom?: number
   onZoomChange?(zoom: number): void
   onSelectStep(stepId: string): void
+  /** Optional segment activation; the caller owns whether its confirmed time may be sought. */
+  onSelectSegment?(track: TimelineTrack['id'], segment: TimelineSegment): void
+  /** Full-size narrow/coarse alternative to short proportional segments; no timing is inferred here. */
+  segmentPicker?: { track: TimelineTrack['id'], ids: readonly string[], label: string, placeholder: string }
   /** Caller pauses and confirms its source/clock before updating controlled currentTimeMs. */
   onSeek(timeMs: number): void
   seekDisabled?: boolean
@@ -353,7 +357,7 @@ function waveformPath(samples: readonly number[] | undefined): string | undefine
 }
 
 /** Data-only timeline; source, playback, seeking authority and all labels remain with its caller. */
-export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, currentTimeMs, selectedStepId, zoom, onZoomChange, onSelectStep, onSeek, seekDisabled, disabled, loading, seeking, density = 'compact' }: TimelineProps) {
+export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, currentTimeMs, selectedStepId, zoom, onZoomChange, onSelectStep, onSelectSegment, segmentPicker, onSeek, seekDisabled, disabled, loading, seeking, density = 'compact' }: TimelineProps) {
   const hintId = useId()
   const viewport = useRef<HTMLDivElement>(null), tick = useRef<HTMLSpanElement>(null), composing = useRef(false)
   const [width, setWidth] = useState(0), [tickWidth, setTickWidth] = useState(1), [localZoom, setLocalZoom] = useState(1), [raw, setRaw] = useState<string>(), [previewTime, setPreviewTime] = useState<number>()
@@ -382,6 +386,10 @@ export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, 
   const invalid = raw !== undefined && (!Number.isFinite(milliseconds) || milliseconds < 0 || span === undefined || milliseconds > span)
   const commitPosition = () => { if (composing.current || raw === undefined || invalid || cannotSeek) return; setRaw(undefined); requestSeek(milliseconds) }
   const rows = useMemo(() => tracks.map(track => ({ ...track, segments: track.segments.map(segment => ({ ...segment, wave: waveformPath(segment.waveform), positioned: timed && segment.timing !== 'unknown' && Number.isFinite(segment.startMs) && Number.isFinite(segment.endMs) && segment.startMs! >= 0 && segment.endMs! >= segment.startMs! && segment.endMs! <= span! })) })), [tracks, timed, span])
+  const pickerSegments = useMemo(() => {
+    const ids = new Set(segmentPicker?.ids)
+    return rows.find(track => track.id === segmentPicker?.track)?.segments.filter(segment => ids.has(segment.id) && segment.positioned && segment.timing === 'confirmed') ?? []
+  }, [rows, segmentPicker])
   const steps = useMemo(() => {
     const choices = new Map<string, TimelineSegment>()
     for (const track of tracks) for (const segment of track.segments) if (segment.stepId && !choices.has(segment.stepId)) choices.set(segment.stepId, segment)
@@ -394,7 +402,7 @@ export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, 
     const marks = Array.from({ length: Math.min(200, Math.floor(span / unit) + 1) }, (_, index) => index * unit)
     return [0, ...marks.filter(time => time > 0 && time < span && Math.min(time, span - time) / span * width * scale >= tickWidth), span]
   }, [span, timed, width, scale, tickWidth])
-  return <section className="pm-ui-timeline" data-density={density} data-disabled={blocked || undefined} aria-label={label} aria-busy={loading || seeking || undefined}>
+  return <section className="pm-ui-timeline" data-density={density} data-disabled={blocked || undefined} data-segment-picker={segmentPicker?.track} aria-label={label} aria-busy={loading || seeking || undefined}>
     <div className="pm-ui-timeline__tools">
       <PmInput label={`${labels.position} (${labels.seconds})`} width="time" density={density} inputMode="decimal" maxLength={32} value={raw ?? (position === undefined ? '' : (position / 1000).toFixed(3))} placeholder={labels.unknown} error={invalid ? labels.invalidPosition : undefined} disabled={cannotSeek}
         onChange={event => setRaw(event.target.value)} onBlur={commitPosition}
@@ -415,11 +423,11 @@ export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, 
           {timed && <><div className="pm-ui-timeline__ruler" aria-hidden="true" onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); requestSeek((event.clientX - rect.left) / rect.width * span!) }}>
             {ticks.map((time, index) => <span key={time} ref={index === 0 ? tick : undefined} data-end={time === span || undefined} style={{ left: `${time / span! * 100}%` }}>{timelineTime(time).replace(/\.000$/, '')}</span>)}
           </div><PmRange label={labels.seek} value={position ?? 0} max={span!} disabled={cannotSeek} density={density} valueText={timelineTime} onPreviewChange={setPreviewTime} onValueCommit={requestSeek} /></>}
-          {rows.map(track => <div key={track.id} className="pm-ui-timeline__track" role="group" aria-label={track.label}>
+          {rows.map(track => <div key={track.id} className="pm-ui-timeline__track" data-track={track.id} role="group" aria-label={track.label}>
             {track.segments.map(segment => {
               const description = `${segment.label}${segment.statusLabel ? ` · ${segment.statusLabel}` : ''} · ${segment.positioned ? `${segment.timing === 'estimated' ? `${labels.estimated} · ` : ''}${timelineTime(segment.startMs!)}–${timelineTime(segment.endMs!)}` : labels.unknown}`
               const content = <>{segment.wave && segment.positioned && <svg className="pm-ui-timeline__wave" viewBox="0 0 160 20" preserveAspectRatio="none" aria-hidden="true"><path d={segment.wave} /></svg>}<span>{segment.label}</span></>
-              return segment.positioned ? <button key={segment.id} type="button" className="pm-ui-timeline__segment" data-timing={segment.timing} aria-label={description} title={description} aria-pressed={segment.stepId ? segment.stepId === selectedStepId : undefined} disabled={blocked || segment.disabled || !segment.stepId} onClick={() => { if (segment.stepId) onSelectStep(segment.stepId) }} style={{ left: `${segment.startMs! / span! * 100}%`, width: `${(segment.endMs! - segment.startMs!) / span! * 100}%` }}>{content}</button>
+              return segment.positioned ? <button key={segment.id} type="button" className="pm-ui-timeline__segment" data-timing={segment.timing} aria-label={description} title={description} aria-pressed={segment.stepId ? segment.stepId === selectedStepId : undefined} disabled={blocked || segment.disabled || !segment.stepId} onClick={() => { if (onSelectSegment) onSelectSegment(track.id, segment); else if (segment.stepId) onSelectStep(segment.stepId) }} style={{ left: `${segment.startMs! / span! * 100}%`, width: `${(segment.endMs! - segment.startMs!) / span! * 100}%` }}>{content}</button>
                 : <span className="pm-ui-timeline__unknown" key={segment.id} title={description}>{segment.label} · {labels.unknown}</span>
             })}
           </div>)}
@@ -427,6 +435,10 @@ export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, 
         </div>
       </div>
     </div>
+    {segmentPicker && pickerSegments.length > 0 && <div className="pm-ui-timeline__segment-picker"><PmSelect density="touch" label={segmentPicker.label} value="" disabled={cannotSeek || !onSelectSegment}
+      onChange={event => { const segment = pickerSegments.find(segment => segment.id === event.target.value); if (segment && !cannotSeek) onSelectSegment?.(segmentPicker.track, segment) }}>
+      <option value="">{segmentPicker.placeholder}</option>{pickerSegments.map(segment => <option key={segment.id} value={segment.id} disabled={segment.disabled}>{timelineTime(segment.startMs!)} · {segment.label}</option>)}
+    </PmSelect></div>}
     <div className="pm-ui-timeline__steps">{steps.map(segment => <PmButton key={segment.stepId} density={density} disabled={blocked || segment.disabled} aria-pressed={segment.stepId === selectedStepId} variant={segment.stepId === selectedStepId ? 'accent' : 'default'} onClick={() => onSelectStep(segment.stepId!)}>{segment.label}</PmButton>)}</div>
     {!tracks.some(track => track.segments.length) && <PmNotice>{labels.empty}</PmNotice>}
     <p id={hintId} className="pm-ui-sr-only">{labels.seekHint}</p>

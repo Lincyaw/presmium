@@ -1,10 +1,12 @@
 import { PmCaption, PmDrawer, PmIconButton, PmMenu, PmTabs, PRODUCTION_PLAYBACK, TIMED_CAPTIONS, useMessages, useServer, useService, useStore } from '@lincyaw/host'
 import type { MenuItem } from '@lincyaw/host'
 import { isPreviewEmbedded } from '@lincyaw/kernel'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
   captionLanguages,
+  captionGroups,
+  captionGroupAt,
   captionText,
   clockText,
   isStale,
@@ -45,6 +47,7 @@ export default function PlayerPanel(_props: { view?: string }) {
   const time = useStore(player?.time, 0),
     clockPlaying = useStore(player?.clock.playing, false),
     rate = useStore(player?.clock.rate, 1)
+  const groupedCaptions = useMemo(() => new Map(player?.track.utterances.map(utterance => [utterance.id, captionGroups(utterance)])), [player?.track])
   const cursor = useStore(player?.cursor), positionMode = useStore(player?.positionMode, 'time')
   const [compact, setCompact] = useState(() => matchMedia('(max-width: 479px)').matches)
   useEffect(() => {
@@ -109,11 +112,11 @@ export default function PlayerPanel(_props: { view?: string }) {
   const text = (u: Utterance) =>
     lang && lang !== player?.track.lang
       ? (u.translations?.[lang]?.text ?? u.text)
-      : u.text
+      : captionGroupAt(groupedCaptions.get(u.id) ?? [], time)?.text ?? u.text
   const caption = selectedCaptions ? selectedCaptions.map(text).join(' ') : current ? text(current) : undefined
   const burned =
     burnedCaptions && current && player
-      ? captionText(player.track, current, burnedCaptions)
+      ? burnedCaptions === player.track.lang ? text(current) : captionText(player.track, current, burnedCaptions)
       : undefined
   const stale = new Set(
     player && lang && lang !== player.track.lang

@@ -46,11 +46,17 @@ export function ProductionTimeline({ plan, sectionId, stepId, active, current, s
       label: track.kind === 'visual' ? step?.title ?? p.stepNumber(Math.max(0, index)) : segment.label,
       ...segment.startMs !== undefined && start !== undefined ? { startMs: Math.max(0, segment.startMs - start) } : {},
       ...segment.endMs !== undefined && start !== undefined ? { endMs: Math.max(0, segment.endMs - start) } : {},
-      statusLabel: [status, segment.audio && (wave === false ? p.waveformUnavailable : wave === undefined ? p.waveformLoading : undefined)].filter(Boolean).join(' · '),
+      statusLabel: [status, track.kind === 'caption' && p.alignmentStatus[segment.alignment ?? 'none'], segment.audio && (wave === false ? p.waveformUnavailable : wave === undefined ? p.waveformLoading : undefined)].filter(Boolean).join(' · '),
       waveform: wave ? wave.peaks : undefined,
     }
   }) })) : [{ id: 'visual', label: p.tracks.visual, segments: section?.stepOrder.map((id, index) => ({ id, stepId: id, label: document?.steps[id]?.title ?? p.stepNumber(index), timing: 'unknown' as const })) ?? [] }, { id: 'voice', label: p.tracks.voice, segments: [] }, { id: 'caption', label: p.tracks.caption, segments: [] }]
+  const captionChoices = current ? plan?.tracks.find(track => track.kind === 'caption')?.segments.filter(segment => segment.stepId === stepId && segment.alignment === 'words' && segment.timing === 'confirmed').map(segment => segment.id) ?? [] : []
   return <PmTimeline label={p.timeline} tracks={tracks} labels={p.timelineLabels} durationMs={duration} durationStatus={page?.timing ?? 'unknown'} currentTimeMs={position} selectedStepId={stepId}
+    segmentPicker={{ track: 'caption', ids: captionChoices, label: p.captionSegment, placeholder: p.chooseCaptionSegment }}
     zoom={zoom} onZoomChange={setZoom} disabled={disabled} loading={loading} seeking={seeking} seekDisabled={!seekEnabled || start === undefined}
-    onSelectStep={onSelectStep} onSeek={time => { if (start !== undefined) onSeek(start + time) }} />
+    onSelectStep={onSelectStep} onSelectSegment={(track, selected) => {
+      const segment = current ? plan?.tracks.find(value => value.kind === track)?.segments.find(value => value.id === selected.id) : undefined
+      if (track === 'caption' && seekEnabled && segment?.alignment === 'words' && segment.timing === 'confirmed' && segment.startMs !== undefined) onSeek(segment.startMs)
+      else if (selected.stepId) onSelectStep(selected.stepId)
+    }} onSeek={time => { if (start !== undefined) onSeek(start + time) }} />
 }

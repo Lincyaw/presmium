@@ -2,6 +2,7 @@ import { timedEvents, trackChapters } from './timing.ts'
 import type { LectureTrack, Utterance } from './track.ts'
 import { trackDuration } from './track.ts'
 import { isStale } from './translation.ts'
+import { captionGroups } from './captions.ts'
 
 export function vttTime(ms: number): string {
   const total = Math.max(0, Math.round(ms))
@@ -44,7 +45,9 @@ export function captionsVtt(track: LectureTrack, lang: string): Captions {
       stale.push(u.id)
       cues.push(`NOTE stale: the original of ${u.id} changed after it was translated`)
     }
-    cues.push(`${u.id}\n${vttTime(u.t)} --> ${vttTime(u.t + Math.max(u.d, 1))}\n${cueText(text)}`)
+    for (const group of original ? captionGroups(u) : [{ id: u.id, t: u.t, d: u.d, text }]) {
+      cues.push(`${group.id}\n${vttTime(group.t)} --> ${vttTime(group.t + Math.max(group.d, 1))}\n${cueText(group.text)}`)
+    }
   }
   return { lang, vtt: `WEBVTT\n\n${cues.join('\n\n')}\n`, missing, stale }
 }

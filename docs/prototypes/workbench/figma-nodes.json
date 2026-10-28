@@ -162,7 +162,9 @@
         "runtimeMaxHeight": "28vh",
         "keyboardContract": "Overlay scroll keys Home/End/PageUp/PageDown/ArrowUp/ArrowDown/Space keep native default scrolling and do not bubble into presentation navigation. Shift+Space scrolls up. Caller onKeyDown runs first; defaultPrevented, composing and Alt/Ctrl/Meta remain caller-owned. Escape, left/right step keys and Tab keep existing behavior.",
         "keyboardDescriptionSession": "f99221e6-81e2-4735-b6b1-197f72ba03f9",
-        "keyboardVerification": "docs/benchmarks/caption-keyboard-scroll-2026-10-28.md"
+        "keyboardVerification": "docs/benchmarks/caption-keyboard-scroll-2026-10-28.md",
+        "timedGroupContract": "The caller may supply readable groups only from genuine validated word boundaries and complete display text mapping. Preserve all punctuation/order and continuous ASCII tokens. Unaligned/proportional/unreliably mapped text and translations without their own word timing remain whole; no independent clock or automatic manual alignment.",
+        "timedGroupDescriptionSession": "e3427536-0d4c-4540-9453-bbcc902f063d"
       },
       "NarrationEditor": {
         "nodeId": "107:1820",
@@ -297,7 +299,21 @@
         ],
         "verification": "docs/benchmarks/public-timeline-2026-10-26.md",
         "completionBoundary": "Formal public primitive design and standalone consumer acceptance; business production integration and host playback are separately verified.",
-        "keyboardHelp": "Accessible description on the timeline viewport; no permanent visible footer."
+        "keyboardHelp": "Accessible description on the timeline viewport; no permanent visible footer.",
+        "timedCaptionContract": "Existing segment buttons delegate activation to the owner. Only source-bound confirmed word-timed captions pause and seek an actual group start. Fine pointer and keyboard retain direct activation. Coarse pointer uses full-size step choices plus the action picker; the caption track never accepts ambiguous pointer hits, even while unaligned/stale options are hidden. Visual/voice behavior is unchanged.",
+        "timedCaptionDescriptionSession": "e3427536-0d4c-4540-9453-bbcc902f063d",
+        "timedCaptionPicker": {
+          "componentSetNodeId": "286:6683",
+          "reviewNodeId": "286:6684",
+          "readyNodeId": "286:6567",
+          "disabledNodeId": "286:6625",
+          "controlNodes": [
+            "34:4872",
+            "34:4879"
+          ],
+          "behavior": "Optional 44px public Touch Select shown only narrow or coarse. Current-step starting words/confirmed groups only; placeholder action can repeatedly seek the same caption from its middle. No new writer/clock. Hide choices for none/proportional/stale sources; keep coarse caption pointer protection and full-size step selection.",
+          "descriptionSession": "e3427536-0d4c-4540-9453-bbcc902f063d"
+        }
       },
       "SortableItem": {
         "nodeId": "158:2823",

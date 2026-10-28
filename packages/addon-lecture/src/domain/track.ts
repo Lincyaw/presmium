@@ -24,6 +24,8 @@ export interface Utterance {
   d: number
   text: string
   words?: Word[]
+  /** Genuine word boundaries are distinct from interpolated edits and unaligned text. */
+  alignment?: 'words' | 'proportional' | 'none'
   section?: string
   step?: number
   translations?: Record<string, Translation>
@@ -137,6 +139,7 @@ function utterance(value: unknown, problems: string[], i: number): Utterance | u
     d: value.d,
     text: value.text,
     ...words(value.words) ? { words: words(value.words) } : {},
+    ...value.alignment === 'words' || value.alignment === 'proportional' || value.alignment === 'none' ? { alignment: value.alignment } : {},
     ...typeof value.section === 'string' ? { section: value.section } : {},
     ...isNumber(value.step) ? { step: value.step } : {},
     ...translations ? { translations } : {},

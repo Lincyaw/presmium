@@ -35,7 +35,10 @@ export function charOffset(text: string, offset: number): number {
 }
 
 export function trackWords(words: readonly SpeechWord[], t: number): Word[] {
-  return words.map(w => [Math.round(t + w.start * 1000), Math.max(0, Math.round((w.end - w.start) * 1000)), w.text])
+  return words.map((w): Word => {
+    const start = Math.round(t + w.start * 1000), end = Math.round(t + w.end * 1000)
+    return [start, Math.max(0, end - start), w.text]
+  })
 }
 
 function common(a: readonly string[], b: readonly string[]): [number, number][] {
@@ -57,7 +60,7 @@ export function realign(utterance: Utterance, text: string): { utterance: Uttera
   const next = splitWords(text)
   if (before.length === 0) {
     const [from, to] = [Math.max(1, [...utterance.text].length), Math.max(1, [...text].length)]
-    return { utterance: { ...utterance, text }, anchor: offset => Math.round(offset * to / from) }
+    return { utterance: { ...utterance, text, alignment: 'proportional' }, anchor: offset => Math.round(offset * to / from) }
   }
   const pairs = common(before.map(w => w[2]), next.map(w => w.text))
   const kept = new Map(pairs.map(([i, j]) => [j, i]))
@@ -92,7 +95,7 @@ export function realign(utterance: Utterance, text: string): { utterance: Uttera
     const previous = [...pairs].reverse().find(([i]) => i < offset)
     return Math.min(next.length, previous ? previous[1] + 1 : 0)
   }
-  return { utterance: { ...utterance, text, words }, anchor }
+  return { utterance: { ...utterance, text, words, alignment: 'proportional' }, anchor }
 }
 
 export function reanchor(text: string, before: readonly Word[], after: readonly Word[]): (offset: number) => number {
