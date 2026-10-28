@@ -100,8 +100,8 @@ action, then read its receipt; admission is not completion. Exact source, client
 input revision are required. Only the browser channel may acknowledge, and it waits for executing
 admission before invoking the existing source/playback control. Never add an MCP ACK tool, a per-tab
 browser SSE, automatic compile/mode switch, estimated playing state or replay after disconnect.
-`source.flush` covers the canonical source actor only. Explicit comment draft inspect/read uses the
-existing bank and bounded request result; passive state never contains draft content. Recording, other
+`source.flush` covers the canonical source actor only. Explicit comment and component-property draft inspect/read use the
+existing banks and bounded request results; passive state never contains draft content. Recording, unwired
 form drafts and MCP draft restore/discard remain unavailable until their real owners are wired.
 
 No dependency internals, no forks or patches. No package uses `vitepress` or `@slidev/*`: the web page and
