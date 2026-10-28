@@ -665,19 +665,19 @@ export interface Focus {
 ### 11.1 命令与目录
 
 - **命令**：`presmium studio [目录] [--port <端口>] [--host <地址>]`，由 `@lincyaw/studio` 提供；`@lincyaw/cli` 在装了它时转交，没装时说明怎样安装。目录的规则同 `presmium serve`（工作区，或只有一份文档的仓库）。
-- **`DSH_HOME`**：`$XDG_STATE_HOME/presmium/studio`，一个 `DSH_HOME` 只由一个 dsh 版本写。其中的 profile `presmium-studio`：`package.json` 列出 bundle `dsh-base`、`dsh-web-app` 与 `@lincyaw/dsh`；dsh 只从 profile 中解析插件模块，所以 profile 的 `node_modules` 链接到 bundle。`DSH_AGENTS_HOME` 是其中的 `agents/`。
+- **`DSH_HOME`**：`$XDG_STATE_HOME/presmium/studio`，一个 `DSH_HOME` 只由一个 dsh 版本写。其中每个安装（一个检出、一个装好的版本）有自己的 profile `presmium-studio-<散列>`，散列取自 `@lincyaw/studio` 依赖的 `@lincyaw/dsh` 包目录的真实路径：`package.json` 列出 bundle `dsh-base`、`dsh-web-app` 与 `@lincyaw/dsh`；dsh 只从 profile 中解析插件模块，所以 profile 的 `node_modules` 链接到这个安装的 bundle。不同检出或版本的 Studio 共用 `DSH_HOME` 同时运行时互不改指对方的链接，日志也各写各的 `presmium-studio-<散列>.log`。会话、凭据（`.credentials.yaml`）、`storages/` 在 `DSH_HOME` 中共用；profile 自己的 `cordis.patch.yml`（界面中的设置）按安装分开：新的 profile 第一次启动时复制最近改过的 `presmium-studio*` profile 的补丁（包括旧布局中唯一的 `presmium-studio`），作者升级或换检出后保留原来的设置，之后两个安装的设置各自变化。旧的 `presmium-studio` 目录与 `presmium-studio.log` 原样留着，不再写。`DSH_AGENTS_HOME` 是其中的 `agents/`。证据见 [Studio 状态目录记录](benchmarks/studio-home-2026-10-28.md)。
 
 ### 11.2 启动与监管
 
 1. 选定 dsh 的端口：默认 4320，每次相同，浏览器的 cookie 跨重启有效；被占用时另取空闲端口。端口要在启动之前选定，因为工作区服务以工作台的源启动。
 2. 生成服务令牌；启动工作区服务：`presmium serve <目录> --port 0 --preview-origin <dsh 的源>`，环境中带 `PRESMIUM_SERVICE_TOKEN`。
-3. 启动 dsh：`--profile presmium-studio --port <端口> --no-open`，加上 6.6 节的补丁，工作目录为工作区根，环境中带服务的地址与令牌（bundle 的 `presmium-service` 行复用该服务）。
+3. 启动 dsh：`--profile presmium-studio-<散列> --port <端口> --no-open`，加上 6.6 节的补丁，工作目录为工作区根，环境中带服务的地址与令牌（bundle 的 `presmium-service` 行复用该服务）。
 4. 等 dsh 在标准输出打印 `dsh web: <网址>`。
 5. 打印一个网址。
 
 启动令牌只能从 dsh 的标准输出读取：每个 dsh 进程自己生成启动令牌，只经 `dsh-web-app` 中的两处带出，`printUrl` 打印的 `dsh web: <网址>` 一行，与 `openBrowser` 交给浏览器的同一个网址（宿主的连接服务另有 `authenticatedUrl(baseUrl)`，只在类型声明中，README 没有写，不用）。`dsh-web-app` 的 README 把这一行写成供监管者使用的就绪信号：加载树安定、启动审计通过之后才打印。`presmium-workspaces` 在激活时登记根工作区，所以读到这一行时工作区已经登记好，启动器不另外查询。用户在 profile 自己的补丁中把 `printUrl` 设为 `false` 时启动器等不到这一行，3 分钟后报错并给出日志的位置。
 
-两个进程的输出带 UTC 时间与进程来源写进 `$DSH_HOME/presmium-studio.log`；启动器的标准输出只有 `studio  <网址>` 一行。标准错误显示日志路径，并实时转发工作区服务输出（编译、预览准备、查看器构建与缓存复用、导出任务的阶段与耗时）；dsh 的输出只保存在日志中，不转发其启动令牌。预览请求以编号关联阶段，标明文稿、媒介、预取、viewer 缓存命中或回退、完成与失败；这些日志的“ready”指后端地址准备好，不代表浏览器预览已完成握手。讲授轨准备记录可用音频与未合成句子数，失败带章节与源码位置。警告（局域网没有登录、`PRESMIUM_MODEL_*` 不全）同样在标准错误。
+两个进程的输出带 UTC 时间与进程来源写进 `$DSH_HOME/presmium-studio-<散列>.log`（11.1 节）；启动器的标准输出只有 `studio  <网址>` 一行。标准错误显示日志路径，并实时转发工作区服务输出（编译、预览准备、查看器构建与缓存复用、导出任务的阶段与耗时）；dsh 的输出只保存在日志中，不转发其启动令牌。预览请求以编号关联阶段，标明文稿、媒介、预取、viewer 缓存命中或回退、完成与失败；这些日志的“ready”指后端地址准备好，不代表浏览器预览已完成握手。讲授轨准备记录可用音频与未合成句子数，失败带章节与源码位置。警告（局域网没有登录、`PRESMIUM_MODEL_*` 不全）同样在标准错误。
 
 仓库开发时用 `pnpm debug:studio` 将隔离浏览器与服务的证据按步骤保存；前端启动失败、握手超时与加载卡顿的排查入口、证据格式和局限见 [调试预览加载与卡顿](debugging.md)。
 

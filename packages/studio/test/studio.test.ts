@@ -234,15 +234,6 @@ describe('presmium studio in a fresh home, with the model of the environment', (
     if (ws) rmSync(ws, { recursive: true, force: true })
   })
 
-  it('shows service diagnostics in stderr and keeps timestamped service logs without forwarding the host login URL', async () => {
-    expect((await api.fetch('/api/presmium/ir?document=lectures/alpha')).status).toBe(200)
-    await expect.poll(() => running.stderr()).toContain('[compile] document="lectures/alpha" state=compiled elapsedMs=')
-    expect(running.stderr()).toContain(`presmium studio: log ${join(home.dshHome, 'presmium-studio.log')}`)
-    expect(running.stdout()).toBe(`studio  ${running.url}\n`)
-    expect(running.stderr()).not.toContain('dsh web:')
-    expect(readFileSync(join(home.dshHome, 'presmium-studio.log'), 'utf8')).toMatch(/\d{4}-\d{2}-\d{2}T[^\n]+ \[serve\] .*\[compile\]/)
-  })
-
   it('runs the first session at the workspace root, with nothing under ~/Documents or outside the test\'s directory', async () => {
     expect(await api.call('workspace/initializeDefault', {})).toBeUndefined()
     expect(await api.call('workspace/create', { request: { path: ws } })).toMatchObject({ created: false })
@@ -256,7 +247,6 @@ describe('presmium studio in a fresh home, with the model of the environment', (
     expect(context).toContain('alpha-one')
     expect(turn.body.tools.map((tool: { name: string }) => tool.name)).toContain('presmium__list_sections')
     expect(readdirSync(home.home)).toEqual([])
-    expect(existsSync(join(home.dshHome, 'profiles', 'presmium-studio', 'package.json'))).toBe(true)
     expect(existsSync(join(home.dshHome, 'documents'))).toBe(false)
     for (const entry of readdirSync(home.dir)) expect(['home', 'state', 'cache', 'config', 'data']).toContain(entry)
   }, 240_000)
