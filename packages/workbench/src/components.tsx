@@ -235,11 +235,13 @@ export interface MenuItem {
   separator?: boolean
 }
 
-export function PmMenu({ label, description, items, icon = 'more', placement = 'below-end', triggerRef, onSelect }: { label: string, description?: string, items: MenuItem[], icon?: IconName, placement?: PopoverPlacement, triggerRef?: Ref<HTMLButtonElement>, onSelect(id: string): void }) {
+/** `toolbarItem`: the trigger joins the surrounding `PmToolbar`'s arrow-key navigation, e.g. as its overflow ("More") menu. */
+export function PmMenu({ label, description, items, icon = 'more', placement = 'below-end', triggerRef, toolbarItem, onSelect }: { label: string, description?: string, items: MenuItem[], icon?: IconName, placement?: PopoverPlacement, triggerRef?: Ref<HTMLButtonElement>, toolbarItem?: boolean, onSelect(id: string): void }) {
   const descriptionId = useId()
+  const trigger = <PmIconButton ref={triggerRef} icon={icon} label={label} small />
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild><PmIconButton ref={triggerRef} icon={icon} label={label} small /></DropdownMenu.Trigger>
+      <DropdownMenu.Trigger asChild>{toolbarItem ? <Toolbar.Button asChild>{trigger}</Toolbar.Button> : trigger}</DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content className="pm-ui-menu pm-ui-floating pm-ui" data-density="compact" data-description={description ? '' : undefined} aria-label={label} aria-describedby={description ? descriptionId : undefined} {...placementOf(placement)} sideOffset={6} collisionPadding={16} onEscapeKeyDown={event => event.stopPropagation()}>
           {description && <p className="pm-ui-menu__description" id={descriptionId}>{description}</p>}

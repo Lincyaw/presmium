@@ -124,7 +124,7 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 | Select | workbench `PmSelect`；host 使用 `PmField`＋`pm-ui-select` | 简单选项统一字段关系与密度；复杂单选使用 `PmSearchList`，不以原生列表冒充 |
 | SearchList | workbench `PmSearchList`、`pm-ui-search-list`，复用 `PmInput` 与 Radix Radio Group | 提供搜索、结果计数、单选、描述、空／加载／错误／禁用态及三种密度；过滤不改写所选值，加载与错误保留已有结果但禁选，列表按公共高度令牌滚动 |
 | Dialog | workbench、host 的 `PmDialog`，Radix Dialog | 已统一模态、标题／说明、操作区、忙碌拦截、外部按下不关闭与焦点归还 |
-| Menu | workbench、host 的 `PmMenu`，Radix Dropdown Menu | 已提供图标、危险项、禁用项、快捷键、分隔与勾选态；键盘移动和焦点归还由 Radix 管理 |
+| Menu | workbench、host 的 `PmMenu`，Radix Dropdown Menu | 已提供图标、危险项、禁用项、快捷键、分隔与勾选态；键盘移动和焦点归还由 Radix 管理；workbench 的 `toolbarItem` 让触发器加入所在 `PmToolbar` 的方向键导航，用作窄屏工具栏的“更多” |
 | Tabs | workbench、host 的 `PmTabs`、`PmTabPanel` 与 `pm-ui-tab` | 已提供图标标签与手动激活；方向键移焦，确认后激活，面板由公共封装关联 |
 | Tooltip | workbench、host 的 `PmTooltip` 与 `PmIconButton` | 已封装 Radix Tooltip；悬停延迟 300ms，键盘聚焦立即显示，可附快捷键 |
 | Segmented | workbench、host 的 `PmSegmented`、`pm-ui-segmented` | 已用 Radix Radio Group 管理横排互斥参数、图标、禁用和选中；不代替工作区导航 |

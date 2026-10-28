@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import type { RefObject } from 'react'
 import { PmButton, PmIconButton, PmMenu, PmNotice, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
@@ -20,6 +21,20 @@ const isTyping = (target: EventTarget | null) => target instanceof HTMLElement &
 
 // The navigation pane starts open where there is room for it beside the page.
 const ROOMY = '(min-width: 1280px)'
+// Below this width the command bar keeps one row: its less frequent commands move into its "More" menu.
+const NARROW = '(max-width: 767px)'
+
+function useMediaQuery(query: string): boolean {
+  return useSyncExternalStore(changed => {
+    if (typeof matchMedia !== 'function') return () => {}
+    const list = matchMedia(query)
+    list.addEventListener('change', changed)
+    return () => list.removeEventListener('change', changed)
+  }, () => typeof matchMedia === 'function' && matchMedia(query).matches, () => false)
+}
+
+// Esc belongs to the topmost dialog or menu first; only then does it leave the presentation.
+const hasOpenLayer = () => document.querySelector('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]') !== null
 
 /**
  * The open document as an editor shows it: the command bar, what needs the author's attention, the navigation pane,
@@ -33,6 +48,7 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   const presenting = workspace === 'presentation', producing = workspace === 'production'
   const [changingView, setChangingView] = useState(false), [viewFailure, setViewFailure] = useState<string>()
   const transition = useRef(0), exiting = useRef<Promise<void>>()
+  const presentButton = useRef<HTMLButtonElement>(null)
   const [commentsPortal, setCommentsPortal] = useState<HTMLDivElement | null>(null)
   const t = useMessages()
   const document = useWorkbenchState(state => state.document)
@@ -95,8 +111,14 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
     const previous = previousView.current
     previousView.current = { document, workspace, view, active }
     // Keep a successful exit owned until React has committed the closed view.
-    if (workspace === 'document') exiting.current = undefined
-    else if (view === 'document' && (presenting || producing && active && previous.active
+    if (workspace === 'document') {
+      exiting.current = undefined
+      // Leaving the presentation hands the keyboard back to the command that opened it.
+      if (previous.workspace === 'presentation' && previous.document === document) {
+        const focused = globalThis.document.activeElement
+        if (!focused || focused === globalThis.document.body) requestAnimationFrame(() => presentButton.current?.focus())
+      }
+    } else if (view === 'document' && (presenting || producing && active && previous.active
       && previous.document === document && previous.workspace === workspace && previous.view === 'present')) void exitPresent()
   }, [document, view, workspace, active])
   useEffect(() => {
@@ -115,9 +137,20 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
     window.addEventListener('keydown', keys)
     return () => window.removeEventListener('keydown', keys)
   }, [active, workbench])
+  useEffect(() => {
+    if (!active || !presenting) return
+    // The frame has the keyboard while presenting; when focus is back in the workbench, Esc still leaves.
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented || event.isComposing || isTyping(event.target) || hasOpenLayer()) return
+      event.preventDefault()
+      void exitPresent()
+    }
+    window.addEventListener('keydown', escape, true)
+    return () => window.removeEventListener('keydown', escape, true)
+  }, [active, presenting])
   return (
     <div className="pmw-document" data-workspace={producing ? 'production' : presenting ? 'presentation' : 'content'} data-presenting={presenting || undefined} data-aside={aside ?? undefined} data-navigation={navigation || undefined}>
-      {!producing && !presenting && <DocumentToolbar framed={framed} aside={aside} navigation={navigation} changingView={changingView} onProduction={() => void openProduction()} onPresent={() => void compilePresentation(() => {
+      {!producing && !presenting && <DocumentToolbar presentButton={presentButton} framed={framed} aside={aside} navigation={navigation} changingView={changingView} onProduction={() => void openProduction()} onPresent={() => void compilePresentation(() => {
         workbench.setMode('viewing')
         workbench.setWebView('present')
         setWorkspace('presentation')
@@ -236,13 +269,13 @@ function StatusBar() {
   const at = section === undefined ? -1 : doc?.sectionOrder.indexOf(section) ?? -1
   return (
     <footer className="pmw-statusbar" aria-label={t.statusBar}>
-      {at >= 0 && <span className="pmw-statusbar__item">{slides ? t.slideOf(at + 1, total) : t.sectionOf(at + 1, total)}</span>}
+      {at >= 0 && <span className="pmw-statusbar__item">{slides ? t.slideOf(at + 1, total) : t.pageOf(at + 1, total)}</span>}
       {doc && <span className="pmw-statusbar__item">{t.words(words)}</span>}
     </footer>
   )
 }
 
-function DocumentToolbar({ framed, aside, navigation, changingView, onProduction, onPresent, onNavigation, onAside }: { framed: boolean, aside: DocumentAside | null, navigation: boolean, changingView: boolean, onProduction(): void, onPresent(): void, onNavigation(): void, onAside(aside: DocumentAside): void }) {
+function DocumentToolbar({ presentButton, framed, aside, navigation, changingView, onProduction, onPresent, onNavigation, onAside }: { presentButton: RefObject<HTMLButtonElement>, framed: boolean, aside: DocumentAside | null, navigation: boolean, changingView: boolean, onProduction(): void, onPresent(): void, onNavigation(): void, onAside(aside: DocumentAside): void }) {
   const t = useMessages()
   const workbench = useWorkbench()
   const p = PRODUCTION_MESSAGES[useWorkbenchState(state => state.locale)]
@@ -256,6 +289,7 @@ function DocumentToolbar({ framed, aside, navigation, changingView, onProduction
   const blocked = useWorkbenchState(state => Boolean(!state.authoring?.content || state.authoring.loading || state.authoring.dirty || state.authoring.saving || state.authoring.restored || state.authoring.error || state.authoring.composing || state.hasDocumentTimingDrafts || state.isEditingPage || state.isCreatingPage || isAgentChanging(state)))
   const openComments = useWorkbenchState(state => Object.values(state.authoring?.content?.comments ?? {}).filter(comment => !comment.resolved && !comment.deletedAt).length)
   const hasStep = useWorkbenchState(state => !state.authoring?.loading && Boolean(state.authoring?.content?.sectionOrder.length))
+  const narrow = useMediaQuery(NARROW)
   return (
     <PmToolbar className="pmw-toolbar" label={t.commands}>
       {!framed && <>
@@ -267,13 +301,20 @@ function DocumentToolbar({ framed, aside, navigation, changingView, onProduction
       <PmToolbarButton asChild><PmIconButton small icon="redo" label={t.redo} shortcut="⌘/Ctrl+Shift+Z" disabled={!editorHistory?.redo && (editorHistory?.field || dirty || !history?.redo) || busy} onClick={() => void workbench.redo()} /></PmToolbarButton>
       <SaveStatus />
       <span className="pmw-spacer" />
-      <PmToolbarButton asChild><PmButton small icon="arrange" loading={changingView} disabled={busy || !hasStep} onClick={onProduction}>{p.title}</PmButton></PmToolbarButton>
-      <PmToolbarButton asChild><PmIconButton small icon="captions" label={t.documentNarration} hint={t.documentNarrationHint} aria-pressed={aside === 'narration'} disabled={!hasStep} onClick={() => onAside('narration')} /></PmToolbarButton>
+      {!narrow && <>
+        <PmToolbarButton asChild><PmButton small icon="arrange" loading={changingView} disabled={busy || !hasStep} onClick={onProduction}>{p.title}</PmButton></PmToolbarButton>
+        <PmToolbarButton asChild><PmIconButton small icon="captions" label={t.documentNarration} hint={t.documentNarrationHint} aria-pressed={aside === 'narration'} disabled={!hasStep} onClick={() => onAside('narration')} /></PmToolbarButton>
+      </>}
       <PmToolbarButton asChild><PmIconButton small icon="comment" label={openComments ? `${t.comments} (${openComments})` : t.comments} aria-pressed={aside === 'comments'} onClick={() => onAside('comments')} /></PmToolbarButton>
-      <PmToolbarButton asChild><PmIconButton small icon="versions" label={t.versionHistory} aria-pressed={aside === 'history'} onClick={() => onAside('history')} /></PmToolbarButton>
+      {!narrow && <PmToolbarButton asChild><PmIconButton small icon="versions" label={t.versionHistory} aria-pressed={aside === 'history'} onClick={() => onAside('history')} /></PmToolbarButton>}
       <span className="pmw-toolbar__divider" aria-hidden="true" />
-      <PmToolbarButton asChild><PmIconButton small icon="slides" label={t.presentationPreview} hint={preparing ? t.presentationPreparing : timingDrafts ? t.timingDraftPending : blocked ? t.presentationPending : t.presentHint} loading={preparing} disabled={blocked} onClick={onPresent} /></PmToolbarButton>
+      <PmToolbarButton asChild><PmIconButton ref={presentButton} small icon="slides" label={t.presentationPreview} hint={preparing ? t.presentationPreparing : timingDrafts ? t.timingDraftPending : blocked ? t.presentationPending : t.presentHint} loading={preparing} disabled={blocked} onClick={onPresent} /></PmToolbarButton>
       <PmToolbarButton asChild><PmIconButton small icon="export" label={t.exportPane} aria-pressed={aside === 'export'} onClick={() => onAside('export')} /></PmToolbarButton>
+      {narrow && <PmMenu toolbarItem label={t.moreCommands} items={[
+        { id: 'production', label: p.title, icon: 'arrange', disabled: busy || !hasStep || changingView },
+        { id: 'narration', label: t.documentNarration, icon: 'captions', disabled: !hasStep },
+        { id: 'history', label: t.versionHistory, icon: 'versions' },
+      ]} onSelect={id => { if (id === 'production') onProduction(); else onAside(id as DocumentAside) }} />}
     </PmToolbar>
   )
 }
