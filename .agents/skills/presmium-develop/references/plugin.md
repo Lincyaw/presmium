@@ -332,7 +332,7 @@ never raw colors:
 
 | Group | Tokens |
 |---|---|
-| Color | `--pm-color-` `bg`, `surface`, `sunk`, `canvas`, `hover`, `code`, `ink`, `muted`, `line`, `line-strong`, `accent`, `accent-soft`, `accent-line`, `on-accent`, `selected`, `ok`, `ok-soft`, `warn`, `warn-soft`, `danger`, `danger-soft`, `add`, `del` |
+| Color | `--pm-color-` `bg`, `surface`, `sunk`, `canvas`, `hover`, `code`, `ink`, `muted`, `muted-soft`, `line`, `line-strong`, `accent`, `accent-soft`, `accent-line`, `on-accent`, `selected`, `ok`, `ok-soft`, `warn`, `warn-soft`, `danger`, `danger-soft`, `add`, `del` |
 | Font | `--pm-font-sans`, `--pm-font-serif`, `--pm-font-mono` |
 | Size, leading | `--pm-text-xs`, `sm`, `md`, `lg`, `reading`, `title`, `display`; `--pm-leading-tight`, `ui`, `reading` |
 | Space | `--pm-space-px`, `--pm-space-1` ... `--pm-space-12` (4 px grid) |

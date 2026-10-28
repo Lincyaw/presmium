@@ -21,6 +21,8 @@
   --pm-color-code: #fbfaf7;
   --pm-color-ink: #1c1b19;
   --pm-color-muted: #5c584f;
+  /* A grey highlight behind document text, beside the other *-soft highlights. */
+  --pm-color-muted-soft: #efebe3;
   --pm-color-line: #e3ded3;
   --pm-color-line-strong: #8c8577;
   --pm-color-accent: #0f5f5c;
@@ -178,18 +180,21 @@
   --pm-color-code: #1a1917;
   --pm-color-ink: #edeae3;
   --pm-color-muted: #a9a498;
+  /* The *-soft fills are lifted off the page enough to read as highlights behind text; ink on them stays above 7:1
+     and each semantic colour on its own fill above 4.5:1. */
+  --pm-color-muted-soft: #3c3a35;
   --pm-color-line: #33312c;
   --pm-color-line-strong: #78736a;
   --pm-color-accent: #6fc1b9;
-  --pm-color-accent-soft: #1d3330;
+  --pm-color-accent-soft: #1f4a45;
   --pm-color-on-accent: #0e1f1d;
   --pm-color-selected: #1b2b29;
   --pm-color-ok: #5cc08a;
-  --pm-color-ok-soft: #1b2e22;
+  --pm-color-ok-soft: #22482d;
   --pm-color-warn: #e3a659;
-  --pm-color-warn-soft: #3a2c19;
+  --pm-color-warn-soft: #50421a;
   --pm-color-danger: #ee9a86;
-  --pm-color-danger-soft: #3a211b;
+  --pm-color-danger-soft: #61342a;
   --pm-color-add: #8fd3a0;
   --pm-color-del: #ee9a86;
   --pm-color-gutter: #6f6a60;
