@@ -50,10 +50,16 @@ export function productRichTextToNative(nodes: readonly RichTextNode[], context:
       } as DocumentEditorInput
     })
     return [{ id: node.id, type: 'table', content: {
-      type: 'tableContent', columnWidths: node.columnWidths ?? [], headerRows: node.headerRows, headerCols: node.headerColumns,
+      type: 'tableContent', columnWidths: node.columnWidths ?? [], headerRows: node.headerRows ?? implicitHeaderRows(node.children.length), headerCols: node.headerColumns,
       rows: node.children.map(row => ({ cells: row.children.map(cell => ({ type: 'tableCell' as const, props: { ...productTextStyleToNative(cell.style), colspan: cell.colspan, rowspan: cell.rowspan }, content: productInlineToNative(cell.children, context) })) })),
     } }]
   })
+}
+
+// The viewer reads a table without `headerRows` as having one header row, as in Markdown.
+const implicitHeaderRows = (rows: number) => Math.min(1, rows)
+function tableHeaderRows(headerRows: number, rows: number, original: TableNode | undefined): { headerRows?: number } {
+  return original && original.headerRows === undefined && headerRows === implicitHeaderRows(rows) ? {} : { headerRows }
 }
 
 function inline(block: DocumentEditorBlock, context: RichProjection): InlineNode[] {
@@ -111,7 +117,7 @@ export function nativeRichTextToProduct(blocks: readonly DocumentEditorBlock[], 
     else if (block.type === 'table') {
       const original = identity?.original?.type === 'table' ? identity.original : undefined
       const table: TableNode = {
-        id: block.id, type: 'table', ...block.content.headerRows ? { headerRows: block.content.headerRows } : {},
+        id: block.id, type: 'table', ...tableHeaderRows(block.content.headerRows ?? 0, block.content.rows.length, original),
         ...block.content.headerCols ? { headerColumns: block.content.headerCols } : {},
         ...block.content.columnWidths.length && block.content.columnWidths.every(width => typeof width === 'number' && Number.isFinite(width) && width > 0) ? { columnWidths: block.content.columnWidths as number[] } : {},
         children: block.content.rows.map((row, rowIndex) => ({

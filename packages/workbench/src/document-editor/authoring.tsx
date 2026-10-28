@@ -94,7 +94,7 @@ function DocumentDragHandleMenu() {
 }
 export function DocumentSideMenu(props: SideMenuProps) { return <SideMenu {...props} dragHandleMenu={DocumentDragHandleMenu} /> }
 
-type TableBlock = Block<any, any, any> & { type: 'table', content: { type: 'tableContent', rows: { cells: any[] }[] } }
+type TableBlock = Block<any, any, any> & { type: 'table', content: { type: 'tableContent', rows: { cells: any[] }[], headerRows?: number, headerCols?: number } }
 
 function useTableColors(cells: { row: number, col: number }[]) {
   const editor = useBlockNoteEditor<any, any, any>()
@@ -131,13 +131,23 @@ function LineColors({ orientation }: TableHandleMenuProps) {
   const colors = useTableColors(cells)
   return colors ? <ColorSubmenu {...colors}>{dict.drag_handle.colors_menuitem}</ColorSubmenu> : null
 }
-// Header toggles stay in the block handle menu; this menu keeps row and column edits and the document palette.
+// BlockNote's own header buttons are not exported, so the first row and column handles get the same toggle here.
+function LineHeader({ orientation }: TableHandleMenuProps) {
+  const Components = useComponentsContext()!, dict = useDictionary(), editor = useBlockNoteEditor<any, any, any>()
+  const { block, index } = useExtensionState(TableHandlesExtension, { selector: state => ({ block: state?.block as TableBlock | undefined, index: orientation === 'column' ? state?.colIndex : state?.rowIndex }) })
+  if (!block || index !== 0 || !editor.settings.tables.headers) return null
+  const key = orientation === 'row' ? 'headerRows' : 'headerCols', checked = Boolean(block.content[key])
+  return <Components.Generic.Menu.Item className="bn-menu-item" checked={checked} onClick={() => editor.updateBlock(block, { ...block, content: { ...block.content, [key]: checked ? undefined : 1 } })}>
+    {orientation === 'row' ? dict.drag_handle.header_row_menuitem : dict.drag_handle.header_column_menuitem}
+  </Components.Generic.Menu.Item>
+}
 function DocumentTableHandleMenu({ orientation }: TableHandleMenuProps) {
   const Components = useComponentsContext()!
   return <Components.Generic.Menu.Dropdown className="bn-table-handle-menu">
     <DeleteButton orientation={orientation} />
     <AddButton orientation={orientation} side={orientation === 'row' ? 'above' : 'left' as any} />
     <AddButton orientation={orientation} side={orientation === 'row' ? 'below' : 'right' as any} />
+    <LineHeader orientation={orientation} />
     <LineColors orientation={orientation} />
   </Components.Generic.Menu.Dropdown>
 }
