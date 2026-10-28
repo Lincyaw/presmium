@@ -327,7 +327,36 @@
         "name": "PmYoutube"
       },
       "parameterSchema": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "视频标识",
+            "readOnly": true
+          },
+          "start": {
+            "type": "number",
+            "title": "开始时间（秒）",
+            "minimum": 0
+          },
+          "width": {
+            "type": "number",
+            "title": "宽度",
+            "exclusiveMinimum": 0
+          },
+          "height": {
+            "type": "number",
+            "title": "高度",
+            "exclusiveMinimum": 0
+          },
+          "caption": {
+            "type": "string",
+            "title": "说明文字"
+          }
+        },
+        "required": [
+          "id"
+        ]
       },
       "states": [],
       "data": {
@@ -357,7 +386,76 @@
         "name": "PmMedia"
       },
       "parameterSchema": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "媒体类型",
+            "enum": [
+              "video",
+              "audio",
+              "animation"
+            ],
+            "readOnly": true
+          },
+          "src": {
+            "type": "string",
+            "title": "媒体来源",
+            "readOnly": true
+          },
+          "caption": {
+            "type": "string",
+            "title": "说明文字"
+          },
+          "controls": {
+            "type": "boolean",
+            "title": "显示播放控件"
+          },
+          "autoplay": {
+            "type": "boolean",
+            "title": "自动播放"
+          },
+          "loop": {
+            "type": "boolean",
+            "title": "循环播放"
+          },
+          "muted": {
+            "type": "boolean",
+            "title": "静音"
+          },
+          "poster": {
+            "type": "string",
+            "title": "封面来源",
+            "readOnly": true
+          },
+          "captions": {
+            "type": "object",
+            "title": "字幕文件",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "readOnly": true
+          },
+          "captionsDefault": {
+            "type": "string",
+            "title": "默认字幕语言",
+            "readOnly": true
+          },
+          "width": {
+            "type": "number",
+            "title": "宽度",
+            "exclusiveMinimum": 0
+          },
+          "height": {
+            "type": "number",
+            "title": "高度",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "kind",
+          "src"
+        ]
       },
       "states": [],
       "data": {
@@ -387,7 +485,44 @@
         "name": "PmMedia"
       },
       "parameterSchema": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "媒体类型",
+            "enum": [
+              "video",
+              "audio",
+              "animation"
+            ],
+            "readOnly": true
+          },
+          "src": {
+            "type": "string",
+            "title": "媒体来源",
+            "readOnly": true
+          },
+          "caption": {
+            "type": "string",
+            "title": "说明文字"
+          },
+          "controls": {
+            "type": "boolean",
+            "title": "显示播放控件"
+          },
+          "autoplay": {
+            "type": "boolean",
+            "title": "自动播放"
+          },
+          "loop": {
+            "type": "boolean",
+            "title": "循环播放"
+          }
+        },
+        "required": [
+          "kind",
+          "src"
+        ]
       },
       "states": [],
       "data": {

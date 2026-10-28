@@ -492,6 +492,77 @@
         ],
         "status": "Implemented; four actual theme/width settings, English, controlled native capture/save/adoption/play/seek and targeted acknowledgement/source/selection races verified. Physical microphone and crash durability are not claimed.",
         "verification": "docs/benchmarks/recording-step-adoption-ui-2026-10-27.md"
+      },
+      "ComponentProperties": {
+        "nodeId": "278:5945",
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=278-5945",
+        "reviewNodeId": "278:5946",
+        "reviewUrl": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=278-5946",
+        "kind": "Domain composition of existing public controls; not a second Dialog primitive",
+        "states": {
+          "Base": {
+            "Compact": "278:5411",
+            "Touch": "278:5678"
+          },
+          "Step": {
+            "Compact": "278:5455",
+            "Touch": "278:5722"
+          },
+          "NoFields": {
+            "Compact": "278:5499",
+            "Touch": "278:5766"
+          },
+          "Error": {
+            "Compact": "278:5540",
+            "Touch": "278:5807"
+          },
+          "SourceChanged": {
+            "Compact": "278:5590",
+            "Touch": "278:5857"
+          },
+          "Saving": {
+            "Compact": "278:5635",
+            "Touch": "278:5902"
+          }
+        },
+        "publicControls": [
+          "PmDialog",
+          "PmField",
+          "PmSelect",
+          "PmButton",
+          "PmIconButton",
+          "PmNotice",
+          "PmSchemaForm"
+        ],
+        "interactionContract": [
+          "Base parameters and current-step input retain separate drafts. Current-step scope reports actual inherited impact; base changes retain explicit step overrides.",
+          "Unknown values remain intact; readOnly fields are not changed; opening does not inject defaults or submit.",
+          "Materials and references uses the existing Definition selector, actual references and in-use deletion guard. Independent implementation copy remains unavailable without a complete dependency closure.",
+          "Source changes preserve input for explicit recheck; saving uses existing disabled/loading controls."
+        ],
+        "review": {
+          "instances": 24,
+          "themes": [
+            "Light",
+            "Dark"
+          ],
+          "widths": [
+            "desktop",
+            "390 narrow"
+          ],
+          "languages": [
+            "zh-CN",
+            "en"
+          ],
+          "density": [
+            "Compact",
+            "Touch"
+          ],
+          "tokens": "Existing Product variables and public control instances",
+          "newAssets": 0
+        },
+        "status": "Formal design and schema-only examples; runtime and browser validation belong to the implementing lanes",
+        "verification": "docs/benchmarks/component-properties-design-schemas-2026-10-28.md"
       }
     },
     "variantCounts": {
@@ -1289,7 +1360,12 @@
       },
       "I03": {
         "nodeId": "40:4648",
-        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4648"
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4648",
+        "componentProperties": {
+          "nodeId": "278:5945",
+          "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=278-5945",
+          "boundary": "Parameter editing does not fork definitions; material implementation copy requires a real dependency closure."
+        }
       },
       "I04": {
         "nodeId": "40:4649",

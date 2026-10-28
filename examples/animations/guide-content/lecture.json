@@ -1687,7 +1687,76 @@
         "name": "PmMedia"
       },
       "parameterSchema": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "媒体类型",
+            "enum": [
+              "video",
+              "audio",
+              "animation"
+            ],
+            "readOnly": true
+          },
+          "src": {
+            "type": "string",
+            "title": "媒体来源",
+            "readOnly": true
+          },
+          "caption": {
+            "type": "string",
+            "title": "说明文字"
+          },
+          "controls": {
+            "type": "boolean",
+            "title": "显示播放控件"
+          },
+          "autoplay": {
+            "type": "boolean",
+            "title": "自动播放"
+          },
+          "loop": {
+            "type": "boolean",
+            "title": "循环播放"
+          },
+          "muted": {
+            "type": "boolean",
+            "title": "静音"
+          },
+          "poster": {
+            "type": "string",
+            "title": "封面来源",
+            "readOnly": true
+          },
+          "captions": {
+            "type": "object",
+            "title": "字幕文件",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "readOnly": true
+          },
+          "captionsDefault": {
+            "type": "string",
+            "title": "默认字幕语言",
+            "readOnly": true
+          },
+          "width": {
+            "type": "number",
+            "title": "宽度",
+            "exclusiveMinimum": 0
+          },
+          "height": {
+            "type": "number",
+            "title": "高度",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "kind",
+          "src"
+        ]
       },
       "states": [],
       "data": {
@@ -1717,7 +1786,44 @@
         "name": "PmMedia"
       },
       "parameterSchema": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "媒体类型",
+            "enum": [
+              "video",
+              "audio",
+              "animation"
+            ],
+            "readOnly": true
+          },
+          "src": {
+            "type": "string",
+            "title": "媒体来源",
+            "readOnly": true
+          },
+          "caption": {
+            "type": "string",
+            "title": "说明文字"
+          },
+          "controls": {
+            "type": "boolean",
+            "title": "显示播放控件"
+          },
+          "autoplay": {
+            "type": "boolean",
+            "title": "自动播放"
+          },
+          "loop": {
+            "type": "boolean",
+            "title": "循环播放"
+          }
+        },
+        "required": [
+          "kind",
+          "src"
+        ]
       },
       "states": [],
       "data": {
@@ -1747,7 +1853,51 @@
         "name": "PmMedia"
       },
       "parameterSchema": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "媒体类型",
+            "enum": [
+              "video",
+              "audio",
+              "animation"
+            ],
+            "readOnly": true
+          },
+          "src": {
+            "type": "string",
+            "title": "媒体来源",
+            "readOnly": true
+          },
+          "caption": {
+            "type": "string",
+            "title": "说明文字"
+          },
+          "width": {
+            "type": "number",
+            "title": "宽度",
+            "exclusiveMinimum": 0
+          },
+          "height": {
+            "type": "number",
+            "title": "高度",
+            "exclusiveMinimum": 0
+          },
+          "alt": {
+            "type": "string",
+            "title": "替代文字"
+          },
+          "still": {
+            "type": "string",
+            "title": "静态备用图",
+            "readOnly": true
+          }
+        },
+        "required": [
+          "kind",
+          "src"
+        ]
       },
       "states": [],
       "data": {
