@@ -65,10 +65,12 @@ export function trimToDeck(track: LectureTrack, doc: IRDocument): LectureTrack |
   const media = <T extends MediaSegment>(segments: T[] | undefined) => segments?.filter(segment => sections.has(segment.section) && !tainted.has(segment.section))
   const audio = media(track.audio)
   const video = media(track.video)
+  const captionOverrides = track.captionOverrides?.filter(own => sections.has(own.section) && !tainted.has(own.section))
   const irSections = track.ir.sections && Object.fromEntries(Object.entries(track.ir.sections).filter(([id]) => sections.has(id)))
   const blocks = Object.fromEntries(Object.entries(track.blocks).filter(([key]) => keepsBlock(key)))
   const same = !changed && utterances.length === track.utterances.length && events.length === track.events.length
     && audio?.length === track.audio?.length && video?.length === track.video?.length
+    && captionOverrides?.length === track.captionOverrides?.length
     && Object.keys(irSections ?? {}).length === Object.keys(track.ir.sections ?? {}).length && Object.keys(blocks).length === Object.keys(track.blocks).length
   if (same) return track
   return {
@@ -77,6 +79,7 @@ export function trimToDeck(track: LectureTrack, doc: IRDocument): LectureTrack |
     ...audio ? { audio } : {},
     ...video ? { video } : {},
     blocks,
+    ...captionOverrides ? { captionOverrides } : {},
     utterances,
     events,
   }
@@ -98,7 +101,8 @@ export function dropChangedSections(track: LectureTrack, view: IRDocument): Lect
   const media = <T extends MediaSegment>(segments: T[] | undefined) => segments?.filter(segment => same(segment.section))
   const audio = media(track.audio)
   const video = media(track.video)
-  if (utterances.length === track.utterances.length && events.length === track.events.length && audio?.length === track.audio?.length && video?.length === track.video?.length) return track
+  const captionOverrides = track.captionOverrides?.filter(own => same(own.section))
+  if (utterances.length === track.utterances.length && events.length === track.events.length && audio?.length === track.audio?.length && video?.length === track.video?.length && captionOverrides?.length === track.captionOverrides?.length) return track
   if (utterances.length === 0 && !audio?.length && !video?.length) return undefined
-  return { ...track, ...audio ? { audio } : {}, ...video ? { video } : {}, utterances, events }
+  return { ...track, ...audio ? { audio } : {}, ...video ? { video } : {}, ...captionOverrides ? { captionOverrides } : {}, utterances, events }
 }

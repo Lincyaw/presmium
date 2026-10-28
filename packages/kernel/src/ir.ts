@@ -73,6 +73,8 @@ export interface IRSection {
   stepIds?: string[]
   /** Display-only canonical narration by stable step, without an audio or timing claim. */
   stepNarrations?: Record<string, { id: string, text: string }[]>
+  /** Exact canonical per-step caption basis, independent of overall source version and preceding steps. */
+  captionSources?: Record<string, string>
   hints: Record<RendererId, Record<string, unknown>>
   config?: Record<string, Record<string, unknown>>
   blocks: IRBlock[]

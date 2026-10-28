@@ -167,6 +167,14 @@ export interface StepProduction {
 }
 export interface ProductionDefaults extends StepProduction {}
 export interface TimeRange { startMs: number, endMs: number }
+/** Explicit author times; offsets partition the original ordered step narration display in UTF16. */
+export interface CaptionTiming {
+  narrationIds: NarrationId[]
+  sourceFingerprint: string
+  playbackFingerprint: string
+  durationMs: number
+  segments: { id: string, from: number, to: number, startMs: number, endMs: number }[]
+}
 export interface MediaClip {
   id: ClipId
   assetId: AssetId
@@ -184,6 +192,8 @@ export interface Production {
   narrationOverrides?: Record<NarrationId, { narrationStart: 'with-animation' | 'after-animation' }>
   /** Cue placement is authored in narration; its delay is owned only here. */
   cueTimings?: Record<string, { pauseMs: number }>
+  /** Stale mappings remain inspectable but never retime audio or replace changed narration. */
+  captionTimings?: Record<StepId, CaptionTiming>
   mediaClips: MediaClip[]
 }
 

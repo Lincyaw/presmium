@@ -1,7 +1,7 @@
-import type { Utterance } from './track.ts'
+import type { LectureTrack, Utterance } from './track.ts'
 import { locate } from './words.ts'
 
-export interface CaptionGroup { id: string, text: string, t: number, d: number, alignment: 'words' | 'proportional' | 'none' }
+export interface CaptionGroup { id: string, text: string, t: number, d: number, alignment: 'words' | 'proportional' | 'none' | 'manual' }
 
 const MAX_CHARACTERS = 42
 const sentenceEnd = /[。！？!?；;]\s*[”’"'）)\]]*\s*$/u
@@ -50,4 +50,10 @@ export function captionGroups(utterance: Utterance): CaptionGroup[] {
 
 export function captionGroupAt(groups: readonly CaptionGroup[], timeMs: number): CaptionGroup | undefined {
   return groups.find(group => group.t <= timeMs && timeMs < group.t + group.d)
+}
+
+/** Shared projection used by publication and playback; an explicit manual gap stays empty. */
+export function trackCaptionGroups(track: LectureTrack): CaptionGroup[] {
+  return [...track.utterances.filter(u => !track.captionOverrides?.some(own => own.section === u.section && own.step === u.step)).flatMap(captionGroups),
+    ...track.captionOverrides?.flatMap(own => own.groups) ?? []].sort((a, b) => a.t - b.t)
 }

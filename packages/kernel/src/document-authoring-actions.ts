@@ -1,3 +1,4 @@
+import { applyDocumentCaptionTiming } from './document-caption-timings.ts'
 import { hasRole } from './access.ts'
 import { applyDocumentCommentAction, DocumentCommentError, validateDocumentCommentAnchor } from './document-comments.ts'
 import { changeDocumentVoice, documentVoiceStepIds, previewDocumentVoiceChange } from './document-voices.ts'
@@ -12,6 +13,10 @@ export function applyDocumentAuthoringAction(document: TeachingDocument, action:
   if (action.type === 'component.parameters.patch' || action.type === 'component.step-parameters.patch' || action.type === 'component.step-parameters.reset' || action.type === 'component.definition.use') {
     const { content, effect } = applyDocumentComponentAction(document, action)
     return { content, effect: { kind: 'component', value: effect } }
+  }
+  if (action.type === 'caption.timing.set' || action.type === 'caption.timing.reset') {
+    const result = applyDocumentCaptionTiming(document, action)
+    return { content: result.content, effect: { kind: 'caption', value: result.effect } }
   }
   if (action.type === 'voice.set') {
     if (action.source !== null && action.source.type !== 'tts' && action.source.type !== 'none') throw new DocumentCommentError(422, 'voice-recording-requires-adoption')

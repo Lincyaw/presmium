@@ -31,6 +31,7 @@ export interface Utterance {
   translations?: Record<string, Translation>
   clip?: string
   clipId?: string
+  audioSha256?: string
   narrationIds?: string[]
   /** Authored no-audio narration; its range comes from actual step boundaries, never reading-speed estimates. */
   recording?: true
@@ -109,6 +110,8 @@ export interface LectureTrack {
   video?: VideoSegment[]
   blocks: Record<string, TrackBlock>
   utterances: Utterance[]
+  /** Derived author times; ordinary audio utterances remain unchanged. */
+  captionOverrides?: { section: string, step: number, stepId: string, startMs: number, endMs: number, groups: import('./captions.ts').CaptionGroup[] }[]
   events: TrackEvent[]
 }
 
@@ -144,6 +147,7 @@ function utterance(value: unknown, problems: string[], i: number): Utterance | u
     ...isNumber(value.step) ? { step: value.step } : {},
     ...translations ? { translations } : {},
     ...typeof value.clipId === 'string' ? { clipId: value.clipId } : {},
+    ...typeof value.audioSha256 === 'string' ? { audioSha256: value.audioSha256 } : {},
     ...Array.isArray(value.narrationIds) && value.narrationIds.every(id => typeof id === 'string') ? { narrationIds: value.narrationIds as string[] } : {},
     ...value.recording === true ? { recording: true as const } : {},
     ...value.silent === true ? { silent: true as const } : {},
@@ -156,6 +160,19 @@ function utterance(value: unknown, problems: string[], i: number): Utterance | u
 function segment(value: unknown): MediaSegment | undefined {
   if (!isRecord(value) || typeof value.section !== 'string' || !isNumber(value.start) || typeof value.src !== 'string' || !isNumber(value.duration)) return undefined
   return { ...value.role === 'recording' ? { role: 'recording' as const } : {}, ...typeof value.stepId === 'string' ? { stepId: value.stepId } : {}, ...Array.isArray(value.narrationIds) && value.narrationIds.every(id => typeof id === 'string') ? { narrationIds: value.narrationIds as string[] } : {}, section: value.section, start: value.start, src: value.src, duration: value.duration, ...typeof value.sha256 === 'string' ? { sha256: value.sha256 } : {}, ...typeof value.clipId === 'string' ? { clipId: value.clipId } : {}, ...typeof value.assetId === 'string' ? { assetId: value.assetId } : {}, ...typeof value.mediaClipId === 'string' ? { mediaClipId: value.mediaClipId } : {}, ...isNumber(value.sourceStartMs) && value.sourceStartMs >= 0 ? { sourceStartMs: value.sourceStartMs } : {}, ...isNumber(value.volume) && value.volume >= 0 && value.volume <= 1 ? { volume: value.volume } : {}, ...typeof value.muted === 'boolean' ? { muted: value.muted } : {} }
+}
+
+function captionOverride(value: unknown): NonNullable<LectureTrack['captionOverrides']>[number] | undefined {
+  if (!isRecord(value) || typeof value.section !== 'string' || !isNumber(value.step) || typeof value.stepId !== 'string'
+    || !isNumber(value.startMs) || !isNumber(value.endMs) || value.endMs <= value.startMs || !Array.isArray(value.groups)) return
+  const start = value.startMs, end = value.endMs
+  let previous = start
+  for (const group of value.groups) {
+    if (!isRecord(group) || typeof group.id !== 'string' || typeof group.text !== 'string' || !isNumber(group.t) || !isNumber(group.d)
+      || group.d <= 0 || group.t < previous || group.t + group.d > end || group.alignment !== 'manual') return
+    previous = group.t + group.d
+  }
+  return value as unknown as NonNullable<LectureTrack['captionOverrides']>[number]
 }
 
 function irOf(value: unknown): LectureTrack['ir'] {
@@ -214,6 +231,7 @@ export function parseTrack(value: unknown): { track?: LectureTrack, problems: st
       ...audio?.length ? { audio } : {},
       ...video?.length ? { video } : {},
       blocks,
+      ...Array.isArray(value.captionOverrides) ? { captionOverrides: value.captionOverrides.flatMap(value => captionOverride(value) ?? []) } : {},
       utterances: utterances.sort((a, b) => a.t - b.t),
       events: sortEvents(events),
     },

@@ -1,6 +1,7 @@
 import { Validator } from '@cfworker/json-schema'
 import { DOCUMENT_JSON_SCHEMA } from './document-schema.ts'
 import { isRecord } from './errors.ts'
+import { captionSourceFingerprint, captionTimingProblem, stepCaptionText } from './document-caption-timings.ts'
 import { validateDocumentParameters } from './parameters.ts'
 import type { DocumentIssue, DocumentValidation, RichTextNode, TeachingDocument } from './contracts/document.ts'
 
@@ -217,6 +218,12 @@ export function validateDocument(value: unknown): DocumentValidation {
   for (const [id, override] of Object.entries(doc.production.stepOverrides)) { reference(doc.steps, id, at('/production/stepOverrides', id), 'step'); voice(override, at('/production/stepOverrides', id)) }
   for (const id of Object.keys(doc.production.narrationOverrides ?? {})) reference(doc.narrations, id, at('/production/narrationOverrides', id), 'narration')
   for (const id of Object.keys(doc.production.cueTimings ?? {})) if (!cues.has(id)) issue(at('/production/cueTimings', id), 'cue.missing', 'Cue timing must reference an authored narration cue.')
+  for (const [stepId, timing] of Object.entries(doc.production.captionTimings ?? {})) {
+    const step = doc.steps[stepId]
+    const stale = !step || JSON.stringify(step.narrationIds) !== JSON.stringify(timing.narrationIds) || captionSourceFingerprint(doc, stepId) !== timing.sourceFingerprint
+    const problem = stale ? 'caption-source-changed' : captionTimingProblem(timing, stepCaptionText(doc, stepId))
+    if (problem) issue(at('/production/captionTimings', stepId), 'caption.timing-stale', 'Manual caption timing requires review: ' + problem, 'warning')
+  }
   for (const [index, clip] of doc.production.mediaClips.entries()) {
     const path = `/production/mediaClips/${index}`
     identify(clip.id, `${path}/id`)

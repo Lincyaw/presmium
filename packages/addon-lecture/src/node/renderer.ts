@@ -87,6 +87,7 @@ async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: un
   const synthesized = await synthesizeLecture(doc, ctx.deckDir, speech, undefined, { cacheOnly: true })
   for (const issue of synthesized.mediaDiagnostics ?? []) ctx.report({ checkId: LECTURE_ID, severity: issue.severity, message: issue.message, source })
   if (synthesized.mediaDiagnostics?.length) throw new Error(synthesized.mediaDiagnostics[0]!.message)
+  for (const issue of synthesized.captionDiagnostics ?? []) ctx.report({ checkId: LECTURE_ID, severity: issue.severity, message: issue.message, source })
   for (const failure of synthesized.failures) {
     ctx.report({ checkId: LECTURE_ID, severity: 'error', message: t.cacheMissing(failure.text.slice(0, 40), failure.section, failure.reason), source: failure.source ?? source, hint: t.generateHint })
   }

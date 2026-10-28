@@ -57,8 +57,9 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
   const view = lectureView(ctx.ir)
   const deck = deckPlan(view)
   const findings = [...deck.findings]
-  const prepared = view.production?.mediaClips.length || deck.recorded ? await synthesizeLecture(view, ctx.deckDir, ctx.service?.(SPEECH), undefined, { cacheOnly: true }) : undefined
+  const prepared = view.production?.mediaClips.length || Object.keys(view.production?.captionTimings ?? {}).length || deck.recorded ? await synthesizeLecture(view, ctx.deckDir, ctx.service?.(SPEECH), undefined, { cacheOnly: true }) : undefined
   findings.push(...(prepared?.mediaDiagnostics ?? []).map(issue => ({ checkId: LECTURE_ID, severity: issue.severity, message: issue.message, source: { file: ctx.ir.meta.entry, line: 1 } })))
+  findings.push(...(prepared?.captionDiagnostics ?? []).map(issue => ({ checkId: LECTURE_ID, severity: issue.severity, message: issue.message, source: { file: ctx.ir.meta.entry, line: 1 } })))
   if (!deck.voice) return findings
   const speech = ctx.service?.(SPEECH)
   const source = { file: ctx.ir.meta.entry, line: 1 }, t = LECTURE_MESSAGES[deckLocale(ctx.ir.meta.lang)].production

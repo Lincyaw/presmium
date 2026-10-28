@@ -50,13 +50,13 @@ export function ProductionTimeline({ plan, sectionId, stepId, active, current, s
       waveform: wave ? wave.peaks : undefined,
     }
   }) })) : [{ id: 'visual', label: p.tracks.visual, segments: section?.stepOrder.map((id, index) => ({ id, stepId: id, label: document?.steps[id]?.title ?? p.stepNumber(index), timing: 'unknown' as const })) ?? [] }, { id: 'voice', label: p.tracks.voice, segments: [] }, { id: 'caption', label: p.tracks.caption, segments: [] }]
-  const captionChoices = current ? plan?.tracks.find(track => track.kind === 'caption')?.segments.filter(segment => segment.stepId === stepId && segment.alignment === 'words' && segment.timing === 'confirmed').map(segment => segment.id) ?? [] : []
+  const captionChoices = current ? plan?.tracks.find(track => track.kind === 'caption')?.segments.filter(segment => segment.stepId === stepId && (segment.alignment === 'words' || segment.alignment === 'manual') && segment.timing === 'confirmed').map(segment => segment.id) ?? [] : []
   return <PmTimeline label={p.timeline} tracks={tracks} labels={p.timelineLabels} durationMs={duration} durationStatus={page?.timing ?? 'unknown'} currentTimeMs={position} selectedStepId={stepId}
     segmentPicker={{ track: 'caption', ids: captionChoices, label: p.captionSegment, placeholder: p.chooseCaptionSegment }}
     zoom={zoom} onZoomChange={setZoom} disabled={disabled} loading={loading} seeking={seeking} seekDisabled={!seekEnabled || start === undefined}
     onSelectStep={onSelectStep} onSelectSegment={(track, selected) => {
       const segment = current ? plan?.tracks.find(value => value.kind === track)?.segments.find(value => value.id === selected.id) : undefined
-      if (track === 'caption' && seekEnabled && segment?.alignment === 'words' && segment.timing === 'confirmed' && segment.startMs !== undefined) onSeek(segment.startMs)
+      if (track === 'caption' && seekEnabled && (segment?.alignment === 'words' || segment?.alignment === 'manual') && segment.timing === 'confirmed' && segment.startMs !== undefined) onSeek(segment.startMs)
       else if (selected.stepId) onSelectStep(selected.stepId)
     }} onSeek={time => { if (start !== undefined) onSeek(start + time) }} />
 }

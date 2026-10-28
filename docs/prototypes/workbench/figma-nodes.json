@@ -606,6 +606,37 @@
           "interactionContract": "Apply succeeds without closing. Undo targets the acknowledged Git revision through existing document history and is unavailable with later pending input or unavailable history capability. Done closes. Apply is disabled without new changes. Native body Undo stays separate.",
           "lineage": "Added after af75a0b8. Original six-state review 278:5946 and schema evidence remain unchanged."
         }
+      },
+      "ManualCaptionTiming": {
+        "componentSetNodeId": "292:7743",
+        "reviewNodeId": "293:7121",
+        "sessionId": "3ac2a354-a923-42bf-a246-226e3f5bd346",
+        "implementation": "packages/workbench/src/panels/ProductionCaptionTiming.tsx",
+        "reuse": [
+          "PmDialog",
+          "PmInput",
+          "PmButton",
+          "PmNotice"
+        ],
+        "states": {
+          "Compact": {
+            "Ready": "292:6929",
+            "Invalid": "292:6996",
+            "Stale": "292:7064",
+            "Unavailable": "292:7132",
+            "Saving": "292:7200",
+            "Applied": "292:7268"
+          },
+          "Touch": {
+            "Ready": "292:7336",
+            "Invalid": "292:7403",
+            "Stale": "292:7471",
+            "Unavailable": "292:7539",
+            "Saving": "292:7607",
+            "Applied": "292:7675"
+          }
+        },
+        "behavior": "Video only: original typed narration is read-only; explicit line-break partitions and author times relative to one stable step. Actual audio and confirmed duration required. Source/media/timing changes require explicit review; no inferred word alignment. Manual gaps stay empty in Web, VTT and burned captions. Apply uses the shared canonical action/actor; old ACK never clears or labels later input saved. Unapplied form drafts survive closing and step changes only within the mounted Video session; no reload/IDB recovery claim. Doc remains caption text and narration start."
       }
     },
     "variantCounts": {

@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto'
-import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import type { CanonicalSource, IRDocument, ProductionAssetAnswer, ProductionAssetQuery, ProductionAudio, ProductionMediaQuery, ProductionPlan, ProductionPlanQuery } from '@lincyaw/kernel'
 import { irRevision } from '@lincyaw/kernel/node'
@@ -21,11 +20,9 @@ const fileStamp = async (path: string) => { const value = await stat(path); retu
 
 async function clipFile(clip: SynthesizedClip, signal?: AbortSignal): Promise<ClipFile> {
   signal?.throwIfAborted()
-  const before = await fileStamp(clip.path), digest = createHash('sha256')
-  const stream = createReadStream(clip.path, { signal })
-  for await (const chunk of stream) digest.update(chunk)
-  if (await fileStamp(clip.path) !== before) throw new RouteRefusal(409, 'production-media-changed')
-  return { audio: { clipId: clip.key, key: clip.key, sha256: digest.digest('hex'), durationMs: Math.round(clip.duration * 1000) }, path: clip.path, stamp: before }
+  const before = await fileStamp(clip.path)
+  if (before !== clip.stamp || !clip.sha256) throw new RouteRefusal(409, 'production-media-changed')
+  return { audio: { clipId: clip.key, key: clip.key, sha256: clip.sha256, durationMs: Math.round(clip.duration * 1000) }, path: clip.path, stamp: before }
 }
 
 async function current(served: ServedDeck, expected?: ProductionPlanQuery): Promise<{ doc: IRDocument, source: CanonicalSource, revision: string }> {
@@ -69,7 +66,7 @@ export async function productionSnapshot(served: ServedDeck, query?: ProductionP
     const clip = made.clips.get(utterance.id)
     if (clip) utterance.clipId = clip.key
   }
-  const projected = projectProductionPlan(now.doc, made.deck.plan, track, new Map([...clips].flatMap(([key, file]) => file.audio ? [[key, file.audio] as const] : [])), made.failures, made.mediaDiagnostics, new Map([...made.assets ?? []].map(([id, file]) => [id, file.asset])))
+  const projected = projectProductionPlan(now.doc, made.deck.plan, track, new Map([...clips].flatMap(([key, file]) => file.audio ? [[key, file.audio] as const] : [])), made.failures, [...made.mediaDiagnostics ?? [], ...made.captionDiagnostics ?? []], new Map([...made.assets ?? []].map(([id, file]) => [id, file.asset])))
   const planId = createHash('sha256').update(JSON.stringify({ source: now.source, irRevision: now.revision, projected, track, audio: [...clips.values()].map(file => file.audio ?? file.asset!.asset) })).digest('hex').slice(0, 32)
   const binding = { source: now.source, irRevision: now.revision, planId }, plan: ProductionPlan = { binding, ...projected }
   track.binding = binding

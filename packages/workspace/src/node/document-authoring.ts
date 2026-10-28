@@ -3,9 +3,9 @@ import { applyDocumentOperations, AUTHORING_API_VERSION, createDocumentPage, DOC
 import { validateDocumentChange, validateDocumentPageChange, validateDocumentPageChangeApply, validateDocumentPageDuplication, validateDocumentPageDuplicationApply, validateDocumentOutlineQuery, validateDocumentPartQuery } from '@lincyaw/kernel/node'
 import type { AppliedDocumentChange, ApplyDocumentChange, CanonicalSource, DocumentAnswer, DocumentAuthoring, DocumentChange, DocumentChangeAnswer, DocumentChangePlan, DocumentIssue, DocumentPageAction, DocumentPageChangePlan, DocumentPageDuplicationPlan, Member, RequestContext, SourceTransactionChange, TeachingDocument } from '@lincyaw/kernel'
 import { RequestError } from './errors.ts'
-import { applyDocumentAuthoringAction, DOCUMENT_ACTION_MAX_REQUEST_CHARS, DOCUMENT_ACTION_MAX_RESPONSE_CHARS, DOCUMENT_AUTHORING_ACTION_TYPES, DOCUMENT_PARAMETER_MAX_CHANGES, DOCUMENT_PARAMETER_MAX_PATH_DEPTH, DocumentCommentError, DocumentComponentError } from '@lincyaw/kernel'
+import { applyDocumentAuthoringAction, DOCUMENT_ACTION_MAX_REQUEST_CHARS, DOCUMENT_ACTION_MAX_RESPONSE_CHARS, DOCUMENT_AUTHORING_ACTION_TYPES, DOCUMENT_PARAMETER_MAX_CHANGES, DOCUMENT_PARAMETER_MAX_PATH_DEPTH, DocumentCommentError, DocumentComponentError, DocumentCaptionTimingError, ProductionAudioRefusal } from '@lincyaw/kernel'
 import { validateDocumentAuthoringAction, validateDocumentAuthoringActionReference, validateDocumentAuthoringActionImpact } from '@lincyaw/kernel/node'
-import type { AppliedDocumentAuthoringAction, DocumentAuthoringActionReference, DocumentAuthoringActionPlan, DocumentComponentImpactAnswer } from '@lincyaw/kernel'
+import type { AppliedDocumentAuthoringAction, DocumentAuthoringActionReference, DocumentAuthoringActionPlan, DocumentComponentImpactAnswer, DocumentAuthoringAction, ProductionPlan } from '@lincyaw/kernel'
 import { MAX_SOURCE, MAX_SOURCE_CHANGES } from './source-editor.ts'
 import type { SourceEditor, SourceTransactionHistory } from './source-editor.ts'
 import type { Revisions } from './revisions.ts'
@@ -39,7 +39,17 @@ export interface DocumentEditor extends DocumentAuthoring {
   applyEditorAction(document: string, reference: DocumentAuthoringActionReference, member: Member): Promise<AppliedDocumentAuthoringAction>
 }
 
-export function createDocumentEditor({ editor, revisions, reviewRequired = false }: { editor: SourceEditor, revisions?: Revisions, reviewRequired?: boolean }): DocumentEditor {
+export function createDocumentEditor({ editor, revisions, reviewRequired = false, productionPlan }: { editor: SourceEditor, revisions?: Revisions, reviewRequired?: boolean, productionPlan?: (document: string, source: CanonicalSource) => Promise<ProductionPlan> }): DocumentEditor {
+  const validateCaption = async (document: string, source: CanonicalSource, action: DocumentAuthoringAction) => {
+    if (action.type !== 'caption.timing.set') return
+    if (!productionPlan) throw new RequestError(503, 'caption-production-unavailable')
+    let plan: ProductionPlan
+    try { plan = await productionPlan(document, source) }
+    catch (error) { if (error instanceof ProductionAudioRefusal) throw new RequestError(error.status, error.code); throw error }
+    const basis = plan.pages.flatMap(page => page.steps).find(step => step.stepId === action.stepId)?.captionTiming
+    if (!basis?.available) throw new RequestError(422, basis?.reason ?? 'caption-timing-unavailable')
+    if (JSON.stringify(plan.binding.source) !== JSON.stringify(source) || basis.sourceFingerprint !== action.value.sourceFingerprint || basis.playbackFingerprint !== action.value.playbackFingerprint || basis.durationMs !== action.value.durationMs || JSON.stringify(basis.narrationIds) !== JSON.stringify(action.value.narrationIds)) throw new RequestError(409, 'caption-playback-changed')
+  }
   const receipts = new Map<string, { signature: string, version: string, files: DocumentChangeAnswer['files'], commit?: DocumentChangeAnswer['commit'] }>()
   type Plan = { key: string, signature: string, expires: number, ready: boolean, duplication?: { signature: string, result: Promise<DocumentPageDuplicationPlan> }, page?: { signature: string, result: Promise<DocumentPageChangePlan> }, action?: { signature: string, result: Promise<DocumentAuthoringActionPlan> } }
   const plans = new Map<string, Plan>()
@@ -181,6 +191,7 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
     const expected = plan.files.find(file => file.path === entryOf(document))!.version, receipt = receipts.get(keyOf(document, member, plan.changeId))
     if (receipt && receipt.signature !== plan.digest) throw new RequestError(409, 'document-change-id-reused')
     readSelection(document, receipt ? { documentId: plan.content.id, version: expected, fingerprint: fnv1a64(`${JSON.stringify(plan.content, null, 2)}\n`) } : plan.source, member, () => undefined)
+    if (!receipt) await validateCaption(document, plan.source, plan.action)
     const answer = await applyPlannedChange(document, { change: plan.change, planId: plan.planId }, member, 'action', origin)
     if (answer.version !== expected || JSON.stringify(answer.content) !== JSON.stringify(plan.content)) throw new RequestError(409, 'document-readback-changed', { committed: true, changeId: plan.changeId, version: answer.version })
     const { content: _content, issues: _issues, commit, ...saved } = answer
@@ -332,10 +343,12 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
       // Reserve before any asynchronous materialization: this intent owns one set of IDs and dates.
       const result = Promise.resolve().then(async (): Promise<DocumentAuthoringActionPlan> => {
         if (plans.get(planId) !== record) throw new RequestError(409, 'document-plan-expired')
+        await validateCaption(document, source, action)
         let materialized: ReturnType<typeof applyDocumentAuthoringAction>
         try { materialized = applyDocumentAuthoringAction(current, action, { member, now: new Date().toISOString(), allocate: randomUUID, allocateContentIds: true }) }
         catch (error) {
           if (error instanceof DocumentCommentError) throw new RequestError(error.status, error.message)
+          if (error instanceof DocumentCaptionTimingError) throw new RequestError(error.status, error.message)
           if (error instanceof DocumentComponentError) throw new RequestError(error.status, error.message, error.detail)
           throw new RequestError(422, 'authoring-action-invalid', { reason: error instanceof Error ? error.message : 'invalid-action' })
         }

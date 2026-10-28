@@ -1,3 +1,4 @@
+import type { DocumentCaptionTimingAction } from '../document-caption-timings.ts'
 import type { DocumentCommentAction, DocumentCommentEffect } from './document-comments.ts'
 import type { JsonValue, VoiceSource } from './document.ts'
 import type { DocumentVoiceImpact, DocumentVoiceScope } from '../document-voices.ts'
@@ -7,7 +8,7 @@ import type { DocumentChangePlan } from './authoring.ts'
 
 export const DOCUMENT_ACTION_MAX_REQUEST_CHARS = 4096
 export const DOCUMENT_ACTION_MAX_RESPONSE_CHARS = 7168
-export const DOCUMENT_AUTHORING_ACTION_TYPES = ['comment.create', 'comment.reply', 'comment.update', 'comment.react', 'comment.resolve', 'comment.reopen', 'comment.delete', 'voice.set', 'component.parameters.patch', 'component.step-parameters.patch', 'component.step-parameters.reset', 'component.definition.use'] as const
+export const DOCUMENT_AUTHORING_ACTION_TYPES = ['comment.create', 'comment.reply', 'comment.update', 'comment.react', 'comment.resolve', 'comment.reopen', 'comment.delete', 'voice.set', 'component.parameters.patch', 'component.step-parameters.patch', 'component.step-parameters.reset', 'component.definition.use', 'caption.timing.set', 'caption.timing.reset'] as const
 export const DOCUMENT_PARAMETER_MAX_CHANGES = 32
 export const DOCUMENT_PARAMETER_MAX_PATH_DEPTH = 16
 /** Paths belong only to this component's parameters; set replaces an array item or appends at its length. */
@@ -38,9 +39,9 @@ export interface DocumentComponentImpactAnswer {
   collection: DocumentComponentImpactCollection, offset: number, total: number, entries: string[], nextOffset?: number, complete: boolean
 }
 /** New recording adoption belongs to the real-media service, never a raw settings action. */
-export type DocumentAuthoringAction = DocumentCommentAction | DocumentComponentAction | { type: 'voice.set', scope: DocumentVoiceScope, source: Exclude<VoiceSource, { type: 'recording' }> | null, replaceOverrides?: boolean }
+export type DocumentAuthoringAction = DocumentCommentAction | DocumentComponentAction | DocumentCaptionTimingAction | { type: 'voice.set', scope: DocumentVoiceScope, source: Exclude<VoiceSource, { type: 'recording' }> | null, replaceOverrides?: boolean }
 export interface DocumentAuthoringActionRequest { id: string, source: CanonicalSource, action: DocumentAuthoringAction }
-export type DocumentAuthoringActionEffect = { kind: 'comment', value: DocumentCommentEffect } | { kind: 'voice', scope: DocumentVoiceScope['kind'], value: DocumentVoiceImpact, recordings: { preserved: number, removed: number } } | { kind: 'component', value: DocumentComponentEffect }
+export type DocumentAuthoringActionEffect = { kind: 'caption', value: { stepId: string, segments: number, changed: boolean, mode: 'manual' | 'automatic' } } | { kind: 'comment', value: DocumentCommentEffect } | { kind: 'voice', scope: DocumentVoiceScope['kind'], value: DocumentVoiceImpact, recordings: { preserved: number, removed: number } } | { kind: 'component', value: DocumentComponentEffect }
 export interface DocumentAuthoringActionPlan extends DocumentChangePlan {
   action: DocumentAuthoringAction
   effect: DocumentAuthoringActionEffect
