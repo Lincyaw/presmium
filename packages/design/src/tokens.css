@@ -209,9 +209,12 @@
   }
 }
 
-/* Presentation cues, terminal surfaces and accessibility contrast palettes. */
+/* Presentation cues, terminal surfaces, the light and shade of animations, and accessibility contrast palettes. */
 :root {
   --pm-color-terminal-bg: #000000;
+  /* A highlight (sheen, glint, spark) that stays light and a shadow that stays dark in both appearance modes. */
+  --pm-color-sheen: #ffffff;
+  --pm-color-shadow: #000000;
   --pm-color-pointer-fill: #ffffff;
   --pm-color-pointer-stroke: #111111;
   --pm-contrast-bg: #ffffff;

@@ -37,6 +37,8 @@ export const COLORS = [
   'terminal-bg',
   'pointer-fill',
   'pointer-stroke',
+  'sheen',
+  'shadow',
 ] as const
 
 export type ColorName = typeof COLORS[number]
