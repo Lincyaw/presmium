@@ -154,11 +154,17 @@ interface MediaClip {
 }
 ```
 
-录音的可选 `sourceRange` 只选择原文件区间；省略表示整段。实际时长与 SHA 在共享采用服务中核对，保存不改原字节、Narration 或 ASR 来源。裁切后整步字幕仍为 `alignment=none`，详见[音频作者接口](audio-authoring.md#采用原音为本步配音)。
+录音的可选 `sourceRange` 只选择原文件区间；省略表示整段。实际时长与 SHA 在共享采用服务中核对，保存不改原字节、Narration 或 ASR 来源。没有另行应用有效手动时间时，裁切后整步字幕仍为 `alignment=none`，详见[音频作者接口](audio-authoring.md#采用原音为本步配音)。
 
 讲授默认顺序从 `sectionOrder → section.stepOrder` 派生，不重复持久化。时序决定仅由 Production 保存，Step 不再保存另一份 timing。配音继承和实际来源必须有唯一规则，不在讲稿和编排中留下互相覆盖的两份配置。绝对起止时间、精确时长和播放片段属于派生的 PlaybackPlan。
 
 时机逐项按文稿 `defaults`、页面 `sectionOverrides`、步骤 `stepOverrides` 解析，后者优先。迁移保留的 `narrationOverrides` 只为讲稿提供开始时机，位于页面与步骤之间：同一步的多条讲稿可继承各自的开始时机；显式设置步骤开始时机只统一本步，不改共享讲稿。恢复本步继承只移除步骤层的时机字段，保留音色、讲稿覆盖、cue 延迟和媒体片段。
+
+`Production.captionTimings[StepID]` 可保存作者明确的本步字幕时间。`CaptionTiming` 包含有序 `narrationIds`、`sourceFingerprint`、`playbackFingerprint`、本步 `durationMs`，以及最多 32 段 `{id, from, to, startMs, endMs}`。`from/to` 是各 Narration 按原顺序显示、用单换行连接后的 UTF-16 范围，必须完整连续覆盖原文；端点必须是 Unicode grapheme 边界，不拆代理对、组合字或 emoji。cue 不产生字幕文字，pronunciation 只投影 display，原 typed content 保持不变。
+
+手动时间是相对稳定 Step 起点的整数毫秒，不是原音文件绝对位置或词时间。每段满足 `0 ≤ startMs < endMs ≤ durationMs`，时序不重叠，允许留白；不跨步或跨页分配。`sourceFingerprint` 覆盖有序 typed Narration、有效音色与本步设置；`playbackFingerprint` 覆盖实际音频 SHA／原音区间、本步相对事件与确认时长，不包含文稿 version、IR revision、planId 或手动字幕本身。这两个非密码摘要只是失效检测，写入仍由精确 canonical source CAS 和真实播放计划校验保护。保存后新 source 版本仍可使用该映射；前序步骤插入／重排不使本步相对时码失效。
+
+内容／顺序、原音、有效音色、本步时序或范围不符时产生 `production.caption-timing-stale`，保留提案但不投影旧映射，回到原有字幕策略，普通 Doc 保存仍可继续。删除页面会清其步骤映射；复制页面保留提案为待核对状态，不把新身份自动当成已对时。真实音频缺失、时长未确认及跨步配音不能设置。新字段只保存决定，分段字幕与绝对时间仍由同一讲授轨道派生；Web、VTT 与视频烧录使用同一投影。译文没有独立时码时不借用本映射。共享动作与范围见[字幕时间接口](rfc-mcp-authoring-actions.md#24-已实现的手动字幕时间)。
 
 未来支持复讲时，再引入有独立出现 ID 的编排序列；当前不为未来需求预先增加第二份默认顺序。
 

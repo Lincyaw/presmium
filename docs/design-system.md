@@ -148,6 +148,8 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 
 选择结果只更新设置草稿，试听与生成放在列表外显式确认。目录状态与已完成缓存是否可播放分开呈现；服务未配置不能遮掉当前可用缓存。语速与风格仅在真实服务声明支持时展示。应用范围使用文稿、页面与稳定步骤身份，对应 canonical Production 的默认值、页面覆盖和步骤覆盖，不在讲稿上新增音色层。恢复继承与明确静音使用不同动作；批量默认保留独立设置，替换时确认更新／保留的步骤数，并说明包含静音或录音的覆盖槽位数。旧源版本的确认失效时保留草稿，要求重新检查，不采用迟到结果。
 
+Video 的[手动字幕时间组合](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=292-7743)复用 `PmDialog`、`PmInput`、`PmButton` 与 `PmNotice`；[四组合设计](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=293-7121)使用现有 Compact／Touch 与明暗令牌。原讲稿只读，逐段成对秒输入，分段与恢复自动均为明确动作；stale、无能力、错误和保存状态沿公共控件，不新增另一套时间线或文本编辑器。业务 CSS 只排列行、原文换行与成对字段。Doc 不增加这些控件。待应用时间输入目前只在本次 Video 挂载会话内保留，不能宣称 strict 备份或重载恢复；实际运行见[验证记录](benchmarks/manual-caption-timing-2026-10-28.md)。
+
 ### 4.1 组件库取用决定
 
 本轮继续使用 BlockNote 编辑正文、Radix Primitives 提供公共浮层和键盘行为，样式由 `@lincyaw/design` 令牌与公共适配层负责。公共组件封装只组合现成行为和样式，不另写焦点循环、菜单键盘控制或文本编辑内核。

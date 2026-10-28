@@ -504,3 +504,14 @@ component effect 记录稳定 block/page/step、实际变更路径、影响 bloc
 同一 source／member／document／token、完整文稿验证、原计划 family、review、CAS、历史和读回全部保留。HTTP 人工采用固定 editor，MCP 固定 agent。409 后不能偷偷换源重试；同引用丢 ACK 沿原 receipt，Undo ABA 拒绝。请求／结果仍限 4096／7168 字符，保留参数不计入短字段请求，已编辑值超限返回可恢复 413。真实 SDK／HTTP、503 个影响步骤与公开 DSH pruner 证据见[参数动作记录](benchmarks/component-parameter-actions-2026-10-28.md)。
 
 Web 已通过同一边界接入组件属性 Dialog：基础／当前步骤的公开字段、恢复继承提案、真实影响、已有 Definition 选择与引用定位；采用和选择分开，应用后保持 Dialog。对应 Git 修订撤消与正文原生历史独立。目标草稿 strict 备份及显式 fork 恢复不成为 MCP 默认可读内容，也未新增 MCP 表单草稿恢复／丢弃能力。[隔离 Studio 首轮](benchmarks/component-properties-ui-2026-10-28.md)在固定 4c555484 运行源完成 26 项和中英文四组合；相同运行字节另完成独立丢 ACK、后来原生删除及撤消 8 项。真实小事务未触发配额拒绝，故障保留分支仍未验证。这些记录不替代完整 Schema、跨进程故障、物理触屏或全部 MCP parity。
+
+
+## 24. 已实现的手动字幕时间
+
+`caption.timing.set` 与 `caption.timing.reset` 复用第 20 节原 `plan_authoring_action`／`apply_authoring_action`、固定 member／origin、计划 family、review、CAS、history、回执和读回。Web 使用相同 HTTP action owner；没有字幕专用 writer、任务账本或第二个时钟。
+
+set 参数是稳定 `stepId` 与 canonical `CaptionTiming value`。先明确准备当前 source 的 IR，再从 `read_production_plan` 对应 `ProductionStep.captionTiming` 读取实际可用的 basis；canonical 文本用原有有界文稿读取取得。沿原文有序 Narration、UTF-16 grapheme 完整分区和真实本步 duration 提交显式起止时间，字段定义见[文稿契约](rfc-document-ir.md)。reset 只移除该步的手工映射，不需要编译或音频可用。读取、预检和采用不合成；没有当前真实 IR／音频或确认时长时，set 明确不可用，不估算补齐。跨步配音不可设置。
+
+set 预检与首次 apply 由同一 `ProductionAudioAuthoring.readPlan` 做 cache-only 真实媒体／时长复核，再交原事务保存。相同 apply 引用丢 ACK 沿原 receipt 重放，不重复提交；新旧源或 basis 不符返回冲突，不能静默重绑。set 只改变字幕映射，音频、讲稿、cue、ASR 来源与词时间均不改；派生段标为 `manual`。更换音频后打开表单也不能自动确认旧时间，必须重新检查。
+
+请求仍限 4096 UTF-16 JSON 字符、结果 7168 pretty-JSON 字符，每步最多 32 段；数量上限不豁免序列化容量，超限返回 413。旧映射 stale 后保留可读、停止投影，不阻普通 Doc 保存。Web 表单的未提交输入只在同一次 Video 挂载会话中跨关窗／切步保留，没有重载、跨 Tab、strict IDB 或 agent 草稿恢复能力。真实 SDK／Studio／导出与保留失败见[手动字幕时间记录](benchmarks/manual-caption-timing-2026-10-28.md)。
