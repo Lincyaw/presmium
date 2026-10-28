@@ -158,7 +158,7 @@ export interface Definition {
   data?: JsonObject
 }
 
-export type VoiceSource = { type: 'none' } | { type: 'tts', voice: SpeechVoice } | { type: 'recording', assetId: AssetId }
+export type VoiceSource = { type: 'none' } | { type: 'tts', voice: SpeechVoice } | { type: 'recording', assetId: AssetId, sourceRange?: TimeRange }
 export interface StepProduction {
   narrationStart?: 'with-animation' | 'after-animation'
   minimumHoldMs?: number

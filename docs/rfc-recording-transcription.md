@@ -4,7 +4,7 @@
 
 后续已单独完成一个英文文件的真实人声 ASR→审阅采用→Web 新配音→播放／暂停链，使用本地 CPU 提供方、正式 MCP 与真实浏览器，见[实际闭环记录](benchmarks/human-audio-to-voiceover-2026-10-27.md)。原音词时未冒充新配音词时，新配音字幕明确为比例对齐。该结果不覆盖真人设备权限、录音来源完整链、多步骤 cue、所有四组合或运行中提供方合成取消；总体状态仍为部分实施。
 
-Video 现已接入原生麦克风候选、明确保存、原音整段采用为本步配音、转写任务恢复与原生校对／对照采用。浅深色与桌面／触屏窄屏已实际操作；任务恢复、共享讲稿与旧回执的范围分别见[录音记录](benchmarks/video-microphone-recording-2026-10-27.md)和[校对记录](benchmarks/video-transcription-adoption-2026-10-27.md)。MCP 与 HTTP 共用任务实例和采用事务，见 [MCP 记录](benchmarks/mcp-transcription-actions-2026-10-27.md)。“原音频”卡复用一个已保存音频选择器，候选保存后或选择既有资产，再明确“采用为本步配音”；四组合、英文、真实播放及迟回执边界见[界面记录](benchmarks/recording-step-adoption-ui-2026-10-27.md)。采用不修改讲稿或启动 ASR/TTS；wholeStep 每步完整播放一次，不是跨步骤连续分配，字幕没有词对齐。多目标批量界面、MCP 客户端录制和录音二进制崩溃恢复仍未完成。
+Video 现已接入原生麦克风候选、明确保存、原音整段采用为本步配音、转写任务恢复与原生校对／对照采用。浅深色与桌面／触屏窄屏已实际操作；任务恢复、共享讲稿与旧回执的范围分别见[录音记录](benchmarks/video-microphone-recording-2026-10-27.md)和[校对记录](benchmarks/video-transcription-adoption-2026-10-27.md)。MCP 与 HTTP 共用任务实例和采用事务，见 [MCP 记录](benchmarks/mcp-transcription-actions-2026-10-27.md)。“原音频”卡复用一个已保存音频选择器，候选保存后或选择既有资产，再明确“采用为本步配音”；四组合、英文、真实播放及迟回执边界见[界面记录](benchmarks/recording-step-adoption-ui-2026-10-27.md)。采用不修改讲稿或启动 ASR/TTS；未设置范围时每步完整播放一次；Video 可明确裁切已采用录音的本步源区间，不是跨步骤连续分配。字幕保留完整讲稿且没有词对齐，见[裁切边界](audio-authoring.md#采用原音为本步配音)。多目标批量界面、MCP 客户端录制和录音二进制崩溃恢复仍未完成。
 
 首片公开 `createDocumentTranscriptions` 与 [kernel 契约](../packages/kernel/src/contracts/transcription.ts)，HTTP 为 `GET document/transcription/capabilities`、`POST/GET document/transcription`、`GET document/transcription/result`、`POST document/transcription/cancel`。首次仅转写整份真实资产，任务不写 `Narration`，不自动编译或合成。持久取消意图重启后仍阻止迟到请求；已知任务 ID 的读取与取消只核文稿路径权限，不因当前 JSON 损坏或 UUID 替换而失去停止入口。MCP 薄适配的范围单独见 [MCP RFC](rfc-mcp-authoring-actions.md)，不能把路由或工具存在视为完整作者流程已交付。
 
@@ -22,7 +22,7 @@ Video 现已接入原生麦克风候选、明确保存、原音整段采用为�
 | ASR | `SpeechService.transcribe` 支持取消；OpenAI 接口形态及火山引擎适配器已有实现 | 音频资产的来源校验、版本化候选、异步任务与重新尝试；真实结果须记录使用的引擎与模型信息 |
 | 旧轨转写 | `track_transcribe` 写讲授轨的 `utterances`；`track_narration` 只返回带 role 文本的草案与来源行 | 不能作为规范 `NarrationNode[]` 的原子采用接口 |
 | 讲稿与配音 | typed Narration 已有 text／pronunciation／cue；`VoiceoverRequest` 已有 source、revision、scope、intent、确认与取消链 | 采用转写后重新检查真实音色能力，明确生成缺失的精确请求缓存 |
-| 原录音跟稿播放 | 共享 HTTP／MCP 可显式采用原音为当前稳定步骤配音；实际全文件时长进入计划与单时钟播放，多讲稿只用一次原音、空讲稿不造字幕 | Video 已有保存候选／既有音频的明确采用按钮；不支持旁白裁切、跨步连续分配或无真实对齐的内部提示。共享服务见[零模型记录](benchmarks/recording-step-adoption-2026-10-27.md)，界面见[采用记录](benchmarks/recording-step-adoption-ui-2026-10-27.md)；既有人声→ASR→讲稿→TTS 闭环不变 |
+| 原录音跟稿播放 | 共享 HTTP／MCP 可显式采用原音为当前稳定步骤配音；实际全文件或所选范围时长进入计划与单时钟播放，多讲稿只用一次原音、空讲稿不造字幕 | Video 已有保存候选／既有音频的明确采用按钮；已采用录音可明确裁切本步源区间；跨步连续分配或无真实对齐的内部提示仍不支持。共享服务见[零模型记录](benchmarks/recording-step-adoption-2026-10-27.md)，界面见[采用记录](benchmarks/recording-step-adoption-ui-2026-10-27.md)；既有人声→ASR→讲稿→TTS 闭环不变 |
 | 字词对齐 | TTS 可携带真实 words；`alignWords` 能读取已有对齐，明确允许时也可能再次转写 | 录音转写时码不能移作新 TTS 时码；没有真实词时码时不得显示精确逐字对齐 |
 
 审计入口：
@@ -105,7 +105,7 @@ interface TranscriptionRevision {
 
 服务校验有限数值、正向区间、素材范围及响应体大小。非法时间不拿来推算精确对齐；可保留有效文字并报告时间不可用，不能用零时长伪造有效区间。静音或空结果可正常结束任务，但采用按钮没有默认可写内容。识别语言、文字与时码不必相互猜测修正；保留来源并让作者校对。
 
-首个切片转写整份资产：`sourceRange` 为实际 `0..durationMs`。现有 `MediaClip.sourceRange` 只是非破坏性播放区间，不能假装已经截取了上传给 ASR 的字节。以后支持“仅识别选区”时，须由媒体适配器真实提取音频，记录原资产、原区间及派生字节摘要；不能只过滤返回文字却宣称仅发送了选区。
+首个切片转写整份资产：`sourceRange` 为实际 `0..durationMs`。现有 `MediaClip.sourceRange` 与录音旁白 `VoiceSource.sourceRange` 只是非破坏性播放区间，不能假装已经截取了上传给 ASR 的字节。以后支持“仅识别选区”时，须由媒体适配器真实提取音频，记录原资产、原区间及派生字节摘要；不能只过滤返回文字却宣称仅发送了选区。
 
 ### 3.2 任务接入
 
@@ -201,7 +201,7 @@ review quote 覆盖 source、候选 revision、步骤与 Narration 基准、文�
 
 ASR 的词时码永远属于原录音。新 TTS 自带真实 words 时，按现有 display／spoken 映射得到字幕时码；没有真实 words 时只能显示分段或明确标识的比例估时。`alignWords` 可能触发另一次 ASR，必须在明确的生成／对齐意图内说明提供方与范围，不能因刷新、打开字幕或导出偷偷调用。
 
-当前非破坏性音频裁切已实现，但没有“任意新讲稿与原录音强制对齐”的能力。后续若开放该操作，结果键至少含音频 SHA、真实 sourceRange、讲稿显示／朗读摘要、语言及对齐引擎版本；任何一个变化均标记过期。未经验证的线性插值不得标为精确。新 TTS 时长改变由同一 ProductionPlan 重算，不能在界面另写自由时间轴来掩盖 hold／cue 冲突。
+背景音频片段与已采用录音旁白均支持非破坏性源区间裁切，后者保留整步讲稿、`alignment=none` 并提示核对；既有 whole-file ASR 候选的时码不会自动变成裁切后的对齐。当前没有“任意新讲稿与原录音强制对齐”的能力。后续若开放该操作，结果键至少含音频 SHA、真实 sourceRange、讲稿显示／朗读摘要、语言及对齐引擎版本；任何一个变化均标记过期。未经验证的线性插值不得标为精确。新 TTS 时长改变由同一 ProductionPlan 重算，不能在界面另写自由时间轴来掩盖 hold／cue 冲突。
 
 ## 7. UI、MCP 与共享边界
 

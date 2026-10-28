@@ -4,6 +4,8 @@ import { PmButton, PmField, PmInput, PmNotice, PmRange, PmSelect } from './compo
 import type { ControlDensity } from './components.tsx'
 import type { Locale } from './messages.ts'
 import { MEDIA_MESSAGES } from './media-messages.ts'
+import { mediaTime, mediaTimeValue as timeValue } from './media-time.ts'
+export { mediaTime } from './media-time.ts'
 
 /** Unaccepted input. Untouched fields keep their original numeric precision. */
 export interface MediaClipDraft {
@@ -46,17 +48,6 @@ export interface MediaClipEditorProps {
   onEditStart(): void
 }
 
-export function mediaTime(value: number): string {
-  const ms = Math.max(0, Math.round(value))
-  return `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${(ms % 60000 / 1000).toFixed(3).padStart(6, '0')}`
-}
-function timeValue(raw: string | undefined, original: number): number | undefined {
-  if (raw === undefined || raw === mediaTime(original)) return original
-  const match = /^(\d+):([0-5]\d)(?:\.(\d{1,6}))?$/.exec(raw.normalize('NFKC').trim())
-  if (!match) return undefined
-  const value = Number(match[1]) * 60000 + Number(match[2]) * 1000 + Number(`0.${match[3] ?? '0'}`) * 1000
-  return Number.isFinite(value) ? value : undefined
-}
 function offsetValue(raw: string | undefined, original: number): number | undefined {
   if (raw === undefined || raw === (original / 1000).toFixed(3)) return original
   const text = raw.normalize('NFKC').trim(), value = Number(text) * 1000

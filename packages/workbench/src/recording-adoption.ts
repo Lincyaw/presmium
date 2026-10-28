@@ -18,15 +18,16 @@ export function reconcileRecordingAdoption(request: DocumentRecordingAdoption, b
   const step = before.steps[request.stepId], asset = before.assets[request.assetId]
   if (!step || asset?.kind !== 'audio') return
   const expected = structuredClone(before)
+  const voice: VoiceSource = { type: 'recording', assetId: asset.id, ...request.sourceRange ? { sourceRange: { ...request.sourceRange } } : {} }
   expected.assets[asset.id]!.fingerprint = `sha256:${request.sha256}`
-  expected.production.stepOverrides[step.id] = { ...expected.production.stepOverrides[step.id], voiceSource: { type: 'recording', assetId: asset.id } }
+  expected.production.stepOverrides[step.id] = { ...expected.production.stepOverrides[step.id], voiceSource: voice }
   if (!same(expected, answer.content)) return
   const content = structuredClone(current), localAsset = content.assets[asset.id]
   const assetUnchanged = same(localAsset, asset) || same(localAsset, expected.assets[asset.id])
   if (assetUnchanged) content.assets[asset.id]!.fingerprint = `sha256:${request.sha256}`
   const own = (document: TeachingDocument) => document.production.stepOverrides[step.id]?.voiceSource
   if (assetUnchanged && content.steps[step.id] && same(own(current), own(before)) && same(source(current, step.id), source(before, step.id))) {
-    content.production.stepOverrides[step.id] = { ...content.production.stepOverrides[step.id], voiceSource: { type: 'recording', assetId: asset.id } }
+    content.production.stepOverrides[step.id] = { ...content.production.stepOverrides[step.id], voiceSource: voice }
   }
   return content
 }

@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { constants } from 'node:fs'
 import { lstat, open } from 'node:fs/promises'
 import { basename, join, relative } from 'node:path'
-import { ASSET_TITLE_MAX_LENGTH, DOCUMENT_AUDIO_MAX_BYTES, DOCUMENT_AUDIO_REQUEST_MAX_BYTES, fnv1a64, hasRole, isRecord, jsonResponse, ProductionAudioRefusal, recordingStepIssue, validateDocument } from '@lincyaw/kernel'
+import { ASSET_TITLE_MAX_LENGTH, DOCUMENT_AUDIO_MAX_BYTES, DOCUMENT_AUDIO_REQUEST_MAX_BYTES, fnv1a64, hasRole, isRecord, jsonResponse, ProductionAudioRefusal, recordingSourceRange, recordingStepIssue, validateDocument } from '@lincyaw/kernel'
 import type { Asset, CanonicalSource, DocumentRecordingAdoption, VerifiedDocumentRecordingAdoption, DocumentAudioAuthoring, DocumentAudioCapabilities, DocumentAudioImport, DocumentAudioInspectionAnswer, DocumentChangeAnswer, DocumentMediaClipEdit, DocumentMediaClipValidation, DocumentMediaClipValidationAnswer, Finding, Member, ProductionAudioAuthoring, RequestContext, Route, TeachingDocument, VerifiedDocumentAudioImport, VerifiedDocumentMediaClipChange, WorkspaceAudioInspectionAnswer } from '@lincyaw/kernel'
 import { productionAssetFile, validateDocumentRecordingAdoption, validateDocumentAudioInspect, validateDocumentWorkspaceAudioImport, validateDocumentWorkspaceAudioInspect, validateDocumentMediaClipValidation, validateDocumentMediaClipEdit, validateDocumentProductionPlanQuery } from '@lincyaw/kernel/node'
 import { readAuthoringDocument } from './document-editor.ts'
@@ -18,7 +18,7 @@ export interface DocumentAudioAuthoringOptions extends DocumentAudioServices {
   reviewRequired?: boolean
   services?(document: string, source: CanonicalSource): Promise<DocumentAudioServices>
 }
-interface Receipt { signature: string, source?: CanonicalSource, version: string, files: DocumentChangeAnswer['files'], commit?: DocumentChangeAnswer['commit'], assetId?: string, inspection?: VerifiedDocumentAudioImport['inspection'], clip?: Pick<VerifiedDocumentMediaClipChange['verification'], 'production' | 'binding'>, recording?: { stepId: string, sha256: string, durationMs: number } }
+interface Receipt { signature: string, source?: CanonicalSource, version: string, files: DocumentChangeAnswer['files'], commit?: DocumentChangeAnswer['commit'], assetId?: string, inspection?: VerifiedDocumentAudioImport['inspection'], clip?: Pick<VerifiedDocumentMediaClipChange['verification'], 'production' | 'binding'>, recording?: Pick<VerifiedDocumentRecordingAdoption['verification'], 'stepId' | 'sha256' | 'durationMs' | 'sourceRange'> }
 interface Operation { controller: AbortController, finished: Promise<unknown> }
 const MAX_RECEIPTS = 64, MAX_CONCURRENT = 4
 const header = (value: unknown): value is DocumentAudioImport => isRecord(value) && typeof value.id === 'string' && value.id.length > 0 && value.id.length <= 200 && typeof value.baseDocumentVersion === 'string' && /^[\da-f]{20}$/.test(value.baseDocumentVersion)
@@ -236,11 +236,13 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
     try {
       const current = opened(ctx, receipt.version), recording = receipt.recording!, assetId = receipt.assetId!, asset = current.content.assets[assetId]
       const source = current.content.production.stepOverrides[recording.stepId]?.voiceSource
-      if (source?.type !== 'recording' || source.assetId !== assetId || !asset || asset.fingerprint !== `sha256:${recording.sha256}`) throw new RequestError(409, 'recording-readback-changed')
+      if (source?.type !== 'recording' || source.assetId !== assetId || JSON.stringify(source.sourceRange) !== JSON.stringify(recording.sourceRange) || !asset || asset.fingerprint !== `sha256:${recording.sha256}`) throw new RequestError(409, 'recording-readback-changed')
       const bytes = await reader(ctx, pathOf(ctx, asset))
       if (hash(bytes) !== recording.sha256 || receipt.files.some(file => editor.read(scopeOf(ctx.document), file.path, ctx.member).version !== file.version)) throw new RequestError(409, 'recording-readback-changed')
       const verified = opened(ctx, receipt.version)
-      return { document: ctx.document, version: verified.source.version, fingerprint: fnv1a64(verified.source.content), content: verified.content, issues: verified.issues, changeId: id, files: receipt.files, ...receipt.commit ? { commit: receipt.commit } : {}, verification: { saved: true, source: binding(verified), assetId, ...recording, compiled: 'not-requested', runtime: 'not-requested' } }
+      const range = recordingSourceRange(source, recording.durationMs)
+      if (!range) throw new RequestError(409, 'recording-readback-changed')
+      return { document: ctx.document, version: verified.source.version, fingerprint: fnv1a64(verified.source.content), content: verified.content, issues: verified.issues, changeId: id, files: receipt.files, ...receipt.commit ? { commit: receipt.commit } : {}, verification: { saved: true, source: binding(verified), assetId, ...recording, sourceRange: range, usedDurationMs: range.endMs - range.startMs, compiled: 'not-requested', runtime: 'not-requested' } }
     } catch (error) {
       let currentSource: CanonicalSource | undefined
       try { currentSource = binding(opened(ctx)) } catch { /* Preserve a committed receipt if the saved source is no longer readable. */ }
@@ -251,7 +253,7 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
     if (!validateDocumentRecordingAdoption(request)) throw new RequestError(400, 'document-recording-invalid')
     if (Buffer.byteLength(JSON.stringify(request)) > DOCUMENT_AUDIO_REQUEST_MAX_BYTES) throw new RequestError(413, 'document-audio-request-size')
     if (origin === 'agent' && reviewRequired) throw new RequestError(409, 'authoring-review-required')
-    const key = JSON.stringify(['recording', ctx.document, ctx.member.id, request.id]), signature = hash(JSON.stringify([request.id, request.source.documentId, request.source.version, request.source.fingerprint, request.stepId, request.assetId, request.sha256]))
+    const key = JSON.stringify(['recording', ctx.document, ctx.member.id, request.id]), signature = hash(JSON.stringify([request.id, request.source.documentId, request.source.version, request.source.fingerprint, request.stepId, request.assetId, request.sha256, request.sourceRange]))
     const previous = receipts.get(key)
     if (previous) {
       if (previous.signature !== signature) throw new RequestError(409, 'document-change-id-reused')
@@ -265,23 +267,28 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
       const current = opened(ctx, request.source.version, request.source), step = current.content.steps[request.stepId], asset = current.content.assets[request.assetId]
       if (!step) throw new RequestError(404, 'document-step-missing')
       if (!asset) throw new RequestError(404, 'production.asset-missing')
+      const original = current.content.production.stepOverrides[step.id]?.voiceSource ?? current.content.production.sectionOverrides?.[step.sectionId]?.voiceSource ?? current.content.production.defaults.voiceSource
+      if (request.sourceRange && (original?.type !== 'recording' || original.assetId !== asset.id)) throw new RequestError(409, 'recording-source-changed')
       const issue = recordingStepIssue(current.content, request.stepId)
       if (issue) throw new RequestError(422, issue)
       const inspection = await inspect(ctx, asset, request.source, signal)
       if (inspection.sha256 !== request.sha256) throw new RequestError(409, 'production.asset-changed')
+      const voice = { type: 'recording' as const, assetId: asset.id, ...request.sourceRange ? { sourceRange: { ...request.sourceRange } } : {} }
+      if (!recordingSourceRange(voice, inspection.durationMs)) throw new RequestError(422, 'production.media-range')
       const candidate = structuredClone(current.content)
       candidate.assets[asset.id]!.fingerprint = `sha256:${inspection.sha256}`
-      candidate.production.stepOverrides[step.id] = { ...candidate.production.stepOverrides[step.id], voiceSource: { type: 'recording', assetId: asset.id } }
+      candidate.production.stepOverrides[step.id] = { ...candidate.production.stepOverrides[step.id], voiceSource: voice }
       const checked = validateDocument(candidate)
       if (!checked.document || checked.issues.some(issue => issue.severity === 'error')) throw new RequestError(422, 'document-invalid', { issues: checked.issues })
       const validate = async () => {
         check(signal); opened(ctx, request.source.version, request.source)
         const actual = await inspect(ctx, asset, request.source, signal)
-        if (actual.sha256 !== request.sha256) throw new RequestError(409, 'production.asset-changed')
+        if (actual.sha256 !== request.sha256 || actual.durationMs !== inspection.durationMs) throw new RequestError(409, 'production.asset-changed')
+        if (!recordingSourceRange(voice, actual.durationMs)) throw new RequestError(422, 'production.media-range')
         check(signal)
       }
       const saved = await editor.transaction(scopeOf(ctx.document), [{ path: current.source.path, content: `${JSON.stringify(checked.document, null, 2)}\n`, base: request.source.version }], ctx.member, history(ctx, checked.document, origin, validate))
-      const receipt: Receipt = { signature, source: request.source, version: saved.versions[0]!.version, files: saved.versions, assetId: asset.id, recording: { stepId: step.id, sha256: inspection.sha256, durationMs: inspection.durationMs }, ...saved.revision ? { commit: saved.revision } : {} }
+      const receipt: Receipt = { signature, source: request.source, version: saved.versions[0]!.version, files: saved.versions, assetId: asset.id, recording: { stepId: step.id, sha256: inspection.sha256, durationMs: inspection.durationMs, ...request.sourceRange ? { sourceRange: { ...request.sourceRange } } : {} }, ...saved.revision ? { commit: saved.revision } : {} }
       remember(key, receipt)
       return recordingReadback(ctx, request.id, receipt)
     }).finally(() => { if (recordingChanges.get(key)?.promise === promise) recordingChanges.delete(key) })

@@ -14,7 +14,7 @@ A step belongs to one section and has `visuals` and `narrationIds`; optional `in
 
 Narrations are structured `text`, `pronunciation { display, spoken }` and `cue { id, action, target?, parameters? }` nodes. The target uses stable `blockId` and optional component element. Captions, spoken text and cue alignment derive from this one structure.
 
-`production.defaults`, optional section overrides and `stepOverrides` own narration start, minimum hold, trailing pause and voice source. Voice sources are `none`, TTS with an actual provider voice, or a recording asset. Cue delays live in `production.cueTimings`. Media clips reference source time ranges and a step attachment. Absolute playback times are generated, never copied back from a snapshot.
+`production.defaults`, optional section overrides and `stepOverrides` own narration start, minimum hold, trailing pause and voice source. Voice sources are `none`, TTS with an actual provider voice, or a recording asset with an optional source range. Change an adopted recording range through the shared audio authoring action with the actual asset SHA and duration; it affects only that step instance and never edits original bytes or narration. Captions remain unaligned whole-step text. Cue delays live in `production.cueTimings`. Media clips reference source time ranges and a step attachment. Absolute playback times are generated, never copied back from a snapshot.
 
 Definitions retain implementation references (`file`, `module` or `plugin`), parameter Schema, declared states and versioned plugin data. A migrated numeric state has an explicit `legacyIndex`; a number is not a semantic state name. Assets keep a location and optional fingerprint/media type, with large files outside JSON.
 

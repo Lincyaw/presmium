@@ -8,6 +8,7 @@ import { AUDIO_RECORDING_MESSAGES } from '../audio-recording-messages.ts'
 import { PmButton, PmCard, PmDialog, PmNotice, PmSelect } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { mediaFailure } from '../media-messages.ts'
+import { ProductionRecordingRange } from './ProductionRecordingRange.tsx'
 
 interface Props { identity: string, sectionId: string, stepId: string, active: boolean, disabled: boolean, onImported(assetId: string): void, onAdopted(): void }
 const elapsed = (ms: number) => `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`
@@ -100,6 +101,7 @@ export function ProductionRecording({ identity, sectionId, stepId, active, disab
         : adoption.failure === 'recording-cue-unsupported' || adoption.failure === 'recording-start-conflict' ? (PRODUCTION_MESSAGES[locale].diagnostics as Record<string, string>)[`production.${adoption.failure}`]
         : adoption.failure.startsWith('production.asset-') || adoption.failure === 'production-audio-unavailable' ? mediaFailure(adoption.failure, locale) : t.adoptionFailed}</PmNotice>}
     </>}
+    <ProductionRecordingRange identity={identity} sectionId={sectionId} stepId={stepId} active={active} disabled={disabled || capturing || saving} onChanged={onAdopted} />
     {discard && <PmDialog open label={t.discardTitle} closeLabel={t.cancel} description={t.discardHint} onClose={() => setDiscard(false)} actions={<><PmButton onClick={() => setDiscard(false)}>{t.keep}</PmButton><PmButton variant="danger" onClick={() => { audition.current?.stop(); recording.discard(); setFailure(undefined); setDiscard(false) }}>{t.discard}</PmButton></>} />}
   </PmCard>
 }
