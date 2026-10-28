@@ -34,7 +34,7 @@ Web、内置助手和外部 MCP agent 使用同一套领域动作。动作接收
 | 页面新建、重命名、复制、排序、删除 | kernel 共享页面纯规则；Web 保持原 actor、创建的原生 Undo／focus 和删除确认；删除核所有保留讲稿 cue | 紧凑 `plan_page_change/apply_page_change` 覆盖新建／重命名／移动／删除；复制沿用其两专用工具，删除按计划与 source 明确确认影响，见第 19 节 | 通用大文写回仍未有界；不包含项目管理、批注或完整历史操作 |
 | 步骤状态、显隐、继承、组件参数与身份 | IR 契约支持稳定 `StepId`、`setStepState`；Web 对复杂步骤操作仍有缺口 | plan/apply 已有 `setStepState`，运行读取／导航仍可使用 | 共用完整步骤动作；未实现的重排／删除规则先声明 unavailable |
 | 讲稿文字、发音替换、cue 与停顿 | `NarrationEditor/DocumentStepNarration` → 同一文稿；`setNarration/setTiming` 已有 | plan/apply 已接受 `NarrationNode[]`；`lecture_preview` 只读派生计划 | 共享讲稿 edit-shared／fork、cue 编辑的更细范围与影响 |
-| 定义、公开参数、共享素材修改和“另存” | 定义在文稿中，代码通过 `DocumentChange.fileChanges`；通用素材属性仍未完整接入 | 已能明确 replacement 加同文稿文本文件原子保存；无专用定义范围动作 | 定义 Schema、引用计数、单实例／全部实例／fork 三种明确范围 |
+| 定义、公开参数、共享素材修改和“另存” | 参数基础／步骤覆盖与已有 Definition 引用使用共享纯规则；实现仍共享 | `component.parameters.patch`、`component.step-parameters.patch/reset`、`component.definition.use` 复用语义计划；有界读取实际影响 | 独立实现闭包、共享实现编辑和通用素材字节操作仍未接入，不能用 Definition 副本冒充独立素材 |
 | 批注新建、回复、编辑、反应、解决、重开、删除 | `DocumentThreadStore` 与 kernel 共用纯动作，保原生 CommentsExtension／选区／即时保存；可信 member 与 owner 管理旧作者权限 | 已有紧凑 `plan_authoring_action/apply_authoring_action` 的七类 comment 动作，服务固定身份／时间／ID，见第 20 节 | 新建／reply／已有 comment edit 已有 strict 浏览器备份与显式恢复，失效目标仍可取稿；MCP 客户端草稿字节桥仍待；禁止写 BlockNote 私有 JSON，不把 replacement 当语义对齐 |
 | 批量批注交给助手、接受／拒绝／继续修改 | workbench 与 dsh 的会话／审阅路由；材料生成流程仍未齐全 | 核心 MCP 不提供会话或审阅动作 | 显式任务范围、会话上下文与修改审阅，不能将发送成功当作内容修改完成 |
 | 导入与查看图片 | `document/image` 将原文件和资产声明原子保存；`document/asset` 按 Asset ID 读取 | 无 | 安全字节输入、回执与资源读取；沿用现有媒体检查限制 |
@@ -419,7 +419,7 @@ MCP 的作者、日期、新线程／评论／富文本 ID 都由服务为该计
 
 预检默认返回 source/planId/digest/期限、动作名、真实 effect、影响计数、有限校验摘要、确认要求与 candidate/details 资源。comment effect 含实际线程／评论 ID、是否变更、锚定／移除状态及评论／反应计数；voice effect 沿原 `DocumentVoiceImpact`，另分别计保留／移除的 recording 配置槽位，不把它冒充受影响步骤数。MCP 请求整体按 JSON.stringify 不超过 4096 个 UTF-16 字符，默认结果按 pretty JSON 不超过 7168；完整候选只按需读资源，不要求模型回抄。SDK 在执行前拒绝 Schema 的错误仍是 SDK 自身文本协议。
 
-apply 通过原 operate、member/document/token、review、CAS、锁、历史和回滚，读回完整实际候选并核预测保存版本。回执带真实 source、commit id/origin、effect 和 `verification`；`compiled/runtime: not-requested` 不代表已验证播放。HTTP `document/action/plan`（POST 预检、GET 读取资源详情）与 `document/action/apply`（POST）使用同一服务，不能选可信 Web 的 editor 写入路径。required review 尚不支持该 agent 提交时准确拒绝；operate off 不暴露 apply，独立 compiler-only stdio 不伪造作者服务。
+apply 通过原 operate、member/document/token、review、CAS、锁、历史和回滚，读回完整实际候选并核预测保存版本。回执带真实 source、commit id/origin、effect 和 `verification`；`compiled/runtime: not-requested` 不代表已验证播放。HTTP `document/action/plan`（POST 预检、GET 读取资源详情）与 `document/action/apply`（POST）使用同一服务。HTTP 适配器固定可信 editor origin，MCP 固定 agent；payload 不能选择 origin。required review 尚不支持该 agent 提交时准确拒绝；operate off 不暴露 apply，独立 compiler-only stdio 不伪造作者服务。
 
 TTS 设置不运行提供方，不表示可合成、生成成功或客户端已试听。新录音来源仍须经过 `adopt_recording` 的真实文件 SHA／时长／本步范围检查，不能直接设置 assetId；明确替换原 recording 只清其配置槽位，不删除原始字节。音色继承与提供方目录继续见[音色作者边界](voice-authoring.md)。
 
@@ -444,3 +444,27 @@ Web 历史面板与五个 MCP 工具借同一个工作区 owner，复用 Revisio
 请求／回复最多 4,096／7,168 UTF-16 字符，64 条进程内计划、五分钟 TTL；目录回执仅结果 HEAD／tree 仍当前可重放，标题回执核结果 canonical source；Undo ABA 不再次执行。成员／origin、operate、required review 与可信文稿绑定令牌重新检查。文稿 token 仅可 retitle 其精确绑定的目标，不因额外 document 参数获得目录管理权限。根文稿空字符串身份仍合法，但根目录复制／移动／删除的工作区控制范围未定义，因此准确 unavailable。目录操作仍要求 Git／可确认 HEAD 与多文稿工作区。
 
 真实运行与未验证门槛见[项目计划记录](benchmarks/project-authoring-plans-2026-10-28.md)和[标题 CAS 增量](benchmarks/project-retitle-canonical-cas-2026-10-28.md)；这不包含原生 Undo、客户端草稿同步、任意 checkout／discard、任意插件路径改写或全部项目管理目标。
+
+
+## 23. 已实现的组件参数与已有 Definition 选择
+
+四个严格 action 复用第 20 节同一个 `plan_authoring_action`／`apply_authoring_action` owner，不新增 writer、队列或计划账本：
+
+| type | 参数与实际语义 |
+| --- | --- |
+| `component.parameters.patch` | `blockId/changes`；只修改实例基础参数。 |
+| `component.step-parameters.patch` | `blockId/stepId/changes`；从当前有效参数编辑，仅物化改到的顶层本层覆盖，真实后继继承影响列入 effect。 |
+| `component.step-parameters.reset` | `blockId/stepId`；只删除当前步骤的 parameters 覆盖，保留 visible／state／inherits。 |
+| `component.definition.use` | `blockId/definitionId`，可选 `changes`；只选择已存在 Definition，保留其它实例与共享实现，完整 Schema／状态重新验证。 |
+
+`changes` 最多 32 项，使用 `{ op: "set", path: string[], value: JsonValue }` 或 `{ op: "remove", path: string[] }`。路径深度最多 16，限参数对象 own 字段／合法数组索引；未知父路径、危险 prototype 路径明确拒绝。set 可以提交完整对象／数组字段，也可替换数组项或按当前 length 追加；remove 数组项后按原生数组顺序收紧。未请求修改的未知字段保留，不回抄大型 parameters。公开 `createDocumentParameterChanges` 使用成熟 RFC 6902 diff 生成这些领域路径。
+
+语义路径只允许 Schema 明确声明且可编辑的字段。共享 `documentParameterAccess` 读取实际前后基础／有效 state Schema 的注解，解析失败准确 unavailable；CFworker 仍验证原 Schema，readOnly 不能只靠 UI disabled 或 validity 保证。父替换／删除需保护只读后代和未知值，新未知字段仅在 typed additionalProperties 等明确声明时可添加。公开数组项删除可带走该完整项的未知子数据；精确完整项 multiset 不变的纯重排可用，显式 remove／append 不被误当重排。无法证明的混合重排／修改需分开采用，不能猜 id 键或静默改只读子字段。
+
+步骤参数是顶层浅覆盖。只改 config.value 也需将当前有效 config 物化为本层字段，不能声称只有此步受影响。无当前 VisualState 时契约要求同步固定当前有效 visible；本次可见状态不变。若 remove 希望继承字段在有效值中消失，浅覆盖不能表达，返回 `component-parameter-inherited-removal-unavailable`，由调用方选择恢复覆盖或合法值，不自动写 null。
+
+component effect 记录稳定 block/page/step、实际变更路径、影响 block/step/page 列表、preserved/materialized/reset 覆盖及选择前后的 Definition 使用者。MCP 默认只返回目标和计数，避免长列表被 DSH 剪裁；`read_authoring_action_impact({ document, request: { planId, digest, collection, offset? } })` 分页读取八种列表，或读取 `presmium://authoring-action/{planId}/{digest}/impact/{collection}/{offset}?document=...`。每页带 plan source、currentSource、current/applied/old、total/nextOffset/complete；旧计划可读但不能用它绕过采用 CAS。HTTP `GET document/action/impact?query=...` 连接同一 owner，HTTP 完整 plan/effect 不被 MCP 摘要替换。
+
+`GET document/capabilities` 返回同一作者能力与限制，无编译／Node 服务装配。独立素材副本明确 `independentCopy: { available: false, reason: "implementation-closure-unavailable" }`：只 clone Definition 或一个 TSX 仍共享代码／CSS／辅助模块，现有整文稿 bundle inputs 不证明实现闭包。Definition 没有实例基础参数的共享默认槽位，本片不把所有实例批量覆盖冒充修改共享默认。
+
+同一 source／member／document／token、完整文稿验证、原计划 family、review、CAS、历史和读回全部保留。HTTP 人工采用固定 editor，MCP 固定 agent。409 后不能偷偷换源重试；同引用丢 ACK 沿原 receipt，Undo ABA 拒绝。请求／结果仍限 4096／7168 字符，保留参数不计入短字段请求，已编辑值超限返回可恢复 413。真实 SDK／HTTP、503 个影响步骤与公开 DSH pruner 证据见[参数动作记录](benchmarks/component-parameter-actions-2026-10-28.md)。本节不宣称界面整体验收或 MCP 全覆盖。
