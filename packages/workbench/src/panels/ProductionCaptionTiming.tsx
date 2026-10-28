@@ -36,8 +36,8 @@ function valueOf(draft: Draft): CaptionTiming | undefined {
 }
 
 /** Video-only explicit timing proposals. The shared semantic action and canonical actor own every save. */
-export function ProductionCaptionTiming({ identity, stepId, plan, current, disabled, onChanged }: {
-  identity: string, stepId: string, plan?: ProductionPlan, current: boolean, disabled: boolean, onChanged(): void,
+export function ProductionCaptionTiming({ identity, stepId, plan, current, loading, disabled, onChanged }: {
+  identity: string, stepId: string, plan?: ProductionPlan, current: boolean, loading: boolean, disabled: boolean, onChanged(): void,
 }) {
   const workbench = useWorkbench(), source = useWorkbenchState(state => state.authoring), locale = useWorkbenchState(state => state.locale), t = CAPTION_TIMING_MESSAGES[locale]
   const document = source?.identity === identity ? source.content : undefined, basis = current ? plan?.pages.flatMap(page => page.steps).find(step => step.stepId === stepId)?.captionTiming : undefined
@@ -56,6 +56,11 @@ export function ProductionCaptionTiming({ identity, stepId, plan, current, disab
     const original = existing?.sourceFingerprint === captionSourceFingerprint(document, stepId)
     pending({ version: source.version, text, basis: original ? { ...structuredClone(basis), sourceFingerprint: existing.sourceFingerprint, playbackFingerprint: existing.playbackFingerprint, durationMs: existing.durationMs, narrationIds: [...existing.narrationIds] } : structuredClone(basis), rows: original ? existing.segments.map(row => ({ id: row.id, from: row.from, to: row.to, start: String(row.startMs / 1000), end: String(row.endMs / 1000) })) : lineRows(text) })
   }
+  useEffect(() => {
+    // A plan may arrive after opening. Step/close effects fence the original opening;
+    // an existing target draft always wins over this passive initialization.
+    if (open && openRef.current && !saved && current && basis && source?.identity === identity && !drafts.current.has(stepId)) initialize()
+  }, [open, saved, current, basis, source?.identity, source?.version, identity, stepId])
   const close = () => {
     request.current?.abort(); setBusy(false); openRef.current = false; setOpen(false)
     if (needsRefresh.current) { needsRefresh.current = false; latest.current.onChanged() }
@@ -82,14 +87,15 @@ export function ProductionCaptionTiming({ identity, stepId, plan, current, disab
   }
   if (!document?.steps[stepId] || !stepCaptionText(document, stepId).trim()) return null
   return <PmCard>
-    <PmButton small disabled={disabled} onClick={() => { if (!drafts.current.has(stepId)) initialize(); openRef.current = true; setOpen(true) }}>{t.open}</PmButton>
+    <PmButton small disabled={disabled} onClick={() => { if (!drafts.current.has(stepId)) initialize(); setSaved(false); openRef.current = true; setOpen(true) }}>{t.open}</PmButton>
     <PmDialog open={open} label={t.title} closeLabel={t.cancel} onClose={close} footer={<>
       <PmButton small onClick={close}>{saved ? t.done : t.cancel}</PmButton>
       <PmButton small variant="primary" loading={busy} disabled={!writable || !current || !value || Boolean(changed) || same(value, canonical)} onClick={() => void apply()}>{t.apply}</PmButton>
     </>}>
       <div className="pmw-caption-times" onCompositionStart={() => { composing.current = true }} onCompositionEnd={() => { composing.current = false }}>
         <span>{t.step}</span>
-        {!basis?.available && <PmNotice tone="warn">{t.unavailable}</PmNotice>}
+        {!saved && basis?.available === false && <PmNotice tone="warn">{t.unavailable}</PmNotice>}
+        {!saved && !basis && <PmNotice>{loading ? t.loading : t.prepare}</PmNotice>}
         {changed && <PmNotice tone="warn">{t.changed}<PmButton small disabled={!basis?.available || busy || !writable || draft?.text !== stepCaptionText(document, stepId)} onClick={() => { if (draft && basis && source?.version) pending({ ...draft, version: source.version, basis: structuredClone(basis) }) }}>{t.recheck}</PmButton></PmNotice>}
         {draft?.rows.map((row, index) => <section key={row.id} className="pmw-caption-times" aria-label={t.segment(index + 1)}>
           <p className="pmw-caption-times__text">{draft.text.slice(row.from, row.to)}</p>

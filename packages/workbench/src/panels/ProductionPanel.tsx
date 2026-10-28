@@ -162,7 +162,7 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
       </div>
       <div className="pmw-production__properties pm-ui-block-editor" hidden={!wide && tab !== 'script' || tab === 'outputs'}>
         <DocumentStepNarration sectionId={sectionId} stepId={stepId} expanded advanced panelId="production-step-fields" onPause={() => select(sectionId, stepId)} />
-        <ProductionCaptionTiming key={source.identity} identity={source.identity} stepId={stepId} plan={plan} current={planCurrent} disabled={blocked || closing} onChanged={() => setMediaRefresh(true)} />
+        <ProductionCaptionTiming key={source.identity} identity={source.identity} stepId={stepId} plan={plan} current={planCurrent} loading={preparing || planBusy} disabled={blocked || closing} onChanged={() => setMediaRefresh(true)} />
         <PmCard><DocumentVoiceField key={`${source.identity}:${stepId}`} stepId={stepId} disabled={blocked || closing}
           onGenerate={() => { workbench.stopAuditions(); setGenerateStep(stepId) }} /></PmCard>
         <ProductionRecording key={source.identity} identity={source.identity} sectionId={sectionId} stepId={stepId} active={tab !== 'outputs' && (wide || tab === 'script')} disabled={blocked || closing}
