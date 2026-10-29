@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { APPROVAL_KINDS, errorMessage, LOCAL_AUTHOR } from '@lincyaw/kernel'
 import type { ApprovalKind } from '@lincyaw/kernel'
+import { fileVersion } from '@lincyaw/kernel/node'
 import { buildSummary, buildToDist, Compiler, findPackageDir, resolveEntry, runBlock } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import type { McpHost } from './host.ts'
@@ -16,21 +17,27 @@ const CLI_PACKAGE = '@lincyaw/cli'
 const t = MCP_CLI_MESSAGES[systemLocale()]
 
 async function stamps(files: string[]): Promise<string> {
-  const times = await Promise.all(files.map(file => stat(file).then(s => s.mtimeMs, () => -1)))
+  const times = await Promise.all(files.map(file => stat(file, { bigint: true }).then(fileVersion, () => 'missing')))
   return times.join(',')
 }
 
 export function compilerMcpHost(entry: string, allow: readonly ApprovalKind[]): McpHost {
   const bundled = findPackageDir(CLI_PACKAGE, dirname(entry)) ?? findPackageDir(CLI_PACKAGE, OWN_DIR) ?? OWN_DIR
   const compiler = new Compiler(entry, { bundled })
+  let inputs = [entry]
   let latest: { compilation: Compilation, files: string[], stamp: string } | undefined
   let queue = Promise.resolve()
   const current = () => {
     const next = queue.then(async () => {
       if (latest && await stamps(latest.files) === latest.stamp) return latest.compilation
+      const before = await stamps(inputs)
       const compilation = await compiler.compile()
-      const files = [...compilation.sourceFiles, ...compilation.inputs.files]
-      latest = { compilation, files, stamp: await stamps(files) }
+      const files = [...new Set([...compilation.sourceFiles, ...compilation.inputs.files])]
+      const stamp = await stamps(files)
+      const known = new Set(inputs)
+      const stable = files.length === known.size && files.every(file => known.has(file)) && await stamps(inputs) === before
+      inputs = files
+      latest = stable ? { compilation, files, stamp } : undefined
       return compilation
     })
     queue = next.then(() => undefined, () => undefined)

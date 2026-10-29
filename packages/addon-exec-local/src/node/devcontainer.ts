@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { basename, dirname, join } from 'node:path'
+import { basename, dirname, join, relative, resolve } from 'node:path'
 import { parse } from 'jsonc-parser'
 import { DEFAULT_BUILD_TIMEOUT_MS, languageCommandsFrom } from '../domain/index.ts'
 import type { LanguageCommands } from '../domain/index.ts'
@@ -56,9 +56,29 @@ export function findDefinition(workspace: string): string | undefined {
   return ['.devcontainer/devcontainer.json', '.devcontainer.json'].map(file => join(workspace, file)).find(existsSync)
 }
 
-function definitionStamp(configFile: string): string {
+export function definitionFiles(configFile: string): string[] {
   const dir = dirname(configFile)
-  return `${configFile}@${Math.max(...readdirSync(dir).map(name => statSync(join(dir, name)).mtimeMs))}`
+  const files = new Set(basename(configFile) === '.devcontainer.json' ? [configFile]
+    : readdirSync(dir, { recursive: true, encoding: 'utf8' }).map(name => join(dir, name)).filter(path => statSync(path).isFile()))
+  const config = parse(readFileSync(configFile, 'utf8'), [], { allowTrailingComma: true }) as {
+    dockerFile?: string, build?: { dockerfile?: string, context?: string }, dockerComposeFile?: string | string[]
+  } | undefined
+  const dockerfile = config?.build?.dockerfile ?? config?.dockerFile
+  const references = [dockerfile, ...typeof config?.dockerComposeFile === 'string' ? [config.dockerComposeFile] : config?.dockerComposeFile ?? []]
+  if (dockerfile) references.push(join(config?.build?.context ?? '.', '.dockerignore'))
+  for (const reference of references) {
+    if (!reference) continue
+    const path = resolve(dir, reference)
+    if (statSync(path, { throwIfNoEntry: false })?.isFile()) files.add(path)
+  }
+  return [...files].sort()
+}
+
+function definitionStamp(configFile: string): string {
+  return JSON.stringify([configFile, definitionFiles(configFile).map(path => {
+    const { size, mtimeMs, ctimeMs } = statSync(path)
+    return [path, size, mtimeMs, ctimeMs]
+  })])
 }
 
 function perVersion<T>(compute: (configFile: string) => T): (configFile: string) => T {
@@ -70,7 +90,7 @@ function perVersion<T>(compute: (configFile: string) => T): (configFile: string)
   }
 }
 
-/** The language commands of the devcontainer definition, read again when a file of its directory changes. */
+/** The language commands of the devcontainer definition, read again when its inputs change. */
 export const definitionCommands = perVersion((configFile): LanguageCommands => {
   const config = parse(readFileSync(configFile, 'utf8'), [], { allowTrailingComma: true }) as { customizations?: unknown } | undefined
   return languageCommandsFrom(config?.customizations)
@@ -79,9 +99,8 @@ export const definitionCommands = perVersion((configFile): LanguageCommands => {
 export const definitionHash = perVersion((configFile): string => {
   const dir = dirname(configFile)
   const hash = createHash('sha256')
-  for (const name of readdirSync(dir).sort()) {
-    const path = join(dir, name)
-    if (statSync(path).isFile()) hash.update(`${name}\0`).update(readFileSync(path)).update('\0')
+  for (const path of definitionFiles(configFile)) {
+    hash.update(`${relative(dir, path)}\0`).update(readFileSync(path)).update('\0')
   }
   return hash.digest('hex')
 })

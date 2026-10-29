@@ -3,7 +3,7 @@ import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, re
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import { deckLocale, escapeHtml, NON_FILE_URL } from '@lincyaw/kernel'
 import type { DocumentLink, Finding, LocalAsset, SourcePos } from '@lincyaw/kernel'
-import { isInside } from '@lincyaw/kernel/node'
+import { fileVersion, isInside } from '@lincyaw/kernel/node'
 import type { Compilation } from './compiler.ts'
 import { DECK_ENTRY, WORK_DIR } from './paths.ts'
 import { lineContaining } from './source-lines.ts'
@@ -14,7 +14,7 @@ const RACY_MS = 2000
 
 export function fileHash(file: string): string {
   const stat = statSync(file, { bigint: true })
-  const stamp = `${stat.size}:${stat.ino}:${stat.mtimeNs}:${stat.ctimeNs}`
+  const stamp = fileVersion(stat)
   const known = hashes.get(file)
   if (known?.stamp === stamp) return known.hash
   const hash = createHash('sha256').update(readFileSync(file)).digest('hex')

@@ -50,6 +50,7 @@ interface Slot {
   refreshed?: boolean
   pendingHash?: string
   projectObservation?: string
+  saveWaiters?: Set<() => void>
 }
 
 const serialize = (value: unknown) => JSON.stringify(value, (_, entry) => entry && typeof entry === 'object' && !Array.isArray(entry) ? Object.fromEntries(Object.entries(entry).sort(([a], [b]) => a.localeCompare(b))) : entry)
@@ -187,7 +188,11 @@ export class DocumentSession {
       this.#slots.delete(directory)
     }
   }
-  #emit(slot: Slot): void { this.#syncLeaveProtection(); if (this.#active === slot.state.directory && this.#slots.get(slot.state.directory) === slot) this.#changed({ ...slot.state }) }
+  #emit(slot: Slot): void {
+    this.#syncLeaveProtection()
+    for (const changed of slot.saveWaiters ?? []) changed()
+    if (this.#active === slot.state.directory && this.#slots.get(slot.state.directory) === slot) this.#changed({ ...slot.state })
+  }
   #error(error: unknown): string { return error instanceof WorkspaceServerError ? error.answer.error ?? 'document-request-failed' : 'document-disconnected' }
   #issues(error: unknown): DocumentIssue[] { const value = error instanceof WorkspaceServerError ? (error.answer as { issues?: DocumentIssue[] }).issues : undefined; return Array.isArray(value) ? value : [] }
 
@@ -476,10 +481,25 @@ export class DocumentSession {
     while (slot.state.dirty || slot.flight || slot.assetFlight) {
       signal?.throwIfAborted()
       if (slot.state.error || slot.state.composing || slot.state.restored) throw new Error(slot.state.error ?? 'document-draft-unconfirmed')
-      if (Date.now() - started > 30000) throw new Error('document-save-timeout')
-      await this.#save(slot, true)
-      if (slot.flight || slot.assetFlight) await new Promise(resolve => setTimeout(resolve, 20))
+      const remaining = 30000 - (Date.now() - started)
+      if (remaining <= 0) throw new Error('document-save-timeout')
+      const waiters = slot.saveWaiters ??= new Set()
+      await new Promise<void>((resolve, reject) => {
+        const cleanup = () => {
+          clearTimeout(timer)
+          waiters.delete(changed)
+          signal?.removeEventListener('abort', cancelled)
+        }
+        const changed = () => { cleanup(); resolve() }
+        const failed = (error: unknown) => { cleanup(); reject(error) }
+        const cancelled = () => failed(signal?.reason)
+        const timer = setTimeout(() => failed(new Error('document-save-timeout')), remaining)
+        waiters.add(changed)
+        signal?.addEventListener('abort', cancelled, { once: true })
+        void this.#save(slot, true).catch(failed)
+      })
     }
+    signal?.throwIfAborted()
   }
 
   #persist(slot: Slot): boolean {

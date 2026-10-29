@@ -1,20 +1,11 @@
-import type { DocumentBlock, JsonValue, TeachingDocument } from '@lincyaw/kernel'
+import type { DocumentBlock, TeachingDocument } from '@lincyaw/kernel'
 import type { Locale } from '../messages.ts'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
 import { BLOCK_PREVIEW_MESSAGES } from './block-preview-messages.ts'
 import { PmNotice } from '../components.tsx'
 import { isDiagram } from './projection.ts'
+import { fallbackText } from './rich-text.ts'
 
-export function fallbackText(value: unknown): string {
-  if (!value || typeof value !== 'object') return ''
-  if (Array.isArray(value)) return value.map(fallbackText).filter(Boolean).join('\n')
-  const node = value as { type?: string, value?: string, text?: string, alt?: string, children?: JsonValue[], fallback?: unknown }
-  if (node.type === 'text') return node.text ?? node.value ?? ''
-  if (node.type === 'image') return node.alt ?? ''
-  if (node.type === 'math' || node.type === 'code') return node.value ?? ''
-  if (node.type === 'extension') return typeof node.fallback === 'string' ? node.fallback : fallbackText(node.fallback)
-  return (node.children ?? []).map(fallbackText).join(node.type === 'root' ? '\n' : '')
-}
 
 const MEDIA_KINDS = ['video', 'audio', 'animation', 'image'] as const
 const authorText = (value: unknown) => typeof value === 'string' && value.trim() ? value.trim() : undefined

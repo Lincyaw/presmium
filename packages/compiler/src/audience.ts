@@ -1,11 +1,8 @@
 import { lstat, readdir, readFile } from 'node:fs/promises'
 import { basename, extname, join, relative } from 'node:path'
-import { irBlocks, isRecord, nodeMdast, productionAssetIds, propText } from '@lincyaw/kernel'
+import { compactSteps, irBlocks, isRecord, nodeMdast, productionAssetIds, propText } from '@lincyaw/kernel'
 import type { Finding, IRBlock, IRDocument, IRNode, IRSection, MdastNode, SourcePos } from '@lincyaw/kernel'
 import { resolveReferences } from './references.ts'
-import { Parser, sourceOf } from './parser.ts'
-import { compactSteps } from './steps.ts'
-import type { ParsedFile } from './parser.ts'
 
 export interface Removed {
   source: SourcePos
@@ -26,8 +23,6 @@ export interface Withheld {
   sentences: string[]
 }
 
-export const AUDIENCE_SCOPE = 'presmiumAudience'
-
 const MIN_SENTENCE = 12
 
 const BINARY = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.ico', '.bmp', '.mp3', '.mp4', '.m4a', '.webm', '.ogg', '.oga', '.wav', '.flac', '.woff', '.woff2', '.ttf', '.otf', '.eot', '.wasm', '.zip', '.gz', '.pdf'])
@@ -38,147 +33,9 @@ export function includesAudience(audience: string[] | undefined, name: string): 
   return !audience || audience.includes(name)
 }
 
-export function audienceList(text: string): string[] {
-  return [...new Set(text.split(/[\s,]+/).filter(Boolean))]
-}
-
-/** The audiences of an inner marking inside an outer one: their intersection. */
-export function narrowAudience(outer: string[] | undefined, inner: string[]): string[] {
-  return outer ? outer.filter(name => inner.includes(name)) : inner
-}
-
 export function markOf(node: unknown): string[] | undefined {
   const audience = isRecord(node) && isRecord(node.data) ? node.data.audience : undefined
   return Array.isArray(audience) ? audience as string[] : undefined
-}
-
-export function markAudience(nodes: MdastNode[], audience: string[]): MdastNode[] {
-  return nodes.map(node => ({ ...node, data: { ...isRecord(node.data) ? node.data : {}, audience: narrowAudience(markOf(node), audience) } }))
-}
-
-export class AudienceParser extends Parser {
-  readonly #scoped = new WeakMap<ParsedFile, ParsedFile>()
-
-  override async read(file: string): Promise<ParsedFile | undefined> {
-    const parsed = await super.read(file)
-    if (!parsed) return undefined
-    let scoped = this.#scoped.get(parsed)
-    if (!scoped) this.#scoped.set(parsed, scoped = { ...parsed, children: scopeIncludes(parsed.children) })
-    return scoped
-  }
-}
-
-function scopeIncludes(nodes: MdastNode[]): MdastNode[] {
-  let changed = false
-  const result = nodes.map((node): MdastNode => {
-    const option = isRecord(node.options) ? node.options.audience : undefined
-    if (node.type === 'mystDirective' && node.name === 'include' && option !== undefined && !node.children?.some(c => c.type === 'include' && c.literal === true)) {
-      changed = true
-      return { type: AUDIENCE_SCOPE, audience: audienceList(typeof option === 'string' ? option : ''), position: node.position, children: [node] }
-    }
-    const children = node.children?.length ? scopeIncludes(node.children) : node.children
-    if (children === node.children) return node
-    changed = true
-    return { ...node, children }
-  })
-  return changed ? result : nodes
-}
-
-export function liftScopes(nodes: MdastNode[], sectionDepth: number, trailing?: (node: MdastNode, audience: string[]) => void): MdastNode[] {
-  if (!nodes.some(node => lifted(node, sectionDepth))) return nodes
-  const out: MdastNode[] = []
-  let section: string[] | undefined
-  for (const node of nodes) {
-    if (lifted(node, sectionDepth)) {
-      section = lift(node, node.audience as string[], sectionDepth, out, trailing)
-      continue
-    }
-    if (opens(node, sectionDepth)) section = undefined
-    else if (section && wider(node, undefined, section)) {
-      trailing?.(node, section)
-      section = undefined
-    }
-    out.push(node)
-  }
-  return out
-}
-
-function lifted(node: MdastNode, depth: number): boolean {
-  return node.type === AUDIENCE_SCOPE && (node.audience as string[]).length > 0 && holdsSection(node, depth)
-}
-
-function opens(node: MdastNode, depth: number): boolean {
-  return node.type === 'heading' && Number(node.depth) <= depth
-}
-
-function holdsSection(scope: MdastNode, depth: number): boolean {
-  return (scope.children ?? []).some(node => opens(node, depth) || (node.type === AUDIENCE_SCOPE && holdsSection(node, depth)))
-}
-
-const SETTINGS = new Set(['hints', 'config', 'audience'])
-
-function ownAudience(node: MdastNode): string[] | undefined {
-  if (node.type === AUDIENCE_SCOPE) return node.section ? undefined : node.audience as string[]
-  const option = node.type === 'mystDirective' && isRecord(node.options) ? node.options.audience : undefined
-  return option === undefined ? undefined : audienceList(typeof option === 'string' ? option : '')
-}
-
-function wider(node: MdastNode, own: string[] | undefined, section: string[]): boolean {
-  if (node.type === 'comment' || node.type === 'mystTarget' || (node.type === 'mystDirective' && SETTINGS.has(String(node.name)))) return false
-  const marked = ownAudience(node)
-  const audience = marked ? narrowAudience(own, marked) : own
-  return !audience || audience.some(name => !section.includes(name))
-}
-
-export function audienceMarks(nodes: MdastNode[], entry: string, outer?: string[], marks: AudienceMark[] = []): AudienceMark[] {
-  for (const node of nodes) {
-    const own = ownAudience(node)
-    const audience = own ? narrowAudience(outer, own) : outer
-    if (own && node.position) marks.push({ source: sourceOf(node, entry), audience: audience! })
-    if (node.children?.length) audienceMarks(node.children, entry, audience, marks)
-  }
-  return marks
-}
-
-export function markBlocks(sections: IRSection[], marks: AudienceMark[]): void {
-  if (marks.length === 0) return
-  for (const section of sections) {
-    for (const block of irBlocks(section.blocks)) {
-      const { file, line } = block.source
-      const end = block.source.endLine ?? line
-      for (const mark of marks) {
-        if (mark.source.file === file && mark.source.line <= line && end <= (mark.source.endLine ?? mark.source.line)) block.audience = narrowAudience(block.audience, mark.audience)
-      }
-    }
-  }
-}
-
-function lift(scope: MdastNode, audience: string[], depth: number, out: MdastNode[], trailing?: (node: MdastNode, audience: string[]) => void): string[] {
-  const before: MdastNode[] = []
-  let opened = false
-  let last = audience
-  const open = () => {
-    if (!opened && before.length > 0) out.push(Object.assign(scope, { audience, children: before }))
-    opened = true
-  }
-  for (const node of scope.children ?? []) {
-    if (node.type === AUDIENCE_SCOPE && holdsSection(node, depth)) {
-      open()
-      last = lift(node, narrowAudience(audience, node.audience as string[]), depth, out, trailing)
-    } else if (opens(node, depth)) {
-      const label = !opened && before.at(-1)?.type === 'mystTarget' ? before.pop() : undefined
-      open()
-      out.push(...label ? [label] : [], node, { type: AUDIENCE_SCOPE, audience, section: true })
-      last = audience
-    } else {
-      if (opened && last !== audience && wider(node, audience, last)) {
-        trailing?.(node, last)
-        last = audience
-      }
-      (opened ? out : before).push(node)
-    }
-  }
-  return last
 }
 
 /** Removes the sections and blocks not for the audience; `keeps` tells whether a finding lies in what is left. */

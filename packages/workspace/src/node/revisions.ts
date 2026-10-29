@@ -211,7 +211,7 @@ export class Revisions implements RevisionService {
     const { summary, body, origin } = commit
     const unique = [...new Set(commit.paths.map(path => path.replace(/^\.?\/+|\/+$/g, '')).filter(path => path && !leavesRoot(path)))]
     if (unique.length === 0) return undefined
-    for (const path of unique) await this.#git.output(['add', '-A', '--', path], { GIT_LITERAL_PATHSPECS: '1' })
+    await this.#git.output(['add', '-A', '--', ...unique], { GIT_LITERAL_PATHSPECS: '1' })
     const staged = (await this.#git.output(['diff', '--cached', '--name-only', '--', ...unique], { GIT_LITERAL_PATHSPECS: '1' })).trim()
     if (!staged) return undefined
     const message = withTrailers(commitMessage(summary, body, origin, commit.revert), commit.trailers ?? [])

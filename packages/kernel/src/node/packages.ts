@@ -65,7 +65,10 @@ export async function playwrightChromium<T = unknown>(deckDir: string, fallbackF
     } catch {
       continue
     }
-    return (await import(pathToFileURL(entry).href) as { chromium: T }).chromium
+    const loaded = await import(pathToFileURL(entry).href) as { chromium?: T, default?: { chromium?: T } }
+    const chromium = loaded.chromium ?? loaded.default?.chromium
+    if (chromium) return chromium
+    throw new Error('playwright-chromium does not export its Chromium browser')
   }
   throw new Error('this needs playwright-chromium: install it in the deck (and its browser with pnpm exec playwright install chromium)')
 }

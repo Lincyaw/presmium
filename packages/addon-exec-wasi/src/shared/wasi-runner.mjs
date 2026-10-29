@@ -144,7 +144,7 @@ export async function runWasi(request, load) {
   const source = lang === 'cpp' ? '/program.cpp' : '/program.c'
   const sysroot = await unpacked(SYSROOT, load)
   const tool = { write, env: {}, stdin: '' }
-  const compile = await start(await compiled('clang.wasm', load), { ...tool, args: ['clang', ...lang === 'cpp' ? CLANG_CPP : CLANG_C, '-o', '/program.o', source], fs: { ...sysroot, [source]: file(source, request.code) } })
+  const compile = await start(await compiled('clang.wasm', load), { ...tool, args: ['clang', ...lang === 'cpp' ? CLANG_CPP : CLANG_C, '-I', '/', '-o', '/program.o', source], fs: { ...sysroot, ...files, [source]: file(source, request.code) } })
   if (compile.exitCode !== 0) return done(compile)
   const link = await start(await compiled('wasm-ld.wasm', load), { ...tool, args: ['wasm-ld', ...LINK, ...lang === 'cpp' ? ['-lc++', '-lc++abi'] : [], '-o', '/program.wasm'], fs: { ...sysroot, '/program.o': compile.fs['/program.o'] } })
   if (link.exitCode !== 0) return done(link)

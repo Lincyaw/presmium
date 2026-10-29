@@ -94,13 +94,19 @@ export function gsapScene(build: (ctx: SceneContext & { gsap: typeof Gsap, plugi
       gsap.config({ force3D: false })
       gsap.registerPlugin(...Object.values(plugins))
       let animation: GsapAnimation | undefined
-      const context = gsap.context(() => {
-        animation = build({ ...ctx, gsap, plugins })
-      }, ctx.root)
-      animation?.pause()
-      return {
-        seek: ms => animation?.totalTime(ms / 1000, true),
-        dispose: () => context.revert(),
+      const context = gsap.context(() => {}, ctx.root)
+      try {
+        context.add(() => {
+          animation = build({ ...ctx, gsap, plugins })
+        })
+        animation?.pause()
+        return {
+          seek: ms => animation?.totalTime(ms / 1000, true),
+          dispose: () => context.revert(),
+        }
+      } catch (error) {
+        context.revert()
+        throw error
       }
     },
   }

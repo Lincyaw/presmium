@@ -95,9 +95,9 @@ Open the notebook in Jupyter and check that images show and code cells run.
 
 ## Prepare an offline class
 
-A built site (web page and slides) keeps its pages and search in the browser's offline cache once opened. The code runtimes (what runs code in the browser) are larger and fetched only the first time code runs. So, while still online:
+A built web site keeps each document's pages and search in a separate browser cache after that document is opened. The code runtimes (what runs code in the browser) are larger and fetched only the first time code runs. So, while still online:
 
-1. Open the exact address you will teach from, in the browser you will teach with, and wait until the page has loaded.
+1. Open every document you will teach from at its exact deployed address, in the browser you will teach with, and wait until each page has loaded.
 2. Run each piece of code the class uses once, or, with the publish plugin listed, click **Save for offline use** in the toolbar, which fetches the runtimes in advance. The publish plugin also copies remote images into the document at build time, so they show offline.
 3. Disconnect the network and rehearse in the same browser at the same address: moving through slides, search, media, running code.
 

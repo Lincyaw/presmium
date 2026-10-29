@@ -207,58 +207,64 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
         '/__export/mediabunny.mjs': { file: mediabunny, type: 'text/javascript' },
       },
     })
-    const browser = await (await playwrightChromium<Chromium>(deckDir, import.meta.url)).launch()
-    const handle = await open(file, 'w')
     try {
-      const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1, reducedMotion: 'reduce', serviceWorkers: 'block' })
-      const [player, encoder] = [await context.newPage(), await context.newPage()]
-      const failures: string[] = []
-      for (const page of [player, encoder]) page.on('pageerror', error => failures.push(String(error.message)))
-      await player.goto(`${server.url}${web.base}?view=lecture&track=${encodeURIComponent(id)}&export${options.burn ? `&captions=${encodeURIComponent(options.burn)}` : ''}`)
-      await player.waitForFunction('Boolean(window.presmiumLecture)', undefined, { timeout: 120_000 })
-      const duration = Math.max(trackDuration(track), await player.evaluate(() => (window as unknown as Hooks).presmiumLecture.duration, undefined))
-      const frames = Math.max(1, Math.ceil(duration * fps / 1000))
-      await encoder.exposeFunction('presmiumWrite', async (position: number, data: string) => {
-        const bytes = Buffer.from(data, 'base64')
-        await handle.write(bytes, 0, bytes.length, position)
-      })
-      await encoder.goto(`${server.url}/__export/encoder.html`)
-      await encoder.waitForFunction('window.presmiumEncoderReady === true', undefined, { timeout: 60_000 })
-      const voice = track.voice
-      const label = voice.kind === 'synthetic' ? aigcLabel(voice.provider ?? voice.engine, id) : undefined
-      await encoder.evaluate(options => (window as unknown as Hooks).presmiumEncoder.start(options), {
-        width,
-        height,
-        fps,
-        duration: frames * 1000 / fps,
-        audio: localAudio(track, `${server.url}${lectures.base}${encodeURIComponent(id)}/`),
-        subtitles: captions.map(({ lang, vtt }) => ({ language: subtitleLanguage(lang), name: lang, vtt })),
-        metadata: { title: compilation.doc.meta.title, ...label ? { comment: aigcString(label), raw: { AIGC: JSON.stringify(label) } } : {} },
-      })
-      log(`playing lecture ${id}: ${frames} frames at ${fps} fps, ${width}x${height}`)
-      for (let i = 0; i < frames; i++) {
-        options.signal?.throwIfAborted()
-        const at = Math.round(i * 1000 / fps)
-        await player.evaluate(t => (window as unknown as Hooks).presmiumLecture.advance(t), at).catch((error: unknown) => {
-          throw new Error(`the frame at ${clockText(at)} cannot be drawn: ${errorMessage(error).replace(/^page\.evaluate: (Error: )?/, '')}`)
-        })
-        const jpeg = await player.screenshot({ type: 'jpeg', quality: 85 })
-        await encoder.evaluate(([data, n]) => (window as unknown as Hooks).presmiumEncoder.frame(data, n), [jpeg.toString('base64'), i] as [string, number])
-        if (failures.length) throw new Error(failures.join('\n'))
-        if ((i + 1) % Math.max(1, Math.round(frames / 10)) === 0) log(`  ${Math.round((i + 1) * 100 / frames)}%`)
-        options.progress?.(i + 1, frames)
+      const browser = await (await playwrightChromium<Chromium>(deckDir, import.meta.url)).launch()
+      try {
+        const handle = await open(file, 'w')
+        try {
+          const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1, reducedMotion: 'reduce', serviceWorkers: 'block' })
+          const [player, encoder] = [await context.newPage(), await context.newPage()]
+          const failures: string[] = []
+          for (const page of [player, encoder]) page.on('pageerror', error => failures.push(String(error.message)))
+          await player.goto(`${server.url}${web.base}?view=lecture&track=${encodeURIComponent(id)}&export${options.burn ? `&captions=${encodeURIComponent(options.burn)}` : ''}`)
+          await player.waitForFunction('Boolean(window.presmiumLecture)', undefined, { timeout: 120_000 })
+          const duration = Math.max(trackDuration(track), await player.evaluate(() => (window as unknown as Hooks).presmiumLecture.duration, undefined))
+          const frames = Math.max(1, Math.ceil(duration * fps / 1000))
+          await encoder.exposeFunction('presmiumWrite', async (position: number, data: string) => {
+            const bytes = Buffer.from(data, 'base64')
+            await handle.write(bytes, 0, bytes.length, position)
+          })
+          await encoder.goto(`${server.url}/__export/encoder.html`)
+          await encoder.waitForFunction('window.presmiumEncoderReady === true', undefined, { timeout: 60_000 })
+          const voice = track.voice
+          const label = voice.kind === 'synthetic' ? aigcLabel(voice.provider ?? voice.engine, id) : undefined
+          await encoder.evaluate(options => (window as unknown as Hooks).presmiumEncoder.start(options), {
+            width,
+            height,
+            fps,
+            duration: frames * 1000 / fps,
+            audio: localAudio(track, `${server.url}${lectures.base}${encodeURIComponent(id)}/`),
+            subtitles: captions.map(({ lang, vtt }) => ({ language: subtitleLanguage(lang), name: lang, vtt })),
+            metadata: { title: compilation.doc.meta.title, ...label ? { comment: aigcString(label), raw: { AIGC: JSON.stringify(label) } } : {} },
+          })
+          log(`playing lecture ${id}: ${frames} frames at ${fps} fps, ${width}x${height}`)
+          for (let i = 0; i < frames; i++) {
+            options.signal?.throwIfAborted()
+            const at = Math.round(i * 1000 / fps)
+            await player.evaluate(t => (window as unknown as Hooks).presmiumLecture.advance(t), at).catch((error: unknown) => {
+              throw new Error(`the frame at ${clockText(at)} cannot be drawn: ${errorMessage(error).replace(/^page\.evaluate: (Error: )?/, '')}`)
+            })
+            const jpeg = await player.screenshot({ type: 'jpeg', quality: 85 })
+            await encoder.evaluate(([data, n]) => (window as unknown as Hooks).presmiumEncoder.frame(data, n), [jpeg.toString('base64'), i] as [string, number])
+            if (failures.length) throw new Error(failures.join('\n'))
+            if ((i + 1) % Math.max(1, Math.round(frames / 10)) === 0) log(`  ${Math.round((i + 1) * 100 / frames)}%`)
+            options.progress?.(i + 1, frames)
+          }
+          await encoder.evaluate(() => (window as unknown as Hooks).presmiumEncoder.finish(), undefined)
+          // The captions go beside the video once the video is whole.
+          const sidecars = captions.map(({ lang, vtt }) => {
+            const sidecar = `${file.replace(/\.webm$/i, '')}.${lang}.vtt`
+            writeFileSync(sidecar, vtt)
+            return { lang, file: sidecar }
+          })
+          return { file, track: id, frames, duration: frames * 1000 / fps, captions: sidecars, warnings }
+        } finally {
+          await handle.close()
+        }
+      } finally {
+        await browser.close()
       }
-      await encoder.evaluate(() => (window as unknown as Hooks).presmiumEncoder.finish(), undefined)
-      // The captions go beside the video once the video is whole.
-      const sidecars = captions.map(({ lang, vtt }) => {
-        const sidecar = `${file.replace(/\.webm$/i, '')}.${lang}.vtt`
-        writeFileSync(sidecar, vtt)
-        return { lang, file: sidecar }
-      })
-      return { file, track: id, frames, duration: frames * 1000 / fps, captions: sidecars, warnings }
     } finally {
-      await handle.close()
-      await browser.close()
       await server.close()
     }
   } finally {
