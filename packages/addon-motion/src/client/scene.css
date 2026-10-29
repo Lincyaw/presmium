@@ -55,6 +55,7 @@
 .pm-scene__step { flex: none; min-width: var(--pm-size-tool); min-height: var(--pm-size-tool); padding: 0 var(--pm-space-1); border: 0; border-radius: var(--pm-radius-chip); background: transparent; color: var(--pm-color-muted); font-family: var(--pm-font-mono); font-size: var(--pm-text-xs); cursor: pointer; }
 .pm-scene__step[aria-pressed='true'], .pm-scene__step:hover, .pm-scene__step:focus-visible { background: var(--pm-color-accent-soft); color: var(--pm-color-accent); }
 html.pm-lecture-exporting .pm-scene__steps { display: none; }
+html.pm-lecture-exporting .pm-scene__frame { border-radius: 0; }
 @media (pointer: coarse) {
   .pm-scene__step { min-width: var(--pm-control-hit-area); min-height: var(--pm-control-hit-area); }
   .pm-scene__scrub { min-height: var(--pm-control-hit-area); }

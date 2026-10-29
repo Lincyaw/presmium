@@ -361,6 +361,8 @@
 | 媒介限定 | `IRBlock.only` | `{only}` 声明的块只出现在列出的渲染端 |
 | 形态映射 | 章节 ID 与 `index` | 章节 `index` 即幻灯片页号，章节 ID 即网页锚点；两种形态据此互相跳转 |
 | 站点外壳 | `renderers.web` 的 `nav`、`footer`、`head`、`sitemap` | 顶部导航、页脚、页面元数据（描述、OG）与站点地图 |
+| 网站主题 | 工作区 `site.theme`、`site.params`；独立文稿 `metadata.renderers.web` 的同名项 | 课程、文档、展示三种预置结构与品牌、排版参数，工作区统一外壳 |
+| 网站首页 | 工作区 `site.landing`、`SiteLandingPage` | 独立的网站页面，可引用 JSON 文件、直接内联页面配置或使用自由 HTML 模板；字符串形式兼容已有文稿目录的全文首页 |
 | 发布的文件 | `RenderContext.localAsset` 给出的发布名 | 正文链接的本地文件、目录的文件清单页、原始 HTML 中 `src`、`poster` 引用的文件 |
 | 译本 | 头部 `translations`、`RenderContext.translations` | 同一文稿的其他语言版本，在网页的 `/<语言>/` 下，由语言菜单切换 |
 
@@ -372,6 +374,8 @@
 - IR 运行时渲染的 `.pm-section[data-section]`、`.pm-block[data-block]` 是对外的标记契约（课堂笔记、讲授的指针录制与工作台的点选据此定位）。
 - 三种媒介发布同一组正文链接的本地文件；无法发布的本地引用产生诊断。
 - 译本记录它所依据的原文摘要；原文改动后 `presmium check` 报告译本过期。
+
+主题、首页和文稿网页布局的完整配置见[网站主题指南](site-themes.md)。独立首页使用站点页面结构或作者的 HTML 模板，不进入教学文稿编译器；HTML 模板只收到公开的网站与文稿集合。教学内容、步骤与讲稿仍以 `lecture.json` 为唯一入口。`site.home` 保留重定向语义；字符串 `site.landing` 兼容在根页消费既有文稿 IR，并保留文稿自己的地址。文稿与译本可以独立选择 `article`、`landing` 或 `wide` 布局；`landing` 将整篇内容合为单页，主题选择不改变步骤和素材身份。
 
 ## 10. 发布
 

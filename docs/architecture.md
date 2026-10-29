@@ -1417,6 +1417,7 @@ export interface Renderer {
 - `RenderContext.localAsset` 的结果也可以是目录（`ir.md`）：编译器（`assets.ts`）与工作区站点的上下文（`packages/workspace/src/node/site.ts`）把文稿之内的目录准备为带文件清单页的副本，渲染端以 `cpSync(…, { recursive: true })` 发布它，与文件相同；不能发布的本地引用由这两处报告 `presmium.links`（构建报告去掉各渲染端重复的报告）。工作区站点的上下文另拒绝工作区之外的文件。
 - 译本的摘要、配置继承与编译统一见 `ir.md`；实现位于 `packages/compiler/src/translations.ts`。诊断经编译器的 `report` 汇入，译本以自己的入口文件编译，不在文稿中写临时入口。
 - 网页的页面路由在 `packages/web/src/app/router.ts`：文稿的每章是一页（`index.html` 与 `<章>.html`，在页面语言的站点路径下，译本在 `<base><语言>/` 下），页面配置给出这一页的 IR 与语言（构建时每页的服务端渲染同样）。这份文稿同一语言的页面之间经浏览器的历史切换，不重新载入；指向其他页面（另一语言、另一份文档、工作区首页）的链接整页载入。工作台中的页面只有一个地址，在原处翻页。
+- 网站主题由网页渲染端的领域配置解析：工作区 `site.theme`、`site.params` 统一站点外壳，独立构建时取 `metadata.renderers.web`；预置 `course`、`docs`、`showcase` 共用查看器与设计令牌。独立首页通过 `site.landing` 引用站点页面 JSON、内联页面配置或指定自由 HTML 模板；它不进入教学文稿 IR，HTML 模板由 Vite 公开构建接口打包，只注入公开的网站与文稿集合。字符串 `site.landing` 兼容在网站根页呈现既有文稿全文并保留独立地址。教学文稿仍以 `lecture.json` 为唯一入口，`web.layout: landing` 将正文合为一页，译本按自己的布局分页。构建与开发服务器共用首页加载和素材发布；完整契约及建站命令见[网站主题指南](site-themes.md)。
 - `presmium serve` 的工作区站点中，上一份、下一份文档的链接按页面打开时已编译的文档给出；搜索中其他文档的内容按这份文档的索引第一次被请求时已编译的文档给出，在这份文档下一次更新时重新计算。
 
 **编译与发布**：

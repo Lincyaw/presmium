@@ -192,8 +192,8 @@ async function threeAddons() {
 export type ThreeAddons = Awaited<ReturnType<typeof threeAddons>>
 
 /**
- * A Three.js scene: the adapter makes the WebGL renderer in `ctx.root` and keeps it the size of
- * `root`; `build` adds the scene and returns how to draw it at a time.
+ * A Three.js scene: the adapter keeps logical dimensions for the scene and a drawing buffer matched
+ * to `root`'s displayed pixels, including presentation scaling; `build` returns how to draw it at a time.
  */
 export function threeScene(build: (ctx: SceneContext & { THREE: typeof ThreeModule, renderer: ThreeModule.WebGLRenderer, addons: ThreeAddons }) => ThreeView | ThreeView['render']): SceneDefinition {
   return {
@@ -202,16 +202,39 @@ export function threeScene(build: (ctx: SceneContext & { THREE: typeof ThreeModu
       const [THREE, addons] = await Promise.all([import('three'), threeAddons()])
       // The drawing buffer is kept so a screenshot of a frame (the lecture's video) shows it.
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true })
-      renderer.setPixelRatio(window.devicePixelRatio)
-      renderer.setSize(ctx.width, ctx.height, false)
       Object.assign(renderer.domElement.style, { width: '100%', height: '100%', display: 'block' })
       ctx.root.append(renderer.domElement)
+      let width = ctx.width, height = ctx.height
+      let bufferWidth = 0, bufferHeight = 0, sizedWidth = 0, sizedHeight = 0
+      const gl = renderer.getContext()
+      const maxSize = Math.min(renderer.capabilities.maxTextureSize, Number(gl.getParameter(gl.MAX_RENDERBUFFER_SIZE)))
+      const syncBuffer = () => {
+        const box = ctx.root.getBoundingClientRect()
+        const dpr = window.devicePixelRatio || 1
+        // Hidden or newly mounted roots can have no height yet. The next seek measures them again.
+        const scale = box.width > 0 && box.height > 0 ? Math.max(box.width / width, box.height / height) : 1
+        // Scale down for a smaller presentation too; only the GPU's size limit caps magnification.
+        const ratio = Math.max(1 / Math.min(width, height), Math.min(dpr * scale, maxSize / width, maxSize / height))
+        const nextWidth = Math.floor(width * ratio), nextHeight = Math.floor(height * ratio)
+        if (nextWidth === bufferWidth && nextHeight === bufferHeight && width === sizedWidth && height === sizedHeight) return false
+        renderer.setDrawingBufferSize(width, height, ratio)
+        bufferWidth = nextWidth; bufferHeight = nextHeight
+        sizedWidth = width; sizedHeight = height
+        return true
+      }
+      syncBuffer()
       const made = build({ ...ctx, THREE, renderer, addons })
       const view: ThreeView = typeof made === 'function' ? { render: made } : made
       return {
-        seek: ms => view.render(ms),
-        resize(width, height) {
-          renderer.setSize(width, height, false)
+        seek(ms) {
+          // Ancestor transforms change displayed pixels without triggering a layout ResizeObserver.
+          if (syncBuffer()) view.resize?.(width, height)
+          view.render(ms)
+        },
+        resize(w, h) {
+          if (!(w > 0 && h > 0)) return
+          width = w; height = h
+          syncBuffer()
           view.resize?.(width, height)
         },
         dispose() {

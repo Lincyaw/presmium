@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "anchors": {
+    "symbol:promo/scenes/model.ts#trajectory": {
+      "fingerprint": "2e483535afe92115",
+      "file": "promo/scenes/model.ts",
+      "startLine": 20
+    }
+  }
+}

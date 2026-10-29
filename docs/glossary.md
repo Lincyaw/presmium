@@ -84,6 +84,14 @@
 | 导出 | Export | 由已保存的版本生成网站、幻灯片、Notebook、PDF、图片、PowerPoint 或视频文件 | `生成记录`、Make（指导出时）、`Build`（作者界面中） |
 | 导出记录 | Export History | 导出窗格中已完成与进行中的导出列表 | `生成记录`、`Made files` |
 | 网站 | Website | 文稿导出为网页的形态 | `站点产物` |
+| 网站主题 | Site Theme | 网站的预置结构与视觉，如课程、文档、展示；配置项为 `theme` | |
+| 课程 | Course | 网站主题 `course` 的名称，突出课程入口与有序学习 | |
+| 文档 | Docs | 网站主题 `docs` 的名称，突出阅读与目录；区别于作者编辑的“文稿” | |
+| 展示 | Showcase | 网站主题 `showcase` 的名称，突出作品与媒体展示 | |
+| 网站页面 | Site Page | 独立设计的站点介绍与展示内容；不使用教学文稿的页面、步骤和讲稿模型 | |
+| 首页模板 | Landing Page Template | 作者提供的 HTML、CSS 与 JavaScript 首页入口；与预置网站主题分开配置 | |
+| 首页 | Home | 网站根地址的页面，可使用独立的网站页面，也可显示文稿列表或指定文稿的全文 | |
+| 页面布局 | Page Layout | 文稿网页的排版选择：文章 / Article、首页 / Landing、宽版 / Wide；配置项为 `layout` | |
 | 形态 | Form | 导出与审批中说出渲染端时用它们的名称：web 为“网站 / Website”，slides 为“幻灯片 / Slides”，notebook 为“Notebook / Notebook”，lecture 为“讲授 / Lecture”；`--to` 的参数仍是这些标识 | 渲染端（作者界面中）、Renderer（作者界面中） |
 | 语句 | Sentence | 讲授编辑器与配音中的一句讲稿，配音按语句生成 | 句段、Segment（指语句时） |
 | 授权 | Consent | 复刻音色时作者确认有权使用这段声音的声明 | `同意书`、`Agreement` |
@@ -106,6 +114,7 @@
 | 网页 | Web | 视图菜单中的网页版式 | 文档（指视图时）、`Document view` |
 | 幻灯片 | Slides | 视图菜单中的幻灯片版式 | `PPT` |
 | 导航窗格 | Navigation Pane | 列出页面与标题的窗格 | `目录栏`、`侧栏` |
+| 课程目录 | Course Contents | 课程主题中按顺序列出内容的区域 | |
 | 批注窗格 | Comments | 列出全部批注的窗格 | `评论区` |
 | 状态栏 | Status Bar | 窗口底部的页码、字数与保存状态 | `底栏` |
 | 应用栏 | App Bar | 工作台左侧的入口栏 | `活动栏`、`Activity bar` |
@@ -145,6 +154,8 @@
 | 重命名 | Rename… | 重命名文稿或页面 | `改名`、`修改名称` |
 | 上移 / 下移 | Move Up / Move Down | 调整页面顺序 | `往上挪`、`往下挪` |
 | 搜索 | Search | 在列表中搜索 | `检索`、`查询` |
+| 开始阅读 | Start Reading | 网站首页进入第一份文稿的命令 | |
+| 浏览文稿 | Browse Documents | 网站首页定位到文稿列表的命令 | |
 | 查找 | Find | 在文稿正文中查找 | |
 | 共享 | Share | 与他人共享 | `分享` |
 | 导出 | Export… | 打开导出窗格或对话框；具体项写作“导出视频 / Export Video”“导出 PDF / Export PDF” | `生成网站`、Make（指导出时） |

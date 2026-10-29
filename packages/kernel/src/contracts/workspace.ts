@@ -87,10 +87,11 @@ export interface DocumentFiles {
 
 export const DOCUMENT_FILES = defineService<DocumentFiles>('presmium.documentFiles')
 
-/** A document as lists show it: its directory (its identity), title, language and tags. */
+/** A document as lists show it: its directory (its identity), title, description, language and tags. */
 export interface DocumentSummary {
   dir: string
   title: string
+  description?: string
   lang?: string
   tags?: string[]
 }

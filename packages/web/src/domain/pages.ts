@@ -1,4 +1,4 @@
-import { blockText, chapters, urlSlug } from '@lincyaw/kernel'
+import { blockText, chapters, isRecord, urlSlug } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 
 export interface WebPage {
@@ -12,6 +12,8 @@ function baseName(file: string): string {
 }
 
 export function webPages(doc: IRDocument): WebPage[] {
+  const web = doc.config.renderers.web
+  if (isRecord(web) && web.layout === 'landing') return [{ path: 'index', title: doc.meta.title, sections: doc.sections.map(section => section.id) }]
   const paths = new Set<string>()
   let file: string | undefined
   return chapters(doc).map((chapter, i) => {

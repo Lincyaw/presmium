@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "title": "{{title}}",
+  "description": "{{description}}",
+  "hero": {
+    "eyebrow": "{{kicker}}",
+    "title": "{{title}}",
+    "description": "{{summary}}",
+    "actions": [
+      {
+        "text": "{{start}}",
+        "link": "/intro/",
+        "variant": "primary"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "type": "features",
+      "id": "features",
+      "title": "{{featuresTitle}}",
+      "items": [
+        {
+          "title": "{{learnTitle}}",
+          "description": "{{learnBody}}"
+        },
+        {
+          "title": "{{publishTitle}}",
+          "description": "{{publishBody}}"
+        },
+        {
+          "title": "{{personalTitle}}",
+          "description": "{{personalBody}}"
+        }
+      ]
+    },
+    {
+      "type": "documents",
+      "id": "documents",
+      "title": "{{documentsTitle}}"
+    }
+  ]
+}

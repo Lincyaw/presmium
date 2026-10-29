@@ -1,0 +1,687 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-linear-regression-lesson",
+  "metadata": {
+    "title": "学习率，怎样改变一条预测线？",
+    "lang": "zh-CN",
+    "description": "用真实线性回归计算，把公式、代码、预测线和损失串在一起。配套宣传片的可回看小课。",
+    "tags": [
+      "机器学习",
+      "线性回归",
+      "梯度下降"
+    ],
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-code",
+      "@lincyaw/addon-lecture"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "lecture": {}
+    },
+    "presmium": {
+      "presmium.web": {
+        "slidesUrl": "./slides/"
+      }
+    }
+  },
+  "sectionOrder": [
+    "setup",
+    "training",
+    "reason",
+    "code"
+  ],
+  "sections": {
+    "setup": {
+      "id": "setup",
+      "title": "学习率，怎样改变一条预测线？",
+      "level": 1,
+      "children": [
+        "setup-body"
+      ],
+      "stepOrder": [
+        "setup-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "training": {
+      "id": "training",
+      "title": "按同一更新规则，比较两条轨迹",
+      "level": 2,
+      "children": [
+        "update-body",
+        "training-scene"
+      ],
+      "stepOrder": [
+        "large-start-step",
+        "large-one-step",
+        "large-two-step",
+        "large-three-step",
+        "small-start-step",
+        "small-one-step",
+        "small-two-step",
+        "small-four-step",
+        "small-eight-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "reason": {
+      "id": "reason",
+      "title": "用误差递推，解释画面为什么变化",
+      "level": 2,
+      "children": [
+        "reason-body"
+      ],
+      "stepOrder": [
+        "reason-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "code": {
+      "id": "code",
+      "title": "从源码复现，再试一个新学习率",
+      "level": 2,
+      "children": [
+        "code-body",
+        "training-code",
+        "next-body"
+      ],
+      "stepOrder": [
+        "code-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "setup-body": {
+      "id": "setup-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "setup-objective",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "目标：理解学习率怎样影响一次参数更新，并同时用预测线和损失检验这个更新。我们只训练一个参数 w；五个无噪声样本来自 y=3x。"
+            }
+          ]
+        },
+        {
+          "id": "model-equation",
+          "type": "math",
+          "value": "\\hat y=wx,\\qquad L(w)=\\frac{1}{2n}\\sum_i(wx_i-y_i)^2"
+        },
+        {
+          "id": "setup-normalization",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "取 x 为 −√2、−1/√2、0、1/√2、√2，y=3x。这组输入的平方均值为 1，因此损失简化如下；这个简化依赖这里的数据尺度。"
+            }
+          ]
+        },
+        {
+          "id": "loss-equation",
+          "type": "math",
+          "value": "L(w)=\\frac12(w-3)^2,\\quad \\nabla L(w)=w-3"
+        },
+        {
+          "id": "setup-shared-source",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本课的散点、预测、损失与梯度，和宣传片直接引用同一个 model.ts；图中的数值来自真实计算。"
+            }
+          ]
+        }
+      ]
+    },
+    "update-body": {
+      "id": "update-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "update-explanation",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "更新规则只有一条：沿负梯度方向移动。两个实验都从 w₀=−1、L=8 开始；只改变学习率 α。黑点是数据，紫线是当前预测；右侧曲线上的点表示同一个 w 的损失。"
+            }
+          ]
+        },
+        {
+          "id": "update-equation",
+          "type": "math",
+          "value": "w_{k+1}=w_k-\\alpha\\nabla L(w_k)"
+        }
+      ]
+    },
+    "training-scene": {
+      "id": "training-scene",
+      "type": "component",
+      "definitionId": "regression-scene",
+      "parameters": {}
+    },
+    "reason-body": {
+      "id": "reason-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "reason-compare",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在这个例子里，α=2.2 时误差的绝对值每次乘以 1.2，预测线越摆越远；α=0.35 时每次乘以 0.65，预测逐步贴合。八次更新后 w≈2.8725，L≈0.00812，尚未精确归零。"
+            }
+          ]
+        },
+        {
+          "id": "error-recurrence",
+          "type": "math",
+          "value": "e_{k+1}=(1-\\alpha)e_k,\\qquad e_k=w_k-3"
+        },
+        {
+          "id": "reason-condition",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "要收敛，需要 |1−α|<1，即这里的 0<α<2。学习率更小并不总是更快：例如 α=1.6 也收敛，但会跨过谷底来回接近。换数据尺度、损失函数或模型后，要重新判断步长，不能把本例阈值当成通用常数。"
+            }
+          ]
+        }
+      ]
+    },
+    "code-body": {
+      "id": "code-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-source-explanation",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "下面直接引用宣传片与本课共同使用的训练函数。每次先记录当前参数、损失和梯度，再执行更新；初始状态也保留，所以 count 次更新会得到 count+1 个状态。"
+            }
+          ]
+        }
+      ]
+    },
+    "training-code": {
+      "id": "training-code",
+      "type": "code",
+      "language": "typescript",
+      "title": "共享的真实训练函数",
+      "origin": {
+        "anchor": "symbol:promo/scenes/model.ts#trajectory"
+      }
+    },
+    "next-body": {
+      "id": "next-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "next-application",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "尝试预测：把学习率改为 1，会发生什么？根据误差递推，本例一次更新就到 w=3。再试 1.6，检查参数左右交替但损失仍在下降。先预测，再用同一个函数验证。"
+            }
+          ]
+        },
+        {
+          "id": "back-to-site",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "link",
+              "href": "../promo/lecture.json",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "查看这堂小课的 60 秒宣传片文稿。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "setup-step": {
+      "id": "setup-step",
+      "sectionId": "setup",
+      "title": "看清模型与数据",
+      "visuals": [
+        {
+          "blockId": "setup-body",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "setup-step-narration"
+      ]
+    },
+    "large-start-step": {
+      "id": "large-start-step",
+      "sectionId": "training",
+      "title": "共同起点",
+      "visuals": [
+        {
+          "blockId": "update-body",
+          "visible": true
+        },
+        {
+          "blockId": "training-scene",
+          "visible": true,
+          "state": "large-start"
+        }
+      ],
+      "narrationIds": [
+        "large-start-step-narration"
+      ]
+    },
+    "large-one-step": {
+      "id": "large-one-step",
+      "sectionId": "training",
+      "title": "大步跨过谷底",
+      "visuals": [
+        {
+          "blockId": "update-body",
+          "visible": true
+        },
+        {
+          "blockId": "training-scene",
+          "visible": true,
+          "state": "large-one"
+        }
+      ],
+      "narrationIds": [
+        "large-one-step-narration"
+      ]
+    },
+    "large-two-step": {
+      "id": "large-two-step",
+      "sectionId": "training",
+      "title": "摆动进一步变大",
+      "visuals": [
+        {
+          "blockId": "update-body",
+          "visible": true
+        },
+        {
+          "blockId": "training-scene",
+          "visible": true,
+          "state": "large-two"
+        }
+      ],
+      "narrationIds": [
+        "large-two-step-narration"
+      ]
+    },
+    "large-three-step": {
+      "id": "large-three-step",
+      "sectionId": "training",
+      "title": "损失继续上升",
+      "visuals": [
+        {
+          "blockId": "update-body",
+          "visible": true
+        },
+        {
+          "blockId": "training-scene",
+          "visible": true,
+          "state": "large-three"
+        }
+      ],
+      "narrationIds": [
+        "large-three-step-narration"
+      ]
+    },
+    "small-start-step": {
+      "id": "small-start-step",
+      "sectionId": "training",
+      "title": "重置起点，只换学习率",
+      "visuals": [
+        {
+          "blockId": "update-body",
+          "visible": true
+        },
+        {
+          "blockId": "training-scene",
+          "visible": true,
+          "state": "small-start"
+        }
+      ],
+      "narrationIds": [
+        "small-start-step-narration"
+      ]
+    },
+    "small-one-step": {
+      "id": "small-one-step",
+      "sectionId": "training",
+      "title": "第一次稳定更新",
+      "visuals": [
+        {
+          "blockId": "update-body",
+          "visible": true
+        },
+        {
+          "blockId": "training-scene",
+          "visible": true,
+          "state": "small-one"
+        }
+      ],
+      "narrationIds": [
+        "small-one-step-narration"
+      ]
+    },
+    "small-two-step": {
+      "id": "small-two-step",
+      "sectionId": "training",
+      "title": "继续降低损失",
+      "visuals": [
+        {
+          "blockId": "update-body",
+          "visible": true
+        },
+        {
+          "blockId": "training-scene",
+          "visible": true,
+          "state": "small-two"
+        }
+      ],
+      "narrationIds": [
+        "small-two-step-narration"
+      ]
+    },
+    "small-four-step": {
+      "id": "small-four-step",
+      "sectionId": "training",
+      "title": "逐步贴合数据",
+      "visuals": [
+        {
+          "blockId": "update-body",
+          "visible": true
+        },
+        {
+          "blockId": "training-scene",
+          "visible": true,
+          "state": "small-four"
+        }
+      ],
+      "narrationIds": [
+        "small-four-step-narration"
+      ]
+    },
+    "small-eight-step": {
+      "id": "small-eight-step",
+      "sectionId": "training",
+      "title": "八次更新后的结果",
+      "visuals": [
+        {
+          "blockId": "update-body",
+          "visible": true
+        },
+        {
+          "blockId": "training-scene",
+          "visible": true,
+          "state": "small-eight"
+        }
+      ],
+      "narrationIds": [
+        "small-eight-step-narration"
+      ]
+    },
+    "reason-step": {
+      "id": "reason-step",
+      "sectionId": "reason",
+      "title": "从现象回到原因",
+      "visuals": [
+        {
+          "blockId": "reason-body",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "reason-step-narration"
+      ]
+    },
+    "code-step": {
+      "id": "code-step",
+      "sectionId": "code",
+      "title": "复现与迁移",
+      "visuals": [
+        {
+          "blockId": "code-body",
+          "visible": true
+        },
+        {
+          "blockId": "training-code",
+          "visible": true
+        },
+        {
+          "blockId": "next-body",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "code-step-narration"
+      ]
+    }
+  },
+  "narrations": {
+    "setup-step-narration": {
+      "id": "setup-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "同一个参数决定预测线，也决定损失。先固定模型和数据，再比较学习率。"
+        }
+      ]
+    },
+    "large-start-step-narration": {
+      "id": "large-start-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "学习率为2.2，第0次更新，参数为-1.0000，损失为8.00000。观察预测线和损失是否一起接近目标。"
+        }
+      ]
+    },
+    "large-one-step-narration": {
+      "id": "large-one-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "学习率为2.2，第1次更新，参数为7.8000，损失为11.52000。预测线偏离数据，损失上升。"
+        }
+      ]
+    },
+    "large-two-step-narration": {
+      "id": "large-two-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "学习率为2.2，第2次更新，参数为-2.7600，损失为16.58880。预测线偏离数据，损失上升。"
+        }
+      ]
+    },
+    "large-three-step-narration": {
+      "id": "large-three-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "学习率为2.2，第3次更新，参数为9.9120，损失为23.88787。预测线偏离数据，损失上升。"
+        }
+      ]
+    },
+    "small-start-step-narration": {
+      "id": "small-start-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "学习率为0.35，第0次更新，参数为-1.0000，损失为8.00000。观察预测线和损失是否一起接近目标。"
+        }
+      ]
+    },
+    "small-one-step-narration": {
+      "id": "small-one-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "学习率为0.35，第1次更新，参数为0.4000，损失为3.38000。观察预测线和损失是否一起接近目标。"
+        }
+      ]
+    },
+    "small-two-step-narration": {
+      "id": "small-two-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "学习率为0.35，第2次更新，参数为1.3100，损失为1.42805。观察预测线和损失是否一起接近目标。"
+        }
+      ]
+    },
+    "small-four-step-narration": {
+      "id": "small-four-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "学习率为0.35，第4次更新，参数为2.2860，损失为0.25492。观察预测线和损失是否一起接近目标。"
+        }
+      ]
+    },
+    "small-eight-step-narration": {
+      "id": "small-eight-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "学习率为0.35，第8次更新，参数为2.8725，损失为0.00812。观察预测线和损失是否一起接近目标。"
+        }
+      ]
+    },
+    "reason-step-narration": {
+      "id": "reason-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "误差的倍率解释了震荡和收敛。学习率要与损失的尺度一起理解，不能只比较大小。"
+        }
+      ]
+    },
+    "code-step-narration": {
+      "id": "code-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "用同一套计算检验新的学习率。先预测结果，再解释预测线和损失怎样变化。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "regression-scene": {
+      "id": "regression-scene",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/regression.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "large-start"
+        },
+        {
+          "id": "large-one"
+        },
+        {
+          "id": "large-two"
+        },
+        {
+          "id": "large-three"
+        },
+        {
+          "id": "small-start"
+        },
+        {
+          "id": "small-one"
+        },
+        {
+          "id": "small-two"
+        },
+        {
+          "id": "small-four"
+        },
+        {
+          "id": "small-eight"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1800,
+          1800,
+          1800,
+          1800,
+          1800,
+          1800,
+          1800,
+          1800,
+          1800
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "学习率2.2使本例发散；0.35从相同起点稳定收敛。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      },
+      "minimumHoldMs": 1800,
+      "trailingPauseMs": 0
+    },
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

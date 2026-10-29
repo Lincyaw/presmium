@@ -1,0 +1,979 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-product-promo-60s",
+  "metadata": {
+    "title": "让每一步，都讲得明白",
+    "lang": "zh-CN",
+    "description": "一位老师用 Presmium 组织机器学习课程，把学习率的公式、代码和预测过程分步讲清，并让学生课后继续回看。",
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-lecture"
+    ],
+    "renderers": {
+      "web": {},
+      "lecture": {}
+    }
+  },
+  "sectionOrder": [
+    "cinematic-film",
+    "product-author",
+    "product-arrange",
+    "product-overshoot",
+    "product-focus",
+    "product-revisit",
+    "product-outputs",
+    "product-brand"
+  ],
+  "sections": {
+    "cinematic-film": {
+      "id": "cinematic-film",
+      "title": "让每一步，都讲得明白",
+      "level": 1,
+      "children": [
+        "cinematic-scene"
+      ],
+      "stepOrder": [
+        "film-pain"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "product-author": {
+      "id": "product-author",
+      "title": "把过程，讲清楚",
+      "level": 2,
+      "children": [
+        "product-author-scene"
+      ],
+      "stepOrder": [
+        "film-author"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "product-arrange": {
+      "id": "product-arrange",
+      "title": "把讲解组织成步骤",
+      "level": 2,
+      "children": [
+        "product-arrange-scene"
+      ],
+      "stepOrder": [
+        "film-arrange"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "product-overshoot": {
+      "id": "product-overshoot",
+      "title": "大步长为什么可能越学越差",
+      "level": 2,
+      "children": [
+        "product-overshoot-scene"
+      ],
+      "stepOrder": [
+        "film-overshoot"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "product-focus": {
+      "id": "product-focus",
+      "title": "从相同起点比较另一种学习率",
+      "level": 2,
+      "children": [
+        "product-focus-scene"
+      ],
+      "stepOrder": [
+        "film-focus"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "product-revisit": {
+      "id": "product-revisit",
+      "title": "刚才那一步，随时回看",
+      "level": 2,
+      "children": [
+        "product-revisit-scene"
+      ],
+      "stepOrder": [
+        "film-revisit"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "product-outputs": {
+      "id": "product-outputs",
+      "title": "讲过，也能继续探索",
+      "level": 2,
+      "children": [
+        "product-outputs-scene"
+      ],
+      "stepOrder": [
+        "film-outputs"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "product-brand": {
+      "id": "product-brand",
+      "title": "让每一步，都讲得明白",
+      "level": 2,
+      "children": [
+        "product-brand-scene"
+      ],
+      "stepOrder": [
+        "film-brand"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    }
+  },
+  "blocks": {
+    "cinematic-scene": {
+      "id": "cinematic-scene",
+      "type": "component",
+      "definitionId": "cinematic-definition",
+      "parameters": {
+        "shot": "pain"
+      }
+    },
+    "product-author-scene": {
+      "id": "product-author-scene",
+      "type": "component",
+      "definitionId": "product-author-definition",
+      "parameters": {
+        "shot": "author"
+      }
+    },
+    "product-arrange-scene": {
+      "id": "product-arrange-scene",
+      "type": "component",
+      "definitionId": "product-arrange-definition",
+      "parameters": {
+        "shot": "arrange"
+      }
+    },
+    "product-overshoot-scene": {
+      "id": "product-overshoot-scene",
+      "type": "component",
+      "definitionId": "product-overshoot-definition",
+      "parameters": {
+        "shot": "overshoot"
+      }
+    },
+    "product-focus-scene": {
+      "id": "product-focus-scene",
+      "type": "component",
+      "definitionId": "product-focus-definition",
+      "parameters": {
+        "shot": "focus"
+      }
+    },
+    "product-revisit-scene": {
+      "id": "product-revisit-scene",
+      "type": "component",
+      "definitionId": "product-revisit-definition",
+      "parameters": {
+        "shot": "revisit"
+      }
+    },
+    "product-outputs-scene": {
+      "id": "product-outputs-scene",
+      "type": "component",
+      "definitionId": "product-outputs-definition",
+      "parameters": {
+        "shot": "outputs"
+      }
+    },
+    "product-brand-scene": {
+      "id": "product-brand-scene",
+      "type": "component",
+      "definitionId": "product-brand-definition",
+      "parameters": {
+        "shot": "brand"
+      }
+    }
+  },
+  "steps": {
+    "film-pain": {
+      "id": "film-pain",
+      "sectionId": "cinematic-film",
+      "visuals": [
+        {
+          "blockId": "cinematic-scene",
+          "visible": true,
+          "state": "show"
+        }
+      ],
+      "narrationIds": []
+    },
+    "film-author": {
+      "id": "film-author",
+      "sectionId": "product-author",
+      "visuals": [
+        {
+          "blockId": "product-author-scene",
+          "visible": true,
+          "state": "show"
+        }
+      ],
+      "narrationIds": []
+    },
+    "film-arrange": {
+      "id": "film-arrange",
+      "sectionId": "product-arrange",
+      "visuals": [
+        {
+          "blockId": "product-arrange-scene",
+          "visible": true,
+          "state": "show"
+        }
+      ],
+      "narrationIds": []
+    },
+    "film-overshoot": {
+      "id": "film-overshoot",
+      "sectionId": "product-overshoot",
+      "visuals": [
+        {
+          "blockId": "product-overshoot-scene",
+          "visible": true,
+          "state": "show"
+        }
+      ],
+      "narrationIds": []
+    },
+    "film-focus": {
+      "id": "film-focus",
+      "sectionId": "product-focus",
+      "visuals": [
+        {
+          "blockId": "product-focus-scene",
+          "visible": true,
+          "state": "show"
+        }
+      ],
+      "narrationIds": []
+    },
+    "film-revisit": {
+      "id": "film-revisit",
+      "sectionId": "product-revisit",
+      "visuals": [
+        {
+          "blockId": "product-revisit-scene",
+          "visible": true,
+          "state": "show"
+        }
+      ],
+      "narrationIds": []
+    },
+    "film-outputs": {
+      "id": "film-outputs",
+      "sectionId": "product-outputs",
+      "visuals": [
+        {
+          "blockId": "product-outputs-scene",
+          "visible": true,
+          "state": "show"
+        }
+      ],
+      "narrationIds": []
+    },
+    "film-brand": {
+      "id": "film-brand",
+      "sectionId": "product-brand",
+      "visuals": [
+        {
+          "blockId": "product-brand-scene",
+          "visible": true,
+          "state": "show"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {
+    "cinematic-original-score": {
+      "id": "cinematic-original-score",
+      "kind": "audio",
+      "location": "audio/cinematic-score.wav",
+      "title": "让想法，被看见 · Original procedural score",
+      "fingerprint": "sha256:5e76a54b655b8d4fad4ee283aad6efe5e180b705614a7affc41e358fc19ea753",
+      "mediaType": "audio/wav"
+    }
+  },
+  "definitions": {
+    "cinematic-definition": {
+      "id": "cinematic-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/product-film.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "shot": {
+            "type": "string",
+            "enum": [
+              "pain",
+              "author",
+              "arrange",
+              "overshoot",
+              "focus",
+              "revisit",
+              "outputs",
+              "brand"
+            ]
+          }
+        },
+        "required": [
+          "shot"
+        ],
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "show"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "language": "typescript",
+        "durations": [
+          6000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "备课材料分散在公式、训练代码与预测图之间，老师进入 Presmium 整理讲解。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "product-author-definition": {
+      "id": "product-author-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/product-film.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "shot": {
+            "type": "string",
+            "enum": [
+              "pain",
+              "author",
+              "arrange",
+              "overshoot",
+              "focus",
+              "revisit",
+              "outputs",
+              "brand"
+            ]
+          }
+        },
+        "required": [
+          "shot"
+        ],
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "show"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "language": "typescript",
+        "durations": [
+          8000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "老师在真实 Presmium 编辑页组织学习率课程的目标和内容。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "product-arrange-definition": {
+      "id": "product-arrange-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/product-film.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "shot": {
+            "type": "string",
+            "enum": [
+              "pain",
+              "author",
+              "arrange",
+              "overshoot",
+              "focus",
+              "revisit",
+              "outputs",
+              "brand"
+            ]
+          }
+        },
+        "required": [
+          "shot"
+        ],
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "show"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "language": "typescript",
+        "durations": [
+          9000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "老师选择已编排步骤，公式、教学代码与预测图共同展示一次参数更新。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "product-overshoot-definition": {
+      "id": "product-overshoot-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/product-film.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "shot": {
+            "type": "string",
+            "enum": [
+              "pain",
+              "author",
+              "arrange",
+              "overshoot",
+              "focus",
+              "revisit",
+              "outputs",
+              "brand"
+            ]
+          }
+        },
+        "required": [
+          "shot"
+        ],
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "show"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "language": "typescript",
+        "durations": [
+          10000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "实际步骤切换展示学习率 2.2 的三次更新，预测误差和损失升高。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "product-focus-definition": {
+      "id": "product-focus-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/product-film.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "shot": {
+            "type": "string",
+            "enum": [
+              "pain",
+              "author",
+              "arrange",
+              "overshoot",
+              "focus",
+              "revisit",
+              "outputs",
+              "brand"
+            ]
+          }
+        },
+        "required": [
+          "shot"
+        ],
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "show"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "language": "typescript",
+        "durations": [
+          9000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "实际步骤切换展示学习率 0.35 的八次更新，预测线逐步贴近数据。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "product-revisit-definition": {
+      "id": "product-revisit-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/product-film.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "shot": {
+            "type": "string",
+            "enum": [
+              "pain",
+              "author",
+              "arrange",
+              "overshoot",
+              "focus",
+              "revisit",
+              "outputs",
+              "brand"
+            ]
+          }
+        },
+        "required": [
+          "shot"
+        ],
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "show"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "language": "typescript",
+        "durations": [
+          6000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "老师通过真实步骤或播放控件回到第二次更新，再恢复第八次。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "product-outputs-definition": {
+      "id": "product-outputs-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/product-film.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "shot": {
+            "type": "string",
+            "enum": [
+              "pain",
+              "author",
+              "arrange",
+              "overshoot",
+              "focus",
+              "revisit",
+              "outputs",
+              "brand"
+            ]
+          }
+        },
+        "required": [
+          "shot"
+        ],
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "show"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "language": "typescript",
+        "durations": [
+          6000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "同一堂课程的真实阅读页、放映和导出教学视频依次呈现。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "product-brand-definition": {
+      "id": "product-brand-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/product-film.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "shot": {
+            "type": "string",
+            "enum": [
+              "pain",
+              "author",
+              "arrange",
+              "overshoot",
+              "focus",
+              "revisit",
+              "outputs",
+              "brand"
+            ]
+          }
+        },
+        "required": [
+          "shot"
+        ],
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "show"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "language": "typescript",
+        "durations": [
+          6000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Presmium。让每一步，都讲得明白。开始创作。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      },
+      "narrationStart": "with-animation",
+      "trailingPauseMs": 0
+    },
+    "stepOverrides": {
+      "film-pain": {
+        "minimumHoldMs": 6000,
+        "trailingPauseMs": 0
+      },
+      "film-author": {
+        "minimumHoldMs": 8000,
+        "trailingPauseMs": 0
+      },
+      "film-arrange": {
+        "minimumHoldMs": 9000,
+        "trailingPauseMs": 0
+      },
+      "film-overshoot": {
+        "minimumHoldMs": 10000,
+        "trailingPauseMs": 0
+      },
+      "film-focus": {
+        "minimumHoldMs": 9000,
+        "trailingPauseMs": 0
+      },
+      "film-revisit": {
+        "minimumHoldMs": 6000,
+        "trailingPauseMs": 0
+      },
+      "film-outputs": {
+        "minimumHoldMs": 6000,
+        "trailingPauseMs": 0
+      },
+      "film-brand": {
+        "minimumHoldMs": 6000,
+        "trailingPauseMs": 0
+      }
+    },
+    "mediaClips": [
+      {
+        "id": "score-pain",
+        "assetId": "cinematic-original-score",
+        "sourceRange": {
+          "startMs": 0,
+          "endMs": 6000
+        },
+        "attachment": {
+          "stepId": "film-pain",
+          "offsetMs": 0
+        },
+        "volume": 1,
+        "muted": false
+      },
+      {
+        "id": "score-author",
+        "assetId": "cinematic-original-score",
+        "sourceRange": {
+          "startMs": 6000,
+          "endMs": 14000
+        },
+        "attachment": {
+          "stepId": "film-author",
+          "offsetMs": 0
+        },
+        "volume": 1,
+        "muted": false
+      },
+      {
+        "id": "score-arrange",
+        "assetId": "cinematic-original-score",
+        "sourceRange": {
+          "startMs": 14000,
+          "endMs": 23000
+        },
+        "attachment": {
+          "stepId": "film-arrange",
+          "offsetMs": 0
+        },
+        "volume": 1,
+        "muted": false
+      },
+      {
+        "id": "score-overshoot",
+        "assetId": "cinematic-original-score",
+        "sourceRange": {
+          "startMs": 23000,
+          "endMs": 33000
+        },
+        "attachment": {
+          "stepId": "film-overshoot",
+          "offsetMs": 0
+        },
+        "volume": 1,
+        "muted": false
+      },
+      {
+        "id": "score-focus",
+        "assetId": "cinematic-original-score",
+        "sourceRange": {
+          "startMs": 33000,
+          "endMs": 42000
+        },
+        "attachment": {
+          "stepId": "film-focus",
+          "offsetMs": 0
+        },
+        "volume": 1,
+        "muted": false
+      },
+      {
+        "id": "score-revisit",
+        "assetId": "cinematic-original-score",
+        "sourceRange": {
+          "startMs": 42000,
+          "endMs": 48000
+        },
+        "attachment": {
+          "stepId": "film-revisit",
+          "offsetMs": 0
+        },
+        "volume": 1,
+        "muted": false
+      },
+      {
+        "id": "score-outputs",
+        "assetId": "cinematic-original-score",
+        "sourceRange": {
+          "startMs": 48000,
+          "endMs": 54000
+        },
+        "attachment": {
+          "stepId": "film-outputs",
+          "offsetMs": 0
+        },
+        "volume": 1,
+        "muted": false
+      },
+      {
+        "id": "score-brand",
+        "assetId": "cinematic-original-score",
+        "sourceRange": {
+          "startMs": 54000,
+          "endMs": 60000
+        },
+        "attachment": {
+          "stepId": "film-brand",
+          "offsetMs": 0
+        },
+        "volume": 1,
+        "muted": false
+      }
+    ]
+  }
+}

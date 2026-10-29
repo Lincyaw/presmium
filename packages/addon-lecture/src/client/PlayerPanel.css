@@ -8,6 +8,15 @@
 html.pm-lecture-exporting .pm-present__bar {
   display: none;
 }
+
+/* A video contains the authored frame, without the presentation workspace's surround. */
+html.pm-lecture-exporting .pm-present__slide {
+  padding: 0;
+}
+
+html.pm-lecture-exporting .pm-slide-fit__canvas {
+  box-shadow: none;
+}
 .pm-lecture-player,
 .pm-lecture-player__status {
   display: flex;

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 export const TEMPLATE_SOURCES: Record<string, string> = {
   'document': 'packages/workspace/templates/document',
   'workspace': 'templates/workspace',
+  'site': 'templates/site',
   'plugin': 'templates/plugin',
   'skills/presmium-animate': '.agents/skills/presmium-animate',
   'skills/presmium-author': '.agents/skills/presmium-author',

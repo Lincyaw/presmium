@@ -1,0 +1,19 @@
+title: Presmium · 让想法，被看见
+documents: ['*/lecture.json']
+site:
+  base: /repo/
+  lang: zh-CN
+  theme: showcase
+  params:
+    accent: violet
+    typography: sans
+    contentWidth: wide
+  landing:
+    template: ./site/home.html
+  nav:
+    - text: 线性回归小课
+      link: /learn/
+    - text: 影片项目
+      link: /promo/
+  head:
+    description: 把知识，变成值得分享的作品。阅读、演示与分享，从 Presmium 开始。

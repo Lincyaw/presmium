@@ -2,6 +2,13 @@ import type { Locale } from '@lincyaw/kernel/contracts'
 
 export const WEB_MESSAGES = {
   'zh-CN': {
+    courseContents: '课程目录',
+    startReading: '开始阅读',
+    browseDocuments: '浏览文稿',
+    documentCount: (count: number) => `${count} 份文稿`,
+    unknownTheme: (name: string) => `找不到主题“${name}”。请选择 course、docs 或 showcase。`,
+    invalidSiteParameter: (name: string) => `站点配置 ${name} 无效。请检查主题配置中的值。`,
+    invalidLanding: '站点首页配置无效。请检查 site.landing 的独立页面定义或文稿目录，并只保留 site.landing 或 site.home。',
     viewMenu: '视图',
     blockPreviewFailed: '无法显示此预览。请检查内容块与素材。',
     startFailed: '无法打开此文稿。请重新加载页面。',
@@ -51,6 +58,13 @@ export const WEB_MESSAGES = {
     searchShortcut: 'Ctrl K',
   },
   'en': {
+    courseContents: 'Course Contents',
+    startReading: 'Start Reading',
+    browseDocuments: 'Browse Documents',
+    documentCount: (count: number) => `${count} ${count === 1 ? 'document' : 'documents'}`,
+    unknownTheme: (name: string) => `Theme “${name}” was not found. Choose course, docs or showcase.`,
+    invalidSiteParameter: (name: string) => `Site setting ${name} is invalid. Check the value in the theme configuration.`,
+    invalidLanding: 'The site home configuration is invalid. Check the independent page definition or document directory in site.landing, and use either site.landing or site.home.',
     viewMenu: 'View',
     blockPreviewFailed: 'Couldn’t show this preview. Check its blocks and assets.',
     startFailed: 'Couldn’t open this document. Please reload the page.',

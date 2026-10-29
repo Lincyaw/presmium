@@ -2,14 +2,15 @@ import { createInterface } from 'node:readline'
 import type { Interface } from 'node:readline'
 import { basename, relative, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import { assertEmpty, createProject, CreateError, isValidPackageName, KINDS, packageNameFor } from './create.ts'
-import type { ProjectKind } from './create.ts'
+import { assertEmpty, createProject, CreateError, isValidPackageName, KINDS, packageNameFor, SITE_THEMES } from './create.ts'
+import type { ProjectKind, SiteTheme } from './create.ts'
 import { MESSAGES, systemLocale } from './messages.ts'
 import type { Messages } from './messages.ts'
 
 const DEFAULT_DIRS: Record<ProjectKind, string> = {
   lecture: 'my-lecture',
   workspace: 'my-course',
+  site: 'my-site',
   plugin: 'presmium-plugin-greeting',
 }
 
@@ -32,6 +33,9 @@ export async function main(argv: string[]): Promise<number> {
     const kind = args.values.type ?? await questions.kind()
     if (!KINDS.includes(kind as ProjectKind)) throw new CreateError(t.badKind(kind), true)
     const project = kind as ProjectKind
+    if (args.values.theme !== undefined && project !== 'site') throw new CreateError(t.themeOnlyForSite, true)
+    const theme = args.values.theme ?? 'course'
+    if (!SITE_THEMES.includes(theme as SiteTheme)) throw new CreateError(t.badTheme(theme), true)
     const dir = resolve(args.positionals[0] ?? await questions.ask(t.dirQuestion, DEFAULT_DIRS[project]))
     assertEmpty(dir, t)
     const folder = relative(process.cwd(), dir) || '.'
@@ -39,8 +43,8 @@ export async function main(argv: string[]): Promise<number> {
     const name = args.values.name ?? (asking && project === 'plugin' ? await questions.ask(t.nameQuestion, packageNameFor(dir)) : packageNameFor(dir))
     if (!isValidPackageName(name)) throw new CreateError(t.badName(name))
     questions.close()
-    createProject({ kind: project, dir, title, name, git: args.values.git, t })
-    const steps = [...folder === '.' ? [] : [`cd ${/[\s'"]/.test(folder) ? JSON.stringify(folder) : folder}`], ...project === 'plugin' ? ['pnpm install', 'pnpm test', 'pnpm dev'] : [`presmium ${project === 'lecture' ? 'dev' : 'serve'}`]]
+    createProject({ kind: project, dir, title, name, git: args.values.git, theme: theme as SiteTheme, t })
+    const steps = [...folder === '.' ? [] : [`cd ${/[\s'"]/.test(folder) ? JSON.stringify(folder) : folder}`], ...project === 'plugin' ? ['pnpm install', 'pnpm test', 'pnpm dev'] : project === 'site' ? ['pnpm install', 'pnpm serve'] : [`presmium ${project === 'lecture' ? 'dev' : 'serve'}`]]
     process.stdout.write(`${t.created(project, folder)}\n\n${t.next}\n${steps.map(step => `  ${step}\n`).join('')}\n${t.agents}\n`)
     return 0
   } catch (error) {
@@ -60,6 +64,7 @@ function parse(argv: string[], t: Messages) {
     options: {
       type: { type: 'string', short: 't' },
       title: { type: 'string' },
+      theme: { type: 'string' },
       name: { type: 'string' },
       git: { type: 'boolean', default: true },
       help: { type: 'boolean', short: 'h', default: false },

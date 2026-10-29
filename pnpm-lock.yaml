@@ -238,6 +238,36 @@ importers:
         specifier: 2.9.0
         version: 2.9.0
 
+  examples/presmium-site:
+    dependencies:
+      '@lincyaw/addon-code':
+        specifier: workspace:*
+        version: link:../../packages/addon-code
+      '@lincyaw/addon-lecture':
+        specifier: workspace:*
+        version: link:../../packages/addon-lecture
+      '@lincyaw/addon-motion':
+        specifier: workspace:*
+        version: link:../../packages/addon-motion
+      '@lincyaw/design':
+        specifier: workspace:*
+        version: link:../../packages/design
+      '@lincyaw/compiler':
+        specifier: workspace:*
+        version: link:../../packages/compiler
+      '@lincyaw/render-slides':
+        specifier: workspace:*
+        version: link:../../packages/render-slides
+      '@lincyaw/presmium':
+        specifier: workspace:*
+        version: link:../../packages/presmium
+      '@lincyaw/web':
+        specifier: workspace:*
+        version: link:../../packages/web
+      yaml:
+        specifier: 2.9.0
+        version: 2.9.0
+
   packages/addon-assistant:
     dependencies:
       eventsource-parser:

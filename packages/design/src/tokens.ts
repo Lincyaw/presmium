@@ -1,5 +1,13 @@
 export const COLORS = [
   'bg',
+  'product-bg',
+  'product-accent',
+  'product-soft',
+  'film-paper',
+  'film-ink',
+  'film-violet',
+  'film-lilac',
+  'film-silver',
   'qr-paper',
   'qr-ink',
   'surface',

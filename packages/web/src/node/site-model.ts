@@ -1,10 +1,10 @@
 import { existsSync, realpathSync, statSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
-import { DEFAULT_LANG, DOCUMENT_ENTRY, docBlocks, isRecord, nodeMdast, NON_FILE_URL, safeDecodeURIComponent } from '@lincyaw/kernel'
+import { DEFAULT_LANG, DOCUMENT_ENTRY, deckLocale, docBlocks, isRecord, nodeMdast, NON_FILE_URL, safeDecodeURIComponent } from '@lincyaw/kernel'
 import type { DocumentLink, Finding, IRDocument, MdastNode, RenderContext, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
 import { findInstalledPackage, isInside } from '@lincyaw/kernel/node'
-import { crossFormLinks, pageLink, searchDocuments, sectionLinks, siteShell, translationPages, urlPath, webPages } from '../domain/index.ts'
-import type { HomeDocument, NavItem, Neighbour, SearchDocument, SiteConfig, SiteLocale, SiteShell, WebPage } from '../domain/index.ts'
+import { crossFormLinks, pageLink, searchDocuments, sectionLinks, sitePageLayout, siteShell, translationPages, urlPath, WEB_MESSAGES, webPages } from '../domain/index.ts'
+import type { AppConfig, HomeDocument, NavItem, Neighbour, SearchDocument, SiteConfig, SiteLocale, SiteShell, WebPage } from '../domain/index.ts'
 import type { DocumentPage } from './publish.ts'
 
 /**
@@ -16,7 +16,7 @@ import type { DocumentPage } from './publish.ts'
 
 export const LIST_PAGE = 'documents'
 const LINK_LANGUAGE = new WeakMap<DocumentLink, string>()
-const SHELL_KEYS = ['nav', 'footer', 'head', 'sitemap']
+const SHELL_KEYS = ['nav', 'footer', 'head', 'sitemap', 'theme', 'params']
 
 /** A document's source files: those of its sections and of all their blocks. */
 export function documentSourceFiles(doc: IRDocument): Set<string> {
@@ -37,9 +37,20 @@ export function homeDocument(site: SiteSpec): SiteDocument | undefined {
   return site.home === undefined ? undefined : site.documents.find(doc => doc.dir === site.home && doc.dir !== '')
 }
 
+/** A landing page consumes the canonical document at the root; it does not introduce a second content format. */
+export function landingDocument(site: SiteSpec): SiteDocument | undefined {
+  const value = site.config.landing
+  if (value === undefined) return undefined
+  if (site.home !== undefined) throw new Error(WEB_MESSAGES[deckLocale(siteLanguage(site))].invalidLanding)
+  if (isRecord(value)) return undefined
+  const document = typeof value === 'string' ? site.documents.find(entry => entry.dir !== '' && entry.dir === value) : undefined
+  if (!document || site.home !== undefined) throw new Error(WEB_MESSAGES[deckLocale(siteLanguage(site))].invalidLanding)
+  return document
+}
+
 /** Where the site's list of documents is: its home page, or `documents.html` when the home page is a document. */
 export function listLink(site: SiteSpec, base: string): string {
-  return homeDocument(site) ? `${base}${LIST_PAGE}.html` : base
+  return homeDocument(site) || site.config.landing !== undefined ? `${base}${LIST_PAGE}.html` : base
 }
 
 export function documentBase(base: string, dir: string): string {
@@ -49,6 +60,12 @@ export function documentBase(base: string, dir: string): string {
 /** The site's own language: the workspace's, else its first document's. */
 export function siteLanguage(site: SiteSpec, fallback?: string): string {
   return typeof site.config.lang === 'string' ? site.config.lang : site.documents.find(doc => doc.lang)?.lang ?? fallback ?? DEFAULT_LANG
+}
+
+export function siteTitle(site: SiteSpec, lang: string): string {
+  const locales = isRecord(site.config.locales) ? site.config.locales : {}
+  const locale = locales[lang]
+  return isRecord(locale) && typeof locale.title === 'string' && locale.title.trim() ? locale.title : site.title
 }
 
 /** The other languages of the documents' translations, each with the title the workspace gives its home page. */
@@ -96,12 +113,15 @@ export function homeDocuments(site: SiteSpec, base: string, compiled: ReadonlyMa
       const root = `${documentBase(base, entry.dir)}${lang}/`
       return { dir: entry.dir, title: translated.doc.meta.title, lang, ...entry.tags?.length ? { tags: entry.tags } : {}, href: root, ...cardOf(translated.doc, root, translated.pages) }
     }
-    const { dir, title, lang: own, tags, doc } = entry
-    return { dir, title, ...own ? { lang: own } : {}, ...tags?.length ? { tags } : {}, href: documentBase(base, dir), ...cardOf(compiled.get(dir) ?? doc, documentBase(base, dir)) }
+    const { dir, title, description, lang: own, tags, doc } = entry
+    const snapshot = compiled.get(dir) ?? doc
+    const root = documentBase(base, dir)
+    const card = snapshot ? cardOf(snapshot, root) : description?.trim() ? { description: description.trim() } : {}
+    return { dir, title, ...own ? { lang: own } : {}, ...tags?.length ? { tags } : {}, href: root, ...card }
   })
 }
 
-function documentLinkOf(ctx: RenderContext): (source: SourcePos, url: string) => DocumentLink | undefined {
+export function documentLinkOf(ctx: RenderContext): (source: SourcePos, url: string) => DocumentLink | undefined {
   if (ctx.documentLink) return (source, url) => ctx.documentLink!(source, url)
   return (source, url) => {
     const path = url.replace(/[?#].*$/s, '')
@@ -254,7 +274,7 @@ export function navBelow(base: string, items: readonly NavItem[] = []): NavItem[
 
 /** The shell of the site's pages, its navigation below the site's path. */
 export function siteShellBelow(site: SiteSpec, base: string): SiteShell {
-  const shell = siteShell(shellOptions(site))
+  const shell = siteShell(shellOptions(site), siteLanguage(site))
   return shell.nav ? { ...shell, nav: navBelow(base, shell.nav) } : shell
 }
 
@@ -264,12 +284,41 @@ export function documentSiteConfig(input: { site: SiteSpec, base: string, dir: s
   const shell = siteShellBelow(site, base)
   const entry = site.documents.find(other => other.dir === dir)
   const links = crossFormLinks(doc.config.presmium, doc.config.renderers)
+  const locales = documentLocales(doc.meta.lang ?? input.lang, documentBase(base, dir), entry?.translations).map(locale => {
+    const shown = entry?.translations?.find(translated => translated.lang === locale.lang)?.doc ?? doc
+    return { ...locale, layout: sitePageLayout(isRecord(shown.config.renderers.web) ? shown.config.renderers.web : {}, locale.lang) }
+  })
+  const own = siteLanguage(site)
+  const prefix = input.lang !== own && siteLanguages(site, own).some(locale => locale.lang === input.lang) ? `${input.lang}/` : ''
+  const root = input.workspace ? `${base}${prefix}` : locales.find(locale => locale.lang === input.lang)?.base ?? base
   return {
     title: doc.meta.title,
+    brandTitle: input.workspace ? siteTitle(site, input.lang) : doc.meta.title,
+    root,
+    layout: sitePageLayout(isRecord(doc.config.renderers.web) ? doc.config.renderers.web : {}, doc.meta.lang),
     shell,
-    locales: documentLocales(doc.meta.lang ?? input.lang, documentBase(base, dir), entry?.translations),
+    locales,
     links: input.workspace ? { ...links, slides: Boolean(links.slidesUrl) } : links,
-    ...input.workspace ? { home: listLink(site, base), neighbours: siteNeighbours(site, base, dir, input.docs).neighbours } : {},
+    ...input.workspace ? { home: listLink(site, root), neighbours: siteNeighbours(site, base, dir, input.docs).neighbours } : {},
+  }
+}
+
+/** Reuse a document's IR, bundle and media, with a root-level route that displays all of its sections. */
+export function landingConfig(config: AppConfig, doc: IRDocument, site: SiteSpec, base: string, lang = ''): AppConfig {
+  const root = `${base}${lang ? `${lang}/` : ''}`
+  const own = config.site.locales[0]?.lang ?? doc.meta.lang
+  return {
+    ...config,
+    page: 'index',
+    landing: true,
+    site: {
+      ...config.site,
+      brandTitle: siteTitle(site, config.lang),
+      root,
+      layout: 'landing',
+      home: `${root}${LIST_PAGE}.html`,
+      locales: config.site.locales.map(locale => ({ ...locale, base: `${base}${locale.lang === own ? '' : `${locale.lang}/`}`, layout: 'landing' })),
+    },
   }
 }
 

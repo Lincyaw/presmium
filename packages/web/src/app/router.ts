@@ -4,7 +4,7 @@ import type { Position } from '@lincyaw/viewer/domain'
 import { createStore } from '@lincyaw/host'
 import type { Store } from '@lincyaw/host'
 const nextTick = (work?: () => void) => new Promise<void>(resolve => requestAnimationFrame(() => { work?.(); resolve() }))
-import { pageLink, sectionLinks, webPages } from '../domain/index.ts'
+import { pageLink, sectionLinks, translationPages, webPages } from '../domain/index.ts'
 import type { AppConfig, WebPage } from '../domain/index.ts'
 
 /**
@@ -32,10 +32,18 @@ export interface PageRouter {
 export function createPageRouter(config: AppConfig, doc: () => IRDocument, history: boolean): PageRouter {
   const root = config.site.locales.find(locale => locale.lang === config.lang)?.base ?? config.base
   const prefix = root.replace(/\/$/, '')
-  const pages = createStore(config.pages ?? webPages(doc()))
+  const pagesOf = () => config.landing ? [{ path: 'index', title: doc().meta.title, sections: doc().sections.map(section => section.id) }] : config.pages ? translationPages(doc(), config.pages) : webPages(doc())
+  const pages = createStore(pagesOf())
   const page = createStore(config.page ?? 'index')
   const shown = createStore(pages.getSnapshot().find(p => p.path === page.getSnapshot()) ?? pages.getSnapshot()[0])
-  const refresh = () => { pages.set(config.pages ?? webPages(doc())); shown.set(pages.getSnapshot().find(p => p.path === page.getSnapshot()) ?? pages.getSnapshot()[0]) }
+  const refresh = () => {
+    const next = pagesOf()
+    pages.set(next)
+    if (!next.some(target => target.path === page.getSnapshot()) && next[0]) {
+      page.set(next[0].path)
+      if (history) window.history.replaceState(null, '', `${pageLink(next[0], prefix)}${window.location.hash}`)
+    } else shown.set(next.find(target => target.path === page.getSnapshot()))
+  }
   page.subscribe(() => shown.set(pages.getSnapshot().find(p => p.path === page.getSnapshot()) ?? pages.getSnapshot()[0]))
   const links = () => sectionLinks(pages.getSnapshot(), prefix)
   const href = (target: WebPage) => pageLink(target, prefix)
