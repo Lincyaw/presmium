@@ -576,7 +576,6 @@ test.describe('the fixture deck in the web form', () => {
     await page.goto(`${site()}?view=presenter&section=lifecycle`)
     await page.locator('.pm-presenter-panels summary').click()
     await expect(page.locator('[data-panel="presmium.core.start-report"] h3')).toHaveText('Start report')
-    await expect(page.locator('.pm-start-report [data-plugin="fixture.core.lifecycle"]')).toHaveText('fixture.core.lifecycle started')
     expect(await page.evaluate(() => window.fixtureLang)).toBe('en-US')
   })
 

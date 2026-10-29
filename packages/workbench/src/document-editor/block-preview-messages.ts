@@ -8,6 +8,6 @@ export const BLOCK_PREVIEW_MESSAGES = {
   en: {
     preparing: 'Preparing preview…', preparingDetail: 'The first time, or after code changes, this takes a moment. The preview appears when it is ready.',
     buildFailure: 'This preview could not be prepared. Check recent changes, then retry.', displayFailure: 'The preview did not appear. Retry.',
-    content: 'Content', animation: 'Animation', mindMap: 'Mind map', video: 'Video', audio: 'Audio', image: 'Image',
+    content: 'Content', animation: 'Animation', mindMap: 'Mind map', video: 'Video', audio: 'Audio', image: 'Picture',
   },
 }

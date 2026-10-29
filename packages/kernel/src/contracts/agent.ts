@@ -1,6 +1,7 @@
 import type { Member } from './server.ts'
 import { defineService } from './service.ts'
 import type { ServiceToken } from './service.ts'
+import type { Locale } from './locale.ts'
 
 export interface SourceRange { file: string, startLine: number, endLine: number }
 
@@ -70,4 +71,6 @@ export interface AgentTool {
   input: Record<string, unknown>
   kind: AgentToolKind
   run(input: Record<string, unknown>, ctx: AgentToolContext): Promise<unknown>
+  /** Text for the codes `run` throws as error messages, in the document's language; other messages pass on as they are. */
+  errors?: Record<Locale, Record<string, string>>
 }

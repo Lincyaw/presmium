@@ -35,7 +35,8 @@ const zh = {
   failures: {
     notAllowed: '运营者尚未允许使用复刻音色，请让运营者在工作区设置中开启。',
     busy: '语音服务正忙，请稍后重试。', tooLarge: '录音太大，请缩短到 30 秒左右。', format: '语音服务不接受这种音频格式，请重新录制。',
-    failed: (message: string) => `无法开始训练：${message}`,
+    unsupported: '当前语音服务不支持复刻音色。请在“设置 → 语音服务”中选择支持它的服务。',
+    failed: '无法开始训练。录音已保留，请稍后重试。',
   },
 }
 
@@ -54,7 +55,7 @@ const en: VoiceCloneMessages = {
   passageLabel: 'A passage to read', passage: 'Today we start from a simple question: how is a picture made, one step after another? First the basic idea, then why it works, and finally a few examples that tie it together. Read it the way you would speak in class, at an easy pace.',
   sample: 'Voice sample', sampleHint: '10 to 30 seconds of the speaker alone, somewhere quiet. Reading the passage above works well.',
   sampleLength: (seconds: number) => `The sample is ${seconds.toFixed(0)} seconds long. Recordings of 10 to 30 seconds work best.`,
-  record: 'Record', stop: 'Stop Recording', choose: 'Choose Audio File', listen: 'Listen', stopListening: 'Stop Listening', clear: 'Clear',
+  record: 'Record', stop: 'Stop Recording', choose: 'Choose Audio File', listen: 'Play Sample', stopListening: 'Stop Sample', clear: 'Clear',
   empty: 'Nothing recorded or chosen yet', preparing: 'Preparing the recording…', seconds: (seconds: number) => `${seconds.toFixed(1)} s`,
   decodeFailed: 'Couldn’t read this audio. Choose another file, or record again.',
   train: 'Start Training', use: 'Use This Voice',
@@ -70,7 +71,8 @@ const en: VoiceCloneMessages = {
   failures: {
     notAllowed: 'The operator has not allowed cloned voices yet. Ask them to turn cloned voices on in the workspace settings.',
     busy: 'The voice service is busy. Try again shortly.', tooLarge: 'The recording is too large. Keep it to about 30 seconds.', format: 'The voice service doesn’t accept this audio format. Record again.',
-    failed: (message: string) => `Couldn’t start training: ${message}`,
+    unsupported: 'The current voice service doesn’t support Voice Cloning. Choose one that does in Settings → Voice Service.',
+    failed: 'Couldn’t start training. The recordings are kept; try again shortly.',
   },
 }
 
@@ -84,5 +86,7 @@ export function cloneFailure(error: unknown, locale: Locale): string {
   if (status === 429) return t.busy
   if (status === 413) return t.tooLarge
   if (status === 415) return t.format
-  return t.failed(message)
+  if (status === 400 && /cannot (?:clone|train cloned) voices/.test(message)) return t.unsupported
+  console.warn(`presmium: voice cloning failed: ${message}`)
+  return t.failed
 }

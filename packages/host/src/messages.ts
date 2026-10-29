@@ -8,6 +8,7 @@ export interface HostMessages {
   noPlugins: string
   status: Record<PluginStatus, string>
   because: string
+  unnamedPlugin: string
   componentError(component: string, message: string): string
   problems(count: number): string
   approvals(count: number): string
@@ -17,6 +18,8 @@ export interface HostMessages {
   answerFailed: string
   close: string
   from(who: string): string
+  origins: Record<string, string>
+  otherOrigin: string
 }
 
 export const HOST_MESSAGES: Catalog<HostMessages> = {
@@ -25,8 +28,9 @@ export const HOST_MESSAGES: Catalog<HostMessages> = {
     startReport: '启动报告',
     starting: '正在启动…',
     noPlugins: '没有注册插件。',
-    status: { started: '已启动', degraded: '已降级', disabled: '已禁用', failed: '启动失败' },
+    status: { started: '已启动', degraded: '部分可用', disabled: '已禁用', failed: '启动失败' },
     because: '：',
+    unnamedPlugin: '其他插件',
     componentError: (component, message) => `${component} 出错：${message}`,
     problems: count => `${count} 个问题`,
     approvals: count => `待确认 ${count}`,
@@ -35,15 +39,18 @@ export const HOST_MESSAGES: Catalog<HostMessages> = {
     deny: '拒绝',
     answerFailed: '无法发送答复。请重试。',
     close: '关闭',
-    from: who => `来自 ${who}`,
+    from: who => `来自${/^[A-Za-z0-9]/.test(who) ? ' ' : ''}${who}`,
+    origins: { 'presmium.mcp': '外部 AI 工具' },
+    otherOrigin: '其他程序',
   },
   'en': {
     panels: 'Classroom and Tools',
     startReport: 'Startup Report',
     starting: 'Starting…',
     noPlugins: 'No plugins registered.',
-    status: { started: 'Started', degraded: 'Degraded', disabled: 'Disabled', failed: 'Failed to start' },
+    status: { started: 'Started', degraded: 'Partly available', disabled: 'Disabled', failed: 'Failed to start' },
     because: ': ',
+    unnamedPlugin: 'Other plugin',
     componentError: (component, message) => `${component} failed: ${message}`,
     problems: count => `${count} ${count === 1 ? 'problem' : 'problems'}`,
     approvals: count => `Pending Approvals (${count})`,
@@ -52,6 +59,8 @@ export const HOST_MESSAGES: Catalog<HostMessages> = {
     deny: 'Deny',
     answerFailed: 'Couldn’t send the answer. Please try again.',
     close: 'Close',
-    from: who => `from ${who}`,
+    from: who => `From ${who}`,
+    origins: { 'presmium.mcp': 'an external AI tool' },
+    otherOrigin: 'another program',
   },
 }

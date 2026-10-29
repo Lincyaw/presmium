@@ -1,9 +1,15 @@
 import './MergeCounter.css'
-import { useActions } from '@lincyaw/host'
+import { useActions, useMessages } from '@lincyaw/host'
 import { useRef, useState } from 'react'
 const VOCABULARY = ['l', 'o', 'w', 'e', 'r', 's', 't']
 const NEW = ['lo', 'low', 'er', 'est']
+const MESSAGES = {
+  'zh-CN': { size: (n: number) => `词表大小：${n}`, merge: '合并一次', reset: '重置' },
+  en: { size: (n: number) => `Vocabulary size: ${n}`, merge: 'Merge Once', reset: 'Reset' },
+}
+
 export default function MergeCounter() {
+  const t = useMessages(MESSAGES)
   const root = useRef<HTMLDivElement>(null)
   const [merges, setMerges] = useState(0)
   const run = useActions(
@@ -25,7 +31,7 @@ export default function MergeCounter() {
           </span>
         ))}
       </div>
-      <p className="merge-counter__size">词表大小：{VOCABULARY.length + merges}</p>
+      <p className="merge-counter__size">{t.size(VOCABULARY.length + merges)}</p>
       <div className="merge-counter__actions">
         <button
           id="merge-once"
@@ -33,10 +39,10 @@ export default function MergeCounter() {
           className="pm-ui-button pm-ui-button--primary"
           onClick={() => run('merge')}
         >
-          合并一次
+          {t.merge}
         </button>
         <button id="merge-reset" type="button" className="pm-ui-button" onClick={() => run('reset')}>
-          重置
+          {t.reset}
         </button>
       </div>
     </div>

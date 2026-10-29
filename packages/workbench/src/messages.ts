@@ -1,4 +1,5 @@
 import { localeOf } from '@lincyaw/kernel'
+import { SHORTCUTS } from './shortcuts.ts'
 
 export type Locale = 'zh-CN' | 'en'
 export { localeOf }
@@ -29,7 +30,6 @@ const zh = {
   movePageUp: '上移页面',
   movePageDown: '下移页面',
   previewPreparing: '正在准备预览，首次打开可能需要一些时间…',
-  previewPrepareTimeout: '准备预览超时。正文和草稿已保留，请重试。',
   previewStalled: '无法连接预览。请重新加载，诊断已保留。',
   contentWorkspace: '内容',
   sequenceWorkspace: '编排',
@@ -160,8 +160,8 @@ const zh = {
   back: '返回文稿列表',
   undo: '撤消',
   redo: '恢复',
-  undoWhat: (what: string) => `撤消：${what}（Ctrl+Z）`,
-  redoWhat: (what: string) => `恢复：${what}（Ctrl+Y）`,
+  undoWhat: (what: string) => `撤消：${what}（${SHORTCUTS.undo}）`,
+  redoWhat: (what: string) => `恢复：${what}（${SHORTCUTS.redo}）`,
   nothingToUndo: '没有可撤消的操作',
   nothingToRedo: '没有可恢复的操作',
   saving: '正在保存…',
@@ -169,7 +169,25 @@ const zh = {
   unsaved: '未保存',
   savedAt: (time: string) => `已保存 · ${time}`,
   saveLocked: 'AI 正在修改，请稍后再编辑这里。',
-  saveFailed: (reason: string) => `无法保存：${reason}`,
+  saveFailed: (reason: string) => `无法保存文稿。${reason}`,
+  failureReasons: {
+    'document-version-changed': '文稿已在别处修改。输入已保留，请重新加载后再保存。',
+    'document-readback-changed': '文稿已在别处修改。输入已保留，请重新加载后再保存。',
+    'document-identity-changed': '这份文稿已被替换。请重新打开它。',
+    'document-invalid': '修改后的文稿无法通过检查。输入已保留，请撤消最近的修改后重试。',
+    'document-files-ignored': '版本历史忽略了这份文稿的文件，无法保存。请让管理员检查工作区设置。',
+    'document-change-id-reused': '这次修改已经保存过。请重新加载后核对。',
+    'document-disconnected': '无法连接工作区服务。输入已保留，请检查网络后重试。',
+    'document-request-failed': '工作区服务没有完成请求。输入已保留，请重试。',
+    'page-context-changed': '页面已经变化。请重新选择后重试。',
+    'authoring-review-required': '这项修改需要先在“待确认”中允许。',
+    'authoring-permission-denied': '没有修改这份文稿的权限。',
+    'preview-timeout': '准备预览超时。正文和草稿已保留，请重试。',
+    'no-conversation': '对话尚未准备好，请稍后重试。',
+    network: '无法连接工作区服务。请检查网络后重试。',
+  } as Record<string, string>,
+  failureGeneric: '请重试；如果仍然失败，请重新加载页面。',
+
   editingMode: '编辑',
   viewingMode: '查看',
   modeLabel: '模式',
@@ -216,8 +234,7 @@ const zh = {
   showResolved: '显示已解决的批注',
   inSection: (title: string) => `位于“${title}”`,
   pointerTools: '对所选内容的操作',
-  askFailed: (reason: string) => `无法发送给 AI：${reason}`,
-  noConversation: '对话尚未准备好，请稍后重试。',
+  askFailed: (reason: string) => `无法发送给 AI。${reason}`,
   formattedEdit: '这一处带有格式或特殊内容，不能直接修改文字。要用 AI 改写吗？',
   rewriteEdit: '用 AI 改写',
   versionHistory: '版本历史',
@@ -295,19 +312,19 @@ const zh = {
   problems: (n: number) => `有 ${n} 处内容无法正确显示。`,
   fixWithAi: '用 AI 修复',
   fixing: '正在发送给 AI…',
-  fixFailed: (reason: string) => `无法发送给 AI：${reason}`,
+  fixFailed: (reason: string) => `无法发送给 AI。${reason}`,
   details: '详细信息',
   diagnosticsUnavailable: '暂时无法检查内容是否正确显示，正在重新连接。',
   retry: '重试',
   preview: '文稿',
   previewTitle: (title: string) => `${title}`,
-  previewFailed: (reason: string) => `文稿暂时无法显示：${reason}`,
+  previewFailed: (reason: string) => `文稿暂时无法显示。${reason}`,
   previewLoading: '正在打开文稿…',
   reloadPreview: '重新加载',
   noSlides: '这份文稿没有幻灯片。',
   versionMismatch: '需要重新启动 Presmium 才能显示这份文稿。',
   previewIdentityMismatch: '显示的内容与所选文稿不一致，请重新加载。',
-  focusFailed: (reason: string) => `所选内容没有同步给 AI：${reason}`,
+  focusFailed: (reason: string) => `所选内容没有同步给 AI。${reason}`,
   justNow: '刚刚',
   editedSection: (title: string) => (title ? `编辑“${title}”` : '编辑文字'),
   retitled: (title: string) => `重命名为“${title}”`,
@@ -331,6 +348,7 @@ const zh = {
   approvalsTitle: '待确认的操作',
   approvalFrom: (who: string) => `来自${spaced(who)}`,
   approvalOrigin: { 'presmium.mcp': '外部 AI 工具' } as Record<string, string>,
+  approvalOtherOrigin: '其他程序',
   approvalAllow: '允许',
   approvalDeny: '拒绝',
   approvalExpired: '此请求已结束或超时，未执行。',
@@ -356,7 +374,6 @@ const en: WorkbenchMessages = {
   movePageUp: 'Move Page Up',
   movePageDown: 'Move Page Down',
   previewPreparing: 'Preparing the preview. Opening it the first time may take a moment…',
-  previewPrepareTimeout: 'Preparing the preview timed out. Your content and drafts are kept; try again.',
   previewStalled: 'Couldn’t connect to the preview. Reload to try again; the diagnostics are kept.',
   contentWorkspace: 'Content',
   sequenceWorkspace: 'Sequence',
@@ -487,8 +504,8 @@ const en: WorkbenchMessages = {
   back: 'Back to Documents',
   undo: 'Undo',
   redo: 'Redo',
-  undoWhat: (what: string) => `Undo: ${what} (Ctrl+Z)`,
-  redoWhat: (what: string) => `Redo: ${what} (Ctrl+Y)`,
+  undoWhat: (what: string) => `Undo: ${what} (${SHORTCUTS.undo})`,
+  redoWhat: (what: string) => `Redo: ${what} (${SHORTCUTS.redo})`,
   nothingToUndo: 'Nothing to undo',
   nothingToRedo: 'Nothing to redo',
   saving: 'Saving…',
@@ -496,7 +513,25 @@ const en: WorkbenchMessages = {
   unsaved: 'Not saved',
   savedAt: (time: string) => `Saved · ${time}`,
   saveLocked: 'The AI is editing the document. Edit this again in a moment.',
-  saveFailed: (reason: string) => `Couldn’t save: ${reason}`,
+  saveFailed: (reason: string) => `Couldn’t save the document. ${reason}`,
+  failureReasons: {
+    'document-version-changed': 'The document changed elsewhere. Your input is kept; reload, then save again.',
+    'document-readback-changed': 'The document changed elsewhere. Your input is kept; reload, then save again.',
+    'document-identity-changed': 'This document was replaced. Open it again.',
+    'document-invalid': 'The changed document doesn’t pass the check. Your input is kept; undo the latest change and try again.',
+    'document-files-ignored': 'Version History ignores this document’s files, so it can’t be saved. Ask the administrator to check the workspace settings.',
+    'document-change-id-reused': 'This change was already saved. Reload and check it.',
+    'document-disconnected': 'Couldn’t reach the workspace service. Your input is kept; check the connection and try again.',
+    'document-request-failed': 'The workspace service didn’t finish the request. Your input is kept; try again.',
+    'page-context-changed': 'The page changed. Select it again and retry.',
+    'authoring-review-required': 'This change needs to be allowed in Pending Approvals first.',
+    'authoring-permission-denied': 'You don’t have permission to change this document.',
+    'preview-timeout': 'Preparing the preview timed out. Your content and drafts are kept; try again.',
+    'no-conversation': 'The chat is not ready yet. Try again in a moment.',
+    network: 'Couldn’t reach the workspace service. Check the connection and try again.',
+  } as Record<string, string>,
+  failureGeneric: 'Try again. If it keeps failing, reload the page.',
+
   editingMode: 'Editing',
   viewingMode: 'Viewing',
   modeLabel: 'Mode',
@@ -543,8 +578,7 @@ const en: WorkbenchMessages = {
   showResolved: 'Show resolved comments',
   inSection: (title: string) => `In “${title}”`,
   pointerTools: 'Actions on the selection',
-  askFailed: (reason: string) => `Couldn’t send to the AI: ${reason}`,
-  noConversation: 'The chat is not ready yet. Try again in a moment.',
+  askFailed: (reason: string) => `Couldn’t send to the AI. ${reason}`,
   formattedEdit: 'This text has formatting or special content and can’t be edited directly. Rewrite it with AI?',
   rewriteEdit: 'Rewrite with AI',
   versionHistory: 'Version History',
@@ -622,19 +656,19 @@ const en: WorkbenchMessages = {
   problems: (n: number) => `${n} item${n === 1 ? '' : 's'} can’t be displayed correctly.`,
   fixWithAi: 'Fix with AI',
   fixing: 'Sending to the AI…',
-  fixFailed: (reason: string) => `Couldn’t send to the AI: ${reason}`,
+  fixFailed: (reason: string) => `Couldn’t send to the AI. ${reason}`,
   details: 'Details',
   diagnosticsUnavailable: 'Can’t check the document right now. Reconnecting…',
   retry: 'Retry',
   preview: 'Document',
   previewTitle: (title: string) => `${title}`,
-  previewFailed: (reason: string) => `The document can’t be shown right now: ${reason}`,
+  previewFailed: (reason: string) => `The document can’t be shown right now. ${reason}`,
   previewLoading: 'Opening the document…',
   reloadPreview: 'Reload',
   noSlides: 'This document has no slides.',
   versionMismatch: 'Restart Presmium to show this document.',
   previewIdentityMismatch: 'What is shown does not match the chosen document. Reload it.',
-  focusFailed: (reason: string) => `The selection did not reach the AI: ${reason}`,
+  focusFailed: (reason: string) => `The selection did not reach the AI. ${reason}`,
   justNow: 'just now',
   editedSection: (title: string) => (title ? `Edit “${title}”` : 'Edit Text'),
   retitled: (title: string) => `Rename to “${title}”`,
@@ -658,6 +692,7 @@ const en: WorkbenchMessages = {
   approvalsTitle: 'Pending Approvals',
   approvalFrom: (who: string) => `From ${who}`,
   approvalOrigin: { 'presmium.mcp': 'an external AI tool' },
+  approvalOtherOrigin: 'another program',
   approvalAllow: 'Allow',
   approvalDeny: 'Deny',
   approvalExpired: 'This request already ended or timed out; nothing was done.',
@@ -666,6 +701,21 @@ const en: WorkbenchMessages = {
 }
 
 export const MESSAGES: Record<Locale, WorkbenchMessages> = { 'zh-CN': zh, en }
+
+const NETWORK_FAILURE = /^(?:Failed to fetch|NetworkError when attempting to fetch resource\.|Load failed|network error)$/i
+const reported = new Set<string>()
+
+/**
+ * The localized sentence for why an operation failed. A server or the browser gives a stable code (`document-version-changed`)
+ * or its own words; an author sees only catalog text, and words without an entry become the generic sentence (the raw
+ * reason goes to the console once, for whoever reads the log).
+ */
+export function failureReason(t: WorkbenchMessages, reason: string | undefined): string {
+  if (reason && reason in t.failureReasons) return t.failureReasons[reason]!
+  if (reason && NETWORK_FAILURE.test(reason)) return t.failureReasons.network!
+  if (reason && !reported.has(reason)) { reported.add(reason); console.warn(`presmium: failure reason without a catalog entry: ${reason}`) }
+  return t.failureGeneric
+}
 
 /** Text the workbench writes into a document (new page titles, copy names) follows the document's `lang`, not the interface's. */
 const CONTENT = {

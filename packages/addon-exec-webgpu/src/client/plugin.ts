@@ -16,7 +16,7 @@ function release(): void {
 }
 
 export const execWebgpuPlugin: PluginDefinition = {
-  manifest: { id: EXEC_WEBGPU_ID, version, kernel: '^1.0.0', requires: [{ token: EXECUTOR }], capabilities: ['exec'] },
+  manifest: { id: EXEC_WEBGPU_ID, name: { 'zh-CN': 'WebGPU 运行', en: 'WebGPU Runner' }, version, kernel: '^1.0.0', requires: [{ token: EXECUTOR }], capabilities: ['exec'] },
   setup(ctx) {
     release()
     const router = ctx.get(EXECUTOR)

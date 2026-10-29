@@ -1,3 +1,4 @@
+import { CodeRefError } from './messages.ts'
 import type { Snippet } from './regions.ts'
 
 const NO_REGION = new Set(['all', 'none'])
@@ -8,8 +9,7 @@ export function highlightSteps(steps: string[], regions: Snippet['regions']): nu
     const region = regions.get(step)
     if (region) return Array.from({ length: region.to - region.from + 1 }, (_, i) => region.from + i)
     if (NO_REGION.has(step)) return []
-    const known = [...regions.keys()].join(', ') || 'none'
-    throw new Error(`step "${step}" is not a #region inside the referenced code (regions: ${known})`)
+    throw new CodeRefError({ code: 'step-region', step, regions: [...regions.keys()] })
   })
 }
 

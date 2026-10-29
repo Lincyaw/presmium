@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import type { RefObject } from 'react'
 import { PmButton, PmIconButton, PmMenu, PmNotice, PmSkeleton, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
-import { timeAgo } from '../messages.ts'
+import { failureReason, timeAgo } from '../messages.ts'
+import { SHORTCUTS } from '../shortcuts.ts'
 import { DocumentOutline, DocumentWordCounter } from '../outline.ts'
 import { isAgentChanging } from '../workbench.ts'
 import { ExportPanel } from './ExportPanel.tsx'
@@ -305,8 +306,8 @@ function DocumentToolbar({ presentButton, framed, aside, navigation, changingVie
         <h1 className="pmw-toolbar__title" title={title}>{title}</h1>
       </>}
       <PmToolbarButton asChild><PmIconButton small icon="navigation" label={t.navigationPane} aria-pressed={navigation} onClick={onNavigation} /></PmToolbarButton>
-      <PmToolbarButton asChild><PmIconButton small icon="undo" label={t.undo} shortcut="⌘/Ctrl+Z" disabled={!editorHistory?.undo && (editorHistory?.field || !history?.undo && !dirty) || busy} onClick={() => void workbench.undo()} /></PmToolbarButton>
-      <PmToolbarButton asChild><PmIconButton small icon="redo" label={t.redo} shortcut="⌘/Ctrl+Shift+Z" disabled={!editorHistory?.redo && (editorHistory?.field || dirty || !history?.redo) || busy} onClick={() => void workbench.redo()} /></PmToolbarButton>
+      <PmToolbarButton asChild><PmIconButton small icon="undo" label={t.undo} shortcut={SHORTCUTS.undo} disabled={!editorHistory?.undo && (editorHistory?.field || !history?.undo && !dirty) || busy} onClick={() => void workbench.undo()} /></PmToolbarButton>
+      <PmToolbarButton asChild><PmIconButton small icon="redo" label={t.redo} shortcut={SHORTCUTS.redo} disabled={!editorHistory?.redo && (editorHistory?.field || dirty || !history?.redo) || busy} onClick={() => void workbench.redo()} /></PmToolbarButton>
       <SaveStatus />
       <span className="pmw-spacer" />
       {!narrow && <>
@@ -370,10 +371,10 @@ function DocumentNotices() {
       )}
       {save.kind === 'locked' && <PmNotice tone="warn">{t.saveLocked}</PmNotice>}
       {timingDrafts && <PmNotice tone="warn">{t.timingDraftPending}</PmNotice>}
-      {save.kind === 'failed' && !sourceError && <PmNotice tone="danger">{t.saveFailed(save.message)}</PmNotice>}
-      {historyFailure && <PmNotice tone="danger">{t.historyFailed(t.historyFailureReasons[historyFailure] ?? historyFailure)}</PmNotice>}
-      {focusFailure && <PmNotice tone="warn">{t.focusFailed(focusFailure)}</PmNotice>}
-      {askFailure && <PmNotice tone="danger">{t.askFailed(askFailure)}</PmNotice>}
+      {save.kind === 'failed' && !sourceError && <PmNotice tone="danger">{t.saveFailed(failureReason(t, save.message))}</PmNotice>}
+      {historyFailure && <PmNotice tone="danger">{t.historyFailed(t.historyFailureReasons[historyFailure] ?? failureReason(t, historyFailure))}</PmNotice>}
+      {focusFailure && <PmNotice tone="warn">{t.focusFailed(failureReason(t, focusFailure))}</PmNotice>}
+      {askFailure && <PmNotice tone="danger">{t.askFailed(failureReason(t, askFailure))}</PmNotice>}
       <ProblemsNotice />
     </div>
   )
@@ -390,7 +391,7 @@ function ProblemsNotice() {
   const repairFailure = useWorkbenchState(state => state.diagnosticsRepairFailure)
   const problems = (snapshot?.diagnostics ?? []).filter(diagnostic => diagnostic.severity === 'error' && !diagnostic.checkId.startsWith('presmium.workbench.'))
   if (unavailable) return <PmNotice tone="warn"><span>{t.diagnosticsUnavailable}</span><PmButton small onClick={() => workbench.retryDiagnostics()}>{t.retry}</PmButton></PmNotice>
-  if (problems.length === 0) return repairFailure ? <PmNotice tone="danger">{t.fixFailed(repairFailure)}</PmNotice> : null
+  if (problems.length === 0) return repairFailure ? <PmNotice tone="danger">{t.fixFailed(failureReason(t, repairFailure))}</PmNotice> : null
   return (
     <PmNotice tone="warn">
       <div className="pmw-problems">
@@ -398,7 +399,7 @@ function ProblemsNotice() {
           <span>{t.problems(problems.length)}</span>
           {canRepair && <PmButton small variant="accent" icon="sparkle" disabled={repairing} onClick={() => void workbench.requestRepairDiagnostics()}>{repairing ? t.fixing : t.fixWithAi}</PmButton>}
         </div>
-        {repairFailure && <p className="pmw-problems__failure">{t.fixFailed(repairFailure)}</p>}
+        {repairFailure && <p className="pmw-problems__failure">{t.fixFailed(failureReason(t, repairFailure))}</p>}
         <details className="pmw-problems__details">
           <summary>{t.details}</summary>
           <ul>{problems.map(problem => <li key={problem.id}>{problem.message}</li>)}</ul>

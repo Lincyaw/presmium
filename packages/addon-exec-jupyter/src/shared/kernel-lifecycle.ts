@@ -128,11 +128,19 @@ async function removeDirectory(settings: ServerConnection.ISettings, path: strin
   }
 }
 
+/** Why a connection to Jupyter failed, as a code a reader's text is chosen by (the message is for logs). */
+export type JupyterFailure = 'jupyter-no-answer' | 'jupyter-closed'
+const failure = (code: JupyterFailure, message: string) => Object.assign(new Error(message), { code })
+export const failureCode = (error: unknown): JupyterFailure | undefined => {
+  const code = (error as { code?: unknown } | undefined)?.code
+  return code === 'jupyter-no-answer' || code === 'jupyter-closed' ? code : undefined
+}
+
 function connected(connection: Kernel.IKernelConnection): Promise<void> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => done(new Error(`no answer from the kernel within ${CONNECT_TIMEOUT_MS / 1000} s`)), CONNECT_TIMEOUT_MS)
+    const timer = setTimeout(() => done(failure('jupyter-no-answer', `no answer from the kernel within ${CONNECT_TIMEOUT_MS / 1000} s`)), CONNECT_TIMEOUT_MS)
     const watch = (_: unknown, status: string) => {
-      if (status === 'disconnected') done(new Error('the kernel\'s WebSocket closed'))
+      if (status === 'disconnected') done(failure('jupyter-closed', 'the kernel\'s WebSocket closed'))
     }
     const done = (error?: Error) => {
       clearTimeout(timer)

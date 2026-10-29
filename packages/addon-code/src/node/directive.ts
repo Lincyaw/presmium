@@ -1,6 +1,6 @@
-import { errorMessage } from '@lincyaw/kernel'
+import { deckLocale, errorMessage } from '@lincyaw/kernel'
 import type { CodeNode, DirectiveSpec, RunSpec } from '@lincyaw/kernel'
-import { parseCodeRef, splitTarget } from '../domain/index.ts'
+import { CODE_MESSAGES, CodeRefError, parseCodeRef, splitTarget } from '../domain/index.ts'
 import type { CodeRefSpec } from '../domain/index.ts'
 
 export const codeRefs = new WeakMap<CodeNode, CodeRefSpec>()
@@ -29,7 +29,8 @@ export const codeRefDirective: DirectiveSpec = {
       spec = parseCodeRef(input.arg, input.options)
     }
     catch (error) {
-      const message = `invalid {code-ref}: ${errorMessage(error)}`
+      const t = CODE_MESSAGES[deckLocale(ctx.lang)]
+      const message = t.invalid(error instanceof CodeRefError ? t.problem(error.problem) : errorMessage(error))
       ctx.report({ checkId: 'presmium.code.syntax', severity: 'error', message })
       return { node: { type: 'markdown', mdast: ctx.parse(`> ${message}`) } }
     }

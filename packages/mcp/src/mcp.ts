@@ -482,7 +482,7 @@ function toText(data: unknown): string {
   return typeof data === 'string' ? data : JSON.stringify(data, null, 2)
 }
 
-async function toolResult(run: () => Promise<unknown>, structured = false, lang?: () => Promise<string | undefined>): Promise<CallToolResult> {
+async function toolResult(run: () => Promise<unknown>, structured = false, lang?: () => Promise<string | undefined>, codes?: AgentTool['errors']): Promise<CallToolResult> {
   try {
     const result = await run()
     return { content: [{ type: 'text', text: toText(result) }], ...structured && isRecord(result) ? { structuredContent: result } : {} }
@@ -494,7 +494,8 @@ async function toolResult(run: () => Promise<unknown>, structured = false, lang?
       const failure = { error: { code: status < 500 ? errorMessage(error) : 'tool-failed', message: explain ? explain(detail ?? {}) : errorMessage(error), status, retryable: status >= 500, ...detail ? { detail } : {} } }
       return { isError: true, structuredContent: failure, content: [{ type: 'text', text: toText(failure) }] }
     }
-    return { isError: true, content: [{ type: 'text', text: errorMessage(error) }] }
+    const coded = codes?.[deckLocale(await lang?.().catch(() => undefined) ?? '')]?.[errorMessage(error)]
+    return { isError: true, content: [{ type: 'text', text: coded ?? errorMessage(error) }] }
   }
 }
 
@@ -645,7 +646,10 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
       inputSchema: fromJsonSchema<Args>(pluginSchema(tool) as JsonSchemaType),
       annotations: { readOnlyHint: tool.kind === 'read' },
       _meta: meta(tool.kind),
-    }, (args, ctx) => toolResult(() => pluginTool(call(args, ctx.mcpReq.signal), tool)))
+    }, (args, ctx) => {
+      const own = call(args, ctx.mcpReq.signal)
+      return toolResult(() => pluginTool(own, tool), false, async () => { const dir = await own.document(); return (await host.documents()).find(doc => doc.dir === dir)?.lang }, tool.errors)
+    })
   }
 
   type Read = (call: Call) => Promise<unknown>
@@ -710,7 +714,7 @@ async function pluginTool(call: Call, tool: AgentTool): Promise<unknown> {
   if (!found) throw new Error(`the document ${JSON.stringify(document)} has no tool ${tool.name}`)
   if (found.kind !== 'read' && !(canOperate(call.caller) && call.host.offers(found.kind))) throw new Error(`${tool.name} is not offered to this token`)
   const { document: _document, ...input } = call.args
-  if (found.kind !== 'read') await call.approve(found.kind, m => m.tool(found.name), { detail: JSON.stringify(input) })
+  if (found.kind !== 'read') await call.approve(found.kind, m => m.tool(found.name), {})
   return found.run(input, { document, member: call.caller.member, service: own.service, signal: call.signal })
 }
 

@@ -1,5 +1,6 @@
-import { isRecord, parseDuration } from '@lincyaw/kernel'
+import { deckLocale, isRecord, parseDuration } from '@lincyaw/kernel'
 import type { MdastNode, WordSpan } from '@lincyaw/kernel'
+import { LECTURE_MESSAGES } from './messages.ts'
 import { LECTURE_ID } from './track.ts'
 import { isWide } from './words.ts'
 
@@ -140,11 +141,20 @@ export const CUE_COMMANDS: readonly CueCommand[] = ['next', 'spot', 'hint', 'poi
 
 export const TARGETED: ReadonlySet<CueCommand> = new Set(['spot', 'hint', 'point', 'click', 'run', 'ink'])
 
-export function parseCue(command: string): { name: CueCommand, arg: string } | { problem: string } {
+/** What is wrong with a {cue} command, as a code; `cueProblem` words it in a document's language. */
+export type CueProblem = { code: 'unknown', name: string } | { code: 'pause-duration', arg: string } | { code: 'click-action' } | { code: 'mark-name' }
+
+export function parseCue(command: string): { name: CueCommand, arg: string } | { problem: CueProblem } {
   const [name = '', ...rest] = command.trim().split(/\s+/)
   const arg = rest.join(' ')
-  if (!(CUE_COMMANDS as readonly string[]).includes(name)) return { problem: `unknown cue command "${name}"; the commands are ${CUE_COMMANDS.join(', ')}` }
-  if (name === 'pause' && parseDuration(arg) === undefined) return { problem: `pause needs a duration, e.g. "pause 800ms", not "${arg}"` }
-  if ((name === 'click' || name === 'mark') && !arg) return { problem: `${name} needs ${name === 'click' ? 'the action of the component, e.g. "click reset"' : 'a name, e.g. "mark merge"'}` }
+  if (!(CUE_COMMANDS as readonly string[]).includes(name)) return { problem: { code: 'unknown', name } }
+  if (name === 'pause' && parseDuration(arg) === undefined) return { problem: { code: 'pause-duration', arg } }
+  if ((name === 'click' || name === 'mark') && !arg) return { problem: { code: name === 'click' ? 'click-action' : 'mark-name' } }
   return { name: name as CueCommand, arg }
+}
+
+export function cueProblem(command: string, problem: CueProblem, lang: string | undefined): string {
+  const t = LECTURE_MESSAGES[deckLocale(lang)].cue
+  const reason = problem.code === 'unknown' ? t.unknown(problem.name, CUE_COMMANDS) : problem.code === 'pause-duration' ? t.pauseDuration(problem.arg) : problem.code === 'click-action' ? t.clickAction : t.markName
+  return t.problem(command, reason)
 }

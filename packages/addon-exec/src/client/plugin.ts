@@ -16,7 +16,7 @@ let script: ScriptExecutor | undefined
 let stopStatus: (() => void) | undefined
 
 export const execPlugin: PluginDefinition = {
-  manifest: { id: EXEC_ID, version, kernel: '^1.0.0', provides: [EXECUTOR, TRACER], requires: [{ token: STATUS, optional: true }], capabilities: ['exec'] },
+  manifest: { id: EXEC_ID, name: { 'zh-CN': '代码运行', en: 'Code Runner' }, version, kernel: '^1.0.0', provides: [EXECUTOR, TRACER], requires: [{ token: STATUS, optional: true }], capabilities: ['exec'] },
   setup(ctx) {
     const config = execConfig(ctx.config)
     declaredEnvironments.set(ctx.environments ?? {})
