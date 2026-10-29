@@ -41,6 +41,18 @@ export function linkToolbarFloating(): FloatingUIOptions {
   return { useFloatingOptions: { middleware: [offset(LINK_TOOLBAR_GAP), flip(), shift({ padding: edge() })] } }
 }
 
+// BlockNote's own gap between commented text and its floating card or new-comment form.
+const COMMENT_GAP = 10
+
+/**
+ * Comment cards and the new-comment form keep BlockNote's place under the text (above when there is no room below)
+ * and slide back inside the screen with the same margin as the other popovers, instead of touching its edge.
+ */
+export function commentFloatingMiddleware(): NonNullable<NonNullable<FloatingUIOptions['useFloatingOptions']>['middleware']> {
+  const padding = edge()
+  return [offset(COMMENT_GAP), flip({ padding }), shift({ padding })]
+}
+
 /**
  * Keeps an inline source popup (BlockNote positions it under the left end of its formula) inside the screen:
  * it flips above the line near the bottom and slides left near the right edge.
