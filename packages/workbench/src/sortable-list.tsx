@@ -40,7 +40,8 @@ export interface SortableListProps {
   reorderDisabled?: boolean
   loading?: boolean
   density?: ControlDensity
-  locale?: 'zh-CN' | 'en'
+  /** The workbench's interface language (its state's `locale`); the list does not choose one itself. */
+  locale: 'zh-CN' | 'en'
   labels?: Partial<SortableListLabels>
   className?: string
 }
@@ -49,11 +50,11 @@ const MESSAGES: Record<'zh-CN' | 'en', SortableListLabels> = {
   'zh-CN': {
     handle: label => `移动：${label}`,
     instructions: '按空格或回车开始移动，用方向键调整位置，再按空格或回车放下，按 Escape 取消。',
-    pickedUp: (label, index, count) => `已拾起${label}，第 ${index} 项，共 ${count} 项。`,
+    pickedUp: (label, index, count) => `已拾起“${label}”，第 ${index} 项，共 ${count} 项。`,
     position: (label, index, count) => `${label}，位置 ${index}，共 ${count} 项。`,
-    dropped: label => `已放下${label}。`, cancelled: label => `已取消移动${label}。`,
-    saving: label => `正在移动${label}。`, saved: (label, index, count) => `已移动${label}，第 ${index} 项，共 ${count} 项。`,
-    failed: label => `未能移动${label}。`,
+    dropped: label => `已放下“${label}”。`, cancelled: label => `已取消移动“${label}”。`,
+    saving: label => `正在移动“${label}”…`, saved: (label, index, count) => `已移动“${label}”，第 ${index} 项，共 ${count} 项。`,
+    failed: label => `无法移动“${label}”。`,
   },
   en: {
     handle: label => `Move: ${label}`,
@@ -61,14 +62,9 @@ const MESSAGES: Record<'zh-CN' | 'en', SortableListLabels> = {
     pickedUp: (label, index, count) => `Picked up ${label}, item ${index} of ${count}.`,
     position: (label, index, count) => `${label}, position ${index} of ${count}.`,
     dropped: label => `Dropped ${label}.`, cancelled: label => `Canceled moving ${label}.`,
-    saving: label => `Moving ${label}.`, saved: (label, index, count) => `Moved ${label}, item ${index} of ${count}.`,
-    failed: label => `Could not move ${label}.`,
+    saving: label => `Moving ${label}…`, saved: (label, index, count) => `Moved ${label}, item ${index} of ${count}.`,
+    failed: label => `Couldn’t move ${label}.`,
   },
-}
-
-function defaultLocale(): 'zh-CN' | 'en' {
-  const languages = [typeof document === 'undefined' ? '' : document.documentElement.lang, typeof navigator === 'undefined' ? '' : navigator.language, 'zh-CN']
-  return languages.find(language => /^(?:zh|en)(?:-|$)/i.test(language))!.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en'
 }
 
 /** A changed list identity owns a fresh gesture and cannot receive an earlier move's completion. */
@@ -83,7 +79,7 @@ export function PmSortableList(props: SortableListProps) {
     previous.current.generation++; gesture.current = false; movePending.current = false
   }
   previous.current = { scope: props.scopeKey, order, members, reset: props.resetKey, availability, generation: previous.current.generation }
-  const signature = JSON.stringify([props.scopeKey, previous.current.generation, props.locale ?? defaultLocale(), props.labels?.instructions])
+  const signature = JSON.stringify([props.scopeKey, previous.current.generation, props.locale, props.labels?.instructions])
   return <SortableSession key={signature} {...props} gesture={gesture} movePending={movePending} focus={focus} />
 }
 
@@ -102,7 +98,7 @@ function SortableGuard({ signature, revision, active, onReplace }: { signature: 
 }
 
 function SortableSession(props: SortableListProps & { gesture: MutableRefObject<boolean>, movePending: MutableRefObject<boolean>, focus: MutableRefObject<string | undefined> }) {
-  const { items, onMove, density = 'compact', locale = defaultLocale() } = props
+  const { items, onMove, density = 'compact', locale } = props
   const labels = useMemo(() => ({ ...MESSAGES[locale], ...props.labels }), [locale, props.labels])
   const [pending, setPending] = useState<{ id: string, order: string[] }>(), [announcement, setAnnouncement] = useState('')
   const alive = useRef(true), active = props.gesture, movePending = props.movePending, focus = props.focus, request = useRef<object>(), current = useRef({ props, labels })

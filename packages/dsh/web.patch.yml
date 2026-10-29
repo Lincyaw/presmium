@@ -47,7 +47,7 @@
 - id: ui-deliverables
   disabled: true
 
-# 内置的「创作」预设：工作台中 Presmium 助手的角色，它面对的作者，以及跟作者说话的方式。预设的
+# 内置的“创作”（authoring）预设：工作台中 Presmium 助手的角色，它面对的作者，以及跟作者说话的方式。预设的
 # persona 遮蔽部署级的人设（profile.patch.yml），所以这里重述 Presmium 的角色；写作的原则在
 # presmium-author 技能中，改写内容时加载。预设只带讲义需要的工具：没有定时任务、目标、子 agent 与文件卡片（present）。
 - insert:
@@ -55,8 +55,9 @@
       name: '@deepseek-ai/dsh-agent-preset'
       config:
         id: authoring
-        name: 创作
-        description: 和作者一起写讲义：回答作者的问题，按作者的要求修改文稿。
+        # The preset picker (ui-agent-preset) is off, so authors never see a preset's name; the brand stands in for it in
+        # both languages, and a description in one language is left out.
+        name: Presmium
         order: 0
         plugins:
           - id: persona

@@ -4,6 +4,11 @@ import { isInside } from '@lincyaw/kernel/node'
 import type { DshAgent, DshContext, DshToolExecution } from './dsh-types.ts'
 import { WORKSPACE_ROUTES } from './server-routes.ts'
 
+// What a writing tool answers when the change cannot be recorded. The AI reads it and tells the author in their own
+// language, so it names what the author sees (Version History) and none of the internals behind it.
+const NOT_RECORDED = 'Version History is not turned on for this folder, so the change could not be recorded for the author to review. Tell the author to ask their administrator to turn on Version History for this folder.'
+const NOTHING_CHANGED = 'Nothing was changed.'
+
 export const name = 'presmium-turns'
 export const inject = ['presmium', 'tools']
 
@@ -75,7 +80,7 @@ export function apply(ctx: DshContext): void {
     const response = await ctx.presmium.server.request(`${REVIEW}/${path}`, { body: { session: agentSessionId, ...body }, headers: { 'presmium-document': encodeURIComponent(document) } })
     const text = await response.text()
     if (response.ok) return
-    if (path === 'open' && response.status === 404) throw new Error('the workspace is not a git repository, so the author cannot review a change: run git init in it')
+    if (path === 'open' && response.status === 404) throw new Error(NOT_RECORDED)
     let reason = text
     try {
       reason = (JSON.parse(text) as { error?: string, detail?: string }).error ?? reason
@@ -104,7 +109,7 @@ export function apply(ctx: DshContext): void {
     try {
       await postReview(document, agentSessionId, 'open', state.turn !== undefined ? { turn: state.turn } : {})
     } catch (error) {
-      throw new Error(`Presmium: ${errorMessage(error)}. Nothing was changed.`)
+      throw new Error(`${errorMessage(error)} ${NOTHING_CHANGED}`)
     }
     state.document = document
     state.wrote = true
