@@ -1,9 +1,9 @@
 {
   "displayName": "Presmium",
-  "description": "Edit lecture.json with native JSON schema support, teaching graph diagnostics, code anchor navigation and a preview that follows the current page",
+  "description": "Edit lecture.json with the built-in JSON editor: schema completion, teaching graph diagnostics, code anchor navigation, and a preview that follows the current page",
   "category": "Presmium",
   "command.openPreview": "Open Preview to the Side",
   "configuration.title": "Presmium",
   "configuration.server.runtime": "Node.js executable that runs the language server (Node.js 22.19 or later).",
-  "configuration.server.path": "Path to presmium-language-server.mjs. By default the one of @lincyaw/language-server installed in the workspace, else the extension's own."
+  "configuration.server.path": "Path to presmium-language-server.mjs. By default, the one of @lincyaw/language-server installed in the workspace, or else the extension’s own."
 }

@@ -31,7 +31,7 @@ export const TRANSCRIPTION_TOOLS: ToolSpec[] = [
     inputSchema: input({ request: structuredClone(DOCUMENT_TRANSCRIPTION_INPUT_SCHEMA) }, ['request']),
     run: async call => {
       const selected = await call.document(), request: DocumentTranscriptionRequest = { ...(call.args.request as Omit<DocumentTranscriptionRequest, 'confirmed'>), confirmed: true }
-      await call.approve('spend', messages => messages.tool('start_transcription'), { lang: await language(call, selected), detail: JSON.stringify({ document: selected, request: call.args.request }), check: () => service(call).checkStart(selected, request, call.caller.member, call.signal) })
+      await call.approve('spend', messages => messages.startTranscription, { lang: await language(call, selected), detail: JSON.stringify({ document: selected, request: call.args.request }), check: () => service(call).checkStart(selected, request, call.caller.member, call.signal) })
       call.signal.throwIfAborted()
       return service(call).start(selected, request, call.caller.member, call.signal)
     },
@@ -62,7 +62,7 @@ export const TRANSCRIPTION_TOOLS: ToolSpec[] = [
       const selected = await call.document(), query = call.args.query as { id: string } | { intent: string }
       const finished = await service(call).checkCancel(selected, query, call.caller.member)
       if (finished) return finished
-      await call.approve('operate', messages => messages.tool('cancel_transcription'), { lang: await language(call, selected), detail: JSON.stringify({ document: selected, query }) })
+      await call.approve('operate', messages => messages.cancelTranscription, { lang: await language(call, selected), detail: JSON.stringify({ document: selected, query }) })
       call.signal.throwIfAborted()
       return service(call).cancel(selected, query, call.caller.member)
     },
@@ -84,7 +84,7 @@ export const TRANSCRIPTION_TOOLS: ToolSpec[] = [
       if (!call.host.transcriptionAdoption || !call.host.authoring) throw Object.assign(new Error('adoption-host-unavailable'), { status: 503 })
       const selected = await call.document(), capability = call.host.authoring.capabilities(selected, call.caller.member)
       if (!capability.actions.apply) throw Object.assign(new Error(capability.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: capability.applyUnavailableReason ? 409 : 403 })
-      await call.approve('operate', messages => messages.tool('apply_transcription_adoption'), { lang: await language(call, selected), detail: JSON.stringify({ document: selected, request: call.args.request }), check: () => call.host.transcriptionAdoption!.check(selected, call.args.request as TranscriptionAdoptionApply, call.caller.member) })
+      await call.approve('operate', messages => messages.adoptTranscription, { lang: await language(call, selected), detail: JSON.stringify({ document: selected, request: call.args.request }), check: () => call.host.transcriptionAdoption!.check(selected, call.args.request as TranscriptionAdoptionApply, call.caller.member) })
       call.signal.throwIfAborted()
       return call.host.transcriptionAdoption.apply(selected, call.args.request as TranscriptionAdoptionApply, call.caller.member)
     },

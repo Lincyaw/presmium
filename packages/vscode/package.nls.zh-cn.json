@@ -1,6 +1,6 @@
 {
   "displayName": "Presmium",
-  "description": "使用原生 JSON 编辑器编写 lecture.json：公共契约补全、教学图诊断、代码锚点导航，以及跟随当前页面的预览",
+  "description": "用内置的 JSON 编辑器编辑 lecture.json：架构补全、教学图诊断、代码锚点导航，以及跟随当前页面的预览",
   "category": "Presmium",
   "command.openPreview": "在侧边打开预览",
   "configuration.title": "Presmium",

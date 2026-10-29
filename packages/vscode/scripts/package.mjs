@@ -28,11 +28,11 @@ try {
     '--config.inject-workspace-packages=true', '--config.node-linker=hoisted', runtime], root)
   for (const file of ['.pnpm', '.bin', '.modules.yaml']) rmSync(join(runtime, 'node_modules', file), { recursive: true, force: true })
   for (const file of ['pnpm-lock.yaml', 'pnpm-workspace.yaml']) rmSync(join(runtime, file), { force: true })
-  for (const file of ['README.md', 'LICENSE', 'package.nls.json', 'package.nls.zh-cn.json', 'dist/extension.cjs', 'dist/lecture.schema.json']) {
+  for (const file of ['README.md', 'LICENSE', 'package.nls.json', 'package.nls.zh-cn.json', 'l10n', 'dist/extension.cjs', 'dist/lecture.schema.json']) {
     cpSync(join(pkg, file), join(staging, file), { recursive: true })
   }
   const { dependencies, devDependencies, scripts, ...installed } = manifest
-  installed.files = ['dist/**', 'runtime/**', 'package.nls*.json', 'README.md', 'LICENSE']
+  installed.files = ['dist/**', 'runtime/**', 'package.nls*.json', 'l10n/**', 'README.md', 'LICENSE']
   writeFileSync(join(staging, 'package.json'), JSON.stringify(installed, null, 2) + '\n')
   await createVSIX({ cwd: staging, packagePath: output, target, dependencies: false, followSymlinks: true })
   console.log(`VSIX: ${basename(output)}\n${output}`)
