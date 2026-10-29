@@ -371,7 +371,17 @@ The rules the shared controls follow, which a plugin's own CSS follows too:
   `confirm` or `prompt`.
 - **Messages.** A success says what happened ("Poll saved to this slide"), an error says what failed and what to do
   next ("The vote was not sent. Check the connection and try again"). No exclamation marks or cute interjections;
-  English in sentence case. Keep the zh-CN and en texts saying the same thing.
+  English messages in sentence case. Keep the zh-CN and en texts saying the same thing.
+- **Interface text.** Every string a reader sees lives in the plugin's catalog with both `'zh-CN'` and `en`, with
+  the same keys; none is written in JSX, an `aria-label`/`title`/`placeholder` literal or a thrown error that
+  reaches the page. Use the words of Presmium's interface glossary (`docs/glossary.md` in the Presmium repository):
+  document 文稿, page 页面, slide 幻灯片, block 内容块, step 步骤, script 讲稿, voiceover 配音, captions 字幕,
+  comment 批注, Undo 撤消, Redo 恢复, Discard 放弃, Reload 重新加载, Presenter View 演示者视图, End Show 结束放映.
+  No internal names on screen (IR, MCP, plugin package names, build, compile, token, git). English is US
+  spelling; commands, pane and dialog titles are Title Case (`New Comment`, `Presenter View`), messages, field
+  labels and options sentence case; a command that opens a dialog ends with “…”; Oxford comma; curly quotes
+  “ ” and ’. Chinese uses full-width punctuation, “” quotes, one “…” for an ellipsis, a space between Chinese and
+  Latin letters or digits (`第 3 页`), verb phrases on buttons, and no colloquial particles.
 - **Motion.** Animate `transform` and `opacity` only, never `top`, `left`, `width`, `height`, margins or padding.
   Take every transition's time from a duration token so that reduced motion stills it, and switch looping
   animations off under `@media (prefers-reduced-motion: reduce)`. A component's step animation shows its final

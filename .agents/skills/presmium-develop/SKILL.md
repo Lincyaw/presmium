@@ -34,7 +34,7 @@ Keep host, kernel, viewer and React as peer dependencies so consumers have one c
 
 A component's state is a pure function of the resolved step and time. Arbitrary step jumps must rebuild it; subscriptions, timers and animation resources are disposed when inactive/unmounted. Use actual declared capabilities, never prototype-only controls.
 
-Use public `Pm*` controls, semantic icons and design tokens through `@lincyaw/host`. Keep all zh-CN and en text together; compiled strings follow the document's language. Business CSS owns layout and cannot override a public control. Check real light/dark and desktop/narrow layouts.
+Use public `Pm*` controls, semantic icons and design tokens through `@lincyaw/host`. Keep all zh-CN and en text together in the plugin's catalog, with the same keys and the words and style rules of Presmium's interface glossary (summarized under *Interface text* in [the plugin contract](references/plugin.md)); compiled strings follow the document's language. Business CSS owns layout and cannot override a public control. Check real light/dark and desktop/narrow layouts.
 
 The design rules a component follows (balanced headings and pretty paragraphs, nested radius, complete control states with skeleton loading and guiding empty panels, specific messages without exclamation marks, motion only through transform and opacity that stops under reduced motion) are listed under *Design system* in [the plugin contract](references/plugin.md).
 

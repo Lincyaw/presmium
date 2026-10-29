@@ -1463,7 +1463,7 @@ export interface Renderer {
 
 - 文稿的语言只由头部的 `lang` 声明，例如 `lang: en-US`，默认 `zh-CN`。编译器总是把它写入 IR 的 `meta.lang`，两种形态都据此设置 `<html lang>`：页面的外壳（`site-page.ts`）按页面配置的 `lang` 写出它（译本的页面是译本的语言）。渲染端的配置不能另设语言。
 - 浏览器中的界面语言为 `'zh-CN'` 或 `'en'`：`<html lang>` 以 `zh` 开头时为中文，以 `en` 开头时为英文；其他语言（如 `fr`）看 `navigator.language`，仍无法确定时为英文。各包一律经 `@lincyaw/host` 取语言：组件中用 `useMessages(CATALOG)`，组件之外用 `CATALOG[currentLocale()]`，`CATALOG` 是包自己的 `{ 'zh-CN': …, en: … }`。只有 `@lincyaw/host` 跟随 `<html lang>` 的变化，各包不自己判断语言，也不各自观察 `<html lang>`。
-- 每个包维护自己的 zh-CN 与 en 文本，文件位置由包自定（例如 `src/domain/messages.ts` 或 `src/client/messages.ts`）。
+- 每个包维护自己的 zh-CN 与 en 文本，文件位置由包自定（例如 `src/domain/messages.ts` 或 `src/client/messages.ts`）。名称、命令、状态词与两种语言的写法以 [界面术语与文案规范](glossary.md) 为准；`scripts/check-i18n.mjs` 盘点键集、未翻译文本、用词与目录之外的界面文字。
 - 开发服务器的端点（如本地环境插件的端点）按请求的 `Accept-Language` 回答，浏览器端在请求中带上界面语言。
 - 编译时写入产物的文本按文稿的语言：指令、编译步骤与渲染上下文都带 `lang`，`deckLocale(lang)`（`@lincyaw/kernel`）给出 `'zh-CN'` 或 `'en'`（没有对应文本的语言为英文），例如 notebook 中指向网页版的说明、练习单元格的标签、导出环境中的说明文件、聚光灯的降级文字。编译时执行器写入录制输出的消息（例如超时）与解释器自身的报错一样为英文，也不含构建机器的路径。
 - 站点外壳与查看器的界面文字（导航、目录、翻页、搜索、明暗切换、视图菜单、放映与演讲者视图的控制条、屏幕阅读器标签与 404 页）都是 Presmium 自己的，网页形态的在 `packages/web/src/domain/messages.ts` 的 `WEB_MESSAGES`，IR 运行时的在 `@lincyaw/viewer`，按页面的语言选取。
