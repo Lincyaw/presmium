@@ -1,4 +1,4 @@
-import { isPreviewEnvelope, PREVIEW_PRESENTATION_PARAM, PREVIEW_EVENTS_PARAM, PREVIEW_APPEARANCE_PARAM, PREVIEW_PARAM, PREVIEW_PROTOCOL, previewEnvelope, toPreviewReport } from '@lincyaw/kernel'
+import { isPreviewEnvelope, PREVIEW_KEYS_PARAM, PREVIEW_PRESENTATION_PARAM, PREVIEW_EVENTS_PARAM, PREVIEW_APPEARANCE_PARAM, PREVIEW_PARAM, PREVIEW_PROTOCOL, previewEnvelope, toPreviewReport } from '@lincyaw/kernel'
 import type { PreviewCommand, PreviewCommandType, PreviewReport, PreviewEventSubscription } from '@lincyaw/kernel'
 
 export interface PreviewHandlers {
@@ -21,13 +21,17 @@ function nonce(): string {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`
 }
 
-/** `dark`: the workbench's appearance as the page loads, which its first paint takes (the `appearance` command follows it). */
-export function connectPreview(frame: () => HTMLIFrameElement | null, address: string, handlers: PreviewHandlers, options: { dark?: boolean, presentation?: boolean, subscribeEvents?: PreviewEventSubscription } = {}): PreviewConnection {
+/**
+ * `dark`: the workbench's appearance as the page loads, which its first paint takes (the `appearance` command follows it).
+ * `playbackKeys`: the workbench plays the page, so the page sends it Space and the left and right arrows.
+ */
+export function connectPreview(frame: () => HTMLIFrameElement | null, address: string, handlers: PreviewHandlers, options: { dark?: boolean, presentation?: boolean, playbackKeys?: boolean, subscribeEvents?: PreviewEventSubscription } = {}): PreviewConnection {
   const url = new URL(address)
   const own = nonce()
   url.searchParams.set(PREVIEW_PARAM, own)
   if (options.dark !== undefined) url.searchParams.set(PREVIEW_APPEARANCE_PARAM, options.dark ? 'dark' : 'light')
   if (options.presentation) url.searchParams.set(PREVIEW_PRESENTATION_PARAM, 'confirmed')
+  if (options.playbackKeys) url.searchParams.set(PREVIEW_KEYS_PARAM, 'playback')
   if (options.subscribeEvents) url.searchParams.set(PREVIEW_EVENTS_PARAM, 'shared')
   const boundDocument = url.searchParams.get('document') ?? ''
   const readers = new Map<string, { topic: string, stop(): void }>()

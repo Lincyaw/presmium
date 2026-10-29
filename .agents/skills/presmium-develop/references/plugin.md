@@ -446,7 +446,7 @@ view) and `presenter` (the presenter view, opened with `p` in `present`); `views
 | `registerView({ id, label, kind: 'page' | 'overlay', component, hidden? })` | A view; a page view gets the prop `sections` |
 | `registerNodeRenderer(key, component)` | Renders a kind of block: `markdown`, `code`, `component`, `code:<lang>`, a component name, or `mime:<type>` for a rich-output MIME type; props `block`, `section`, `step` |
 | `registerComponent(name, component)` | A component for `component` nodes beyond the `components/` convention |
-| `registerAction({ id, keys, run(viewer), views? })` | Key actions (`KeyboardEvent.key`, no modifiers); `run` returning `false` passes the key on; default views are present and presenter |
+| `registerAction({ id, keys, run(viewer), views? })` | Key actions (`KeyboardEvent.key`, no modifiers); `run` returning `false` passes the key on; a plugin's action runs before the built-in one on the same key (the lecture player takes Space and hands it back to the next step when nothing plays); keys that belong to a text field, an editor, an open menu or dialog, or a control reached with the keyboard never reach an action; default views are present and presenter |
 | `registerLayer({ id, component, views?, scope? })` | A layer of the overlay views, prop `view`: `scope` `'viewport'` (default; players, blackout), `'view'` (inside the view), `'slide'` (on each slide, in canvas coordinates, with props `section` and `step`), `'bar'` (a control in the view's bar) |
 | `useViewer()`, `SectionView`, `BlockView` | The runtime state (document, view, position), and building blocks of views |
 

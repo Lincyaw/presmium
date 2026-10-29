@@ -1,6 +1,7 @@
 import { createStore, serverClient, useServer, useStore } from '@lincyaw/host'
 import type { Viewer, ViewerPluginContext } from '@lincyaw/viewer'
 import { useEffect } from 'react'
+import type { LecturePlayer } from './player.ts'
 import { serverSource } from './source.ts'
 
 let context: Pick<ViewerPluginContext, 'useViewer'> | undefined
@@ -38,3 +39,5 @@ export function play(id: string | undefined): void {
   else url.searchParams.delete(PARAM)
   history.replaceState(history.state, '', url.pathname + url.search + url.hash)
 }
+/** The player a presentation shows, which Space plays and pauses; none while Video Production drives the player. */
+export const keyboardPlayer = createStore<LecturePlayer | undefined>(undefined)

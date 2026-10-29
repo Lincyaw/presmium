@@ -5,7 +5,7 @@ import LectureView from './LectureView.tsx'
 import PlayerPanel from './PlayerPanel.tsx'
 import PlayLectureButton from './PlayLectureButton.tsx'
 import RecorderPanel from './RecorderPanel.tsx'
-import { exporting, setViewerContext, watchLectureList } from './state.ts'
+import { exporting, keyboardPlayer, setViewerContext, watchLectureList } from './state.ts'
 
 const plugin: ViewerPlugin = (ctx) => {
   setViewerContext(ctx)
@@ -22,6 +22,13 @@ const plugin: ViewerPlugin = (ctx) => {
     hidden: true,
   })
   ctx.registerLayer({ id: 'presmium.lecture.player', component: PlayerPanel, views: ['present'], scope: exporting ? 'view' : 'bar' })
+  // Space plays and pauses the lecture; without a player it is left to the next step.
+  ctx.registerAction({ id: 'presmium.lecture.play', keys: [' '], views: ['present'], run: () => {
+    const player = keyboardPlayer.getSnapshot()
+    if (!player) return false
+    if (player.playing) player.pause()
+    else void player.play()
+  } })
   ctx.registerLayer({ id: 'presmium.lecture.play', component: PlayLectureButton, views: ['present'], scope: 'bar' })
   ctx.registerLayer({ id: 'presmium.lecture.recorder', component: RecorderPanel, views: ['present'], scope: 'view' })
 }

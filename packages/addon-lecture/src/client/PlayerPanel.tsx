@@ -24,6 +24,7 @@ import { PLAYBACK_RATES, ProductionPlaybackController } from './production-playb
 import {
   burnedCaptions,
   exporting,
+  keyboardPlayer,
   play,
   playing,
   useLecturesAvailable,
@@ -44,6 +45,11 @@ export default function PlayerPanel(_props: { view?: string }) {
   const production = useService(PRODUCTION_PLAYBACK)
   const controlled = useStore(production instanceof ProductionPlaybackController ? production.engaged : undefined, false)
   useEffect(() => player && status === 'ready' ? timedCaptions?.claim() : undefined, [player, status, timedCaptions])
+  useEffect(() => {
+    if (!player || status !== 'ready' || failure || controlled || exporting) return
+    keyboardPlayer.set(player)
+    return () => { if (keyboardPlayer.getSnapshot() === player) keyboardPlayer.set(undefined) }
+  }, [player, status, failure, controlled])
   const time = useStore(player?.time, 0),
     clockPlaying = useStore(player?.clock.playing, false),
     rate = useStore(player?.clock.rate, 1)
@@ -169,6 +175,7 @@ export default function PlayerPanel(_props: { view?: string }) {
     </PmDrawer>}
     <div className="pm-lecture-player" role="region" aria-label={t.player.region} data-state={state} data-time={Math.round(time)} data-clip={current?.clip} data-unsaid={unsaid.length || undefined}>
       <PmIconButton small className="pm-lecture-player__play" icon={clockPlaying ? 'pause' : 'play'} label={clockPlaying ? t.player.pause : t.player.play}
+        hint={`${clockPlaying ? t.player.pause : t.player.play} · Space`} aria-keyshortcuts="Space"
         onClick={() => player.playing ? player.pause() : void player.play()} />
       <span className="pm-lecture-player__time" title={t.player.time(clockText(time), clockText(player.duration))}>{clockText(time)}<span className="pm-lecture-player__time-total"> / {clockText(player.duration)}</span></span>
       <input className="pm-lecture-player__seek pm-ui-range" style={{ '--pm-range-progress': `${player.duration ? Math.max(0, Math.min(100, time / player.duration * 100)) : 0}%` } as CSSProperties} type="range" min="0" max={player.duration} step="100" value={Math.round(time)}

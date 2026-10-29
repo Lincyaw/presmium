@@ -7,8 +7,11 @@ import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { slideAspect } from '../workbench.ts'
 import { failureReason } from '../messages.ts'
 
-/** The open document as its readers see it (the web form or the slides), with the tools for what the author points at. */
-export function PreviewPanel({ active = true, onPresentationAction, presentation = false }: { active?: boolean, presentation?: boolean, onPresentationAction?(action: PresentationAction): void }) {
+/**
+ * The open document as its readers see it (the web form or the slides), with the tools for what the author points at.
+ * `playbackKeys`: the workbench plays the page, which hands it Space and the left and right arrows.
+ */
+export function PreviewPanel({ active = true, onPresentationAction, presentation = false, playbackKeys = false }: { active?: boolean, presentation?: boolean, playbackKeys?: boolean, onPresentationAction?(action: PresentationAction): void }) {
   const presentationAction = useRef(onPresentationAction)
   presentationAction.current = onPresentationAction
   const t = useMessages()
@@ -35,10 +38,10 @@ export function PreviewPanel({ active = true, onPresentationAction, presentation
     const current = createPreviewPool(container.current, workbench, setStatus, document => {
       setLoads(n => n + 1)
       void workbench.openDocument(document)
-    }, action => presentationAction.current?.(action), { presentation })
+    }, action => presentationAction.current?.(action), { presentation, playbackKeys })
     pool.current = current
     return () => { current.dispose(); pool.current = undefined }
-  }, [workbench, presentation])
+  }, [workbench, presentation, playbackKeys])
   useLayoutEffect(() => { pool.current?.confirmPresentation(confirmedRevision) }, [confirmedRevision])
   // A presentation takes the keyboard (arrows, space, Esc) once its frame can be seen, unless the author already focused something else.
   const keyboardTaken = useRef(false)

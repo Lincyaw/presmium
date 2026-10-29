@@ -156,6 +156,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 - 工作台把连接绑定到建立它的文档与形态；位置、点选与选区只提交给当前握手确认的文稿。已发出的正文写入仍须向原连接明确回复，不能转入新文稿状态。预览内的跨文稿导航由 `ready.document` 驱动工作台切换文档，沿用未保存修改的确认流程；取消时恢复原文档的预览。
 - 每次 `ready` 都开启该 iframe 的新一代连接；待确认请求还须匹配原连接实例与代次。插页、保存边界与正文历史命令，以及正文、素材源码的请求回复，均只发送一次：首次握手前可以排队，发送后不因重载再次执行。
 - 显式 Present 可选择画面级版本门禁（`presmium-presentation=confirmed`、`presentation-confirmed` 能力）。父页面只发送既有已准备 snapshot 的 revision，子页面核对自身真实 revision 后才开放画面；新 IR 同次渲染关闭画面、字幕和插件交互，原底栏仍可重新编译或退出。未确认位置不报告或回写作者选择。页面 ready 与排队诊断不依赖可报告位置，不生成默认位置；不支持该能力的 iframe 仍保留整框门禁。Standalone 与 Video 不启用此选项。
+- 视频制作由工作台播放预览，它的 iframe 地址带 `presmium-keys=playback`：页面中按下的空格与左右方向键交给工作台（`shortcut` 的 `play-pause`、`previous`、`next`），查看器不再把空格当作下一步。放映不带这个参数，按键仍由放映画面处理。
 - 完整查看器共享订阅为可选能力：父页面有 `subscribePreviewEvents` 时才在 iframe 地址声明 `presmium-events=shared`。子页面 `ready.eventConnection` 固定本代次，父页面确认后才开始订阅；仅允许当前 iframe 绑定文稿的 site/control 各一条，带原 app、语言、形态或 window。消息、取消与回调均检查本代次和 reader ID，重载／退出释放旧订阅，park 后不派发迟到消息。旧五种 WS topic 的数据帧形状不变；命名事件字段只用于两个新通道。契约类型见 `PreviewEventTarget`、`PreviewEventMessage`。单块预览不启用此能力。
 - 未知类型的消息一律忽略。消息只是数据：代理不执行收到的代码，也不打开收到的链接。
 
@@ -212,7 +213,7 @@ Doc 中的单块只读预览使用独立消息，不建立 v1 编辑握手或 SS
 | 产物 → 工作台 | `updated` | `revision` | 页面换上了新的 IR。工作台据此重新加上高亮与焦点的标记，并判断预览是否已反映刚保存的源码 |
 | 产物 → 工作台 | `report` | `level`（`error` 或 `warning`）、`plugin?`、`message`、`resolved?` | 页面中的运行时问题；`resolved: true` 清除同一问题。工作台按预览实例报告到诊断接口 |
 | 产物 → 工作台 | `presentation-action` | `action`（`refresh` 或 `exit`） | 只接受当前选中且活动的预览窗口。重新编译交给当前工作区的已保存版本编译流程；退出先暂停并同步位置，再恢复文档编辑器。 |
-| 产物 → 工作台 | `shortcut` | `command`（`undo`、`redo` 或 `dismiss`） | 预览获得键盘焦点后，转发撤消、恢复或关闭工具条的意图；正文优先使用原生历史，再按保存边界回退到源码版本。页面自己的输入框与就地编辑中的按键不转发。只传这三种意图，经原有来源、nonce 与文稿身份检查 |
+| 产物 → 工作台 | `shortcut` | `command`（`undo`、`redo`、`dismiss`、`save`、`play-pause`、`previous` 或 `next`） | 预览获得键盘焦点后，转发工作台快捷键的意图。撤消与恢复优先使用正文的原生历史，再按保存边界回退到源码版本；页面自己的输入框与就地编辑中的这些按键不转发。`save`（`Mod+S`）在任何位置都转发并取消浏览器的“另存为”，工作台据此立即保存。`play-pause`、`previous`、`next`（空格、`←`、`→`）只在地址带 `presmium-keys=playback` 时转发，归属按 [UI/UX RFC 7.3 节](rfc-workbench-uiux.md#73-快捷键)的规则判断，转发的按键不再交给查看器。只传这些意图，经原有来源、nonce 与文稿身份检查 |
 
 文档编辑的撤消和恢复优先使用当前正文编辑器的原生历史。页面重命名、移动，以及已保存源码版本的撤消、恢复或回退，先发送 `flush` 并等待已提交的串行写入，再执行操作；不在写入队列内部等待预览保存，避免正文回调等待同一个队列。文档编辑不提交或阻塞于保留的视频讲稿草稿；视频操作可以显式请求额外的讲稿保存边界。
 
