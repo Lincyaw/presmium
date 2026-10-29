@@ -8,15 +8,15 @@ Each stage ends in a check; don't start the next stage before the check passes. 
 
 | Stage | Write | Check |
 |---|---|---|
-| 0. Brief | Audience and what they already know; what they believe before and should believe after; the form that matters most (web page, slides or video); the length | Before and after fit on one line each |
+| 0. Brief | Audience and what they already know; what they believe before and should believe after; the form that matters most (web page, slides or video); the length, as a range. Ask only what only the person can answer; state the rest as one line of assumptions (length, aspect, music or voice, each paid item with its free option) | Before and after fit on one line each |
 | 1. Thesis | "看完后，观众明白 X，因为他们看到了 Y" (After watching, the viewer understands X because they saw Y), X in 25 汉字 or fewer; the same claim as And–But–Therefore | Someone who has seen nothing restates it; the ABT has exactly one But |
 | 2. Central picture | Three candidate pictures; keep the one in which X becomes a visible property that changes. Draw the money frame: the one still that proves X | Shown for 3 s to a cold viewer, the money frame alone gets something close to X back. If it needs a caption, keep looking |
-| 3. Shape | A narrative shape; where its turn falls (usually 40–60% in); one spatial convention; one meaning per colour; the misconception to confront and the parts to name first | The turn is a change in the picture, not a sentence |
+| 3. Shape | Three different storylines, one of them bold, each with its shape, its form (below), its first 2 s, its beats, look and sound; recommend one. Then for the chosen one: where its turn falls (usually 40–60% in); one spatial convention; one meaning per colour; the misconception to confront and the parts to name first | The person picked a storyline (stop and wait, unless they asked for the file or for no stops); the turn is a change in the picture, not a sentence |
 | 4. Storyboard | One row per step: the rest frame (the still), what moves, what the viewer now understands, why | The strip of rest frames at thumbnail size tells the story with no sound |
 | 5. Script | The narration of each step; when its words come; cues | Read aloud with a timer: each step's narration fits its state, or the state is lengthened on purpose |
-| 6. Animatic | The scene drawing only each state's rest frame, with cuts between them; the narration attached; build and export | The durations add up to the length; every payoff rests at least 2 s |
+| 6. Animatic | The scene drawing only each state's rest frame, with cuts between them; the narration attached; build and export | The durations add up to the length; every payoff rests at least 2 s; the person approved the contact sheet of rest frames (stop and wait; a note on one frame changes only that frame) |
 | 7. Motion | The movement between rest frames, one transition at a time, by `lengths.md` | Every motion's why says what it means (cause, the same object, converging); delete the ones whose why is "looks nice" |
-| 8. Review | Cold viewers, cheapest test first (below) | Two of three retell the thesis in their own words and get the prediction question right |
+| 8. Review | Cold viewers, cheapest test first (below); then the final export and the delivery note | Two of three retell the thesis in their own words and get the prediction question right. Export the final only after check and review pass and the person approved the preview (or asked for the file, or for no stops) |
 
 Studios work the same way: script, storyboard, an animatic timed against scratch audio, then animation (Thomas and Johnston, *The Illusion of Life*, ch. 3; Catmull, *Creativity, Inc.*, ch. 5). In Presmium the animatic is cheap: a scene whose states draw their final frames, the real narration and `presmium-lecture export`.
 
@@ -80,6 +80,8 @@ The strongest pieces in the gallery have one picture that is the argument: in th
 | Human question → aim → finding | A thesis talk (3MT) | a relatable question → the stakes → one aim → the finding → so what | 3MT winners |
 | 起承转合 (kishōtenketsu) | No conflict to stage; one idea shows a new side | introduce → develop → twist (the same idea used in a new way) → conclude | Nintendo level design |
 
+**Forms** say how shots join, whatever the shape: one continuous take; a chain where each shot's last object becomes the next one's first; an endless zoom; match cuts on shape or motion; a split screen that becomes one; one frame that rebuilds itself. A film uses one form throughout.
+
 Paper videos are designed to the venue's clock (SIGGRAPH's Fast Forward 20 s narrated or 10 s silent, a CHI preview 30 s, ECCV summaries 60–120 s, a Three Minute Thesis 3:00, journal video abstracts 4–5 minutes), say one thing to remember, show the baseline in the same frame and tag every number with its table. Result first suits short pieces and method or systems papers, not theory (open with the puzzle), clinical abstracts (the design comes first, because credibility depends on it) or a thesis talk (a human question). By length: 10 s is ABT compressed into setup, change, result, hold; 60 s is ABT, puzzle first or predict first; 3–6 minutes is 起承转合 or a chain of causes inside SCQA, with the misconception at the turn; promos use problem–agitate–solve, the sparkline or the heartbeat; data uses one picture over time shaped establisher → initial → peak → release (Amini et al., CHI 2015).
 
 ## 4. Storyboard the rest frames first
@@ -96,8 +98,11 @@ A. Brief    title; length and why; audience and what they know; before → after
 B. Claim    看完后，观众明白 ___，因为他们看到了 ___。 | ABT: ___，而且 ___；但是 ___；所以 ___。 | shape; the turn at ___ s
 C. Picture  the central picture; the money frame; each readout and how the picture computes it;
             the spatial convention; one meaning per colour; the source of every number; a 3-second glance: what a cold viewer said
+            LOOK: every adjective as a number (premium: a material and its values; clean: a 12-column grid, the accent on one word;
+            playful: spring damping 0.45–0.6). BANNED: the default looks this piece avoids, added to after every render
 D. Steps    | # | State | Start–end | Rest frame | What moves (one thing; cause → effect) | Viewer now understands |
-            | Viewer does (predict, quiz, run) | Narration | Words come (with / after / cue) | On-screen text (one line at most) | Why |
+            | Viewer does (predict, quiz, run) | Narration | Words come (with / after / cue) | On-screen text (one line at most) |
+            | Reads (what the eye reads, in order, each with its time window; windows never overlap) | Sound | Why |
 E. Checks   durations add up; the thumbnail strip reads silent; read-aloud timing; animatic screened; the review results
 ```
 
@@ -110,6 +115,7 @@ Put the filled worksheet in the piece's reading-view notes, as the gallery does:
 - **Speak the words; don't print them over moving pictures.** Narration with the picture beats text with it (modality d = 1.17); narration plus the same text on screen is worse than narration alone (redundancy d = 0.69). One or two key words beside the part they name are fine (spatial contiguity); captions are a separate track, not on-screen text.
 - **Say it while it happens** (temporal contiguity d = 1.30): the narration and its motion share a step. `narrationStart: "with-animation"` (the default) for a mechanism; `"after-animation"` when the picture should land first and the words name it (a result, a surprise); a narration cue on the key word (`point` or `spot` to aim the eye, a pause timed in `production.cueTimings`) when the words lead.
 - **Questions turn the acts**: "那有没有可能……直的呢？", "还剩最后一个问题". A 1–2 s silence before the turn, and 6–10 s with a spoken "先暂停，写下答案" after a prediction question in a video (the web view's prediction block waits by itself).
+- **Not a slideshow.** A step whose parts are all on screen in its first quarter and then freeze reads as a slide: reveal each part when the voice names it. In a promo whose voice runs longer than its pictures, trim the script; don't stretch the motion.
 - **Weed**: interesting facts off the causal chain, background music under a dense explanation, decorative clips (coherence d = 0.90). A tangent comes back to the question within its step or moves to the reading page.
 - **Read d values as direction, not dose**: a 2025 meta-analysis of Mayer's studies found an average g = 0.37, smaller for primary-school and graduate learners, and the modality benefit narrows when learners set the pace.
 
@@ -135,6 +141,7 @@ Interactive explainers let the reader drag; a lecture video can't. Script the ma
 - **Sources in the frame**: the dataset and its year on screen, the precise values and caveats in the reading view; mark estimates 估算 and illustrative values 示意.
 - **Where you stop is what they believe** (Hullman and Diakopoulos 2011): the last rest frame is the honest one (three rankings side by side, not only the one that assigns blame). Don't join two series with different definitions; teach a log axis aloud or don't use one (41% vs 84% read a COVID chart correctly); show uncertainty as outcomes people can count and label every band.
 - **Motion means new data**: never move a value that isn't changing (the NYT election needle).
+- **Derive no claim the source didn't make**: "40 分钟变 2 分钟" is not "快 20 倍". A screen you can't get is a labelled placeholder (ink at 72, 45, 18 and 8% alpha, a 14% hairline, text never lighter than the 72% step), never a drawn imitation. No "Introducing" as the first line; no "unlock", "seamless", "赋能", "颠覆".
 - **Show the trade-off**: an approximate index that misses one neighbour, a straight path that crosses others. Showing the flaw makes the rest believable.
 
 ## 9. Review from a cold seat
@@ -150,6 +157,10 @@ Cheapest first; never ask "看懂了吗" (people say yes when they haven't), and
 | Pause | Stop mid-motion and on each rest frame: "what happens next?" | Motion with no cause |
 | Prediction probe | Stop before the turn and ask for a guess | A turn that doesn't land |
 | Retell | "讲给一个没看过的人听" | The thesis, in their words |
+
+Before showing anyone, review the export yourself. Make the sheets with ffmpeg from the exported video: each step at its start + 0.3 s and at its middle (`tile`), a strip from −0.2 to +0.2 s around every cut, and the payoff frames at phone width (360 px). First describe each rest frame as a stranger would, naming every object; an object you would have to explain is a P0. Write each note as `t · where · problem → exact change · what stays`, ranked P0 (stops understanding), P1, P2; never a score. Do a second pass only while a P0 is open. If it feels busy, remove a third of the motion.
+
+Hand the piece over with a delivery note in its reading view: the creative calls made, the storylines not built, what was measured and what was only looked at, the weakest shot, and the warnings kept on purpose.
 
 A cold viewer saying "clear" is not a pass: Muller's clear video raised confidence and taught nothing. A changed prediction and a retold thesis are. A subagent that sees only the exported rest frames, in order, and has to predict each next step and state the thesis is a cheap first cold viewer; then fix the first step where anyone got lost and screen again.
 
@@ -189,6 +200,8 @@ The example's worksheet is in its reading view. Its data come from `gallery/stor
 | A hook from the news on every frame | The news in the first step only; the rest timeless |
 | A lone-genius history | One dated step that credits the chain |
 | A long piece with one rhythm | Change shot length, view or scale at each part; silence before the turn |
+| A default look: a dark void with glow and particles, a purple-blue gradient, everything fading up, three cards in a row, a KPI grid, a title over a dimmed screenshot | The LOOK line of the worksheet; glow, particles and glass only as one moment of light (`lengths.md`, polish 6) |
+| A piece padded to the length asked for | A length is a range; cut, don't pad |
 
 ## Sources
 

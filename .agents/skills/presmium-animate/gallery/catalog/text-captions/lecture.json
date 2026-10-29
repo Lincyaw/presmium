@@ -1,0 +1,4264 @@
+{
+  "schemaVersion": 1,
+  "id": "document-catalog-text-captions",
+  "metadata": {
+    "title": "文字与字幕：标题、换词、字幕与名条",
+    "lang": "zh-CN",
+    "description": "从 HyperFrames 文字类目录重做的原生场景：逐字逐词出场、讲解字幕、标题卡、换词与纠错、解码、名条。每个场景都适用中文，参数化合并了同类变体。",
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-lecture"
+    ],
+    "renderers": {
+      "web": {},
+      "lecture": {}
+    }
+  },
+  "sectionOrder": [
+    "intro",
+    "text-reveal",
+    "captions",
+    "title-card",
+    "glyph-slam",
+    "slot-swap",
+    "strike-replace",
+    "text-match-cut",
+    "weight-wave",
+    "scramble-reveal",
+    "lower-third",
+    "camera-caption",
+    "versus-cards"
+  ],
+  "sections": {
+    "intro": {
+      "id": "intro",
+      "title": "文字与字幕：标题、换词、字幕与名条",
+      "level": 1,
+      "children": [
+        "intro--card",
+        "intro--notes"
+      ],
+      "stepOrder": [
+        "intro--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "cover"
+          }
+        }
+      }
+    },
+    "text-reveal": {
+      "id": "text-reveal",
+      "title": "逐字出场：升起、落下、对焦、收字距、擦出、滑入",
+      "level": 2,
+      "children": [
+        "text-reveal--notes",
+        "text-reveal--shot"
+      ],
+      "stepOrder": [
+        "text-reveal--step-0",
+        "text-reveal--step-1",
+        "text-reveal--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "captions": {
+      "id": "captions",
+      "title": "讲解字幕：卡拉 OK、胶囊、编辑体、擦出",
+      "level": 2,
+      "children": [
+        "captions--notes",
+        "captions--shot"
+      ],
+      "stepOrder": [
+        "captions--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "title-card": {
+      "id": "title-card",
+      "title": "标题卡：章节开场与片尾",
+      "level": 2,
+      "children": [
+        "title-card--notes",
+        "title-card--shot"
+      ],
+      "stepOrder": [
+        "title-card--step-0",
+        "title-card--step-1",
+        "title-card--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "glyph-slam": {
+      "id": "glyph-slam",
+      "title": "重字砸落：散字聚合与整字砸下",
+      "level": 2,
+      "children": [
+        "glyph-slam--notes",
+        "glyph-slam--shot"
+      ],
+      "stepOrder": [
+        "glyph-slam--step-0",
+        "glyph-slam--step-1"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "slot-swap": {
+      "id": "slot-swap",
+      "title": "换词：句子不动，一个词轮换",
+      "level": 2,
+      "children": [
+        "slot-swap--notes",
+        "slot-swap--shot"
+      ],
+      "stepOrder": [
+        "slot-swap--step-0",
+        "slot-swap--step-1",
+        "slot-swap--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "strike-replace": {
+      "id": "strike-replace",
+      "title": "纠错：划掉错误，写上正确",
+      "level": 2,
+      "children": [
+        "strike-replace--notes",
+        "strike-replace--shot"
+      ],
+      "stepOrder": [
+        "strike-replace--step-0",
+        "strike-replace--step-1",
+        "strike-replace--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "text-match-cut": {
+      "id": "text-match-cut",
+      "title": "匹配剪辑：一个词在运动中变成另一个",
+      "level": 2,
+      "children": [
+        "text-match-cut--notes",
+        "text-match-cut--shot"
+      ],
+      "stepOrder": [
+        "text-match-cut--step-0",
+        "text-match-cut--step-1",
+        "text-match-cut--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "weight-wave": {
+      "id": "weight-wave",
+      "title": "字重波：一道波把关键词加粗",
+      "level": 2,
+      "children": [
+        "weight-wave--notes",
+        "weight-wave--shot"
+      ],
+      "stepOrder": [
+        "weight-wave--step-0",
+        "weight-wave--step-1",
+        "weight-wave--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "scramble-reveal": {
+      "id": "scramble-reveal",
+      "title": "解码：乱码锁定与翻牌",
+      "level": 2,
+      "children": [
+        "scramble-reveal--notes",
+        "scramble-reveal--shot"
+      ],
+      "stepOrder": [
+        "scramble-reveal--step-0",
+        "scramble-reveal--step-1"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "lower-third": {
+      "id": "lower-third",
+      "title": "名条：讲者姓名与身份",
+      "level": 2,
+      "children": [
+        "lower-third--notes",
+        "lower-third--shot"
+      ],
+      "stepOrder": [
+        "lower-third--step-0",
+        "lower-third--step-1",
+        "lower-third--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "camera-caption": {
+      "id": "camera-caption",
+      "title": "镜头跟字：一句话写满一张大纸",
+      "level": 2,
+      "children": [
+        "camera-caption--notes",
+        "camera-caption--shot"
+      ],
+      "stepOrder": [
+        "camera-caption--step-0",
+        "camera-caption--step-1"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "versus-cards": {
+      "id": "versus-cards",
+      "title": "对比卡：左边是基线，右边是我们",
+      "level": 2,
+      "children": [
+        "versus-cards--notes",
+        "versus-cards--shot"
+      ],
+      "stepOrder": [
+        "versus-cards--step-0",
+        "versus-cards--step-1",
+        "versus-cards--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    }
+  },
+  "blocks": {
+    "intro--card": {
+      "id": "intro--card",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--card--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "逐字 · 换词 · 字幕 · 名条"
+            }
+          ]
+        },
+        {
+          "id": "intro--card--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "字落定后不再动"
+            }
+          ]
+        }
+      ]
+    },
+    "intro--notes": {
+      "id": "intro--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这一组是讲解视频和课件里的文字动效。它们来自 HyperFrames 目录里八十多个文字、字幕和名条作品，按我们的规则重做：同类的十几个变体合并成一个带参数的场景（例如所有逐字逐词出场都是 "
+            },
+            {
+              "type": "text",
+              "text": "text-reveal",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 的 "
+            },
+            {
+              "type": "text",
+              "text": "style",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "），只保留对讲课、解释和论文视频有用的。"
+            }
+          ]
+        },
+        {
+          "id": "intro--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "三条规则贯穿全组："
+            },
+            {
+              "type": "text",
+              "text": "中文可用",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "，逐字按字素、逐词按浏览器的词典分词，不靠空格；"
+            },
+            {
+              "type": "text",
+              "text": "读得完",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "，画面上的文字不超过每秒 9 个汉字或 20 个拉丁字母，并且停留到能读两遍；"
+            },
+            {
+              "type": "text",
+              "text": "落定即静止",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "，标题和句子落下之后不再漂移，动的只有下一个焦点。"
+            }
+          ]
+        },
+        {
+          "id": "intro--notes--n2",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "intro--notes--n2--i0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "intro--notes--n2--i0--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "每节下方是说明：画面里发生什么、什么时候用、有哪些参数。参数写在组件块的 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "parameters",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " 里，场景都有中文默认值。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "intro--notes--n2--i1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "intro--notes--n2--i1--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "状态就是节拍：多状态的场景每个状态一步，步骤可以只用其中几个（例如跳过退场 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "out",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "，直接切到下一个镜头）。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "text-reveal--notes": {
+      "id": "text-reveal--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "text-reveal--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "标题、结论句、章节开场。一块一到两行的文字按字、按词或按行出场，落定后完全静止，最后可以按来时的方向退场。中文按字素拆字、按词典分词，标点跟随前一个字。"
+            }
+          ]
+        },
+        {
+          "id": "text-reveal--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "节拍："
+            },
+            {
+              "type": "text",
+              "text": "in",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 1.2 秒，字与字相隔 45 毫秒（词和行 80 毫秒），整串最多 0.7 秒，每个字 0.55 秒；最后一个字落定时关键词变成强调色。"
+            },
+            {
+              "type": "text",
+              "text": "hold",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 2.5 秒什么都不动。"
+            },
+            {
+              "type": "text",
+              "text": "out",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 0.5 秒，0.25 秒加速离开。"
+            }
+          ]
+        },
+        {
+          "id": "text-reveal--notes--n2",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "text-reveal--notes--n2--i0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "text-reveal--notes--n2--i0--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "text",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：文字，"
+                    },
+                    {
+                      "type": "text",
+                      "text": "\\n",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " 换行。"
+                    },
+                    {
+                      "type": "text",
+                      "text": "key",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：落定后变成强调色的短语。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "text-reveal--notes--n2--i1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "text-reveal--notes--n2--i1--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "style",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "："
+                    },
+                    {
+                      "type": "text",
+                      "text": "rise",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（从槽里升起，默认）、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "drop",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（从上方落下）、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "blur",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（由虚到实）、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "track",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（字距收拢，按行）、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "wipe",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（从左到右擦出）、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "slide",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（整行从左滑入、向右离开）。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "text-reveal--notes--n2--i2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "text-reveal--notes--n2--i2--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "unit",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "："
+                    },
+                    {
+                      "type": "text",
+                      "text": "char",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "word",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "line",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "。"
+                    },
+                    {
+                      "type": "text",
+                      "text": "size",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "："
+                    },
+                    {
+                      "type": "text",
+                      "text": "title",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（默认）或 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "lead",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "text-reveal--shot": {
+      "id": "text-reveal--shot",
+      "type": "component",
+      "definitionId": "text-reveal--shot--definition",
+      "parameters": {
+        "scene": "text-reveal",
+        "alt": "两行字“注意力，就是加权求和”逐字从各自的槽里升起，落定后“加权求和”变成强调色。"
+      }
+    },
+    "captions--notes": {
+      "id": "captions--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "captions--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "给讲解视频配字幕，或在没有配音的短片里代替旁白。旁白分成短句，一次只显示一句；句中每个词按说话的节奏标出，关键词换强调色。整个场景只有一个状态，各句按长度分配时间，最后留 1.2 秒给最后一句停留。"
+            }
+          ]
+        },
+        {
+          "id": "captions--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "读速：场景不会拉长时间。状态时长至少是所有句子读两遍的时间（每秒 9 个汉字）；默认 20 个字放 6 秒，每秒约 3.3 字。"
+            }
+          ]
+        },
+        {
+          "id": "captions--notes--n2",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "captions--notes--n2--i0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "captions--notes--n2--i0--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "phrases",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：短句列表。"
+                    },
+                    {
+                      "type": "text",
+                      "text": "keywords",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：关键词列表。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "captions--notes--n2--i1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "captions--notes--n2--i1--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "style",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "："
+                    },
+                    {
+                      "type": "text",
+                      "text": "karaoke",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（整句先灰，说到的词变黑，默认）、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "pill",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（字幕放在卡片上，一个胶囊标出正在说的词）、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "editorial",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（词按说话节奏升起，关键词用衬线大字）、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "wipe",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（词按说话节奏擦出）。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "captions--notes--n2--i2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "captions--notes--n2--i2--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "position",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "："
+                    },
+                    {
+                      "type": "text",
+                      "text": "center",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（默认）或 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "bottom",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（叠在视频画面下方）。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "captions--shot": {
+      "id": "captions--shot",
+      "type": "component",
+      "definitionId": "captions--shot--definition",
+      "parameters": {
+        "scene": "captions",
+        "alt": "三句字幕依次出现：“梯度告诉我们”“往哪个方向走，”“损失下降得最快”，每个词按说话节奏变亮，“方向”和“最快”变成强调色。"
+      }
+    },
+    "title-card--notes": {
+      "id": "title-card--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "title-card--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "章节之间的停顿、视频片头和片尾。小标签、居中的大标题、一条细线、一行副标题；可选一个最后落下的强调色句点，和背后一个很淡的大字做纹理。标题落定后不动，只有背后的大字缓慢平移 1.5%，让长时间停留的画面不显得卡住。"
+            }
+          ]
+        },
+        {
+          "id": "title-card--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "节拍："
+            },
+            {
+              "type": "text",
+              "text": "in",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 1.4 秒，小标签先出，标题由 96% 和轻微模糊收到清晰（不回弹），句点弹出，细线从中间向两边画开，副标题最后出现。"
+            },
+            {
+              "type": "text",
+              "text": "hold",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 2.6 秒。"
+            },
+            {
+              "type": "text",
+              "text": "out",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 0.4 秒，副标题先走。"
+            }
+          ]
+        },
+        {
+          "id": "title-card--notes--n2",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "title-card--notes--n2--i0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "title-card--notes--n2--i0--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "kicker",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：小标签；"
+                    },
+                    {
+                      "type": "text",
+                      "text": "title",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：标题；"
+                    },
+                    {
+                      "type": "text",
+                      "text": "sub",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：副标题（留空则不显示）。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "title-card--notes--n2--i1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "title-card--notes--n2--i1--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "dot",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：是否显示强调色句点（默认是）。"
+                    },
+                    {
+                      "type": "text",
+                      "text": "backdrop",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：背后的大字，留空则不显示。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "title-card--shot": {
+      "id": "title-card--shot",
+      "type": "component",
+      "definitionId": "title-card--shot--definition",
+      "parameters": {
+        "scene": "title-card",
+        "alt": "标题卡：小字“第 3 章”，大标题“反向传播”和一个强调色句点，细线从中间画开，副标题“链式法则把误差送回每一层”，背后淡淡的大字“∂L/∂w”。"
+      }
+    },
+    "glyph-slam--notes": {
+      "id": "glyph-slam--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "glyph-slam--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一个短而重的结论：一个术语、一个问题的名字、一个数字。字落下时有冲击：字被压扁再弹回，画面震三帧，字下的强调色横线向两边弹开；之后完全静止。字要短，2 到 6 个字，一眼读完。"
+            }
+          ]
+        },
+        {
+          "id": "glyph-slam--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "节拍："
+            },
+            {
+              "type": "text",
+              "text": "slam",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 1.4 秒。"
+            },
+            {
+              "type": "text",
+              "text": "gather",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 方式下，散落的字先停 0.35 秒（让人看到“散”），再相隔 50 毫秒依次飞回，回弹约 6%；"
+            },
+            {
+              "type": "text",
+              "text": "slam",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 方式下，整个词从镜头前两倍大、模糊地加速砸下。"
+            },
+            {
+              "type": "text",
+              "text": "hold",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 2 秒。散落位置由固定种子生成，每次构建都一样。"
+            }
+          ]
+        },
+        {
+          "id": "glyph-slam--notes--n2",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "glyph-slam--notes--n2--i0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "glyph-slam--notes--n2--i0--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "text",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：词。"
+                    },
+                    {
+                      "type": "text",
+                      "text": "mode",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "："
+                    },
+                    {
+                      "type": "text",
+                      "text": "gather",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（散字聚合，默认）或 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "slam",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（整字砸下）。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "glyph-slam--shot": {
+      "id": "glyph-slam--shot",
+      "type": "component",
+      "definitionId": "glyph-slam--shot--definition",
+      "parameters": {
+        "scene": "glyph-slam",
+        "alt": "四个字“梯度消失”从画面各处飞回原位，落定时画面轻震，一条强调色横线从字下向两边弹开。"
+      }
+    },
+    "slot-swap--notes": {
+      "id": "slot-swap--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "slot-swap--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "“X 是 ___”：句子固定，只有一个词在槽里轮换，最后落在答案上。用于排除错误选项、列举候选、揭晓答案。固定的字从不移动；槽的宽度取最宽的选项（所有选项叠在同一个网格单元里），所以句子不会因为换词而抖动。"
+            }
+          ]
+        },
+        {
+          "id": "slot-swap--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "节拍："
+            },
+            {
+              "type": "text",
+              "text": "set",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 1.6 秒，句子和第一个选项出现并被读完。"
+            },
+            {
+              "type": "text",
+              "text": "roll",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 3 秒，中间的选项平分，每次换词 0.45 秒，之后至少停 0.6 秒，让每个词都能读两遍。"
+            },
+            {
+              "type": "text",
+              "text": "land",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 2 秒，答案带一点回弹落定，变成强调色，下划线从左画出。"
+            }
+          ]
+        },
+        {
+          "id": "slot-swap--notes--n2",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "slot-swap--notes--n2--i0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "slot-swap--notes--n2--i0--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "prefix",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "suffix",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：槽前后的固定文字。"
+                    },
+                    {
+                      "type": "text",
+                      "text": "options",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：选项，最后一个是答案。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "slot-swap--notes--n2--i1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "slot-swap--notes--n2--i1--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "mode",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "："
+                    },
+                    {
+                      "type": "text",
+                      "text": "roll",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（像老虎机的卷轴，带纵向拖影，默认）或 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "axis",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（旧词上浮淡出、新词升起变清晰，更安静）。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "slot-swap--shot": {
+      "id": "slot-swap--shot",
+      "type": "component",
+      "definitionId": "slot-swap--shot--definition",
+      "parameters": {
+        "scene": "slot-swap",
+        "alt": "句子“大模型的本质是”后面的词依次换成“记忆”“检索”“压缩”，最后落在“预测”，变成强调色并画上下划线。"
+      }
+    },
+    "strike-replace--notes": {
+      "id": "strike-replace--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "strike-replace--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "纠正一个常见误解：先完整陈述错误说法，划掉错的部分，再给出正确说法。默认把改正写在被划掉的词上方，像老师批改作业，错和对同时留在画面上形成对比；也可以选中错词、收起、在原处打出正确的词。"
+            }
+          ]
+        },
+        {
+          "id": "strike-replace--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "节拍："
+            },
+            {
+              "type": "text",
+              "text": "claim",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 2 秒，句子出现并被读完。"
+            },
+            {
+              "type": "text",
+              "text": "strike",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 1.2 秒，危险色的线从左划过错词，线到达时错词变灰。"
+            },
+            {
+              "type": "text",
+              "text": "fix",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 2.5 秒，改正升起（或错词收起后按每秒 14 字打出），然后停住。"
+            }
+          ]
+        },
+        {
+          "id": "strike-replace--notes--n2",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "strike-replace--notes--n2--i0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "strike-replace--notes--n2--i0--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "prefix",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "suffix",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：错词前后的文字。"
+                    },
+                    {
+                      "type": "text",
+                      "text": "wrong",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：错误说法；"
+                    },
+                    {
+                      "type": "text",
+                      "text": "right",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：正确说法。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "strike-replace--notes--n2--i1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "strike-replace--notes--n2--i1--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "mode",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "："
+                    },
+                    {
+                      "type": "text",
+                      "text": "above",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（改正写在上方，默认）或 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "caret",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（选中、收起、打字替换）。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "strike-replace--shot": {
+      "id": "strike-replace--shot",
+      "type": "component",
+      "definitionId": "strike-replace--shot--definition",
+      "parameters": {
+        "scene": "strike-replace",
+        "alt": "句子“梯度下降总能找到全局最优”，“全局最优”被红线划掉变灰，上方升起强调色的“局部最优”。"
+      }
+    },
+    "text-match-cut--notes": {
+      "id": "text-match-cut--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "text-match-cut--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "“这个变成了那个”：像素变成概念，问题变成答案，输入变成输出。两个词共用一条两端缓和的运动曲线，旧词走前半段，新词走后半段，切换发生在速度最快、看不清字形的一刻，所以看起来是同一个东西在变化。上方的小标签全程不动，给视线一个锚点。模糊由曲线的速度算出，切点最强，静止时为零。"
+            }
+          ]
+        },
+        {
+          "id": "text-match-cut--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "节拍："
+            },
+            {
+              "type": "text",
+              "text": "a",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 1.6 秒，标签和第一个词出现并被读完。"
+            },
+            {
+              "type": "text",
+              "text": "cut",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 0.9 秒，运动，0.45 秒处切换。"
+            },
+            {
+              "type": "text",
+              "text": "b",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 2 秒，新词停住。"
+            }
+          ]
+        },
+        {
+          "id": "text-match-cut--notes--n2",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "text-match-cut--notes--n2--i0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "text-match-cut--notes--n2--i0--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "from",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "to",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：前后两个词。"
+                    },
+                    {
+                      "type": "text",
+                      "text": "label",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：上方不动的小标签（留空则不显示）。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "text-match-cut--notes--n2--i1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "text-match-cut--notes--n2--i1--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "mode",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "："
+                    },
+                    {
+                      "type": "text",
+                      "text": "push",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（镜头推过旧词，新词从小落定，默认）、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "track",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（字距拉开消失，新词字距收拢）、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "slide",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（向左滑出，新词从右滑入）。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "text-match-cut--shot": {
+      "id": "text-match-cut--shot",
+      "type": "component",
+      "definitionId": "text-match-cut--shot--definition",
+      "parameters": {
+        "scene": "text-match-cut",
+        "alt": "“深层网络把”下方的大字“像素”向镜头推近消失，在最快的一刻切成“概念”，“概念”从小到大落定，变成强调色。"
+      }
+    },
+    "weight-wave--notes": {
+      "id": "weight-wave--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "weight-wave--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在一句话里点出关键词：一道“字重”的波峰从左到右经过，每个字在波峰下变粗、上浮、前倾，再恢复；关键词留在粗体并变成强调色。我们发布的字体没有可变字重轴，中文还会退回系统字体，所以字重是画出来的：用与文字同色的描边加粗，任何文字、任何字体都适用。"
+            }
+          ]
+        },
+        {
+          "id": "weight-wave--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "节拍："
+            },
+            {
+              "type": "text",
+              "text": "set",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 1.2 秒，整句以细、灰的样子出现并被读完。"
+            },
+            {
+              "type": "text",
+              "text": "wave",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 1.4 秒，波峰用 1 秒走完整句，开头和结尾都缓。"
+            },
+            {
+              "type": "text",
+              "text": "hold",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 2 秒。"
+            }
+          ]
+        },
+        {
+          "id": "weight-wave--notes--n2",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "weight-wave--notes--n2--i0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "weight-wave--notes--n2--i0--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "text",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：句子。"
+                    },
+                    {
+                      "type": "text",
+                      "text": "key",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：保持加粗的关键词。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "weight-wave--shot": {
+      "id": "weight-wave--shot",
+      "type": "component",
+      "definitionId": "weight-wave--shot--definition",
+      "parameters": {
+        "scene": "weight-wave",
+        "alt": "一句“注意力是一种加权平均”，一道加粗的波从左到右扫过，每个字膨胀、上浮、前倾后恢复，“加权平均”保持粗体并变成强调色。"
+      }
+    },
+    "scramble-reveal--notes": {
+      "id": "scramble-reveal--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "scramble-reveal--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一个词被“解出来”：解码、加密、模型输出逐渐稳定、哈希变成名字；翻牌样式用于到站、结果、排名。乱码由位置和帧号的哈希决定，不用随机数，任意跳转画面都相同；中文目标在常用汉字里轮换，其他文字在字母和数字里轮换。"
+            }
+          ]
+        },
+        {
+          "id": "scramble-reveal--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "节拍："
+            },
+            {
+              "type": "text",
+              "text": "decode",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 1.6 秒，每秒换 15 次（够快像噪声，又不闪烁），从 0.35 秒起每 110 毫秒锁定一个，锁定时闪 0.25 秒强调色；翻牌样式下第 i 格翻 8 + 2i 次，每次 70 毫秒，从左到右落定。"
+            },
+            {
+              "type": "text",
+              "text": "hold",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 2 秒。"
+            }
+          ]
+        },
+        {
+          "id": "scramble-reveal--notes--n2",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "scramble-reveal--notes--n2--i0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "scramble-reveal--notes--n2--i0--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "text",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：目标文字。"
+                    },
+                    {
+                      "type": "text",
+                      "text": "style",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "："
+                    },
+                    {
+                      "type": "text",
+                      "text": "scramble",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（默认）或 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "flap",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（翻牌）。"
+                    },
+                    {
+                      "type": "text",
+                      "text": "caption",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：下方的说明（可选）。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "scramble-reveal--shot": {
+      "id": "scramble-reveal--shot",
+      "type": "component",
+      "definitionId": "scramble-reveal--shot--definition",
+      "parameters": {
+        "scene": "scramble-reveal",
+        "alt": "五个位置的字快速变换，从左到右依次锁定成“注意力机制”，每锁定一个闪一下强调色。"
+      }
+    },
+    "lower-third--notes": {
+      "id": "lower-third--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "lower-third--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲课视频、访谈、会议报告里标出讲者。画面里的讲者轮廓是占位，代表它叠在上面的视频；"
+            },
+            {
+              "type": "text",
+              "text": "backdrop",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 设为 false 后画面留空，用来叠在真实镜头上。先出现“原因”（色条、竖线、色块），姓名晚 120–150 毫秒，身份和标签最后；每个部分在前一个结束前开始。"
+            }
+          ]
+        },
+        {
+          "id": "lower-third--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "节拍："
+            },
+            {
+              "type": "text",
+              "text": "in",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 1 秒。"
+            },
+            {
+              "type": "text",
+              "text": "hold",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 3 秒，约 15 个字读两遍。"
+            },
+            {
+              "type": "text",
+              "text": "out",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 0.5 秒，按出场的相反顺序 0.3 秒离开。"
+            }
+          ]
+        },
+        {
+          "id": "lower-third--notes--n2",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "lower-third--notes--n2--i0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "lower-third--notes--n2--i0--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "name",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "role",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "kicker",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（小标签，可留空）。"
+                    },
+                    {
+                      "type": "text",
+                      "text": "side",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "："
+                    },
+                    {
+                      "type": "text",
+                      "text": "left",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（默认）或 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "right",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "lower-third--notes--n2--i1",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "lower-third--notes--n2--i1--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "look",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "："
+                    },
+                    {
+                      "type": "text",
+                      "text": "bar",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（带色条的卡片，默认）、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "stack",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（姓名条和身份条上下叠放，分别从左右擦入）、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "rule",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（无卡片，竖线后滑出）、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "sweep",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（无卡片，色块扫过揭出姓名）、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "pill",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（圆角胶囊带状态点）。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "lower-third--notes--n2--i2",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "lower-third--notes--n2--i2--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "tone",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "："
+                    },
+                    {
+                      "type": "text",
+                      "text": "bar",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " 卡片的底色，"
+                    },
+                    {
+                      "type": "text",
+                      "text": "surface",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "ink",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": " 或 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "accent",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "。"
+                    },
+                    {
+                      "type": "text",
+                      "text": "backdrop",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：是否画占位镜头。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "lower-third--shot": {
+      "id": "lower-third--shot",
+      "type": "component",
+      "definitionId": "lower-third--shot--definition",
+      "parameters": {
+        "scene": "lower-third",
+        "alt": "讲者画面左下角，一条强调色竖条先长出，卡片从它展开，姓名“陈思远”升起，身份“计算机系副教授 · 机器学习”淡入。"
+      }
+    },
+    "camera-caption--notes": {
+      "id": "camera-caption--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "camera-caption--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一节课的中心句、一个定义、一个论点。字不动，镜头动：每个新词的大小按已写内容的外框来定，交替写在外框右边（外框一半高）或下面（外框大部分宽），外框按几何级数长大，镜头匀速后退，每个词到达时在屏幕上一样大。旧词留在原处变小，像手写填满一页纸；最后镜头拉远，整句一次读完。"
+            }
+          ]
+        },
+        {
+          "id": "camera-caption--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "节拍："
+            },
+            {
+              "type": "text",
+              "text": "write",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 5.6 秒，每个词平分：前一半镜头滑到下一个空位（缩放按对数插值，推拉速度均匀），镜头到达时词浮现，后一半停住（至少 0.6 秒）。"
+            },
+            {
+              "type": "text",
+              "text": "reveal",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 2.5 秒，前 1.2 秒拉远到整句，然后静止。排版按字数估算宽度（汉字 1 em），不测量文字，所以在每台机器上都一样。"
+            }
+          ]
+        },
+        {
+          "id": "camera-caption--notes--n2",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "camera-caption--notes--n2--i0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "camera-caption--notes--n2--i0--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "words",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：词组列表（自己决定断句），或一个字符串（按词典分词）。"
+                    },
+                    {
+                      "type": "text",
+                      "text": "keywords",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：强调色的词。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "camera-caption--shot": {
+      "id": "camera-caption--shot",
+      "type": "component",
+      "definitionId": "camera-caption--shot--definition",
+      "parameters": {
+        "scene": "camera-caption",
+        "alt": "“反向传播”“就是”“把误差”“沿着计算图”“一层层”“送回去”依次写在越来越大的位置上，镜头每次跟到新词并后退，最后拉远露出整句话，“把误差”和“送回去”是强调色。"
+      }
+    },
+    "versus-cards--notes": {
+      "id": "versus-cards--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "versus-cards--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "两种方法、两个版本、之前和之后的对比。左边永远是基线或之前，右边是新的或我们的。两张卡片在同一个透视下各向中间转 10°，像打开的书，阴影向外落。"
+            }
+          ]
+        },
+        {
+          "id": "versus-cards--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "节拍："
+            },
+            {
+              "type": "text",
+              "text": "in",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 1.3 秒，左卡从左侧转入，0.25 秒后右卡对称转入，各自的要点在落定时依次升起。"
+            },
+            {
+              "type": "text",
+              "text": "badge",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 1.2 秒，先弹出左边的标签，再弹出右边强调色的标签，右卡边框变成强调色：一次一个，结论最后。"
+            },
+            {
+              "type": "text",
+              "text": "hold",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 2 秒。"
+            }
+          ]
+        },
+        {
+          "id": "versus-cards--notes--n2",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "versus-cards--notes--n2--i0",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "versus-cards--notes--n2--i0--p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "left",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "right",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "：各一个对象，含 "
+                    },
+                    {
+                      "type": "text",
+                      "text": "title",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（标题）、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "points",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（要点列表，每条一行，宜短）、"
+                    },
+                    {
+                      "type": "text",
+                      "text": "badge",
+                      "marks": [
+                        {
+                          "type": "code"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "text": "（标签，可留空）。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "versus-cards--shot": {
+      "id": "versus-cards--shot",
+      "type": "component",
+      "definitionId": "versus-cards--shot--definition",
+      "parameters": {
+        "scene": "versus-cards",
+        "alt": "两张卡片像书一样打开：左边 RNN（逐个词读入、难以并行、远处的词会遗忘），右边 Transformer（整句一次读入、完全并行、注意力直连任意两词），先后弹出“顺序”和强调色的“并行”标签。"
+      }
+    }
+  },
+  "steps": {
+    "intro--step-0": {
+      "id": "intro--step-0",
+      "sectionId": "intro",
+      "visuals": [
+        {
+          "blockId": "intro--card",
+          "visible": true
+        },
+        {
+          "blockId": "intro--notes",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "text-reveal--step-0": {
+      "id": "text-reveal--step-0",
+      "sectionId": "text-reveal",
+      "visuals": [
+        {
+          "blockId": "text-reveal--notes",
+          "visible": false
+        },
+        {
+          "blockId": "text-reveal--shot",
+          "visible": true,
+          "state": "in"
+        }
+      ],
+      "narrationIds": []
+    },
+    "text-reveal--step-1": {
+      "id": "text-reveal--step-1",
+      "sectionId": "text-reveal",
+      "visuals": [
+        {
+          "blockId": "text-reveal--notes",
+          "visible": false
+        },
+        {
+          "blockId": "text-reveal--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "text-reveal--step-2": {
+      "id": "text-reveal--step-2",
+      "sectionId": "text-reveal",
+      "visuals": [
+        {
+          "blockId": "text-reveal--notes",
+          "visible": false
+        },
+        {
+          "blockId": "text-reveal--shot",
+          "visible": true,
+          "state": "out"
+        }
+      ],
+      "narrationIds": []
+    },
+    "captions--step-0": {
+      "id": "captions--step-0",
+      "sectionId": "captions",
+      "visuals": [
+        {
+          "blockId": "captions--notes",
+          "visible": false
+        },
+        {
+          "blockId": "captions--shot",
+          "visible": true,
+          "state": "play"
+        }
+      ],
+      "narrationIds": []
+    },
+    "title-card--step-0": {
+      "id": "title-card--step-0",
+      "sectionId": "title-card",
+      "visuals": [
+        {
+          "blockId": "title-card--notes",
+          "visible": false
+        },
+        {
+          "blockId": "title-card--shot",
+          "visible": true,
+          "state": "in"
+        }
+      ],
+      "narrationIds": []
+    },
+    "title-card--step-1": {
+      "id": "title-card--step-1",
+      "sectionId": "title-card",
+      "visuals": [
+        {
+          "blockId": "title-card--notes",
+          "visible": false
+        },
+        {
+          "blockId": "title-card--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "title-card--step-2": {
+      "id": "title-card--step-2",
+      "sectionId": "title-card",
+      "visuals": [
+        {
+          "blockId": "title-card--notes",
+          "visible": false
+        },
+        {
+          "blockId": "title-card--shot",
+          "visible": true,
+          "state": "out"
+        }
+      ],
+      "narrationIds": []
+    },
+    "glyph-slam--step-0": {
+      "id": "glyph-slam--step-0",
+      "sectionId": "glyph-slam",
+      "visuals": [
+        {
+          "blockId": "glyph-slam--notes",
+          "visible": false
+        },
+        {
+          "blockId": "glyph-slam--shot",
+          "visible": true,
+          "state": "slam"
+        }
+      ],
+      "narrationIds": []
+    },
+    "glyph-slam--step-1": {
+      "id": "glyph-slam--step-1",
+      "sectionId": "glyph-slam",
+      "visuals": [
+        {
+          "blockId": "glyph-slam--notes",
+          "visible": false
+        },
+        {
+          "blockId": "glyph-slam--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "slot-swap--step-0": {
+      "id": "slot-swap--step-0",
+      "sectionId": "slot-swap",
+      "visuals": [
+        {
+          "blockId": "slot-swap--notes",
+          "visible": false
+        },
+        {
+          "blockId": "slot-swap--shot",
+          "visible": true,
+          "state": "set"
+        }
+      ],
+      "narrationIds": []
+    },
+    "slot-swap--step-1": {
+      "id": "slot-swap--step-1",
+      "sectionId": "slot-swap",
+      "visuals": [
+        {
+          "blockId": "slot-swap--notes",
+          "visible": false
+        },
+        {
+          "blockId": "slot-swap--shot",
+          "visible": true,
+          "state": "roll"
+        }
+      ],
+      "narrationIds": []
+    },
+    "slot-swap--step-2": {
+      "id": "slot-swap--step-2",
+      "sectionId": "slot-swap",
+      "visuals": [
+        {
+          "blockId": "slot-swap--notes",
+          "visible": false
+        },
+        {
+          "blockId": "slot-swap--shot",
+          "visible": true,
+          "state": "land"
+        }
+      ],
+      "narrationIds": []
+    },
+    "strike-replace--step-0": {
+      "id": "strike-replace--step-0",
+      "sectionId": "strike-replace",
+      "visuals": [
+        {
+          "blockId": "strike-replace--notes",
+          "visible": false
+        },
+        {
+          "blockId": "strike-replace--shot",
+          "visible": true,
+          "state": "claim"
+        }
+      ],
+      "narrationIds": []
+    },
+    "strike-replace--step-1": {
+      "id": "strike-replace--step-1",
+      "sectionId": "strike-replace",
+      "visuals": [
+        {
+          "blockId": "strike-replace--notes",
+          "visible": false
+        },
+        {
+          "blockId": "strike-replace--shot",
+          "visible": true,
+          "state": "strike"
+        }
+      ],
+      "narrationIds": []
+    },
+    "strike-replace--step-2": {
+      "id": "strike-replace--step-2",
+      "sectionId": "strike-replace",
+      "visuals": [
+        {
+          "blockId": "strike-replace--notes",
+          "visible": false
+        },
+        {
+          "blockId": "strike-replace--shot",
+          "visible": true,
+          "state": "fix"
+        }
+      ],
+      "narrationIds": []
+    },
+    "text-match-cut--step-0": {
+      "id": "text-match-cut--step-0",
+      "sectionId": "text-match-cut",
+      "visuals": [
+        {
+          "blockId": "text-match-cut--notes",
+          "visible": false
+        },
+        {
+          "blockId": "text-match-cut--shot",
+          "visible": true,
+          "state": "a"
+        }
+      ],
+      "narrationIds": []
+    },
+    "text-match-cut--step-1": {
+      "id": "text-match-cut--step-1",
+      "sectionId": "text-match-cut",
+      "visuals": [
+        {
+          "blockId": "text-match-cut--notes",
+          "visible": false
+        },
+        {
+          "blockId": "text-match-cut--shot",
+          "visible": true,
+          "state": "cut"
+        }
+      ],
+      "narrationIds": []
+    },
+    "text-match-cut--step-2": {
+      "id": "text-match-cut--step-2",
+      "sectionId": "text-match-cut",
+      "visuals": [
+        {
+          "blockId": "text-match-cut--notes",
+          "visible": false
+        },
+        {
+          "blockId": "text-match-cut--shot",
+          "visible": true,
+          "state": "b"
+        }
+      ],
+      "narrationIds": []
+    },
+    "weight-wave--step-0": {
+      "id": "weight-wave--step-0",
+      "sectionId": "weight-wave",
+      "visuals": [
+        {
+          "blockId": "weight-wave--notes",
+          "visible": false
+        },
+        {
+          "blockId": "weight-wave--shot",
+          "visible": true,
+          "state": "set"
+        }
+      ],
+      "narrationIds": []
+    },
+    "weight-wave--step-1": {
+      "id": "weight-wave--step-1",
+      "sectionId": "weight-wave",
+      "visuals": [
+        {
+          "blockId": "weight-wave--notes",
+          "visible": false
+        },
+        {
+          "blockId": "weight-wave--shot",
+          "visible": true,
+          "state": "wave"
+        }
+      ],
+      "narrationIds": []
+    },
+    "weight-wave--step-2": {
+      "id": "weight-wave--step-2",
+      "sectionId": "weight-wave",
+      "visuals": [
+        {
+          "blockId": "weight-wave--notes",
+          "visible": false
+        },
+        {
+          "blockId": "weight-wave--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "scramble-reveal--step-0": {
+      "id": "scramble-reveal--step-0",
+      "sectionId": "scramble-reveal",
+      "visuals": [
+        {
+          "blockId": "scramble-reveal--notes",
+          "visible": false
+        },
+        {
+          "blockId": "scramble-reveal--shot",
+          "visible": true,
+          "state": "decode"
+        }
+      ],
+      "narrationIds": []
+    },
+    "scramble-reveal--step-1": {
+      "id": "scramble-reveal--step-1",
+      "sectionId": "scramble-reveal",
+      "visuals": [
+        {
+          "blockId": "scramble-reveal--notes",
+          "visible": false
+        },
+        {
+          "blockId": "scramble-reveal--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "lower-third--step-0": {
+      "id": "lower-third--step-0",
+      "sectionId": "lower-third",
+      "visuals": [
+        {
+          "blockId": "lower-third--notes",
+          "visible": false
+        },
+        {
+          "blockId": "lower-third--shot",
+          "visible": true,
+          "state": "in"
+        }
+      ],
+      "narrationIds": []
+    },
+    "lower-third--step-1": {
+      "id": "lower-third--step-1",
+      "sectionId": "lower-third",
+      "visuals": [
+        {
+          "blockId": "lower-third--notes",
+          "visible": false
+        },
+        {
+          "blockId": "lower-third--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    },
+    "lower-third--step-2": {
+      "id": "lower-third--step-2",
+      "sectionId": "lower-third",
+      "visuals": [
+        {
+          "blockId": "lower-third--notes",
+          "visible": false
+        },
+        {
+          "blockId": "lower-third--shot",
+          "visible": true,
+          "state": "out"
+        }
+      ],
+      "narrationIds": []
+    },
+    "camera-caption--step-0": {
+      "id": "camera-caption--step-0",
+      "sectionId": "camera-caption",
+      "visuals": [
+        {
+          "blockId": "camera-caption--notes",
+          "visible": false
+        },
+        {
+          "blockId": "camera-caption--shot",
+          "visible": true,
+          "state": "write"
+        }
+      ],
+      "narrationIds": []
+    },
+    "camera-caption--step-1": {
+      "id": "camera-caption--step-1",
+      "sectionId": "camera-caption",
+      "visuals": [
+        {
+          "blockId": "camera-caption--notes",
+          "visible": false
+        },
+        {
+          "blockId": "camera-caption--shot",
+          "visible": true,
+          "state": "reveal"
+        }
+      ],
+      "narrationIds": []
+    },
+    "versus-cards--step-0": {
+      "id": "versus-cards--step-0",
+      "sectionId": "versus-cards",
+      "visuals": [
+        {
+          "blockId": "versus-cards--notes",
+          "visible": false
+        },
+        {
+          "blockId": "versus-cards--shot",
+          "visible": true,
+          "state": "in"
+        }
+      ],
+      "narrationIds": []
+    },
+    "versus-cards--step-1": {
+      "id": "versus-cards--step-1",
+      "sectionId": "versus-cards",
+      "visuals": [
+        {
+          "blockId": "versus-cards--notes",
+          "visible": false
+        },
+        {
+          "blockId": "versus-cards--shot",
+          "visible": true,
+          "state": "badge"
+        }
+      ],
+      "narrationIds": []
+    },
+    "versus-cards--step-2": {
+      "id": "versus-cards--step-2",
+      "sectionId": "versus-cards",
+      "visuals": [
+        {
+          "blockId": "versus-cards--notes",
+          "visible": false
+        },
+        {
+          "blockId": "versus-cards--shot",
+          "visible": true,
+          "state": "hold"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "text-reveal--shot--definition": {
+      "id": "text-reveal--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/text-reveal.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "title": "文字（\\n 换行）",
+            "type": "string",
+            "default": "注意力，\n就是加权求和"
+          },
+          "key": {
+            "title": "强调短语",
+            "type": "string",
+            "default": "加权求和"
+          },
+          "style": {
+            "title": "出场方式",
+            "type": "string",
+            "enum": [
+              "rise",
+              "drop",
+              "blur",
+              "track",
+              "wipe",
+              "slide"
+            ],
+            "default": "rise"
+          },
+          "unit": {
+            "title": "拆分单位",
+            "type": "string",
+            "enum": [
+              "char",
+              "word",
+              "line"
+            ],
+            "default": "char"
+          },
+          "size": {
+            "title": "字号",
+            "type": "string",
+            "enum": [
+              "title",
+              "lead"
+            ],
+            "default": "title"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "in"
+        },
+        {
+          "id": "hold"
+        },
+        {
+          "id": "out"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1200,
+          2500,
+          500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "两行字“注意力，就是加权求和”逐字从各自的槽里升起，落定后“加权求和”变成强调色。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "captions--shot--definition": {
+      "id": "captions--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/captions.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "phrases": {
+            "title": "短句",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "梯度告诉我们",
+              "往哪个方向走，",
+              "损失下降得最快"
+            ]
+          },
+          "keywords": {
+            "title": "关键词",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "方向",
+              "最快"
+            ]
+          },
+          "style": {
+            "title": "样式",
+            "type": "string",
+            "enum": [
+              "karaoke",
+              "pill",
+              "editorial",
+              "wipe"
+            ],
+            "default": "karaoke"
+          },
+          "position": {
+            "title": "位置",
+            "type": "string",
+            "enum": [
+              "center",
+              "bottom"
+            ],
+            "default": "center"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "play"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          6000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "三句字幕依次出现：“梯度告诉我们”“往哪个方向走，”“损失下降得最快”，每个词按说话节奏变亮，“方向”和“最快”变成强调色。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "title-card--shot--definition": {
+      "id": "title-card--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/title-card.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "kicker": {
+            "title": "小标签",
+            "type": "string",
+            "default": "第 3 章"
+          },
+          "title": {
+            "title": "标题",
+            "type": "string",
+            "default": "反向传播"
+          },
+          "sub": {
+            "title": "副标题",
+            "type": "string",
+            "default": "链式法则把误差送回每一层"
+          },
+          "dot": {
+            "title": "强调色句点",
+            "type": "boolean",
+            "default": true
+          },
+          "backdrop": {
+            "title": "背景大字",
+            "type": "string",
+            "default": "∂L/∂w"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "in"
+        },
+        {
+          "id": "hold"
+        },
+        {
+          "id": "out"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1400,
+          2600,
+          400
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "标题卡：小字“第 3 章”，大标题“反向传播”和一个强调色句点，细线从中间画开，副标题“链式法则把误差送回每一层”，背后淡淡的大字“∂L/∂w”。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "glyph-slam--shot--definition": {
+      "id": "glyph-slam--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/glyph-slam.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "title": "词",
+            "type": "string",
+            "default": "梯度消失"
+          },
+          "mode": {
+            "title": "方式",
+            "type": "string",
+            "enum": [
+              "gather",
+              "slam"
+            ],
+            "default": "gather"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "slam"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1400,
+          2000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "四个字“梯度消失”从画面各处飞回原位，落定时画面轻震，一条强调色横线从字下向两边弹开。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "slot-swap--shot--definition": {
+      "id": "slot-swap--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/slot-swap.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "prefix": {
+            "title": "前文",
+            "type": "string",
+            "default": "大模型的本质是"
+          },
+          "suffix": {
+            "title": "后文",
+            "type": "string",
+            "default": ""
+          },
+          "options": {
+            "title": "选项（最后一个是答案）",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "记忆",
+              "检索",
+              "压缩",
+              "预测"
+            ]
+          },
+          "mode": {
+            "title": "换词方式",
+            "type": "string",
+            "enum": [
+              "roll",
+              "axis"
+            ],
+            "default": "roll"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "set"
+        },
+        {
+          "id": "roll"
+        },
+        {
+          "id": "land"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1600,
+          3000,
+          2000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "句子“大模型的本质是”后面的词依次换成“记忆”“检索”“压缩”，最后落在“预测”，变成强调色并画上下划线。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "strike-replace--shot--definition": {
+      "id": "strike-replace--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/strike-replace.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "prefix": {
+            "title": "前文",
+            "type": "string",
+            "default": "梯度下降总能找到"
+          },
+          "wrong": {
+            "title": "错误说法",
+            "type": "string",
+            "default": "全局最优"
+          },
+          "right": {
+            "title": "正确说法",
+            "type": "string",
+            "default": "局部最优"
+          },
+          "suffix": {
+            "title": "后文",
+            "type": "string",
+            "default": ""
+          },
+          "mode": {
+            "title": "改正方式",
+            "type": "string",
+            "enum": [
+              "above",
+              "caret"
+            ],
+            "default": "above"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "claim"
+        },
+        {
+          "id": "strike"
+        },
+        {
+          "id": "fix"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          2000,
+          1200,
+          2500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "句子“梯度下降总能找到全局最优”，“全局最优”被红线划掉变灰，上方升起强调色的“局部最优”。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "text-match-cut--shot--definition": {
+      "id": "text-match-cut--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/text-match-cut.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "title": "前一个词",
+            "type": "string",
+            "default": "像素"
+          },
+          "to": {
+            "title": "后一个词",
+            "type": "string",
+            "default": "概念"
+          },
+          "label": {
+            "title": "标签",
+            "type": "string",
+            "default": "深层网络把"
+          },
+          "mode": {
+            "title": "运动",
+            "type": "string",
+            "enum": [
+              "push",
+              "track",
+              "slide"
+            ],
+            "default": "push"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "a"
+        },
+        {
+          "id": "cut"
+        },
+        {
+          "id": "b"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1600,
+          900,
+          2000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "“深层网络把”下方的大字“像素”向镜头推近消失，在最快的一刻切成“概念”，“概念”从小到大落定，变成强调色。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "weight-wave--shot--definition": {
+      "id": "weight-wave--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/weight-wave.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "title": "句子",
+            "type": "string",
+            "default": "注意力是一种加权平均"
+          },
+          "key": {
+            "title": "关键词",
+            "type": "string",
+            "default": "加权平均"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "set"
+        },
+        {
+          "id": "wave"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1200,
+          1400,
+          2000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一句“注意力是一种加权平均”，一道加粗的波从左到右扫过，每个字膨胀、上浮、前倾后恢复，“加权平均”保持粗体并变成强调色。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "scramble-reveal--shot--definition": {
+      "id": "scramble-reveal--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/scramble-reveal.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "title": "目标文字",
+            "type": "string",
+            "default": "注意力机制"
+          },
+          "style": {
+            "title": "样式",
+            "type": "string",
+            "enum": [
+              "scramble",
+              "flap"
+            ],
+            "default": "scramble"
+          },
+          "caption": {
+            "title": "说明",
+            "type": "string",
+            "default": ""
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "decode"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1600,
+          2000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "五个位置的字快速变换，从左到右依次锁定成“注意力机制”，每锁定一个闪一下强调色。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "lower-third--shot--definition": {
+      "id": "lower-third--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/lower-third.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "title": "姓名",
+            "type": "string",
+            "default": "陈思远"
+          },
+          "role": {
+            "title": "身份",
+            "type": "string",
+            "default": "计算机系副教授 · 机器学习"
+          },
+          "kicker": {
+            "title": "小标签",
+            "type": "string",
+            "default": "主讲"
+          },
+          "look": {
+            "title": "样式",
+            "type": "string",
+            "enum": [
+              "bar",
+              "stack",
+              "rule",
+              "sweep",
+              "pill"
+            ],
+            "default": "bar"
+          },
+          "tone": {
+            "title": "卡片底色",
+            "type": "string",
+            "enum": [
+              "surface",
+              "ink",
+              "accent"
+            ],
+            "default": "surface"
+          },
+          "side": {
+            "title": "位置",
+            "type": "string",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "default": "left"
+          },
+          "backdrop": {
+            "title": "占位镜头",
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "in"
+        },
+        {
+          "id": "hold"
+        },
+        {
+          "id": "out"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          3000,
+          500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "讲者画面左下角，一条强调色竖条先长出，卡片从它展开，姓名“陈思远”升起，身份“计算机系副教授 · 机器学习”淡入。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "camera-caption--shot--definition": {
+      "id": "camera-caption--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/camera-caption.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "words": {
+            "title": "词组（列表，或一句话自动分词）",
+            "type": [
+              "array",
+              "string"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "反向传播",
+              "就是",
+              "把误差",
+              "沿着计算图",
+              "一层层",
+              "送回去"
+            ]
+          },
+          "keywords": {
+            "title": "关键词",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "误差",
+              "送回去"
+            ]
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "write"
+        },
+        {
+          "id": "reveal"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          5600,
+          2500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "“反向传播”“就是”“把误差”“沿着计算图”“一层层”“送回去”依次写在越来越大的位置上，镜头每次跟到新词并后退，最后拉远露出整句话，“把误差”和“送回去”是强调色。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "versus-cards--shot--definition": {
+      "id": "versus-cards--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/versus-cards.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "left": {
+            "title": "左卡（基线）",
+            "type": "object"
+          },
+          "right": {
+            "title": "右卡（我们）",
+            "type": "object"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "in"
+        },
+        {
+          "id": "badge"
+        },
+        {
+          "id": "hold"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1300,
+          1200,
+          2000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "两张卡片像书一样打开：左边 RNN（逐个词读入、难以并行、远处的词会遗忘），右边 Transformer（整句一次读入、完全并行、注意力直连任意两词），先后弹出“顺序”和强调色的“并行”标签。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      },
+      "trailingPauseMs": 0
+    },
+    "stepOverrides": {
+      "intro--step-0": {
+        "minimumHoldMs": 2500
+      }
+    },
+    "mediaClips": []
+  }
+}

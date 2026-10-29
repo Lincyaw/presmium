@@ -13,7 +13,8 @@ Every piece below exists in this skill's gallery. `gallery/lengths/lecture.json`
 5. **One spatial convention per piece.** For example: left is before, cheaper or the baseline; right is after or ours; up is better. Never swap it between shots.
 6. **Show, don't write.** Use shapes, icons, logos, product UI and numbers before words. When there must be words, show at most one short line at a time, at no more than 9 Chinese characters or 20 Latin characters a second, and keep it on screen until it can be read twice (about 0.6 s per word). A chart's own labels count as words.
 7. **Hold the payoff.** At least 1.5 s on the result of a 5-second piece, at least 2 s from 10 seconds up, and 3–8 s on the final frame of a film (the call to action or the title card), because the last frame is the one people pause on.
-8. **Be honest with data.** Bars start at zero. Numbers come from the source, and the source is named on screen. Values made up for illustration are labelled as such.
+8. **Size and rhythm.** The hero fills at least 40% of the frame's width or height. Secondary moves travel 50–70% as far as the main one and start 100–200 ms after it. In a promo something new happens every 2–4 s and shots average 1.8–3 s; a card is readable within 2.5 s and then holds.
+9. **Be honest with data.** Bars start at zero. Numbers come from the source, and the source is named on screen. Values made up for illustration are labelled as such.
 
 ### Durations and eases
 
@@ -28,8 +29,10 @@ Every piece below exists in this skill's gallery. `gallery/lengths/lecture.json`
 | Stagger between items of a group | 20–50 ms for UI lists, 60–80 ms for cards and words | — |
 | One stage of a data transition | about 1 s, with a short dwell between stages | ease-in-out |
 | Typing | 12–15 characters a second | linear |
+| Count-up (with `tabular-nums`) | 1.2–1.6 s | `expo.out` |
+| Hold before a payoff | 0.3–0.75 s | — |
 
-Linear motion is only for typing, loops and constant drifts. Springs and overshoot mean "new" or "done": use them for one thing at a time (a badge, a delta, a celebration), never for a whole list.
+Linear motion is only for typing, loops and constant drifts. Springs and overshoot mean "new" or "done": use them for one thing at a time (a badge, a delta, a celebration), never for a whole list. Choose a spring by its damping ratio: 1.0 never bounces, 0.7–0.85 reads premium, 0.4–0.6 playful, below 0.3 a cartoon; never spring opacity or colour. In a sequence the next element starts when the previous one is 30–50% done.
 
 ### Making it look polished
 
@@ -37,14 +40,14 @@ A plain atom moves one property, stops dead and changes nothing else. These are 
 
 1. **Anticipation, action, overshoot, settle.** Before a big move, go back 3–10% (or shrink to 0.92–0.97) for 15–25% of the move. Calibrate the overshoot by scale: 1–5% for interface parts, 5–10% for the hero of a frame, 15–25% only for mascots and celebrations; settle in one return. Data values never overshoot.
 2. **Overlap everything.** Start each part before the last ends; on one object, let the properties arrive at different times (opacity first, position over the whole move, scale 30–60 ms later, color on landing). The same duration for every property is what looks templated.
-3. **Speed you can see.** Smears, directional blur, trails and comet tails are computed from the current speed and disappear at rest.
+3. **Speed you can see.** Smears, directional blur, trails and comet tails are computed from the current speed and disappear at rest. Blur peaks at the fastest frame: about 0.3–0.6 cqw on text, 0.8–1 cqw on the whole frame.
 4. **Masks instead of fades.** Things rise out of a slot, slide from behind an edge or are uncovered by a clip.
 5. **Every impact gets a reaction** within one or two frames: a squash, a ring, sparks, a neighbour pushed away, about a third of the main move's size.
 6. **One sweep of light is a material.** A sheen or glow once, at the moment of change, never permanently on. On the light page a white highlight becomes the deepened accent.
 7. **Depth from one height value** driving scale, shadow size, blur and fade together.
 8. **One clock, several readouts.** A head and its tail, a pointer and the tilt it causes, a pen and the value it shows share one progress, so they read as one mechanism.
 9. **Waves from a meaningful origin** (the tap, the logo, the centre), with the total stagger capped and itself eased.
-10. **A hold that lives.** A 1–2% drift or breath on a resting result; a frame frozen for more than about a second looks broken.
+10. **A hold that reads.** A landed title, line or interface stays dead still. When the whole frame would otherwise freeze for more than about a second, let one layer that carries no argument (a background, a light) drift 1–2%.
 
 ## What each second shows
 
@@ -124,6 +127,8 @@ These five are the vocabulary, and their GSAP functions in `kit/atoms.ts` build 
 | 22–27 s | Proof: one number, or ours beside the baseline |
 | 27–30 s | Call to action or title card, held (conference title cards run 3–5 s) |
 
+**Transitions have a cause.** A film uses 3–5 kinds of transition, at most a third of its seams are hard cuts, and unrelated worlds never crossfade. A cut lands on the fastest frame with the direction and speed matched across it and the eases mirrored (`power3.in` out, `power3.out` in); a click is a match cut on its rebound. Measured recipes: zoom through a button from 8% to 250% in 0.35 s; an iris from the click in 0.15 s; a dip that darkens 40% for 3 frames; a colour flood in 0.4 s.
+
 A 30-second film needs no new animation. Every shot is a scene of a shorter length with new parameters, new durations, or only some of its states: the gallery's product film (`s30-product`) shows the problem → solution scene twice, its first two states as the problem and its last three as the answer, so the files that cause the trouble are the same objects that become the document. The paper film (`s30-paper`) opens with the 1-second odometer held for 1.5 s, and its problem and idea shots use the same sentence, so the two read as one comparison. Cut between shots; move inside them.
 
 ### 60 seconds: a complete promo or paper video
@@ -132,6 +137,15 @@ Not a slower 30-second film. Keep the skeleton (hook, brand, problem, answer, ca
 
 - Product explainer (`s60-product`): hook 0–4 s, brand 4–9 s, problem 9–17 s, answer 17–27 s, how it works in three parts (write 27–37 s, a montage of four atoms 37–43 s, a summary line 43–48 s, publish 48–53 s), call to action 53–60 s.
 - Paper video (`s60-paper`): the key result first 0–5 s, then 10 s each for the problem, the key idea, the method and the evidence, a one-line takeaway 45–52 s, and an 8-second title card.
+
+## Sound and music
+
+- **When.** Promos and films over about 15 s get a music bed; a dense teaching explanation gets none (`story.md`, Weed). A sound effect needs a cause on screen: a click on a real click, a whoosh on a cut, ticks on typing, a pop on a badge, one riser into one impact per film. Rotate 2–3 takes of a repeated sound. Never compose music or synthesise tones in code; without a source, deliver silent and say so.
+- **Sources.** The person's own track first. Effects from Openverse, named concretely ("glass shatter", not "dramatic"), clips of 4 s or less; credit their authors in the reading view. Generated music only from a generator the person chooses.
+- **Edits.** Enter the track at its strongest bar, not its quiet intro; end on a bar line with a short fade; a library loop gets a 0.4 s fade-in and a 1.5 s fade-out. Choose by feel and tempo, not subject: calm 90–110 BPM, energetic 110–130.
+- **Beat grid.** Beat n falls on frame `round(n × fps × 60 / BPM)`; never add a rounded beat repeatedly (at 128 BPM and 30 fps that drifts 2 frames in 32 beats). Cut on the beat, change the layout on the bar. A move that must land on a hit starts 40–190 ms early, a reaction starts 0–45 ms after, and the hit itself is not eased. A word holds at least one beat; any treatment goes stale after about 6 s. On calm music beat trackers invent a metronome, often at double tempo: cut on changes of phrase and energy instead.
+- **Timing and levels.** An effect's peak lands one frame after its picture; most files peak after their start, so measure the offset. A riser starts at the climax minus its length. Under a voice the bed sits about −18 dB (volume 0.12–0.14) and ducks further while anyone speaks; effects sit 3–6 dB over the bed; a bed whose energy is mostly under 150 Hz is inaudible on a phone. Deliver at a true peak of −1 dBTP or lower and −16 to −14 LUFS for social video; measure with `ffmpeg -i <file> -af ebur128=peak=true -f null -`.
+- **In Presmium** sound is `production.mediaClips` (see `presmium-present`, lecture production): each clip lies within one step with its own volume, so a bed is cut into per-step clips at bar lines, and ducking is the lower volume of the clips under narration.
 
 ## Build and export in Presmium
 
@@ -142,9 +156,10 @@ Not a slower 30-second film. Keep the skeleton (hook, brand, problem, answer, ca
 - **Silent timing.** Set `production.defaults` to `{ "voiceSource": { "type": "none" }, "trailingPauseMs": 0 }`. Without the zero trailing pause, every silent step adds a 0.5 s gap, and a beat shorter than that is stretched.
 - **Reuse a scene in a longer piece** by giving it a new definition with its own durations. To show only some of its states, keep all of them in the definition (so the scene's `at(k)` still names the same state) and let the steps name only the states shown.
 - **Parameters** from the component block reach the scene as `parameters` (names, the text to type, the data), so one scene serves several pieces.
-- **Logos and product marks**: import SVG files as text (`import mark from './logos/mark.svg?raw'`) and inline them; the frame never waits for an image to load. Bitmaps that load after a frame is drawn show up blank in the export.
-- **Export** the document with `presmium build <deck> --to web,lecture` (the document needs the `lecture` renderer and `@lincyaw/addon-lecture` in its plugins), then `presmium-lecture export <deck>`. `dist/lecture/script/chapters.vtt` gives each section's time span; cut a single piece from the video by frame number, because `-ss` lands a frame off on the exported WebM (at 30 fps, frames `a = start × 30` to `b = end × 30`: `ffmpeg -i <deck>/dist/script.webm -vf "select=between(n\\,a\\,b-1),setpts=N/30/TB" piece.mp4`). Take check frames the same way (`select=eq(n\\,N)`).
+- **Logos and product marks**: import SVG files as text (`import mark from './logos/mark.svg?raw'`) and inline them, so they take the token colours. A bitmap (screenshot, photo) goes in an `<img>`: the scene shows its first frame only once every `<img>` has decoded.
+- **Export** the document with `presmium build <deck> --to web,lecture` (the document needs the `lecture` renderer and `@lincyaw/addon-lecture` in its plugins), then `presmium-lecture export <deck>` (it writes `dist/script.mp4` when FFmpeg is installed, else a softer `dist/script.webm`). `dist/lecture/script/chapters.vtt` gives each section's time span; cut a single piece from the video by frame number, because `-ss` can land a frame off (at 30 fps, frames `a = start × 30` to `b = end × 30`: `ffmpeg -i <deck>/dist/script.mp4 -vf "select=between(n\\,a\\,b-1),setpts=N/30/TB" piece.mp4`). Take check frames the same way (`select=eq(n\\,N)`).
 - **Check by frames**: take frames at every beat boundary and just after every cut, in light and dark, and compare them with the beat sheet.
+- **What H.264 loses**: full-frame gradients on a dark ground band, and an accent at 5% opacity disappears; give atmosphere 15–25%.
 
 ## Before calling a piece done
 

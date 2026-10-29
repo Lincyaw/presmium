@@ -1,0 +1,1939 @@
+{
+  "schemaVersion": 1,
+  "id": "document-catalog-data-code",
+  "metadata": {
+    "title": "数据与代码：图表、数字、代码与终端",
+    "lang": "zh-CN",
+    "description": "从 HyperFrames 目录中挑出的数据与代码类动效，按 Presmium 的规则重做：图表、终端、代码对比、代码变形、代码聚焦、决策树、地图与示波器。",
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-lecture"
+    ],
+    "renderers": {
+      "web": {},
+      "lecture": {}
+    }
+  },
+  "sectionOrder": [
+    "intro",
+    "code-diff",
+    "code-morph",
+    "code-focus",
+    "code-typing",
+    "terminal-run",
+    "chart-story",
+    "decision-tree",
+    "tile-map",
+    "oscilloscope"
+  ],
+  "sections": {
+    "intro": {
+      "id": "intro",
+      "title": "数据与代码：图表、数字、代码与终端",
+      "level": 1,
+      "children": [
+        "intro--card",
+        "intro--notes"
+      ],
+      "stepOrder": [
+        "intro--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "cover"
+          }
+        }
+      }
+    },
+    "code-diff": {
+      "id": "code-diff",
+      "title": "代码对比：先标出删改，再应用",
+      "level": 2,
+      "children": [
+        "code-diff--notes",
+        "code-diff--shot"
+      ],
+      "stepOrder": [
+        "code-diff--step-0",
+        "code-diff--step-1",
+        "code-diff--step-2",
+        "code-diff--step-3"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "code-morph": {
+      "id": "code-morph",
+      "title": "代码变形：同一段逻辑的三种写法",
+      "level": 2,
+      "children": [
+        "code-morph--notes",
+        "code-morph--shot"
+      ],
+      "stepOrder": [
+        "code-morph--step-0",
+        "code-morph--step-1",
+        "code-morph--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "code-focus": {
+      "id": "code-focus",
+      "title": "代码导览：滚到一段，照亮一段",
+      "level": 2,
+      "children": [
+        "code-focus--notes",
+        "code-focus--shot"
+      ],
+      "stepOrder": [
+        "code-focus--step-0",
+        "code-focus--step-1",
+        "code-focus--step-2",
+        "code-focus--step-3"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "code-typing": {
+      "id": "code-typing",
+      "title": "代码输入：光标跟着字往前走",
+      "level": 2,
+      "children": [
+        "code-typing--notes",
+        "code-typing--shot"
+      ],
+      "stepOrder": [
+        "code-typing--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "terminal-run": {
+      "id": "terminal-run",
+      "title": "终端运行：输入命令，逐行输出，落在结果上",
+      "level": 2,
+      "children": [
+        "terminal-run--notes",
+        "terminal-run--shot"
+      ],
+      "stepOrder": [
+        "terminal-run--step-0",
+        "terminal-run--step-1",
+        "terminal-run--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "chart-story": {
+      "id": "chart-story",
+      "title": "小图表：按阅读顺序生长，落在一个值上",
+      "level": 2,
+      "children": [
+        "chart-story--notes",
+        "chart-story--shot"
+      ],
+      "stepOrder": [
+        "chart-story--step-0",
+        "chart-story--step-1",
+        "chart-story--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "decision-tree": {
+      "id": "decision-tree",
+      "title": "决策树：逐层长出，再走一遍",
+      "level": 2,
+      "children": [
+        "decision-tree--notes",
+        "decision-tree--shot"
+      ],
+      "stepOrder": [
+        "decision-tree--step-0",
+        "decision-tree--step-1",
+        "decision-tree--step-2",
+        "decision-tree--step-3"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "tile-map": {
+      "id": "tile-map",
+      "title": "方格地图：按数值从低到高填色",
+      "level": 2,
+      "children": [
+        "tile-map--notes",
+        "tile-map--shot"
+      ],
+      "stepOrder": [
+        "tile-map--step-0",
+        "tile-map--step-1",
+        "tile-map--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "oscilloscope": {
+      "id": "oscilloscope",
+      "title": "示波器：扫描出波形，再调高频率",
+      "level": 2,
+      "children": [
+        "oscilloscope--notes",
+        "oscilloscope--shot"
+      ],
+      "stepOrder": [
+        "oscilloscope--step-0",
+        "oscilloscope--step-1",
+        "oscilloscope--step-2"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    }
+  },
+  "blocks": {
+    "intro--card": {
+      "id": "intro--card",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--card--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "图表 · 数字 · 代码 · 终端 · 地图"
+            }
+          ]
+        },
+        {
+          "id": "intro--card--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "数据驱动形状，代码按列落位"
+            }
+          ]
+        }
+      ]
+    },
+    "intro--notes": {
+      "id": "intro--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这份文稿收录从 HyperFrames 目录迁移来的数据与代码类动效。每个作品都按本技能的规则重写：只用设计令牌的颜色，亮色与暗色都可读；画面只由时间决定，任意顺序跳转得到同一帧；节拍拆成状态，每个状态是一步。"
+            }
+          ]
+        },
+        {
+          "id": "intro--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "图表从零起，示意数据在画面上标明“示意数据”；数字用等宽数字。代码场景共用 scenes/lib/code.ts：一个小的确定性着色器和按列定位，代码在阅读栏、幻灯片和视频里落在同样的位置。"
+            }
+          ]
+        },
+        {
+          "id": "intro--notes--n2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每个作品的参数写在定义的参数 Schema 里，默认值是中文教学例子；换参数即可复用到自己的讲义。"
+            }
+          ]
+        }
+      ]
+    },
+    "code-diff--notes": {
+      "id": "code-diff--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-diff--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲一次修改时用：先看旧代码，要删的行先变红，新行再一行行撑开（下面的行被推下去，看得出插在哪里），最后删去的行收起、颜色褪去，标题栏弹出“−1 +3”，停在干净的新代码上。"
+            }
+          ]
+        },
+        {
+          "id": "code-diff--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "0–1 s 编辑器升起；1–2.2 s 删除行依次标红，先出“−”号再横扫底色（原因先于结果）；2.2–3.7 s 新行从零高度展开，底色先到、文字晚 60 ms；3.7–6 s 删除行收起，底色褪去，改动计数弹出，静止 1.6 s。"
+            }
+          ]
+        },
+        {
+          "id": "code-diff--notes--n2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "参数：before、after（前后两版代码，按行做最长公共子序列对比）、lang（python、js、shell）、file（标题栏文件名）。"
+            }
+          ]
+        }
+      ]
+    },
+    "code-diff--shot": {
+      "id": "code-diff--shot",
+      "type": "component",
+      "definitionId": "code-diff--shot--definition",
+      "parameters": {
+        "scene": "code-diff",
+        "alt": "代码对比：mean 函数的文档字符串被改写，并新增空列表判断，删除行标红收起，新增行标绿展开。"
+      }
+    },
+    "code-morph--notes": {
+      "id": "code-morph--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-morph--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲重构、讲同一件事的几种写法时用：留下的词滑到新位置，要走的先沉下去，新来的最后浮上来；标题栏的版本名随落位切换。"
+            }
+          ]
+        },
+        {
+          "id": "code-morph--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每个后续状态：0–0.25 s 离开的词下沉淡出；0.15–0.8 s 留下的词同时滑到新的列和行（换行的词途中略抬起，看得见它走过去）；0.75 s 起新词以 30 ms 间隔浮现；其余时间静止。默认：for 循环 → 列表推导式 → 生成器表达式，x * x 从循环末尾飞到推导式开头。"
+            }
+          ]
+        },
+        {
+          "id": "code-morph--notes--n2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "参数：versions（每个状态一版代码）、labels（每版的名字）、lang、file。词先按最长公共子序列配对，剩下的相同单词再就近配对；标点不跨位置配对。"
+            }
+          ]
+        }
+      ]
+    },
+    "code-morph--shot": {
+      "id": "code-morph--shot",
+      "type": "component",
+      "definitionId": "code-morph--shot--definition",
+      "parameters": {
+        "scene": "code-morph",
+        "alt": "代码变形：四行 for 循环变成一行列表推导式，再变成用 sum 的生成器表达式，相同的词滑到新位置。"
+      }
+    },
+    "code-focus--notes": {
+      "id": "code-focus--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-focus--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "带读一个比窗口长的文件时用：每一步滚到一段代码，高亮带跟着滑过去，其余行变暗，旁边浮出一句短注。"
+            }
+          ]
+        },
+        {
+          "id": "code-focus--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "overview 1.5 s：编辑器升起，显示文件开头。每个 focus：0–0.85 s 滚动使这一段居中，高亮带随之从上一段滑到这一段（第一次则在滚动落定后从左扫入）；0.85 s 起其余行暗到三分之一；1.15 s 起短注在高亮带右侧浮现，上一条短注先在 0.2 s 内离开。"
+            }
+          ]
+        },
+        {
+          "id": "code-focus--notes--n2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "参数：code、lang、file、focus（每项 from、to 为行号，note 为不超过九个字的短注；状态数 = focus 数 + 1）。合并了 HyperFrames 的 code-highlight（单行高亮扫入、上下文变暗）。"
+            }
+          ]
+        }
+      ]
+    },
+    "code-focus--shot": {
+      "id": "code-focus--shot",
+      "type": "component",
+      "definitionId": "code-focus--shot--definition",
+      "parameters": {
+        "scene": "code-focus",
+        "alt": "代码导览：BFS 函数依次滚到“起点入队”“取出队头”“记距离，入队”三段，高亮并注释。"
+      }
+    },
+    "code-typing--notes": {
+      "id": "code-typing--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-typing--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "现场写一段代码时用：代码带着颜色逐字出现，光标始终在最前面；缩进一次出现，中文注释一个字一个字地来。"
+            }
+          ]
+        },
+        {
+          "id": "code-typing--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "0–0.45 s 编辑器升起；0.5 s 起约每秒 14 个字符（观众能跟读的速度），节奏由固定种子决定：词内连打、换行与注释前稍停；每行开始时行号出现；打完后光标以 530 ms 闪烁，静止约 2 秒。代码比状态长时整体压缩。"
+            }
+          ]
+        },
+        {
+          "id": "code-typing--notes--n2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "参数：code、lang、file。"
+            }
+          ]
+        }
+      ]
+    },
+    "code-typing--shot": {
+      "id": "code-typing--shot",
+      "type": "component",
+      "definitionId": "code-typing--shot--definition",
+      "parameters": {
+        "scene": "code-typing",
+        "alt": "代码输入：softmax 函数逐字写出，带一行中文注释。"
+      }
+    },
+    "terminal-run--notes": {
+      "id": "terminal-run--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "terminal-run--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "演示一条命令的运行过程时用：命令按人手的节奏敲出，回车后输出一行行打印，最后一行结果以成功色落定，新的提示符闪烁。"
+            }
+          ]
+        },
+        {
+          "id": "terminal-run--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "type 2.6 s：终端升起，0.5 s 起约每秒 14 个字符敲入命令，打完光标闪烁一拍；run 2.4 s：回车，0.3 s 后每 0.32 s 打印一行；done 2 s：结果行以成功色出现并轻微回弹（全片唯一的回弹，表示“完成”），随后新提示符出现。标题栏右侧标“示意输出”。"
+            }
+          ]
+        },
+        {
+          "id": "terminal-run--notes--n2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "参数：command、output（每行一项；以 ✓ 开头为成功色，✗ 或“错误”开头为危险色）、prompt、title、tag。合并了 terminal-simulator 与 code-snippet-apple-terminal-pro 的打字（不模仿任何产品外观）。"
+            }
+          ]
+        }
+      ]
+    },
+    "terminal-run--shot": {
+      "id": "terminal-run--shot",
+      "type": "component",
+      "definitionId": "terminal-run--shot--definition",
+      "parameters": {
+        "scene": "terminal-run",
+        "alt": "终端运行：输入 python train.py --epochs 3，打印三轮训练的损失与准确率（示意输出），最后显示模型已保存。"
+      }
+    },
+    "chart-story--notes": {
+      "id": "chart-story--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "chart-story--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一张小图讲一个数时用：先给出读法（标题、零基线、网格、类别名），再按阅读顺序长出数据，最后其余数据退成浅灰，被强调的那个变成强调色并弹出数值标签。"
+            }
+          ]
+        },
+        {
+          "id": "chart-story--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "frame 1 s：标题，基线和网格从左往右画出，类别名依次出现；build 1.8 s：各数据错开 80 ms、各约 1 s 长出（三次缓入缓出，数据不过冲），柱顶数字同步计数；emphasis 2.2 s：其余退为浅灰，强调项变色，数值标签弹出，至少静止 1.5 s。"
+            }
+          ]
+        },
+        {
+          "id": "chart-story--notes--n2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "参数：kind（bars 柱、line 折线、donut 环、progress 进度条）、data、labels、emphasize、title、unit、source（默认“示意数据”，真实数据请写出处）。柱与面积从零开始。合并了 animated-bar-chart、data-chart、mk-line-graph。"
+            }
+          ]
+        }
+      ]
+    },
+    "chart-story--shot": {
+      "id": "chart-story--shot",
+      "type": "component",
+      "definitionId": "chart-story--shot--definition",
+      "parameters": {
+        "scene": "chart-story",
+        "alt": "柱状图：第 1 到第 4 章测验平均分 62、71、78、86（示意数据），第 4 章以强调色标出 86 分。"
+      }
+    },
+    "decision-tree--notes": {
+      "id": "decision-tree--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "decision-tree--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲一个判断流程时用：问题树一层层长出来，再沿一个具体情况从根走到答案；没走的分支随之变暗，答案填色并轻轻放大。"
+            }
+          ]
+        },
+        {
+          "id": "decision-tree--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "root 1.2 s：根问题弹出；grow 3 s：每层占等长一段，连线先从父节点画出，分支标签在拐角淡入，子节点在连线到达时弹出（原因先于结果）；trace 3 s：强调色的线一段段走下选中的分支，到达的节点描边变色，没走的分支在线经过后暗到三分之一；answer 2.3 s：答案节点填色、放大 8% 再回落，停住。"
+            }
+          ]
+        },
+        {
+          "id": "decision-tree--notes--n2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "参数：tree（节点 label、到它的分支名 edge、children）、path（每层选第几个孩子，从 0 起）、orientation（vertical 自上而下，horizontal 自左向右）。D3 的 tree 布局决定位置；节点宽度按字符列数计算，不测量页面。合并了 flowchart-vertical。"
+            }
+          ]
+        }
+      ]
+    },
+    "decision-tree--shot": {
+      "id": "decision-tree--shot",
+      "type": "component",
+      "definitionId": "decision-tree--shot--definition",
+      "parameters": {
+        "scene": "decision-tree",
+        "alt": "决策树：数据量很大吗？是 → 需要稳定排序？否 → 怕最坏情况？否 → 快速排序；其余分支为插入排序、归并排序、堆排序。"
+      }
+    },
+    "tile-map--notes": {
+      "id": "tile-map--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "tile-map--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "比较各地区的一个数时用：每个地区一个等大的方格（小地区和大地区一样显眼，也不需要地图数据），图例上的指针从低扫到高，方格在指针经过自己的值时上色，最后只留前几名并列出数值。"
+            }
+          ]
+        },
+        {
+          "id": "tile-map--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "grid 1.5 s：方格从中心向外以波的方式出现（总错开 0.6 s），随后标题与图例；fill 2.5 s：指针 1.6 s 扫过图例，方格依次上色，地图由低值地区填到高值地区，再停 0.9 s；focus 2.5 s：其余地区暗到三分之一，前三名描边，右侧排名列表依次浮现，停留至少 1.5 s。"
+            }
+          ]
+        },
+        {
+          "id": "tile-map--notes--n2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "参数：tiles（[名称, 列, 行] 的列表，默认中国 34 个省级行政区）、values（名称到数值）、unit、title、source（默认“示意数据”）、top。没有数值的地区画成斜线并在图例注明“无数据”。合并了 us-map、spain-map、world-map 的分区着色与 us-map-hex。"
+            }
+          ]
+        }
+      ]
+    },
+    "tile-map--shot": {
+      "id": "tile-map--shot",
+      "type": "component",
+      "definitionId": "tile-map--shot--definition",
+      "parameters": {
+        "scene": "tile-map",
+        "alt": "方格地图：中国 34 个省级行政区的在线课程注册人数（示意数据，万人），广东 98、江苏 86、山东 80 居前三。"
+      }
+    },
+    "oscilloscope--notes": {
+      "id": "oscilloscope--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "oscilloscope--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲信号、频率、采样时用：光点按时基从左扫到右，荧光余辉留下波形并按指数衰减；随后频率升高，同一屏里的周期变多。"
+            }
+          ]
+        },
+        {
+          "id": "oscilloscope--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "screen 1.2 s：刻度网格从中线向外出现，读数栏出现（横轴是时间、纵轴是电压）；trace 2.5 s：光点以每格 0.1 s 的速度扫描，余辉亮度按 exp(−age/τ) 衰减，光点慢处更亮；change 2.5 s：1.2 s 内频率从 from 升到 to，读数同步计数，后面的扫描波形变密，其余时间持续扫描。"
+            }
+          ]
+        },
+        {
+          "id": "oscilloscope--notes--n2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "参数：waveform（sine、square、triangle）、from、to（Hz）、amplitude（格）、persistence（τ，毫秒）。每次扫描在信号下一次上升过零时触发，所以波形不漂；相位是频率的积分，按分段闭式计算。"
+            }
+          ]
+        }
+      ]
+    },
+    "oscilloscope--shot": {
+      "id": "oscilloscope--shot",
+      "type": "component",
+      "definitionId": "oscilloscope--shot--definition",
+      "parameters": {
+        "scene": "oscilloscope",
+        "alt": "示波器：正弦波在 10 × 8 格的屏幕上扫出，频率从 2 Hz 升到 5 Hz，波形变密。"
+      }
+    }
+  },
+  "steps": {
+    "intro--step-0": {
+      "id": "intro--step-0",
+      "sectionId": "intro",
+      "visuals": [
+        {
+          "blockId": "intro--card",
+          "visible": true
+        },
+        {
+          "blockId": "intro--notes",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "code-diff--step-0": {
+      "id": "code-diff--step-0",
+      "sectionId": "code-diff",
+      "visuals": [
+        {
+          "blockId": "code-diff--notes",
+          "visible": false
+        },
+        {
+          "blockId": "code-diff--shot",
+          "visible": true,
+          "state": "before"
+        }
+      ],
+      "narrationIds": []
+    },
+    "code-diff--step-1": {
+      "id": "code-diff--step-1",
+      "sectionId": "code-diff",
+      "visuals": [
+        {
+          "blockId": "code-diff--notes",
+          "visible": false
+        },
+        {
+          "blockId": "code-diff--shot",
+          "visible": true,
+          "state": "mark"
+        }
+      ],
+      "narrationIds": []
+    },
+    "code-diff--step-2": {
+      "id": "code-diff--step-2",
+      "sectionId": "code-diff",
+      "visuals": [
+        {
+          "blockId": "code-diff--notes",
+          "visible": false
+        },
+        {
+          "blockId": "code-diff--shot",
+          "visible": true,
+          "state": "add"
+        }
+      ],
+      "narrationIds": []
+    },
+    "code-diff--step-3": {
+      "id": "code-diff--step-3",
+      "sectionId": "code-diff",
+      "visuals": [
+        {
+          "blockId": "code-diff--notes",
+          "visible": false
+        },
+        {
+          "blockId": "code-diff--shot",
+          "visible": true,
+          "state": "apply"
+        }
+      ],
+      "narrationIds": []
+    },
+    "code-morph--step-0": {
+      "id": "code-morph--step-0",
+      "sectionId": "code-morph",
+      "visuals": [
+        {
+          "blockId": "code-morph--notes",
+          "visible": false
+        },
+        {
+          "blockId": "code-morph--shot",
+          "visible": true,
+          "state": "loop"
+        }
+      ],
+      "narrationIds": []
+    },
+    "code-morph--step-1": {
+      "id": "code-morph--step-1",
+      "sectionId": "code-morph",
+      "visuals": [
+        {
+          "blockId": "code-morph--notes",
+          "visible": false
+        },
+        {
+          "blockId": "code-morph--shot",
+          "visible": true,
+          "state": "comprehension"
+        }
+      ],
+      "narrationIds": []
+    },
+    "code-morph--step-2": {
+      "id": "code-morph--step-2",
+      "sectionId": "code-morph",
+      "visuals": [
+        {
+          "blockId": "code-morph--notes",
+          "visible": false
+        },
+        {
+          "blockId": "code-morph--shot",
+          "visible": true,
+          "state": "generator"
+        }
+      ],
+      "narrationIds": []
+    },
+    "code-focus--step-0": {
+      "id": "code-focus--step-0",
+      "sectionId": "code-focus",
+      "visuals": [
+        {
+          "blockId": "code-focus--notes",
+          "visible": false
+        },
+        {
+          "blockId": "code-focus--shot",
+          "visible": true,
+          "state": "overview"
+        }
+      ],
+      "narrationIds": []
+    },
+    "code-focus--step-1": {
+      "id": "code-focus--step-1",
+      "sectionId": "code-focus",
+      "visuals": [
+        {
+          "blockId": "code-focus--notes",
+          "visible": false
+        },
+        {
+          "blockId": "code-focus--shot",
+          "visible": true,
+          "state": "focus-1"
+        }
+      ],
+      "narrationIds": []
+    },
+    "code-focus--step-2": {
+      "id": "code-focus--step-2",
+      "sectionId": "code-focus",
+      "visuals": [
+        {
+          "blockId": "code-focus--notes",
+          "visible": false
+        },
+        {
+          "blockId": "code-focus--shot",
+          "visible": true,
+          "state": "focus-2"
+        }
+      ],
+      "narrationIds": []
+    },
+    "code-focus--step-3": {
+      "id": "code-focus--step-3",
+      "sectionId": "code-focus",
+      "visuals": [
+        {
+          "blockId": "code-focus--notes",
+          "visible": false
+        },
+        {
+          "blockId": "code-focus--shot",
+          "visible": true,
+          "state": "focus-3"
+        }
+      ],
+      "narrationIds": []
+    },
+    "code-typing--step-0": {
+      "id": "code-typing--step-0",
+      "sectionId": "code-typing",
+      "visuals": [
+        {
+          "blockId": "code-typing--notes",
+          "visible": false
+        },
+        {
+          "blockId": "code-typing--shot",
+          "visible": true,
+          "state": "type"
+        }
+      ],
+      "narrationIds": []
+    },
+    "terminal-run--step-0": {
+      "id": "terminal-run--step-0",
+      "sectionId": "terminal-run",
+      "visuals": [
+        {
+          "blockId": "terminal-run--notes",
+          "visible": false
+        },
+        {
+          "blockId": "terminal-run--shot",
+          "visible": true,
+          "state": "type"
+        }
+      ],
+      "narrationIds": []
+    },
+    "terminal-run--step-1": {
+      "id": "terminal-run--step-1",
+      "sectionId": "terminal-run",
+      "visuals": [
+        {
+          "blockId": "terminal-run--notes",
+          "visible": false
+        },
+        {
+          "blockId": "terminal-run--shot",
+          "visible": true,
+          "state": "run"
+        }
+      ],
+      "narrationIds": []
+    },
+    "terminal-run--step-2": {
+      "id": "terminal-run--step-2",
+      "sectionId": "terminal-run",
+      "visuals": [
+        {
+          "blockId": "terminal-run--notes",
+          "visible": false
+        },
+        {
+          "blockId": "terminal-run--shot",
+          "visible": true,
+          "state": "done"
+        }
+      ],
+      "narrationIds": []
+    },
+    "chart-story--step-0": {
+      "id": "chart-story--step-0",
+      "sectionId": "chart-story",
+      "visuals": [
+        {
+          "blockId": "chart-story--notes",
+          "visible": false
+        },
+        {
+          "blockId": "chart-story--shot",
+          "visible": true,
+          "state": "frame"
+        }
+      ],
+      "narrationIds": []
+    },
+    "chart-story--step-1": {
+      "id": "chart-story--step-1",
+      "sectionId": "chart-story",
+      "visuals": [
+        {
+          "blockId": "chart-story--notes",
+          "visible": false
+        },
+        {
+          "blockId": "chart-story--shot",
+          "visible": true,
+          "state": "build"
+        }
+      ],
+      "narrationIds": []
+    },
+    "chart-story--step-2": {
+      "id": "chart-story--step-2",
+      "sectionId": "chart-story",
+      "visuals": [
+        {
+          "blockId": "chart-story--notes",
+          "visible": false
+        },
+        {
+          "blockId": "chart-story--shot",
+          "visible": true,
+          "state": "emphasis"
+        }
+      ],
+      "narrationIds": []
+    },
+    "decision-tree--step-0": {
+      "id": "decision-tree--step-0",
+      "sectionId": "decision-tree",
+      "visuals": [
+        {
+          "blockId": "decision-tree--notes",
+          "visible": false
+        },
+        {
+          "blockId": "decision-tree--shot",
+          "visible": true,
+          "state": "root"
+        }
+      ],
+      "narrationIds": []
+    },
+    "decision-tree--step-1": {
+      "id": "decision-tree--step-1",
+      "sectionId": "decision-tree",
+      "visuals": [
+        {
+          "blockId": "decision-tree--notes",
+          "visible": false
+        },
+        {
+          "blockId": "decision-tree--shot",
+          "visible": true,
+          "state": "grow"
+        }
+      ],
+      "narrationIds": []
+    },
+    "decision-tree--step-2": {
+      "id": "decision-tree--step-2",
+      "sectionId": "decision-tree",
+      "visuals": [
+        {
+          "blockId": "decision-tree--notes",
+          "visible": false
+        },
+        {
+          "blockId": "decision-tree--shot",
+          "visible": true,
+          "state": "trace"
+        }
+      ],
+      "narrationIds": []
+    },
+    "decision-tree--step-3": {
+      "id": "decision-tree--step-3",
+      "sectionId": "decision-tree",
+      "visuals": [
+        {
+          "blockId": "decision-tree--notes",
+          "visible": false
+        },
+        {
+          "blockId": "decision-tree--shot",
+          "visible": true,
+          "state": "answer"
+        }
+      ],
+      "narrationIds": []
+    },
+    "tile-map--step-0": {
+      "id": "tile-map--step-0",
+      "sectionId": "tile-map",
+      "visuals": [
+        {
+          "blockId": "tile-map--notes",
+          "visible": false
+        },
+        {
+          "blockId": "tile-map--shot",
+          "visible": true,
+          "state": "grid"
+        }
+      ],
+      "narrationIds": []
+    },
+    "tile-map--step-1": {
+      "id": "tile-map--step-1",
+      "sectionId": "tile-map",
+      "visuals": [
+        {
+          "blockId": "tile-map--notes",
+          "visible": false
+        },
+        {
+          "blockId": "tile-map--shot",
+          "visible": true,
+          "state": "fill"
+        }
+      ],
+      "narrationIds": []
+    },
+    "tile-map--step-2": {
+      "id": "tile-map--step-2",
+      "sectionId": "tile-map",
+      "visuals": [
+        {
+          "blockId": "tile-map--notes",
+          "visible": false
+        },
+        {
+          "blockId": "tile-map--shot",
+          "visible": true,
+          "state": "focus"
+        }
+      ],
+      "narrationIds": []
+    },
+    "oscilloscope--step-0": {
+      "id": "oscilloscope--step-0",
+      "sectionId": "oscilloscope",
+      "visuals": [
+        {
+          "blockId": "oscilloscope--notes",
+          "visible": false
+        },
+        {
+          "blockId": "oscilloscope--shot",
+          "visible": true,
+          "state": "screen"
+        }
+      ],
+      "narrationIds": []
+    },
+    "oscilloscope--step-1": {
+      "id": "oscilloscope--step-1",
+      "sectionId": "oscilloscope",
+      "visuals": [
+        {
+          "blockId": "oscilloscope--notes",
+          "visible": false
+        },
+        {
+          "blockId": "oscilloscope--shot",
+          "visible": true,
+          "state": "trace"
+        }
+      ],
+      "narrationIds": []
+    },
+    "oscilloscope--step-2": {
+      "id": "oscilloscope--step-2",
+      "sectionId": "oscilloscope",
+      "visuals": [
+        {
+          "blockId": "oscilloscope--notes",
+          "visible": false
+        },
+        {
+          "blockId": "oscilloscope--shot",
+          "visible": true,
+          "state": "change"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "code-diff--shot--definition": {
+      "id": "code-diff--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/code-diff.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "scene": {
+            "type": "string",
+            "title": "场景文件"
+          },
+          "alt": {
+            "type": "string",
+            "title": "替代文本"
+          },
+          "before": {
+            "type": "string",
+            "title": "修改前的代码"
+          },
+          "after": {
+            "type": "string",
+            "title": "修改后的代码"
+          },
+          "lang": {
+            "type": "string",
+            "title": "语言",
+            "description": "python、js 或 shell"
+          },
+          "file": {
+            "type": "string",
+            "title": "文件名"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "before"
+        },
+        {
+          "id": "mark"
+        },
+        {
+          "id": "add"
+        },
+        {
+          "id": "apply"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1200,
+          1500,
+          2300
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "代码对比：mean 函数的文档字符串被改写，并新增空列表判断，删除行标红收起，新增行标绿展开。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "code-morph--shot--definition": {
+      "id": "code-morph--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/code-morph.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "scene": {
+            "type": "string",
+            "title": "场景文件"
+          },
+          "alt": {
+            "type": "string",
+            "title": "替代文本"
+          },
+          "versions": {
+            "type": "array",
+            "title": "各版本代码",
+            "items": {
+              "type": "string"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "title": "版本名",
+            "items": {
+              "type": "string"
+            }
+          },
+          "lang": {
+            "type": "string",
+            "title": "语言"
+          },
+          "file": {
+            "type": "string",
+            "title": "文件名"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "loop"
+        },
+        {
+          "id": "comprehension"
+        },
+        {
+          "id": "generator"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1500,
+          2500,
+          3000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "代码变形：四行 for 循环变成一行列表推导式，再变成用 sum 的生成器表达式，相同的词滑到新位置。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "code-focus--shot--definition": {
+      "id": "code-focus--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/code-focus.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "scene": {
+            "type": "string",
+            "title": "场景文件"
+          },
+          "alt": {
+            "type": "string",
+            "title": "替代文本"
+          },
+          "code": {
+            "type": "string",
+            "title": "代码"
+          },
+          "lang": {
+            "type": "string",
+            "title": "语言"
+          },
+          "file": {
+            "type": "string",
+            "title": "文件名"
+          },
+          "focus": {
+            "type": "array",
+            "title": "依次聚焦的段落",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "number",
+                  "title": "起始行"
+                },
+                "to": {
+                  "type": "number",
+                  "title": "结束行"
+                },
+                "note": {
+                  "type": "string",
+                  "title": "短注"
+                }
+              }
+            }
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "overview"
+        },
+        {
+          "id": "focus-1"
+        },
+        {
+          "id": "focus-2"
+        },
+        {
+          "id": "focus-3"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1500,
+          2500,
+          2500,
+          3000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "代码导览：BFS 函数依次滚到“起点入队”“取出队头”“记距离，入队”三段，高亮并注释。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "code-typing--shot--definition": {
+      "id": "code-typing--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/code-typing.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "scene": {
+            "type": "string",
+            "title": "场景文件"
+          },
+          "alt": {
+            "type": "string",
+            "title": "替代文本"
+          },
+          "code": {
+            "type": "string",
+            "title": "代码"
+          },
+          "lang": {
+            "type": "string",
+            "title": "语言"
+          },
+          "file": {
+            "type": "string",
+            "title": "文件名"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "type"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          7000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "代码输入：softmax 函数逐字写出，带一行中文注释。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "terminal-run--shot--definition": {
+      "id": "terminal-run--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/terminal-run.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "scene": {
+            "type": "string",
+            "title": "场景文件"
+          },
+          "alt": {
+            "type": "string",
+            "title": "替代文本"
+          },
+          "command": {
+            "type": "string",
+            "title": "命令"
+          },
+          "output": {
+            "type": "array",
+            "title": "输出行",
+            "items": {
+              "type": "string"
+            }
+          },
+          "prompt": {
+            "type": "string",
+            "title": "提示符"
+          },
+          "title": {
+            "type": "string",
+            "title": "窗口标题"
+          },
+          "tag": {
+            "type": "string",
+            "title": "右上角标注"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "type"
+        },
+        {
+          "id": "run"
+        },
+        {
+          "id": "done"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          2600,
+          2400,
+          2000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "终端运行：输入 python train.py --epochs 3，打印三轮训练的损失与准确率（示意输出），最后显示模型已保存。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "chart-story--shot--definition": {
+      "id": "chart-story--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/chart-story.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "scene": {
+            "type": "string",
+            "title": "场景文件"
+          },
+          "alt": {
+            "type": "string",
+            "title": "替代文本"
+          },
+          "kind": {
+            "type": "string",
+            "title": "图表形式",
+            "enum": [
+              "bars",
+              "line",
+              "donut",
+              "progress"
+            ]
+          },
+          "data": {
+            "type": "array",
+            "title": "数据",
+            "items": {
+              "type": "number"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "title": "类别名",
+            "items": {
+              "type": "string"
+            }
+          },
+          "emphasize": {
+            "type": "number",
+            "title": "强调第几个（从 0 起）"
+          },
+          "title": {
+            "type": "string",
+            "title": "标题"
+          },
+          "unit": {
+            "type": "string",
+            "title": "单位"
+          },
+          "source": {
+            "type": "string",
+            "title": "来源",
+            "description": "真实数据写出处；默认“示意数据”"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "frame"
+        },
+        {
+          "id": "build"
+        },
+        {
+          "id": "emphasis"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1000,
+          1800,
+          2200
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "柱状图：第 1 到第 4 章测验平均分 62、71、78、86（示意数据），第 4 章以强调色标出 86 分。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "decision-tree--shot--definition": {
+      "id": "decision-tree--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/decision-tree.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "scene": {
+            "type": "string",
+            "title": "场景文件"
+          },
+          "alt": {
+            "type": "string",
+            "title": "替代文本"
+          },
+          "tree": {
+            "type": "object",
+            "title": "问题树",
+            "description": "节点：label、edge、children"
+          },
+          "path": {
+            "type": "array",
+            "title": "要走的路径",
+            "items": {
+              "type": "number"
+            }
+          },
+          "orientation": {
+            "type": "string",
+            "title": "方向",
+            "enum": [
+              "vertical",
+              "horizontal"
+            ]
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "root"
+        },
+        {
+          "id": "grow"
+        },
+        {
+          "id": "trace"
+        },
+        {
+          "id": "answer"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1200,
+          3000,
+          3000,
+          2300
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "决策树：数据量很大吗？是 → 需要稳定排序？否 → 怕最坏情况？否 → 快速排序；其余分支为插入排序、归并排序、堆排序。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "tile-map--shot--definition": {
+      "id": "tile-map--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/tile-map.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "scene": {
+            "type": "string",
+            "title": "场景文件"
+          },
+          "alt": {
+            "type": "string",
+            "title": "替代文本"
+          },
+          "tiles": {
+            "type": "array",
+            "title": "方格布局",
+            "items": {
+              "type": "array"
+            }
+          },
+          "values": {
+            "type": "object",
+            "title": "各地区数值"
+          },
+          "unit": {
+            "type": "string",
+            "title": "单位"
+          },
+          "title": {
+            "type": "string",
+            "title": "标题"
+          },
+          "source": {
+            "type": "string",
+            "title": "来源"
+          },
+          "top": {
+            "type": "number",
+            "title": "列出前几名"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "grid"
+        },
+        {
+          "id": "fill"
+        },
+        {
+          "id": "focus"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1500,
+          2500,
+          2500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "方格地图：中国 34 个省级行政区的在线课程注册人数（示意数据，万人），广东 98、江苏 86、山东 80 居前三。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "oscilloscope--shot--definition": {
+      "id": "oscilloscope--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/oscilloscope.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "scene": {
+            "type": "string",
+            "title": "场景文件"
+          },
+          "alt": {
+            "type": "string",
+            "title": "替代文本"
+          },
+          "waveform": {
+            "type": "string",
+            "title": "波形",
+            "enum": [
+              "sine",
+              "square",
+              "triangle"
+            ]
+          },
+          "from": {
+            "type": "number",
+            "title": "起始频率（Hz）"
+          },
+          "to": {
+            "type": "number",
+            "title": "结束频率（Hz）"
+          },
+          "amplitude": {
+            "type": "number",
+            "title": "幅度（格）"
+          },
+          "persistence": {
+            "type": "number",
+            "title": "余辉时间常数（毫秒）"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "screen"
+        },
+        {
+          "id": "trace"
+        },
+        {
+          "id": "change"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1200,
+          2500,
+          2500
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "示波器：正弦波在 10 × 8 格的屏幕上扫出，频率从 2 Hz 升到 5 Hz，波形变密。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      },
+      "trailingPauseMs": 0
+    },
+    "stepOverrides": {
+      "intro--step-0": {
+        "minimumHoldMs": 2500
+      }
+    },
+    "mediaClips": []
+  }
+}
