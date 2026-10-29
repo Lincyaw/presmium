@@ -666,7 +666,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的内容与状态，�
 
 动词与名字的约定：
 
-- **read 只表示 I/O**：读文件、请求、流（`SourceReader.read`、`Parser.read` 读文件并解析）。文本变成结构写 parse（`parseAnchor`、`parseFrontmatter`）；把 unknown 收窄成具体类型写 `to*` 或 `as*`（`toPreviewCommand`、`toExecuteConfig`），不合法时返回 undefined 或给出诊断。
+- **read 只表示 I/O**：读文件、请求、流（`SourceReader.read` 读文件）。文本变成结构写 parse（`parseAnchor`、`parseFrontmatter`）；把 unknown 收窄成具体类型写 `to*` 或 `as*`（`toPreviewCommand`、`toExecuteConfig`），不合法时返回 undefined 或给出诊断。
 - **get 找不到时抛错**；找不到时返回 undefined 的写 `tryGet` 或 `find*`（`ServiceRegistry.get` 与 `tryGet`）。Context 上返回 undefined 的服务查找沿用契约中的 `service(token)`。
 - **执行动作的函数以动词开头**（`buildToDist`、`runAllChecks`、`writeServiceWorker`、`enqueueCompile`）；只计算、不改外部状态的函数可以用名词短语（`viewFor`、`stepTrail`）。函数有写文件、连网络、启动进程这类副作用时，名字要说出来。
 - **布尔值与返回布尔值的函数用 `is*`、`has*`、`can*`**（`isInside`、`includesAudience` 这类以动词说出判断的也可以）。

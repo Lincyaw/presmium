@@ -3,6 +3,7 @@ import { closeSync, constants, fstatSync, mkdirSync, openSync, readFileSync, rea
 import { join, relative, sep } from 'node:path'
 import type { AigcLabel, DocumentFiles, SpeechWord, SynthesisRequest } from '@lincyaw/kernel'
 import { isRecord, speechEngineId } from '@lincyaw/kernel'
+import { fileVersion } from '@lincyaw/kernel/node'
 import { applyLexicon } from '../domain/index.ts'
 import type { CacheProfile } from './backend.ts'
 import type { SynthesisResult } from './backend.ts'
@@ -53,10 +54,6 @@ interface LockSnapshot {
   version: string
   lock: Readonly<{ version: 1, synthesis: Readonly<LockFile['synthesis']> }>
   requests: ReadonlyMap<string, string | undefined>
-}
-
-function fileVersion(stat: ReturnType<typeof fstatSync> & { mtimeNs?: bigint, ctimeNs?: bigint }): string {
-  return [stat.dev, stat.ino, stat.size, stat.mtimeNs, stat.ctimeNs].join(':')
 }
 
 const OPEN_FLAGS = constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0)

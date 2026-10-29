@@ -3,7 +3,7 @@ import { statSync } from 'node:fs'
 import { join } from 'node:path'
 import { irBlocks, mapHtmlUrls, NON_FILE_URL, publishedUrl, withPublishedAssets } from '@lincyaw/kernel'
 import type { DocumentLink, IRBlock, IRDocument, IRSection, LocalAsset, MdastNode, RenderContext, SourcePos } from '@lincyaw/kernel'
-import { copyPublished } from '@lincyaw/kernel/node'
+import { copyPublished, fileVersion } from '@lincyaw/kernel/node'
 import katex from 'katex'
 
 export const MEDIA = 'media'
@@ -16,8 +16,7 @@ export function irRevisionOfJson(json: string): string {
 const LINKED = new Set(['image', 'link', 'definition', 'card'])
 
 interface Asset extends LocalAsset {
-  size: number
-  mtimeMs: number
+  version: string
 }
 
 const assets = new Map<string, Asset>()
@@ -25,15 +24,15 @@ const assets = new Map<string, Asset>()
 function localAsset(ctx: RenderContext, source: SourcePos, url: string): Asset | undefined {
   const key = `${source.file}\0${url}`
   const known = assets.get(key)
-  const now = known && statSync(known.file, { throwIfNoEntry: false })
-  if (known && now && now.size === known.size && now.mtimeMs === known.mtimeMs) return known
+  const now = known && statSync(known.file, { bigint: true, throwIfNoEntry: false })
+  if (known && now && fileVersion(now) === known.version) return known
   const found = ctx.localAsset(source, url)
-  const stat = found && statSync(found.file, { throwIfNoEntry: false })
+  const stat = found && statSync(found.file, { bigint: true, throwIfNoEntry: false })
   if (!found || !stat) {
     assets.delete(key)
     return undefined
   }
-  const asset = { ...found, size: stat.size, mtimeMs: stat.mtimeMs, directory: found.directory ?? stat.isDirectory() }
+  const asset = { ...found, version: fileVersion(stat), directory: found.directory ?? stat.isDirectory() }
   if (asset.directory) assets.delete(key)
   else assets.set(key, asset)
   return asset

@@ -112,6 +112,7 @@ async function takeSnapshots(spec: CodeRefSpec, current: Resolution, repo: Repos
       if (isRenderable(current)) snapshots.push({ location: current.location!, fingerprint: current.fingerprint, status: current.status })
       continue
     }
+    ctx.watch(...await repo.refFiles(rev))
     const commit = await repo.commit(rev)
     if (!commit) {
       report('presmium.code.anchors', 'error', `commit "${rev}" of ${anchor} not found`, 'use a commit of the repository that holds the file')
@@ -166,6 +167,7 @@ async function writeCode(node: CodeNode, spec: CodeRefSpec, snapshots: CodeSnaps
 }
 
 async function snapshotAtHead(anchor: AnchorString, repo: Repository, tree: GitTree, ctx: PassContext): Promise<CodeSnapshot | undefined> {
+  ctx.watch(...await repo.refFiles('HEAD'))
   const commit = await repo.commit('HEAD')
   if (!commit) return undefined
   const resolution = await ctx.resolvers.resolve(anchor, tree.src, undefined, commit)

@@ -72,13 +72,13 @@ export class LecturePlayer {
     try {
       if (this.playback && !await this.playback.requestStart()) return false
       if (this.disposed || generation !== this.generation) return false
-      if (this.trying.getSnapshot()) {
+      const at = this.clock.now()
+      if (this.trying.getSnapshot() || at >= this.duration) {
         // Restore the timeline without cancelling the permission just granted
         // for this start. Explicit Back/Seek still pause through their own API.
-        const at = this.clock.now()
         this.trying.set(false)
-        this.clock.seek(at)
-        this.fold(at)
+        this.clock.seek(at >= this.duration ? 0 : at)
+        this.fold(this.clock.now())
       }
       if (this.disposed || generation !== this.generation) return false
       this.positionMode.set('time')

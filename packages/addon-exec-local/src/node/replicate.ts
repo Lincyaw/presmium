@@ -1,10 +1,10 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { dirname, join, relative, sep } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { relative, sep } from 'node:path'
 import { languageId } from '@lincyaw/kernel'
 import { strToU8, zipSync } from 'fflate'
 import { archiveName, workspacePath } from '../domain/index.ts'
 import type { ReplicateRequest } from '../domain/index.ts'
-import { definitionCommands } from './devcontainer.ts'
+import { definitionCommands, definitionFiles } from './devcontainer.ts'
 import { text } from './messages.ts'
 
 export class PathError extends Error {}
@@ -17,19 +17,11 @@ export function requirePath(file: string): string {
   }
 }
 
-function definitionFiles(workspace: string, configFile: string): string[] {
-  const dir = dirname(configFile)
-  if (dir === workspace) return [configFile]
-  return readdirSync(dir, { recursive: true, encoding: 'utf8' })
-    .map(name => join(dir, name))
-    .filter(path => statSync(path).isFile())
-}
-
 export function replicateArchive(workspace: string, configFile: string, request: ReplicateRequest): { name: string, zip: Uint8Array } {
   const file = requirePath(request.file)
   const entries: Record<string, Uint8Array> = {}
-  for (const path of definitionFiles(workspace, configFile)) {
-    entries[relative(workspace, path).split(sep).join('/')] = readFileSync(path)
+  for (const path of definitionFiles(configFile)) {
+    entries[requirePath(relative(workspace, path).split(sep).join('/'))] = readFileSync(path)
   }
   entries[file] = strToU8(request.content)
   const command = request.lang ? definitionCommands(configFile)[languageId(request.lang)] : undefined

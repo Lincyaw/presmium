@@ -126,6 +126,7 @@ export function createClassroomConnection(options: ClassroomConnectionOptions): 
   }
 
   function bind(next: Y.Doc): void {
+    const previous = doc
     detach.forEach(stop => stop())
     detach = []
     doc = next
@@ -135,11 +136,18 @@ export function createClassroomConnection(options: ClassroomConnectionOptions): 
     }))
     channels.rebind()
     shared.rebind()
+    if (previous !== next) previous.destroy()
   }
 
   function bindPersonal(next: Y.Doc): void {
+    const previous = personalDoc
+    if (previous !== next) {
+      personalProvider?.destroy()
+      personalProvider = undefined
+    }
     personalDoc = next
     personal.rebind()
+    if (previous !== next) previous.destroy()
   }
 
   function disconnect(): void {
@@ -380,6 +388,10 @@ export function createClassroomConnection(options: ClassroomConnectionOptions): 
       stopPublishing()
       tabs.close()
       disconnect()
+      detach.forEach(stop => stop())
+      detach = []
+      doc.destroy()
+      personalDoc.destroy()
       listeners.clear()
     },
   }

@@ -141,11 +141,24 @@ export class CompileSession {
     }
     for (const dir of next.keys()) {
       if (this.#watchers.has(dir)) continue
+      const failed = (error: unknown) => {
+        if (this.#closed) return
+        const failure = new Error(`cannot watch ${dir}: ${errorMessage(error)}`)
+        this.#log.error(failure.message)
+        for (const listener of this.#failures) listener(failure)
+      }
       try {
-        this.#watchers.set(dir, watch(dir, (_event, name) => {
+        const watcher = watch(dir, (_event, name) => {
           if (name && this.#relevant.get(dir)?.has(basename(name))) this.#changed(join(dir, name))
-        }))
-      } catch {
+        })
+        this.#watchers.set(dir, watcher)
+        watcher.on('error', (error) => {
+          watcher.close()
+          if (this.#watchers.get(dir) === watcher) this.#watchers.delete(dir)
+          failed(error)
+        })
+      } catch (error) {
+        failed(error)
       }
     }
     const modified = [...files].filter((file) => {

@@ -1,9 +1,19 @@
-import type { InlineNode, ListItemNode, RichTextNode, TableNode } from '@lincyaw/kernel'
+import type { InlineNode, JsonValue, ListItemNode, RichTextNode, TableNode } from '@lincyaw/kernel'
 import type { TableCellProps } from '@blocknote/core'
 import { nativeInlineToProduct, nativeTextStyleToProduct, productInlineToNative, productTextStyleToNative } from './inline.ts'
 import type { InlineProjectionContext, NativeInline } from './inline.ts'
 import type { DocumentEditorBlock, DocumentEditorInput } from './schema.tsx'
-import { fallbackText } from './DocumentBlockFallback.tsx'
+
+export function fallbackText(value: unknown): string {
+  if (!value || typeof value !== 'object') return ''
+  if (Array.isArray(value)) return value.map(fallbackText).filter(Boolean).join('\n')
+  const node = value as { type?: string, value?: string, text?: string, alt?: string, children?: JsonValue[], fallback?: unknown }
+  if (node.type === 'text') return node.text ?? node.value ?? ''
+  if (node.type === 'image') return node.alt ?? ''
+  if (node.type === 'math' || node.type === 'code') return node.value ?? ''
+  if (node.type === 'extension') return typeof node.fallback === 'string' ? node.fallback : fallbackText(node.fallback)
+  return (node.children ?? []).map(fallbackText).join(node.type === 'root' ? '\n' : '')
+}
 
 interface RichIdentity {
   original?: RichTextNode

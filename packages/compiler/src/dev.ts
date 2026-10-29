@@ -6,6 +6,7 @@ import { errorMessage } from '@lincyaw/kernel'
 import type { Finding, RenderContext, RenderDevServer } from '@lincyaw/kernel'
 import type { Compilation, Compiler } from './compiler.ts'
 import { gitReadFiles } from './inputs.ts'
+import { pluginLogger } from './logging.ts'
 import { nodeVitePlugins, planRenderRun, renderContext, renderFinding, selectRenderers, translationsFor, WEB, writeIR } from './renderers.ts'
 import type { InstalledRenderer, RenderRun } from './renderers.ts'
 import { viewFor } from './views.ts'
@@ -40,10 +41,12 @@ interface RunningServer {
 class FileWatcher {
   readonly #watchers = new Map<string, FSWatcher>()
   readonly #changed: () => void
+  readonly #failed: (error: Error) => void
   #names = new Map<string, Set<string>>()
 
-  constructor(changed: () => void) {
+  constructor(changed: () => void, failed: (error: Error) => void) {
     this.#changed = changed
+    this.#failed = failed
   }
 
   watch(files: Iterable<string>): void {
@@ -65,17 +68,26 @@ class FileWatcher {
     }
     for (const dir of names.keys()) {
       if (this.#watchers.has(dir)) continue
+      const failed = (error: unknown) => this.#failed(new Error(`cannot watch ${dir}: ${errorMessage(error)}`))
       try {
-        this.#watchers.set(dir, watch(dir, (_event, name) => {
+        const watcher = watch(dir, (_event, name) => {
           if (name && this.#names.get(dir)?.has(basename(name))) this.#changed()
-        }))
-      } catch {
+        })
+        this.#watchers.set(dir, watcher)
+        watcher.on('error', (error) => {
+          watcher.close()
+          if (this.#watchers.get(dir) === watcher) this.#watchers.delete(dir)
+          failed(error)
+        })
+      } catch (error) {
+        failed(error)
       }
     }
   }
 
   close(): void {
     for (const watcher of this.#watchers.values()) watcher.close()
+    this.#watchers.clear()
   }
 }
 
@@ -138,7 +150,11 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
       })
     }, 30)
   }
-  const watcher = new FileWatcher(schedule)
+  const watcher = new FileWatcher(schedule, error => {
+    if (closed) return
+    if (options.onCompile) options.onCompile(compilation, [...compilation.doc.diagnostics, ...findings, renderFinding(compilation, 'error', error.message)])
+    else pluginLogger('presmium.watch').error(error.message)
+  })
   const watchFiles = async () => {
     const { files, gitReads } = compilation.inputs
     const git = await gitReadFiles(gitReads)

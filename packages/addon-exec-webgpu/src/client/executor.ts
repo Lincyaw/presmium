@@ -12,7 +12,8 @@ export type WebgpuExecutor = Executor & {
 
 export function createWebgpuExecutor(options: { id: string, timeoutMs: number }): WebgpuExecutor {
   const { id } = options
-  const running = new Set<Worker>()
+  const running = new Map<Worker, () => void>()
+  let disposed = false
   return {
     id,
     runsIn: 'browser',
@@ -24,17 +25,19 @@ export function createWebgpuExecutor(options: { id: string, timeoutMs: number })
     },
     run(request, signal) {
       const text = MESSAGES[currentLocale()]
+      if (disposed || signal?.aborted) return Promise.resolve(failedRun(id, text.cancelled))
       const made = computeRequest(request.code, request.args, text)
       if ('error' in made) return Promise.resolve(programError(id, made.error, 0))
       return new Promise<RunResult>((resolve) => {
         if (signal?.aborted) return resolve(failedRun(id, text.cancelled))
         const worker = new Worker(new URL('./webgpu.worker.ts', import.meta.url), { type: 'module', name: 'presmium-webgpu' })
-        running.add(worker)
         const started = performance.now()
         const elapsed = () => Math.round(performance.now() - started)
         const timeoutMs = request.timeoutMs ?? options.timeoutMs
         let settled = false
+        let stopping: ReturnType<typeof setTimeout> | undefined
         const end = () => {
+          clearTimeout(stopping)
           running.delete(worker)
           worker.terminate()
         }
@@ -46,13 +49,18 @@ export function createWebgpuExecutor(options: { id: string, timeoutMs: number })
           resolve(result)
         }
         const stop = (result: RunResult) => {
+          if (settled) return
           finish(result)
           worker.postMessage({ type: 'stop' } satisfies WorkerRequest)
-          setTimeout(end, STOP_GRACE_MS)
+          stopping = setTimeout(end, STOP_GRACE_MS)
         }
         const timer = setTimeout(() => stop({ ...failedRun(id, text.timedOut(timeoutMs), elapsed()), timedOut: true }), timeoutMs)
         const onAbort = () => stop(failedRun(id, text.cancelled, elapsed()))
         signal?.addEventListener('abort', onAbort)
+        running.set(worker, () => {
+          finish(failedRun(id, text.cancelled, elapsed()))
+          end()
+        })
         worker.onmessage = ({ data }: MessageEvent<WorkerReply>) => {
           end()
           if (data.type === 'done') finish(runResultOf(id, data.outcome, elapsed(), text))
@@ -65,7 +73,8 @@ export function createWebgpuExecutor(options: { id: string, timeoutMs: number })
       })
     },
     dispose() {
-      running.forEach(worker => worker.terminate())
+      disposed = true
+      running.forEach(cancel => cancel())
       running.clear()
     },
   }

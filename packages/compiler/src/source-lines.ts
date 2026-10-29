@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import type { SourcePos } from '@lincyaw/kernel'
-import { withoutBom } from './parser.ts'
+import { withoutBom } from './frontmatter.ts'
 
 export type LineFinder = (source: SourcePos, needles: string[]) => number
 

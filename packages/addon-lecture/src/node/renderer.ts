@@ -5,7 +5,7 @@ import { deckLocale, errorMessage, SPEECH } from '@lincyaw/kernel'
 import type { IRDocument, RenderContext, Renderer, SpeechService } from '@lincyaw/kernel'
 import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, dropChangedSections, eventsVtt, formatTrack, LECTURE_ID, LECTURE_RENDERER, LECTURE_MESSAGES, plannedUtterances, SCRIPT_TRACK, trackDuration, trimToDeck, utteranceLine } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
-import { cachedClip, clipKeys } from './clips.ts'
+import { cachedClip } from './clips.ts'
 import { latestDoc } from './latest-ir.ts'
 import { deckPlan } from './plan.ts'
 import { mediaFile, mediaPolicy, publishedMedia, readTrack, TRACK_FILE, trackIds } from './store.ts'
@@ -77,7 +77,7 @@ async function publishTrack(track: LectureTrack, text: string, file: string, doc
   writeFileSync(join(out, 'events.vtt'), eventsVtt(track))
 }
 
-async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: unknown[], tracks: LectureTrack[]): Promise<boolean> {
+async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: unknown[]): Promise<boolean> {
   const source = { file: doc.meta.entry, line: 1 }, t = LECTURE_MESSAGES[deckLocale(doc.meta.lang)].production
   const speech = ctx.service?.(SPEECH)
   if (!speech && plannedUtterances(deckPlan(doc).plan).some(unit => unit.sourceKind !== 'none' && unit.sourceKind !== 'recording')) {
@@ -99,7 +99,6 @@ async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: un
   const clipFiles = new Map([...synthesized.clips.values()].map(clip => [clip.file, clip.path]))
   await publishTrack(track, formatTrack(track), doc.meta.entry, doc, ctx, clipFiles, { kind: 'ignore' }, synthesized.assets)
   index.push(summary(track))
-  tracks.push(track)
   return true
 }
 
@@ -137,7 +136,6 @@ export const lectureRenderer: Renderer = {
   support: () => 'full',
   async build(doc, ctx) {
     const index: unknown[] = []
-    const tracks: LectureTrack[] = []
     const plan = deckPlan(doc)
     plan.findings.forEach(ctx.report)
     if (plan.findings.some(finding => finding.severity === 'error')) throw new Error(plan.findings.find(finding => finding.severity === 'error')!.message)
@@ -145,7 +143,7 @@ export const lectureRenderer: Renderer = {
     const synthesize = Boolean(plan.voice || plan.silent || plan.recorded)
     const policy = mediaPolicy(workspaceSettings(ctx.workspaceRoot).settings[LECTURE_ID] ?? {})
     const published = publishedTrack(doc, ctx.deckDir)
-    let complete = !synthesize || await publishSynthesized(doc, ctx, index, tracks)
+    const complete = !synthesize || await publishSynthesized(doc, ctx, index)
     if (!complete) throw new Error(LECTURE_MESSAGES[deckLocale(doc.meta.lang)].production.incompleteCache)
     for (const id of trackIds(ctx.deckDir)) {
       if (synthesize && id === SCRIPT_TRACK) {
@@ -157,11 +155,9 @@ export const lectureRenderer: Renderer = {
         stored = readTrack(ctx.deckDir, id)
       } catch (error) {
         ctx.report({ checkId: LECTURE_ID, severity: 'error', message: `lecture ${id}: ${errorMessage(error)}` })
-        complete = false
         continue
       }
       if (!stored) continue
-      tracks.push(stored.track)
       const track = published(stored.track)
       if (!track) continue
       const { clipFiles, refused } = await recordedClipFiles(track, ctx.service?.(SPEECH))
@@ -174,8 +170,6 @@ export const lectureRenderer: Renderer = {
     }
     mkdirSync(ctx.outDir, { recursive: true })
     writeFileSync(join(ctx.outDir, 'index.json'), `${JSON.stringify(index, null, 2)}\n`)
-    const used = clipKeys(tracks)
-    if (complete && (synthesize || used.size > 0)) await ctx.service?.(SPEECH)?.pruneLock?.(used)
     return { outDir: ctx.outDir, skipped: [] }
   },
   async dev(_doc, ctx) {

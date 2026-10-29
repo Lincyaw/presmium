@@ -14,6 +14,8 @@ It also takes `--node-ipc` and `--socket=<port>`. Clients select `**/lecture.jso
 
 Opened buffers are validated without writing or compiling unsaved text. Saving JSON and notifications for watched project inputs trigger a real compiler run. Diagnostics resolve JSON pointers to token ranges; entity and `origin.anchor` definitions navigate to their authoritative JSON or project code. `presmium/section` locates a page from the entity under the cursor, including normalized blocks, steps and narration. `presmium/preview` starts a real `presmium dev` web server for the canonical entry and stops it when the language server closes.
 
+Compilation and preview prefer the document's installed `@lincyaw/presmium` package, which supplies its bundled plugins and renderers. A standalone installation uses the project's CLI or the language server's own CLI dependencies.
+
 The server does not register its own completion provider: JSON schema completion remains with the editor. The studio provides native rich-text editing of the same `lecture.json` document.
 
 ## Documentation

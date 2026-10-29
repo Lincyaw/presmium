@@ -97,35 +97,39 @@ export async function printSlides(options: PrintOptions): Promise<Printed> {
   const shape = slideShape(JSON.parse(await readFile(join(options.dir, 'ir.json'), 'utf8')) as IRDocument)
   const timeout = options.timeout ?? PRINT_TIMEOUT
   const server = await serveBuilt(options.dir)
-  const browser = await options.chromium.launch()
-  const stop = () => void browser.close()
-  options.signal?.addEventListener('abort', stop, { once: true })
   try {
-    const page = await browser.newPage({ viewport: shape, deviceScaleFactor: options.format === 'png' ? PICTURE_SCALE : 1, reducedMotion: 'reduce', serviceWorkers: 'block' })
-    const query = `${printQuery(options)}&${PREVIEW_APPEARANCE_PARAM}=${options.dark ? 'dark' : 'light'}`
-    await page.goto(`${server.url}/${query}`, { waitUntil: 'load', timeout })
-    await page.waitForSelector(`html[${PRINTED_ATTRIBUTE}]`, { timeout })
-    options.signal?.throwIfAborted()
-    const pages: PrintedPage[] = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.pm-slides-print__page > .pm-slide')]
-      .map(slide => ({ section: slide.dataset.section!, slide: Number(slide.dataset.slide), step: Number(slide.dataset.step) })))
-    if (options.format === 'pdf') {
-      await page.pdf({ path: options.output, width: `${shape.width}px`, height: `${shape.height}px`, printBackground: true })
-      return { shape, pages }
-    }
-    const elements = await page.$$('.pm-slides-print__page')
-    for (const [i, element] of elements.entries()) {
+    const browser = await options.chromium.launch()
+    const stop = () => void browser.close()
+    options.signal?.addEventListener('abort', stop, { once: true })
+    try {
       options.signal?.throwIfAborted()
-      const printed = pages[i]!
-      printed.file = `${printed.slide}${options.steps ? `-${printed.step + 1}` : ''}.png`
-      await element.screenshot({ path: join(options.output, printed.file) })
+      const page = await browser.newPage({ viewport: shape, deviceScaleFactor: options.format === 'png' ? PICTURE_SCALE : 1, reducedMotion: 'reduce', serviceWorkers: 'block' })
+      const query = `${printQuery(options)}&${PREVIEW_APPEARANCE_PARAM}=${options.dark ? 'dark' : 'light'}`
+      await page.goto(`${server.url}/${query}`, { waitUntil: 'load', timeout })
+      await page.waitForSelector(`html[${PRINTED_ATTRIBUTE}]`, { timeout })
+      options.signal?.throwIfAborted()
+      const pages: PrintedPage[] = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.pm-slides-print__page > .pm-slide')]
+        .map(slide => ({ section: slide.dataset.section!, slide: Number(slide.dataset.slide), step: Number(slide.dataset.step) })))
+      if (options.format === 'pdf') {
+        await page.pdf({ path: options.output, width: `${shape.width}px`, height: `${shape.height}px`, printBackground: true })
+        return { shape, pages }
+      }
+      const elements = await page.$$('.pm-slides-print__page')
+      for (const [i, element] of elements.entries()) {
+        options.signal?.throwIfAborted()
+        const printed = pages[i]!
+        printed.file = `${printed.slide}${options.steps ? `-${printed.step + 1}` : ''}.png`
+        await element.screenshot({ path: join(options.output, printed.file) })
+      }
+      return { shape, pages }
+    } catch (error) {
+      options.signal?.throwIfAborted()
+      throw error
+    } finally {
+      options.signal?.removeEventListener('abort', stop)
+      await browser.close()
     }
-    return { shape, pages }
-  } catch (error) {
-    options.signal?.throwIfAborted()
-    throw error
   } finally {
-    options.signal?.removeEventListener('abort', stop)
-    await browser.close()
     await server.close()
   }
 }

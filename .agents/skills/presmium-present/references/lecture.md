@@ -46,7 +46,7 @@ A cache-only preview can play existing exact-text/exact-voice audio; a missing c
 
 Checks, lecture builds and video exports read only exact cached voiceover. A configured engine does not make missing audio ready: generate it explicitly before exporting; these read/output actions never synthesize it.
 
-Completed audio belongs to the exact content and voice configuration that produced it. Old callbacks cannot clear new input or label old audio current. Cancellation stops remaining work and retains completed valid cache. Reuse requires the synthesis key, current non-credential engine profile and actual audio SHA. Without that engine configured, commit the cache and matching speech lock: one locked profile can satisfy a request; multiple profiles are ambiguous. Legacy locked audio is still readable offline, but is not proof of a configured provider's identity. Unknown or mismatched alignment bindings are unavailable, not precise timing.
+Completed audio belongs to the exact content and voice configuration that produced it. Old callbacks cannot clear new input or label old audio current. Cancellation stops remaining work and retains completed valid cache. Reuse requires the synthesis key, current non-credential engine profile and actual audio SHA. Without that engine configured, commit the cache and matching speech lock: one locked profile can satisfy a request; multiple profiles are ambiguous. Builds and exports preserve the document's speech lock, including clips omitted by audience or form filtering. Legacy locked audio is still readable offline, but is not proof of a configured provider's identity. Unknown or mismatched alignment bindings are unavailable, not precise timing.
 
 ## Align and produce
 

@@ -4,6 +4,7 @@ import { Compiler, DECK_ENTRY } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import { ANCHOR_LOCK_PATH, errorMessage, fnv1a64 } from '@lincyaw/kernel'
 import type { Finding } from '@lincyaw/kernel'
+import { documentCli } from './document-cli.ts'
 
 export class Deck {
   readonly entry: string
@@ -19,7 +20,7 @@ export class Deck {
 
   constructor(entry: string, compiled: (deck: Deck) => void) {
     this.entry = entry
-    this.#compiler = new Compiler(entry)
+    this.#compiler = new Compiler(entry, { bundled: documentCli(entry).bundled })
     this.#compiled = compiled
   }
 

@@ -2,18 +2,10 @@ import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { createInterface } from 'node:readline'
-import { findPackageBin } from '@lincyaw/kernel/node'
+import { documentCli } from './document-cli.ts'
 
 const START_TIMEOUT = 120_000
 const PREVIEW_DIR = '.presmium/preview'
-
-const CLI = '@lincyaw/cli'
-
-function presmiumBin(deckDir: string): string {
-  const bin = findPackageBin(CLI, 'presmium', join(deckDir, 'package.json')) ?? findPackageBin(CLI, 'presmium', import.meta.url)
-  if (!bin) throw new Error(`${CLI} is not installed`)
-  return bin
-}
 
 function stopProcess(child: ChildProcess, signal: NodeJS.Signals = 'SIGTERM'): void {
   if (!child.pid || child.exitCode !== null || child.signalCode !== null) return
@@ -48,7 +40,7 @@ export class DevServerLauncher {
 
   #start(entry: string, forget: () => void): Promise<string> {
     const deckDir = dirname(entry)
-    const args = [presmiumBin(deckDir), 'dev', entry, '--to', 'web', '--out', join(deckDir, PREVIEW_DIR)]
+    const args = [documentCli(entry).bin, 'dev', entry, '--to', 'web', '--out', join(deckDir, PREVIEW_DIR)]
     // The lines read below are the English ones: `presmium dev` prints in the system's language.
     const child = spawn(process.execPath, args, { cwd: deckDir, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, LC_ALL: 'en_US.UTF-8' } })
     this.#children.add(child)

@@ -206,12 +206,14 @@ export default function SceneView(props: SceneProps) {
     const root = stage.current
     if (!enabled || !root) return
     let disposed = false
+    let generation = 0
     let observer: ResizeObserver | undefined
     let resizeTimer: ReturnType<typeof setTimeout> | undefined
     let dimensions = { width: root.clientWidth, height: root.clientHeight }
-    const build = async () => {
+    const build = async (version: number) => {
+      const current = () => !disposed && version === generation
       const definition = await loadScene(props.scene)
-      if (disposed) return
+      if (!current()) return
       if (!definition) {
         setStatus('missing')
         throw new Error(`the deck has no scene ${props.scene}`)
@@ -252,16 +254,17 @@ export default function SceneView(props: SceneProps) {
         },
       }).catch((error: unknown) => {
         layer.remove()
-        if (!disposed) {
+        if (current()) {
           instance.current?.dispose?.()
           instance.current = undefined
           root.replaceChildren()
         }
         throw error
       })
-      if (disposed) {
-        made.dispose?.()
-        return layer.remove()
+      if (!current()) {
+        try { made.dispose?.() }
+        finally { layer.remove() }
+        return
       }
       instance.current?.dispose?.()
       for (const child of [...root.children]) if (child !== layer) child.remove()
@@ -271,9 +274,12 @@ export default function SceneView(props: SceneProps) {
       setStatus('ready')
     }
     const rebuild = () => {
-      const work = build()
+      const version = ++generation
+      const work = build(version).catch((error: unknown) => {
+        if (!disposed && version === generation) throw error
+      })
       work.catch((error) => {
-        if (!disposed) fail(error)
+        if (!disposed && version === generation) fail(error)
       })
       clock?.wait(work)
     }

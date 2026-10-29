@@ -24,7 +24,15 @@ export async function openTerminal(settings: ServerConnection.ISettings, events:
     },
   }
   const manager = new TerminalManager({ serverSettings: settings, terminalAPIClient: client, standby: 'when-hidden' })
-  const connection = await manager.startNew()
+  // The terminal request owns startup errors; readiness may reject during disposal.
+  void manager.ready.catch(() => {})
+  let connection: Awaited<ReturnType<typeof manager.startNew>>
+  try {
+    connection = await manager.startNew()
+  } catch (error) {
+    manager.dispose()
+    throw error
+  }
   let closed = false
   let dimensions: [number, number] | undefined
   const resize = () => {

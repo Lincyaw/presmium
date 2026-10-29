@@ -131,6 +131,12 @@ class ReviewTrees {
     }
   }
 
+  async changedPaths(from: string, to: string): Promise<string[]> {
+    if (from === to) return []
+    return (await this.#text([...DIFF, '--name-only', '-z', from, to])).split('\0').filter(Boolean)
+      .map(this.fromGit).sort((a, b) => a.localeCompare(b))
+  }
+
   async compare(from: string, to: string): Promise<ReviewChange[]> {
     if (from === to) return []
     const status = (await this.#text([...DIFF, '--name-status', '-z', from, to])).split('\0').filter(Boolean)
@@ -206,7 +212,7 @@ class ReviewTrees {
   }
 
   async reset(tree: string): Promise<void> {
-    await this.restore(tree, (await this.compare(tree, await this.tree())).map(change => change.path))
+    await this.restore(tree, await this.changedPaths(tree, await this.tree()))
   }
 
   dispose(): void {
@@ -254,7 +260,7 @@ async function rollBackLeftReview(scopeDir: string, root: string, options: Omit<
   try {
     if (record.guard) gitDirGuard(record.dirs.gitDir, scopeDir, root, options.onRestore, record.guard).restore()
     trees = new ReviewTrees(record.dirs, scopeDir, root, await isolatedGitConfig(record.dirs), options)
-    const paths = (await trees.compare(record.snapshot, await trees.tree())).map(change => change.path)
+    const paths = await trees.changedPaths(record.snapshot, await trees.tree())
     await trees.restore(record.snapshot, paths)
     return { task: record.task, paths }
   } finally {
@@ -338,10 +344,10 @@ function createGitReview(open: { scopeDir: string, trees: ReviewTrees, restoreGi
   const prepareAccept = async (reject: string[]) => {
     live()
     restoreGitDir()
-    const changes = await trees.compare(snapshot, await trees.tree())
-    const rejected = new Set(reject.filter(path => changes.some(change => change.path === path)))
+    const changes = await trees.changedPaths(snapshot, await trees.tree())
+    const rejected = new Set(reject.filter(path => changes.includes(path)))
     await trees.restore(snapshot, [...rejected])
-    return changes.filter(change => !rejected.has(change.path)).map(change => change.path)
+    return changes.filter(path => !rejected.has(path))
   }
 
   return {
@@ -384,7 +390,7 @@ function createGitReview(open: { scopeDir: string, trees: ReviewTrees, restoreGi
     async restoreFiles(paths) {
       live()
       restoreGitDir()
-      const changed = new Set((await trees.compare(snapshot, await trees.tree())).map(change => change.path))
+      const changed = new Set(await trees.changedPaths(snapshot, await trees.tree()))
       await trees.restore(snapshot, paths.filter(path => changed.has(path)))
     },
     noteSession(session) {
