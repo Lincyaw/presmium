@@ -2,6 +2,11 @@ import { captionTimingProblem, deckLocale, fnv1a64 } from '@lincyaw/kernel'
 import type { CaptionTimingSource, IRDocument, ProductionDiagnostic, ProductionPage } from '@lincyaw/kernel'
 import type { LectureTrack } from './track.ts'
 
+const STALE = {
+  'zh-CN': '手动字幕时间与当前讲稿、音频或步骤时间不符。请重新核对。',
+  'en': 'Manual caption times no longer match this script, audio, or step timing. Review them before using them again.',
+}
+
 /** Actual per-step playback evidence. All positions are relative; no source version or mutable plan ID enters this basis. */
 export function captionTimingSources(doc: IRDocument, track: LectureTrack, pages: readonly ProductionPage[]): Map<string, CaptionTimingSource> {
   const sources = new Map<string, CaptionTimingSource>()
@@ -43,7 +48,7 @@ export function applyCaptionTimings(doc: IRDocument, track: LectureTrack, pages:
       || value.durationMs !== source.durationMs || JSON.stringify(value.narrationIds) !== JSON.stringify(source.narrationIds) || captionTimingProblem(value, text)
     if (stale || !step || step.startMs === undefined || step.endMs === undefined || !section) {
       diagnostics.push({ code: 'production.caption-timing-stale', severity: 'warning', stepId, ...page ? { sectionId: page.sectionId } : {},
-        message: deckLocale(doc.meta.lang) === 'en' ? 'Manual caption times no longer match this script, audio or step timing. Review them before using them again.' : '手动字幕时间与当前讲稿、音频或步骤时序不符，请重新核对。' })
+        message: STALE[deckLocale(doc.meta.lang)] })
       continue
     }
     overrides.push({ section: section.id, step: step.index, stepId, startMs: step.startMs, endMs: step.endMs,

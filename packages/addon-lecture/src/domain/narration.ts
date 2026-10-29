@@ -145,6 +145,6 @@ export function parseCue(command: string): { name: CueCommand, arg: string } | {
   const arg = rest.join(' ')
   if (!(CUE_COMMANDS as readonly string[]).includes(name)) return { problem: `unknown cue command "${name}"; the commands are ${CUE_COMMANDS.join(', ')}` }
   if (name === 'pause' && parseDuration(arg) === undefined) return { problem: `pause needs a duration, e.g. "pause 800ms", not "${arg}"` }
-  if ((name === 'click' || name === 'mark') && !arg) return { problem: `${name} needs ${name === 'click' ? 'the action of the component, e.g. "click reset"' : 'a name, e.g. "mark 合并"'}` }
+  if ((name === 'click' || name === 'mark') && !arg) return { problem: `${name} needs ${name === 'click' ? 'the action of the component, e.g. "click reset"' : 'a name, e.g. "mark merge"'}` }
   return { name: name as CueCommand, arg }
 }

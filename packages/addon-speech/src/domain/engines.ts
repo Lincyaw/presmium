@@ -90,7 +90,7 @@ export function operatorEngines(names: Iterable<string>, secret: (name: string) 
       else {
         if (Boolean(accessKeyId) !== Boolean(secretAccessKey)) warnings.push(`speech engine ${id}: ${engineVariable(id, 'ACCESS_KEY_ID')} and ${engineVariable(id, 'SECRET_ACCESS_KEY')} come as a pair, and only one is set, so the voice list is the bundled one`)
         engines.push({
-          id, kind: 'volcengine', url: VOLCENGINE_URL, provider: '火山引擎', key, appid: value('APPID'), model: 'seed-tts-2.0', transcribeModel: 'volc.bigasr.auc_turbo', synthesizes: true, transcribes: true,
+          id, kind: 'volcengine', url: VOLCENGINE_URL, provider: VOLCENGINE_NAME['zh-CN'], key, appid: value('APPID'), model: 'seed-tts-2.0', transcribeModel: 'volc.bigasr.auc_turbo', synthesizes: true, transcribes: true,
           ...accessKeyId && secretAccessKey ? { console: { accessKeyId, secretAccessKey, project: value('PROJECT') ?? 'default' } } : {},
         })
       }
@@ -128,13 +128,15 @@ export function operatorEngines(names: Iterable<string>, secret: (name: string) 
   return { engines, unavailable, warnings }
 }
 
+const VOLCENGINE_NAME = { 'zh-CN': '火山引擎', 'en': 'Volcengine' }
+
 function isChinese(lang: string | undefined): boolean {
   return /^zh\b/i.test((lang ?? '').trim())
 }
 
 export function providerName(engine: EngineDefinition, lang?: string): string {
   if (engine.kind !== 'volcengine') return engine.provider
-  return isChinese(lang ?? 'zh') ? '火山引擎' : 'Volcengine'
+  return VOLCENGINE_NAME[isChinese(lang ?? 'zh') ? 'zh-CN' : 'en']
 }
 
 export function engineInfo(engine: EngineDefinition, lang?: string): SpeechEngineInfo {
