@@ -68,6 +68,8 @@ export interface BlockNoteSurfaceProps {
   reset?: number
   initialContent: DocumentEditorInput[]
   locale: Locale
+  /** The language the document is written in (its `lang`), so the browser shapes its text and punctuation for it. */
+  contentLang?: string
   readOnly?: boolean
   resolveAssetURL?(location: string): Promise<string>
   uploadImage?(file: File, signal: AbortSignal): Promise<string>
@@ -158,7 +160,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
       onStart: () => { if (current.current.identity === props.identity) setFileErrors(undefined) },
       onFailure: failure => { if (current.current.identity === props.identity) setFileErrors(value => ({ identity: props.identity, failures: [...(value?.identity === props.identity ? value.failures : []), failure] })) },
     }), ...props.comments ? [nativeCommentSelection(), nativeComments(props.comments, t.author)] : []],
-    domAttributes: { block: { 'data-document-editor-block': '' } },
+    domAttributes: { block: { 'data-document-editor-block': '' }, editor: { lang: props.contentLang ?? props.locale } },
   }, [props.identity, props.reset ?? 0])
   useEffect(() => {
     const stopCommentHistory = current.current.comments ? excludeCommentMarkHistory(editor) : undefined
