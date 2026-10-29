@@ -23,8 +23,8 @@ export function pushStream<T>(subscribe: (push: (value: T) => void) => () => voi
     if (ended) return
     ended = true
     signal?.removeEventListener('abort', end)
-    unsubscribe?.()
-    wake?.()
+    try { unsubscribe?.() }
+    finally { wake?.() }
   }
   if (signal?.aborted) {
     ended = true
@@ -35,22 +35,32 @@ export function pushStream<T>(subscribe: (push: (value: T) => void) => () => voi
       else queue.push(value)
       wake?.()
     })
-    signal?.addEventListener('abort', end, { once: true })
+    if (signal?.aborted) end()
+    else signal?.addEventListener('abort', end, { once: true })
   }
   return {
     end,
-    async* [Symbol.asyncIterator]() {
-      try {
-        while (!ended) {
-          if (queue.length > 0) {
-            yield queue.shift()!
-            continue
+    [Symbol.asyncIterator](): AsyncIterableIterator<T> {
+      const iterator = (async function* () {
+        try {
+          while (!ended) {
+            if (queue.length > 0) {
+              yield queue.shift()!
+              continue
+            }
+            await new Promise<void>(resolve => wake = resolve)
+            wake = undefined
           }
-          await new Promise<void>(resolve => wake = resolve)
-          wake = undefined
+        } finally {
+          end()
         }
-      } finally {
-        end()
+      })()
+      // Wake a pending next() before the generator queues return() or throw().
+      return {
+        [Symbol.asyncIterator]() { return this },
+        next: value => iterator.next(value),
+        return(value) { end(); return iterator.return(value) },
+        throw(error) { end(); return iterator.throw(error) },
       }
     },
   }
