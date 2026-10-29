@@ -331,7 +331,8 @@
   margin: 0;
   padding: var(--pm-ui-control-padding-block, var(--pm-space-1)) var(--pm-ui-control-padding-inline, var(--pm-space-3));
   border: var(--pm-size-hairline) solid transparent;
-  border-radius: var(--pm-radius-small);
+  /* Nested radius: the results frame's radius less its padding. */
+  border-radius: calc(var(--pm-ui-control-radius, var(--pm-radius-control)) - var(--pm-space-px));
   background: transparent;
   color: var(--pm-color-ink);
   font-family: var(--pm-font-sans);
@@ -609,8 +610,18 @@
 }
 
 .pm-ui-card--interactive:hover,
-.pm-ui-card--dashed:hover {
+.pm-ui-card--dashed:hover:not(:disabled) {
   border-color: var(--pm-color-accent);
+}
+
+.pm-ui-card--dashed:active:not(:disabled) {
+  background: var(--pm-color-hover);
+}
+
+.pm-ui-card--dashed:disabled {
+  border-color: var(--pm-color-line);
+  opacity: var(--pm-opacity-disabled);
+  cursor: not-allowed;
 }
 
 .pm-ui-card--interactive:focus-within,
@@ -742,6 +753,15 @@
 :is(.pm-ui-segmented__option, .pm-ui-tab):hover:not(:disabled):not([data-disabled]) {
   background: var(--pm-color-hover);
   color: var(--pm-color-ink);
+}
+
+:is(.pm-ui-segmented__option, .pm-ui-tab):active:not(:disabled):not([data-disabled]) {
+  background: var(--pm-color-pressed);
+}
+
+/* Nested radius: an option sits the frame's padding inside it. */
+.pm-ui-segmented > .pm-ui-segmented__option {
+  border-radius: var(--pm-radius-control-inset);
 }
 
 .pm-ui-segmented__option[aria-pressed='true'],
@@ -918,7 +938,8 @@
   min-height: var(--pm-ui-control-height, var(--pm-control-height));
   padding: var(--pm-ui-control-padding-block, var(--pm-space-1)) var(--pm-ui-control-padding-inline, var(--pm-space-3));
   border: 0;
-  border-radius: var(--pm-radius-small);
+  /* Nested radius: the menu's radius less its padding. */
+  border-radius: var(--pm-radius-menu-item);
   background: transparent;
   color: var(--pm-color-ink);
   font-family: var(--pm-font-sans);
@@ -945,6 +966,10 @@
 .pm-ui-menu__item:focus:not([data-disabled]),
 .pm-ui-menu__item[data-highlighted]:not([data-disabled]) {
   background: var(--pm-color-sunk);
+}
+
+.pm-ui-menu__item:active:not([data-disabled]) {
+  background: var(--pm-color-pressed);
 }
 
 .pm-ui-menu__item--danger {
@@ -981,6 +1006,62 @@
   margin: 0;
   color: var(--pm-color-ink);
   font-weight: var(--pm-weight-semibold);
+}
+
+.pm-ui-empty__body {
+  max-width: var(--pm-popover-min-width);
+  margin: 0;
+}
+
+/* Loading in the shape of what is coming: grey bars where its headings and lines will be, not a spinner. The pulse
+   animates opacity only and stops when motion is reduced. Its name is read from the status, not from the bars. */
+.pm-ui-skeleton {
+  display: grid;
+  gap: var(--pm-space-3);
+  min-width: 0;
+}
+
+.pm-ui-skeleton__group {
+  display: grid;
+  gap: var(--pm-space-2);
+}
+
+.pm-ui-skeleton__bar {
+  height: var(--pm-skeleton-line);
+  border-radius: var(--pm-radius-chip);
+  background: var(--pm-color-sunk);
+  animation: pm-ui-skeleton-pulse var(--pm-duration-pulse) ease-in-out infinite;
+}
+
+.pm-ui-skeleton__bar[data-kind='heading'] {
+  width: 60%;
+  height: var(--pm-skeleton-heading);
+  margin-block-end: var(--pm-space-1);
+}
+
+.pm-ui-skeleton__bar[data-kind='row'] {
+  height: var(--pm-size-tool);
+  border-radius: var(--pm-radius-tool);
+}
+
+.pm-ui-skeleton__bar[data-kind='media'] {
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--pm-radius-small);
+}
+
+.pm-ui-skeleton__group > .pm-ui-skeleton__bar:last-child:not(:only-child) {
+  width: 64%;
+}
+
+@keyframes pm-ui-skeleton-pulse {
+  50% { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pm-ui-skeleton__bar {
+    animation: none;
+  }
 }
 
 .pm-ui-notice {
@@ -1665,6 +1746,7 @@
 .pm-ui-timeline__segment[aria-pressed='true'] { border-color: var(--pm-color-accent); background: var(--pm-color-accent-soft); }
 .pm-ui-timeline__segment[data-timing='estimated'] { border-style: dashed; }
 .pm-ui-timeline__segment:hover:not(:disabled) { background: var(--pm-color-hover); }
+.pm-ui-timeline__segment:active:not(:disabled) { background: var(--pm-color-pressed); }
 .pm-ui-timeline__segment:focus-visible { outline: var(--pm-space-px) solid var(--pm-color-accent); outline-offset: calc(var(--pm-space-px) * -1); }
 .pm-ui-timeline__segment:disabled { cursor: default; opacity: var(--pm-opacity-disabled); }
 .pm-ui-timeline__unknown { flex: 0 0 auto; color: var(--pm-color-muted); white-space: nowrap; }

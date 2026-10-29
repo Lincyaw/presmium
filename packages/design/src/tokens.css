@@ -12,6 +12,8 @@
   --pm-color-canvas: #e7e5e0;
   /* A flat control under the mouse, and the edge of a pressed one. */
   --pm-color-hover: color-mix(in srgb, var(--pm-color-ink) 7%, transparent);
+  /* A flat control while it is pressed: one step past its hover. */
+  --pm-color-pressed: color-mix(in srgb, var(--pm-color-ink) 12%, transparent);
   --pm-color-primary-hover: color-mix(in srgb, var(--pm-color-ink) 88%, var(--pm-color-bg));
   --pm-color-primary-pressed: color-mix(in srgb, var(--pm-color-ink) 80%, var(--pm-color-bg));
   --pm-color-accent-hover: color-mix(in srgb, var(--pm-color-accent) 88%, var(--pm-color-bg));
@@ -60,6 +62,7 @@
   --pm-leading-tight: 1.25;
   --pm-leading-ui: 1.6;
   --pm-leading-reading: 1.85;
+  /* Headings wrap balanced and paragraphs pretty (no lone last character); the rules are in typography.css. */
   --pm-tracking-label: 0.06em;
   --pm-weight-regular: 400;
   --pm-weight-medium: 500;
@@ -84,6 +87,11 @@
   --pm-radius-pill: 999px;
   --pm-radius-tool: 4px;
   --pm-radius-sheet: 2px;
+  /* Nested radius: a shape inside another, less than 2rem from its edge, takes the outer radius minus that gap,
+     so that the two curves stay concentric. When the difference is 2px or less the inner shape keeps its own
+     radius. These name the pairs the shared controls use; a new pair is written the same way. */
+  --pm-radius-control-inset: calc(var(--pm-radius-control) - var(--pm-space-px)); /* an option in a segmented or list frame */
+  --pm-radius-menu-item: calc(var(--pm-radius-control) - var(--pm-space-1)); /* an item in a menu */
 
   --pm-size-hairline: 1px;
   --pm-size-stroke: 2px;
@@ -129,7 +137,12 @@
   --pm-duration: 200ms;
   --pm-duration-spin: 900ms;
   --pm-duration-pulse: 1200ms;
+  /* A step's reveal on a page or slide. */
+  --pm-duration-slow: 300ms;
   --pm-ease: cubic-bezier(0.2, 0, 0, 1);
+  /* Motion animates transform and opacity only, never a box's size or position (top, left, width, height,
+     margin, padding), and every transition takes its time from a duration above, so that the reduced-motion
+     query below stills it; a looping animation (spin, pulse, skeleton) is switched off in that query instead. */
 
   /* The editor's frame: its bars, panes and the page on the canvas. */
   --pm-appbar-height: 2.5rem;
@@ -147,6 +160,9 @@
   --pm-narration-editor-height: 12rem;
   --pm-narration-editor-compact-height: 5rem;
   --pm-tooltip-width: 18rem;
+  /* A placeholder in the shape of content still loading: a line of text and a heading. */
+  --pm-skeleton-line: 0.75rem;
+  --pm-skeleton-heading: 1.25rem;
 
   /* A document's site: its header, the chapters beside the page, the page's sections, the measure of its text. */
   --pm-site-header-height: 3.5rem;
@@ -211,6 +227,7 @@
   :root {
     --pm-duration-fast: 0ms;
     --pm-duration: 0ms;
+    --pm-duration-slow: 0ms;
   }
 }
 

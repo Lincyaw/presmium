@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { RefObject } from 'react'
-import { PmButton, PmIconButton, PmMenu, PmNotice, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
+import { PmButton, PmIconButton, PmMenu, PmNotice, PmSkeleton, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
 import { DocumentOutline, DocumentWordCounter } from '../outline.ts'
@@ -193,6 +193,7 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
   const creating = useWorkbenchState(state => Boolean(state.isCreatingPage))
   const pageBusy = useWorkbenchState(state => Boolean(state.isEditingPage || state.isHistoryPreparing || state.isHistoryBusy))
   const failure = useWorkbenchState(state => state.pageEditFailure)
+  const loading = useWorkbenchState(state => Boolean(state.authoring?.loading && !state.authoring.content))
   const document = useWorkbenchState(state => state.document)
   const [renaming, setRenaming] = useState<{ id: string, title: string, trigger?: HTMLButtonElement }>()
   const [deleting, setDeleting] = useState<{ id: string, title: string, trigger?: HTMLButtonElement }>()
@@ -228,7 +229,8 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
         <PmIconButton icon="close" label={t.closeNavigation} small onClick={onClose} />
       </header>
       {failure && !renaming && !deleting && <PmNotice tone="danger">{failure}</PmNotice>}
-      {items.length === 0
+      {items.length === 0 && loading ? <div className="pmw-navigation__empty"><PmSkeleton shape="list" label={t.loadingPages} /></div>
+        : items.length === 0
         ? <p className="pmw-muted pmw-navigation__empty">{t.noSections}</p>
         : editing ? <PmSortableList label={t.pages} scopeKey={JSON.stringify([identity, documentId, document])} resetKey={reset} className="pmw-navigation__list" locale={locale}
           items={items.map((item, index) => ({ id: item.id, label: item.title, prefix: item.number, reorderDisabled: !workbench.pageEditCapability(item.id).move, actions: pageActions(item, index) }))}

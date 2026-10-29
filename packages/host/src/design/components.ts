@@ -127,6 +127,15 @@ export function PmSegmented({ value, modelValue, choices, items, label, onValueC
 }
 export function PmNotice({ tone = 'neutral', children, className, ...rest }: HTMLAttributes<HTMLDivElement> & { tone?: Tone }) { return h('div', { ...rest, className: cls('pm-ui-notice', tone !== 'neutral' && `pm-ui-notice--${tone}`, className), role: tone === 'danger' ? 'alert' : 'status' }, children) }
 export function PmEmpty({ title, icon, action, children }: { title?: string, icon?: IconName, action?: ReactNode, children?: ReactNode }) { return h('div', { className: 'pm-ui-empty' }, icon ? h(PmIcon, { name: icon }) : null, title ? h('p', { className: 'pm-ui-empty__title' }, title) : null, children, action) }
+/** Loading in the shape of the content: `document` headings and paragraphs, `list` rows, `preview` a slide-shaped area. */
+export function PmSkeleton({ label, shape = 'document' }: { label: string, shape?: 'document' | 'list' | 'preview' }) {
+  const bar = (kind?: string, key?: number) => h('span', { key, className: 'pm-ui-skeleton__bar', 'data-kind': kind })
+  const paragraph = (lines: number, key: number) => h('span', { key, className: 'pm-ui-skeleton__group' }, Array.from({ length: lines }, (_, index) => bar(undefined, index)))
+  const bars = shape === 'list' ? Array.from({ length: 5 }, (_, index) => bar('row', index))
+    : shape === 'preview' ? [bar('media', 0), paragraph(2, 1)]
+      : [bar('heading', 0), paragraph(4, 1), paragraph(3, 2), bar('heading', 3), paragraph(4, 4)]
+  return h('div', { className: 'pm-ui-skeleton', 'data-shape': shape, role: 'status', 'aria-busy': 'true' }, h('span', { className: 'pm-ui-sr-only' }, label), h('span', { className: 'pm-ui-skeleton', 'aria-hidden': 'true' }, bars))
+}
 export const ToolbarPlacementContext = createContext<ToolbarPlacement>('bar')
 export const provideToolbarPlacement = ToolbarPlacementContext.Provider
 export function useToolbarPlacement() { return useContext(ToolbarPlacementContext) }
