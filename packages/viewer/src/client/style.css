@@ -13,11 +13,11 @@
   --pm-line-highlight: var(--pm-color-selected);
   --pm-board-bg: color-mix(in srgb, var(--pm-c-brand) 4%, var(--pm-c-bg));
   --pm-board-border: var(--pm-c-border);
-  --pm-scroll-shadow: rgba(0, 0, 0, 0.18);
+  --pm-scroll-shadow: color-mix(in srgb, var(--pm-color-shadow) 18%, transparent);
 }
 
 .dark {
-  --pm-scroll-shadow: rgba(255, 255, 255, 0.16);
+  --pm-scroll-shadow: color-mix(in srgb, var(--pm-color-sheen) 16%, transparent);
 }
 
 .pm-hidden,
@@ -29,7 +29,7 @@
 .pm-block,
 .pm-block li,
 [data-pm-click] {
-  transition: opacity 0.3s;
+  transition: opacity var(--pm-duration-slow) var(--pm-ease);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -90,7 +90,7 @@
 .pm-diagnostics {
   margin: 0.5rem 0;
   padding: 0.5rem 0.75rem 0.5rem 1.75rem;
-  border: 1px solid var(--pm-c-danger);
+  border: var(--pm-size-hairline) solid var(--pm-c-danger);
   border-radius: 0.25rem;
   color: var(--pm-c-danger);
   font-size: 0.875em;
@@ -99,8 +99,8 @@
 .pm-board {
   margin: 1.25rem 0;
   padding: 0.75rem 1.25rem;
-  border: 1px solid var(--pm-board-border);
-  border-left: 4px solid var(--pm-c-brand);
+  border: var(--pm-size-hairline) solid var(--pm-board-border);
+  border-left: calc(var(--pm-size-stroke) * 2) solid var(--pm-c-brand);
   border-radius: 0.5rem;
   background: var(--pm-board-bg);
 }
@@ -148,7 +148,7 @@
 .pm-step {
   min-height: 45vh;
   padding-left: 0.75rem;
-  border-left: 2px solid var(--pm-c-border);
+  border-left: var(--pm-size-stroke) solid var(--pm-c-border);
 }
 
 .pm-step--current {
@@ -205,7 +205,7 @@
 .pm-code-origin__badge {
   padding: 0 0.4em;
   border-radius: 0.25rem;
-  border: 1px solid currentColor;
+  border: var(--pm-size-hairline) solid currentColor;
   color: var(--pm-c-warning);
 }
 
@@ -222,7 +222,7 @@
 
 .pm-code-block__run button {
   padding: 0.125rem 0.75rem;
-  border: 1px solid var(--pm-c-brand);
+  border: var(--pm-size-hairline) solid var(--pm-c-brand);
   border-radius: 0.25rem;
   color: var(--pm-c-brand);
 }
@@ -259,7 +259,7 @@
 
 .pm-stage .pm-code pre {
   --pm-code-pad: 0.75rem;
-  font-size: clamp(0.65rem, (100cqi - 2 * var(--pm-code-pad) - 2px) / (var(--pm-code-columns, 40) * 0.62), 0.875rem);
+  font-size: clamp(0.65rem, (100cqi - 2 * var(--pm-code-pad) - var(--pm-size-stroke)) / (var(--pm-code-columns, 40) * 0.62), 0.875rem);
 }
 
 .pm-view table {
@@ -316,7 +316,7 @@
   margin: 0.25rem 0;
   padding: 0.5rem 0.75rem;
   overflow-x: auto;
-  border-left: 3px solid var(--pm-c-border);
+  border-left: var(--pm-size-rule) solid var(--pm-c-border);
   background: var(--pm-c-bg-soft);
   font-size: 0.8125em;
 }
@@ -370,7 +370,7 @@
 .pm-admonition {
   margin: 1rem 0;
   padding: 0.25rem 1rem;
-  border-left: 4px solid var(--pm-c-brand);
+  border-left: calc(var(--pm-size-stroke) * 2) solid var(--pm-c-brand);
   border-radius: 0.25rem;
   background: var(--pm-c-bg-soft);
 }
@@ -388,8 +388,8 @@
 
 .pm-block kbd {
   padding: 0.05em 0.35em;
-  border: 1px solid var(--pm-c-border);
-  border-bottom-width: 2px;
+  border: var(--pm-size-hairline) solid var(--pm-c-border);
+  border-bottom-width: var(--pm-size-stroke);
   border-radius: 0.25rem;
   background: var(--pm-c-bg-soft);
   font-family: var(--pm-font-mono);
@@ -407,7 +407,7 @@
 .pm-block details {
   margin: 1rem 0;
   padding: 0.25rem 1rem;
-  border: 1px solid var(--pm-c-border);
+  border: var(--pm-size-hairline) solid var(--pm-c-border);
   border-radius: 0.25rem;
 }
 
@@ -469,7 +469,7 @@
   display: flex;
   flex-direction: column;
   margin: 1rem 0;
-  border: 1px solid var(--pm-c-border);
+  border: var(--pm-size-hairline) solid var(--pm-c-border);
   border-radius: 0.5rem;
   background: var(--pm-c-bg);
   overflow: hidden;
@@ -490,12 +490,12 @@
 }
 
 .pm-card__header {
-  border-bottom: 1px solid var(--pm-c-border);
+  border-bottom: var(--pm-size-hairline) solid var(--pm-c-border);
 }
 
 .pm-card__footer {
   margin-top: auto;
-  border-top: 1px solid var(--pm-c-border);
+  border-top: var(--pm-size-hairline) solid var(--pm-c-border);
 }
 
 .pm-card > .pm-card__title {
@@ -538,8 +538,8 @@
 .pm-block .pm-button {
   display: inline-block;
   padding: 0.3em 1em;
-  border: 1px solid var(--pm-c-brand);
-  border-radius: 999px;
+  border: var(--pm-size-hairline) solid var(--pm-c-brand);
+  border-radius: var(--pm-radius-pill);
   color: var(--pm-c-brand);
   font-weight: 600;
   text-decoration: none;
@@ -558,13 +558,13 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem;
-  border-bottom: 1px solid var(--pm-c-border);
+  border-bottom: var(--pm-size-hairline) solid var(--pm-c-border);
 }
 
 .pm-tabs__tab {
   margin-bottom: -1px;
   padding: 0.4rem 0.9rem;
-  border-bottom: 2px solid transparent;
+  border-bottom: var(--pm-size-stroke) solid transparent;
   color: var(--pm-c-text-2);
   cursor: pointer;
 }
@@ -598,7 +598,7 @@
 
 .pm-component-missing {
   padding: 0.5rem 0.75rem;
-  border: 1px dashed var(--pm-c-border);
+  border: var(--pm-size-hairline) dashed var(--pm-c-border);
   border-radius: 0.25rem;
   color: var(--pm-c-text-2);
   font-size: 0.875em;
@@ -606,7 +606,7 @@
 
 .pm-boundary-error {
   padding: 0.5rem 0.75rem;
-  border: 1px dashed var(--pm-c-danger);
+  border: var(--pm-size-hairline) dashed var(--pm-c-danger);
   border-radius: 0.25rem;
   color: var(--pm-c-danger);
   font-size: 0.85em;
@@ -934,7 +934,7 @@ html.pm-presenting {
   width: 100%;
   min-height: 4.5rem;
   padding: 0.75rem;
-  border: 1px solid var(--pm-c-border);
+  border: var(--pm-size-hairline) solid var(--pm-c-border);
   border-radius: 0.375rem;
   background: var(--pm-c-bg-soft);
   color: var(--pm-c-text);
@@ -944,12 +944,12 @@ html.pm-presenting {
 
 .pm-overview__item[aria-current='true'] {
   border-color: var(--pm-c-brand);
-  box-shadow: inset 0 0 0 1px var(--pm-c-brand);
+  box-shadow: inset 0 0 0 var(--pm-size-hairline) var(--pm-c-brand);
 }
 
 .pm-overview__item:focus-visible {
-  outline: 2px solid var(--pm-c-brand);
-  outline-offset: 2px;
+  outline: var(--pm-size-stroke) solid var(--pm-c-brand);
+  outline-offset: var(--pm-size-stroke);
 }
 
 .pm-overview__index {
@@ -972,7 +972,7 @@ html.pm-presenting {
   gap: 0.5rem;
   align-items: center;
   padding: 0.5rem 1rem;
-  border-top: 1px solid var(--pm-c-border);
+  border-top: var(--pm-size-hairline) solid var(--pm-c-border);
   font-size: 0.875rem;
   color: var(--pm-c-text-2);
 }
@@ -983,7 +983,7 @@ html.pm-presenting {
 
 .pm-present__button {
   padding: 0.25rem 0.75rem;
-  border: 1px solid var(--pm-c-border);
+  border: var(--pm-size-hairline) solid var(--pm-c-border);
   border-radius: 0.25rem;
   background: var(--pm-c-bg-soft);
   color: var(--pm-c-text);
@@ -992,7 +992,7 @@ html.pm-presenting {
 
 .pm-presenter__bar {
   border-top: none;
-  border-bottom: 1px solid var(--pm-c-border);
+  border-bottom: var(--pm-size-hairline) solid var(--pm-c-border);
 }
 
 .pm-presenter__title {
@@ -1038,7 +1038,7 @@ html.pm-presenting {
 
 .pm-presenter__note {
   padding: 0 0.5rem;
-  border-left: 3px solid transparent;
+  border-left: var(--pm-size-rule) solid transparent;
   opacity: 0.5;
 }
 
@@ -1060,7 +1060,7 @@ html.pm-presenting {
 .pm-role-mark {
   margin: 0 0.15em;
   padding: 0 0.2em;
-  border-radius: 3px;
+  border-radius: var(--pm-radius-chip);
   font-size: 0.85em;
   color: var(--pm-color-muted);
   background: var(--pm-color-sunk);

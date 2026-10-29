@@ -1,6 +1,6 @@
 # Presmium 控件与视觉实现规范
 
-状态：正式实现约束；核心公共控件已迁移，领域控件和剩余页面待实现。更新日期：2026-10-27。
+状态：正式实现约束；核心公共控件已迁移，领域控件和剩余页面待实现。更新日期：2026-10-29。
 
 本文供设计与开发实现 Web 工作台、未来 Tauri 外壳及共用控件时使用。功能、信息架构和产品边界见 [UI/UX RFC](rfc-workbench-uiux.md)，Figma 文件及功能原型索引见 [原型覆盖说明](prototypes/workbench/README.md)。本文规定样式和素材放在哪里、控件如何复用，以及实现前必须补齐的公共能力。
 
@@ -93,12 +93,12 @@ compact 与 regular 是公共控件的密度，不是每个业务面板各自定
 | 图标 | 常规取 `--pm-size-icon`，小号取 `--pm-size-icon-sm`，较大上下文图标取本轮新增的 `--pm-size-icon-lg`；CSS 决定尺寸，业务组件不传数字 |
 | 多行输入 | regular 通用 Textarea 最小高度取 `calc(var(--pm-size-row) * 2)`；compact 讲稿最小高度取 `--pm-narration-editor-compact-height`，独占多行区域并按内容和窗格伸缩；保留的 `--pm-narration-editor-height` 不作为 compact 默认值 |
 | 文字与控件间距 | compact 组内取 `--pm-space-1`／`--pm-space-2`，组间固定取 `--pm-space-3`；标签与输入取 `--pm-space-1`，图标与文字取 `--pm-space-2`；regular 字段组可取 `--pm-space-3` 或 `--pm-space-4` |
-| 控件边框与圆角 | `--pm-size-hairline`、`--pm-radius-control`；紧凑项用 `--pm-radius-small` |
+| 控件边框与圆角 | `--pm-size-hairline`、`--pm-radius-control`；紧凑项用 `--pm-radius-small`；嵌在另一形状内的按第 5.4 节取外层减间隙 |
 | 焦点 | 输入框使用 `--pm-color-accent` 边框，配合 `--pm-color-accent-line` 的柔和光圈；光圈宽度取 `--pm-space-px`，不能仅改变背景表示焦点 |
 | 输入表面 | 默认使用 `--pm-color-chrome`、`--pm-color-ink` 与 `--pm-color-line-strong` 的细边框；默认边界即达到 3:1，不依赖悬停加强才可识别；提示文字取 `--pm-color-muted` |
 | 选中项 | `--pm-color-selected` 或 `--pm-color-accent-soft`，配合 `--pm-color-accent` 与形状标记，不与键盘焦点混为一态 |
 | 浮层 | `--pm-shadow-float`、`--pm-z-popover`、`--pm-z-dialog`、`--pm-z-tooltip`，按控件类型使用 |
-| 动效 | `--pm-duration-fast`、`--pm-duration`、`--pm-ease`；忙碌动画用 `--pm-duration-spin`，遵循减少动态效果偏好 |
+| 动效 | `--pm-duration-fast`、`--pm-duration`、`--pm-duration-slow`、`--pm-ease`；忙碌动画用 `--pm-duration-spin`，加载占位用 `--pm-duration-pulse`；只动画 `transform` 与 `opacity`，遵循减少动态效果偏好（第 5.8 节） |
 
 compact 复用 `--pm-size-tool` 的 1.875rem 和 `--pm-text-sm` 的 0.8125rem，按根字号 16px 分别为 30px 和 13px；组内 4px／8px 分别取 `--pm-space-1`／`--pm-space-2`，组间 12px 取 `--pm-space-3`。regular 单行控件的正式最小高度令牌 `--pm-control-height` 为 2.25rem，有效触摸热区 `--pm-control-hit-area` 为 2.75rem，分别为 36px 和 44px。触屏输入的 `--pm-text-lg` 为 1rem，即 16px。常规、小号和较大图标分别为 16px、13px、20px。图形保持紧凑，热区扩展后不得与相邻控件重叠。
 
@@ -131,7 +131,7 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 | Tooltip | workbench、host 的 `PmTooltip` 与 `PmIconButton` | 已封装 Radix Tooltip；悬停延迟 300ms，键盘聚焦立即显示，可附快捷键 |
 | Segmented | workbench、host 的 `PmSegmented`、`pm-ui-segmented` | 已用 Radix Radio Group 管理横排互斥参数、图标、禁用和选中；不代替工作区导航 |
 | Popover／Drawer | host 的 `PmPopover`、`PmDrawer`，workbench 的 `PmPopover`（同一 Radix Popover 与 `pm-ui-popover` 表面，首个使用者是应用栏的待确认），共用 CSS | 依据任务使用浮层或侧抽屉；workbench 不引用 host 或复制私有实现；workbench Drawer 与 Figma 变体待补 |
-| Field／Notice／Empty | `PmField`、`PmNotice`、`PmEmpty` | 同一位置展示字段说明、错误和恢复入口，不把所有状态写成页面私有提示卡 |
+| Field／Notice／Empty／Skeleton | `PmField`、`PmNotice`、`PmEmpty`、`PmSkeleton` | 同一位置展示字段说明、错误和恢复入口；已知形状的加载用骨架占位（第 5.6 节），不把所有状态写成页面私有提示卡 |
 | SchemaForm | workbench `PmSchemaForm`、`schemaFormPropertyNames` | RJSF 6.11.0 的公开 fields／templates／widgets 组合已有 Pm 控件，CFworker 与文稿共用校验。公共根入口所需的同版 validator-ajv8 作为常规依赖安装，表单不使用它校验，实际生产构建中输出为零。只显示声明的命名字段；推导的 additionalProperties 连字段名也不展示，原数据保留。独立状态根通过 `accessorSchemas` 限制只读、`extraValidation` 分别校验，不拼接引用根。联合分支只有唯一、必填标量 const 与明确 discriminator 的实证路径开放编辑；其余首开即只读，外层独立字段继续。范围、草稿、应用与来源冲突由调用方持有。实际范围见[公共参数表单验证](benchmarks/component-schema-form-2026-10-28.md) |
 | Range | workbench `PmRange`、`pm-ui-range`，使用原生 range | 提供受控数值、读屏值、焦点、禁用和三种密度；方向键／Home／End 提交意图，拖动先显示本地预览，释放时单次提交，Esc／取消／失焦／卸载丢弃手势草稿 |
 | MediaClipEditor | workbench `MediaClipEditor`、`pm-ui-media-clip-editor` | 组合公开素材选择、成对时间输入、短偏移、音量与静音；导入和采用分开，非法输入保留。调用方提供真实音频检查、已确认步骤范围和版本化提交，不绘制虚构波形 |
@@ -183,7 +183,7 @@ Video 的[手动字幕时间组合](https://www.figma.com/design/CjQ5JFn3PuGXx0N
 | 错误 | 字段设置 `aria-invalid`，错误文字通过 `aria-describedby` 关联；使用 `--pm-color-danger` 与文字或错误图标，不只靠红边 |
 | 处理中 | `aria-busy`，保持宽度和动作名称稳定，防止重复提交；可取消的任务提供独立取消操作，不禁用整份文稿 |
 
-公共 CSS 已覆盖按钮、图标按钮、输入、菜单、错误字段和 loading 的适用状态。公共 loading 使用 `loading`（Lucide LoaderCircle），按钮包装负责 `aria-busy` 与重复提交拦截。处理中使用独立的状态图标位，不受调用方 Icon 或 Show icon 属性替换，动作名称和尺寸保持稳定；业务页面不得用转圈字符、私有 SVG 或自定义透明度填补。
+公共 CSS 已覆盖按钮、图标按钮、输入、菜单、错误字段和 loading 的适用状态；已知内容形状的加载使用骨架占位（第 5.6 节）。公共 loading 使用 `loading`（Lucide LoaderCircle），按钮包装负责 `aria-busy` 与重复提交拦截。处理中使用独立的状态图标位，不受调用方 Icon 或 Show icon 属性替换，动作名称和尺寸保持稳定；业务页面不得用转圈字符、私有 SVG 或自定义透明度填补。
 
 Danger 动作默认使用危险色文字和浅色表面；悬停增加 1px 危险色内边界，按下使用现有 2px 描边令牌，不靠不断加深背景降低文字对比度。固定控件外尺寸与排版，焦点仍单独叠加。其余普通控件的 hover／pressed 使用既有 chrome／sunk 语义表面。上述状态由公共 CSS 定义，页面只选择公开属性。
 
@@ -218,6 +218,53 @@ Tooltip 的内容与定位层均不接收指针，不能挡住相邻控件。Rea
 工具栏每组只占一个 Tab 停靠点，方向键及 Home／End 移动组内焦点，Enter／Space 激活；内容／编排标签采用手动激活，不能仅移动焦点就切换工作区。Tooltip 悬停延迟 300ms，键盘聚焦立即显示，Esc 关闭；延迟属于公共组件行为常量，业务不各设一份。覆盖式窄屏 Drawer 为模态，桌面属性栏为非模态。Esc 每次只关闭最上层，关闭后归还触发器；触发器失效时回到有效页面或内容块入口。
 
 现有 workbench Dialog 绘制 Overlay，而 host 的包装不同；历史架构文字中的“非模态”也不足以证明实现语义。实现迁移必须显式统一 `modal`、外部关闭与焦点策略，按源码实际行为验证，不能把该差异带入新页面。
+
+### 5.4 嵌套圆角
+
+一个形状嵌在另一个形状内、两者边缘间隙小于 2rem 时，内层圆角等于外层圆角减去间隙，两条弧线同心；差值不大于 2px 时内层保留自己的圆角，不再缩小。间隙大于等于 2rem 的两层彼此独立，各取自己的圆角。
+
+公共层的成对取值以令牌表达，写在 `tokens.css` 里并附规则说明：
+
+| 令牌 | 取值 | 用途 |
+|---|---|---|
+| `--pm-radius-control-inset` | `calc(var(--pm-radius-control) - var(--pm-space-px))`，6px | Segmented 外框内的选项 |
+| `--pm-radius-menu-item` | `calc(var(--pm-radius-control) - var(--pm-space-1))`，4px | Menu 内的菜单项 |
+
+外层圆角随密度变化时直接写 `calc()`：搜索列表的结果框取 `--pm-ui-control-radius`，其中的选项取 `calc(var(--pm-ui-control-radius, var(--pm-radius-control)) - var(--pm-space-px))`，compact 下为 4px，regular 下为 6px。Popover（12px 圆角、12px 内边距）、Card（12px、18px）、Dialog 正文与时间轴的说明块差值不大于 2px，内层保留原圆角。新的嵌套组合先在公共层补令牌或 `calc()`，业务 CSS 不另写圆角。
+
+### 5.5 换行
+
+标题使用 `text-wrap: balance`，各行长度接近；正文段落使用 `text-wrap: pretty`，避免末行只剩一两个字或一个词，这在中文讲义中尤其常见。规则在 `packages/design/src/typography.css`，经 `design.css` 进入工作台、网页与幻灯片：
+
+- 平衡：`h1`–`h6`、`.pm-ui-heading`、`.pm-ui-card__title`、`.pm-ui-dialog__title`、`.pm-ui-drawer__title`、`.pm-ui-empty__title`、`.pm-layout__title`，以及编辑器中 BlockNote 的标题块。
+- 优化末行：`p`、`li`、`dd`、`blockquote`、`figcaption`、`caption`、`.pm-ui-empty`、`.pm-ui-notice`、`.pm-ui-tooltip`、`.pm-ui-caption__line`、`.pm-ui-menu__description`，以及编辑器中的段落、引用与列表块。
+- 保持浏览器默认：`pre`、`code`、`kbd`、`samp`、表格单元格（数值列不重排）、`input`、`textarea`、`select` 与按钮。
+
+规则用 `:where()` 写成零特异度，组件自身的换行设定仍然优先。不支持 `text-wrap` 的浏览器按原样换行，不影响内容。
+
+### 5.6 完整状态：交互、加载、空与错误
+
+每个可交互的公共控件都有悬停、按下、`:focus-visible` 与禁用四态（第 5.1 节）。按下的平面控件使用 `--pm-color-pressed`，比悬停的 `--pm-color-hover` 深一级；菜单项悬停为 `sunk`，按下为 `pressed`。Segmented 选项、Tab、菜单项、时间轴片段与虚线卡片按钮已补齐按下态，虚线卡片按钮补齐禁用态。
+
+加载时已知内容形状的，使用 `PmSkeleton`（`pm-ui-skeleton`）画出将要出现的标题、段落、列表行或画面，不用转圈：`shape="document"` 用于打开文稿的纸面，`shape="list"` 用于页面列表，`shape="preview"` 用于内容块预览准备中。占位条的明暗脉动只改 `opacity`，减少动态效果时停止；名称通过 `role="status"` 的隐藏文字读出。转圈 `loading` 只留给按钮等不知道结果形状的动作。
+
+空面板显示简短的引导文字（`PmEmpty`），说明这里会出现什么、怎样产生第一项，不留空白。错误就地显示在出错的字段或区域（`PmNotice`、字段错误），说明什么失败、接下来怎么做，并给出重试等动作；不使用 `window.alert`、`window.confirm` 或 `prompt`，确认使用 `PmDialog`。
+
+### 5.7 系统消息
+
+- 成功消息说明具体发生了什么，例如“字幕时间已保存到当前步骤。”“片段已应用到当前步骤”，不单写“成功”“完成”。
+- 错误消息说明什么失败、输入是否保留、下一步做什么，例如“参数没有应用，输入仍保留。请重试。”
+- 不用感叹号，不用“哎呀”“太棒了”“Oops”一类语气词与表情。
+- 英文消息用句子大小写（只有首词与专有名词大写）。仿照 Word 的命令名称（如 “Version History”、“Navigation Pane”）是标签，不属于系统消息。
+- 状态标签（排队中、正在生成、生成失败）可以简短，具体原因在旁边的错误消息中给出。
+
+zh-CN 与 en 两份文本同时修改，含义一致。
+
+### 5.8 动效
+
+只动画 `transform`（含 `translate`、`rotate`、`scale`）与 `opacity`：位移和尺寸变化用 `transform`，出现和消失用 `opacity`。不动画 `top`、`left`、`width`、`height`、`margin`、`padding`、边框宽度、字号或 `all`，它们会让布局逐帧重排。状态切换中的颜色过渡（背景、边框、文字颜色）只重绘、不重排，可以保留。
+
+每个过渡都从时长令牌取时间：`--pm-duration-fast`、`--pm-duration`、`--pm-duration-slow` 在 `prefers-reduced-motion: reduce` 下为 0，过渡随之停止。循环动画（`--pm-duration-spin` 的转圈、`--pm-duration-pulse` 的圆点与加载占位、引导光圈）在同一查询中设为 `animation: none`。`scripts/check-tokens.mjs` 在受管样式中报告原始时长，以及过渡或 `@keyframes` 中的布局属性。
 
 ## 6. 素材、字体与图标入库
 
@@ -269,7 +316,7 @@ Web 面向非技术作者，组件名称、令牌名和映射说明只属于设�
 5. 真实查看浅色／深色与桌面／768 px 以下四种组合，并检查键盘、触屏、长文字和错误状态。
 6. 运行本次涉及的轻量结构检查，记录实际通过和未验证范围，再更新组件与素材登记。
 
-已有 `scripts/check-tokens.mjs` 检查受管 CSS 中的原始颜色、px 和时长；它不检查所有 rem、任意业务覆盖、组件内数字、缺少错误语义或实际视觉质量。不能把 `tokens ok` 当作完整设计验收。触及公共图标和组件分层时运行相关 `check-layering.mjs`，改指令、流程或技能时运行 `check-skills.mjs`；公开包变更按发布规则检查。日常不新增或运行测试套件，遵循根目录 `AGENTS.md`。
+已有 `scripts/check-tokens.mjs` 检查受管 CSS 中的原始颜色、px 和时长，以及过渡与 `@keyframes` 中的布局属性（第 5.8 节）；它不检查所有 rem、任意业务覆盖、组件内数字、缺少错误语义或实际视觉质量。不能把 `tokens ok` 当作完整设计验收。触及公共图标和组件分层时运行相关 `check-layering.mjs`，改指令、流程或技能时运行 `check-skills.mjs`；公开包变更按发布规则检查。日常不新增或运行测试套件，遵循根目录 `AGENTS.md`。
 
 遗留样式按触及范围迁移：先把缺少的语义值与状态收进公共层，再替换本次改动涉及页面的重复控件样式。不能在旧 CSS 上继续叠加新覆盖，也不能一次性重置无关页面。对尚未迁移部分登记来源、影响范围与替换条件，明确不属于正式验收完成项。
 
@@ -285,5 +332,7 @@ Web 面向非技术作者，组件名称、令牌名和映射说明只属于设�
 | Checkbox／Switch | 在实际使用前补齐适用状态与可访问关系，不在业务页手写控件 |
 | 新插画、品牌或其他公共素材 | 按第 6 节登记来源、许可、文件和消费位置 |
 | Figma 其余功能屏幕与领域组件 | 使用核心组件组合，补齐独立交互状态与映射后再实施 |
+| Figma 的 Skeleton、按下态与嵌套圆角 | 代码已按第 5.4–5.6 节实现；Figma 组件区补 `Presmium/Skeleton` 三种形状、各控件 pressed 变体，菜单项与 Segmented 选项绑定嵌套圆角变量，再登记 `figma-nodes.json` |
+| 其余已知形状的加载 | 版本历史、导出记录、音色目录与视频制作预览仍用文字或转圈；按第 5.6 节逐个换成 `PmSkeleton` |
 
 每次迁移仍须提交公共层变更、Figma 映射和实际验证范围。结构检查只确认受管规则，视觉验收按第 8 节执行。

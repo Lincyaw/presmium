@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { PmButton, PmNotice, PmSelect } from '../components.tsx'
+import { PmButton, PmNotice, PmSelect, PmSkeleton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { DocumentEditor } from '../document-editor/DocumentEditor.tsx'
 import { DOCUMENT_EDITOR_MESSAGES } from '../document-editor/messages.ts'
@@ -171,7 +171,9 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore }: {
       {error && <PmNotice tone="danger"><span>{error}</span><span className="pmw-notice__actions"><PmButton small onClick={() => void workbench.retryDocument()}>{t.retry}</PmButton>{source?.dirty && <PmButton small onClick={() => void workbench.discardDocument()}>{t.narrationDiscard}</PmButton>}</span></PmNotice>}
     </div>}
     {source?.issues.length ? <div className="pmw-source-document__diagnostics"><PmNotice tone="warn"><details><summary>{messages.diagnostics(source.issues.length)}</summary><ul>{source.issues.map((issue, index) => <li key={`${issue.path}:${index}`}><code>{issue.path}</code> {issue.message}</li>)}</ul></details></PmNotice></div> : null}
-    {!source?.content || !source.identity ? <p className="pmw-muted">{source?.loading ? messages.loading : messages.unavailable}</p> : <div className="pmw-source-document__sheet">
+    {!source?.content || !source.identity ? source?.loading
+      ? <div className="pmw-source-document__sheet pmw-source-document__sheet--loading"><PmSkeleton label={messages.loading} /></div>
+      : <PmNotice tone="warn"><span>{messages.unavailable}</span><span className="pmw-notice__actions"><PmButton small onClick={() => void workbench.retryDocument()}>{t.retry}</PmButton></span></PmNotice> : <div className="pmw-source-document__sheet">
       <DocumentEditor acknowledged={sourceAcknowledged()} getDocumentAcknowledged={sourceAcknowledged} onCommentDraftRestore={onCommentDraftRestore} commentDrafts={workbench.documentCommentDrafts(source.identity)} identity={source.identity} document={source.content} version={source.version} member={source.member} getDocument={() => workbench.getDocument(source.identity)}
         getDocumentVersion={() => { const current = workbench.getState().authoring; return current && current.identity === source.identity && current.reset === source.reset ? current.version : undefined }} reset={source.reset} locale={locale} readOnly={readOnly}
         uploadImage={(file, signal) => workbench.importDocumentImage(file, source.identity!, signal)}

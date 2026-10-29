@@ -6,6 +6,8 @@ Write ordinary document content in typed text blocks. Use paragraphs, headings, 
 
 Keep the document readable without playback. Content blocks and narration are separate domain objects: changing a visible paragraph does not implicitly synthesize audio. When they should share wording, make the intended update explicitly and inspect affected narration/voice scope.
 
+Let the page and slide wrap the text. Headings are balanced across their lines and paragraphs avoid ending on one or two characters, in the editor, on the site and on slides alike, at every screen width. Do not add manual line breaks, spaces or shortened words to fix a lone last character; a hard break that suits one width breaks another.
+
 Put one teaching state in each step. State visibility and component state IDs must come from the document and definition contracts. For a reveal, bind explicit rich-text item IDs; do not infer identity from array positions. Narration order follows each step's `narrationIds`.
 
 After an edit, inspect the complete document, including the final page. Then check the relevant preview: labels and code must be visible, steps reversible, and errors readable. Compile failures do not discard valid document edits. See [Document format](document.md) for the authority and [Publishing](publishing.md) for outputs.

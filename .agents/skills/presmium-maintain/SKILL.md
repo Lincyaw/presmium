@@ -130,6 +130,16 @@ the slides are both pages of Presmium's own prebuilt viewer (`docs/architecture.
   states, whether by descendant selector, business class or inline style. Migrate legacy styles in the
   touched scope instead of adding another override. A UI change is done only after it was seen in light
   and dark, on desktop and below 768 px; a wireframe or a passing token check is not visual acceptance.
+- **Design rules.** `docs/design-system.md` 5.4–5.8 holds five norms; follow them in shared controls first:
+  nested radius (inner = outer − gap when the gap is under 2rem and the result over 2px; tokens
+  `--pm-radius-control-inset`, `--pm-radius-menu-item` in `tokens.css`), line wrapping (headings balance,
+  paragraphs pretty; rules in `packages/design/src/typography.css`), complete states (hover, pressed with
+  `--pm-color-pressed`, focus-visible, disabled; `PmSkeleton` for loading of a known shape, `PmEmpty` with a
+  guiding line for empty panels, inline errors, never `window.alert`/`confirm`), message style (specific
+  success and error text with a next step, no exclamation marks, English sentence case, zh-CN and en together)
+  and motion (transform and opacity only, durations from tokens, loops off under reduced motion).
+  `scripts/check-tokens.mjs` reports raw values and transitions or `@keyframes` of layout properties in its
+  scope; the other rules are checked by looking.
 - **Resources and fallbacks.** New components have an understandable static fallback; Workers, timers and
   subscriptions are released when their lifetime ends. Behavior that only recovers after a reload is not
   done.

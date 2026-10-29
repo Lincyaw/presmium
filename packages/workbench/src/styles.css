@@ -935,6 +935,8 @@
 .pmw-source-document__recovery-actions { display: flex; flex-wrap: wrap; gap: var(--pm-space-2); }
 .pmw-source-document__diagnostics { margin-block-end: var(--pm-space-3); }
 .pmw-source-document__sheet { max-width: var(--pm-sheet-width); min-height: 100%; margin-inline: auto; padding-block: var(--pm-space-4); background: var(--pm-color-surface); box-shadow: var(--pm-shadow-page); }
+/* Opening: the page's own margins, so that the placeholder lines sit where the text will. */
+.pmw-source-document__sheet--loading { box-sizing: border-box; padding: var(--pm-space-10) var(--pm-space-12); }
 .pmw-voice__filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--pm-space-3); }
 .pmw-voice__summary, .pmw-voice__status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pm-space-2); min-width: 0; overflow-wrap: anywhere; }
 .pmw-voice__status { justify-content: space-between; }
