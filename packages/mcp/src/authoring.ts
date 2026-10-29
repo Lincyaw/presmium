@@ -1,7 +1,9 @@
 import { AUTHORING_API_VERSION, DOCUMENT_OUTLINE_QUERY_SCHEMA, DOCUMENT_PART_QUERY_SCHEMA, DOCUMENT_READ_MAX_REQUEST_CHARS, DOCUMENT_READ_MAX_RESPONSE_CHARS, DOCUMENT_PAGE_CHANGE_SCHEMA, DOCUMENT_PAGE_CHANGE_APPLY_SCHEMA, DOCUMENT_PAGE_DUPLICATION_APPLY_SCHEMA, DOCUMENT_PAGE_DUPLICATION_SCHEMA, DOCUMENT_SCHEMA_VERSION } from '@lincyaw/kernel'
+import { deckLocale } from '@lincyaw/kernel'
 import { DOCUMENT_CHANGE_JSON_SCHEMA } from '@lincyaw/kernel/node'
 import type { DocumentAuthoring, DocumentChange, DocumentOutlineQuery, DocumentPartQuery, DocumentPageChangePlan, DocumentPageChangeReference, DocumentPageChangeRequest, DocumentPageDuplicationPlan, DocumentPageDuplicationReference, DocumentPageDuplicationRequest } from '@lincyaw/kernel'
 import type { Call, ToolSpec } from './mcp.ts'
+import { documentChangeSummary, MCP_MESSAGES } from './messages.ts'
 
 function service(call: Call): DocumentAuthoring {
   if (!call.host.authoring) throw Object.assign(new Error('authoring-host-unavailable'), { status: 503 })
@@ -114,7 +116,7 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
       const document = await call.document(), own = service(call), capability = own.capabilities(document, call.caller.member)
       if (!capability.actions.applyPageChange) throw Object.assign(new Error(capability.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: capability.applyUnavailableReason ? 409 : 403 })
       const summary = (await call.host.documents()).find(item => item.dir === document)
-      await call.approve('operate', messages => messages.applyPagePlan, { lang: summary?.lang ?? '', detail: JSON.stringify({ document, request: call.args.request }), check: () => own.checkPageChange(document, call.args.request as DocumentPageChangeReference, call.caller.member) })
+      await call.approve('operate', messages => messages.applyPagePlan, { lang: summary?.lang ?? '', check: () => own.checkPageChange(document, call.args.request as DocumentPageChangeReference, call.caller.member) })
       call.signal.throwIfAborted()
       return own.applyPageChange(document, call.args.request as DocumentPageChangeReference, call.caller.member)
     }),
@@ -133,7 +135,7 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
       const document = await call.document(), own = service(call), capability = own.capabilities(document, call.caller.member)
       if (!capability.actions.applyPageDuplication) throw Object.assign(new Error(capability.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: capability.applyUnavailableReason ? 409 : 403 })
       const current = await own.read(document, call.caller.member)
-      await call.approve('operate', messages => messages.duplicatePage, { lang: current.content.metadata.lang ?? '', detail: JSON.stringify({ document, request: call.args.request }), check: () => own.checkPageDuplication(document, call.args.request as DocumentPageDuplicationReference, call.caller.member) })
+      await call.approve('operate', messages => messages.duplicatePage, { lang: current.content.metadata.lang ?? '', check: () => own.checkPageDuplication(document, call.args.request as DocumentPageDuplicationReference, call.caller.member) })
       call.signal.throwIfAborted()
       return own.applyPageDuplication(document, call.args.request as DocumentPageDuplicationReference, call.caller.member)
     },
@@ -147,7 +149,7 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
       const capability = own.capabilities(document, call.caller.member)
       if (!capability.actions.apply) throw Object.assign(new Error(capability.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: capability.applyUnavailableReason ? 409 : 403 })
       const current = await own.read(document, call.caller.member)
-      await call.approve('operate', messages => messages.applyDocumentChange, { lang: current.content.metadata.lang ?? '', detail: JSON.stringify({ document, planId: call.args.planId, change: call.args.change }), check: () => own.checkApply(document, { change: call.args.change as DocumentChange, planId: String(call.args.planId) }, call.caller.member) })
+      await call.approve('operate', messages => messages.applyDocumentChange, { lang: current.content.metadata.lang ?? '', detail: documentChangeSummary(MCP_MESSAGES[deckLocale(current.content.metadata.lang)], call.args.change as DocumentChange, current.content), check: () => own.checkApply(document, { change: call.args.change as DocumentChange, planId: String(call.args.planId) }, call.caller.member) })
       call.signal.throwIfAborted()
       return own.apply(document, { change: call.args.change as DocumentChange, planId: String(call.args.planId) }, call.caller.member)
     },

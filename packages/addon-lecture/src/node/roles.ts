@@ -1,12 +1,12 @@
 import type { RoleSpec } from '@lincyaw/kernel'
-import { LECTURE_ID, parseCue } from '../domain/index.ts'
+import { cueProblem, LECTURE_ID, parseCue } from '../domain/index.ts'
 
 export const cueRole: RoleSpec = {
   name: 'cue',
   options: { to: 'string', lines: 'string', sel: 'string' },
   children(input, ctx) {
     const parsed = parseCue(input.value)
-    if ('problem' in parsed) ctx.report({ checkId: LECTURE_ID, severity: 'warning', message: `{cue}\`${input.value}\`: ${parsed.problem}` })
+    if ('problem' in parsed) ctx.report({ checkId: LECTURE_ID, severity: 'warning', message: cueProblem(input.value, parsed.problem, ctx.lang) })
     return []
   },
 }

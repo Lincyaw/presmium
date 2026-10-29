@@ -4,6 +4,7 @@ import type { AnchorResolver, AnchorString } from './anchors.ts'
 import type { Check, CheckContext } from './checks.ts'
 import type { EnvironmentProvider, EnvironmentSpec, Executor } from './execution.ts'
 import type { NodeServiceContext, ServerContext, ServerContribution } from './server.ts'
+import type { Locale } from './locale.ts'
 import type { ServiceToken } from './service.ts'
 
 export const KERNEL_VERSION = '1.0.0'
@@ -17,6 +18,8 @@ export interface ServiceRequirement {
 
 export interface PluginManifest {
   id: string
+  /** The name readers and authors see (the startup report), in both interface languages; the id is never shown. */
+  name?: Record<Locale, string>
   version: string
   kernel: string
   provides?: ServiceToken<unknown>[]
@@ -68,6 +71,7 @@ export type PluginStatus = 'started' | 'degraded' | 'disabled' | 'failed'
 
 export interface PluginReport {
   id: string
+  name?: Record<Locale, string>
   status: PluginStatus
   reason?: string
   missing?: string[]

@@ -4,7 +4,7 @@ export const MEDIA_MESSAGES = {
   'zh-CN': {
     title: '音频片段', import: '导入音频', retryImport: '重试导入', asset: '音频素材', chooseAsset: '选择音频素材', clip: '当前步骤片段', newClip: '新片段',
     in: '入点', out: '出点', timeFormat: 'mm:ss.mmm', offset: '步骤内延后（秒）', volume: '音量', mute: '静音', unmute: '取消静音',
-    add: '采用到本步', apply: '应用', restore: '使用完整音频', remove: '移除片段', check: '核对当前版本', retry: '重新加载',
+    add: '采用到本步', apply: '应用', restore: '使用完整音频', remove: '删除片段', check: '核对当前版本', retry: '重新加载',
     loading: '正在加载音频…', pending: '尚未采用', saved: '片段已应用到当前步骤', imported: '音频已导入',
     original: (duration: string, used?: string) => `原始 00:00.000 – ${duration}${used ? ` · 使用 ${used}` : ''}`,
     clipLabel: (index: number, name: string) => `片段 ${index + 1} · ${name}`,
@@ -21,7 +21,7 @@ export const MEDIA_MESSAGES = {
   en: {
     title: 'Audio Clip', import: 'Import Audio', retryImport: 'Retry Import', asset: 'Audio asset', chooseAsset: 'Choose Audio', clip: 'Clips in this step', newClip: 'New Clip',
     in: 'In', out: 'Out', timeFormat: 'mm:ss.mmm', offset: 'Step offset (seconds)', volume: 'Volume', mute: 'Mute', unmute: 'Unmute',
-    add: 'Add to Step', apply: 'Apply', restore: 'Use Full Audio', remove: 'Remove Clip', check: 'Review Current Version', retry: 'Reload',
+    add: 'Add to Step', apply: 'Apply', restore: 'Use Full Audio', remove: 'Delete Clip', check: 'Review Current Version', retry: 'Reload',
     loading: 'Loading audio…', pending: 'Not applied', saved: 'Clip applied to this step', imported: 'Audio imported',
     original: (duration: string, used?: string) => `Original 00:00.000 – ${duration}${used ? ` · Used ${used}` : ''}`,
     clipLabel: (index: number, name: string) => `Clip ${index + 1} · ${name}`,

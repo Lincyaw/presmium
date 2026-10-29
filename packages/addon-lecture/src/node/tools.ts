@@ -1,7 +1,7 @@
 import { isAbsolute, relative, resolve } from 'node:path'
 import { deckLocale, defineService, DOCUMENT_FILES, SPEECH } from '@lincyaw/kernel'
 import type { AgentTool, AgentToolContext, IRDocument, SourceRange, SpeechService } from '@lincyaw/kernel'
-import { LECTURES_DIR, LECTURE_MESSAGES, narrationDraft, narrationSource, SCRIPT_TRACK, trackDuration, translationItems } from '../domain/index.ts'
+import { LECTURES_DIR, LECTURE_MESSAGES, LECTURE_TOOL_ERRORS, narrationDraft, narrationSource, SCRIPT_TRACK, trackDuration, translationItems } from '../domain/index.ts'
 import type { LecturePlan, LectureTrack } from '../domain/index.ts'
 import { latestView } from './latest-ir.ts'
 import { deckPlan } from './plan.ts'
@@ -21,15 +21,15 @@ export const LECTURE_DECK = defineService<LectureDeck>('presmium.lecture.deck')
 
 function deckOf(ctx: AgentToolContext): { deckDir: string, doc: IRDocument, files: DeckFiles } {
   const deck = ctx.service(LECTURE_DECK)
-  if (!deck) throw new Error('this document does not use the lecture plugin')
+  if (!deck) throw new Error('lecture-plugin-missing')
   const doc = latestView(deck.deckDir)
-  if (!doc) throw new Error('the document has not compiled yet')
+  if (!doc) throw new Error('document-not-ready')
   return { deckDir: deck.deckDir, doc, files: deckFiles(deck.workspaceRoot, () => ctx.service(DOCUMENT_FILES)) }
 }
 
 function speechOf(ctx: AgentToolContext): SpeechService {
   const speech = ctx.service(SPEECH)
-  if (!speech) throw new Error('no speech service: the deck needs @lincyaw/addon-speech')
+  if (!speech) throw new Error('speech-unavailable')
   return speech
 }
 
@@ -111,14 +111,14 @@ export const trackTranscribe: AgentTool = {
   kind: 'spend',
   async run(input, ctx) {
     const { deckDir, doc, files } = deckOf(ctx)
-    if (typeof input.track !== 'string' || !input.track) throw new Error('track: the lecture id is required')
+    if (typeof input.track !== 'string' || !input.track) throw new Error('track-required')
     const { track, bound, provider } = await transcribeLecture(files, deckDir, input.track, speechOf(ctx), doc, ctx.signal)
     return { track: track.id, provider, utterances: track.utterances.map(u => ({ id: u.id, section: u.section, t: u.t, text: u.text })), bound }
   },
 }
 
 function storedTrack(deckDir: string, input: Record<string, unknown>): LectureTrack {
-  if (typeof input.track !== 'string' || !input.track) throw new Error('track: the lecture id is required')
+  if (typeof input.track !== 'string' || !input.track) throw new Error('track-required')
   const track = trackDir(deckDir, input.track) ? readTrack(deckDir, input.track)?.track : undefined
   if (!track) throw new Error(`no lecture ${input.track} (lectures/${input.track}/${TRACK_FILE})`)
   return track
@@ -161,10 +161,10 @@ export const trackTranslations: AgentTool = {
   async run(input, ctx) {
     const { deckDir } = deckOf(ctx)
     const track = storedTrack(deckDir, input)
-    if (typeof input.lang !== 'string' || !input.lang) throw new Error('lang: the language to translate into is required')
+    if (typeof input.lang !== 'string' || !input.lang) throw new Error('lang-required')
     return { track: track.id, file: `${LECTURES_DIR}/${track.id}/${TRACK_FILE}`, lang: track.lang, into: input.lang, utterances: translationItems(track, input.lang) }
   },
 }
 
 // Generation uses shared host start_voiceover tasks; the existing export CLI is unchanged.
-export const lectureTools: AgentTool[] = [lecturePreview, trackTranscribe, trackNarration, trackTranslations]
+export const lectureTools: AgentTool[] = [lecturePreview, trackTranscribe, trackNarration, trackTranslations].map(tool => ({ ...tool, errors: LECTURE_TOOL_ERRORS }))

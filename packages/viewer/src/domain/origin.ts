@@ -19,8 +19,8 @@ const zh = {
 export type OriginMessages = typeof zh
 
 const en: OriginMessages = {
-  workingTree: 'Current code',
-  status: { moved: 'Moved', fuzzy: 'Unconfirmed', lost: 'Lost' },
+  workingTree: 'Current Code',
+  status: { moved: 'Moved', fuzzy: 'Unverified', lost: 'Lost' },
   statusTitle: {
     moved: 'The referenced code moved in its file; this is the code where it is now.',
     fuzzy: 'The referenced code changed and the place found is uncertain; run presmium check to see it.',

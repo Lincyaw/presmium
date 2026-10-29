@@ -1,3 +1,4 @@
+export { systemLocale } from '@lincyaw/kernel/node'
 import { DOCUMENT_ENTRY } from '@lincyaw/kernel'
 import type { Locale } from '@lincyaw/kernel'
 
@@ -100,7 +101,7 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
     badPort: (option, value) => `${option} 需要 0 到 65535 之间的端口号，而不是“${value}”。`,
     unmountFailed: error => `presmium: 无法关闭上一次加载的服务端扩展：${error}`,
     compiled: (sections, summary) => `已更新 ${sections} 个页面；${summary}`,
-    token: file => ` （访问凭据在 ${file} 中）`,
+    token: file => ` （访问令牌在 ${file} 中）`,
     watching: ir => `正在监视修改；运行快照在 ${ir}`,
     serveOpen: (address, port) => `presmium serve: 正在 ${address} 上监听，局域网中的设备可以访问，且没有登录：任何能访问端口 ${port} 的人都以你的身份使用这个工作区（编辑、运行代码、允许操作）。请只在可信的网络中使用；不加 --host 时只在本机监听。`,
     newMissing: 'presmium new: 没有安装 create-presmium。它随 presmium 一起安装，请运行 pnpm add -g @lincyaw/presmium。',
@@ -136,7 +137,7 @@ Commands:
           --out <dir>     working directory (default: <deck>/.presmium/dev)
           --server-port <n>  port of the Presmium server (default: a free port)
           --allow <kinds>    approvals given without asking: operate, spend, write, agent
-  ir      print the IR as JSON
+  ir      print the runtime snapshot as JSON
           --out <file>    write it to a file instead
   check   check the deck and run the plugins’ checks
           --json          print the result as JSON
@@ -180,7 +181,7 @@ Exit Codes: 0 no errors, 1 error findings, 2 usage or internal error.`,
     unmountFailed: error => `presmium: couldn’t close the previous server contributions: ${error}`,
     compiled: (sections, summary) => `compiled ${sections} sections; ${summary}`,
     token: file => ` (its token is in ${file})`,
-    watching: ir => `watching; IR in ${ir}`,
+    watching: ir => `watching; runtime snapshot in ${ir}`,
     serveOpen: (address, port) => `presmium serve: listening on ${address}, on the local network, with no login: anyone who reaches port ${port} uses this workspace as you (edits, runs code, approves). Use it on a network you trust; without --host it listens on this machine only.`,
     newMissing: 'presmium new: create-presmium is not installed. It comes with the presmium package: run pnpm add -g @lincyaw/presmium.',
     studioMissing: 'presmium studio: Presmium Studio is not installed here (experimental, about 865 MB). Run pnpm add -g @lincyaw/studio, then presmium-studio; or run pnpm add -D @lincyaw/studio in this project.',
@@ -195,8 +196,3 @@ Exit Codes: 0 no errors, 1 error findings, 2 usage or internal error.`,
   },
 }
 
-/** The language of command-line output: the system's (`LC_ALL`, `LC_MESSAGES`, `LANG`), as `create-presmium` chooses it. */
-export function systemLocale(env: NodeJS.ProcessEnv = process.env): Locale {
-  const tag = env.LC_ALL || env.LC_MESSAGES || env.LANG || Intl.DateTimeFormat().resolvedOptions().locale
-  return /^zh/i.test(tag) ? 'zh-CN' : 'en'
-}

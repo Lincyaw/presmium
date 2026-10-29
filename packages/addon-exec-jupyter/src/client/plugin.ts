@@ -11,6 +11,7 @@ let unregister: Unsubscribe[] = []
 export const execJupyterPlugin: PluginDefinition = {
   manifest: {
     id: EXEC_JUPYTER_ID,
+    name: { 'zh-CN': 'Jupyter 运行环境', en: 'Jupyter Environment' },
     version,
     kernel: '^1.0.0',
     provides: [JUPYTER_TERMINALS],

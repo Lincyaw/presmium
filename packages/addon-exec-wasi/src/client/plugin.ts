@@ -11,6 +11,7 @@ let executors: WasiExecutors | undefined
 export const execWasiPlugin: PluginDefinition = {
   manifest: {
     id: EXEC_WASI_ID,
+    name: { 'zh-CN': 'WebAssembly 运行', en: 'WebAssembly Runner' },
     version,
     kernel: '^1.0.0',
     requires: [{ token: EXECUTOR, optional: true }],

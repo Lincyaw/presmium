@@ -24,7 +24,7 @@ export const AUTHORING_CLIENT_TOOLS: ToolSpec[] = [
       const document = await call.document(), request = call.args.request
       if (!validateAuthoringClientRequest(request)) throw Object.assign(new Error('client-request-invalid'), { status: 400 })
       const lang = (await call.host.documents()).find(item => item.dir === document)?.lang ?? 'zh-CN'
-      await call.approve('operate', messages => messages.authoringClientAction(request.action.type), { lang, detail: JSON.stringify({ document, request }) })
+      await call.approve('operate', messages => messages.authoringClientAction(request.action.type), { lang })
       call.signal.throwIfAborted()
       return service(call).request(document, request, call.caller.member)
     }) },

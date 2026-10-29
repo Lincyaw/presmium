@@ -18,7 +18,7 @@ export const AUDIO_AUTHORING_TOOLS: ToolSpec[] = [
       const selected = await call.document(), request = call.args.request as DocumentRecordingAdoption, authoring = call.host.authoring?.capabilities(selected, call.caller.member)
       if (authoring && !authoring.actions.apply) throw Object.assign(new Error(authoring.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: authoring.applyUnavailableReason ? 409 : 403 })
       const target = (await call.host.documents()).find(document => document.dir === selected)
-      await call.approve('operate', messages => messages.adoptRecording(request.stepId), { lang: target?.lang ?? '', detail: `${target?.title ?? selected}\n${request.stepId}\n${request.assetId}`, check: () => service(call).checkRecordingAdoption(selected, request, call.caller.member, call.signal) })
+      await call.approve('operate', messages => messages.adoptRecording(request.stepId), { lang: target?.lang ?? '', detail: target?.title ?? selected, check: () => service(call).checkRecordingAdoption(selected, request, call.caller.member, call.signal) })
       call.signal.throwIfAborted()
       return service(call).adoptRecording(selected, request, call.caller.member, call.signal)
     },
@@ -70,7 +70,7 @@ export const AUDIO_AUTHORING_TOOLS: ToolSpec[] = [
       const current = await call.host.authoring?.read(selected, call.caller.member)
       const action = 'removeClipId' in request ? 'remove' : current?.content.production.mediaClips.some(clip => clip.id === clipId) ? 'update' : 'add'
       const target = (await call.host.documents()).find(document => document.dir === selected)
-      await call.approve('operate', messages => messages.changeMediaClip(action, clipId), { lang: target?.lang ?? '', detail: `${target?.title ?? selected}\n${clipId}${'clip' in request ? `\n${request.clip.attachment.stepId}` : ''}`, check: () => service(call).checkClipChange(selected, request, call.caller.member, call.signal) })
+      await call.approve('operate', messages => messages.changeMediaClip(action, clipId), { lang: target?.lang ?? '', detail: target?.title ?? selected, check: () => service(call).checkClipChange(selected, request, call.caller.member, call.signal) })
       call.signal.throwIfAborted()
       return service(call).changeClip(selected, request, call.caller.member, call.signal)
     },

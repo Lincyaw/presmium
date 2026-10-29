@@ -84,7 +84,7 @@ export const PRODUCTION_MESSAGES: Record<Locale, typeof zh> = {
     restoreHint: 'The selected level uses its parent’s setting; overrides kept below it stay. Clearing the document default leaves no default voice.',
     catalogFailed: 'Couldn’t load the list of voices. Try again.', cached: 'The current script can use existing cached voiceover.',
     sourceReady: 'Confirm the saved version and step before listening or generating voiceover.',
-    currentScript: 'Listen to This Step’s Script', selectedVoice: 'Selected voice', unknownSource: 'Disconnected service',
+    currentScript: 'Play This Step’s Script', selectedVoice: 'Selected voice', unknownSource: 'Disconnected service',
     playbackHint: 'Editing is organized by steps. Durations and caption times come from the lecture’s actual timeline.',
     timeline: 'Timeline', play: 'Play', pause: 'Pause', rate: 'Playback speed', planLoading: 'Loading the timeline…',
     enable: 'Turn On Video Production', enableHint: 'Video production is not turned on for this document. Turn it on to use the timeline and export the lecture; content and scripts are kept. Voiceover still needs a chosen source and must be generated.',
