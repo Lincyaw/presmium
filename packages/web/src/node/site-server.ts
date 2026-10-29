@@ -454,6 +454,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
       ...form === 'slides' ? { form } : {},
       ir: `${base}${PREFIX}ir?${query}`,
       events: `${base}${PREFIX}events?${query}&app=${current!.manifest.key}`,
+      ...base !== '/' ? { server: base } : {},
       ...bundle ? { bundle: `${base}${PREFIX}d/${segment(dir)}/${bundle.key}/${BUNDLE_ENTRY}` } : {},
       ...form === 'web' ? { search: `${base}${PREFIX}search?${query}` } : {},
       ...page ? { page: page.path } : {},

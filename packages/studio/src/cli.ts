@@ -28,10 +28,10 @@ function portOf(value: string | undefined): number | undefined {
 }
 
 export async function main(argv: string[], options: MainOptions = {}): Promise<number> {
-  let values: { port?: string, host?: string, 'public-url'?: string, 'preview-url'?: string, help?: boolean }
+  let values: { port?: string, host?: string, 'public-url'?: string, 'preview-url'?: string, 'preview-port'?: string, help?: boolean }
   let dir: string
   try {
-    const parsed = parseArgs({ args: argv, allowPositionals: true, options: { port: { type: 'string' }, host: { type: 'string' }, 'public-url': { type: 'string' }, 'preview-url': { type: 'string' }, help: { type: 'boolean', short: 'h' } } })
+    const parsed = parseArgs({ args: argv, allowPositionals: true, options: { port: { type: 'string' }, host: { type: 'string' }, 'public-url': { type: 'string' }, 'preview-url': { type: 'string' }, 'preview-port': { type: 'string' }, help: { type: 'boolean', short: 'h' } } })
     values = parsed.values
     const [given = '.', ...extra] = parsed.positionals
     if (extra.length > 0) throw new Error(t.unexpectedArgument(extra[0]!))
@@ -40,6 +40,7 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
     portOf(values.port)
     urlOf('--public-url', values['public-url'])
     urlOf('--preview-url', values['preview-url'])
+    portOf(values['preview-port'])
   } catch (error) {
     process.stderr.write(`presmium studio: ${error instanceof Error ? error.message : String(error)}\n\n${t.usage}\n`)
     return 2
@@ -54,7 +55,7 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
 
   let studio
   try {
-    studio = await startStudio({ dir, port: portOf(values.port), onServiceOutput: text => process.stderr.write(text), ...values.host ? { listenAddress: values.host } : {}, ...values['public-url'] ? { publicUrl: urlOf('--public-url', values['public-url']) } : {}, ...values['preview-url'] ? { previewUrl: urlOf('--preview-url', values['preview-url']) } : {}, ...options.presmium ? { presmium: options.presmium } : {} })
+    studio = await startStudio({ dir, port: portOf(values.port), onServiceOutput: text => process.stderr.write(text), ...values.host ? { listenAddress: values.host } : {}, ...values['public-url'] ? { publicUrl: urlOf('--public-url', values['public-url']) } : {}, ...values['preview-url'] ? { previewUrl: urlOf('--preview-url', values['preview-url']) } : {}, ...values['preview-port'] ? { previewPort: portOf(values['preview-port']) } : {}, ...options.presmium ? { presmium: options.presmium } : {} })
   } catch (error) {
     process.stderr.write(`presmium studio: ${error instanceof Error ? error.message : String(error)}\n`)
     return 2

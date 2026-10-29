@@ -131,7 +131,7 @@ async function bootDocument(): Promise<void> {
     }
   }
   let viewersReady: Promise<unknown> = Promise.resolve()
-  const lifecycle = createRuntimeLifecycle({ modules: { plugins, viewers, restartable }, doc, viewer: viewer!, shared, original, active, ...!config.block && config.events ? { server: { document: config.document, subscribeEvents: preview?.events } } : {}, refresh, onViewers: (ready) => {
+  const lifecycle = createRuntimeLifecycle({ modules: { plugins, viewers, restartable }, doc, viewer: viewer!, shared, original, active, ...!config.block && config.events ? { server: { document: config.document, root: config.server, subscribeEvents: preview?.events } } : {}, refresh, onViewers: (ready) => {
     viewersReady = ready
   } })
   let stopOperations: (() => void) | undefined

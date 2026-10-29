@@ -29,8 +29,10 @@ const TELL_MS = 250
 
 export interface JobsOptions {
   stateDir: string
-  /** The service's address, which the job's files are below. */
+  /** The service's origin as browsers use it. */
   url(): string
+  /** The path of the jobs' files on that origin (default `/__outputs/`; below the base when a proxy fronts the service). */
+  outputsPath?: string
   compilation(document: string, fresh?: boolean): Promise<Compilation>
   revision(compilation: Compilation): string
   /** The workbench's origins, whose pages may read the files (a video's captions). */
@@ -125,6 +127,7 @@ function mainFile(target: string, files: JobFile[]): string | undefined {
 }
 
 export function createJobs(options: JobsOptions): Jobs {
+  const outputs = options.outputsPath ?? OUTPUTS_PATH
   const root = join(options.stateDir, 'outputs')
   // The jobs, oldest first, without their address (`present` adds it: the service's port changes between sessions).
   const jobs = new Map<string, CompileJob>()
@@ -134,7 +137,7 @@ export function createJobs(options: JobsOptions): Jobs {
   let server: ReturnType<typeof serveDirectory> | undefined
   let closed = false
 
-  const present = (job: CompileJob): CompileJob => ({ ...job, url: `${options.url()}${OUTPUTS_PATH}${job.id}/`, log: [...job.log], files: [...job.files] })
+  const present = (job: CompileJob): CompileJob => ({ ...job, url: `${options.url()}${outputs}${job.id}/`, log: [...job.log], files: [...job.files] })
 
   // The jobs of earlier sessions whose files are still there.
   mkdirSync(root, { recursive: true })
@@ -194,7 +197,7 @@ export function createJobs(options: JobsOptions): Jobs {
     }
     if (job.kind === 'render') {
       progress(job.target)
-      const report = await build(compilation, { outDir: dir, to: [job.target], base: `${OUTPUTS_PATH}${job.id}/${job.target}/`, log })
+      const report = await build(compilation, { outDir: dir, to: [job.target], base: `${outputs}${job.id}/${job.target}/`, log })
       if (controller.signal.aborted) throw new Cancelled()
       job.warnings = report.findings.filter(finding => finding.severity === 'warning').map(finding => finding.message)
       if (!report.outputs.some(output => output.renderer === job.target)) {
@@ -268,7 +271,8 @@ export function createJobs(options: JobsOptions): Jobs {
     confirmed()
     const inputs = await inputVersions([...compilation.inputs.files, ...translations.translations.flatMap(translation => translation.files)].filter(file => !compilation.sourceFiles.includes(file)))
     confirmed()
-    const inputFingerprint = fnv1a64(JSON.stringify([...inputs].sort(([a], [b]) => a.localeCompare(b))))
+    // A site is built for the path its files are served at: one made below another base is not reused.
+    const inputFingerprint = fnv1a64(JSON.stringify([outputs, ...[...inputs].sort(([a], [b]) => a.localeCompare(b))]))
     // The same target of the same revision, made or being made: not again.
     const same = [...jobs.values()].reverse().find(job => job.document === document && job.target === target && job.revision === revision && sameSource(job.source, source) && job.inputFingerprint === inputFingerprint && ['queued', 'running', 'done'].includes(job.state))
     return { compilation, source, revision, known, inputs, inputFingerprint, same }
@@ -344,7 +348,7 @@ export function createJobs(options: JobsOptions): Jobs {
       return () => listeners.delete(listener)
     },
     async origin() {
-      server ??= serveDirectory(root, { base: OUTPUTS_PATH, origins: options.origins })
+      server ??= serveDirectory(root, { base: outputs, origins: options.origins })
       return (await server).url
     },
     async close() {

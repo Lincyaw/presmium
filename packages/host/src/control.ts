@@ -3,7 +3,7 @@ import type { ApprovalRequest, ServiceToken, Unsubscribe } from '@lincyaw/kernel
 import { createStore } from './store.ts'
 import type { Store } from './store.ts'
 import type { Navigation, NavigationPosition, ServerClient, StatusRegistry, ViewRole } from './contracts.ts'
-import { clientDocument, clientEventSubscription, documentHeader, SERVER_PATH } from './server.ts'
+import { clientDocument, clientEventSubscription, documentHeader, pluginRoutePath } from './server.ts'
 
 export interface PendingApproval {
   id: string
@@ -38,7 +38,8 @@ export function connectControl(client: ServerClient, host: {
   const { navigation, status } = host
   const document = clientDocument(client)
   const id = Math.random().toString(36).slice(2, 12)
-  const post = (body: Record<string, unknown>) => fetch(`${SERVER_PATH}/control`, {
+  const control = `${pluginRoutePath(client, 'presmium.server')}control`
+  const post = (body: Record<string, unknown>) => fetch(control, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Presmium-Document': documentHeader(document) },
     body: JSON.stringify({ window: id, ...body }),
@@ -49,7 +50,7 @@ export function connectControl(client: ServerClient, host: {
     pending.set(pending.getSnapshot().filter(p => p.id !== approval))
   }
   const subscribe = clientEventSubscription(client)
-  const source = subscribe ? undefined : new EventSource(`${SERVER_PATH}/control?window=${id}&document=${documentHeader(document)}`)
+  const source = subscribe ? undefined : new EventSource(`${control}?window=${id}&document=${documentHeader(document)}`)
   const handlers = new Map<string, (data: string) => void>()
   const on = <T>(event: string, handle: (data: T) => void) => {
     const receive = (data: string) => {

@@ -1,4 +1,4 @@
-import { currentLocale, NAVIGATION, siteBase, SYNC_TRANSPORTS, TOOLBAR, serverClient } from '@lincyaw/host'
+import { currentLocale, NAVIGATION, pluginRoutePath, siteBase, SYNC_TRANSPORTS, TOOLBAR, serverClient } from '@lincyaw/host'
 import { CLASSROOM_STORE, isRecord, PRESENTER_PANELS, SESSION } from '@lincyaw/kernel'
 import type { PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
 import { version } from '../../package.json'
@@ -29,7 +29,10 @@ async function fetchLocalServer(): Promise<{ server: string, params: Record<stri
   const response = await client.fetch(SESSION_ID, 'classroom').catch(() => undefined)
   const answer: unknown = response?.ok ? await response.json().catch(() => undefined) : undefined
   if (!isRecord(answer) || typeof answer.path !== 'string' || typeof answer.document !== 'string') return undefined
-  return localServer(answer as unknown as LocalClassroom, location)
+  // The server names its route from its own root; the page reaches it below the root it was served at.
+  const own = `/__presmium/${SESSION_ID}/`
+  const path = answer.path.startsWith(own) ? `${pluginRoutePath(client, SESSION_ID)}${answer.path.slice(own.length)}` : answer.path
+  return localServer({ ...answer, path } as unknown as LocalClassroom, location)
 }
 
 export const sessionPlugin: PluginDefinition = {

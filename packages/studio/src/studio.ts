@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { closeSync, copyFileSync, existsSync, mkdirSync, openSync, readdirSync, realpathSync, renameSync, statSync, writeSync } from 'node:fs'
+import { closeSync, copyFileSync, existsSync, mkdirSync, openSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeFileSync, writeSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { createServer, isIP } from 'node:net'
 import type { AddressInfo } from 'node:net'
@@ -28,6 +28,8 @@ export interface StudioOptions {
    */
   publicUrl?: string
   previewUrl?: string
+  /** The workspace service's port (default: a free one), for a proxy that needs it in advance. */
+  previewPort?: number
   env?: NodeJS.ProcessEnv
   presmium?: string
   /** Live workspace-service output; the complete host output is also kept in `Studio.log`. */
@@ -40,6 +42,8 @@ export interface Studio {
   root: string
   home: string
   log: string
+  /** `<home>/<profile>.json`: `url` (with its launch token), `workspace`, `workspaceServerUrl`, `pid`; 0600, removed on close. */
+  state: string
   ended: Promise<string>
   close(): Promise<void>
 }
@@ -167,10 +171,11 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
       presmium: options.presmium ?? presmiumBin(),
       dir: resolve(options.dir),
       serviceToken,
+      ...options.previewPort ? { port: options.previewPort } : {},
       args: [
         ...listenAddress ? ['--host', listenAddress] : [],
         ...origins.flatMap(origin => ['--preview-origin', origin]),
-        ...options.previewUrl ? ['--public-url', new URL(options.previewUrl).origin] : [],
+        ...options.previewUrl ? ['--public-url', options.previewUrl] : [],
       ],
       env,
       onOutput: text => { log.write('serve', text); options.onServiceOutput?.(text) },
@@ -197,6 +202,9 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
     started.push(dsh)
     const address = (await dsh.ready(WEB_READY))[1]!
     dsh.stopBuffering()
+    // The address with its launch token, for a host that opens Studio for the user (0600, removed on close).
+    const state = join(home, `${profile}.json`)
+    writeFileSync(state, `${JSON.stringify({ url: address, workspace: root, workspaceServerUrl: url, pid: process.pid }, null, 2)}\n`, { mode: 0o600 })
 
     let closing: Promise<void> | undefined
     const ended = Promise.race([
@@ -210,8 +218,9 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
       home,
       log: log.file,
       ended,
+      state,
       close() {
-        closing ??= stopAll().finally(() => log.close())
+        closing ??= stopAll().finally(() => { rmSync(state, { force: true }); log.close() })
         return closing
       },
     }

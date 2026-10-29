@@ -139,7 +139,7 @@ function parseCommand(argv: string[]): Command | 'help' {
   const notOrigin = previewOrigins.find(origin => !isOrigin(origin))
   if (notOrigin !== undefined) throw new Error(t.badPreviewOrigin(notOrigin))
   const publicUrl = values['public-url']
-  if (publicUrl !== undefined && !isOrigin(publicUrl)) throw new Error(t.badPublicUrl(publicUrl))
+  if (publicUrl !== undefined && !isPublicUrl(publicUrl)) throw new Error(t.badPublicUrl(publicUrl))
   return {
     name: name as Name,
     entry,
@@ -158,6 +158,16 @@ function parseCommand(argv: string[]): Command | 'help' {
     listenAddress: values.host,
     previewOrigins,
     ...publicUrl ? { publicUrl } : {},
+  }
+}
+
+/** An http(s) address, optionally with the path a proxy forwards; no credentials, query or fragment. */
+function isPublicUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return /^https?:$/.test(url.protocol) && !url.username && !url.password && !url.search && !url.hash
+  } catch {
+    return false
   }
 }
 
