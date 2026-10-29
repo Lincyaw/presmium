@@ -13,6 +13,7 @@ import { createRichProjection, nativeRichTextToProduct, productRichTextToNative 
 import { commentEditorSchema } from './schema.tsx'
 import type { DocumentEditorBlock } from './schema.tsx'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
+import { commentFloatingMiddleware } from './popover.tsx'
 
 export const COMMENT_EDITOR_CONTEXT = createContext<{ store: DocumentThreadStore, locale: Locale, sidebar: boolean, getPositionToken?(): string | undefined, onDraftRestore?(): void } | undefined>(undefined)
 const THREAD_CONTEXT = createContext<string | undefined>(undefined)
@@ -33,41 +34,52 @@ export function DocumentFloatingThreadController() {
   const editor = useBlockNoteEditor(), { selectedThreadId } = useExtensionState(CommentsExtension)
   const empty = useEditorState({ editor, on: 'selection', selector: ({ editor }) => editor.prosemirrorState.selection.empty })
   const [selecting, setSelecting] = useState(false)
+  const blocked = selecting || !empty
+  const shown = useRef(false)
+  shown.current = Boolean(selectedThreadId) && !blocked
   useEffect(() => {
-    const view = editor.prosemirrorView, body = view.dom, document = body.ownerDocument
+    // The view is read at event time: the one present when this effect runs can be replaced when the editor mounts.
+    const view = () => editor.prosemirrorView
     let pressed = false
     const down = (event: PointerEvent) => {
-      if (event.button !== 0 || event.isPrimary === false || !view.editable || view.composing
-        || !(event.target instanceof Element) || event.target.closest('[contenteditable="false"]')) return
+      const current = view()
+      if (event.button !== 0 || event.isPrimary === false || !current?.editable || current.composing
+        || !(event.target instanceof Element) || !current.dom.contains(event.target) || event.target.closest('[contenteditable="false"]')) return
       pressed = true
-      setSelecting(true)
+      // A card already on screen stays through a plain click; a card the press would open waits for the click.
+      if (!shown.current) setSelecting(true)
+    }
+    const move = (event: PointerEvent) => {
+      // Only the native collapse flag gates a popover; ranges and content stay editor-owned.
+      if (pressed && event.buttons & 1 && document.getSelection()?.isCollapsed === false) setSelecting(true)
     }
     const click = () => {
       if (!pressed) return
       pressed = false
-      // Only the native collapse flag gates a popover; ranges and content stay editor-owned.
       // PM may still report the previous caret at the end of a fast pointer selection.
       setSelecting(document.getSelection()?.isCollapsed === false)
     }
-    const key = () => { pressed = false; setSelecting(false) }
+    const key = (event: KeyboardEvent) => { if (event.target instanceof Node && view()?.dom.contains(event.target)) { pressed = false; setSelecting(false) } }
     const cancel = () => { if (pressed) { pressed = false; setSelecting(true) } }
-    body.addEventListener('pointerdown', down, true)
-    body.addEventListener('keydown', key, true)
+    document.addEventListener('pointerdown', down, true)
+    document.addEventListener('pointermove', move, true)
+    document.addEventListener('keydown', key, true)
     document.addEventListener('click', click)
     document.addEventListener('pointercancel', cancel, true)
-    document.defaultView?.addEventListener('blur', cancel)
+    window.addEventListener('blur', cancel)
     return () => {
       pressed = false
-      body.removeEventListener('pointerdown', down, true)
-      body.removeEventListener('keydown', key, true)
+      document.removeEventListener('pointerdown', down, true)
+      document.removeEventListener('pointermove', move, true)
+      document.removeEventListener('keydown', key, true)
       document.removeEventListener('click', click)
       document.removeEventListener('pointercancel', cancel, true)
-      document.defaultView?.removeEventListener('blur', cancel)
+      window.removeEventListener('blur', cancel)
     }
   }, [editor])
-  const blocked = selecting || !empty
+  const middleware = useMemo(commentFloatingMiddleware, [])
   return <FloatingThreadController floatingThread={DocumentCommentThread} floatingUIOptions={{
-    useFloatingOptions: { open: Boolean(selectedThreadId) && !blocked },
+    useFloatingOptions: { open: Boolean(selectedThreadId) && !blocked, middleware },
     elementProps: { className: blocked ? 'pm-ui-comment-hidden' : undefined },
   }} />
 }
