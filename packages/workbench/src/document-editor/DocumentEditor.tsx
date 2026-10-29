@@ -123,7 +123,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
       reportPosition()
     } catch (error) { current.current.onError?.(error instanceof Error ? error : new Error(String(error))) }
   }
-  return <BlockNoteSurface identity={props.identity} reset={props.reset} initialContent={projection.content} locale={props.locale} readOnly={props.readOnly}
+  return <BlockNoteSurface identity={props.identity} reset={props.reset} initialContent={projection.content} locale={props.locale} contentLang={props.document.metadata.lang || 'zh-CN'} readOnly={props.readOnly}
     resolveAssetURL={props.resolveAssetURL} uploadImage={props.uploadImage}
     comments={comments} commentsPortal={props.commentsPortal} onCommentDraftRestore={() => current.current.onCommentDraftRestore?.()} nodeViews={props.nodeViews} onComposition={props.onComposition} onSelection={props.onSelection} onSectionLink={sectionId => {
       if (!current.current.onSectionLink?.(sectionId)) return false
