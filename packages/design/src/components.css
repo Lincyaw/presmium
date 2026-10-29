@@ -1433,8 +1433,15 @@
   line-height: var(--pm-leading-ui);
 }
 
+/* The native actions float over the end of the author line; the line keeps room for them instead of a blank row above. */
 .pm-ui-block-editor .pm-ui-comment-actions-row {
-  padding-block-start: calc(var(--pm-size-tool) + var(--pm-space-2));
+  --pm-ui-comment-action: var(--pm-size-tool);
+}
+
+.pm-ui-block-editor .pm-ui-comment-actions-row > .mantine-Group-root:has(> .mantine-Avatar-root) {
+  box-sizing: border-box;
+  min-height: calc(var(--pm-ui-comment-action) + var(--pm-space-2));
+  padding-inline-end: calc(var(--pm-ui-comment-action) * 3 + var(--pm-space-3));
 }
 
 .pm-ui-block-editor .bn-threads-sidebar {
@@ -1524,7 +1531,7 @@
     min-height: var(--pm-control-hit-area);
   }
   .pm-ui-block-editor .pm-ui-comment-actions-row {
-    padding-block-start: calc(var(--pm-control-hit-area) + var(--pm-space-2));
+    --pm-ui-comment-action: var(--pm-control-hit-area);
   }
   .pm-ui-block-editor .bn-comment-editor .bn-editor {
     font-size: var(--pm-text-lg);

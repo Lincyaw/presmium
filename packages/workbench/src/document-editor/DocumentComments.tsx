@@ -13,7 +13,7 @@ import { createRichProjection, nativeRichTextToProduct, productRichTextToNative 
 import { commentEditorSchema } from './schema.tsx'
 import type { DocumentEditorBlock } from './schema.tsx'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
-import { commentFloatingMiddleware } from './popover.tsx'
+import { commentFloating } from './popover.tsx'
 
 export const COMMENT_EDITOR_CONTEXT = createContext<{ store: DocumentThreadStore, locale: Locale, sidebar: boolean, getPositionToken?(): string | undefined, onDraftRestore?(): void } | undefined>(undefined)
 const THREAD_CONTEXT = createContext<string | undefined>(undefined)
@@ -35,14 +35,20 @@ export function DocumentFloatingThreadController() {
   const empty = useEditorState({ editor, on: 'selection', selector: ({ editor }) => editor.prosemirrorState.selection.empty })
   const [selecting, setSelecting] = useState(false)
   const blocked = selecting || !empty
-  const shown = useRef(false)
+  const shown = useRef(false), thread = useRef(selectedThreadId)
   shown.current = Boolean(selectedThreadId) && !blocked
+  thread.current = selectedThreadId
+  // The pointer that last pressed commented text, and the line of the thread chosen from it (the first line without one).
+  const point = useRef<{ x: number, y: number }>(), line = useRef<{ thread: string, index: number }>()
   useEffect(() => {
     // The view is read at event time: the one present when this effect runs can be replaced when the editor mounts.
     const view = () => editor.prosemirrorView
     let pressed = false
     const down = (event: PointerEvent) => {
       const current = view()
+      if (event.target instanceof Element && current?.dom.contains(event.target) && event.target.closest('[data-bn-thread-id]')) {
+        point.current = { x: event.clientX, y: event.clientY }; line.current = undefined
+      }
       if (event.button !== 0 || event.isPrimary === false || !current?.editable || current.composing
         || !(event.target instanceof Element) || !current.dom.contains(event.target) || event.target.closest('[contenteditable="false"]')) return
       pressed = true
@@ -59,7 +65,11 @@ export function DocumentFloatingThreadController() {
       // PM may still report the previous caret at the end of a fast pointer selection.
       setSelecting(document.getSelection()?.isCollapsed === false)
     }
-    const key = (event: KeyboardEvent) => { if (event.target instanceof Node && view()?.dom.contains(event.target)) { pressed = false; setSelecting(false) } }
+    const key = (event: KeyboardEvent) => {
+      if (!(event.target instanceof Node) || !view()?.dom.contains(event.target)) return
+      pressed = false; setSelecting(false)
+      point.current = undefined; line.current = undefined
+    }
     const cancel = () => { if (pressed) { pressed = false; setSelecting(true) } }
     document.addEventListener('pointerdown', down, true)
     document.addEventListener('pointermove', move, true)
@@ -77,9 +87,20 @@ export function DocumentFloatingThreadController() {
       window.removeEventListener('blur', cancel)
     }
   }, [editor])
-  const middleware = useMemo(commentFloatingMiddleware, [])
+  const floating = useMemo(() => commentFloating(() => {
+    const id = thread.current, body = editor.prosemirrorView?.dom
+    if (!id || !body) return
+    const rects = [...body.querySelectorAll(`[data-bn-thread-id="${CSS.escape(id)}"]:not([data-orphan="true"])`)]
+      .flatMap(mark => [...mark.getClientRects()]).filter(rect => rect.width > 0 && rect.height > 0)
+    if (!rects.length) return
+    if (line.current?.thread !== id) {
+      const at = point.current, distance = (rect: DOMRect) => at ? Math.hypot(Math.max(rect.left - at.x, 0, at.x - rect.right), Math.max(rect.top - at.y, 0, at.y - rect.bottom)) : 0
+      line.current = { thread: id, index: rects.reduce((best, rect, index) => distance(rect) < distance(rects[best]!) ? index : best, 0) }
+    }
+    return rects[Math.min(line.current.index, rects.length - 1)]
+  }), [editor])
   return <FloatingThreadController floatingThread={DocumentCommentThread} floatingUIOptions={{
-    useFloatingOptions: { open: Boolean(selectedThreadId) && !blocked, middleware },
+    useFloatingOptions: { ...floating, open: Boolean(selectedThreadId) && !blocked },
     elementProps: { className: blocked ? 'pm-ui-comment-hidden' : undefined },
   }} />
 }
