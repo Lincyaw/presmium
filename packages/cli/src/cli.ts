@@ -5,7 +5,7 @@ import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { createJiti } from 'jiti'
-import { APPROVAL_KINDS, DOCUMENT_ENTRY, errorMessage } from '@lincyaw/kernel'
+import { APPROVAL_KINDS, errorMessage } from '@lincyaw/kernel'
 import { bracketIPv6, irRevision, lanAddresses } from '@lincyaw/kernel/node'
 import type { ApprovalKind, Finding, Severity } from '@lincyaw/kernel'
 import { build, Compiler, dev, resolveEntry } from '@lincyaw/compiler'
@@ -17,6 +17,7 @@ import type { WorkspaceBuild } from '@lincyaw/workspace'
 import { runCheck } from './check.ts'
 import type { CheckResult } from './check.ts'
 import { devHost } from './dev-host.ts'
+import { CLI_MESSAGES, systemLocale } from './messages.ts'
 
 const BUNDLED = fileURLToPath(new URL('..', import.meta.url))
 const PRESMIUM_BIN = fileURLToPath(new URL('../bin/presmium.mjs', import.meta.url))
@@ -28,57 +29,7 @@ export interface MainOptions {
   bin?: string
 }
 
-const USAGE = `Usage: presmium <command> [deck] [options]
-
-The deck is a directory holding ${DOCUMENT_ENTRY}, or that JSON entry file (default: .).
-
-Commands:
-  new     a new project in the directory (default: asks), from create-presmium
-          --type <kind>   lecture, workspace or plugin (default: asks)
-          --title <text>  the lecture's or the workspace's title
-          --name <name>   the plugin's package name
-          --no-git        do not run git init
-  build   compile and render; writes <out>/ir.json and <out>/<renderer>/; at a workspace root
-          (presmium.workspace.yaml) builds the workspace site into <out>/web/
-          --to <ids>      renderers to run, comma-separated (default: the deck's renderers)
-          --out <dir>     output directory (default: <deck>/dist)
-          --audience <name>  only the content for this audience (e.g. student); then every file
-                          written is scanned for the sentences of the content left out
-  dev     compile, start the Presmium server and the renderers' dev servers, recompile on save
-          --to <ids>      renderers to run, comma-separated
-          --out <dir>     working directory (default: <deck>/.presmium/dev)
-          --server-port <n>  port of the Presmium server (default: a free port)
-          --allow <kinds>    approvals given without asking: operate, spend, write, agent
-  ir      print the IR as JSON
-          --out <file>    write it to a file instead
-  check   compile and run the plugins' checks
-          --json          print the result as JSON
-          --update-lock   re-resolve anchors and rewrite .presmium/anchors.lock.json
-          --env           also connect to the environments of execute.environments
-          --audience <name>  check the deck as compiled for this audience
-          --external-links   also check the external links, with lychee when it is installed
-  serve   the workspace service for you on this machine (the argument is the workspace root, or
-          a deck): the workspace site, the documents and their history, the reviews, the plugins'
-          routes, the classroom sync; without --host it listens on this machine only
-          --port <n>      port (default: 4310)
-          --host <addr>   address to listen on (default: 127.0.0.1); 0.0.0.0 or an address on the
-                          local network opens it to your other devices there, with no login:
-                          whoever reaches the port works as you
-          --operator-dir <dir>  the operator directory (default: the user's state directory)
-          --preview-origin <origin>  (repeatable) the origin of a workbench whose pages embed the
-                          previews, e.g. http://127.0.0.1:4320; with PRESMIUM_SERVICE_TOKEN set, the
-                          workspace's routes ask for it (Authorization: Bearer)
-  studio  the workbench (experimental): DeepSeek Harness with Presmium's bundle and the workspace
-          service of the directory (the workspace root, or a deck); prints the one address to open.
-          It is the package @lincyaw/studio (with DeepSeek Harness, about 865 MB), installed beside
-          this one
-          --port <n>      the workbench's port (default: 4320, or a free one when that is in use)
-          --host <addr>   listen on this address of the machine on the local network instead of
-                          127.0.0.1, with no login: whoever reaches the port works as you
-
-  -h, --help   show this help
-
-Exit codes: 0 no errors, 1 error findings, 2 usage or internal error.`
+const t = CLI_MESSAGES[systemLocale()]
 
 const OPTIONS = {
   'build': ['to', 'out', 'audience'],
@@ -117,11 +68,11 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
   try {
     command = parseCommand(argv)
   } catch (error) {
-    process.stderr.write(`presmium: ${errorMessage(error)}\n\n${USAGE}\n`)
+    process.stderr.write(`presmium: ${errorMessage(error)}\n\n${t.usage}\n`)
     return 2
   }
   if (command === 'help') {
-    process.stdout.write(`${USAGE}\n`)
+    process.stdout.write(`${t.usage}\n`)
     return 0
   }
   try {
@@ -161,29 +112,29 @@ function parseCommand(argv: string[]): Command | 'help' {
   })
   if (values.help) return 'help'
   const [name, deck = '.', ...extra] = positionals
-  if (!name) throw new Error('missing command')
-  if (!(name in OPTIONS)) throw new Error(`unknown command "${name}"`)
+  if (!name) throw new Error(t.missingCommand)
+  if (!(name in OPTIONS)) throw new Error(t.unknownCommand(name))
   const allowed: readonly string[] = OPTIONS[name as Name]
   const given = Object.entries(values).filter(([key, value]) => key !== 'help' && value !== undefined && value !== false)
   const wrong = given.find(([key]) => !allowed.includes(key))
-  if (wrong) throw new Error(`option --${wrong[0]} does not apply to ${name}`)
-  if (extra.length > 0) throw new Error(`unexpected argument "${extra[0]}"`)
+  if (wrong) throw new Error(t.optionNotFor(wrong[0], name))
+  if (extra.length > 0) throw new Error(t.unexpectedArgument(extra[0]!))
   const workspace = name === 'build' && existsSync(deck) && statSync(deck).isDirectory() && isWorkspaceRoot(resolve(deck)) ? resolve(deck) : undefined
-  if (workspace && values.to) throw new Error('--to does not apply to a workspace: its site is the web form')
-  if (workspace && values.audience !== undefined) throw new Error('--audience does not apply to a workspace yet: build each document for its audience')
+  if (workspace && values.to) throw new Error(t.toNotForWorkspace)
+  if (workspace && values.audience !== undefined) throw new Error(t.audienceNotForWorkspace)
   const audience = values.audience?.trim()
-  if (values.audience !== undefined && !/^[\w.-]+$/.test(audience ?? '')) throw new Error(`--audience takes the name of an audience, e.g. student, not "${values.audience}"`)
+  if (values.audience !== undefined && !/^[\w.-]+$/.test(audience ?? '')) throw new Error(t.badAudience(values.audience))
   const directory = name === 'serve'
   const entry = directory || workspace ? resolve(deck) : resolveEntry(deck)
-  if (!existsSync(entry) || (directory && !statSync(entry).isDirectory())) throw new Error(`${entry} not found`)
+  if (!existsSync(entry) || (directory && !statSync(entry).isDirectory())) throw new Error(t.notFound(entry))
   const to = values.to?.split(',').map(id => id.trim()).filter(Boolean)
-  if (to?.length === 0) throw new Error('--to needs at least one renderer id')
+  if (to?.length === 0) throw new Error(t.emptyTo)
   const allow = values.allow?.split(',').map(kind => kind.trim()).filter(Boolean) ?? []
   const unknown = allow.find(kind => !(APPROVAL_KINDS as readonly string[]).includes(kind))
-  if (unknown) throw new Error(`--allow takes ${APPROVAL_KINDS.join(', ')}, not "${unknown}"`)
+  if (unknown) throw new Error(t.badAllow(APPROVAL_KINDS, unknown))
   const previewOrigins = values['preview-origin'] ?? []
   const notOrigin = previewOrigins.find(origin => !isOrigin(origin))
-  if (notOrigin !== undefined) throw new Error(`--preview-origin takes an origin such as http://127.0.0.1:4320, not "${notOrigin}"`)
+  if (notOrigin !== undefined) throw new Error(t.badPreviewOrigin(notOrigin))
   return {
     name: name as Name,
     entry,
@@ -216,7 +167,7 @@ function isOrigin(value: string): boolean {
 function parsePort(value: string | undefined, option: string): number | undefined {
   if (value === undefined) return undefined
   const n = Number(value)
-  if (!Number.isInteger(n) || n < 0 || n > 65535) throw new Error(`${option} takes a port number, not "${value}"`)
+  if (!Number.isInteger(n) || n < 0 || n > 65535) throw new Error(t.badPort(option, value))
   return n
 }
 
@@ -289,10 +240,10 @@ async function runDevCommand(command: Command, bundled: string): Promise<number>
         server.diagnostics.compiled('', compilation.doc, compilation.workspaceRoot, revision)
         server.diagnostics.replace({ document: '', origin: 'preview' }, findings.filter(finding => finding.checkId === 'presmium.render'), { root: compilation.workspaceRoot, irRevision: revision })
         if (changed) void server.unmount('', { preserveFocus: true }).catch((error: unknown) => {
-          process.stderr.write(`presmium: the previous server contributions did not close: ${errorMessage(error)}\n`)
+          process.stderr.write(`${t.unmountFailed(errorMessage(error))}\n`)
         })
         const lines = findingLines(findings)
-        lines.push(`compiled ${compilation.doc.sections.length} sections; ${summary(findings)}`)
+        lines.push(t.compiled(compilation.doc.sections.length, summary(findings)))
         process.stdout.write(`${lines.join('\n')}\n`)
       },
     })
@@ -301,8 +252,8 @@ async function runDevCommand(command: Command, bundled: string): Promise<number>
     throw error
   }
   for (const { renderer, url } of devServers.servers) process.stdout.write(`${renderer}  ${url}\n`)
-  process.stdout.write(`server  ${server.url}\nmcp  ${server.url}/mcp (its token is in ${relative(process.cwd(), join(deckDir, '.presmium', 'server.json'))})\n`)
-  process.stdout.write(`watching; IR in ${relative(process.cwd(), devServers.ir)}\n`)
+  process.stdout.write(`server  ${server.url}\nmcp  ${server.url}/mcp${t.token(relative(process.cwd(), join(deckDir, '.presmium', 'server.json')))}\n`)
+  process.stdout.write(`${t.watching(relative(process.cwd(), devServers.ir))}\n`)
   await new Promise<void>((done) => {
     process.once('SIGINT', done)
     process.once('SIGTERM', done)
@@ -322,9 +273,9 @@ async function runServeCommand(command: Command, bundled: string): Promise<numbe
     check: compilation => compilation.check(),
     previewOrigins: command.previewOrigins,
   })
-  process.stdout.write(`serve  ${started.url}\n${networkLines(command.listenAddress, started.url)}workspace  ${started.root}\nmcp  ${started.mcp.url} (its token is in ${started.mcp.stateFile})\n`)
+  process.stdout.write(`serve  ${started.url}\n${networkLines(command.listenAddress, started.url)}workspace  ${started.root}\nmcp  ${started.mcp.url}${t.token(started.mcp.stateFile)}\n`)
   if (command.listenAddress && !isLoopback(command.listenAddress)) {
-    process.stderr.write(`presmium serve: listening on ${command.listenAddress}, on the local network, with no login: anyone who reaches port ${new URL(started.url).port} uses this workspace as you (edits, runs code, approves). Use it on a network you trust; without --host it listens on this machine only.\n`)
+    process.stderr.write(`${t.serveOpen(command.listenAddress, new URL(started.url).port)}\n`)
   }
   await new Promise<void>((done) => {
     process.once('SIGINT', done)
@@ -347,7 +298,7 @@ function resolveInstalled(name: string, bundled: string): string | undefined {
 async function runNewCommand(argv: string[], bundled: string): Promise<number> {
   const entry = resolveInstalled('create-presmium', bundled)
   if (!entry) {
-    process.stderr.write('presmium new: create-presmium is not installed; it comes with the presmium package: pnpm add -g @lincyaw/presmium\n')
+    process.stderr.write(`${t.newMissing}\n`)
     return 2
   }
   const { main: createMain } = await createJiti(import.meta.url).import<{ main(argv: string[]): Promise<number> }>(entry)
@@ -357,7 +308,7 @@ async function runNewCommand(argv: string[], bundled: string): Promise<number> {
 async function runStudioCommand(argv: string[], bundled: string, presmiumBin: string): Promise<number> {
   const entry = resolveInstalled('@lincyaw/studio', bundled)
   if (!entry) {
-    process.stderr.write('presmium studio: the workbench is not installed here. It is the package @lincyaw/studio (experimental; with DeepSeek Harness, about 865 MB): pnpm add -g @lincyaw/studio, then run presmium-studio; or pnpm add -D @lincyaw/studio in this project.\n')
+    process.stderr.write(`${t.studioMissing}\n`)
     return 2
   }
   const { main: studioMain } = await createJiti(import.meta.url).import<{ main(argv: string[], options: { presmium: string }): Promise<number> }>(entry)
@@ -383,13 +334,13 @@ function counts(findings: Finding[]): Record<Severity, number> {
 
 function summary(findings: Finding[]): string {
   const n = counts(findings)
-  return findings.length === 0 ? 'no problems' : `${n.error} errors, ${n.warning} warnings, ${n.info} infos`
+  return findings.length === 0 ? t.noProblems : t.counts(n.error, n.warning, n.info)
 }
 
 function findingLines(findings: Finding[], cwd = process.cwd()): string[] {
   return findings.flatMap((f) => {
     const where = f.source ? `${relative(cwd, f.source.file)}${f.source.line ? `:${f.source.line}` : ''}` : ''
-    return [`${where}  ${f.severity}  ${f.message}  (${f.checkId})`, ...f.hint ? [`    hint: ${f.hint}`] : []]
+    return [`${where}  ${t.severity[f.severity]}  ${f.message}  (${f.checkId})`, ...f.hint ? [t.hint(f.hint)] : []]
   })
 }
 
@@ -400,8 +351,7 @@ function checkJson(result: CheckResult) {
 function checkText(result: CheckResult, cwd = process.cwd()): string {
   const out = findingLines(result.findings, cwd)
   if (result.lock) {
-    const state = result.lock.changed ? 'updated' : 'unchanged'
-    out.push(`${relative(cwd, result.lock.file)} ${state} (${result.lock.anchors} anchors)`)
+    out.push(t.lock(relative(cwd, result.lock.file), result.lock.changed, result.lock.anchors))
   }
   out.push(summary(result.findings))
   return `${out.join('\n')}\n`
@@ -410,7 +360,7 @@ function checkText(result: CheckResult, cwd = process.cwd()): string {
 function workspaceText(report: WorkspaceBuild, cwd = process.cwd()): string {
   const out = findingLines(report.findings, cwd)
   for (const { dir, title, runs } of report.documents) {
-    out.push(`document  ${dir || '.'}  ${title}${runs.executed + runs.cached > 0 ? `  (code runs: ${runs.executed} executed, ${runs.cached} from cache)` : ''}`)
+    out.push(`document  ${dir || '.'}  ${title}${runs.executed + runs.cached > 0 ? t.documentRuns(runs.executed, runs.cached) : ''}`)
   }
   out.push(`web  ${relative(cwd, report.outDir)}`)
   out.push(summary(report.findings))
@@ -422,10 +372,10 @@ function buildText(report: BuildReport, runs: RunStats, audience?: string, cwd =
   if (audience) out.push(`audience  ${audience}`)
   out.push(`ir  ${relative(cwd, report.ir)}`)
   for (const { renderer, outDir, skipped } of report.outputs) {
-    out.push(`${renderer}  ${relative(cwd, outDir)}${skipped.length ? `  (${skipped.length} blocks not rendered)` : ''}`)
+    out.push(`${renderer}  ${relative(cwd, outDir)}${skipped.length ? t.notRendered(skipped.length) : ''}`)
     for (const s of skipped) out.push(`    ${s.section}#${s.block}: ${s.reason}`)
   }
-  if (runs.executed + runs.cached > 0) out.push(`code runs: ${runs.executed} executed, ${runs.cached} from cache${runs.sandbox && runs.executed > 0 ? `, isolated by ${runs.sandbox}` : ''}`)
+  if (runs.executed + runs.cached > 0) out.push(t.codeRuns(runs.executed, runs.cached, runs.sandbox && runs.executed > 0 ? runs.sandbox : undefined))
   out.push(summary(report.findings))
   return `${out.join('\n')}\n`
 }

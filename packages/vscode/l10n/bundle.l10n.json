@@ -1,0 +1,8 @@
+{
+  "{0} is not installed. Add it to the workspace, or set presmium.server.path.": "{0} is not installed. Add it to the workspace, or set presmium.server.path.",
+  "Couldn’t start Presmium: {0}": "Couldn’t start Presmium: {0}",
+  "Starting the preview…": "Starting the preview…",
+  "Couldn’t open the preview: {0}": "Couldn’t open the preview: {0}",
+  "Preview {0}": "Preview {0}",
+  "Presmium Preview": "Presmium Preview"
+}

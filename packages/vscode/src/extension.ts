@@ -28,7 +28,7 @@ function serverModule(context: vscode.ExtensionContext): string {
   }
   const bundled = join(context.extensionPath, 'runtime', SERVER_BIN)
   if (existsSync(bundled)) return bundled
-  throw new Error(`${SERVER_PACKAGE} is not installed; add it to the workspace or set presmium.server.path`)
+  throw new Error(vscode.l10n.t('{0} is not installed. Add it to the workspace, or set presmium.server.path.', SERVER_PACKAGE))
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -36,7 +36,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   try {
     server = serverModule(context)
   } catch (error) {
-    void vscode.window.showErrorMessage(`Presmium: ${errorMessage(error)}`)
+    void vscode.window.showErrorMessage(vscode.l10n.t('Couldn’t start Presmium: {0}', errorMessage(error)))
     return
   }
   const runtime = vscode.workspace.getConfiguration('presmium').get<string>('server.runtime') || 'node'
@@ -62,10 +62,10 @@ async function openPreview(client: LanguageClient): Promise<void> {
   if (editor.document.isDirty && !await editor.document.save()) return
   let preview: Preview
   try {
-    preview = await vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: 'Starting presmium dev' }, () =>
+    preview = await vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: vscode.l10n.t('Starting the preview…') }, () =>
       client.sendRequest<Preview>(PREVIEW_REQUEST, { textDocument: { uri: editor.document.uri.toString() } }))
   } catch (error) {
-    void vscode.window.showErrorMessage(`Presmium preview: ${errorMessage(error)}`)
+    void vscode.window.showErrorMessage(vscode.l10n.t('Couldn’t open the preview: {0}', errorMessage(error)))
     return
   }
   const base = (await vscode.env.asExternalUri(vscode.Uri.parse(preview.url))).toString(true).replace(/\/?$/, '/')
@@ -73,7 +73,7 @@ async function openPreview(client: LanguageClient): Promise<void> {
   const urlOf = (section: SectionLocation | null | undefined): string => previewUrl(base, section, shown)
 
   const first = await requestSectionAtCursor(client, editor)
-  const panel = vscode.window.createWebviewPanel('presmium.preview', `Preview ${vscode.workspace.asRelativePath(preview.entry)}`, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, { enableScripts: true, retainContextWhenHidden: true })
+  const panel = vscode.window.createWebviewPanel('presmium.preview', vscode.l10n.t('Preview {0}', vscode.workspace.asRelativePath(preview.entry)), { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, { enableScripts: true, retainContextWhenHidden: true })
   panel.webview.html = previewHtml(urlOf(first), new URL(base).origin)
   shown = first ?? undefined
 
@@ -101,14 +101,14 @@ async function openPreview(client: LanguageClient): Promise<void> {
 function previewHtml(url: string, origin: string): string {
   const nonce = randomBytes(16).toString('base64')
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${escapeHtml(vscode.env.language)}">
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; frame-src ${escapeHtml(origin)}; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
 <style>html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; } iframe { display: block; border: 0; width: 100%; height: 100%; }</style>
 </head>
 <body>
-<iframe id="preview" title="Presmium preview" src="${escapeHtml(url)}"></iframe>
+<iframe id="preview" title="${escapeHtml(vscode.l10n.t('Presmium Preview'))}" src="${escapeHtml(url)}"></iframe>
 <script nonce="${nonce}">
 const frame = document.getElementById('preview')
 window.addEventListener('message', (event) => {

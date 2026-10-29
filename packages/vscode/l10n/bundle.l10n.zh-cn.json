@@ -1,0 +1,8 @@
+{
+  "{0} is not installed. Add it to the workspace, or set presmium.server.path.": "没有安装 {0}。请把它加入工作区，或设置 presmium.server.path。",
+  "Couldn’t start Presmium: {0}": "无法启动 Presmium：{0}",
+  "Starting the preview…": "正在启动预览…",
+  "Couldn’t open the preview: {0}": "无法打开预览：{0}",
+  "Preview {0}": "预览 {0}",
+  "Presmium Preview": "Presmium 预览"
+}
