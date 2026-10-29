@@ -5,7 +5,7 @@ FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab
 # as a JupyterHub single-user server. The toolchain is fixed at image build; the user's files live on /work.
 ENV DEBIAN_FRONTEND=noninteractive PLAYWRIGHT_BROWSERS_PATH=/opt/playwright
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git python3 python3-venv ca-certificates tar \
+ && apt-get install -y --no-install-recommends git python3 python3-venv ca-certificates tar ffmpeg \
  && rm -rf /var/lib/apt/lists/* \
  && corepack enable && corepack prepare pnpm@11.20.0 --activate
 WORKDIR /opt/presmium

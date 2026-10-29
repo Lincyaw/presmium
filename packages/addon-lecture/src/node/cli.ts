@@ -6,18 +6,19 @@ import { errorMessage } from '@lincyaw/kernel'
 import { clockText } from '../domain/index.ts'
 import { exportVideo } from './export.ts'
 
-const USAGE = `Usage: presmium-lecture export [deckDir] [--track <id>] [--out <file.webm>] [--size <width>x<height>] [--fps <n>] [--burn <lang>]
+const USAGE = `Usage: presmium-lecture export [deckDir] [--track <id>] [--out <file.mp4|file.webm>] [--size <width>x<height>] [--fps <n>] [--burn <lang>]
 
 Builds the deck's web form and lectures, plays the lecture in Chromium
-(playwright-chromium) a frame at a time and writes it with its audio as a
-WebM video (VP9 or VP8, Opus), with a WebVTT subtitle track for each language
-of its captions, and the captions next to it (<file>.<lang>.vtt). The
+(playwright-chromium) a frame at a time and writes it with its audio and a
+subtitle track for each language of its captions, and the captions next to it
+(<file>.<lang>.vtt). With FFmpeg (on the path, or PRESMIUM_FFMPEG) the video is
+MP4 (H.264, AAC) or WebM (VP9, Opus) as --out names it; without it the browser
+writes WebM only, at a lower quality, and the export says how to install it. The
 animations follow the lecture's time frame by frame. --track names the
 lecture (default: the synthesized one, else the only recorded one); --out the
-file (default <deckDir>/dist/<track>.webm); --size the window (default
-1280x720); --fps the frames a second (default 30); --burn draws the captions
-in that language on the picture. MP4 is not written: it would need the GPL
-FFmpeg of @mediabunny/server.`
+file (default <deckDir>/dist/<track>.mp4, .webm without FFmpeg); --size the window (default
+1920x1080); --fps the frames a second (default 30); --burn draws the captions
+in that language on the picture.`
 
 function shown(file: string): string {
   const rel = relative(process.cwd(), file)
@@ -52,8 +53,8 @@ export async function main(argv: string[]): Promise<number> {
     console.error(`--size takes <width>x<height> and --fps a number from 1 to 60\n\n${USAGE}`)
     return 2
   }
-  if (values.out && !values.out.toLowerCase().endsWith('.webm')) {
-    console.error(`presmium-lecture export writes WebM (--out <file>.webm): MP4 would need the GPL FFmpeg of @mediabunny/server`)
+  if (values.out && !/\.(mp4|webm)$/i.test(values.out)) {
+    console.error(`presmium-lecture export writes MP4 or WebM (--out <file>.mp4 or <file>.webm)`)
     return 2
   }
   if (!existsSync(deck) || !statSync(deck).isDirectory() || !existsSync(join(deck, DECK_ENTRY))) {
