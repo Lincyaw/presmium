@@ -5,8 +5,8 @@ import { WORKSPACE_CONFIG } from '@lincyaw/compiler'
 import { DOCUMENT_ENTRY, validateDocument } from '@lincyaw/kernel'
 import type { ConflictAnswer, DocumentFileChange, FilesAnswer, Member, Revision, SavedAnswer, SourceAnswer, SourceFile, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
 import { isWithin } from '../domain/paths.ts'
-import { listDocuments } from './config.ts'
-import type { FoundDocument, WorkspaceConfig } from './config.ts'
+import { listDocumentEntries, readDocumentSummary } from './config.ts'
+import type { DocumentEntry, WorkspaceConfig } from './config.ts'
 import { RequestError } from './errors.ts'
 import { lockedError } from './locks.ts'
 import type { DocumentLocks } from './locks.ts'
@@ -76,15 +76,20 @@ export class SourceEditor {
   }
 
   canEdit(scope: Scope, path: string, member: Member): boolean {
+    return this.#canEdit(scope, path, member)
+  }
+
+  #canEdit(scope: Scope, path: string, member: Member, documents?: readonly DocumentEntry[]): boolean {
     if (path === WORKSPACE_CONFIG) return (scope.home || (this.#config.singleDeck && scope.document === '')) && member.roles.includes('owner')
     if (scope.home && member.roles.includes('owner')) return true
     const dir = documentDirOf(this.#config, path)
     if (dir === undefined) return scope.home && member.roles.includes('owner')
-    return scope.home ? listDocuments(this.#config).some(doc => doc.dir === dir) : dir === scope.document
+    return scope.home ? (documents ?? listDocumentEntries(this.#config)).some(doc => doc.dir === dir) : dir === scope.document
   }
 
   files(scope: Scope, member: Member): FilesAnswer {
     const files: SourceFile[] = []
+    const documents = scope.home ? listDocumentEntries(this.#config) : undefined
     let truncated = false
     const walk = (dir: string, owner: string | undefined) => {
       let names: string[]
@@ -100,7 +105,7 @@ export class SourceEditor {
         if (!found || found.isSymbolicLink()) continue
         if (found.isDirectory() && (scope.home || documentDirOf(this.#config, `${path}/x`) === owner)) {
           walk(path, owner)
-        } else if (found.isFile() && this.canEdit(scope, path, member)) {
+        } else if (found.isFile() && this.#canEdit(scope, path, member, documents)) {
           if (files.length >= MAX_FILES) {
             truncated = true
             return
@@ -110,23 +115,32 @@ export class SourceEditor {
       }
     }
     walk(scope.home ? '' : scope.document, scope.home ? undefined : scope.document)
-    const documents = scope.home ? listDocuments(this.#config).map(doc => doc.dir) : undefined
-    return { document: scope.document, home: scope.home, ...documents ? { documents } : {}, files, ...truncated ? { truncated: true as const } : {} }
+    return { document: scope.document, home: scope.home, ...documents ? { documents: documents.map(doc => doc.dir) } : {}, files, ...truncated ? { truncated: true as const } : {} }
   }
 
-  #documentHolding(path: string): FoundDocument | undefined {
-    return listDocuments(this.#config).sort((a, b) => b.dir.length - a.dir.length).find(doc => isWithin(path, doc.dir))
+  #documentHolding(path: string, documents: readonly DocumentEntry[]): DocumentEntry | undefined {
+    let found: DocumentEntry | undefined
+    for (const doc of documents) if (isWithin(path, doc.dir) && (!found || doc.dir.length > found.dir.length)) found = doc
+    return found
   }
 
   /** Checks path and document policy without requiring a file to exist. */
   assertEditable(scope: Scope, path: string, member: Member): void {
+    this.#assertEditable(scope, path, member)
+  }
+
+  #assertEditable(scope: Scope, path: string, member: Member, documents?: readonly DocumentEntry[]): void {
     if (typeof path !== 'string' || !path || path.startsWith('/') || path.includes('\\') || path.includes('\0') || path.split('/').some(part => part === '' || part === '.' || part === '..' || HIDDEN_FROM_EDITOR.has(part))) throw new RequestError(400, 'workspace-path-invalid', { path: String(path).slice(0, 500) })
-    if (!this.canEdit(scope, path, member)) throw new RequestError(403, 'workspace-file-forbidden', { path })
+    if (!this.#canEdit(scope, path, member, documents)) throw new RequestError(403, 'workspace-file-forbidden', { path })
   }
 
   /** A regular file under the same path and document policy as source editing. */
   readableFile(scope: Scope, path: string, member: Member): string {
-    this.assertEditable(scope, path, member)
+    return this.#readableFile(scope, path, member)
+  }
+
+  #readableFile(scope: Scope, path: string, member: Member, documents?: readonly DocumentEntry[]): string {
+    this.#assertEditable(scope, path, member, documents)
     const file = join(this.#config.root, path)
     let real: string
     try {
@@ -138,8 +152,8 @@ export class SourceEditor {
     return file
   }
 
-  #readBytes(scope: Scope, path: string, member: Member): Buffer {
-    const file = this.readableFile(scope, path, member)
+  #readBytes(scope: Scope, path: string, member: Member, documents?: readonly DocumentEntry[]): Buffer {
+    const file = this.#readableFile(scope, path, member, documents)
     const bytes = readFileSync(file)
     if (bytes.byteLength > MAX_SOURCE) throw new RequestError(413, `${path} is larger than the editor opens (${MAX_SOURCE} bytes)`)
     return bytes
@@ -158,10 +172,11 @@ export class SourceEditor {
   }
 
   async create(scope: Scope, path: string, member: Member): Promise<SourceAnswer> {
-    this.assertEditable(scope, path, member)
+    const documents = listDocumentEntries(this.#config)
+    this.#assertEditable(scope, path, member, documents)
     if (path === DOCUMENT_ENTRY || path.endsWith(`/${DOCUMENT_ENTRY}`)) throw new RequestError(422, 'create-a-document-with-valid-content')
     if (BINARY.test(path)) throw new RequestError(415, `${path} is not a text file`)
-    const document = this.#documentHolding(path)?.dir
+    const document = this.#documentHolding(path, documents)?.dir
     const scopeDir = document ?? ''
     const release = this.#locks ? this.#locks.claim(scopeDir, 'editor:create') : () => {}
     if (!release) throw lockedError(scopeDir, this.#locks!.holder(scopeDir)!)
@@ -197,16 +212,17 @@ export class SourceEditor {
   async #transaction(scope: Scope, changes: TransactionFile[], member: Member, history?: SourceTransactionHistory, binaryPath?: string, dryRun = false): Promise<SourceTransactionAnswer> {
     if (changes.length === 0 || changes.length > MAX_SOURCE_CHANGES) throw new RequestError(400, `a source transaction takes 1 to ${MAX_SOURCE_CHANGES} files`)
     const paths = new Set<string>()
+    const known = listDocumentEntries(this.#config)
     let bytes = 0
     const documents = changes.map(change => {
-      this.assertEditable(scope, change.path, member)
+      this.#assertEditable(scope, change.path, member, known)
       if (paths.has(change.path)) throw new RequestError(400, `a source path occurs twice: ${change.path}`)
       paths.add(change.path)
       if (change.path !== binaryPath) {
         if (typeof change.content !== 'string' || BINARY.test(change.path) || change.content.includes('\0')) throw new RequestError(415, `${change.path} is not a text file`)
         bytes += Buffer.byteLength(change.content, 'utf8')
       }
-      return this.#documentHolding(change.path)
+      return this.#documentHolding(change.path, known)
     })
     if (bytes > MAX_SOURCE) throw new RequestError(413, `the transaction is larger than the editor saves (${MAX_SOURCE} bytes)`)
     for (const path of paths) if ([...paths].some(other => path !== other && path.startsWith(`${other}/`))) throw new RequestError(400, `a source file cannot also be a parent directory: ${path}`)
@@ -220,7 +236,7 @@ export class SourceEditor {
       const snapshots = changes.map(change => {
         const written = typeof change.content === 'string' ? Buffer.from(change.content, 'utf8') : Buffer.from(change.content)
         if (change.base !== null) {
-          const before = this.#readBytes(scope, change.path, member)
+          const before = this.#readBytes(scope, change.path, member, known)
           const version = versionOf(before)
           if (version !== change.base) throw new RequestError(409, `${change.path} changed since it was opened`, { conflict: { path: change.path, version, content: before.toString('utf8') } })
           if (BINARY.test(change.path) || before.includes(0)) throw new RequestError(415, `${change.path} is not a text file`)
@@ -242,6 +258,9 @@ export class SourceEditor {
       for (const snapshot of snapshots) if (snapshot.path !== binaryPath) validateDocumentSource(snapshot.path, snapshot.written.toString('utf8'), snapshot.before)
       if (dryRun) return { versions: snapshots.map(snapshot => ({ path: snapshot.path, version: versionOf(snapshot.written) })) }
       const created: string[] = []
+      const edited = snapshots.filter(snapshot => snapshot.before && !snapshot.written.equals(snapshot.before))
+      const touched = snapshots.filter(snapshot => !snapshot.before || !snapshot.written.equals(snapshot.before)).map(snapshot => snapshot.path)
+      const lang = history && touched.length ? readDocumentSummary(this.#config, document).lang : undefined
       const write = (next: DocumentFileChange[]) => this.#writer.write(next)
       try {
         // Exclusive creation prevents replacing a file created outside serve after validation.
@@ -249,10 +268,8 @@ export class SourceEditor {
           await this.#writer.create(snapshot.path, snapshot.written)
           created.push(snapshot.path)
         }
-        const edited = snapshots.filter(snapshot => snapshot.before && !snapshot.written.equals(snapshot.before))
         if (edited.length) await write(edited.map(snapshot => ({ path: snapshot.path, content: snapshot.written, ...snapshot.executable ? { executable: true } : {} })))
-        const touched = snapshots.filter(snapshot => !snapshot.before || !snapshot.written.equals(snapshot.before)).map(snapshot => snapshot.path)
-        const revision = history && touched.length ? await history.commit(touched, document?.lang) : undefined
+        const revision = history && touched.length ? await history.commit(touched, lang) : undefined
         return { versions: snapshots.map(snapshot => ({ path: snapshot.path, version: versionOf(snapshot.written) })), ...revision ? { revision } : {} }
       } catch (error) {
         try {
@@ -278,13 +295,14 @@ export class SourceEditor {
    * is still held; when it fails, the file is put back as it was and the save fails.
    */
   async save(scope: Scope, path: string, content: string, base: string, member: Member, commit?: (path: string, lang: string | undefined) => Promise<Revision | undefined>): Promise<SavedAnswer> {
-    const document = this.#documentHolding(path)
+    const documents = listDocumentEntries(this.#config)
+    const document = this.#documentHolding(path, documents)
     const outside = document === undefined
     const scopeDir = document?.dir ?? ''
     const release = this.#locks ? this.#locks.claim(scopeDir, 'editor:save') : () => {}
     if (!release) throw lockedError(scopeDir, this.#locks!.holder(scopeDir)!)
     try {
-      const bytes = this.#readBytes(scope, path, member)
+      const bytes = this.#readBytes(scope, path, member, documents)
       const now = versionOf(bytes)
       if (now !== base) {
         const conflict: Omit<ConflictAnswer, 'error'> = { conflict: { version: now, content: bytes.toString('utf8') } }
@@ -294,12 +312,13 @@ export class SourceEditor {
       validateDocumentSource(path, content, bytes)
       if (written.byteLength > MAX_SOURCE) throw new RequestError(413, `the text is larger than the editor saves (${MAX_SOURCE} bytes)`)
       const change: DocumentFileChange = { path, content: written, ...(lstatSync(join(this.#config.root, path)).mode & 0o111) !== 0 ? { executable: true } : {} }
+      const lang = commit && !written.equals(bytes) && document ? readDocumentSummary(this.#config, document).lang : undefined
       const write = async (next: DocumentFileChange) => (outside ? writeChanges(this.#config, [next], true) : await this.#writer.write([next]))
       await write(change)
       let revision: Revision | undefined
       if (commit && !written.equals(bytes)) {
         try {
-          revision = await commit(path, document?.lang)
+          revision = await commit(path, lang)
         } catch (error) {
           await write({ ...change, content: bytes })
           throw error

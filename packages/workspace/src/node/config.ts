@@ -98,12 +98,19 @@ function entries(config: WorkspaceConfig): string[] {
   return found
 }
 
-export interface FoundDocument extends DocumentSummary {
+export interface DocumentEntry {
+  dir: string
   entry: string
 }
 
-function documentOf(config: WorkspaceConfig, entry: string): FoundDocument {
-  const dir = entry.split('/').slice(0, -1).join('/')
+export interface FoundDocument extends DocumentSummary, DocumentEntry {}
+
+/** The configured documents that exist on disk, without reading their content. */
+export function listDocumentEntries(config: WorkspaceConfig): DocumentEntry[] {
+  return entries(config).map(entry => ({ dir: entry.split('/').slice(0, -1).join('/'), entry }))
+}
+
+export function readDocumentSummary(config: WorkspaceConfig, { dir, entry }: DocumentEntry): FoundDocument {
   let headmatter: Record<string, unknown> = {}
   try {
     const parsed: unknown = JSON.parse(readFileSync(join(config.root, entry), 'utf8'))
@@ -121,7 +128,7 @@ function documentOf(config: WorkspaceConfig, entry: string): FoundDocument {
 }
 
 export function listDocuments(config: WorkspaceConfig): FoundDocument[] {
-  return entries(config).map(entry => documentOf(config, entry))
+  return listDocumentEntries(config).map(entry => readDocumentSummary(config, entry))
 }
 
 export function documentSummaries(config: WorkspaceConfig): DocumentSummary[] {
