@@ -94,18 +94,18 @@ export function renderNotebook(doc: IRDocument, options: NotebookOptions): Noteb
     unlinked: 0,
   }
   if (doc.meta.title) out.notebook.metadata.title = doc.meta.title
-  const ids = new Set<string>()
+  const cellCounts = new Map<string, number>()
   const executions = { count: 0 }
-  for (const section of doc.sections) renderSection(section, options, out, ids, executions)
+  for (const section of doc.sections) renderSection(section, options, out, cellCounts, executions)
   return out
 }
 
-function renderSection(section: IRSection, options: NotebookOptions, out: NotebookResult, ids: Set<string>, executions: { count: number }): void {
+function renderSection(section: IRSection, options: NotebookOptions, out: NotebookResult, cellCounts: Map<string, number>, executions: { count: number }): void {
   let pending: { parts: string[], blocks: string[] } | undefined
 
   const cell = (type: NotebookCell['cell_type'], source: string | string[], blocks: string[], extra: Partial<NotebookCell> = {}) => {
     out.notebook.cells.push({
-      id: cellId(section, ids),
+      id: cellId(section, cellCounts),
       cell_type: type,
       ...extra,
       metadata: { ...extra.metadata, presmium: { section: section.id, blocks } },
@@ -271,10 +271,9 @@ function lines(text: string): string[] {
   return text ? text.split(/(?<=\n)/) : []
 }
 
-function cellId(section: IRSection, ids: Set<string>): string {
+function cellId(section: IRSection, counts: Map<string, number>): string {
   const base = section.id.replace(/[^\w-]/g, '').slice(0, 48) || `section-${section.index}`
-  let n = 1
-  while (ids.has(`${base}-${n}`)) n++
-  ids.add(`${base}-${n}`)
+  const n = (counts.get(base) ?? 0) + 1
+  counts.set(base, n)
   return `${base}-${n}`
 }
