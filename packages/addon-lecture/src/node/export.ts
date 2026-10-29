@@ -5,14 +5,18 @@ import { dirname, join, resolve } from 'node:path'
 import { build, Compiler, playwrightChromium, serveDirectory } from '@lincyaw/compiler'
 import { ABSOLUTE_URL, aigcLabel, aigcString, deckLocale, errorMessage } from '@lincyaw/kernel'
 import type { CanonicalSource } from '@lincyaw/kernel'
+import { ffmpegInstallCommand, findFfmpeg } from '@lincyaw/kernel/node'
 import { audioSegments, clockText, defaultTrack, LECTURE_MESSAGES, parseTrack, trackDuration } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
+import { ffmpegEncodes, startFfmpeg, videoFormat } from './ffmpeg.ts'
+import type { FfmpegEncoder, VideoFormat } from './ffmpeg.ts'
 
 export interface ExportOptions {
   deckDir: string
   /** Refuse to render if the fresh compilation differs from the requested canonical document. */
   source?: CanonicalSource
   track?: string
+  /** `.mp4` (H.264, AAC; needs FFmpeg) or `.webm`; MP4 when FFmpeg is there, else WebM. */
   out?: string
   width?: number
   height?: number
@@ -71,6 +75,11 @@ function mix(a, b) {
   for (let channel = 0; channel < 2; channel++) { const data = buffer.getChannelData(channel); for (let i = 0; i < data.length; i++) data[i] = Math.max(-1, Math.min(1, data[i])) }
   return buffer
 }
+async function load(list) {
+  const decoded = new Map()
+  for (const a of list) if (!decoded.has(a.url)) decoded.set(a.url, await decode(a.url))
+  clips = list.map(a => ({ start: a.start, end: a.start + a.duration, sourceStartMs: a.sourceStartMs ?? 0, volume: a.volume ?? 1, muted: a.muted ?? false, samples: decoded.get(a.url) }))
+}
 async function audioUntil(ms) {
   while (audio && done < Math.min(ms, total)) {
     const next = Math.min(done + 1000, total)
@@ -88,15 +97,15 @@ window.presmiumEncoder = {
     output = new Output({ format: new WebMOutputFormat(), target: new StreamTarget(writable, { chunked: true, chunkSize: 4 * 1024 * 1024 }) })
     const codec = await getFirstEncodableVideoCodec(['vp9', 'vp8'], { width: options.width, height: options.height })
     if (!codec) throw new Error('this browser encodes neither VP9 nor VP8 video')
-    video = new CanvasSource(canvas, { codec, bitrate: QUALITY_HIGH, keyFrameInterval: 5 })
+    // Slides are text and thin lines: the bitrate is set for that, not for camera footage (QUALITY_HIGH gives 720p VP9 about 0.6 Mbit/s).
+    const bitrate = Math.round(options.width * options.height * fps * 0.12)
+    video = new CanvasSource(canvas, { codec, bitrate, keyFrameInterval: 10, latencyMode: 'quality', contentHint: 'text' })
     output.addVideoTrack(video, { frameRate: fps })
     if (options.audio.length > 0) {
       if (!(await canEncodeAudio('opus'))) throw new Error('this browser encodes no Opus audio')
       audio = new AudioBufferSource({ codec: 'opus', bitrate: QUALITY_HIGH })
       output.addAudioTrack(audio)
-      const decoded = new Map()
-      for (const a of options.audio) if (!decoded.has(a.url)) decoded.set(a.url, await decode(a.url))
-      clips = options.audio.map(a => ({ start: a.start, end: a.start + a.duration, sourceStartMs: a.sourceStartMs ?? 0, volume: a.volume ?? 1, muted: a.muted ?? false, samples: decoded.get(a.url) }))
+      await load(options.audio)
     }
     const subtitles = options.subtitles.map(({ language, name, vtt }) => {
       const source = new TextSubtitleSource('webvtt')
@@ -108,8 +117,8 @@ window.presmiumEncoder = {
     // The muxer interleaves the cues with the frames as they come, so the cues are not awaited here.
     subtitled = subtitles.map(({ source, vtt }) => source.add(vtt))
   },
-  async frame(jpeg, index) {
-    const bitmap = await createImageBitmap(new Blob([bytes(jpeg)], { type: 'image/jpeg' }))
+  async frame(png, index) {
+    const bitmap = await createImageBitmap(new Blob([bytes(png)], { type: 'image/png' }))
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
     bitmap.close()
     await video.add(index / fps, 1 / fps)
@@ -120,13 +129,26 @@ window.presmiumEncoder = {
     await Promise.all(subtitled)
     await output.finalize()
   },
+  /** The whole mix as 16-bit stereo PCM at 48 kHz, written a second at a time (FFmpeg encodes it). */
+  async mixdown(options) {
+    await load(options.audio)
+    let position = 0
+    for (let a = 0; a < options.duration; a += 1000) {
+      const buffer = mix(a, Math.min(a + 1000, options.duration)), left = buffer.getChannelData(0), right = buffer.getChannelData(1)
+      const pcm = new Int16Array(left.length * 2)
+      for (let i = 0; i < left.length; i++) { pcm[2 * i] = left[i] * 32767; pcm[2 * i + 1] = right[i] * 32767 }
+      const data = new Uint8Array(pcm.buffer)
+      await window.presmiumWrite(position, base64(data))
+      position += data.length
+    }
+  },
 }
 window.presmiumEncoderReady = true
 </script>`
 
 interface Hooks {
   presmiumLecture: { duration: number, advance(t: number): Promise<void> }
-  presmiumEncoder: { start(options: unknown): Promise<void>, frame(jpeg: string, index: number): Promise<void>, finish(): Promise<void> }
+  presmiumEncoder: { start(options: unknown): Promise<void>, frame(png: string, index: number): Promise<void>, finish(): Promise<void>, mixdown(options: unknown): Promise<void> }
 }
 
 interface Page {
@@ -134,7 +156,7 @@ interface Page {
   waitForFunction(fn: string, arg?: unknown, options?: { timeout?: number }): Promise<unknown>
   evaluate<R, A>(fn: (arg: A) => R | Promise<R>, arg: A): Promise<R>
   exposeFunction(name: string, fn: (...args: never[]) => unknown): Promise<void>
-  screenshot(options: { type: 'jpeg', quality: number }): Promise<Buffer>
+  screenshot(options: { type: 'png' }): Promise<Buffer>
   on(event: 'console' | 'pageerror', listener: (value: { text?(): string, message?: string }) => void): void
 }
 
@@ -168,10 +190,16 @@ function localAudio(track: LectureTrack, base: string): { url: string, start: nu
   return audioSegments(track).filter(segment => !ABSOLUTE_URL.test(segment.src)).map(({ src, ...segment }) => ({ url: `${base}${src}`, ...segment }))
 }
 
+/** The format of a lecture video whose file is not named: MP4 when FFmpeg can write it, else WebM from the browser. */
+export function defaultVideoFormat(): VideoFormat {
+  const ffmpeg = findFfmpeg()
+  return ffmpeg && ffmpegEncodes(ffmpeg, 'mp4') ? 'mp4' : 'webm'
+}
+
 export async function exportVideo(options: ExportOptions): Promise<ExportResult> {
   const deckDir = resolve(options.deckDir)
   const log = options.log ?? (() => {})
-  const [width, height, fps] = [options.width ?? 1280, options.height ?? 720, options.fps ?? 30]
+  const [width, height, fps] = [options.width ?? 1920, options.height ?? 1080, options.fps ?? 30]
   const work = join(deckDir, '.presmium', 'lecture-export')
   rmSync(work, { recursive: true, force: true })
   try {
@@ -192,8 +220,12 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
     const id = options.track ?? defaultTrack(ids)
     if (!id || !ids.includes(id)) throw new Error(ids.length ? `name the lecture with --track: ${ids.join(', ')}` : LECTURE_MESSAGES[deckLocale(compilation.doc.meta.lang)].production.noPreparedLecture)
     const track = parseTrack(JSON.parse(readFileSync(join(lectures.outDir, id, 'track.json'), 'utf8'))).track!
-    const file = resolve(options.out ?? join(deckDir, 'dist', `${id}.webm`))
+    const file = resolve(options.out ?? join(deckDir, 'dist', `${id}.${defaultVideoFormat()}`))
     mkdirSync(dirname(file), { recursive: true })
+    const format = videoFormat(file), found = findFfmpeg()
+    const ffmpeg = found && ffmpegEncodes(found, format) ? found : undefined
+    if (!ffmpeg && format === 'mp4') throw new Error(`an MP4 video needs FFmpeg with libx264 and aac: install it (${ffmpegInstallCommand()}) or set PRESMIUM_FFMPEG to its file`)
+    if (!ffmpeg) warnings.push(`FFmpeg was not found, so the browser encoded the video as WebM at a lower quality; install it for MP4 at a higher quality: ${ffmpegInstallCommand()}`)
     const captions = captionFiles(join(lectures.outDir, id), index.find(entry => entry.id === id)?.captions ?? [])
     if (options.burn && !captions.some(c => c.lang === options.burn)) throw new Error(`lecture ${id} has no captions in ${options.burn}: ${captions.map(c => c.lang).join(', ') || 'none'}`)
     for (const { lang } of captions) {
@@ -210,7 +242,10 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
     try {
       const browser = await (await playwrightChromium<Chromium>(deckDir, import.meta.url)).launch()
       try {
-        const handle = await open(file, 'w')
+        // With FFmpeg the encoder page only mixes the sound, into this file; without it, it writes the video.
+        const pcm = join(work, 'export-audio.pcm')
+        const handle = await open(ffmpeg ? pcm : file, 'w')
+        let native: FfmpegEncoder | undefined
         try {
           const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1, reducedMotion: 'reduce', serviceWorkers: 'block' })
           const [player, encoder] = [await context.newPage(), await context.newPage()]
@@ -228,37 +263,60 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
           await encoder.waitForFunction('window.presmiumEncoderReady === true', undefined, { timeout: 60_000 })
           const voice = track.voice
           const label = voice.kind === 'synthetic' ? aigcLabel(voice.provider ?? voice.engine, id) : undefined
-          await encoder.evaluate(options => (window as unknown as Hooks).presmiumEncoder.start(options), {
-            width,
-            height,
-            fps,
-            duration: frames * 1000 / fps,
-            audio: localAudio(track, `${server.url}${lectures.base}${encodeURIComponent(id)}/`),
-            subtitles: captions.map(({ lang, vtt }) => ({ language: subtitleLanguage(lang), name: lang, vtt })),
-            metadata: { title: compilation.doc.meta.title, ...label ? { comment: aigcString(label), raw: { AIGC: JSON.stringify(label) } } : {} },
-          })
-          log(`playing lecture ${id}: ${frames} frames at ${fps} fps, ${width}x${height}`)
+          const audio = localAudio(track, `${server.url}${lectures.base}${encodeURIComponent(id)}/`)
+          const title = compilation.doc.meta.title
+          if (ffmpeg) {
+            if (audio.length > 0) await encoder.evaluate(options => (window as unknown as Hooks).presmiumEncoder.mixdown(options), { audio, duration: frames * 1000 / fps })
+            const subtitles = captions.map(({ lang, vtt }) => {
+              const caption = join(work, `export-captions.${lang}.vtt`)
+              writeFileSync(caption, vtt)
+              const language = subtitleLanguage(lang)
+              return { file: caption, name: lang, ...language ? { language } : {} }
+            })
+            native = startFfmpeg(ffmpeg, {
+              out: file,
+              fps,
+              ...audio.length > 0 ? { audio: pcm } : {},
+              subtitles,
+              metadata: { ...title ? { title } : {}, ...label ? { comment: aigcString(label), AIGC: JSON.stringify(label) } : {} },
+            })
+          } else {
+            await encoder.evaluate(options => (window as unknown as Hooks).presmiumEncoder.start(options), {
+              width,
+              height,
+              fps,
+              duration: frames * 1000 / fps,
+              audio,
+              subtitles: captions.map(({ lang, vtt }) => ({ language: subtitleLanguage(lang), name: lang, vtt })),
+              metadata: { title, ...label ? { comment: aigcString(label), raw: { AIGC: JSON.stringify(label) } } : {} },
+            })
+          }
+          log(`playing lecture ${id}: ${frames} frames at ${fps} fps, ${width}x${height}, ${ffmpeg ? `${format.toUpperCase()} by FFmpeg` : 'WebM by the browser'}`)
           for (let i = 0; i < frames; i++) {
             options.signal?.throwIfAborted()
             const at = Math.round(i * 1000 / fps)
             await player.evaluate(t => (window as unknown as Hooks).presmiumLecture.advance(t), at).catch((error: unknown) => {
               throw new Error(`the frame at ${clockText(at)} cannot be drawn: ${errorMessage(error).replace(/^page\.evaluate: (Error: )?/, '')}`)
             })
-            const jpeg = await player.screenshot({ type: 'jpeg', quality: 85 })
-            await encoder.evaluate(([data, n]) => (window as unknown as Hooks).presmiumEncoder.frame(data, n), [jpeg.toString('base64'), i] as [string, number])
+            // PNG: a JPEG frame would blur the text before the encoder sees it.
+            const png = await player.screenshot({ type: 'png' })
+            if (native) await native.frame(png)
+            else await encoder.evaluate(([data, n]) => (window as unknown as Hooks).presmiumEncoder.frame(data, n), [png.toString('base64'), i] as [string, number])
             if (failures.length) throw new Error(failures.join('\n'))
             if ((i + 1) % Math.max(1, Math.round(frames / 10)) === 0) log(`  ${Math.round((i + 1) * 100 / frames)}%`)
             options.progress?.(i + 1, frames)
           }
-          await encoder.evaluate(() => (window as unknown as Hooks).presmiumEncoder.finish(), undefined)
+          if (native) await native.finish()
+          else await encoder.evaluate(() => (window as unknown as Hooks).presmiumEncoder.finish(), undefined)
           // The captions go beside the video once the video is whole.
           const sidecars = captions.map(({ lang, vtt }) => {
-            const sidecar = `${file.replace(/\.webm$/i, '')}.${lang}.vtt`
+            const sidecar = `${file.replace(/\.(webm|mp4)$/i, '')}.${lang}.vtt`
             writeFileSync(sidecar, vtt)
             return { lang, file: sidecar }
           })
           return { file, track: id, frames, duration: frames * 1000 / fps, captions: sidecars, warnings }
         } finally {
+          native?.kill()
           await handle.close()
         }
       } finally {

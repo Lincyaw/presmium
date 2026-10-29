@@ -1694,7 +1694,7 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 | `presmium-classroom-server` | `@lincyaw/classroom-server` | `--port <n>`（默认 1234，`0` 取空闲端口）、`--host <address>`（默认全部网卡）、`--deck <dir>`（归档写到 `<dir>/.presmium/classroom/`） | 课堂服务（y-websocket）；启动后打印服务地址与局域网地址。发布到静态托管的文稿用它（头部的 `presmium.session.server`）；`presmium dev` 与 `presmium serve` 在自己的端口上提供同一协议的课堂同步，不必另起进程（10.2 节） |
 | `presmium-language-server` | `@lincyaw/language-server` | `--stdio`、`--node-ipc`、`--socket=<port>` | 语言服务，VS Code 扩展启动它 |
 | `presmium-mcp [deck]` | `@lincyaw/mcp` | `--allow operate`（不加时不提供操作类工具） | 以 stdio 提供与 `/mcp` 相同的读取类工具，供编辑器中的 agent（Claude Code、Codex、VS Code）使用；没有放映位置与课堂 |
-| `presmium-lecture export [deck]` | `@lincyaw/addon-lecture` | `--track <id>`（默认合成的讲授 `script`，否则唯一的录制讲授）、`--out <file>`（只能是 `.webm`，默认 `<deck>/dist/<id>.webm`；不导出 MP4）、`--size <宽x高>`（默认 1280x720）、`--fps <n>`（默认 30）、`--burn <语言>`（把这种语言的字幕画进画面） | 构建网页与讲授（工作目录 `.presmium/lecture-export`，结束后删除），用 Playwright 的 Chromium 逐帧播放讲授并截图：每一帧先把讲授推进到这一帧的时刻，等组件准备好画面（`STEP_CLOCK.settled()`）再截图，动画按讲授的时刻画出（4.4 节“步内时间”）；某一帧画不出来（组件登记的准备失败，例如场景载入出错）时导出失败，指出这一帧的时刻；在另一个页面中用 Mediabunny 的 WebCodecs 路径把画面与音频（合成的片段或录音，各在其时刻）合成为 WebM（VP9 或 VP8、Opus），讲授轨的每种字幕成为一条 WebVTT 字幕轨（语言码取 ISO 639-2，不知道的语言给出警告），视频写完后也写在视频旁边（`<文件>.<语言>.vtt`）；`--burn` 画的字幕与字幕轨同样取文字，没有译文的句子不画；合成的声音在文件的标签中带 `AIGC` 标识。退出码 0 完成，2 用法错误或失败 |
+| `presmium-lecture export [deck]` | `@lincyaw/addon-lecture` | `--track <id>`（默认合成的讲授 `script`，否则唯一的录制讲授）、`--out <file>`（`.mp4` 或 `.webm`，默认 `<deck>/dist/<id>.mp4`，没有 FFmpeg 时为 `.webm`）、`--size <宽x高>`（默认 1920x1080）、`--fps <n>`（默认 30）、`--burn <语言>`（把这种语言的字幕画进画面） | 构建网页与讲授（工作目录 `.presmium/lecture-export`，结束后删除），用 Playwright 的 Chromium 逐帧播放讲授并截 PNG 图：每一帧先把讲授推进到这一帧的时刻，等组件准备好画面（`STEP_CLOCK.settled()`）再截图，动画按讲授的时刻画出（4.4 节“步内时间”）；某一帧画不出来（组件登记的准备失败，例如场景载入出错）时导出失败，指出这一帧的时刻；编码优先用作者安装的 FFmpeg（`PRESMIUM_FFMPEG`，否则 PATH 上的 `ffmpeg`，由 `@lincyaw/kernel/node` 的 `findFfmpeg` 找到；Presmium 不附带它）：另一个页面只把音频（合成的片段或录音，各在其时刻）混成 48 kHz 双声道 PCM，PNG 帧经管道交给 FFmpeg，写成 MP4（H.264 CRF 18、AAC、mov_text 字幕）或 WebM（VP9 CRF 24、Opus、WebVTT 字幕）；没有 FFmpeg 时只能导出 WebM，由那个页面用 Mediabunny 的 WebCodecs 路径合成（VP9 或 VP8、Opus；码率按文字画面定为每像素每帧 0.12 比特，按质量而非实时编码），并在警告中给出本系统安装 FFmpeg 的一条命令（`ffmpegInstallCommand`），要 MP4 而没有 FFmpeg 时失败并给出同一条命令。讲授轨的每种字幕成为一条字幕轨（语言码取 ISO 639-2，不知道的语言给出警告），视频写完后也写在视频旁边（`<文件>.<语言>.vtt`）；`--burn` 画的字幕与字幕轨同样取文字，没有译文的句子不画；合成的声音在文件的标签中带 `AIGC` 标识。退出码 0 完成，2 用法错误或失败 |
 | `presmium-speech fake` | `@lincyaw/addon-speech` | `--port <n>`（默认取空闲端口）、`--host <地址>`（默认 `127.0.0.1`） | 确定性的假引擎，打印 `fake  <地址>`（`http://…/v1`，作为 `PRESMIUM_SPEECH_FAKE_URL`）。OpenAI 音频接口的形态加 Presmium 的扩展：`audio/voices`（音色 `alpha`、`beta` 与克隆音色 `cloned-lin`）、`audio/voices/clone`（POST 训练，GET `?voice=` 查进度：第一次为训练中，之后就绪，训练过的音色进入音色列表）、`audio/speech`、`audio/speech/timestamps`、`audio/transcriptions`；合成的 WAV（8 kHz，每词一个音调）在 `pmfk` 块中嵌入文字、音色与逐字时间，转写读回它们；`GET /requests` 列出收到的请求（方法、路径、`Authorization`），供用例计数 |
 | `presmium-speech clone` | `@lincyaw/addon-speech` | `<引擎> <音色> <样本>`、`--speaker <说话人>`、`--scope <范围>`、`--statement <同意声明录音>`，可选 `--lang`、`--text`、`--operator-dir <目录>`；`--status` 只查进度 | 运营者训练克隆音色：与工作台的“克隆音色”对话框相同，先登记同意记录（声明录音存为同目录的 `<音色>.statement.<扩展名>`，记录中是它的 sha256），再把样本发给引擎，每 3 秒查一次进度直到就绪或失败。要求 `settings.presmium.speech.cloned: true`；训练按提供方的价格计费 |
 | `presmium-speech consent` | `@lincyaw/addon-speech` | `<引擎> <音色> <记录文件>`、`--operator-dir <目录>`（默认为当前工作区的运营者目录或 `PRESMIUM_OPERATOR_DIR`，10.5 节；同样不能在工作区之中） | 运营者登记克隆音色的同意记录：记录是 JSON `{ speaker, scope, date, statementSha256 }`，校验后写入运营者目录中的 `<consentDir>/<引擎>/<音色>.json`（`consentDir` 取当前工作区配置的 `settings.presmium.speech.consentDir`，权限 0600）。与所有者经语音插件路由的登记效果相同（第 11 节） |
@@ -1901,7 +1901,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 
 ## 12. 依赖选型
 
-依赖准则：只用公开接口，不 fork，不引入 AGPL。依赖声明与对等依赖约束以各包的 `package.json` 为准，实际解析版本以 `pnpm-lock.yaml` 为准；安装策略由 `pnpm-workspace.yaml` 约束。
+依赖准则：只用公开接口，不 fork；许可证不作为取舍依据。依赖声明与对等依赖约束以各包的 `package.json` 为准，实际解析版本以 `pnpm-lock.yaml` 为准；安装策略由 `pnpm-workspace.yaml` 约束。
 
 | 组件 | 许可证 | 用途 | 包 |
 |---|---|---|---|
@@ -1922,7 +1922,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 | `@xterm/xterm`、`@xterm/addon-fit` | MIT | 浏览器终端 | addon-exec-jupyter |
 | `ws` | MIT | Node 端连接内核与终端的 WebSocket（能带请求头，令牌不进地址；`@jupyterlab/services` 本身也依赖它） | addon-exec-jupyter |
 | `@noble/hashes` | MIT | 讲授的播放器在浏览器中计算译文原文的 SHA-256（不依赖安全上下文中的 `crypto.subtle`，过期的译文在任何浏览器中都能标出） | addon-lecture |
-| Mediabunny（`mediabunny`） | MPL-2.0（文件级） | 录音为 Ogg/Opus（WebCodecs），摄像头与屏幕录为 WebM；导出视频时在 Chromium 页面中合成音视频与 WebVTT 字幕轨（WebM）。`@mediabunny/server` 附带的 FFmpeg 是 GPL，不用它，不导出 MP4 | addon-lecture |
+| Mediabunny（`mediabunny`） | MPL-2.0（文件级） | 录音为 Ogg/Opus（WebCodecs），摄像头与屏幕录为 WebM；导出视频时没有 FFmpeg 则在 Chromium 页面中合成音视频与 WebVTT 字幕轨（只有 WebM）；有 FFmpeg 时只用它混音。`@mediabunny/server`（node-av）每个平台的原生包约 175 MB 且依赖安装脚本，不用它 | addon-lecture |
 | GSAP（`gsap`） | Standard "No Charge" GSAP License | 动画场景：GSAP 时间轴 | addon-motion |
 | Anime.js（`animejs`） | MIT | 动画场景：Anime.js 时间轴 | addon-motion |
 | Motion（`motion`） | MIT | 动画场景：Motion 的动画与序列 | addon-motion |
@@ -1954,7 +1954,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 
 火山引擎的控制台接口（OpenAPI，`speech_saas_prod`）用官方 SDK `@volcengine/speechsaasprod`（ListSpeakers，模型的音色列表）与 `@volcengine/speechsaasprod20250521`（BatchListMegaTTSTrainStatus，账号的克隆音色），Apache-2.0，凭据显式传入。合成、转写与训练克隆音色的数据面接口（`/api/v3/tts/unidirectional`、`/api/v3/tts/voice_clone`、`/api/v3/tts/get_voice` 等）没有 npm SDK，适配器直接调用 HTTP；OpenAI 音频接口形态的服务用 `fetch` 即可。没有控制台凭据时，火山引擎的音色来自随包的目录 `volcengine-voices.ts`（语音合成 2.0 的全部音色，由 `packages/addon-speech/scripts/volcengine-voices.mjs` 从官方的音色列表文档生成）。
 
-不采用：ffmpeg.wasm（核心为 GPL）、Motion Canvas（2024 年底起停止维护）、TensorFlow.js 的 WebGPU 后端与 webgpu-torch（停更）、Jupyter Kernel Gateway（停更，浏览器跨域有缺陷）、Daytona 等 AGPL 许可的沙箱平台、edge-tts（非官方接口）、在进程内 mock 语音或模型的测试库。
+不采用：ffmpeg.wasm（在浏览器中编码慢，导出视频用作者安装的 FFmpeg）、Motion Canvas（2024 年底起停止维护）、TensorFlow.js 的 WebGPU 后端与 webgpu-torch（停更）、Jupyter Kernel Gateway（停更，浏览器跨域有缺陷）、Daytona 等 AGPL 许可的沙箱平台、edge-tts（非官方接口）、在进程内 mock 语音或模型的测试库。
 
 ## 13. 工作台与 dsh
 

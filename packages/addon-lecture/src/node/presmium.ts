@@ -4,7 +4,7 @@ import { PRODUCTION_AUDIO_AUTHORING, VOICEOVER, VOICEOVER_EXECUTION } from '@lin
 import type { Exporter, PresmiumNodePlugin } from '@lincyaw/kernel'
 import { LECTURE_ID } from '../domain/index.ts'
 import { lectureCheck } from './check.ts'
-import { exportVideo } from './export.ts'
+import { defaultVideoFormat, exportVideo } from './export.ts'
 import { rememberLatestIrPass } from './latest-ir.ts'
 import { lectureRenderer } from './renderer.ts'
 import { cueRole, sayRole } from './roles.ts'
@@ -29,7 +29,7 @@ const videoExporter: Exporter = {
     const result = await exportVideo({
       deckDir: ctx.deckDir,
       source: ctx.source,
-      out: join(ctx.outDir, 'lecture.webm'),
+      out: join(ctx.outDir, `lecture.${defaultVideoFormat()}`),
       log: ctx.log,
       progress: (done, total) => ctx.progress('frames', done, total),
       signal: ctx.signal,

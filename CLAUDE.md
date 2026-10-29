@@ -16,6 +16,7 @@
 ## 约定
 
 - 依赖优先：能用现成组件就用，通过公开接口定制；不 fork、不打补丁、不引用依赖的内部路径。
+- 不考虑许可证：选依赖与外部工具（包括 GPL 的 FFmpeg 等）只看能力与维护状况，不因许可证排除，文档与代码注释中也不以许可证为理由。
 - 查框架接口先读本地文档 `vendor/docs/`（DeepSeek Harness 与 MCP TypeScript SDK 的文档，缺失时运行 `pnpm docs:fetch`），不读框架的编译产物。
 - 分层（`docs/architecture.md` 第 3 节，`scripts/check-layering.mjs` 检查）：`src/domain` 为纯 TS；组件与 `src/client` 只通过 `@lincyaw/host` 获取步骤状态与服务；任何包都不用 `vitepress` 与 `@slidev/*`（网页与幻灯片两种形态都是查看器）；插件包之间不互相引用。
 - 界面文本有中文与英文（`docs/architecture.md` 5.7 节）：每个包维护自己的 zh-CN 与 en 文本，按 `<html lang>`（由文稿头部的 `lang` 决定，默认 `zh-CN`）选择，没有对应文本时看 `navigator.language`；组件可以用 `@lincyaw/host` 的 `useLocale`、`useMessages(catalog)`。编译时写入产物的文本按文稿的 `lang`。用词与写法按 `docs/glossary.md`，`node scripts/check-i18n.mjs --strict`（在 `pnpm test` 中）在目录与规范不一致时失败，逐条判断过的误报连同原因写在 `scripts/check-i18n.allow.json`；服务端或浏览器给出的失败原因按代码映射为目录文本，不把原文显示给作者；命令行的语言由 `@lincyaw/kernel/node` 的 `systemLocale` 决定。
