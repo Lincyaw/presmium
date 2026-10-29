@@ -66,6 +66,22 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "${CLOUD_HUB_CLIENT_ID:presmium-hub}",
+      "name": "Presmium Studio",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${CLOUD_HUB_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["${CLOUD_HUB_URL}/hub/oauth_callback"],
+      "webOrigins": ["${CLOUD_HUB_URL}"],
+      "attributes": { "post.logout.redirect.uris": "${CLOUD_HUB_URL}" },
+      "defaultClientScopes": ["web-origins", "acr", "profile", "roles", "email"]
     }
   ]
 }
