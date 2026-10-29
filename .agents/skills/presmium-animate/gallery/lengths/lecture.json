@@ -59,6 +59,7 @@
     "s10-problem-solution",
     "s10-method",
     "s10-data-story",
+    "s10-fourier",
     "s30",
     "s30-product",
     "s30-paper",
@@ -969,6 +970,35 @@
         "s10-data-story--step-2",
         "s10-data-story--step-3",
         "s10-data-story--step-4"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "s10-fourier": {
+      "id": "s10-fourier",
+      "title": "傅里叶级数：用圆画出任意轮廓",
+      "level": 3,
+      "children": [
+        "s10-fourier--notes",
+        "s10-fourier--shot"
+      ],
+      "stepOrder": [
+        "s10-fourier--step-0",
+        "s10-fourier--step-1",
+        "s10-fourier--step-2",
+        "s10-fourier--step-3",
+        "s10-fourier--step-4",
+        "s10-fourier--step-5",
+        "s10-fourier--step-6",
+        "s10-fourier--step-7",
+        "s10-fourier--step-8",
+        "s10-fourier--step-9"
       ],
       "layout": {
         "type": "stack",
@@ -9838,6 +9868,306 @@
         "alt": "散点图：此前模型 BLEU 24.6 到 26.36，Transformer base 27.3、big 28.4，训练算力更低。"
       }
     },
+    "s10-fourier--notes": {
+      "id": "s10-fourier--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "s10-fourier--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "科普与论文宣传。傅里叶级数用一串转动的圆画出任意轮廓：先是一个大圆，量出误差，再一轮轮加入更小的圆，最后得到一条矢量路径。默认拟合 Claude 的标志，参数 "
+            },
+            {
+              "type": "text",
+              "text": "svg",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "（或 "
+            },
+            {
+              "type": "text",
+              "text": "path",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "、"
+            },
+            {
+              "type": "text",
+              "text": "viewBox",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "、"
+            },
+            {
+              "type": "text",
+              "text": "fill",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "）换成任何轮廓，"
+            },
+            {
+              "type": "text",
+              "text": "terms",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 定每轮的圆数。D3；级数、误差与贝塞尔拟合在 "
+            },
+            {
+              "type": "text",
+              "text": "scenes/kit/fourier.ts",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "。"
+            }
+          ]
+        },
+        {
+          "id": "s10-fourier--notes--n1",
+          "type": "table",
+          "headerRows": 1,
+          "children": [
+            {
+              "id": "s10-fourier--notes--n1--r0",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s10-fourier--notes--n1--r0c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "时间"
+                    }
+                  ]
+                },
+                {
+                  "id": "s10-fourier--notes--n1--r0c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "画面"
+                    }
+                  ]
+                },
+                {
+                  "id": "s10-fourier--notes--n1--r0c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "为什么"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s10-fourier--notes--n1--r1",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s10-fourier--notes--n1--r1c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "0–0.9 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s10-fourier--notes--n1--r1c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "要拟合的轮廓淡入，沿轮廓依次亮起 128 个测量点；右边画好“圆的个数–误差”的空坐标，两轴都取对数"
+                    }
+                  ]
+                },
+                {
+                  "id": "s10-fourier--notes--n1--r1c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "先交代对象和怎么读图"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s10-fourier--notes--n1--r2",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s10-fourier--notes--n1--r2c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "0.9–2.6 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s10-fourier--notes--n1--r2c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "一个大圆从中心弹出，转一圈画出近似；笔尖经过哪个测量点，就从那里拉出一条到笔尖的误差线，读数是已画误差线的均方根，停在 32%"
+                    }
+                  ]
+                },
+                {
+                  "id": "s10-fourier--notes--n1--r2c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "误差是量出来的：数字随测量一起出现"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s10-fourier--notes--n1--r3",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s10-fourier--notes--n1--r3c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "2.6–8.1 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s10-fourier--notes--n1--r3c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "每轮圆的个数翻倍（2、4……128）：新的小圆在链条末端依次弹出，上一轮的轨迹退成虚影，链条再转一圈；误差线随笔尖经过逐条缩短，读数和图上的新点一起落下，128 个圆时是 0.6%"
+                    }
+                  ]
+                },
+                {
+                  "id": "s10-fourier--notes--n1--r3c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "同一个动作重复七次，一次比一次快：加速的节奏就是“越来越接近”"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s10-fourier--notes--n1--r4",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "s10-fourier--notes--n1--r4c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "8.1–10 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "s10-fourier--notes--n1--r4c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "圆和误差线退去，拟合曲线填成标志的颜色，一道光扫过；锚点和控制柄沿轮廓依次弹出，下面打出路径数据"
+                    }
+                  ]
+                },
+                {
+                  "id": "s10-fourier--notes--n1--r4c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "结果：得到的是一条普通的矢量路径"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s10-fourier--notes--n2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每个圆是级数的一项 cₙe^(int)：半径是 |cₙ|，每圈转 n 次（正负是方向），按半径从大到小首尾相接。误差是 128 个测量点上的均方根，以轮廓到中心的均方根距离为 100%。矢量路径的锚点来自级数本身：每段三次贝塞尔用两端的点和那里的精确导数，在偏离不超过 2 个单位的前提下尽量长，所以平直处锚点少、尖角处锚点多（128 个圆得到 82 个锚点）。每个状态停在本轮的结果上：状态的终点属于这一轮，下一轮从它之后开始。"
+            }
+          ]
+        }
+      ]
+    },
+    "s10-fourier--shot": {
+      "id": "s10-fourier--shot",
+      "type": "component",
+      "definitionId": "s10-fourier--shot--definition",
+      "parameters": {
+        "scene": "10s/fourier",
+        "alt": "一串转动的圆画出 Claude 的标志：从一个圆开始，每轮圆的个数翻倍，误差从 32% 降到 0.6%，最后得到一条带锚点的矢量路径。"
+      }
+    },
     "s30--card": {
       "id": "s30--card",
       "type": "text",
@@ -13239,6 +13569,166 @@
       ],
       "narrationIds": []
     },
+    "s10-fourier--step-0": {
+      "id": "s10-fourier--step-0",
+      "sectionId": "s10-fourier",
+      "visuals": [
+        {
+          "blockId": "s10-fourier--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s10-fourier--shot",
+          "visible": true,
+          "state": "shape"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s10-fourier--step-1": {
+      "id": "s10-fourier--step-1",
+      "sectionId": "s10-fourier",
+      "visuals": [
+        {
+          "blockId": "s10-fourier--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s10-fourier--shot",
+          "visible": true,
+          "state": "c1"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s10-fourier--step-2": {
+      "id": "s10-fourier--step-2",
+      "sectionId": "s10-fourier",
+      "visuals": [
+        {
+          "blockId": "s10-fourier--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s10-fourier--shot",
+          "visible": true,
+          "state": "c2"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s10-fourier--step-3": {
+      "id": "s10-fourier--step-3",
+      "sectionId": "s10-fourier",
+      "visuals": [
+        {
+          "blockId": "s10-fourier--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s10-fourier--shot",
+          "visible": true,
+          "state": "c4"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s10-fourier--step-4": {
+      "id": "s10-fourier--step-4",
+      "sectionId": "s10-fourier",
+      "visuals": [
+        {
+          "blockId": "s10-fourier--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s10-fourier--shot",
+          "visible": true,
+          "state": "c8"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s10-fourier--step-5": {
+      "id": "s10-fourier--step-5",
+      "sectionId": "s10-fourier",
+      "visuals": [
+        {
+          "blockId": "s10-fourier--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s10-fourier--shot",
+          "visible": true,
+          "state": "c16"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s10-fourier--step-6": {
+      "id": "s10-fourier--step-6",
+      "sectionId": "s10-fourier",
+      "visuals": [
+        {
+          "blockId": "s10-fourier--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s10-fourier--shot",
+          "visible": true,
+          "state": "c32"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s10-fourier--step-7": {
+      "id": "s10-fourier--step-7",
+      "sectionId": "s10-fourier",
+      "visuals": [
+        {
+          "blockId": "s10-fourier--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s10-fourier--shot",
+          "visible": true,
+          "state": "c64"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s10-fourier--step-8": {
+      "id": "s10-fourier--step-8",
+      "sectionId": "s10-fourier",
+      "visuals": [
+        {
+          "blockId": "s10-fourier--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s10-fourier--shot",
+          "visible": true,
+          "state": "c128"
+        }
+      ],
+      "narrationIds": []
+    },
+    "s10-fourier--step-9": {
+      "id": "s10-fourier--step-9",
+      "sectionId": "s10-fourier",
+      "visuals": [
+        {
+          "blockId": "s10-fourier--notes",
+          "visible": false
+        },
+        {
+          "blockId": "s10-fourier--shot",
+          "visible": true,
+          "state": "vector"
+        }
+      ],
+      "narrationIds": []
+    },
     "s30--step-0": {
       "id": "s30--step-0",
       "sectionId": "s30",
@@ -15090,6 +15580,81 @@
                 {
                   "type": "text",
                   "value": "散点图：此前模型 BLEU 24.6 到 26.36，Transformer base 27.3、big 28.4，训练算力更低。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "s10-fourier--shot--definition": {
+      "id": "s10-fourier--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/10s/fourier.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "shape"
+        },
+        {
+          "id": "c1"
+        },
+        {
+          "id": "c2"
+        },
+        {
+          "id": "c4"
+        },
+        {
+          "id": "c8"
+        },
+        {
+          "id": "c16"
+        },
+        {
+          "id": "c32"
+        },
+        {
+          "id": "c64"
+        },
+        {
+          "id": "c128"
+        },
+        {
+          "id": "vector"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          900,
+          1700,
+          1200,
+          950,
+          800,
+          700,
+          650,
+          600,
+          600,
+          1900
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一串转动的圆画出 Claude 的标志：从一个圆开始，每轮圆的个数翻倍，误差从 32% 降到 0.6%，最后得到一条带锚点的矢量路径。"
                 }
               ]
             }

@@ -1,0 +1,198 @@
+{
+  "key": "da0bc57b3a6b7c56986d6094ab045db8",
+  "audio": "da0bc57b3a6b7c56986d6094ab045db8.ogg",
+  "mime": "audio/ogg",
+  "duration": 12,
+  "words": [
+    {
+      "text": "Reflow",
+      "start": 0.1,
+      "end": 0.6
+    },
+    {
+      "text": "的",
+      "start": 0.6,
+      "end": 0.6875
+    },
+    {
+      "text": "办法",
+      "start": 0.7,
+      "end": 1.0625
+    },
+    {
+      "text": "是",
+      "start": 1.0625,
+      "end": 1.3875
+    },
+    {
+      "text": "先",
+      "start": 1.7375,
+      "end": 1.9625
+    },
+    {
+      "text": "用",
+      "start": 1.9625,
+      "end": 2.1125
+    },
+    {
+      "text": "这个",
+      "start": 2.1375,
+      "end": 2.35
+    },
+    {
+      "text": "模型",
+      "start": 2.3625,
+      "end": 2.925
+    },
+    {
+      "text": "把",
+      "start": 3.0375,
+      "end": 3.175
+    },
+    {
+      "text": "每个",
+      "start": 3.1875,
+      "end": 3.45
+    },
+    {
+      "text": "噪声",
+      "start": 3.4625,
+      "end": 3.85
+    },
+    {
+      "text": "点",
+      "start": 3.85,
+      "end": 4.0625
+    },
+    {
+      "text": "送",
+      "start": 4.0875,
+      "end": 4.25
+    },
+    {
+      "text": "到",
+      "start": 4.25,
+      "end": 4.3875
+    },
+    {
+      "text": "终点",
+      "start": 4.4,
+      "end": 4.9125
+    },
+    {
+      "text": "按",
+      "start": 5.275,
+      "end": 5.475
+    },
+    {
+      "text": "这样",
+      "start": 5.4875,
+      "end": 5.7625
+    },
+    {
+      "text": "的",
+      "start": 5.7625,
+      "end": 5.825
+    },
+    {
+      "text": "配对",
+      "start": 5.8375,
+      "end": 6.3125
+    },
+    {
+      "text": "重新",
+      "start": 6.4125,
+      "end": 6.8375
+    },
+    {
+      "text": "连",
+      "start": 6.85,
+      "end": 7.05
+    },
+    {
+      "text": "直线",
+      "start": 7.0625,
+      "end": 7.55
+    },
+    {
+      "text": "再",
+      "start": 7.7875,
+      "end": 7.975
+    },
+    {
+      "text": "训练",
+      "start": 7.9875,
+      "end": 8.4
+    },
+    {
+      "text": "一",
+      "start": 8.4125,
+      "end": 8.5375
+    },
+    {
+      "text": "遍",
+      "start": 8.5375,
+      "end": 8.825
+    },
+    {
+      "text": "这",
+      "start": 9.3875,
+      "end": 9.6125
+    },
+    {
+      "text": "一次",
+      "start": 9.6125,
+      "end": 10.0625
+    },
+    {
+      "text": "路",
+      "start": 10.325,
+      "end": 10.4625
+    },
+    {
+      "text": "几乎",
+      "start": 10.475,
+      "end": 10.8
+    },
+    {
+      "text": "是",
+      "start": 10.8,
+      "end": 10.95
+    },
+    {
+      "text": "直",
+      "start": 10.9625,
+      "end": 11.25
+    },
+    {
+      "text": "的",
+      "start": 11.25,
+      "end": 11.4625
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "Reflow 的办法是：先用这个模型把每个噪声点送到终点，按这样的配对重新连直线，再训练一遍。这一次，路几乎是直的。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "da0bc57b3a6b7c56986d6094ab045db8",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "3cc38cbb99cf536a848c15c0d5867435ee796cebea356a4b8fd3a08793c2a18a",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "80a5e7820709becae95364a98b3671ed",
+  "request": {
+    "spoken": "Reflow 的办法是：先用这个模型把每个噪声点送到终点，按这样的配对重新连直线，再训练一遍。这一次，路几乎是直的。",
+    "rate": 1,
+    "style": ""
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "key": "c807e5be7a951ee5a3327cdf65a323e0",
+  "audio": "c807e5be7a951ee5a3327cdf65a323e0.ogg",
+  "mime": "audio/ogg",
+  "duration": 5.5,
+  "words": [
+    {
+      "text": "如果",
+      "start": 0.1,
+      "end": 0.425
+    },
+    {
+      "text": "路",
+      "start": 0.425,
+      "end": 0.5375
+    },
+    {
+      "text": "是",
+      "start": 0.55,
+      "end": 0.725
+    },
+    {
+      "text": "直",
+      "start": 0.725,
+      "end": 0.9875
+    },
+    {
+      "text": "的",
+      "start": 0.9875,
+      "end": 1.2
+    },
+    {
+      "text": "一",
+      "start": 1.4625,
+      "end": 1.65
+    },
+    {
+      "text": "步",
+      "start": 1.65,
+      "end": 1.95
+    },
+    {
+      "text": "就",
+      "start": 2.05,
+      "end": 2.2
+    },
+    {
+      "text": "能",
+      "start": 2.2,
+      "end": 2.3625
+    },
+    {
+      "text": "走",
+      "start": 2.375,
+      "end": 2.5875
+    },
+    {
+      "text": "到",
+      "start": 2.5875,
+      "end": 2.85
+    },
+    {
+      "text": "那",
+      "start": 3.4125,
+      "end": 3.6
+    },
+    {
+      "text": "能",
+      "start": 3.6,
+      "end": 3.7375
+    },
+    {
+      "text": "不能",
+      "start": 3.75,
+      "end": 4.025
+    },
+    {
+      "text": "把",
+      "start": 4.05,
+      "end": 4.225
+    },
+    {
+      "text": "路",
+      "start": 4.225,
+      "end": 4.3625
+    },
+    {
+      "text": "拉直",
+      "start": 4.375,
+      "end": 4.9625
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "如果路是直的，一步就能走到。那能不能把路拉直？",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "c807e5be7a951ee5a3327cdf65a323e0",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "f07dd937bc60956529c592394201fe160715481522b7089b82ab9d50ac6b1209",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "ad739dff362cbc159c337a4a204df956",
+  "request": {
+    "spoken": "如果路是直的，一步就能走到。那能不能把路拉直？",
+    "rate": 1,
+    "style": ""
+  }
+}

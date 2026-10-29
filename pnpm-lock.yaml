@@ -56,6 +56,9 @@ importers:
       '@lincyaw/addon-motion':
         specifier: workspace:*
         version: link:../../../../packages/addon-motion
+      '@lincyaw/addon-speech':
+        specifier: workspace:*
+        version: link:../../../../packages/addon-speech
       '@lincyaw/cli':
         specifier: workspace:*
         version: link:../../../../packages/cli
