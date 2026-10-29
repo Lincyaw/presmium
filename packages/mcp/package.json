@@ -38,6 +38,7 @@
     "@modelcontextprotocol/server": "2.3.1",
     "@lincyaw/compiler": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
+    "@lincyaw/skills": "workspace:*",
     "jiti": "^2.7.0",
     "minisearch": "7.2.0"
   }

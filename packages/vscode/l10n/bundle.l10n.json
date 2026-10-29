@@ -1,8 +1,15 @@
 {
-  "{0} is not installed. Add it to the workspace, or set presmium.server.path.": "{0} is not installed. Add it to the workspace, or set presmium.server.path.",
-  "Couldn’t start Presmium: {0}": "Couldn’t start Presmium: {0}",
+  "Show Output": "Show Output",
+  "Open lecture.json to preview or present this document.": "Open lecture.json to preview or present this document.",
   "Starting the preview…": "Starting the preview…",
-  "Couldn’t open the preview: {0}": "Couldn’t open the preview: {0}",
-  "Preview {0}": "Preview {0}",
-  "Presmium Preview": "Presmium Preview"
+  "Starting the visual editor…": "Starting the visual editor…",
+  "Open Visual Editor": "Open Visual Editor",
+  "Install Project Skills": "Install Project Skills",
+  "Couldn’t open the preview. Check the Presmium output and try again.": "Couldn’t open the preview. Check the Presmium output and try again.",
+  "Couldn’t open the presentation. Check the Presmium output and try again.": "Couldn’t open the presentation. Check the Presmium output and try again.",
+  "Couldn’t open the visual editor. Check the Presmium output and try again.": "Couldn’t open the visual editor. Check the Presmium output and try again.",
+  "Couldn’t stop the visual editor. Check the Presmium output and try again.": "Couldn’t stop the visual editor. Check the Presmium output and try again.",
+  "Couldn’t install the project skills. Check the Presmium output and try again.": "Couldn’t install the project skills. Check the Presmium output and try again.",
+  "Installing the project skills…": "Installing the project skills…",
+  "Installed {0} project skills; kept {1} existing skills.": "Installed {0} project skills; kept {1} existing skills."
 }

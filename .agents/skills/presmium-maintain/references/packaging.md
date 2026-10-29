@@ -57,8 +57,11 @@ Define its typed entities and Schema in the kernel, validate references and para
 ## Skills
 
 Skills are in `.agents/skills`; `.claude/skills` is a symbolic link to it and `AGENTS.md` a link to
-`CLAUDE.md`. Shipped skills are copied at pack time: the bundle registers those listed in
-`packages/dsh/package.json` `presmium.skills`, and new projects get those listed in
+`CLAUDE.md`. Shipped skills are copied at pack time into `@lincyaw/skills`: author, animate, present and develop,
+including their text reference files and gallery scene sources. Studio registers these same resources;
+MCP exposes `list_skills`, `read_skill` and `presmium://skills` without needing a document. The client
+decides when to read them. VS Code Install Project Skills and `pnpm exec presmium skills install . --json`
+install missing project entries and preserve existing ones. New projects get those listed in
 `packages/create-presmium/src/templates.ts`. Shipped skills must be self-contained (no references to
 `docs/`, `packages/`, `scripts/` or `e2e/`); `presmium-maintain` is listed in neither. When instructions,
 commands or the development flow change, update the skills in the same change. `scripts/check-skills.mjs`
@@ -90,12 +93,19 @@ the same. Publishing itself is the maintainers' steps in
 
 ## The VS Code extension
 
-`pnpm --filter presmium-vscode package:vsix` builds the VSIX for the current OS and processor. The language
-server and the web rendering runtime are deployed into the VSIX from the lockfile; a symlink into the
-development tree is not a packaged dependency. The build generates `dist/lecture.schema.json` directly
-from the public kernel `DOCUMENT_JSON_SCHEMA`; the archive must contain that file and the JSON validation
-association. Verify the unpacked language server with real LSP initialize/open/save, diagnostics, entity
-navigation and preview requests, then accept the package in an ordinary VS Code window. If a window
-cannot be started, report that boundary separately from the service and archive checks. `.github/workflows/vscode.yml` builds it on six platforms and attaches the files to a
-GitHub Release when one is published. Install and build steps are maintained in one place,
-`packages/vscode/README.md`.
+`pnpm --filter presmium-vscode package:vsix` builds the VSIX for the current OS and processor. It builds
+Studio's shared client and the four shared skills, then deploys the extension's production dependency root (language
+server and complete Studio) from the lockfile. The explicit file list excludes existing VSIX archives; a
+symlink into the development tree is not a packaged dependency. The schema is generated from the public
+kernel `DOCUMENT_JSON_SCHEMA`. Native JSON editing, diagnostics, live preview and presentation remain the
+daily entrance; Open Visual Editor starts or reuses the same Web Studio in VS Code's Integrated Browser.
+The first opening checks the listed document directory, source identity and initial section; an already
+open document keeps its current editing or runtime view. Keep local request guards unchanged.
+
+Verify the unpacked language server with real LSP initialize/open/save, diagnostics, entity navigation and
+preview requests, then accept native preview/presentation, the visual editor and shared exports in a real
+VS Code window outside the repository. Check the visual editor in light/dark and desktop/narrow layouts,
+then stop the owned services and confirm their ports close. If a window cannot be controlled, report that
+boundary separately from service and archive checks. `.github/workflows/vscode.yml` packages and type-checks
+six platforms; it does not perform real-window acceptance. It attaches the files to a GitHub Release when
+one is published. Commands, requirements and installation details live in `packages/vscode/README.md`.

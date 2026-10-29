@@ -1,0 +1,35 @@
+{
+  "name": "@lincyaw/skills",
+  "version": "1.0.0-rc.0",
+  "description": "Presmium's bundled authoring, animation, presentation and plugin-development skills for coding agents",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lincyaw/presmium.git",
+    "directory": "packages/skills"
+  },
+  "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/skills#readme",
+  "bugs": "https://github.com/Lincyaw/presmium/issues",
+  "keywords": ["presmium", "skills", "agents"],
+  "type": "module",
+  "engines": { "node": ">=22.19" },
+  "publishConfig": { "access": "public" },
+  "bin": { "presmium-skills": "./bin/presmium-skills.mjs" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "files": ["bin", "src", "skills"],
+  "scripts": {
+    "prepack": "node scripts/copy-skills.mjs",
+    "skills": "node scripts/copy-skills.mjs"
+  },
+  "dependencies": {
+    "@lincyaw/kernel": "workspace:*",
+    "jiti": "^2.7.0"
+  },
+  "presmium": {
+    "skills": ["presmium-author", "presmium-animate", "presmium-present", "presmium-develop"],
+    "generated": ["skills"]
+  }
+}

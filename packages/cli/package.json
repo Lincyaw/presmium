@@ -39,6 +39,7 @@
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/server": "workspace:*",
     "@lincyaw/workspace": "workspace:*",
-    "jiti": "^2.7.0"
+    "jiti": "^2.7.0",
+    "@lincyaw/skills": "workspace:*"
   }
 }

@@ -149,12 +149,13 @@ for (const [file, text] of texts) {
   }
 }
 
-const bundle = join(root, 'packages/dsh/package.json')
-if (existsSync(bundle)) {
+for (const packagePath of ['packages/skills/package.json', 'packages/dsh/package.json']) {
+  const bundle = join(root, packagePath)
+  if (!existsSync(bundle)) continue
   const bundled = JSON.parse(readFileSync(bundle, 'utf8')).presmium?.skills ?? []
-  if (bundled.length === 0) fail('packages/dsh/package.json names no skill (presmium.skills)')
+  if (bundled.length === 0) fail(`${packagePath} names no skill (presmium.skills)`)
   for (const name of bundled) {
-    if (!skills.includes(name)) fail(`packages/dsh/package.json: the bundle registers the skill ${name}, which is not in .agents/skills`)
+    if (!skills.includes(name)) fail(`${packagePath}: the bundle registers the skill ${name}, which is not in .agents/skills`)
   }
 }
 

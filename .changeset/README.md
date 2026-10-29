@@ -21,6 +21,7 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `@lincyaw/mcp` | npm | agent 环境（MCP）与 `presmium-mcp` |
 | `@lincyaw/workspace` | npm | 工作区服务 `presmium serve` |
 | `@lincyaw/language-server` | npm | 语言服务 |
+| `@lincyaw/skills` | npm | 官方作者、动画、讲授与插件开发技能及参考资源；MCP、Studio 与 VS Code 共用，支持保留已有内容的工程技能安装 |
 | `@lincyaw/classroom-server` | npm | 课堂同步服务 |
 | `@lincyaw/addon-stage` | npm | 插件：讲台 |
 | `@lincyaw/addon-code` | npm | 插件：代码引用 |
@@ -38,12 +39,12 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `@lincyaw/addon-assistant` | npm | 插件：AI 助手与读者问答 |
 | `@lincyaw/addon-lecture` | npm | 插件：讲授轨与导出视频 |
 | `@lincyaw/addon-speech` | npm | 插件：语音服务 |
-| `@lincyaw/dsh` | npm | DeepSeek Harness 的 bundle：工作台的宿主部分（工具、确认策略、文稿上下文、技能、路由）与客户端部分（根布局、面板、主题与品牌）；0.x、实验性，版本号不随统一版本（`docs/design-dsh.md` 12 节）；技能在打包时从 `.agents/skills` 复制，客户端部分在打包时预编译（`build/client.mjs`，`docs/design-dsh.md` 7.8 节） |
+| `@lincyaw/dsh` | npm | DeepSeek Harness 的 bundle：工作台的宿主部分（工具、确认策略、文稿上下文、技能、路由）与客户端部分（根布局、面板、主题与品牌）；0.x、实验性，版本号不随统一版本（`docs/design-dsh.md` 12 节）；技能由 `@lincyaw/skills` 从 `.agents/skills` 统一打包，客户端部分在打包时预编译（`build/client.mjs`，`docs/design-dsh.md` 7.8 节） |
 | `@lincyaw/studio` | npm | `presmium studio`：组装 Presmium 的 profile，启动并监管 DeepSeek Harness（精确版本的依赖）与工作区服务，只打印一个网址；命令 `presmium-studio`（`pnpm add -g @lincyaw/studio`），依赖 `presmium`，项目里装了它时 `presmium studio` 转交给它；0.x、实验性，版本号不随统一版本 |
 | `@lincyaw/workbench` | npm | 工作台的 React 面板与工作区服务的客户端（首页、文件树、源码编辑器、问题、预览）；0.x、实验性，版本号不随统一版本，由 `@lincyaw/dsh` 的客户端部分打包使用 |
 | `@lincyaw/presmium` | npm | `pnpm add -g @lincyaw/presmium`：`presmium` 命令连同三个渲染端与全部官方插件；文稿与工作区中找不到的插件从它的依赖中找，项目里装有 `@lincyaw/presmium` 时全局命令转交给项目里的那一份；`presmium new` 运行 `create-presmium` |
 | `create-presmium` | npm | `presmium new` 与 `pnpm create presmium`：新建讲义、工作区或插件项目（不在 `@lincyaw` 作用域中：`pnpm create presmium` 运行的就是这个名字的包；它的模板在打包时从各自的源复制，在源码仓库中直接用源） |
-| `presmium-vscode` | 否 | VS Code 扩展：按平台预打包为 `.vsix`，含语言服务与网页渲染运行时，附加到 GitHub Release；不发布到 npm，扩展市场发布另行处理 |
+| `presmium-vscode` | 否 | VS Code 扩展：按平台预打包为 `.vsix`，含语言服务、网页渲染端与完整 Studio 运行时，附加到 GitHub Release；不发布到 npm，扩展市场发布另行处理 |
 | `presmium-animations` | 否 | 公开示例：两讲用代码写动画的讲义（`examples/animations`） |
 | `presmium-animate-gallery` | 否 | presmium-animate 技能自带的效果合集，每个动画库一讲，在这里构建以检查场景（`.agents/skills/presmium-animate/gallery`）；技能发布时不带依赖与构建产物 |
 | `presmium-regression-fixture` | 否 | 集成测试的私有文稿与依赖（`e2e/fixtures/regression`） |

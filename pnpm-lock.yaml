@@ -782,6 +782,9 @@ importers:
 
   packages/cli:
     dependencies:
+      '@lincyaw/skills':
+        specifier: workspace:*
+        version: link:../skills
       '@lincyaw/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -874,6 +877,9 @@ importers:
 
   packages/dsh:
     dependencies:
+      '@lincyaw/skills':
+        specifier: workspace:*
+        version: link:../skills
       '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
@@ -1038,6 +1044,9 @@ importers:
 
   packages/mcp:
     dependencies:
+      '@lincyaw/skills':
+        specifier: workspace:*
+        version: link:../skills
       '@lincyaw/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -1195,6 +1204,15 @@ importers:
         specifier: 2.3.1
         version: 2.3.1
 
+  packages/skills:
+    dependencies:
+      '@lincyaw/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      jiti:
+        specifier: ^2.7.0
+        version: 2.7.0
+
   packages/studio:
     dependencies:
       '@deepseek-ai/dsh':
@@ -1313,12 +1331,18 @@ importers:
 
   packages/vscode:
     dependencies:
+      '@lincyaw/skills':
+        specifier: workspace:*
+        version: link:../skills
       '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
       '@lincyaw/language-server':
         specifier: workspace:*
         version: link:../language-server
+      '@lincyaw/studio':
+        specifier: workspace:*
+        version: link:../studio
       vscode-languageclient:
         specifier: 10.1.2
         version: 10.1.2

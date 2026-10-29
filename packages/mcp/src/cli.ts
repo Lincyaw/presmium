@@ -50,6 +50,7 @@ export function compilerMcpHost(entry: string, allow: readonly ApprovalKind[]): 
   return {
     process: { command: 'presmium-mcp' },
     async documents() {
+      if (!await stat(entry).then(info => info.isFile(), () => false)) return []
       const { doc } = await current()
       return [{ dir: '', title: doc.meta.title, lang: doc.meta.lang }]
     },
@@ -68,6 +69,7 @@ export function compilerMcpHost(entry: string, allow: readonly ApprovalKind[]): 
     approve: async request => allow.includes(request.kind),
     offers: kind => allow.includes(kind),
     async tools() {
+      if (!await stat(entry).then(info => info.isFile(), () => false)) return { tools: [], service: () => undefined }
       const compilation = await current()
       return { tools: compilation.plugins.flatMap(loaded => loaded.plugin?.tools ?? []), service: compilation.service }
     },
@@ -88,9 +90,8 @@ export async function main(argv: string[]): Promise<number | undefined> {
     allow = (values.allow?.split(',').map(kind => kind.trim()).filter(Boolean) ?? []) as ApprovalKind[]
     const unknown = allow.find(kind => !APPROVAL_KINDS.includes(kind))
     if (unknown) throw new Error(t.badAllow(APPROVAL_KINDS, unknown))
-    await stat(deck).catch(() => {
-      throw new Error(t.notFound(deck))
-    })
+    const exists = await stat(deck).then(info => info.isFile(), () => false)
+    if (!exists && !await stat(positionals[0] ?? '.').then(info => info.isDirectory(), () => false)) throw new Error(t.notFound(deck))
   } catch (error) {
     process.stderr.write(`presmium-mcp: ${errorMessage(error)}\n\n${t.usage}\n`)
     return 2

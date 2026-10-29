@@ -49,7 +49,6 @@
     "entries",
     "build",
     "src",
-    "skills",
     "cordis.patch.yml",
     "web.patch.yml",
     "profile.patch.yml"
@@ -74,15 +73,15 @@
     "skills": [
       "presmium-animate",
       "presmium-author",
-      "presmium-present"
+      "presmium-present",
+      "presmium-develop"
     ],
     "generated": [
-      "skills",
       "build/dist"
     ]
   },
   "scripts": {
-    "prepack": "node build/client.mjs && node scripts/copy-skills.mjs"
+    "prepack": "node build/client.mjs"
   },
   "dependencies": {
     "@lincyaw/cli": "workspace:*",
@@ -91,7 +90,8 @@
     "eventsource": "3.0.7",
     "jiti": "^2.7.0",
     "ws": "8.22.0",
-    "zod": "4.4.3"
+    "zod": "4.4.3",
+    "@lincyaw/skills": "workspace:*"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh": "0.2.1-alpha.4"

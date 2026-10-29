@@ -4,6 +4,14 @@ Presmium's agent environment: a document's tools and resources over MCP, for age
 
 Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonical lecture.json teaching documents into web pages, slides, Jupyter notebooks and narrated playback.
 
+## Shared skills
+
+`list_skills` exposes the bundled `presmium-author`, `presmium-animate`, `presmium-present` and `presmium-develop` skills, including descriptions, versions, hashes and relative resource paths. `read_skill({ name, path?, offset?, limit? })` reads `SKILL.md` by default. Follow `nextOffset` until complete and compare version/hash between pages; offsets count Unicode code points and a page contains at most 12,000. Read referenced files on demand.
+
+Standard resources expose the same catalog at `presmium://skills` and bounded JSON text fragments at `presmium://skills/{name}/{path}`; file resources accept `?offset=<n>&limit=<n>`. The server advertises this discovery flow in its initialization instructions. Clients control whether they load those instructions or files. Connecting does not install local skills or activate every skill automatically.
+
+Skills work over stdio and HTTP without compiling a document. For a skills-only stdio connection, pass an existing empty directory to `pnpm exec presmium-mcp <directory>`. For local skill discovery, `pnpm exec presmium skills install . --json` installs missing entries in `.agents/skills` and preserves existing ones. Web Studio, MCP, the CLI and the VSIX all use the same `@lincyaw/skills` resources.
+
 ## Usage
 
 `presmium dev` and `presmium serve` serve it at `/mcp` and print its address and the file that holds its token. Without a server, run it over stdio:

@@ -9,6 +9,8 @@ await build({
   platform: 'node',
   format: 'cjs',
   target: 'node20',
+  // Prefer dependencies' public ESM entry: UMD require factories cannot be relocated into one CJS bundle.
+  mainFields: ['module', 'main'],
   external: ['vscode'],
   sourcemap: true,
   logLevel: 'warning',
@@ -17,7 +19,7 @@ await build({
 // Serialize the public kernel schema at build time; there is no separately maintained IDE schema.
 const schema = await build({
   stdin: { contents: "export { DOCUMENT_JSON_SCHEMA } from '@lincyaw/kernel'", resolveDir: fileURLToPath(new URL('..', import.meta.url)) },
-  bundle: true, platform: 'node', format: 'esm', target: 'node20', write: false, logLevel: 'warning',
+  bundle: true, platform: 'node', format: 'esm', target: 'node20', mainFields: ['module', 'main'], write: false, logLevel: 'warning',
 })
 const { DOCUMENT_JSON_SCHEMA } = await import(`data:text/javascript,${encodeURIComponent(schema.outputFiles[0].text)}`)
 await mkdir(new URL('../dist/', import.meta.url), { recursive: true })

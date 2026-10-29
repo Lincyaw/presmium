@@ -103,6 +103,7 @@ presmium/
 │   ├── language-server/     @lincyaw/language-server           语言服务（诊断、跳转、悬停、补全、预览同步）
 │   ├── vscode/              presmium-vscode                     VS Code 扩展（预打包）
 │   ├── server/              @lincyaw/server                    服务端：挂载服务端贡献、请求来源的检查、确认、控制通道、反向代理（Node）
+│   ├── skills/              @lincyaw/skills                    四项可分发技能与资源：Web、MCP、CLI 与 VSIX 共用
 │   ├── mcp/                 @lincyaw/mcp                       agent 环境：MCP 工具与资源；presmium-mcp（stdio）
 │   ├── workspace/           @lincyaw/workspace                 工作区服务 presmium serve：文档管理、修改历史（REVISIONS）、审阅、工作区站点；templates/document/ 是随包发布的文档模板
 │   ├── addon-exec-wasi/     @lincyaw/addon-exec-wasi    WebAssembly 后端（Runno）
@@ -176,7 +177,7 @@ packages/addon-<ctx>/
 - **面板不认识宿主**：`@lincyaw/workbench` 不引用 UI 框架、`@lincyaw/host` 与 `@deepseek-ai/*`；`@lincyaw/design` 只允许引用无框架的 Lucide 图标节点，不引用 UI 框架或业务包。
 - **mcp 的使用者**：“只有 server 使用 mcp”放宽为“server 与 dsh 使用 mcp”；`@modelcontextprotocol/*` 仍只在 `mcp` 中，bundle 经 `@lincyaw/mcp` 导出的客户端一侧使用 MCP。
 
-`check-layering.mjs` 的规则 `only the server and the dsh bundle use mcp`、`DeepSeek Harness only in dsh and studio`、`the workbench's panels know no host`、`the design system only uses framework-free icons`、`outputs do not use the workbench` 检查模块引用；另一项检查不看引用：各包 `package.json` 的依赖（含开发与对等依赖）中 `@deepseek-ai/*` 只出现在 `dsh` 与 `studio` 中。`check-packages.mjs` 让 `@lincyaw/workbench`、`@lincyaw/dsh`、`@lincyaw/studio` 有自己的 0.x 版本（不计入统一版本），`package.json` 的 `presmium.generated` 列出打包时才生成、不入库却在 `files` 中的路径（`@lincyaw/dsh` 的 `skills` 与预编译的客户端）。
+`check-layering.mjs` 的规则 `only the server and the dsh bundle use mcp`、`DeepSeek Harness only in dsh and studio`、`the workbench's panels know no host`、`the design system only uses framework-free icons`、`outputs do not use the workbench` 检查模块引用；另一项检查不看引用：各包 `package.json` 的依赖（含开发与对等依赖）中 `@deepseek-ai/*` 只出现在 `dsh` 与 `studio` 中。`check-packages.mjs` 让 `@lincyaw/workbench`、`@lincyaw/dsh`、`@lincyaw/studio` 有自己的 0.x 版本（不计入统一版本），`package.json` 的 `presmium.generated` 列出打包时才生成、不入库却在 `files` 中的路径（`@lincyaw/skills` 的技能资源与 `@lincyaw/dsh` 的预编译客户端）。
 
 `package.json` 的 `exports`：
 
@@ -190,7 +191,9 @@ packages/addon-<ctx>/
 
 源码直接以 `.ts`、`.tsx` 发布，不预编译；例外是 `presmium-vscode` 与 `@lincyaw/dsh` 的客户端部分（dsh 的客户端运行时只加载它的工厂格式，`design-dsh.md` 7.8 节）。Vite（查看器与文稿代码包的构建）与 Vitest 直接处理 TS；CLI 通过 jiti 加载 TS（装在 `node_modules` 中的 `.ts` 不被 Node 剥离类型）。
 
-VS Code 扩展的安装包包含语言服务、编译器与网页渲染运行时，编辑与布局交给 VS Code；不依赖工作台。`pnpm --filter presmium-vscode package:vsix` 按工作区锁文件部署生产依赖，以普通目录写入平台专用 VSIX；有 Node.js 22.19 以上即可启动，文稿的额外插件仍由文稿项目提供。`.github/workflows/vscode.yml` 在 macOS、Windows、Linux 的 x64 与 ARM64 上构建，解压到仓库外验证真实预览服务，再把产物上传为 Actions artifact；GitHub Release 发布时附加六个安装包。完整安装与构建说明见 `packages/vscode/README.md`。
+VS Code 扩展以原生 JSON 与代码编辑、诊断定位、实时预览和放映为日常入口，需要可视化创作或导出时，在 VS Code 的 Integrated Browser 打开同一个 Studio。安装包包含语言服务、编译器、网页渲染端及完整 Studio 运行时；原生语言服务与预览独立运行，可视化入口才启动 Studio。`pnpm --filter presmium-vscode package:vsix` 先构建共用客户端和作者技能，再按工作区锁文件部署生产依赖，以普通目录写入平台专用 VSIX。需要 VS Code Desktop 1.142 与 Node.js 22.19 以上；文稿的额外插件由文稿项目提供。预览通过真正浏览器页面承载，保留现有本机请求防护。`.github/workflows/vscode.yml` 在六个平台打包、类型检查并上传 artifact，未运行真实窗口验收；GitHub Release 发布时附加六个安装包。完整命令与验收说明见 `packages/vscode/README.md`。
+
+`@lincyaw/skills` 在打包时从 `.agents/skills` 复制 author、animate、present 与 develop 四项技能及其文本资源。Web Studio 直接登记它们；MCP 的 `list_skills`、`read_skill` 与 `presmium://skills` 提供按需发现与分页读取，无文稿时也可用；VS Code 的 Install Project Skills 与 `presmium skills install <目录>` 安装缺少的项目技能并保留已有内容。MCP 初始化说明引导客户端读取，实际加载由客户端决定，不隐式改写 Agent 配置。
 
 ## 4. 跨上下文契约
 
@@ -1962,7 +1965,8 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 
 | 层 | 包 | 框架 | 依赖 dsh | 版本 |
 |---|---|---|---|---|
-| 核心 | `kernel`、`compiler`、`cli`、`presmium`、`server`、`mcp`、`language-server`、`workspace` 的 Node 部分（工作区服务）、`classroom-server`、`create-presmium`、`presmium-vscode` | TS、Node | 否 | 1.x |
+| 核心 | `kernel`、`compiler`、`cli`、`presmium`、`server`、`mcp`、`language-server`、`workspace` 的 Node 部分（工作区服务）、`classroom-server`、`create-presmium` | TS、Node | 否 | 1.x |
+| VS Code 宿主 | `presmium-vscode` | TS、Node、VS Code Integrated Browser | 可视化入口经 `studio` 启动，语言服务与预览独立 | 0.x |
 | 产物 | `web`、`viewer`、`render-slides`、`render-notebook`、各插件的组件与 `src/client`、`host` | React | 否 | 1.x |
 | 工作台 | `design`（与产物共用）、`workbench`、`dsh`、`studio` | React 18（由 dsh 的外壳提供） | 只有 `dsh` 与 `studio` | 0.x（`design` 随 `host` 为 1.x） |
 

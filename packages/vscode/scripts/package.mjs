@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, cpSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -18,14 +18,32 @@ function run(args, cwd) {
   if (result.status !== 0) throw new Error(`Build command failed with exit code ${result.status}`)
 }
 
+// pnpm can hard-link workspace sources even with a copy import method. A concurrent source build must
+// not change the bytes after vsce has counted them for the archive.
+function snapshotFiles(dir) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const file = join(dir, entry.name)
+    if (entry.isDirectory()) snapshotFiles(file)
+    else if (entry.isFile() && lstatSync(file).nlink > 1) {
+      const copy = `${file}.presmium-copy`
+      copyFileSync(file, copy)
+      renameSync(copy, file)
+    }
+  }
+}
+
 run(['scripts/build.mjs'], pkg)
+// The same prebuilt client and author skills used by browser Studio ship in the VSIX.
+run([pnpm, '--filter', '@lincyaw/skills', 'run', 'prepack'], root)
+run([pnpm, '--filter', '@lincyaw/dsh', 'run', 'prepack'], root)
 mkdirSync(join(pkg, 'dist'), { recursive: true })
 const staging = mkdtempSync(join(tmpdir(), 'presmium-vsix-'))
 const output = join(pkg, 'dist', `${manifest.name}-${manifest.version}-${target}.vsix`)
 try {
   const runtime = join(staging, 'runtime')
-  run([pnpm, '--filter', '@lincyaw/language-server', 'deploy', '--prod',
-    '--config.inject-workspace-packages=true', '--config.node-linker=hoisted', runtime], root)
+  run([pnpm, '--filter', 'presmium-vscode', 'deploy', '--prod', '--frozen-lockfile',
+    '--config.inject-workspace-packages=true', '--config.node-linker=hoisted', '--config.package-import-method=copy', runtime], root)
+  snapshotFiles(join(runtime, 'node_modules', '@lincyaw'))
   for (const file of ['.pnpm', '.bin', '.modules.yaml']) rmSync(join(runtime, 'node_modules', file), { recursive: true, force: true })
   for (const file of ['pnpm-lock.yaml', 'pnpm-workspace.yaml']) rmSync(join(runtime, file), { force: true })
   for (const file of ['README.md', 'LICENSE', 'package.nls.json', 'package.nls.zh-cn.json', 'l10n', 'dist/extension.cjs', 'dist/lecture.schema.json']) {

@@ -1,9 +1,14 @@
 {
   "displayName": "Presmium",
-  "description": "用内置的 JSON 编辑器编辑 lecture.json：架构补全、教学图诊断、代码锚点导航，以及跟随当前页面的预览",
+  "description": "在原生编辑器中编辑 JSON 与代码，提供诊断、实时预览和放映；打开共用的可视化编辑器进行创作与导出。",
   "category": "Presmium",
   "command.openPreview": "在侧边打开预览",
+  "command.openStudio": "打开可视化编辑器",
+  "command.present": "放映文稿",
+  "command.stopStudio": "停止可视化编辑器",
   "configuration.title": "Presmium",
-  "configuration.server.runtime": "运行语言服务的 Node.js 可执行文件（Node.js 22.19 或更高版本）。",
-  "configuration.server.path": "presmium-language-server.mjs 的路径。默认使用工作区中安装的 @lincyaw/language-server，没有时使用扩展自带的。"
+  "configuration.server.runtime": "运行本地服务的 Node.js 可执行文件（Node.js 22.19 或更高版本）。",
+  "configuration.server.path": "presmium-language-server.mjs 的路径。默认使用工作区中安装的版本，没有时使用扩展自带的版本。",
+  "capabilities.untrustedWorkspaces": "Presmium 会启动本地服务，用于编辑文件和运行工程代码。",
+  "command.installSkills": "安装工程技能"
 }

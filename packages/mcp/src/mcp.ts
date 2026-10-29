@@ -19,6 +19,7 @@ import { AUDIO_AUTHORING_TOOLS } from './audio-authoring.ts'
 import { IMAGE_AUTHORING_TOOLS } from './image-authoring.ts'
 import { VOICE_AUTHORING_TOOLS } from './voice-authoring.ts'
 import { DIAGNOSTIC_TOOLS, diagnosticSnapshot } from './diagnostics.ts'
+import { registerSkillResources, SKILL_INSTRUCTIONS, SKILL_TOOLS } from './skills.ts'
 
 const MCP_VERSION: string = (createRequire(import.meta.url)('../package.json') as { version: string }).version
 const POSITION_URI = 'presmium://position'
@@ -123,6 +124,7 @@ function jobSummary(job: CompileJob, logLines = 0) {
 }
 
 const TOOLS: ToolSpec[] = [
+  ...SKILL_TOOLS,
   ...AUTHORING_TOOLS,
   ...AUTHORING_ACTION_TOOLS,
   ...HISTORY_TOOLS,
@@ -545,6 +547,7 @@ function instructions(host: McpHost, caller: McpCaller, tools: { name: string, k
   const operations = tools.filter(tool => tool.kind !== 'read').map(tool => tool.name)
   return [
     `Presmium: ${title ? `the lecture deck "${title}"` : 'lecture decks'} as tools.`,
+    SKILL_INSTRUCTIONS,
     `Read tools: ${reads.join(', ')}.`,
     `The same data is offered as resources: presmium://documents, presmium://deck, presmium://sections, presmium://sections/{section}, presmium://sections/{section}/steps/{step}, presmium://sections/{section}/outputs, presmium://diagnostics (the current diagnostic snapshot; reading it does not run checks), presmium://ir (the compiled deck)${pages ? ', presmium://position (subscribe to it to hear when the presentation moves)' : ''}, presmium://focus (what the author points at in the workbench; subscribe to it to hear of a new one)${host.classroomStatus ? ', presmium://classroom' : ''}. With several documents, add ?document=<dir> to a deck's resource (presmium://sections?document=<dir>). Subscribe to presmium://diagnostics?document=<dir> to hear when that document's current problems change; get_diagnostics reads bounded, version-bound snapshot fragments without running checks; check_document explicitly runs compilation and plugin checks. An empty snapshot is not browser or current-source verification.`,
     'Sections are named by id (list_sections); steps count from 0. Source paths in diagnostic snapshots are relative to the workspace root; other document paths are relative to the deck directory.',
@@ -597,6 +600,7 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
     capabilities: { resources: { subscribe: true } },
     instructions: instructions(host, caller, [...builtIn, ...plugins], documents.length === 1 ? documents[0]!.title : undefined),
   })
+  registerSkillResources(server)
 
   const call = (args: Args, signal: AbortSignal): Call => {
     let document: Promise<string> | undefined
@@ -637,7 +641,8 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
       _meta: meta(tool.kind),
     }, (args, ctx) => {
       const own = call(args, ctx.mcpReq.signal)
-      return toolResult(() => tool.run(own), tool.structured, async () => { const dir = await own.document(); return (await host.documents()).find(doc => doc.dir === dir)?.lang })
+      const lang = SKILL_TOOLS.includes(tool) ? undefined : async () => { const dir = await own.document(); return (await host.documents()).find(doc => doc.dir === dir)?.lang }
+      return toolResult(() => tool.run(own), tool.structured, lang)
     })
   }
   for (const tool of plugins) {
