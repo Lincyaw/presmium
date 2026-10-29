@@ -45,6 +45,9 @@ export function startExchange(client: AskClient, question: string, context: Agen
   void (async () => {
     let answer = ''
     try { for await (const piece of client.ask(question, context, stop.signal)) { answer += piece; update({ answer }) }; update({ state: 'done' }) }
-    catch (error) { update(stop.signal.aborted ? { state: 'done' } : { state: 'failed', error: errorMessage(error) }) }
+    catch (error) {
+      const cancelled = stop.signal.aborted || (error instanceof Error && error.name === 'AbortError')
+      update(cancelled ? { state: 'done', cancelled: true } : { state: 'failed', error: errorMessage(error) })
+    }
   })()
 }

@@ -53,6 +53,7 @@ export interface ChatClientOptions {
   webViewer(): WebViewerAccess | undefined
   slideNavigation(): Navigation | undefined
   missing(): string
+  signal?: AbortSignal
 }
 
 export function createAskClient(options: ChatClientOptions): AskClient {
@@ -61,17 +62,24 @@ export function createAskClient(options: ChatClientOptions): AskClient {
     async* ask(question, context, signal) {
       const settings = askSettings.getSnapshot()
       if (!settings) throw new Error(options.missing())
+      const requestSignal = signal && options.signal ? AbortSignal.any([signal, options.signal]) : signal ?? options.signal
       const response = await fetch(completionsUrl(settings.url), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream', 'Authorization': `Bearer ${settings.key}` },
         body: JSON.stringify({ model: settings.model, stream: true, messages: askMessages(question, placeOf(context, options.webViewer(), options.slideNavigation())) }),
         credentials: 'omit',
         referrerPolicy: 'no-referrer',
-        ...signal ? { signal } : {},
+        ...requestSignal ? { signal: requestSignal } : {},
       })
-      if (!response.ok) throw new Error(serviceError(response.status, await response.text().catch(() => '')))
+      if (!response.ok) {
+        const body = await response.text().catch(() => '')
+        requestSignal?.throwIfAborted()
+        throw new Error(serviceError(response.status, body))
+      }
       if (!response.headers.get('content-type')?.includes('text/event-stream') || !response.body) {
-        const text = completionText(await response.json().catch(() => undefined))
+        const body = await response.json().catch(() => undefined)
+        requestSignal?.throwIfAborted()
+        const text = completionText(body)
         if (text === undefined) throw new Error(serviceError(response.status, ''))
         yield text
         return

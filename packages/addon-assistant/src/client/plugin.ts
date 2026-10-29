@@ -20,16 +20,19 @@ export const assistantPlugin: PluginDefinition = {
     requires: [{ token: TOOLBAR, optional: true }, { token: PRESENTER_PANELS, optional: true }, { token: NAVIGATION, optional: true }],
   },
   setup(ctx) {
+    const lifetime = new AbortController()
     slideNavigation.set(ctx.tryGet(NAVIGATION))
     const ask = createAskClient({
       webViewer: keptWebViewerAccess,
       slideNavigation: () => slideNavigation.getSnapshot(),
       missing: () => ASSISTANT_MESSAGES[currentLocale()].ask.missing,
+      signal: lifetime.signal,
     })
     ctx.provide(ASK, ask)
     askClient.set(ask)
     const t = ASSISTANT_MESSAGES[currentLocale()]
     cleanup = [
+      () => lifetime.abort(),
       ctx.tryGet(TOOLBAR)?.register({ id: ASSISTANT_ID, title: t.toolbar.title, component: AssistantToolbar, order: 15 }),
       ctx.tryGet(PRESENTER_PANELS)?.register({ id: ASSISTANT_ID, title: t.panel.title, component: AskPanel, order: 15 }),
       typeof document === 'undefined' ? undefined : trackSelection(),
